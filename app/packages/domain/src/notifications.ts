@@ -45,6 +45,8 @@ export type NotificationKind =
   | 'ride_booking_cancelled'
   // 0734 — the ride expired without leaving, so a confirmed seat was cancelled.
   | 'ride_booking_lapsed'
+  // FR-RIDE-047 (0743) — the driver called the whole ride off; the passenger's seat is cancelled.
+  | 'ride_booking_withdrawn'
   // D74 (0516) — a new ride on a route the user follows.
   | 'ride_route_match'
   // D70 (0517) — an emergency raised on a ride of the one rides flow.

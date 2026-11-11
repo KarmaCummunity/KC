@@ -113,6 +113,9 @@ export const notificationsHe = {
   // 0734 — a confirmed seat on a ride that expired without leaving.
   rideBookingLapsedTitle: 'הנסיעה לא יצאה',
   rideBookingLapsedBody: 'הנסיעה "{{rideTitle}}" לא יצאה לדרך והסתיימה, וההזמנה שלך בוטלה. אפשר לחפש נסיעה אחרת.',
+  // FR-RIDE-047 — the driver called the ride off (a pause, a delete or the end of a recurring ride).
+  rideBookingWithdrawnTitle: 'הנהג/ת ביטל/ה את הנסיעה',
+  rideBookingWithdrawnBody: '{{name}} ביטל/ה את הנסיעה "{{rideTitle}}" וההזמנה שלך בוטלה. אפשר לחפש נסיעה אחרת.',
   // D74 — a new ride on a route the user follows (0516).
   rideRouteMatchTitle: 'נסיעה חדשה במסלול שלך',
   rideRouteMatchBody: '{{origin}} ← {{dest}} · {{when}}',

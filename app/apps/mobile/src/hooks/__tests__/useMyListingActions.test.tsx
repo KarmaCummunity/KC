@@ -31,7 +31,17 @@ vi.mock('../../store/closureStore', () => ({
   useClosureStore: { getState: () => ({ start: vi.fn() }) },
 }));
 
+import type { MyListingRow } from '@kc/domain';
 import { useMyListingActions } from '../useMyListingActions';
+
+/** A row of the list; only the fields the actions read matter here. */
+function row(over: Partial<MyListingRow> = {}): MyListingRow {
+  return {
+    listingId: 'l1', worldSlug: 'items', kindSlug: 'give_item', direction: 'give', status: 'open',
+    title: 't', summary: null, urgencyLevel: 2, availabilityStatus: 'ongoing', updatedAt: '2026-11-11T00:00:00Z',
+    feedPostId: 'p1', ...over,
+  };
+}
 
 /** Lets the fire-and-forget action promises settle. */
 const flush = () => act(async () => { await new Promise((r) => setTimeout(r, 0)); });
@@ -44,7 +54,7 @@ describe('useMyListingActions', () => {
     const refetch = vi.fn(async () => undefined);
     const { result } = renderHook(() => useMyListingActions(refetch));
 
-    act(() => result.current.pause('l1'));
+    act(() => result.current.pause(row()));
     await flush();
 
     expect(m.alert).toHaveBeenCalledWith('marketplace.myListingsErrorTitle', 'marketplace.myListingsErrorActiveHandoff');
@@ -95,5 +105,31 @@ describe('useMyListingActions', () => {
     act(() => result.current.addPhotos('l1'));
     await flush();
     expect(m.alert).toHaveBeenCalledWith('marketplace.myListingsErrorTitle', 'marketplace.myListingsErrorMediaFull');
+  });
+
+  it('asks before pausing a ride, says its passengers are told, and pauses only on yes (FR-RIDE-047)', async () => {
+    m.alert.mockImplementation((_t: string, _m: string, buttons?: { onPress?: () => void }[]) => buttons?.[1]?.onPress?.());
+    m.repo.pauseMyListing.mockResolvedValue(undefined);
+    const { result } = renderHook(() => useMyListingActions(vi.fn(async () => undefined)));
+
+    act(() => result.current.pause(row({ worldSlug: 'rides', kindSlug: 'ride_offer' })));
+    await flush();
+
+    expect(m.alert.mock.calls[0]?.[1]).toBe('marketplace.myListingsPauseHoldersHint');
+    expect(m.repo.pauseMyListing).toHaveBeenCalledWith('l1');
+  });
+
+  it('pauses an item at once, and warns of the holders when deleting a ride', async () => {
+    m.repo.pauseMyListing.mockResolvedValue(undefined);
+    const { result } = renderHook(() => useMyListingActions(vi.fn(async () => undefined)));
+
+    act(() => result.current.pause(row()));
+    await flush();
+    expect(m.alert).not.toHaveBeenCalled();
+    expect(m.repo.pauseMyListing).toHaveBeenCalledWith('l1');
+
+    act(() => result.current.remove(row({ worldSlug: 'rides', kindSlug: 'ride_offer' })));
+    await flush();
+    expect(m.alert.mock.calls[0]?.[1]).toBe('marketplace.myListingsDeleteHoldersHint');
   });
 });

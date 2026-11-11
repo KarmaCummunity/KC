@@ -13,6 +13,7 @@ import { ORG_EVENT_KIND_SLUG, type MyListingRow } from '@kc/domain';
 import { useAuthStore } from '../store/authStore';
 import { useClosureStore } from '../store/closureStore';
 import { listingOfferAllowsCloseWithout } from '../lib/listingOwnerClosure';
+import { ownerCancelNotifiesHolders } from '../lib/listingHasHolders';
 import { useInvalidateMyListings } from './useMyMarketplaceListings';
 
 /** Native confirm dialog (window.confirm on web); resolves true when the owner confirms. */
@@ -40,10 +41,11 @@ function notify(title: string, message: string): void {
 export interface MyListingActions {
   /** The listing whose action is running, so its row can disable its buttons. */
   readonly busyId: string | null;
-  readonly pause: (listingId: string) => void;
+  /** Takes the row: a ride or an event asks first, since its holders are told (FR-RIDE-047, D131). */
+  readonly pause: (listing: MyListingRow) => void;
   readonly resume: (listingId: string) => void;
   readonly fulfill: (listing: MyListingRow) => void;
-  readonly remove: (listingId: string) => void;
+  readonly remove: (listing: MyListingRow) => void;
   readonly addPhotos: (listingId: string) => void;
 }
 
@@ -79,8 +81,16 @@ export function useMyListingActions(refetch: () => Promise<unknown>): MyListingA
   );
 
   const pause = useCallback(
-    (listingId: string) => void run(listingId, () => marketplaceRepository().pauseMyListing(listingId)),
-    [run],
+    (listing: MyListingRow) => {
+      const action = () => marketplaceRepository().pauseMyListing(listing.listingId);
+      // Pausing a ride or an event cancels its bookings or registrations, so the owner confirms first.
+      if (ownerCancelNotifiesHolders(listing)) {
+        void confirmThenRun(listing.listingId, 'marketplace.myListingsPauseTitle', 'marketplace.myListingsPauseHoldersHint', action);
+        return;
+      }
+      void run(listing.listingId, action);
+    },
+    [confirmThenRun, run],
   );
   const resume = useCallback(
     (listingId: string) => void run(listingId, () => marketplaceRepository().resumeMyListing(listingId)),
@@ -122,9 +132,13 @@ export function useMyListingActions(refetch: () => Promise<unknown>): MyListingA
     [confirmThenRun, t, userId],
   );
   const remove = useCallback(
-    (listingId: string) =>
-      void confirmThenRun(listingId, 'marketplace.myListingsDeleteTitle', 'marketplace.myListingsDeleteHint', () =>
-        marketplaceRepository().deleteMyListing(listingId),
+    (listing: MyListingRow) =>
+      void confirmThenRun(
+        listing.listingId,
+        'marketplace.myListingsDeleteTitle',
+        // A ride's passengers and an event's attendees are told, and the hint says so.
+        ownerCancelNotifiesHolders(listing) ? 'marketplace.myListingsDeleteHoldersHint' : 'marketplace.myListingsDeleteHint',
+        () => marketplaceRepository().deleteMyListing(listing.listingId),
       ),
     [confirmThenRun],
   );

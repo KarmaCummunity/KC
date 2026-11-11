@@ -54,7 +54,7 @@ Tech (G48 ✅): `ride_saved_routes` (RLS own rows, places canonical, ≤ 10) and
 Tech (G44 ✅): `listings_ride_route_cost_cap` caps the cost share at ₪20 when both ends are in one city and ₪70 otherwise, after the places are made canonical; `ride_listing_emergency` lets the driver or an approved passenger call for help from 1 hour before departure to 2 hours after the estimated end (once per 5 minutes) and alerts every other participant and the super admins (`0517`, kind `ride_listing_emergency`). The legacy `ride_listings` screens are retired: `/donations/rides/[id]` (+ `active`, `rate`) opens the ride's listing via `listings.legacy_ride_id`, or the rides hub; `my-rides` / `my-requests` open my listings.
 
 ## 5.4 Time & volunteering (`time`) — MVP, live
-Anyone can give an hour (D22). One-off, person-to-person, and org events.
+Anyone can give an hour (D22). One-off, person-to-person, and org events. Regular volunteering and recurring events are a series of dates, each taking its own registrations (FR-POST-024, `{{D:recurring-time-posts}}`).
 1. Offer or request with estimated duration (D32).
 2. Match & chat.
 3. "Volunteering done" — unaffiliated: karma by declared duration (S14); affiliated: hours approved by the org manager (D32).

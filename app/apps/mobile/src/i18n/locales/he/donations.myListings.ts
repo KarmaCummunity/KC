@@ -15,6 +15,10 @@ export const marketplaceMyListings = {
   myListingsDelete: 'מחיקה',
   myListingsDeleteTitle: 'למחוק את המודעה?',
   myListingsDeleteHint: 'המודעה תימחק לצמיתות.',
+  // FR-RIDE-047, D131 — a ride's passengers and an event's attendees are told when it is called off.
+  myListingsPauseTitle: 'להשהות את המודעה?',
+  myListingsPauseHoldersHint: 'מי שהזמין מקום או נרשם יקבל הודעה, וההזמנה או ההרשמה שלו תבוטל.',
+  myListingsDeleteHoldersHint: 'המודעה תימחק לצמיתות. מי שהזמין מקום או נרשם יקבל הודעה, וההזמנה או ההרשמה שלו תבוטל.',
   myListingsSave: 'שמירת שינויים',
   myListingsUpdated: 'עודכן {{date}}',
   myListingsHiddenHint: 'מוסתרת מאחרים עד שהצוות יבדוק את הדיווחים',

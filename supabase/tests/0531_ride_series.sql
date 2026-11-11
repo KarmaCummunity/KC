@@ -1,6 +1,7 @@
 -- 0531_ride_series.sql | Recurring rides (FR-RIDE-046, #1413): a series materializes one
 -- ride listing per upcoming day, only its soonest occurrence reaches the main feed, a follower
--- is alerted once, pause / resume / cancel / reschedule respect booked occurrences.
+-- is alerted once, pause / resume / reschedule respect booked occurrences, and a cancel ends
+-- every upcoming one, telling its passengers (0743).
 begin;
 
 update public.matching_settings set quiet_start = '00:00', quiet_end = '00:00';
@@ -204,22 +205,29 @@ begin
     to_char(c.soon, 'HH24:MI'), 'the booked occurrence keeps its agreed time');
 end $$;
 
--- 7) Cancel is terminal: unbooked occurrences go, booked ones go on as single rides.
+-- 7) Cancel is terminal: every upcoming occurrence ends, a booked one too, and its passenger is
+--    told (0743, FR-RIDE-046 AC6).
 do $$
 declare
-  p personas; v_series uuid; v_booked uuid;
+  p personas; v_series uuid; v_booked uuid; v_seat uuid;
 begin
   select * into p from personas;
   v_series := pg_temp.series(p.driver);
   select listing_id into v_booked from pg_temp.occurrences(v_series) limit 1;
-  perform kc_test.book_ride(p.rider, v_booked, 1);
+  v_seat := kc_test.book_ride(p.rider, v_booked, 1);
   perform kc_test.act_as(p.driver);
   perform public.set_ride_series_status(v_series, 'cancelled');
   perform kc_test.assert_eq((select count(*) from pg_temp.occurrences(v_series)), 0::bigint,
     'no occurrence carries a cancelled series');
-  perform kc_test.assert_eq(kc_test.listing_status(v_booked), 'open', 'the booked ride goes on as a single ride');
-  perform kc_test.assert_true(not ((select details from public.listings where listing_id = v_booked) ? 'ride_series'),
-    'the booked ride is detached from the series');
+  perform kc_test.assert_eq(
+    (select status from public.posts where post_id = public.post_id_of_listing(v_booked)),
+    'deleted_no_recipient', 'the booked date ends with the series');
+  perform kc_test.assert_eq(
+    (select cancel_reason from public.post_handoffs where handoff_id = v_seat),
+    'host_cancelled', 'its seat is cancelled by the driver');
+  perform kc_test.assert_eq(
+    (select count(*) from public.notifications_outbox where user_id = p.rider and kind = 'ride_booking_withdrawn'),
+    1::bigint, 'the passenger is told the driver cancelled the ride');
   perform kc_test.assert_raises(format('select public.set_ride_series_status(%L, %L)', v_series, 'active'),
     'ride_series_cancelled', 'a cancelled series cannot be resumed');
   perform kc_test.assert_raises(format('select public.update_ride_series(%L, %L, 127)', v_series, '08:00'),

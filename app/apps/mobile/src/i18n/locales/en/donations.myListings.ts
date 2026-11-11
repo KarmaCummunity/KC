@@ -15,6 +15,10 @@ export const marketplaceMyListings = {
   myListingsDelete: 'Delete',
   myListingsDeleteTitle: 'Delete listing?',
   myListingsDeleteHint: 'This permanently removes the listing.',
+  // FR-RIDE-047, D131 — a ride's passengers and an event's attendees are told when it is called off.
+  myListingsPauseTitle: 'Pause this listing?',
+  myListingsPauseHoldersHint: 'Everyone who booked a seat or registered is told, and their booking or registration is cancelled.',
+  myListingsDeleteHoldersHint: 'This permanently removes the listing. Everyone who booked a seat or registered is told, and their booking or registration is cancelled.',
   myListingsSave: 'Save changes',
   myListingsUpdated: 'Updated {{date}}',
   myListingsHiddenHint: 'Hidden from others until the team reviews the reports',

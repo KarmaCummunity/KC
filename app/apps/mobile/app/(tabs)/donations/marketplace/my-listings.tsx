@@ -39,10 +39,10 @@ interface MyListingRowItemProps {
   readonly busy: boolean;
   readonly onOpen: (listingId: string) => void;
   readonly onEdit: (listingId: string) => void;
-  readonly onPause: (listingId: string) => void;
+  readonly onPause: (listing: MyListingRow) => void;
   readonly onFulfill: (listing: MyListingRow) => void;
   readonly onResume: (listingId: string) => void;
-  readonly onDelete: (listingId: string) => void;
+  readonly onDelete: (listing: MyListingRow) => void;
   readonly onAddPhotos: (listingId: string) => void;
   readonly styles: ReturnType<typeof useStyles>;
 }
@@ -63,10 +63,10 @@ const MyListingRowItem = React.memo(function MyListingRowItem({
 
   const handleOpen = useCallback(() => onOpen(item.listingId), [item.listingId, onOpen]);
   const handleEdit = useCallback(() => onEdit(item.listingId), [item.listingId, onEdit]);
-  const handlePause = useCallback(() => onPause(item.listingId), [item.listingId, onPause]);
+  const handlePause = useCallback(() => onPause(item), [item, onPause]);
   const handleFulfill = useCallback(() => onFulfill(item), [item, onFulfill]);
   const handleResume = useCallback(() => onResume(item.listingId), [item.listingId, onResume]);
-  const handleDelete = useCallback(() => onDelete(item.listingId), [item.listingId, onDelete]);
+  const handleDelete = useCallback(() => onDelete(item), [item, onDelete]);
   const handleAddPhotos = useCallback(() => onAddPhotos(item.listingId), [item.listingId, onAddPhotos]);
 
   const meta = useMemo(

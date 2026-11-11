@@ -113,6 +113,9 @@ export const notificationsEn = {
   // 0734 — a confirmed seat on a ride that expired without leaving.
   rideBookingLapsedTitle: 'The ride did not run',
   rideBookingLapsedBody: 'The ride "{{rideTitle}}" never set off and has ended, so your booking was cancelled. You can look for another ride.',
+  // FR-RIDE-047 — the driver called the ride off (a pause, a delete or the end of a recurring ride).
+  rideBookingWithdrawnTitle: 'The driver cancelled the ride',
+  rideBookingWithdrawnBody: '{{name}} cancelled the ride "{{rideTitle}}", so your booking was cancelled. You can look for another ride.',
   // D74 — a new ride on a route the user follows (0516).
   rideRouteMatchTitle: 'A new ride on your route',
   rideRouteMatchBody: '{{origin}} → {{dest}} · {{when}}',
