@@ -134,12 +134,13 @@ Last applied on kc-dev when this was written: `0239`.
 | 0700 | #1398 `give_food` no longer requires `food_type` (the food type is the world sub-category) | in progress |
 | 0703–0714 | knowledge exchange posts, epic #1687 (KNOW-K1-B): `0703` six kinds, slots as rows, slot rules and sync (#2034), `0704` slot bookings, sweeps, pushes (#2034), `0705–0714` children #2035–#2039 | in progress |
 | 0715 | RLS auth initplan on the hot-table policies, all but posts (supersedes closed #1546, PR #2054) | in progress |
+| 0730–0739 | Events and organizations (G18) and the handoff fixes found on the way: `0730` organization registration and members (FR-ORG-002 first slice), `0731` event notifications, `0732` demo events on kc-dev, `0733` animal handoff pushes (`fix/animals-handoff-push`), `0734` ride expiry settles bookings (`fix/rides-expiry-settles-bookings`), `0735` an event's close earns no fulfilled karma, `0736` the end of an event lapses its requests and waitlist; `0737`–`0739` held | in progress |
 | 0740 | delivered listing visibility: union of the two surfaces, recipient via handoff, `recipients` row for food / animals / items hand-overs + backfill (D-229) | in progress |
-| 0726+ | — | free |
+| 0726–0729, 0741+ | — | free |
 
 ## Next free ranges
 
-`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0595–0599`, `0614–0619`, `0639`, `0640–0659`, `0726+`.
+`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0595–0599`, `0614–0619`, `0639`, `0640–0659`, `0726–0729`, `0741+`.
 
 ## How to claim
 

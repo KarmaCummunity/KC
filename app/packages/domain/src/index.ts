@@ -62,6 +62,7 @@ export * from './marketplace/validateListingDetails';
 export * from './marketplace/marketplaceWorldRules';
 export * from './marketplace/externalBodies';
 export * from './marketplace/eventPost';
+export * from './organizations/Organization';
 export * from './marketplace/mapPins';
 export * from './launch/launchWorlds';
 export * from './worlds/givingWorlds';

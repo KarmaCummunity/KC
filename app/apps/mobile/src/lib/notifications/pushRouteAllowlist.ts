@@ -147,6 +147,17 @@ const KIND_ROUTES: Record<NotificationKind, KindHandler> = {
   // FR-HOUSING-017 — housing booking changes open the stay offer, where both sides act on it.
   // D131 — a cancelled event registration opens the event post.
   event_registration_cancelled: (d) => listingRoute(d.params),
+  // G18 (0731) — every event registration notice opens the event post.
+  event_join_request: (d) => listingRoute(d.params),
+  event_registration_approved: (d) => listingRoute(d.params),
+  event_registration_promoted: (d) => listingRoute(d.params),
+  event_registration_declined: (d) => listingRoute(d.params),
+  event_registration_expired: (d) => listingRoute(d.params),
+  event_reminder: (d) => listingRoute(d.params),
+  event_mark_attendance: (d) => listingRoute(d.params),
+  // FR-ORG-002 (0730) — organization notices open "My organizations"; no params to trust.
+  org_registration_decided: () => ({ pathname: '/settings/organizations', params: {} }),
+  org_member_added: () => ({ pathname: '/settings/organizations', params: {} }),
   // FR-FEED engagement — a reaction, comment or mention opens the post.
   post_reaction: (d) => postRoute(d.params?.id),
   post_comment: (d) => postRoute(d.params?.id),

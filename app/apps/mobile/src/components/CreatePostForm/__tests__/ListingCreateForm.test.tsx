@@ -26,6 +26,7 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 vi.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
+vi.mock('expo-router', () => ({ useRouter: () => ({ push: vi.fn() }) })); // the membership hint (FR-ORG-002)
 // A native picker may only ever mount inside the date sheet, never inline in the form.
 vi.mock('@react-native-community/datetimepicker', () => ({
   default: mocks.nativeDatePicker,
@@ -88,7 +89,6 @@ vi.mock('../../CityPicker', () => ({
     <button type="button" data-testid="city-picker" onClick={() => onChange({ id: '7000', name: 'לוד' })} />
   ),
 }));
-
 import { ListingCreateForm } from '../ListingCreateForm';
 
 const RIDE_FILL = vi.hoisted(() => ({
