@@ -1,11 +1,11 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { IMarketplaceRepository, MarketplacePage, MyListingsCursor } from '@kc/application';
-import { BackendRuleError, type ListingKindOption, type MarketplaceSimilarListing, type MyListingRow, type ProfileListingRow } from '@kc/domain';
+import { BackendRuleError, POST_STATUSES, type ListingKindOption, type MarketplaceSimilarListing, type MyListingRow, type ProfileListingRow } from '@kc/domain';
 import type { Database } from '../database.types';
 import { unwrapCall } from '../rpc/mapRpcError';
 import { openDirectChat } from '../chat/supabaseDmChat';
 import { sessionUserId } from '../users/userReads';
-import { encodeKeysetCursor, keysetAfterFilter, parseKeysetCursor } from '../posts/pageCursor';
+import { decodePageCursor, encodePageCursor } from '../posts/pageCursor';
 import { clampPageLimit } from '../posts/postCardPages';
 import { fetchListingDetail } from './mapListingDetail';
 import { searchExternalBodies } from './mapExternalBody';
@@ -18,6 +18,9 @@ import * as events from './eventRegistrations';
 import * as owner from './listingOwnerActions';
 
 type Client = SupabaseClient<Database>;
+
+/** "My listings" shows every status of the owner's posts but an unpublished draft. */
+const MY_LISTING_STATUSES = POST_STATUSES.filter((status) => status !== 'draft');
 
 /** A listing is a post: the marketplace screens' repository over the baseline's post functions. */
 export class SupabaseMarketplaceRepository implements IMarketplaceRepository {
@@ -53,7 +56,7 @@ export class SupabaseMarketplaceRepository implements IMarketplaceRepository {
     return chat.chatId;
   }
 
-  /** The caller's own listings of any status but draft, newest first, keyset on `(created_at, id)`. */
+  /** The caller's own listings of any status but draft, newest first: the owner-only `mine` tab of `profile_posts_page`. */
   async listMyListingsPage(
     limit: number,
     cursor?: MyListingsCursor | null,
@@ -61,23 +64,21 @@ export class SupabaseMarketplaceRepository implements IMarketplaceRepository {
     const userId = await sessionUserId(this.client);
     if (!userId) return { rows: [], nextCursor: null };
     const size = clampPageLimit(limit);
-    let query = this.client
-      .from('posts')
-      .select('id, created_at')
-      .eq('owner_id', userId)
-      .neq('status', 'draft')
-      .order('created_at', { ascending: false })
-      .order('id', { ascending: false })
-      .limit(size + 1);
-    const after = parseKeysetCursor(cursor);
-    if (after) query = query.or(keysetAfterFilter('created_at', 'id', after));
-    const found = unwrapCall('table:posts', await query) ?? [];
-    const page = found.slice(0, size);
-    const [cards, kinds] = await Promise.all([fetchCardsInOrder(this.client, page.map((r) => r.id)), loadKindCatalog(this.client)]);
-    const last = page[page.length - 1];
+    const [found, kinds] = await Promise.all([
+      this.client.rpc('profile_posts_page', {
+        p_user_id: userId,
+        p_tab: 'mine',
+        p_statuses: MY_LISTING_STATUSES,
+        p_cursor: decodePageCursor(cursor) ?? undefined,
+        p_limit: size,
+      }),
+      loadKindCatalog(this.client),
+    ]);
+    const rows = unwrapCall('rpc:profile_posts_page', found) ?? [];
+    const last = rows[rows.length - 1];
     return {
-      rows: cards.map((card) => cardToMyListingRow(card, kinds)),
-      nextCursor: found.length > size && last ? encodeKeysetCursor({ t: last.created_at, id: last.id }) : null,
+      rows: rows.map((row) => cardToMyListingRow(row.card, kinds)),
+      nextCursor: rows.length >= size && last ? encodePageCursor(last.next_cursor) : null,
     };
   }
 

@@ -54,7 +54,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `infrastructure-supabase/src/housing/` | 12 | 3 | 9 | 0 | 0 |
 | `infrastructure-supabase/src/knowledge/` | 13 | 1 | 5 | 0 | 7 |
 | `infrastructure-supabase/src/legal/` | 3 | 3 | 0 | 0 | 0 |
-| `infrastructure-supabase/src/marketplace/` | 48 | 34 | 14 | 0 | 0 |
+| `infrastructure-supabase/src/marketplace/` | 48 | 35 | 13 | 0 | 0 |
 | `infrastructure-supabase/src/matching/` | 3 | 3 | 0 | 0 | 0 |
 | `infrastructure-supabase/src/moderation/` | 7 | 6 | 1 | 0 | 0 |
 | `infrastructure-supabase/src/notifications/` | 7 | 7 | 0 | 0 | 0 |
@@ -284,7 +284,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 
 ### `infrastructure-supabase/src/marketplace/`
 
-48 call sites: 34 map 1:1, 14 need logic changes, 0 removed, 0 MISSING.
+48 call sites: 35 map 1:1, 13 need logic changes, 0 removed, 0 MISSING.
 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -303,16 +303,16 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `post_cards` | core | 1:1 | `post_cards(p_post_ids: string[]) → post_card[]` | Cards of up to 100 post ids the caller can read, in no particular order: the adapter restores the order of the ids (saved posts, a member's posts by status, one post). |  | high | listingMapping.ts:93 |
 | `post_detail` | wedge | 1:1 | `post_detail(p_post_id: string) → Json` | Card, gallery and first comments as one JSON; the adapter adds the world detail row and the world labels to build the listing detail. |  | high | mapListingDetail.ts:104 |
 | `post_seat_counts` | wedge | 1:1 | `post_seat_counts(p_post_ids: string[]) → { capacity: number post_id: string seats_left: number seats_taken: number waitlisted: number }[]` | Places held, waiting registrations and seats left of event and ride posts the caller can read (`p_post_ids`, at most 100); the volunteering shifts and the occurrences of a ride series read their free places here. |  | high | postSeatCounts.ts:22 |
-| `profile_posts_page` | core | 1:1 | `profile_posts_page(p_cursor?: Json, p_limit?: number, p_tab?: string, p_user_id: string) → { card: post_card next_cursor: Json }[]` | `p_tab` open \| closed \| hidden, keyset `p_cursor`; the closed tab of a profile. The owner's delivered or deleted "only me" posts come from `posts` ids completed by `post_cards`. | `invalid_input` | high | SupabaseMarketplaceRepository.ts:88 |
+| `profile_posts_page` | core | 1:1 | `profile_posts_page(p_cursor?: Json, p_limit?: number, p_statuses?: string[], p_tab?: string, p_user_id: string) → { card: post_card next_cursor: Json }[]` | `p_tab` open \| closed \| hidden \| mine, keyset `p_cursor`; the closed tab of a profile. `mine` is the owner's own posts in every status and audience, narrowed by `p_statuses` (`forbidden` on another member's profile): "my listings" reads it. The owner's delivered or deleted "only me" posts still come from `posts` ids completed by `post_cards`. | `forbidden`, `invalid_input` | high | SupabaseMarketplaceRepository.ts:68, SupabaseMarketplaceRepository.ts:89 |
 | `publish_post` | core | 1:1 | `publish_post(p_post_id: string) → undefined` | Publishes the draft the adapter wrote (draft → open); a failed create deletes the draft, which a device may delete. Refusals: `listing_wrong_status`, `post_limit_exceeded`. | `account_not_active`, `listing_wrong_status`, `post_not_found`, `unauthenticated` | high | listingWrites.ts:97 |
 | `rate_handoff` | wedge | 1:1 | `rate_handoff(p_comment?: string, p_handoff_id: string, p_stars: number) → undefined` | One rating RPC for every world (`p_stars`, optional `p_comment`); refusals `invalid_rating`, `handoff_not_found`, `not_participant`, `handoff_already_rated`. | `account_not_active`, `handoff_already_rated`, `handoff_not_found`, `invalid_rating`, `not_participant`, `unauthenticated` | high | givingHandoffs.ts:177 |
 | `register_for_event` | wedge | 1:1 (renamed) | `register_for_event(p_post_id: string) → post_handoffs row` | `p_target` → `p_post_id`. Returned row: `handoff_id` → `id`, `listing_id` → `post_id`, `reserved_at` → `created_at`, `knowledge_slot_id` → `slot_starts_at` / `slot_ends_at`, new `machine_id`. | `account_not_active`, `invalid_rate_limit_args`, `item_already_reserved`, `listing_not_available`, `own_listing`, `rate_limited`, `slot_started`, `unauthenticated`, `verification_required` | high | eventRegistrations.ts:66 |
 | `reserve_item_giving` | wedge | 1:1 (renamed) | `reserve_item_giving(p_pickup_mode?: string, p_pickup_window_end?: string, p_pickup_window_start?: string, p_post_id: string) → post_handoffs row` | `p_listing_id` → `p_post_id`. Returned row: `handoff_id` → `id`, `listing_id` → `post_id`, `reserved_at` → `created_at`, `knowledge_slot_id` → `slot_starts_at` / `slot_ends_at`, new `machine_id`. | `account_not_active`, `invalid_pickup_mode`, `invalid_rate_limit_args`, `item_already_reserved`, `listing_not_available`, `own_listing`, `rate_limited`, `unauthenticated` | high | givingHandoffs.ts:115 |
 | `resume_post` | wedge | 1:1 | `resume_post(p_post_id: string) → undefined` | Reopens a paused post. | `account_not_active`, `listing_wrong_status`, `post_not_found`, `unauthenticated` | high | listingOwnerActions.ts:32 |
 | `ride_occurrence_schedules` | wedge | 1:1 | `ride_occurrence_schedules(p_post_ids: string[]) → { depart_time: string ends_on: string post_id: string series_id: string series_on: string weekdays: number }[]` | The series day, weekdays, departure time and last day of ride occurrences the caller can read (`p_post_ids`); the ride detail builds its series marker from it, since `ride_series` is its owner's alone. |  | high | mapListingDetail.ts:68 |
-| `send_message` | core | 1:1 | see `infrastructure-supabase/src/chat/` |  |  |  | SupabaseMarketplaceRepository.ts:51 |
+| `send_message` | core | 1:1 | see `infrastructure-supabase/src/chat/` |  |  |  | SupabaseMarketplaceRepository.ts:54 |
 | `set_post_organization` | wedge | 1:1 | `set_post_organization(p_org_id: string, p_post_id: string) → undefined` | Attaches a new organization event to the organization the member publishes for (`forbidden` when the member may not act for it). | `account_not_active`, `post_not_found`, `unauthenticated` | high | listingWrites.ts:129 |
-| `similar_posts` | wedge | 1:1 | `similar_posts(p_limit?: number, p_post_id: string) → post_card[]` | "More like this" as cards. |  | high | SupabaseMarketplaceRepository.ts:30 |
+| `similar_posts` | wedge | 1:1 | `similar_posts(p_limit?: number, p_post_id: string) → post_card[]` | "More like this" as cards. |  | high | SupabaseMarketplaceRepository.ts:33 |
 | `item_subcategories` (table) | core | 1:1 | table `item_subcategories` | Read-only catalog; the items world's rows are the app's item categories (slug = lower-case category, `baby_gear`). |  | high | listWorldSubcategories.ts:33 |
 | `org_memberships` (table) | wedge | CHANGED | table `org_memberships` | `role` → `roles` (array), `membership_id` gone (key is org + user), new `can_post`. |  | high | eventRegistrations.ts:154 |
 | `organizations` (table) | wedge | 1:1 | table `organizations` | The routed worlds' body picker (organizations by name). |  | high | mapExternalBody.ts:38 |
@@ -322,7 +322,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `post_kinds` (table) | core | 1:1 | table `post_kinds` | Read-only catalog; a new generic post needs the items world's offer / request kind id. |  | high | kindCatalog.ts:31 |
 | `post_media` (table) | core | 1:1 | table `post_media` | One row per photo, inserted `pending` by the owner after the upload to `post-images`; delete by the owner. An edit keeps the rows whose file and position are unchanged (no update grant). |  | high | listingOwnerActions.ts:89, listingWrites.ts:55 |
 | `post_ride_details` (table) | wedge | 1:1 | table `post_ride_details` | Read for the route, time and seats of a ride and for the occurrences of a series; the owner edits it through the adapter. |  | high | mapListingDetail.ts:38 |
-| `posts` (table) | core | CHANGED | see `infrastructure-supabase/src/admin/` |  |  |  | givingHandoffs.ts:25, listingOwnerActions.ts:46, listingOwnerActions.ts:71, listingWrites.ts:89, listingWrites.ts:100, mapListingDetail.ts:77, mapListingDetail.ts:112, SupabaseMarketplaceRepository.ts:65 |
+| `posts` (table) | core | CHANGED | see `infrastructure-supabase/src/admin/` |  |  |  | givingHandoffs.ts:25, listingOwnerActions.ts:46, listingOwnerActions.ts:71, listingWrites.ts:89, listingWrites.ts:100, mapListingDetail.ts:77, mapListingDetail.ts:112 |
 | `users` (table) | core | CHANGED | see `infrastructure-supabase/src/admin/` |  |  |  | eventRegistrations.ts:120 |
 | `worlds` (table) | wedge | 1:1 | table `worlds` | The world labels shown on a listing detail. |  | high | mapListingDetail.ts:111 |
 

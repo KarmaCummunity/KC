@@ -8,13 +8,17 @@
 --   closed   delivered posts; on one's own profile also posts deleted without a recipient,
 --            which can still be reopened
 --   hidden   the owner's "only me" posts — RLS returns them to nobody else
+--   mine     the caller's own posts in every status and audience (drafts, paused, expired,
+--            closed, under moderation): "my listings" (FR-POST-016); p_statuses narrows it
+--            to the listed statuses. Only for one's own profile (forbidden, SQLSTATE 42501).
 -- RLS narrows every tab to what the caller may read of that member. Keyset on
 -- (created_at, id), served by posts_owner_recent_idx.
 create function public.profile_posts_page(
   p_user_id uuid,
   p_cursor jsonb default null,
   p_limit integer default 20,
-  p_tab text default 'open'
+  p_tab text default 'open',
+  p_statuses text[] default null
 )
 returns table (card public.post_card, next_cursor jsonb)
 language plpgsql
@@ -25,8 +29,11 @@ as $$
 declare
   v_post_ids uuid[];
 begin
-  if p_tab is null or p_tab not in ('open', 'closed', 'hidden') then
+  if p_tab is null or p_tab not in ('open', 'closed', 'hidden', 'mine') then
     raise exception 'invalid_input' using errcode = 'P0001';
+  end if;
+  if p_tab = 'mine' and p_user_id is distinct from (select auth.uid()) then
+    raise exception 'forbidden' using errcode = '42501';
   end if;
 
   v_post_ids := array(
@@ -37,7 +44,8 @@ begin
              when 'open' then p.status = 'open' and p.visibility <> 'OnlyMe'
              when 'closed' then p.status in ('closed_delivered', 'deleted_no_recipient')
                                 and p.visibility <> 'OnlyMe'
-             else p.status in ('open', 'closed_delivered') and p.visibility = 'OnlyMe' end
+             when 'hidden' then p.status in ('open', 'closed_delivered') and p.visibility = 'OnlyMe'
+             else p_statuses is null or p.status = any (p_statuses) end
        and (p_cursor is null
             or (p.created_at, p.id) < ((p_cursor ->> 't')::timestamptz, (p_cursor ->> 'id')::uuid))
      order by p.created_at desc, p.id desc
@@ -49,9 +57,9 @@ begin
    order by c.created_at desc, c.id desc;
 end;
 $$;
-comment on function public.profile_posts_page(uuid, jsonb, integer, text) is
-  'One keyset page of a tab of a member''s posts (open, closed, hidden), as cards.';
-grant execute on function public.profile_posts_page(uuid, jsonb, integer, text) to authenticated;
+comment on function public.profile_posts_page(uuid, jsonb, integer, text, text[]) is
+  'One keyset page of a tab of a member''s posts (open, closed, hidden; mine for the owner), as cards.';
+grant execute on function public.profile_posts_page(uuid, jsonb, integer, text, text[]) to authenticated;
 
 -- Post search: posts whose title or description contains the text (FR-FEED-016), newest
 -- first unless p_filters names another sort. It is the feed query in search scope, so the
