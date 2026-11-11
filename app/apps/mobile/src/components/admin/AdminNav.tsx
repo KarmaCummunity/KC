@@ -12,6 +12,7 @@ import { router, usePathname, type Href } from 'expo-router';
 import { type AdminPermission, type AdminRole, hasPermission } from '@kc/domain';
 import { makeUseStyles, radius, spacing, typography, useTheme, Text, iconSize } from '@kc/ui';
 import { useAdminRoles } from '../../hooks/useAdminRoles';
+import { BACK_OFFICE_TOOLS_AVAILABLE, WHATSAPP_BOT_AVAILABLE } from '../../lib/parkedFeatures';
 import { rowDirectionStart, textAlignStart } from '../../lib/rtlLayout';
 import { useLocaleBundle, type LocaleBundle } from '../../i18n/useLocaleBundle';
 
@@ -22,18 +23,20 @@ interface NavItem {
   href: Extract<Href, string>;
   icon: IconName;
   perm: AdminPermission | null;
+  /** False while the section's backend is parked (src/lib/parkedFeatures.ts). */
+  available?: boolean;
 }
 
 const ITEMS: readonly NavItem[] = [
   { key: 'dashboard', href: '/(admin)',         icon: 'grid-outline',             perm: null },
   { key: 'reports',   href: '/(admin)/reports', icon: 'flag-outline',             perm: null },
-  { key: 'tasks',     href: '/(admin)/tasks',   icon: 'checkbox-outline',         perm: 'tasks.view' },
+  { key: 'tasks',     href: '/(admin)/tasks',   icon: 'checkbox-outline',         perm: 'tasks.view', available: BACK_OFFICE_TOOLS_AVAILABLE },
   { key: 'admins',    href: '/(admin)/admins',  icon: 'shield-checkmark-outline', perm: 'admins.view' },
   { key: 'users',     href: '/(admin)/users',   icon: 'people-outline',           perm: 'users.search' },
   { key: 'posts',     href: '/(admin)/posts',   icon: 'document-text-outline',    perm: 'posts.search' },
   { key: 'surveys',   href: '/(admin)/surveys', icon: 'bar-chart-outline',        perm: 'surveys.view' },
   { key: 'audit',     href: '/(admin)/audit',   icon: 'time-outline',             perm: 'audit.view_own' },
-  { key: 'whatsapp',  href: '/(admin)/whatsapp', icon: 'logo-whatsapp',            perm: 'whatsapp.manage' },
+  { key: 'whatsapp',  href: '/(admin)/whatsapp', icon: 'logo-whatsapp',            perm: 'whatsapp.manage', available: WHATSAPP_BOT_AVAILABLE },
   { key: 'matching',  href: '/(admin)/matching', icon: 'git-compare-outline',      perm: 'matching.view_quality' },
   { key: 'money',     href: '/(admin)/money',    icon: 'wallet-outline',           perm: 'money.manage' },
   { key: 'donationLinks', href: '/(admin)/donation-links', icon: 'link-outline',     perm: 'donation_links.review' },
@@ -55,7 +58,7 @@ export function AdminNav({ variant }: { variant: 'sidebar' | 'topbar' }): ReactE
   const labels = L.admin.nav;
 
   const items = ITEMS.filter(
-    (it) => it.perm == null || hasPermission(roles as readonly AdminRole[], it.perm),
+    (it) => it.available !== false && (it.perm == null || hasPermission(roles as readonly AdminRole[], it.perm)),
   );
   const current = normalize(pathname || '/admin');
 

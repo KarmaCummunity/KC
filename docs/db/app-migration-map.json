@@ -2,12 +2,12 @@
  "generatedBy": "scripts/app-migration-map.mjs",
  "totals": {
   "rpc": {
-   "objects": 219,
+   "objects": 188,
    "same": 91,
    "renamed": 20,
    "changed": 46,
    "removed": 1,
-   "missing": 61
+   "missing": 30
   },
   "table": {
    "objects": 56,
@@ -52,12 +52,12 @@
    "missing": 0
   },
   "later": {
-   "objects": 131,
+   "objects": 100,
    "same": 21,
    "renamed": 4,
    "changed": 40,
    "removed": 1,
-   "missing": 65
+   "missing": 34
   },
   "wedge": {
    "objects": 54,
@@ -70,11 +70,11 @@
  },
  "modules": {
   "admin": {
-   "callSites": 54,
+   "callSites": 26,
    "oneToOne": 6,
    "changed": 18,
    "removed": 0,
-   "missing": 30
+   "missing": 2
   },
   "auth": {
    "callSites": 2,
@@ -266,11 +266,11 @@
    "missing": 0
   },
   "mobile": {
-   "callSites": 20,
+   "callSites": 17,
    "oneToOne": 16,
    "changed": 1,
    "removed": 0,
-   "missing": 3
+   "missing": 0
   },
   "moderation": {
    "callSites": 7,
@@ -380,6 +380,7 @@
  },
  "notes": [
   "Capabilities the baseline does not provide and the identity adapters therefore do not call (they report `BackendUnavailableError` and the screens degrade): the blocked-users list (M01, the screen shows its empty state; unblock from a profile is not reachable because `users_hide_blocked` hides it), follow suggestions (M03) and the profile completeness nudge (M04), both hidden on the suggestions screen, and the About team roster (M08, no team section).",
+  "Internal back-office tools the baseline does not provide and whose adapters therefore make no call (they report `BackendUnavailableError`; the sections are parked behind `BACK_OFFICE_TOOLS_AVAILABLE`): the admin task tracker (FR-ADMIN-018), the CRM contacts (roadmap phase 3) and the timesheets (not in the spec), formerly M19. Whether they belong in this database is a product decision.",
   "Errors: every baseline RPC raises `P0001` with a stable snake_case message (`unauthenticated` uses `42501`). Map on `error.message`, never on a SQLSTATE or on Hebrew text. Codes marked † in the tables are not referenced anywhere in the app today and need a user-visible mapping.",
   "Paging: no OFFSET anywhere. Lists take the `next_cursor` JSON of the last row (cards) or explicit `p_before_*` / `p_after_*` values; application ports that expose `offset` change to an opaque cursor.",
   "Money: integer agorot (`*_agorot`), never ILS floats or `*_cents` names.",
@@ -423,17 +424,6 @@
    "blocker": false
   },
   {
-   "id": "M19",
-   "title": "Back-office tools: tasks, CRM, timesheets",
-   "usedBy": "Admin portal (SupabaseAdminTaskRepository, SupabaseCrmContactsRepository, SupabaseTimesheetsRepository) — 18 RPCs",
-   "spec": "tasks: FR-ADMIN-018; CRM: roadmap phase 3; timesheets: not in spec",
-   "launch": "no",
-   "action": "defer",
-   "recommendation": "Internal tools, not member data: hide the three admin sections behind a flag and decide separately whether they belong in this database at all.",
-   "tier": "later",
-   "blocker": false
-  },
-  {
    "id": "M20",
    "title": "KC support channels",
    "usedBy": "Donations → support KC card (SupabaseKcSupportChannelsRepository)",
@@ -458,7 +448,7 @@
   {
    "id": "M22",
    "title": "WhatsApp bot, linking and admin console",
-   "usedBy": "Three Edge Functions (webhook, intake worker, sender), mobile link screen, admin WhatsApp console — 32 RPCs and one table",
+   "usedBy": "Three Edge Functions (webhook, intake worker, sender) — 19 RPCs and one table; the mobile link screen and the admin WhatsApp console are parked and make no call",
    "spec": "design Q4 (PM): not in the launch baseline",
    "launch": "no",
    "action": "defer",
@@ -1158,38 +1148,19 @@
     "admin/SupabaseTimesheetsRepository.ts",
     "apps/mobile: admin tasks, CRM, timesheets screens"
    ],
-   "work": "Nothing to migrate to: the baseline has none of it (M19). Decide first whether these tools belong in this database.",
+   "work": "Done: nothing to migrate to (the baseline has no task tracker, CRM or timesheets, old M19). The three adapters make no call and reject with `BackendUnavailableError`; whether these internal tools belong in this database is still an open product decision.",
    "tests": [
-    "—"
+    "vitest: parkedBackOffice, parkedAdminSections"
    ],
-   "degrade": "The three admin sections are hidden behind a flag; their repositories are not constructed.",
+   "degrade": "Parked behind `BACK_OFFICE_TOOLS_AVAILABLE` (apps/mobile/src/lib/parkedFeatures.ts): the tasks nav entry and dashboard card are hidden, and the tasks, CRM and timesheets routes render the not-available notice.",
    "risks": "Product decision, not engineering.",
-   "rows": [
-    "rpc:admin_task_list",
-    "rpc:admin_task_detail",
-    "rpc:admin_task_create",
-    "rpc:admin_task_update",
-    "rpc:admin_task_set_status",
-    "rpc:admin_task_assign",
-    "rpc:admin_task_add_comment",
-    "rpc:admin_task_delete",
-    "rpc:crm_contact_list",
-    "rpc:crm_contact_upsert",
-    "rpc:crm_contact_delete",
-    "rpc:crm_contact_mark_contacted",
-    "rpc:timesheet_list",
-    "rpc:timesheet_upsert",
-    "rpc:timesheet_submit",
-    "rpc:timesheet_approve",
-    "rpc:timesheet_reject",
-    "rpc:timesheet_delete"
-   ],
+   "rows": [],
    "counts": {
-    "objects": 18,
+    "objects": 0,
     "oneToOne": 0,
     "changed": 0,
     "removed": 0,
-    "missing": 18
+    "missing": 0
    }
   },
   {
@@ -1210,26 +1181,13 @@
     "supabase/functions/_shared/whatsapp/**",
     "apps/mobile: WhatsApp link screen"
    ],
-   "work": "Waits for the `integrations` module (M22, design Q4).",
+   "work": "App side done: the admin console adapter makes no call and rejects with `BackendUnavailableError`, and the link screen is a not-available notice. The bot itself waits for the `integrations` module (M22, design Q4).",
    "tests": [
     "deno test supabase/functions/_shared/whatsapp"
    ],
-   "degrade": "The three functions are not deployed; the link screen and the admin console are hidden behind a flag.",
+   "degrade": "The three functions are not deployed; the settings row and the admin nav entry are hidden behind `WHATSAPP_BOT_AVAILABLE` (apps/mobile/src/lib/parkedFeatures.ts), and both routes render the not-available notice.",
    "risks": "None for launch.",
    "rows": [
-    "rpc:api_whatsapp_my_link_status",
-    "rpc:api_whatsapp_create_link_code",
-    "rpc:api_whatsapp_unlink_me",
-    "rpc:api_whatsapp_admin_get_channel",
-    "rpc:api_whatsapp_admin_set_channel_enabled",
-    "rpc:api_whatsapp_admin_overview",
-    "rpc:api_whatsapp_admin_list_consent",
-    "rpc:api_whatsapp_admin_list_outbound",
-    "rpc:api_whatsapp_admin_list_rate_hits",
-    "rpc:api_whatsapp_admin_list_recent_matches",
-    "rpc:api_whatsapp_admin_list_conversations",
-    "rpc:api_whatsapp_admin_resend",
-    "rpc:api_whatsapp_admin_block_user",
     "rpc:api_whatsapp_llm_budget_take",
     "rpc:api_whatsapp_queue_reply",
     "rpc:api_whatsapp_outbound_claim",
@@ -1252,11 +1210,11 @@
     "table:whatsapp_channel_config"
    ],
    "counts": {
-    "objects": 33,
+    "objects": 20,
     "oneToOne": 0,
     "changed": 0,
     "removed": 0,
-    "missing": 33
+    "missing": 20
    }
   }
  ],
@@ -3093,214 +3051,6 @@
    ]
   },
   {
-   "old": "admin_task_add_comment",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M19",
-   "note": "No internal task tracker in the baseline.",
-   "oldObject": {
-    "signature": [
-     "admin_task_add_comment(p_body: string, p_task_id: string) → string"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminTaskRepository.ts",
-     "line": 208,
-     "symbol": "SupabaseAdminTaskRepository.addComment",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "admin_task_assign",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M19",
-   "note": "No internal task tracker in the baseline.",
-   "oldObject": {
-    "signature": [
-     "admin_task_assign(p_new_assignee: string, p_task_id: string) → undefined"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminTaskRepository.ts",
-     "line": 200,
-     "symbol": "SupabaseAdminTaskRepository.assign",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "admin_task_create",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M19",
-   "note": "No internal task tracker in the baseline.",
-   "oldObject": {
-    "signature": [
-     "admin_task_create(p_assignee_id?: string, p_category?: string, p_description?: string, p_due_at?: string, p_labels?: string[], p_priority?: string, p_title: string) → string"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminTaskRepository.ts",
-     "line": 161,
-     "symbol": "SupabaseAdminTaskRepository.create",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "admin_task_delete",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M19",
-   "note": "No internal task tracker in the baseline.",
-   "oldObject": {
-    "signature": [
-     "admin_task_delete(p_task_id: string) → undefined"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminTaskRepository.ts",
-     "line": 220,
-     "symbol": "SupabaseAdminTaskRepository.delete",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "admin_task_detail",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M19",
-   "note": "No internal task tracker in the baseline.",
-   "oldObject": {
-    "signature": [
-     "admin_task_detail(p_task_id: string) → { activities: Json assignee_display_name: string assignee_id: string category: string created_at: string created_by: string created_by_display_name: string description: string due_at: string labels: string[] priority:..."
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminTaskRepository.ts",
-     "line": 151,
-     "symbol": "SupabaseAdminTaskRepository.getDetail",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "admin_task_list",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M19",
-   "note": "No internal task tracker in the baseline.",
-   "oldObject": {
-    "signature": [
-     "admin_task_list(p_assignee?: string, p_category?: string, p_due_from?: string, p_due_to?: string, p_label?: string, p_limit?: number, p_offset?: number, p_only_mine?: boolean, p_overdue?: boolean, p_priority?: string, p_status?: string, p_unassigned_only?: boolean) → { assignee_display_name: string assignee_id: string category: string comment_count: number created_at: string created_by: string created_by_display_name: string description: string due_at: string labels: string[] prio..."
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminTaskRepository.ts",
-     "line": 126,
-     "symbol": "SupabaseAdminTaskRepository.list",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "admin_task_set_status",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M19",
-   "note": "No internal task tracker in the baseline.",
-   "oldObject": {
-    "signature": [
-     "admin_task_set_status(p_new_status: string, p_task_id: string) → undefined"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminTaskRepository.ts",
-     "line": 192,
-     "symbol": "SupabaseAdminTaskRepository.setStatus",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "admin_task_update",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M19",
-   "note": "No internal task tracker in the baseline.",
-   "oldObject": {
-    "signature": [
-     "admin_task_update(p_category?: string, p_clear_due?: boolean, p_description?: string, p_due_at?: string, p_labels?: string[], p_priority?: string, p_task_id: string, p_title?: string) → undefined"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminTaskRepository.ts",
-     "line": 178,
-     "symbol": "SupabaseAdminTaskRepository.update",
-     "area": "admin"
-    }
-   ]
-  },
-  {
    "old": "admin_user_feedback_list",
    "kind": "rpc",
    "status": "missing",
@@ -3705,266 +3455,6 @@
    ]
   },
   {
-   "old": "api_whatsapp_admin_block_user",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
-   "oldObject": {
-    "signature": [
-     "api_whatsapp_admin_block_user(p_user_id: string) → undefined"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
-     "line": 176,
-     "symbol": "SupabaseWhatsAppAdminRepository.blockUser",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "api_whatsapp_admin_get_channel",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
-   "oldObject": {
-    "signature": [
-     "api_whatsapp_admin_get_channel() → Json"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
-     "line": 49,
-     "symbol": "SupabaseWhatsAppAdminRepository.getChannel",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "api_whatsapp_admin_list_consent",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
-   "oldObject": {
-    "signature": [
-     "api_whatsapp_admin_list_consent(p_limit?: number, p_offset?: number) → { consent_status: string last_inbound_at: string opted_in: boolean opted_in_at: string opted_out_at: string preferred_language: string total_count: number updated_at: string user_id: string wa_id_masked: string }[]"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
-     "line": 82,
-     "symbol": "SupabaseWhatsAppAdminRepository.overview",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "api_whatsapp_admin_list_conversations",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
-   "oldObject": {
-    "signature": [
-     "api_whatsapp_admin_list_conversations(p_limit?: number) → { created_at: string listing_id: string session_id: string state: string updated_at: string user_id: string wa_id_masked: string }[]"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
-     "line": 156,
-     "symbol": "SupabaseWhatsAppAdminRepository.listConversations",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "api_whatsapp_admin_list_outbound",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
-   "oldObject": {
-    "signature": [
-     "api_whatsapp_admin_list_outbound(p_limit?: number, p_offset?: number, p_status?: string) → { attempts: number created_at: string kind: string language: string last_error: string next_attempt_at: string outbound_id: string sent_at: string status: string template_name: string total_count: number user_id: stri..."
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
-     "line": 104,
-     "symbol": "SupabaseWhatsAppAdminRepository.overview",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "api_whatsapp_admin_list_rate_hits",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
-   "oldObject": {
-    "signature": [
-     "api_whatsapp_admin_list_rate_hits(p_limit?: number) → whatsapp_rate_counters row[]"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
-     "line": 131,
-     "symbol": "SupabaseWhatsAppAdminRepository.listRateHits",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "api_whatsapp_admin_list_recent_matches",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
-   "oldObject": {
-    "signature": [
-     "api_whatsapp_admin_list_recent_matches(p_limit?: number) → { created_at: string language: string outbound_id: string payload: Json sent_at: string status: string user_id: string wa_id_masked: string }[]"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
-     "line": 141,
-     "symbol": "SupabaseWhatsAppAdminRepository.listRecentMatches",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "api_whatsapp_admin_overview",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
-   "oldObject": {
-    "signature": [
-     "api_whatsapp_admin_overview() → Json"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
-     "line": 63,
-     "symbol": "SupabaseWhatsAppAdminRepository.overview",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "api_whatsapp_admin_resend",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
-   "oldObject": {
-    "signature": [
-     "api_whatsapp_admin_resend(p_outbound_id: string) → string"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
-     "line": 170,
-     "symbol": "SupabaseWhatsAppAdminRepository.resend",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "api_whatsapp_admin_set_channel_enabled",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
-   "oldObject": {
-    "signature": [
-     "api_whatsapp_admin_set_channel_enabled(p_enabled: boolean) → Json"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
-     "line": 55,
-     "symbol": "SupabaseWhatsAppAdminRepository.setChannelEnabled",
-     "area": "admin"
-    }
-   ]
-  },
-  {
    "old": "api_whatsapp_bot_access",
    "kind": "rpc",
    "status": "missing",
@@ -4013,32 +3503,6 @@
      "line": 71,
      "symbol": "handleMessage",
      "area": "fn:whatsapp-webhook"
-    }
-   ]
-  },
-  {
-   "old": "api_whatsapp_create_link_code",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
-   "oldObject": {
-    "signature": [
-     "api_whatsapp_create_link_code() → Json"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "mobile"
-   ],
-   "callSites": [
-    {
-     "file": "app/apps/mobile/app/settings/whatsapp.tsx",
-     "line": 39,
-     "symbol": "WhatsAppLinkScreen",
-     "area": "mobile"
     }
    ]
   },
@@ -4150,32 +3614,6 @@
      "line": 55,
      "symbol": "body",
      "area": "fn:whatsapp-intake-worker"
-    }
-   ]
-  },
-  {
-   "old": "api_whatsapp_my_link_status",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
-   "oldObject": {
-    "signature": [
-     "api_whatsapp_my_link_status() → Json"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "mobile"
-   ],
-   "callSites": [
-    {
-     "file": "app/apps/mobile/app/settings/whatsapp.tsx",
-     "line": 19,
-     "symbol": "fetchStatus",
-     "area": "mobile"
     }
    ]
   },
@@ -4325,32 +3763,6 @@
      "line": 81,
      "symbol": "handleMessage",
      "area": "fn:whatsapp-webhook"
-    }
-   ]
-  },
-  {
-   "old": "api_whatsapp_unlink_me",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
-   "oldObject": {
-    "signature": [
-     "api_whatsapp_unlink_me() → undefined"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "mobile"
-   ],
-   "callSites": [
-    {
-     "file": "app/apps/mobile/app/settings/whatsapp.tsx",
-     "line": 52,
-     "symbol": "WhatsAppLinkScreen",
-     "area": "mobile"
     }
    ]
   },
@@ -5949,110 +5361,6 @@
      "line": 120,
      "symbol": "SupabasePaymentsRepository.createStandingOrder",
      "area": "payments"
-    }
-   ]
-  },
-  {
-   "old": "crm_contact_delete",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M19",
-   "note": "No CRM in the baseline.",
-   "oldObject": {
-    "signature": [
-     "crm_contact_delete(p_contact_id: string) → undefined"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseCrmContactsRepository.ts",
-     "line": 108,
-     "symbol": "SupabaseCrmContactsRepository.delete",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "crm_contact_list",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M19",
-   "note": "No CRM in the baseline.",
-   "oldObject": {
-    "signature": [
-     "crm_contact_list(p_limit?: number, p_offset?: number, p_query?: string, p_status?: string, p_tag?: string) → { contact_id: string created_at: string email: string last_contacted_at: string name: string notes: string organization: string phone: string role_title: string status: string tags: string[] total_count: number update..."
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseCrmContactsRepository.ts",
-     "line": 71,
-     "symbol": "SupabaseCrmContactsRepository.list",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "crm_contact_mark_contacted",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M19",
-   "note": "No CRM in the baseline.",
-   "oldObject": {
-    "signature": [
-     "crm_contact_mark_contacted(p_contact_id: string) → undefined"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseCrmContactsRepository.ts",
-     "line": 113,
-     "symbol": "SupabaseCrmContactsRepository.markContacted",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "crm_contact_upsert",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M19",
-   "note": "No CRM in the baseline.",
-   "oldObject": {
-    "signature": [
-     "crm_contact_upsert(p_contact_id?: string, p_email?: string, p_name?: string, p_notes?: string, p_organization?: string, p_phone?: string, p_role_title?: string, p_status?: string, p_tags?: string[]) → string"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseCrmContactsRepository.ts",
-     "line": 89,
-     "symbol": "SupabaseCrmContactsRepository.upsert",
-     "area": "admin"
     }
    ]
   },
@@ -11094,162 +10402,6 @@
      "line": 26,
      "symbol": "submit",
      "area": "fn:public-research-submit"
-    }
-   ]
-  },
-  {
-   "old": "timesheet_approve",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M19",
-   "note": "No timesheets in the baseline.",
-   "oldObject": {
-    "signature": [
-     "timesheet_approve(p_entry_id: string, p_note?: string) → undefined"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseTimesheetsRepository.ts",
-     "line": 118,
-     "symbol": "SupabaseTimesheetsRepository.approve",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "timesheet_delete",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M19",
-   "note": "No timesheets in the baseline.",
-   "oldObject": {
-    "signature": [
-     "timesheet_delete(p_entry_id: string) → undefined"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseTimesheetsRepository.ts",
-     "line": 132,
-     "symbol": "SupabaseTimesheetsRepository.delete",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "timesheet_list",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M19",
-   "note": "No timesheets in the baseline.",
-   "oldObject": {
-    "signature": [
-     "timesheet_list(p_from?: string, p_limit?: number, p_offset?: number, p_status?: string, p_to?: string, p_user_id?: string) → { approval_note: string approved_at: string approved_by: string approver_name: string created_at: string description: string entry_id: string hours_x100: number project: string status: string submitted_at: string tota..."
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseTimesheetsRepository.ts",
-     "line": 79,
-     "symbol": "SupabaseTimesheetsRepository.list",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "timesheet_reject",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M19",
-   "note": "No timesheets in the baseline.",
-   "oldObject": {
-    "signature": [
-     "timesheet_reject(p_entry_id: string, p_note?: string) → undefined"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseTimesheetsRepository.ts",
-     "line": 125,
-     "symbol": "SupabaseTimesheetsRepository.reject",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "timesheet_submit",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M19",
-   "note": "No timesheets in the baseline.",
-   "oldObject": {
-    "signature": [
-     "timesheet_submit(p_entry_id: string) → undefined"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseTimesheetsRepository.ts",
-     "line": 113,
-     "symbol": "SupabaseTimesheetsRepository.submit",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "timesheet_upsert",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M19",
-   "note": "No timesheets in the baseline.",
-   "oldObject": {
-    "signature": [
-     "timesheet_upsert(p_description?: string, p_entry_id?: string, p_hours_x100?: number, p_project?: string, p_work_date?: string) → string"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseTimesheetsRepository.ts",
-     "line": 98,
-     "symbol": "SupabaseTimesheetsRepository.upsert",
-     "area": "admin"
     }
    ]
   },

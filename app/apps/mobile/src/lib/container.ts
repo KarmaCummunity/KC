@@ -151,11 +151,11 @@ const moderationAdminRepo = new SupabaseModerationAdminRepository(supabase);
 const accountGateRepo = new SupabaseAccountGateRepository(supabase);
 const deviceRepo = new SupabaseDeviceRepository(supabase);
 const adminRoleRepo = new SupabaseAdminRoleRepository(supabase);
-const adminTaskRepo = new SupabaseAdminTaskRepository(legacySupabase);
+const adminTaskRepo = new SupabaseAdminTaskRepository();
 const orgHierarchyRepo = new SupabaseOrgHierarchyRepository(legacySupabase);
 const adminContentRepo = new SupabaseAdminContentRepository(supabase);
-const timesheetsRepo = new SupabaseTimesheetsRepository(legacySupabase);
-const crmContactsRepo = new SupabaseCrmContactsRepository(legacySupabase);
+const timesheetsRepo = new SupabaseTimesheetsRepository();
+const crmContactsRepo = new SupabaseCrmContactsRepository();
 const orgApplicationsRepo = new SupabaseOrgApplicationsRepository(legacySupabase);
 const reportsRepo = new SupabaseReportsRepository(supabase);
 const surveyRepo = new SupabaseSurveyRepository(legacySupabase);
@@ -218,7 +218,7 @@ export const container = {
   deleteTimesheet:  new DeleteTimesheetUseCase(timesheetsRepo),
   // V2-ADMIN-MONEY-9 (+ accounts, donors, public display: FR-FIN-003/022/023)
   ...createFinanceUseCases(supabase),
-  ...createWhatsAppAdminUseCases(supabase),
+  ...createWhatsAppAdminUseCases(),
   // V2-ADMIN-CRM-8
   listCrmContacts: new ListCrmContactsUseCase(crmContactsRepo),
   upsertCrmContact: new UpsertCrmContactUseCase(crmContactsRepo),
