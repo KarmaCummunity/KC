@@ -2,7 +2,9 @@ import type {
   ChallengeDraft,
   ChallengeEntry,
   ChallengeLeaderboardRow,
+  ChallengeListCursor,
   ChallengeListView,
+  ChallengePage,
   ChallengeProgressResult,
   ChallengeSummary,
 } from '@kc/domain';
@@ -14,9 +16,11 @@ import type {
 export interface IChallengeRepository {
   /** Opens a challenge and joins its creator; returns the new challenge id. */
   createChallenge(draft: ChallengeDraft): Promise<string>;
-  listChallenges(view: ChallengeListView, limit?: number, offset?: number): Promise<ChallengeSummary[]>;
+  /** One keyset page of a list; pass the previous page's `nextCursor` to continue. */
+  listChallenges(view: ChallengeListView, cursor?: ChallengeListCursor | null, limit?: number): Promise<ChallengePage>;
   getChallenge(challengeId: string): Promise<ChallengeSummary | null>;
-  joinChallenge(challengeId: string, showOnProfile?: boolean): Promise<void>;
+  /** Joins a community challenge. */
+  joinChallenge(challengeId: string): Promise<void>;
   /** Leaves a challenge; the creator cannot leave and ends it instead. */
   leaveChallenge(challengeId: string): Promise<void>;
   /** Creator only: stops further reports; participants keep their history. */

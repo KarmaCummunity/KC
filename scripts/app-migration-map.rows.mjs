@@ -170,7 +170,7 @@ rpc('join_challenge', 'changed', 'rpc:join_challenge', '`p_show_on_profile` is g
 rpc('get_challenge', 'changed', 'rpc:get_challenge', 'Returns the `challenge_summary` composite (re-map the fields).', { c: M });
 rpc('list_challenges', 'changed', 'rpc:list_challenges', 'Offset → keyset `p_cursor`; each row is `{ challenge, next_cursor }`.');
 rpc('list_challenge_leaderboard', 'same', 'rpc:list_challenge_leaderboard', 'Adds `avatar_url`.');
-rpc('list_my_challenge_entries', 'changed', 'table:challenge_progress_entries', 'Direct read of the caller\'s own entries (policy `challenge_progress_entries_select_own`).');
+table('challenge_progress_entries', 'same', 'table:challenge_progress_entries', 'The caller\'s own reports of a challenge, newest cycle first (policy `challenge_progress_entries_select_own`); replaces `list_my_challenge_entries`.');
 table('karma_ledger', 'changed', 'table:karma_ledger', '`ledger_id` → `id`, `points_delta` → `points`, `ref_type` / `ref_id` → `subject` / `reference`. The total is `my_karma_points()`.');
 rpc('my_karma_points', 'same', 'rpc:my_karma_points', 'The caller\'s own karma total (the `user_stats.karma_points` column is not readable by clients).');
 rpc('check_survey_prompt_eligibility', 'same', 'rpc:check_survey_prompt_eligibility', 'Signature unchanged.');

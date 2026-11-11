@@ -61,11 +61,6 @@ export const challenges = {
     completed: 'You completed this challenge',
     noStreak: 'A flexible challenge has no streak, only a count of cycles.',
     join: 'Join the challenge',
-    joinProfileTitle: 'Show this challenge on your profile?',
-    joinProfileBody:
-      'The challenge post will be linked to you. You can show it on your profile’s open posts tab, or keep it only for you under Hidden.',
-    joinProfileShow: 'Yes, show on profile',
-    joinProfileHidden: 'No, only hidden for me',
     leave: 'Leave the challenge',
     leaveTitle: 'Leave the challenge?',
     leaveBody: 'Your reports in this challenge will be deleted.',

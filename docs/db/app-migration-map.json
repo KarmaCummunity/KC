@@ -2,16 +2,16 @@
  "generatedBy": "scripts/app-migration-map.mjs",
  "totals": {
   "rpc": {
-   "objects": 226,
+   "objects": 225,
    "same": 97,
    "renamed": 20,
-   "changed": 47,
+   "changed": 46,
    "removed": 1,
    "missing": 61
   },
   "table": {
-   "objects": 56,
-   "same": 36,
+   "objects": 57,
+   "same": 37,
    "renamed": 0,
    "changed": 16,
    "removed": 0,
@@ -53,9 +53,9 @@
   },
   "later": {
    "objects": 137,
-   "same": 26,
+   "same": 27,
    "renamed": 4,
-   "changed": 41,
+   "changed": 40,
    "removed": 1,
    "missing": 65
   },
@@ -91,9 +91,9 @@
    "missing": 0
   },
   "challenges": {
-   "callSites": 10,
-   "oneToOne": 5,
-   "changed": 5,
+   "callSites": 9,
+   "oneToOne": 6,
+   "changed": 3,
    "removed": 0,
    "missing": 0
   },
@@ -266,9 +266,9 @@
    "missing": 0
   },
   "mobile": {
-   "callSites": 21,
+   "callSites": 20,
    "oneToOne": 16,
-   "changed": 2,
+   "changed": 1,
    "removed": 0,
    "missing": 3
   },
@@ -1025,12 +1025,12 @@
     "rpc:get_challenge",
     "rpc:list_challenges",
     "rpc:list_challenge_leaderboard",
-    "rpc:list_my_challenge_entries"
+    "table:challenge_progress_entries"
    ],
    "counts": {
     "objects": 9,
-    "oneToOne": 5,
-    "changed": 4,
+    "oneToOne": 6,
+    "changed": 3,
     "removed": 0,
     "missing": 0
    }
@@ -5703,7 +5703,7 @@
       },
       {
        "code": "challenge_world_not_configured",
-       "knownToApp": false
+       "knownToApp": true
       },
       {
        "code": "city_required",
@@ -5726,7 +5726,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/challenges/SupabaseChallengeRepository.ts",
-     "line": 121,
+     "line": 150,
      "symbol": "SupabaseChallengeRepository.createChallenge",
      "area": "challenges"
     }
@@ -6467,7 +6467,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/challenges/SupabaseChallengeRepository.ts",
-     "line": 176,
+     "line": 195,
      "symbol": "SupabaseChallengeRepository.endChallenge",
      "area": "challenges"
     }
@@ -7156,7 +7156,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/challenges/SupabaseChallengeRepository.ts",
-     "line": 149,
+     "line": 180,
      "symbol": "SupabaseChallengeRepository.getChallenge",
      "area": "challenges"
     }
@@ -7685,13 +7685,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/challenges/SupabaseChallengeRepository.ts",
-     "line": 156,
-     "symbol": "SupabaseChallengeRepository.joinChallenge",
-     "area": "challenges"
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/challenges/SupabaseChallengeRepository.ts",
-     "line": 163,
+     "line": 187,
      "symbol": "SupabaseChallengeRepository.joinChallenge",
      "area": "challenges"
     }
@@ -7744,7 +7738,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/challenges/SupabaseChallengeRepository.ts",
-     "line": 171,
+     "line": 191,
      "symbol": "SupabaseChallengeRepository.leaveChallenge",
      "area": "challenges"
     }
@@ -7825,7 +7819,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/challenges/SupabaseChallengeRepository.ts",
-     "line": 201,
+     "line": 228,
      "symbol": "SupabaseChallengeRepository.listLeaderboard",
      "area": "challenges"
     }
@@ -7870,7 +7864,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/challenges/SupabaseChallengeRepository.ts",
-     "line": 139,
+     "line": 169,
      "symbol": "SupabaseChallengeRepository.listChallenges",
      "area": "challenges"
     }
@@ -8148,49 +8142,6 @@
      "line": 20,
      "symbol": "SupabaseKnowledgeBookingRepository.listSlots",
      "area": "knowledge"
-    }
-   ]
-  },
-  {
-   "old": "list_my_challenge_entries",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "later",
-   "confidence": "high",
-   "missing": null,
-   "note": "Direct read of the caller's own entries (policy `challenge_progress_entries_select_own`).",
-   "oldObject": {
-    "signature": [
-     "list_my_challenge_entries(p_challenge_id: string, p_limit?: number) → { cycle_start: string goal_met: boolean note: string reported_at: string value: number }[]"
-    ]
-   },
-   "targets": [
-    {
-     "type": "table",
-     "name": "challenge_progress_entries",
-     "columns": [
-      "challenge_id",
-      "cycle_start",
-      "goal_met",
-      "note",
-      "reported_at",
-      "user_id",
-      "value"
-     ],
-     "clientGrants": {
-      "select": true
-     }
-    }
-   ],
-   "areas": [
-    "challenges"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/challenges/SupabaseChallengeRepository.ts",
-     "line": 192,
-     "symbol": "SupabaseChallengeRepository.listMyEntries",
-     "area": "challenges"
     }
    ]
   },
@@ -10041,7 +9992,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/challenges/SupabaseChallengeRepository.ts",
-     "line": 181,
+     "line": 200,
      "symbol": "SupabaseChallengeRepository.reportProgress",
      "area": "challenges"
     }
@@ -11956,6 +11907,60 @@
      "area": "blocks",
      "ops": [
       "delete"
+     ]
+    }
+   ]
+  },
+  {
+   "old": "challenge_progress_entries",
+   "kind": "table",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "The caller's own reports of a challenge, newest cycle first (policy `challenge_progress_entries_select_own`); replaces `list_my_challenge_entries`.",
+   "oldObject": {
+    "columns": [
+     "challenge_id",
+     "cycle_start",
+     "entry_id",
+     "goal_met",
+     "note",
+     "reported_at",
+     "user_id",
+     "value"
+    ],
+    "isView": false
+   },
+   "targets": [
+    {
+     "type": "table",
+     "name": "challenge_progress_entries",
+     "columns": [
+      "challenge_id",
+      "cycle_start",
+      "goal_met",
+      "note",
+      "reported_at",
+      "user_id",
+      "value"
+     ],
+     "clientGrants": {
+      "select": true
+     }
+    }
+   ],
+   "areas": [
+    "challenges"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/challenges/SupabaseChallengeRepository.ts",
+     "line": 217,
+     "symbol": "SupabaseChallengeRepository.listMyEntries",
+     "area": "challenges",
+     "ops": [
+      "select"
      ]
     }
    ]
@@ -14790,21 +14795,11 @@
    "areas": [
     "admin",
     "marketplace",
-    "mobile",
     "posts",
     "reports",
     "volunteering"
    ],
    "callSites": [
-    {
-     "file": "app/apps/mobile/src/hooks/useChallengeLinkedPost.ts",
-     "line": 11,
-     "symbol": "resolveChallengePostId",
-     "area": "mobile",
-     "ops": [
-      "select"
-     ]
-    },
     {
      "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminContentRepository.ts",
      "line": 147,
