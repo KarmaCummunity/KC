@@ -1,21 +1,18 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { isRideBookingListStatus, type RideBooking } from '@kc/domain';
 import type { IRideBookingRepository } from '@kc/application';
-import type { Database } from '../database.types';
+import type { Database, Json } from '../database.types';
+import { unwrapCall } from '../rpc/mapRpcError';
+import { sessionUserId } from '../users/userReads';
+import { requireRpcRow } from '../marketplace/rpcRow';
 
 type Client = SupabaseClient<Database>;
-type BookingRow = Database['public']['Functions']['list_ride_bookings']['Returns'][number];
-type HandoffRpc =
-  | 'confirm_ride_booking'
-  | 'decline_ride_booking'
-  | 'cancel_ride_booking'
-  | 'complete_ride_trip'
-  | 'reinstate_ride_booking';
+type HandoffRow = Database['public']['Tables']['post_handoffs']['Row'];
 
 /**
- * Ride seat bookings over the 0393/0453/0511 RPCs (docs/spec/05_giving_worlds.md §5.3, D73).
- * Server errors keep their message (an error code such as `owner_only`) so the UI can map
- * it to copy; the server also queues the push to the other side on every change.
+ * Ride seat bookings on `post_handoffs` (machine `ride_booking`, docs/spec/05_giving_worlds.md §5.3,
+ * D73). A refusal is a stable reason (`BackendRuleError`, e.g. `seats_exhausted`), which the screens
+ * map to copy; the server queues the push to the other side on every change.
  */
 export class SupabaseRideBookingRepository implements IRideBookingRepository {
   constructor(private readonly client: Client) {}
@@ -25,71 +22,89 @@ export class SupabaseRideBookingRepository implements IRideBookingRepository {
     seats: number,
     requestedMeetingPoint?: Record<string, unknown> | null,
   ): Promise<string> {
-    const { data, error } = await this.client.rpc('book_ride_seat', {
-      p_listing_id: listingId,
-      p_seats: seats,
-      p_requested_meeting_point: (requestedMeetingPoint ?? undefined) as never,
-    });
-    if (error) throw new Error(error.message);
-    return data.handoff_id;
+    const row = requireRpcRow(unwrapCall(
+      'rpc:book_ride_seat',
+      await this.client.rpc('book_ride_seat', {
+        p_post_id: listingId,
+        p_seats: seats,
+        p_requested_meeting_point: (requestedMeetingPoint ?? undefined) as Json | undefined,
+      }),
+    ), 'book_ride_seat');
+    return row.id;
   }
 
+  /** The driver's view: every booking of the ride with the passenger's name and whether the driver rated them. */
   async listForRide(listingId: string): Promise<RideBooking[]> {
-    const { data, error } = await this.client.rpc('list_ride_bookings', { p_listing_id: listingId });
-    if (error) throw new Error(error.message);
-    return (data ?? []).flatMap((row) => {
-      const booking = mapBookingRow(row);
+    const rows =
+      unwrapCall(
+        'table:post_handoffs',
+        await this.client.from('post_handoffs').select('*').eq('post_id', listingId).order('created_at', { ascending: true }),
+      ) ?? [];
+    if (rows.length === 0) return [];
+    const [users, ratings, viewerId] = await Promise.all([
+      this.client.from('users').select('id, display_name, avatar_url').in('id', [...new Set(rows.map((r) => r.recipient_id))]),
+      this.client.from('post_ratings').select('handoff_id').in('handoff_id', rows.map((r) => r.id)),
+      sessionUserId(this.client),
+    ]);
+    const userById = new Map((unwrapCall('table:users', users) ?? []).map((u) => [u.id, u]));
+    // The table shows a member only the ratings they wrote, so every returned row is "rated by me".
+    const rated = new Set((viewerId ? (unwrapCall('table:post_ratings', ratings) ?? []) : []).map((r) => r.handoff_id));
+    return rows.flatMap((row) => {
+      const booking = mapBookingRow(row, userById.get(row.recipient_id) ?? null, rated.has(row.id));
       return booking ? [booking] : [];
     });
   }
 
-  approve(handoffId: string): Promise<void> {
-    return this.runHandoffRpc('confirm_ride_booking', handoffId);
+  async approve(handoffId: string): Promise<void> {
+    unwrapCall('rpc:confirm_ride_booking', await this.client.rpc('confirm_ride_booking', { p_handoff_id: handoffId }));
   }
 
-  decline(handoffId: string): Promise<void> {
-    return this.runHandoffRpc('decline_ride_booking', handoffId);
+  /** There is no separate decline: the driver cancelling a waiting booking declines it. */
+  decline = (handoffId: string) => this.cancel(handoffId);
+
+  async cancel(handoffId: string): Promise<void> {
+    unwrapCall('rpc:cancel_ride_booking', await this.client.rpc('cancel_ride_booking', { p_handoff_id: handoffId }));
   }
 
-  cancel(handoffId: string): Promise<void> {
-    return this.runHandoffRpc('cancel_ride_booking', handoffId);
+  async complete(handoffId: string): Promise<void> {
+    unwrapCall('rpc:complete_ride_trip', await this.client.rpc('complete_ride_trip', { p_handoff_id: handoffId }));
   }
 
-  complete(handoffId: string): Promise<void> {
-    return this.runHandoffRpc('complete_ride_trip', handoffId);
+  async reinstate(handoffId: string): Promise<void> {
+    unwrapCall('rpc:reinstate_ride_booking', await this.client.rpc('reinstate_ride_booking', { p_handoff_id: handoffId }));
   }
 
+  /** Completes the whole ride; resolves to the number of bookings completed. */
   async completeRide(listingId: string): Promise<number> {
-    const { data, error } = await this.client.rpc('complete_ride_listing', { p_listing_id: listingId });
-    if (error) throw new Error(error.message);
-    return data ?? 0;
-  }
-
-  reinstate(handoffId: string): Promise<void> {
-    return this.runHandoffRpc('reinstate_ride_booking', handoffId);
-  }
-
-  /** Every booking transition takes one handoff id and returns the updated row, unused here. */
-  private async runHandoffRpc(fn: HandoffRpc, handoffId: string): Promise<void> {
-    const { error } = await this.client.rpc(fn, { p_handoff_id: handoffId });
-    if (error) throw new Error(error.message);
+    return unwrapCall('rpc:complete_ride', await this.client.rpc('complete_ride', { p_post_id: listingId })) ?? 0;
   }
 }
 
-/** Maps one `list_ride_bookings` row; a status outside the managed set is dropped. */
-export function mapBookingRow(row: BookingRow): RideBooking | null {
+/** The label of the meeting point a passenger asked for, when the stored document has one. */
+function requestedStopLabel(point: Json | null): string | null {
+  if (typeof point !== 'object' || point === null || Array.isArray(point)) return null;
+  const label = point['label'];
+  return typeof label === 'string' ? label : null;
+}
+
+/** Maps one handoff row; a status outside the managed set is dropped. */
+export function mapBookingRow(
+  row: HandoffRow,
+  passenger: { display_name: string | null; avatar_url: string | null } | null,
+  ratedByMe: boolean,
+): RideBooking | null {
   if (!isRideBookingListStatus(row.status)) return null;
   return {
-    handoffId: row.handoff_id,
+    handoffId: row.id,
     recipientId: row.recipient_id,
-    passengerName: row.passenger_name ?? '',
-    avatarUrl: row.avatar_url ?? null,
+    passengerName: passenger?.display_name ?? '',
+    avatarUrl: passenger?.avatar_url ?? null,
     seats: row.seats,
     status: row.status,
-    reservedAt: row.reserved_at,
-    confirmBy: row.confirm_by ?? null,
-    ratedByMe: row.rated_by_me === true,
-    requestedStopLabel: (row as { requested_stop_label?: string | null }).requested_stop_label ?? null,
-    cancelReason: (row as { cancel_reason?: string | null }).cancel_reason ?? null,
+    reservedAt: row.created_at,
+    confirmBy: row.confirm_by,
+    ratedByMe,
+    requestedStopLabel: requestedStopLabel(row.requested_meeting_point),
+    cancelReason: row.cancel_reason,
   };
 }

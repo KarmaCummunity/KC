@@ -58,4 +58,9 @@ export const postEditHe = {
   editListing: {
     headerTitle: 'עריכת {{category}}',
   },
+  // D127 — an expired listing-world post is republished as a new post (dates cleared).
+  republishListing: {
+    cta: 'פרסום מחדש',
+    a11y: 'פרסום מחדש כפוסט חדש עם תאריכים חדשים',
+  },
 } as const;

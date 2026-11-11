@@ -11,6 +11,10 @@ name: CI — release
 
 on:
   workflow_call:
+    secrets:
+      E2E_SEED_PASSWORD:
+        description: kc-dev seed users' password (the P0 journeys sign in with it)
+        required: false
 
 permissions:
   contents: read

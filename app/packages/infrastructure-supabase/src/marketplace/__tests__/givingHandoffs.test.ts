@@ -1,125 +1,80 @@
-import { describe, it, expect } from 'vitest';
-import { SupabaseMarketplaceRepository } from '../SupabaseMarketplaceRepository';
+import { describe, expect, it } from 'vitest';
+import { BackendRuleError, BackendUnavailableError } from '@kc/domain';
+import { callsTo, createFakeClient } from '../../__tests__/fakeBaselineClient';
+import { fail, ok } from '../../posts/__tests__/cardFixtures';
+import * as handoffs from '../givingHandoffs';
 
-type Result = { data: unknown; error: unknown };
-
-function makeRepo(results: Record<string, Result>) {
-  const calls: Array<{ fn: string; args: unknown }> = [];
-  const client = {
-    rpc: async (fn: string, args: unknown) => {
-      calls.push({ fn, args });
-      return results[fn] ?? { data: null, error: null };
-    },
-  };
-  return { repo: new SupabaseMarketplaceRepository(client as never), calls };
-}
-
-const ok = (data: unknown): Result => ({ data, error: null });
-const boom = { message: 'boom' };
-const fail: Result = { data: null, error: boom };
-
-const row = {
-  handoff_id: 'h1',
-  listing_id: 'l1',
-  owner_id: 'u1',
-  recipient_id: 'u2',
-  world_slug: 'items',
-  status: 'reserved',
-  pickup_mode: 'pickup',
-  pickup_window_start: null,
-  pickup_window_end: null,
-  confirm_by: '2026-10-18T00:00:00Z',
-  reserved_at: '2026-10-17T00:00:00Z',
-  confirmed_at: null,
+const ROW = {
+  id: 'h1', post_id: 'p1', owner_id: 'o', recipient_id: 'r', machine_id: 'giving_handoff', status: 'reserved', pickup_mode: 'pickup',
+  pickup_window_start: null, pickup_window_end: null, confirm_by: '2030-01-01T00:00:00Z', created_at: '2026-01-01T00:00:00Z', confirmed_at: null,
 };
-const snap = {
-  handoffId: 'h1',
-  listingId: 'l1',
-  ownerId: 'u1',
-  recipientId: 'u2',
-  worldSlug: 'items',
-  status: 'reserved',
-  pickupMode: 'pickup',
-  pickupWindowStart: null,
-  pickupWindowEnd: null,
-  confirmBy: '2026-10-18T00:00:00Z',
-  reservedAt: '2026-10-17T00:00:00Z',
-  confirmedAt: null,
+const SNAPSHOT = {
+  handoffId: 'h1', listingId: 'p1', ownerId: 'o', recipientId: 'r', worldSlug: 'items', status: 'reserved', pickupMode: 'pickup',
+  pickupWindowStart: null, pickupWindowEnd: null, confirmBy: '2030-01-01T00:00:00Z', reservedAt: '2026-01-01T00:00:00Z', confirmedAt: null,
 };
 
-describe('SupabaseMarketplaceRepository — giving handoffs', () => {
-  it('getListingHandoff parses json, null on error or empty', async () => {
-    expect(await makeRepo({ get_listing_handoff: ok(row) }).repo.getListingHandoff('l1')).toEqual(snap);
-    expect(await makeRepo({ get_listing_handoff: fail }).repo.getListingHandoff('l1')).toBeNull();
-    expect(await makeRepo({}).repo.getListingHandoff('l1')).toBeNull();
+describe('giving handoffs', () => {
+  it('reserves an item with the baseline argument names and the world of the post', async () => {
+    const { client, calls } = createFakeClient({ rpc: { reserve_item_giving: ok(ROW) }, tables: { posts: ok({ world_slug: 'items' }) } });
+    expect(await handoffs.reserveItemGiving(client, 'p1', 'delivery', 's', 'e')).toEqual(SNAPSHOT);
+    expect(callsTo(calls, 'reserve_item_giving')[0]?.args).toEqual({
+      p_post_id: 'p1', p_pickup_mode: 'delivery', p_pickup_window_start: 's', p_pickup_window_end: 'e',
+    });
   });
 
-  it('listMyGivingHandoffs maps rows, [] on error', async () => {
-    const { repo, calls } = makeRepo({
-      list_my_giving_handoffs: ok([
-        {
-          handoff_id: 'h1',
-          listing_id: 'l1',
-          title: 'Chair',
-          world_slug: 'items',
-          status: 'reserved',
-          role: 'owner',
-          pickup_window_start: null,
-          pickup_window_end: null,
-          reserved_at: 'x',
-        },
-      ]),
+  it('claims food, confirms and marks handed over through their RPCs', async () => {
+    const { client, calls } = createFakeClient({
+      rpc: { claim_food_giving: ok(ROW), confirm_item_handoff: ok(ROW), mark_giving_handed_over: ok({ ...ROW, status: 'handed_over' }) },
+      tables: { posts: ok({ world_slug: 'food' }) },
     });
-    expect(await repo.listMyGivingHandoffs()).toEqual([
+    await handoffs.claimFoodGiving(client, 'p1');
+    await handoffs.confirmItemHandoff(client, 'h1');
+    expect((await handoffs.markGivingHandedOver(client, 'h1')).status).toBe('handed_over');
+    expect(callsTo(calls, 'claim_food_giving')[0]?.args).toMatchObject({ p_post_id: 'p1' });
+  });
+
+  it('rates with stars and an optional comment', async () => {
+    const { client, calls } = createFakeClient({ rpc: { rate_handoff: ok(null) } });
+    await handoffs.rateGivingHandoff(client, 'h1', 5, 'kind');
+    expect(callsTo(calls, 'rate_handoff')[0]?.args).toEqual({ p_handoff_id: 'h1', p_stars: 5, p_comment: 'kind' });
+  });
+
+  it('reads the caller\'s live handoff of a post, none after a cancel', async () => {
+    const { client, calls } = createFakeClient({ tables: { post_handoffs: ok(ROW), posts: ok({ world_slug: 'items' }) } });
+    expect(await handoffs.getListingHandoff(client, 'p1')).toEqual(SNAPSHOT);
+    expect(callsTo(calls, 'post_handoffs')[0]?.filters).toContainEqual(['in', 'status', ['reserved', 'confirmed', 'handed_over', 'no_show']]);
+    const none = createFakeClient({ tables: { post_handoffs: ok(null) } });
+    expect(await handoffs.getListingHandoff(none.client, 'p1')).toBeNull();
+  });
+
+  it('lists the caller\'s handoffs with the title and the role', async () => {
+    const { client } = createFakeClient({
+      userId: 'o',
+      tables: {
+        post_handoffs: ok([
+          { ...ROW, posts: { title: 'Sofa', world_slug: 'items' } },
+          { ...ROW, id: 'h2', posts: null },
+        ]),
+      },
+    });
+    expect(await handoffs.listMyGivingHandoffs(client)).toEqual([
       {
-        handoffId: 'h1',
-        listingId: 'l1',
-        title: 'Chair',
-        worldSlug: 'items',
-        status: 'reserved',
-        role: 'owner',
-        pickupWindowStart: null,
-        pickupWindowEnd: null,
-        reservedAt: 'x',
+        handoffId: 'h1', listingId: 'p1', title: 'Sofa', worldSlug: 'items', status: 'reserved', role: 'owner',
+        pickupWindowStart: null, pickupWindowEnd: null, reservedAt: '2026-01-01T00:00:00Z',
       },
     ]);
-    expect(calls[0]?.args).toEqual({ p_limit: 50 });
-    expect(await makeRepo({ list_my_giving_handoffs: fail }).repo.listMyGivingHandoffs(3)).toEqual([]);
+    expect(await handoffs.listMyGivingHandoffs(createFakeClient({ userId: null }).client)).toEqual([]);
   });
 
-  it('row-returning writes map the handoff and throw on failure', async () => {
-    const { repo, calls } = makeRepo({
-      reserve_item_giving: ok(row),
-      confirm_item_handoff: ok(row),
-      claim_food_giving: ok(row),
-      mark_giving_handed_over: ok(row),
-    });
-    expect(await repo.reserveItemGiving('l1')).toEqual(snap);
-    expect(calls[0]?.args).toEqual({
-      p_listing_id: 'l1',
-      p_pickup_mode: 'pickup',
-      p_pickup_window_start: undefined,
-      p_pickup_window_end: undefined,
-    });
-    expect(await repo.confirmItemHandoff('h1')).toEqual(snap);
-    expect(await repo.claimFoodGiving('l1', 'a', 'b')).toEqual(snap);
-    expect(calls[2]?.args).toEqual({ p_listing_id: 'l1', p_pickup_window_start: 'a', p_pickup_window_end: 'b' });
-    expect(await repo.markGivingHandedOver('h1')).toEqual(snap);
-
-    const bad = makeRepo({ reserve_item_giving: fail, confirm_item_handoff: fail }).repo;
-    await expect(bad.reserveItemGiving('l1', 'delivery', 'a', 'b')).rejects.toBe(boom);
-    await expect(bad.confirmItemHandoff('h1')).rejects.toBe(boom);
-    await expect(bad.claimFoodGiving('l1')).rejects.toThrow('claim_food_giving failed');
-    await expect(bad.markGivingHandedOver('h1')).rejects.toThrow('mark_giving_handed_over failed');
+  it('keeps a refusal reason and reports a missing function', async () => {
+    const refused = createFakeClient({ rpc: { reserve_item_giving: fail('P0001', 'item_already_reserved') } });
+    await expect(handoffs.reserveItemGiving(refused.client, 'p1')).rejects.toMatchObject({ constructor: BackendRuleError, reason: 'item_already_reserved' });
+    const missing = createFakeClient({ rpc: { cancel_giving_handoff: fail('PGRST202', 'nope') } });
+    await expect(handoffs.cancelGivingHandoff(missing.client, 'h1')).rejects.toBeInstanceOf(BackendUnavailableError);
   });
 
-  it('void writes resolve or throw', async () => {
-    const { repo, calls } = makeRepo({});
-    await expect(repo.cancelGivingHandoff('h1')).resolves.toBeUndefined();
-    await expect(repo.rateGivingHandoff('h1', 5)).resolves.toBeUndefined();
-    expect(calls[1]?.args).toEqual({ p_handoff_id: 'h1', p_rating: 5, p_comment: undefined });
-    const bad = makeRepo({ cancel_giving_handoff: fail, rate_giving_handoff: fail }).repo;
-    await expect(bad.cancelGivingHandoff('h1')).rejects.toBe(boom);
-    await expect(bad.rateGivingHandoff('h1', 1, 'meh')).rejects.toBe(boom);
+  it('treats an empty answer of a row RPC as a failure', async () => {
+    const { client } = createFakeClient({ rpc: { confirm_item_handoff: ok(null) } });
+    await expect(handoffs.confirmItemHandoff(client, 'h1')).rejects.toThrow(/returned no row/);
   });
 });

@@ -1,3 +1,4 @@
+import { readFile } from 'node:fs/promises';
 import { anonKey, SUPABASE_URL } from './env';
 import { fetchPasswordSession } from './supabaseSession';
 
@@ -27,10 +28,26 @@ export async function rest<T = unknown>(
   return data as T;
 }
 
+/**
+ * Uploads the fixture photo into the user's own folder of the `post-images` bucket (the storage
+ * policy admits a member only under `<user id>/`) and returns the object key.
+ */
+export async function uploadPostPhoto(accessToken: string, userId: string): Promise<string> {
+  const key = `${userId}/e2e-${Date.now()}.png`;
+  const file = await readFile(new URL('../fixtures/item.png', import.meta.url));
+  const res = await fetch(`${SUPABASE_URL}/storage/v1/object/post-images/${key}`, {
+    method: 'POST',
+    headers: { apikey: await anonKey(), Authorization: `Bearer ${accessToken}`, 'Content-Type': 'image/png' },
+    body: file,
+  });
+  if (!res.ok) throw new Error(`photo upload ${res.status}: ${await res.text()}`);
+  return key;
+}
+
 export const runTag = () => `[e2e ${new Date().toISOString().slice(0, 16)}]`;
 
 /**
- * Best-effort removal of this user's e2e-tagged posts and open listings so test
+ * Best-effort removal of this user's e2e-tagged posts so test
  * data never lingers in the user-visible kc-dev feed. Never throws.
  */
 export async function cleanupE2eContent(user: { email: string; password: string }): Promise<void> {
@@ -40,7 +57,6 @@ export async function cleanupE2eContent(user: { email: string; password: string 
     const me = (session.user as { id: string }).id;
     const tag = encodeURIComponent('[e2e*');
     await rest(token, `posts?owner_id=eq.${me}&title=like.${tag}`, { method: 'DELETE' }).catch(() => undefined);
-    await rest(token, `listings?owner_id=eq.${me}&title=like.${tag}`, { method: 'DELETE' }).catch(() => undefined);
   } catch {
     // cleanup must never fail the suite
   }

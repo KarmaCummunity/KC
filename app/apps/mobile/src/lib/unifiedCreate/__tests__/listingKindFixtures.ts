@@ -1,5 +1,5 @@
 // Listing kinds of the four listing create worlds, with the detail schemas the dev database
-// holds (migrations 0241, 0321, 0381, 0391, 0563). Shared by the field-spec and form tests.
+// holds (migrations 0241, 0321, 0381, 0391, 0563, 0700, 0703). Shared by the field-spec and form tests.
 import type { ListingKindOption } from '@kc/domain';
 
 const obj = (properties: Record<string, unknown>, required: string[] = []) => ({
@@ -27,7 +27,7 @@ function kind(slug: string, direction: 'give' | 'request', schema: Record<string
 
 export const KINDS_BY_WORLD: Readonly<Record<string, readonly ListingKindOption[]>> = {
   food: [
-    kind('give_food', 'give', obj({
+    kind('food_offer', 'give', obj({
       food_type: { enum: ['cooked', 'packaged', 'fresh', 'frozen', 'dry', 'beverage'] },
       expires_at: { type: 'string', format: 'date-time' },
       allergens: { type: 'array', items: { type: 'string' } },
@@ -38,8 +38,8 @@ export const KINDS_BY_WORLD: Readonly<Record<string, readonly ListingKindOption[
       delivery_available: { type: 'boolean' },
       pickup_window_start: { type: 'string', format: 'date-time' },
       pickup_window_end: { type: 'string', format: 'date-time' },
-    }, ['expires_at', 'food_type'])),
-    kind('request_food', 'request', obj({ household_size: { type: 'integer' }, dietary_needs: { type: 'string' } })),
+    }, ['expires_at'])), // food_type left `required` in 0700 (D137).
+    kind('food_request', 'request', obj({ household_size: { type: 'integer' }, dietary_needs: { type: 'string' } })),
   ],
   rides: [
     kind('ride_offer', 'give', obj({
@@ -123,43 +123,69 @@ export const KINDS_BY_WORLD: Readonly<Record<string, readonly ListingKindOption[
     }, ['species', 'care_mode'])),
   ],
   knowledge: [
-    // Binding schemas of migration 0395, trimmed to the keys and enums the form uses.
-    kind('course', 'give', obj({
+    // The six exchange kinds of migration 0703 (#2034), trimmed to the keys and enums the form uses.
+    kind('lesson_offer', 'give', obj({
       topic: { type: 'string', minLength: 2, maxLength: 80 },
       level: { enum: ['beginner', 'intermediate', 'advanced'] },
       modality: { enum: ['in_person', 'video', 'phone'] },
-      slot_starts_at: { type: 'string', format: 'date-time' },
-      slot_ends_at: { type: 'string', format: 'date-time' },
-      slots_available: { type: 'integer', minimum: 1, maximum: 50 },
-      requires_org_approval: { type: 'boolean' },
-    }, ['topic', 'modality', 'slot_starts_at', 'slot_ends_at', 'slots_available'])),
-    kind('private_lesson', 'give', obj({
-      topic: { type: 'string', minLength: 2, maxLength: 80 },
-      level: { enum: ['beginner', 'intermediate', 'advanced'] },
-      modality: { enum: ['in_person', 'video', 'phone'] },
-      slot_starts_at: { type: 'string', format: 'date-time' },
-      slot_ends_at: { type: 'string', format: 'date-time' },
-      slots_available: { type: 'integer', minimum: 1, maximum: 20 },
+      language: { type: 'array', items: { enum: ['he', 'en', 'ar', 'ru', 'am', 'fr', 'es', 'other'] } },
+      capacity_per_slot: { type: 'integer', minimum: 1, maximum: 20 },
+      slots: { type: 'array', minItems: 1, maxItems: 20 },
       availability_note: { type: 'string', maxLength: 280 },
-    }, ['topic', 'modality', 'slot_starts_at', 'slot_ends_at', 'slots_available'])),
-    kind('mentorship_request', 'request', obj({
+      resource_ids: { type: 'array' },
+    }, ['modality', 'capacity_per_slot', 'slots'])),
+    kind('mentoring_offer', 'give', obj({
       topic: { type: 'string', minLength: 2, maxLength: 80 },
-      level: { type: 'string' },
+      level: { enum: ['beginner', 'intermediate', 'advanced'] },
+      modality: { enum: ['in_person', 'video', 'phone'] },
+      language: { type: 'array' },
+      audience: { type: 'array', items: { enum: ['career_change', 'students', 'new_immigrants', 'youth_18plus', 'seniors', 'other'] } },
+      cadence: { enum: ['weekly', 'biweekly', 'monthly', 'flexible'] },
+      seats: { type: 'integer', minimum: 1, maximum: 10 },
+      availability_note: { type: 'string', maxLength: 280 },
+    }, ['cadence', 'seats', 'modality'])),
+    kind('consulting_hour', 'give', obj({
+      topic: { type: 'string', minLength: 2, maxLength: 80 },
+      modality: { enum: ['in_person', 'video', 'phone'] },
+      language: { type: 'array' },
+      profession: { enum: ['lawyer', 'accountant', 'tax_advisor', 'social_worker', 'employment_rights', 'housing_rights', 'consumer_rights', 'other'] },
+      capacity_per_slot: { type: 'integer', minimum: 1, maximum: 5 },
+      slots: { type: 'array', minItems: 1, maxItems: 20 },
+      availability_note: { type: 'string', maxLength: 280 },
+      disclaimer_accepted: { const: true },
+    }, ['profession', 'modality', 'capacity_per_slot', 'slots', 'disclaimer_accepted'])),
+    kind('learning_request', 'request', obj({
+      topic: { type: 'string', minLength: 2, maxLength: 80 },
+      level: { enum: ['beginner', 'intermediate', 'advanced'] },
       preferred_modality: { enum: ['in_person', 'video', 'phone'] },
-    }, ['topic'])),
+      language: { type: 'array' },
+      availability_note: { type: 'string', maxLength: 280 },
+    })),
+    kind('mentoring_request', 'request', obj({
+      topic: { type: 'string', minLength: 2, maxLength: 80 },
+      level: { enum: ['beginner', 'intermediate', 'advanced'] },
+      preferred_modality: { enum: ['in_person', 'video', 'phone'] },
+      language: { type: 'array' },
+      goal: { type: 'string', maxLength: 280 },
+      cadence: { enum: ['weekly', 'biweekly', 'monthly', 'flexible'] },
+    })),
+    kind('question', 'request', obj({
+      topic: { type: 'string', minLength: 2, maxLength: 80 },
+      context_url: { type: 'string', maxLength: 500 },
+    })),
   ],
   time: [
-    kind('volunteer_shift', 'give', obj({
+    kind('volunteer_offer', 'give', obj({
       duration_minutes: { type: 'integer' },
       skills: { type: 'array', items: { type: 'string' } },
       org_host_slug: { type: 'string' },
     })),
-    kind('support_request', 'request', obj({
+    kind('volunteer_request', 'request', obj({
       support_type: { enum: ['emotional', 'companionship', 'practical', 'escort'] },
       duration_minutes: { type: 'integer' },
     })),
     // An organization's event (0563), offered only to members of an organization.
-    kind('org_event', 'give', obj({
+    kind('event', 'give', obj({
       org_id: { type: 'string', minLength: 36, maxLength: 36 },
       starts_at: { type: 'string', format: 'date-time' },
       ends_at: { type: 'string', format: 'date-time' },

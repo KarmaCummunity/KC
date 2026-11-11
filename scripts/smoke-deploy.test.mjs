@@ -2,7 +2,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  checkAppLinks,
   checkFunctions,
+  checkPages,
+  extractTitle,
+  listPublicPages,
   checkSupabase,
   checkWeb,
   extractScriptSrcs,
@@ -137,4 +141,81 @@ test('optionsFromEnv validates the check list and required settings', () => {
   assert.throws(() => optionsFromEnv({ SMOKE_WEB_URL: WEB }), /SUPABASE_URL is required/);
   const all = optionsFromEnv({ SMOKE_WEB_URL: WEB, SUPABASE_URL: SB, SUPABASE_ANON_KEY: 'k' });
   assert.ok(Object.keys(all.probes).length > 0);
+});
+
+const SHELL = '<!DOCTYPE html><html><head><title>KC - קהילת קארמה</title></head><body><div id="root"></div></body></html>';
+const page = (title) => `<!doctype html><html><head><title>${title}</title></head><body>static</body></html>`;
+
+test('extractTitle decodes entities and tolerates a missing title', () => {
+  assert.equal(extractTitle(page('Support &amp; Help')), 'Support & Help');
+  assert.equal(extractTitle('<html></html>'), '');
+});
+
+test('listPublicPages covers the store-linked pages and skips the SPA shell', () => {
+  const pages = listPublicPages();
+  const names = pages.map((p) => p.name);
+  for (const required of ['privacy', 'terms', 'support', 'delete-account', 'child-safety']) assert.ok(names.includes(required), required);
+  assert.ok(!names.includes('index'));
+  for (const p of pages) assert.ok(p.title.length > 0, `${p.name} has a title`);
+});
+
+test('checkPages passes when every page serves its own title at both URLs', async () => {
+  const { fetch, calls } = fakeFetch({
+    [`GET ${WEB}/delete-account`]: response(200, page('Delete your account')),
+    [`GET ${WEB}/privacy`]: response(200, page('Privacy')),
+  });
+  const pages = [{ name: 'delete-account', title: 'Delete your account' }, { name: 'privacy', title: 'Privacy' }];
+  const result = await checkPages({ webUrl: WEB, fetch, pages });
+  assert.equal(result.ok, true, result.detail);
+  assert.deepEqual(calls, [`GET ${WEB}/delete-account`, `GET ${WEB}/delete-account.html`, `GET ${WEB}/privacy`, `GET ${WEB}/privacy.html`]);
+});
+
+test('checkPages fails when a page falls through to the SPA shell (Unmatched Route)', async () => {
+  const { fetch } = fakeFetch({
+    [`GET ${WEB}/child-safety`]: response(200, SHELL),
+    [`GET ${WEB}/privacy`]: response(200, page('Privacy')),
+  });
+  const pages = [{ name: 'child-safety', title: 'Child Safety' }, { name: 'privacy', title: 'Privacy' }];
+  const result = await checkPages({ webUrl: WEB, fetch, pages });
+  assert.equal(result.ok, false);
+  assert.match(result.detail, /\/child-safety served "KC - קהילת קארמה" \(SPA fallback\?\)/);
+  assert.match(result.detail, /\/child-safety\.html served/);
+  assert.doesNotMatch(result.detail, /privacy/);
+});
+
+test('checkPages reports HTTP errors and a page without a title', async () => {
+  const { fetch } = fakeFetch({ [`GET ${WEB}/terms`]: response(404) });
+  const result = await checkPages({ webUrl: WEB, fetch, pages: [{ name: 'terms', title: 'Terms' }, { name: 'blank', title: '' }] });
+  assert.equal(result.ok, false);
+  assert.match(result.detail, /\/terms → HTTP 404/);
+  assert.match(result.detail, /blank\.html has no <title>/);
+});
+
+const manifest = (status, body, type = 'application/json') => ({
+  ...response(status, body),
+  headers: { get: (h) => (h.toLowerCase() === 'content-type' ? type : null) },
+});
+const WK = { 'apple-app-site-association': '{"applinks":{}}', 'assetlinks.json': '[]' };
+const readSource = (name) => WK[name];
+
+test('checkAppLinks passes for direct 200 JSON that matches the checkout', async () => {
+  const { fetch, calls } = fakeFetch({
+    [`GET ${WEB}/.well-known/apple-app-site-association`]: manifest(200, '{ "applinks": {} }'),
+    [`GET ${WEB}/.well-known/assetlinks.json`]: manifest(200, '[]'),
+  });
+  const result = await checkAppLinks({ webUrl: WEB, fetch, readSource });
+  assert.equal(result.ok, true, result.detail);
+  assert.equal(calls.length, 2);
+});
+
+test('checkAppLinks fails on a redirect, a wrong content type and a stale body', async () => {
+  const { fetch } = fakeFetch({
+    [`GET ${WEB}/.well-known/apple-app-site-association`]: manifest(301, ''),
+    [`GET ${WEB}/.well-known/assetlinks.json`]: manifest(200, '[{"old":1}]', 'application/octet-stream'),
+  });
+  const result = await checkAppLinks({ webUrl: WEB, fetch, readSource });
+  assert.equal(result.ok, false);
+  assert.match(result.detail, /apple-app-site-association → HTTP 301 \(redirect/);
+  assert.match(result.detail, /assetlinks\.json content-type is "application\/octet-stream"/);
+  assert.match(result.detail, /assetlinks\.json body differs/);
 });

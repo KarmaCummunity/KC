@@ -20,6 +20,6 @@ export class CompleteOnboardingUseCase {
         `cannot complete onboarding from state '${state}' — basic info step required first`,
       );
     }
-    await this.users.setOnboardingState(input.userId, 'completed');
+    await this.users.setOnboardingState('completed');
   }
 }

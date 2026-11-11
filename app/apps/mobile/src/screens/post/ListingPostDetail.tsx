@@ -19,6 +19,8 @@ import { postDetailScrollBottomInset } from '../../components/post-detail/postDe
 import { useKeyboardVerticalOffset } from '../../lib/platform/useKeyboardVerticalOffset';
 import { ListingOwnerClosureBar } from '../../components/closure/ListingOwnerClosureBar';
 import { PostDetailBottomChrome } from '../../components/post-detail/PostDetailBottomChrome';
+import { ListingRepublishBar } from '../../components/closure/ListingRepublishBar';
+import { canRepublishListingPost } from '../../lib/unifiedCreate/listingRepublish';
 
 type Props = {
   readonly post: PostWithOwner;
@@ -37,10 +39,17 @@ export function ListingPostDetail({ post, listingId, viewerId, bottomInset }: Pr
     && post.type === 'Give'
     ? viewerId
     : null;
-  const showBottomChrome = Boolean(ownerCloseId) || showEngagement;
+  // D127: an expired post is never reopened; its owner republishes it as a new post instead.
+  const canRepublish = canRepublishListingPost(post, viewerId);
+  const ownerSlot = ownerCloseId ? (
+    <ListingOwnerClosureBar post={post} listingId={listingId} ownerId={ownerCloseId} embedded />
+  ) : canRepublish ? (
+    <ListingRepublishBar listingId={listingId} />
+  ) : undefined;
+  const showBottomChrome = Boolean(ownerSlot) || showEngagement;
   const scrollInset = postDetailScrollBottomInset({
     tabBarOverlayInset: bottomInset,
-    hasOwnerBar: Boolean(ownerCloseId),
+    hasOwnerBar: Boolean(ownerSlot),
     hasComposer: showEngagement,
   });
 
@@ -73,11 +82,7 @@ export function ListingPostDetail({ post, listingId, viewerId, bottomInset }: Pr
           {showBottomChrome ? (
             <PostDetailBottomChrome
               tabBarOverlayInset={bottomInset}
-              ownerSlot={
-                ownerCloseId ? (
-                  <ListingOwnerClosureBar post={post} ownerId={ownerCloseId} embedded />
-                ) : undefined
-              }
+              ownerSlot={ownerSlot}
               composerSlot={showEngagement ? <PostEngagementComposer embedded /> : undefined}
             />
           ) : null}

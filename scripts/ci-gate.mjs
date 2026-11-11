@@ -31,6 +31,8 @@
 // gate the test-integrity guard or the ci.yml check turned red. They re-run
 // only REVIEW_LANES; every other lane's result comes from the latest completed
 // `pull_request` run of this PR for the same head SHA, read via the API.
+// An `edited` event without a base change does the same, also re-running
+// hygiene, and reuses a full (non-edit) run for the rest.
 //
 // This job's own `CI gate` check can be imitated by any workflow on any
 // branch, so branch protection trusts `CI verdict` (scripts/ci-verdict.mjs),
@@ -45,7 +47,7 @@
 
 import { appendFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { HEAVY_LANES, LANE_JOBS, OPTIONAL_LANES as OPTIONAL_LANE_IDS, PR_ONLY_LANES, REVIEW_LANES } from './ci-changes.mjs';
+import { HEAVY_LANES, LANE_JOBS, OPTIONAL_LANES as OPTIONAL_LANE_IDS, PR_ONLY_LANES, REVIEW_LANES, readPrAction } from './ci-changes.mjs';
 import { ownerApprovalRequired } from './ci-base.mjs';
 import { findOwnerOverride } from './ci-github.mjs';
 import { PROTECTED } from './ci-run-binding.mjs';
@@ -117,18 +119,39 @@ export function evaluateGate({ needs, plan, draft, event, ref, baseRef }) {
 }
 
 /**
- * The needs a review-event run is judged on: its own result for `changes` and
- * REVIEW_LANES, and the earlier `pull_request` run's result for every other
- * lane (`missing` when that run has none, which fails a needed lane). An
- * optional lane is replaced only when this ci.yml has the job.
+ * Lanes an `edited` event (no base change) runs itself: hygiene (the PR
+ * title/body just changed) plus the review lanes. Everything else is reused.
  */
-export function mergeReused(needs, reused) {
+export const EDIT_LANES = ['hygiene', ...REVIEW_LANES];
+
+/**
+ * The needs a reuse-event run is judged on: its own result for `changes` and
+ * `keepLanes` (REVIEW_LANES on a review, EDIT_LANES on an edit), and the
+ * earlier full `pull_request` run's result for every other lane (`missing`
+ * when that run has none, which fails a needed lane). An optional lane is
+ * replaced only when this ci.yml has the job.
+ */
+export function mergeReused(needs, reused, keepLanes = REVIEW_LANES) {
+  const keep = new Set(keepLanes);
   const merged = { ...needs };
   for (const lane of [...LANE_JOBS, ...OPTIONAL_LANE_IDS]) {
-    if (REVIEW_LANES.includes(lane) || (OPTIONAL_LANE_IDS.includes(lane) && !(lane in needs))) continue;
+    if (keep.has(lane) || (OPTIONAL_LANE_IDS.includes(lane) && !(lane in needs))) continue;
     merged[lane] = { result: reused[lane] ?? 'missing' };
   }
   return merged;
+}
+
+/**
+ * Whether this run should reuse a prior full `pull_request` run's lane
+ * results, and which lanes it keeps from itself.
+ */
+export function reuseLanesForEvent(env) {
+  if (env.EVENT_NAME === 'pull_request_review') return { reuse: true, keep: REVIEW_LANES };
+  if (env.EVENT_NAME === 'pull_request') {
+    const { action, baseChanged } = readPrAction(env.GITHUB_EVENT_PATH);
+    if (action === 'edited' && !baseChanged) return { reuse: true, keep: EDIT_LANES };
+  }
+  return { reuse: false, keep: REVIEW_LANES };
 }
 
 /**
@@ -165,11 +188,12 @@ async function judge(env, needs, plan) {
   }
   const errors = [];
   let judged = needs;
-  if (env.EVENT_NAME === 'pull_request_review' && !draft) {
+  const reuse = !draft ? reuseLanesForEvent(env) : { reuse: false, keep: REVIEW_LANES };
+  if (reuse.reuse) {
     try {
       const { run, results } = await reusedLaneResults(env, [...LANE_JOBS, ...OPTIONAL_LANE_IDS]);
-      console.log(`Review event: reusing lane results of ${run.html_url}`);
-      judged = mergeReused(needs, results);
+      console.log(`${env.EVENT_NAME} event: reusing lane results of ${run.html_url}`);
+      judged = mergeReused(needs, results, reuse.keep);
     } catch (err) {
       errors.push(`review re-evaluation has no lane results to reuse: ${err.message}`);
     }

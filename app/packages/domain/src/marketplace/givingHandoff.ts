@@ -12,8 +12,6 @@ export type GivingHandoffStatus = (typeof GIVING_HANDOFF_STATUSES)[number];
 export const GIVING_HANDOFF_PICKUP_MODES = ['pickup', 'delivery'] as const;
 export type GivingHandoffPickupMode = (typeof GIVING_HANDOFF_PICKUP_MODES)[number];
 
-export type GivingHandoffRole = 'owner' | 'recipient';
-
 export class GivingHandoffError extends DomainError {
   readonly code: string;
 
@@ -36,73 +34,6 @@ export function isValidHandoffRating(value: unknown): value is number {
 }
 
 export const HANDOFF_RATING_MAX_NOTE_LENGTH = 300;
-
-/**
- * Checks whether a state transition is permitted for a giving handoff.
- * - 'reserved' -> 'confirmed' (owner only: selects recipient)
- * - 'reserved' -> 'cancelled' (owner or recipient can cancel/decline)
- * - 'confirmed' -> 'handed_over' (owner or recipient: completion)
- * - 'confirmed' -> 'cancelled' (owner or recipient can cancel)
- * Terminal states: 'handed_over', 'cancelled', 'no_show' cannot transition further.
- */
-export function canTransitionGivingHandoff(
-  from: GivingHandoffStatus,
-  to: GivingHandoffStatus,
-  role?: GivingHandoffRole,
-): boolean {
-  if (from === to) return false;
-
-  if (from === 'reserved') {
-    if (to === 'confirmed') return role === undefined || role === 'owner';
-    if (to === 'cancelled') return true;
-    return false;
-  }
-
-  if (from === 'confirmed') {
-    if (to === 'handed_over' || to === 'cancelled') return true;
-    return false;
-  }
-
-  return false;
-}
-
-/**
- * Validates a state transition and throws a domain GivingHandoffError if invalid.
- */
-export function validateGivingHandoffTransition(
-  from: GivingHandoffStatus,
-  to: GivingHandoffStatus,
-  role?: GivingHandoffRole,
-): void {
-  if (from === 'handed_over' || from === 'cancelled' || from === 'no_show') {
-    throw new GivingHandoffError('invalid_status', `Cannot transition from terminal status ${from} to ${to}`);
-  }
-
-  if (from === 'reserved') {
-    if (to === 'handed_over') {
-      throw new GivingHandoffError(
-        'handoff_not_confirmed',
-        'Cannot complete a handoff that has not been confirmed by the owner',
-      );
-    }
-    if (to === 'confirmed' && role === 'recipient') {
-      throw new GivingHandoffError('owner_only', 'Only the listing owner can select/confirm the recipient');
-    }
-    if (to !== 'confirmed' && to !== 'cancelled') {
-      throw new GivingHandoffError('invalid_status', `Invalid transition from reserved to ${to}`);
-    }
-    return;
-  }
-
-  if (from === 'confirmed') {
-    if (to !== 'handed_over' && to !== 'cancelled') {
-      throw new GivingHandoffError('invalid_status', `Invalid transition from confirmed to ${to}`);
-    }
-    return;
-  }
-
-  throw new GivingHandoffError('invalid_status', `Unsupported transition from ${from} to ${to}`);
-}
 
 /**
  * Validates rating recording on a completed handoff.

@@ -41,7 +41,13 @@ function flowIds() {
 function appHasTestId(id) {
   if (source.includes(`testID="${id}"`) || source.includes(`testID: '${id}'`)) return true;
   const tab = id.match(/^tab-(\w+)$/);
-  return Boolean(tab && source.includes('testID={`tab-${tab.key}`}') && source.includes(`key: '${tab[1]}'`));
+  if (tab && source.includes('testID={`tab-${tab.key}`}') && source.includes(`key: '${tab[1]}'`)) return true;
+  const createCategory = id.match(/^create-category-([a-z0-9_]+)$/);
+  if (createCategory && source.includes('testID={`create-category-${')) {
+    const slug = createCategory[1];
+    return source.includes(`${slug}: `) || source.includes(`${slug}: '`);
+  }
+  return false;
 }
 
 test('flows exist and every flow declares the KC app id', () => {

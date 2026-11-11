@@ -29,4 +29,31 @@ describe('useFormFieldFocus', () => {
     expect(props).toHaveProperty('canGoPrev');
     expect(props).toHaveProperty('canGoNext');
   });
+
+  it('focusNext / focusPrev move one field and stop at the ends', () => {
+    const spy = vi.spyOn(Keyboard, 'dismiss').mockImplementation(() => {});
+    const { result } = renderHook(() => useFormFieldFocus(3));
+    const focus = [vi.fn(), vi.fn(), vi.fn()];
+    focus.forEach((fn, i) => {
+      (result.current.bindField(i).ref as { current: unknown }).current = { focus: fn };
+    });
+    // Nothing focused yet: next goes to the first field, prev to the last.
+    act(() => result.current.focusNext());
+    expect(focus[0]).toHaveBeenCalledTimes(1);
+    act(() => result.current.focusPrev());
+    expect(focus[2]).toHaveBeenCalledTimes(1);
+    act(() => result.current.bindField(1).onFocus());
+    act(() => result.current.focusNext());
+    expect(focus[2]).toHaveBeenCalledTimes(2);
+    act(() => result.current.focusPrev());
+    expect(focus[0]).toHaveBeenCalledTimes(2);
+    // From the last field, next dismisses the keyboard; from the first, prev does nothing.
+    act(() => result.current.bindField(2).onFocus());
+    act(() => result.current.focusNext());
+    expect(spy).toHaveBeenCalledTimes(1);
+    act(() => result.current.bindField(0).onFocus());
+    act(() => result.current.focusPrev());
+    expect(focus.map((f) => f.mock.calls.length)).toEqual([2, 0, 2]);
+    spy.mockRestore();
+  });
 });

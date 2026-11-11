@@ -3,7 +3,7 @@
 // with a purpose-built control per field type, styled like the rest of the create form.
 import React from 'react';
 import { format } from 'date-fns';
-import { Switch, View } from 'react-native';
+import { Switch } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Text } from '@kc/ui';
 import { formDecimalInputProps, formIntegerInputProps } from '../../lib/platform/formTextInputHints';
@@ -13,8 +13,10 @@ import { DateTimeField } from '../ui/DateTimeField';
 import { clampWholeNumber, visibleDetailSpecs, type ListingFieldSpec } from '../../lib/unifiedCreate/listingFieldSpecs';
 import { detailField } from '../../lib/unifiedCreate/listingFormProblem';
 import { CountStepper } from './CountStepper';
+import { KnowledgeSlotListField } from './KnowledgeSlotListField';
 import { ListingFieldFrame, useListingFieldProblem } from './ListingFieldFrame';
 import { Chip } from '../ui/Chip';
+import { ChipSelectRow } from '../filterKit/ChipSelectRow';
 
 type Details = Readonly<Record<string, unknown>>;
 
@@ -201,6 +203,10 @@ function FieldControl({ spec, value, onChange, disabled }: ControlProps) {
           editable={!disabled}
         />
       );
+    case 'slotList':
+      return (
+        <KnowledgeSlotListField value={value} onChange={set} maxSlots={spec.maxSlots} disabled={disabled} />
+      );
     case 'toggle':
       return <Switch value={value === true} onValueChange={set} disabled={disabled} />;
   }
@@ -224,12 +230,11 @@ interface ChipRowProps<T extends string | number> {
 
 /** Wrapping row of kit filter chips, the same chips as the items form's subcategory row. */
 function ChipRow<T extends string | number>({ options, isOn, onPress, label, disabled }: ChipRowProps<T>) {
-  const styles = useCreatePostStyles();
   return (
-    <View style={styles.chipWrap}>
+    <ChipSelectRow testID="listing-field-chip-row">
       {options.map((o) => (
         <Chip key={String(o)} label={label(o)} selected={isOn(o)} onPress={() => onPress(o)} disabled={disabled} />
       ))}
-    </View>
+    </ChipSelectRow>
   );
 }

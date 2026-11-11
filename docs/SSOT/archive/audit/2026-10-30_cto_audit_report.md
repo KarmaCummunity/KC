@@ -50,7 +50,7 @@ The risk is concentrated in **storage-layer privacy** and **release/process plum
 |---|---|---|
 | `dev` | 2026-10-29 `fdc861d3` | Working branch. **~50 first-parent PRs and 13 migrations (`0429`–`0441`) ahead of `main`**; 353 files / +9.3k −3.2k lines. |
 | `main` | 2026-10-27 `b25a9d30` | Last release "promote dev → main (migrations 0232–0427)". |
-| `staging` | 2026-09-09 `872aecd4` | **Abandoned.** 2 commits not in `main`, 208 behind; last work is GloWe (sunset per `D-191`). |
+| `staging` | 2026-09-09 `872aecd4` | **Abandoned.** 2 commits not in `main`, 208 behind; last work is on the retired product (`D-190`). |
 | `production` | 2026-05-18 `b9e71b2d` | **Abandoned** for 5 months; not referenced by any deploy workflow. |
 | Others | 63 branches | **54 have had no commits since 2026-08-31** (`claude/*`, `cursor/*`, `chore/TD-156-*`, `version-bump-*`). |
 
@@ -134,7 +134,7 @@ There are 8 raw `throw new Error(...)` in `packages/application` (`SavePostUseCa
 
 ### 4.7 Dead / residual code
 - **"Forgot password" button is inert**: `app/(auth)/sign-in.tsx:128` is a `TouchableOpacity` with no `onPress` (FR-AUTH-008). Users with password accounts have no recovery path.
-- **GloWe residue after sunset (`D-191`)**: `glowe-avatars` bucket, `GLOWE_PAGES_PREVIEW` CORS regex, `TD-180/181/185/186/187` (GloWe-only), and the abandoned `staging` branch.
+- **Retired-product residue (`D-190`)**: a leftover avatars bucket, a misnamed CORS regex, `TD-180/181/185/186/187`, and the abandoned `staging` branch (resolved by #1961).
 - 58 `no-unused-vars` warnings. These are mechanical cleanup items.
 
 ### 4.8 Toolchain drift
@@ -161,7 +161,7 @@ There are 8 raw `throw new Error(...)` in `packages/application` (`SavePostUseCa
 | # | Drift | Impact |
 |---|---|---|
 | D-1 | **Three different Supabase refs are documented as "dev"**: `ENVIRONMENTS.md` → `enbqriuxvvuontiwslun`; `CLAUDE.md` §13, `.mcp.json`, `app/.mcp.json`, `docs/DEPLOY_WEB.md` → `roeefqpdbftlndzsvhfj`; an archived audit cites yet another prod ref. CLAUDE.md grants agents *full write authority* on "dev". | 🔴 operational risk: an agent could migrate the wrong project. **Founder must confirm the canonical refs.** |
-| D-2 | `CLAUDE.md` §6 names the repo `KarmaCummunity/GloWe`; the remote is `KarmaCummunity/KC`. Its "Standard PR workflow" runs `gh pr create --base main`, contradicting "All PRs target `dev`" two lines above. | 🟠 agents follow the wrong recipe |
+| D-2 | `CLAUDE.md` §6 names the repo by its former name; the remote is `KarmaCummunity/KC`. Its "Standard PR workflow" runs `gh pr create --base main`, contradicting "All PRs target `dev`" two lines above. | 🟠 agents follow the wrong recipe |
 | D-3 | **TD IDs reused for unrelated items**: specs cite `TD-69` (privacyMode cast), `TD-75` (`messages_insert_user` regression), and `TD-79` (donation SSRF), but `TECH_DEBT.md` now uses those IDs for migration-drift guard, translation provider, and translate tests. | 🟠 traceability broken |
 | D-4 | Stale spec headers: `spec/13_donations.md` still flags the SSRF as 🔴 open, but it is fixed in `validate-donation-link/index.ts:33-143`. Several other headers still list "Audit 2026-05-16" 🔴 items that `TECH_DEBT.md` marks ✅ (`TD-73/74/76/77/80`). | 🟡 misleads prioritisation |
 | D-5 | `BACKLOG` P1.7 / P1.8 (public research) have been "🟡 post-merge QA" for months; `spec/11` FR-SETTINGS-015..017 likewise. | 🟡 QA debt hides real status |
@@ -227,7 +227,7 @@ Recommended refinements:
 | P2-5 | Close `TD-68` and the low-severity private items. | TD-68 |
 | P2-6 | Replace the 8 raw `Error` throws with domain error classes. | §4.6 |
 | P2-7 | Close the QA debt on P1.7 / P1.8 / FR-SETTINGS-015..017, or downgrade their status honestly. | D-5 |
-| P2-8 | Remove GloWe residue; prune stale branches; split `DECISIONS.md`. | §4.7, T-8, D-8 |
+| P2-8 | Remove retired-product residue; prune stale branches; split `DECISIONS.md`. | §4.7, T-8, D-8 |
 
 ### Inputs required from the founder
 

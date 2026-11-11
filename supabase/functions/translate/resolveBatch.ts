@@ -1,4 +1,4 @@
-// Batch resolution for KC UGC translation (ported from glowe-translate, FR-TRANSLATE-006).
+// Batch resolution for KC UGC translation (FR-TRANSLATE-006).
 
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 import { isTranslatable, needsTranslation, sameLanguageSkip } from '../_shared/translation/shortcircuit.ts';

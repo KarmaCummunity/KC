@@ -9,6 +9,7 @@ import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 import { marketplaceRepository } from '../../services/marketplaceComposition';
 import { useListingChipStyles } from './listingChipStyles';
+import { ChipSelectRow } from '../filterKit/ChipSelectRow';
 
 interface Props {
   readonly worldSlug: string;
@@ -42,7 +43,7 @@ export function WorldSubcategoryPicker({ worldSlug, value, onChange, disabled = 
     <View style={styles.root}>
       <Text style={styles.label}>{t('marketplace.fieldWorldSubcategory')}</Text>
       <Text style={styles.hint}>{t('marketplace.fieldWorldSubcategoryHint')}</Text>
-      <View style={chipStyles.chipRow}>
+      <ChipSelectRow testID="world-subcategory-chips">
         {subcategories.map((s) => {
           const selected = s.categoryId === value;
           return (
@@ -59,7 +60,7 @@ export function WorldSubcategoryPicker({ worldSlug, value, onChange, disabled = 
             </Pressable>
           );
         })}
-      </View>
+      </ChipSelectRow>
     </View>
   );
 }

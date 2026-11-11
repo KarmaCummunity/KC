@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { HousingGuestStay, HousingHostBooking, HousingPrivateDetails, HousingStayRequestInput } from '@kc/domain';
 import type { HousingPrivateDetailsInput, IHousingRepository } from '@kc/application';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 import { mapGuestStayRow, mapHostBookingRow, mapPrivateDetailsRow } from './housingMappers';
 
 type Client = SupabaseClient<Database>;
@@ -54,6 +54,7 @@ export class SupabaseHousingRepository implements IHousingRepository {
       p_minors_guardian_ack: input.minorsGuardianAck,
     });
     if (error) throw new Error(error.message);
+    if (!data?.handoff_id) throw new Error('Failed to request stay');
     return data.handoff_id;
   }
 

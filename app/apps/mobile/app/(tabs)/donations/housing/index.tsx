@@ -3,7 +3,7 @@
 // is off the world stays a portal (curated links, D60).
 import React from 'react';
 import { WorldMarketplaceHub } from '../../../../src/components/giving/WorldMarketplaceHub';
-import { worldSubScreens } from '../../../../src/components/giving/worldSubScreens';
+import { WORLD_CHROME_BY_SLUG } from '../../../../src/components/giving/worldChromeRegistry';
 import { WorldLaunchGateBySlug } from '../../../../src/components/worlds/WorldLaunchGate';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../../../src/components/RouteErrorBoundary';
@@ -16,10 +16,7 @@ export default function HousingWorldScreen() {
         icon="home-outline"
         introKey="donations.worldFeed.housingIntro"
         linksCategory="housing"
-        subScreens={worldSubScreens('/(tabs)/donations/housing/handoffs', [
-          { labelKey: 'housingStay.myHosting.nav', path: '/(tabs)/donations/housing/hosting', testID: 'world-hub-housing-hosting' },
-          { labelKey: 'housingStay.myStays.nav', path: '/(tabs)/donations/housing/stays', testID: 'world-hub-housing-stays' },
-        ])}
+        subScreens={WORLD_CHROME_BY_SLUG.housing.subScreens}
       />
     </WorldLaunchGateBySlug>
   );

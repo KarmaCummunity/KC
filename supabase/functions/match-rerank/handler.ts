@@ -1,7 +1,10 @@
-// match-rerank — optional Gemini re-rank for matching v2 (0420–0423). Logic lives here so it is
-// unit-tested with mocks. Clean no-op when: the caller is not service-role, the GEMINI key is
-// absent, or matching_settings.llm_rerank_enabled is false (api_match_llm_pending returns []).
+// match-rerank — optional Gemini re-rank of fresh match candidates (docs/db/target-design.md
+// matching module, supabase/schemas/76_matching/050_match_processing.sql). Started every five
+// minutes by the database job `match_rerank`. Logic lives here so it is unit-tested with mocks.
+// Clean no-op when: the caller is not the service role, the GEMINI key is absent, or the
+// matching setting `llm_rerank_enabled` is off (api_match_llm_pending returns no rows).
 
+import { isServiceRoleRequest } from '../_shared/serviceRoleGuard.ts';
 import { buildGeminiBody, parseRerankResponse, type PendingPair } from '../_shared/matching/rerank.ts';
 
 type RpcResult = { data: unknown; error: { message: string } | null };
@@ -18,29 +21,10 @@ export interface RerankDeps {
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 
-function jwtRole(token: string): string | null {
-  const part = token.split('.')[1];
-  if (!part) return null;
-  try {
-    const payload = JSON.parse(atob(part.replace(/-/g, '+').replace(/_/g, '/'))) as { role?: unknown };
-    return typeof payload.role === 'string' ? payload.role : null;
-  } catch {
-    return null;
-  }
-}
-
-/** The platform gateway verifies the JWT; we additionally require the service role. */
-export function isServiceCaller(req: Request, serviceKey: string): boolean {
-  const token = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '');
-  if (!token) return false;
-  if (serviceKey && token === serviceKey) return true;
-  return jwtRole(token) === 'service_role';
-}
-
 export function createRerankHandler(deps: RerankDeps) {
   return async (req: Request): Promise<Response> => {
     if (req.method !== 'POST') return json({ error: 'method_not_allowed' }, 405);
-    if (!isServiceCaller(req, deps.serviceKey)) return json({ error: 'forbidden' }, 403);
+    if (!isServiceRoleRequest(req, deps.serviceKey)) return json({ error: 'forbidden' }, 403);
     if (!deps.geminiKey) return json({ ok: true, skipped: 'no_gemini_key', scored: 0 });
 
     const pending = await deps.rpc('api_match_llm_pending', { p_limit: deps.batchSize ?? 20 });

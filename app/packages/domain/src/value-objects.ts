@@ -22,7 +22,8 @@ export type AccountStatus =
   | 'suspended_for_false_reports'
   | 'suspended_admin'
   | 'banned'
-  | 'deleted';
+  /** FR-AUTH-016: deletion requested, restorable until the purge (the row is then removed). */
+  | 'pending_deletion';
 
 export type OnboardingState =
   | 'pending_basic_info'
@@ -34,6 +35,8 @@ export type OnboardingState =
 export type PostType = 'Give' | 'Request';
 
 export type PostStatus =
+  // A post that is saved but not published yet (baseline `post` machine: draft → open).
+  | 'draft'
   | 'open'
   | 'closed_delivered'
   | 'deleted_no_recipient'
@@ -86,7 +89,12 @@ export type FollowRequestStatus = 'pending' | 'accepted' | 'rejected' | 'cancell
 
 export type ReportReason = 'Spam' | 'Offensive' | 'Misleading' | 'Illegal' | 'Other';
 
-export type ReportTargetType = 'post' | 'user' | 'chat' | 'listing' | 'none';
+/**
+ * What a report can be filed against. `reports.target_type` accepts post, user, comment and
+ * chat; `listing` is kept as a submission alias of `post` (a listing is a post). There is no
+ * general (target-less) report: the baseline has no row for one.
+ */
+export type ReportTargetType = 'post' | 'user' | 'chat' | 'comment' | 'listing';
 
 export type ReportStatus = 'open' | 'confirmed_violation' | 'dismissed_no_violation';
 

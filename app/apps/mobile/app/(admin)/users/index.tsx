@@ -24,7 +24,7 @@ const STATUS_OPTIONS = [
   { value: 'banned',                        key: 'banned' as const },
   { value: 'suspended_admin',               key: 'suspendedAdmin' as const },
   { value: 'suspended_for_false_reports',   key: 'suspendedFalse' as const },
-  { value: 'deleted',                       key: 'deleted' as const },
+  { value: 'pending_deletion',              key: 'pendingDeletion' as const },
 ];
 
 const userSearchKeyExtractor = (u: AdminUserSearchResult) => u.userId;
@@ -97,14 +97,16 @@ export default function UsersScreen() {
           />
         )}
       />
-      <Text style={styles.totalLabel}>
-        {L.admin.content.totalCount(result.page.totalCount)}
-      </Text>
+      {!result.hasMore && (
+        <Text style={styles.totalLabel}>{L.admin.content.totalCount(result.rows.length)}</Text>
+      )}
       <KcFlashList
-        data={result.page.rows}
+        data={result.rows}
         keyExtractor={userSearchKeyExtractor}
         estimatedItemSize={72}
         renderItem={renderItem}
+        onEndReached={result.fetchMore}
+        onEndReachedThreshold={0.5}
         refreshControl={<RefreshControl refreshing={result.isRefetching} onRefresh={result.refetch} />}
         ListEmptyComponent={
           !result.isLoading ? (

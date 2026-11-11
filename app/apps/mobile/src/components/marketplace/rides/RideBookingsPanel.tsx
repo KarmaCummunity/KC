@@ -7,7 +7,13 @@ import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { iconSize, Text, useTheme } from '@kc/ui';
-import { canApproveRideBooking, canReinstateRideBooking, summarizeRideSeats } from '@kc/domain';
+import {
+  canApproveRideBooking,
+  canCompleteRideBooking,
+  rideReinstateBlocker,
+  summarizeRideSeats,
+  type RideBookingRideContext,
+} from '@kc/domain';
 import { useAuthStore } from '../../../store/authStore';
 import { givingHandoffUseCases } from '../../../services/givingHandoffComposition';
 import {
@@ -55,7 +61,9 @@ export function RideBookingsPanel({
 
   const list = bookings.data ?? [];
   const seats = summarizeRideSeats(capacity, list);
-  const hasReinstatable = list.some((b) => canReinstateRideBooking(b));
+  // The ride as the reinstate rule reads it: open, not departed, seats free (0667).
+  const ride: RideBookingRideContext = { listingStatus, departsAt, capacity, bookings: list };
+  const hasReinstatable = list.some((b) => rideReinstateBlocker(b, ride) === null);
   const canFinishRide = listingStatus === 'open'
     && departsAt !== null
     && Number.isFinite(Date.parse(departsAt))
@@ -82,7 +90,7 @@ export function RideBookingsPanel({
   const actions: RideBookingRowActions = {
     approve: (id) => void run(() => rideBookingUseCases.approve().execute(id, { capacity, bookings: list }), 'match_made'),
     decline: (id) => void run(() => rideBookingUseCases.decline().execute(id, { bookings: list })),
-    complete: (id) => void run(() => rideBookingUseCases.complete().execute(id, { bookings: list }), 'handover_completed'),
+    complete: (id) => void run(() => rideBookingUseCases.complete().execute(id, { bookings: list, departsAt }), 'handover_completed'),
     cancel: (id) => void run(() => rideBookingUseCases.cancel().execute(id, { bookings: list })),
     rate: (id, rating, note) =>
       void run(async () => {
@@ -92,7 +100,7 @@ export function RideBookingsPanel({
     chat: (recipientId) => void onChat(recipientId),
     reinstate: (id) =>
       void run(
-        () => rideBookingUseCases.reinstate().execute(id, { bookings: list }),
+        () => rideBookingUseCases.reinstate().execute(id, { ride }),
         'match_made',
       ),
   };
@@ -151,7 +159,8 @@ export function RideBookingsPanel({
               busy={busy}
               actions={actions}
               canApprove={canApproveRideBooking(capacity, list, booking)}
-              canReinstate={canReinstateRideBooking(booking)}
+              canReinstate={rideReinstateBlocker(booking, ride) === null}
+              canComplete={canCompleteRideBooking(booking, departsAt)}
             />
           ))}
         </View>

@@ -1,6 +1,5 @@
 # CodeRabbit — AI PR review (non-merging), installed on KarmaCummunity/KC.
-# Reviews the KC app, backend and scripts. (The former GloWe web tree was
-# removed in 0238 / D-190, so it is no longer a review target.)
+# Reviews the KC app, backend and scripts.
 # https://github.com/apps/coderabbitai
 
 language: en-US

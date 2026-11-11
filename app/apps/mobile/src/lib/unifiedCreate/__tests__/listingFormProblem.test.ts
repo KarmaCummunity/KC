@@ -20,6 +20,10 @@ describe('fieldForRule', () => {
     expect(fieldForRule('knowledge_slot_invalid', {})).toBe('detail:slot_starts_at');
     expect(fieldForRule('event_window_invalid', {})).toBe('detail:starts_at');
     expect(fieldForRule('routed_world_requires_external_body', {})).toBe('org');
+    // D132 (KC#1937): a missing offer photo outlines the photo picker.
+    expect(fieldForRule('offer_photo_required', {})).toBe('photos');
+    // D137 (KC#1398): a missing food type outlines the sub-category picker.
+    expect(fieldForRule('food_subcategory_required', {})).toBe('subcategory');
   });
 });
 
@@ -33,12 +37,17 @@ describe('fieldForHouseNumbers', () => {
 describe('renderedListingFields', () => {
   it('a ride shows its route and schedule fields instead of a title and a city', () => {
     const fields = renderedListingFields({ isRides: true, isOrgEvent: false, detailKeys: ['passengers'] });
-    expect([...fields]).toEqual(['ride:origin', 'ride:dest', 'ride:departure', 'ride:recurrence', 'detail:passengers']);
+    expect([...fields]).toEqual(['ride:origin', 'ride:dest', 'ride:departure', 'ride:recurrence', 'photos', 'detail:passengers']);
   });
 
   it('other worlds show title, city, the visible details and the organization of an event', () => {
     const fields = renderedListingFields({ isRides: false, isOrgEvent: true, detailKeys: ['starts_at'] });
-    expect([...fields]).toEqual(['title', 'city', 'org', 'detail:starts_at']);
+    expect([...fields]).toEqual(['title', 'city', 'photos', 'org', 'detail:starts_at']);
+  });
+
+  it('includes the sub-category picker in the worlds that show it', () => {
+    const fields = renderedListingFields({ isRides: false, isOrgEvent: false, detailKeys: [], showSubcategory: true });
+    expect(fields.has('subcategory')).toBe(true);
   });
 });
 

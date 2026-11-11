@@ -1,7 +1,7 @@
 // Unit tests for scripts/mobile-store-config.mjs. Run: node --test scripts/mobile-store-config.test.mjs
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { DEV_REF, DEV_URL, PROD_REF, checkAnonKey, checkBundle, checkPin, injectProfileEnv } from './mobile-store-config.mjs';
+import { DEV_REF, DEV_URL, DEV_GOOGLE_WEB_CLIENT_ID, PROD_REF, PROD_URL, PROD_GOOGLE_WEB_CLIENT_ID, checkAnonKey, checkBundle, checkPin, injectProfileEnv, resolveStoreBackend, sentryVars } from './mobile-store-config.mjs';
 
 /** Build an unsigned JWT with the given payload (only the payload is inspected). */
 const jwt = (payload) =>
@@ -61,4 +61,68 @@ test('injectProfileEnv merges into one profile and keeps the rest untouched', ()
 
 test('injectProfileEnv fails on an unknown profile', () => {
   assert.throws(() => injectProfileEnv({ build: {} }, 'nightly', {}), /no build profile "nightly"/);
+});
+
+test('sentryVars keeps only the non-secret Sentry settings that are set', () => {
+  assert.deepEqual(
+    sentryVars({ EXPO_PUBLIC_SENTRY_DSN: ' https://k@o1.ingest.sentry.io/1 ', SENTRY_ORG: 'org', SENTRY_URL: '', SENTRY_AUTH_TOKEN: 'secret', OTHER: 'x' }),
+    { EXPO_PUBLIC_SENTRY_DSN: 'https://k@o1.ingest.sentry.io/1', SENTRY_ORG: 'org' },
+  );
+  assert.deepEqual(sentryVars({}), {});
+});
+
+test('resolveStoreBackend is prod only for the exact token, otherwise dev', () => {
+  assert.equal(resolveStoreBackend('prod'), 'prod');
+  assert.equal(resolveStoreBackend(' prod '), 'prod');
+  assert.equal(resolveStoreBackend('production'), 'dev');
+  assert.equal(resolveStoreBackend('dev'), 'dev');
+  assert.equal(resolveStoreBackend(''), 'dev');
+  assert.equal(resolveStoreBackend(undefined), 'dev');
+});
+
+test('pins the prod backend for a main build with a publishable or prod anon JWT', () => {
+  assert.deepEqual(checkPin({ branch: 'main', anonKey: 'sb_publishable_x', mode: 'prod' }), []);
+  assert.deepEqual(checkPin({ branch: 'main', anonKey: jwt({ ref: PROD_REF, role: 'anon' }), mode: 'prod' }), []);
+});
+
+test('prod mode refuses any source branch other than main and a kc-dev key', () => {
+  assert.match(checkPin({ branch: 'dev', anonKey: 'sb_publishable_x', mode: 'prod' })[0], /must come from main \(got "dev"\)/);
+  const errors = checkPin({ branch: 'main', anonKey: jwt({ ref: DEV_REF, role: 'anon' }), mode: 'prod' });
+  assert.deepEqual(errors, [`MOBILE_SUPABASE_ANON_KEY belongs to project "${DEV_REF}", not "${PROD_REF}"`]);
+});
+
+test('a bundle with only the prod URL passes in prod mode and fails in dev mode', () => {
+  const prodOnly = Buffer.from(`\u0000hbc\u0000${PROD_URL} ${PROD_GOOGLE_WEB_CLIENT_ID}\u0000`);
+  assert.deepEqual(checkBundle(prodOnly, 'prod'), []);
+  assert.ok(checkBundle(prodOnly).some((e) => e.includes('kc-dev URL')));
+});
+
+test('a bundle without the prod URL fails in prod mode', () => {
+  const errors = checkBundle(Buffer.from('nothing here'), 'prod');
+  assert.deepEqual(errors, [
+    `bundle does not contain the kc-prod URL ${PROD_URL}`,
+    'bundle does not contain the PROD Google web client ID',
+  ]);
+});
+
+test('a bundle that also mentions the dev project fails in prod mode', () => {
+  const errors = checkBundle(Buffer.from(`${PROD_URL} ${PROD_GOOGLE_WEB_CLIENT_ID} ${DEV_URL}`), 'prod');
+  assert.deepEqual(errors, [`bundle contains the kc-dev project ref ${DEV_REF}`]);
+});
+
+test('prod mode rejects a bundle that still has the kc-dev Google web client', () => {
+  const errors = checkBundle(
+    Buffer.from(`${PROD_URL} ${PROD_GOOGLE_WEB_CLIENT_ID} ${DEV_GOOGLE_WEB_CLIENT_ID}`),
+    'prod',
+  );
+  assert.deepEqual(errors, ['bundle contains the kc-dev Google web client ID']);
+});
+
+test('prod mode fails when the prod Google web client ID is missing', () => {
+  const errors = checkBundle(Buffer.from(PROD_URL), 'prod');
+  assert.deepEqual(errors, ['bundle does not contain the PROD Google web client ID']);
+});
+
+test('dev mode does not require or reject the prod Google web client ID', () => {
+  assert.deepEqual(checkBundle(Buffer.from(`${DEV_URL} ${PROD_GOOGLE_WEB_CLIENT_ID}`)), []);
 });

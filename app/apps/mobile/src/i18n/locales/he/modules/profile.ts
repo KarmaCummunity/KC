@@ -80,6 +80,8 @@ export const profileHe = {
   followCooldownDays: 'ניתן לשלוח שוב בעוד {{count}} ימים.',
   followErrorTitle: 'שגיאה',
   followErrorMessage: 'הפעולה נכשלה. נסו שוב.',
+  followRateLimited: 'יותר מדי בקשות מעקב. נסו שוב עוד מעט.',
+  followAccountNotActive: 'החשבון שלך עדיין לא פעיל, ולכן אי אפשר לעקוב אחרי חברים כרגע.',
 
   // Avatar editor (EditProfileAvatar — FR-PROFILE-007)
   avatarChangeA11y: 'החלפת תמונת פרופיל',

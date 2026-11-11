@@ -3,11 +3,22 @@
 // Keys mirror MARKETPLACE_SERVER_ERROR_CODES in @kc/domain (marketplaceWorldRules.ts).
 
 export const marketplaceErrors = {
+  offer_photo_required: 'Please add at least one photo to your offer.',
+  food_subcategory_required: 'Please choose the type of food.',
   food_expiry_required: 'Please enter a future expiry date and time for the food.',
   routed_world_requires_external_body: 'Please choose a verified organisation before publishing in this world.',
   ride_route_required: 'Choose where the ride starts and where it ends.',
   ride_departure_past: 'Choose a departure time in the future.',
   knowledge_slot_invalid: 'Choose a future start time and an end time after it.',
+  knowledge_slot_duration_invalid: 'A session lasts between 15 minutes and 8 hours.',
+  knowledge_slot_in_past: 'Only future times can be added.',
+  knowledge_slots_overlap: 'Two times overlap. Pick times that do not touch each other.',
+  knowledge_slot_has_booking: 'This time has a booking, so it cannot be removed or changed. Cancel the booking first.',
+  knowledge_slot_capacity_below_bookings: 'More places are already booked than the new number.',
+  consulting_requires_id_verification: 'A professional consulting hour requires identity verification. Verify your identity in your profile and try again.',
+  slot_not_found: 'This time is no longer available.',
+  booking_expired: 'The booking expired because it was not answered in time.',
+  account_not_active: 'Your account is not active right now, so you cannot book.',
   event_window_invalid: 'The event must end after it starts.',
   seats_exhausted: 'No seats left on this ride.',
   ride_seats_exhausted: 'There are not enough seats left to approve this booking.',
@@ -76,6 +87,7 @@ export const marketplaceErrors = {
   housing_not_in_window: 'This action isn\'t possible at this point of the stay.',
   housing_note_too_long: 'The note is too long. Up to 300 characters.',
   housing_use_booking_cancel: 'Cancel a stay from its booking card.',
+  event_use_registration_cancel: 'Cancel an event registration from its registration card.',
   // Organization events (0563).
   event_org_required: 'Only a member of the organization can publish its event. Pick one of your organizations.',
   verification_required: 'This event is open to verified members only. Verify your account and try again.',

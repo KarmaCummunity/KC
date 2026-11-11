@@ -6,16 +6,12 @@
 import React, { useCallback, useState } from 'react';
 import { Screen } from '../../../components/ui/Screen';
 import { WorldHubHeader } from '../../../components/giving/WorldHubHeader';
-import { worldSubScreens } from '../../../components/giving/worldSubScreens';
+import { WORLD_CHROME_BY_SLUG } from '../../../components/giving/worldChromeRegistry';
 import { WorldLinksSection } from '../../../components/giving/WorldLinksSection';
 import { useWorldHeader } from '../../../components/giving/useWorldHeader';
 import { RidesFeedFilterSheet } from '../../../components/giving/RidesFeedFilterSheet';
 import { RidesFeedList } from '../../../components/giving/RidesFeedList';
 import { useRidesHubFeed } from '../../../hooks/useRidesHubFeed';
-
-const RIDES_SUB_SCREENS = worldSubScreens('/(tabs)/donations/rides/handoffs', [
-  { labelKey: 'rideSeries.mine', path: '/(tabs)/donations/rides/series', testID: 'world-hub-ride-series' },
-]);
 
 export function RidesHubScreen() {
   const feed = useRidesHubFeed();
@@ -23,7 +19,7 @@ export function RidesHubScreen() {
   const openFilters = useCallback(() => setFiltersOpen(true), []);
   const screensMenu = useWorldHeader({
     worldSlug: 'rides',
-    subScreens: RIDES_SUB_SCREENS,
+    subScreens: WORLD_CHROME_BY_SLUG.rides.subScreens,
     activeFilterCount: feed.activeFilterCount,
     onOpenFilters: openFilters,
   });

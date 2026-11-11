@@ -22,7 +22,7 @@ const REMOTE = 'origin/dev';
  * Picks the spec file a reference names.
  * @param {string} ref path | file name | number prefix | FR-ID
  * @param {string[]} files spec files on dev
- * @param {(frId: string) => string[]} frFiles files that mention the FR-ID, best match first
+ * @param {(frId: string) => string[]} frFiles files that mention the FR-ID, defining file first
  * @returns {{ match?: string, candidates: string[] }}
  */
 export function resolveRef(ref, files, frFiles = () => []) {
@@ -47,7 +47,51 @@ function specFiles() {
   return git('ls-tree', '-r', '--name-only', REMOTE, SPEC_DIR).split('\n').filter((file) => file.endsWith('.md'));
 }
 
-/** Files mentioning an FR-ID, the one that mentions it most often first. */
+/**
+ * Rank files that mention an FR-ID. A file whose heading defines it
+ * (`## FR-XXX-NNN`) comes first. Mention counts break ties only among
+ * non-defining files.
+ * @param {{ file: string, count: number, defines?: boolean }[]} hits
+ * @returns {string[]}
+ */
+export function rankFrHits(hits) {
+  return hits
+    .slice()
+    .sort((a, b) => {
+      const aDef = Boolean(a.defines);
+      const bDef = Boolean(b.defines);
+      if (aDef !== bDef) return aDef ? -1 : 1;
+      if (aDef) return a.file.localeCompare(b.file);
+      return b.count - a.count || a.file.localeCompare(b.file);
+    })
+    .map((hit) => hit.file);
+}
+
+/** True when `content` has a heading that defines `frId` (`## FR-XXX-NNN`). */
+export function fileDefinesFr(content, frId) {
+  const pattern = new RegExp(`^## ${frId}(?:\\s|$)`, 'm');
+  return pattern.test(content);
+}
+
+function definingFiles(frId) {
+  let out = '';
+  try {
+    out = git('grep', '-l', '-E', `^## ${frId}($|[[:space:]])`, REMOTE, '--', `${SPEC_DIR}requirements`);
+  } catch {
+    return new Set();
+  }
+  return new Set(
+    out
+      .split('\n')
+      .filter(Boolean)
+      .map((line) => {
+        const cut = line.indexOf(':');
+        return cut === -1 ? line : line.slice(cut + 1);
+      }),
+  );
+}
+
+/** Files mentioning an FR-ID, the defining heading first, then by mention count. */
 function filesMentioning(frId) {
   let out = '';
   try {
@@ -55,16 +99,16 @@ function filesMentioning(frId) {
   } catch {
     return [];
   }
-  return out
+  const defines = definingFiles(frId);
+  const hits = out
     .split('\n')
     .filter(Boolean)
     .map((line) => {
       const [, file, count] = /^[^:]+:(.+):(\d+)$/.exec(line) ?? [];
-      return { file, count: Number(count) };
+      return { file, count: Number(count), defines: defines.has(file) };
     })
-    .filter((hit) => hit.file)
-    .sort((a, b) => b.count - a.count)
-    .map((hit) => hit.file);
+    .filter((hit) => hit.file);
+  return rankFrHits(hits);
 }
 
 function refresh() {

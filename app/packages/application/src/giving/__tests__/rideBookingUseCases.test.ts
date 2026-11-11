@@ -216,16 +216,21 @@ describe('ride booking use cases', () => {
     });
   });
 
-  it('reinstates only a cancellable driver-list row', async () => {
+  it('reinstates only when the ride can take the booking back', async () => {
     const repo = makeRepo();
     const cancelled: RideBooking = { ...BOOKING, status: 'cancelled', cancelReason: 'driver_cancelled' };
-    await new ReinstateRideBookingUseCase(repo).execute('h1', { bookings: [cancelled] });
+    const ride = { listingStatus: 'open', departsAt: null, capacity: 3, bookings: [cancelled] };
+    await new ReinstateRideBookingUseCase(repo).execute('h1', { ride });
     expect(repo.reinstate).toHaveBeenCalledWith('h1');
 
     await expect(
       new ReinstateRideBookingUseCase(repo).execute('h1', {
-        bookings: [{ ...cancelled, cancelReason: 'expired' }],
+        ride: { ...ride, bookings: [{ ...cancelled, cancelReason: 'expired' }] },
       }),
     ).rejects.toMatchObject({ code: 'invalid_status' });
+    await expect(
+      new ReinstateRideBookingUseCase(repo).execute('h1', { ride: { ...ride, listingStatus: 'closed' } }),
+    ).rejects.toMatchObject({ code: 'listing_not_available' });
+    expect(repo.reinstate).toHaveBeenCalledTimes(1);
   });
 });

@@ -9,8 +9,13 @@ const { listWorldSubcategories } = vi.hoisted(() => ({ listWorldSubcategories: v
 vi.mock('../../../services/marketplaceComposition', () => ({
   marketplaceRepository: () => ({ listWorldSubcategories }),
 }));
+vi.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
+
 vi.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (k: string) => k, i18n: { language: 'he' } }),
+  useTranslation: () => ({
+    t: (k: string) => k,
+    i18n: { language: 'he' },
+  }),
 }));
 
 import { WorldSubcategoryPicker } from '../WorldSubcategoryPicker';

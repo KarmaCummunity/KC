@@ -38,7 +38,22 @@ vi.mock('../../../services/platformConfirm', () => ({ confirmAction: vi.fn().moc
 vi.mock('../../../hooks/useUserBlock', () => ({
   useUserBlock: () => ({ canBlock: false, isBlocked: false, busy: false, toggle: vi.fn() }),
 }));
-vi.mock('../../../services/ridesKnowledgeComposition', () => ({ ridesKnowledgeRpcs: {} }));
+vi.mock('../../../services/knowledgeBookingComposition', () => {
+  const slot = (id: string, days: number) => ({
+    slotId: id,
+    startsAt: new Date(Date.now() + days * 86_400_000).toISOString(),
+    endsAt: new Date(Date.now() + days * 86_400_000 + 3_600_000).toISOString(),
+    capacity: 2,
+    seatsLeft: 2,
+    myHandoffId: null,
+    myStatus: null,
+  });
+  return {
+    knowledgeBookingUseCases: { listSlots: () => ({ execute: async () => [slot('slot-1', 1), slot('slot-2', 8)] }) },
+    knowledgeSlotsQueryKey: (id: string) => ['knowledge-slots', id],
+    knowledgeBookingsQueryKey: (id: string) => ['knowledge-bookings', id],
+  };
+});
 vi.mock('../../../services/rideSafetyComposition', () => ({ raiseRideEmergency: vi.fn() }));
 vi.mock('../../../lib/analytics', () => ({ track: vi.fn() }));
 vi.mock('../../../lib/analyticsCoreLoop', () => ({ trackCoreLoop: vi.fn() }));
@@ -119,10 +134,13 @@ describe('listing detail — one primary per screen', () => {
   it.each([
     ['items', 'giving-handoff-reserve'],
     ['food', 'giving-handoff-claim'],
-    ['knowledge', 'giving-handoff-book-slot'],
+    ['knowledge', 'knowledge-slot-book-slot-1'],
     ['rides', 'giving-handoff-book-seat'],
   ])('makes the %s flow action the only primary and the message button secondary', async (worldSlug, flowAction) => {
-    const { container, findByTestId, getByTestId } = renderDetail({ worldSlug });
+    // A knowledge offer books by time slot: a lesson with two upcoming times (#2034).
+    const { container, findByTestId, getByTestId } = renderDetail(
+      worldSlug === 'knowledge' ? { worldSlug, kindSlug: 'lesson_offer' } : { worldSlug },
+    );
     await findByTestId(flowAction);
 
     expect(primaries(container)).toEqual([flowAction]);

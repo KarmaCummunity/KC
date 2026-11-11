@@ -34,11 +34,11 @@ vi.mock('../../../services/givingHandoffComposition', () => ({
     rate: () => ({ execute: rateHandoff }),
   },
 }));
-vi.mock('../../../services/ridesKnowledgeComposition', () => ({ ridesKnowledgeRpcs: {} }));
 vi.mock('../../../lib/analytics', () => ({ track: vi.fn() }));
 vi.mock('../../../lib/analyticsCoreLoop', () => ({ trackCoreLoop: vi.fn() }));
 vi.mock('../../../lib/haptics', () => ({ hapticLightImpact: () => undefined, hapticSuccess: vi.fn() }));
-vi.mock('../../closure/OwnerAssignUserButton', () => ({ OwnerAssignUserButton: () => null }));
+// A marker stands in for the assign button so the tests can see when it is offered.
+vi.mock('../../closure/OwnerAssignUserButton', () => ({ OwnerAssignUserButton: () => <span data-testid="owner-assign" /> }));
 
 import { GivingHandoffActions } from '../GivingHandoffActions';
 import { HandoffActionButton } from '../HandoffActionButton';
@@ -113,10 +113,22 @@ describe('GivingHandoffActions', () => {
   it('lets the owner assign a member before anyone reserved', async () => {
     getForListing.mockResolvedValue(null);
     currentUserId = 'u_owner';
-    const owned = { ...ITEM, ownerId: 'u_owner' } as MarketplaceListingDetail;
-    const { queryByTestId } = renderInProviders(<GivingHandoffActions detail={owned} />);
-    expect(queryByTestId('giving-handoff')).not.toBeNull();
+    const owned = { ...ITEM, ownerId: 'u_owner', listingStatus: 'open' } as MarketplaceListingDetail;
+    const { findByTestId, queryByTestId } = renderInProviders(<GivingHandoffActions detail={owned} />);
+    expect(await findByTestId('owner-assign')).not.toBeNull();
     expect(queryByTestId('giving-handoff-reserve')).toBeNull();
+  });
+
+  it('offers no assign once the listing is no longer open (owner_complete_offer_with_user refuses it)', async () => {
+    getForListing.mockResolvedValue(null);
+    currentUserId = 'u_owner';
+    for (const listingStatus of ['closed', 'cancelled', 'expired']) {
+      const owned = { ...ITEM, ownerId: 'u_owner', listingStatus } as MarketplaceListingDetail;
+      const { findByTestId, queryByTestId } = renderInProviders(<GivingHandoffActions detail={owned} />);
+      await findByTestId('giving-handoff');
+      expect(queryByTestId('owner-assign')).toBeNull();
+      cleanup();
+    }
   });
 
   it('owner confirms reservation (selects recipient) and can decline/cancel', async () => {
@@ -218,10 +230,19 @@ describe('GivingHandoffActions', () => {
 
   it('shows handed over status and hides reserve buttons if listing is ongoing/closed', async () => {
     getForListing.mockResolvedValue(null);
-    const ongoing = { ...ITEM, availabilityStatus: 'ongoing' } as MarketplaceListingDetail;
+    const ongoing = { ...ITEM, availabilityStatus: 'ongoing', listingStatus: 'closed' } as MarketplaceListingDetail;
     const { findByTestId, queryByTestId } = renderInProviders(<GivingHandoffActions detail={ongoing} />);
 
     expect(await findByTestId('giving-handoff-status')).toBeTruthy();
     expect(queryByTestId('giving-handoff-reserve')).toBeNull();
+  });
+
+  it('an open listing with the default "ongoing" availability can still be reserved (not handed over)', async () => {
+    getForListing.mockResolvedValue(null);
+    const fresh = { ...ITEM, availabilityStatus: 'ongoing', listingStatus: 'open' } as MarketplaceListingDetail;
+    const { findByTestId, queryByTestId } = renderInProviders(<GivingHandoffActions detail={fresh} />);
+
+    expect(await findByTestId('giving-handoff-reserve')).toBeTruthy();
+    expect(queryByTestId('giving-handoff-status')).toBeNull();
   });
 });

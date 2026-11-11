@@ -1,3 +1,6 @@
+import { canTransition } from '../fsm/machine';
+import { adminTaskMachine } from '../fsm/machines/adminTask';
+
 export const ADMIN_TASK_STATUSES = [
   'open',
   'in_progress',
@@ -46,20 +49,16 @@ export interface AdminTask {
   readonly commentCount: number;
 }
 
-const ALLOWED_TRANSITIONS: Readonly<Record<AdminTaskStatus, readonly AdminTaskStatus[]>> = {
-  open:        ['in_progress', 'blocked'],
-  in_progress: ['open', 'blocked', 'done'],
-  blocked:     ['open', 'in_progress', 'done'],
-  done:        ['in_progress', 'archived'],
-  archived:    [],
-};
-
+/**
+ * True when an admin task may move `from → to` (same status counts as a legal no-op).
+ * Delegates to the FSM kernel so the graph has one TypeScript copy (`adminTaskMachine`),
+ * which the SQL catalog mirrors.
+ */
 export function isStatusTransitionAllowed(
   from: AdminTaskStatus,
   to: AdminTaskStatus,
 ): boolean {
-  if (from === to) return true;
-  return ALLOWED_TRANSITIONS[from].includes(to);
+  return canTransition(adminTaskMachine, from, to).ok;
 }
 
 export function parseAdminTaskStatus(value: string | null | undefined): AdminTaskStatus | null {

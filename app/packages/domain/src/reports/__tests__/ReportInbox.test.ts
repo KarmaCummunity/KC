@@ -1,8 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
-  parseReportInboxPage, AUTO_REMOVE_THRESHOLD, thresholdProgress,
-  type ReportInboxRow,
+  AUTO_REMOVE_THRESHOLD, thresholdProgress, groupOpenReports, pageInboxGroups,
+  type OpenReportRecord,
 } from '../ReportInbox';
+
+const report = (
+  targetId: string, createdAt: string, reporterId: string | null = 'r1',
+  targetType: OpenReportRecord['targetType'] = 'post',
+): OpenReportRecord => ({ reporterId, targetType, targetId, createdAt });
 
 describe('ReportInbox', () => {
   it('AUTO_REMOVE_THRESHOLD is 3', () => {
@@ -16,54 +21,75 @@ describe('ReportInbox', () => {
     expect(thresholdProgress(99)).toEqual({ count: 99, threshold: 3, pct: 1 });
   });
 
-  it('parseReportInboxPage returns an empty page on malformed input', () => {
-    expect(parseReportInboxPage(null)).toEqual({ rows: [], nextCursor: null });
-    expect(parseReportInboxPage({})).toEqual({ rows: [], nextCursor: null });
-    expect(parseReportInboxPage({ rows: 'oops' })).toEqual({ rows: [], nextCursor: null });
-  });
-
-  it('parseReportInboxPage filters invalid rows and preserves valid ones', () => {
-    const input = {
-      rows: [
-        { target_type: 'post', target_id: 'a-uuid', reporter_count: 2, oldest_at: '2026-05-25T10:00:00Z', latest_reporter_id: 'b', target: { preview: 'hi' } },
-        { target_type: 'unknown', target_id: 'x' },              // dropped
-        { target_id: 'no-type' },                                // dropped
-      ],
-      next_cursor: { oldest_at: '2026-05-25T09:00:00Z', target_type: 'post', target_id: 'c' },
-    };
-    const out = parseReportInboxPage(input);
-    expect(out.rows).toHaveLength(1);
-    const first = out.rows[0]!;
-    expect(first.targetType).toBe<ReportInboxRow['targetType']>('post');
-    expect(out.nextCursor?.targetType).toBe('post');
-  });
-
-  it('handles row fallback defaults and malformed cursors', () => {
-    const input = {
-      rows: [
-        null,
-        'string-row',
-        {
-          target_type: 'user',
-          target_id: 'u-1',
-          reporter_count: 'not-a-number',
-          oldest_at: null,
-          latest_reporter_id: 123,
-          target: null,
-        },
-      ],
-      next_cursor: { oldest_at: 123, target_type: 'post', target_id: 'c' },
-    };
-    const out = parseReportInboxPage(input);
-    expect(out.rows).toHaveLength(1);
-    expect(out.rows[0]).toEqual({
-      targetType: 'user',
-      targetId: 'u-1',
-      reporterCount: 0,
-      oldestAt: '',
-      latestReporterId: null,
-      target: {},
+  describe('groupOpenReports', () => {
+    it('folds the reports of one target into one case', () => {
+      const groups = groupOpenReports([
+        report('p1', '2026-11-01T10:00:00Z', 'a'),
+        report('p1', '2026-11-01T12:00:00Z', 'b'),
+        report('p1', '2026-11-01T11:00:00Z', 'a'),
+      ]);
+      expect(groups).toEqual([{
+        targetType: 'post', targetId: 'p1', reporterCount: 2,
+        oldestAt: '2026-11-01T10:00:00Z', latestReporterId: 'b',
+      }]);
     });
-    expect(out.nextCursor).toBeNull();
+
+    it('keeps the same id of different target types as separate cases', () => {
+      const groups = groupOpenReports([
+        report('x', '2026-11-01T10:00:00Z', 'a', 'post'),
+        report('x', '2026-11-01T10:00:00Z', 'a', 'user'),
+      ]);
+      expect(groups.map((g) => g.targetType)).toEqual(['post', 'user']);
+    });
+
+    it('sorts the oldest case first', () => {
+      const groups = groupOpenReports([
+        report('late', '2026-11-02T00:00:00Z'),
+        report('early', '2026-11-01T00:00:00Z'),
+      ]);
+      expect(groups.map((g) => g.targetId)).toEqual(['early', 'late']);
+    });
+
+    it('counts reports whose reporter account was purged as separate reporters', () => {
+      const groups = groupOpenReports([
+        report('p1', '2026-11-01T10:00:00Z', null),
+        report('p1', '2026-11-01T11:00:00Z', null),
+      ]);
+      expect(groups[0]?.reporterCount).toBe(2);
+      expect(groups[0]?.latestReporterId).toBeNull();
+    });
+
+    it('returns no case for no report', () => {
+      expect(groupOpenReports([])).toEqual([]);
+    });
+  });
+
+  describe('pageInboxGroups', () => {
+    const groups = groupOpenReports(
+      ['a', 'b', 'c'].map((id, i) => report(id, `2026-11-0${i + 1}T00:00:00Z`)),
+    );
+
+    it('returns the first page and a cursor on the last case when more remain', () => {
+      const page = pageInboxGroups(groups, null, 2);
+      expect(page.groups.map((g) => g.targetId)).toEqual(['a', 'b']);
+      expect(page.nextCursor).toEqual({ oldestAt: '2026-11-02T00:00:00Z', targetType: 'post', targetId: 'b' });
+    });
+
+    it('resumes after the cursor and ends with a null cursor', () => {
+      const first = pageInboxGroups(groups, null, 2);
+      const second = pageInboxGroups(groups, first.nextCursor, 2);
+      expect(second.groups.map((g) => g.targetId)).toEqual(['c']);
+      expect(second.nextCursor).toBeNull();
+    });
+
+    it('resumes correctly when the cursor case was resolved meanwhile', () => {
+      const cursor = { oldestAt: '2026-11-01T12:00:00Z', targetType: 'post' as const, targetId: 'gone' };
+      expect(pageInboxGroups(groups, cursor, 5).groups.map((g) => g.targetId)).toEqual(['b', 'c']);
+    });
+
+    it('returns an empty page past the end', () => {
+      const cursor = { oldestAt: '2027-01-01T00:00:00Z', targetType: 'post' as const, targetId: 'z' };
+      expect(pageInboxGroups(groups, cursor, 5)).toEqual({ groups: [], nextCursor: null });
+    });
   });
 });

@@ -20,6 +20,18 @@ export function canChooseOrgEvent(
 }
 
 /**
+ * Whether the form tells a member how to publish an organization's event: an offer in a world with
+ * the kind, by someone who belongs to no organization yet (FR-ORG-002, G18).
+ */
+export function suggestsOrgMembership(
+  kinds: readonly ListingKindOption[],
+  direction: CreateDirection,
+  organizations: readonly OrganizationMembershipOption[],
+): boolean {
+  return direction === 'give' && organizations.length === 0 && orgEventKind(kinds) !== null;
+}
+
+/**
  * The kind the form publishes: the event when the member chose it, else the kind the member
  * picked for this direction (`chosenSlug`), otherwise the direction's default.
  */

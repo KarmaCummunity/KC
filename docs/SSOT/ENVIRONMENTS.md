@@ -15,7 +15,7 @@
 | `EXPO_PUBLIC_ENVIRONMENT` | `production` | `development` | `development` |
 | In-app dev banner | hidden | visible | visible |
 
-> **GloWe sunset (2026-10-16, D-190):** The GloWe static frontend and `glowe_*` schema were removed. All branches deploy the KC web export at the site root. Legacy `/glowe/*` URLs redirect to `/` via `web-postbuild.mjs`.
+> **KC-only (D-190):** All branches deploy the KC web export at the site root.
 
 ## Branching rules
 
@@ -92,7 +92,7 @@ Nothing deploys on push. `.github/workflows/deploy.yml` (**Deploy**) is the only
 | --- | --- | --- |
 | Preflight | `deploy-preflight.yml` | Read-only, one job per environment: `scripts/deploy-preflight.mjs`, plus the Pages production branch on prod. |
 | Database | `deploy-db.yml` (**DB deploy**) | Prod: encrypted `supabase db dump` (roles, schema, data — no Storage objects; `age` to `BACKUP_AGE_RECIPIENT`, 14-day artifact) when `supabase/migrations` changed since the last `v*` tag; then counts pending migrations (output `applied_migrations`), `db push --dry-run` and `db push` **without** `--include-all`, so a remote-ahead ledger or an out-of-order migration fails. Dev keeps `--include-all`. No manual trigger: dispatch **Deploy** on `dev`. |
-| Edge Functions | `deploy-functions.yml` | Syncs `PUBLIC_RESEARCH_ALLOWED_ORIGINS` (through `env:`), deploys every function `scripts/edge-functions.mjs` lists — all of `supabase/functions` except `_shared` and local-only `mock-login` — on both dev and prod, then requires each to be `ACTIVE`. |
+| Edge Functions | `deploy-functions.yml` | Syncs `PUBLIC_RESEARCH_ALLOWED_ORIGINS` (through `env:`), deploys every function `scripts/edge-functions.mjs` lists — all of `supabase/functions` except `_shared`, the `LOCAL_ONLY` set (`mock-login`) and the `NOT_DEPLOYED` set (the three `whatsapp-*` functions, off until WhatsApp is in scope) — on both dev and prod, then requires each to be `ACTIVE`. |
 | Web | `deploy-web.yml` | Builds the export with `EXPO_PUBLIC_GIT_COMMIT_SHA` = the deployed SHA (stamped into `/version.json`) and uploads it with `wrangler pages deploy --branch=<dev|main> --commit-hash=<sha>`. |
 | Smoke | `deploy-smoke.yml` | `scripts/smoke-deploy.mjs` (15 s timeout per request): `/version.json` serves the SHA (backoff up to 10 min), `/` + every referenced JS bundle return 200, `/auth/v1/health` with the anon key, and every function with a probe in `SMOKE_PROBES` answers one `OPTIONS` (anon key + web origin) with exactly its documented status — the gateway passes `OPTIONS` to the handler unverified, and each probe hits a check that runs before any work. A function without a probe (`null`) is covered by the `ACTIVE` check only. Manual dispatch (read-only) against dev or prod from `dev`/`main`. |
 | Tag | `deploy-tag.yml` | Annotated `v<app/VERSION>` on the deployed commit + GitHub Release (generated notes). The same version on another commit fails (checked again up front in **resolve**). |
@@ -206,8 +206,6 @@ Branch protection on `dev` uses the table above; `main` release PRs use [`RELEAS
 | Variable (`supabase-prod`) | `BACKUP_AGE_RECIPIENT` | `age1…` public key the pre-migration prod backup is encrypted to; the owner keeps the private key offline |
 
 The legacy `PROD_WEB_URL` alias is no longer read; delete it.
-
-**Manual follow-up:** Remove obsolete repo variables `GLOWE_PROD_URL`, `GLOWE_STAGING_URL`, and `GLOWE_SEED_PASSWORD` from GitHub Actions if still present.
 
 ## E2E automation (Web, `D-55`)
 

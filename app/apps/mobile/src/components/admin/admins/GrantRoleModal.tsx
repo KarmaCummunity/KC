@@ -7,13 +7,13 @@
 // screen (user fixed via `presetUser`).
 import { useEffect, useMemo, useState } from 'react';
 import { ScrollView } from 'react-native';
-import { grantableRolesIn, isAdminRoleError, type GrantableAdminRole } from '@kc/domain';
+import { grantableRolesIn, type GrantableAdminRole } from '@kc/domain';
 import { makeUseStyles, spacing, Text, typography } from '@kc/ui';
 import { useGrantAdminRole } from '../../../hooks/useAdminRoleMutations';
 import { useGrantAuthority } from '../../../hooks/useGrantAuthority';
 import { ChoiceChips } from './ChoiceChips';
 import { UserLookupField, type PickedUser } from './UserLookupField';
-import { roleScopeErrorText } from './roleErrors';
+import { roleErrorCode, roleScopeErrorText } from './roleErrors';
 import { textAlignStart } from '../../../lib/rtlLayout';
 import { useLocaleBundle } from '../../../i18n/useLocaleBundle';
 import { GhostButton, PrimaryButton } from '../../ui/Buttons';
@@ -68,7 +68,7 @@ export function GrantRoleModal({ visible, onClose, presetUser }: GrantRoleModalP
       await grant.mutateAsync({ targetUserId: user.userId, role, scopeOrgId: activeScope });
       onClose();
     } catch (e) {
-      setErrorCode(isAdminRoleError(e) ? e.code : 'unknown');
+      setErrorCode(roleErrorCode(e));
     }
   }
 

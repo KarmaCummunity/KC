@@ -1,12 +1,20 @@
 # Migration range registry
 
+> **Reset by the production baseline cut-over (D-228).** The incremental chain `0001`–`0742` was
+> replaced by one migration, `supabase/migrations/0001_baseline.sql`, assembled from
+> `supabase/schemas/` and frozen (`node scripts/assemble-baseline.mjs --check` fails when it
+> changes). The old files are history in `supabase/migrations/archive/`. **The next free number is
+> `0002`.** Later changes are forward-only `supabase/migrations/NNNN_snake.sql` files with their
+> pgTAP test in `supabase/tests/`; claim a range below as before. The table that follows is the
+> record of the retired chain and is kept for reference only.
+
 **Rule:** before writing a migration, claim a range here, in your PR or a small docs PR to `dev`. Use only numbers inside your range. Files are `supabase/migrations/NNNN_snake_case.sql`. Gaps are fine; collisions are not.
 
 Last applied on kc-dev when this was written: `0239`.
 
 | Range | Owner / issue | Status |
 |---|---|---|
-| 0238–0239 | #852 (GloWe removal, translation) | merged |
+| 0238–0239 | #852 (retired product removal, translation) | merged |
 | 0240–0247 | #860 (unified schema) | merged |
 | 0248–0249 | — | free |
 | 0250–0259 | social (#885, #887) | merged |
@@ -107,7 +115,7 @@ Last applied on kc-dev when this was written: `0239`.
 | 0550 | kc_support payee phone for bit / paybox (#1587; taken while the G1 range was claimed, G1 step 1 moved to `0551–0553`) | merged |
 | 0551–0569 | G1 one Post model (ADR-006): `0551–0553` step 1 additive schema (merged), `0554` step 2 posts own the listing worlds (merged), `0555` step 3a post_handoffs is the handoff record (merged), `0556` step 3b ride / knowledge booking RPCs and readers accept a post id (merged), `0557` step 3b-pre a post for every listing + `posts.feed_hidden` (merged), `0558` step 3b″ ride / knowledge writers on `post_handoffs` (merged), `0559` step 3c one closing system for items, G34 (merged), `0560` step 4a listing detail `feed_hidden` (merged), `0561` step 4b listing detail by post id (merged), `0562` step 4c listing notifications open the post (merged), `0563` step 5 event posts (merged), `0564` step 5c event waitlist and attendance (merged), `0565` step 6a-1 leaf readers on posts (merged #1892), `0566–0569` step 6 (later step 6 files take `0620–0639`) | in progress |
 | 0570 | knowledge topic graph: `knowledge_topics`, aliases, follows, resolve / propose / review RPCs, six shelves (FR-KNOW-001) | in progress |
-| 0571–0589 | knowledge world K1–K2 (`spec/23_knowledge.md` FR-KNOW-002..020) | claimed (spec only, no files yet) |
+| 0571–0589 | — (returned by #2034: knowledge SQL redefines functions of `0667` / `0684` / `0694` and must sort after them) | free |
 | 0590 | users.date_of_birth + rpc_set_date_of_birth (FR-AUTH-010 AC2.d) | in progress |
 | 0591 | admin demo-data status + wipe (FR-ADMIN-031) | in progress |
 | 0592 | admin restore demo data: seed moved into the DB (FR-ADMIN-031) | in progress |
@@ -124,11 +132,25 @@ Last applied on kc-dev when this was written: `0239`.
 | 0676 | #1964 demo rides on posts + wipe/restore ride coverage test | in review |
 | 0677 | #1964 demo post media paths + org_memberships on demo orgs | in review |
 | 0678 | #1964 verification 0..2 mix, OnlyMe posts, storage JPEG fixtures | in review |
-| 0679+ | — | free |
+| 0679 | FR-ADMIN-031 admin_demo_data_status ride/org/media KPIs | in review |
+| 0705 | #2032 the listing detail resolves a former listing id (`posts.listing_id`) to its post | in progress |
+| 0680–0689, 0694–0699, 0701–0702, 0716–0725 | FSM kernel program (`docs/architecture/state-machines.md`): `0680` kernel catalog (`fsm_state` / `fsm_edge` / `fsm_assert_transition`) and the admin-task pilot; `0681` post S1 (wave 1a); `0682` admin restore (wave 1b-i); `0683` handoff writers (1b-ii); `0684` items without expiry and `0685` events expire (1b-iii); `0686` event owner actions (1b-iv); `0694` handoff machines (wave 2); `0695` legacy ride jobs retired (wave 1d); `0696` account status (wave 3a); `0697` account status writers (3a-2); `0698` onboarding (3b); `0699` retryable account purge (3c); `0701` reports and follow requests (4a); `0702` comments and knowledge topics (4b); `0716` item / animal reservation expiry (2c); `0717` review queues (4c); `0718` timesheets (5); `0719` ride series and standing orders (6a); `0720`–`0725` held for the next waves; `0692`, `0693` and `0700` are other work | in progress |
+| 0690 | money sandbox completion behind the `sandbox_payments` server flag; org memberships written by definer functions only | merged (#1983) |
+| 0691 | #1961 reset the public schema comment (retired product cleanup) | in progress |
+| 0692 | G1 compatibility views (`listings`, `giving_handoffs`, `ride_listings`) follow the base tables' access rules | merged (#2017) |
+| 0693 | composer items posts get their listing kind on insert (regression from 0666) | in progress |
+| 0700 | #1398 `give_food` no longer requires `food_type` (the food type is the world sub-category) | in progress |
+| 0703–0714 | knowledge exchange posts, epic #1687 (KNOW-K1-B): `0703` six kinds, slots as rows, slot rules and sync (#2034), `0704` slot bookings, sweeps, pushes (#2034), `0705–0714` children #2035–#2039 | in progress |
+| 0715 | RLS auth initplan on the hot-table policies, all but posts (supersedes closed #1546, PR #2054) | in progress |
+| 0730–0739 | Events and organizations (G18) and the handoff fixes found on the way: `0730` organization registration and members (FR-ORG-002 first slice), `0731` event notifications, `0732` demo events on kc-dev, `0733` animal handoff pushes (`fix/animals-handoff-push`), `0734` ride expiry settles bookings (`fix/rides-expiry-settles-bookings`), `0735` an event's close earns no fulfilled karma, `0736` the end of an event lapses its requests and waitlist; `0737`–`0739` unused (below the applied `0740`, not reissued) | merged (#2106, #2109, #2112) |
+| 0740 | delivered listing visibility: union of the two surfaces, recipient via handoff, `recipients` row for food / animals / items hand-overs + backfill (D-229) | in progress |
+| 0741 | #2020 offer photo rule on the server (D132): commit-time check on new posts and deleted listing photos, `create_post_with_media` | in progress |
+| 0742 | #2078 the personal activity timeline returns each post's world (volunteering wording, FR-CLOSURE-011 AC9) | in progress |
+| 0726–0729, 0743+ | — | free |
 
 ## Next free ranges
 
-`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0595–0599`, `0614–0619`, `0639`, `0640–0659`, `0678+`.
+`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0595–0599`, `0614–0619`, `0639`, `0640–0659`, `0726–0729`, `0743+`.
 
 ## How to claim
 

@@ -1,7 +1,7 @@
 /**
  * Shared E2E environment for the kc-dev QA suite.
  * Defaults target dev (https://dev.karma-community.pages.dev + kc-dev Supabase) and the
- * public seed users from supabase/seed/kc-dev/seed.sql (dev-only credentials, already in repo).
+ * the e2e members user1…user4@seed.kc.test from supabase/seed/e2e/load.sql (the Seed KC dev workflow, action e2e-users).
  * Never point this at production.
  */
 
