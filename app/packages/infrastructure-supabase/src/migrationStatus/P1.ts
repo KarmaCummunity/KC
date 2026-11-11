@@ -1,5 +1,4 @@
 export const P1_UNMIGRATED: readonly string[] = [
-  'apps/mobile/src/services/avatarUpload.ts',
   'apps/mobile/src/services/devIdentityVerification.ts',
   'packages/infrastructure-supabase/src/__tests__/SupabaseLegalDocumentRepository.test.ts',
   'packages/infrastructure-supabase/src/__tests__/contractUsers.ts',

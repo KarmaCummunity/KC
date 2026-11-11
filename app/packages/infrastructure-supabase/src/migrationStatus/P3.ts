@@ -1,6 +1,4 @@
 export const P3_UNMIGRATED: readonly string[] = [
-  'apps/mobile/src/services/chatMediaUpload.ts',
-  'apps/mobile/src/services/chatMediaUrl.ts',
   'packages/infrastructure-supabase/src/chat/SupabaseChatRealtime.ts',
   'packages/infrastructure-supabase/src/chat/SupabaseChatRepository.ts',
   'packages/infrastructure-supabase/src/chat/SupabaseChatV2Realtime.ts',
