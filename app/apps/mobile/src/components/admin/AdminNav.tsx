@@ -4,20 +4,18 @@
 //   - `topbar`  — phone & mobile-web: horizontal scrollable pill bar.
 // Entries are filtered by the caller's RBAC so a moderator/support session
 // only sees the surfaces they can actually open.
-import type { ComponentProps, ReactElement } from 'react';
+import type { ReactElement } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { adminChipScroll } from './adminChipScroll';
 import { Ionicons } from '@expo/vector-icons';
-import { router, usePathname, type Href } from 'expo-router';
-import { type AdminPermission, type AdminRole, hasPermission } from '@kc/domain';
+import { router, usePathname } from 'expo-router';
+import { type AdminRole, hasPermission } from '@kc/domain';
 import { makeUseStyles, radius, spacing, typography, useTheme, Text, iconSize } from '@kc/ui';
 import { useAdminRoles } from '../../hooks/useAdminRoles';
 import { rowDirectionStart, textAlignStart } from '../../lib/rtlLayout';
-import { useLocaleBundle, type LocaleBundle } from '../../i18n/useLocaleBundle';
+import { useLocaleBundle } from '../../i18n/useLocaleBundle';
 import { useLaunchSurface } from '../../hooks/useLaunchSurface';
 import { ADMIN_DESTINATIONS, type AdminDestination } from '../../lib/admin/adminDestinations';
-
-type IconName = ComponentProps<typeof Ionicons>['name'];
 
 type NavItem = AdminDestination;
 const ITEMS = ADMIN_DESTINATIONS;
