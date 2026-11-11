@@ -7,7 +7,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { ValidationError } from '@kc/domain';
-import type { IMarketplaceRepository } from '@kc/application';
+import type { IMarketplaceRepository, MediaAssetInput } from '@kc/application';
 import type { Database, Json } from '../database.types';
 import { unwrapCall } from '../rpc/mapRpcError';
 import { requireRpcRow } from './rpcRow';
@@ -25,31 +25,31 @@ type Client = SupabaseClient<Database>;
 type CreateInput = Parameters<IMarketplaceRepository['createListing']>[0];
 type JsonObject = { [key: string]: Json | undefined };
 
-/** Bucket and placeholder size of a listing photo (see `recordPhotos`). */
+/** Bucket of a listing photo (see `recordPhotos`). */
 const PHOTO_BUCKET = 'post-images';
-const PHOTO_MIME = 'image/jpeg';
-/** The media pipeline re-encodes every file, so the size recorded at upload only has to be positive. */
-const PHOTO_PLACEHOLDER_BYTES = 1;
 /** Photos a post holds at most (`post_media.ordinal` 0..4). */
 const MAX_PHOTOS = 5;
 
-/** Records already-uploaded files as the post's photos from `firstOrdinal` on; returns how many. */
+/**
+ * Records already-uploaded files as the post's photos from `firstOrdinal` on, each with the type
+ * and size it was uploaded with (`post_media` checks them); returns how many.
+ */
 export async function recordPhotos(
   client: Client,
   postId: string,
   ownerId: string,
-  paths: readonly string[],
+  media: readonly MediaAssetInput[],
   firstOrdinal: number,
 ): Promise<number> {
-  const rows = paths.slice(0, Math.max(0, MAX_PHOTOS - firstOrdinal)).map((path, index) => ({
+  const rows = media.slice(0, Math.max(0, MAX_PHOTOS - firstOrdinal)).map((asset, index) => ({
     post_id: postId,
     owner_id: ownerId,
     kind: 'image',
     storage_bucket: PHOTO_BUCKET,
-    storage_key: path,
+    storage_key: asset.path,
     ordinal: firstOrdinal + index,
-    mime_type: PHOTO_MIME,
-    size_bytes: PHOTO_PLACEHOLDER_BYTES,
+    mime_type: asset.mimeType,
+    size_bytes: asset.sizeBytes,
   }));
   if (rows.length === 0) return 0;
   unwrapCall('table:post_media', await client.from('post_media').insert(rows));
@@ -93,7 +93,7 @@ async function createPlain(client: Client, ownerId: string, post: JsonObject, in
   );
   const postId = (row as { id: string }).id;
   try {
-    await recordPhotos(client, postId, ownerId, input.mediaPaths ?? [], 0);
+    await recordPhotos(client, postId, ownerId, input.media ?? [], 0);
     unwrapCall('rpc:publish_post', await client.rpc('publish_post', { p_post_id: postId }));
     return postId;
   } catch (error) {
@@ -132,7 +132,7 @@ export async function createListing(client: Client, input: CreateInput): Promise
   if (kind.world_slug === 'food' && direction === 'offer') {
     const post = { ...postDocument(input, kind, direction, cityId), details: freeDetails(form, 'food') };
     const postId = await createWithDetails(client, post, foodDetailColumns(form));
-    await recordPhotos(client, postId, ownerId, input.mediaPaths ?? [], 0);
+    await recordPhotos(client, postId, ownerId, input.media ?? [], 0);
     return postId;
   }
   return createPlain(client, ownerId, postDocument(input, kind, direction, cityId), input, freeDetails(form, 'plain'));

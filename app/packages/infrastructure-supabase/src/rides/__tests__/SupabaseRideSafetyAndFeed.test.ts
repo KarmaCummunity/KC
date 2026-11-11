@@ -8,7 +8,8 @@ import { SupabaseRidesFeedRepository, mapFeedRow } from '../SupabaseRidesFeedRep
 const FEED_ROW = {
   post_id: 'p1', owner_id: 'o', direction: 'offer', title: 'Lod to Haifa', departs_at: '2026-01-01T07:00:00Z',
   arrives_at: '2026-01-01T08:00:00Z', origin_name: 'Lod', dest_name: 'Haifa', meeting_points: [{}, {}], seats: 4, seats_left: 3,
-  reward_model: 'free', series_id: null, series_more: 2, next_cursor: {},
+  reward_model: 'free', series_id: null, series_more: 2, series_on: null, series_weekdays: null, series_depart_time: null,
+  next_cursor: {},
 } as unknown as Parameters<typeof mapFeedRow>[0];
 
 describe('SupabaseRideSafetyRepository', () => {
@@ -59,6 +60,15 @@ describe('SupabaseRidesFeedRepository', () => {
   it('maps a request to its passengers and drops an unknown direction', () => {
     expect(mapFeedRow({ ...FEED_ROW, direction: 'request', seats: 2 })).toMatchObject({ direction: 'request', seatsLeft: null, passengers: 2 });
     expect(mapFeedRow({ ...FEED_ROW, direction: 'x' })).toBeNull();
+  });
+
+  it('marks an occurrence of a running series with its weekdays and departure time', () => {
+    const occurrence = { ...FEED_ROW, series_id: 's1', series_on: '2026-01-05', series_weekdays: 10, series_depart_time: '07:30:00' };
+    expect(mapFeedRow(occurrence)?.recurrence).toEqual({ id: 's1', on: '2026-01-05', weekdays: [1, 3], time: '07:30' });
+    // A ride left by a cancelled series keeps its id but no schedule: no marker.
+    // The generated row type cannot say these columns are nullable; the function returns null for them.
+    const single = { ...occurrence, series_weekdays: null, series_depart_time: null } as unknown as typeof occurrence;
+    expect(mapFeedRow(single)?.recurrence).toBeNull();
   });
 
   it('reports a missing feed function as BackendUnavailableError', async () => {

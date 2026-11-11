@@ -1,64 +1,38 @@
-/**
- * Unit tests for SupabasePublicResearchRepository.
- * Uses a manually-crafted mock — no live Supabase instance.
- * Integration tests against a local Supabase fixture are deferred
- * (no local-Supabase fixture in CI per existing repo pattern).
- */
+// SupabasePublicResearchRepository: the questions come from `get_public_research_questions`
+// (granted to signed-out callers; null for a survey that is missing or not active), responses go
+// through the `public-research-submit` Edge Function, whose HTTP answers map to
+// PublicResearchError codes; a function that is not deployed (404) is BackendUnavailableError.
 import { describe, it, expect, vi } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { PublicResearchError } from '@kc/domain';
-import type { Database } from '../../database.legacy.types';
+import { BackendUnavailableError, PublicResearchError } from '@kc/domain';
+import type { Database } from '../../database.types';
 import { SupabasePublicResearchRepository } from '../SupabasePublicResearchRepository';
 
-// ---------------------------------------------------------------------------
-// Mock factory
-// ---------------------------------------------------------------------------
+type Mock = ReturnType<typeof vi.fn>;
 
-type MockClient = SupabaseClient<Database> & {
-  rpc: ReturnType<typeof vi.fn>;
-  functions: {
-    invoke: {
-      mock: {
-        calls: [[string, { body: Record<string, unknown> }], ...unknown[]];
-      };
-    };
-  };
-};
-
-function makeClient(opts: {
-  rpcResult?: { data: unknown; error: { message: string } | null };
-  invokeResult?: { data: unknown; error: unknown };
-} = {}): MockClient {
-  const rpcResult = opts.rpcResult ?? { data: null, error: null };
-  const invokeResult = opts.invokeResult ?? { data: null, error: null };
-
-  return {
-    rpc: vi.fn().mockResolvedValue(rpcResult),
-    functions: {
-      invoke: vi.fn().mockResolvedValue(invokeResult),
-    },
-  } as unknown as MockClient;
+function makeRepo(result: { data: unknown; error: unknown }): {
+  repo: SupabasePublicResearchRepository;
+  invoke: Mock;
+  rpc: Mock;
+} {
+  const invoke = vi.fn().mockResolvedValue(result);
+  const rpc = vi.fn().mockResolvedValue(result);
+  const client = { functions: { invoke }, rpc } as unknown as SupabaseClient<Database>;
+  return { repo: new SupabasePublicResearchRepository(client), invoke, rpc };
 }
 
-// ---------------------------------------------------------------------------
-// Fixtures
-// ---------------------------------------------------------------------------
+const httpError = (status: number) => ({ name: 'FunctionsHttpError', message: 'non-2xx', context: { status } });
 
 const BUNDLE_RAW = {
   slug: 'market-research-2026',
-  title_he: 'מחקר שוק',
+  title_he: 'Market research',
+  description_he: null,
   version: 1,
   questions: [
     {
-      id: 'q-001',
-      sort_order: 1,
-      question_type: 'rating_1_7_with_optional_text',
-      short_label_he: 'המלצה',
-      prompt_he: 'כמה סביר שתמליץ?',
-      context_he: 'הסבר כאן',
-      text_placeholder_he: 'הסבר קצר',
-      rating_anchor_low_he: 'לא סביר',
-      rating_anchor_high_he: 'בוודאי',
+      id: 'q-001', sort_order: 1, question_type: 'rating_1_7_with_optional_text', short_label_he: 'recommend',
+      prompt_he: 'How likely?', context_he: 'context', text_placeholder_he: 'why', rating_anchor_low_he: 'low',
+      rating_anchor_high_he: 'high', choice_options: null,
     },
   ],
 };
@@ -69,160 +43,70 @@ const SUBMISSION = {
   source: 'web',
   answers: [{ questionId: 'q-001', rating: 6, answerText: 'great' }],
   contactEmail: 'user@example.com',
-  contactWindowHe: 'בוקר',
+  contactWindowHe: 'mornings',
   honeypot: '',
 };
 
-// ---------------------------------------------------------------------------
-// loadBundle — happy path
-// ---------------------------------------------------------------------------
-
 describe('SupabasePublicResearchRepository.loadBundle', () => {
-  it('maps snake_case JSON to camelCase PublicResearchBundle', async () => {
-    const client = makeClient({ rpcResult: { data: BUNDLE_RAW, error: null } });
-    const repo = new SupabasePublicResearchRepository(client);
+  it('reads the questions with the RPC and maps them', async () => {
+    const { repo, rpc, invoke } = makeRepo({ data: BUNDLE_RAW, error: null });
     const bundle = await repo.loadBundle('market-research-2026');
-
-    expect(bundle.slug).toBe('market-research-2026');
-    expect(bundle.titleHe).toBe('מחקר שוק');
-    expect(bundle.version).toBe(1);
-    expect(bundle.questions).toHaveLength(1);
-
-    const [q] = bundle.questions;
-    expect(q?.id).toBe('q-001');
-    expect(q?.sortOrder).toBe(1);
-    expect(q?.questionType).toBe('rating_1_7_with_optional_text');
-    expect(q?.shortLabelHe).toBe('המלצה');
-    expect(q?.promptHe).toBe('כמה סביר שתמליץ?');
-    expect(q?.contextHe).toBe('הסבר כאן');
-    expect(q?.textPlaceholderHe).toBe('הסבר קצר');
-    expect(q?.ratingAnchorLowHe).toBe('לא סביר');
-    expect(q?.ratingAnchorHighHe).toBe('בוודאי');
-  });
-
-  it('calls RPC with correct p_slug argument', async () => {
-    const client = makeClient({ rpcResult: { data: BUNDLE_RAW, error: null } });
-    const repo = new SupabasePublicResearchRepository(client);
-    await repo.loadBundle('market-research-2026');
-    expect(client.rpc).toHaveBeenCalledWith('get_public_research_questions', {
-      p_slug: 'market-research-2026',
+    expect(rpc).toHaveBeenCalledWith('get_public_research_questions', { p_slug: 'market-research-2026' });
+    expect(invoke).not.toHaveBeenCalled();
+    expect(bundle).toEqual({
+      slug: 'market-research-2026',
+      titleHe: 'Market research',
+      version: 1,
+      questions: [{
+        id: 'q-001', sortOrder: 1, questionType: 'rating_1_7_with_optional_text', shortLabelHe: 'recommend',
+        promptHe: 'How likely?', contextHe: 'context', textPlaceholderHe: 'why', ratingAnchorLowHe: 'low',
+        ratingAnchorHighHe: 'high', choiceOptions: [],
+      }],
     });
   });
 
-  it('throws PublicResearchError(survey_not_found) when RPC message includes survey_not_found', async () => {
-    const client = makeClient({
-      rpcResult: { data: null, error: { message: 'survey_not_found: market-research-2026' } },
-    });
-    const repo = new SupabasePublicResearchRepository(client);
-    await expect(repo.loadBundle('market-research-2026')).rejects.toMatchObject({
-      code: 'survey_not_found',
-    });
-    await expect(repo.loadBundle('market-research-2026')).rejects.toBeInstanceOf(
-      PublicResearchError,
-    );
+  it('maps a missing or inactive survey (null) to survey_not_found', async () => {
+    const { repo } = makeRepo({ data: null, error: null });
+    const error = await repo.loadBundle('gone').catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(PublicResearchError);
+    expect(error).toMatchObject({ code: 'survey_not_found' });
   });
 
-  it('throws PublicResearchError(network) on generic RPC error', async () => {
-    const client = makeClient({
-      rpcResult: { data: null, error: { message: 'connection timeout' } },
-    });
-    const repo = new SupabasePublicResearchRepository(client);
-    await expect(repo.loadBundle('market-research-2026')).rejects.toMatchObject({
-      code: 'network',
-    });
+  it('reports a function the backend does not have as unavailable, and other errors as network', async () => {
+    const { repo } = makeRepo({ data: null, error: { code: 'PGRST202', message: 'not found' } });
+    await expect(repo.loadBundle('market-research-2026')).rejects.toBeInstanceOf(BackendUnavailableError);
+    const { repo: failing } = makeRepo({ data: null, error: { code: '08006', message: 'connection lost' } });
+    await expect(failing.loadBundle('market-research-2026')).rejects.toMatchObject({ code: 'network' });
   });
 });
 
-// ---------------------------------------------------------------------------
-// submit — happy path + body shape
-// ---------------------------------------------------------------------------
-
 describe('SupabasePublicResearchRepository.submit', () => {
-  it('returns responseId from Edge Function response', async () => {
-    const client = makeClient({
-      invokeResult: { data: { responseId: 'resp-uuid-123' }, error: null },
-    });
-    const repo = new SupabasePublicResearchRepository(client);
-    const result = await repo.submit(SUBMISSION);
-    expect(result.responseId).toBe('resp-uuid-123');
-  });
-
-  it('sends answers keyed by questionId with snake_case nested keys', async () => {
-    const client = makeClient({
-      invokeResult: { data: { responseId: 'resp-uuid-123' }, error: null },
-    });
-    const repo = new SupabasePublicResearchRepository(client);
-    await repo.submit(SUBMISSION);
-
-    const invokeArgs = client.functions.invoke.mock.calls[0];
-    expect(invokeArgs[0]).toBe('public-research-submit');
-    const body = invokeArgs[1].body;
-    expect(body.slug).toBe('market-research-2026');
-    expect(body.version).toBe(1);
-    expect(body.source).toBe('web');
-    expect(body.honeypot).toBe('');
-    expect(body.contactEmail).toBe('user@example.com');
-    expect(body.contactWindowHe).toBe('בוקר');
-    // answers keyed by questionId, nested values in snake_case
-    expect(body.answers).toEqual({
-      'q-001': { rating: 6, answer_text: 'great' },
+  it('sends the answers keyed by question id and returns the response id', async () => {
+    const { repo, invoke } = makeRepo({ data: { responseId: 'resp-uuid-123' }, error: null });
+    await expect(repo.submit({ ...SUBMISSION, honeypot: null })).resolves.toEqual({ responseId: 'resp-uuid-123' });
+    expect(invoke).toHaveBeenCalledWith('public-research-submit', {
+      body: {
+        slug: 'market-research-2026', version: 1, source: 'web', honeypot: '',
+        answers: { 'q-001': { rating: 6, answer_text: 'great' } },
+        contactEmail: 'user@example.com', contactWindowHe: 'mornings',
+      },
     });
   });
 
-  it('sends empty string for null honeypot', async () => {
-    const client = makeClient({
-      invokeResult: { data: { responseId: 'resp-uuid-123' }, error: null },
-    });
-    const repo = new SupabasePublicResearchRepository(client);
-    await repo.submit({ ...SUBMISSION, honeypot: null });
-    const body = client.functions.invoke.mock.calls[0][1].body;
-    expect(body.honeypot).toBe('');
+  it.each([
+    [429, { code: 'rate_limited' }],
+    [503, { code: 'circuit_open' }],
+    [400, { code: 'survey_not_found' }],
+    [403, { code: 'network', detail: 'origin_not_allowed' }],
+  ])('maps HTTP %i to a PublicResearchError', async (status, expected) => {
+    const { repo } = makeRepo({ data: null, error: httpError(status) });
+    await expect(repo.submit(SUBMISSION)).rejects.toMatchObject(expected);
   });
 
-  it('throws PublicResearchError(rate_limited) on HTTP 429', async () => {
-    const error = { context: { status: 429 } };
-    const client = makeClient({ invokeResult: { data: null, error } });
-    const repo = new SupabasePublicResearchRepository(client);
-    await expect(repo.submit(SUBMISSION)).rejects.toMatchObject({ code: 'rate_limited' });
-  });
-
-  it('throws PublicResearchError(circuit_open) on HTTP 503', async () => {
-    const error = { context: { status: 503 } };
-    const client = makeClient({ invokeResult: { data: null, error } });
-    const repo = new SupabasePublicResearchRepository(client);
-    await expect(repo.submit(SUBMISSION)).rejects.toMatchObject({ code: 'circuit_open' });
-  });
-
-  it('throws PublicResearchError(survey_not_found) on HTTP 400', async () => {
-    const error = { context: { status: 400 } };
-    const client = makeClient({ invokeResult: { data: null, error } });
-    const repo = new SupabasePublicResearchRepository(client);
-    await expect(repo.submit(SUBMISSION)).rejects.toMatchObject({ code: 'survey_not_found' });
-  });
-
-  it('throws PublicResearchError(network, origin_not_allowed) on HTTP 403', async () => {
-    const error = { context: { status: 403 } };
-    const client = makeClient({ invokeResult: { data: null, error } });
-    const repo = new SupabasePublicResearchRepository(client);
-    await expect(repo.submit(SUBMISSION)).rejects.toMatchObject({
-      code: 'network',
-      detail: 'origin_not_allowed',
-    });
-  });
-
-  it('throws PublicResearchError(network) on generic Edge Function error', async () => {
-    const error = new Error('fetch failed');
-    const client = makeClient({ invokeResult: { data: null, error } });
-    const repo = new SupabasePublicResearchRepository(client);
+  it('maps a network failure and a missing response id to network', async () => {
+    const { repo } = makeRepo({ data: null, error: new Error('fetch failed') });
     await expect(repo.submit(SUBMISSION)).rejects.toMatchObject({ code: 'network' });
-  });
-
-  it('throws PublicResearchError(network, missing_response_id) when responseId is absent', async () => {
-    const client = makeClient({ invokeResult: { data: {}, error: null } });
-    const repo = new SupabasePublicResearchRepository(client);
-    await expect(repo.submit(SUBMISSION)).rejects.toMatchObject({
-      code: 'network',
-      detail: 'missing_response_id',
-    });
+    const { repo: empty } = makeRepo({ data: {}, error: null });
+    await expect(empty.submit(SUBMISSION)).rejects.toMatchObject({ code: 'network', detail: 'missing_response_id' });
   });
 });

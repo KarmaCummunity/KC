@@ -19,6 +19,7 @@ import { ridePlaces } from './ridePlaces';
 import { dateTimeField, rideFeed, rideRoutes, rideSafety, rideSchedule, rideSeries } from './rideSchedule';
 import { authHe } from './modules/auth';
 import { authVerificationHintHe } from './modules/authVerificationHint';
+import { offlineSyncHe } from './modules/offlineSync';
 import { onboardingHe } from './modules/onboarding';
 import { dateOfBirthHe } from './modules/dateOfBirth';
 import { verificationHe } from './modules/verification';
@@ -26,6 +27,8 @@ import { errorsHe } from './modules/errors';
 import { chatHe } from './modules/chat';
 import { chatNewHe } from './modules/chatNew';
 import { chatMessagingHe } from './modules/chatMessaging';
+import { marketplaceBaselineErrorsHe } from './modules/marketplaceBaselineErrors';
+import { challengeBaselineErrorsHe } from './modules/challengeBaselineErrors';
 import { notificationsHe } from './modules/notifications';
 import { emptyStatesHe, feedSettingsHe } from './modules/feedSettings';
 import { moderationHe, auditHe, accountBlockedHe } from './modules/moderation';
@@ -48,7 +51,9 @@ import { surveyDemoHe } from './modules/surveyDemo';
 import { surveyHe } from './modules/survey';
 import { researchHe } from './modules/research';
 import { adminHe } from './modules/admin';
+import { adminOrgApprovalsBaselineHe } from './modules/adminOrgApprovalsBaseline';
 import { karmaHe } from './modules/karma';
+import { karmaEventsHe } from './modules/karmaEvents';
 import { cardsHe } from './modules/cards';
 import { asideHe } from './modules/aside';
 import { configHe } from './modules/config';
@@ -64,6 +69,7 @@ const he = {
 
   // Auth (FR-AUTH-001..014) — see modules/auth.ts
   auth: { ...authHe, ...authVerificationHintHe },
+  offlineSync: offlineSyncHe,
 
   // Onboarding (FR-AUTH-010..012, FR-AUTH-018) — see modules/onboarding.ts
   onboarding: onboardingHe,
@@ -73,8 +79,8 @@ const he = {
   // Feed — see modules/feed.ts
   feed: feedHe,
 
-  // Karma points (FR-KARMA-004/007) — see modules/karma.ts
-  karma: karmaHe,
+  // Karma points (FR-KARMA-004/007) — see modules/karma.ts and modules/karmaEvents.ts
+  karma: { ...karmaHe, reason: { ...karmaHe.reason, ...karmaEventsHe } },
   cards: cardsHe,
 
   // Post — see modules/post.ts
@@ -107,7 +113,15 @@ const he = {
   restoreAccount: restoreAccountHe,
 
   // Admin portal (FR-ADMIN-010/011) — see modules/admin.ts
-  admin: adminHe,
+  // The baseline approval copy joins admin.orgApprovals — see modules/adminOrgApprovalsBaseline.ts.
+  admin: {
+    ...adminHe,
+    orgApprovals: {
+      ...adminHe.orgApprovals,
+      row: { ...adminHe.orgApprovals.row, ...adminOrgApprovalsBaselineHe.row },
+      errors: { ...adminHe.orgApprovals.errors, ...adminOrgApprovalsBaselineHe.errors },
+    },
+  },
 
   // Settings — see modules/settings.ts
   settings: settingsHe,
@@ -139,13 +153,15 @@ const he = {
   // Donations (D-16, FR-DONATE-001..005) — see donations.ts
   donations,
 
-  marketplace,
+  // Baseline server reasons join the marketplace error copy — see modules/marketplaceBaselineErrors.ts.
+  marketplace: { ...marketplace, errors: { ...marketplace.errors, ...marketplaceBaselineErrorsHe } },
   moneyPayments,
   // Direct support for KC (FR-DONATE-011) — see donations.supportKc.ts
   supportKc,
   timeVolunteer,
-  // Challenges world (docs/spec/10_challenges.md) — see challenges.ts
-  challenges,
+  // Challenges world (docs/spec/10_challenges.md) — see challenges.ts; baseline refusals in
+  // modules/challengeBaselineErrors.ts.
+  challenges: { ...challenges, errors: { ...challenges.errors, ...challengeBaselineErrorsHe } },
   medicalBodies,
   givingHandoff,
   // Ride seat bookings (D73) — see rideBooking.ts

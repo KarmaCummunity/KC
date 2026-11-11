@@ -13,7 +13,7 @@ function makeRepo(): IFinanceLedgerRepository & {
   summary: ReturnType<typeof vi.fn>;
 } {
   return {
-    list:    vi.fn(async () => ({ rows: [], totalCount: 0 })),
+    list:    vi.fn(async () => ({ rows: [], nextCursor: null })),
     upsert:  vi.fn(async () => 'id-1'),
     delete:  vi.fn(async () => undefined),
     summary: vi.fn(async () => []),

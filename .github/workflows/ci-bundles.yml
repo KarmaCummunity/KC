@@ -77,9 +77,11 @@ jobs:
           npm install --no-save --silent "playwright@${PLAYWRIGHT_VERSION}"
           if [ "$CACHE_HIT" = "true" ]; then
             # Browser binaries restored from cache — only OS deps needed.
-            npx playwright install-deps chromium
+            npx playwright install-deps chromium || echo "::warning::apt unavailable, using the runner's preinstalled libraries"
           else
-            npx playwright install --with-deps chromium
+            # An apt mirror outage must not fail the lane: fall back to the
+            # browser alone, the runner image already carries the system libraries.
+            npx playwright install --with-deps chromium || npx playwright install chromium
           fi
 
       - name: Smoke-load web bundle (headless Chromium)

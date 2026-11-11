@@ -18,6 +18,7 @@ import { unwrapCall } from '../rpc/mapRpcError';
 import { requireRpcRow } from '../marketplace/rpcRow';
 import { loadKindCatalog, postDirectionOf } from '../marketplace/kindCatalog';
 import { freeDetails, rideCityId, rideDetailColumns, rideDetailsFromRow } from '../marketplace/worldDetails';
+import { loadSeatCounts } from '../marketplace/postSeatCounts';
 import { meetingPointRefs, placeRefKey, resolvePlaces, type PlaceRef } from './ridePlaces';
 
 type Client = SupabaseClient<Database>;
@@ -84,7 +85,7 @@ export class SupabaseRideSeriesRepository implements IRideSeriesRepository {
     unwrapCall('rpc:set_ride_series_status', await this.client.rpc('set_ride_series_status', { p_series_id: seriesId, p_status: status }));
   }
 
-  /** The upcoming open occurrences of a series, soonest first. Free seats are not readable per occurrence, so an offer shows its seats. */
+  /** The upcoming open occurrences of a series, soonest first; an offer shows its free seats (`post_seat_counts`). */
   async listOccurrences(seriesId: string): Promise<RideSeriesOccurrence[]> {
     const rows =
       unwrapCall(
@@ -96,12 +97,18 @@ export class SupabaseRideSeriesRepository implements IRideSeriesRepository {
           .gt('departs_at', new Date().toISOString())
           .order('departs_at', { ascending: true }),
       ) ?? [];
-    return rows.flatMap((row) => {
+    const open = rows.flatMap((row) => {
       const post = Array.isArray(row.posts) ? row.posts[0] : row.posts;
-      if (!post || post.status !== 'open') return [];
-      const offer = post.direction === 'offer';
-      return [{ listingId: row.post_id, departsAt: row.departs_at, seatsLeft: offer ? row.seats : null, passengers: offer ? null : row.seats }];
+      return post && post.status === 'open' ? [{ row, offer: post.direction === 'offer' }] : [];
     });
+    const seats = await loadSeatCounts(this.client, open.filter((o) => o.offer).map((o) => o.row.post_id));
+    return open.map(({ row, offer }) => ({
+      listingId: row.post_id,
+      departsAt: row.departs_at,
+      // A count the caller cannot read (the occurrence just left the air) falls back to the seats offered.
+      seatsLeft: offer ? seats.get(row.post_id)?.left ?? row.seats : null,
+      passengers: offer ? null : row.seats,
+    }));
   }
 
   async updateSchedule(seriesId: string, schedule: RideSeriesSchedule, durationMinutes: number | null): Promise<void> {

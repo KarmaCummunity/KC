@@ -78,7 +78,7 @@ export const PERMISSION_MATRIX: Readonly<Record<AdminPermission, readonly AdminR
   'crm.manage':                 ['super_admin', 'moderator'],
   'org.review_applications':    ['super_admin', 'moderator'],
   'whatsapp.manage':            ['super_admin', 'moderator'],
-  // KC#1122 / FR-ADMIN-029 — mirrors admin_match_quality's admin_assert_role (0454).
+  // KC#1122 / FR-ADMIN-029 — the server opens admin_match_quality to moderators and above.
   'matching.view_quality':      ['super_admin', 'moderator'],
   // D9 — approve or reject suggested donation links (server: is_donation_link_reviewer, 0546).
   'donation_links.review':      ['super_admin', 'moderator'],

@@ -8,7 +8,7 @@ begin
   if v_n <> 11 then raise exception 'seed: % donation link categories, want 11', v_n; end if;
 
   select count(*) into v_n from public.donation_links where review_status = 'approved' and submitted_by is null;
-  if v_n <> 86 then raise exception 'seed: % curated donation links, want 86', v_n; end if;
+  if v_n <> 108 then raise exception 'seed: % curated donation links, want 108', v_n; end if;
 
   -- Every list a member can open has links, and the lists match the worlds that show them.
   if exists (select 1 from public.donation_link_categories c

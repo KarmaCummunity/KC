@@ -8,13 +8,17 @@ const { fetchFlags } = vi.hoisted(() => ({ fetchFlags: vi.fn() }));
 vi.mock('../../services/featureFlagsComposition', () => ({ fetchRemoteFeatureFlags: fetchFlags }));
 
 import { useLaunchSurface } from '../useLaunchSurface';
+import { useAuthStore } from '../../store/authStore';
 
 const ORIGINAL = process.env['EXPO_PUBLIC_ENVIRONMENT'];
 const wrapper = ({ children }: { children: ReactNode }) => (
   <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>{children}</QueryClientProvider>
 );
 
-beforeEach(() => vi.clearAllMocks());
+beforeEach(() => {
+  vi.clearAllMocks();
+  useAuthStore.setState({ session: { userId: 'u_member' } as never, isAuthenticated: true });
+});
 afterEach(() => {
   cleanup();
   if (ORIGINAL === undefined) delete process.env['EXPO_PUBLIC_ENVIRONMENT'];

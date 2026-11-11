@@ -13,10 +13,12 @@ tags: [profile, keyboard]
       id: edit-profile-save
     timeout: 20000
 # The phone field sits below the avatar, name, city and street fields.
+# A field in the middle of the form: the sticky footer and the tab bar do not reach it.
 - scrollUntilVisible:
     element:
       id: edit-profile-phone
     timeout: 15000
+    centerElement: false
 - tapOn:
     id: edit-profile-phone
 - assertVisible:

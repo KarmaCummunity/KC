@@ -7,6 +7,8 @@ import { standingOrderActions } from '@kc/domain';
 import { makeUseStyles, radius, spacing, typography, Text } from '@kc/ui';
 import { Screen } from '../../../../src/components/ui/Screen';
 import { paymentsUseCases } from '../../../../src/services/paymentsComposition';
+import { shekelsText } from '../../../../src/components/money/moneyAmount';
+import { listOrEmpty } from '../../../../src/lib/backendAvailability';
 
 const useStyles = makeUseStyles(({ colors }) => ({
   row: { padding: spacing.lg, gap: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border },
@@ -24,7 +26,7 @@ export default function MyStandingOrdersScreen() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const orders = useQuery({
     queryKey: ['money', 'standing-orders'],
-    queryFn: () => paymentsUseCases.listStandingOrders().execute(50),
+    queryFn: () => listOrEmpty(() => paymentsUseCases.listStandingOrders().execute()),
   });
 
   async function act(orderId: string, fn: () => Promise<void>) {
@@ -54,7 +56,7 @@ export default function MyStandingOrdersScreen() {
           return (
             <View style={styles.row}>
               <Text style={styles.title}>
-                ₪{item.amountIls.toFixed(0)} / {t('moneyPayments.monthlyCadence')}
+                ₪{shekelsText(item.amountAgorot)} / {t('moneyPayments.monthlyCadence')}
               </Text>
               <Text style={styles.meta}>
                 {t('moneyPayments.standingStatus', { status: item.status })}

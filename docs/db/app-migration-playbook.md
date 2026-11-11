@@ -2,6 +2,8 @@
 
 > For the agent that owns a work package (P1–P6, L1–L7) of [`app-migration-map.md`](./app-migration-map.md) § 5. Follow the steps in order; parallel agents doing the same thing the same way is the point. Design: [`target-design.md`](./target-design.md) §9, §12.1.
 
+> **Status: complete.** Every package (P1–P6, L1–L7) is moved. The legacy view is removed: `database.legacy.types.ts`, `getLegacySupabaseClient`, `legacySupabase` and `LegacyDatabase` are gone, and the scan in `migrationStatus/scan.ts` now reports any legacy reference anywhere. The frozen pre-baseline types live in [`pre-baseline-schema.types.ts`](./pre-baseline-schema.types.ts) as the "old" side of the migration map only; nothing compiles against them. The sections below describe how the move was done.
+
 ## 0. What P0 left you
 
 | Piece | Where | What it does |

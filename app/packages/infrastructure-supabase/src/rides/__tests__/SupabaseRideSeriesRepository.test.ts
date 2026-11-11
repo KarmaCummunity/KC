@@ -59,18 +59,32 @@ describe('SupabaseRideSeriesRepository', () => {
     ).rejects.toMatchObject({ reason: 'ride_place_invalid' });
   });
 
-  it('lists the open upcoming occurrences, soonest first', async () => {
-    const { client } = createFakeClient({
+  it('lists the open upcoming occurrences, soonest first, with the free seats of each', async () => {
+    const { client, calls } = createFakeClient({
+      rpc: { post_seat_counts: ok([{ post_id: 'a', capacity: 3, seats_taken: 2, waitlisted: 0, seats_left: 1 }]) },
       tables: {
         post_ride_details: ok([
           { post_id: 'a', departs_at: '2030-01-01T07:00:00Z', seats: 3, posts: { status: 'open', direction: 'offer' } },
           { post_id: 'b', departs_at: '2030-01-02T07:00:00Z', seats: 3, posts: { status: 'closed_delivered', direction: 'offer' } },
+          { post_id: 'c', departs_at: '2030-01-03T07:00:00Z', seats: 3, posts: { status: 'open', direction: 'offer' } },
         ]),
       },
     });
     expect(await new SupabaseRideSeriesRepository(client).listOccurrences('s1')).toEqual([
-      { listingId: 'a', departsAt: '2030-01-01T07:00:00Z', seatsLeft: 3, passengers: null },
+      { listingId: 'a', departsAt: '2030-01-01T07:00:00Z', seatsLeft: 1, passengers: null },
+      { listingId: 'c', departsAt: '2030-01-03T07:00:00Z', seatsLeft: 3, passengers: null },
     ]);
+    expect(callsTo(calls, 'post_seat_counts')[0]?.args).toEqual({ p_post_ids: ['a', 'c'] });
+  });
+
+  it('asks no seat counts for a request series', async () => {
+    const { client, calls } = createFakeClient({
+      tables: { post_ride_details: ok([{ post_id: 'a', departs_at: '2030-01-01T07:00:00Z', seats: 2, posts: { status: 'open', direction: 'request' } }]) },
+    });
+    expect(await new SupabaseRideSeriesRepository(client).listOccurrences('s1')).toEqual([
+      { listingId: 'a', departsAt: '2030-01-01T07:00:00Z', seatsLeft: null, passengers: 2 },
+    ]);
+    expect(callsTo(calls, 'post_seat_counts')).toEqual([]);
   });
 
   it('updates the schedule and sets the status through the RPCs', async () => {

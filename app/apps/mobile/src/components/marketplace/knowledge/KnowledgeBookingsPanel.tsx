@@ -21,6 +21,7 @@ import { HandoffActionButton } from '../HandoffActionButton';
 import { HandoffRatingForm } from '../HandoffRatingForm';
 import { useRideBookingStyles } from '../rides/rideBookingStyles';
 import { useKnowledgeBookingAction } from './useKnowledgeBookingAction';
+import { listOrEmpty } from '../../../lib/backendAvailability';
 
 interface Props {
   readonly listingId: string;
@@ -35,7 +36,7 @@ export function KnowledgeBookingsPanel({ listingId, cityId }: Props) {
   const { busy, run } = useKnowledgeBookingAction(listingId, cityId);
   const bookings = useQuery({
     queryKey: knowledgeBookingsQueryKey(listingId),
-    queryFn: () => knowledgeBookingUseCases.listBookings().execute(listingId),
+    queryFn: () => listOrEmpty(() => knowledgeBookingUseCases.listBookings().execute(listingId)),
   });
 
   return (

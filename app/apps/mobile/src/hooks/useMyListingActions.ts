@@ -137,8 +137,8 @@ export function useMyListingActions(refetch: () => Promise<unknown>): MyListingA
         const picked = await pickListingImages(0);
         if (picked.length === 0) return;
         await run(listingId, async () => {
-          const paths = await uploadListingImages(userId, picked);
-          await marketplaceRepository().addMyListingMedia(listingId, paths);
+          const media = await uploadListingImages(userId, picked);
+          await marketplaceRepository().addMyListingMedia(listingId, media);
           notify(t('marketplace.myListingsAddPhotos'), t('marketplace.myListingsPhotosAdded'));
         });
       })();

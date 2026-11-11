@@ -1,4 +1,4 @@
-// Composition root for knowledge slot bookings (FR-KNOW-004, #2034; RPCs of migration 0704).
+// Composition root for knowledge slot bookings (FR-KNOW-004; supabase/schemas/70_worlds/150, 200).
 import {
   BookKnowledgeSeatUseCase,
   CompleteKnowledgeSessionUseCase,
@@ -9,13 +9,13 @@ import {
   type IKnowledgeBookingRepository,
 } from '@kc/application';
 import { SupabaseKnowledgeBookingRepository } from '@kc/infrastructure-supabase';
-import { container, legacySupabase } from '../lib/container';
+import { container, supabase } from '../lib/container';
 
 let repo: IKnowledgeBookingRepository | null = null;
 
 /** One adapter per app session, created on first use (after auth storage is ready). */
 function repository(): IKnowledgeBookingRepository {
-  repo ??= new SupabaseKnowledgeBookingRepository(legacySupabase);
+  repo ??= new SupabaseKnowledgeBookingRepository(supabase);
   return repo;
 }
 
