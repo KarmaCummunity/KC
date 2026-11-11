@@ -35,9 +35,9 @@ export default function ProPaywallScreen() {
     queryKey: [...PRO_KEY, userId],
     enabled: enabled && !!userId,
     queryFn: async () => {
-      const { data, error } = await getMarketplaceSupabaseClient().rpc('is_pro', { p_user_id: userId as string });
+      const { data, error } = await getMarketplaceSupabaseClient().rpc('api_my_pro_status');
       if (error) throw error;
-      return Boolean(data);
+      return (data as { is_pro?: boolean } | null)?.is_pro === true;
     },
   });
   const isPro = proQuery.data === true;
