@@ -68,6 +68,7 @@ export class SupabaseChatRepository implements IChatRepository {
     chatId: string,
     senderId: string,
     body: string,
+    clientId?: string,
   ): Promise<Message> {
     const { data, error } = await this.client
       .from('messages')
@@ -75,12 +76,41 @@ export class SupabaseChatRepository implements IChatRepository {
         chat_id: chatId,
         sender_id: senderId,
         body,
+        client_id: clientId ?? null,
         kind: 'user',
         status: 'pending',
       })
       .select('message_id, chat_id, sender_id, body, kind, system_payload, status, created_at, delivered_at, read_at')
       .single();
-    if (error) throw mapChatError(error);
+
+    if (error) {
+      if (error.code === '23505' && clientId) {
+        const { data: existing } = await this.client
+          .from('messages')
+          .select('message_id, chat_id, sender_id, body, kind, system_payload, status, created_at, delivered_at, read_at')
+          .eq('chat_id', chatId)
+          .eq('client_id', clientId)
+          .maybeSingle();
+        if (existing) {
+          return rowToMessage(existing as unknown as Parameters<typeof rowToMessage>[0]);
+        }
+      }
+      throw mapChatError(error);
+    }
+    if (!data) {
+      if (clientId) {
+        const { data: existing } = await this.client
+          .from('messages')
+          .select('message_id, chat_id, sender_id, body, kind, system_payload, status, created_at, delivered_at, read_at')
+          .eq('chat_id', chatId)
+          .eq('client_id', clientId)
+          .maybeSingle();
+        if (existing) {
+          return rowToMessage(existing as unknown as Parameters<typeof rowToMessage>[0]);
+        }
+      }
+      throw new Error('sendMessage: no message returned');
+    }
     return rowToMessage(data as unknown as Parameters<typeof rowToMessage>[0]);
   }
 

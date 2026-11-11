@@ -27,6 +27,7 @@ import { mapInsertError } from './mapInsertError';
 import { encodeCursor } from './cursor';
 import { runSimpleFeedQuery } from './feedQuery';
 import { fetchRankedFeedPage, needsRankedPath } from './feedQueryRanked';
+import { createPostHelper } from './createPostHelper';
 import {
   closePost as closePostHelper,
   reopenPost as reopenPostHelper,
@@ -119,65 +120,7 @@ export class SupabasePostRepository implements IPostRepository {
 
   // ── Mutations ───────────────────────────────────────────────────────────
   async create(input: CreatePostInput): Promise<Post> {
-    const { data: insertedPost, error: insertErr } = await this.client
-      .from('posts')
-      .insert({
-        owner_id: input.ownerId,
-        type: input.type,
-        visibility: input.visibility,
-        title: input.title,
-        description: input.description,
-        category: input.category,
-        city: input.address.city,
-        street: input.address.street,
-        street_number: input.address.streetNumber,
-        location_display_level: input.locationDisplayLevel,
-        item_condition: input.itemCondition,
-        urgency: input.urgency,
-        estimated_value: input.estimatedValue ?? null,
-      })
-      .select('post_id')
-      .single();
-    if (insertErr) throw mapInsertError(insertErr);
-    if (!insertedPost) throw new Error('create.post: no row returned');
-
-    const postId = insertedPost.post_id;
-
-    if (input.mediaAssets.length > 0) {
-      const mediaRows = input.mediaAssets.map((m, i) => ({
-        post_id: postId,
-        ordinal: i,
-        path: m.path,
-        mime_type: m.mimeType,
-        size_bytes: m.sizeBytes,
-      }));
-      const { error: mediaErr } = await this.client.from('media_assets').insert(mediaRows);
-      if (mediaErr) {
-        // Best-effort orphan cleanup. If this also fails the post row remains;
-        // recovery is by the user editing or deleting it.
-        await this.client.from('posts').delete().eq('post_id', postId);
-        throw new Error(`create.media: ${mediaErr.message}`);
-      }
-    }
-
-    const created = await fetchPostById(this.client, postId);
-    if (!created) throw new Error(`create: post ${postId} disappeared after insert`);
-
-    if (input.hideFromCounterparty) {
-      try {
-        await upsertPostActorIdentityRow(this.client, {
-          postId,
-          userId: input.ownerId,
-          surfaceVisibility: input.visibility,
-          hideFromCounterparty: true,
-        });
-      } catch (e) {
-        await this.client.from('posts').delete().eq('post_id', postId);
-        throw e instanceof Error ? e : new Error(String(e));
-      }
-    }
-
-    return created;
+    return createPostHelper(this.client, input);
   }
 
   async update(postId: string, patch: UpdatePostInput): Promise<Post> {

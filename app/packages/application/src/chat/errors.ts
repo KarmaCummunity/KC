@@ -25,3 +25,7 @@ export class ChatError extends Error {
     Object.setPrototypeOf(this, ChatError.prototype);
   }
 }
+
+export function isChatError(value: unknown): value is ChatError {
+  return value instanceof ChatError;
+}

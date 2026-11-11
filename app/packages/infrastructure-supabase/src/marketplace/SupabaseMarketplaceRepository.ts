@@ -272,14 +272,12 @@ export class SupabaseMarketplaceRepository implements IMarketplaceRepository {
   getListingHandoff = (listingId: string) => handoffs.getListingHandoff(this.client, listingId);
   listMyGivingHandoffs = (limit?: number) => handoffs.listMyGivingHandoffs(this.client, limit);
   reserveItemGiving = (
-    listingId: string,
-    pickupMode?: 'pickup' | 'delivery',
-    start?: string | null,
-    end?: string | null,
-  ) => handoffs.reserveItemGiving(this.client, listingId, pickupMode, start, end);
+    listingId: string, pickupMode?: 'pickup' | 'delivery', start?: string | null, end?: string | null, idempotencyKey?: string | null,
+  ) => handoffs.reserveItemGiving(this.client, listingId, pickupMode, start, end, idempotencyKey);
   confirmItemHandoff = (id: string) => handoffs.confirmItemHandoff(this.client, id);
-  claimFoodGiving = (listingId: string, start?: string | null, end?: string | null) =>
-    handoffs.claimFoodGiving(this.client, listingId, start, end);
+  claimFoodGiving = (
+    listingId: string, start?: string | null, end?: string | null, idempotencyKey?: string | null,
+  ) => handoffs.claimFoodGiving(this.client, listingId, start, end, idempotencyKey);
   cancelGivingHandoff = (id: string) => handoffs.cancelGivingHandoff(this.client, id);
   markGivingHandedOver = (id: string) => handoffs.markGivingHandedOver(this.client, id);
   rateGivingHandoff = (id: string, rating: number, comment?: string | null) =>

@@ -7,6 +7,8 @@ import { randomUUID } from 'expo-crypto';
 import { MESSAGE_MAX_CHARS } from '@kc/domain';
 import { ChatError } from '@kc/application';
 import { useChatStore, type OptimisticMessage } from '../store/chatStore';
+import { useNetworkStatusStore } from '../lib/networkStatusStore';
+import { useOutboxStore } from '../store/outboxStore';
 import i18n from '../i18n';
 import { container } from '../lib/container';
 
@@ -66,14 +68,31 @@ export function useChatSend({
       useChatStore.getState().appendOptimistic(chatId, optimistic);
       setInput('');
     }
+    const isOnline = useNetworkStatusStore.getState().isOnline;
+    if (!isOnline) {
+      useOutboxStore.getState().enqueue({
+        entityType: 'chat_message',
+        action: 'send_message',
+        payload: { chatId, senderId: userId, body, clientId },
+        idempotencyKey: `chat:${chatId}:${clientId}`,
+      });
+      return;
+    }
     try {
-      const server = await container.sendMessage.execute({ chatId, senderId: userId, body });
+      const server = await container.sendMessage.execute({ chatId, senderId: userId, body, clientId });
       useChatStore.getState().reconcileSent(chatId, clientId, server);
       if (wasFirstSend) void presentPrePrompt('first-message-sent');
     } catch (err) {
       useChatStore.getState().markFailed(chatId, clientId);
       if (err instanceof ChatError && err.code === 'send_to_deleted_user') {
         setNotify({ title: i18n.t('errors.chat.userUnavailableTitle'), message: i18n.t('errors.chat.userUnavailableMessage') });
+      } else {
+        useOutboxStore.getState().enqueue({
+          entityType: 'chat_message',
+          action: 'send_message',
+          payload: { chatId, senderId: userId, body, clientId },
+          idempotencyKey: `chat:${chatId}:${clientId}`,
+        });
       }
     }
   };

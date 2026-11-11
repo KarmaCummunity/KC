@@ -65,7 +65,7 @@ export { GetSupportThreadUseCase } from './chat/GetSupportThreadUseCase';
 export * from './chat/ListChatStartCandidatesUseCase';
 export { SubmitSupportIssueUseCase } from './chat/SubmitSupportIssueUseCase';
 export type { SubmitSupportIssueInput } from './chat/SubmitSupportIssueUseCase';
-export { ChatError } from './chat/errors';
+export { ChatError, isChatError } from './chat/errors';
 export type { ChatErrorCode } from './chat/errors';
 
 // Report use cases

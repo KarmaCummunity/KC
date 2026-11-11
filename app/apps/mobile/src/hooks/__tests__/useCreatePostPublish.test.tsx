@@ -73,4 +73,18 @@ describe('useCreatePostPublish', () => {
     await waitFor(() => expect(execute).toHaveBeenCalled());
     expect(back).not.toHaveBeenCalled();
   });
+
+  it('enqueues to outbox and closes form when offline', async () => {
+    const { useNetworkStatusStore } = await import('../../lib/networkStatusStore');
+    const { useOutboxStore } = await import('../../store/outboxStore');
+    useNetworkStatusStore.setState({ isOnline: false, isInternetReachable: false });
+    const args = baseArgs();
+    args.uploads = [{ uri: 'file:///image.png', mimeType: 'image/png' } as never];
+    const { result } = renderHook(() => useCreatePostPublish(args), { wrapper });
+    act(() => result.current.tryPublish());
+    expect(execute).not.toHaveBeenCalled();
+    expect(back).toHaveBeenCalled();
+    expect(useOutboxStore.getState().items.some((i) => i.entityType === 'post')).toBe(true);
+    useNetworkStatusStore.setState({ isOnline: true, isInternetReachable: true });
+  });
 });

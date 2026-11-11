@@ -4,6 +4,7 @@ import type { Message, Chat } from '@kc/domain';
 import type { ChatState, OptimisticMessage } from './chatStoreTypes';
 import { runRefreshInbox, runStartInboxSub } from './chatStoreInboxLifecycle';
 import { useAuthStore } from './authStore';
+import { useOutboxStore } from './outboxStore';
 import { queryClient } from '../lib/queryPersist';
 import {
   chatInboxQueryKey,
@@ -80,7 +81,35 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
   setThreadMessages: (chatId, msgs) => {
     const next = msgs.map(toOptimistic).sort(compareCreatedAt);
-    set((s) => ({ threads: { ...s.threads, [chatId]: next } }));
+    const outboxItems = useOutboxStore
+      .getState()
+      .items.filter(
+        (i) =>
+          i.entityType === 'chat_message' &&
+          (i.payload as { chatId?: string }).chatId === chatId &&
+          !next.some((m) => m.clientId === (i.payload as { clientId?: string }).clientId),
+      );
+    const pendingFromOutbox: OptimisticMessage[] = outboxItems.map((i) => {
+      const p = i.payload as { clientId: string; chatId: string; senderId: string; body: string };
+      return {
+        messageId: p.clientId,
+        clientId: p.clientId,
+        chatId: p.chatId,
+        senderId: p.senderId,
+        kind: 'user',
+        body: p.body,
+        systemPayload: null,
+        mediaPayload: null,
+        status: 'pending',
+        createdAt: i.createdAt,
+        deliveredAt: null,
+        readAt: null,
+        failed: i.status === 'failed',
+      };
+    });
+    set((s) => ({
+      threads: { ...s.threads, [chatId]: [...next, ...pendingFromOutbox].sort(compareCreatedAt) },
+    }));
   },
 
   appendOptimistic: (chatId, msg) =>

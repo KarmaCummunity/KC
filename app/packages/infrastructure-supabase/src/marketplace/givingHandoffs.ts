@@ -72,8 +72,10 @@ export async function reserveItemGiving(
   pickupMode: 'pickup' | 'delivery' = 'pickup',
   pickupWindowStart?: string | null,
   pickupWindowEnd?: string | null,
+  idempotencyKey?: string | null,
 ) {
   const { data, error } = await client.rpc('reserve_item_giving', {
+    p_idempotency_key: idempotencyKey ?? undefined,
     p_listing_id: listingId,
     p_pickup_mode: pickupMode,
     p_pickup_window_start: pickupWindowStart ?? undefined,
@@ -94,8 +96,10 @@ export async function claimFoodGiving(
   listingId: string,
   pickupWindowStart?: string | null,
   pickupWindowEnd?: string | null,
+  idempotencyKey?: string | null,
 ) {
   const { data, error } = await client.rpc('claim_food_giving', {
+    p_idempotency_key: idempotencyKey ?? undefined,
     p_listing_id: listingId,
     p_pickup_window_start: pickupWindowStart ?? undefined,
     p_pickup_window_end: pickupWindowEnd ?? undefined,

@@ -44,6 +44,8 @@ import { ConfigErrorScreen } from '../src/components/ConfigErrorScreen';
 import { isSupabaseConfigured } from '../src/lib/supabasePublicConfig';
 import { DevBanner } from '../src/components/DevBanner';
 import { SuspensionBanner } from '../src/components/SuspensionBanner';
+import { GlobalOfflineBanner } from '../src/components/common/GlobalOfflineBanner';
+import { initOutboxRunner } from '../src/lib/outboxRunner';
 import { LegalConsentGate } from '../src/components/legal/LegalConsentGate';
 import { ModalStackProvider } from '../src/components/legal/useActiveModalStack';
 import { useMeRealtime } from '../src/hooks/useMeRealtime';
@@ -91,6 +93,7 @@ function ThemedRootShell() {
       <StatusBar style={isDark ? 'light' : 'dark'} />
       <DevBanner />
       <SuspensionBanner />
+      <GlobalOfflineBanner />
       <NotificationsBridge />
       <AuthGate>
         <ModalStackProvider>
@@ -167,7 +170,12 @@ function ThemedRootShell() {
 
 function RootLayoutContent() {
   useEffect(() => {
-    return setupQueryLifecycleSync();
+    const unsubLifecycle = setupQueryLifecycleSync();
+    const unsubOutbox = initOutboxRunner();
+    return () => {
+      unsubLifecycle();
+      unsubOutbox();
+    };
   }, []);
 
   useEffect(() => {

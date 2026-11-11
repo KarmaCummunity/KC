@@ -37,6 +37,7 @@ export interface IChatRepository {
     chatId: string,
     senderId: string,
     body: string,
+    clientId?: string,
   ): Promise<Message>;
 
   markRead(chatId: string, userId: string): Promise<void>;

@@ -100,6 +100,7 @@ export interface MediaAssetInput {
 }
 
 export interface CreatePostInput {
+  postId?: string;
   ownerId: string;
   type: PostType;
   visibility: PostVisibility;

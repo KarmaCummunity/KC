@@ -148,12 +148,14 @@ export interface IMarketplaceRepository {
     pickupMode?: 'pickup' | 'delivery',
     pickupWindowStart?: string | null,
     pickupWindowEnd?: string | null,
+    idempotencyKey?: string | null,
   ): Promise<GivingHandoffSnapshot>;
   confirmItemHandoff(handoffId: string): Promise<GivingHandoffSnapshot>;
   claimFoodGiving(
     listingId: string,
     pickupWindowStart?: string | null,
     pickupWindowEnd?: string | null,
+    idempotencyKey?: string | null,
   ): Promise<GivingHandoffSnapshot>;
   cancelGivingHandoff(handoffId: string): Promise<void>;
   markGivingHandedOver(handoffId: string): Promise<GivingHandoffSnapshot>;

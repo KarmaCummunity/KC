@@ -5829,6 +5829,7 @@ export type Database = {
         Row: {
           body: string | null
           chat_id: string
+          client_id: string | null
           created_at: string
           delivered_at: string | null
           kind: string
@@ -5844,6 +5845,7 @@ export type Database = {
         Insert: {
           body?: string | null
           chat_id: string
+          client_id?: string | null
           created_at?: string
           delivered_at?: string | null
           kind?: string
@@ -5859,6 +5861,7 @@ export type Database = {
         Update: {
           body?: string | null
           chat_id?: string
+          client_id?: string | null
           created_at?: string
           delivered_at?: string | null
           kind?: string
@@ -7226,6 +7229,7 @@ export type Database = {
           confirmed_at: string | null
           handed_over_at: string | null
           handoff_id: string
+          idempotency_key: string | null
           no_show_at: string | null
           owner_id: string
           pickup_mode: string
@@ -7248,6 +7252,7 @@ export type Database = {
           confirmed_at?: string | null
           handed_over_at?: string | null
           handoff_id?: string
+          idempotency_key?: string | null
           no_show_at?: string | null
           owner_id: string
           pickup_mode?: string
@@ -7270,6 +7275,7 @@ export type Database = {
           confirmed_at?: string | null
           handed_over_at?: string | null
           handoff_id?: string
+          idempotency_key?: string | null
           no_show_at?: string | null
           owner_id?: string
           pickup_mode?: string
@@ -13432,6 +13438,7 @@ export type Database = {
       }
       claim_food_giving: {
         Args: {
+          p_idempotency_key?: string
           p_listing_id: string
           p_pickup_window_end?: string
           p_pickup_window_start?: string
@@ -15885,6 +15892,7 @@ export type Database = {
       }
       reserve_item_giving: {
         Args: {
+          p_idempotency_key?: string
           p_listing_id: string
           p_pickup_mode?: string
           p_pickup_window_end?: string

@@ -13,8 +13,12 @@ import { hapticSuccess } from '../../lib/haptics';
 import { handoffErrorKey } from '../../lib/marketplaceCreateErrors';
 import { HandoffRatingForm } from './HandoffRatingForm';
 import { HandoffActionButton } from './HandoffActionButton';
+import { GivingHandoffRequestButtons } from './GivingHandoffRequestButtons';
 import { HANDOFF_WORLDS } from './listingFlow';
 import { OwnerAssignUserButton } from '../closure/OwnerAssignUserButton';
+import { useNetworkStatusStore } from '../../lib/networkStatusStore';
+import { useOutboxStore } from '../../store/outboxStore';
+import { useFeedSessionStore } from '../../store/feedSessionStore';
 
 const OWNER_ASSIGN_WORLDS = ['items', 'food', 'animals'];
 
@@ -62,7 +66,24 @@ export function GivingHandoffActions({ detail }: Props) {
   const run = async (
     fn: () => Promise<void>,
     analytics?: 'match_made' | 'handover_completed',
+    offlineAction?: {
+      action: 'reserve_item' | 'claim_food' | 'confirm_handoff';
+      payload: Record<string, unknown>;
+    },
   ) => {
+    if (!useNetworkStatusStore.getState().isOnline && offlineAction && userId) {
+      const idempotencyKey = `handoff:${detail.listingId}:${userId}:${offlineAction.action}`;
+      useOutboxStore.getState().enqueue({
+        entityType: 'giving_handoff',
+        action: offlineAction.action,
+        payload: offlineAction.payload,
+        idempotencyKey,
+      });
+      hapticSuccess();
+      useFeedSessionStore.getState().showEphemeralToast(t('offlineSync.handoffPending'), 'success');
+      return;
+    }
+
     setBusy(true);
     try {
       await fn();
@@ -75,7 +96,16 @@ export function GivingHandoffActions({ detail }: Props) {
       hapticSuccess();
       await invalidate();
     } catch (err) {
-      alert(t(handoffErrorKey(err) ?? 'givingHandoff.errorGeneric'));
+      const errKey = handoffErrorKey(err);
+      if (
+        errKey === 'marketplace.errors.listing_not_available' ||
+        errKey === 'marketplace.errors.item_already_reserved'
+      ) {
+        alert(t('offlineSync.handoffConflict'));
+        await invalidate();
+      } else {
+        alert(t(errKey ?? 'givingHandoff.errorGeneric'));
+      }
     } finally {
       setBusy(false);
     }
@@ -114,43 +144,14 @@ export function GivingHandoffActions({ detail }: Props) {
         <OwnerAssignUserButton targetId={detail.feedPostId ?? detail.listingId} worldSlug={detail.worldSlug} />
       ) : null}
 
-      {!h && isAvailableForRequest && (detail.worldSlug === 'items' || detail.worldSlug === 'animals') && !isOwner ? (
-        <>
-          <HandoffActionButton
-            testID="giving-handoff-reserve"
-            label={t('givingHandoff.reserveItem')}
-            busy={busy}
-            onPress={() => run(async () => { await givingHandoffUseCases.reserveItem().execute(detail.listingId, 'pickup'); }, 'match_made')}
-          />
-          {detail.worldSlug === 'items' ? (
-            <HandoffActionButton
-              testID="giving-handoff-reserve-delivery"
-              label={t('givingHandoff.reserveDelivery')}
-              busy={busy}
-              secondary
-              onPress={() => run(async () => { await givingHandoffUseCases.reserveItem().execute(detail.listingId, 'delivery'); }, 'match_made')}
-            />
-          ) : null}
-        </>
-      ) : null}
-
-      {!h && isAvailableForRequest && detail.worldSlug === 'food' && !isOwner ? (
-        <HandoffActionButton
-          testID="giving-handoff-claim"
-          label={t('givingHandoff.claimFood')}
-          busy={busy}
-          onPress={() => run(async () => { await givingHandoffUseCases.claimFood().execute(detail.listingId); }, 'match_made')}
-        />
-      ) : null}
-
-      {!h && isAvailableForRequest && detail.worldSlug === 'knowledge' && !isOwner ? (
-        <HandoffActionButton
-          testID="giving-handoff-book-slot"
-          label={t('givingHandoff.bookKnowledgeSlot')}
-          busy={busy}
-          onPress={() => run(async () => { await ridesKnowledgeRpcs.bookKnowledgeSlot(detail.listingId); }, 'match_made')}
-        />
-      ) : null}
+      <GivingHandoffRequestButtons
+        detail={detail}
+        isOwner={isOwner}
+        isAvailableForRequest={isAvailableForRequest}
+        hasHandoff={Boolean(h)}
+        busy={busy}
+        run={run}
+      />
 
       {h?.status === 'reserved' && isOwner && detail.worldSlug !== 'knowledge' ? (
         <>
