@@ -224,7 +224,7 @@ The owner of an open **give** offer can name the member who received it, using t
 - AC6. Assigning a passenger on a ride that has not left confirms one seat and does not close the ride. A further assign past the seat cap is refused.
 - AC7. Assigning a guest on a housing offer confirms that one stay (or completes it when the stay window is open) and does not close the listing.
 - AC8. Offer rows on My listings open this sheet when the listing has a feed post. Request listings keep `fulfill_my_listing`.
-- AC9. A time-world (volunteering) post, offer or request, is never "delivered": the button reads «ההתנדבות התקיימה ✓» / "Volunteering took place ✓", and the confirmation, picker and explainer speak of the volunteering taking place (#2078, {{D:volunteering-close-wording}}). The member's activity timeline (FR-STATS-003) words the close and the marks as volunteering too (`0742` returns each row's world). The stored status stays `closed_delivered`; the status badge already reads «הושלם». An organization's event ends through its own bar (G18).
+- AC9. A time-world (volunteering) post, offer or request, is never "delivered": the button reads «ההתנדבות התקיימה ✓» / "Volunteering took place ✓", and the confirmation, picker and explainer speak of the volunteering taking place (#2078, D141). The member's activity timeline (FR-STATS-003) words the close and the marks as volunteering too (`0742` returns each row's world). The stored status stays `closed_delivered`; the status badge already reads «הושלם». An organization's event ends through its own bar (G18).
 
 **Related.** Screens: listing post detail, My listings, ride bookings, housing host, animal handoff. RPC: `0658_owner_complete_offer_with_user`.
 

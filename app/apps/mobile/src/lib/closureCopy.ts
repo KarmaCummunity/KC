@@ -105,7 +105,7 @@ const BY_WORLD: Record<string, ClosureCopyKeys> = {
     'closure.explainerKnowledgeTitle',
     'closure.explainerKnowledgeBody',
   ),
-  // #2078, {{D:volunteering-close-wording}}: volunteering "takes place" whichever side posted it.
+  // #2078, D141: volunteering "takes place" whichever side posted it.
   time: worldCopy(
     'closure.step1TimeTitle',
     'closure.step1TimeBody',

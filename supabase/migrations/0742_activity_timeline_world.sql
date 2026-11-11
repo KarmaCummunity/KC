@@ -1,5 +1,5 @@
 -- 0742_activity_timeline_world | The personal activity timeline names each post's world
--- (FR-STATS-003, FR-CLOSURE-011 AC9, #2078; PM decision {{D:volunteering-close-wording}})
+-- (FR-STATS-003, FR-CLOSURE-011 AC9, #2078; PM decision D141)
 --
 -- A closed volunteering post read «סימנת מסירה של …» in "What's happening with me", because the
 -- timeline row had no world and the app could only print the item wording. The RPC now returns

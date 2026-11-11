@@ -9,7 +9,7 @@ export const closureEn = {
   markAnimalsCta: 'Mark as handed over ✓',
   markHousingCta: 'End the stay',
   markRidesCta: 'Assign a passenger',
-  // #2078, {{D:volunteering-close-wording}} — volunteering is not "delivered"; it takes place.
+  // #2078, D141 — volunteering is not "delivered"; it takes place.
   markTimeCta: 'Volunteering took place ✓',
   assignUserCta: 'Assign to a user',
   assignSuccessToast: 'That member is assigned.',

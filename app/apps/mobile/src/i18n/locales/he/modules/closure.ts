@@ -9,7 +9,7 @@ export const closureHe = {
   markAnimalsCta: 'סומן כמסור',
   markHousingCta: 'סיום האירוח',
   markRidesCta: 'שיבוץ נוסע',
-  // #2078, {{D:volunteering-close-wording}} — volunteering is not "delivered"; it takes place.
+  // #2078, D141 — volunteering is not "delivered"; it takes place.
   markTimeCta: 'ההתנדבות התקיימה ✓',
   assignUserCta: 'שבץ למשתמש',
   assignSuccessToast: 'המשתמש שובץ.',
