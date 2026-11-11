@@ -17,6 +17,9 @@ on:
       E2E_SEED_PASSWORD:
         description: kc-dev seed users' password (every flow signs in with it)
         required: true
+  # A manual run on any branch (Actions → this workflow → Run workflow), for example to check a change
+  # to the app or the flows before the lane has planned it. Secrets come from the repository.
+  workflow_dispatch:
 
 permissions:
   contents: read
