@@ -155,7 +155,7 @@ describe('ListingCreateForm — organization event', () => {
     await waitFor(() => expect(onPublished).toHaveBeenCalledWith('listing-event'));
     expect(mocks.createListing).toHaveBeenCalledWith(
       expect.objectContaining({
-        kindId: 'k-org_event',
+        kindId: 'k-event',
         cityId: '4000',
         details: { starts_at: WINDOW.start, ends_at: WINDOW.end, registration_policy: 'automatic', org_id: ORG_A },
       }),

@@ -15,6 +15,8 @@ const CASE_TIMEOUT_MS = 60_000;
 describe('IChatRepository contract — SupabaseChatRepository (local stack)', () => {
   const users = new ContractUsers();
   const ctx: ChatContractContext = {
+    // The baseline keeps one chat per pair (D13): reopening a hidden chat brings it back.
+    reopenAfterHide: 'same-thread',
     newActor: async () => {
       const { userId, displayName, client } = await users.signInNewUser();
       return { userId, displayName, chats: new SupabaseChatRepository(client) };

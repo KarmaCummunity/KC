@@ -10,6 +10,19 @@ import { useChatStore, type OptimisticMessage } from '../store/chatStore';
 import i18n from '../i18n';
 import { container } from '../lib/container';
 
+/** Locale keys of the notice each send refusal that the member can act on shows (FR-CHAT-003). */
+const SEND_FAILURE_NOTICES: Partial<Record<ChatError['code'], { title: string; message: string }>> = {
+  send_to_deleted_user: { title: 'errors.chat.userUnavailableTitle', message: 'errors.chat.userUnavailableMessage' },
+  rate_limited: { title: 'chat.messaging.rateLimited.title', message: 'chat.messaging.rateLimited.message' },
+  blocked_relationship: { title: 'chat.messaging.blocked.title', message: 'chat.messaging.blocked.message' },
+};
+
+/** The translated notice for a failed send, or null when the failure only needs the red retry state. */
+function sendFailureNotice(code: ChatError['code']): { title: string; message: string } | null {
+  const keys = SEND_FAILURE_NOTICES[code];
+  return keys ? { title: i18n.t(keys.title), message: i18n.t(keys.message) } : null;
+}
+
 interface UseChatSendArgs {
   chatId: string;
   userId: string;
@@ -67,14 +80,13 @@ export function useChatSend({
       setInput('');
     }
     try {
-      const server = await container.sendMessage.execute({ chatId, senderId: userId, body });
+      const server = await container.sendMessage.execute({ chatId, senderId: userId, body, messageId: clientId });
       useChatStore.getState().reconcileSent(chatId, clientId, server);
       if (wasFirstSend) void presentPrePrompt('first-message-sent');
     } catch (err) {
       useChatStore.getState().markFailed(chatId, clientId);
-      if (err instanceof ChatError && err.code === 'send_to_deleted_user') {
-        setNotify({ title: i18n.t('errors.chat.userUnavailableTitle'), message: i18n.t('errors.chat.userUnavailableMessage') });
-      }
+      const notice = err instanceof ChatError ? sendFailureNotice(err.code) : null;
+      if (notice) setNotify(notice);
     }
   };
 }

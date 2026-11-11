@@ -214,7 +214,7 @@ describe('ListingCreateForm — publish', () => {
     await waitFor(() => expect(onPublished).toHaveBeenCalledWith('listing-1'));
     expect(mocks.createListing).toHaveBeenCalledWith(
       expect.objectContaining({
-        kindId: 'k-volunteer_shift',
+        kindId: 'k-volunteer_offer',
         title: 'כותרת',
         details: { duration_minutes: 60 },
         cityId: '7000',

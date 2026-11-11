@@ -31,4 +31,9 @@ describe('SendMessageUseCase', () => {
     expect(result.body).toBe('hello');
     expect(repo.sendCallCount).toBe(1);
   });
+
+  it('forwards the client message id so a retry is idempotent', async () => {
+    await uc.execute({ chatId: 'c1', senderId: 'u1', body: 'hello', messageId: 'client-1' });
+    expect(repo.lastSentMessageId).toBe('client-1');
+  });
 });

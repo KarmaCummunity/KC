@@ -28,7 +28,7 @@ export const adminMoneyHe = {
   status: {
     pending:  'ממתין',
     cleared:  'סופי',
-    canceled: 'בוטל',
+    cancelled: 'בוטל',
   },
   row: {
     counterpartyPrefix: 'גורם:',

@@ -1,18 +1,14 @@
 // Composition root for IAboutRepository — About landing team roster.
 
-import {
-  getSupabaseClient,
-  SupabaseAboutRepository,
-} from '@kc/infrastructure-supabase';
+import { SupabaseAboutRepository } from '@kc/infrastructure-supabase';
 import { ListAboutTeamMembersUseCase, type IAboutRepository } from '@kc/application';
-import { pickAuthStorage } from './authSecureStorage';
 
 let _about: IAboutRepository | null = null;
 let _listTeamMembers: ListAboutTeamMembersUseCase | null = null;
 
 function getAboutRepo(): IAboutRepository {
   if (_about) return _about;
-  _about = new SupabaseAboutRepository(getSupabaseClient({ storage: pickAuthStorage() }));
+  _about = new SupabaseAboutRepository();
   return _about;
 }
 

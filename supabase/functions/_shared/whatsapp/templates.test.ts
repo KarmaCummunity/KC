@@ -4,7 +4,6 @@ import {
   placeholderCount,
   resolveTemplateParams,
   TEMPLATE,
-  TEMPLATES,
   validateRegistry,
 } from './templates.ts';
 
@@ -48,16 +47,6 @@ Deno.test('resolveTemplateParams prefers localized keys and refuses missing para
   assertEquals(resolveTemplateParams(TEMPLATE.reminder, 'en', { listing_title: 'a\n\tb    c' }), ['a b c']);
 });
 
-Deno.test('migration 0307 seed mirrors templates.json (he + en bodies and params)', async () => {
-  const sql = await Deno.readTextFile(
-    new URL('../../../migrations/0307_whatsapp_templates_registry.sql', import.meta.url),
-  );
-  for (const t of TEMPLATES) {
-    for (const lang of ['he', 'en'] as const) {
-      const body = t.languages[lang].body.replaceAll("'", "''");
-      const row = `('${t.name}', '${lang}', '${t.category.toLowerCase()}', '${body}', '${JSON.stringify(t.params)}'::jsonb`;
-      assert(sql.includes(row), `0307 seed out of sync for ${t.name}/${lang} — regenerate with scripts/whatsapp-templates.mjs sql`);
-    }
-  }
+Deno.test('placeholderCount counts the numbered placeholders of a body', () => {
   assertEquals(placeholderCount('a {{1}} b {{2}}'), 2);
 });

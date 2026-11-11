@@ -5,9 +5,12 @@
 export type FollowErrorCode =
   | 'self_follow'
   | 'blocked_relationship'
-  | 'already_following'
   | 'cooldown_active'
-  | 'pending_request_exists'
+  /** A direct follow reached a Private profile: the server filed a request instead (FR-FOLLOW-012 AC2). */
+  | 'request_required'
+  /** The caller's account is not active (waiting for verification, sanctioned or pending deletion). */
+  | 'account_not_active'
+  | 'rate_limited'
   | 'user_not_found'
   | 'privacy_mode_no_change'
   | 'unknown';

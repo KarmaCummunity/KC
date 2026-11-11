@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { SubmitSupportIssueUseCase } from '../SubmitSupportIssueUseCase';
+import { SUPPORT_ISSUE_DESCRIPTION_MAX, SubmitSupportIssueUseCase } from '../SubmitSupportIssueUseCase';
 import { FakeChatRepository } from './fakeChatRepository';
 
 describe('SubmitSupportIssueUseCase', () => {
@@ -33,6 +33,26 @@ describe('SubmitSupportIssueUseCase', () => {
     const uc = new SubmitSupportIssueUseCase(repo);
     // Exactly 10 visible chars + surrounding whitespace.
     const chat = await uc.execute({ category: 'bug', description: '   1234567890   ' });
+    expect(chat.isSupportThread).toBe(true);
+  });
+
+  // #2096 (FR-MOD-002 AC6): the description is capped at 500 characters after trim.
+  it('accepts a description of exactly the maximum length', async () => {
+    const uc = new SubmitSupportIssueUseCase(new FakeChatRepository());
+    const chat = await uc.execute({ category: 'Bug', description: 'x'.repeat(SUPPORT_ISSUE_DESCRIPTION_MAX) });
+    expect(chat.isSupportThread).toBe(true);
+  });
+
+  it('rejects a description over the maximum length', async () => {
+    const uc = new SubmitSupportIssueUseCase(new FakeChatRepository());
+    await expect(
+      uc.execute({ category: 'Bug', description: 'x'.repeat(SUPPORT_ISSUE_DESCRIPTION_MAX + 1) }),
+    ).rejects.toMatchObject({ code: 'description_too_long' });
+  });
+
+  it('measures the maximum after trim, so surrounding spaces do not count', async () => {
+    const uc = new SubmitSupportIssueUseCase(new FakeChatRepository());
+    const chat = await uc.execute({ category: null, description: `  ${'x'.repeat(SUPPORT_ISSUE_DESCRIPTION_MAX)}  ` });
     expect(chat.isSupportThread).toBe(true);
   });
 

@@ -1,7 +1,7 @@
 // FR-KNOW-001: the Supabase adapter of the knowledge topic graph, over a recording client fake.
 import { describe, expect, it } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '../../database.types';
+import type { Database } from '../../database.legacy.types';
 import { SupabaseKnowledgeTopicRepository } from '../SupabaseKnowledgeTopicRepository';
 
 type Result = { data: unknown; error: unknown };

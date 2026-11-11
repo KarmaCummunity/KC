@@ -1,177 +1,166 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { SupabaseClient } from '@supabase/supabase-js';
-import type { SearchFilters } from '@kc/domain';
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-// Mock the underlying helpers so we can assert which path the orchestrator
-// chose without standing up real Supabase queries. Each mock returns a
-// stable, distinguishable buckets so section totals + preview lengths
-// double as call-witness assertions.
-vi.mock('../searchExploreHelpers', () => ({
-  explorePosts: vi.fn(async () => ({ items: [{ kind: 'explore-post' }], total: 10 })),
-  exploreUsers: vi.fn(async () => ({ items: [{ kind: 'explore-user' }, { kind: 'explore-user' }], total: 20 })),
-  exploreLinks: vi.fn(async () => ({ items: [], total: 0 })),
-}));
-vi.mock('../searchQueryHelpers', () => ({
-  searchPosts: vi.fn(async () => ({ items: [{ kind: 'search-post' }, { kind: 'search-post' }], total: 100 })),
-  searchUsers: vi.fn(async () => ({ items: [{ kind: 'search-user' }], total: 15 })),
-  searchLinks: vi.fn(async () => ({
-    items: [{ kind: 'search-link' }, { kind: 'search-link' }, { kind: 'search-link' }],
-    total: 30,
-  })),
-}));
-
+import { describe, expect, it } from 'vitest';
+import { BackendUnavailableError, type SearchFilters } from '@kc/domain';
+import { callsTo, createFakeClient, type FakeCall, type FakeClientConfig } from '../../__tests__/fakeBaselineClient';
+import { fail, makeCard, ok, pageTables } from '../../posts/__tests__/cardFixtures';
 import { SupabaseSearchRepository } from '../SupabaseSearchRepository';
-import { explorePosts, exploreUsers, exploreLinks } from '../searchExploreHelpers';
-import { searchPosts, searchUsers, searchLinks } from '../searchQueryHelpers';
 
-const FAKE_CLIENT = {
-  rpc: vi.fn(async () => ({ data: [], error: null })),
-} as unknown as SupabaseClient<any>;
-const LIMITS = { posts: 10, users: 10, links: 10 };
+const LIMITS = { posts: 2, users: 2, links: 2 };
 
-beforeEach(() => {
-  vi.clearAllMocks();
+const userRow = (id: string) => ({
+  id, share_handle: id, display_name: `User ${id}`, biography: 'bio', avatar_url: null, city_id: 'IL-001',
+  privacy_mode: 'Public', privacy_changed_at: null, verification_level: 1, preferred_language: null,
+  created_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-01T00:00:00Z',
+});
+const statsRow = (id: string, followers: number) => ({
+  user_id: id, followers_count: followers, following_count: 0, items_given_count: 4, items_received_count: 0,
+  open_posts_public: 0, open_posts_followers_only: 0,
+});
+const linkRow = (id: string) => ({
+  id, category_slug: 'food', url: `https://x/${id}`, display_name: `Link ${id}`, description: null,
 });
 
-describe('SupabaseSearchRepository — explore vs search path', () => {
-  it('routes empty query to the explore helpers', async () => {
-    const repo = new SupabaseSearchRepository(FAKE_CLIENT);
+function setup(config: FakeClientConfig = {}) {
+  return createFakeClient({
+    userId: 'viewer',
+    ...config,
+    tables: {
+      ...pageTables(),
+      cities: ok([{ city_id: 'IL-001', name_he: 'Tel Aviv' }]),
+      user_stats: ok([statsRow('u1', 9), statsRow('u2', 5)]),
+      donation_links: ok([linkRow('l1')]),
+      ...config.tables,
+    },
+  });
+}
 
-    await repo.search('', {}, null, LIMITS);
+const query = (calls: FakeCall[], table: string) => callsTo(calls, table)[0];
 
-    expect(explorePosts).toHaveBeenCalledTimes(1);
-    expect(exploreUsers).toHaveBeenCalledTimes(1);
-    expect(exploreLinks).toHaveBeenCalledTimes(1);
-    expect(searchPosts).not.toHaveBeenCalled();
-    expect(searchUsers).not.toHaveBeenCalled();
-    expect(searchLinks).not.toHaveBeenCalled();
+describe('SupabaseSearchRepository — text query', () => {
+  it('searches posts, members and links in parallel and reports has-more', async () => {
+    const { client, calls } = setup({
+      tables: {
+        users: ok([userRow('u2'), userRow('u1')]),
+        donation_links: ok([linkRow('l1'), linkRow('l2'), linkRow('l3')]),
+      },
+      rpc: {
+        search_posts_page: ok([
+          { card: makeCard({ id: 'a' }), next_cursor: {} },
+          { card: makeCard({ id: 'b' }), next_cursor: {} },
+          { card: makeCard({ id: 'c' }), next_cursor: {} },
+        ]),
+        search_users_page: ok([{ id: 'u1' }, { id: 'u2' }]),
+      },
+    });
+
+    const result = await new SupabaseSearchRepository(client).search('sofa', {}, 'viewer', LIMITS);
+
+    expect(result.posts.map((p) => p.postId)).toEqual(['a', 'b']);
+    expect(result.postsHasMore).toBe(true);
+    expect(result.users.map((u) => [u.userId, u.followersCount, u.itemsGivenCount, u.cityName])).toEqual([
+      ['u1', 9, 4, 'Tel Aviv'],
+      ['u2', 5, 4, 'Tel Aviv'],
+    ]);
+    expect(result.usersHasMore).toBe(false);
+    expect(result.links.map((l) => l.id)).toEqual(['l1', 'l2']);
+    expect(result.linksHasMore).toBe(true);
+    expect(callsTo(calls, 'search_posts_page')[0]?.args).toMatchObject({ p_query: 'sofa', p_limit: 3 });
   });
 
-  it('routes whitespace-only query to the explore helpers (trim check)', async () => {
-    const repo = new SupabaseSearchRepository(FAKE_CLIENT);
+  it('has no organizations, hashtags or suggested queries (M05)', async () => {
+    const { client } = setup({ rpc: { search_posts_page: ok([]), search_users_page: ok([]) } });
 
-    await repo.search('   \t  ', {}, null, LIMITS);
+    const result = await new SupabaseSearchRepository(client).search('sofa', {}, null, LIMITS);
 
-    expect(explorePosts).toHaveBeenCalledTimes(1);
-    expect(searchPosts).not.toHaveBeenCalled();
+    expect(result).toMatchObject({ orgs: [], hashtags: [], suggestedQueries: [], orgsTotal: 0, hashtagsTotal: 0 });
   });
 
-  it('routes a non-empty query to the search helpers', async () => {
-    const repo = new SupabaseSearchRepository(FAKE_CLIENT);
+  it('turns the filters into the keys of the feed', async () => {
+    const { client, calls } = setup({ rpc: { search_posts_page: ok([]), search_users_page: ok([]) } });
+    const filters: SearchFilters = {
+      resultType: 'post', postType: 'Request', category: 'Books', city: 'IL-001', radiusKm: 10,
+    };
 
-    await repo.search('car', {}, 'u_viewer', LIMITS);
+    await new SupabaseSearchRepository(client).search('book', filters, null, LIMITS);
 
-    expect(searchPosts).toHaveBeenCalledTimes(1);
-    expect(searchUsers).toHaveBeenCalledTimes(1);
-    expect(searchLinks).toHaveBeenCalledTimes(1);
-    expect(explorePosts).not.toHaveBeenCalled();
+    expect(callsTo(calls, 'search_posts_page')[0]?.args).toMatchObject({
+      p_filters: { direction: 'request', item_subcategory_ids: ['sub-books'], city_id: 'IL-001', radius_km: 10 },
+    });
+    expect(callsTo(calls, 'search_users_page')).toHaveLength(0);
   });
 
-  it('forwards (client, query, filters, limit, viewerId) to each search helper', async () => {
-    const repo = new SupabaseSearchRepository(FAKE_CLIENT);
-    const filters: SearchFilters = { category: 'Electronics' };
+  it('filters members by city and followers, and links by category', async () => {
+    const { client, calls } = setup({
+      tables: { users: ok([]) },
+      rpc: { search_users_page: ok([]) },
+    });
 
-    await repo.search('car', filters, 'u_viewer', { posts: 5, users: 7, links: 9 });
+    await new SupabaseSearchRepository(client).search(
+      'dana',
+      { resultType: 'user', city: 'IL-001', minFollowers: 3 },
+      null,
+      LIMITS,
+    );
+    expect(callsTo(calls, 'search_users_page')[0]?.args).toMatchObject({
+      p_filters: { city_id: 'IL-001', min_followers: 3 },
+    });
 
-    expect(searchPosts).toHaveBeenCalledWith(FAKE_CLIENT, 'car', filters, 5, 'u_viewer');
-    expect(searchUsers).toHaveBeenCalledWith(FAKE_CLIENT, 'car', filters, 'u_viewer', 7);
-    expect(searchLinks).toHaveBeenCalledWith(FAKE_CLIENT, 'car', filters, 9);
+    const links = setup();
+    await new SupabaseSearchRepository(links.client).search(
+      'help',
+      { resultType: 'link', donationCategory: 'food' },
+      null,
+      LIMITS,
+    );
+    const read = query(links.calls, 'donation_links');
+    expect(read?.filters).toEqual(expect.arrayContaining([['eq', 'review_status', 'approved'], ['eq', 'category_slug', 'food']]));
   });
 
-  it('forwards (client, filters, limit, viewerId) to each explore helper (no query arg)', async () => {
-    const repo = new SupabaseSearchRepository(FAKE_CLIENT);
-    const filters: SearchFilters = { city: 'tel-aviv' };
-
-    await repo.search('', filters, 'u_viewer', { posts: 5, users: 7, links: 9 });
-
-    expect(explorePosts).toHaveBeenCalledWith(FAKE_CLIENT, filters, 5, 'u_viewer');
-    expect(exploreUsers).toHaveBeenCalledWith(FAKE_CLIENT, filters, 'u_viewer', 7);
-    expect(exploreLinks).toHaveBeenCalledWith(FAKE_CLIENT, filters, 9);
-  });
-});
-
-describe('SupabaseSearchRepository — resultType gating', () => {
-  it('runs only posts when resultType === "post"', async () => {
-    const repo = new SupabaseSearchRepository(FAKE_CLIENT);
-
-    const out = await repo.search('car', { resultType: 'post' }, null, LIMITS);
-
-    expect(searchPosts).toHaveBeenCalledTimes(1);
-    expect(searchUsers).not.toHaveBeenCalled();
-    expect(searchLinks).not.toHaveBeenCalled();
-    expect(out.users).toEqual([]);
-    expect(out.links).toEqual([]);
-  });
-
-  it('runs only users when resultType === "user"', async () => {
-    const repo = new SupabaseSearchRepository(FAKE_CLIENT);
-
-    const out = await repo.search('car', { resultType: 'user' }, null, LIMITS);
-
-    expect(searchUsers).toHaveBeenCalledTimes(1);
-    expect(searchPosts).not.toHaveBeenCalled();
-    expect(searchLinks).not.toHaveBeenCalled();
-    expect(out.posts).toEqual([]);
-    expect(out.links).toEqual([]);
-  });
-
-  it('runs only links when resultType === "link"', async () => {
-    const repo = new SupabaseSearchRepository(FAKE_CLIENT);
-
-    const out = await repo.search('car', { resultType: 'link' }, null, LIMITS);
-
-    expect(searchLinks).toHaveBeenCalledTimes(1);
-    expect(searchPosts).not.toHaveBeenCalled();
-    expect(searchUsers).not.toHaveBeenCalled();
-    expect(out.posts).toEqual([]);
-    expect(out.users).toEqual([]);
-  });
-
-  it('runs all three when resultType is null', async () => {
-    const repo = new SupabaseSearchRepository(FAKE_CLIENT);
-
-    await repo.search('car', { resultType: null }, null, LIMITS);
-
-    expect(searchPosts).toHaveBeenCalledTimes(1);
-    expect(searchUsers).toHaveBeenCalledTimes(1);
-    expect(searchLinks).toHaveBeenCalledTimes(1);
-  });
-
-  it('runs all three when resultType is absent (treats undefined === null === all)', async () => {
-    const repo = new SupabaseSearchRepository(FAKE_CLIENT);
-
-    await repo.search('car', {}, null, LIMITS);
-
-    expect(searchPosts).toHaveBeenCalledTimes(1);
-    expect(searchUsers).toHaveBeenCalledTimes(1);
-    expect(searchLinks).toHaveBeenCalledTimes(1);
+  it('reports a missing search function as unavailable', async () => {
+    const { client } = setup({ rpc: { search_posts_page: fail('PGRST202', 'not found'), search_users_page: ok([]) } });
+    await expect(new SupabaseSearchRepository(client).search('sofa', { resultType: 'post' }, null, LIMITS)).rejects.toBeInstanceOf(
+      BackendUnavailableError,
+    );
   });
 });
 
-describe('SupabaseSearchRepository — section totals', () => {
-  it('exposes bucket totals separately from preview item lengths', async () => {
-    const repo = new SupabaseSearchRepository(FAKE_CLIENT);
+describe('SupabaseSearchRepository — explore (no query)', () => {
+  it('lists open posts of every world in search scope, newest first', async () => {
+    const { client, calls } = setup({
+      rpc: { feed_page: ok([{ card: makeCard({ id: 'a' }), next_cursor: {} }]) },
+    });
 
-    const out = await repo.search('car', {}, null, LIMITS);
+    const result = await new SupabaseSearchRepository(client).search('  ', { resultType: 'post', city: 'IL-001' }, null, LIMITS);
 
-    expect(out.postsTotal).toBe(100);
-    expect(out.usersTotal).toBe(15);
-    expect(out.linksTotal).toBe(30);
-    expect(out.posts).toHaveLength(2);
-    expect(out.users).toHaveLength(1);
-    expect(out.links).toHaveLength(3);
+    expect(callsTo(calls, 'feed_page')[0]?.args).toMatchObject({
+      p_filters: { scope: 'search', sort: 'newest', status: 'open', city_id: 'IL-001' },
+    });
+    expect(result.posts.map((p) => p.postId)).toEqual(['a']);
   });
 
-  it('zeros disabled buckets when resultType narrows the search', async () => {
-    const repo = new SupabaseSearchRepository(FAKE_CLIENT);
+  it('lists the most followed members first', async () => {
+    const { client, calls } = setup({ tables: { users: ok([userRow('u2'), userRow('u1')]) } });
 
-    const out = await repo.search('car', { resultType: 'user' }, null, LIMITS);
+    const result = await new SupabaseSearchRepository(client).search('', { resultType: 'user', minFollowers: 2 }, null, LIMITS);
 
-    expect(out.usersTotal).toBe(15);
-    expect(out.postsTotal).toBe(0);
-    expect(out.linksTotal).toBe(0);
-    expect(out.users).toHaveLength(1);
+    const stats = query(calls, 'user_stats');
+    expect(stats?.filters).toEqual(expect.arrayContaining([['gte', 'followers_count', 2], ['limit', 3]]));
+    expect(result.users.map((u) => u.userId)).toEqual(['u1', 'u2']);
+  });
+
+  it('considers only the members of the chosen city', async () => {
+    const { client, calls } = setup({ tables: { users: ok([userRow('u1')]) } });
+
+    await new SupabaseSearchRepository(client).search('', { resultType: 'user', city: 'IL-001' }, null, LIMITS);
+
+    expect(callsTo(calls, 'users')[0]?.filters).toContainEqual(['eq', 'city_id', 'IL-001']);
+  });
+
+  it('lists the newest approved links', async () => {
+    const { client, calls } = setup();
+
+    const result = await new SupabaseSearchRepository(client).search('', { resultType: 'link' }, null, LIMITS);
+
+    expect(query(calls, 'donation_links')?.filters).toContainEqual(['eq', 'review_status', 'approved']);
+    expect(result.links[0]).toMatchObject({ id: 'l1', categorySlug: 'food', tags: null });
   });
 });

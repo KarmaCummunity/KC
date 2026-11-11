@@ -2,7 +2,7 @@
 // Extracted from entities.ts to keep that file under the size cap (TD-29).
 
 import { DomainError } from './errors';
-import { canTransition } from './fsm/machine';
+import { hasEdge } from './fsm/machine';
 import { postMachine } from './fsm/machines/post';
 import type {
   Address,
@@ -114,8 +114,8 @@ export const POST_STATUSES: readonly PostStatus[] = postMachine.states;
  * a no-op.
  */
 export function canTransitionPostStatus(from: PostStatus, to: PostStatus): boolean {
-  const answer = canTransition(postMachine, from, to);
-  return answer.ok && answer.changed;
+  // Who may make the move (owner, system, admin) is each RPC's concern; here: is it a real edge.
+  return hasEdge(postMachine, from, to);
 }
 
 export class PostStatusTransitionError extends DomainError {

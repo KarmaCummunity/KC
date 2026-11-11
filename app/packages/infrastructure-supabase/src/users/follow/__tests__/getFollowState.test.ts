@@ -1,153 +1,104 @@
 import { describe, it, expect } from 'vitest';
-import type { SupabaseClient } from '@supabase/supabase-js';
+import { BackendUnavailableError } from '@kc/domain';
+import { callsTo, createFakeClient, type FakeCall, type FakeResult } from '../../../__tests__/fakeBaselineClient';
 import { fetchFollowStateRaw } from '../getFollowState';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+const ok = (data: unknown = null): FakeResult => ({ data, error: null });
 
-// Each call to client.from() opens a new chain; we collect the chain
-// ops per call (in invocation order) plus return canned data for that
-// chain's terminating maybeSingle().
-
-interface ChainLog {
-  table: string;
-  ops: string[];
+/** follow_requests answers per status filter: the pending probe and the cooldown probe. */
+function requests(pending: unknown, cooldown: unknown) {
+  return (call: FakeCall): FakeResult => {
+    const status = call.filters.find((f) => f[0] === 'eq' && f[1] === 'status')?.[2];
+    return ok(status === 'pending' ? pending : cooldown);
+  };
 }
 
-function makeFakeClient(opts: {
-  // Returns by invocation index: [target, edge, pending, cooldown]
-  data?: Array<unknown>;
-}): { client: SupabaseClient<any>; logs: ChainLog[] } {
-  const logs: ChainLog[] = [];
-  const data = opts.data ?? [null, null, null, null];
+describe('fetchFollowStateRaw', () => {
+  it('runs the four probes against users, follows and follow_requests', async () => {
+    const { client, calls } = createFakeClient({
+      tables: { users: ok({ id: 'u_t', privacy_mode: 'Public' }), follows: ok(null), follow_requests: requests(null, null) },
+    });
 
-  function makeChain(table: string): any {
-    const log: ChainLog = { table, ops: [] };
-    logs.push(log);
-    const myIndex = logs.length - 1;
-    const chain: any = new Proxy(
-      {},
-      {
-        get(_t, prop: string) {
-          if (prop === 'then') return undefined; // not a thenable
-          return (..._args: any[]) => {
-            log.ops.push(prop);
-            if (prop === 'maybeSingle') {
-              return Promise.resolve({ data: data[myIndex] ?? null, error: null });
-            }
-            return chain;
-          };
-        },
-      },
-    );
-    return chain;
-  }
+    await fetchFollowStateRaw(client, 'viewer', 'u_t');
 
-  const client = {
-    from: (table: string) => makeChain(table),
-  } as unknown as SupabaseClient<any>;
-  return { client, logs };
-}
-
-describe('fetchFollowStateRaw — query shapes', () => {
-  it('issues four parallel queries against the right tables in declaration order', async () => {
-    const { client, logs } = await runWith({});
-
-    expect(logs.map((l) => l.table)).toEqual([
-      'users',
-      'follow_edges',
-      'follow_requests',
-      'follow_requests',
+    expect(calls.map((c) => c.table).sort()).toEqual(['follow_requests', 'follow_requests', 'follows', 'users']);
+    expect(callsTo(calls, 'users')[0]?.filters).toEqual([['eq', 'id', 'u_t']]);
+    expect(callsTo(calls, 'follows')[0]?.filters).toEqual([
+      ['eq', 'follower_id', 'viewer'],
+      ['eq', 'followed_id', 'u_t'],
     ]);
-    // Both follow_requests chains terminate in maybeSingle().
-    for (const log of logs) {
-      expect(log.ops[log.ops.length - 1]).toBe('maybeSingle');
-    }
-    // Touch client to silence unused warning.
-    expect(client).toBeDefined();
   });
 
-  it('cooldown chain adds gt + order + limit before maybeSingle', async () => {
-    const { logs } = await runWith({});
+  it('describes a visible public target the viewer follows (a visible target is active)', async () => {
+    const { client } = createFakeClient({
+      tables: {
+        users: ok({ id: 'u_t', privacy_mode: 'Public' }),
+        follows: ok({ follower_id: 'viewer' }),
+        follow_requests: requests(null, null),
+      },
+    });
 
-    const cooldownLog = logs[3]!;
-    expect(cooldownLog.ops).toEqual(['select', 'eq', 'eq', 'eq', 'gt', 'order', 'limit', 'maybeSingle']);
+    expect(await fetchFollowStateRaw(client, 'viewer', 'u_t')).toEqual({
+      target: { userId: 'u_t', privacyMode: 'Public', accountStatus: 'active' },
+      followingExists: true,
+      pendingRequestExists: false,
+      cooldownUntil: null,
+    });
+  });
+
+  it('reports a pending request and the end of a rejection cooldown', async () => {
+    const { client } = createFakeClient({
+      tables: {
+        users: ok({ id: 'u_t', privacy_mode: 'Private' }),
+        follows: ok(null),
+        follow_requests: requests({ requester_id: 'viewer' }, { cooldown_until: '2026-06-14T00:00:00Z' }),
+      },
+    });
+
+    expect(await fetchFollowStateRaw(client, 'viewer', 'u_t')).toMatchObject({
+      target: { privacyMode: 'Private' },
+      pendingRequestExists: true,
+      cooldownUntil: '2026-06-14T00:00:00Z',
+    });
+  });
+
+  it('reads only unexpired rejections for the cooldown', async () => {
+    const { client, calls } = createFakeClient({
+      tables: { users: ok(null), follows: ok(null), follow_requests: requests(null, null) },
+    });
+
+    await fetchFollowStateRaw(client, 'viewer', 'u_t');
+
+    const cooldown = callsTo(calls, 'follow_requests').find((c) => c.columns === 'cooldown_until');
+    expect(cooldown?.filters).toContainEqual(['eq', 'status', 'rejected']);
+    expect(cooldown?.filters.find((f) => f[0] === 'gt')?.[1]).toBe('cooldown_until');
+  });
+
+  it('reports a null target when the profile is not visible (inactive or blocked)', async () => {
+    const { client } = createFakeClient({
+      tables: { users: ok(null), follows: ok(null), follow_requests: requests(null, null) },
+    });
+
+    expect((await fetchFollowStateRaw(client, 'viewer', 'u_t')).target).toBeNull();
+  });
+
+  it('collapses an unknown privacy mode to Public', async () => {
+    const { client } = createFakeClient({
+      tables: { users: ok({ id: 'u_t', privacy_mode: 'Followers' }), follows: ok(null), follow_requests: requests(null, null) },
+    });
+
+    expect((await fetchFollowStateRaw(client, 'viewer', 'u_t')).target?.privacyMode).toBe('Public');
+  });
+
+  it('reports a missing follows table as BackendUnavailableError', async () => {
+    const { client } = createFakeClient({
+      tables: {
+        users: ok({ id: 'u_t', privacy_mode: 'Public' }),
+        follows: { data: null, error: { code: 'PGRST205', message: 'not found' } },
+        follow_requests: requests(null, null),
+      },
+    });
+
+    await expect(fetchFollowStateRaw(client, 'viewer', 'u_t')).rejects.toBeInstanceOf(BackendUnavailableError);
   });
 });
-
-describe('fetchFollowStateRaw — target user', () => {
-  it('returns null target when the user row is missing (RLS or deleted)', async () => {
-    const out = (await runWith({ data: [null, null, null, null] })).result;
-    expect(out.target).toBeNull();
-  });
-
-  it('maps target row fields verbatim (userId, privacyMode, accountStatus)', async () => {
-    const { result } = await runWith({
-      data: [
-        { user_id: 'u_target', privacy_mode: 'Private', account_status: 'active' },
-        null,
-        null,
-        null,
-      ],
-    });
-
-    expect(result.target).toEqual({
-      userId: 'u_target',
-      privacyMode: 'Private',
-      accountStatus: 'active',
-    });
-  });
-});
-
-describe('fetchFollowStateRaw — edge / pending derived flags', () => {
-  it('followingExists is false when no follow_edges row exists', async () => {
-    const { result } = await runWith({ data: [null, null, null, null] });
-    expect(result.followingExists).toBe(false);
-  });
-
-  it('followingExists is true when a follow_edges row exists', async () => {
-    const { result } = await runWith({
-      data: [null, { follower_id: 'u_viewer' }, null, null],
-    });
-    expect(result.followingExists).toBe(true);
-  });
-
-  it('pendingRequestExists is false when no pending follow_requests row exists', async () => {
-    const { result } = await runWith({ data: [null, null, null, null] });
-    expect(result.pendingRequestExists).toBe(false);
-  });
-
-  it('pendingRequestExists is true when a pending row exists', async () => {
-    const { result } = await runWith({
-      data: [null, null, { requester_id: 'u_viewer' }, null],
-    });
-    expect(result.pendingRequestExists).toBe(true);
-  });
-});
-
-describe('fetchFollowStateRaw — cooldown extraction', () => {
-  it('cooldownUntil is null when no future-rejected row exists', async () => {
-    const { result } = await runWith({ data: [null, null, null, null] });
-    expect(result.cooldownUntil).toBeNull();
-  });
-
-  it('cooldownUntil is the cooldown_until column when a row is returned', async () => {
-    const { result } = await runWith({
-      data: [null, null, null, { cooldown_until: '2026-06-01T12:00:00.000Z' }],
-    });
-    expect(result.cooldownUntil).toBe('2026-06-01T12:00:00.000Z');
-  });
-
-  it('cooldownUntil coalesces a null column to null', async () => {
-    // Defensive — a row with NULL cooldown_until should not crash the read.
-    const { result } = await runWith({
-      data: [null, null, null, { cooldown_until: null }],
-    });
-    expect(result.cooldownUntil).toBeNull();
-  });
-});
-
-async function runWith(opts: Parameters<typeof makeFakeClient>[0]) {
-  const { client, logs } = makeFakeClient(opts);
-  const result = await fetchFollowStateRaw(client, 'u_viewer', 'u_target');
-  return { client, logs, result };
-}

@@ -4,14 +4,14 @@ import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
 import { RegisterDeviceUseCase, DeactivateDeviceUseCase } from '@kc/application';
 import type { IDeviceRepository } from '@kc/application';
-import { ensureAndroidNotificationChannel } from '../pushSetup';
+import { ensureNotificationChannels } from './channels';
 
 export async function registerCurrentDeviceIfPermitted(
   userId: string,
   deps: { deviceRepo: IDeviceRepository },
 ): Promise<void> {
   if (!Device.isDevice) return;
-  await ensureAndroidNotificationChannel();
+  await ensureNotificationChannels();
   const perm = await Notifications.getPermissionsAsync();
   if (perm.status !== 'granted') return;
   const projectId = Constants.expoConfig?.extra?.eas?.projectId as string | undefined;
@@ -38,4 +38,20 @@ export async function deactivateCurrentDevice(
   } catch {
     // Token unavailable — nothing to deactivate.
   }
+}
+
+/**
+ * Re-registers when the platform rotates the device's push token while the app runs
+ * (FR-NOTIF-015 AC2), so the row in `user_devices` never points at a dead token.
+ * Returns the unsubscribe function.
+ */
+export function watchPushTokenRefresh(
+  userId: string,
+  deps: { deviceRepo: IDeviceRepository },
+): () => void {
+  if (!Device.isDevice) return () => undefined;
+  const subscription = Notifications.addPushTokenListener(() => {
+    registerCurrentDeviceIfPermitted(userId, deps).catch(() => undefined);
+  });
+  return () => subscription.remove();
 }

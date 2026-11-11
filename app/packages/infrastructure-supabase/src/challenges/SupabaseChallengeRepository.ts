@@ -9,7 +9,7 @@ import {
   type ChallengeProgressResult,
   type ChallengeSummary,
 } from '@kc/domain';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 
 type SummaryRow = Database['public']['Functions']['list_challenges']['Returns'][number];
 type EntryRow = Database['public']['Functions']['list_my_challenge_entries']['Returns'][number];

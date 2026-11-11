@@ -106,6 +106,19 @@ export function canTransition<S extends string, R extends string>(
   return { ok: true, changed: true };
 }
 
+/**
+ * True when some caller may move `from → to`: the edge exists, whatever its roles. Use it for
+ * "is this a real move in this lifecycle" questions that do not know the caller (a status
+ * badge, a button the server will still authorize). A same-status write is not a move.
+ */
+export function hasEdge<S extends string, R extends string>(
+  machine: FsmMachine<S, R>,
+  from: string,
+  to: string,
+): boolean {
+  return machine.edges.some((edge) => edge.from === from && edge.to === to);
+}
+
 /** Same answer as `canTransition`, but throws `TransitionError` when the move is not legal. */
 export function assertTransition<S extends string, R extends string>(
   machine: FsmMachine<S, R>,

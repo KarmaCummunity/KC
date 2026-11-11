@@ -30,7 +30,9 @@ function InboxChatRowInner({ item, onOpen, onRequestHide }: Props) {
   // Some inbox rows (support/system chats, deleted peers) arrive without a
   // participant; never dereference it blindly.
   const other = item.otherParticipant;
-  const otherName = other?.displayName ?? t('common.deletedUser');
+  // A support thread has no counterpart to name: it carries the support title instead.
+  const otherName =
+    other?.displayName ?? (item.isSupportThread ? t('chat.messaging.supportThreadTitle') : t('common.deletedUser'));
   return (
     <View style={styles.chatRow}>
       <TouchableOpacity style={styles.chatRowMain} onPress={() => onOpen(item.chatId)}>

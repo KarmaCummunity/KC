@@ -9,6 +9,7 @@ import type { MatchQualityByWorld } from '@kc/infrastructure-supabase';
 import { makeUseStyles, radius, spacing, typography, Text } from '@kc/ui';
 import { useAdminRoles } from '../../../src/hooks/useAdminRoles';
 import { getMatchRepository } from '../../../src/services/matchingComposition';
+import { listOrEmpty } from '../../../src/lib/backendAvailability';
 import { AdminFilterTopBarButton } from '../../../src/components/admin/AdminSearchFilterToolbar';
 import { FilterSection } from '../../../src/components/filterKit/FilterSection';
 import { AdminListEmpty } from '../../../src/components/admin/AdminListEmpty';
@@ -36,7 +37,8 @@ export default function MatchQualityScreen() {
 
   const quality = useQuery({
     queryKey: ['admin.matching.quality', days],
-    queryFn: () => getMatchRepository().qualityByWorld(days),
+    // The baseline has no match quality report (M14): an unavailable backend shows the empty state.
+    queryFn: () => listOrEmpty(() => getMatchRepository().qualityByWorld(days)),
     enabled,
     staleTime: 60_000,
   });

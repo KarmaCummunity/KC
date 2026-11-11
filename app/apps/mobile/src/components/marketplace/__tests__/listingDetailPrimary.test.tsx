@@ -38,7 +38,6 @@ vi.mock('../../../services/platformConfirm', () => ({ confirmAction: vi.fn().moc
 vi.mock('../../../hooks/useUserBlock', () => ({
   useUserBlock: () => ({ canBlock: false, isBlocked: false, busy: false, toggle: vi.fn() }),
 }));
-vi.mock('../../../services/ridesKnowledgeComposition', () => ({ ridesKnowledgeRpcs: {} }));
 vi.mock('../../../services/knowledgeBookingComposition', () => {
   const slot = (id: string, days: number) => ({
     slotId: id,

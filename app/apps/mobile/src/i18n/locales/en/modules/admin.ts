@@ -7,7 +7,6 @@ import { adminOrgApprovalsEn } from './adminOrgApprovals';
 import { adminDonationLinksEn } from './adminDonationLinks';
 import { adminWhatsAppEn } from './adminWhatsApp';
 import { adminMatchingEn } from './adminMatching';
-import { adminDemoDataEn } from './adminDemoData';
 import { adminOrgTreeEn } from './adminOrgTree';
 import { adminStatsEn } from './adminStats';
 import { adminSurveysEn } from './adminSurveys';
@@ -32,7 +31,6 @@ export const adminEn = {
     audit:         'Audit Log',
     whatsapp:      'WhatsApp',
     matching:      'Match quality',
-    demoData:      'Demo data',
     donationLinks: 'Donation links',
     stats:         'Statistics',
   },
@@ -81,7 +79,7 @@ export const adminEn = {
       posts:      'Posts',
       users:      'Users',
       chats:      'Chats',
-      listings:   'Listings',
+      comments:   'Comments',
       last7Days:  'Last 7 days',
       last30Days: 'Last 30 days',
       search:     'Search by target ID or reporter name',
@@ -124,9 +122,7 @@ export const adminEn = {
       postKind:    'Post',
       userKind:    'User',
       chatKind:    'Chat',
-      listingKind: 'Listing',
-      openListing: 'Open listing',
-      openOwner:   'Open owner profile',
+      commentKind: 'Comment',
       noPreview:   '(No preview)',
       unnamedUser: '(Unnamed user)',
       openPost:    'Open the post',
@@ -151,7 +147,6 @@ export const adminEn = {
   money: adminMoneyEn,
   whatsapp: adminWhatsAppEn,
   matching: adminMatchingEn,
-  demoData: adminDemoDataEn,
   orgTree: adminOrgTreeEn,
   stats: adminStatsEn,
   crm: adminCrmEn,

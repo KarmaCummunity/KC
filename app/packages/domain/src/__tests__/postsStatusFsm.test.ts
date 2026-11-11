@@ -10,16 +10,17 @@ import { postMachine } from '../fsm/machines/post';
 import { isTerminal } from '../fsm/machine';
 
 describe('S1 Post Status State Machine (Spec 07 §7.1, D104)', () => {
-  it('defines all 7 post statuses', () => {
-    expect(POST_STATUSES).toHaveLength(7);
+  it('defines all 8 post statuses', () => {
+    expect(POST_STATUSES).toHaveLength(8);
     expect(POST_STATUSES).toEqual([
+      'draft',
       'open',
+      'paused',
       'closed_delivered',
       'deleted_no_recipient',
       'expired',
-      'removed_admin',
       'hidden_pending_review',
-      'paused',
+      'removed_admin',
     ]);
   });
 
@@ -27,7 +28,7 @@ describe('S1 Post Status State Machine (Spec 07 §7.1, D104)', () => {
     // Compile-time: both directions of assignability between the union and the machine.
     expectTypeOf<(typeof postMachine.states)[number]>().toEqualTypeOf<PostStatus>();
     expect(postMachine.id).toBe('post');
-    expect(postMachine.edges).toHaveLength(29);
+    expect(postMachine.edges).toHaveLength(30);
   });
 
   it('has no terminal status: every status can still be moderated or restored', () => {

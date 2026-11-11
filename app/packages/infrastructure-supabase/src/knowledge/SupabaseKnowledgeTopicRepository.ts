@@ -7,7 +7,7 @@ import type {
   ProposeKnowledgeTopicInput,
   ReviewKnowledgeTopicInput,
 } from '@kc/application';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 import { KNOWLEDGE_TOPIC_COLUMNS, mapKnowledgeTopic, mapKnowledgeTopicMatch } from './mapKnowledgeTopic';
 
 type Client = SupabaseClient<Database>;
