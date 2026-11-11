@@ -66,4 +66,18 @@ describe('readBaselineFsmSeeds', () => {
       expect(() => readBaselineFsmSeeds([{ name: 'a.sql', sql }])).toThrow(ValidationError);
     }
   });
+
+  it('keeps a row seeded again by a later file once, and accepts on conflict do nothing', () => {
+    const schema = `insert into kc_private.fsm_state (machine_id, status) values ('m', 'a');
+      insert into kc_private.fsm_edge (machine_id, from_status, to_status, role) values ('m', 'a', 'b', 'admin');`;
+    const migration = `insert into kc_private.fsm_state (machine_id, status) values ('m', 'a'), ('m', 'b')
+        on conflict (machine_id, status) do nothing;
+      insert into kc_private.fsm_edge (machine_id, from_status, to_status, role) values
+        ('m', 'a', 'b', 'admin'), ('m', 'b', 'a', 'admin') on conflict do nothing;`;
+    const { states, edges } = readBaselineFsmSeeds([
+      { name: '~migrations/0015_x.sql', sql: migration }, { name: '60/a.sql', sql: schema },
+    ]);
+    expect(states.map((row) => row.status)).toEqual(['a', 'b']);
+    expect(edges.map((row) => `${row.from}>${row.to}[${row.role}]`)).toEqual(['a>b[admin]', 'b>a[admin]']);
+  });
 });
