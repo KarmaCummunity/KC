@@ -129,6 +129,11 @@ for (const [name, note] of [
 rpc('cancel_giving_handoff', 'renamed', 'rpc:cancel_giving_handoff', 'Same argument; now returns the handoff row (was void).');
 table('post_handoffs', 'changed', 'table:post_handoffs', 'Read-only for both parties. `handoff_id` → `id`, `reserved_at` → `created_at`, `world_slug` gone (join the post), `knowledge_slot_id` → slot times, new `machine_id`.');
 table('org_memberships', 'changed', 'table:org_memberships', '`role` → `roles` (array), `membership_id` gone (key is org + user), new `can_post`.');
+table('org_applications', 'same', 'table:org_applications', 'Read-only for the applicant (own rows) and org reviewers; written through `submit_org_application`. Ported from dev (organization registration).');
+rpc('submit_org_application', 'same', 'rpc:submit_org_application', '`p_org_name`, `p_org_description`, `p_contact_email`, `p_contact_phone`, `p_website_url`, `p_declared_nonprofit`; one open application per user, again 7 days after a rejection.');
+rpc('list_org_members', 'same', 'rpc:list_org_members', '`p_org_id`; members only. Returns user, display name, share handle, avatar, role and join time.');
+rpc('org_add_member', 'same', 'rpc:org_add_member', '`p_org_id`, `p_share_handle`, `p_role`; adds a member or changes their role (grants live in `admin_role_grants`, `org_memberships` is the projection).');
+rpc('org_remove_member', 'same', 'rpc:org_remove_member', '`p_org_id`, `p_user_id`; a member removes themselves to leave.');
 
 // ───────────────────────────── rides
 rpc('create_ride_series', 'changed', 'rpc:create_ride_series', 'Post fields go in `p_post`, ride fields in `p_ride` (was flat title / summary / details / kind); returns the series id only.');
@@ -405,8 +410,8 @@ export const packages = [
     degrade: 'Reporting a post or member shows "not available yet"; the admin portal entry is hidden for everyone until the package lands (staff use the dashboard of the database meanwhile).',
     risks: 'Staff deletion of a chat message is `admin_delete_message` (M18).' },
   { id: 'P5', title: 'Launch worlds: items, food, rides, time (events), matching, donation links', launch: 'wedge', parallelWith: ['P6'],
-    select: either(inArea('marketplace', 'rides', 'volunteering', 'matching', 'donations'), both(inArea('mobile'), tierIs('wedge'))),
-    files: ['marketplace/**', 'rides/** (except rides/SupabaseRidesRealtime.ts)', 'volunteering/**', 'matching/**', 'donations/**', 'apps/mobile: world screens, ridesKnowledgeComposition, listing image upload, karma history'],
+    select: either(inArea('marketplace', 'rides', 'volunteering', 'matching', 'donations', 'organizations'), both(inArea('mobile'), tierIs('wedge'))),
+    files: ['marketplace/**', 'rides/** (except rides/SupabaseRidesRealtime.ts)', 'volunteering/**', 'matching/**', 'donations/**', 'organizations/**', 'apps/mobile: world screens, ridesKnowledgeComposition, listing image upload, karma history'],
     work: 'Listings become posts; one handoff row shape; the legacy ride tables and their repositories are deleted; volunteering maps onto event posts; matches as cards. Two agents may split it by folder (rides / the rest): no shared file.',
     tests: ['vitest: marketplace, rides, volunteering, matching, donations suites', 'pgTAP 035, 070, 072 (events, karma), 073 (food), 076, 080'],
     degrade: 'Each launch world is behind `world_<slug>_enabled`: until this package lands the four flags are off and the worlds render as portals (the generic post flow of P2 still lets members publish and close items).',

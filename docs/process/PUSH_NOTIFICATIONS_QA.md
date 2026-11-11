@@ -10,7 +10,7 @@ registry, `app.json` notification settings or `apps/mobile/src/lib/notifications
 
 | Layer | Suite | Covers, for every kind of the registry |
 |---|---|---|
-| Database | `supabase/baseline/tests/051_push_contract.sql` | push payload fields, tokens by device, badge, quiet hours, retries, receipts, dead devices |
+| Database | `supabase/tests/051_push_contract.sql` | push payload fields, tokens by device, badge, quiet hours, retries, receipts, dead devices |
 | Worker | `supabase/functions/dispatch-notification/*.test.ts` | Android and iOS message per kind, batching, partial failure, back-off, concurrency, no token or text in logs |
 | App | `app/apps/mobile/src/i18n/__tests__/notificationKinds.test.ts` | Hebrew and English texts and their arguments, route, channel |
 | Generator | `scripts/generate-notification-kinds.test.mjs` | kind list derived from SQL, missing pieces named |

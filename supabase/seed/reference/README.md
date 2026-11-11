@@ -2,7 +2,7 @@
 
 Rows the product cannot run without, in **every** environment: the city list, the official
 street list and the named road junctions. They are not part of the baseline (the schema holds
-no data) and they are not demo data: demo data lives in `supabase/seed/kc-dev/` and never
+no data) and they are not demo data: the retired demo data lives in `supabase/archive/seed-kc-dev-demo/` and never
 reaches kc-prod, reference data is loaded into kc-prod, kc-dev and local stacks alike.
 
 ## Files
@@ -58,6 +58,6 @@ the rows existed (`extract-from-migrations.sh` replays those statements into a t
 database and exports them). The legacy `tel-aviv` slug row that migration `0667` re-inserts on
 kc-dev is a duplicate of city `5000` and is deliberately not carried over.
 
-After the cut-over to the baseline the migrations are gone and the CSV files are the source:
+Since the cut-over to the baseline the old migrations are history (`supabase/migrations/archive/`) and the CSV files are the source:
 refresh a file from its upstream source (the two generator scripts above describe the mapping),
 keep the sort order, review the diff, and run the loader.

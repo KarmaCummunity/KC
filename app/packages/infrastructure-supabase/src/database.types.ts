@@ -488,7 +488,7 @@ export type Database = {
           reviewed_at: string | null
           reviewed_by: string | null
           search_vector: unknown
-          submitted_by: string
+          submitted_by: string | null
           updated_at: string
           url: string
           validated_at: string
@@ -504,7 +504,7 @@ export type Database = {
           reviewed_at?: string | null
           reviewed_by?: string | null
           search_vector?: unknown
-          submitted_by: string
+          submitted_by?: string | null
           updated_at?: string
           url: string
           validated_at: string
@@ -520,7 +520,7 @@ export type Database = {
           reviewed_at?: string | null
           reviewed_by?: string | null
           search_vector?: unknown
-          submitted_by?: string
+          submitted_by?: string | null
           updated_at?: string
           url?: string
           validated_at?: string

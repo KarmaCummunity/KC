@@ -22,7 +22,7 @@ export interface DonationLink {
   readonly url: string;
   readonly displayName: string;
   readonly description: string | null;
-  readonly submittedBy: string;
+  readonly submittedBy: string | null;
   readonly validatedAt: string;
   readonly createdAt: string;
   /** D9 review state; a content edit sends an approved link back to 'pending'. */

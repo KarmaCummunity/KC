@@ -3,8 +3,8 @@
 #
 #   1. create an empty database on a LOCAL PostgreSQL server
 #   2. apply the Supabase shim (roles, `auth`, `extensions` — what the platform provides)
-#   3. apply supabase/baseline/0001_baseline.sql
-#   4. run every supabase/baseline/tests/*.sql and fail on any `not ok`
+#   3. apply supabase/migrations/NNNN_*.sql in order (0001_baseline.sql first)
+#   4. run every supabase/tests/*.sql and fail on any `not ok`
 #
 # The scratch database is dropped and recreated on every run, so the baseline is always
 # proven against an empty database — the state production starts from.
@@ -18,9 +18,9 @@ set -euo pipefail
 shopt -s nullglob
 
 readonly ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-readonly BASELINE="$ROOT/supabase/baseline/0001_baseline.sql"
+readonly MIGRATIONS_DIR="$ROOT/supabase/migrations"
 readonly SHIM="$ROOT/supabase/baseline/local/supabase_shim.sql"
-readonly TESTS_DIR="$ROOT/supabase/baseline/tests"
+readonly TESTS_DIR="$ROOT/supabase/tests"
 readonly SCRATCH_DB="${BASELINE_SCRATCH_DB:-kc_baseline_check}"
 # The name is interpolated into DROP/CREATE DATABASE, so only a plain identifier is accepted.
 if [[ ! "$SCRATCH_DB" =~ ^[a-z_][a-z0-9_]{0,62}$ ]]; then
@@ -69,9 +69,12 @@ run_sql() {
 echo "── Applying Supabase shim ──"
 run_sql "$SHIM"
 
-echo "── Applying baseline ──"
-# One transaction, as a migration runner applies it: a failing statement leaves nothing behind.
-psql "$SCRATCH_URL" -v ON_ERROR_STOP=1 -q --single-transaction -f "$BASELINE"
+echo "── Applying migrations (0001_baseline.sql, then any later ones; archive/ is history) ──"
+# One transaction per file, as a migration runner applies it: a failing statement leaves nothing behind.
+for migration in "$MIGRATIONS_DIR"/[0-9][0-9][0-9][0-9]_*.sql; do
+  echo "   $(basename "$migration")"
+  psql "$SCRATCH_URL" -v ON_ERROR_STOP=1 -q --single-transaction -f "$migration"
+done
 
 if (($# > 0)); then
   files=("$@")

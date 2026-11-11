@@ -2,10 +2,13 @@ name: CI — backend
 
 # Database lane, called by ci.yml when migrations, seed/config, the Supabase
 # adapter package or CI plumbing changed. Boots a fresh local Supabase stack
-# (all migrations + seed.sql), then runs every supabase/tests/*.sql file
-# (incl. rls-lint.sql), the database.types.ts drift check and the SECURITY
-# DEFINER SQL probe integration tests. The migration chain and destructive-op
-# scans are static and run in ci-static-guards.yml.
+# (supabase/migrations: 0001_baseline.sql, then any later migration), runs the
+# pgTAP suites of supabase/tests on an empty scratch database of the same server
+# (plus the reference and content seed loaders, applied twice), the RPC grants
+# check, the database.types.ts drift check, the FSM catalog contract and the
+# SECURITY DEFINER SQL probe / port contract integration tests. The migration
+# chain, destructive-op and baseline-assembly scans are static and run in
+# ci-static-guards.yml.
 
 on:
   workflow_call:
@@ -37,7 +40,7 @@ jobs:
           ACTOR: ${{ github.actor }}
         run: echo "$GH_TOKEN" | docker login ghcr.io -u "$ACTOR" --password-stdin
 
-      - name: Start Supabase (applies all migrations + seed.sql)
+      - name: Start Supabase (applies supabase/migrations, the baseline and any later ones)
         run: |
           # Image pulls hit registry rate limits intermittently (`toomanyrequests`
           # on ghcr.io, `Data limit exceeded` on public.ecr.aws) — infra, not a
@@ -51,34 +54,27 @@ jobs:
           done
           exit 1
 
-      - name: Run all DB tests (harness + supabase/tests + flows)
-        # Same runner agents use locally: installs supabase/tests/_harness, then runs the
-        # per-migration tests and the per-world lifecycle flows (G44).
-        run: scripts/run-db-tests.sh
-
-      # The production baseline (supabase/schemas → supabase/baseline) is built on an empty
-      # scratch database of the same server and its pgTAP tests run against it. It is not
-      # part of supabase/migrations until the cut-over (docs/db/target-design.md §10).
-      - name: Production baseline applies on an empty database + pgTAP tests
+      # The migrations are built on an empty scratch database of the same server (the state
+      # production starts from; the Supabase shim stands in for the platform objects the
+      # excluded services would create), its pgTAP suites run, and the seed loaders are
+      # proven loadable and idempotent. See docs/db/target-design.md §10.
+      - name: Migrations apply on an empty database + pgTAP tests + seed loaders
         run: scripts/run-baseline-tests.sh
 
       - name: Check every client RPC is granted to a client role
-        # Functions are owner/service_role-only by default (0520), so a client RPC whose
+        # Functions are owner/service_role-only by default, so a client RPC whose
         # migration forgot its `grant execute … to authenticated` fails here, not in the app.
         run: |
           set -euo pipefail
           DB_URL="$(supabase status -o env | sed -n 's/^DB_URL="\(.*\)"$/\1/p')" node scripts/check-rpc-grants.mjs
 
-      # Monthly partition children are created relative to now(), so they are
-      # stripped before the diff; otherwise the check breaks on every 1st of the month.
+      # The generator is the one that produced the committed file: the migrations are applied
+      # to a scratch database of the local stack's server and `@supabase/postgres-meta` (pinned)
+      # reads it; partition children are stripped there (they are created relative to now()).
       - name: Check database.types.ts drift
         run: |
           set -euo pipefail
-          supabase gen types typescript --local | node scripts/strip-partition-types.mjs > /tmp/database.types.ts
-          if ! diff -u app/packages/infrastructure-supabase/src/database.types.ts /tmp/database.types.ts; then
-            echo "::error::database.types.ts is out of date. Run: supabase gen types typescript --local | node scripts/strip-partition-types.mjs > app/packages/infrastructure-supabase/src/database.types.ts"
-            exit 1
-          fi
+          DB_URL="$(supabase status -o env | sed -n 's/^DB_URL="\(.*\)"$/\1/p')" node scripts/gen-baseline-types.mjs --check
 
       # Node 22 is deliberate (sqlProbes need native WebSocket; do not use .nvmrc).
       - name: Setup pnpm + Turbo cache (Node 22)
@@ -94,7 +90,7 @@ jobs:
 
       # Runs vitest directly, not through turbo: a cached test task would skip this
       # contract when only supabase/migrations changed (turbo does not hash that tree).
-      - name: FSM catalog contract (migrations vs FSM_MACHINES)
+      - name: FSM catalog contract (baseline SQL vs FSM_MACHINES)
         working-directory: app
         run: pnpm --filter @kc/infrastructure-supabase exec vitest run src/fsm/__tests__/catalogMatchesSql.test.ts
 

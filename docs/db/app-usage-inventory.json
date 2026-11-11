@@ -20,12 +20,12 @@
    "distinct": 3
   },
   "rpc": {
-   "callSites": 239,
-   "distinct": 217
+   "callSites": 243,
+   "distinct": 221
   },
   "table": {
-   "callSites": 164,
-   "distinct": 55
+   "callSites": 166,
+   "distinct": 56
   }
  },
  "entries": [
@@ -2135,6 +2135,66 @@
    "symbol": "SupabaseNotificationInboxRepository.markAllRead",
    "via": "literal",
    "name": "notifications_mark_all_read"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/organizations/SupabaseOrganizationsRepository.ts",
+   "line": 45,
+   "area": "organizations",
+   "symbol": "SupabaseOrganizationsRepository.submitApplication",
+   "via": "literal",
+   "name": "submit_org_application"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/organizations/SupabaseOrganizationsRepository.ts",
+   "line": 60,
+   "area": "organizations",
+   "symbol": "SupabaseOrganizationsRepository.getMyLatestApplication",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "org_applications"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/organizations/SupabaseOrganizationsRepository.ts",
+   "line": 84,
+   "area": "organizations",
+   "symbol": "SupabaseOrganizationsRepository.listMyOrganizations",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "org_memberships"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/organizations/SupabaseOrganizationsRepository.ts",
+   "line": 104,
+   "area": "organizations",
+   "symbol": "SupabaseOrganizationsRepository.listMembers",
+   "via": "literal",
+   "name": "list_org_members"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/organizations/SupabaseOrganizationsRepository.ts",
+   "line": 112,
+   "area": "organizations",
+   "symbol": "SupabaseOrganizationsRepository.addMember",
+   "via": "literal",
+   "name": "org_add_member"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/organizations/SupabaseOrganizationsRepository.ts",
+   "line": 119,
+   "area": "organizations",
+   "symbol": "SupabaseOrganizationsRepository.removeMember",
+   "via": "literal",
+   "name": "org_remove_member"
   },
   {
    "kind": "rpc",

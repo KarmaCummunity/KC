@@ -4,7 +4,7 @@
 // `supabase gen types typescript --local` needs the Docker stack. That command is a thin
 // wrapper: it starts the `supabase/postgres-meta` image and asks it for the types. This
 // script runs the same generator (`@supabase/postgres-meta`, from npm) against a scratch
-// database built from `supabase/baseline/0001_baseline.sql` on a plain local PostgreSQL
+// database built from `supabase/migrations/*.sql` on a plain local PostgreSQL
 // server:
 //
 //   1. create an empty scratch database, apply the Supabase shim and the baseline
@@ -28,7 +28,7 @@
 //       temp dir, reused between runs).
 
 import { execFileSync, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -36,7 +36,7 @@ import { stripPartitionTypes } from './strip-partition-types.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 export const OUTPUT_FILE = join(ROOT, 'app/packages/infrastructure-supabase/src/database.types.ts');
-const BASELINE = join(ROOT, 'supabase/baseline/0001_baseline.sql');
+const MIGRATIONS_DIR = join(ROOT, 'supabase/migrations');
 const SHIM = join(ROOT, 'supabase/baseline/local/supabase_shim.sql');
 
 /** Schemas the API exposes; the only ones the client can address (target-design §2.1). */
@@ -145,7 +145,11 @@ function buildScratch(admin, name, target) {
   if (!isLocalAddress(address)) throw new Error(`gen-baseline-types: refusing non-local server '${address}'`);
   psql(admin, ['-c', `drop database if exists ${name} with (force)`, '-c', `create database ${name}`]);
   psql(target, ['-f', SHIM]);
-  psql(target, ['--single-transaction', '-f', BASELINE]);
+  // Every migration in order, each in one transaction, as the migration runner applies them
+  // (archive/ is history and is not a migration).
+  for (const file of readdirSync(MIGRATIONS_DIR).filter((n) => /^\d{4}_[a-z0-9_]+\.sql$/.test(n)).sort()) {
+    psql(target, ['--single-transaction', '-f', join(MIGRATIONS_DIR, file)]);
+  }
 }
 
 /** Installs the pinned generator once and returns the path of its entry script. */

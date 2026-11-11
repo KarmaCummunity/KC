@@ -120,7 +120,7 @@ export class SupabaseDonationLinksRepository implements IDonationLinksRepository
     const users = await this.guarded('table:users', async () =>
       unwrapCall(
         'table:users',
-        await this.client.from('users').select('id, display_name').in('id', [...new Set(rows.map((row) => row.submitted_by))]),
+        await this.client.from('users').select('id, display_name').in('id', [...new Set(rows.flatMap((row) => (row.submitted_by === null ? [] : [row.submitted_by])))]),
       ),
     );
     const names = new Map((users ?? []).map((user) => [user.id, user.display_name]));
@@ -131,7 +131,7 @@ export class SupabaseDonationLinksRepository implements IDonationLinksRepository
       displayName: row.display_name,
       description: row.description,
       submittedBy: row.submitted_by,
-      submitterName: names.get(row.submitted_by) ?? null,
+      submitterName: (row.submitted_by === null ? null : names.get(row.submitted_by)) ?? null,
       reviewStatus: row.review_status as DonationLinkReviewStatus,
       reviewNote: row.review_note,
       createdAt: row.created_at,

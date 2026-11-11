@@ -181,7 +181,7 @@ function namesCatalog(keyword: string, statement: string): boolean {
 
 /**
  * Reads the catalog seeds of `files` in path order (the order they are assembled into
- * `supabase/baseline/0001_baseline.sql`) and returns the resulting rows.
+ * `supabase/migrations/0001_baseline.sql`) and returns the resulting rows.
  */
 export function readBaselineFsmSeeds(files: readonly SchemaFile[]): FsmCatalogSnapshot {
   const states: FsmStateRow[] = [];

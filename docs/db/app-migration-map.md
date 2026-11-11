@@ -8,12 +8,12 @@ The application (`app/packages/infrastructure-supabase`, `app/apps/mobile`) and 
 
 | Kind | Objects used | 1:1 | 1:1 (renamed) | CHANGED | REMOVED | MISSING |
 | --- | --- | --- | --- | --- | --- | --- |
-| RPCs | 217 | 88 | 20 | 47 | 1 | 61 |
-| Tables and views | 55 | 35 | 0 | 16 | 0 | 4 |
+| RPCs | 221 | 92 | 20 | 47 | 1 | 61 |
+| Tables and views | 56 | 36 | 0 | 16 | 0 | 4 |
 | Storage buckets | 4 | 3 | 0 | 1 | 0 | 0 |
 | Realtime channels | 6 | 6 | 0 | 0 | 0 | 0 |
 | Edge Function invokes | 3 | 3 | 0 | 0 | 0 | 0 |
-| **Total** | 285 | 135 | 20 | 64 | 1 | 65 |
+| **Total** | 290 | 140 | 20 | 64 | 1 | 65 |
 
 ### Launch scope
 
@@ -23,7 +23,7 @@ Every row carries `launch` (spec D102, `docs/spec/96_launch_and_first_group_plan
 | --- | --- | --- | --- | --- | --- | --- |
 | core | 103 | 85 | 1 | 17 | 0 | 0 |
 | wedge | 52 | 31 | 15 | 6 | 0 | 0 |
-| later | 130 | 19 | 4 | 41 | 1 | 65 |
+| later | 135 | 24 | 4 | 41 | 1 | 65 |
 | **Launch-critical (core + wedge)** | 155 | 116 | 16 | 23 | 0 | 0 |
 
 Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename of the function or its arguments · **CHANGED** the caller's logic changes · **REMOVED** no replacement by design · **MISSING** the baseline has no equivalent although the code needs one (§4). Confidence: **high** read in the baseline source, **medium** inferred from names and generated types.
@@ -58,6 +58,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `infrastructure-supabase/src/matching/` | 2 | 2 | 0 | 0 | 0 |
 | `infrastructure-supabase/src/moderation/` | 7 | 6 | 1 | 0 | 0 |
 | `infrastructure-supabase/src/notifications/` | 7 | 7 | 0 | 0 | 0 |
+| `infrastructure-supabase/src/organizations/` | 6 | 5 | 1 | 0 | 0 |
 | `infrastructure-supabase/src/payments/` | 12 | 2 | 8 | 1 | 1 |
 | `infrastructure-supabase/src/posts/` | 50 | 34 | 16 | 0 | 0 |
 | `infrastructure-supabase/src/realtime/` | 1 | 1 | 0 | 0 | 0 |
@@ -98,9 +99,9 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `admin_change_role` | core | 1:1 | `admin_change_role(p_grant_id: string, p_new_role: string) → string` | Signature unchanged. | `account_not_active`, `forbidden_grant`, `forbidden_revoke`, `grant_already_revoked`, `grant_not_found`, `invalid_role`, `invalid_scope`, `role_already_active`, `unauthenticated` | high | SupabaseAdminRoleRepository.ts:148 |
 | `admin_grant_role` | core | 1:1 | `admin_grant_role(p_role: string, p_scope_org_id?: string, p_target_user_id: string) → string` | Signature unchanged. | `account_not_active`, `forbidden_grant`, `invalid_role`, `invalid_scope`, `role_already_active`, `target_not_active`, `target_not_found`, `unauthenticated` | high | SupabaseAdminRoleRepository.ts:130 |
 | `admin_hierarchy_census` | later | CHANGED | table `admin_role_grants` | Counts per level and role computed on the device from the same grants read. |  | medium | SupabaseOrgHierarchyRepository.ts:138 |
-| `admin_org_application_approve` | later | CHANGED | `admin_org_application_approve(p_application_id: string, p_note?: string, p_slug: string) → string` | New required `p_slug`; returns the organization id. | `application_already_decided`, `application_not_found`, `forbidden`, `slug_required` †, `unauthenticated` | high | SupabaseOrgApplicationsRepository.ts:90 |
+| `admin_org_application_approve` | later | CHANGED | `admin_org_application_approve(p_application_id: string, p_note?: string, p_slug?: string) → string` | New required `p_slug`; returns the organization id. | `application_already_decided`, `application_not_found`, `forbidden`, `unauthenticated` | high | SupabaseOrgApplicationsRepository.ts:90 |
 | `admin_org_application_list` | later | CHANGED | table `org_applications` | Direct read (policy `org_applications_select_reviewers`). |  | high | SupabaseOrgApplicationsRepository.ts:74 |
-| `admin_org_application_reject` | later | 1:1 | `admin_org_application_reject(p_application_id: string, p_note?: string) → undefined` | Signature unchanged. | `application_already_decided`, `application_not_found`, `forbidden`, `slug_required` †, `unauthenticated` | high | SupabaseOrgApplicationsRepository.ts:98 |
+| `admin_org_application_reject` | later | 1:1 | `admin_org_application_reject(p_application_id: string, p_note?: string) → undefined` | Signature unchanged. | `application_already_decided`, `application_not_found`, `forbidden`, `unauthenticated` | high | SupabaseOrgApplicationsRepository.ts:98 |
 | `admin_org_tree` | later | CHANGED | table `admin_role_grants` | Build the tree on the device from the grants (`manager_grant_id`, `scope_org_id`). |  | medium | SupabaseOrgHierarchyRepository.ts:116 |
 | `admin_revoke_role` | core | 1:1 | `admin_revoke_role(p_grant_id: string) → undefined` | Signature unchanged. | `account_not_active`, `forbidden_revoke`, `grant_already_revoked`, `grant_not_found`, `unauthenticated` | high | SupabaseAdminRoleRepository.ts:143 |
 | `admin_set_manager` | later | CHANGED | `admin_set_manager(p_grant_id: string, p_manager_grant_id: string) → undefined` | `p_manager_grant_id` is required: a grant can be moved under another grant but not detached. | `account_not_active`, `forbidden_revoke`, `grant_already_revoked`, `grant_not_found`, `invalid_manager`, `unauthenticated` | high | SupabaseOrgHierarchyRepository.ts:130 |
@@ -303,7 +304,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `post_cards` | core | 1:1 | `post_cards(p_post_ids: string[]) → post_card[]` | Cards of up to 100 post ids the caller can read, in no particular order: the adapter restores the order of the ids (saved posts, a member's posts by status, one post). |  | high | listingMapping.ts:93 |
 | `post_detail` | wedge | 1:1 | `post_detail(p_post_id: string) → Json` | Card, gallery and first comments as one JSON; the adapter adds the world detail row and the world labels to build the listing detail. |  | high | mapListingDetail.ts:107 |
 | `profile_posts_page` | core | 1:1 | `profile_posts_page(p_cursor?: Json, p_limit?: number, p_tab?: string, p_user_id: string) → { card: post_card next_cursor: Json }[]` | `p_tab` open \| closed \| hidden, keyset `p_cursor`; the closed tab of a profile. The owner's delivered or deleted "only me" posts come from `posts` ids completed by `post_cards`. | `invalid_input` | high | SupabaseMarketplaceRepository.ts:88 |
-| `publish_post` | core | 1:1 | `publish_post(p_post_id: string) → undefined` | Publishes the draft the adapter wrote (draft → open); a failed create deletes the draft, which a device may delete. Refusals: `listing_wrong_status`, `post_limit_exceeded`. | `account_not_active`, `listing_wrong_status`, `post_not_found`, `unauthenticated` | high | listingWrites.ts:97 |
+| `publish_post` | core | 1:1 | `publish_post(p_post_id: string) → undefined` | Publishes the draft the adapter wrote (draft → open); a failed create deletes the draft, which a device may delete. Refusals: `listing_wrong_status`, `post_limit_exceeded`. | `account_not_active`, `listing_wrong_status`, `offer_photo_required`, `post_not_found`, `unauthenticated` | high | listingWrites.ts:97 |
 | `rate_handoff` | wedge | 1:1 | `rate_handoff(p_comment?: string, p_handoff_id: string, p_stars: number) → undefined` | One rating RPC for every world (`p_stars`, optional `p_comment`); refusals `invalid_rating`, `handoff_not_found`, `not_participant`, `handoff_already_rated`. | `account_not_active`, `handoff_already_rated`, `handoff_not_found`, `invalid_rating`, `not_participant`, `unauthenticated` | high | givingHandoffs.ts:177 |
 | `register_for_event` | wedge | 1:1 (renamed) | `register_for_event(p_post_id: string) → post_handoffs row` | `p_target` → `p_post_id`. Returned row: `handoff_id` → `id`, `listing_id` → `post_id`, `reserved_at` → `created_at`, `knowledge_slot_id` → `slot_starts_at` / `slot_ends_at`, new `machine_id`. | `account_not_active`, `invalid_rate_limit_args`, `item_already_reserved`, `listing_not_available`, `own_listing`, `rate_limited`, `slot_started`, `unauthenticated`, `verification_required` | high | eventRegistrations.ts:66 |
 | `reserve_item_giving` | wedge | 1:1 (renamed) | `reserve_item_giving(p_pickup_mode?: string, p_pickup_window_end?: string, p_pickup_window_start?: string, p_post_id: string) → post_handoffs row` | `p_listing_id` → `p_post_id`. Returned row: `handoff_id` → `id`, `listing_id` → `post_id`, `reserved_at` → `created_at`, `knowledge_slot_id` → `slot_starts_at` / `slot_ends_at`, new `machine_id`. | `account_not_active`, `invalid_pickup_mode`, `invalid_rate_limit_args`, `item_already_reserved`, `listing_not_available`, `own_listing`, `rate_limited`, `unauthenticated` | high | givingHandoffs.ts:115 |
@@ -358,6 +359,19 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `notifications_page` | core | 1:1 | `notifications_page(p_before_created_at?: string, p_before_id?: string, p_category?: string, p_limit?: number) → { actor_avatar_url: string actor_display_name: string actor_ids: string[] body_key: string category: string created_at: string data: Json entity_id: string entity_type: string group_count: number id: string kind: stri...` | Already moved to the baseline contract. |  | high | SupabaseNotificationInboxRepository.ts:62 |
 | `notifications_unread_count` | core | 1:1 | `notifications_unread_count() → number` | Already moved to the baseline contract. |  | high | SupabaseNotificationInboxRepository.ts:73 |
 | `user_devices` (table) | core | 1:1 | table `user_devices` | Already moved to the baseline contract. |  | high | SupabaseDeviceRepository.ts:41, SupabaseDeviceRepository.ts:59, SupabaseDeviceRepository.ts:66 |
+
+### `infrastructure-supabase/src/organizations/`
+
+6 call sites: 5 map 1:1, 1 need logic changes, 0 removed, 0 MISSING.
+
+| Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `list_org_members` | later | 1:1 | `list_org_members(p_org_id: string) → { avatar_url: string display_name: string joined_at: string role: string share_handle: string user_id: string }[]` | `p_org_id`; members only. Returns user, display name, share handle, avatar, role and join time. | `account_not_active`, `org_not_member`, `unauthenticated` | high | SupabaseOrganizationsRepository.ts:104 |
+| `org_add_member` | later | 1:1 | `org_add_member(p_org_id: string, p_role?: string, p_share_handle: string) → string` | `p_org_id`, `p_share_handle`, `p_role`; adds a member or changes their role (grants live in `admin_role_grants`, `org_memberships` is the projection). | `account_not_active`, `org_last_admin`, `org_member_manage_forbidden`, `org_member_user_not_found`, `org_role_invalid`, `unauthenticated` | high | SupabaseOrganizationsRepository.ts:112 |
+| `org_remove_member` | later | 1:1 | `org_remove_member(p_org_id: string, p_user_id: string) → undefined` | `p_org_id`, `p_user_id`; a member removes themselves to leave. | `account_not_active`, `org_last_admin`, `org_member_manage_forbidden`, `org_member_not_found`, `unauthenticated` | high | SupabaseOrganizationsRepository.ts:119 |
+| `submit_org_application` | later | 1:1 | `submit_org_application(p_contact_email: string, p_contact_phone?: string, p_declared_nonprofit?: boolean, p_org_description: string, p_org_name: string, p_website_url?: string) → string` | `p_org_name`, `p_org_description`, `p_contact_email`, `p_contact_phone`, `p_website_url`, `p_declared_nonprofit`; one open application per user, again 7 days after a rejection. | `account_not_active`, `org_application_pending_exists`, `org_application_resubmit_too_soon`, `org_contact_email_invalid`, `org_description_required`, `org_name_invalid`, `org_nonprofit_declaration_required`, `org_website_invalid`, `unauthenticated` | high | SupabaseOrganizationsRepository.ts:45 |
+| `org_applications` (table) | later | 1:1 | table `org_applications` | Read-only for the applicant (own rows) and org reviewers; written through `submit_org_application`. Ported from dev (organization registration). |  | high | SupabaseOrganizationsRepository.ts:60 |
+| `org_memberships` (table) | wedge | CHANGED | see `infrastructure-supabase/src/marketplace/` |  |  |  | SupabaseOrganizationsRepository.ts:84 |
 
 ### `infrastructure-supabase/src/payments/`
 
@@ -495,7 +509,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `community_stats` | core | 1:1 | `community_stats(delivered_posts: number, open_public_posts: number, refreshed_at: string, registered_users: number) → { delivered_posts: number open_public_posts: number refreshed_at: string registered_users: number }[]` | One row of registered_users, open_public_posts, delivered_posts, refreshed_at; the About screen reads it again every 60 seconds (there is no change feed). | `unauthenticated` | high | SupabaseStatsRepository.ts:35 |
-| `my_activity_timeline` | later | 1:1 | `my_activity_timeline(p_limit?: number) → { actor_display_name: string actor_id: string kind: string occurred_at: string post_id: string post_title: string }[]` | `p_limit`; rows of occurred_at, kind, post_id, post_title, actor_id, actor_display_name. |  | high | SupabaseStatsRepository.ts:52 |
+| `my_activity_timeline` | later | 1:1 | `my_activity_timeline(p_limit?: number) → { actor_display_name: string actor_id: string kind: string occurred_at: string post_id: string post_title: string world_slug: string }[]` | `p_limit`; rows of occurred_at, kind, post_id, post_title, actor_id, actor_display_name. |  | high | SupabaseStatsRepository.ts:52 |
 
 ### `infrastructure-supabase/src/streets/`
 
@@ -755,7 +769,7 @@ In launch order: after package *n* the app is shippable with everything up to *n
 | P2 — Posts, feed, search, closure, translations | core | 42 | 31 | 11 | 0 | 0 | P3, P4 |
 | P3 — Chat and realtime | core | 18 | 17 | 1 | 0 | 0 | P2, P4 |
 | P4 — Reports, moderation and admin basics | core | 17 | 12 | 5 | 0 | 0 | P2, P3 |
-| P5 — Launch worlds: items, food, rides, time (events), matching, donation links | wedge | 65 | 54 | 11 | 0 | 0 | P6 |
+| P5 — Launch worlds: items, food, rides, time (events), matching, donation links | wedge | 70 | 59 | 11 | 0 | 0 | P6 |
 | P6 — Edge Functions of the launch | core | 10 | 6 | 4 | 0 | 0 | P5 |
 | L1 — Housing world | later | 12 | 3 | 9 | 0 | 0 | L2, L3, L4, L5, L6, L7 |
 | L2 — Knowledge world | later | 12 | 1 | 5 | 0 | 6 | L1, L3, L4, L5, L6, L7 |
@@ -807,7 +821,7 @@ In launch order: after package *n* the app is shippable with everything up to *n
 
 ### P5 — Launch worlds: items, food, rides, time (events), matching, donation links
 
-- **Owns:** `marketplace/**`, `rides/** (except rides/SupabaseRidesRealtime.ts)`, `volunteering/**`, `matching/**`, `donations/**`, `apps/mobile: world screens, ridesKnowledgeComposition, listing image upload, karma history`
+- **Owns:** `marketplace/**`, `rides/** (except rides/SupabaseRidesRealtime.ts)`, `volunteering/**`, `matching/**`, `donations/**`, `organizations/**`, `apps/mobile: world screens, ridesKnowledgeComposition, listing image upload, karma history`
 - **Work:** Listings become posts; one handoff row shape; the legacy ride tables and their repositories are deleted; volunteering maps onto event posts; matches as cards. Two agents may split it by folder (rides / the rest): no shared file.
 - **Must pass:** vitest: marketplace, rides, volunteering, matching, donations suites; pgTAP 035, 070, 072 (events, karma), 073 (food), 076, 080
 - **If reached before it is migrated:** Each launch world is behind `world_<slug>_enabled`: until this package lands the four flags are off and the worlds render as portals (the generic post flow of P2 still lets members publish and close items).

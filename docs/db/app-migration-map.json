@@ -2,16 +2,16 @@
  "generatedBy": "scripts/app-migration-map.mjs",
  "totals": {
   "rpc": {
-   "objects": 217,
-   "same": 88,
+   "objects": 221,
+   "same": 92,
    "renamed": 20,
    "changed": 47,
    "removed": 1,
    "missing": 61
   },
   "table": {
-   "objects": 55,
-   "same": 35,
+   "objects": 56,
+   "same": 36,
    "renamed": 0,
    "changed": 16,
    "removed": 0,
@@ -52,8 +52,8 @@
    "missing": 0
   },
   "later": {
-   "objects": 130,
-   "same": 19,
+   "objects": 135,
+   "same": 24,
    "renamed": 4,
    "changed": 41,
    "removed": 1,
@@ -283,6 +283,13 @@
    "callSites": 7,
    "oneToOne": 7,
    "changed": 0,
+   "removed": 0,
+   "missing": 0
+  },
+  "organizations": {
+   "callSites": 6,
+   "oneToOne": 5,
+   "changed": 1,
    "removed": 0,
    "missing": 0
   },
@@ -762,6 +769,7 @@
     "volunteering/**",
     "matching/**",
     "donations/**",
+    "organizations/**",
     "apps/mobile: world screens, ridesKnowledgeComposition, listing image upload, karma history"
    ],
    "work": "Listings become posts; one handoff row shape; the legacy ride tables and their repositories are deleted; volunteering maps onto event posts; matches as cards. Two agents may split it by folder (rides / the rest): no shared file.",
@@ -804,6 +812,11 @@
     "rpc:cancel_giving_handoff",
     "table:post_handoffs",
     "table:org_memberships",
+    "table:org_applications",
+    "rpc:submit_org_application",
+    "rpc:list_org_members",
+    "rpc:org_add_member",
+    "rpc:org_remove_member",
     "rpc:create_ride_series",
     "rpc:update_ride_series",
     "rpc:set_ride_series_status",
@@ -839,8 +852,8 @@
     "table:post_ratings"
    ],
    "counts": {
-    "objects": 65,
-    "oneToOne": 54,
+    "objects": 70,
+    "oneToOne": 59,
     "changed": 11,
     "removed": 0,
     "missing": 0
@@ -2445,9 +2458,9 @@
     {
      "type": "rpc",
      "name": "admin_org_application_approve",
-     "source": "80_organizations/030_org_applications.sql:149",
+     "source": "80_organizations/030_org_applications.sql:176",
      "signature": [
-      "admin_org_application_approve(p_application_id: string, p_note?: string, p_slug: string) → string"
+      "admin_org_application_approve(p_application_id: string, p_note?: string, p_slug?: string) → string"
      ],
      "errors": [
       {
@@ -2461,10 +2474,6 @@
       {
        "code": "forbidden",
        "knownToApp": true
-      },
-      {
-       "code": "slug_required",
-       "knownToApp": false
       },
       {
        "code": "unauthenticated",
@@ -2521,19 +2530,7 @@
       "website_url"
      ],
      "clientGrants": {
-      "select": true,
-      "insert": [
-       "applicant_id",
-       "contact_email",
-       "contact_phone",
-       "declared_nonprofit",
-       "id",
-       "org_description",
-       "org_name",
-       "org_type",
-       "registration_number",
-       "website_url"
-      ]
+      "select": true
      }
     }
    ],
@@ -2566,7 +2563,7 @@
     {
      "type": "rpc",
      "name": "admin_org_application_reject",
-     "source": "80_organizations/030_org_applications.sql:161",
+     "source": "80_organizations/030_org_applications.sql:188",
      "signature": [
       "admin_org_application_reject(p_application_id: string, p_note?: string) → undefined"
      ],
@@ -2582,10 +2579,6 @@
       {
        "code": "forbidden",
        "knownToApp": true
-      },
-      {
-       "code": "slug_required",
-       "knownToApp": false
       },
       {
        "code": "unauthenticated",
@@ -2842,7 +2835,7 @@
     {
      "type": "rpc",
      "name": "admin_review_donation_link",
-     "source": "80_organizations/050_donation_links.sql:122",
+     "source": "80_organizations/050_donation_links.sql:124",
      "signature": [
       "admin_review_donation_link(p_approve: boolean, p_link_id: string, p_note?: string) → string"
      ],
@@ -6204,7 +6197,7 @@
     {
      "type": "rpc",
      "name": "delete_post",
-     "source": "25_handoffs/060_post_owner_actions.sql:83",
+     "source": "25_handoffs/060_post_owner_actions.sql:86",
      "signature": [
       "delete_post(p_post_id: string) → undefined"
      ],
@@ -8281,6 +8274,51 @@
    ]
   },
   {
+   "old": "list_org_members",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "`p_org_id`; members only. Returns user, display name, share handle, avatar, role and join time.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "list_org_members",
+     "source": "80_organizations/070_org_registration.sql:107",
+     "signature": [
+      "list_org_members(p_org_id: string) → { avatar_url: string display_name: string joined_at: string role: string share_handle: string user_id: string }[]"
+     ],
+     "errors": [
+      {
+       "code": "account_not_active",
+       "knownToApp": true
+      },
+      {
+       "code": "org_not_member",
+       "knownToApp": true
+      },
+      {
+       "code": "unauthenticated",
+       "knownToApp": true
+      }
+     ]
+    }
+   ],
+   "areas": [
+    "organizations"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/organizations/SupabaseOrganizationsRepository.ts",
+     "line": 104,
+     "symbol": "SupabaseOrganizationsRepository.listMembers",
+     "area": "organizations"
+    }
+   ]
+  },
+  {
    "old": "list_verified_nonprofits",
    "kind": "rpc",
    "status": "changed",
@@ -8641,7 +8679,7 @@
      "name": "my_activity_timeline",
      "source": "79_activity_stats/020_activity_and_community.sql:18",
      "signature": [
-      "my_activity_timeline(p_limit?: number) → { actor_display_name: string actor_id: string kind: string occurred_at: string post_id: string post_title: string }[]"
+      "my_activity_timeline(p_limit?: number) → { actor_display_name: string actor_id: string kind: string occurred_at: string post_id: string post_title: string world_slug: string }[]"
      ],
      "errors": []
     }
@@ -8923,6 +8961,116 @@
    ]
   },
   {
+   "old": "org_add_member",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "`p_org_id`, `p_share_handle`, `p_role`; adds a member or changes their role (grants live in `admin_role_grants`, `org_memberships` is the projection).",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "org_add_member",
+     "source": "80_organizations/070_org_registration.sql:158",
+     "signature": [
+      "org_add_member(p_org_id: string, p_role?: string, p_share_handle: string) → string"
+     ],
+     "errors": [
+      {
+       "code": "account_not_active",
+       "knownToApp": true
+      },
+      {
+       "code": "org_last_admin",
+       "knownToApp": true
+      },
+      {
+       "code": "org_member_manage_forbidden",
+       "knownToApp": true
+      },
+      {
+       "code": "org_member_user_not_found",
+       "knownToApp": true
+      },
+      {
+       "code": "org_role_invalid",
+       "knownToApp": true
+      },
+      {
+       "code": "unauthenticated",
+       "knownToApp": true
+      }
+     ]
+    }
+   ],
+   "areas": [
+    "organizations"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/organizations/SupabaseOrganizationsRepository.ts",
+     "line": 112,
+     "symbol": "SupabaseOrganizationsRepository.addMember",
+     "area": "organizations"
+    }
+   ]
+  },
+  {
+   "old": "org_remove_member",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "`p_org_id`, `p_user_id`; a member removes themselves to leave.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "org_remove_member",
+     "source": "80_organizations/070_org_registration.sql:226",
+     "signature": [
+      "org_remove_member(p_org_id: string, p_user_id: string) → undefined"
+     ],
+     "errors": [
+      {
+       "code": "account_not_active",
+       "knownToApp": true
+      },
+      {
+       "code": "org_last_admin",
+       "knownToApp": true
+      },
+      {
+       "code": "org_member_manage_forbidden",
+       "knownToApp": true
+      },
+      {
+       "code": "org_member_not_found",
+       "knownToApp": true
+      },
+      {
+       "code": "unauthenticated",
+       "knownToApp": true
+      }
+     ]
+    }
+   ],
+   "areas": [
+    "organizations"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/organizations/SupabaseOrganizationsRepository.ts",
+     "line": 119,
+     "symbol": "SupabaseOrganizationsRepository.removeMember",
+     "area": "organizations"
+    }
+   ]
+  },
+  {
    "old": "pause_post",
    "kind": "rpc",
    "status": "same",
@@ -8935,7 +9083,7 @@
     {
      "type": "rpc",
      "name": "pause_post",
-     "source": "25_handoffs/060_post_owner_actions.sql:36",
+     "source": "25_handoffs/060_post_owner_actions.sql:39",
      "signature": [
       "pause_post(p_post_id: string) → undefined"
      ],
@@ -9324,6 +9472,10 @@
       },
       {
        "code": "listing_wrong_status",
+       "knownToApp": true
+      },
+      {
+       "code": "offer_photo_required",
        "knownToApp": true
       },
       {
@@ -9772,7 +9924,7 @@
     {
      "type": "rpc",
      "name": "report_donation_link",
-     "source": "80_organizations/050_donation_links.sql:152",
+     "source": "80_organizations/050_donation_links.sql:154",
      "signature": [
       "report_donation_link(p_link_id: string) → undefined"
      ],
@@ -10152,7 +10304,7 @@
     {
      "type": "rpc",
      "name": "resume_post",
-     "source": "25_handoffs/060_post_owner_actions.sql:59",
+     "source": "25_handoffs/060_post_owner_actions.sql:62",
      "signature": [
       "resume_post(p_post_id: string) → undefined"
      ],
@@ -10960,6 +11112,75 @@
      "line": 30,
      "symbol": "SupabaseMarketplaceRepository.similarListings",
      "area": "marketplace"
+    }
+   ]
+  },
+  {
+   "old": "submit_org_application",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "`p_org_name`, `p_org_description`, `p_contact_email`, `p_contact_phone`, `p_website_url`, `p_declared_nonprofit`; one open application per user, again 7 days after a rejection.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "submit_org_application",
+     "source": "80_organizations/070_org_registration.sql:47",
+     "signature": [
+      "submit_org_application(p_contact_email: string, p_contact_phone?: string, p_declared_nonprofit?: boolean, p_org_description: string, p_org_name: string, p_website_url?: string) → string"
+     ],
+     "errors": [
+      {
+       "code": "account_not_active",
+       "knownToApp": true
+      },
+      {
+       "code": "org_application_pending_exists",
+       "knownToApp": true
+      },
+      {
+       "code": "org_application_resubmit_too_soon",
+       "knownToApp": true
+      },
+      {
+       "code": "org_contact_email_invalid",
+       "knownToApp": true
+      },
+      {
+       "code": "org_description_required",
+       "knownToApp": true
+      },
+      {
+       "code": "org_name_invalid",
+       "knownToApp": true
+      },
+      {
+       "code": "org_nonprofit_declaration_required",
+       "knownToApp": true
+      },
+      {
+       "code": "org_website_invalid",
+       "knownToApp": true
+      },
+      {
+       "code": "unauthenticated",
+       "knownToApp": true
+      }
+     ]
+    }
+   ],
+   "areas": [
+    "organizations"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/organizations/SupabaseOrganizationsRepository.ts",
+     "line": 45,
+     "symbol": "SupabaseOrganizationsRepository.submitApplication",
+     "area": "organizations"
     }
    ]
   },
@@ -12960,6 +13181,73 @@
    ]
   },
   {
+   "old": "org_applications",
+   "kind": "table",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Read-only for the applicant (own rows) and org reviewers; written through `submit_org_application`. Ported from dev (organization registration).",
+   "oldObject": {
+    "columns": [
+     "applicant_user_id",
+     "application_id",
+     "contact_email",
+     "contact_phone",
+     "created_at",
+     "org_description",
+     "org_name",
+     "review_note",
+     "reviewed_at",
+     "reviewed_by",
+     "status",
+     "website_url"
+    ],
+    "isView": false
+   },
+   "targets": [
+    {
+     "type": "table",
+     "name": "org_applications",
+     "columns": [
+      "applicant_id",
+      "contact_email",
+      "contact_phone",
+      "created_at",
+      "declared_nonprofit",
+      "id",
+      "org_description",
+      "org_name",
+      "org_type",
+      "organization_id",
+      "registration_number",
+      "review_note",
+      "reviewed_at",
+      "reviewed_by",
+      "status",
+      "website_url"
+     ],
+     "clientGrants": {
+      "select": true
+     }
+    }
+   ],
+   "areas": [
+    "organizations"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/organizations/SupabaseOrganizationsRepository.ts",
+     "line": 60,
+     "symbol": "SupabaseOrganizationsRepository.getMyLatestApplication",
+     "area": "organizations",
+     "ops": [
+      "select"
+     ]
+    }
+   ]
+  },
+  {
    "old": "org_memberships",
    "kind": "table",
    "status": "changed",
@@ -12998,7 +13286,8 @@
     }
    ],
    "areas": [
-    "marketplace"
+    "marketplace",
+    "organizations"
    ],
    "callSites": [
     {
@@ -13006,6 +13295,15 @@
      "line": 154,
      "symbol": "listMyOrganizations",
      "area": "marketplace",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/organizations/SupabaseOrganizationsRepository.ts",
+     "line": 84,
+     "symbol": "SupabaseOrganizationsRepository.listMyOrganizations",
+     "area": "organizations",
      "ops": [
       "select"
      ]
@@ -14301,7 +14599,7 @@
     {
      "type": "rpc",
      "name": "delete_post",
-     "source": "25_handoffs/060_post_owner_actions.sql:83",
+     "source": "25_handoffs/060_post_owner_actions.sql:86",
      "signature": [
       "delete_post(p_post_id: string) → undefined"
      ],

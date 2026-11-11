@@ -7,7 +7,7 @@ export interface DonationLinkReviewItem {
   readonly url: string;
   readonly displayName: string;
   readonly description: string | null;
-  readonly submittedBy: string;
+  readonly submittedBy: string | null;
   readonly submitterName: string | null;
   readonly reviewStatus: DonationLinkReviewStatus;
   readonly reviewNote: string | null;

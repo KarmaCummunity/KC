@@ -89,7 +89,7 @@ declare
   v_slug text;
   v_n integer := 1;
 begin
-  v_base := lower(translate(coalesce(p_name, ''), 'אבגדהוזחטיכךלמםנןסעפףצץקרשת', 'abgdhvzhtykklmmnnsappcckrst'));
+  v_base := lower(translate(coalesce(p_name, ''), U&'\05D0\05D1\05D2\05D3\05D4\05D5\05D6\05D7\05D8\05D9\05DB\05DA\05DC\05DE\05DD\05E0\05DF\05E1\05E2\05E4\05E3\05E6\05E5\05E7\05E8\05E9\05EA', 'abgdhvzhtykklmmnnsappcckrst'));
   v_base := btrim(regexp_replace(v_base, '[^a-z0-9]+', '-', 'g'), '-');
   v_base := array_to_string((string_to_array(v_base, '-'))[1:9], '-');
   v_base := btrim(left(v_base, 50), '-');

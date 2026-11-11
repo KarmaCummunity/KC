@@ -12,7 +12,7 @@
 set -euo pipefail
 
 readonly HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-readonly MIGRATIONS="$HERE/../../migrations"
+readonly MIGRATIONS="$HERE/../../migrations/archive"
 readonly SCRATCH_DB="kc_reference_extract"
 : "${DB_URL:?set DB_URL to an admin connection URI of a local PostgreSQL server}"
 
