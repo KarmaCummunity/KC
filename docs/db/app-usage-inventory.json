@@ -24,8 +24,8 @@
    "distinct": 223
   },
   "table": {
-   "callSites": 166,
-   "distinct": 56
+   "callSites": 169,
+   "distinct": 58
   }
  },
  "entries": [
@@ -3998,6 +3998,42 @@
     "select"
    ],
    "name": "users"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/worlds/SupabaseWorldContentRepository.ts",
+   "line": 28,
+   "area": "worlds",
+   "symbol": "SupabaseWorldContentRepository.getWorldContent",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "world_links"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/worlds/SupabaseWorldContentRepository.ts",
+   "line": 35,
+   "area": "worlds",
+   "symbol": "SupabaseWorldContentRepository.getWorldContent",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "external_bodies"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/worlds/SupabaseWorldContentRepository.ts",
+   "line": 42,
+   "area": "worlds",
+   "symbol": "SupabaseWorldContentRepository.getWorldContent",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "knowledge_topics"
   },
   {
    "kind": "rpc",

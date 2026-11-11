@@ -160,7 +160,9 @@ rpc('complete_knowledge_session', 'changed', 'rpc:mark_giving_handed_over', 'Com
 for (const name of ['resolve_knowledge_topics', 'propose_knowledge_topic', 'update_my_proposed_knowledge_topic', 'review_knowledge_topic']) {
   rpc(name, 'missing', null, 'No topic graph in the baseline.', { m: 'M12' });
 }
-table('knowledge_topics', 'missing', null, 'No topic graph in the baseline (design §8 names `topics`, not built).', { m: 'M12' });
+table('knowledge_topics', 'changed', 'table:knowledge_topics', 'Migration `0003`: the topic tree, read-only for members (`id`, not `topic_id`; `world_slug` added; no `created_by` / `approved_by` / `legacy_category_slug`). `SupabaseWorldContentRepository` reads it; proposals, review and follows stay missing (M12).');
+table('world_links', 'same', 'table:world_links', 'Migration `0003`: curated links from one world to a related one; readable signed-out too.');
+table('external_bodies', 'changed', 'table:external_bodies', 'Migration `0003`: `id` (not `body_id`); read directly, the search and admin RPCs of the old picker are not in the baseline.');
 table('knowledge_topic_follows', 'missing', null, 'No topic follows in the baseline.', { m: 'M12' });
 
 // ───────────────────────────── challenges, matching, karma, stats, surveys
@@ -411,7 +413,7 @@ export const packages = [
     degrade: 'Reporting a post or member shows "not available yet"; the admin portal entry is hidden for everyone until the package lands (staff use the dashboard of the database meanwhile).',
     risks: 'Staff deletion of a chat message is `admin_delete_message` (M18).' },
   { id: 'P5', title: 'Launch worlds: items, food, rides, time (events), matching, donation links', launch: 'wedge', parallelWith: ['P6'],
-    select: either(inArea('marketplace', 'rides', 'volunteering', 'matching', 'donations', 'organizations'), both(inArea('mobile'), tierIs('wedge'))),
+    select: either(inArea('marketplace', 'rides', 'volunteering', 'matching', 'donations', 'organizations', 'worlds'), both(inArea('mobile'), tierIs('wedge'))),
     files: ['marketplace/**', 'rides/** (except rides/SupabaseRidesRealtime.ts)', 'volunteering/**', 'matching/**', 'donations/**', 'organizations/**', 'apps/mobile: world screens, ridesKnowledgeComposition, listing image upload, karma history'],
     work: 'Listings become posts; one handoff row shape; the legacy ride tables and their repositories are deleted; volunteering maps onto event posts; matches as cards. Two agents may split it by folder (rides / the rest): no shared file.',
     tests: ['vitest: marketplace, rides, volunteering, matching, donations suites', 'pgTAP 035, 070, 072 (events, karma), 073 (food), 076, 080'],
