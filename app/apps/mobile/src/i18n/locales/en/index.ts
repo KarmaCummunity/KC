@@ -22,6 +22,7 @@ import { ridePlaces } from './ridePlaces';
 import { dateTimeField, rideFeed, rideRoutes, rideSafety, rideSchedule, rideSeries } from './rideSchedule';
 import { authEn } from './modules/auth';
 import { authVerificationHintEn } from './modules/authVerificationHint';
+import { offlineSyncEn } from './modules/offlineSync';
 import { onboardingEn } from './modules/onboarding';
 import { dateOfBirthEn } from './modules/dateOfBirth';
 import { verificationEn } from './modules/verification';
@@ -70,6 +71,7 @@ const en = {
 
   // Auth (FR-AUTH-001..014) — see modules/auth.ts
   auth: { ...authEn, ...authVerificationHintEn },
+  offlineSync: offlineSyncEn,
 
   // Onboarding (FR-AUTH-010..012, FR-AUTH-018) — see modules/onboarding.ts
   onboarding: onboardingEn,
