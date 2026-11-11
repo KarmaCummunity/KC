@@ -86,6 +86,8 @@ async function loadEventDetails(client: Client, postId: string): Promise<Record<
     registration_policy: row.registration_policy,
     address: row.address_label,
     ...(orgId ? { org_id: orgId } : {}),
+    // A date of a recurring event names its series and day (FR-POST-024).
+    ...(row.series_id ? { series_id: row.series_id, series_on: row.series_on } : {}),
   };
 }
 

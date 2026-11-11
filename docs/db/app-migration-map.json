@@ -2,16 +2,16 @@
  "generatedBy": "scripts/app-migration-map.mjs",
  "totals": {
   "rpc": {
-   "objects": 173,
-   "same": 106,
+   "objects": 177,
+   "same": 110,
    "renamed": 20,
    "changed": 28,
    "removed": 0,
    "missing": 19
   },
   "table": {
-   "objects": 59,
-   "same": 43,
+   "objects": 60,
+   "same": 44,
    "renamed": 0,
    "changed": 15,
    "removed": 0,
@@ -52,8 +52,8 @@
    "missing": 0
   },
   "later": {
-   "objects": 86,
-   "same": 41,
+   "objects": 91,
+   "same": 46,
    "renamed": 4,
    "changed": 21,
    "removed": 0,
@@ -339,6 +339,13 @@
    "callSites": 6,
    "oneToOne": 1,
    "changed": 5,
+   "removed": 0,
+   "missing": 0
+  },
+  "series": {
+   "callSites": 6,
+   "oneToOne": 6,
+   "changed": 0,
    "removed": 0,
    "missing": 0
   },
@@ -779,6 +786,11 @@
     "rpc:rides_feed",
     "rpc:ride_occurrence_schedules",
     "rpc:post_seat_counts",
+    "table:post_series",
+    "rpc:create_post_series",
+    "rpc:update_post_series",
+    "rpc:set_post_series_status",
+    "rpc:cancel_post_series_date",
     "rpc:accept_world_consent",
     "rpc:my_matches",
     "rpc:admin_match_quality",
@@ -793,8 +805,8 @@
     "table:post_ratings"
    ],
    "counts": {
-    "objects": 73,
-    "oneToOne": 62,
+    "objects": 78,
+    "oneToOne": 67,
     "changed": 11,
     "removed": 0,
     "missing": 0
@@ -3991,6 +4003,37 @@
    ]
   },
   {
+   "old": "cancel_post_series_date",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Cancels one date of a series without ending it; the owner only.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "cancel_post_series_date",
+     "signature": [
+      "cancel_post_series_date(p_post_id: string) → undefined"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "series"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/series/SupabasePostSeriesRepository.ts",
+     "line": 92,
+     "symbol": "SupabasePostSeriesRepository.cancelOccurrence",
+     "area": "series"
+    }
+   ]
+  },
+  {
    "old": "cancel_ride_booking",
    "kind": "rpc",
    "status": "renamed",
@@ -4924,6 +4967,37 @@
      "line": 61,
      "symbol": "SupabasePaymentsRepository.createDonationIntent",
      "area": "payments"
+    }
+   ]
+  },
+  {
+   "old": "create_post_series",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Creates a series and publishes its dates of the next 30 days; any active member, for an organization only one who may act for it.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "create_post_series",
+     "signature": [
+      "create_post_series(p_duration_minutes: number, p_ends_on?: string, p_event: Json, p_org_id?: string, p_post: Json, p_start_time: string, p_time_zone?: string, p_weekdays: number) → string"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "series"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/series/SupabasePostSeriesRepository.ts",
+     "line": 56,
+     "symbol": "SupabasePostSeriesRepository.kind",
+     "area": "series"
     }
    ]
   },
@@ -7691,7 +7765,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-     "line": 104,
+     "line": 106,
      "symbol": "fetchListingDetail",
      "area": "marketplace"
     }
@@ -9338,6 +9412,37 @@
    ]
   },
   {
+   "old": "set_post_series_status",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "`p_series_id`, `p_status`: active, paused or ended; ending cancels every upcoming date and tells its registrants. The owner only.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "set_post_series_status",
+     "signature": [
+      "set_post_series_status(p_series_id: string, p_status: string) → undefined"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "series"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/series/SupabasePostSeriesRepository.ts",
+     "line": 88,
+     "symbol": "SupabasePostSeriesRepository.setStatus",
+     "area": "series"
+    }
+   ]
+  },
+  {
    "old": "set_privacy_mode",
    "kind": "rpc",
    "status": "same",
@@ -9594,6 +9699,37 @@
      "line": 26,
      "symbol": "submit",
      "area": "fn:public-research-submit"
+    }
+   ]
+  },
+  {
+   "old": "update_post_series",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Edits the series template and schedule; the owner only (`post_series_not_found`).",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "update_post_series",
+     "signature": [
+      "update_post_series(p_duration_minutes: number, p_ends_on?: string, p_event?: Json, p_post?: Json, p_series_id: string, p_start_time: string, p_weekdays: number) → undefined"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "series"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/series/SupabasePostSeriesRepository.ts",
+     "line": 77,
+     "symbol": "SupabasePostSeriesRepository.unwrapCall",
+     "area": "series"
     }
    ]
   },
@@ -11867,6 +12003,8 @@
       "ends_at",
       "post_id",
       "registration_policy",
+      "series_id",
+      "series_on",
       "starts_at",
       "updated_at"
      ],
@@ -11885,6 +12023,7 @@
    ],
    "areas": [
     "marketplace",
+    "series",
     "volunteering"
    ],
    "callSites": [
@@ -11893,6 +12032,15 @@
      "line": 76,
      "symbol": "loadEventDetails",
      "area": "marketplace",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/series/SupabasePostSeriesRepository.ts",
+     "line": 101,
+     "symbol": "SupabasePostSeriesRepository.unwrapCall",
+     "area": "series",
      "ops": [
       "select"
      ]
@@ -11959,7 +12107,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-     "line": 95,
+     "line": 97,
      "symbol": "loadFoodDetails",
      "area": "marketplace",
      "ops": [
@@ -12689,6 +12837,53 @@
    ]
   },
   {
+   "old": "post_series",
+   "kind": "table",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "The recurring-event series of a post (schedule plus post and event templates); read through the series RPCs, written only by them.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "table",
+     "name": "post_series",
+     "columns": [
+      "beneficiary_org_id",
+      "created_at",
+      "duration_minutes",
+      "ends_on",
+      "event_template",
+      "id",
+      "owner_id",
+      "post_template",
+      "start_time",
+      "starts_on",
+      "status",
+      "time_zone",
+      "updated_at",
+      "weekdays"
+     ],
+     "clientGrants": {}
+    }
+   ],
+   "areas": [
+    "series"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/series/SupabasePostSeriesRepository.ts",
+     "line": 40,
+     "symbol": "SupabasePostSeriesRepository.unwrapCall",
+     "area": "series",
+     "ops": [
+      "select"
+     ]
+    }
+   ]
+  },
+  {
    "old": "post_stats",
    "kind": "table",
    "status": "same",
@@ -12806,6 +13001,7 @@
       "details",
       "direction",
       "expires_at",
+      "feed_folded",
       "geo_approx",
       "id",
       "item_subcategory_id",
@@ -13006,7 +13202,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-     "line": 112,
+     "line": 114,
      "symbol": "fetchListingDetail",
      "area": "marketplace",
      "ops": [
@@ -14666,7 +14862,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-     "line": 111,
+     "line": 113,
      "symbol": "fetchListingDetail",
      "area": "marketplace",
      "ops": [

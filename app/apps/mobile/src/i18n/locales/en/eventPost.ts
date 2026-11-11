@@ -7,6 +7,8 @@ export const eventPost = {
     kindLabel: 'What are you offering?',
     kindShift: 'Volunteer shift',
     kindEvent: 'Organization event',
+    // FR-POST-024 — a member's own event: a date, places and registration, and it may recur.
+    kindPersonalEvent: 'Volunteering with sign-up',
     orgLabel: 'Organization',
     orgRequired: 'Pick the organization the event is for',
     membershipHint: 'Want to publish an organization\'s event? Members of a registered organization publish events. Register your organization, or ask its admin to add you.',

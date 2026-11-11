@@ -13,6 +13,7 @@ import { matchMachine } from './machines/match';
 import { moderationQueueMachine } from './machines/moderationQueue';
 import { onboardingMachine } from './machines/onboarding';
 import { organizationMachine } from './machines/organization';
+import { orgSec46Machine } from './machines/orgSec46';
 import { orgApplicationMachine } from './machines/orgApplication';
 import { orgFinanceEntryMachine } from './machines/orgFinanceEntry';
 import { paymentMachine } from './machines/payment';
@@ -23,6 +24,7 @@ import { postMediaMachine } from './machines/postMedia';
 import { refundMachine } from './machines/refund';
 import { reportMachine } from './machines/report';
 import { rideBookingMachine } from './machines/rideBooking';
+import { postSeriesMachine } from './machines/postSeries';
 import { rideSeriesMachine } from './machines/rideSeries';
 import { standingOrderMachine } from './machines/standingOrder';
 import { timesheetMachine } from './machines/timesheet';
@@ -51,9 +53,11 @@ export const FSM_MACHINES: readonly FsmMachine<string, string>[] = [
   reportMachine,
   moderationQueueMachine,
   rideSeriesMachine,
+  postSeriesMachine,
   challengeMachine,
   matchMachine,
   organizationMachine,
+  orgSec46Machine,
   orgApplicationMachine,
   donationLinkReviewMachine,
   standingOrderMachine,
