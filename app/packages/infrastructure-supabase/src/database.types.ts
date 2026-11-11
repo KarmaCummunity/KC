@@ -4452,6 +4452,16 @@ export type Database = {
           sort_order: number
         }[]
       }
+      finance_donors_summary: {
+        Args: { p_limit?: number; p_org_id: string }
+        Returns: {
+          donations_count: number
+          donor_name: string
+          first_at: string
+          last_at: string
+          total_agorot: number
+        }[]
+      }
       finance_ledger_list: {
         Args: {
           p_after_id?: string
@@ -4491,6 +4501,16 @@ export type Database = {
           p_void_reason?: string
         }
         Returns: undefined
+      }
+      finance_ledger_summary: {
+        Args: { p_from?: string; p_org_id: string; p_to?: string }
+        Returns: {
+          currency: string
+          entry_count: number
+          expense_agorot: number
+          income_agorot: number
+          net_agorot: number
+        }[]
       }
       finance_ledger_upsert: {
         Args: {
@@ -4572,7 +4592,25 @@ export type Database = {
       get_public_research_questions: { Args: { p_slug: string }; Returns: Json }
       get_research_salt: { Args: never; Returns: string }
       hide_chat: { Args: { p_chat_id: string }; Returns: undefined }
+      housing_completed_stays: {
+        Args: { p_user_ids: string[] }
+        Returns: {
+          completed_stays: number
+          user_id: string
+        }[]
+      }
       join_challenge: { Args: { p_challenge_id: string }; Returns: undefined }
+      knowledge_slot_seats: {
+        Args: { p_post_id: string }
+        Returns: {
+          capacity: number
+          ends_at: string
+          id: string
+          seats_left: number
+          seats_taken: number
+          starts_at: string
+        }[]
+      }
       leave_challenge: { Args: { p_challenge_id: string }; Returns: undefined }
       list_challenge_leaderboard: {
         Args: { p_challenge_id: string; p_limit?: number }

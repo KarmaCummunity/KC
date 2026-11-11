@@ -18,3 +18,4 @@
 0007_chat_inbox_previews.sql
 0008_post_media_sizes.sql
 0009_research_feedback_survey_reports.sql
+0010_housing_knowledge_finance_reads.sql
