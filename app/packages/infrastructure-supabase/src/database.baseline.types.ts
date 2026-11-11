@@ -79,6 +79,37 @@ export type Database = {
           },
         ]
       }
+      app_flags: {
+        Row: {
+          description: string
+          enabled: boolean
+          key: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          description?: string
+          enabled?: boolean
+          key: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          description?: string
+          enabled?: boolean
+          key?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "app_flags_updated_by_fkey"
+            columns: ["updated_by"]
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       blocks: {
         Row: {
           blocked_id: string
@@ -312,6 +343,7 @@ export type Database = {
           id: string
           kind: string
           last_message_at: string | null
+          moderation_hidden_at: string | null
           support_user_id: string | null
         }
         Insert: {
@@ -322,6 +354,7 @@ export type Database = {
           id?: string
           kind: string
           last_message_at?: string | null
+          moderation_hidden_at?: string | null
           support_user_id?: string | null
         }
         Update: {
@@ -332,6 +365,7 @@ export type Database = {
           id?: string
           kind?: string
           last_message_at?: string | null
+          moderation_hidden_at?: string | null
           support_user_id?: string | null
         }
         Relationships: [
@@ -567,6 +601,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      feed_impressions_2026_11: {
+        Row: {
+          post_id: string
+          seen_at: string
+          user_id: string
+        }
+        Insert: {
+          post_id: string
+          seen_at?: string
+          user_id?: string
+        }
+        Update: {
+          post_id?: string
+          seen_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      feed_impressions_2026_12: {
+        Row: {
+          post_id: string
+          seen_at: string
+          user_id: string
+        }
+        Insert: {
+          post_id: string
+          seen_at?: string
+          user_id?: string
+        }
+        Update: {
+          post_id?: string
+          seen_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       feed_impressions_default: {
         Row: {
@@ -3455,6 +3525,10 @@ export type Database = {
         Args: { p_comment_id: string }
         Returns: undefined
       }
+      admin_delete_message: {
+        Args: { p_message_id: string }
+        Returns: undefined
+      }
       admin_dismiss_report: {
         Args: { p_report_id: string }
         Returns: undefined
@@ -3496,6 +3570,22 @@ export type Database = {
         Returns: string
       }
       admin_revoke_role: { Args: { p_grant_id: string }; Returns: undefined }
+      admin_set_app_flag: {
+        Args: { p_description?: string; p_enabled: boolean; p_key: string }
+        Returns: {
+          description: string
+          enabled: boolean
+          key: string
+          updated_at: string
+          updated_by: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "app_flags"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       admin_set_manager: {
         Args: { p_grant_id: string; p_manager_grant_id: string }
         Returns: undefined
@@ -4546,6 +4636,7 @@ export type Database = {
           id: string
           kind: string
           last_message_at: string | null
+          moderation_hidden_at: string | null
           support_user_id: string | null
         }
         SetofOptions: {
@@ -4565,6 +4656,7 @@ export type Database = {
           id: string
           kind: string
           last_message_at: string | null
+          moderation_hidden_at: string | null
           support_user_id: string | null
         }
         SetofOptions: {

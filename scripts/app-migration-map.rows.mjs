@@ -353,9 +353,6 @@ rpc('provider_webhook_apply', 'same', 'rpc:provider_webhook_apply', 'Signature u
 rpc('api_revenuecat_set_pro', 'same', 'rpc:api_revenuecat_set_pro', 'Signature unchanged.');
 rpc('submit_public_research_response', 'same', 'rpc:submit_public_research_response', 'Signature unchanged.');
 rpc('rpc_request_account_deletion', 'renamed', 'rpc:request_account_deletion', 'Returns the purge date. It is granted to members, so the app can call it directly and the `delete-account` function is no longer needed.');
-rpc('accounts_due_for_purge', 'changed', 'sql:kc_private.accounts_due_for_purge', 'Not exposed through the API: the purge worker reads it over a direct Postgres connection, as `dispatch-notification` does.');
-rpc('account_purge_media_paths', 'changed', 'table:post_media', 'No such function: the worker reads `storage_bucket`, `storage_key` of the member\'s `post_media` rows (service role) before deleting the account.', { c: M });
-rpc('delete_account_data_for', 'changed', 'client:auth.admin.deleteUser', 'No such function: deleting the auth user cascades through the foreign keys; billing rows are detached to a tombstone by trigger (`kc_private.billing_detach_user`).', { c: M });
 table('research_secrets', 'changed', ['rpc:get_research_salt', 'rpc:rotate_research_salt'], 'The table is private: read the salt with `get_research_salt()`, rotate with `rotate_research_salt()` (service role).');
 table('payments', 'removed', null, 'Lives in the `billing` schema, not exposed. `receipts-issuer` is obsolete: the receipt is issued in the transaction that settles the payment (`kc_private.billing_receipt_issue`).');
 table('donation_receipts', 'removed', null, 'Same: `billing.receipts`, written by the database.');

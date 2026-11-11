@@ -2,10 +2,10 @@
  "generatedBy": "scripts/app-migration-map.mjs",
  "totals": {
   "rpc": {
-   "objects": 291,
+   "objects": 288,
    "same": 34,
    "renamed": 43,
-   "changed": 125,
+   "changed": 122,
    "removed": 14,
    "missing": 75
   },
@@ -52,10 +52,10 @@
  },
  "launchTotals": {
   "core": {
-   "objects": 121,
+   "objects": 118,
    "same": 27,
    "renamed": 17,
-   "changed": 61,
+   "changed": 58,
    "removed": 4,
    "missing": 12
   },
@@ -196,25 +196,11 @@
    "removed": 0,
    "missing": 0
   },
-  "fn:purge-deleted-accounts": {
-   "callSites": 3,
-   "oneToOne": 0,
-   "changed": 3,
-   "removed": 0,
-   "missing": 0
-  },
   "fn:receipts-issuer": {
    "callSites": 2,
    "oneToOne": 0,
    "changed": 0,
    "removed": 2,
-   "missing": 0
-  },
-  "fn:reconcile-storage-orphans": {
-   "callSites": 3,
-   "oneToOne": 2,
-   "changed": 1,
-   "removed": 0,
    "missing": 0
   },
   "fn:revenuecat-webhook": {
@@ -1170,7 +1156,6 @@
    "risks": "No file shared with the app packages. **Launch line: after P6 the app is shippable on the new database.**",
    "rows": [
     "table:users",
-    "table:media_assets",
     "table:admin_role_grants",
     "table:donation_links",
     "table:content_translations",
@@ -1180,16 +1165,13 @@
     "rpc:api_match_llm_pending",
     "rpc:api_match_llm_store",
     "rpc:rpc_request_account_deletion",
-    "rpc:accounts_due_for_purge",
-    "rpc:account_purge_media_paths",
-    "rpc:delete_account_data_for",
     "bucket:post-images",
     "bucket:<bucket>"
    ],
    "counts": {
-    "objects": 16,
+    "objects": 12,
     "oneToOne": 6,
-    "changed": 10,
+    "changed": 6,
     "removed": 0,
     "missing": 0
    }
@@ -1839,7 +1821,6 @@
     }
    ],
    "areas": [
-    "fn:reconcile-storage-orphans",
     "fn:strip-exif",
     "mobile"
    ],
@@ -1879,18 +1860,6 @@
      "line": 191,
      "symbol": "resizeAndUploadImage",
      "area": "mobile"
-    },
-    {
-     "file": "supabase/functions/reconcile-storage-orphans/index.ts",
-     "line": 38,
-     "symbol": "listAllObjects",
-     "area": "fn:reconcile-storage-orphans"
-    },
-    {
-     "file": "supabase/functions/reconcile-storage-orphans/index.ts",
-     "line": 98,
-     "symbol": "serve",
-     "area": "fn:reconcile-storage-orphans"
     },
     {
      "file": "supabase/functions/strip-exif/index.ts",
@@ -2595,104 +2564,6 @@
      "line": 116,
      "symbol": "SupabaseLegalDocumentRepository.acceptVersion",
      "area": "legal"
-    }
-   ]
-  },
-  {
-   "old": "account_purge_media_paths",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "core",
-   "confidence": "medium",
-   "missing": null,
-   "note": "No such function: the worker reads `storage_bucket`, `storage_key` of the member's `post_media` rows (service role) before deleting the account.",
-   "oldObject": {
-    "signature": [
-     "account_purge_media_paths(p_user_id: string) → string[]"
-    ]
-   },
-   "targets": [
-    {
-     "type": "table",
-     "name": "post_media",
-     "columns": [
-      "blurhash",
-      "created_at",
-      "duration_ms",
-      "height",
-      "id",
-      "kind",
-      "mime_type",
-      "ordinal",
-      "owner_id",
-      "post_id",
-      "processing_status",
-      "size_bytes",
-      "storage_bucket",
-      "storage_key",
-      "width"
-     ],
-     "clientGrants": {
-      "select": true,
-      "delete": true,
-      "insert": [
-       "blurhash",
-       "duration_ms",
-       "height",
-       "id",
-       "kind",
-       "mime_type",
-       "ordinal",
-       "owner_id",
-       "post_id",
-       "size_bytes",
-       "storage_bucket",
-       "storage_key",
-       "width"
-      ]
-     }
-    }
-   ],
-   "areas": [
-    "fn:purge-deleted-accounts"
-   ],
-   "callSites": [
-    {
-     "file": "supabase/functions/purge-deleted-accounts/index.ts",
-     "line": 27,
-     "symbol": "mediaPaths",
-     "area": "fn:purge-deleted-accounts"
-    }
-   ]
-  },
-  {
-   "old": "accounts_due_for_purge",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "core",
-   "confidence": "high",
-   "missing": null,
-   "note": "Not exposed through the API: the purge worker reads it over a direct Postgres connection, as `dispatch-notification` does.",
-   "oldObject": {
-    "signature": [
-     "accounts_due_for_purge(p_limit?: number) → { user_id: string }[]"
-    ]
-   },
-   "targets": [
-    {
-     "type": "sql",
-     "name": "kc_private.accounts_due_for_purge"
-    }
-   ],
-   "areas": [
-    "fn:purge-deleted-accounts"
-   ],
-   "callSites": [
-    {
-     "file": "supabase/functions/purge-deleted-accounts/index.ts",
-     "line": 60,
-     "symbol": "serve",
-     "area": "fn:purge-deleted-accounts"
     }
    ]
   },
@@ -5690,6 +5561,10 @@
        "knownToApp": true
       },
       {
+       "code": "invalid_rate_limit_args",
+       "knownToApp": false
+      },
+      {
        "code": "item_already_reserved",
        "knownToApp": true
       },
@@ -5699,6 +5574,10 @@
       },
       {
        "code": "own_listing",
+       "knownToApp": true
+      },
+      {
+       "code": "rate_limited",
        "knownToApp": true
       },
       {
@@ -5755,6 +5634,10 @@
        "knownToApp": true
       },
       {
+       "code": "invalid_rate_limit_args",
+       "knownToApp": false
+      },
+      {
        "code": "item_already_reserved",
        "knownToApp": true
       },
@@ -5768,6 +5651,10 @@
       },
       {
        "code": "own_listing",
+       "knownToApp": true
+      },
+      {
+       "code": "rate_limited",
        "knownToApp": true
       },
       {
@@ -6083,7 +5970,7 @@
     {
      "type": "rpc",
      "name": "cancel_standing_order",
-     "source": "85_billing/090_donor_rpcs.sql:228",
+     "source": "85_billing/090_donor_rpcs.sql:229",
      "signature": [
       "cancel_standing_order(p_order_id: string) → Json"
      ],
@@ -6293,6 +6180,10 @@
        "knownToApp": true
       },
       {
+       "code": "invalid_rate_limit_args",
+       "knownToApp": false
+      },
+      {
        "code": "item_already_reserved",
        "knownToApp": true
       },
@@ -6302,6 +6193,10 @@
       },
       {
        "code": "own_listing",
+       "knownToApp": true
+      },
+      {
+       "code": "rate_limited",
        "knownToApp": true
       },
       {
@@ -6401,7 +6296,7 @@
     {
      "type": "rpc",
      "name": "close_post_without_recipient",
-     "source": "25_handoffs/070_post_closure_rpcs.sql:63",
+     "source": "25_handoffs/070_post_closure_rpcs.sql:67",
      "signature": [
       "close_post_without_recipient(p_post_id: string) → undefined"
      ],
@@ -6942,12 +6837,20 @@
        "knownToApp": false
       },
       {
+       "code": "invalid_rate_limit_args",
+       "knownToApp": false
+      },
+      {
        "code": "money_min_amount",
        "knownToApp": false
       },
       {
        "code": "payments_unavailable",
        "knownToApp": false
+      },
+      {
+       "code": "rate_limited",
+       "knownToApp": true
       },
       {
        "code": "unauthenticated",
@@ -7159,7 +7062,7 @@
     {
      "type": "rpc",
      "name": "create_ride_series",
-     "source": "70_worlds/070_ride_series_rpcs.sql:114",
+     "source": "70_worlds/070_ride_series_rpcs.sql:116",
      "signature": [
       "create_ride_series(p_depart_time: string, p_duration_minutes?: number, p_ends_on?: string, p_post: Json, p_ride: Json, p_weekdays: number) → string"
      ],
@@ -7216,7 +7119,7 @@
     {
      "type": "rpc",
      "name": "create_standing_order",
-     "source": "85_billing/090_donor_rpcs.sql:140",
+     "source": "85_billing/090_donor_rpcs.sql:141",
      "signature": [
       "create_standing_order(p_amount_agorot: number, p_cadence?: string, p_idempotency_key: string, p_org_id: string) → Json"
      ],
@@ -7601,37 +7504,6 @@
      "line": 75,
      "symbol": "SupabaseRideBookingRepository.runHandoffRpc",
      "area": "rides"
-    }
-   ]
-  },
-  {
-   "old": "delete_account_data_for",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "core",
-   "confidence": "medium",
-   "missing": null,
-   "note": "No such function: deleting the auth user cascades through the foreign keys; billing rows are detached to a tombstone by trigger (`kc_private.billing_detach_user`).",
-   "oldObject": {
-    "signature": [
-     "delete_account_data_for(p_user_id: string) → Json"
-    ]
-   },
-   "targets": [
-    {
-     "type": "client",
-     "name": "auth.admin.deleteUser"
-    }
-   ],
-   "areas": [
-    "fn:purge-deleted-accounts"
-   ],
-   "callSites": [
-    {
-     "file": "supabase/functions/purge-deleted-accounts/index.ts",
-     "line": 43,
-     "symbol": "deleteData",
-     "area": "fn:purge-deleted-accounts"
     }
    ]
   },
@@ -8450,7 +8322,7 @@
     {
      "type": "rpc",
      "name": "close_post_without_recipient",
-     "source": "25_handoffs/070_post_closure_rpcs.sql:63",
+     "source": "25_handoffs/070_post_closure_rpcs.sql:67",
      "signature": [
       "close_post_without_recipient(p_post_id: string) → undefined"
      ],
@@ -8574,7 +8446,7 @@
     {
      "type": "rpc",
      "name": "get_donation_receipt",
-     "source": "85_billing/090_donor_rpcs.sql:103",
+     "source": "85_billing/090_donor_rpcs.sql:104",
      "signature": [
       "get_donation_receipt(p_payment_id: string) → Json"
      ],
@@ -9822,7 +9694,7 @@
     {
      "type": "rpc",
      "name": "list_my_donation_history",
-     "source": "85_billing/090_donor_rpcs.sql:72",
+     "source": "85_billing/090_donor_rpcs.sql:73",
      "signature": [
       "list_my_donation_history(p_after_id?: string, p_after_paid_at?: string, p_limit?: number) → { amount_agorot: number currency: string org_id: string org_name: string paid_at: string payment_id: string receipt_serial: number refunded_agorot: number sec46_eligible: boolean standing_order_id: string status: stri..."
      ],
@@ -10034,7 +9906,7 @@
     {
      "type": "rpc",
      "name": "list_my_standing_orders",
-     "source": "85_billing/090_donor_rpcs.sql:240",
+     "source": "85_billing/090_donor_rpcs.sql:241",
      "signature": [
       "list_my_standing_orders() → Json[]"
      ],
@@ -11197,7 +11069,7 @@
     {
      "type": "rpc",
      "name": "close_post_without_recipient",
-     "source": "25_handoffs/070_post_closure_rpcs.sql:63",
+     "source": "25_handoffs/070_post_closure_rpcs.sql:67",
      "signature": [
       "close_post_without_recipient(p_post_id: string) → undefined"
      ],
@@ -11311,7 +11183,7 @@
     {
      "type": "rpc",
      "name": "pause_standing_order",
-     "source": "85_billing/090_donor_rpcs.sql:206",
+     "source": "85_billing/090_donor_rpcs.sql:207",
      "signature": [
       "pause_standing_order(p_order_id: string) → Json"
      ],
@@ -11688,6 +11560,10 @@
        "knownToApp": true
       },
       {
+       "code": "invalid_rate_limit_args",
+       "knownToApp": false
+      },
+      {
        "code": "item_already_reserved",
        "knownToApp": true
       },
@@ -11697,6 +11573,10 @@
       },
       {
        "code": "own_listing",
+       "knownToApp": true
+      },
+      {
+       "code": "rate_limited",
        "knownToApp": true
       },
       {
@@ -11812,7 +11692,7 @@
     {
      "type": "rpc",
      "name": "reopen_post",
-     "source": "25_handoffs/070_post_closure_rpcs.sql:94",
+     "source": "25_handoffs/070_post_closure_rpcs.sql:98",
      "signature": [
       "reopen_post(p_post_id: string) → undefined"
      ],
@@ -11869,7 +11749,7 @@
     {
      "type": "rpc",
      "name": "reopen_post",
-     "source": "25_handoffs/070_post_closure_rpcs.sql:94",
+     "source": "25_handoffs/070_post_closure_rpcs.sql:98",
      "signature": [
       "reopen_post(p_post_id: string) → undefined"
      ],
@@ -12314,6 +12194,10 @@
        "knownToApp": true
       },
       {
+       "code": "invalid_rate_limit_args",
+       "knownToApp": false
+      },
+      {
        "code": "item_already_reserved",
        "knownToApp": true
       },
@@ -12323,6 +12207,10 @@
       },
       {
        "code": "own_listing",
+       "knownToApp": true
+      },
+      {
+       "code": "rate_limited",
        "knownToApp": true
       },
       {
@@ -12379,6 +12267,10 @@
        "knownToApp": true
       },
       {
+       "code": "invalid_rate_limit_args",
+       "knownToApp": false
+      },
+      {
        "code": "item_already_reserved",
        "knownToApp": true
       },
@@ -12388,6 +12280,10 @@
       },
       {
        "code": "own_listing",
+       "knownToApp": true
+      },
+      {
+       "code": "rate_limited",
        "knownToApp": true
       },
       {
@@ -12505,7 +12401,7 @@
     {
      "type": "rpc",
      "name": "resume_standing_order",
-     "source": "85_billing/090_donor_rpcs.sql:217",
+     "source": "85_billing/090_donor_rpcs.sql:218",
      "signature": [
       "resume_standing_order(p_order_id: string) → Json"
      ],
@@ -12707,7 +12603,7 @@
     {
      "type": "rpc",
      "name": "hide_chat",
-     "source": "40_messaging/030_chat_rpcs.sql:179",
+     "source": "40_messaging/030_chat_rpcs.sql:180",
      "signature": [
       "hide_chat(p_chat_id: string) → undefined"
      ],
@@ -12756,7 +12652,7 @@
     {
      "type": "rpc",
      "name": "mark_chat_read",
-     "source": "40_messaging/030_chat_rpcs.sql:155",
+     "source": "40_messaging/030_chat_rpcs.sql:156",
      "signature": [
       "mark_chat_read(p_chat_id: string) → undefined"
      ],
@@ -13321,7 +13217,7 @@
      "name": "open_support_thread",
      "source": "40_messaging/030_chat_rpcs.sql:61",
      "signature": [
-      "open_support_thread(anchor_post_id: string | null, created_at: string, direct_user_a: string | null, direct_user_b: string | null, id: string, kind: string, last_message_at: string | null, support_user_id: string | null) → chats row"
+      "open_support_thread(anchor_post_id: string | null, created_at: string, direct_user_a: string | null, direct_user_b: string | null, id: string, kind: string, last_message_at: string | null, moderation_hidden_at: string | null, support_user_id: string | null) → chats row"
      ],
      "errors": [
       {
@@ -13676,7 +13572,7 @@
     {
      "type": "rpc",
      "name": "recipient_unmark_self",
-     "source": "25_handoffs/070_post_closure_rpcs.sql:130",
+     "source": "25_handoffs/070_post_closure_rpcs.sql:134",
      "signature": [
       "recipient_unmark_self(p_post_id: string) → undefined"
      ],
@@ -14111,6 +14007,10 @@
        "knownToApp": true
       },
       {
+       "code": "invalid_rate_limit_args",
+       "knownToApp": false
+      },
+      {
        "code": "item_already_reserved",
        "knownToApp": true
       },
@@ -14124,6 +14024,10 @@
       },
       {
        "code": "own_listing",
+       "knownToApp": true
+      },
+      {
+       "code": "rate_limited",
        "knownToApp": true
       },
       {
@@ -14392,8 +14296,16 @@
        "knownToApp": false
       },
       {
+       "code": "invalid_rate_limit_args",
+       "knownToApp": false
+      },
+      {
        "code": "message_body_invalid",
        "knownToApp": false
+      },
+      {
+       "code": "rate_limited",
+       "knownToApp": true
       },
       {
        "code": "unauthenticated",
@@ -14484,7 +14396,7 @@
     {
      "type": "rpc",
      "name": "set_message_reaction",
-     "source": "40_messaging/030_chat_rpcs.sql:208",
+     "source": "40_messaging/030_chat_rpcs.sql:209",
      "signature": [
       "set_message_reaction(p_message_id: string, p_reaction_type: string) → undefined"
      ],
@@ -14743,7 +14655,7 @@
      "name": "open_support_thread",
      "source": "40_messaging/030_chat_rpcs.sql:61",
      "signature": [
-      "open_support_thread(anchor_post_id: string | null, created_at: string, direct_user_a: string | null, direct_user_b: string | null, id: string, kind: string, last_message_at: string | null, support_user_id: string | null) → chats row"
+      "open_support_thread(anchor_post_id: string | null, created_at: string, direct_user_a: string | null, direct_user_b: string | null, id: string, kind: string, last_message_at: string | null, moderation_hidden_at: string | null, support_user_id: string | null) → chats row"
      ],
      "errors": [
       {
@@ -14777,8 +14689,16 @@
        "knownToApp": false
       },
       {
+       "code": "invalid_rate_limit_args",
+       "knownToApp": false
+      },
+      {
        "code": "message_body_invalid",
        "knownToApp": false
+      },
+      {
+       "code": "rate_limited",
+       "knownToApp": true
       },
       {
        "code": "unauthenticated",
@@ -15174,7 +15094,7 @@
     {
      "type": "rpc",
      "name": "set_ride_series_status",
-     "source": "70_worlds/070_ride_series_rpcs.sql:181",
+     "source": "70_worlds/070_ride_series_rpcs.sql:183",
      "signature": [
       "set_ride_series_status(p_series_id: string, p_status: string) → undefined"
      ],
@@ -15263,6 +15183,10 @@
        "knownToApp": true
       },
       {
+       "code": "invalid_rate_limit_args",
+       "knownToApp": false
+      },
+      {
        "code": "item_already_reserved",
        "knownToApp": true
       },
@@ -15272,6 +15196,10 @@
       },
       {
        "code": "own_listing",
+       "knownToApp": true
+      },
+      {
+       "code": "rate_limited",
        "knownToApp": true
       },
       {
@@ -15410,8 +15338,16 @@
        "knownToApp": false
       },
       {
+       "code": "invalid_rate_limit_args",
+       "knownToApp": false
+      },
+      {
        "code": "message_body_invalid",
        "knownToApp": false
+      },
+      {
+       "code": "rate_limited",
+       "knownToApp": true
       },
       {
        "code": "unauthenticated",
@@ -15769,7 +15705,7 @@
     {
      "type": "rpc",
      "name": "update_ride_series",
-     "source": "70_worlds/070_ride_series_rpcs.sql:148",
+     "source": "70_worlds/070_ride_series_rpcs.sql:150",
      "signature": [
       "update_ride_series(p_depart_time: string, p_duration_minutes?: number, p_ends_on?: string, p_series_id: string, p_weekdays: number) → undefined"
      ],
@@ -16292,6 +16228,7 @@
       "id",
       "kind",
       "last_message_at",
+      "moderation_hidden_at",
       "support_user_id"
      ],
      "clientGrants": {
@@ -16948,6 +16885,14 @@
        "knownToApp": true
       },
       {
+       "code": "invalid_rate_limit_args",
+       "knownToApp": false
+      },
+      {
+       "code": "rate_limited",
+       "knownToApp": true
+      },
+      {
        "code": "self_follow_forbidden",
        "knownToApp": true
       },
@@ -17090,6 +17035,14 @@
        "knownToApp": true
       },
       {
+       "code": "invalid_rate_limit_args",
+       "knownToApp": false
+      },
+      {
+       "code": "rate_limited",
+       "knownToApp": true
+      },
+      {
        "code": "self_follow_forbidden",
        "knownToApp": true
       },
@@ -17106,7 +17059,7 @@
     {
      "type": "rpc",
      "name": "follow_request_decide",
-     "source": "15_social_graph/040_follow_rpcs.sql:92",
+     "source": "15_social_graph/040_follow_rpcs.sql:93",
      "signature": [
       "follow_request_decide(p_accept: boolean, p_requester: string) → undefined"
      ],
@@ -17132,7 +17085,7 @@
     {
      "type": "rpc",
      "name": "follow_request_cancel",
-     "source": "15_social_graph/040_follow_rpcs.sql:123",
+     "source": "15_social_graph/040_follow_rpcs.sql:124",
      "signature": [
       "follow_request_cancel(p_target: string) → undefined"
      ],
@@ -17812,7 +17765,6 @@
     }
    ],
    "areas": [
-    "fn:reconcile-storage-orphans",
     "posts"
    ],
    "callSites": [
@@ -17841,15 +17793,6 @@
      "area": "posts",
      "ops": [
       "insert"
-     ]
-    },
-    {
-     "file": "supabase/functions/reconcile-storage-orphans/index.ts",
-     "line": 80,
-     "symbol": "serve",
-     "area": "fn:reconcile-storage-orphans",
-     "ops": [
-      "select"
      ]
     }
    ]
@@ -17990,8 +17933,16 @@
        "knownToApp": false
       },
       {
+       "code": "invalid_rate_limit_args",
+       "knownToApp": false
+      },
+      {
        "code": "message_body_invalid",
        "knownToApp": false
+      },
+      {
+       "code": "rate_limited",
+       "knownToApp": true
       },
       {
        "code": "unauthenticated",
@@ -18292,7 +18243,7 @@
     {
      "type": "rpc",
      "name": "delete_post_comment",
-     "source": "30_social/040_post_comments.sql:232",
+     "source": "30_social/040_post_comments.sql:229",
      "signature": [
       "delete_post_comment(p_comment_id: string) → undefined"
      ],

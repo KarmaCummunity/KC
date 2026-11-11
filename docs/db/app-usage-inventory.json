@@ -8,7 +8,7 @@
  ],
  "summary": {
   "bucket": {
-   "callSites": 21,
+   "callSites": 19,
    "distinct": 5
   },
   "channel": {
@@ -24,11 +24,11 @@
    "distinct": 5
   },
   "rpc": {
-   "callSites": 303,
-   "distinct": 291
+   "callSites": 300,
+   "distinct": 288
   },
   "table": {
-   "callSites": 164,
+   "callSites": 163,
    "distinct": 52
   }
  },
@@ -4787,33 +4787,6 @@
    "name": "submit_public_research_response"
   },
   {
-   "kind": "rpc",
-   "file": "supabase/functions/purge-deleted-accounts/index.ts",
-   "line": 27,
-   "area": "fn:purge-deleted-accounts",
-   "symbol": "mediaPaths",
-   "via": "literal",
-   "name": "account_purge_media_paths"
-  },
-  {
-   "kind": "rpc",
-   "file": "supabase/functions/purge-deleted-accounts/index.ts",
-   "line": 43,
-   "area": "fn:purge-deleted-accounts",
-   "symbol": "deleteData",
-   "via": "literal",
-   "name": "delete_account_data_for"
-  },
-  {
-   "kind": "rpc",
-   "file": "supabase/functions/purge-deleted-accounts/index.ts",
-   "line": 60,
-   "area": "fn:purge-deleted-accounts",
-   "symbol": "serve",
-   "via": "literal",
-   "name": "accounts_due_for_purge"
-  },
-  {
    "kind": "table",
    "file": "supabase/functions/receipts-issuer/index.ts",
    "line": 21,
@@ -4836,36 +4809,6 @@
     "upsert"
    ],
    "name": "donation_receipts"
-  },
-  {
-   "kind": "bucket",
-   "file": "supabase/functions/reconcile-storage-orphans/index.ts",
-   "line": 38,
-   "area": "fn:reconcile-storage-orphans",
-   "symbol": "listAllObjects",
-   "via": "const",
-   "name": "post-images"
-  },
-  {
-   "kind": "table",
-   "file": "supabase/functions/reconcile-storage-orphans/index.ts",
-   "line": 80,
-   "area": "fn:reconcile-storage-orphans",
-   "symbol": "serve",
-   "via": "literal",
-   "ops": [
-    "select"
-   ],
-   "name": "media_assets"
-  },
-  {
-   "kind": "bucket",
-   "file": "supabase/functions/reconcile-storage-orphans/index.ts",
-   "line": 98,
-   "area": "fn:reconcile-storage-orphans",
-   "symbol": "serve",
-   "via": "const",
-   "name": "post-images"
   },
   {
    "kind": "rpc",
