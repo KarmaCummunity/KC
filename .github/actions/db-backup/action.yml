@@ -97,8 +97,10 @@ runs:
         # storage), so accounts and file metadata are included. The files in
         # Storage themselves are not in any dump.
         dump data --data-only --use-copy
+        # A dump of a database with no tables is small but never empty: pg_dump
+        # always writes its SET header. A file without it is a failed dump.
         for f in roles schema data; do
-          test -s "$plain/$f.sql" || { echo "::error::empty dump file $f.sql"; exit 1; }
+          grep -q '^SET ' "$plain/$f.sql" || { echo "::error::$f.sql is empty or not a pg_dump file"; exit 1; }
         done
         node scripts/db-backup-manifest.mjs analyze --schema "$plain/schema.sql" --data "$plain/data.sql" \
           --target "$TARGET" --ref "$SUPABASE_PROJECT_REF" --sha "$SHA" --out "$plain/manifest.json"
