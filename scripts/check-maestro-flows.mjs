@@ -11,7 +11,10 @@
 // Rules, per file under .maestro/flows and .maestro/subflows:
 //   1. the YAML parses, and its last document (the commands) is a list;
 //   2. no command name, at any nesting depth, contains whitespace (a bare string or a map key);
-//   3. a flow (not a subflow) has at least one required step that is not a runFlow.
+//   3. a flow (not a subflow) has at least one required step that is not a runFlow;
+//   4. a flow's `name` has none of the characters `actions/upload-artifact` rejects in a path.
+//      Maestro names the debug folder of a flow after it, so one such character fails the upload
+//      of the whole maestro-android artifact (reports, videos, screenshots) on every run.
 //
 // Usage: node scripts/check-maestro-flows.mjs   (exit 1 when a flow breaks a rule)
 
@@ -25,6 +28,9 @@ const FLOW_DIRS = [
   { dir: '.maestro/flows', isSubflow: false },
   { dir: '.maestro/subflows', isSubflow: true },
 ];
+/** Characters `actions/upload-artifact` refuses in a file path (the flow name becomes a folder). */
+const ARTIFACT_UNSAFE_NAME_CHARS = /["':<>|*?\r\n]/;
+
 /** Commands that carry nested command lists (`runFlow` inline, `repeat`, `retry`). */
 const NESTING_COMMANDS = ['runFlow', 'repeat', 'retry'];
 
@@ -82,6 +88,10 @@ export function flowProblems(file, text, { isSubflow = false } = {}) {
   const problems = invalidBareCommands(commands).map(
     (command) => `${file}: invalid command '${command}' (a bare command takes no arguments)`,
   );
+  const flowName = documents.length > 1 ? documents[0].toJS()?.name : undefined;
+  if (typeof flowName === 'string' && ARTIFACT_UNSAFE_NAME_CHARS.test(flowName)) {
+    problems.push(`${file}: the flow name '${flowName}' has a character the artifact upload rejects (one of " ' : < > | * ?)`);
+  }
   if (!isSubflow && !commands.some(isRequiredOwnStep)) {
     problems.push(`${file}: every step is optional or a runFlow, so the flow asserts nothing`);
   }

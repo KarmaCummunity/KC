@@ -47,3 +47,11 @@ test('reports YAML that does not parse and a commands document that is not a lis
     'flows/map.yaml: the commands document must be a list',
   ]);
 });
+
+test('rejects a flow name the artifact upload cannot store (it broke the upload of every run)', () => {
+  const text = 'appId: org.karmacommunity.app\nname: \'Worlds: the "+" entry\'\n---\n- assertVisible:\n    id: feed-screen\n';
+  assert.deepEqual(flowProblems('flows/quoted-name.yaml', text), [
+    `flows/quoted-name.yaml: the flow name 'Worlds: the "+" entry' has a character the artifact upload rejects (one of " ' : < > | * ?)`,
+  ]);
+  assert.deepEqual(flowProblems('flows/ok-name.yaml', `${HEADER}- assertVisible:\n    id: feed-screen\n`), []);
+});
