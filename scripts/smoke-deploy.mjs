@@ -15,6 +15,9 @@
 //              /<name>.html, and not as the SPA fallback (index.html), which
 //              renders the Expo Router "Unmatched Route" screen. Catches a
 //              deploy that is missing a page the store listings depend on.
+//   applinks   /.well-known/apple-app-site-association and assetlinks.json answer
+//              200 directly (no redirect: Apple and Google do not follow one),
+//              as application/json, with the same JSON as the checkout.
 //   supabase   Auth health (/auth/v1/health) answers 200 with the anon key.
 //   functions  every Edge Function with a probe in scripts/edge-functions.mjs
 //              (SMOKE_PROBES) answers one OPTIONS request with exactly the
@@ -28,12 +31,13 @@
 // rollback with no earlier release tag), SMOKE_CHECKS (comma list, default
 // all), SMOKE_TIMEOUT_SECONDS (default 600), SUPABASE_URL, SUPABASE_ANON_KEY.
 
+import assert from 'node:assert/strict';
 import { appendFileSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { SMOKE_PROBES, listDeployableFunctions } from './edge-functions.mjs';
 
-export const ALL_CHECKS = ['version', 'web', 'pages', 'supabase', 'functions'];
+export const ALL_CHECKS = ['version', 'web', 'pages', 'applinks', 'supabase', 'functions'];
 const PUBLIC_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'app', 'apps', 'mobile', 'public');
 const FIRST_DELAY_MS = 5_000;
 const MAX_DELAY_MS = 30_000;
@@ -147,6 +151,33 @@ export async function checkPages({ webUrl, fetch, pages = listPublicPages() }) {
   return bad.length ? { ok: false, detail: bad.join('; ') } : { ok: true, detail: `${pages.length} pages × 2 URLs serve their own page` };
 }
 
+const WELL_KNOWN = ['apple-app-site-association', 'assetlinks.json'];
+
+/**
+ * Universal/app-link manifests as served: Apple and Google fetch them without
+ * following redirects and require JSON, and the body must be the deployed
+ * commit's file (a stale or placeholder manifest silently breaks app links).
+ */
+export async function checkAppLinks({ webUrl, fetch, readSource = (name) => readFileSync(join(PUBLIC_DIR, '.well-known', name), 'utf8') }) {
+  const bad = [];
+  for (const name of WELL_KNOWN) {
+    const url = `${webUrl}/.well-known/${name}`;
+    const res = await request(fetch, url, { redirect: 'manual', cache: 'no-store' });
+    if (res.status !== 200) {
+      bad.push(`${name} → HTTP ${res.status}${res.status >= 300 && res.status < 400 ? ' (redirect; must be served directly)' : ''}`);
+      continue;
+    }
+    const type = res.headers?.get?.('content-type') ?? '';
+    if (!/^application\/json\b/i.test(type)) bad.push(`${name} content-type is "${type || 'missing'}", expected application/json`);
+    try {
+      assert.deepEqual(JSON.parse(await res.text()), JSON.parse(readSource(name)));
+    } catch {
+      bad.push(`${name} body differs from the checkout (or is not JSON)`);
+    }
+  }
+  return bad.length ? { ok: false, detail: bad.join('; ') } : { ok: true, detail: `${WELL_KNOWN.length} manifests: 200, application/json, no redirect, match the checkout` };
+}
+
 /** Supabase Auth health with the public anon key: proves URL, key and project are live. */
 export async function checkSupabase({ supabaseUrl, anonKey, fetch }) {
   const res = await request(fetch, `${supabaseUrl}/auth/v1/health`, { headers: { apikey: anonKey } });
@@ -189,6 +220,7 @@ export async function runSmoke(opts) {
     version: () => waitForVersion(opts),
     web: () => checkWeb(opts),
     pages: () => checkPages(opts),
+    applinks: () => checkAppLinks(opts),
     supabase: () => checkSupabase(opts),
     functions: () => checkFunctions(opts),
   };
