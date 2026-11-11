@@ -127,70 +127,15 @@ for (const [name, note] of [
   ['cancel_housing_booking', 'Same arguments.'],
 ]) rpc(name, 'renamed', `rpc:${name}`, `${note} Returned row: \`handoff_id\` → \`id\`, \`listing_id\` → \`post_id\`, \`reserved_at\` → \`created_at\`, \`knowledge_slot_id\` → \`slot_starts_at\` / \`slot_ends_at\`, new \`machine_id\`.`);
 rpc('cancel_giving_handoff', 'renamed', 'rpc:cancel_giving_handoff', 'Same argument; now returns the handoff row (was void).');
-rpc('rate_giving_handoff', 'changed', 'rpc:rate_handoff', 'One rating RPC for every world: `p_rating` → `p_stars`, returns void, once per handoff (`handoff_already_rated`).');
-rpc('get_listing_handoff', 'changed', 'table:post_handoffs', 'Direct read of the caller\'s handoff of the post (policy `post_handoffs_select_party`).', { c: M });
-rpc('list_my_giving_handoffs', 'changed', 'table:post_handoffs', 'Direct read of the caller\'s handoffs (owner or recipient) joined to `posts` for the title; role = which of the two ids is the caller.', { c: M });
-rpc('list_event_registrations', 'changed', ['table:post_handoffs', 'table:users'], 'The organizer reads the post\'s handoffs directly and the members\' names from `users`.', { c: M });
 table('post_handoffs', 'changed', 'table:post_handoffs', 'Read-only for both parties. `handoff_id` → `id`, `reserved_at` → `created_at`, `world_slug` gone (join the post), `knowledge_slot_id` → slot times, new `machine_id`.');
-rpc('pause_my_listing', 'renamed', 'rpc:pause_post', '`p_listing_id` → `p_post_id`; refused while a handoff is live (`listing_has_active_handoff`).');
-rpc('resume_my_listing', 'renamed', 'rpc:resume_post', '`p_listing_id` → `p_post_id`.');
-rpc('delete_my_listing', 'changed', 'rpc:delete_post', 'Allowed in any status (design §12.1): live handoffs are cancelled and their members notified; the post is purged after the grace period and can be reopened until then.');
-rpc('fulfill_my_listing', 'changed', 'rpc:close_post_without_recipient', 'Closing without naming a recipient; refused while a handoff is live.', { c: M });
-rpc('update_my_listing', 'changed', 'table:posts', 'Direct update of the content columns (title, description, details, city_id, urgency_level, visibility, time_window, item_subcategory_id, location_display_level). `p_summary` → `description`; `p_availability_status` and `p_max_radius_km` have no column.');
-rpc('add_my_listing_media', 'changed', 'table:post_media', 'Direct insert of one row per uploaded file (storage_bucket, storage_key, ordinal, …).');
-rpc('create_marketplace_listing', 'changed', ['table:posts', 'rpc:create_post_with_details', 'table:post_media', 'table:post_private_locations'], 'Items, animals, knowledge: insert into `posts`, then `post_media` rows. Rides, stays, events, food: `create_post_with_details(p_post, p_details)`. `p_summary` → description, `p_category_id` → item_subcategory_id, exact address → `post_private_locations`, `p_external_body_id` → `beneficiary_org_id`; additional worlds and `availability_status` are gone.');
-rpc('get_marketplace_listing_detail', 'changed', 'rpc:post_detail', 'One JSON: card, media gallery, first page of comments; world details come from the detail tables (`post_ride_details`, …).');
-rpc('browse_listings', 'changed', 'rpc:feed_page', '`p_filters.world` selects the world feed; offset / four-part cursor → `next_cursor`; lat / lng → `near_city_id` + `radius_km`; returns cards.');
-rpc('marketplace_search', 'changed', 'rpc:search_posts_page', 'Text search over posts, cards with `next_cursor`; the rank components are not returned.');
-rpc('list_my_listings', 'changed', 'rpc:profile_posts_page', 'The caller\'s own id with `p_tab` open / closed / hidden; keyset cursor (offset is gone).');
-rpc('list_profile_listings', 'changed', 'rpc:profile_posts_page', 'Same page function, as cards.');
-rpc('recommend_listings_for_user', 'changed', 'rpc:recommended_posts', 'Cards; no `reason` / `score`.');
-rpc('similar_listings', 'renamed', 'rpc:similar_posts', '`p_listing_id` → `p_post_id`; returns cards.');
-rpc('map_listing_clusters', 'changed', 'rpc:map_post_clusters', 'Bounds travel as one jsonb `{west, south, east, north}` and the zoom is an argument; filters (`world`, `direction`, `item_subcategory_ids`) in `p_filters`. Returns `lat, lng, post_count, single_post_id` (M10, built).');
-rpc('map_listing_pins', 'changed', 'rpc:map_post_pins', 'Bounds as one jsonb, filters in `p_filters`, at most 200 pins of `post_id, lat, lng, world_slug, direction`; hydrate with `post_cards` (M10, built).');
-rpc('search_external_bodies', 'changed', 'table:organizations', 'External bodies are organizations (FR-ORG-001): search `organizations` by name (policy `organizations_select_active`).', { c: M });
-rpc('record_listing_signal', 'removed', null, '`listing_user_signals` is not carried over (design §8); ranking uses saves, reactions and `feed_impressions`.');
-rpc('share_listing_to_feed', 'removed', null, 'A listing is a post and is already in the feed (`listing_feed_posts` not carried over). A share is a `post_shares` row.');
-rpc('start_listing_chat', 'changed', ['rpc:open_direct_chat', 'rpc:send_message'], '`open_direct_chat(owner, p_anchor_post_id)` then `send_message` for the opening text.');
-table('listings', 'changed', ['table:posts', 'rpc:post_cards'], 'The view is gone (design §8): read `posts`, or cards through `post_cards`.');
-table('listing_kinds', 'renamed', 'table:post_kinds', 'Same role; `direction` and `detail_schema` are on the kind.');
-table('categories', 'renamed', 'table:item_subcategories', 'Item subcategories per world (`world_slug`, `parent_id`).');
 table('org_memberships', 'changed', 'table:org_memberships', '`role` → `roles` (array), `membership_id` gone (key is org + user), new `can_post`.');
 
 // ───────────────────────────── rides
 rpc('create_ride_series', 'changed', 'rpc:create_ride_series', 'Post fields go in `p_post`, ride fields in `p_ride` (was flat title / summary / details / kind); returns the series id only.');
 rpc('update_ride_series', 'same', 'rpc:update_ride_series', 'Signature unchanged.');
 rpc('set_ride_series_status', 'same', 'rpc:set_ride_series_status', 'Signature unchanged.');
-rpc('complete_ride_listing', 'renamed', 'rpc:complete_ride', '`p_listing_id` → `p_post_id`; returns the number of bookings completed.');
-rpc('decline_ride_booking', 'changed', 'rpc:cancel_ride_booking', 'No separate decline: the driver cancelling a waiting booking declines it.');
-rpc('list_ride_bookings', 'changed', ['table:post_handoffs', 'table:users'], 'The driver reads the ride\'s handoffs and the passengers\' names directly. `rated_by_me` is a select on `post_ratings` by the caller as rater (M07, built).', { c: M });
-rpc('list_rides_feed', 'changed', 'rpc:rides_feed', 'Keyset `p_cursor`; `listing_id` → `post_id`, labels → `origin_name` / `dest_name`, `meeting_points` is the JSON list, `passengers` is not returned.');
-rpc('ride_listings_search', 'changed', 'rpc:rides_feed', 'Search is the feed with `p_filters` (direction, departure window, route origin / destination).', { c: M });
-rpc('ride_listings_find_matches', 'changed', 'rpc:rides_feed', 'Route filter of `rides_feed`; saved routes get alerts through `ride_route_alerts`.', { c: M });
-rpc('find_ride_listing_matches', 'changed', 'rpc:rides_feed', 'Same as above (mobile composition calls it directly today).', { c: M });
-rpc('list_ride_places', 'changed', 'rpc:search_places', 'Server-side place search (cities and road junctions) instead of loading the whole list (design §12.1).');
-rpc('list_ride_series_occurrences', 'changed', 'table:post_ride_details', 'Occurrences are the posts whose `post_ride_details.series_id` is the series: direct read, soonest first. Seats left per occurrence come from `rides_feed`.', { c: M });
-rpc('set_ride_house_numbers', 'changed', 'table:post_private_locations', 'Owner writes `street_number` (origin) and `destination_street_number` directly.');
-rpc('get_ride_house_numbers', 'changed', 'rpc:get_post_private_location', 'Owner, or the member of a confirmed booking (each release is audited).');
-rpc('ride_listing_emergency', 'renamed', 'rpc:report_post_emergency', '`p_listing_id` → `p_post_id`; returns the emergency id; throttled (`emergency_throttled`).');
-rpc('rpc_ride_emergency_trigger', 'renamed', 'rpc:report_post_emergency', '`p_ride_id` → `p_post_id`; returns the emergency id.');
-rpc('rpc_ride_rate', 'changed', 'rpc:rate_handoff', 'Rating is per handoff (booking), not per ride + ratee; `p_is_penalty` is gone.');
-rpc('rpc_ride_start', 'removed', null, 'Legacy ride lifecycle; not carried over (design §9). A ride completes through `complete_ride` / `complete_ride_trip`.');
-rpc('rpc_ride_arrive', 'removed', null, 'Legacy ride lifecycle; not carried over (design §9).');
-rpc('rpc_ride_update_visibility', 'changed', 'table:posts', 'Direct update of `posts.visibility`.');
-rpc('rpc_ride_participants_request', 'changed', 'rpc:book_ride_seat', 'Legacy participants are bookings (`post_handoffs`).');
-rpc('rpc_ride_participants_decide', 'changed', ['rpc:confirm_ride_booking', 'rpc:cancel_ride_booking'], 'Approve → confirm; reject → cancel.');
-rpc('rpc_ride_participants_cancel', 'changed', 'rpc:cancel_ride_booking', 'Same RPC for both sides.');
-table('ride_listings', 'changed', ['table:posts', 'table:post_ride_details', 'rpc:create_post_with_details', 'rpc:rides_feed'], 'The view is gone: a ride is a post (`post_type = \'ride\'`) with a `post_ride_details` row. Create with `create_post_with_details`; edit both tables directly; close with the post RPCs.');
-table('ride_participants', 'changed', 'table:post_handoffs', 'Dropped: bookings are `post_handoffs` rows (machine `ride_booking`).');
-table('ride_stops', 'changed', 'table:post_ride_details', 'Dropped: stops are the `meeting_points` JSON of the ride details.');
-table('ride_templates', 'changed', 'table:ride_series', 'Dropped: recurring rides are `ride_series` (create / update / status RPCs; read-only table).');
 table('ride_series', 'changed', 'table:ride_series', '`series_id` → `id`; title / summary / details / direction / kind → `post_template` and `ride_template` JSON.');
 table('ride_saved_routes', 'changed', 'table:ride_saved_routes', '`route_id` → `id`; label / lat / lng / place columns → official place ids (`*_city_id`, `*_street_id`, `*_junction_id`) with a derived point.');
-table('ride_emergency_events', 'changed', 'table:post_emergencies', 'A participant reads id, post_id, reporter_id, created_at only; note and location are for the safety team.');
-table('ride_ratings', 'changed', 'table:post_ratings', 'Ratings are `post_ratings` per handoff: the rater reads back only the rows they wrote; nobody reads a rating about themselves (M07, built).');
-table('user_ride_rating_summary', 'changed', 'table:user_stats', 'Columns `ratings_count` and `ratings_avg` (average only from three ratings), readable with the profile. Spec conflict recorded in the handback: D24 says members never see ratings (M07, built).');
-table('driver_declarations', 'changed', ['table:user_consents', 'rpc:accept_world_consent'], 'Read `user_consents` where `consent_kind = \'driver_declaration\'`; accept with `accept_world_consent(\'driver_declaration\', version)`. The current version is `bootstrap_session().consents.<kind>.version`, with the caller\'s `accepted` flag (M11, built).');
 
 // ───────────────────────────── housing, knowledge, volunteering
 rpc('accept_housing_conduct', 'changed', 'rpc:accept_world_consent', '`accept_world_consent(\'housing_conduct\', p_version)`; rejects a stale version (`consent_version_stale`).');
@@ -212,17 +157,6 @@ for (const name of ['resolve_knowledge_topics', 'propose_knowledge_topic', 'upda
 }
 table('knowledge_topics', 'missing', null, 'No topic graph in the baseline (design §8 names `topics`, not built).', { m: 'M12' });
 table('knowledge_topic_follows', 'missing', null, 'No topic follows in the baseline.', { m: 'M12' });
-rpc('list_volunteer_opportunities', 'changed', 'rpc:feed_page', 'Volunteering is event posts (design Q3, G18): the world feed of events, as cards. One post per shift.', { c: M });
-rpc('get_volunteer_opportunity_detail', 'changed', 'rpc:post_detail', 'Post detail plus the `post_event_details` row (starts_at, ends_at, capacity, registration_policy).', { c: M });
-rpc('sign_up_volunteer_shift', 'changed', 'rpc:register_for_event', '`p_shift_id` → `p_post_id`; the status says confirmed, waiting for approval, or waiting list.');
-rpc('cancel_volunteer_signup', 'changed', 'rpc:cancel_event_registration', '`p_signup_id` → `p_handoff_id`.');
-rpc('list_my_volunteer_signups', 'changed', 'table:post_handoffs', 'The caller\'s handoffs on event posts, joined to `post_event_details`; hours are in `user_stats.volunteer_hours_total`.', { c: M });
-rpc('check_in_volunteer_shift', 'changed', 'rpc:mark_event_attendance', 'Attendance is recorded by the organizer, not by the volunteer\'s own check-in.', { c: M });
-rpc('get_volunteer_shift_ics', 'removed', null, 'Not carried over; the calendar file is built on the device from the event\'s start and end.', { c: M });
-rpc('close_volunteer_opportunity', 'changed', 'rpc:close_post_without_recipient', 'The organizer closes (or pauses / deletes) the event post.', { c: M });
-rpc('list_my_volunteer_opportunities', 'changed', 'rpc:profile_posts_page', 'The organizer\'s own posts; filter the event posts on the device.', { c: M });
-rpc('list_shift_volunteers', 'changed', ['table:post_handoffs', 'table:users'], 'The organizer reads the event\'s handoffs and the members\' names; waiting-list order = `created_at`.', { c: M });
-rpc('organizer_message_shift_volunteers', 'renamed', 'rpc:message_event_registrants', '`p_shift_id` → `p_post_id`, `p_message` → `p_body`.');
 
 // ───────────────────────────── challenges, matching, karma, stats, surveys
 rpc('create_challenge', 'same', 'rpc:create_challenge', 'New optional `p_city_id` (required for a community challenge: `city_required`).');
@@ -232,10 +166,6 @@ rpc('get_challenge', 'changed', 'rpc:get_challenge', 'Returns the `challenge_sum
 rpc('list_challenges', 'changed', 'rpc:list_challenges', 'Offset → keyset `p_cursor`; each row is `{ challenge, next_cursor }`.');
 rpc('list_challenge_leaderboard', 'same', 'rpc:list_challenge_leaderboard', 'Adds `avatar_url`.');
 rpc('list_my_challenge_entries', 'changed', 'table:challenge_progress_entries', 'Direct read of the caller\'s own entries (policy `challenge_progress_entries_select_own`).');
-rpc('rpc_my_matches', 'changed', 'rpc:my_matches', '`candidate_id` → `match_id`; the other side comes as a `post_card` (`other_post`); `components` is not returned.');
-rpc('rpc_match_respond', 'changed', 'rpc:match_respond', '`p_candidate_id` → `p_match_id`, `p_response` text → `p_accept` boolean; returns the pair\'s status.');
-rpc('rpc_match_refresh_mine', 'removed', null, 'Matching runs from the outbox when a post is published or changed; there is no on-demand refresh.', { c: M });
-rpc('admin_match_quality', 'missing', null, 'No match quality report.', { m: 'M14' });
 table('karma_ledger', 'changed', 'table:karma_ledger', '`ledger_id` → `id`, `points_delta` → `points`, `ref_type` / `ref_id` → `subject` / `reference`. The total is `my_karma_points()`.');
 rpc('check_survey_prompt_eligibility', 'same', 'rpc:check_survey_prompt_eligibility', 'Signature unchanged.');
 rpc('upsert_survey_answers', 'same', 'rpc:upsert_survey_answers', 'Signature unchanged.');
@@ -279,7 +209,6 @@ table('admin_role_grants', 'changed', 'table:admin_role_grants', '`grant_id` →
 
 // ───────────────────────────── organizations, donations, payments, finance
 table('donation_links', 'changed', 'table:donation_links', 'Clients select and delete only; insert and update are done by the `validate-donation-link` function with the service role. `tags`, `hidden_at`, `hidden_by` are gone (hiding = `review_status`).');
-rpc('admin_list_donation_links_for_review', 'changed', ['table:donation_links', 'table:users'], 'A moderator reads pending links directly (policy `donation_links_select`) and the submitters\' names from `users`.');
 rpc('admin_review_donation_link', 'same', 'rpc:admin_review_donation_link', 'Signature unchanged.');
 rpc('report_donation_link', 'same', 'rpc:report_donation_link', 'Signature unchanged.');
 rpc('create_donation_intent', 'changed', 'rpc:create_donation_intent', '`p_amount_ils` → `p_amount_agorot` (integer agorot); `p_listing_id` → `p_post_id`; returns JSON (intent and checkout).');
@@ -343,7 +272,6 @@ rpc('api_standing_orders_charge_due', 'same', 'rpc:api_standing_orders_charge_du
 
 // ───────────────────────────── storage buckets
 bucket('post-images', 'same', 'bucket:post-images', 'Declared by the baseline (own-folder insert / delete policies); `post_media.storage_bucket` points at it.');
-bucket('listing-images', 'changed', 'bucket:post-images', 'A listing is a post: its images move to `post-images` and get `post_media` rows.', { c: M });
 bucket('avatars', 'same', 'bucket:avatars', 'Declared in `95_platform/090_storage.sql`: public, JPEG, 512 KB, `<user_id>/avatar.jpg` (and the thumb in the same folder) (M23, verified).');
 bucket('chat-media', 'same', 'bucket:chat-media', 'Declared in `95_platform/090_storage.sql`: private, `<user_id>/<chat_id>/<file>`, read through signed URLs by chat members (M23, verified).');
 bucket('<bucket>', 'changed', 'bucket:post-images', '`backfill-image-thumbs` loops over a bucket list passed at run time; after the cut-over the list is `post-images` (plus `avatars` and `chat-media`).', { c: M });
@@ -361,11 +289,36 @@ edge('public-research-submit', 'same', 'edge:public-research-submit', 'Same invo
 edge('translate', 'same', 'edge:translate', 'Same invoke.');
 edge('validate-donation-link', 'same', 'edge:validate-donation-link', 'Same invoke; the function writes `donation_links` with the service role.');
 
+// ───────────────────────────── launch worlds (package P5): the objects the world adapters address on the baseline
+// A listing is a post; a ride, an event and a food offer are posts with a detail row; every booking, reservation and registration is a `post_handoffs` row.
+rpc('create_post_with_details', 'same', 'rpc:create_post_with_details', '`p_post` (world, kind, direction, title, city, ...) and `p_details` (the columns of the detail table). The adapter turns the forms\' legacy `details` document into the ride, event or food columns; refusals `declaration_required`, `ride_place_invalid`, `ride_time_invalid`, `food_expiry_required`, `event_time_invalid`, `post_limit_exceeded`.');
+rpc('set_post_organization', 'same', 'rpc:set_post_organization', 'Attaches a new organization event to the organization the member publishes for (`forbidden` when the member may not act for it).');
+rpc('post_detail', 'same', 'rpc:post_detail', 'Card, gallery and first comments as one JSON; the adapter adds the world detail row and the world labels to build the listing detail.');
+rpc('similar_posts', 'same', 'rpc:similar_posts', '"More like this" as cards.');
+rpc('pause_post', 'same', 'rpc:pause_post', 'Pauses the owner\'s open post (`listing_wrong_status`, `listing_has_active_handoff`).');
+rpc('resume_post', 'same', 'rpc:resume_post', 'Reopens a paused post.');
+rpc('rate_handoff', 'same', 'rpc:rate_handoff', 'One rating RPC for every world (`p_stars`, optional `p_comment`); refusals `invalid_rating`, `handoff_not_found`, `not_participant`, `handoff_already_rated`.');
+rpc('message_event_registrants', 'same', 'rpc:message_event_registrants', 'The organizer\'s message to everyone registered for an event; answers how many were told (`event_message_invalid`).');
+rpc('complete_ride', 'same', 'rpc:complete_ride', 'The driver completes the whole ride; answers the number of bookings completed.');
+rpc('get_post_private_location', 'same', 'rpc:get_post_private_location', 'The private house numbers of a ride, released to the driver and to the passengers of a confirmed booking.');
+rpc('report_post_emergency', 'same', 'rpc:report_post_emergency', '`p_post_id`, optional `p_note`; refusals `ride_not_active`, `emergency_throttled`.');
+rpc('rides_feed', 'same', 'rpc:rides_feed', 'The rides feed; with `p_filters.origin` / `dest` / `radius_km` it is the route search. The app reads the first page; the series marker (weekdays) is not part of a row.');
+rpc('accept_world_consent', 'same', 'rpc:accept_world_consent', 'Accepts the driver declaration in force (`p_kind`, `p_version`); `consent_version_stale` for an old version.');
+rpc('my_matches', 'same', 'rpc:my_matches', 'The caller\'s pairs, each with the other member\'s post as a card (`other_post`).');
+rpc('match_respond', 'same', 'rpc:match_respond', '`p_match_id`, `p_accept`; answers the pair\'s status (`accepted` when both accepted).');
+table('post_ride_details', 'same', 'table:post_ride_details', 'Read for the route, time and seats of a ride and for the occurrences of a series; the owner edits it through the adapter.');
+table('post_event_details', 'same', 'table:post_event_details', 'Read for an event\'s window, capacity and policy; the organizer edits it through the adapter.');
+table('post_food_details', 'same', 'table:post_food_details', 'Read for a food offer\'s expiry and contents; the giver edits it through the adapter.');
+table('worlds', 'same', 'table:worlds', 'The world labels shown on a listing detail.');
+table('organizations', 'same', 'table:organizations', 'The routed worlds\' body picker (organizations by name).');
+table('road_junctions', 'same', 'table:road_junctions', 'The junctions of the ride place catalog (name and position).');
+table('user_consents', 'same', 'table:user_consents', 'The acceptance record of the driver declaration.');
+table('post_ratings', 'same', 'table:post_ratings', 'The rater reads back the ratings they wrote, to mark a booking "rated by me".');
+
 // ═════════════════════════════ MISSING: what the baseline does not provide
 // action: build (add to the baseline) · rls-read (already possible, no new object) · drop · defer (behind a flag)
 export const missing = [
   { id: 'M12', title: 'Knowledge topic graph (topics, aliases, follows, proposals, review)', usedBy: 'Knowledge world topic picker, follow, proposal and admin review (SupabaseKnowledgeTopicRepository)', spec: 'FR-KNOW-001, FR-KNOW-002', launch: 'no (knowledge is a portal at launch)', action: 'defer', recommendation: 'Keep the knowledge world behind `world_knowledge_enabled`. When it opens: design §8 maps `knowledge_topics` → `topics`, `topic_aliases`, `topic_follows`, but no module creates them. Add them to `70_worlds` (knowledge), or launch knowledge with item subcategories only and defer.' },
-  { id: 'M14', title: 'Admin analytics: world flow funnel, match quality', usedBy: 'Admin statistics screens (SupabaseStatsRepository.getWorldFlowFunnel, SupabaseMatchRepository.qualityByWorld)', spec: 'FR-STATS-007, FR-ADMIN-029', launch: 'no', action: 'defer', recommendation: 'Staff-only reports: hide behind a flag at launch and build later in `79_activity_stats` / `76_matching`.' },
   { id: 'M16', title: 'Free feedback form and its admin list', usedBy: 'Settings → feedback (SupabaseSurveyRepository), admin feedback dashboard (admin_user_feedback_list)', spec: 'FR-SETTINGS-017, FR-ADMIN-021', launch: 'no (ships with the surveys and feedback hub)', action: 'defer', recommendation: 'Hide the feedback form with the surveys hub; the insert sits inside the survey prompt check today and must fail silently. Later: table `user_feedback` in `90_research` (insert own, select super admin).' },
   { id: 'M17', title: 'Survey statistics for admins (overview, results, PMF report)', usedBy: 'Admin survey dashboard (SupabaseSurveyAdminRepository)', spec: 'FR-ADMIN-021', launch: 'no', action: 'defer', recommendation: 'Hide the admin survey dashboard behind a flag. When it opens no new object is needed at first: the super admin can read `survey_answers` (policy `survey_answers_select_super_admin`); aggregate on the device at launch volumes, and add an aggregate function to `90_research` when answers grow.' },
   { id: 'M19', title: 'Back-office tools: tasks, CRM, timesheets', usedBy: 'Admin portal (SupabaseAdminTaskRepository, SupabaseCrmContactsRepository, SupabaseTimesheetsRepository) — 18 RPCs', spec: 'tasks: FR-ADMIN-018; CRM: roadmap phase 3; timesheets: not in spec', launch: 'no', action: 'defer', recommendation: 'Internal tools, not member data: hide the three admin sections behind a flag and decide separately whether they belong in this database at all.' },

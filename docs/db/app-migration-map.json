@@ -2,26 +2,26 @@
  "generatedBy": "scripts/app-migration-map.mjs",
  "totals": {
   "rpc": {
-   "objects": 262,
-   "same": 73,
-   "renamed": 27,
-   "changed": 93,
-   "removed": 7,
-   "missing": 62
+   "objects": 217,
+   "same": 88,
+   "renamed": 20,
+   "changed": 47,
+   "removed": 1,
+   "missing": 61
   },
   "table": {
-   "objects": 58,
-   "same": 27,
-   "renamed": 2,
-   "changed": 25,
+   "objects": 55,
+   "same": 35,
+   "renamed": 0,
+   "changed": 16,
    "removed": 0,
    "missing": 4
   },
   "bucket": {
-   "objects": 5,
+   "objects": 4,
    "same": 3,
    "renamed": 0,
-   "changed": 2,
+   "changed": 1,
    "removed": 0,
    "missing": 0
   },
@@ -52,19 +52,19 @@
    "missing": 0
   },
   "later": {
-   "objects": 131,
+   "objects": 130,
    "same": 19,
    "renamed": 4,
    "changed": 41,
    "removed": 1,
-   "missing": 66
+   "missing": 65
   },
   "wedge": {
-   "objects": 100,
-   "same": 8,
-   "renamed": 24,
-   "changed": 62,
-   "removed": 6,
+   "objects": 52,
+   "same": 31,
+   "renamed": 15,
+   "changed": 6,
+   "removed": 0,
    "missing": 0
   }
  },
@@ -112,8 +112,8 @@
    "missing": 0
   },
   "donations": {
-   "callSites": 8,
-   "oneToOne": 4,
+   "callSites": 7,
+   "oneToOne": 3,
    "changed": 4,
    "removed": 0,
    "missing": 0
@@ -252,23 +252,23 @@
    "missing": 0
   },
   "marketplace": {
-   "callSites": 42,
-   "oneToOne": 15,
-   "changed": 25,
-   "removed": 2,
+   "callSites": 47,
+   "oneToOne": 33,
+   "changed": 14,
+   "removed": 0,
    "missing": 0
   },
   "matching": {
-   "callSites": 4,
-   "oneToOne": 0,
-   "changed": 2,
-   "removed": 1,
-   "missing": 1
+   "callSites": 2,
+   "oneToOne": 2,
+   "changed": 0,
+   "removed": 0,
+   "missing": 0
   },
   "mobile": {
-   "callSites": 22,
-   "oneToOne": 14,
-   "changed": 5,
+   "callSites": 21,
+   "oneToOne": 16,
+   "changed": 2,
    "removed": 0,
    "missing": 3
   },
@@ -322,10 +322,10 @@
    "missing": 0
   },
   "rides": {
-   "callSites": 53,
-   "oneToOne": 10,
-   "changed": 41,
-   "removed": 2,
+   "callSites": 28,
+   "oneToOne": 19,
+   "changed": 9,
+   "removed": 0,
    "missing": 0
   },
   "search": {
@@ -371,10 +371,10 @@
    "missing": 0
   },
   "volunteering": {
-   "callSites": 11,
-   "oneToOne": 1,
-   "changed": 9,
-   "removed": 1,
+   "callSites": 9,
+   "oneToOne": 3,
+   "changed": 6,
+   "removed": 0,
    "missing": 0
   }
  },
@@ -397,17 +397,6 @@
    "launch": "no (knowledge is a portal at launch)",
    "action": "defer",
    "recommendation": "Keep the knowledge world behind `world_knowledge_enabled`. When it opens: design §8 maps `knowledge_topics` → `topics`, `topic_aliases`, `topic_follows`, but no module creates them. Add them to `70_worlds` (knowledge), or launch knowledge with item subcategories only and defer.",
-   "tier": "later",
-   "blocker": false
-  },
-  {
-   "id": "M14",
-   "title": "Admin analytics: world flow funnel, match quality",
-   "usedBy": "Admin statistics screens (SupabaseStatsRepository.getWorldFlowFunnel, SupabaseMatchRepository.qualityByWorld)",
-   "spec": "FR-STATS-007, FR-ADMIN-029",
-   "launch": "no",
-   "action": "defer",
-   "recommendation": "Staff-only reports: hide behind a flag at launch and build later in `79_activity_stats` / `76_matching`.",
    "tier": "later",
    "blocker": false
   },
@@ -783,7 +772,22 @@
    "degrade": "Each launch world is behind `world_<slug>_enabled`: until this package lands the four flags are off and the worlds render as portals (the generic post flow of P2 still lets members publish and close items).",
    "risks": "Depends on P2 (`post_card` mapper). Ratings (M07), map (M10) and the driver declaration version (M11) are built.",
    "rows": [
+    "rpc:bootstrap_session",
+    "table:users",
     "table:cities",
+    "table:streets",
+    "table:posts",
+    "rpc:feed_page",
+    "rpc:post_cards",
+    "rpc:profile_posts_page",
+    "rpc:close_post_without_recipient",
+    "rpc:publish_post",
+    "rpc:delete_post",
+    "table:post_media",
+    "table:post_private_locations",
+    "table:item_subcategories",
+    "table:post_kinds",
+    "rpc:send_message",
     "rpc:reserve_item_giving",
     "rpc:claim_food_giving",
     "rpc:confirm_item_handoff",
@@ -798,97 +802,48 @@
     "rpc:reinstate_ride_booking",
     "rpc:complete_ride_trip",
     "rpc:cancel_giving_handoff",
-    "rpc:rate_giving_handoff",
-    "rpc:get_listing_handoff",
-    "rpc:list_my_giving_handoffs",
-    "rpc:list_event_registrations",
     "table:post_handoffs",
-    "rpc:pause_my_listing",
-    "rpc:resume_my_listing",
-    "rpc:delete_my_listing",
-    "rpc:fulfill_my_listing",
-    "rpc:update_my_listing",
-    "rpc:add_my_listing_media",
-    "rpc:create_marketplace_listing",
-    "rpc:get_marketplace_listing_detail",
-    "rpc:browse_listings",
-    "rpc:marketplace_search",
-    "rpc:list_my_listings",
-    "rpc:list_profile_listings",
-    "rpc:recommend_listings_for_user",
-    "rpc:similar_listings",
-    "rpc:map_listing_clusters",
-    "rpc:map_listing_pins",
-    "rpc:search_external_bodies",
-    "rpc:record_listing_signal",
-    "rpc:share_listing_to_feed",
-    "rpc:start_listing_chat",
-    "table:listings",
-    "table:listing_kinds",
-    "table:categories",
     "table:org_memberships",
     "rpc:create_ride_series",
     "rpc:update_ride_series",
     "rpc:set_ride_series_status",
-    "rpc:complete_ride_listing",
-    "rpc:decline_ride_booking",
-    "rpc:list_ride_bookings",
-    "rpc:list_rides_feed",
-    "rpc:ride_listings_search",
-    "rpc:ride_listings_find_matches",
-    "rpc:find_ride_listing_matches",
-    "rpc:list_ride_places",
-    "rpc:list_ride_series_occurrences",
-    "rpc:set_ride_house_numbers",
-    "rpc:get_ride_house_numbers",
-    "rpc:ride_listing_emergency",
-    "rpc:rpc_ride_emergency_trigger",
-    "rpc:rpc_ride_rate",
-    "rpc:rpc_ride_start",
-    "rpc:rpc_ride_arrive",
-    "rpc:rpc_ride_update_visibility",
-    "rpc:rpc_ride_participants_request",
-    "rpc:rpc_ride_participants_decide",
-    "rpc:rpc_ride_participants_cancel",
-    "table:ride_listings",
-    "table:ride_participants",
-    "table:ride_stops",
-    "table:ride_templates",
     "table:ride_series",
     "table:ride_saved_routes",
-    "table:ride_emergency_events",
-    "table:ride_ratings",
-    "table:user_ride_rating_summary",
-    "table:driver_declarations",
-    "rpc:list_volunteer_opportunities",
-    "rpc:get_volunteer_opportunity_detail",
-    "rpc:sign_up_volunteer_shift",
-    "rpc:cancel_volunteer_signup",
-    "rpc:list_my_volunteer_signups",
-    "rpc:check_in_volunteer_shift",
-    "rpc:get_volunteer_shift_ics",
-    "rpc:close_volunteer_opportunity",
-    "rpc:list_my_volunteer_opportunities",
-    "rpc:list_shift_volunteers",
-    "rpc:organizer_message_shift_volunteers",
-    "rpc:rpc_my_matches",
-    "rpc:rpc_match_respond",
-    "rpc:rpc_match_refresh_mine",
-    "rpc:admin_match_quality",
     "table:karma_ledger",
     "table:donation_links",
-    "rpc:admin_list_donation_links_for_review",
     "rpc:admin_review_donation_link",
     "rpc:report_donation_link",
-    "bucket:listing-images",
-    "edge_function:validate-donation-link"
+    "edge_function:validate-donation-link",
+    "rpc:create_post_with_details",
+    "rpc:set_post_organization",
+    "rpc:post_detail",
+    "rpc:similar_posts",
+    "rpc:pause_post",
+    "rpc:resume_post",
+    "rpc:rate_handoff",
+    "rpc:message_event_registrants",
+    "rpc:complete_ride",
+    "rpc:get_post_private_location",
+    "rpc:report_post_emergency",
+    "rpc:rides_feed",
+    "rpc:accept_world_consent",
+    "rpc:my_matches",
+    "rpc:match_respond",
+    "table:post_ride_details",
+    "table:post_event_details",
+    "table:post_food_details",
+    "table:worlds",
+    "table:organizations",
+    "table:road_junctions",
+    "table:user_consents",
+    "table:post_ratings"
    ],
    "counts": {
-    "objects": 99,
-    "oneToOne": 28,
-    "changed": 64,
-    "removed": 6,
-    "missing": 1
+    "objects": 65,
+    "oneToOne": 54,
+    "changed": 11,
+    "removed": 0,
+    "missing": 0
    }
   },
   {
@@ -1537,39 +1492,6 @@
    ]
   },
   {
-   "old": "listing-images",
-   "kind": "bucket",
-   "status": "changed",
-   "launch": "wedge",
-   "confidence": "medium",
-   "missing": null,
-   "note": "A listing is a post: its images move to `post-images` and get `post_media` rows.",
-   "oldObject": {},
-   "targets": [
-    {
-     "type": "bucket",
-     "name": "post-images"
-    }
-   ],
-   "areas": [
-    "mobile"
-   ],
-   "callSites": [
-    {
-     "file": "app/apps/mobile/src/services/listingImageUpload.ts",
-     "line": 38,
-     "symbol": "uploadListingImages",
-     "area": "mobile"
-    },
-    {
-     "file": "app/apps/mobile/src/services/listingImageUpload.ts",
-     "line": 51,
-     "symbol": "listingImagePublicUrl",
-     "area": "mobile"
-    }
-   ]
-  },
-  {
    "old": "post-images",
    "kind": "bucket",
    "status": "same",
@@ -1623,6 +1545,18 @@
      "file": "app/apps/mobile/src/services/imageUpload.ts",
      "line": 191,
      "symbol": "resizeAndUploadImage",
+     "area": "mobile"
+    },
+    {
+     "file": "app/apps/mobile/src/services/listingImageUpload.ts",
+     "line": 39,
+     "symbol": "uploadListingImages",
+     "area": "mobile"
+    },
+    {
+     "file": "app/apps/mobile/src/services/listingImageUpload.ts",
+     "line": 52,
+     "symbol": "listingImagePublicUrl",
      "area": "mobile"
     },
     {
@@ -1888,14 +1822,8 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/donations/SupabaseDonationLinksRepository.ts",
-     "line": 52,
-     "symbol": "SupabaseDonationLinksRepository.addViaEdgeFunction",
-     "area": "donations"
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/donations/SupabaseDonationLinksRepository.ts",
-     "line": 72,
-     "symbol": "SupabaseDonationLinksRepository.updateViaEdgeFunction",
+     "line": 90,
+     "symbol": "SupabaseDonationLinksRepository.invoke",
      "area": "donations"
     }
    ]
@@ -1924,7 +1852,7 @@
      "errors": [
       {
        "code": "consent_version_stale",
-       "knownToApp": false
+       "knownToApp": true
       },
       {
        "code": "unauthenticated",
@@ -1999,69 +1927,47 @@
    ]
   },
   {
-   "old": "add_my_listing_media",
+   "old": "accept_world_consent",
    "kind": "rpc",
-   "status": "changed",
+   "status": "same",
    "launch": "wedge",
    "confidence": "high",
    "missing": null,
-   "note": "Direct insert of one row per uploaded file (storage_bucket, storage_key, ordinal, …).",
-   "oldObject": {
-    "signature": [
-     "add_my_listing_media(p_listing_id: string, p_storage_paths: string[]) → number"
-    ]
-   },
+   "note": "Accepts the driver declaration in force (`p_kind`, `p_version`); `consent_version_stale` for an old version.",
+   "oldObject": {},
    "targets": [
     {
-     "type": "table",
-     "name": "post_media",
-     "columns": [
-      "blurhash",
-      "created_at",
-      "duration_ms",
-      "height",
-      "id",
-      "kind",
-      "mime_type",
-      "ordinal",
-      "owner_id",
-      "post_id",
-      "processing_status",
-      "size_bytes",
-      "storage_bucket",
-      "storage_key",
-      "width"
+     "type": "rpc",
+     "name": "accept_world_consent",
+     "source": "70_worlds/010_world_shared.sql:92",
+     "signature": [
+      "accept_world_consent(p_kind: string, p_locale?: string, p_user_agent?: string, p_version: number) → user_consents row"
      ],
-     "clientGrants": {
-      "select": true,
-      "delete": true,
-      "insert": [
-       "blurhash",
-       "duration_ms",
-       "height",
-       "id",
-       "kind",
-       "mime_type",
-       "ordinal",
-       "owner_id",
-       "post_id",
-       "size_bytes",
-       "storage_bucket",
-       "storage_key",
-       "width"
-      ]
-     }
+     "errors": [
+      {
+       "code": "consent_version_stale",
+       "knownToApp": true
+      },
+      {
+       "code": "unauthenticated",
+       "knownToApp": true
+      },
+      {
+       "code": "unknown_consent_kind",
+       "knownToApp": false
+      }
+     ]
     }
    ],
    "areas": [
-    "marketplace"
+    "rides"
    ],
    "callSites": [
     {
-     "file": "app/packages/infrastructure-supabase/src/marketplace/listingOwnerActions.ts",
-     "line": 41,
-     "symbol": "addMyListingMedia",
-     "area": "marketplace"
+     "file": "app/packages/infrastructure-supabase/src/rides/SupabaseDriverDeclarationRepository.ts",
+     "line": 61,
+     "symbol": "SupabaseDriverDeclarationRepository.requireRpcRow",
+     "area": "rides"
     }
    ]
   },
@@ -2523,113 +2429,6 @@
    ]
   },
   {
-   "old": "admin_list_donation_links_for_review",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "wedge",
-   "confidence": "high",
-   "missing": null,
-   "note": "A moderator reads pending links directly (policy `donation_links_select`) and the submitters' names from `users`.",
-   "oldObject": {
-    "signature": [
-     "admin_list_donation_links_for_review(p_status?: string) → { category_slug: string created_at: string description: string display_name: string id: string review_note: string review_status: string submitted_by: string submitter_name: string url: string }[]"
-    ]
-   },
-   "targets": [
-    {
-     "type": "table",
-     "name": "donation_links",
-     "columns": [
-      "category_slug",
-      "created_at",
-      "description",
-      "display_name",
-      "id",
-      "review_note",
-      "review_status",
-      "reviewed_at",
-      "reviewed_by",
-      "search_vector",
-      "submitted_by",
-      "updated_at",
-      "url",
-      "validated_at"
-     ],
-     "clientGrants": {
-      "select": true,
-      "delete": true
-     }
-    },
-    {
-     "type": "table",
-     "name": "users",
-     "columns": [
-      "avatar_url",
-      "biography",
-      "city_id",
-      "created_at",
-      "display_name",
-      "id",
-      "is_active",
-      "preferred_language",
-      "privacy_changed_at",
-      "privacy_mode",
-      "search_vector",
-      "share_handle",
-      "updated_at",
-      "verification_level"
-     ],
-     "clientGrants": {
-      "select": true,
-      "update": [
-       "avatar_url",
-       "biography",
-       "city_id",
-       "display_name",
-       "preferred_language"
-      ]
-     }
-    }
-   ],
-   "areas": [
-    "donations"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/donations/SupabaseDonationLinksRepository.ts",
-     "line": 113,
-     "symbol": "SupabaseDonationLinksRepository.listForReview",
-     "area": "donations"
-    }
-   ]
-  },
-  {
-   "old": "admin_match_quality",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M14",
-   "note": "No match quality report.",
-   "oldObject": {
-    "signature": [
-     "admin_match_quality(p_days?: number) → { accepted: number chat_pairs: number chat_rate: number completed_pairs: number completion_rate: number notified_pairs: number precision_proxy: number responses: number world_label_en: string world_label_he: string wo..."
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "matching"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/matching/SupabaseMatchRepository.ts",
-     "line": 131,
-     "symbol": "SupabaseMatchRepository.qualityByWorld",
-     "area": "matching"
-    }
-   ]
-  },
-  {
    "old": "admin_org_application_approve",
    "kind": "rpc",
    "status": "changed",
@@ -3069,8 +2868,8 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/donations/SupabaseDonationLinksRepository.ts",
-     "line": 131,
-     "symbol": "SupabaseDonationLinksRepository.review",
+     "line": 146,
+     "symbol": "SupabaseDonationLinksRepository.unwrapCall",
      "area": "donations"
     }
    ]
@@ -4655,7 +4454,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideBookingRepository.ts",
-     "line": 28,
+     "line": 27,
      "symbol": "SupabaseRideBookingRepository.bookSeat",
      "area": "rides"
     }
@@ -4687,7 +4486,8 @@
     }
    ],
    "areas": [
-    "auth"
+    "auth",
+    "rides"
    ],
    "callSites": [
     {
@@ -4695,51 +4495,12 @@
      "line": 138,
      "symbol": "fetchBootstrapSession",
      "area": "auth"
-    }
-   ]
-  },
-  {
-   "old": "browse_listings",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "wedge",
-   "confidence": "high",
-   "missing": null,
-   "note": "`p_filters.world` selects the world feed; offset / four-part cursor → `next_cursor`; lat / lng → `near_city_id` + `radius_km`; returns cards.",
-   "oldObject": {
-    "signature": [
-     "browse_listings(p_availability?: string, p_category_id?: string, p_cursor_created_at?: string, p_cursor_id?: string, p_cursor_sort?: number, p_cursor_urgency?: number, p_direction?: string, p_lat?: number, p_limit?: number, p_lng?: number, p_offset?: number, p_radius_km?: number, p_urgency_min?: number, p_viewer?: string, p_world_slug?: string) → { availability_status: string city_id: string created_at: string direction: string distance_km: number geo: unknown kind_slug: string listing_id: string sort_key: number summary: string title: string urgency_level: nu..."
-    ]
-   },
-   "targets": [
+    },
     {
-     "type": "rpc",
-     "name": "feed_page",
-     "source": "30_social/080_feed_page.sql:48",
-     "signature": [
-      "feed_page(p_cursor?: Json, p_filters?: Json, p_limit?: number) → { card: post_card distance_m: number next_cursor: Json }[]"
-     ],
-     "errors": [
-      {
-       "code": "invalid_input",
-       "knownToApp": true
-      },
-      {
-       "code": "unauthenticated",
-       "knownToApp": true
-      }
-     ]
-    }
-   ],
-   "areas": [
-    "marketplace"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/marketplace/marketplacePaging.ts",
-     "line": 77,
-     "symbol": "fetchBrowsePage",
-     "area": "marketplace"
+     "file": "app/packages/infrastructure-supabase/src/rides/SupabaseDriverDeclarationRepository.ts",
+     "line": 39,
+     "symbol": "SupabaseDriverDeclarationRepository.state",
+     "area": "rides"
     }
    ]
   },
@@ -4790,7 +4551,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/eventRegistrations.ts",
-     "line": 76,
+     "line": 84,
      "symbol": "cancelEventRegistration",
      "area": "marketplace"
     }
@@ -4839,7 +4600,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/givingHandoffs.ts",
-     "line": 108,
+     "line": 155,
      "symbol": "cancelGivingHandoff",
      "area": "marketplace"
     }
@@ -4957,8 +4718,8 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideBookingRepository.ts",
-     "line": 75,
-     "symbol": "SupabaseRideBookingRepository.runHandoffRpc",
+     "line": 66,
+     "symbol": "SupabaseRideBookingRepository.cancel",
      "area": "rides"
     }
    ]
@@ -5005,59 +4766,6 @@
      "line": 137,
      "symbol": "SupabasePaymentsRepository.cancelStandingOrder",
      "area": "payments"
-    }
-   ]
-  },
-  {
-   "old": "cancel_volunteer_signup",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "wedge",
-   "confidence": "high",
-   "missing": null,
-   "note": "`p_signup_id` → `p_handoff_id`.",
-   "oldObject": {
-    "signature": [
-     "cancel_volunteer_signup(p_signup_id: string) → undefined"
-    ]
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "cancel_event_registration",
-     "source": "70_worlds/130_event_registrations.sql:84",
-     "signature": [
-      "cancel_event_registration(p_handoff_id: string) → post_handoffs row"
-     ],
-     "errors": [
-      {
-       "code": "account_not_active",
-       "knownToApp": true
-      },
-      {
-       "code": "handoff_not_found",
-       "knownToApp": true
-      },
-      {
-       "code": "invalid_status",
-       "knownToApp": true
-      },
-      {
-       "code": "unauthenticated",
-       "knownToApp": true
-      }
-     ]
-    }
-   ],
-   "areas": [
-    "volunteering"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
-     "line": 131,
-     "symbol": "SupabaseVolunteerRepository.cancelSignup",
-     "area": "volunteering"
     }
    ]
   },
@@ -5129,7 +4837,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/chat/getMyChats.ts",
-     "line": 73,
+     "line": 71,
      "symbol": "getMyChats",
      "area": "chat"
     }
@@ -5216,63 +4924,6 @@
      "line": 81,
      "symbol": "SupabaseChatRepository.getUnreadTotal",
      "area": "chat"
-    }
-   ]
-  },
-  {
-   "old": "check_in_volunteer_shift",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "wedge",
-   "confidence": "medium",
-   "missing": null,
-   "note": "Attendance is recorded by the organizer, not by the volunteer's own check-in.",
-   "oldObject": {
-    "signature": [
-     "check_in_volunteer_shift(p_signup_id: string) → Json"
-    ]
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "mark_event_attendance",
-     "source": "70_worlds/130_event_registrations.sql:116",
-     "signature": [
-      "mark_event_attendance(p_attended: boolean, p_handoff_id: string) → post_handoffs row"
-     ],
-     "errors": [
-      {
-       "code": "account_not_active",
-       "knownToApp": true
-      },
-      {
-       "code": "event_not_started",
-       "knownToApp": true
-      },
-      {
-       "code": "handoff_not_found",
-       "knownToApp": true
-      },
-      {
-       "code": "invalid_status",
-       "knownToApp": true
-      },
-      {
-       "code": "unauthenticated",
-       "knownToApp": true
-      }
-     ]
-    }
-   ],
-   "areas": [
-    "volunteering"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
-     "line": 142,
-     "symbol": "SupabaseVolunteerRepository.checkIn",
-     "area": "volunteering"
     }
    ]
   },
@@ -5380,7 +5031,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/givingHandoffs.ts",
-     "line": 98,
+     "line": 144,
      "symbol": "claimFoodGiving",
      "area": "marketplace"
     }
@@ -5489,69 +5140,26 @@
     }
    ],
    "areas": [
-    "posts"
+    "marketplace",
+    "posts",
+    "volunteering"
    ],
    "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/marketplace/listingOwnerActions.ts",
+     "line": 35,
+     "symbol": "runOwnerAction",
+     "area": "marketplace"
+    },
     {
      "file": "app/packages/infrastructure-supabase/src/posts/closureMethods.ts",
      "line": 35,
      "symbol": "unwrapCall",
      "area": "posts"
-    }
-   ]
-  },
-  {
-   "old": "close_volunteer_opportunity",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "wedge",
-   "confidence": "medium",
-   "missing": null,
-   "note": "The organizer closes (or pauses / deletes) the event post.",
-   "oldObject": {
-    "signature": [
-     "close_volunteer_opportunity(p_opportunity_id: string) → undefined"
-    ]
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "close_post_without_recipient",
-     "source": "25_handoffs/070_post_closure_rpcs.sql:67",
-     "signature": [
-      "close_post_without_recipient(p_post_id: string) → undefined"
-     ],
-     "errors": [
-      {
-       "code": "account_not_active",
-       "knownToApp": true
-      },
-      {
-       "code": "closure_wrong_status",
-       "knownToApp": true
-      },
-      {
-       "code": "listing_has_active_handoff",
-       "knownToApp": true
-      },
-      {
-       "code": "post_not_found",
-       "knownToApp": true
-      },
-      {
-       "code": "unauthenticated",
-       "knownToApp": true
-      }
-     ]
-    }
-   ],
-   "areas": [
-    "volunteering"
-   ],
-   "callSites": [
+    },
     {
      "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
-     "line": 164,
+     "line": 158,
      "symbol": "SupabaseVolunteerRepository.closeOpportunity",
      "area": "volunteering"
     }
@@ -5709,18 +5317,14 @@
    ]
   },
   {
-   "old": "complete_ride_listing",
+   "old": "complete_ride",
    "kind": "rpc",
-   "status": "renamed",
+   "status": "same",
    "launch": "wedge",
    "confidence": "high",
    "missing": null,
-   "note": "`p_listing_id` → `p_post_id`; returns the number of bookings completed.",
-   "oldObject": {
-    "signature": [
-     "complete_ride_listing(p_listing_id: string) → number"
-    ]
-   },
+   "note": "The driver completes the whole ride; answers the number of bookings completed.",
+   "oldObject": {},
    "targets": [
     {
      "type": "rpc",
@@ -5763,7 +5367,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideBookingRepository.ts",
-     "line": 64,
+     "line": 79,
      "symbol": "SupabaseRideBookingRepository.completeRide",
      "area": "rides"
     }
@@ -5820,8 +5424,8 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideBookingRepository.ts",
-     "line": 75,
-     "symbol": "SupabaseRideBookingRepository.runHandoffRpc",
+     "line": 70,
+     "symbol": "SupabaseRideBookingRepository.complete",
      "area": "rides"
     }
    ]
@@ -5895,7 +5499,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/givingHandoffs.ts",
-     "line": 87,
+     "line": 128,
      "symbol": "confirmItemHandoff",
      "area": "marketplace"
     }
@@ -6001,8 +5605,8 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideBookingRepository.ts",
-     "line": 75,
-     "symbol": "SupabaseRideBookingRepository.runHandoffRpc",
+     "line": 59,
+     "symbol": "SupabaseRideBookingRepository.approve",
      "area": "rides"
     }
    ]
@@ -6134,69 +5738,15 @@
    ]
   },
   {
-   "old": "create_marketplace_listing",
+   "old": "create_post_with_details",
    "kind": "rpc",
-   "status": "changed",
+   "status": "same",
    "launch": "wedge",
    "confidence": "high",
    "missing": null,
-   "note": "Items, animals, knowledge: insert into `posts`, then `post_media` rows. Rides, stays, events, food: `create_post_with_details(p_post, p_details)`. `p_summary` → description, `p_category_id` → item_subcategory_id, exact address → `post_private_locations`, `p_external_body_id` → `beneficiary_org_id`; additional worlds and `availability_status` are gone.",
-   "oldObject": {
-    "signature": [
-     "create_marketplace_listing(p_additional_world_slugs?: string[], p_availability_status?: string, p_category_id?: string, p_city_id?: string, p_details?: Json, p_direction?: string, p_external_body_id?: string, p_kind_id: string, p_lat?: number, p_lng?: number, p_max_radius_km?: number, p_media_paths?: string[], p_summary?: string, p_title: string, p_urgency_level?: number) → string"
-    ]
-   },
+   "note": "`p_post` (world, kind, direction, title, city, ...) and `p_details` (the columns of the detail table). The adapter turns the forms' legacy `details` document into the ride, event or food columns; refusals `declaration_required`, `ride_place_invalid`, `ride_time_invalid`, `food_expiry_required`, `event_time_invalid`, `post_limit_exceeded`.",
+   "oldObject": {},
    "targets": [
-    {
-     "type": "table",
-     "name": "posts",
-     "columns": [
-      "beneficiary_org_id",
-      "city_id",
-      "created_at",
-      "description",
-      "details",
-      "direction",
-      "expires_at",
-      "geo_approx",
-      "id",
-      "item_subcategory_id",
-      "kind_id",
-      "location_display_level",
-      "owner_id",
-      "post_type",
-      "published_at",
-      "search_vector",
-      "source",
-      "source_language",
-      "status",
-      "status_before_removal",
-      "time_window",
-      "title",
-      "updated_at",
-      "urgency_level",
-      "visibility",
-      "world_slug"
-     ],
-     "clientGrants": {
-      "select": true,
-      "delete": true,
-      "insert": [
-       "beneficiary_org_id"
-      ],
-      "update": [
-       "city_id",
-       "description",
-       "details",
-       "item_subcategory_id",
-       "location_display_level",
-       "time_window",
-       "title",
-       "urgency_level",
-       "visibility"
-      ]
-     }
-    },
     {
      "type": "rpc",
      "name": "create_post_with_details",
@@ -6218,77 +5768,6 @@
        "knownToApp": true
       }
      ]
-    },
-    {
-     "type": "table",
-     "name": "post_media",
-     "columns": [
-      "blurhash",
-      "created_at",
-      "duration_ms",
-      "height",
-      "id",
-      "kind",
-      "mime_type",
-      "ordinal",
-      "owner_id",
-      "post_id",
-      "processing_status",
-      "size_bytes",
-      "storage_bucket",
-      "storage_key",
-      "width"
-     ],
-     "clientGrants": {
-      "select": true,
-      "delete": true,
-      "insert": [
-       "blurhash",
-       "duration_ms",
-       "height",
-       "id",
-       "kind",
-       "mime_type",
-       "ordinal",
-       "owner_id",
-       "post_id",
-       "size_bytes",
-       "storage_bucket",
-       "storage_key",
-       "width"
-      ]
-     }
-    },
-    {
-     "type": "table",
-     "name": "post_private_locations",
-     "columns": [
-      "access_notes",
-      "destination_street_number",
-      "exact_point",
-      "post_id",
-      "street",
-      "street_number",
-      "updated_at"
-     ],
-     "clientGrants": {
-      "select": true,
-      "insert": [
-       "access_notes",
-       "destination_street_number",
-       "exact_point",
-       "post_id",
-       "street",
-       "street_number"
-      ],
-      "update": [
-       "access_notes",
-       "destination_street_number",
-       "exact_point",
-       "street",
-       "street_number"
-      ]
-     }
     }
    ],
    "areas": [
@@ -6296,9 +5775,9 @@
    ],
    "callSites": [
     {
-     "file": "app/packages/infrastructure-supabase/src/marketplace/SupabaseMarketplaceRepository.ts",
-     "line": 193,
-     "symbol": "SupabaseMarketplaceRepository.createListing",
+     "file": "app/packages/infrastructure-supabase/src/marketplace/listingWrites.ts",
+     "line": 78,
+     "symbol": "unwrapCall",
      "area": "marketplace"
     }
    ]
@@ -6354,8 +5833,8 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideSeriesRepository.ts",
-     "line": 44,
-     "symbol": "SupabaseRideSeriesRepository.create",
+     "line": 68,
+     "symbol": "SupabaseRideSeriesRepository.kind",
      "area": "rides"
     }
    ]
@@ -6576,8 +6055,8 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/eventRegistrations.ts",
-     "line": 71,
-     "symbol": "decideEventRegistration",
+     "line": 78,
+     "symbol": "unwrapCall",
      "area": "marketplace"
     }
    ]
@@ -6713,112 +6192,6 @@
    ]
   },
   {
-   "old": "decline_ride_booking",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "wedge",
-   "confidence": "high",
-   "missing": null,
-   "note": "No separate decline: the driver cancelling a waiting booking declines it.",
-   "oldObject": {
-    "signature": [
-     "decline_ride_booking(p_handoff_id: string) → { cancel_reason: string | null cancelled_at: string | null confirm_by: string | null confirmed_at: string | null handed_over_at: string | null handoff_id: string | null listing_id: string | null no_show_at: string | n..."
-    ]
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "cancel_ride_booking",
-     "source": "70_worlds/040_ride_bookings.sql:83",
-     "signature": [
-      "cancel_ride_booking(p_handoff_id: string) → post_handoffs row"
-     ],
-     "errors": [
-      {
-       "code": "account_not_active",
-       "knownToApp": true
-      },
-      {
-       "code": "handoff_not_found",
-       "knownToApp": true
-      },
-      {
-       "code": "invalid_status",
-       "knownToApp": true
-      },
-      {
-       "code": "unauthenticated",
-       "knownToApp": true
-      }
-     ]
-    }
-   ],
-   "areas": [
-    "rides"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideBookingRepository.ts",
-     "line": 75,
-     "symbol": "SupabaseRideBookingRepository.runHandoffRpc",
-     "area": "rides"
-    }
-   ]
-  },
-  {
-   "old": "delete_my_listing",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "wedge",
-   "confidence": "high",
-   "missing": null,
-   "note": "Allowed in any status (design §12.1): live handoffs are cancelled and their members notified; the post is purged after the grace period and can be reopened until then.",
-   "oldObject": {
-    "signature": [
-     "delete_my_listing(p_listing_id: string) → undefined"
-    ]
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "delete_post",
-     "source": "25_handoffs/060_post_owner_actions.sql:83",
-     "signature": [
-      "delete_post(p_post_id: string) → undefined"
-     ],
-     "errors": [
-      {
-       "code": "account_not_active",
-       "knownToApp": true
-      },
-      {
-       "code": "listing_wrong_status",
-       "knownToApp": true
-      },
-      {
-       "code": "post_not_found",
-       "knownToApp": true
-      },
-      {
-       "code": "unauthenticated",
-       "knownToApp": true
-      }
-     ]
-    }
-   ],
-   "areas": [
-    "marketplace"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/marketplace/listingOwnerActions.ts",
-     "line": 16,
-     "symbol": "runOwnerAction",
-     "area": "marketplace"
-    }
-   ]
-  },
-  {
    "old": "delete_post",
    "kind": "rpc",
    "status": "same",
@@ -6856,9 +6229,16 @@
     }
    ],
    "areas": [
+    "marketplace",
     "posts"
    ],
    "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/marketplace/listingOwnerActions.ts",
+     "line": 38,
+     "symbol": "runOwnerAction",
+     "area": "marketplace"
+    },
     {
      "file": "app/packages/infrastructure-supabase/src/posts/postWriteMethods.ts",
      "line": 170,
@@ -7059,7 +6439,8 @@
     }
    ],
    "areas": [
-    "posts"
+    "posts",
+    "volunteering"
    ],
    "callSites": [
     {
@@ -7067,6 +6448,12 @@
      "line": 86,
      "symbol": "fetchFeedPage",
      "area": "posts"
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
+     "line": 52,
+     "symbol": "SupabaseVolunteerRepository.listOpportunities",
+     "area": "volunteering"
     }
    ]
   },
@@ -7516,47 +6903,6 @@
    ]
   },
   {
-   "old": "find_ride_listing_matches",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "wedge",
-   "confidence": "medium",
-   "missing": null,
-   "note": "Same as above (mobile composition calls it directly today).",
-   "oldObject": {
-    "signature": [
-     "find_ride_listing_matches(p_departs_after?: string, p_departs_before?: string, p_dest_lat: number, p_dest_lng: number, p_limit?: number, p_origin_lat: number, p_origin_lng: number, p_radius_km?: number) → { departs_at: string dest_label: string direction: string distance_m: number listing_id: string origin_label: string seats_left: number title: string }[]"
-    ]
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "rides_feed",
-     "source": "70_worlds/060_rides_feed.sql:105",
-     "signature": [
-      "rides_feed(p_cursor?: Json, p_filters?: Json, p_limit?: number) → { arrives_at: string departs_at: string dest_name: string direction: string meeting_points: Json next_cursor: Json origin_name: string owner_id: string post_id: string reward_model: string seats: number seats_left: nu..."
-     ],
-     "errors": [
-      {
-       "code": "ride_place_invalid",
-       "knownToApp": true
-      }
-     ]
-    }
-   ],
-   "areas": [
-    "mobile"
-   ],
-   "callSites": [
-    {
-     "file": "app/apps/mobile/src/services/ridesKnowledgeComposition.ts",
-     "line": 20,
-     "symbol": "findMatches",
-     "area": "mobile"
-    }
-   ]
-  },
-  {
    "old": "follow_request_cancel",
    "kind": "rpc",
    "status": "same",
@@ -7712,63 +7058,6 @@
    ]
   },
   {
-   "old": "fulfill_my_listing",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "wedge",
-   "confidence": "medium",
-   "missing": null,
-   "note": "Closing without naming a recipient; refused while a handoff is live.",
-   "oldObject": {
-    "signature": [
-     "fulfill_my_listing(p_listing_id: string) → undefined"
-    ]
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "close_post_without_recipient",
-     "source": "25_handoffs/070_post_closure_rpcs.sql:67",
-     "signature": [
-      "close_post_without_recipient(p_post_id: string) → undefined"
-     ],
-     "errors": [
-      {
-       "code": "account_not_active",
-       "knownToApp": true
-      },
-      {
-       "code": "closure_wrong_status",
-       "knownToApp": true
-      },
-      {
-       "code": "listing_has_active_handoff",
-       "knownToApp": true
-      },
-      {
-       "code": "post_not_found",
-       "knownToApp": true
-      },
-      {
-       "code": "unauthenticated",
-       "knownToApp": true
-      }
-     ]
-    }
-   ],
-   "areas": [
-    "marketplace"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/marketplace/listingOwnerActions.ts",
-     "line": 16,
-     "symbol": "runOwnerAction",
-     "area": "marketplace"
-    }
-   ]
-  },
-  {
    "old": "get_challenge",
    "kind": "rpc",
    "status": "changed",
@@ -7891,99 +7180,6 @@
    ]
   },
   {
-   "old": "get_listing_handoff",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "wedge",
-   "confidence": "medium",
-   "missing": null,
-   "note": "Direct read of the caller's handoff of the post (policy `post_handoffs_select_party`).",
-   "oldObject": {
-    "signature": [
-     "get_listing_handoff(p_listing_id: string) → Json"
-    ]
-   },
-   "targets": [
-    {
-     "type": "table",
-     "name": "post_handoffs",
-     "columns": [
-      "cancel_reason",
-      "cancelled_at",
-      "confirm_by",
-      "confirmed_at",
-      "created_at",
-      "handed_over_at",
-      "id",
-      "machine_id",
-      "no_show_at",
-      "owner_id",
-      "pickup_mode",
-      "pickup_window_end",
-      "pickup_window_start",
-      "post_id",
-      "recipient_id",
-      "requested_meeting_point",
-      "seats",
-      "slot_ends_at",
-      "slot_starts_at",
-      "status",
-      "updated_at"
-     ],
-     "clientGrants": {
-      "select": true
-     }
-    }
-   ],
-   "areas": [
-    "marketplace"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/marketplace/givingHandoffs.ts",
-     "line": 48,
-     "symbol": "getListingHandoff",
-     "area": "marketplace"
-    }
-   ]
-  },
-  {
-   "old": "get_marketplace_listing_detail",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "wedge",
-   "confidence": "high",
-   "missing": null,
-   "note": "One JSON: card, media gallery, first page of comments; world details come from the detail tables (`post_ride_details`, …).",
-   "oldObject": {
-    "signature": [
-     "get_marketplace_listing_detail(p_listing_id: string) → Json"
-    ]
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "post_detail",
-     "source": "30_social/070_post_cards.sql:168",
-     "signature": [
-      "post_detail(p_post_id: string) → Json"
-     ],
-     "errors": []
-    }
-   ],
-   "areas": [
-    "marketplace"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/marketplace/SupabaseMarketplaceRepository.ts",
-     "line": 103,
-     "symbol": "SupabaseMarketplaceRepository.getListingDetail",
-     "area": "marketplace"
-    }
-   ]
-  },
-  {
    "old": "get_my_admin_roles",
    "kind": "rpc",
    "status": "same",
@@ -8059,6 +7255,47 @@
      "line": 48,
      "symbol": "SupabasePaymentsRepository.getNonprofitPublicPage",
      "area": "payments"
+    }
+   ]
+  },
+  {
+   "old": "get_post_private_location",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "wedge",
+   "confidence": "high",
+   "missing": null,
+   "note": "The private house numbers of a ride, released to the driver and to the passengers of a confirmed booking.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "get_post_private_location",
+     "source": "25_handoffs/100_private_location_release.sql:12",
+     "signature": [
+      "get_post_private_location(p_post_id: string) → post_private_locations row"
+     ],
+     "errors": [
+      {
+       "code": "post_not_found",
+       "knownToApp": true
+      },
+      {
+       "code": "unauthenticated",
+       "knownToApp": true
+      }
+     ]
+    }
+   ],
+   "areas": [
+    "rides"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideHouseNumberRepository.ts",
+     "line": 37,
+     "symbol": "SupabaseRideHouseNumberRepository.get",
+     "area": "rides"
     }
    ]
   },
@@ -8167,51 +7404,6 @@
    ]
   },
   {
-   "old": "get_ride_house_numbers",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "wedge",
-   "confidence": "high",
-   "missing": null,
-   "note": "Owner, or the member of a confirmed booking (each release is audited).",
-   "oldObject": {
-    "signature": [
-     "get_ride_house_numbers(p_listing_id: string) → { house_number: string place_end: string }[]"
-    ]
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "get_post_private_location",
-     "source": "25_handoffs/100_private_location_release.sql:12",
-     "signature": [
-      "get_post_private_location(p_post_id: string) → post_private_locations row"
-     ],
-     "errors": [
-      {
-       "code": "post_not_found",
-       "knownToApp": true
-      },
-      {
-       "code": "unauthenticated",
-       "knownToApp": true
-      }
-     ]
-    }
-   ],
-   "areas": [
-    "rides"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideHouseNumberRepository.ts",
-     "line": 27,
-     "symbol": "SupabaseRideHouseNumberRepository.get",
-     "area": "rides"
-    }
-   ]
-  },
-  {
    "old": "get_survey_bundle",
    "kind": "rpc",
    "status": "changed",
@@ -8289,68 +7481,6 @@
      "line": 149,
      "symbol": "SupabaseSurveyRepository.getBundle",
      "area": "survey"
-    }
-   ]
-  },
-  {
-   "old": "get_volunteer_opportunity_detail",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "wedge",
-   "confidence": "medium",
-   "missing": null,
-   "note": "Post detail plus the `post_event_details` row (starts_at, ends_at, capacity, registration_policy).",
-   "oldObject": {
-    "signature": [
-     "get_volunteer_opportunity_detail(p_opportunity_id: string) → Json"
-    ]
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "post_detail",
-     "source": "30_social/070_post_cards.sql:168",
-     "signature": [
-      "post_detail(p_post_id: string) → Json"
-     ],
-     "errors": []
-    }
-   ],
-   "areas": [
-    "volunteering"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
-     "line": 114,
-     "symbol": "SupabaseVolunteerRepository.getOpportunityDetail",
-     "area": "volunteering"
-    }
-   ]
-  },
-  {
-   "old": "get_volunteer_shift_ics",
-   "kind": "rpc",
-   "status": "removed",
-   "launch": "wedge",
-   "confidence": "medium",
-   "missing": null,
-   "note": "Not carried over; the calendar file is built on the device from the event's start and end.",
-   "oldObject": {
-    "signature": [
-     "get_volunteer_shift_ics(p_shift_id: string) → string"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "volunteering"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
-     "line": 156,
-     "symbol": "SupabaseVolunteerRepository.getShiftIcs",
-     "area": "volunteering"
     }
    ]
   },
@@ -8679,93 +7809,6 @@
      "line": 139,
      "symbol": "SupabaseChallengeRepository.listChallenges",
      "area": "challenges"
-    }
-   ]
-  },
-  {
-   "old": "list_event_registrations",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "wedge",
-   "confidence": "medium",
-   "missing": null,
-   "note": "The organizer reads the post's handoffs directly and the members' names from `users`.",
-   "oldObject": {
-    "signature": [
-     "list_event_registrations(p_target: string) → { confirmed_at: string display_name: string handoff_id: string recipient_id: string reserved_at: string status: string }[]"
-    ]
-   },
-   "targets": [
-    {
-     "type": "table",
-     "name": "post_handoffs",
-     "columns": [
-      "cancel_reason",
-      "cancelled_at",
-      "confirm_by",
-      "confirmed_at",
-      "created_at",
-      "handed_over_at",
-      "id",
-      "machine_id",
-      "no_show_at",
-      "owner_id",
-      "pickup_mode",
-      "pickup_window_end",
-      "pickup_window_start",
-      "post_id",
-      "recipient_id",
-      "requested_meeting_point",
-      "seats",
-      "slot_ends_at",
-      "slot_starts_at",
-      "status",
-      "updated_at"
-     ],
-     "clientGrants": {
-      "select": true
-     }
-    },
-    {
-     "type": "table",
-     "name": "users",
-     "columns": [
-      "avatar_url",
-      "biography",
-      "city_id",
-      "created_at",
-      "display_name",
-      "id",
-      "is_active",
-      "preferred_language",
-      "privacy_changed_at",
-      "privacy_mode",
-      "search_vector",
-      "share_handle",
-      "updated_at",
-      "verification_level"
-     ],
-     "clientGrants": {
-      "select": true,
-      "update": [
-       "avatar_url",
-       "biography",
-       "city_id",
-       "display_name",
-       "preferred_language"
-      ]
-     }
-    }
-   ],
-   "areas": [
-    "marketplace"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/marketplace/eventRegistrations.ts",
-     "line": 88,
-     "symbol": "listEventRegistrations",
-     "area": "marketplace"
     }
    ]
   },
@@ -9124,63 +8167,6 @@
    ]
   },
   {
-   "old": "list_my_giving_handoffs",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "wedge",
-   "confidence": "medium",
-   "missing": null,
-   "note": "Direct read of the caller's handoffs (owner or recipient) joined to `posts` for the title; role = which of the two ids is the caller.",
-   "oldObject": {
-    "signature": [
-     "list_my_giving_handoffs(p_limit?: number) → { handoff_id: string listing_id: string pickup_window_end: string pickup_window_start: string reserved_at: string role: string status: string title: string world_slug: string }[]"
-    ]
-   },
-   "targets": [
-    {
-     "type": "table",
-     "name": "post_handoffs",
-     "columns": [
-      "cancel_reason",
-      "cancelled_at",
-      "confirm_by",
-      "confirmed_at",
-      "created_at",
-      "handed_over_at",
-      "id",
-      "machine_id",
-      "no_show_at",
-      "owner_id",
-      "pickup_mode",
-      "pickup_window_end",
-      "pickup_window_start",
-      "post_id",
-      "recipient_id",
-      "requested_meeting_point",
-      "seats",
-      "slot_ends_at",
-      "slot_starts_at",
-      "status",
-      "updated_at"
-     ],
-     "clientGrants": {
-      "select": true
-     }
-    }
-   ],
-   "areas": [
-    "marketplace"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/marketplace/givingHandoffs.ts",
-     "line": 54,
-     "symbol": "listMyGivingHandoffs",
-     "area": "marketplace"
-    }
-   ]
-  },
-  {
    "old": "list_my_housing_stays",
    "kind": "rpc",
    "status": "changed",
@@ -9259,47 +8245,6 @@
    ]
   },
   {
-   "old": "list_my_listings",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "wedge",
-   "confidence": "high",
-   "missing": null,
-   "note": "The caller's own id with `p_tab` open / closed / hidden; keyset cursor (offset is gone).",
-   "oldObject": {
-    "signature": [
-     "list_my_listings(p_cursor_id?: string, p_cursor_updated_at?: string, p_limit?: number, p_offset?: number) → { availability_status: string direction: string feed_post_id: string kind_slug: string listing_id: string status: string summary: string title: string updated_at: string urgency_level: number world_slug: string }[]"
-    ]
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "profile_posts_page",
-     "source": "30_social/090_profile_and_search.sql:13",
-     "signature": [
-      "profile_posts_page(p_cursor?: Json, p_limit?: number, p_tab?: string, p_user_id: string) → { card: post_card next_cursor: Json }[]"
-     ],
-     "errors": [
-      {
-       "code": "invalid_input",
-       "knownToApp": true
-      }
-     ]
-    }
-   ],
-   "areas": [
-    "marketplace"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/marketplace/marketplacePaging.ts",
-     "line": 180,
-     "symbol": "fetchMyListingsPage",
-     "area": "marketplace"
-    }
-   ]
-  },
-  {
    "old": "list_my_standing_orders",
    "kind": "rpc",
    "status": "changed",
@@ -9336,486 +8281,6 @@
    ]
   },
   {
-   "old": "list_my_volunteer_opportunities",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "wedge",
-   "confidence": "medium",
-   "missing": null,
-   "note": "The organizer's own posts; filter the event posts on the device.",
-   "oldObject": {
-    "signature": [
-     "list_my_volunteer_opportunities(p_limit?: number) → volunteer_opportunities row[]"
-    ]
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "profile_posts_page",
-     "source": "30_social/090_profile_and_search.sql:13",
-     "signature": [
-      "profile_posts_page(p_cursor?: Json, p_limit?: number, p_tab?: string, p_user_id: string) → { card: post_card next_cursor: Json }[]"
-     ],
-     "errors": [
-      {
-       "code": "invalid_input",
-       "knownToApp": true
-      }
-     ]
-    }
-   ],
-   "areas": [
-    "volunteering"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
-     "line": 171,
-     "symbol": "SupabaseVolunteerRepository.listMyOrganizerOpportunities",
-     "area": "volunteering"
-    }
-   ]
-  },
-  {
-   "old": "list_my_volunteer_signups",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "wedge",
-   "confidence": "medium",
-   "missing": null,
-   "note": "The caller's handoffs on event posts, joined to `post_event_details`; hours are in `user_stats.volunteer_hours_total`.",
-   "oldObject": {
-    "signature": [
-     "list_my_volunteer_signups(p_limit?: number) → { ends_at: string hours_logged: number opportunity_id: string shift_id: string signup_id: string starts_at: string status: string title: string }[]"
-    ]
-   },
-   "targets": [
-    {
-     "type": "table",
-     "name": "post_handoffs",
-     "columns": [
-      "cancel_reason",
-      "cancelled_at",
-      "confirm_by",
-      "confirmed_at",
-      "created_at",
-      "handed_over_at",
-      "id",
-      "machine_id",
-      "no_show_at",
-      "owner_id",
-      "pickup_mode",
-      "pickup_window_end",
-      "pickup_window_start",
-      "post_id",
-      "recipient_id",
-      "requested_meeting_point",
-      "seats",
-      "slot_ends_at",
-      "slot_starts_at",
-      "status",
-      "updated_at"
-     ],
-     "clientGrants": {
-      "select": true
-     }
-    }
-   ],
-   "areas": [
-    "volunteering"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
-     "line": 136,
-     "symbol": "SupabaseVolunteerRepository.listMySignups",
-     "area": "volunteering"
-    }
-   ]
-  },
-  {
-   "old": "list_profile_listings",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "wedge",
-   "confidence": "high",
-   "missing": null,
-   "note": "Same page function, as cards.",
-   "oldObject": {
-    "signature": [
-     "list_profile_listings(p_limit?: number, p_owner_id: string) → { direction: string kind_slug: string listing_id: string status: string summary: string title: string world_slug: string }[]"
-    ]
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "profile_posts_page",
-     "source": "30_social/090_profile_and_search.sql:13",
-     "signature": [
-      "profile_posts_page(p_cursor?: Json, p_limit?: number, p_tab?: string, p_user_id: string) → { card: post_card next_cursor: Json }[]"
-     ],
-     "errors": [
-      {
-       "code": "invalid_input",
-       "knownToApp": true
-      }
-     ]
-    }
-   ],
-   "areas": [
-    "marketplace"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/marketplace/SupabaseMarketplaceRepository.ts",
-     "line": 245,
-     "symbol": "SupabaseMarketplaceRepository.listProfileListings",
-     "area": "marketplace"
-    }
-   ]
-  },
-  {
-   "old": "list_ride_bookings",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "wedge",
-   "confidence": "medium",
-   "missing": null,
-   "note": "The driver reads the ride's handoffs and the passengers' names directly. `rated_by_me` is a select on `post_ratings` by the caller as rater (M07, built).",
-   "oldObject": {
-    "signature": [
-     "list_ride_bookings(p_listing_id: string) → { avatar_url: string cancel_reason: string confirm_by: string handoff_id: string passenger_name: string rated_by_me: boolean recipient_id: string requested_stop_label: string reserved_at: string seats: number status: ..."
-    ]
-   },
-   "targets": [
-    {
-     "type": "table",
-     "name": "post_handoffs",
-     "columns": [
-      "cancel_reason",
-      "cancelled_at",
-      "confirm_by",
-      "confirmed_at",
-      "created_at",
-      "handed_over_at",
-      "id",
-      "machine_id",
-      "no_show_at",
-      "owner_id",
-      "pickup_mode",
-      "pickup_window_end",
-      "pickup_window_start",
-      "post_id",
-      "recipient_id",
-      "requested_meeting_point",
-      "seats",
-      "slot_ends_at",
-      "slot_starts_at",
-      "status",
-      "updated_at"
-     ],
-     "clientGrants": {
-      "select": true
-     }
-    },
-    {
-     "type": "table",
-     "name": "users",
-     "columns": [
-      "avatar_url",
-      "biography",
-      "city_id",
-      "created_at",
-      "display_name",
-      "id",
-      "is_active",
-      "preferred_language",
-      "privacy_changed_at",
-      "privacy_mode",
-      "search_vector",
-      "share_handle",
-      "updated_at",
-      "verification_level"
-     ],
-     "clientGrants": {
-      "select": true,
-      "update": [
-       "avatar_url",
-       "biography",
-       "city_id",
-       "display_name",
-       "preferred_language"
-      ]
-     }
-    }
-   ],
-   "areas": [
-    "rides"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideBookingRepository.ts",
-     "line": 39,
-     "symbol": "SupabaseRideBookingRepository.listForRide",
-     "area": "rides"
-    }
-   ]
-  },
-  {
-   "old": "list_ride_places",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "wedge",
-   "confidence": "high",
-   "missing": null,
-   "note": "Server-side place search (cities and road junctions) instead of loading the whole list (design §12.1).",
-   "oldObject": {
-    "signature": [
-     "list_ride_places(city_id: string, label: string, lat: number, lng: number, place_id: string, place_kind: string) → { city_id: string label: string lat: number lng: number place_id: string place_kind: string }[]"
-    ]
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "search_places",
-     "source": "05_geo/040_place_search.sql:12",
-     "signature": [
-      "search_places(p_kinds?: string[], p_limit?: number, p_query: string) → { city_id: string junction_kind: string lat: number lng: number name_en: string name_he: string place_id: string place_kind: string roads: string }[]"
-     ],
-     "errors": [
-      {
-       "code": "place_kinds_invalid",
-       "knownToApp": false
-      },
-      {
-       "code": "place_limit_invalid",
-       "knownToApp": false
-      },
-      {
-       "code": "place_query_invalid",
-       "knownToApp": false
-      }
-     ]
-    }
-   ],
-   "areas": [
-    "rides"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRidePlaceRepository.ts",
-     "line": 32,
-     "symbol": "SupabaseRidePlaceRepository.listPlaces",
-     "area": "rides"
-    }
-   ]
-  },
-  {
-   "old": "list_ride_series_occurrences",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "wedge",
-   "confidence": "medium",
-   "missing": null,
-   "note": "Occurrences are the posts whose `post_ride_details.series_id` is the series: direct read, soonest first. Seats left per occurrence come from `rides_feed`.",
-   "oldObject": {
-    "signature": [
-     "list_ride_series_occurrences(p_limit?: number, p_series_id: string) → { departs_at: string listing_id: string passengers: number seats_left: number }[]"
-    ]
-   },
-   "targets": [
-    {
-     "type": "table",
-     "name": "post_ride_details",
-     "columns": [
-      "arrives_at",
-      "cargo_food",
-      "cargo_items",
-      "cost_share_ils",
-      "created_at",
-      "departs_at",
-      "dest_city_id",
-      "dest_junction_id",
-      "dest_point",
-      "dest_street_id",
-      "luggage",
-      "meeting_points",
-      "notes",
-      "origin_city_id",
-      "origin_junction_id",
-      "origin_point",
-      "origin_street_id",
-      "post_id",
-      "reward_model",
-      "seats",
-      "series_id",
-      "series_on",
-      "updated_at"
-     ],
-     "clientGrants": {
-      "select": true,
-      "update": [
-       "arrives_at",
-       "cargo_food",
-       "cargo_items",
-       "cost_share_ils",
-       "departs_at",
-       "dest_city_id",
-       "dest_junction_id",
-       "dest_street_id",
-       "luggage",
-       "meeting_points",
-       "notes",
-       "origin_city_id",
-       "origin_junction_id",
-       "origin_street_id",
-       "reward_model",
-       "seats"
-      ]
-     }
-    }
-   ],
-   "areas": [
-    "rides"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideSeriesRepository.ts",
-     "line": 67,
-     "symbol": "SupabaseRideSeriesRepository.listOccurrences",
-     "area": "rides"
-    }
-   ]
-  },
-  {
-   "old": "list_rides_feed",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "wedge",
-   "confidence": "high",
-   "missing": null,
-   "note": "Keyset `p_cursor`; `listing_id` → `post_id`, labels → `origin_name` / `dest_name`, `meeting_points` is the JSON list, `passengers` is not returned.",
-   "oldObject": {
-    "signature": [
-     "list_rides_feed(p_limit?: number) → { departs_at: string dest_label: string direction: string listing_id: string meeting_points: number origin_label: string passengers: number recurrence: Json seats_left: number series_more: number title: string }[]"
-    ]
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "rides_feed",
-     "source": "70_worlds/060_rides_feed.sql:105",
-     "signature": [
-      "rides_feed(p_cursor?: Json, p_filters?: Json, p_limit?: number) → { arrives_at: string departs_at: string dest_name: string direction: string meeting_points: Json next_cursor: Json origin_name: string owner_id: string post_id: string reward_model: string seats: number seats_left: nu..."
-     ],
-     "errors": [
-      {
-       "code": "ride_place_invalid",
-       "knownToApp": true
-      }
-     ]
-    }
-   ],
-   "areas": [
-    "rides"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRidesFeedRepository.ts",
-     "line": 14,
-     "symbol": "SupabaseRidesFeedRepository.list",
-     "area": "rides"
-    }
-   ]
-  },
-  {
-   "old": "list_shift_volunteers",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "wedge",
-   "confidence": "medium",
-   "missing": null,
-   "note": "The organizer reads the event's handoffs and the members' names; waiting-list order = `created_at`.",
-   "oldObject": {
-    "signature": [
-     "list_shift_volunteers(p_shift_id: string) → { display_name: string hours_logged: number share_handle: string signup_id: string status: string user_id: string waitlist_position: number }[]"
-    ]
-   },
-   "targets": [
-    {
-     "type": "table",
-     "name": "post_handoffs",
-     "columns": [
-      "cancel_reason",
-      "cancelled_at",
-      "confirm_by",
-      "confirmed_at",
-      "created_at",
-      "handed_over_at",
-      "id",
-      "machine_id",
-      "no_show_at",
-      "owner_id",
-      "pickup_mode",
-      "pickup_window_end",
-      "pickup_window_start",
-      "post_id",
-      "recipient_id",
-      "requested_meeting_point",
-      "seats",
-      "slot_ends_at",
-      "slot_starts_at",
-      "status",
-      "updated_at"
-     ],
-     "clientGrants": {
-      "select": true
-     }
-    },
-    {
-     "type": "table",
-     "name": "users",
-     "columns": [
-      "avatar_url",
-      "biography",
-      "city_id",
-      "created_at",
-      "display_name",
-      "id",
-      "is_active",
-      "preferred_language",
-      "privacy_changed_at",
-      "privacy_mode",
-      "search_vector",
-      "share_handle",
-      "updated_at",
-      "verification_level"
-     ],
-     "clientGrants": {
-      "select": true,
-      "update": [
-       "avatar_url",
-       "biography",
-       "city_id",
-       "display_name",
-       "preferred_language"
-      ]
-     }
-    }
-   ],
-   "areas": [
-    "volunteering"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
-     "line": 179,
-     "symbol": "SupabaseVolunteerRepository.listShiftVolunteers",
-     "area": "volunteering"
-    }
-   ]
-  },
-  {
    "old": "list_verified_nonprofits",
    "kind": "rpc",
    "status": "changed",
@@ -9848,149 +8313,6 @@
      "line": 42,
      "symbol": "SupabasePaymentsRepository.listVerifiedNonprofits",
      "area": "payments"
-    }
-   ]
-  },
-  {
-   "old": "list_volunteer_opportunities",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "wedge",
-   "confidence": "medium",
-   "missing": null,
-   "note": "Volunteering is event posts (design Q3, G18): the world feed of events, as cards. One post per shift.",
-   "oldObject": {
-    "signature": [
-     "list_volunteer_opportunities(p_limit?: number, p_offset?: number) → { city_id: string location_label: string next_shift_at: string open_slots: number opportunity_id: string summary: string title: string }[]"
-    ]
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "feed_page",
-     "source": "30_social/080_feed_page.sql:48",
-     "signature": [
-      "feed_page(p_cursor?: Json, p_filters?: Json, p_limit?: number) → { card: post_card distance_m: number next_cursor: Json }[]"
-     ],
-     "errors": [
-      {
-       "code": "invalid_input",
-       "knownToApp": true
-      },
-      {
-       "code": "unauthenticated",
-       "knownToApp": true
-      }
-     ]
-    }
-   ],
-   "areas": [
-    "volunteering"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
-     "line": 105,
-     "symbol": "SupabaseVolunteerRepository.listOpportunities",
-     "area": "volunteering"
-    }
-   ]
-  },
-  {
-   "old": "map_listing_clusters",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "wedge",
-   "confidence": "high",
-   "missing": null,
-   "note": "Bounds travel as one jsonb `{west, south, east, north}` and the zoom is an argument; filters (`world`, `direction`, `item_subcategory_ids`) in `p_filters`. Returns `lat, lng, post_count, single_post_id` (M10, built).",
-   "oldObject": {
-    "signature": [
-     "map_listing_clusters(p_ne_lat: number, p_ne_lng: number, p_sw_lat: number, p_sw_lng: number, p_viewer?: string, p_world_slug?: string) → { center_lat: number center_lng: number cluster_key: string listing_count: number sample_listing_id: string }[]"
-    ]
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "map_post_clusters",
-     "source": "30_social/100_map.sql:135",
-     "signature": [
-      "map_post_clusters(p_bounds: Json, p_filters?: Json, p_zoom: number) → { lat: number lng: number post_count: number single_post_id: string }[]"
-     ],
-     "errors": [
-      {
-       "code": "invalid_bounds",
-       "knownToApp": false
-      },
-      {
-       "code": "invalid_input",
-       "knownToApp": true
-      },
-      {
-       "code": "unauthenticated",
-       "knownToApp": true
-      }
-     ]
-    }
-   ],
-   "areas": [
-    "marketplace"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/marketplace/SupabaseMarketplaceRepository.ts",
-     "line": 72,
-     "symbol": "SupabaseMarketplaceRepository.mapClusters",
-     "area": "marketplace"
-    }
-   ]
-  },
-  {
-   "old": "map_listing_pins",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "wedge",
-   "confidence": "high",
-   "missing": null,
-   "note": "Bounds as one jsonb, filters in `p_filters`, at most 200 pins of `post_id, lat, lng, world_slug, direction`; hydrate with `post_cards` (M10, built).",
-   "oldObject": {
-    "signature": [
-     "map_listing_pins(p_limit?: number, p_ne_lat: number, p_ne_lng: number, p_sw_lat: number, p_sw_lng: number, p_world_slug?: string) → { departs_at: string dest_label: string dest_lat: number dest_lng: number direction: string kind_slug: string lat: number listing_id: string lng: number origin_label: string origin_lat: number origin_lng: number seats..."
-    ]
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "map_post_pins",
-     "source": "30_social/100_map.sql:97",
-     "signature": [
-      "map_post_pins(p_bounds: Json, p_filters?: Json, p_limit?: number) → { direction: string lat: number lng: number post_id: string world_slug: string }[]"
-     ],
-     "errors": [
-      {
-       "code": "invalid_bounds",
-       "knownToApp": false
-      },
-      {
-       "code": "invalid_input",
-       "knownToApp": true
-      },
-      {
-       "code": "unauthenticated",
-       "knownToApp": true
-      }
-     ]
-    }
-   ],
-   "areas": [
-    "marketplace"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/marketplace/SupabaseMarketplaceRepository.ts",
-     "line": 90,
-     "symbol": "SupabaseMarketplaceRepository.mapClusters",
-     "area": "marketplace"
     }
    ]
   },
@@ -10086,8 +8408,8 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/eventRegistrations.ts",
-     "line": 82,
-     "symbol": "markEventAttendance",
+     "line": 91,
+     "symbol": "unwrapCall",
      "area": "marketplace"
     }
    ]
@@ -10143,7 +8465,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/givingHandoffs.ts",
-     "line": 113,
+     "line": 163,
      "symbol": "markGivingHandedOver",
      "area": "marketplace"
     }
@@ -10207,29 +8529,82 @@
    ]
   },
   {
-   "old": "marketplace_search",
+   "old": "match_respond",
    "kind": "rpc",
-   "status": "changed",
+   "status": "same",
    "launch": "wedge",
    "confidence": "high",
    "missing": null,
-   "note": "Text search over posts, cards with `next_cursor`; the rank components are not returned.",
-   "oldObject": {
-    "signature": [
-     "marketplace_search(p_cursor_id?: string, p_cursor_score?: number, p_limit?: number, p_query?: string, p_viewer?: string, p_world_slug?: string) → { fts_rank: number geo_rank: number listing_id: string rrf_score: number trgm_rank: number vector_rank: number }[]"
-    ]
-   },
+   "note": "`p_match_id`, `p_accept`; answers the pair's status (`accepted` when both accepted).",
+   "oldObject": {},
    "targets": [
     {
      "type": "rpc",
-     "name": "search_posts_page",
-     "source": "30_social/090_profile_and_search.sql:60",
+     "name": "match_respond",
+     "source": "76_matching/060_match_rpcs.sql:71",
      "signature": [
-      "search_posts_page(p_cursor?: Json, p_filters?: Json, p_limit?: number, p_query: string) → { card: post_card distance_m: number next_cursor: Json }[]"
+      "match_respond(p_accept: boolean, p_match_id: string) → string"
      ],
      "errors": [
       {
-       "code": "invalid_input",
+       "code": "account_not_active",
+       "knownToApp": true
+      },
+      {
+       "code": "match_not_found",
+       "knownToApp": false
+      },
+      {
+       "code": "match_not_open",
+       "knownToApp": false
+      },
+      {
+       "code": "unauthenticated",
+       "knownToApp": true
+      }
+     ]
+    }
+   ],
+   "areas": [
+    "matching"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/matching/SupabaseMatchRepository.ts",
+     "line": 107,
+     "symbol": "SupabaseMatchRepository.respond",
+     "area": "matching"
+    }
+   ]
+  },
+  {
+   "old": "message_event_registrants",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "wedge",
+   "confidence": "high",
+   "missing": null,
+   "note": "The organizer's message to everyone registered for an event; answers how many were told (`event_message_invalid`).",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "message_event_registrants",
+     "source": "70_worlds/130_event_registrations.sql:156",
+     "signature": [
+      "message_event_registrants(p_body: string, p_post_id: string) → number"
+     ],
+     "errors": [
+      {
+       "code": "account_not_active",
+       "knownToApp": true
+      },
+      {
+       "code": "event_message_invalid",
+       "knownToApp": false
+      },
+      {
+       "code": "post_not_found",
        "knownToApp": true
       },
       {
@@ -10244,15 +8619,9 @@
    ],
    "callSites": [
     {
-     "file": "app/packages/infrastructure-supabase/src/marketplace/marketplacePaging.ts",
-     "line": 105,
-     "symbol": "fetchSearchPage",
-     "area": "marketplace"
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/marketplace/SupabaseMarketplaceRepository.ts",
-     "line": 50,
-     "symbol": "SupabaseMarketplaceRepository.search",
+     "file": "app/packages/infrastructure-supabase/src/marketplace/eventRegistrations.ts",
+     "line": 100,
+     "symbol": "unwrapCall",
      "area": "marketplace"
     }
    ]
@@ -10286,6 +8655,38 @@
      "line": 52,
      "symbol": "SupabaseStatsRepository.listMyActivityTimeline",
      "area": "stats"
+    }
+   ]
+  },
+  {
+   "old": "my_matches",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "wedge",
+   "confidence": "high",
+   "missing": null,
+   "note": "The caller's pairs, each with the other member's post as a card (`other_post`).",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "my_matches",
+     "source": "76_matching/060_match_rpcs.sql:43",
+     "signature": [
+      "my_matches(p_limit?: number) → { created_at: string distance_km: number llm_reason: string match_id: string my_post_id: string my_post_title: string my_response: string my_role: string other_post: post_card other_response: string score: number stat..."
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "matching"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/matching/SupabaseMatchRepository.ts",
+     "line": 99,
+     "symbol": "SupabaseMatchRepository.listMine",
+     "area": "matching"
     }
    ]
   },
@@ -10522,71 +8923,14 @@
    ]
   },
   {
-   "old": "organizer_message_shift_volunteers",
+   "old": "pause_post",
    "kind": "rpc",
-   "status": "renamed",
+   "status": "same",
    "launch": "wedge",
    "confidence": "high",
    "missing": null,
-   "note": "`p_shift_id` → `p_post_id`, `p_message` → `p_body`.",
-   "oldObject": {
-    "signature": [
-     "organizer_message_shift_volunteers(p_message: string, p_shift_id: string) → number"
-    ]
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "message_event_registrants",
-     "source": "70_worlds/130_event_registrations.sql:156",
-     "signature": [
-      "message_event_registrants(p_body: string, p_post_id: string) → number"
-     ],
-     "errors": [
-      {
-       "code": "account_not_active",
-       "knownToApp": true
-      },
-      {
-       "code": "event_message_invalid",
-       "knownToApp": false
-      },
-      {
-       "code": "post_not_found",
-       "knownToApp": true
-      },
-      {
-       "code": "unauthenticated",
-       "knownToApp": true
-      }
-     ]
-    }
-   ],
-   "areas": [
-    "volunteering"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
-     "line": 187,
-     "symbol": "SupabaseVolunteerRepository.messageShiftVolunteers",
-     "area": "volunteering"
-    }
-   ]
-  },
-  {
-   "old": "pause_my_listing",
-   "kind": "rpc",
-   "status": "renamed",
-   "launch": "wedge",
-   "confidence": "high",
-   "missing": null,
-   "note": "`p_listing_id` → `p_post_id`; refused while a handoff is live (`listing_has_active_handoff`).",
-   "oldObject": {
-    "signature": [
-     "pause_my_listing(p_listing_id: string) → undefined"
-    ]
-   },
+   "note": "Pauses the owner's open post (`listing_wrong_status`, `listing_has_active_handoff`).",
+   "oldObject": {},
    "targets": [
     {
      "type": "rpc",
@@ -10625,7 +8969,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/listingOwnerActions.ts",
-     "line": 16,
+     "line": 29,
      "symbol": "runOwnerAction",
      "area": "marketplace"
     }
@@ -10697,9 +9041,16 @@
     }
    ],
    "areas": [
+    "marketplace",
     "posts"
    ],
    "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/marketplace/listingMapping.ts",
+     "line": 93,
+     "symbol": "fetchCardsInOrder",
+     "area": "marketplace"
+    },
     {
      "file": "app/packages/infrastructure-supabase/src/posts/postCardPages.ts",
      "line": 68,
@@ -10743,6 +9094,38 @@
      "line": 161,
      "symbol": "SupabasePostEngagementRepository.commentsPage",
      "area": "posts"
+    }
+   ]
+  },
+  {
+   "old": "post_detail",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "wedge",
+   "confidence": "high",
+   "missing": null,
+   "note": "Card, gallery and first comments as one JSON; the adapter adds the world detail row and the world labels to build the listing detail.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "post_detail",
+     "source": "30_social/070_post_cards.sql:168",
+     "signature": [
+      "post_detail(p_post_id: string) → Json"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "marketplace"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
+     "line": 107,
+     "symbol": "fetchListingDetail",
+     "area": "marketplace"
     }
    ]
   },
@@ -10808,9 +9191,16 @@
     }
    ],
    "areas": [
+    "marketplace",
     "posts"
    ],
    "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/marketplace/SupabaseMarketplaceRepository.ts",
+     "line": 88,
+     "symbol": "SupabaseMarketplaceRepository.listProfileListings",
+     "area": "marketplace"
+    },
     {
      "file": "app/packages/infrastructure-supabase/src/posts/postCardPages.ts",
      "line": 125,
@@ -10948,9 +9338,16 @@
     }
    ],
    "areas": [
+    "marketplace",
     "posts"
    ],
    "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/marketplace/listingWrites.ts",
+     "line": 97,
+     "symbol": "postId",
+     "area": "marketplace"
+    },
     {
      "file": "app/packages/infrastructure-supabase/src/posts/postWriteMethods.ts",
      "line": 94,
@@ -10960,18 +9357,14 @@
    ]
   },
   {
-   "old": "rate_giving_handoff",
+   "old": "rate_handoff",
    "kind": "rpc",
-   "status": "changed",
+   "status": "same",
    "launch": "wedge",
    "confidence": "high",
    "missing": null,
-   "note": "One rating RPC for every world: `p_rating` → `p_stars`, returns void, once per handoff (`handoff_already_rated`).",
-   "oldObject": {
-    "signature": [
-     "rate_giving_handoff(p_comment?: string, p_handoff_id: string, p_rating: number) → giving_handoff_ratings row"
-    ]
-   },
+   "note": "One rating RPC for every world (`p_stars`, optional `p_comment`); refusals `invalid_rating`, `handoff_not_found`, `not_participant`, `handoff_already_rated`.",
+   "oldObject": {},
    "targets": [
     {
      "type": "rpc",
@@ -10987,7 +9380,7 @@
       },
       {
        "code": "handoff_already_rated",
-       "knownToApp": false
+       "knownToApp": true
       },
       {
        "code": "handoff_not_found",
@@ -11014,8 +9407,8 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/givingHandoffs.ts",
-     "line": 119,
-     "symbol": "rateGivingHandoff",
+     "line": 177,
+     "symbol": "unwrapCall",
      "area": "marketplace"
     }
    ]
@@ -11066,42 +9459,6 @@
    ]
   },
   {
-   "old": "recommend_listings_for_user",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "wedge",
-   "confidence": "high",
-   "missing": null,
-   "note": "Cards; no `reason` / `score`.",
-   "oldObject": {
-    "signature": [
-     "recommend_listings_for_user(p_limit?: number, p_viewer?: string) → { listing_id: string reason: string score: number }[]"
-    ]
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "recommended_posts",
-     "source": "76_matching/060_match_rpcs.sql:235",
-     "signature": [
-      "recommended_posts(p_limit?: number) → post_card[]"
-     ],
-     "errors": []
-    }
-   ],
-   "areas": [
-    "marketplace"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/marketplace/SupabaseMarketplaceRepository.ts",
-     "line": 60,
-     "symbol": "SupabaseMarketplaceRepository.recommendForYou",
-     "area": "marketplace"
-    }
-   ]
-  },
-  {
    "old": "record_active_day",
    "kind": "rpc",
    "status": "same",
@@ -11135,32 +9492,6 @@
      "line": 18,
      "symbol": "SupabaseUserActivityRepository.recordActiveDay",
      "area": "survey"
-    }
-   ]
-  },
-  {
-   "old": "record_listing_signal",
-   "kind": "rpc",
-   "status": "removed",
-   "launch": "wedge",
-   "confidence": "high",
-   "missing": null,
-   "note": "`listing_user_signals` is not carried over (design §8); ranking uses saves, reactions and `feed_impressions`.",
-   "oldObject": {
-    "signature": [
-     "record_listing_signal(p_listing_id: string, p_signal_type: string, p_weight?: number) → undefined"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "marketplace"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/marketplace/SupabaseMarketplaceRepository.ts",
-     "line": 215,
-     "symbol": "SupabaseMarketplaceRepository.recordSignal",
-     "area": "marketplace"
     }
    ]
   },
@@ -11231,7 +9562,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/eventRegistrations.ts",
-     "line": 63,
+     "line": 66,
      "symbol": "registerForEvent",
      "area": "marketplace"
     }
@@ -11300,8 +9631,8 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideBookingRepository.ts",
-     "line": 75,
-     "symbol": "SupabaseRideBookingRepository.runHandoffRpc",
+     "line": 74,
+     "symbol": "SupabaseRideBookingRepository.reinstate",
      "area": "rides"
     }
    ]
@@ -11463,9 +9794,54 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/donations/SupabaseDonationLinksRepository.ts",
-     "line": 107,
+     "line": 106,
      "symbol": "SupabaseDonationLinksRepository.report",
      "area": "donations"
+    }
+   ]
+  },
+  {
+   "old": "report_post_emergency",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "wedge",
+   "confidence": "high",
+   "missing": null,
+   "note": "`p_post_id`, optional `p_note`; refusals `ride_not_active`, `emergency_throttled`.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "report_post_emergency",
+     "source": "70_worlds/080_post_emergencies.sql:79",
+     "signature": [
+      "report_post_emergency(p_lat?: number, p_lng?: number, p_note?: string, p_post_id: string) → string"
+     ],
+     "errors": [
+      {
+       "code": "emergency_not_active",
+       "knownToApp": false
+      },
+      {
+       "code": "emergency_throttled",
+       "knownToApp": true
+      },
+      {
+       "code": "unauthenticated",
+       "knownToApp": true
+      }
+     ]
+    }
+   ],
+   "areas": [
+    "rides"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideSafetyRepository.ts",
+     "line": 17,
+     "symbol": "SupabaseRideSafetyRepository.unwrapCall",
+     "area": "rides"
     }
    ]
   },
@@ -11686,7 +10062,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/givingHandoffs.ts",
-     "line": 76,
+     "line": 115,
      "symbol": "reserveItemGiving",
      "area": "marketplace"
     }
@@ -11764,18 +10140,14 @@
    ]
   },
   {
-   "old": "resume_my_listing",
+   "old": "resume_post",
    "kind": "rpc",
-   "status": "renamed",
+   "status": "same",
    "launch": "wedge",
    "confidence": "high",
    "missing": null,
-   "note": "`p_listing_id` → `p_post_id`.",
-   "oldObject": {
-    "signature": [
-     "resume_my_listing(p_listing_id: string) → undefined"
-    ]
-   },
+   "note": "Reopens a paused post.",
+   "oldObject": {},
    "targets": [
     {
      "type": "rpc",
@@ -11810,7 +10182,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/listingOwnerActions.ts",
-     "line": 16,
+     "line": 32,
      "symbol": "runOwnerAction",
      "area": "marketplace"
     }
@@ -11888,67 +10260,14 @@
    ]
   },
   {
-   "old": "ride_listing_emergency",
+   "old": "rides_feed",
    "kind": "rpc",
-   "status": "renamed",
+   "status": "same",
    "launch": "wedge",
    "confidence": "high",
    "missing": null,
-   "note": "`p_listing_id` → `p_post_id`; returns the emergency id; throttled (`emergency_throttled`).",
-   "oldObject": {
-    "signature": [
-     "ride_listing_emergency(p_listing_id: string, p_note?: string) → ride_listing_emergencies row"
-    ]
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "report_post_emergency",
-     "source": "70_worlds/080_post_emergencies.sql:79",
-     "signature": [
-      "report_post_emergency(p_lat?: number, p_lng?: number, p_note?: string, p_post_id: string) → string"
-     ],
-     "errors": [
-      {
-       "code": "emergency_not_active",
-       "knownToApp": false
-      },
-      {
-       "code": "emergency_throttled",
-       "knownToApp": true
-      },
-      {
-       "code": "unauthenticated",
-       "knownToApp": true
-      }
-     ]
-    }
-   ],
-   "areas": [
-    "rides"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideSafetyRepository.ts",
-     "line": 15,
-     "symbol": "SupabaseRideSafetyRepository.raiseEmergency",
-     "area": "rides"
-    }
-   ]
-  },
-  {
-   "old": "ride_listings_find_matches",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "wedge",
-   "confidence": "medium",
-   "missing": null,
-   "note": "Route filter of `rides_feed`; saved routes get alerts through `ride_route_alerts`.",
-   "oldObject": {
-    "signature": [
-     "ride_listings_find_matches(p_limit?: number, p_ride_id: string, p_window_hours?: number) → { arrive_reason: string | null arrived_at: string | null cargo_allowed_types: string[] | null cargo_enabled: boolean | null cargo_max_volume_l: number | null cargo_max_weight_kg: number | null created_at: string | nul..."
-    ]
-   },
+   "note": "The rides feed; with `p_filters.origin` / `dest` / `radius_km` it is the route search. The app reads the first page; the series marker (weekdays) is not part of a row.",
+   "oldObject": {},
    "targets": [
     {
      "type": "rpc",
@@ -11970,50 +10289,9 @@
    ],
    "callSites": [
     {
-     "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideListingRepository.ts",
-     "line": 254,
-     "symbol": "SupabaseRideListingRepository.findMatches",
-     "area": "rides"
-    }
-   ]
-  },
-  {
-   "old": "ride_listings_search",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "wedge",
-   "confidence": "medium",
-   "missing": null,
-   "note": "Search is the feed with `p_filters` (direction, departure window, route origin / destination).",
-   "oldObject": {
-    "signature": [
-     "ride_listings_search(p_cursor?: string, p_depart_from?: string, p_depart_to?: string, p_dest_city_id?: string, p_limit?: number, p_mode?: string, p_origin_city_id?: string, p_query?: string) → { arrive_reason: string | null arrived_at: string | null cargo_allowed_types: string[] | null cargo_enabled: boolean | null cargo_max_volume_l: number | null cargo_max_weight_kg: number | null created_at: string | nul..."
-    ]
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "rides_feed",
-     "source": "70_worlds/060_rides_feed.sql:105",
-     "signature": [
-      "rides_feed(p_cursor?: Json, p_filters?: Json, p_limit?: number) → { arrives_at: string departs_at: string dest_name: string direction: string meeting_points: Json next_cursor: Json origin_name: string owner_id: string post_id: string reward_model: string seats: number seats_left: nu..."
-     ],
-     "errors": [
-      {
-       "code": "ride_place_invalid",
-       "knownToApp": true
-      }
-     ]
-    }
-   ],
-   "areas": [
-    "rides"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideListingRepository.ts",
-     "line": 113,
-     "symbol": "SupabaseRideListingRepository.search",
+     "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRidesFeedRepository.ts",
+     "line": 19,
+     "symbol": "SupabaseRidesFeedRepository.list",
      "area": "rides"
     }
    ]
@@ -12047,121 +10325,6 @@
      "line": 17,
      "symbol": "rotate",
      "area": "fn:rotate-research-salt"
-    }
-   ]
-  },
-  {
-   "old": "rpc_match_refresh_mine",
-   "kind": "rpc",
-   "status": "removed",
-   "launch": "wedge",
-   "confidence": "medium",
-   "missing": null,
-   "note": "Matching runs from the outbox when a post is published or changed; there is no on-demand refresh.",
-   "oldObject": {
-    "signature": [
-     "rpc_match_refresh_mine() → number"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "matching"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/matching/SupabaseMatchRepository.ts",
-     "line": 138,
-     "symbol": "SupabaseMatchRepository.refreshMine",
-     "area": "matching"
-    }
-   ]
-  },
-  {
-   "old": "rpc_match_respond",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "wedge",
-   "confidence": "high",
-   "missing": null,
-   "note": "`p_candidate_id` → `p_match_id`, `p_response` text → `p_accept` boolean; returns the pair's status.",
-   "oldObject": {
-    "signature": [
-     "rpc_match_respond(p_candidate_id: string, p_response: string) → Json"
-    ]
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "match_respond",
-     "source": "76_matching/060_match_rpcs.sql:71",
-     "signature": [
-      "match_respond(p_accept: boolean, p_match_id: string) → string"
-     ],
-     "errors": [
-      {
-       "code": "account_not_active",
-       "knownToApp": true
-      },
-      {
-       "code": "match_not_found",
-       "knownToApp": false
-      },
-      {
-       "code": "match_not_open",
-       "knownToApp": false
-      },
-      {
-       "code": "unauthenticated",
-       "knownToApp": true
-      }
-     ]
-    }
-   ],
-   "areas": [
-    "matching"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/matching/SupabaseMatchRepository.ts",
-     "line": 120,
-     "symbol": "SupabaseMatchRepository.respond",
-     "area": "matching"
-    }
-   ]
-  },
-  {
-   "old": "rpc_my_matches",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "wedge",
-   "confidence": "high",
-   "missing": null,
-   "note": "`candidate_id` → `match_id`; the other side comes as a `post_card` (`other_post`); `components` is not returned.",
-   "oldObject": {
-    "signature": [
-     "rpc_my_matches(p_limit?: number) → { candidate_id: string components: Json created_at: string distance_km: number llm_reason: string my_listing_id: string my_listing_title: string my_response: string my_role: string other_listing_id: string other_listi..."
-    ]
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "my_matches",
-     "source": "76_matching/060_match_rpcs.sql:43",
-     "signature": [
-      "my_matches(p_limit?: number) → { created_at: string distance_km: number llm_reason: string match_id: string my_post_id: string my_post_title: string my_response: string my_role: string other_post: post_card other_response: string score: number stat..."
-     ],
-     "errors": []
-    }
-   ],
-   "areas": [
-    "matching"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/matching/SupabaseMatchRepository.ts",
-     "line": 114,
-     "symbol": "SupabaseMatchRepository.listMine",
-     "area": "matching"
     }
    ]
   },
@@ -12203,537 +10366,6 @@
      "line": 69,
      "symbol": "SupabaseOrgTransparencyRepository.getPublic",
      "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "rpc_ride_arrive",
-   "kind": "rpc",
-   "status": "removed",
-   "launch": "wedge",
-   "confidence": "high",
-   "missing": null,
-   "note": "Legacy ride lifecycle; not carried over (design §9).",
-   "oldObject": {
-    "signature": [
-     "rpc_ride_arrive(p_reason?: string, p_ride_id: string) → { arrive_reason: string | null arrived_at: string | null cargo_allowed_types: string[] | null cargo_enabled: boolean | null cargo_max_volume_l: number | null cargo_max_weight_kg: number | null created_at: string | nul..."
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "rides"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideListingRepository.ts",
-     "line": 231,
-     "symbol": "SupabaseRideListingRepository.arrive",
-     "area": "rides"
-    }
-   ]
-  },
-  {
-   "old": "rpc_ride_emergency_trigger",
-   "kind": "rpc",
-   "status": "renamed",
-   "launch": "wedge",
-   "confidence": "high",
-   "missing": null,
-   "note": "`p_ride_id` → `p_post_id`; returns the emergency id.",
-   "oldObject": {
-    "signature": [
-     "rpc_ride_emergency_trigger(p_lat?: number, p_lng?: number, p_note?: string, p_ride_id: string) → ride_emergency_events row"
-    ]
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "report_post_emergency",
-     "source": "70_worlds/080_post_emergencies.sql:79",
-     "signature": [
-      "report_post_emergency(p_lat?: number, p_lng?: number, p_note?: string, p_post_id: string) → string"
-     ],
-     "errors": [
-      {
-       "code": "emergency_not_active",
-       "knownToApp": false
-      },
-      {
-       "code": "emergency_throttled",
-       "knownToApp": true
-      },
-      {
-       "code": "unauthenticated",
-       "knownToApp": true
-      }
-     ]
-    }
-   ],
-   "areas": [
-    "rides"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideEmergencyRepository.ts",
-     "line": 31,
-     "symbol": "SupabaseRideEmergencyRepository.trigger",
-     "area": "rides"
-    }
-   ]
-  },
-  {
-   "old": "rpc_ride_participants_cancel",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "wedge",
-   "confidence": "high",
-   "missing": null,
-   "note": "Same RPC for both sides.",
-   "oldObject": {
-    "signature": [
-     "rpc_ride_participants_cancel(p_participant_id: string) → ride_participants row"
-    ]
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "cancel_ride_booking",
-     "source": "70_worlds/040_ride_bookings.sql:83",
-     "signature": [
-      "cancel_ride_booking(p_handoff_id: string) → post_handoffs row"
-     ],
-     "errors": [
-      {
-       "code": "account_not_active",
-       "knownToApp": true
-      },
-      {
-       "code": "handoff_not_found",
-       "knownToApp": true
-      },
-      {
-       "code": "invalid_status",
-       "knownToApp": true
-      },
-      {
-       "code": "unauthenticated",
-       "knownToApp": true
-      }
-     ]
-    }
-   ],
-   "areas": [
-    "rides"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideParticipantRepository.ts",
-     "line": 72,
-     "symbol": "SupabaseRideParticipantRepository.cancel",
-     "area": "rides"
-    }
-   ]
-  },
-  {
-   "old": "rpc_ride_participants_decide",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "wedge",
-   "confidence": "high",
-   "missing": null,
-   "note": "Approve → confirm; reject → cancel.",
-   "oldObject": {
-    "signature": [
-     "rpc_ride_participants_decide(p_participant_id: string, p_status: string) → ride_participants row"
-    ]
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "confirm_ride_booking",
-     "source": "70_worlds/040_ride_bookings.sql:59",
-     "signature": [
-      "confirm_ride_booking(p_handoff_id: string) → post_handoffs row"
-     ],
-     "errors": [
-      {
-       "code": "account_not_active",
-       "knownToApp": true
-      },
-      {
-       "code": "handoff_not_found",
-       "knownToApp": true
-      },
-      {
-       "code": "invalid_status",
-       "knownToApp": true
-      },
-      {
-       "code": "ride_departed",
-       "knownToApp": true
-      },
-      {
-       "code": "unauthenticated",
-       "knownToApp": true
-      }
-     ]
-    },
-    {
-     "type": "rpc",
-     "name": "cancel_ride_booking",
-     "source": "70_worlds/040_ride_bookings.sql:83",
-     "signature": [
-      "cancel_ride_booking(p_handoff_id: string) → post_handoffs row"
-     ],
-     "errors": [
-      {
-       "code": "account_not_active",
-       "knownToApp": true
-      },
-      {
-       "code": "handoff_not_found",
-       "knownToApp": true
-      },
-      {
-       "code": "invalid_status",
-       "knownToApp": true
-      },
-      {
-       "code": "unauthenticated",
-       "knownToApp": true
-      }
-     ]
-    }
-   ],
-   "areas": [
-    "rides"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideParticipantRepository.ts",
-     "line": 63,
-     "symbol": "SupabaseRideParticipantRepository.decide",
-     "area": "rides"
-    }
-   ]
-  },
-  {
-   "old": "rpc_ride_participants_request",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "wedge",
-   "confidence": "high",
-   "missing": null,
-   "note": "Legacy participants are bookings (`post_handoffs`).",
-   "oldObject": {
-    "signature": [
-     "rpc_ride_participants_request(p_note?: string, p_ride_id: string) → ride_participants row"
-    ]
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "book_ride_seat",
-     "source": "70_worlds/040_ride_bookings.sql:15",
-     "signature": [
-      "book_ride_seat(p_post_id: string, p_requested_meeting_point?: Json, p_seats?: number) → post_handoffs row"
-     ],
-     "errors": [
-      {
-       "code": "account_not_active",
-       "knownToApp": true
-      },
-      {
-       "code": "invalid_rate_limit_args",
-       "knownToApp": true
-      },
-      {
-       "code": "item_already_reserved",
-       "knownToApp": true
-      },
-      {
-       "code": "listing_not_available",
-       "knownToApp": true
-      },
-      {
-       "code": "not_ride_offer",
-       "knownToApp": false
-      },
-      {
-       "code": "own_listing",
-       "knownToApp": true
-      },
-      {
-       "code": "rate_limited",
-       "knownToApp": true
-      },
-      {
-       "code": "ride_departed",
-       "knownToApp": true
-      },
-      {
-       "code": "ride_place_invalid",
-       "knownToApp": true
-      },
-      {
-       "code": "seats_exhausted",
-       "knownToApp": true
-      },
-      {
-       "code": "unauthenticated",
-       "knownToApp": true
-      }
-     ]
-    }
-   ],
-   "areas": [
-    "rides"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideParticipantRepository.ts",
-     "line": 51,
-     "symbol": "SupabaseRideParticipantRepository.constructor",
-     "area": "rides"
-    }
-   ]
-  },
-  {
-   "old": "rpc_ride_rate",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "wedge",
-   "confidence": "high",
-   "missing": null,
-   "note": "Rating is per handoff (booking), not per ride + ratee; `p_is_penalty` is gone.",
-   "oldObject": {
-    "signature": [
-     "rpc_ride_rate(p_comment?: string, p_is_penalty?: boolean, p_ratee_id: string, p_ride_id: string, p_stars: number) → ride_ratings row"
-    ]
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "rate_handoff",
-     "source": "25_handoffs/110_post_ratings.sql:41",
-     "signature": [
-      "rate_handoff(p_comment?: string, p_handoff_id: string, p_stars: number) → undefined"
-     ],
-     "errors": [
-      {
-       "code": "account_not_active",
-       "knownToApp": true
-      },
-      {
-       "code": "handoff_already_rated",
-       "knownToApp": false
-      },
-      {
-       "code": "handoff_not_found",
-       "knownToApp": true
-      },
-      {
-       "code": "invalid_rating",
-       "knownToApp": true
-      },
-      {
-       "code": "not_participant",
-       "knownToApp": true
-      },
-      {
-       "code": "unauthenticated",
-       "knownToApp": true
-      }
-     ]
-    }
-   ],
-   "areas": [
-    "rides"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideRatingRepository.ts",
-     "line": 32,
-     "symbol": "SupabaseRideRatingRepository.submit",
-     "area": "rides"
-    }
-   ]
-  },
-  {
-   "old": "rpc_ride_start",
-   "kind": "rpc",
-   "status": "removed",
-   "launch": "wedge",
-   "confidence": "high",
-   "missing": null,
-   "note": "Legacy ride lifecycle; not carried over (design §9). A ride completes through `complete_ride` / `complete_ride_trip`.",
-   "oldObject": {
-    "signature": [
-     "rpc_ride_start(p_ride_id: string) → { arrive_reason: string | null arrived_at: string | null cargo_allowed_types: string[] | null cargo_enabled: boolean | null cargo_max_volume_l: number | null cargo_max_weight_kg: number | null created_at: string | nul..."
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "rides"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideListingRepository.ts",
-     "line": 209,
-     "symbol": "SupabaseRideListingRepository.start",
-     "area": "rides"
-    }
-   ]
-  },
-  {
-   "old": "rpc_ride_update_visibility",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "wedge",
-   "confidence": "high",
-   "missing": null,
-   "note": "Direct update of `posts.visibility`.",
-   "oldObject": {
-    "signature": [
-     "rpc_ride_update_visibility(p_ride_id: string, p_visibility: string) → { arrive_reason: string | null arrived_at: string | null cargo_allowed_types: string[] | null cargo_enabled: boolean | null cargo_max_volume_l: number | null cargo_max_weight_kg: number | null created_at: string | nul..."
-    ]
-   },
-   "targets": [
-    {
-     "type": "table",
-     "name": "posts",
-     "columns": [
-      "beneficiary_org_id",
-      "city_id",
-      "created_at",
-      "description",
-      "details",
-      "direction",
-      "expires_at",
-      "geo_approx",
-      "id",
-      "item_subcategory_id",
-      "kind_id",
-      "location_display_level",
-      "owner_id",
-      "post_type",
-      "published_at",
-      "search_vector",
-      "source",
-      "source_language",
-      "status",
-      "status_before_removal",
-      "time_window",
-      "title",
-      "updated_at",
-      "urgency_level",
-      "visibility",
-      "world_slug"
-     ],
-     "clientGrants": {
-      "select": true,
-      "delete": true,
-      "insert": [
-       "beneficiary_org_id"
-      ],
-      "update": [
-       "city_id",
-       "description",
-       "details",
-       "item_subcategory_id",
-       "location_display_level",
-       "time_window",
-       "title",
-       "urgency_level",
-       "visibility"
-      ]
-     }
-    }
-   ],
-   "areas": [
-    "rides"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideListingRepository.ts",
-     "line": 157,
-     "symbol": "SupabaseRideListingRepository.updateVisibility",
-     "area": "rides"
-    }
-   ]
-  },
-  {
-   "old": "search_external_bodies",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "wedge",
-   "confidence": "medium",
-   "missing": null,
-   "note": "External bodies are organizations (FR-ORG-001): search `organizations` by name (policy `organizations_select_active`).",
-   "oldObject": {
-    "signature": [
-     "search_external_bodies(p_limit?: number, p_query?: string, p_world_slug: string) → { body_id: string body_type: string contact_url: string label_en: string label_he: string slug: string world_slug: string }[]"
-    ]
-   },
-   "targets": [
-    {
-     "type": "table",
-     "name": "organizations",
-     "columns": [
-      "city_id",
-      "contact_email",
-      "created_at",
-      "id",
-      "is_platform",
-      "is_verified_nonprofit",
-      "name",
-      "org_type",
-      "public_about_en",
-      "public_about_he",
-      "public_tagline_en",
-      "public_tagline_he",
-      "registration_number",
-      "sec46_approval_number",
-      "sec46_status",
-      "sec46_valid_from",
-      "sec46_valid_until",
-      "show_category_breakdown",
-      "show_donations_count",
-      "show_monthly_trend",
-      "show_program_ratio",
-      "show_totals",
-      "slug",
-      "status",
-      "updated_at",
-      "verification_level",
-      "verification_method",
-      "verified_at",
-      "verified_by",
-      "website_url"
-     ],
-     "clientGrants": {
-      "select": true,
-      "update": [
-       "city_id",
-       "contact_email",
-       "public_about_en",
-       "public_about_he",
-       "public_tagline_en",
-       "public_tagline_he",
-       "website_url"
-      ]
-     }
-    }
-   ],
-   "areas": [
-    "marketplace"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/marketplace/mapExternalBody.ts",
-     "line": 26,
-     "symbol": "searchExternalBodies",
-     "area": "marketplace"
     }
    ]
   },
@@ -12872,7 +10504,8 @@
     }
    ],
    "areas": [
-    "chat"
+    "chat",
+    "marketplace"
    ],
    "callSites": [
     {
@@ -12892,6 +10525,12 @@
      "line": 36,
      "symbol": "SupabaseChatV2Repository.sendMediaMessage",
      "area": "chat"
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/marketplace/SupabaseMarketplaceRepository.ts",
+     "line": 51,
+     "symbol": "SupabaseMarketplaceRepository.startChat",
+     "area": "marketplace"
     }
    ]
   },
@@ -13101,6 +10740,51 @@
    ]
   },
   {
+   "old": "set_post_organization",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "wedge",
+   "confidence": "high",
+   "missing": null,
+   "note": "Attaches a new organization event to the organization the member publishes for (`forbidden` when the member may not act for it).",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "set_post_organization",
+     "source": "80_organizations/040_org_posts.sql:78",
+     "signature": [
+      "set_post_organization(p_org_id: string, p_post_id: string) → undefined"
+     ],
+     "errors": [
+      {
+       "code": "account_not_active",
+       "knownToApp": true
+      },
+      {
+       "code": "post_not_found",
+       "knownToApp": true
+      },
+      {
+       "code": "unauthenticated",
+       "knownToApp": true
+      }
+     ]
+    }
+   ],
+   "areas": [
+    "marketplace"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/marketplace/listingWrites.ts",
+     "line": 129,
+     "symbol": "createListing",
+     "area": "marketplace"
+    }
+   ]
+  },
+  {
    "old": "set_post_reaction",
    "kind": "rpc",
    "status": "same",
@@ -13195,64 +10879,6 @@
    ]
   },
   {
-   "old": "set_ride_house_numbers",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "wedge",
-   "confidence": "high",
-   "missing": null,
-   "note": "Owner writes `street_number` (origin) and `destination_street_number` directly.",
-   "oldObject": {
-    "signature": [
-     "set_ride_house_numbers(p_dest?: string, p_listing_id: string, p_origin?: string) → undefined"
-    ]
-   },
-   "targets": [
-    {
-     "type": "table",
-     "name": "post_private_locations",
-     "columns": [
-      "access_notes",
-      "destination_street_number",
-      "exact_point",
-      "post_id",
-      "street",
-      "street_number",
-      "updated_at"
-     ],
-     "clientGrants": {
-      "select": true,
-      "insert": [
-       "access_notes",
-       "destination_street_number",
-       "exact_point",
-       "post_id",
-       "street",
-       "street_number"
-      ],
-      "update": [
-       "access_notes",
-       "destination_street_number",
-       "exact_point",
-       "street",
-       "street_number"
-      ]
-     }
-    }
-   ],
-   "areas": [
-    "rides"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideHouseNumberRepository.ts",
-     "line": 18,
-     "symbol": "SupabaseRideHouseNumberRepository.save",
-     "area": "rides"
-    }
-   ]
-  },
-  {
    "old": "set_ride_series_status",
    "kind": "rpc",
    "status": "same",
@@ -13299,124 +10925,21 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideSeriesRepository.ts",
-     "line": 62,
+     "line": 84,
      "symbol": "SupabaseRideSeriesRepository.setStatus",
      "area": "rides"
     }
    ]
   },
   {
-   "old": "share_listing_to_feed",
+   "old": "similar_posts",
    "kind": "rpc",
-   "status": "removed",
+   "status": "same",
    "launch": "wedge",
    "confidence": "high",
    "missing": null,
-   "note": "A listing is a post and is already in the feed (`listing_feed_posts` not carried over). A share is a `post_shares` row.",
-   "oldObject": {
-    "signature": [
-     "share_listing_to_feed(p_listing_id: string) → string"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "marketplace"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/marketplace/SupabaseMarketplaceRepository.ts",
-     "line": 222,
-     "symbol": "SupabaseMarketplaceRepository.shareToFeed",
-     "area": "marketplace"
-    }
-   ]
-  },
-  {
-   "old": "sign_up_volunteer_shift",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "wedge",
-   "confidence": "high",
-   "missing": null,
-   "note": "`p_shift_id` → `p_post_id`; the status says confirmed, waiting for approval, or waiting list.",
-   "oldObject": {
-    "signature": [
-     "sign_up_volunteer_shift(p_shift_id: string) → volunteer_shift_signups row"
-    ]
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "register_for_event",
-     "source": "70_worlds/130_event_registrations.sql:14",
-     "signature": [
-      "register_for_event(p_post_id: string) → post_handoffs row"
-     ],
-     "errors": [
-      {
-       "code": "account_not_active",
-       "knownToApp": true
-      },
-      {
-       "code": "invalid_rate_limit_args",
-       "knownToApp": true
-      },
-      {
-       "code": "item_already_reserved",
-       "knownToApp": true
-      },
-      {
-       "code": "listing_not_available",
-       "knownToApp": true
-      },
-      {
-       "code": "own_listing",
-       "knownToApp": true
-      },
-      {
-       "code": "rate_limited",
-       "knownToApp": true
-      },
-      {
-       "code": "slot_started",
-       "knownToApp": true
-      },
-      {
-       "code": "unauthenticated",
-       "knownToApp": true
-      },
-      {
-       "code": "verification_required",
-       "knownToApp": true
-      }
-     ]
-    }
-   ],
-   "areas": [
-    "volunteering"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
-     "line": 122,
-     "symbol": "SupabaseVolunteerRepository.signUpForShift",
-     "area": "volunteering"
-    }
-   ]
-  },
-  {
-   "old": "similar_listings",
-   "kind": "rpc",
-   "status": "renamed",
-   "launch": "wedge",
-   "confidence": "high",
-   "missing": null,
-   "note": "`p_listing_id` → `p_post_id`; returns cards.",
-   "oldObject": {
-    "signature": [
-     "similar_listings(p_limit?: number, p_listing_id: string) → { kind_slug: string listing_id: string title: string world_slug: string }[]"
-    ]
-   },
+   "note": "\"More like this\" as cards.",
+   "oldObject": {},
    "targets": [
     {
      "type": "rpc",
@@ -13434,111 +10957,8 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/SupabaseMarketplaceRepository.ts",
-     "line": 111,
+     "line": 30,
      "symbol": "SupabaseMarketplaceRepository.similarListings",
-     "area": "marketplace"
-    }
-   ]
-  },
-  {
-   "old": "start_listing_chat",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "wedge",
-   "confidence": "high",
-   "missing": null,
-   "note": "`open_direct_chat(owner, p_anchor_post_id)` then `send_message` for the opening text.",
-   "oldObject": {
-    "signature": [
-     "start_listing_chat(p_listing_id: string, p_opening_message?: string) → string"
-    ]
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "open_direct_chat",
-     "source": "40_messaging/030_chat_rpcs.sql:11",
-     "signature": [
-      "open_direct_chat(p_anchor_post_id?: string, p_user_id: string) → chats row"
-     ],
-     "errors": [
-      {
-       "code": "account_not_active",
-       "knownToApp": true
-      },
-      {
-       "code": "blocked_relationship",
-       "knownToApp": true
-      },
-      {
-       "code": "cannot_chat_self",
-       "knownToApp": true
-      },
-      {
-       "code": "post_unavailable",
-       "knownToApp": true
-      },
-      {
-       "code": "unauthenticated",
-       "knownToApp": true
-      },
-      {
-       "code": "user_unavailable",
-       "knownToApp": true
-      }
-     ]
-    },
-    {
-     "type": "rpc",
-     "name": "send_message",
-     "source": "40_messaging/030_chat_rpcs.sql:92",
-     "signature": [
-      "send_message(p_body: string, p_chat_id: string, p_media_payload?: Json, p_message_id?: string) → messages row"
-     ],
-     "errors": [
-      {
-       "code": "account_not_active",
-       "knownToApp": true
-      },
-      {
-       "code": "blocked_relationship",
-       "knownToApp": true
-      },
-      {
-       "code": "chat_not_found",
-       "knownToApp": true
-      },
-      {
-       "code": "invalid_media_payload",
-       "knownToApp": true
-      },
-      {
-       "code": "invalid_rate_limit_args",
-       "knownToApp": true
-      },
-      {
-       "code": "message_body_invalid",
-       "knownToApp": true
-      },
-      {
-       "code": "rate_limited",
-       "knownToApp": true
-      },
-      {
-       "code": "unauthenticated",
-       "knownToApp": true
-      }
-     ]
-    }
-   ],
-   "areas": [
-    "marketplace"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/marketplace/SupabaseMarketplaceRepository.ts",
-     "line": 228,
-     "symbol": "SupabaseMarketplaceRepository.startChat",
      "area": "marketplace"
     }
    ]
@@ -13761,83 +11181,6 @@
    ]
   },
   {
-   "old": "update_my_listing",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "wedge",
-   "confidence": "high",
-   "missing": null,
-   "note": "Direct update of the content columns (title, description, details, city_id, urgency_level, visibility, time_window, item_subcategory_id, location_display_level). `p_summary` → `description`; `p_availability_status` and `p_max_radius_km` have no column.",
-   "oldObject": {
-    "signature": [
-     "update_my_listing(p_availability_status?: string, p_city_id?: string, p_details?: Json, p_listing_id: string, p_max_radius_km?: number, p_summary?: string, p_title?: string, p_urgency_level?: number) → undefined"
-    ]
-   },
-   "targets": [
-    {
-     "type": "table",
-     "name": "posts",
-     "columns": [
-      "beneficiary_org_id",
-      "city_id",
-      "created_at",
-      "description",
-      "details",
-      "direction",
-      "expires_at",
-      "geo_approx",
-      "id",
-      "item_subcategory_id",
-      "kind_id",
-      "location_display_level",
-      "owner_id",
-      "post_type",
-      "published_at",
-      "search_vector",
-      "source",
-      "source_language",
-      "status",
-      "status_before_removal",
-      "time_window",
-      "title",
-      "updated_at",
-      "urgency_level",
-      "visibility",
-      "world_slug"
-     ],
-     "clientGrants": {
-      "select": true,
-      "delete": true,
-      "insert": [
-       "beneficiary_org_id"
-      ],
-      "update": [
-       "city_id",
-       "description",
-       "details",
-       "item_subcategory_id",
-       "location_display_level",
-       "time_window",
-       "title",
-       "urgency_level",
-       "visibility"
-      ]
-     }
-    }
-   ],
-   "areas": [
-    "marketplace"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/marketplace/listingOwnerActions.ts",
-     "line": 22,
-     "symbol": "updateMyListing",
-     "area": "marketplace"
-    }
-   ]
-  },
-  {
    "old": "update_my_proposed_knowledge_topic",
    "kind": "rpc",
    "status": "missing",
@@ -13914,8 +11257,8 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideSeriesRepository.ts",
-     "line": 78,
-     "symbol": "SupabaseRideSeriesRepository.updateSchedule",
+     "line": 110,
+     "symbol": "SupabaseRideSeriesRepository.unwrapCall",
      "area": "rides"
     }
    ]
@@ -14225,65 +11568,6 @@
    ]
   },
   {
-   "old": "categories",
-   "kind": "table",
-   "status": "renamed",
-   "launch": "wedge",
-   "confidence": "high",
-   "missing": null,
-   "note": "Item subcategories per world (`world_slug`, `parent_id`).",
-   "oldObject": {
-    "columns": [
-     "category_id",
-     "created_at",
-     "is_active",
-     "label_en",
-     "label_he",
-     "legacy_donation_slug",
-     "legacy_post_category",
-     "parent_id",
-     "slug",
-     "sort_order",
-     "world_slug"
-    ],
-    "isView": false
-   },
-   "targets": [
-    {
-     "type": "table",
-     "name": "item_subcategories",
-     "columns": [
-      "created_at",
-      "id",
-      "is_active",
-      "label_en",
-      "label_he",
-      "parent_id",
-      "slug",
-      "sort_order",
-      "world_slug"
-     ],
-     "clientGrants": {
-      "select": true
-     }
-    }
-   ],
-   "areas": [
-    "marketplace"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/marketplace/listWorldSubcategories.ts",
-     "line": 29,
-     "symbol": "listWorldSubcategories",
-     "area": "marketplace",
-     "ops": [
-      "select"
-     ]
-    }
-   ]
-  },
-  {
    "old": "challenges",
    "kind": "table",
    "status": "same",
@@ -14525,18 +11809,9 @@
      ]
     },
     {
-     "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideListingRepository.ts",
-     "line": 129,
-     "symbol": "SupabaseRideListingRepository.rows",
-     "area": "rides",
-     "ops": [
-      "select"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideListingRepository.ts",
-     "line": 265,
-     "symbol": "SupabaseRideListingRepository.rows",
+     "file": "app/packages/infrastructure-supabase/src/rides/ridePlaces.ts",
+     "line": 97,
+     "symbol": "resolvePlaces",
      "area": "rides",
      "ops": [
       "select"
@@ -14729,8 +12004,8 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/donations/SupabaseDonationLinksRepository.ts",
-     "line": 39,
-     "symbol": "SupabaseDonationLinksRepository.listByCategory",
+     "line": 60,
+     "symbol": "SupabaseDonationLinksRepository.unwrapCall",
      "area": "donations",
      "ops": [
       "select"
@@ -14738,20 +12013,20 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/donations/SupabaseDonationLinksRepository.ts",
-     "line": 95,
-     "symbol": "SupabaseDonationLinksRepository.userId",
-     "area": "donations",
-     "ops": [
-      "update"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/donations/SupabaseDonationLinksRepository.ts",
-     "line": 102,
+     "line": 99,
      "symbol": "SupabaseDonationLinksRepository.deleteById",
      "area": "donations",
      "ops": [
       "delete"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/donations/SupabaseDonationLinksRepository.ts",
+     "line": 116,
+     "symbol": "SupabaseDonationLinksRepository.unwrapCall",
+     "area": "donations",
+     "ops": [
+      "select"
      ]
     },
     {
@@ -14805,90 +12080,6 @@
      "line": 42,
      "symbol": "insert",
      "area": "fn:validate-donation-link",
-     "ops": [
-      "select",
-      "insert"
-     ]
-    }
-   ]
-  },
-  {
-   "old": "driver_declarations",
-   "kind": "table",
-   "status": "changed",
-   "launch": "wedge",
-   "confidence": "high",
-   "missing": null,
-   "note": "Read `user_consents` where `consent_kind = 'driver_declaration'`; accept with `accept_world_consent('driver_declaration', version)`. The current version is `bootstrap_session().consents.<kind>.version`, with the caller's `accepted` flag (M11, built).",
-   "oldObject": {
-    "columns": [
-     "declared_at",
-     "insurance_declared",
-     "license_declared",
-     "no_profit_acknowledged",
-     "user_id"
-    ],
-    "isView": false
-   },
-   "targets": [
-    {
-     "type": "table",
-     "name": "user_consents",
-     "columns": [
-      "accepted_at",
-      "consent_kind",
-      "id",
-      "ip_address",
-      "locale",
-      "user_agent",
-      "user_id",
-      "version"
-     ],
-     "clientGrants": {
-      "select": true
-     }
-    },
-    {
-     "type": "rpc",
-     "name": "accept_world_consent",
-     "source": "70_worlds/010_world_shared.sql:92",
-     "signature": [
-      "accept_world_consent(p_kind: string, p_locale?: string, p_user_agent?: string, p_version: number) → user_consents row"
-     ],
-     "errors": [
-      {
-       "code": "consent_version_stale",
-       "knownToApp": false
-      },
-      {
-       "code": "unauthenticated",
-       "knownToApp": true
-      },
-      {
-       "code": "unknown_consent_kind",
-       "knownToApp": false
-      }
-     ]
-    }
-   ],
-   "areas": [
-    "rides"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/rides/SupabaseDriverDeclarationRepository.ts",
-     "line": 30,
-     "symbol": "SupabaseDriverDeclarationRepository.getMine",
-     "area": "rides",
-     "ops": [
-      "select"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/rides/SupabaseDriverDeclarationRepository.ts",
-     "line": 47,
-     "symbol": "SupabaseDriverDeclarationRepository.accept",
-     "area": "rides",
      "ops": [
       "select",
       "insert"
@@ -15385,9 +12576,19 @@
     }
    ],
    "areas": [
+    "marketplace",
     "posts"
    ],
    "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/marketplace/listWorldSubcategories.ts",
+     "line": 33,
+     "symbol": "listWorldSubcategories",
+     "area": "marketplace",
+     "ops": [
+      "select"
+     ]
+    },
     {
      "file": "app/packages/infrastructure-supabase/src/posts/postCatalog.ts",
      "line": 54,
@@ -15443,7 +12644,7 @@
    "callSites": [
     {
      "file": "app/apps/mobile/src/hooks/useKarmaHistory.ts",
-     "line": 19,
+     "line": 24,
      "symbol": "useKarmaHistory",
      "area": "mobile",
      "ops": [
@@ -15650,227 +12851,6 @@
    ]
   },
   {
-   "old": "listing_kinds",
-   "kind": "table",
-   "status": "renamed",
-   "launch": "wedge",
-   "confidence": "high",
-   "missing": null,
-   "note": "Same role; `direction` and `detail_schema` are on the kind.",
-   "oldObject": {
-    "columns": [
-     "created_at",
-     "default_ttl_hours",
-     "detail_schema",
-     "direction",
-     "is_active",
-     "kind_id",
-     "label_en",
-     "label_he",
-     "slug",
-     "sort_order",
-     "world_slug"
-    ],
-    "isView": false
-   },
-   "targets": [
-    {
-     "type": "table",
-     "name": "post_kinds",
-     "columns": [
-      "created_at",
-      "default_ttl_hours",
-      "detail_schema",
-      "direction",
-      "id",
-      "is_active",
-      "label_en",
-      "label_he",
-      "slug",
-      "sort_order",
-      "world_slug"
-     ],
-     "clientGrants": {
-      "select": true
-     }
-    }
-   ],
-   "areas": [
-    "marketplace"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/marketplace/SupabaseMarketplaceRepository.ts",
-     "line": 126,
-     "symbol": "SupabaseMarketplaceRepository.listKindsForWorld",
-     "area": "marketplace",
-     "ops": [
-      "select"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/marketplace/SupabaseMarketplaceRepository.ts",
-     "line": 172,
-     "symbol": "SupabaseMarketplaceRepository.getListingCard",
-     "area": "marketplace",
-     "ops": [
-      "select"
-     ]
-    }
-   ]
-  },
-  {
-   "old": "listings",
-   "kind": "table",
-   "status": "changed",
-   "launch": "wedge",
-   "confidence": "high",
-   "missing": null,
-   "note": "The view is gone (design §8): read `posts`, or cards through `post_cards`.",
-   "oldObject": {
-    "columns": [
-     "anonymity_level",
-     "availability_status",
-     "beneficiary_org_id",
-     "canonical_id",
-     "category_id",
-     "city_id",
-     "created_at",
-     "details",
-     "direction",
-     "embedding",
-     "embedding_model",
-     "expires_at",
-     "external_body_id",
-     "geo",
-     "geo_mode_override",
-     "geo_weight_override",
-     "kind_id",
-     "legacy_post_id",
-     "legacy_ride_id",
-     "listing_id",
-     "max_radius_km_override",
-     "moderation_status",
-     "origin",
-     "owner_id",
-     "published_at",
-     "search_vector",
-     "status",
-     "summary",
-     "time_window",
-     "title",
-     "updated_at",
-     "urgency_level",
-     "visibility",
-     "world_slug"
-    ],
-    "isView": true
-   },
-   "targets": [
-    {
-     "type": "table",
-     "name": "posts",
-     "columns": [
-      "beneficiary_org_id",
-      "city_id",
-      "created_at",
-      "description",
-      "details",
-      "direction",
-      "expires_at",
-      "geo_approx",
-      "id",
-      "item_subcategory_id",
-      "kind_id",
-      "location_display_level",
-      "owner_id",
-      "post_type",
-      "published_at",
-      "search_vector",
-      "source",
-      "source_language",
-      "status",
-      "status_before_removal",
-      "time_window",
-      "title",
-      "updated_at",
-      "urgency_level",
-      "visibility",
-      "world_slug"
-     ],
-     "clientGrants": {
-      "select": true,
-      "delete": true,
-      "insert": [
-       "beneficiary_org_id"
-      ],
-      "update": [
-       "city_id",
-       "description",
-       "details",
-       "item_subcategory_id",
-       "location_display_level",
-       "time_window",
-       "title",
-       "urgency_level",
-       "visibility"
-      ]
-     }
-    },
-    {
-     "type": "rpc",
-     "name": "post_cards",
-     "source": "30_social/070_post_cards.sql:69",
-     "signature": [
-      "post_cards(p_post_ids: string[]) → post_card[]"
-     ],
-     "errors": []
-    }
-   ],
-   "areas": [
-    "marketplace",
-    "rides"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/marketplace/marketplacePaging.ts",
-     "line": 163,
-     "symbol": "fetchListingCards",
-     "area": "marketplace",
-     "ops": [
-      "select"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/marketplace/marketplacePaging.ts",
-     "line": 236,
-     "symbol": "attachCardExtras",
-     "area": "marketplace",
-     "ops": [
-      "select"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/marketplace/SupabaseMarketplaceRepository.ts",
-     "line": 149,
-     "symbol": "SupabaseMarketplaceRepository.getListingCard",
-     "area": "marketplace",
-     "ops": [
-      "select"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideLegacyLinkRepository.ts",
-     "line": 13,
-     "symbol": "SupabaseRideLegacyLinkRepository.listingIdForLegacyRide",
-     "area": "rides",
-     "ops": [
-      "select"
-     ]
-    }
-   ]
-  },
-  {
    "old": "message_reactions",
    "kind": "table",
    "status": "same",
@@ -16023,8 +13003,99 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/eventRegistrations.ts",
-     "line": 117,
+     "line": 154,
      "symbol": "listMyOrganizations",
+     "area": "marketplace",
+     "ops": [
+      "select"
+     ]
+    }
+   ]
+  },
+  {
+   "old": "organizations",
+   "kind": "table",
+   "status": "same",
+   "launch": "wedge",
+   "confidence": "high",
+   "missing": null,
+   "note": "The routed worlds' body picker (organizations by name).",
+   "oldObject": {
+    "columns": [
+     "created_at",
+     "is_platform",
+     "is_verified_nonprofit",
+     "name",
+     "org_id",
+     "public_about_en",
+     "public_about_he",
+     "public_tagline_en",
+     "public_tagline_he",
+     "slug",
+     "transparency_settings",
+     "verification_method",
+     "verified_at"
+    ],
+    "isView": false
+   },
+   "targets": [
+    {
+     "type": "table",
+     "name": "organizations",
+     "columns": [
+      "city_id",
+      "contact_email",
+      "created_at",
+      "id",
+      "is_platform",
+      "is_verified_nonprofit",
+      "name",
+      "org_type",
+      "public_about_en",
+      "public_about_he",
+      "public_tagline_en",
+      "public_tagline_he",
+      "registration_number",
+      "sec46_approval_number",
+      "sec46_status",
+      "sec46_valid_from",
+      "sec46_valid_until",
+      "show_category_breakdown",
+      "show_donations_count",
+      "show_monthly_trend",
+      "show_program_ratio",
+      "show_totals",
+      "slug",
+      "status",
+      "updated_at",
+      "verification_level",
+      "verification_method",
+      "verified_at",
+      "verified_by",
+      "website_url"
+     ],
+     "clientGrants": {
+      "select": true,
+      "update": [
+       "city_id",
+       "contact_email",
+       "public_about_en",
+       "public_about_he",
+       "public_tagline_en",
+       "public_tagline_he",
+       "website_url"
+      ]
+     }
+    }
+   ],
+   "areas": [
+    "marketplace"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/marketplace/mapExternalBody.ts",
+     "line": 38,
+     "symbol": "searchExternalBodies",
      "area": "marketplace",
      "ops": [
       "select"
@@ -16292,6 +13363,128 @@
    ]
   },
   {
+   "old": "post_event_details",
+   "kind": "table",
+   "status": "same",
+   "launch": "wedge",
+   "confidence": "high",
+   "missing": null,
+   "note": "Read for an event's window, capacity and policy; the organizer edits it through the adapter.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "table",
+     "name": "post_event_details",
+     "columns": [
+      "address_label",
+      "capacity",
+      "counts_volunteer_hours",
+      "created_at",
+      "ends_at",
+      "post_id",
+      "registration_policy",
+      "starts_at",
+      "updated_at"
+     ],
+     "clientGrants": {
+      "select": true,
+      "update": [
+       "address_label",
+       "capacity",
+       "counts_volunteer_hours",
+       "ends_at",
+       "registration_policy",
+       "starts_at"
+      ]
+     }
+    }
+   ],
+   "areas": [
+    "marketplace",
+    "volunteering"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
+     "line": 79,
+     "symbol": "loadEventDetails",
+     "area": "marketplace",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
+     "line": 36,
+     "symbol": "loadEventRows",
+     "area": "volunteering",
+     "ops": [
+      "select"
+     ]
+    }
+   ]
+  },
+  {
+   "old": "post_food_details",
+   "kind": "table",
+   "status": "same",
+   "launch": "wedge",
+   "confidence": "high",
+   "missing": null,
+   "note": "Read for a food offer's expiry and contents; the giver edits it through the adapter.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "table",
+     "name": "post_food_details",
+     "columns": [
+      "allergens",
+      "created_at",
+      "dietary_tags",
+      "expires_at",
+      "expiry_alerted_at",
+      "food_type",
+      "kosher",
+      "post_id",
+      "updated_at"
+     ],
+     "clientGrants": {
+      "select": [
+       "allergens",
+       "created_at",
+       "dietary_tags",
+       "expires_at",
+       "food_type",
+       "kosher",
+       "post_id",
+       "updated_at"
+      ],
+      "update": [
+       "allergens",
+       "dietary_tags",
+       "expires_at",
+       "food_type",
+       "kosher"
+      ]
+     }
+    }
+   ],
+   "areas": [
+    "marketplace"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
+     "line": 98,
+     "symbol": "loadFoodDetails",
+     "area": "marketplace",
+     "ops": [
+      "select"
+     ]
+    }
+   ]
+  },
+  {
    "old": "post_handoffs",
    "kind": "table",
    "status": "changed",
@@ -16359,13 +13552,42 @@
    ],
    "areas": [
     "marketplace",
-    "posts"
+    "posts",
+    "rides",
+    "volunteering"
    ],
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/eventRegistrations.ts",
-     "line": 101,
+     "line": 114,
+     "symbol": "unwrapCall",
+     "area": "marketplace",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/marketplace/eventRegistrations.ts",
+     "line": 136,
      "symbol": "getMyEventRegistration",
+     "area": "marketplace",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/marketplace/givingHandoffs.ts",
+     "line": 61,
+     "symbol": "getListingHandoff",
+     "area": "marketplace",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/marketplace/givingHandoffs.ts",
+     "line": 79,
+     "symbol": "listMyGivingHandoffs",
      "area": "marketplace",
      "ops": [
       "select"
@@ -16376,6 +13598,42 @@
      "line": 52,
      "symbol": "loadRecipients",
      "area": "posts",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideBookingRepository.ts",
+     "line": 41,
+     "symbol": "SupabaseRideBookingRepository.unwrapCall",
+     "area": "rides",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
+     "line": 106,
+     "symbol": "SupabaseVolunteerRepository.myRegistrationStatus",
+     "area": "volunteering",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
+     "line": 130,
+     "symbol": "SupabaseVolunteerRepository.unwrapCall",
+     "area": "volunteering",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
+     "line": 193,
+     "symbol": "SupabaseVolunteerRepository.listShiftVolunteers",
+     "area": "volunteering",
      "ops": [
       "select"
      ]
@@ -16414,9 +13672,19 @@
     }
    ],
    "areas": [
+    "marketplace",
     "posts"
    ],
    "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/marketplace/kindCatalog.ts",
+     "line": 31,
+     "symbol": "readCatalog",
+     "area": "marketplace",
+     "ops": [
+      "select"
+     ]
+    },
     {
      "file": "app/packages/infrastructure-supabase/src/posts/postCatalog.ts",
      "line": 56,
@@ -16480,9 +13748,28 @@
     }
    ],
    "areas": [
+    "marketplace",
     "posts"
    ],
    "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/marketplace/listingOwnerActions.ts",
+     "line": 89,
+     "symbol": "addMyListingMedia",
+     "area": "marketplace",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/marketplace/listingWrites.ts",
+     "line": 55,
+     "symbol": "recordPhotos",
+     "area": "marketplace",
+     "ops": [
+      "insert"
+     ]
+    },
     {
      "file": "app/packages/infrastructure-supabase/src/posts/postMediaWrites.ts",
      "line": 40,
@@ -16573,7 +13860,8 @@
     }
    ],
    "areas": [
-    "posts"
+    "posts",
+    "rides"
    ],
    "callSites": [
     {
@@ -16592,6 +13880,57 @@
      "area": "posts",
      "ops": [
       "upsert"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideHouseNumberRepository.ts",
+     "line": 22,
+     "symbol": "SupabaseRideHouseNumberRepository.unwrapCall",
+     "area": "rides",
+     "ops": [
+      "upsert"
+     ]
+    }
+   ]
+  },
+  {
+   "old": "post_ratings",
+   "kind": "table",
+   "status": "same",
+   "launch": "wedge",
+   "confidence": "high",
+   "missing": null,
+   "note": "The rater reads back the ratings they wrote, to mark a booking \"rated by me\".",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "table",
+     "name": "post_ratings",
+     "columns": [
+      "comment",
+      "created_at",
+      "handoff_id",
+      "id",
+      "ratee_id",
+      "rater_id",
+      "stars"
+     ],
+     "clientGrants": {
+      "select": true
+     }
+    }
+   ],
+   "areas": [
+    "rides"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideBookingRepository.ts",
+     "line": 46,
+     "symbol": "SupabaseRideBookingRepository.listForRide",
+     "area": "rides",
+     "ops": [
+      "select"
      ]
     }
    ]
@@ -16654,6 +13993,110 @@
      "area": "posts",
      "ops": [
       "delete"
+     ]
+    }
+   ]
+  },
+  {
+   "old": "post_ride_details",
+   "kind": "table",
+   "status": "same",
+   "launch": "wedge",
+   "confidence": "high",
+   "missing": null,
+   "note": "Read for the route, time and seats of a ride and for the occurrences of a series; the owner edits it through the adapter.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "table",
+     "name": "post_ride_details",
+     "columns": [
+      "arrives_at",
+      "cargo_food",
+      "cargo_items",
+      "cost_share_ils",
+      "created_at",
+      "departs_at",
+      "dest_city_id",
+      "dest_junction_id",
+      "dest_point",
+      "dest_street_id",
+      "luggage",
+      "meeting_points",
+      "notes",
+      "origin_city_id",
+      "origin_junction_id",
+      "origin_point",
+      "origin_street_id",
+      "post_id",
+      "reward_model",
+      "seats",
+      "series_id",
+      "series_on",
+      "updated_at"
+     ],
+     "clientGrants": {
+      "select": true,
+      "update": [
+       "arrives_at",
+       "cargo_food",
+       "cargo_items",
+       "cost_share_ils",
+       "departs_at",
+       "dest_city_id",
+       "dest_junction_id",
+       "dest_street_id",
+       "luggage",
+       "meeting_points",
+       "notes",
+       "origin_city_id",
+       "origin_junction_id",
+       "origin_street_id",
+       "reward_model",
+       "seats"
+      ]
+     }
+    }
+   ],
+   "areas": [
+    "marketplace",
+    "rides"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
+     "line": 38,
+     "symbol": "loadRideDetails",
+     "area": "marketplace",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
+     "line": 70,
+     "symbol": "seriesMarker",
+     "area": "marketplace",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideSeriesRepository.ts",
+     "line": 93,
+     "symbol": "SupabaseRideSeriesRepository.unwrapCall",
+     "area": "rides",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideSeriesRepository.ts",
+     "line": 124,
+     "symbol": "SupabaseRideSeriesRepository.soonestOccurrence",
+     "area": "rides",
+     "ops": [
+      "select"
      ]
     }
    ]
@@ -16884,9 +14327,11 @@
    ],
    "areas": [
     "admin",
+    "marketplace",
     "mobile",
     "posts",
-    "reports"
+    "reports",
+    "volunteering"
    ],
    "callSites": [
     {
@@ -16903,6 +14348,80 @@
      "line": 147,
      "symbol": "SupabaseAdminContentRepository.searchPosts",
      "area": "admin",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/marketplace/givingHandoffs.ts",
+     "line": 25,
+     "symbol": "postWorldSlug",
+     "area": "marketplace",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/marketplace/listingOwnerActions.ts",
+     "line": 46,
+     "symbol": "loadShape",
+     "area": "marketplace",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/marketplace/listingOwnerActions.ts",
+     "line": 71,
+     "symbol": "updateMyListing",
+     "area": "marketplace",
+     "ops": [
+      "select",
+      "update"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/marketplace/listingWrites.ts",
+     "line": 89,
+     "symbol": "createPlain",
+     "area": "marketplace",
+     "ops": [
+      "select",
+      "insert"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/marketplace/listingWrites.ts",
+     "line": 100,
+     "symbol": "postId",
+     "area": "marketplace",
+     "ops": [
+      "delete"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
+     "line": 80,
+     "symbol": "loadEventDetails",
+     "area": "marketplace",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
+     "line": 115,
+     "symbol": "fetchListingDetail",
+     "area": "marketplace",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/marketplace/SupabaseMarketplaceRepository.ts",
+     "line": 65,
+     "symbol": "SupabaseMarketplaceRepository.listMyListingsPage",
+     "area": "marketplace",
      "ops": [
       "select"
      ]
@@ -16986,6 +14505,24 @@
      "line": 33,
      "symbol": "postPreviews",
      "area": "reports",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
+     "line": 135,
+     "symbol": "SupabaseVolunteerRepository.listMySignups",
+     "area": "volunteering",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
+     "line": 169,
+     "symbol": "SupabaseVolunteerRepository.unwrapCall",
+     "area": "volunteering",
      "ops": [
       "select"
      ]
@@ -17080,427 +14617,6 @@
    ]
   },
   {
-   "old": "ride_emergency_events",
-   "kind": "table",
-   "status": "changed",
-   "launch": "wedge",
-   "confidence": "high",
-   "missing": null,
-   "note": "A participant reads id, post_id, reporter_id, created_at only; note and location are for the safety team.",
-   "oldObject": {
-    "columns": [
-     "event_id",
-     "lat",
-     "lng",
-     "note",
-     "resolved_at",
-     "resolved_by",
-     "ride_id",
-     "triggered_at",
-     "triggered_by"
-    ],
-    "isView": false
-   },
-   "targets": [
-    {
-     "type": "table",
-     "name": "post_emergencies",
-     "columns": [
-      "created_at",
-      "id",
-      "location",
-      "note",
-      "post_id",
-      "reporter_id"
-     ],
-     "clientGrants": {
-      "select": [
-       "created_at",
-       "id",
-       "post_id",
-       "reporter_id"
-      ]
-     }
-    }
-   ],
-   "areas": [
-    "rides"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideEmergencyRepository.ts",
-     "line": 56,
-     "symbol": "SupabaseRideEmergencyRepository.listForRide",
-     "area": "rides",
-     "ops": [
-      "select"
-     ]
-    }
-   ]
-  },
-  {
-   "old": "ride_listings",
-   "kind": "table",
-   "status": "changed",
-   "launch": "wedge",
-   "confidence": "high",
-   "missing": null,
-   "note": "The view is gone: a ride is a post (`post_type = 'ride'`) with a `post_ride_details` row. Create with `create_post_with_details`; edit both tables directly; close with the post RPCs.",
-   "oldObject": {
-    "columns": [
-     "arrive_reason",
-     "arrived_at",
-     "cargo_allowed_types",
-     "cargo_enabled",
-     "cargo_max_volume_l",
-     "cargo_max_weight_kg",
-     "created_at",
-     "departs_at",
-     "description",
-     "dest_city_id",
-     "dest_street",
-     "dest_street_number",
-     "food_chilled",
-     "food_handover_to_org",
-     "food_max_kg",
-     "food_shipping_enabled",
-     "linked_post_id",
-     "mode",
-     "origin_city_id",
-     "origin_street",
-     "origin_street_number",
-     "owner_id",
-     "payment_amount_ils",
-     "payment_model",
-     "req_gender",
-     "req_pets_allowed",
-     "req_smoking_allowed",
-     "req_verified_only",
-     "ride_id",
-     "seats_available",
-     "started_at",
-     "status",
-     "template_id",
-     "title",
-     "updated_at",
-     "visibility"
-    ],
-    "isView": true
-   },
-   "targets": [
-    {
-     "type": "table",
-     "name": "posts",
-     "columns": [
-      "beneficiary_org_id",
-      "city_id",
-      "created_at",
-      "description",
-      "details",
-      "direction",
-      "expires_at",
-      "geo_approx",
-      "id",
-      "item_subcategory_id",
-      "kind_id",
-      "location_display_level",
-      "owner_id",
-      "post_type",
-      "published_at",
-      "search_vector",
-      "source",
-      "source_language",
-      "status",
-      "status_before_removal",
-      "time_window",
-      "title",
-      "updated_at",
-      "urgency_level",
-      "visibility",
-      "world_slug"
-     ],
-     "clientGrants": {
-      "select": true,
-      "delete": true,
-      "insert": [
-       "beneficiary_org_id"
-      ],
-      "update": [
-       "city_id",
-       "description",
-       "details",
-       "item_subcategory_id",
-       "location_display_level",
-       "time_window",
-       "title",
-       "urgency_level",
-       "visibility"
-      ]
-     }
-    },
-    {
-     "type": "table",
-     "name": "post_ride_details",
-     "columns": [
-      "arrives_at",
-      "cargo_food",
-      "cargo_items",
-      "cost_share_ils",
-      "created_at",
-      "departs_at",
-      "dest_city_id",
-      "dest_junction_id",
-      "dest_point",
-      "dest_street_id",
-      "luggage",
-      "meeting_points",
-      "notes",
-      "origin_city_id",
-      "origin_junction_id",
-      "origin_point",
-      "origin_street_id",
-      "post_id",
-      "reward_model",
-      "seats",
-      "series_id",
-      "series_on",
-      "updated_at"
-     ],
-     "clientGrants": {
-      "select": true,
-      "update": [
-       "arrives_at",
-       "cargo_food",
-       "cargo_items",
-       "cost_share_ils",
-       "departs_at",
-       "dest_city_id",
-       "dest_junction_id",
-       "dest_street_id",
-       "luggage",
-       "meeting_points",
-       "notes",
-       "origin_city_id",
-       "origin_junction_id",
-       "origin_street_id",
-       "reward_model",
-       "seats"
-      ]
-     }
-    },
-    {
-     "type": "rpc",
-     "name": "create_post_with_details",
-     "source": "70_worlds/160_world_post_create.sql:91",
-     "signature": [
-      "create_post_with_details(p_details: Json, p_post: Json) → string"
-     ],
-     "errors": [
-      {
-       "code": "account_not_active",
-       "knownToApp": true
-      },
-      {
-       "code": "post_details_not_supported",
-       "knownToApp": false
-      },
-      {
-       "code": "unauthenticated",
-       "knownToApp": true
-      }
-     ]
-    },
-    {
-     "type": "rpc",
-     "name": "rides_feed",
-     "source": "70_worlds/060_rides_feed.sql:105",
-     "signature": [
-      "rides_feed(p_cursor?: Json, p_filters?: Json, p_limit?: number) → { arrives_at: string departs_at: string dest_name: string direction: string meeting_points: Json next_cursor: Json origin_name: string owner_id: string post_id: string reward_model: string seats: number seats_left: nu..."
-     ],
-     "errors": [
-      {
-       "code": "ride_place_invalid",
-       "knownToApp": true
-      }
-     ]
-    }
-   ],
-   "areas": [
-    "rides"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideListingRepository.ts",
-     "line": 39,
-     "symbol": "SupabaseRideListingRepository.create",
-     "area": "rides",
-     "ops": [
-      "select",
-      "insert"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideListingRepository.ts",
-     "line": 103,
-     "symbol": "SupabaseRideListingRepository.getById",
-     "area": "rides",
-     "ops": [
-      "select"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideListingRepository.ts",
-     "line": 146,
-     "symbol": "SupabaseRideListingRepository.close",
-     "area": "rides",
-     "ops": [
-      "update"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideListingRepository.ts",
-     "line": 195,
-     "symbol": "SupabaseRideListingRepository.query",
-     "area": "rides",
-     "ops": [
-      "select"
-     ]
-    }
-   ]
-  },
-  {
-   "old": "ride_participants",
-   "kind": "table",
-   "status": "changed",
-   "launch": "wedge",
-   "confidence": "high",
-   "missing": null,
-   "note": "Dropped: bookings are `post_handoffs` rows (machine `ride_booking`).",
-   "oldObject": {
-    "columns": [
-     "decided_at",
-     "decided_by",
-     "joined_active_at",
-     "note",
-     "participant_id",
-     "requested_at",
-     "ride_id",
-     "status",
-     "user_id"
-    ],
-    "isView": false
-   },
-   "targets": [
-    {
-     "type": "table",
-     "name": "post_handoffs",
-     "columns": [
-      "cancel_reason",
-      "cancelled_at",
-      "confirm_by",
-      "confirmed_at",
-      "created_at",
-      "handed_over_at",
-      "id",
-      "machine_id",
-      "no_show_at",
-      "owner_id",
-      "pickup_mode",
-      "pickup_window_end",
-      "pickup_window_start",
-      "post_id",
-      "recipient_id",
-      "requested_meeting_point",
-      "seats",
-      "slot_ends_at",
-      "slot_starts_at",
-      "status",
-      "updated_at"
-     ],
-     "clientGrants": {
-      "select": true
-     }
-    }
-   ],
-   "areas": [
-    "rides"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideParticipantRepository.ts",
-     "line": 81,
-     "symbol": "SupabaseRideParticipantRepository.listForRide",
-     "area": "rides",
-     "ops": [
-      "select"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideParticipantRepository.ts",
-     "line": 95,
-     "symbol": "SupabaseRideParticipantRepository.listForUser",
-     "area": "rides",
-     "ops": [
-      "select"
-     ]
-    }
-   ]
-  },
-  {
-   "old": "ride_ratings",
-   "kind": "table",
-   "status": "changed",
-   "launch": "wedge",
-   "confidence": "high",
-   "missing": null,
-   "note": "Ratings are `post_ratings` per handoff: the rater reads back only the rows they wrote; nobody reads a rating about themselves (M07, built).",
-   "oldObject": {
-    "columns": [
-     "comment",
-     "created_at",
-     "is_penalty",
-     "ratee_id",
-     "rater_id",
-     "rating_id",
-     "ride_id",
-     "stars"
-    ],
-    "isView": false
-   },
-   "targets": [
-    {
-     "type": "table",
-     "name": "post_ratings",
-     "columns": [
-      "comment",
-      "created_at",
-      "handoff_id",
-      "id",
-      "ratee_id",
-      "rater_id",
-      "stars"
-     ],
-     "clientGrants": {
-      "select": true
-     }
-    }
-   ],
-   "areas": [
-    "rides"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideRatingRepository.ts",
-     "line": 58,
-     "symbol": "SupabaseRideRatingRepository.listForRide",
-     "area": "rides",
-     "ops": [
-      "select"
-     ]
-    }
-   ]
-  },
-  {
    "old": "ride_saved_routes",
    "kind": "table",
    "status": "changed",
@@ -17585,7 +14701,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideSavedRoutesRepository.ts",
-     "line": 31,
+     "line": 32,
      "symbol": "SupabaseRideSavedRoutesRepository.listMine",
      "area": "rides",
      "ops": [
@@ -17594,8 +14710,8 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideSavedRoutesRepository.ts",
-     "line": 44,
-     "symbol": "SupabaseRideSavedRoutesRepository.save",
+     "line": 47,
+     "symbol": "SupabaseRideSavedRoutesRepository.unwrapCall",
      "area": "rides",
      "ops": [
       "insert"
@@ -17603,7 +14719,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideSavedRoutesRepository.ts",
-     "line": 64,
+     "line": 66,
      "symbol": "SupabaseRideSavedRoutesRepository.remove",
      "area": "rides",
      "ops": [
@@ -17669,8 +14785,8 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideSeriesRepository.ts",
-     "line": 32,
-     "symbol": "SupabaseRideSeriesRepository.listMine",
+     "line": 47,
+     "symbol": "SupabaseRideSeriesRepository.unwrapCall",
      "area": "rides",
      "ops": [
       "select"
@@ -17679,159 +14795,38 @@
    ]
   },
   {
-   "old": "ride_stops",
+   "old": "road_junctions",
    "kind": "table",
-   "status": "changed",
+   "status": "same",
    "launch": "wedge",
    "confidence": "high",
    "missing": null,
-   "note": "Dropped: stops are the `meeting_points` JSON of the ride details.",
+   "note": "The junctions of the ride place catalog (name and position).",
    "oldObject": {
     "columns": [
-     "city_id",
-     "created_at",
-     "notes",
-     "ride_id",
-     "sort_order",
-     "stop_id",
-     "street"
+     "junction_id",
+     "kind",
+     "lat",
+     "lng",
+     "name_ar",
+     "name_en",
+     "name_he",
+     "roads"
     ],
     "isView": false
    },
    "targets": [
     {
      "type": "table",
-     "name": "post_ride_details",
+     "name": "road_junctions",
      "columns": [
-      "arrives_at",
-      "cargo_food",
-      "cargo_items",
-      "cost_share_ils",
-      "created_at",
-      "departs_at",
-      "dest_city_id",
-      "dest_junction_id",
-      "dest_point",
-      "dest_street_id",
-      "luggage",
-      "meeting_points",
-      "notes",
-      "origin_city_id",
-      "origin_junction_id",
-      "origin_point",
-      "origin_street_id",
-      "post_id",
-      "reward_model",
-      "seats",
-      "series_id",
-      "series_on",
-      "updated_at"
-     ],
-     "clientGrants": {
-      "select": true,
-      "update": [
-       "arrives_at",
-       "cargo_food",
-       "cargo_items",
-       "cost_share_ils",
-       "departs_at",
-       "dest_city_id",
-       "dest_junction_id",
-       "dest_street_id",
-       "luggage",
-       "meeting_points",
-       "notes",
-       "origin_city_id",
-       "origin_junction_id",
-       "origin_street_id",
-       "reward_model",
-       "seats"
-      ]
-     }
-    }
-   ],
-   "areas": [
-    "rides"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideStopsRepository.ts",
-     "line": 35,
-     "symbol": "SupabaseRideStopsRepository.listForRide",
-     "area": "rides",
-     "ops": [
-      "select"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideStopsRepository.ts",
-     "line": 46,
-     "symbol": "SupabaseRideStopsRepository.setStops",
-     "area": "rides",
-     "ops": [
-      "delete"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideStopsRepository.ts",
-     "line": 61,
-     "symbol": "SupabaseRideStopsRepository.setStops",
-     "area": "rides",
-     "ops": [
-      "select",
-      "insert"
-     ]
-    }
-   ]
-  },
-  {
-   "old": "ride_templates",
-   "kind": "table",
-   "status": "changed",
-   "launch": "wedge",
-   "confidence": "high",
-   "missing": null,
-   "note": "Dropped: recurring rides are `ride_series` (create / update / status RPCs; read-only table).",
-   "oldObject": {
-    "columns": [
-     "created_at",
-     "depart_time",
-     "description",
-     "dest_city_id",
-     "dest_street",
-     "dest_street_number",
-     "lookahead_days",
-     "mode",
-     "origin_city_id",
-     "origin_street",
-     "origin_street_number",
-     "owner_id",
-     "seats_available",
-     "status",
-     "template_id",
-     "updated_at",
-     "visibility",
-     "weekday_mask"
-    ],
-    "isView": false
-   },
-   "targets": [
-    {
-     "type": "table",
-     "name": "ride_series",
-     "columns": [
-      "created_at",
-      "depart_time",
-      "duration_minutes",
-      "ends_on",
-      "id",
-      "owner_id",
-      "post_template",
-      "ride_template",
-      "starts_on",
-      "status",
-      "updated_at",
-      "weekdays"
+      "junction_id",
+      "kind",
+      "location",
+      "name_ar",
+      "name_en",
+      "name_he",
+      "roads"
      ],
      "clientGrants": {
       "select": true
@@ -17843,50 +14838,12 @@
    ],
    "callSites": [
     {
-     "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideTemplateRepository.ts",
-     "line": 22,
-     "symbol": "SupabaseRideTemplateRepository.create",
-     "area": "rides",
-     "ops": [
-      "select",
-      "insert"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideTemplateRepository.ts",
-     "line": 47,
-     "symbol": "SupabaseRideTemplateRepository.getById",
+     "file": "app/packages/infrastructure-supabase/src/rides/ridePlaces.ts",
+     "line": 94,
+     "symbol": "resolvePlaces",
      "area": "rides",
      "ops": [
       "select"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideTemplateRepository.ts",
-     "line": 58,
-     "symbol": "SupabaseRideTemplateRepository.listForOwner",
-     "area": "rides",
-     "ops": [
-      "select"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideTemplateRepository.ts",
-     "line": 68,
-     "symbol": "SupabaseRideTemplateRepository.setStatus",
-     "area": "rides",
-     "ops": [
-      "select",
-      "update"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideTemplateRepository.ts",
-     "line": 79,
-     "symbol": "SupabaseRideTemplateRepository.delete",
-     "area": "rides",
-     "ops": [
-      "delete"
      ]
     }
    ]
@@ -18001,9 +14958,19 @@
     }
    ],
    "areas": [
+    "rides",
     "streets"
    ],
    "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/rides/ridePlaces.ts",
+     "line": 101,
+     "symbol": "resolvePlaces",
+     "area": "rides",
+     "ops": [
+      "select"
+     ]
+    },
     {
      "file": "app/packages/infrastructure-supabase/src/streets/SupabaseStreetRepository.ts",
      "line": 41,
@@ -18057,6 +15024,49 @@
      "line": 54,
      "symbol": "userPreviews",
      "area": "reports",
+     "ops": [
+      "select"
+     ]
+    }
+   ]
+  },
+  {
+   "old": "user_consents",
+   "kind": "table",
+   "status": "same",
+   "launch": "wedge",
+   "confidence": "high",
+   "missing": null,
+   "note": "The acceptance record of the driver declaration.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "table",
+     "name": "user_consents",
+     "columns": [
+      "accepted_at",
+      "consent_kind",
+      "id",
+      "ip_address",
+      "locale",
+      "user_agent",
+      "user_id",
+      "version"
+     ],
+     "clientGrants": {
+      "select": true
+     }
+    }
+   ],
+   "areas": [
+    "rides"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/rides/SupabaseDriverDeclarationRepository.ts",
+     "line": 47,
+     "symbol": "SupabaseDriverDeclarationRepository.getMine",
+     "area": "rides",
      "ops": [
       "select"
      ]
@@ -18242,76 +15252,6 @@
      "line": 230,
      "symbol": "SupabaseUserRepository.updateNotificationPreferences",
      "area": "users",
-     "ops": [
-      "select"
-     ]
-    }
-   ]
-  },
-  {
-   "old": "user_ride_rating_summary",
-   "kind": "table",
-   "status": "changed",
-   "launch": "wedge",
-   "confidence": "high",
-   "missing": null,
-   "note": "Columns `ratings_count` and `ratings_avg` (average only from three ratings), readable with the profile. Spec conflict recorded in the handback: D24 says members never see ratings (M07, built).",
-   "oldObject": {
-    "columns": [
-     "avg_stars",
-     "last_rated_at",
-     "ratings_count",
-     "user_id"
-    ],
-    "isView": true
-   },
-   "targets": [
-    {
-     "type": "table",
-     "name": "user_stats",
-     "columns": [
-      "followers_count",
-      "following_count",
-      "items_given_count",
-      "items_received_count",
-      "karma_points",
-      "open_posts_followers_only",
-      "open_posts_only_me",
-      "open_posts_public",
-      "posts_created_total",
-      "ratings_avg",
-      "ratings_count",
-      "ratings_stars_total",
-      "updated_at",
-      "user_id",
-      "volunteer_hours_total"
-     ],
-     "clientGrants": {
-      "select": [
-       "followers_count",
-       "following_count",
-       "items_given_count",
-       "items_received_count",
-       "karma_points",
-       "open_posts_followers_only",
-       "open_posts_public",
-       "posts_created_total",
-       "updated_at",
-       "user_id",
-       "volunteer_hours_total"
-      ]
-     }
-    }
-   ],
-   "areas": [
-    "rides"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideRatingRepository.ts",
-     "line": 68,
-     "symbol": "SupabaseRideRatingRepository.summaryFor",
-     "area": "rides",
      "ops": [
       "select"
      ]
@@ -18572,10 +15512,14 @@
    "areas": [
     "admin",
     "chat",
+    "donations",
+    "marketplace",
     "posts",
     "reports",
+    "rides",
     "search",
-    "users"
+    "users",
+    "volunteering"
    ],
    "callSites": [
     {
@@ -18615,6 +15559,24 @@
      ]
     },
     {
+     "file": "app/packages/infrastructure-supabase/src/donations/SupabaseDonationLinksRepository.ts",
+     "line": 123,
+     "symbol": "SupabaseDonationLinksRepository.unwrapCall",
+     "area": "donations",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/marketplace/eventRegistrations.ts",
+     "line": 120,
+     "symbol": "unwrapCall",
+     "area": "marketplace",
+     "ops": [
+      "select"
+     ]
+    },
+    {
      "file": "app/packages/infrastructure-supabase/src/posts/closureMethods.ts",
      "line": 134,
      "symbol": "getClosureCandidates",
@@ -18646,6 +15608,15 @@
      "line": 106,
      "symbol": "loadDisplayNames",
      "area": "reports",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideBookingRepository.ts",
+     "line": 45,
+     "symbol": "SupabaseRideBookingRepository.listForRide",
+     "area": "rides",
      "ops": [
       "select"
      ]
@@ -18730,6 +15701,15 @@
      "ops": [
       "select"
      ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
+     "line": 196,
+     "symbol": "SupabaseVolunteerRepository.listShiftVolunteers",
+     "area": "volunteering",
+     "ops": [
+      "select"
+     ]
     }
    ]
   },
@@ -18762,6 +15742,75 @@
      "line": 19,
      "symbol": "serve",
      "area": "fn:whatsapp-sender",
+     "ops": [
+      "select"
+     ]
+    }
+   ]
+  },
+  {
+   "old": "worlds",
+   "kind": "table",
+   "status": "same",
+   "launch": "wedge",
+   "confidence": "high",
+   "missing": null,
+   "note": "The world labels shown on a listing detail.",
+   "oldObject": {
+    "columns": [
+     "created_at",
+     "default_anonymity_level",
+     "default_radius_km",
+     "default_ttl_hours",
+     "feed_mirror",
+     "geo_decay",
+     "geo_mode",
+     "geo_weight",
+     "is_active",
+     "label_en",
+     "label_he",
+     "prd_index",
+     "requires_verification",
+     "sensitivity",
+     "slug",
+     "sort_order"
+    ],
+    "isView": false
+   },
+   "targets": [
+    {
+     "type": "table",
+     "name": "worlds",
+     "columns": [
+      "created_at",
+      "default_anonymity_level",
+      "default_radius_km",
+      "default_ttl_hours",
+      "geo_mode",
+      "geo_weight",
+      "is_active",
+      "label_en",
+      "label_he",
+      "requires_verification",
+      "sensitivity",
+      "shows_in_main_feed",
+      "slug",
+      "sort_order"
+     ],
+     "clientGrants": {
+      "select": true
+     }
+    }
+   ],
+   "areas": [
+    "marketplace"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
+     "line": 114,
+     "symbol": "fetchListingDetail",
+     "area": "marketplace",
      "ops": [
       "select"
      ]
