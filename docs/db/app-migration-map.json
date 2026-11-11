@@ -3,43 +3,43 @@
  "totals": {
   "rpc": {
    "objects": 288,
-   "same": 34,
-   "renamed": 43,
-   "changed": 122,
+   "same": 36,
+   "renamed": 44,
+   "changed": 126,
    "removed": 14,
-   "missing": 75
+   "missing": 68
   },
   "table": {
    "objects": 52,
-   "same": 9,
+   "same": 10,
    "renamed": 2,
-   "changed": 30,
+   "changed": 33,
    "removed": 2,
-   "missing": 9
+   "missing": 5
   },
   "bucket": {
    "objects": 5,
-   "same": 1,
+   "same": 3,
    "renamed": 0,
    "changed": 2,
    "removed": 0,
-   "missing": 2
+   "missing": 0
   },
   "channel": {
    "objects": 13,
    "same": 3,
    "renamed": 0,
-   "changed": 3,
+   "changed": 4,
    "removed": 1,
-   "missing": 6
+   "missing": 5
   },
   "postgres_changes": {
    "objects": 5,
    "same": 0,
    "renamed": 0,
-   "changed": 1,
+   "changed": 2,
    "removed": 1,
-   "missing": 3
+   "missing": 2
   },
   "edge_function": {
    "objects": 4,
@@ -53,27 +53,27 @@
  "launchTotals": {
   "core": {
    "objects": 118,
-   "same": 27,
-   "renamed": 17,
-   "changed": 58,
+   "same": 32,
+   "renamed": 18,
+   "changed": 62,
    "removed": 4,
-   "missing": 12
+   "missing": 2
   },
   "later": {
    "objects": 143,
    "same": 15,
    "renamed": 4,
-   "changed": 42,
+   "changed": 43,
    "removed": 8,
-   "missing": 74
+   "missing": 73
   },
   "wedge": {
    "objects": 106,
    "same": 8,
    "renamed": 24,
-   "changed": 59,
+   "changed": 63,
    "removed": 6,
-   "missing": 9
+   "missing": 5
   }
  },
  "modules": {
@@ -269,9 +269,9 @@
   "housing": {
    "callSites": 12,
    "oneToOne": 3,
-   "changed": 8,
+   "changed": 9,
    "removed": 0,
-   "missing": 1
+   "missing": 0
   },
   "knowledge": {
    "callSites": 13,
@@ -290,9 +290,9 @@
   "marketplace": {
    "callSites": 42,
    "oneToOne": 15,
-   "changed": 23,
+   "changed": 25,
    "removed": 2,
-   "missing": 2
+   "missing": 0
   },
   "matching": {
    "callSites": 4,
@@ -303,17 +303,17 @@
   },
   "mobile": {
    "callSites": 28,
-   "oneToOne": 7,
+   "oneToOne": 14,
    "changed": 7,
    "removed": 4,
-   "missing": 10
+   "missing": 3
   },
   "moderation": {
    "callSites": 8,
-   "oneToOne": 4,
+   "oneToOne": 5,
    "changed": 3,
    "removed": 0,
-   "missing": 1
+   "missing": 0
   },
   "notifications": {
    "callSites": 7,
@@ -331,10 +331,10 @@
   },
   "posts": {
    "callSites": 51,
-   "oneToOne": 10,
-   "changed": 36,
+   "oneToOne": 11,
+   "changed": 39,
    "removed": 1,
-   "missing": 4
+   "missing": 0
   },
   "realtime": {
    "callSites": 2,
@@ -360,9 +360,9 @@
   "rides": {
    "callSites": 59,
    "oneToOne": 10,
-   "changed": 39,
+   "changed": 41,
    "removed": 2,
-   "missing": 8
+   "missing": 6
   },
   "search": {
    "callSites": 11,
@@ -408,10 +408,10 @@
   },
   "users": {
    "callSites": 42,
-   "oneToOne": 3,
-   "changed": 35,
+   "oneToOne": 4,
+   "changed": 37,
    "removed": 1,
-   "missing": 3
+   "missing": 0
   },
   "volunteering": {
    "callSites": 11,
@@ -431,116 +431,6 @@
   "Workers that need `kc_private` connect over Postgres (as `dispatch-notification` does); only `public` is reachable through the HTTP API."
  ],
  "missing": [
-  {
-   "id": "M02",
-   "title": "Per-participant audience and identity mask on closed posts",
-   "usedBy": "Closed-post privacy controls, profile closed tab, post detail (postActorIdentityMethods, applyPostActorIdentityProjection)",
-   "spec": "FR-POST-021, FR-PROFILE-001 AC5, FR-PROFILE-002",
-   "launch": "yes (spec ✅ feature)",
-   "action": "build",
-   "recommendation": "Table + RPC in `25_handoffs` next to `post_closures`: one row per (post, participant) with `surface_visibility` and `hide_from_counterparty`, applied inside `post_card` / `profile_posts_page`.",
-   "tier": "core",
-   "blocker": true
-  },
-  {
-   "id": "M06",
-   "title": "Counterpart contact phone in a chat",
-   "usedBy": "Chat header contact action (getChatCounterpartyContact)",
-   "spec": "FR-CHAT-014 AC7",
-   "launch": "yes",
-   "action": "build",
-   "recommendation": "Definer function in `40_messaging`: `chat_counterpart_contact(p_chat_id)` returning the phone only to a member of that chat.",
-   "tier": "core",
-   "blocker": true
-  },
-  {
-   "id": "M09",
-   "title": "Remote feature flags (`app_flags`)",
-   "usedBy": "featureFlagsComposition (world launch gates, FR-HOUSING-001)",
-   "spec": "FR-HOUSING-001",
-   "launch": "yes",
-   "action": "build",
-   "recommendation": "Provided by `95_platform` (feature flags), written in parallel and not in this tree: map this row when that module lands.",
-   "tier": "core",
-   "blocker": true
-  },
-  {
-   "id": "M18",
-   "title": "Staff deletion of a chat message",
-   "usedBy": "Moderation case actions (SupabaseModerationAdminRepository.deleteMessage)",
-   "spec": "docs/spec/requirements/08_moderation.md (reported chat content)",
-   "launch": "yes",
-   "action": "build",
-   "recommendation": "`admin_delete_message` in `60_moderation/080_content_moderation.sql`, audited like `admin_delete_comment`.",
-   "tier": "core",
-   "blocker": true
-  },
-  {
-   "id": "M23",
-   "title": "Storage buckets `avatars` and `chat-media`",
-   "usedBy": "Avatar upload, chat image upload and signed URLs (mobile services)",
-   "spec": "FR-PROFILE-007, FR-CHAT media",
-   "launch": "yes",
-   "action": "build",
-   "recommendation": "The baseline declares `post-images` only (`30_social/900_storage.sql`). Storage is part of `95_platform`, written in parallel; if it does not declare these two buckets with own-folder policies, add them there.",
-   "tier": "core",
-   "blocker": true
-  },
-  {
-   "id": "M24",
-   "title": "Realtime topics beyond chat and notifications",
-   "usedBy": "New-posts banner (`feed:public`), online presence (`presence:online`), rides feed and booking updates, account gate on the member's own row",
-   "spec": "not specified per topic; design §9 requires Broadcast instead of postgres_changes",
-   "launch": "partly",
-   "tier": "core",
-   "action": "build",
-   "recommendation": "Launch blocker only for the account gate. Account status change: broadcast on `user:<id>:account` from `10_identity` (needed so a suspension takes effect at once). Booking updates: reuse the notification badge event. Feed banner, presence, rides feed: drop to refresh-on-focus at launch.",
-   "blocker": true
-  },
-  {
-   "id": "M07",
-   "title": "Ratings a member may read: own ratings and a public rating summary",
-   "usedBy": "Ride ratings list and driver rating badge (SupabaseRideRatingRepository), `rated_by_me` flags of booking lists, guest reputation on stay requests",
-   "spec": "FR-RIDE-037, FR-RIDE-039; FR-HOUSING booking lists",
-   "launch": "yes",
-   "action": "build",
-   "recommendation": "In `25_handoffs/110_post_ratings.sql`: a select policy for the rater on their own rows, and rating count / average columns on `user_stats` maintained by the rating trigger.",
-   "tier": "wedge",
-   "blocker": true
-  },
-  {
-   "id": "M10",
-   "title": "Feed on a map (clusters and pins)",
-   "usedBy": "Map mode of the feed and of housing search (SupabaseMarketplaceRepository.mapClusters)",
-   "spec": "FR-FEED-021, FR-HOUSING-014 AC5",
-   "launch": "yes, unless map mode is flagged off",
-   "action": "build",
-   "recommendation": "If it cannot land before launch, hide the map toggle (the list mode is unaffected). One function in `30_social` over `posts.geo_approx` (GiST): viewport → clusters at low zoom, post ids at high zoom, hydrated with `post_cards`.",
-   "tier": "wedge",
-   "blocker": true
-  },
-  {
-   "id": "M11",
-   "title": "Current version of a world consent",
-   "usedBy": "Housing code of conduct and driver declaration screens (SupabaseHousingRepository.currentConductVersion, SupabaseDriverDeclarationRepository)",
-   "spec": "FR-RIDE-041, S59",
-   "launch": "yes (rides: driver declaration)",
-   "tier": "wedge",
-   "action": "build",
-   "recommendation": "`accept_world_consent` rejects any version but the current one, and the current one is only in `kc_private.world_consent_version`. Add the two versions to `bootstrap_session` (or a public reader) in `70_worlds/010_world_shared.sql`.",
-   "blocker": true
-  },
-  {
-   "id": "M13",
-   "title": "Count of closed posts on a profile",
-   "usedBy": "Profile tabs badge (countProfileClosedPosts)",
-   "spec": "FR-PROFILE-001",
-   "launch": "no",
-   "action": "drop",
-   "recommendation": "Drop the number (the tab pages by keyset), or add a column to `user_stats` in `20_posts/060_post_counters.sql`.",
-   "tier": "core",
-   "blocker": false
-  },
   {
    "id": "M01",
    "title": "Blocked users list",
@@ -694,6 +584,17 @@
    "recommendation": "Do not deploy the three functions; hide the link screen and the admin console behind a flag until the `integrations` module lands.",
    "tier": "later",
    "blocker": false
+  },
+  {
+   "id": "M24",
+   "title": "Realtime topics beyond chat, notifications and the account gate",
+   "usedBy": "New-posts banner (`feed:public`), online presence (`presence:online`), rides feed and booking updates",
+   "spec": "not specified per topic; design §9 requires Broadcast instead of postgres_changes",
+   "launch": "no (the account gate, the only blocker, is built)",
+   "tier": "later",
+   "action": "defer",
+   "recommendation": "The account gate is built: topic `user:<id>:account`, event `account_changed` (`40_messaging/090_account_realtime.sql`). Booking updates: reuse the notification badge event. Feed banner, presence, rides feed: drop to refresh-on-focus at launch.",
+   "blocker": false
   }
  ],
  "packages": [
@@ -722,7 +623,7 @@
     "unit test of `isBackendObjectMissing` and of the error mapper"
    ],
    "degrade": "This package defines the rule for all others: an adapter call that hits a missing function or table throws `BackendUnavailableError`; a list screen shows its empty state, an action shows the generic \"not available yet\" message, a world whose `world_<slug>_enabled` flag is off never renders its entry points. No screen reads `error.message` of an unknown error.",
-   "risks": "Everything depends on it and it must not change behaviour. Feature flags come from `95_platform` (M09): until it lands the flags are the build-time defaults.",
+   "risks": "Everything depends on it and it must not change behaviour. Feature flags come from `app_flags` / `bootstrap_session().flags` (M09 verified); before sign-in the build-time defaults apply.",
    "rows": [
     "table:app_flags",
     "channel:ONLINE_PRESENCE_TOPIC = 'presence:online'",
@@ -730,10 +631,10 @@
    ],
    "counts": {
     "objects": 3,
-    "oneToOne": 1,
+    "oneToOne": 2,
     "changed": 0,
     "removed": 0,
-    "missing": 2
+    "missing": 1
    }
   },
   {
@@ -761,7 +662,7 @@
     "pgTAP 010, 011, 020, 021, 050, 051"
    ],
    "degrade": "Nothing works before this package (no session): it is the first one after P0. The blocked-users row, follow suggestions, the completeness hint and the About team list are hidden (M01, M03, M04, M08).",
-   "risks": "Owns `users/mapUserRow.ts`, which chat, posts and search read: it lands before P2 and P3 start. Open blockers: M09 (flags), M23 (avatars bucket), M24 (account gate).",
+   "risks": "Owns `users/mapUserRow.ts`, which chat, posts and search read: it lands before P2 and P3 start. Account gate: topic `user:<id>:account` (M24).",
    "rows": [
     "rpc:auth_check_account_gate",
     "rpc:rpc_restore_account",
@@ -803,10 +704,10 @@
    ],
    "counts": {
     "objects": 37,
-    "oneToOne": 14,
-    "changed": 12,
+    "oneToOne": 16,
+    "changed": 14,
     "removed": 3,
-    "missing": 8
+    "missing": 4
    }
   },
   {
@@ -831,7 +732,7 @@
     "pgTAP 030, 035, 040, 041, 042, 078"
    ],
    "degrade": "Until it lands the feed and profile tabs show their empty state and the create-post button is disabled; nothing else in the app depends on a post list. The statistics screen shows the community counters and the timeline only: its per-world block and the admin funnel are hidden (M14, M15).",
-   "risks": "Largest behavioural change: cursor and card shape reach the application ports. Owns `posts/mapPostRow.ts`, read by P5. Open blocker: M02 (identity mask on closed posts).",
+   "risks": "Largest behavioural change: cursor and card shape reach the application ports. Owns `posts/mapPostRow.ts`, read by P5. The card carries `owner_identity_masked` (M02).",
    "rows": [
     "table:users",
     "table:users_public",
@@ -884,10 +785,10 @@
    ],
    "counts": {
     "objects": 48,
-    "oneToOne": 10,
-    "changed": 28,
+    "oneToOne": 11,
+    "changed": 30,
     "removed": 3,
-    "missing": 7
+    "missing": 4
    }
   },
   {
@@ -911,7 +812,7 @@
     "pgTAP 045, 050"
    ],
    "degrade": "The chat tab shows an empty inbox and \"contact\" buttons on posts are disabled; a failed subscription is ignored (the screen refreshes on focus).",
-   "risks": "Open blockers: M06 (contact phone), M23 (chat-media bucket), M24. Optimistic send must pass `p_message_id`.",
+   "risks": "Contact phone: `chat_counterpart_contact` (M06). Optimistic send must pass `p_message_id`.",
    "rows": [
     "table:users",
     "rpc:rpc_chat_mark_read",
@@ -936,10 +837,10 @@
    ],
    "counts": {
     "objects": 20,
-    "oneToOne": 8,
+    "oneToOne": 9,
     "changed": 11,
     "removed": 0,
-    "missing": 1
+    "missing": 0
    }
   },
   {
@@ -965,7 +866,7 @@
     "pgTAP 060, 061"
    ],
    "degrade": "Reporting a post or member shows \"not available yet\"; the admin portal entry is hidden for everyone until the package lands (staff use the dashboard of the database meanwhile).",
-   "risks": "Open blocker: M18 (staff deletion of a chat message).",
+   "risks": "Staff deletion of a chat message is `admin_delete_message` (M18).",
    "rows": [
     "rpc:is_admin",
     "rpc:get_my_admin_roles",
@@ -992,10 +893,10 @@
    ],
    "counts": {
     "objects": 22,
-    "oneToOne": 9,
+    "oneToOne": 10,
     "changed": 9,
     "removed": 3,
-    "missing": 1
+    "missing": 0
    }
   },
   {
@@ -1019,7 +920,7 @@
     "pgTAP 035, 070, 072 (events, karma), 073 (food), 076, 080"
    ],
    "degrade": "Each launch world is behind `world_<slug>_enabled`: until this package lands the four flags are off and the worlds render as portals (the generic post flow of P2 still lets members publish and close items).",
-   "risks": "Depends on P2 (`post_card` mapper). Open blockers: M07 (ratings), M10 (map), M11 (driver declaration version).",
+   "risks": "Depends on P2 (`post_card` mapper). Ratings (M07), map (M10) and the driver declaration version (M11) are built.",
    "rows": [
     "table:cities",
     "rpc:reserve_item_giving",
@@ -1129,9 +1030,9 @@
    "counts": {
     "objects": 104,
     "oneToOne": 28,
-    "changed": 60,
+    "changed": 64,
     "removed": 6,
-    "missing": 10
+    "missing": 6
    }
   },
   {
@@ -1198,7 +1099,7 @@
     "pgTAP 071"
    ],
    "degrade": "`world_housing_enabled` off: the world is a portal and no housing adapter is called.",
-   "risks": "M07 and M11 must be closed first (shared with rides).",
+   "risks": "M07 and M11 are built (shared with rides).",
    "rows": [
     "rpc:request_housing_booking",
     "rpc:decide_housing_booking",
@@ -1216,9 +1117,9 @@
    "counts": {
     "objects": 12,
     "oneToOne": 3,
-    "changed": 8,
+    "changed": 9,
     "removed": 0,
-    "missing": 1
+    "missing": 0
    }
   },
   {
@@ -1678,7 +1579,7 @@
    "launch": "core",
    "confidence": "medium",
    "missing": null,
-   "note": "`backfill-image-thumbs` loops over a bucket list passed at run time; after the cut-over the list is `post-images` (plus the buckets of M23).",
+   "note": "`backfill-image-thumbs` loops over a bucket list passed at run time; after the cut-over the list is `post-images` (plus `avatars` and `chat-media`).",
    "oldObject": {},
    "targets": [
     {
@@ -1707,13 +1608,18 @@
   {
    "old": "avatars",
    "kind": "bucket",
-   "status": "missing",
+   "status": "same",
    "launch": "core",
    "confidence": "high",
-   "missing": "M23",
-   "note": "The baseline declares only `post-images`.",
+   "missing": null,
+   "note": "Declared in `95_platform/090_storage.sql`: public, JPEG, 512 KB, `<user_id>/avatar.jpg` (and the thumb in the same folder) (M23, verified).",
    "oldObject": {},
-   "targets": [],
+   "targets": [
+    {
+     "type": "bucket",
+     "name": "avatars"
+    }
+   ],
    "areas": [
     "mobile"
    ],
@@ -1747,13 +1653,18 @@
   {
    "old": "chat-media",
    "kind": "bucket",
-   "status": "missing",
+   "status": "same",
    "launch": "core",
    "confidence": "high",
-   "missing": "M23",
-   "note": "The baseline declares only `post-images`.",
+   "missing": null,
+   "note": "Declared in `95_platform/090_storage.sql`: private, `<user_id>/<chat_id>/<file>`, read through signed URLs by chat members (M23, verified).",
    "oldObject": {},
-   "targets": [],
+   "targets": [
+    {
+     "type": "bucket",
+     "name": "chat-media"
+    }
+   ],
    "areas": [
     "mobile"
    ],
@@ -2085,13 +1996,18 @@
   {
    "old": "topic = `me:${userId}:${Date.now()}`",
    "kind": "channel",
-   "status": "missing",
+   "status": "changed",
    "launch": "core",
    "confidence": "high",
-   "missing": "M24",
-   "note": "No broadcast when the member's own account row changes.",
+   "missing": null,
+   "note": "Private topic `user:<id>:account`, event `account_changed` with `status`, `status_until`, `onboarding_state`; re-read `bootstrap_session` on it (M24, built for the account gate).",
    "oldObject": {},
-   "targets": [],
+   "targets": [
+    {
+     "type": "topic",
+     "name": "user:<user_id>:account"
+    }
+   ],
    "areas": [
     "users"
    ],
@@ -2449,13 +2365,18 @@
   {
    "old": "users",
    "kind": "postgres_changes",
-   "status": "missing",
+   "status": "changed",
    "launch": "core",
    "confidence": "high",
-   "missing": "M24",
-   "note": "Same gap as the `me:` topic.",
+   "missing": null,
+   "note": "Replaced by the account topic; no postgres_changes publication exists (M24, built for the account gate).",
    "oldObject": {},
-   "targets": [],
+   "targets": [
+    {
+     "type": "topic",
+     "name": "user:<user_id>:account"
+    }
+   ],
    "areas": [
     "users"
    ],
@@ -2486,7 +2407,7 @@
     {
      "type": "rpc",
      "name": "accept_world_consent",
-     "source": "70_worlds/010_world_shared.sql:71",
+     "source": "70_worlds/010_world_shared.sql:92",
      "signature": [
       "accept_world_consent(p_kind: string, p_locale?: string, p_user_agent?: string, p_version: number) → user_consents row"
      ],
@@ -2594,23 +2515,17 @@
       "open_posts_only_me",
       "open_posts_public",
       "posts_created_total",
+      "ratings_avg",
+      "ratings_count",
+      "ratings_stars_total",
       "updated_at",
       "user_id",
       "volunteer_hours_total"
      ],
      "clientGrants": {
       "select": [
-       "followers_count",
-       "following_count",
-       "items_given_count",
-       "items_received_count",
-       "karma_points",
-       "open_posts_followers_only",
-       "open_posts_public",
-       "posts_created_total",
-       "updated_at",
-       "user_id",
-       "volunteer_hours_total"
+       "ratings_avg",
+       "ratings_count"
       ]
      }
     }
@@ -2982,17 +2897,40 @@
   {
    "old": "admin_delete_message",
    "kind": "rpc",
-   "status": "missing",
+   "status": "same",
    "launch": "core",
    "confidence": "high",
-   "missing": "M18",
-   "note": "Staff can delete a comment (`admin_delete_comment`) but not a chat message.",
+   "missing": null,
+   "note": "Same name and argument (`p_message_id`); it lives in `40_messaging/070_chat_moderation.sql` and is audited by the moderation module (M18, verified).",
    "oldObject": {
     "signature": [
      "admin_delete_message(p_message_id: string) → undefined"
     ]
    },
-   "targets": [],
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "admin_delete_message",
+     "source": "40_messaging/070_chat_moderation.sql:89",
+     "signature": [
+      "admin_delete_message(p_message_id: string) → undefined"
+     ],
+     "errors": [
+      {
+       "code": "forbidden",
+       "knownToApp": true
+      },
+      {
+       "code": "message_not_found",
+       "knownToApp": false
+      },
+      {
+       "code": "unauthenticated",
+       "knownToApp": true
+      }
+     ]
+    }
+   ],
    "areas": [
     "moderation"
    ],
@@ -8406,17 +8344,32 @@
   {
    "old": "get_chat_counterparty_contact",
    "kind": "rpc",
-   "status": "missing",
+   "status": "renamed",
    "launch": "core",
    "confidence": "high",
-   "missing": "M06",
-   "note": "The other member's `contact_phone` lives in `user_private`, readable by its owner only.",
+   "missing": null,
+   "note": "Same argument (`p_chat_id`), returns the phone as text, null when the caller cannot use the chat, it is a support thread, the counterpart is inactive or has no phone (M06, built).",
    "oldObject": {
     "signature": [
      "get_chat_counterparty_contact(p_chat_id: string) → string"
     ]
    },
-   "targets": [],
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "chat_counterpart_contact",
+     "source": "40_messaging/080_chat_counterpart_contact.sql:13",
+     "signature": [
+      "chat_counterpart_contact(p_chat_id: string) → string"
+     ],
+     "errors": [
+      {
+       "code": "unauthenticated",
+       "knownToApp": true
+      }
+     ]
+    }
+   ],
    "areas": [
     "users"
    ],
@@ -8584,7 +8537,7 @@
     {
      "type": "rpc",
      "name": "post_detail",
-     "source": "30_social/070_post_cards.sql:152",
+     "source": "30_social/070_post_cards.sql:168",
      "signature": [
       "post_detail(p_post_id: string) → Json"
      ],
@@ -8890,7 +8843,7 @@
     {
      "type": "rpc",
      "name": "post_detail",
-     "source": "30_social/070_post_cards.sql:152",
+     "source": "30_social/070_post_cards.sql:168",
      "signature": [
       "post_detail(p_post_id: string) → Json"
      ],
@@ -8938,17 +8891,32 @@
   {
    "old": "housing_conduct_version",
    "kind": "rpc",
-   "status": "missing",
+   "status": "changed",
    "launch": "later",
    "confidence": "high",
-   "missing": "M11",
-   "note": "The current consent version lives in `kc_private.world_consent_version` and is not exposed.",
+   "missing": null,
+   "note": "Read `consents.housing_conduct.version` (and `accepted`) from the session payload (M11, built).",
    "oldObject": {
     "signature": [
      "housing_conduct_version() → number"
     ]
    },
-   "targets": [],
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "bootstrap_session",
+     "source": "10_identity/100_bootstrap_session.sql:10",
+     "signature": [
+      "bootstrap_session() → Json"
+     ],
+     "errors": [
+      {
+       "code": "unauthenticated",
+       "knownToApp": true
+      }
+     ]
+    }
+   ],
    "areas": [
     "housing"
    ],
@@ -9340,7 +9308,7 @@
    "launch": "later",
    "confidence": "medium",
    "missing": null,
-   "note": "The host reads the handoffs of the post with their booking details and the guests' names. Guest reputation fields (`guest_completed_stays`, `rated_by_me`) are not derivable (see M07).",
+   "note": "The host reads the handoffs of the post with their booking details and the guests' names. Guest reputation fields (`guest_completed_stays`, `rated_by_me`) are not derivable: `rated_by_me` is a select on `post_ratings`, the reputation count is `user_stats.ratings_count` (M07, built).",
    "oldObject": {
     "signature": [
      "list_housing_bookings(p_listing_id: string) → { adults: number avatar_url: string check_in_date: string check_out_date: string confirm_by: string guest_completed_stays: number guest_member_since: string guest_name: string guest_verified: boolean handoff_id: strin..."
@@ -10071,7 +10039,7 @@
    "launch": "wedge",
    "confidence": "medium",
    "missing": null,
-   "note": "The driver reads the ride's handoffs and the passengers' names directly. `rated_by_me` cannot be derived (see M07).",
+   "note": "The driver reads the ride's handoffs and the passengers' names directly. `rated_by_me` is a select on `post_ratings` by the caller as rater (M07, built).",
    "oldObject": {
     "signature": [
      "list_ride_bookings(p_listing_id: string) → { avatar_url: string cancel_reason: string confirm_by: string handoff_id: string passenger_name: string rated_by_me: boolean recipient_id: string requested_stop_label: string reserved_at: string seats: number status: ..."
@@ -10489,17 +10457,40 @@
   {
    "old": "map_listing_clusters",
    "kind": "rpc",
-   "status": "missing",
+   "status": "changed",
    "launch": "wedge",
    "confidence": "high",
-   "missing": "M10",
-   "note": "No map query in the baseline.",
+   "missing": null,
+   "note": "Bounds travel as one jsonb `{west, south, east, north}` and the zoom is an argument; filters (`world`, `direction`, `item_subcategory_ids`) in `p_filters`. Returns `lat, lng, post_count, single_post_id` (M10, built).",
    "oldObject": {
     "signature": [
      "map_listing_clusters(p_ne_lat: number, p_ne_lng: number, p_sw_lat: number, p_sw_lng: number, p_viewer?: string, p_world_slug?: string) → { center_lat: number center_lng: number cluster_key: string listing_count: number sample_listing_id: string }[]"
     ]
    },
-   "targets": [],
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "map_post_clusters",
+     "source": "30_social/100_map.sql:135",
+     "signature": [
+      "map_post_clusters(p_bounds: Json, p_filters?: Json, p_zoom: number) → { lat: number lng: number post_count: number single_post_id: string }[]"
+     ],
+     "errors": [
+      {
+       "code": "invalid_bounds",
+       "knownToApp": false
+      },
+      {
+       "code": "invalid_input",
+       "knownToApp": true
+      },
+      {
+       "code": "unauthenticated",
+       "knownToApp": true
+      }
+     ]
+    }
+   ],
    "areas": [
     "marketplace"
    ],
@@ -10515,17 +10506,40 @@
   {
    "old": "map_listing_pins",
    "kind": "rpc",
-   "status": "missing",
+   "status": "changed",
    "launch": "wedge",
    "confidence": "high",
-   "missing": "M10",
-   "note": "No map query in the baseline.",
+   "missing": null,
+   "note": "Bounds as one jsonb, filters in `p_filters`, at most 200 pins of `post_id, lat, lng, world_slug, direction`; hydrate with `post_cards` (M10, built).",
    "oldObject": {
     "signature": [
      "map_listing_pins(p_limit?: number, p_ne_lat: number, p_ne_lng: number, p_sw_lat: number, p_sw_lng: number, p_world_slug?: string) → { departs_at: string dest_label: string dest_lat: number dest_lng: number direction: string kind_slug: string lat: number listing_id: string lng: number origin_label: string origin_lat: number origin_lng: number seats..."
     ]
    },
-   "targets": [],
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "map_post_pins",
+     "source": "30_social/100_map.sql:97",
+     "signature": [
+      "map_post_pins(p_bounds: Json, p_filters?: Json, p_limit?: number) → { direction: string lat: number lng: number post_id: string world_slug: string }[]"
+     ],
+     "errors": [
+      {
+       "code": "invalid_bounds",
+       "knownToApp": false
+      },
+      {
+       "code": "invalid_input",
+       "knownToApp": true
+      },
+      {
+       "code": "unauthenticated",
+       "knownToApp": true
+      }
+     ]
+    }
+   ],
    "areas": [
     "marketplace"
    ],
@@ -11218,7 +11232,7 @@
    "launch": "core",
    "confidence": "high",
    "missing": null,
-   "note": "`p_tab = 'closed'`, keyset `p_cursor`, returns cards. `identity_role` is not returned (see M02).",
+   "note": "`p_tab = 'closed'`, keyset `p_cursor`, returns cards. `identity_role` is not returned: the card carries `owner_identity_masked` and null owner fields instead (M02, built).",
    "oldObject": {
     "signature": [
      "profile_closed_posts(p_cursor?: string, p_limit?: number, p_list_mode?: string, p_profile_user_id: string, p_viewer_user_id: string) → { closed_at: string identity_role: string post_id: string }[]"
@@ -11255,17 +11269,27 @@
   {
    "old": "profile_closed_posts_count",
    "kind": "rpc",
-   "status": "missing",
+   "status": "changed",
    "launch": "core",
    "confidence": "high",
-   "missing": "M13",
-   "note": "No count of closed posts per profile.",
+   "missing": null,
+   "note": "One argument, `p_user_id` (the viewer is the caller); counts the closed tab only, so the Hidden tab badge (`p_list_mode = owner_only_me`) is not served: take it from `user_stats.open_posts_only_me` or drop it (M13, built as a count over the same rows as the tab).",
    "oldObject": {
     "signature": [
      "profile_closed_posts_count(p_list_mode?: string, p_profile_user_id: string, p_viewer_user_id: string) → number"
     ]
    },
-   "targets": [],
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "profile_closed_posts_count",
+     "source": "30_social/095_profile_closed_count.sql:12",
+     "signature": [
+      "profile_closed_posts_count(p_user_id: string) → number"
+     ],
+     "errors": []
+    }
+   ],
    "areas": [
     "posts"
    ],
@@ -15748,17 +15772,56 @@
   {
    "old": "upsert_post_actor_identity",
    "kind": "rpc",
-   "status": "missing",
+   "status": "same",
    "launch": "core",
    "confidence": "high",
-   "missing": "M02",
-   "note": "No per-participant audience or identity mask on closed posts.",
+   "missing": null,
+   "note": "Same three arguments plus an optional `p_identity_visibility`; errors are P0001 codes (`not_participant`, `followers_only_requires_public_profile`). The owner of a delivered post also moves `posts.visibility` (M02, built).",
    "oldObject": {
     "signature": [
      "upsert_post_actor_identity(p_hide_from_counterparty: boolean, p_post_id: string, p_surface_visibility: string) → undefined"
     ]
    },
-   "targets": [],
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "upsert_post_actor_identity",
+     "source": "25_handoffs/120_post_actor_identity.sql:134",
+     "signature": [
+      "upsert_post_actor_identity(p_hide_from_counterparty: boolean, p_identity_visibility?: string, p_post_id: string, p_surface_visibility: string) → undefined"
+     ],
+     "errors": [
+      {
+       "code": "account_not_active",
+       "knownToApp": true
+      },
+      {
+       "code": "followers_only_requires_public_profile",
+       "knownToApp": false
+      },
+      {
+       "code": "invalid_identity_visibility",
+       "knownToApp": false
+      },
+      {
+       "code": "invalid_surface_visibility",
+       "knownToApp": false
+      },
+      {
+       "code": "not_participant",
+       "knownToApp": true
+      },
+      {
+       "code": "post_not_found",
+       "knownToApp": true
+      },
+      {
+       "code": "unauthenticated",
+       "knownToApp": true
+      }
+     ]
+    }
+   ],
    "areas": [
     "posts"
    ],
@@ -16027,11 +16090,11 @@
   {
    "old": "app_flags",
    "kind": "table",
-   "status": "missing",
+   "status": "same",
    "launch": "core",
    "confidence": "high",
-   "missing": "M09",
-   "note": "Feature flags belong to the platform module (`95_platform`), which is not in this tree.",
+   "missing": null,
+   "note": "Same `select key, enabled`, for signed-in members only (no `anon` grant): before sign-in the compiled defaults apply. After sign-in the same map is `bootstrap_session().flags`. The rows (`world_<slug>_enabled`) are seed data, not part of the baseline (M09, verified).",
    "oldObject": {
     "columns": [
      "description",
@@ -16041,7 +16104,27 @@
     ],
     "isView": false
    },
-   "targets": [],
+   "targets": [
+    {
+     "type": "table",
+     "name": "app_flags",
+     "columns": [
+      "description",
+      "enabled",
+      "key",
+      "updated_at",
+      "updated_by"
+     ],
+     "clientGrants": {
+      "select": [
+       "description",
+       "enabled",
+       "key",
+       "updated_at"
+      ]
+     }
+    }
+   ],
    "areas": [
     "mobile"
    ],
@@ -16757,7 +16840,7 @@
    "launch": "wedge",
    "confidence": "high",
    "missing": null,
-   "note": "Read `user_consents` where `consent_kind = 'driver_declaration'`; accept with `accept_world_consent('driver_declaration', version)`. The current version is not readable (see M11).",
+   "note": "Read `user_consents` where `consent_kind = 'driver_declaration'`; accept with `accept_world_consent('driver_declaration', version)`. The current version is `bootstrap_session().consents.<kind>.version`, with the caller's `accepted` flag (M11, built).",
    "oldObject": {
     "columns": [
      "declared_at",
@@ -16789,7 +16872,7 @@
     {
      "type": "rpc",
      "name": "accept_world_consent",
-     "source": "70_worlds/010_world_shared.sql:71",
+     "source": "70_worlds/010_world_shared.sql:92",
      "signature": [
       "accept_world_consent(p_kind: string, p_locale?: string, p_user_agent?: string, p_version: number) → user_consents row"
      ],
@@ -17651,7 +17734,7 @@
     {
      "type": "rpc",
      "name": "post_cards",
-     "source": "30_social/070_post_cards.sql:65",
+     "source": "30_social/070_post_cards.sql:69",
      "signature": [
       "post_cards(p_post_ids: string[]) → post_card[]"
      ],
@@ -18090,11 +18173,11 @@
   {
    "old": "post_actor_identity",
    "kind": "table",
-   "status": "missing",
+   "status": "changed",
    "launch": "core",
    "confidence": "high",
-   "missing": "M02",
-   "note": "Same gap as `upsert_post_actor_identity`.",
+   "missing": null,
+   "note": "A member reads only their own row. The projection `projectActorIdentityForViewer` is no longer run on the device: the server masks the owner in `post_card` and the author in `post_comments_page` (M02, built).",
    "oldObject": {
     "columns": [
      "hide_from_counterparty",
@@ -18106,7 +18189,24 @@
     ],
     "isView": false
    },
-   "targets": [],
+   "targets": [
+    {
+     "type": "table",
+     "name": "post_actor_identity",
+     "columns": [
+      "created_at",
+      "hide_from_counterparty",
+      "identity_visibility",
+      "post_id",
+      "surface_visibility",
+      "updated_at",
+      "user_id"
+     ],
+     "clientGrants": {
+      "select": true
+     }
+    }
+   ],
    "areas": [
     "posts"
    ],
@@ -18234,9 +18334,9 @@
     {
      "type": "rpc",
      "name": "post_comments_page",
-     "source": "30_social/070_post_cards.sql:102",
+     "source": "30_social/070_post_cards.sql:112",
      "signature": [
-      "post_comments_page(p_cursor?: Json, p_limit?: number, p_parent_comment_id?: string, p_post_id: string) → { author_avatar_url: string author_display_name: string author_id: string author_share_handle: string body: string created_at: string edited_at: string id: string mention_user_ids: string[] next_cursor: Json parent_co..."
+      "post_comments_page(p_cursor?: Json, p_limit?: number, p_parent_comment_id?: string, p_post_id: string) → { author_avatar_url: string author_display_name: string author_id: string author_identity_masked: boolean author_share_handle: string body: string created_at: string edited_at: string id: string mention_user_ids: stri..."
      ],
      "errors": []
     },
@@ -18528,7 +18628,7 @@
     {
      "type": "rpc",
      "name": "post_cards",
-     "source": "30_social/070_post_cards.sql:65",
+     "source": "30_social/070_post_cards.sql:69",
      "signature": [
       "post_cards(p_post_ids: string[]) → post_card[]"
      ],
@@ -18537,7 +18637,7 @@
     {
      "type": "rpc",
      "name": "post_detail",
-     "source": "30_social/070_post_cards.sql:152",
+     "source": "30_social/070_post_cards.sql:168",
      "signature": [
       "post_detail(p_post_id: string) → Json"
      ],
@@ -19283,11 +19383,11 @@
   {
    "old": "ride_ratings",
    "kind": "table",
-   "status": "missing",
+   "status": "changed",
    "launch": "wedge",
    "confidence": "high",
-   "missing": "M07",
-   "note": "Ratings are `post_ratings`, readable by staff only.",
+   "missing": null,
+   "note": "Ratings are `post_ratings` per handoff: the rater reads back only the rows they wrote; nobody reads a rating about themselves (M07, built).",
    "oldObject": {
     "columns": [
      "comment",
@@ -19301,7 +19401,24 @@
     ],
     "isView": false
    },
-   "targets": [],
+   "targets": [
+    {
+     "type": "table",
+     "name": "post_ratings",
+     "columns": [
+      "comment",
+      "created_at",
+      "handoff_id",
+      "id",
+      "ratee_id",
+      "rater_id",
+      "stars"
+     ],
+     "clientGrants": {
+      "select": true
+     }
+    }
+   ],
    "areas": [
     "rides"
    ],
@@ -19988,11 +20105,11 @@
   {
    "old": "user_ride_rating_summary",
    "kind": "table",
-   "status": "missing",
+   "status": "changed",
    "launch": "wedge",
    "confidence": "high",
-   "missing": "M07",
-   "note": "No public rating aggregate per member.",
+   "missing": null,
+   "note": "Columns `ratings_count` and `ratings_avg` (average only from three ratings), readable with the profile. Spec conflict recorded in the handback: D24 says members never see ratings (M07, built).",
    "oldObject": {
     "columns": [
      "avg_stars",
@@ -20002,7 +20119,35 @@
     ],
     "isView": true
    },
-   "targets": [],
+   "targets": [
+    {
+     "type": "table",
+     "name": "user_stats",
+     "columns": [
+      "followers_count",
+      "following_count",
+      "items_given_count",
+      "items_received_count",
+      "karma_points",
+      "open_posts_followers_only",
+      "open_posts_only_me",
+      "open_posts_public",
+      "posts_created_total",
+      "ratings_avg",
+      "ratings_count",
+      "ratings_stars_total",
+      "updated_at",
+      "user_id",
+      "volunteer_hours_total"
+     ],
+     "clientGrants": {
+      "select": [
+       "ratings_avg",
+       "ratings_count"
+      ]
+     }
+    }
+   ],
    "areas": [
     "rides"
    ],
@@ -20173,23 +20318,17 @@
       "open_posts_only_me",
       "open_posts_public",
       "posts_created_total",
+      "ratings_avg",
+      "ratings_count",
+      "ratings_stars_total",
       "updated_at",
       "user_id",
       "volunteer_hours_total"
      ],
      "clientGrants": {
       "select": [
-       "followers_count",
-       "following_count",
-       "items_given_count",
-       "items_received_count",
-       "karma_points",
-       "open_posts_followers_only",
-       "open_posts_public",
-       "posts_created_total",
-       "updated_at",
-       "user_id",
-       "volunteer_hours_total"
+       "ratings_avg",
+       "ratings_count"
       ]
      }
     }

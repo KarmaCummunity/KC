@@ -48,6 +48,9 @@ begin
            -- >>> platform module (95_platform): feature flags, `{ "<key>": true|false }`.
            'flags', (select coalesce(jsonb_object_agg(f.key, f.enabled), '{}'::jsonb) from public.app_flags f),
            -- <<< platform module
+           -- >>> worlds module (M11): current version of each world consent and whether the caller accepted it.
+           'consents', kc_access.world_consents(),
+           -- <<< worlds module
            'legal', (
              -- Documents in force whose last material version the caller has not accepted.
              -- `modal` blocks the app; `banner` is the 7-day notice of a standard change,

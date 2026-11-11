@@ -1475,6 +1475,9 @@ begin
            -- >>> platform module (95_platform): feature flags, `{ "<key>": true|false }`.
            'flags', (select coalesce(jsonb_object_agg(f.key, f.enabled), '{}'::jsonb) from public.app_flags f),
            -- <<< platform module
+           -- >>> worlds module (M11): current version of each world consent and whether the caller accepted it.
+           'consents', kc_access.world_consents(),
+           -- <<< worlds module
            'legal', (
              -- Documents in force whose last material version the caller has not accepted.
              -- `modal` blocks the app; `banner` is the 7-day notice of a standard change,
@@ -4131,9 +4134,9 @@ grant execute on function public.get_post_private_location(uuid) to authenticate
 -- Handoffs · post_ratings (one two-sided rating for every post type, D15, D19)
 --
 -- After a handoff each member rates the other, 1 to 5 with an optional note. Members never
--- see ratings — not the ones about them and not their own (D24): the table has no policy
--- and no grant for a device, and the moderation module adds the admin read. Ratings feed
--- the trust engine.
+-- read the ratings written about them (D24); the rater reads their own rows back (M07:
+-- `rated_by_me` of booking lists) and the moderation module adds the admin read. Ratings
+-- feed the trust engine and the public summary on `user_stats` (end of this file).
 
 create table public.post_ratings (
   id         uuid primary key default gen_random_uuid(),
@@ -4151,7 +4154,7 @@ create table public.post_ratings (
   constraint post_ratings_once_key unique (handoff_id, rater_id)
 );
 comment on table public.post_ratings is
-  'Ratings between the two members of a handoff. Not readable by members (D24).';
+  'Ratings between the two members of a handoff. Readable by the rater and by staff only (D24).';
 
 -- A member's ratings for the trust engine and the admin view, newest first; covers ratee_id.
 create index post_ratings_ratee_recent_idx on public.post_ratings (ratee_id, created_at desc, id desc);
@@ -4208,6 +4211,247 @@ $$;
 comment on function public.rate_handoff(uuid, integer, text) is
   'The caller rates the other member of a handed-over handoff, once.';
 grant execute on function public.rate_handoff(uuid, integer, text) to authenticated;
+
+-- The rater reads back what they gave, to show "rated" on a booking list or a handoff
+-- (FR-RIDE-037 AC6). The ratee cannot read the row: only the aggregate below reaches them.
+-- Query: ratings of one rater by handoff, served by post_ratings_once_key.
+create policy post_ratings_select_rater on public.post_ratings
+  for select to authenticated
+  using (rater_id = (select auth.uid()));
+
+grant select (id, handoff_id, rater_id, ratee_id, stars, comment, created_at)
+  on public.post_ratings to authenticated;
+
+-- Public summary of a member's ratings (M07, FR-RIDE-037, FR-RIDE-038 AC1-AC2): how many
+-- they received and their average. It is a column of `user_stats`, so it is readable
+-- exactly when the profile is. Below three ratings the average stays hidden (privacy
+-- threshold, FR-RIDE-038 AC2); the count is always shown. Individual ratings stay private.
+alter table public.user_stats
+  add column ratings_count integer not null default 0 check (ratings_count >= 0),
+  add column ratings_stars_total integer not null default 0 check (ratings_stars_total >= 0),
+  add column ratings_avg numeric(2, 1) generated always as (
+    case when ratings_count >= 3 then round(ratings_stars_total::numeric / ratings_count, 1) end) stored;
+comment on column public.user_stats.ratings_count is 'Ratings received (M07); maintained by a trigger on post_ratings.';
+comment on column public.user_stats.ratings_stars_total is 'Sum of the stars received; not readable, only the average derived from it is.';
+comment on column public.user_stats.ratings_avg is 'Average stars, one decimal; null until three ratings were received (FR-RIDE-038 AC2).';
+
+grant select (ratings_count, ratings_avg) on public.user_stats to authenticated;
+
+-- Keeps the received-ratings summary of the ratee in step with every inserted or removed rating.
+create function kc_private.post_ratings_sync_user_stats()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if tg_op = 'INSERT' then
+    update public.user_stats s
+       set ratings_count = s.ratings_count + 1, ratings_stars_total = s.ratings_stars_total + new.stars
+     where s.user_id = new.ratee_id;
+  else
+    update public.user_stats s
+       set ratings_count = greatest(s.ratings_count - 1, 0),
+           ratings_stars_total = greatest(s.ratings_stars_total - old.stars, 0)
+     where s.user_id = old.ratee_id;
+  end if;
+  return null;
+end;
+$$;
+comment on function kc_private.post_ratings_sync_user_stats() is
+  'AFTER trigger on post_ratings: maintains ratings_count and ratings_stars_total of the ratee.';
+
+create trigger post_ratings_sync_user_stats
+  after insert or delete on public.post_ratings
+  for each row execute function kc_private.post_ratings_sync_user_stats();
+
+-- >>> supabase/schemas/25_handoffs/120_post_actor_identity.sql
+-- Handoffs · post_actor_identity (FR-POST-021, D28, D31, D39)
+--
+-- What each participant of a post decides about how they appear on it:
+--   surface_visibility      who, beyond the two participants, may find a closed post through
+--                           this participant (Public / FollowersOnly / OnlyMe)
+--   identity_visibility     how the participant's name and avatar render on post chrome
+--                           (Public / FollowersOnly / Hidden); null follows the world default
+--   hide_from_counterparty  third parties see an anonymous poster on the post (D31)
+-- The participants are the post owner and the member of a handed-over handoff. The row is
+-- written only by `upsert_post_actor_identity`; masking is applied server side by
+-- `kc_access.post_actor_masked`, which `post_cards` and `post_comments_page` call, so a
+-- masked identity never reaches a device (the spec's client-side projection is replaced).
+
+create table public.post_actor_identity (
+  post_id                uuid not null references public.posts (id) on delete cascade,
+  user_id                uuid not null references public.users (id) on delete cascade,
+  surface_visibility     text not null default 'Public'
+                           check (surface_visibility in ('Public', 'FollowersOnly', 'OnlyMe')),
+  -- Null = the default of the post's world (`worlds.default_anonymity_level`). An explicit
+  -- value can only make the identity more private than that default, never less.
+  identity_visibility    text check (identity_visibility in ('Public', 'FollowersOnly', 'Hidden')),
+  hide_from_counterparty boolean not null default false,
+  created_at             timestamptz not null default now(),
+  updated_at             timestamptz not null default now(),
+  primary key (post_id, user_id)
+);
+comment on table public.post_actor_identity is
+  'Per-participant audience and identity mask of a post (FR-POST-021). Written only by upsert_post_actor_identity.';
+
+-- Query: all rows of one participant, and the user foreign key (account removal).
+create index post_actor_identity_user_idx on public.post_actor_identity (user_id);
+
+create trigger post_actor_identity_set_updated_at
+  before update on public.post_actor_identity
+  for each row execute function kc_private.set_updated_at();
+
+alter table public.post_actor_identity enable row level security;
+alter table public.post_actor_identity force row level security;
+
+-- A participant reads their own row. Unlike the former design, nobody reads the other
+-- participant's row: the mask is applied by the server, so no device needs it.
+create policy post_actor_identity_select_own on public.post_actor_identity
+  for select to authenticated
+  using (user_id = (select auth.uid()));
+
+grant select on public.post_actor_identity to authenticated;
+
+-- True when the caller must not be shown who `p_actor_id` is on post `p_post_id`. Only the
+-- two participants of a post can be masked; the viewer is never masked from themselves, the
+-- counterparty always sees the real identity (AC2, AC4, D39) and platform staff see through
+-- the mask. For a third party the actor is masked when
+--   * the effective identity level is "operators only" (world default 1 or `Hidden`), or
+--     "followers" (level 2 or `FollowersOnly`) and the viewer does not follow the actor; or
+--   * the post is delivered and the actor chose `hide_from_counterparty`, or an `OnlyMe`
+--     surface (which implies the mask, AC4).
+-- Definer rights read the rows the caller cannot see; the answer is a boolean only.
+-- The staff test calls `kc_access.is_admin()` of the moderation module, resolved when the
+-- function runs (plpgsql), because that module is created later.
+create function kc_access.post_actor_masked(p_post_id uuid, p_actor_id uuid)
+returns boolean
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  v_viewer constant uuid := (select auth.uid());
+  v_owner uuid;
+  v_status text;
+  v_world_level smallint;
+  v_identity public.post_actor_identity;
+  v_level integer;
+begin
+  if p_actor_id is null or p_actor_id = v_viewer then
+    return false;
+  end if;
+  select p.owner_id, p.status, w.default_anonymity_level into v_owner, v_status, v_world_level
+    from public.posts p join public.worlds w on w.slug = p.world_slug
+   where p.id = p_post_id;
+  if not found then
+    return false;
+  end if;
+  -- Not a participant (an ordinary commenter): nothing to mask.
+  if p_actor_id <> v_owner and not exists (
+       select 1 from public.post_handoffs h
+        where h.post_id = p_post_id and h.recipient_id = p_actor_id and h.status = 'handed_over') then
+    return false;
+  end if;
+  -- The counterparty: the owner sees the receiver, the receiver (confirmed or handed over) the owner.
+  if v_viewer is not null and (
+       (p_actor_id <> v_owner and v_viewer = v_owner)
+       or (p_actor_id = v_owner and exists (
+             select 1 from public.post_handoffs h
+              where h.post_id = p_post_id and h.recipient_id = v_viewer
+                and h.status in ('confirmed', 'handed_over')))) then
+    return false;
+  end if;
+  if v_viewer is not null and kc_access.is_admin() then
+    return false;
+  end if;
+
+  select i.* into v_identity from public.post_actor_identity i
+   where i.post_id = p_post_id and i.user_id = p_actor_id;
+  v_level := least(
+    case v_identity.identity_visibility when 'FollowersOnly' then 2 when 'Hidden' then 1 else 3 end,
+    v_world_level);
+  if v_level = 1 then
+    return true;
+  end if;
+  if v_level = 2 and not exists (select 1 from public.follows f
+                                  where f.follower_id = v_viewer and f.followed_id = p_actor_id) then
+    return true;
+  end if;
+  return v_status = 'closed_delivered'
+    and (coalesce(v_identity.hide_from_counterparty, false)
+         or coalesce(v_identity.surface_visibility = 'OnlyMe', false));
+end;
+$$;
+comment on function kc_access.post_actor_masked(uuid, uuid) is
+  'Whether the caller is shown an anonymous poster instead of this participant of the post (FR-POST-021).';
+grant execute on function kc_access.post_actor_masked(uuid, uuid) to authenticated;
+
+-- Sets the caller's audience and identity mask on a post they take part in.
+--   unauthenticated                       no session (42501)
+--   invalid_surface_visibility            not Public / FollowersOnly / OnlyMe
+--   invalid_identity_visibility           not Public / FollowersOnly / Hidden
+--   post_not_found                        no such post
+--   not_participant                       the caller is neither the owner nor the receiver
+--   followers_only_requires_public_profile  FollowersOnly needs a public profile (FR-POST-009)
+-- The owner of a delivered post routes third-party discovery through `posts.visibility`
+-- (feed, profile tabs and the read policy decide on it), so the audience is mirrored there;
+-- the receiver's audience is stored for the profile surface that lists received posts.
+-- `p_identity_visibility` null keeps the stored value (world default on first write).
+create function public.upsert_post_actor_identity(
+  p_post_id uuid,
+  p_surface_visibility text,
+  p_hide_from_counterparty boolean,
+  p_identity_visibility text default null
+)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_user_id constant uuid := kc_private.require_active_caller();
+  v_post public.posts;
+begin
+  if p_surface_visibility is null or p_surface_visibility not in ('Public', 'FollowersOnly', 'OnlyMe') then
+    raise exception 'invalid_surface_visibility' using errcode = 'P0001';
+  end if;
+  if p_identity_visibility is not null and p_identity_visibility not in ('Public', 'FollowersOnly', 'Hidden') then
+    raise exception 'invalid_identity_visibility' using errcode = 'P0001';
+  end if;
+  select p.* into v_post from public.posts p where p.id = p_post_id;
+  if not found then
+    raise exception 'post_not_found' using errcode = 'P0001';
+  end if;
+  if v_post.owner_id <> v_user_id and not exists (
+       select 1 from public.post_handoffs h
+        where h.post_id = p_post_id and h.recipient_id = v_user_id and h.status = 'handed_over') then
+    raise exception 'not_participant' using errcode = 'P0001';
+  end if;
+  if p_surface_visibility = 'FollowersOnly'
+     and not exists (select 1 from public.users u where u.id = v_user_id and u.privacy_mode = 'Public') then
+    raise exception 'followers_only_requires_public_profile' using errcode = 'P0001';
+  end if;
+
+  insert into public.post_actor_identity as i
+         (post_id, user_id, surface_visibility, identity_visibility, hide_from_counterparty)
+  values (p_post_id, v_user_id, p_surface_visibility, p_identity_visibility,
+          coalesce(p_hide_from_counterparty, false))
+  on conflict (post_id, user_id) do update
+    set surface_visibility = excluded.surface_visibility,
+        identity_visibility = coalesce(excluded.identity_visibility, i.identity_visibility),
+        hide_from_counterparty = excluded.hide_from_counterparty;
+
+  if v_post.owner_id = v_user_id and v_post.status = 'closed_delivered'
+     and v_post.visibility <> p_surface_visibility then
+    update public.posts p set visibility = p_surface_visibility where p.id = p_post_id;
+  end if;
+end;
+$$;
+comment on function public.upsert_post_actor_identity(uuid, text, boolean, text) is
+  'The caller sets their audience and identity mask on a post they own or received (FR-POST-021).';
+grant execute on function public.upsert_post_actor_identity(uuid, text, boolean, text) to authenticated;
 
 -- >>> supabase/schemas/30_social/010_post_media.sql
 -- Social · post_media (one row per file attached to a post)
@@ -5169,7 +5413,11 @@ create type public.post_card as (
   -- The viewer's own state: their reaction type (null = none), bookmark, follow of the owner.
   viewer_reaction          text,
   viewer_saved             boolean,
-  viewer_follows_owner     boolean
+  viewer_follows_owner     boolean,
+  -- >>> M02 (FR-POST-021): true when the owner is shown to this viewer as "the poster". The
+  -- owner fields above are then null: no name, handle, avatar, verification level or id.
+  owner_identity_masked    boolean
+  -- <<< M02
 );
 comment on type public.post_card is 'Everything a post card shows, as returned by every post list.';
 
@@ -5197,11 +5445,14 @@ stable
 security invoker
 set search_path = ''
 as $$
-  select p.id, p.owner_id, p.world_slug, p.kind_id, p.post_type, p.direction, p.status, p.visibility,
+  select p.id, case when mk.masked then null else p.owner_id end, p.world_slug, p.kind_id, p.post_type, p.direction, p.status, p.visibility,
          p.title, p.description, p.item_subcategory_id, p.details,
          p.city_id, c.name_he, c.name_en, p.location_display_level, p.time_window, p.urgency_level,
          p.expires_at, p.published_at, p.created_at,
-         u.display_name, u.share_handle, u.avatar_url, u.verification_level,
+         case when mk.masked then null else u.display_name end,
+         case when mk.masked then null else u.share_handle end,
+         case when mk.masked then null else u.avatar_url end,
+         case when mk.masked then null else u.verification_level end,
          media.cover, coalesce(media.n, 0),
          coalesce(s.reactions_count, 0), coalesce(s.comments_count, 0), coalesce(s.shares_count, 0),
          (select r.reaction_type from public.post_reactions r
@@ -5210,7 +5461,10 @@ as $$
                   where sp.user_id = (select auth.uid()) and sp.post_id = p.id),
          exists (select 1 from public.follows f
                   where f.follower_id = (select auth.uid()) and f.followed_id = p.owner_id)
+           and not mk.masked,
+         mk.masked
     from public.posts p
+    cross join lateral (select kc_access.post_actor_masked(p.id, p.owner_id) as masked) mk
     join public.users u on u.id = p.owner_id
     join public.cities c on c.city_id = p.city_id
     left join public.post_stats s on s.post_id = p.id
@@ -5241,6 +5495,7 @@ returns table (
   author_display_name text,
   author_share_handle text,
   author_avatar_url text,
+  author_identity_masked boolean,
   body text,
   mention_user_ids uuid[],
   created_at timestamptz,
@@ -5255,8 +5510,12 @@ stable
 security invoker
 set search_path = ''
 as $$
-  select c.id, c.post_id, c.parent_comment_id, c.author_id, u.display_name, u.share_handle, u.avatar_url,
-         c.body, c.mention_user_ids, c.created_at, c.edited_at,
+  select c.id, c.post_id, c.parent_comment_id,
+         case when mk.masked then null else c.author_id end,
+         case when mk.masked then null else u.display_name end,
+         case when mk.masked then null else u.share_handle end,
+         case when mk.masked then null else u.avatar_url end,
+         mk.masked, c.body, c.mention_user_ids, c.created_at, c.edited_at,
          (select count(*)::integer from public.post_comment_reactions r where r.comment_id = c.id),
          (select count(*)::integer from public.post_comments reply where reply.parent_comment_id = c.id),
          exists (select 1 from public.post_comment_reactions r
@@ -5264,6 +5523,7 @@ as $$
          jsonb_build_object('t', c.created_at, 'id', c.id)
     from public.post_comments c
     join public.users u on u.id = c.author_id
+    cross join lateral (select kc_access.post_actor_masked(c.post_id, c.author_id) as masked) mk
    where c.post_id = p_post_id
      and c.parent_comment_id is not distinct from p_parent_comment_id
      and (p_cursor is null
@@ -5790,6 +6050,211 @@ $$;
 comment on function public.search_all(text, integer) is
   'Search preview: the first posts and the first members matching a text.';
 grant execute on function public.search_all(text, integer) to authenticated;
+
+-- >>> supabase/schemas/30_social/095_profile_closed_count.sql
+-- Social · closed-post count of a profile (FR-PROFILE-001, M13)
+--
+-- The badge of the "closed" tab. It is a count over the same rows the tab lists, not a
+-- stored counter: what a viewer may count depends on who is looking (RLS narrows the rows,
+-- the owner also counts their own deleted-without-recipient posts), which a column of
+-- `user_stats` cannot express, and a count needs no trigger on the hot path of closing a
+-- post. The scan is one member's posts through posts_owner_recent_idx, bounded by how many
+-- posts a single member has.
+
+-- Number of posts in the "closed" tab of a member, as the caller may see them: the same
+-- filter as profile_posts_page(p_tab => 'closed').
+create function public.profile_closed_posts_count(p_user_id uuid)
+returns integer
+language sql
+stable
+security invoker
+set search_path = ''
+as $$
+  select count(*)::integer
+    from public.posts p
+   where p.owner_id = p_user_id
+     and p.status in ('closed_delivered', 'deleted_no_recipient')
+     and p.visibility <> 'OnlyMe';
+$$;
+comment on function public.profile_closed_posts_count(uuid) is
+  'Size of the closed tab of a profile for the caller; same rows as profile_posts_page(closed).';
+grant execute on function public.profile_closed_posts_count(uuid) to authenticated;
+
+-- >>> supabase/schemas/30_social/100_map.sql
+-- Social · the feed on a map (FR-FEED-021, M10)
+--
+-- Two reads over `posts.geo_approx`, the only location any member ever sees (design §4.1:
+-- a city centre or an exact point coarsened to about 300 m; an exact address is never read
+-- here). Map mode shows open posts, so both use the partial GiST index
+-- posts_geo_approx_gist_idx (status = 'open').
+--
+-- Leak-proof rule. Under row security the planner pushes only leak-proof conditions into an
+-- index scan, and a spatial test is not one. So the candidates are found by a definer
+-- function that applies the audience test of the read policy (own post, public, or followed
+-- owner) next to the spatial one, and the invoker functions then read the candidate rows
+-- with the caller's rights: RLS on `posts` and `users` (blocks, inactive accounts) is the
+-- final gate, and a count never includes a post the caller cannot read.
+--
+-- p_bounds   {"west", "south", "east", "north"} in degrees; west < east, south < north.
+-- p_filters  (every key optional) world, direction, item_subcategory_ids — as in feed_page.
+-- Hydrate a pin with public.post_cards(array[post_id]).
+
+-- Ids of open posts inside the box, newest first. Coarse audience test only; see above.
+create function kc_access.map_post_candidates(
+  p_west double precision,
+  p_south double precision,
+  p_east double precision,
+  p_north double precision,
+  p_world text,
+  p_direction text,
+  p_subcategory_ids uuid[],
+  p_limit integer
+)
+returns table (post_id uuid)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select p.id
+    from public.posts p
+   where p.status = 'open'
+     and extensions.st_intersects(
+           p.geo_approx,
+           extensions.st_makeenvelope(p_west, p_south, p_east, p_north, 4326)::extensions.geography)
+     and (p_world is null or p.world_slug = p_world)
+     and (p_direction is null or p.direction = p_direction)
+     and (p_subcategory_ids is null or p.item_subcategory_id = any (p_subcategory_ids))
+     and (p.owner_id = (select auth.uid())
+          or p.visibility = 'Public'
+          or (p.visibility = 'FollowersOnly'
+              and exists (select 1 from public.follows f
+                           where f.follower_id = (select auth.uid()) and f.followed_id = p.owner_id)))
+   order by p.published_at desc, p.id desc
+   limit p_limit;
+$$;
+comment on function kc_access.map_post_candidates(
+  double precision, double precision, double precision, double precision, text, text, uuid[], integer) is
+  'Ids of open posts inside a box that the caller''s audience admits; the caller''s row access is the final gate.';
+grant execute on function kc_access.map_post_candidates(
+  double precision, double precision, double precision, double precision, text, text, uuid[], integer)
+  to authenticated;
+
+-- Validates bounds and filters shared by both map reads and returns them parsed.
+create function kc_access.map_args(p_bounds jsonb, p_filters jsonb)
+returns table (west double precision, south double precision, east double precision, north double precision,
+               world text, direction text, subcategory_ids uuid[])
+language plpgsql
+immutable
+set search_path = ''
+as $$
+declare
+  v_f constant jsonb := coalesce(p_filters, '{}'::jsonb);
+begin
+  west := (p_bounds ->> 'west')::double precision;
+  south := (p_bounds ->> 'south')::double precision;
+  east := (p_bounds ->> 'east')::double precision;
+  north := (p_bounds ->> 'north')::double precision;
+  if west is null or south is null or east is null or north is null
+     or west >= east or south >= north
+     or west < -180 or east > 180 or south < -90 or north > 90 then
+    raise exception 'invalid_bounds' using errcode = 'P0001';
+  end if;
+  world := v_f ->> 'world';
+  direction := v_f ->> 'direction';
+  if direction is not null and direction not in ('offer', 'request') then
+    raise exception 'invalid_input' using errcode = 'P0001';
+  end if;
+  if jsonb_typeof(v_f -> 'item_subcategory_ids') = 'array' then
+    subcategory_ids := array(select jsonb_array_elements_text(v_f -> 'item_subcategory_ids')::uuid);
+  end if;
+  return next;
+end;
+$$;
+comment on function kc_access.map_args(jsonb, jsonb) is 'Parses the bounds and filters of the map reads; invalid_bounds / invalid_input on bad values.';
+grant execute on function kc_access.map_args(jsonb, jsonb) to authenticated;
+
+-- Single posts inside the viewport as approximate pins, newest first. At most p_limit
+-- (default 100, maximum 200) are returned; a screen that receives p_limit pins should zoom
+-- in or switch to map_post_clusters.
+create function public.map_post_pins(
+  p_bounds jsonb,
+  p_filters jsonb default '{}'::jsonb,
+  p_limit integer default 100
+)
+returns table (post_id uuid, lat double precision, lng double precision, world_slug text, direction text)
+language plpgsql
+stable
+security invoker
+set search_path = ''
+as $$
+declare
+  v_a record;
+  v_ids uuid[];
+begin
+  if (select auth.uid()) is null then
+    raise exception 'unauthenticated' using errcode = '42501';
+  end if;
+  select * into v_a from kc_access.map_args(p_bounds, p_filters);
+  v_ids := array(select c.post_id from kc_access.map_post_candidates(
+    v_a.west, v_a.south, v_a.east, v_a.north, v_a.world, v_a.direction, v_a.subcategory_ids,
+    least(greatest(coalesce(p_limit, 100), 1), 200)) c);
+  return query
+  select p.id, extensions.st_y(p.geo_approx::extensions.geometry),
+         extensions.st_x(p.geo_approx::extensions.geometry), p.world_slug, p.direction
+    from public.posts p
+   where p.id = any (v_ids)
+   order by p.published_at desc, p.id desc;
+end;
+$$;
+comment on function public.map_post_pins(jsonb, jsonb, integer) is
+  'Open posts inside a map viewport as approximate pins (FR-FEED-021); at most 200.';
+grant execute on function public.map_post_pins(jsonb, jsonb, integer) to authenticated;
+
+-- Posts inside the viewport grouped on a grid that halves with every zoom level (cells of
+-- a quarter of a 256-pixel tile): centre of the cluster, number of posts and, for a lone
+-- post, its id. Counts cover the 3000 newest candidates of the viewport and only posts the
+-- caller can read. At most 500 clusters, the largest first. zoom is 0 to 20.
+create function public.map_post_clusters(
+  p_bounds jsonb,
+  p_zoom integer,
+  p_filters jsonb default '{}'::jsonb
+)
+returns table (lat double precision, lng double precision, post_count integer, single_post_id uuid)
+language plpgsql
+stable
+security invoker
+set search_path = ''
+as $$
+declare
+  v_a record;
+  v_ids uuid[];
+  v_cell constant double precision := 360.0 / power(2, least(greatest(coalesce(p_zoom, 0), 0), 20)) / 4;
+begin
+  if (select auth.uid()) is null then
+    raise exception 'unauthenticated' using errcode = '42501';
+  end if;
+  if p_zoom is null or p_zoom not between 0 and 20 then
+    raise exception 'invalid_input' using errcode = 'P0001';
+  end if;
+  select * into v_a from kc_access.map_args(p_bounds, p_filters);
+  v_ids := array(select c.post_id from kc_access.map_post_candidates(
+    v_a.west, v_a.south, v_a.east, v_a.north, v_a.world, v_a.direction, v_a.subcategory_ids, 3000) c);
+  return query
+  select avg(extensions.st_y(p.geo_approx::extensions.geometry)),
+         avg(extensions.st_x(p.geo_approx::extensions.geometry)),
+         count(*)::integer,
+         case when count(*) = 1 then (array_agg(p.id))[1] end
+    from public.posts p
+   where p.id = any (v_ids)
+   group by extensions.st_snaptogrid(p.geo_approx::extensions.geometry, v_cell)
+   order by count(*) desc, 1, 2
+   limit 500;
+end;
+$$;
+comment on function public.map_post_clusters(jsonb, integer, jsonb) is
+  'Open posts inside a map viewport grouped into zoom-sized grid clusters (FR-FEED-021); at most 500.';
+grant execute on function public.map_post_clusters(jsonb, integer, jsonb) to authenticated;
 
 -- >>> supabase/schemas/30_social/900_storage.sql
 -- Social · storage bucket for post images (design §4 "Storage", §5.3)
@@ -6981,6 +7446,82 @@ $$;
 comment on function public.admin_delete_message(uuid) is
   'Moderator deletes a chat message; audited. Errors: 42501 forbidden, P0001 message_not_found.';
 grant execute on function public.admin_delete_message(uuid) to authenticated;
+
+-- >>> supabase/schemas/40_messaging/080_chat_counterpart_contact.sql
+-- Messaging · the counterpart's contact phone (FR-CHAT-014 AC7, FR-PROFILE-007)
+--
+-- A member may enter a contact phone for the people they talk to. `user_private` is
+-- readable by its owner only, so the other side of a direct chat gets it through this
+-- definer function and nowhere else. The spec asks for no access log: the number is one the
+-- owner chose to share with chat counterparts, and nothing is recorded.
+
+-- The contact phone of the other member of a direct chat the caller can access, verbatim
+-- (no normalisation, AC7). Null when the chat is not a direct chat the caller may use (a
+-- support thread, a chat hidden by moderation, a blocked pair, a chat of someone else), the
+-- counterpart's account is gone or inactive, or the field is empty. A caller outside the chat
+-- gets null as well, so that the function does not reveal which chats exist.
+create function public.chat_counterpart_contact(p_chat_id uuid)
+returns text
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  v_user_id constant uuid := kc_private.require_caller();
+begin
+  if not kc_access.can_access_chat(p_chat_id) then
+    return null;
+  end if;
+  return (
+    select up.contact_phone
+      from public.chats c
+      join public.users u on u.id = case v_user_id when c.direct_user_a then c.direct_user_b
+                                                   else c.direct_user_a end
+      join public.user_private up on up.user_id = u.id
+     where c.id = p_chat_id and c.kind = 'direct' and u.is_active);
+end;
+$$;
+comment on function public.chat_counterpart_contact(uuid) is
+  'Contact phone of the other member of a direct chat the caller can access; null otherwise (FR-CHAT-014 AC7).';
+grant execute on function public.chat_counterpart_contact(uuid) to authenticated;
+
+-- >>> supabase/schemas/40_messaging/090_account_realtime.sql
+-- Messaging · realtime of the member's own account (M24)
+--
+-- Topic `user:<user_id>:account`, event `account_changed`: the account gate changed — a
+-- suspension, a ban, a lifted sanction, a deletion request or its restore — so the app
+-- leaves or re-enters the main screens at once instead of at the next request. The payload
+-- is the gate itself (status, until, onboarding state) and nothing else. Who may listen is
+-- the policy on a member's own `user:<id>:…` topics in 060_realtime.sql; the send is a no-op
+-- where the platform's realtime schema is absent (kc_private.broadcast). The sender lives
+-- here, not in 10_identity, because the broadcast helper belongs to this module's realtime
+-- wiring and sorts after the identity files.
+
+create function kc_private.user_account_broadcast_gate()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  perform kc_private.broadcast('user:' || new.user_id || ':account', 'account_changed', jsonb_build_object(
+    'status', new.status,
+    'status_until', new.status_until,
+    'onboarding_state', new.onboarding_state));
+  return null;
+end;
+$$;
+comment on function kc_private.user_account_broadcast_gate() is
+  'AFTER UPDATE on user_account: tells the member''s own topic that status, suspension end or onboarding state changed.';
+
+create trigger user_account_broadcast_gate
+  after update of status, status_until, onboarding_state on public.user_account
+  for each row
+  when (old.status is distinct from new.status
+        or old.status_until is distinct from new.status_until
+        or old.onboarding_state is distinct from new.onboarding_state)
+  execute function kc_private.user_account_broadcast_gate();
 
 -- >>> supabase/schemas/50_notifications/010_notification_kinds.sql
 -- Notifications · registry of notification kinds
@@ -10017,6 +10558,27 @@ as $$
 $$;
 comment on function kc_private.world_consent_accepted(uuid, text) is
   'The member accepted the current version of a world consent.';
+
+-- >>> M11: the consents in force, for `bootstrap_session`. One entry per consent kind,
+-- `{ "<kind>": { "version": <int>, "accepted": <bool> } }`: the app shows the driver
+-- declaration or the code of conduct when `accepted` is false and sends `version` to
+-- accept_world_consent. `accepted` is the caller's own state.
+create function kc_access.world_consents()
+returns jsonb
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select jsonb_object_agg(k.kind, jsonb_build_object(
+           'version', kc_private.world_consent_version(k.kind),
+           'accepted', kc_private.world_consent_accepted((select auth.uid()), k.kind)))
+    from (values ('driver_declaration'), ('housing_conduct')) k (kind);
+$$;
+comment on function kc_access.world_consents() is
+  'Current version of each world consent and whether the caller accepted it; used by bootstrap_session.';
+grant execute on function kc_access.world_consents() to authenticated;
+-- <<< M11
 
 -- The caller accepts the driver declaration or the housing code of conduct. Only the
 -- version in force is accepted, so an old screen cannot record a stale consent.

@@ -66,6 +66,27 @@ $$;
 comment on function kc_private.world_consent_accepted(uuid, text) is
   'The member accepted the current version of a world consent.';
 
+-- >>> M11: the consents in force, for `bootstrap_session`. One entry per consent kind,
+-- `{ "<kind>": { "version": <int>, "accepted": <bool> } }`: the app shows the driver
+-- declaration or the code of conduct when `accepted` is false and sends `version` to
+-- accept_world_consent. `accepted` is the caller's own state.
+create function kc_access.world_consents()
+returns jsonb
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select jsonb_object_agg(k.kind, jsonb_build_object(
+           'version', kc_private.world_consent_version(k.kind),
+           'accepted', kc_private.world_consent_accepted((select auth.uid()), k.kind)))
+    from (values ('driver_declaration'), ('housing_conduct')) k (kind);
+$$;
+comment on function kc_access.world_consents() is
+  'Current version of each world consent and whether the caller accepted it; used by bootstrap_session.';
+grant execute on function kc_access.world_consents() to authenticated;
+-- <<< M11
+
 -- The caller accepts the driver declaration or the housing code of conduct. Only the
 -- version in force is accepted, so an old screen cannot record a stale consent.
 create function public.accept_world_consent(

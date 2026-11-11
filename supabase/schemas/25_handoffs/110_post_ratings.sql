@@ -1,9 +1,9 @@
 -- Handoffs · post_ratings (one two-sided rating for every post type, D15, D19)
 --
 -- After a handoff each member rates the other, 1 to 5 with an optional note. Members never
--- see ratings — not the ones about them and not their own (D24): the table has no policy
--- and no grant for a device, and the moderation module adds the admin read. Ratings feed
--- the trust engine.
+-- read the ratings written about them (D24); the rater reads their own rows back (M07:
+-- `rated_by_me` of booking lists) and the moderation module adds the admin read. Ratings
+-- feed the trust engine and the public summary on `user_stats` (end of this file).
 
 create table public.post_ratings (
   id         uuid primary key default gen_random_uuid(),
@@ -21,7 +21,7 @@ create table public.post_ratings (
   constraint post_ratings_once_key unique (handoff_id, rater_id)
 );
 comment on table public.post_ratings is
-  'Ratings between the two members of a handoff. Not readable by members (D24).';
+  'Ratings between the two members of a handoff. Readable by the rater and by staff only (D24).';
 
 -- A member's ratings for the trust engine and the admin view, newest first; covers ratee_id.
 create index post_ratings_ratee_recent_idx on public.post_ratings (ratee_id, created_at desc, id desc);
@@ -78,3 +78,56 @@ $$;
 comment on function public.rate_handoff(uuid, integer, text) is
   'The caller rates the other member of a handed-over handoff, once.';
 grant execute on function public.rate_handoff(uuid, integer, text) to authenticated;
+
+-- The rater reads back what they gave, to show "rated" on a booking list or a handoff
+-- (FR-RIDE-037 AC6). The ratee cannot read the row: only the aggregate below reaches them.
+-- Query: ratings of one rater by handoff, served by post_ratings_once_key.
+create policy post_ratings_select_rater on public.post_ratings
+  for select to authenticated
+  using (rater_id = (select auth.uid()));
+
+grant select (id, handoff_id, rater_id, ratee_id, stars, comment, created_at)
+  on public.post_ratings to authenticated;
+
+-- Public summary of a member's ratings (M07, FR-RIDE-037, FR-RIDE-038 AC1-AC2): how many
+-- they received and their average. It is a column of `user_stats`, so it is readable
+-- exactly when the profile is. Below three ratings the average stays hidden (privacy
+-- threshold, FR-RIDE-038 AC2); the count is always shown. Individual ratings stay private.
+alter table public.user_stats
+  add column ratings_count integer not null default 0 check (ratings_count >= 0),
+  add column ratings_stars_total integer not null default 0 check (ratings_stars_total >= 0),
+  add column ratings_avg numeric(2, 1) generated always as (
+    case when ratings_count >= 3 then round(ratings_stars_total::numeric / ratings_count, 1) end) stored;
+comment on column public.user_stats.ratings_count is 'Ratings received (M07); maintained by a trigger on post_ratings.';
+comment on column public.user_stats.ratings_stars_total is 'Sum of the stars received; not readable, only the average derived from it is.';
+comment on column public.user_stats.ratings_avg is 'Average stars, one decimal; null until three ratings were received (FR-RIDE-038 AC2).';
+
+grant select (ratings_count, ratings_avg) on public.user_stats to authenticated;
+
+-- Keeps the received-ratings summary of the ratee in step with every inserted or removed rating.
+create function kc_private.post_ratings_sync_user_stats()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if tg_op = 'INSERT' then
+    update public.user_stats s
+       set ratings_count = s.ratings_count + 1, ratings_stars_total = s.ratings_stars_total + new.stars
+     where s.user_id = new.ratee_id;
+  else
+    update public.user_stats s
+       set ratings_count = greatest(s.ratings_count - 1, 0),
+           ratings_stars_total = greatest(s.ratings_stars_total - old.stars, 0)
+     where s.user_id = old.ratee_id;
+  end if;
+  return null;
+end;
+$$;
+comment on function kc_private.post_ratings_sync_user_stats() is
+  'AFTER trigger on post_ratings: maintains ratings_count and ratings_stars_total of the ratee.';
+
+create trigger post_ratings_sync_user_stats
+  after insert or delete on public.post_ratings
+  for each row execute function kc_private.post_ratings_sync_user_stats();

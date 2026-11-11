@@ -117,7 +117,7 @@ select throws_ok($$select kc_private.record_consent(pg_temp.id('b'), 'newsletter
 -- ── bootstrap_session ───────────────────────────────────────────────────────
 select is(
   (select string_agg(k, ',' order by k) from jsonb_object_keys(pg_temp.run('a', 'select public.bootstrap_session()')::jsonb) k),
-  'account,admin,flags,legal,private_profile,unread,user_id', 'bootstrap returns one key per concern');
+  'account,admin,consents,flags,legal,private_profile,unread,user_id', 'bootstrap returns one key per concern');
 select is(pg_temp.run('a', $$select public.bootstrap_session() -> 'account' ->> 'status'$$), 'active', 'bootstrap carries the account gate');
 select is(pg_temp.run('a', $$select (public.bootstrap_session() -> 'private_profile' ? 'date_of_birth')::text$$),
   'true', 'bootstrap carries the private profile');

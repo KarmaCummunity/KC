@@ -41,7 +41,11 @@ create type public.post_card as (
   -- The viewer's own state: their reaction type (null = none), bookmark, follow of the owner.
   viewer_reaction          text,
   viewer_saved             boolean,
-  viewer_follows_owner     boolean
+  viewer_follows_owner     boolean,
+  -- >>> M02 (FR-POST-021): true when the owner is shown to this viewer as "the poster". The
+  -- owner fields above are then null: no name, handle, avatar, verification level or id.
+  owner_identity_masked    boolean
+  -- <<< M02
 );
 comment on type public.post_card is 'Everything a post card shows, as returned by every post list.';
 
@@ -69,11 +73,14 @@ stable
 security invoker
 set search_path = ''
 as $$
-  select p.id, p.owner_id, p.world_slug, p.kind_id, p.post_type, p.direction, p.status, p.visibility,
+  select p.id, case when mk.masked then null else p.owner_id end, p.world_slug, p.kind_id, p.post_type, p.direction, p.status, p.visibility,
          p.title, p.description, p.item_subcategory_id, p.details,
          p.city_id, c.name_he, c.name_en, p.location_display_level, p.time_window, p.urgency_level,
          p.expires_at, p.published_at, p.created_at,
-         u.display_name, u.share_handle, u.avatar_url, u.verification_level,
+         case when mk.masked then null else u.display_name end,
+         case when mk.masked then null else u.share_handle end,
+         case when mk.masked then null else u.avatar_url end,
+         case when mk.masked then null else u.verification_level end,
          media.cover, coalesce(media.n, 0),
          coalesce(s.reactions_count, 0), coalesce(s.comments_count, 0), coalesce(s.shares_count, 0),
          (select r.reaction_type from public.post_reactions r
@@ -82,7 +89,10 @@ as $$
                   where sp.user_id = (select auth.uid()) and sp.post_id = p.id),
          exists (select 1 from public.follows f
                   where f.follower_id = (select auth.uid()) and f.followed_id = p.owner_id)
+           and not mk.masked,
+         mk.masked
     from public.posts p
+    cross join lateral (select kc_access.post_actor_masked(p.id, p.owner_id) as masked) mk
     join public.users u on u.id = p.owner_id
     join public.cities c on c.city_id = p.city_id
     left join public.post_stats s on s.post_id = p.id
@@ -113,6 +123,7 @@ returns table (
   author_display_name text,
   author_share_handle text,
   author_avatar_url text,
+  author_identity_masked boolean,
   body text,
   mention_user_ids uuid[],
   created_at timestamptz,
@@ -127,8 +138,12 @@ stable
 security invoker
 set search_path = ''
 as $$
-  select c.id, c.post_id, c.parent_comment_id, c.author_id, u.display_name, u.share_handle, u.avatar_url,
-         c.body, c.mention_user_ids, c.created_at, c.edited_at,
+  select c.id, c.post_id, c.parent_comment_id,
+         case when mk.masked then null else c.author_id end,
+         case when mk.masked then null else u.display_name end,
+         case when mk.masked then null else u.share_handle end,
+         case when mk.masked then null else u.avatar_url end,
+         mk.masked, c.body, c.mention_user_ids, c.created_at, c.edited_at,
          (select count(*)::integer from public.post_comment_reactions r where r.comment_id = c.id),
          (select count(*)::integer from public.post_comments reply where reply.parent_comment_id = c.id),
          exists (select 1 from public.post_comment_reactions r
@@ -136,6 +151,7 @@ as $$
          jsonb_build_object('t', c.created_at, 'id', c.id)
     from public.post_comments c
     join public.users u on u.id = c.author_id
+    cross join lateral (select kc_access.post_actor_masked(c.post_id, c.author_id) as masked) mk
    where c.post_id = p_post_id
      and c.parent_comment_id is not distinct from p_parent_comment_id
      and (p_cursor is null

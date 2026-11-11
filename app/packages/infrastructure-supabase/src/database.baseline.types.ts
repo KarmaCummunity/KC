@@ -1447,6 +1447,49 @@ export type Database = {
           },
         ]
       }
+      post_actor_identity: {
+        Row: {
+          created_at: string
+          hide_from_counterparty: boolean
+          identity_visibility: string | null
+          post_id: string
+          surface_visibility: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          hide_from_counterparty?: boolean
+          identity_visibility?: string | null
+          post_id: string
+          surface_visibility?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          hide_from_counterparty?: boolean
+          identity_visibility?: string | null
+          post_id?: string
+          surface_visibility?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_actor_identity_post_id_fkey"
+            columns: ["post_id"]
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_actor_identity_user_id_fkey"
+            columns: ["user_id"]
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       post_closures: {
         Row: {
           delivered: boolean
@@ -3296,6 +3339,9 @@ export type Database = {
           open_posts_only_me: number
           open_posts_public: number
           posts_created_total: number
+          ratings_avg: number | null
+          ratings_count: number
+          ratings_stars_total: number
           updated_at: string
           user_id: string
           volunteer_hours_total: number
@@ -3310,6 +3356,9 @@ export type Database = {
           open_posts_only_me?: number
           open_posts_public?: number
           posts_created_total?: number
+          ratings_avg?: number | null
+          ratings_count?: number
+          ratings_stars_total?: number
           updated_at?: string
           user_id: string
           volunteer_hours_total?: number
@@ -3324,6 +3373,9 @@ export type Database = {
           open_posts_only_me?: number
           open_posts_public?: number
           posts_created_total?: number
+          ratings_avg?: number | null
+          ratings_count?: number
+          ratings_stars_total?: number
           updated_at?: string
           user_id?: string
           volunteer_hours_total?: number
@@ -3875,6 +3927,7 @@ export type Database = {
         }
       }
       cancel_standing_order: { Args: { p_order_id: string }; Returns: Json }
+      chat_counterpart_contact: { Args: { p_chat_id: string }; Returns: string }
       chat_inbox_page: {
         Args: {
           p_before_chat_id?: string
@@ -4494,6 +4547,25 @@ export type Database = {
           verification_level: number
         }[]
       }
+      map_post_clusters: {
+        Args: { p_bounds: Json; p_filters?: Json; p_zoom: number }
+        Returns: {
+          lat: number
+          lng: number
+          post_count: number
+          single_post_id: string
+        }[]
+      }
+      map_post_pins: {
+        Args: { p_bounds: Json; p_filters?: Json; p_limit?: number }
+        Returns: {
+          direction: string
+          lat: number
+          lng: number
+          post_id: string
+          world_slug: string
+        }[]
+      }
       mark_chat_read: { Args: { p_chat_id: string }; Returns: undefined }
       mark_event_attendance: {
         Args: { p_attended: boolean; p_handoff_id: string }
@@ -4689,6 +4761,7 @@ export type Database = {
           author_avatar_url: string
           author_display_name: string
           author_id: string
+          author_identity_masked: boolean
           author_share_handle: string
           body: string
           created_at: string
@@ -4704,6 +4777,10 @@ export type Database = {
         }[]
       }
       post_detail: { Args: { p_post_id: string }; Returns: Json }
+      profile_closed_posts_count: {
+        Args: { p_user_id: string }
+        Returns: number
+      }
       profile_posts_page: {
         Args: {
           p_cursor?: Json
@@ -5061,6 +5138,15 @@ export type Database = {
         }
         Returns: undefined
       }
+      upsert_post_actor_identity: {
+        Args: {
+          p_hide_from_counterparty: boolean
+          p_identity_visibility?: string
+          p_post_id: string
+          p_surface_visibility: string
+        }
+        Returns: undefined
+      }
       upsert_survey_answers: {
         Args: { p_answers: Json; p_slug: string }
         Returns: undefined
@@ -5129,6 +5215,7 @@ export type Database = {
         viewer_reaction: string | null
         viewer_saved: boolean | null
         viewer_follows_owner: boolean | null
+        owner_identity_masked: boolean | null
       }
     }
   }

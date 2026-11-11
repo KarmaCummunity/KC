@@ -120,7 +120,7 @@ as $$
              = '00000000-0000-4000-8000-00000000000' || p_who);
 $$;
 
-select plan(159);
+select plan(160);
 
 -- Alice owns the posts. Bob, Carol and Eve take them. Dan and Alice are blocked.
 insert into auth.users (id, email, raw_app_meta_data)
@@ -297,8 +297,9 @@ select is(pg_temp.act('b', 'select public.rate_handoff(~01b, 1)'), 'handoff_alre
 select is(pg_temp.act('a', 'select public.rate_handoff(~01b, 4)'), 'ok', 'the owner rates the recipient');
 select is(pg_temp.val($$select string_agg(stars || coalesce(comment, '-'), ' ' order by stars) from public.post_ratings
     where (rater_id, ratee_id) in ((@a, @b), (@b, @a))$$), '4- 5thanks', 'both ratings are stored, each about the other member');
--- The moderation module grants the table for its staff-only policy, so a member gets no rows.
-select is(pg_temp.seen('b', 'select 1 from public.post_ratings'), 0::bigint, 'members cannot read ratings, not even their own');
+-- A member reads back only the rating they gave (M07), never the one about them.
+select is(pg_temp.seen('b', 'select 1 from public.post_ratings'), 1::bigint, 'a member reads only the rating they gave');
+select is(pg_temp.seen('b', 'select 1 from public.post_ratings where ratee_id = @b'), 0::bigint, 'and not the one about them');
 select is(pg_temp.events('karma', 'rating_given'), 2::bigint, 'each rating records a karma event');
 
 -- ── Reopen, close with a recipient, un-mark ─────────────────────────────────
