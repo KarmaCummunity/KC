@@ -1,5 +1,5 @@
 // FR-FEED-020 AC2 / FR-DONATE-011 / FR-KNOW-001 — the links and knowledge a giving world shows
-// next to its posts (`world_links`, `external_bodies`, `knowledge_topics`, migration 0003).
+// next to its posts (`world_links`, `external_bodies`, `knowledge_topics`, migration 0021).
 // Pure vocabulary and rules; persistence lives behind `IWorldContentRepository`.
 import type { DonationCategorySlug } from '../value-objects';
 import type { KnowledgeTopic } from '../knowledge/knowledgeTopics';

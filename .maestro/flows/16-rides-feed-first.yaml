@@ -12,11 +12,15 @@ tags: [donations, rides, feed]
     visible:
       id: donations-hub
     timeout: 15000
+# `centerElement` keeps scrolling until the tile is mid-screen: the default stops as soon as the tile
+# is inside the screen bounds, where the floating tab bar can still cover it and the tap lands on
+# the search tab instead.
 - scrollUntilVisible:
     element:
       id: donation-tile-rides
     direction: DOWN
     timeout: 10000
+    centerElement: true
 - tapOn:
     id: donation-tile-rides
 - extendedWaitUntil:

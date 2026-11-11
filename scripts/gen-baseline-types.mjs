@@ -13,9 +13,9 @@
 //   3. drop monthly partition children (scripts/strip-partition-types.mjs)
 //   4. write app/packages/infrastructure-supabase/src/database.types.ts
 //
-// `database.types.ts` is the one generated file the app compiles against. Adapters that
-// have not moved to the baseline yet import the frozen `database.legacy.types.ts`
-// (docs/db/app-migration-playbook.md); that file is never regenerated.
+// `database.types.ts` is the one generated file the app compiles against. The frozen types of
+// the pre-baseline schema live in `docs/db/pre-baseline-schema.types.ts`, the input of the
+// migration map only (docs/db/app-migration-playbook.md); that file is never regenerated.
 //
 // Usage: node scripts/gen-baseline-types.mjs [--check] [--no-build] [--stdout]
 //   --check     generate and compare with the committed file; exit 1 on a difference

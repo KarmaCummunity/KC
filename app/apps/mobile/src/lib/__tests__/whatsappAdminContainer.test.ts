@@ -1,11 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import type { SupabaseClient } from '@supabase/supabase-js';
 import { createWhatsAppAdminUseCases } from '../whatsappAdminContainer';
 
 describe('whatsappAdminContainer', () => {
   it('instantiates all WhatsApp admin use cases wired with the repository', () => {
-    const mockSupabase = {} as unknown as SupabaseClient;
-    const container = createWhatsAppAdminUseCases(mockSupabase);
+    const container = createWhatsAppAdminUseCases();
 
     expect(container).toBeDefined();
     expect(container.getWhatsAppAdminOverview).toBeDefined();

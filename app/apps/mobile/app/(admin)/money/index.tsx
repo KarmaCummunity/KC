@@ -205,7 +205,10 @@ export default function MoneyScreen() {
           />
         )}
       />
-      <Text style={styles.totalLabel}>{t.totalCount(list.data?.totalCount ?? 0)}</Text>
+      {/* The count is known only when every entry fits on the first page (keyset paging). */}
+      {list.data && list.data.nextCursor === null ? (
+        <Text style={styles.totalLabel}>{t.totalCount(list.data.rows.length)}</Text>
+      ) : null}
 
       <KcFlashList
         data={list.data?.rows ?? []}

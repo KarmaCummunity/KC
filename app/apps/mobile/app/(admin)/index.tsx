@@ -2,7 +2,7 @@
 // FR-ADMIN-011 — admin dashboard. Welcome hero with role badges plus a
 // responsive grid of stat / quick-link cards, RBAC-filtered per session.
 // Users/posts KPIs show community-wide counts (FR-STATS-004 / community_stats).
-import type { ComponentProps, ReactElement } from 'react';
+import { useCallback, type ComponentProps, type ReactElement } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -18,6 +18,9 @@ import { useReportsInbox } from '../../src/hooks/useReportsInbox';
 import { getCommunityStatsSnapshotUseCase } from '../../src/services/postsComposition';
 import { useLocaleBundle } from '../../src/i18n/useLocaleBundle';
 import { useAdminPortalChrome } from '../../src/components/admin/AdminPortalChrome';
+import { BACK_OFFICE_TOOLS_AVAILABLE } from '../../src/lib/parkedFeatures';
+import { AdminDashboardSearch } from '../../src/components/admin/AdminDashboardSearch';
+import { useLaunchSurface } from '../../src/hooks/useLaunchSurface';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
 
@@ -87,13 +90,18 @@ export default function AdminDashboard(): ReactElement {
 
   const cards: Card[] = [
     { key: 'reports', label: t.openReportsKpi, value: reportsLabel, icon: 'flag-outline', accent: colors.error, accentBg: colors.errorLight, href: '/(admin)/reports' },
-    { key: 'tasks', label: t.openTasksKpi, value: openTasksLabel, icon: 'checkbox-outline', accent: colors.info, accentBg: colors.infoLight, href: '/(admin)/tasks' },
   ];
+  // M19: the tasks card stays hidden while the back-office tools are parked.
+  if (BACK_OFFICE_TOOLS_AVAILABLE) cards.push({ key: 'tasks', label: t.openTasksKpi, value: openTasksLabel, icon: 'checkbox-outline', accent: colors.info, accentBg: colors.infoLight, href: '/(admin)/tasks' });
   if (canViewAdmins) cards.push({ key: 'admins', label: t.adminsKpi, value: adminsLabel, icon: 'shield-checkmark-outline', accent: colors.secondary, accentBg: colors.secondaryLight, href: '/(admin)/admins' });
   if (canSearchUsers) cards.push({ key: 'users', label: t.usersKpi, value: usersLabel, icon: 'people-outline', accent: colors.success, accentBg: colors.successLight, href: '/(admin)/users' });
   if (canSearchPosts) cards.push({ key: 'posts', label: t.postsKpi, value: postsLabel, icon: 'document-text-outline', accent: colors.primary, accentBg: colors.primaryLight, href: '/(admin)/posts' });
   if (canViewSurveys) cards.push({ key: 'surveys', label: t.surveysKpi, value: t.auditOpenLabel, icon: 'bar-chart-outline', accent: colors.secondary, accentBg: colors.secondaryLight, href: '/(admin)/surveys' });
   if (canViewAudit) cards.push({ key: 'audit', label: t.auditKpi, value: t.auditOpenLabel, icon: 'time-outline', accent: colors.warning, accentBg: colors.warningLight, href: '/(admin)/audit' });
+
+  // The WhatsApp bot screen is hidden at launch; keep it out of the search too, like the nav rail.
+  const whatsappBotVisible = useLaunchSurface('whatsappBot');
+  const isHiddenFromSearch = useCallback((key: string) => key === 'whatsapp' && !whatsappBotVisible, [whatsappBotVisible]);
 
   const goTo = (path: string): void => router.push(path as never);
 
@@ -112,6 +120,8 @@ export default function AdminDashboard(): ReactElement {
           ))}
         </View>
       </View>
+
+      <AdminDashboardSearch roles={roles} isHidden={isHiddenFromSearch} />
 
       <Text style={styles.sectionTitle}>{t.quickLinksTitle}</Text>
       <View style={styles.grid}>

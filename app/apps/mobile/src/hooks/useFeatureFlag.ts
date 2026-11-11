@@ -1,13 +1,7 @@
-import { useQuery } from '@tanstack/react-query';
 import { resolveFeatureFlag, type FeatureFlagKey } from '../config/featureFlags';
-import { fetchRemoteFeatureFlags } from '../services/featureFlagsComposition';
+import { useAppFlags } from './useAppFlags';
 
-/** Remote flag value, falling back to the compiled default while loading / offline. */
+/** Remote flag value, falling back to the compiled default while loading / offline / signed out. */
 export function useFeatureFlag(key: FeatureFlagKey): boolean {
-  const { data } = useQuery({
-    queryKey: ['app-flags'],
-    queryFn: fetchRemoteFeatureFlags,
-    staleTime: 5 * 60 * 1000,
-  });
-  return resolveFeatureFlag(key, data);
+  return resolveFeatureFlag(key, useAppFlags());
 }

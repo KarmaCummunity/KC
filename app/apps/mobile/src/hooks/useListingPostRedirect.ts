@@ -9,7 +9,10 @@ import type { MarketplaceListingDetail } from '@kc/domain';
 
 type ListingPostSource = Pick<MarketplaceListingDetail, 'feedPostId'> | null | undefined;
 
-/** Replaces the listing route with its post's detail when the listing has a post. */
+/**
+ * Forwards the listing route to its post's detail when the listing has a post. Back from the post
+ * returns to the screen the listing was opened from.
+ */
 export function useListingPostRedirect(detail: ListingPostSource): boolean {
   const router = useRouter();
   const postId = detail?.feedPostId ?? null;
@@ -19,7 +22,17 @@ export function useListingPostRedirect(detail: ListingPostSource): boolean {
   useEffect(() => {
     if (!postId || redirectedTo.current === postId) return;
     redirectedTo.current = postId;
-    router.replace({ pathname: '/post/[id]', params: { id: postId } });
+    const post = { pathname: '/post/[id]', params: { id: postId } } as const;
+    // The listing route is only a hop. `/post/[id]` is a root-stack route, so a `replace` from the
+    // tab stack's listing route replaces the root stack's current route, the whole tab host, and
+    // Back from the post then left the app (Maestro flow 17). Pop the hop and push the post instead.
+    // With no history (a deep link) there is nothing to pop, and a replace is right.
+    if (router.canGoBack()) {
+      router.back();
+      router.push(post);
+    } else {
+      router.replace(post);
+    }
   }, [postId, router]);
 
   return postId !== null;

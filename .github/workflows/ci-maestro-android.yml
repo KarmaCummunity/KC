@@ -29,6 +29,11 @@ env:
   MAESTRO_VERSION: 2.12.0
   # The emulator image runs x86_64; building one ABI keeps the native compile short.
   E2E_ABI: x86_64
+  # The APK has no EXPO_PUBLIC_ENVIRONMENT, so launchSurfaces.ts treats it as production and hides
+  # email sign-in (#2134); every flow signs in with the seed user's email. The build override beats
+  # that default (a remote app_flags row would beat it, and kc-dev has none). Read by Expo at
+  # prebuild/bundle time, so it applies to both build steps below.
+  EXPO_PUBLIC_LAUNCH_EMAIL_AUTH: '1'
 
 jobs:
   android-e2e:
@@ -137,5 +142,8 @@ jobs:
         with:
           name: maestro-android
           path: ${{ runner.temp }}/maestro
+          # Maestro writes screenshots, the view hierarchy and maestro.log of every flow to
+          # <debug>/.maestro/tests/..., a hidden folder that is skipped unless this is on.
+          include-hidden-files: true
           if-no-files-found: ignore
           retention-days: 14

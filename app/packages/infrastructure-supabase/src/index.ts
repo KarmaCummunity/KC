@@ -1,4 +1,4 @@
-export { getSupabaseClient, getLegacySupabaseClient, resetSupabaseClient, setOnForbiddenCallback } from './client';
+export { getSupabaseClient, resetSupabaseClient, setOnForbiddenCallback } from './client';
 export type { SupabaseAuthStorage, SupabaseClientOptions } from './client';
 export {
   createTimeoutFetch,
@@ -7,7 +7,6 @@ export {
   isTimeoutError,
 } from './timeoutFetch';
 export type { Database } from './database.types';
-export type { Database as LegacyDatabase } from './database.legacy.types';
 
 export { SupabaseAuthService } from './auth/SupabaseAuthService';
 export { SupabaseUserRepository } from './users/SupabaseUserRepository';
@@ -91,12 +90,10 @@ export { EdgeFnTranslationService } from './translations/EdgeFnTranslationServic
 export { SupabasePostTranslationReader } from './translations/SupabasePostTranslationReader';
 export { SupabaseMarketplaceRepository } from './marketplace/SupabaseMarketplaceRepository';
 export { SupabasePaymentsRepository } from './payments/SupabasePaymentsRepository';
-export { SandboxPaymentProvider } from './payments/SandboxPaymentProvider';
 export { SupabaseKcSupportChannelsRepository } from './payments/SupabaseKcSupportChannelsRepository';
 export { SupabaseVolunteerRepository } from './volunteering/SupabaseVolunteerRepository';
 export { SupabaseOrganizationsRepository } from './organizations/SupabaseOrganizationsRepository';
 export { SupabaseChallengeRepository } from './challenges/SupabaseChallengeRepository';
 export * from './admin/SupabaseWhatsAppAdminRepository';
 export { SupabaseKnowledgeTopicRepository } from './knowledge/SupabaseKnowledgeTopicRepository';
-export { mapKnowledgeTopic, mapKnowledgeTopicMatch } from './knowledge/mapKnowledgeTopic';
 export { SupabaseKnowledgeBookingRepository } from './knowledge/SupabaseKnowledgeBookingRepository';

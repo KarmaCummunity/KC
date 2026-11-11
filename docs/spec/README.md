@@ -72,6 +72,7 @@ One file per domain, each with FR-IDs, acceptance criteria and a status header. 
 | [21_housing.md](./requirements/21_housing.md) | Housing & Spaces (`housing`) — free space sharing | FR-HOUSING-* |
 | [22_identity_verification.md](./requirements/22_identity_verification.md) | Identity verification (ID document + face) | FR-VERIFY-* |
 | [23_knowledge.md](./requirements/23_knowledge.md) | Knowledge world — give & take, free library, courses, agent retrieval | FR-KNOW-* |
+| [24_ride_event_groups.md](./requirements/24_ride_event_groups.md) | Event ride groups — a private room per event (wedding, party, concert, trip) to publish and book rides to and from it | FR-EVRIDE-* |
 
 ## Update procedure
 

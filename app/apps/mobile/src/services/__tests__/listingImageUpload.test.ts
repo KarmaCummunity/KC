@@ -57,13 +57,17 @@ describe('listingImageUpload', () => {
   });
 
   describe('uploadListingImages', () => {
-    it('compresses and uploads images to the post-images bucket', async () => {
+    it('compresses and uploads images to the post-images bucket, answering their real type and size', async () => {
       mockManipulateAsync.mockResolvedValue({ base64: Buffer.from('jpeg-bytes').toString('base64') });
       mockUpload.mockResolvedValue({ error: null });
 
-      const paths = await uploadListingImages('user-1', sampleImages);
+      const uploaded = await uploadListingImages('user-1', sampleImages);
 
-      expect(paths).toEqual(['user-1/batch-uuid-1/0.jpg', 'user-1/batch-uuid-1/1.jpg']);
+      // 'jpeg-bytes' is ten bytes once decoded: the size recorded is the size stored.
+      expect(uploaded).toEqual([
+        { path: 'user-1/batch-uuid-1/0.jpg', mimeType: 'image/jpeg', sizeBytes: 10 },
+        { path: 'user-1/batch-uuid-1/1.jpg', mimeType: 'image/jpeg', sizeBytes: 10 },
+      ]);
       expect(mockClient.storage.from).toHaveBeenCalledWith('post-images');
       expect(mockUpload).toHaveBeenCalledTimes(2);
       expect(mockUpload).toHaveBeenCalledWith(
@@ -71,7 +75,7 @@ describe('listingImageUpload', () => {
         expect.any(Uint8Array),
         {
           contentType: 'image/jpeg',
-          upsert: true,
+          upsert: false,
           cacheControl: 'public, max-age=31536000, immutable',
         },
       );

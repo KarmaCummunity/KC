@@ -45,6 +45,10 @@ for flow in .maestro/flows/*.yaml; do
     failed+=("$name")
   fi
 
+  # Maestro writes the -e variables, the password included, into commands.json and maestro.log.
+  # The artifact is readable by everyone with repository access, so hide it before it is uploaded.
+  node "$(dirname "$0")/maestro-redact.mjs" "$OUT_DIR"
+
   # SIGINT lets screenrecord finalise the mp4 before it is pulled.
   adb shell pkill -INT screenrecord || true
   wait "$recorder" 2>/dev/null || true

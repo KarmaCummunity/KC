@@ -1,12 +1,12 @@
+// Composition root of the money world (FR-DONATE-011, FR-ORG-010, FR-FIN-021): donations to
+// organizations, standing orders and receipts over the billing RPCs, amounts in agorot.
 import {
-  SandboxPaymentProvider,
   SupabaseKcSupportChannelsRepository,
   SupabasePaymentsRepository,
-  getLegacySupabaseClient,
+  getSupabaseClient,
 } from '@kc/infrastructure-supabase';
 import {
   CancelStandingOrderUseCase,
-  ConfirmDonationUseCase,
   CreateStandingOrderUseCase,
   DonateNowUseCase,
   GetDonationReceiptUseCase,
@@ -22,27 +22,16 @@ import * as Crypto from 'expo-crypto';
 import { pickAuthStorage } from './authSecureStorage';
 
 let _repo: SupabasePaymentsRepository | null = null;
-let _provider: SandboxPaymentProvider | null = null;
-
-function client() {
-  return getLegacySupabaseClient({ storage: pickAuthStorage() });
-}
 
 function repo() {
-  _repo ??= new SupabasePaymentsRepository(client());
+  _repo ??= new SupabasePaymentsRepository(getSupabaseClient({ storage: pickAuthStorage() }));
   return _repo;
-}
-
-function provider() {
-  _provider ??= new SandboxPaymentProvider(repo());
-  return _provider;
 }
 
 export const paymentsUseCases = {
   listNonprofits: () => new ListVerifiedNonprofitsUseCase(repo()),
   getNonprofitPage: () => new GetNonprofitPublicPageUseCase(repo()),
-  donateNow: () => new DonateNowUseCase(provider()),
-  confirmDonation: () => new ConfirmDonationUseCase(provider()),
+  donateNow: () => new DonateNowUseCase(repo()),
   createStandingOrder: () => new CreateStandingOrderUseCase(repo()),
   listStandingOrders: () => new ListMyStandingOrdersUseCase(repo()),
   cancelStandingOrder: () => new CancelStandingOrderUseCase(repo()),
@@ -51,7 +40,7 @@ export const paymentsUseCases = {
   listHistory: () => new ListDonationHistoryUseCase(repo()),
   getReceipt: () => new GetDonationReceiptUseCase(repo()),
   /** FR-DONATE-011 — direct support for KC; channels are server config only (D20, D64). */
-  kcSupportOptions: () => new GetKcSupportOptionsUseCase(new SupabaseKcSupportChannelsRepository(client())),
+  kcSupportOptions: () => new GetKcSupportOptionsUseCase(new SupabaseKcSupportChannelsRepository()),
 };
 
 export function newIdempotencyKey(prefix: string): string {

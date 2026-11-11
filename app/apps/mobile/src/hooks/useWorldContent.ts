@@ -1,4 +1,4 @@
-// FR-FEED-020 AC2 — the curated links and knowledge of a giving world (migration 0003).
+// FR-FEED-020 AC2 — the curated links and knowledge of a giving world (migration 0021).
 import { useQuery } from '@tanstack/react-query';
 import { emptyWorldContent, type WorldContent } from '@kc/domain';
 import { worldContentContainer } from '../lib/worldContentContainer';

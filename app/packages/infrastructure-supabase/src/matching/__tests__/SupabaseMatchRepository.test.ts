@@ -51,9 +51,38 @@ describe('SupabaseMatchRepository', () => {
     await expect(new SupabaseMatchRepository(missing.client).listMine()).rejects.toBeInstanceOf(BackendUnavailableError);
   });
 
-  it('degrades the admin quality report: the baseline has none (M14)', async () => {
-    const { client, calls } = createFakeClient();
-    await expect(new SupabaseMatchRepository(client).qualityByWorld(30)).rejects.toBeInstanceOf(BackendUnavailableError);
-    expect(calls).toHaveLength(0);
+  it('reads the admin quality report per world, rates as numbers', async () => {
+    const { client, calls } = createFakeClient({
+      rpc: {
+        admin_match_quality: ok([
+          {
+            world_slug: 'items', world_label_he: 'i', world_label_en: 'Items', notified_pairs: 2, responses: 3, accepted: 2,
+            precision_proxy: '0.6667', chat_pairs: 1, chat_rate: '0.5000', completed_pairs: 1, completion_rate: '0.5000',
+          },
+          {
+            world_slug: 'food', world_label_he: 'f', world_label_en: 'Food', notified_pairs: 1, responses: 0, accepted: 0,
+            precision_proxy: null, chat_pairs: 0, chat_rate: 0, completed_pairs: 0, completion_rate: 0,
+          },
+        ]),
+      },
+    });
+    expect(await new SupabaseMatchRepository(client).qualityByWorld(60)).toEqual([
+      {
+        worldSlug: 'items', worldLabelHe: 'i', worldLabelEn: 'Items', notifiedPairs: 2, responses: 3, accepted: 2,
+        precisionProxy: 0.6667, chatPairs: 1, chatRate: 0.5, completedPairs: 1, completionRate: 0.5,
+      },
+      {
+        worldSlug: 'food', worldLabelHe: 'f', worldLabelEn: 'Food', notifiedPairs: 1, responses: 0, accepted: 0,
+        precisionProxy: null, chatPairs: 0, chatRate: 0, completedPairs: 0, completionRate: 0,
+      },
+    ]);
+    expect(callsTo(calls, 'admin_match_quality')[0]?.args).toEqual({ p_days: 60 });
+  });
+
+  it('keeps the staff refusal and reports a missing report function', async () => {
+    const refused = createFakeClient({ rpc: { admin_match_quality: fail('42501', 'forbidden') } });
+    await expect(new SupabaseMatchRepository(refused.client).qualityByWorld()).rejects.not.toBeInstanceOf(BackendUnavailableError);
+    const missing = createFakeClient({ rpc: { admin_match_quality: fail('PGRST202', 'missing') } });
+    await expect(new SupabaseMatchRepository(missing.client).qualityByWorld()).rejects.toBeInstanceOf(BackendUnavailableError);
   });
 });

@@ -4,9 +4,22 @@
 > replaced by one migration, `supabase/migrations/0001_baseline.sql`, assembled from
 > `supabase/schemas/` and frozen (`node scripts/assemble-baseline.mjs --check` fails when it
 > changes). The old files are history in `supabase/migrations/archive/`. **The next free number is
-> `0004`** (`0002_org_entitlements`, #2150; `0003_world_content`: links and knowledge of the giving worlds). Later changes are forward-only `supabase/migrations/NNNN_snake.sql` files with their
-> pgTAP test in `supabase/tests/`; claim a range below as before. The table that follows is the
-> record of the retired chain and is kept for reference only.
+> `0002`.** Later changes are forward-only `supabase/migrations/NNNN_snake.sql` files with their
+> pgTAP test in `supabase/tests/`; claim a range in the first table below. The second table is
+> the record of the retired chain and is kept for reference only.
+
+## Ranges after the cut-over
+
+| Range | Owner / issue | Status |
+|---|---|---|
+| 0002 | #2150 organization entitlement (`0002_org_entitlements.sql`) | merged |
+| 0003–0019 | `claude/baseline-post-cutover`: the post-cut-over world, chat, research, housing, knowledge and money changes ported from the pre-cut-over baseline branches. `0003` post seat counts, `0004` ride series schedule, `0005` match quality, `0006` profile mine tab, `0007` chat inbox previews, `0008` post media sizes, `0009` research feedback and survey reports, `0010` housing, knowledge and finance reads; `0011`–`0019` held for follow-ups | in progress |
+| 0020 | #2154 Section 46(a) status on the kernel (`0020_org_sec46_machine.sql`) | in progress |
+| 0021 | #2163 links and knowledge of the giving worlds: `world_links`, `external_bodies`, `knowledge_topics`, `knowledge_topic_aliases` (`0021_world_content.sql`) | in progress |
+
+Next free number: `0022`.
+
+## Retired chain (before D-228)
 
 **Rule:** before writing a migration, claim a range here, in your PR or a small docs PR to `dev`. Use only numbers inside your range. Files are `supabase/migrations/NNNN_snake_case.sql`. Gaps are fine; collisions are not.
 

@@ -1,20 +1,13 @@
-// Maps a challenge to its feed post (0639) for share, menu and likes/comments on the detail screen.
+// Maps a challenge to its feed post for share, menu and likes/comments on the detail screen.
+// The challenge summary names its post (supabase/schemas/74_challenges, `challenge_summary`).
 import { useQuery } from '@tanstack/react-query';
-import { getLegacySupabaseClient } from '@kc/infrastructure-supabase';
 import type { PostWithOwner } from '@kc/application';
 import { getPostByIdUseCase } from '../services/postsComposition';
-import { pickAuthStorage } from '../services/authSecureStorage';
+import { challengeUseCases } from '../services/challengeComposition';
 
 async function resolveChallengePostId(challengeId: string): Promise<string | null> {
-  const client = getLegacySupabaseClient({ storage: pickAuthStorage() });
-  const { data, error } = await client
-    .from('posts')
-    .select('post_id')
-    .eq('post_type', 'challenge')
-    .filter('details->>challenge_id', 'eq', challengeId)
-    .maybeSingle();
-  if (error) throw error;
-  return data?.post_id ?? null;
+  const challenge = await challengeUseCases.get().execute(challengeId);
+  return challenge?.postId ?? null;
 }
 
 export function useChallengeLinkedPost(

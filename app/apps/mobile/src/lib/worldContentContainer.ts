@@ -1,4 +1,4 @@
-// Composition of the "links and knowledge" reads of a giving world (migration 0003). Kept out
+// Composition of the "links and knowledge" reads of a giving world (migration 0021). Kept out
 // of `container.ts`, which is at its size cap.
 import { GetWorldContentUseCase } from '@kc/application';
 import { SupabaseWorldContentRepository } from '@kc/infrastructure-supabase';

@@ -1,4 +1,4 @@
--- Links and knowledge of a giving world (migration 0003): everyone reads what is live, signed
+-- Links and knowledge of a giving world (migration 0021): everyone reads what is live, signed
 -- in or not; only a platform admin writes; an alias is unique once normalized and is as
 -- visible as its topic.
 begin;

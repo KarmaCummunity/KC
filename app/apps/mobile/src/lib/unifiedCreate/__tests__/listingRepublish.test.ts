@@ -82,13 +82,15 @@ describe('republishTargetFor', () => {
 });
 
 describe('listingRepublishSeed', () => {
-  it('carries the details without dates, and the photos in order', () => {
+  it('carries the details without dates, and the photos in order with their type and size', () => {
     const seed = listingRepublishSeed({
       kindSlug: 'food_offer',
       details: { food_type: 'cooked', expires_at: '2026-11-09T10:00:00Z' },
       media: [
-        { storagePath: 'u1/b/1.jpg', sortOrder: 1 },
-        { storagePath: 'u1/b/0.jpg', sortOrder: 0 },
+        { storagePath: 'u1/b/1.jpg', sortOrder: 1, mimeType: 'image/jpeg', sizeBytes: 2048 },
+        { storagePath: 'u1/b/0.jpg', sortOrder: 0, mimeType: 'image/png', sizeBytes: 1024 },
+        // A file without a recorded size cannot be attached again.
+        { storagePath: 'u1/b/2.jpg', sortOrder: 2, mimeType: 'image/jpeg', sizeBytes: 0 },
       ],
     });
     expect(seed).toEqual({
@@ -96,7 +98,10 @@ describe('listingRepublishSeed', () => {
       details: { food_type: 'cooked' },
       isOrgEvent: false,
       orgId: null,
-      mediaPaths: ['u1/b/0.jpg', 'u1/b/1.jpg'],
+      media: [
+        { path: 'u1/b/0.jpg', mimeType: 'image/png', sizeBytes: 1024 },
+        { path: 'u1/b/1.jpg', mimeType: 'image/jpeg', sizeBytes: 2048 },
+      ],
     });
   });
 

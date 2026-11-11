@@ -8,7 +8,7 @@ import { makeUseStyles, typography, spacing, radius, iconSize, useTheme, Text } 
 import { AvatarInitials } from '../AvatarInitials';
 import { OnlineDot } from './OnlineDot';
 import { formatRelativeChatTime } from '../../lib/formatRelativeChatTime';
-import { formatInboxPreview } from '../../lib/formatInboxPreview';
+import { formatInboxPreview, inboxMediaIcon } from '../../lib/formatInboxPreview';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 import { rowDirectionStart } from '../../lib/rtlLayout';
 import { VerificationBadge } from '../VerificationBadge';
@@ -33,6 +33,7 @@ function InboxChatRowInner({ item, onOpen, onRequestHide }: Props) {
   // A support thread has no counterpart to name: it carries the support title instead.
   const otherName =
     other?.displayName ?? (item.isSupportThread ? t('chat.messaging.supportThreadTitle') : t('common.deletedUser'));
+  const mediaIcon = inboxMediaIcon(item.lastMessage);
   return (
     <View style={styles.chatRow}>
       <TouchableOpacity style={styles.chatRowMain} onPress={() => onOpen(item.chatId)}>
@@ -54,9 +55,12 @@ function InboxChatRowInner({ item, onOpen, onRequestHide }: Props) {
               <VerificationBadge level={other?.verificationLevel} />
             </View>
           </View>
-          <Text style={styles.chatPreview} numberOfLines={1}>
-            {formatInboxPreview(item.lastMessage, t)}
-          </Text>
+          <View style={styles.previewRow}>
+            {mediaIcon ? <Ionicons name={mediaIcon} size={iconSize.sm} color={colors.textSecondary} /> : null}
+            <Text style={styles.chatPreview} numberOfLines={1}>
+              {formatInboxPreview(item.lastMessage, t)}
+            </Text>
+          </View>
         </View>
       </TouchableOpacity>
       {item.unreadCount > 0 ? (
@@ -108,7 +112,8 @@ const useInboxChatRowStyles = makeUseStyles(({ colors }) => ({
     textAlign: rtlTextAlignStart,
   },
   chatTime: { ...typography.caption, color: colors.textSecondary },
-  chatPreview: { ...typography.body, color: colors.textSecondary, textAlign: rtlTextAlignStart },
+  previewRow: { flexDirection: rowDirectionStart, alignItems: 'center', gap: spacing.xs },
+  chatPreview: { flexShrink: 1, ...typography.body, color: colors.textSecondary, textAlign: rtlTextAlignStart },
   badge: {
     width: 22,
     height: 22,

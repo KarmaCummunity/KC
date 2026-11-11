@@ -1,10 +1,13 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
-import type {
-  IWhatsAppAdminRepository,
-  WhatsAppOutboundListFilters,
-} from '@kc/application';
+// #1090 — WhatsApp bot admin console.
+//
+// The WhatsApp bot waits for the `integrations` module, which the production baseline reserves
+// but leaves empty (docs/db/app-migration-map.md, M22; design Q4). The adapter therefore makes
+// no call: every method reports the capability as missing with `BackendUnavailableError`, and
+// the admin portal hides the WhatsApp section (apps/mobile/src/lib/parkedFeatures.ts). The
+// previous RPC adapter is in git history.
+import type { IWhatsAppAdminRepository, WhatsAppOutboundListFilters } from '@kc/application';
 import {
-  WhatsAppAdminError,
+  BackendUnavailableError,
   type WhatsAppAdminOverview,
   type WhatsAppChannelConfig,
   type WhatsAppConsentRow,
@@ -14,166 +17,49 @@ import {
   type WhatsAppRateHit,
 } from '@kc/domain';
 
-function toError(err: { message?: string; code?: string } | null): WhatsAppAdminError {
-  const msg = err?.message ?? '';
-  if (err?.code === '42501' || msg === 'forbidden') return new WhatsAppAdminError('forbidden');
-  if (err?.code === 'P0002' || msg.includes('not_found') || msg.includes('missing')) {
-    return new WhatsAppAdminError('not_found', msg);
-  }
-  if (msg === 'invalid_status') return new WhatsAppAdminError('invalid_status');
-  if (msg === 'not_resendable') return new WhatsAppAdminError('not_resendable');
-  return new WhatsAppAdminError('unknown', msg);
-}
+const unavailable = (rpc: string): Promise<never> =>
+  Promise.reject(new BackendUnavailableError(`rpc:${rpc}`, 'function'));
 
-function asDate(v: string | null | undefined): Date | null {
-  return v ? new Date(v) : null;
-}
-
-function asString(v: unknown, fallback: string): string {
-  return typeof v === 'string' ? v : fallback;
-}
-
-function mapChannel(raw: Record<string, unknown>): WhatsAppChannelConfig {
-  return {
-    isEnabled: Boolean(raw.is_enabled),
-    phoneNumberId: (raw.phone_number_id as string | null) ?? null,
-    graphApiVersion: (raw.graph_api_version as string | null) ?? null,
-    updatedAt: asDate(raw.updated_at as string | null),
-  };
-}
+type CountedRows<T> = { rows: T[]; totalCount: number };
 
 export class SupabaseWhatsAppAdminRepository implements IWhatsAppAdminRepository {
-  constructor(private readonly client: SupabaseClient) {}
-
-  async getChannel(): Promise<WhatsAppChannelConfig> {
-    const { data, error } = await this.client.rpc('api_whatsapp_admin_get_channel');
-    if (error) throw toError(error);
-    return mapChannel((data ?? {}) as Record<string, unknown>);
+  getChannel(): Promise<WhatsAppChannelConfig> {
+    return unavailable('api_whatsapp_admin_get_channel');
   }
 
-  async setChannelEnabled(enabled: boolean): Promise<WhatsAppChannelConfig> {
-    const { data, error } = await this.client.rpc('api_whatsapp_admin_set_channel_enabled', {
-      p_enabled: enabled,
-    });
-    if (error) throw toError(error);
-    return mapChannel((data ?? {}) as Record<string, unknown>);
+  setChannelEnabled(_enabled: boolean): Promise<WhatsAppChannelConfig> {
+    return unavailable('api_whatsapp_admin_set_channel_enabled');
   }
 
-  async overview(): Promise<WhatsAppAdminOverview> {
-    const { data, error } = await this.client.rpc('api_whatsapp_admin_overview');
-    if (error) throw toError(error);
-    const r = (data ?? {}) as Record<string, unknown>;
-    return {
-      channelEnabled: Boolean(r.channel_enabled),
-      since: new Date(String(r.since)),
-      outboundQueued: Number(r.outbound_queued ?? 0),
-      outboundSent: Number(r.outbound_sent ?? 0),
-      outboundFailed: Number(r.outbound_failed ?? 0),
-      outboundSkipped: Number(r.outbound_skipped ?? 0),
-      consentOptedIn: Number(r.consent_opted_in ?? 0),
-      consentOptedOut: Number(r.consent_opted_out ?? 0),
-      sessions7d: Number(r.sessions_7d ?? 0),
-      matchesSent7d: Number(r.matches_sent_7d ?? 0),
-      rateHits7d: Number(r.rate_hits_7d ?? 0),
-    };
+  overview(): Promise<WhatsAppAdminOverview> {
+    return unavailable('api_whatsapp_admin_overview');
   }
 
-  async listConsent(limit = 50, offset = 0): Promise<{ rows: WhatsAppConsentRow[]; totalCount: number }> {
-    const { data, error } = await this.client.rpc('api_whatsapp_admin_list_consent', {
-      p_limit: limit, p_offset: offset,
-    });
-    if (error) throw toError(error);
-    const rows = (Array.isArray(data) ? data : []) as Record<string, unknown>[];
-    return {
-      totalCount: rows.length ? Number(rows[0]?.total_count ?? 0) : 0,
-      rows: rows.map((r) => ({
-        userId: (r.user_id as string | null) ?? null,
-        waIdMasked: (r.wa_id_masked as string | null) ?? null,
-        consentStatus: asString(r.consent_status, 'unknown'),
-        optedIn: Boolean(r.opted_in),
-        optedInAt: asDate(r.opted_in_at as string | null),
-        optedOutAt: asDate(r.opted_out_at as string | null),
-        preferredLanguage: (r.preferred_language as string | null) ?? null,
-        lastInboundAt: asDate(r.last_inbound_at as string | null),
-        updatedAt: new Date(String(r.updated_at)),
-      })),
-    };
+  listConsent(_limit?: number, _offset?: number): Promise<CountedRows<WhatsAppConsentRow>> {
+    return unavailable('api_whatsapp_admin_list_consent');
   }
 
-  async listOutbound(filters: WhatsAppOutboundListFilters): Promise<{ rows: WhatsAppOutboundRow[]; totalCount: number }> {
-    const { data, error } = await this.client.rpc('api_whatsapp_admin_list_outbound', {
-      p_status: filters.status ?? null,
-      p_limit: filters.limit ?? 50,
-      p_offset: filters.offset ?? 0,
-    });
-    if (error) throw toError(error);
-    const rows = (Array.isArray(data) ? data : []) as Record<string, unknown>[];
-    return {
-      totalCount: rows.length ? Number(rows[0]?.total_count ?? 0) : 0,
-      rows: rows.map((r) => ({
-        outboundId: String(r.outbound_id),
-        userId: (r.user_id as string | null) ?? null,
-        waIdMasked: (r.wa_id_masked as string | null) ?? null,
-        kind: asString(r.kind, 'template'),
-        templateName: (r.template_name as string | null) ?? null,
-        language: asString(r.language, 'he'),
-        status: String(r.status),
-        attempts: Number(r.attempts ?? 0),
-        lastError: (r.last_error as string | null) ?? null,
-        createdAt: new Date(String(r.created_at)),
-        sentAt: asDate(r.sent_at as string | null),
-        nextAttemptAt: asDate(r.next_attempt_at as string | null),
-      })),
-    };
+  listOutbound(_filters: WhatsAppOutboundListFilters): Promise<CountedRows<WhatsAppOutboundRow>> {
+    return unavailable('api_whatsapp_admin_list_outbound');
   }
 
-  async listRateHits(limit = 50): Promise<WhatsAppRateHit[]> {
-    const { data, error } = await this.client.rpc('api_whatsapp_admin_list_rate_hits', { p_limit: limit });
-    if (error) throw toError(error);
-    return ((Array.isArray(data) ? data : []) as Record<string, unknown>[]).map((r) => ({
-      bucket: String(r.bucket),
-      windowStart: new Date(String(r.window_start)),
-      hits: Number(r.hits ?? 0),
-    }));
+  listRateHits(_limit?: number): Promise<WhatsAppRateHit[]> {
+    return unavailable('api_whatsapp_admin_list_rate_hits');
   }
 
-  async listRecentMatches(limit = 50): Promise<WhatsAppMatchSentRow[]> {
-    const { data, error } = await this.client.rpc('api_whatsapp_admin_list_recent_matches', { p_limit: limit });
-    if (error) throw toError(error);
-    return ((Array.isArray(data) ? data : []) as Record<string, unknown>[]).map((r) => ({
-      outboundId: String(r.outbound_id),
-      userId: (r.user_id as string | null) ?? null,
-      waIdMasked: (r.wa_id_masked as string | null) ?? null,
-      language: asString(r.language, 'he'),
-      status: String(r.status),
-      payload: (r.payload as Record<string, unknown>) ?? {},
-      createdAt: new Date(String(r.created_at)),
-      sentAt: asDate(r.sent_at as string | null),
-    }));
+  listRecentMatches(_limit?: number): Promise<WhatsAppMatchSentRow[]> {
+    return unavailable('api_whatsapp_admin_list_recent_matches');
   }
 
-  async listConversations(limit = 50): Promise<WhatsAppConversationRow[]> {
-    const { data, error } = await this.client.rpc('api_whatsapp_admin_list_conversations', { p_limit: limit });
-    if (error) throw toError(error);
-    return ((Array.isArray(data) ? data : []) as Record<string, unknown>[]).map((r) => ({
-      sessionId: String(r.session_id),
-      waIdMasked: (r.wa_id_masked as string | null) ?? null,
-      userId: (r.user_id as string | null) ?? null,
-      state: String(r.state),
-      listingId: (r.listing_id as string | null) ?? null,
-      updatedAt: new Date(String(r.updated_at)),
-      createdAt: new Date(String(r.created_at)),
-    }));
+  listConversations(_limit?: number): Promise<WhatsAppConversationRow[]> {
+    return unavailable('api_whatsapp_admin_list_conversations');
   }
 
-  async resend(outboundId: string): Promise<string> {
-    const { data, error } = await this.client.rpc('api_whatsapp_admin_resend', { p_outbound_id: outboundId });
-    if (error) throw toError(error);
-    return String(data ?? 'queued');
+  resend(_outboundId: string): Promise<string> {
+    return unavailable('api_whatsapp_admin_resend');
   }
 
-  async blockUser(userId: string): Promise<void> {
-    const { error } = await this.client.rpc('api_whatsapp_admin_block_user', { p_user_id: userId });
-    if (error) throw toError(error);
+  blockUser(_userId: string): Promise<void> {
+    return unavailable('api_whatsapp_admin_block_user');
   }
 }
