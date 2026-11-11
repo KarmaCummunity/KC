@@ -3181,6 +3181,37 @@ export type Database = {
           },
         ]
       }
+      user_feedback: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          rating: number | null
+          user_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          rating?: number | null
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          rating?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_feedback_user_id_fkey"
+            columns: ["user_id"]
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_private: {
         Row: {
           basic_info_skipped: boolean
@@ -3617,6 +3648,7 @@ export type Database = {
         Args: { p_application_id: string; p_note?: string }
         Returns: undefined
       }
+      admin_pmf_survey_report: { Args: { p_slug?: string }; Returns: Json }
       admin_refund_payment: {
         Args: {
           p_amount_agorot: number
@@ -3671,6 +3703,8 @@ export type Database = {
         }
         Returns: undefined
       }
+      admin_survey_overview: { Args: never; Returns: Json }
+      admin_survey_results: { Args: { p_slug: string }; Returns: Json }
       admin_suspend_user: {
         Args: {
           p_note?: string
@@ -3679,6 +3713,18 @@ export type Database = {
           p_user_id: string
         }
         Returns: undefined
+      }
+      admin_user_feedback_list: {
+        Args: { p_cursor?: Json; p_limit?: number }
+        Returns: {
+          body: string
+          created_at: string
+          display_name: string
+          id: string
+          next_cursor: Json
+          rating: number
+          user_id: string
+        }[]
       }
       api_donation_intent_set_checkout: {
         Args: {
