@@ -22,4 +22,5 @@ export * from './FinanceDonor';
 export * from './FinanceTransparency';
 export * from './CrmContact';
 export * from './OrgApplication';
+export * from './orgSlug';
 export * from './WhatsAppAdmin';
