@@ -144,7 +144,7 @@ describe('SupabaseChatRepository.sendMessage', () => {
   it.each([
     ['rate_limited', 'rate_limited'],
     ['blocked_relationship', 'blocked_relationship'],
-    ['chat_not_found', 'chat_not_found'],
+    ['chat_not_found', 'chat_forbidden'],
     ['message_body_invalid', 'message_too_long'],
   ])('maps the refusal %s to ChatError %s', async (reason, code) => {
     const { repo: r } = repo({ rpc: { send_message: { data: null, error: { code: 'P0001', message: reason } } } });

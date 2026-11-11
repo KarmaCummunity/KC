@@ -73,11 +73,20 @@ export class SupabaseChatRepository implements IChatRepository {
 
   /** Sends a text message; `messageId` makes a retry idempotent (the server returns the first copy). */
   async sendMessage(chatId: string, _senderId: string, body: string, messageId?: string): Promise<Message> {
-    const row = await chatCall(
-      'rpc:send_message',
-      this.client.rpc('send_message', { p_chat_id: chatId, p_body: body, p_message_id: messageId }),
-    );
-    return rowToMessage(requireRow(row, 'send_message'));
+    try {
+      const row = await chatCall(
+        'rpc:send_message',
+        this.client.rpc('send_message', { p_chat_id: chatId, p_body: body, p_message_id: messageId }),
+      );
+      return rowToMessage(requireRow(row, 'send_message'));
+    } catch (error) {
+      // The server answers `chat_not_found` for a chat the caller is not in, so as not to confirm it
+      // exists; for a send that is the participants-only refusal of FR-CHAT-003.
+      if (error instanceof ChatError && error.code === 'chat_not_found') {
+        throw new ChatError('chat_forbidden', 'chat_forbidden', error);
+      }
+      throw error;
+    }
   }
 
   async markRead(chatId: string, _userId: string): Promise<void> {

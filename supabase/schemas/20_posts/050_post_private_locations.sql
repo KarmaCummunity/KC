@@ -135,6 +135,8 @@ create policy post_private_locations_update_owner on public.post_private_locatio
 grant select on public.post_private_locations to authenticated;
 grant insert (post_id, exact_point, street, street_number, destination_street_number, access_notes)
   on public.post_private_locations to authenticated;
--- The row cannot be moved to another post.
-grant update (exact_point, street, street_number, destination_street_number, access_notes)
+-- `post_id` is updatable only because an upsert (`on conflict (post_id) do update`) names every
+-- column it writes; the update policy's check still requires the caller to own the post the row
+-- points at, so a row can move between the caller's own posts at most.
+grant update (post_id, exact_point, street, street_number, destination_street_number, access_notes)
   on public.post_private_locations to authenticated;
