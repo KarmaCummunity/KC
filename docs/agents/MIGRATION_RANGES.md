@@ -8,6 +8,13 @@
 > pgTAP test in `supabase/tests/`; claim a range below as before. The table that follows is the
 > record of the retired chain and is kept for reference only.
 
+Claims after the cut-over:
+
+| Range | Owner / issue | Status |
+|---|---|---|
+| 0002 | #2150 organization entitlement | merged |
+| 0003–0006 | #2086 recurring events: `0003` post series, `0004` series RPCs and the end of a recurring ride; `0005`–`0006` held | in progress |
+
 **Rule:** before writing a migration, claim a range here, in your PR or a small docs PR to `dev`. Use only numbers inside your range. Files are `supabase/migrations/NNNN_snake_case.sql`. Gaps are fine; collisions are not.
 
 Last applied on kc-dev when this was written: `0239`.

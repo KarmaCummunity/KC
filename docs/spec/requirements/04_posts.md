@@ -539,10 +539,32 @@ A signed-in viewer of a `Public` post that is `open` or `closed_delivered` may s
 
 **Related.** Screens: 2.3 (post detail). Domain: `Post.visibility`, `Post.status`. Cross-refs: `FR-POST-014` (viewer detail), `FR-AUTH-014` (guest entry), `TD-66` (deep-link manifests). Server: `app/apps/mobile/web-server/server.mjs`. Decision: `D-38`.
 
+## FR-POST-024 — Recurring time posts (a series of occurrences) 🟡
+> Issue #2086; PM decisions `{{D:recurring-time-posts}}`, `{{D:series-end-cancels-booked}}`, `{{D:owner-cancel-notifies-registrants}}` (2026-11-11). Rides keep their own series (FR-RIDE-046) and move onto this model later.
+
+**Description.**
+A member who volunteers on a fixed schedule (for example every Tuesday at 17:00, three places), or an organization that runs the same event every week, publishes it once as a **series** from the regular time form. The series publishes each upcoming date as an ordinary time post (an **occurrence**), and each occurrence takes its own registrations, waitlist and attendance, exactly like a single event (G18). The owner manages the whole series in one place.
+
+**Acceptance Criteria.**
+- AC1. The time form (an event, which a volunteering shift is too) has a "recurring" switch under the schedule: weekdays, a start time and duration, an optional end date. The series' time zone is the member's (Israel by default); the first date opens after publishing. ⏳ app
+- AC2. A series publishes its dates for the coming 30 days and keeps that window filled; one date per series and day, never two, also when two runs overlap. ✅
+- AC3. Each date is an event post with its own registrations: capacity, waiting list and registration policy come from the series, and the organizer marks attendance per date; only marked attendance earns karma (D124). A person's series (regular volunteering) and an organization's follow the same rules; an organization's dates are published only while the owner may act for it. ✅
+- AC4. A local start time that does not exist on a clock-change day moves forward by the jump (02:30 → 03:30, as calendars do); a time that occurs twice takes the first. ✅
+- AC5. **Edit all**: the owner edits the series (schedule, and the title, description and capacity of its template); upcoming dates nobody registered for are replaced; a date that has registrations keeps its time and details. ✅ server, ⏳ app
+- AC6. **Cancel one**: the owner cancels a single date, from the series or by deleting the date's post; its registrations are cancelled, each registrant gets a notification, and the day is not published again. ✅ server, ⏳ app
+- AC7. **Pause / resume**: pausing stops publishing new dates and removes the upcoming dates nobody registered for; dates with registrations go ahead. Resuming publishes again. ✅ server, ⏳ app
+- AC8. **End**: ending a series is final. Every upcoming date is cancelled, including those with registrations, and each registrant gets a notification. Past dates stay as they were. The scheduler also ends a series whose last day has passed. ✅ server, ⏳ app
+- AC9. The series moves on the kernel: `active ⇄ paused → ended`; any other move is refused (`illegal_transition`). ✅
+- AC10. Not in the first version: editing a single date, "this and the following", and folding a series' later dates in the main feed (every date is an ordinary post there, as with recurring rides).
+- Server (`0003_post_series.sql`, `0004_post_series_rpcs.sql`): `post_series` (schedule + post and event templates, optional organization), `post_event_details.series_id / series_on` (one date per series and day), `kc_private.post_series_skipped_days` (cancelled days), machine `post_series`, `kc_private.series_local_instant`, `kc_private.post_series_materialize` (daily job, and on every series RPC), RPCs `create_post_series`, `update_post_series`, `set_post_series_status`, `cancel_post_series_date`. Tests: `supabase/tests/075_post_series.sql`.
+
+---
+
 ---
 
 | Version | Date | Summary |
 | ------- | ---- | ------- |
+| 0.20 | 2026-11-11 | `FR-POST-024` — recurring time posts: a series publishes occurrences that each take registrations; edit all, cancel one, pause / resume, end (#2086). |
 | 0.19 | 2026-11-07 | `FR-POST-001` AC6 — a blocked publish scrolls to the field with the problem and outlines it in red, with the message under it, instead of one message above the bottom Publish button. |
 | 0.18 | 2026-11-04 | `FR-POST-001` AC6 (#1411) — the rides form gets "from my current location" (origin) and "leave now" (departure) switches; see `FR-RIDE-003` AC6–AC7. |
 | 0.17 | 2026-11-04 | `FR-POST-001` AC6 + AC8 (KC#1741) — the create category picker is one horizontally scrolling row of chips instead of a 4x3 grid; labels, helper text and inline links in every create sub-form align to the reading-start edge in Hebrew and English. |
