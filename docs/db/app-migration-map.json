@@ -2,8 +2,8 @@
  "generatedBy": "scripts/app-migration-map.mjs",
  "totals": {
   "rpc": {
-   "objects": 222,
-   "same": 93,
+   "objects": 224,
+   "same": 95,
    "renamed": 20,
    "changed": 47,
    "removed": 1,
@@ -52,16 +52,16 @@
    "missing": 0
   },
   "later": {
-   "objects": 135,
-   "same": 24,
+   "objects": 136,
+   "same": 25,
    "renamed": 4,
    "changed": 41,
    "removed": 1,
    "missing": 65
   },
   "wedge": {
-   "objects": 52,
-   "same": 31,
+   "objects": 53,
+   "same": 32,
    "renamed": 15,
    "changed": 6,
    "removed": 0,
@@ -168,8 +168,8 @@
    "missing": 0
   },
   "fn:revenuecat-webhook": {
-   "callSites": 1,
-   "oneToOne": 1,
+   "callSites": 2,
+   "oneToOne": 2,
    "changed": 0,
    "removed": 0,
    "missing": 0
@@ -252,8 +252,8 @@
    "missing": 0
   },
   "marketplace": {
-   "callSites": 47,
-   "oneToOne": 33,
+   "callSites": 48,
+   "oneToOne": 34,
    "changed": 14,
    "removed": 0,
    "missing": 0
@@ -840,6 +840,7 @@
     "rpc:get_post_private_location",
     "rpc:report_post_emergency",
     "rpc:rides_feed",
+    "rpc:post_seat_counts",
     "rpc:accept_world_consent",
     "rpc:my_matches",
     "rpc:match_respond",
@@ -853,8 +854,8 @@
     "table:post_ratings"
    ],
    "counts": {
-    "objects": 70,
-    "oneToOne": 59,
+    "objects": 71,
+    "oneToOne": 60,
     "changed": 11,
     "removed": 0,
     "missing": 0
@@ -1092,11 +1093,12 @@
     "rpc:finance_donors_summary",
     "rpc:provider_webhook_apply",
     "rpc:api_revenuecat_set_pro",
+    "rpc:api_revenuecat_set_org_entitlement",
     "rpc:api_standing_orders_charge_due"
    ],
    "counts": {
-    "objects": 31,
-    "oneToOne": 7,
+    "objects": 32,
+    "oneToOne": 8,
     "changed": 20,
     "removed": 1,
     "missing": 3
@@ -3583,6 +3585,37 @@
    ]
   },
   {
+   "old": "api_revenuecat_set_org_entitlement",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Service role only (RevenueCat webhook, 0002): reports an organization's store subscription state.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_revenuecat_set_org_entitlement",
+     "signature": [
+      "api_revenuecat_set_org_entitlement(p_active: boolean, p_expires_at: string, p_org_id: string) → Json"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "fn:revenuecat-webhook"
+   ],
+   "callSites": [
+    {
+     "file": "supabase/functions/revenuecat-webhook/handler.ts",
+     "line": 62,
+     "symbol": "now",
+     "area": "fn:revenuecat-webhook"
+    }
+   ]
+  },
+  {
    "old": "api_revenuecat_set_pro",
    "kind": "rpc",
    "status": "same",
@@ -3612,8 +3645,8 @@
    "callSites": [
     {
      "file": "supabase/functions/revenuecat-webhook/handler.ts",
-     "line": 43,
-     "symbol": "createRevenueCatHandler",
+     "line": 63,
+     "symbol": "now",
      "area": "fn:revenuecat-webhook"
     }
    ]
@@ -4413,7 +4446,7 @@
       },
       {
        "code": "not_ride_offer",
-       "knownToApp": false
+       "knownToApp": true
       },
       {
        "code": "own_listing",
@@ -4579,7 +4612,7 @@
       },
       {
        "code": "handoff_world_not_supported",
-       "knownToApp": false
+       "knownToApp": true
       },
       {
        "code": "unauthenticated",
@@ -5153,7 +5186,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
-     "line": 158,
+     "line": 166,
      "symbol": "SupabaseVolunteerRepository.closeOpportunity",
      "area": "volunteering"
     }
@@ -5289,7 +5322,7 @@
       },
       {
        "code": "handoff_world_not_supported",
-       "knownToApp": false
+       "knownToApp": true
       },
       {
        "code": "unauthenticated",
@@ -5338,7 +5371,7 @@
       },
       {
        "code": "not_ride_offer",
-       "knownToApp": false
+       "knownToApp": true
       },
       {
        "code": "post_not_found",
@@ -5755,7 +5788,7 @@
       },
       {
        "code": "post_details_not_supported",
-       "knownToApp": false
+       "knownToApp": true
       },
       {
        "code": "unauthenticated",
@@ -5804,7 +5837,7 @@
       },
       {
        "code": "post_details_not_supported",
-       "knownToApp": false
+       "knownToApp": true
       },
       {
        "code": "ride_series_no_occurrence",
@@ -5812,7 +5845,7 @@
       },
       {
        "code": "ride_series_schedule_invalid",
-       "knownToApp": false
+       "knownToApp": true
       },
       {
        "code": "unauthenticated",
@@ -5827,7 +5860,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideSeriesRepository.ts",
-     "line": 68,
+     "line": 69,
      "symbol": "SupabaseRideSeriesRepository.kind",
      "area": "rides"
     }
@@ -6164,7 +6197,7 @@
       },
       {
        "code": "handoff_world_not_supported",
-       "knownToApp": false
+       "knownToApp": true
       },
       {
        "code": "unauthenticated",
@@ -6445,7 +6478,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
-     "line": 52,
+     "line": 53,
      "symbol": "SupabaseVolunteerRepository.listOpportunities",
      "area": "volunteering"
     }
@@ -8489,7 +8522,7 @@
       },
       {
        "code": "handoff_world_not_supported",
-       "knownToApp": false
+       "knownToApp": true
       },
       {
        "code": "unauthenticated",
@@ -8640,7 +8673,7 @@
       },
       {
        "code": "event_message_invalid",
-       "knownToApp": false
+       "knownToApp": true
       },
       {
        "code": "post_not_found",
@@ -9306,6 +9339,37 @@
      "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
      "line": 107,
      "symbol": "fetchListingDetail",
+     "area": "marketplace"
+    }
+   ]
+  },
+  {
+   "old": "post_seat_counts",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "wedge",
+   "confidence": "high",
+   "missing": null,
+   "note": "Places held, waiting registrations and seats left of event and ride posts the caller can read (`p_post_ids`, at most 100); the volunteering shifts and the occurrences of a ride series read their free places here.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "post_seat_counts",
+     "signature": [
+      "post_seat_counts(p_post_ids: string[]) → { capacity: number post_id: string seats_left: number seats_taken: number waitlisted: number }[]"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "marketplace"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/marketplace/postSeatCounts.ts",
+     "line": 22,
+     "symbol": "loadSeatCounts",
      "area": "marketplace"
     }
    ]
@@ -10005,7 +10069,7 @@
      "errors": [
       {
        "code": "emergency_not_active",
-       "knownToApp": false
+       "knownToApp": true
       },
       {
        "code": "emergency_throttled",
@@ -11092,7 +11156,7 @@
       },
       {
        "code": "post_details_not_supported",
-       "knownToApp": false
+       "knownToApp": true
       },
       {
        "code": "ride_series_not_found",
@@ -11111,7 +11175,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideSeriesRepository.ts",
-     "line": 84,
+     "line": 85,
      "symbol": "SupabaseRideSeriesRepository.setStatus",
      "area": "rides"
     }
@@ -11489,7 +11553,7 @@
       },
       {
        "code": "post_details_not_supported",
-       "knownToApp": false
+       "knownToApp": true
       },
       {
        "code": "ride_series_not_found",
@@ -11497,7 +11561,7 @@
       },
       {
        "code": "ride_series_schedule_invalid",
-       "knownToApp": false
+       "knownToApp": true
       },
       {
        "code": "unauthenticated",
@@ -11512,7 +11576,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideSeriesRepository.ts",
-     "line": 110,
+     "line": 117,
      "symbol": "SupabaseRideSeriesRepository.unwrapCall",
      "area": "rides"
     }
@@ -13747,7 +13811,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
-     "line": 36,
+     "line": 37,
      "symbol": "loadEventRows",
      "area": "volunteering",
      "ops": [
@@ -13945,7 +14009,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
-     "line": 106,
+     "line": 114,
      "symbol": "SupabaseVolunteerRepository.myRegistrationStatus",
      "area": "volunteering",
      "ops": [
@@ -13954,7 +14018,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
-     "line": 130,
+     "line": 138,
      "symbol": "SupabaseVolunteerRepository.unwrapCall",
      "area": "volunteering",
      "ops": [
@@ -13963,7 +14027,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
-     "line": 193,
+     "line": 201,
      "symbol": "SupabaseVolunteerRepository.listShiftVolunteers",
      "area": "volunteering",
      "ops": [
@@ -14416,7 +14480,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideSeriesRepository.ts",
-     "line": 93,
+     "line": 94,
      "symbol": "SupabaseRideSeriesRepository.unwrapCall",
      "area": "rides",
      "ops": [
@@ -14425,7 +14489,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideSeriesRepository.ts",
-     "line": 124,
+     "line": 131,
      "symbol": "SupabaseRideSeriesRepository.soonestOccurrence",
      "area": "rides",
      "ops": [
@@ -14623,7 +14687,7 @@
       },
       {
        "code": "post_details_not_supported",
-       "knownToApp": false
+       "knownToApp": true
       },
       {
        "code": "unauthenticated",
@@ -14844,7 +14908,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
-     "line": 135,
+     "line": 143,
      "symbol": "SupabaseVolunteerRepository.listMySignups",
      "area": "volunteering",
      "ops": [
@@ -14853,7 +14917,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
-     "line": 169,
+     "line": 177,
      "symbol": "SupabaseVolunteerRepository.unwrapCall",
      "area": "volunteering",
      "ops": [
@@ -15118,7 +15182,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideSeriesRepository.ts",
-     "line": 47,
+     "line": 48,
      "symbol": "SupabaseRideSeriesRepository.unwrapCall",
      "area": "rides",
      "ops": [
@@ -16037,7 +16101,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
-     "line": 196,
+     "line": 204,
      "symbol": "SupabaseVolunteerRepository.listShiftVolunteers",
      "area": "volunteering",
      "ops": [

@@ -11,3 +11,4 @@
 # supabase-prod variable KC_PROD_SCHEMA_MODE is set to "baseline" (D-228).
 0001_baseline.sql
 0002_org_entitlements.sql
+0003_post_seat_counts.sql

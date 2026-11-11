@@ -1,8 +1,8 @@
 // Volunteering over event posts (design Q3, G18): an opportunity is an event post with its
 // `post_event_details` row, and one shift is one such post. A sign-up is a registration (a
 // `post_handoffs` row of the `event_registration` machine); attendance is marked by the organizer.
-// Free places per shift are not readable by a volunteer (handoffs are visible to their two members
-// only), so a shift shows its capacity as open slots and fills only for its organizer.
+// Places held and left per shift come from `post_seat_counts`, readable by everyone who can see the
+// event (the registrations themselves stay visible to their two members only).
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { IVolunteerRepository } from '@kc/application';
@@ -23,6 +23,7 @@ import {
   registerForEvent,
 } from '../marketplace/eventRegistrations';
 import { fetchCardsInOrder } from '../marketplace/listingMapping';
+import { loadSeatCounts } from '../marketplace/postSeatCounts';
 
 type Client = SupabaseClient<Database>;
 type EventRow = Database['public']['Tables']['post_event_details']['Row'];
@@ -52,7 +53,8 @@ export class SupabaseVolunteerRepository implements IVolunteerRepository {
       await this.client.rpc('feed_page', { p_limit: clampPageLimit(limit), p_filters: { world: 'time', sort: 'newest' } }),
     );
     const cards = (rows ?? []).map((row) => row.card).filter((card) => card.post_type === 'event' && card.id !== null);
-    const events = await loadEventRows(this.client, cards.map((card) => card.id as string));
+    const ids = cards.map((card) => card.id as string);
+    const [events, seats] = await Promise.all([loadEventRows(this.client, ids), loadSeatCounts(this.client, ids)]);
     return cards.flatMap((card) => {
       const event = events.get(card.id as string);
       if (!event) return [];
@@ -64,7 +66,8 @@ export class SupabaseVolunteerRepository implements IVolunteerRepository {
           locationLabel: event.address_label,
           cityId: card.city_id,
           nextShiftAt: event.starts_at,
-          openSlots: event.capacity ?? 0,
+          // An event without a capacity has no count of places left; it shows none.
+          openSlots: seats.get(card.id as string)?.left ?? 0,
         },
       ];
     });
@@ -72,9 +75,14 @@ export class SupabaseVolunteerRepository implements IVolunteerRepository {
 
   /** One opportunity is one event, with a single shift (itself). */
   async getOpportunityDetail(opportunityId: string): Promise<VolunteerOpportunityDetail | null> {
-    const [card] = await fetchCardsInOrder(this.client, [opportunityId]);
-    const event = (await loadEventRows(this.client, [opportunityId])).get(opportunityId);
+    const [[card], events, seats] = await Promise.all([
+      fetchCardsInOrder(this.client, [opportunityId]),
+      loadEventRows(this.client, [opportunityId]),
+      loadSeatCounts(this.client, [opportunityId]),
+    ]);
+    const event = events.get(opportunityId);
     if (!card?.id || !event) return null;
+    const seat = seats.get(opportunityId);
     const userId = await sessionUserId(this.client);
     const mine = userId ? await this.myRegistrationStatus(opportunityId, userId) : null;
     return {
@@ -91,8 +99,8 @@ export class SupabaseVolunteerRepository implements IVolunteerRepository {
           startsAt: event.starts_at,
           endsAt: event.ends_at,
           capacity: event.capacity ?? 0,
-          filled: 0,
-          slotsOpen: event.capacity ?? 0,
+          filled: seat?.taken ?? 0,
+          slotsOpen: seat?.left ?? 0,
           myStatus: mine,
         },
       ],

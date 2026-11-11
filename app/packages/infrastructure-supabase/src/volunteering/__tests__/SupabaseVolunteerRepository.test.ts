@@ -5,6 +5,7 @@ import { fail, makeCard, ok } from '../../posts/__tests__/cardFixtures';
 import { SupabaseVolunteerRepository } from '../SupabaseVolunteerRepository';
 
 const EVENT = { post_id: 'e1', starts_at: '2030-01-01T08:00:00Z', ends_at: '2030-01-01T10:30:00Z', capacity: 10, address_label: 'Community hall' };
+const SEATS = { post_id: 'e1', capacity: 10, seats_taken: 7, waitlisted: 0, seats_left: 3 };
 const HANDOFF = {
   id: 'h1', post_id: 'e1', owner_id: 'org', recipient_id: 'vol', machine_id: 'event_registration', status: 'confirmed',
   created_at: '2026-01-01T00:00:00Z', confirmed_at: '2026-01-01T01:00:00Z',
@@ -18,26 +19,44 @@ describe('SupabaseVolunteerRepository', () => {
           { card: makeCard({ id: 'e1', post_type: 'event', world_slug: 'time', title: 'Pack boxes' }), next_cursor: {}, distance_m: null },
           { card: makeCard({ id: 'x', post_type: 'standard', world_slug: 'time' }), next_cursor: {}, distance_m: null },
         ]),
+        post_seat_counts: ok([SEATS]),
       },
       tables: { post_event_details: ok([EVENT]) },
     });
     expect(await new SupabaseVolunteerRepository(client).listOpportunities(20)).toEqual([
-      { opportunityId: 'e1', title: 'Pack boxes', summary: 'Three seats', locationLabel: 'Community hall', cityId: 'IL-001', nextShiftAt: EVENT.starts_at, openSlots: 10 },
+      { opportunityId: 'e1', title: 'Pack boxes', summary: 'Three seats', locationLabel: 'Community hall', cityId: 'IL-001', nextShiftAt: EVENT.starts_at, openSlots: 3 },
     ]);
     expect(callsTo(calls, 'feed_page')[0]?.args).toEqual({ p_limit: 20, p_filters: { world: 'time', sort: 'newest' } });
+    expect(callsTo(calls, 'post_seat_counts')[0]?.args).toEqual({ p_post_ids: ['e1'] });
   });
 
   it('shows one opportunity as one shift with the caller\'s registration', async () => {
     const { client } = createFakeClient({
       userId: 'vol',
-      rpc: { post_cards: ok([makeCard({ id: 'e1', post_type: 'event', title: 'Pack boxes' })]) },
+      rpc: { post_cards: ok([makeCard({ id: 'e1', post_type: 'event', title: 'Pack boxes' })]), post_seat_counts: ok([SEATS]) },
       tables: { post_event_details: ok([EVENT]), post_handoffs: ok({ status: 'waitlisted' }) },
     });
     const detail = await new SupabaseVolunteerRepository(client).getOpportunityDetail('e1');
     expect(detail).toMatchObject({ opportunityId: 'e1', organizerId: 'owner-1', title: 'Pack boxes', locationLabel: 'Community hall', status: 'open' });
     expect(detail?.shifts).toEqual([
-      { shiftId: 'e1', startsAt: EVENT.starts_at, endsAt: EVENT.ends_at, capacity: 10, filled: 0, slotsOpen: 10, myStatus: 'waitlisted' },
+      { shiftId: 'e1', startsAt: EVENT.starts_at, endsAt: EVENT.ends_at, capacity: 10, filled: 7, slotsOpen: 3, myStatus: 'waitlisted' },
     ]);
+  });
+
+  it('shows an event without readable seat counts as having no open places', async () => {
+    const { client } = createFakeClient({
+      rpc: { post_cards: ok([makeCard({ id: 'e1', post_type: 'event' })]), post_seat_counts: ok([]) },
+      tables: { post_event_details: ok([EVENT]) },
+    });
+    expect((await new SupabaseVolunteerRepository(client).getOpportunityDetail('e1'))?.shifts[0]).toMatchObject({ filled: 0, slotsOpen: 0 });
+  });
+
+  it('reports a missing seat count function as unavailable', async () => {
+    const { client } = createFakeClient({
+      rpc: { feed_page: ok([{ card: makeCard({ id: 'e1', post_type: 'event' }), next_cursor: {}, distance_m: null }]), post_seat_counts: fail('PGRST202', 'missing') },
+      tables: { post_event_details: ok([EVENT]) },
+    });
+    await expect(new SupabaseVolunteerRepository(client).listOpportunities()).rejects.toBeInstanceOf(BackendUnavailableError);
   });
 
   it('answers null for an event the caller cannot read', async () => {
