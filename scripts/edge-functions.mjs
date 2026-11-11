@@ -5,7 +5,8 @@
 // One list for the deploy job and the smoke, so a function cannot be deployed
 // without being checked or checked without being deployed. Every directory
 // under supabase/functions with an index.ts is deployable, except shared code
-// (`_*`) and LOCAL_ONLY functions, which must never exist on a hosted project.
+// (`_*`), LOCAL_ONLY functions (must never exist on a hosted project) and
+// NOT_DEPLOYED functions (kept in the repo, switched off in the pipeline).
 //
 //   (no args)                   print the deployable names, space-separated
 //   --verify-active <json>      fail unless `supabase functions list -o json`
@@ -19,6 +20,20 @@ const DEFAULT_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'supabas
 
 /** Functions that exist for a local stack only and must never be deployed; none today (demo users are dev seed data, target-design §9). */
 export const LOCAL_ONLY = new Set();
+
+/**
+ * Functions that stay in the repo but are NOT deployed to any hosted project by
+ * the pipeline, with the reason (an explicit, reviewable list; adding a name
+ * here is the whole opt-out, removing it is the whole opt-in, and the tests
+ * force every whatsapp-* function to be listed until someone decides otherwise).
+ * The pipeline never deletes a function: one that is already deployed stays at
+ * its last version until removed by hand (`supabase functions delete`).
+ */
+export const NOT_DEPLOYED = new Map([
+  ['whatsapp-intake-worker', 'WhatsApp is not part of the launch scope'],
+  ['whatsapp-sender', 'WhatsApp is not part of the launch scope'],
+  ['whatsapp-webhook', 'WhatsApp is not part of the launch scope'],
+]);
 
 /**
  * How the deploy smoke probes each function: one OPTIONS request carrying the
@@ -46,15 +61,12 @@ export const SMOKE_PROBES = {
   'subscriptions-charger': { expect: [405], why: 'method guard (POST only) runs first' },
   translate: { expect: [200], why: 'answers the preflight for the deployed web origin' },
   'validate-donation-link': { expect: [200], why: 'answers the CORS preflight' },
-  'whatsapp-intake-worker': { expect: [405], why: 'method guard (POST only) runs first' },
-  'whatsapp-sender': { expect: [405], why: 'method guard (POST only) runs first' },
-  'whatsapp-webhook': { expect: [405], why: 'only GET (verification) and POST are handled' },
 };
 
 /** Sorted deployable function names under `dir`. */
 export function listDeployableFunctions(dir = DEFAULT_DIR) {
   return readdirSync(dir, { withFileTypes: true })
-    .filter((e) => e.isDirectory() && !e.name.startsWith('_') && !LOCAL_ONLY.has(e.name))
+    .filter((e) => e.isDirectory() && !e.name.startsWith('_') && !LOCAL_ONLY.has(e.name) && !NOT_DEPLOYED.has(e.name))
     .filter((e) => existsSync(join(dir, e.name, 'index.ts')))
     .map((e) => e.name)
     .sort();

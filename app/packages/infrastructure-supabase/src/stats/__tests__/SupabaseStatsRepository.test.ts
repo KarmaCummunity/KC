@@ -49,8 +49,8 @@ describe('listMyActivityTimeline', () => {
     const { client, calls } = createFakeClient({
       rpc: {
         my_activity_timeline: ok([
-          { occurred_at: 't1', kind: 'marked_as_recipient', post_id: 'p1', post_title: 'Sofa', actor_id: 'u2', actor_display_name: 'Dana' },
-          { occurred_at: 't2', kind: 'something_new', post_id: 'p2', post_title: 'Bike', actor_id: 'u1', actor_display_name: 'Me' },
+          { occurred_at: 't1', kind: 'marked_as_recipient', post_id: 'p1', post_title: 'Sofa', actor_id: 'u2', actor_display_name: 'Dana', world_slug: 'time' },
+          { occurred_at: 't2', kind: 'something_new', post_id: 'p2', post_title: 'Bike', actor_id: 'u1', actor_display_name: 'Me', world_slug: null },
         ]),
       },
     });
@@ -59,8 +59,8 @@ describe('listMyActivityTimeline', () => {
 
     expect(callsTo(calls, 'my_activity_timeline')[0]?.args).toEqual({ p_limit: 25 });
     expect(items).toEqual([
-      { occurredAt: 't1', kind: 'marked_as_recipient', postId: 'p1', postTitle: 'Sofa', actorDisplayName: 'Dana' },
-      { occurredAt: 't2', kind: 'post_created', postId: 'p2', postTitle: 'Bike', actorDisplayName: 'Me' },
+      { occurredAt: 't1', kind: 'marked_as_recipient', postId: 'p1', postTitle: 'Sofa', actorDisplayName: 'Dana', worldSlug: 'time' },
+      { occurredAt: 't2', kind: 'post_created', postId: 'p2', postTitle: 'Bike', actorDisplayName: 'Me', worldSlug: null },
     ]);
   });
 });

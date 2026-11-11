@@ -15905,7 +15905,7 @@ comment on function kc_private.user_active_days_purge() is 'Retention of active 
 create function public.my_activity_timeline(p_limit integer default 30)
 returns table (
   kind text, post_id uuid, post_title text, actor_id uuid, actor_display_name text,
-  occurred_at timestamptz)
+  occurred_at timestamptz, world_slug text)
 language sql
 stable
 security invoker
@@ -15943,7 +15943,7 @@ as $$
       order by h.created_at desc
       limit (select n from me))
   )
-  select e.kind, e.post_id, p.title, e.actor_id, u.display_name, e.occurred_at
+  select e.kind, e.post_id, p.title, e.actor_id, u.display_name, e.occurred_at, p.world_slug
     from entries e
     left join public.posts p on p.id = e.post_id
     left join public.users u on u.id = e.actor_id
@@ -15951,7 +15951,7 @@ as $$
    limit (select n from me);
 $$;
 comment on function public.my_activity_timeline(integer) is
-  'The caller''s recent activity (posts published and closed, handoffs received), newest first.';
+  'The caller''s recent activity (posts published and closed, handoffs received), newest first, with the world of each post (null once the post is gone).';
 grant execute on function public.my_activity_timeline(integer) to authenticated;
 
 -- ── Community numbers ────────────────────────────────────────────────────────────────────

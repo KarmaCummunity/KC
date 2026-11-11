@@ -52,7 +52,7 @@ begin
 end;
 $$;
 
-select plan(15);
+select plan(16);
 
 insert into auth.users (id, email, raw_app_meta_data)
 select ('00000000-0000-4000-8000-00000000000' || x)::uuid, x || '@example.test', '{"provider":"google"}'
@@ -98,6 +98,8 @@ select is(pg_temp.get('a', $$select string_agg(kind || ':' || post_title, ',' or
 select is(pg_temp.get('b', $$select string_agg(kind || ':' || post_title || ':' || (actor_id = @a), ',') from public.my_activity_timeline()$$),
   'marked_as_recipient:a chair:true', 'the recipient''s timeline lists the handover and who gave');
 select is(pg_temp.get('c', 'select count(*) from public.my_activity_timeline()'), '0', 'nobody sees another member''s activity');
+select is(pg_temp.get('a', $$select string_agg(distinct world_slug, ',') from public.my_activity_timeline()$$), 'items',
+  'each row names the world of its post, so the app can word a volunteering row as such');
 
 select * from finish();
 rollback;

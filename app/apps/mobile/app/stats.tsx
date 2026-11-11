@@ -25,6 +25,7 @@ import { CommunityStatsPanel } from '../src/components/stats/CommunityStatsPanel
 import { ActivityTimelineList } from '../src/components/stats/ActivityTimelineList';
 import { MyWorldGivingsPanel } from '../src/components/stats/MyWorldGivingsPanel';
 import { OrgTransparencySection } from '../src/components/finance/OrgTransparencySection';
+import { activityLabelKey } from '../src/lib/activityLabelKey';
 import { rowDirectionStart } from '../src/lib/rtlLayout';
 import { rtlTextAlignStart } from '../src/lib/rtlTextAlignStart';
 
@@ -61,7 +62,7 @@ export default function StatsScreen() {
 
   const resolveActivityLabel = useCallback(
     (item: PersonalActivityItem) =>
-      t(`stats.activityKind.${item.kind}`, {
+      t(activityLabelKey(item), {
         title: item.postTitle,
         owner: item.actorDisplayName ?? t('stats.activitySomeone'),
       }),

@@ -57,6 +57,7 @@ export class SupabaseStatsRepository implements IStatsRepository {
       postId: row.post_id,
       postTitle: row.post_title,
       actorDisplayName: row.actor_display_name,
+      worldSlug: row.world_slug ?? null,
     }));
   }
 

@@ -1229,7 +1229,7 @@ export type Database = {
           id: string
           org_description: string | null
           org_name: string
-          org_type: string
+          org_type: string | null
           organization_id: string | null
           registration_number: string | null
           review_note: string | null
@@ -1247,7 +1247,7 @@ export type Database = {
           id?: string
           org_description?: string | null
           org_name: string
-          org_type: string
+          org_type?: string | null
           organization_id?: string | null
           registration_number?: string | null
           review_note?: string | null
@@ -1265,7 +1265,7 @@ export type Database = {
           id?: string
           org_description?: string | null
           org_name?: string
-          org_type?: string
+          org_type?: string | null
           organization_id?: string | null
           registration_number?: string | null
           review_note?: string | null
@@ -3594,7 +3594,7 @@ export type Database = {
         Returns: string
       }
       admin_org_application_approve: {
-        Args: { p_application_id: string; p_note?: string; p_slug: string }
+        Args: { p_application_id: string; p_note?: string; p_slug?: string }
         Returns: string
       }
       admin_org_application_reject: {
@@ -4536,6 +4536,17 @@ export type Database = {
         }[]
       }
       list_my_standing_orders: { Args: never; Returns: Json[] }
+      list_org_members: {
+        Args: { p_org_id: string }
+        Returns: {
+          avatar_url: string
+          display_name: string
+          joined_at: string
+          role: string
+          share_handle: string
+          user_id: string
+        }[]
+      }
       list_verified_nonprofits: {
         Args: { p_after_id?: string; p_after_name?: string; p_limit?: number }
         Returns: {
@@ -4648,6 +4659,7 @@ export type Database = {
           occurred_at: string
           post_id: string
           post_title: string
+          world_slug: string
         }[]
       }
       my_karma_points: { Args: never; Returns: number }
@@ -4737,6 +4749,14 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      org_add_member: {
+        Args: { p_org_id: string; p_role?: string; p_share_handle: string }
+        Returns: string
+      }
+      org_remove_member: {
+        Args: { p_org_id: string; p_user_id: string }
+        Returns: undefined
       }
       pause_post: { Args: { p_post_id: string }; Returns: undefined }
       pause_standing_order: { Args: { p_order_id: string }; Returns: Json }
@@ -5117,6 +5137,17 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      submit_org_application: {
+        Args: {
+          p_contact_email: string
+          p_contact_phone?: string
+          p_declared_nonprofit?: boolean
+          p_org_description: string
+          p_org_name: string
+          p_website_url?: string
+        }
+        Returns: string
       }
       submit_public_research_response: {
         Args: {
