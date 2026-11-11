@@ -32,6 +32,7 @@ import { chatMessagingEn } from './modules/chatMessaging';
 import { marketplaceBaselineErrorsEn } from './modules/marketplaceBaselineErrors';
 import { challengeBaselineErrorsEn } from './modules/challengeBaselineErrors';
 import { notificationsEn } from './modules/notifications';
+import { notificationsRichEn } from './modules/notificationsRich';
 import { emptyStatesEn, feedSettingsEn } from './modules/feedSettings';
 import { moderationEn, auditEn, accountBlockedEn } from './modules/moderation';
 import { restoreAccountEn } from './modules/restoreAccount';
@@ -100,7 +101,7 @@ const en = {
   chat: { ...chatEn, new: chatNewEn, messaging: chatMessagingEn },
 
   // Notifications (FR-NOTIF-001..015) — see modules/notifications.ts
-  notifications: notificationsEn,
+  notifications: { ...notificationsEn, ...notificationsRichEn },
   feedSettings: feedSettingsEn,
   emptyStates: emptyStatesEn,
 

@@ -38,15 +38,21 @@ export const PATHS = {
   schemas: 'supabase/schemas',
   migrations: 'supabase/migrations',
   locale: 'app/apps/mobile/src/i18n/locales/he/modules/notifications.ts',
+  /** Further modules merged into the same `notifications` namespace (D26 rich texts). */
+  localeExtra: ['app/apps/mobile/src/i18n/locales/he/modules/notificationsRich.ts'],
   domain: 'app/packages/domain/src/notificationKinds.generated.ts',
   worker: `${WORKER_DIR}/kinds.generated.ts`,
   strings: `${WORKER_DIR}/strings.he.generated.json`,
 };
 
 /** Arguments a notification text may interpolate; both renderers provide exactly these. */
-export const TEXT_ARGS = ['actorName', 'count', 'othersCount', 'messagePreview'];
+export const TEXT_ARGS = ['actorName', 'count', 'othersCount', 'messagePreview', 'postTitle', 'details'];
 /** Texts the worker needs besides the kinds' own (fallbacks of the arguments above). */
-export const AUXILIARY_KEYS = ['notifications.messagePreviewFallback', 'notifications.actorNameFallback'];
+export const AUXILIARY_KEYS = [
+  'notifications.messagePreviewFallback', 'notifications.actorNameFallback',
+  // D26: the fallback of `postTitle` and the pieces `details` is built from.
+  'notifications.postTitleFallback', 'notifications.detailsSeats', 'notifications.detailsRoute',
+];
 const KEY_PREFIX = 'notifications.';
 const COLUMN_DEFAULTS = {
   default_enabled: true, bypass_preferences: false, bypass_quiet_hours: false, sends_push: true, group_window: null,
@@ -343,7 +349,9 @@ function main(argv) {
   const check = argv.includes('--check');
   const dbUrl = argv.includes('--db-url') ? argv[argv.indexOf('--db-url') + 1] : null;
   const rows = readRegistry();
-  const { kinds, files } = build(rows, parseLocaleModule(readFileSync(join(ROOT, PATHS.locale), 'utf8')));
+  const locale = Object.assign({}, ...[PATHS.locale, ...PATHS.localeExtra]
+    .map((path) => parseLocaleModule(readFileSync(join(ROOT, path), 'utf8'))));
+  const { kinds, files } = build(rows, locale);
   if (dbUrl) compareWithDatabase(rows, dbUrl);
   const stale = Object.entries(files).filter(([path, content]) => {
     const file = join(ROOT, path);

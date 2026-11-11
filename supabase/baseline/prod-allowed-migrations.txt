@@ -21,3 +21,4 @@
 0010_housing_knowledge_finance_reads.sql
 0020_org_sec46_machine.sql
 0026_member_realtime.sql
+0027_rich_notifications.sql
