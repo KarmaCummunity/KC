@@ -7,6 +7,8 @@ export const eventPost = {
     kindLabel: 'מה אתם מציעים?',
     kindShift: 'משמרת התנדבות',
     kindEvent: 'אירוע של ארגון',
+    // FR-POST-024 — a member's own event: a date, places and registration, and it may recur.
+    kindPersonalEvent: 'התנדבות עם הרשמה',
     orgLabel: 'ארגון',
     orgRequired: 'בחרו את הארגון שהאירוע שלו',
     membershipHint: 'רוצים לפרסם אירוע של ארגון? חברי ארגון רשום מפרסמים אירועים. רשמו את הארגון שלכם, או בקשו ממנהל/ת הארגון לצרף אתכם.',

@@ -24,6 +24,7 @@ import { postMediaMachine } from './machines/postMedia';
 import { refundMachine } from './machines/refund';
 import { reportMachine } from './machines/report';
 import { rideBookingMachine } from './machines/rideBooking';
+import { postSeriesMachine } from './machines/postSeries';
 import { rideSeriesMachine } from './machines/rideSeries';
 import { standingOrderMachine } from './machines/standingOrder';
 import { timesheetMachine } from './machines/timesheet';
@@ -52,6 +53,7 @@ export const FSM_MACHINES: readonly FsmMachine<string, string>[] = [
   reportMachine,
   moderationQueueMachine,
   rideSeriesMachine,
+  postSeriesMachine,
   challengeMachine,
   matchMachine,
   organizationMachine,
