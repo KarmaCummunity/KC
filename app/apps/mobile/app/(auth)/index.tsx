@@ -31,6 +31,7 @@ import { NotifyModal } from '../../src/components/NotifyModal';
 import { AmbientBlobs } from '../../src/components/ui/AmbientBlobs';
 import { AuthMiniAboutTeaser } from '../../src/components/auth/AuthMiniAboutTeaser';
 import { AuthLanguageToggle } from '../../src/components/auth/AuthLanguageToggle';
+import { useLaunchSurface } from '../../src/hooks/useLaunchSurface';
 import { useWelcomeScreenStyles } from '../../src/components/auth/welcomeScreen.styles';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
@@ -53,6 +54,7 @@ export default function WelcomeScreen() {
   const [appleLoading, setAppleLoading] = useState(false);
   const [appleError, setAppleError] = useState<string | null>(null);
   const isExecutingRef = React.useRef(false);
+  const emailAuthVisible = useLaunchSurface('emailAuth');
 
   // ── Animation values ──────────────────────────────────────────────────
   const heroOpacity = useSharedValue(0);
@@ -221,15 +223,17 @@ export default function WelcomeScreen() {
           >
             <Text style={styles.guestBtnText}>{t('auth.guestPreviewCta')}</Text>
           </TouchableOpacity>
-          {/* FR-AUTH-001 AC2: the only route to email/password sign-in (and sign-up from there). */}
-          <TouchableOpacity
-            testID="auth-email-entry"
-            style={styles.guestBtn}
-            onPress={() => router.push('/(auth)/sign-in')}
-            accessibilityRole="link"
-          >
-            <Text style={styles.emailEntryText}>{t('auth.continueWithEmail')}</Text>
-          </TouchableOpacity>
+          {/* FR-AUTH-001 AC2: route to email sign-in; hidden in a production first launch (config/launchSurfaces.ts). */}
+          {emailAuthVisible ? (
+            <TouchableOpacity
+              testID="auth-email-entry"
+              style={styles.guestBtn}
+              onPress={() => router.push('/(auth)/sign-in')}
+              accessibilityRole="link"
+            >
+              <Text style={styles.emailEntryText}>{t('auth.continueWithEmail')}</Text>
+            </TouchableOpacity>
+          ) : null}
         </Animated.View>
 
         <Animated.View style={[propsStyle, styles.miniAboutWrap]}>

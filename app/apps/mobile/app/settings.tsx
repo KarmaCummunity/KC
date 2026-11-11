@@ -9,6 +9,7 @@ import { useShellStackScreenOptions } from '../src/navigation/shellStackScreenOp
 import { useShellTabBarScrollInset } from '../src/navigation/useShellTabBarVisibility';
 import { useIsSuperAdmin } from '../src/hooks/useIsSuperAdmin';
 import { useAdminRoles } from '../src/hooks/useAdminRoles';
+import { useLaunchSurface } from '../src/hooks/useLaunchSurface';
 import { useSettingsAccountActions } from '../src/hooks/useSettingsAccountActions';
 import { useSimulateHardRefresh } from '../src/hooks/useSimulateHardRefresh';
 import { useAuthStore } from '../src/store/authStore';
@@ -32,6 +33,7 @@ const SHOW_SETTINGS_DEBUG_TOOLS =
 export default function SettingsScreen() {
   const router = useRouter();
   const { t } = useTranslation();
+  const whatsappBotVisible = useLaunchSurface('whatsappBot');
   const styles = useSettingsScreenStyles();
   const shellStackOptions = useShellStackScreenOptions();
   const tabBarPad = useShellTabBarScrollInset();
@@ -117,11 +119,13 @@ export default function SettingsScreen() {
             icon="globe-outline"
             onPress={() => router.push('/settings/language')}
           />
-          <SettingsScreenRow
-            label={t('settings.whatsappRow')}
-            icon="logo-whatsapp"
-            onPress={() => router.push('/settings/whatsapp')}
-          />
+          {whatsappBotVisible ? (
+            <SettingsScreenRow
+              label={t('settings.whatsappRow')}
+              icon="logo-whatsapp"
+              onPress={() => router.push('/settings/whatsapp')}
+            />
+          ) : null}
         </View>
 
         <Text style={styles.sectionTitle}>{t('settings.notifications')}</Text>

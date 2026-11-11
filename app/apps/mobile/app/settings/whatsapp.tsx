@@ -9,6 +9,7 @@ import { useShellStackScreenOptions } from '../../src/navigation/shellStackScree
 import { rtlTextAlignStart } from '../../src/lib/rtlTextAlignStart';
 import { webTextRtl, webViewRtl } from '../../src/lib/webRtlStyle';
 import { getMarketplaceSupabaseClient } from '../../src/services/marketplaceComposition';
+import { LaunchSurfaceGate } from '../../src/components/LaunchSurfaceGate';
 
 interface LinkStatus { linked: boolean; wa_id_masked: string | null; is_pro: boolean }
 interface LinkCode { code: string; expires_at: string }
@@ -21,7 +22,7 @@ async function fetchStatus(): Promise<LinkStatus> {
   return data as unknown as LinkStatus;
 }
 
-export default function WhatsAppLinkScreen() {
+function WhatsAppLinkScreenContent() {
   const shellStackScreenOptions = useShellStackScreenOptions();
   const { t } = useTranslation();
   const { colors } = useTheme();
@@ -127,3 +128,12 @@ const useScreenStyles = makeUseStyles(({ colors }) => ({
   linkButton: { paddingVertical: spacing.sm, alignItems: 'center' as const },
   danger: { ...typography.body, color: colors.error },
 }));
+
+/** Hidden while `whatsappBot` is off (first launch): sends the visitor away instead of rendering. */
+export default function WhatsAppLinkScreen() {
+  return (
+    <LaunchSurfaceGate surface="whatsappBot" redirectTo="/settings">
+      <WhatsAppLinkScreenContent />
+    </LaunchSurfaceGate>
+  );
+}
