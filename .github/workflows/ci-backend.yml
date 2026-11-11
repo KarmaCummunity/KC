@@ -116,6 +116,22 @@ jobs:
           CI_LOCAL_SUPABASE: 'true'
         run: pnpm --filter @kc/infrastructure-supabase test sqlProbes contract.integration
 
+      - name: Diagnose (on failure)
+        if: failure()
+        continue-on-error: true
+        run: |
+          DB_URL="$(supabase status -o env | sed -n 's/^DB_URL="\(.*\)"$/\1/p')"
+          U="${DB_URL%/*}/kc_baseline_check"
+          q() { echo "── $1"; psql "$U" -X -v ON_ERROR_STOP=0 -c "$1" 2>&1 | tail -6; }
+          q "select version()"
+          q "select setting from pg_settings where name = 'shared_preload_libraries'"
+          q "select extname from pg_extension order by 1"
+          q "begin; set local role anon; select 1 from public.streets; rollback"
+          q "begin; set local role anon; select 1 from public.road_junctions; rollback"
+          q "begin; set local role anon; select 1 from public.search_places('ganim'); rollback"
+          q "begin; set local role authenticated; select count(*) from public.streets; rollback"
+          q "select count(*) from public.search_places('ganim')"
+
       - name: Database container log (on failure)
         if: failure()
         run: docker ps --filter name=supabase_db -q | xargs -r -n1 docker logs --tail 120 2>&1 | sed -E 's/(password|secret|key)=[^ ]+/\1=***/Ig'
