@@ -9,14 +9,13 @@ import {
   type IKnowledgeBookingRepository,
 } from '@kc/application';
 import { SupabaseKnowledgeBookingRepository } from '@kc/infrastructure-supabase';
-import { container } from '../lib/container';
-import { getMarketplaceSupabaseClient } from './marketplaceComposition';
+import { container, legacySupabase } from '../lib/container';
 
 let repo: IKnowledgeBookingRepository | null = null;
 
 /** One adapter per app session, created on first use (after auth storage is ready). */
 function repository(): IKnowledgeBookingRepository {
-  repo ??= new SupabaseKnowledgeBookingRepository(getMarketplaceSupabaseClient());
+  repo ??= new SupabaseKnowledgeBookingRepository(legacySupabase);
   return repo;
 }
 

@@ -53,12 +53,10 @@ export default function SettingsScreen() {
   const { hardRefreshing, simulateHardRefresh: handleSimulateHardRefresh } = useSimulateHardRefresh(userId);
   const {
     signingOut,
-    resettingOnboarding,
     deleteModalVisible,
     setDeleteModalVisible,
     deleteSuccessVisible,
     handleDeleteConfirm,
-    handleResetOnboarding,
     handleSignOut,
   } = useSettingsAccountActions();
 
@@ -175,12 +173,8 @@ export default function SettingsScreen() {
               onPress={() => router.push('/settings/follow-requests')}
             />
           ) : null}
-          {/* FR-MOD-004 AC1 — the only way back to a blocked member (their profile is hidden). */}
-          <SettingsScreenRow
-            label={t('moderation.block.listTitle')}
-            icon="ban-outline"
-            onPress={() => router.push('/settings/blocked-users')}
-          />
+          {/* FR-MOD-004 AC1 — the blocked-users row is hidden: the baseline cannot show a blocked member's
+              name or avatar (M01), so the list has nothing to show. The screen stays for a deep link. */}
         </View>
 
         <Text style={styles.sectionTitle}>{t('settings.statsSection')}</Text>
@@ -238,12 +232,6 @@ export default function SettingsScreen() {
           <>
             <Text style={styles.sectionTitle}>{t('settings.devTools')}</Text>
             <View style={styles.section}>
-              <SettingsScreenRow
-                label={resettingOnboarding ? t('settings.resetting') : t('settings.resetOnboarding')}
-                icon="refresh-outline"
-                onPress={handleResetOnboarding}
-                disabled={resettingOnboarding}
-              />
               <SettingsScreenRow
                 label={hardRefreshing ? t('settings.simulatingHardRefresh') : t('settings.simulateHardRefresh')}
                 icon="reload-outline"

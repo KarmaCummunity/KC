@@ -3,6 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import type { AdminReportTargetType } from '@kc/domain';
 import { container } from '../lib/container';
+import { valueOrNull } from '../lib/backendAvailability';
 
 export function useReportCaseDetail(
   targetType: AdminReportTargetType | null,
@@ -11,7 +12,8 @@ export function useReportCaseDetail(
   return useQuery({
     queryKey: ['admin.reports.case', targetType, targetId],
     queryFn: () =>
-      container.getReportCaseDetail.execute(targetType!, targetId!),
+      // Degrade rule: an unavailable backend reads as "case not found".
+      valueOrNull(() => container.getReportCaseDetail.execute(targetType!, targetId!)),
     enabled: targetType !== null && targetId !== null,
     staleTime: 10_000,
   });

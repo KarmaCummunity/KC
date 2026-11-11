@@ -1,0 +1,13 @@
+slug,label_he,label_en,sensitivity,requires_verification,geo_mode,shows_in_main_feed,sort_order
+items,חפצים,Items,standard,false,local,true,10
+food,אוכל,Food,standard,false,local,true,20
+rides,טרמפים,Rides,standard,false,regional,true,30
+time,זמן,Time,standard,false,local,true,40
+money,כסף,Money,elevated,false,remote,false,50
+knowledge,ידע,Knowledge,standard,false,remote,false,60
+housing,דיור,Housing,restricted,true,local,false,70
+medical,רפואה,Medical,elevated,false,local,false,80
+animals,בעלי חיים,Animals,standard,false,local,false,90
+employment,תעסוקה,Employment,standard,false,regional,false,100
+democracy,דמוקרטיה,Democracy,standard,false,remote,false,110
+challenges,אתגרים,Challenges,standard,false,remote,false,120

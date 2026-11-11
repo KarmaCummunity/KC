@@ -23,13 +23,13 @@ const onboardingRoundTrip: ContractCase<Ctx> = {
     assertEqual((await me.users.getOnboardingBootstrap(me.userId)).basicInfoSkipped, false, 'skip flag after clearing');
     await me.users.markBasicInfoSkipped(me.userId);
     const [, city] = ctx.cities;
-    await me.users.setBasicInfo(me.userId, { displayName: 'basic info', city: city.id, cityName: city.name });
+    await me.users.setBasicInfo(me.userId, { displayName: 'basic info', city: city.id });
     await me.users.setDateOfBirth(ADULT_DATE_OF_BIRTH);
     const bootstrap = await me.users.getOnboardingBootstrap(me.userId);
     assertEqual(bootstrap.basicInfoSkipped, false, 'saving basic info clears the skip flag');
     const profile = await me.users.getEditableProfile(me.userId);
     assertTrue(profile.displayName === 'basic info' && profile.city === city.id, 'basic info is stored');
-    assertEqual(profile.cityName, city.name, 'city name is stored');
+    assertEqual(profile.cityName, city.name, 'city name is the name of the stored city');
     await me.users.setOnboardingState('pending_avatar');
     assertEqual((await me.users.getOnboardingBootstrap(me.userId)).state, 'pending_avatar', 'state after step 1');
     await me.users.setOnboardingState('pending_avatar');
@@ -44,7 +44,7 @@ const onboardingMovesForwardOnly: ContractCase<Ctx> = {
   async run(ctx) {
     const me = await ctx.newActor();
     const [city] = ctx.cities;
-    await me.users.setBasicInfo(me.userId, { displayName: 'forward only', city: city.id, cityName: city.name });
+    await me.users.setBasicInfo(me.userId, { displayName: 'forward only', city: city.id });
     // Name and city are on file; the date of birth is not yet.
     await assertRejectsWithCode(
       me.users.setOnboardingState('pending_avatar'),

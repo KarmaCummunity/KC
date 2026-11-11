@@ -2,12 +2,12 @@
 export { TransitionError } from './TransitionError';
 export type { TransitionErrorCode, TransitionErrorDetails } from './TransitionError';
 export {
-  assertTransition, canTransition, defineMachine, isTerminal,
+  assertTransition, canTransition, defineMachine, hasEdge, isTerminal,
 } from './machine';
 export type {
   FsmEdge, FsmMachine, TransitionAnswer, TransitionFail, TransitionOk,
 } from './machine';
-export { FSM_MACHINES } from './catalog';
+export { FSM_MACHINES, LEGACY_FSM_MACHINES } from './catalog';
 export { adminTaskMachine } from './machines/adminTask';
 export { postMachine } from './machines/post';
 export { givingHandoffMachine } from './machines/givingHandoff';
@@ -22,7 +22,20 @@ export { followRequestMachine } from './machines/followRequest';
 export { reviewDecisionMachine } from './machines/reviewDecision';
 export { donationLinkReviewMachine } from './machines/donationLinkReview';
 export { timesheetMachine } from './machines/timesheet';
-export { rideSeriesMachine } from './machines/rideSeries';
-export { standingOrderMachine } from './machines/standingOrder';
 export { handoffMachineFor } from './machines/handoffMachineFor';
 export { accountStatusMachine } from './machines/accountStatus';
+export { postMediaMachine } from './machines/postMedia';
+export { moderationQueueMachine } from './machines/moderationQueue';
+export { rideSeriesMachine } from './machines/rideSeries';
+export { challengeMachine } from './machines/challenge';
+export { matchMachine } from './machines/match';
+export { organizationMachine } from './machines/organization';
+export { orgApplicationMachine } from './machines/orgApplication';
+export { standingOrderMachine } from './machines/standingOrder';
+export { donationIntentMachine } from './machines/donationIntent';
+export { paymentMachine } from './machines/payment';
+export { refundMachine } from './machines/refund';
+export { payoutMachine } from './machines/payout';
+export { kycMachine } from './machines/kyc';
+export { webhookEventMachine } from './machines/webhookEvent';
+export { orgFinanceEntryMachine } from './machines/orgFinanceEntry';

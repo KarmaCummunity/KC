@@ -27,6 +27,12 @@ export interface SavedPostsContractContext {
   newActor(): Promise<SavedPostsActor>;
   /** An address whose city the implementation knows (cities are a lookup table). */
   readonly address: Address;
+  /**
+   * The production baseline keeps a deleted published post for seven days (reopen undoes it); its
+   * bookmarks go with the purge, and meanwhile the post is unreadable to everyone but its owner and
+   * so left out of other members' saved lists.
+   */
+  readonly deleteKeepsPostForReopen?: boolean;
 }
 
 type Ctx = SavedPostsContractContext;
@@ -154,6 +160,10 @@ const postDeleteCascades: ContractCase<Ctx> = {
     await owner.saved.savePost(postId);
     await reader.saved.savePost(postId);
     await owner.posts.delete(postId);
+    if (ctx.deleteKeepsPostForReopen) {
+      assertTrue(!(await savedIds(reader)).includes(postId), "reader's saved list leaves out the deleted post");
+      return;
+    }
     assertEqual(await owner.saved.isPostSaved(postId), false, "owner's isPostSaved after the post is deleted");
     assertEqual(await reader.saved.isPostSaved(postId), false, "reader's isPostSaved after the post is deleted");
     assertTrue((await savedIds(reader)).length === 0, "reader's saved list after the post is deleted");

@@ -69,7 +69,6 @@ describe('post card inventory', () => {
     ['src/components/giving/MyWorldHandoffsList.tsx', 'KcRowCard'],
     ['src/components/giving/RidesFeedList.tsx', 'ListingCard'],
     ['src/components/chat/AnchoredPostCard.tsx', 'KcRowCard'],
-    ['src/components/chat/AnchoredRideCard.tsx', 'KcRowCard'],
   ])('%s renders through %s', (rel, base) => {
     const f = files.find((x) => x.rel === rel);
     expect(f, rel).toBeDefined();
@@ -83,7 +82,6 @@ describe('post card inventory', () => {
 
   describe.each([
     ['src/components/chat/AnchoredPostCard.tsx', "pathname: '/post/[id]'"],
-    ['src/components/chat/AnchoredRideCard.tsx', '/(tabs)/donations/rides/'],
   ])('chat preview %s', (rel, fullPageRoute) => {
     const src = () => files.find((x) => x.rel === rel)!.src;
     it('uses the compact row card with an "open full post" link', () => {

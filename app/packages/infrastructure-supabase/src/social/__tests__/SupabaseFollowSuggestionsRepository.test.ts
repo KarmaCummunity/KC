@@ -1,50 +1,21 @@
 import { describe, expect, it } from 'vitest';
-import type { SupabaseClient } from '@supabase/supabase-js';
+import { BackendUnavailableError } from '@kc/domain';
 import { SupabaseFollowSuggestionsRepository } from '../SupabaseFollowSuggestionsRepository';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+// M03 / M04: the baseline has neither a suggestion query nor a completeness function. The
+// adapter reports both as missing without a call, so the screens degrade (empty list, no nudge).
+describe('SupabaseFollowSuggestionsRepository (capabilities missing from the baseline)', () => {
+  it('listSuggestions reports rpc_follow_suggestions as unavailable (M03)', async () => {
+    const error = await new SupabaseFollowSuggestionsRepository().listSuggestions(20).catch((e: unknown) => e);
 
-function makeClient(
-  rpcImpl: (fn: string, args?: unknown) => Promise<{ data: unknown; error: { message: string } | null }>,
-): SupabaseClient<any> {
-  return { rpc: rpcImpl } as unknown as SupabaseClient<any>;
-}
-
-describe('SupabaseFollowSuggestionsRepository', () => {
-  it('listSuggestions maps RPC rows', async () => {
-    const repo = new SupabaseFollowSuggestionsRepository(
-      makeClient(async () => ({
-        data: [
-          {
-            user_id: 'u1',
-            display_name: 'A',
-            share_handle: 'a',
-            avatar_url: null,
-            city_name: 'TLV',
-            followers_count: 4,
-            reason: 'mutual',
-          },
-        ],
-        error: null,
-      })),
-    );
-    const rows = await repo.listSuggestions(5);
-    expect(rows[0]?.userId).toBe('u1');
-    expect(rows[0]?.reason).toBe('mutual');
+    expect(error).toBeInstanceOf(BackendUnavailableError);
+    expect(error).toMatchObject({ object: 'rpc:rpc_follow_suggestions', kind: 'function' });
   });
 
-  it('getProfileCompleteness maps fields', async () => {
-    const repo = new SupabaseFollowSuggestionsRepository(
-      makeClient(async () => ({
-        data: { score: 80, missing: ['avatar'], verified: true, showVerifiedBadge: false },
-        error: null,
-      })),
-    );
-    await expect(repo.getProfileCompleteness('u1')).resolves.toEqual({
-      score: 80,
-      missing: ['avatar'],
-      verified: true,
-      showVerifiedBadge: false,
-    });
+  it('getProfileCompleteness reports rpc_profile_completeness as unavailable (M04)', async () => {
+    const error = await new SupabaseFollowSuggestionsRepository().getProfileCompleteness().catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(BackendUnavailableError);
+    expect(error).toMatchObject({ object: 'rpc:rpc_profile_completeness', kind: 'function' });
   });
 });

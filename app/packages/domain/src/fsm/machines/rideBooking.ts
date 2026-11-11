@@ -12,18 +12,18 @@ import { defineMachine } from '../machine';
  *   Which cancelled booking qualifies is a predicate on `cancel_reason`, checked by the RPC.
  * - A ride has no no-show state; `handed_over` is terminal.
  *
- * SQL copy: `supabase/migrations/0694_fsm_handoffs.sql`.
+ * SQL copy: `supabase/schemas/25_handoffs/010_post_handoffs.sql` (`kc_private.fsm_state` / `fsm_edge` seeds).
  */
 export const rideBookingMachine = defineMachine({
   id: 'ride_booking',
   states: ['reserved', 'confirmed', 'handed_over', 'cancelled'] as const,
   edges: [
-    { from: 'reserved', to: 'confirmed' },
-    { from: 'reserved', to: 'handed_over' },
-    { from: 'reserved', to: 'cancelled' },
-    { from: 'confirmed', to: 'handed_over' },
-    { from: 'confirmed', to: 'cancelled' },
-    { from: 'cancelled', to: 'reserved' },
-    { from: 'cancelled', to: 'confirmed' },
+    { from: 'reserved', to: 'confirmed', roles: ['owner'] },
+    { from: 'reserved', to: 'handed_over', roles: ['owner'] },
+    { from: 'reserved', to: 'cancelled', roles: ['owner', 'recipient', 'system'] },
+    { from: 'confirmed', to: 'handed_over', roles: ['owner', 'recipient'] },
+    { from: 'confirmed', to: 'cancelled', roles: ['owner', 'recipient', 'system'] },
+    { from: 'cancelled', to: 'reserved', roles: ['owner'] },
+    { from: 'cancelled', to: 'confirmed', roles: ['owner'] },
   ],
 });

@@ -10,8 +10,15 @@ export type ChatErrorCode =
   | 'super_admin_not_found'
   | 'support_thread_not_hideable'
   | 'description_too_short'
+  | 'cannot_chat_self'
+  | 'blocked_relationship'
+  | 'account_not_active'
+  | 'post_unavailable'
+  | 'rate_limited'
+  | 'invalid_media_payload'
+  | 'message_not_found'
+  | 'invalid_reaction_type'
   | 'description_too_long'
-  | 'both_anchors_forbidden'
   | 'unknown';
 
 export class ChatError extends Error {

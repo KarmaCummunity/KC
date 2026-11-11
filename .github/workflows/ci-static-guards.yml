@@ -59,62 +59,6 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: node .judge/scripts/check-test-integrity.mjs
 
-  # DB schema freeze (KC_DB_SCHEMA_FREEZE): while the repository variable is
-  # "true", a change into dev that touches supabase/migrations, supabase/baseline
-  # or supabase/schemas fails here, except from the cut-over branch. It is part
-  # of the `static` lane, so the CI gate and the merge queue both enforce it.
-  # Like the integrity guard it runs the base commit's script, so a PR cannot
-  # edit its own judge. `pull-requests: read` is used only to read the PR's head
-  # branch in a merge-queue run (the queue ref carries just the PR number).
-  freeze:
-    name: db schema freeze
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    permissions:
-      contents: read
-      pull-requests: read
-    env:
-      JUDGE_REF: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.sha }}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
-          filter: blob:none
-          sparse-checkout: .nvmrc
-          sparse-checkout-cone-mode: false
-
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ env.JUDGE_REF }}
-          path: .judge
-          persist-credentials: false
-          sparse-checkout: scripts
-
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
-        with:
-          node-version-file: .nvmrc
-
-      # A base that predates the script (this guard's own introducing PR) has
-      # nothing to judge with; once the guard is on dev the script always exists.
-      - name: Judge the diff against the freeze
-        env:
-          FREEZE: ${{ vars.KC_DB_SCHEMA_FREEZE }}
-          EVENT_NAME: ${{ github.event_name }}
-          BASE_REF: ${{ github.event.pull_request.base.ref || github.event.merge_group.base_ref }}
-          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha }}
-          HEAD_REF: ${{ github.event.pull_request.head.ref || github.event.merge_group.head_ref }}
-          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
-          REPO: ${{ github.repository }}
-          GITHUB_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          if [ ! -f .judge/scripts/check-db-schema-freeze.mjs ]; then
-            echo "::notice::base commit has no scripts/check-db-schema-freeze.mjs yet; freeze not enforced for this run"
-            exit 0
-          fi
-          node .judge/scripts/check-db-schema-freeze.mjs
-
   guards:
     name: static guards
     runs-on: ubuntu-latest

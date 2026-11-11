@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { canTransition, isTerminal } from '../machine';
+import { canTransition, hasEdge, isTerminal } from '../machine';
 import { eventRegistrationMachine } from '../machines/eventRegistration';
 import { givingHandoffMachine } from '../machines/givingHandoff';
 import { handoffMachineFor } from '../machines/handoffMachineFor';
 import { housingBookingMachine } from '../machines/housingBooking';
 import { rideBookingMachine } from '../machines/rideBooking';
 
-/** True when the move is a legal, state-changing edge of the machine. */
+/** True when the machine has the edge, whoever may make the move (roles are checked separately). */
 const legal = (machine: Parameters<typeof canTransition>[0], from: string, to: string) =>
-  canTransition(machine, from, to).ok;
+  hasEdge(machine, from, to);
 
 describe('handoffMachineFor', () => {
   it('picks the booking machine of rides, housing and events', () => {
@@ -30,8 +30,10 @@ describe('giving handoff', () => {
   });
 
   it('marks a confirmed pickup a no-show, and nothing leaves the end states', () => {
-    expect(legal(givingHandoffMachine, 'confirmed', 'no_show')).toBe(true);
-    for (const end of ['handed_over', 'cancelled', 'no_show']) {
+    expect(hasEdge(givingHandoffMachine, 'confirmed', 'no_show')).toBe(true);
+    // A delivery can be taken back (owner reopens, recipient removes their mark): handed_over → cancelled.
+    expect(hasEdge(givingHandoffMachine, 'handed_over', 'cancelled')).toBe(true);
+    for (const end of ['cancelled', 'no_show']) {
       expect(isTerminal(givingHandoffMachine, end)).toBe(true);
     }
   });
@@ -51,7 +53,7 @@ describe('ride booking', () => {
   });
 
   it('has no no-show, and a completed trip is final', () => {
-    expect(canTransition(rideBookingMachine, 'confirmed', 'no_show').ok).toBe(false);
+    expect(hasEdge(rideBookingMachine, 'confirmed', 'no_show')).toBe(false);
     expect(isTerminal(rideBookingMachine, 'handed_over')).toBe(true);
   });
 });
@@ -85,6 +87,24 @@ describe('same-status writes', () => {
   it('are legal no-ops in every handoff machine', () => {
     for (const machine of [givingHandoffMachine, rideBookingMachine, housingBookingMachine, eventRegistrationMachine]) {
       expect(canTransition(machine, 'cancelled', 'cancelled')).toEqual({ ok: true, changed: false });
+    }
+  });
+});
+
+describe('handoff roles (baseline)', () => {
+  it('lets only the owner approve a reservation and only the system mark a no-show', () => {
+    expect(canTransition(givingHandoffMachine, 'reserved', 'confirmed', 'owner').ok).toBe(true);
+    expect(canTransition(givingHandoffMachine, 'reserved', 'confirmed', 'recipient')).toEqual({
+      ok: false,
+      code: 'forbidden_role',
+    });
+    expect(canTransition(givingHandoffMachine, 'confirmed', 'no_show', 'system').ok).toBe(true);
+    expect(canTransition(givingHandoffMachine, 'confirmed', 'no_show', 'owner').ok).toBe(false);
+  });
+
+  it('lets either side complete a confirmed handoff', () => {
+    for (const role of ['owner', 'recipient']) {
+      expect(canTransition(givingHandoffMachine, 'confirmed', 'handed_over', role).ok).toBe(true);
     }
   });
 });

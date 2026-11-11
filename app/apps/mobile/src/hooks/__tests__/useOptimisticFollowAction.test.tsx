@@ -78,4 +78,13 @@ describe('useOptimisticFollowAction', () => {
     expect(client.getQueryData(['user-profile','viewer'])).toMatchObject({ followingCount: 8 });
     expect(onError).toHaveBeenCalledWith({ title: 'profile.followCooldownTitle', message: 'profile.followCooldownDays' });
   });
+  it.each([
+    ['rate_limited', 'profile.followRateLimited'],
+    ['account_not_active', 'profile.followAccountNotActive'],
+  ] as const)('explains the server refusal %s with its own message', async (code, message) => {
+    mocks.execute.mockRejectedValue(new FollowError(code, code));
+    const onError = vi.fn(); const { result } = renderHook(() => useOptimisticFollowAction({ viewerId: 'viewer', target, handle: 'handle', onError }), { wrapper });
+    await act(async () => result.current('follow'));
+    expect(onError).toHaveBeenCalledWith({ title: 'profile.followErrorTitle', message });
+  });
 });

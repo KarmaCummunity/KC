@@ -46,15 +46,13 @@ import { DevBanner } from '../src/components/DevBanner';
 import { SuspensionBanner } from '../src/components/SuspensionBanner';
 import { LegalConsentGate } from '../src/components/legal/LegalConsentGate';
 import { ModalStackProvider } from '../src/components/legal/useActiveModalStack';
-import { useMeRealtime } from '../src/hooks/useMeRealtime';
 import { useBrandFonts } from '../src/lib/useBrandFonts';
 import { useOnlinePresenceLifecycle } from '../src/hooks/useOnlinePresence';
 import { useCoreLoopReturnVisit } from '../src/hooks/useCoreLoopReturnVisit';
 import { useRecordActiveDay } from '../src/hooks/useRecordActiveDay';
 import * as NavigationBar from 'expo-navigation-bar';
 
-function MeRealtimeMount() {
-  useMeRealtime();
+function SignedInLifecycleMount() {
   useOnlinePresenceLifecycle();
   useCoreLoopReturnVisit();
   useRecordActiveDay();
@@ -206,7 +204,7 @@ function RootLayoutContent() {
       <SafeAreaProvider>
         <ErrorBoundary>
           <PersistQueryClientProvider client={queryClient} persistOptions={persistOptions}>
-            <MeRealtimeMount />
+            <SignedInLifecycleMount />
             <RevenueCatSync />
             <AppThemeProvider>
               {/* KC#1410: a fatal uncaught JS error shows the themed fallback;

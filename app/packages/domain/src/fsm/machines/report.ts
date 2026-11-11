@@ -9,13 +9,13 @@ import { defineMachine } from '../machine';
  * - Both outcomes are final. A dismissal is what counts against the reporter (FR-MOD-010),
  *   so it is never reopened or turned into a confirmation.
  *
- * SQL copy: `supabase/migrations/0701_fsm_reports_follow_requests.sql`.
+ * SQL copy: `supabase/schemas/60_moderation/040_reports.sql` (`kc_private.fsm_state` / `fsm_edge` seeds).
  */
 export const reportMachine = defineMachine({
   id: 'report',
   states: ['open', 'confirmed_violation', 'dismissed_no_violation'] as const,
   edges: [
-    { from: 'open', to: 'confirmed_violation' },
-    { from: 'open', to: 'dismissed_no_violation' },
+    { from: 'open', to: 'confirmed_violation', roles: ['admin'] },
+    { from: 'open', to: 'dismissed_no_violation', roles: ['admin'] },
   ],
 });

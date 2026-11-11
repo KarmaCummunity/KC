@@ -3,7 +3,7 @@
 User journeys against the deployed dev web app (`DEV_WEB_URL`, default
 `https://dev.karma-community.pages.dev`) and the kc-dev Supabase project.
 
-- **Users:** the public kc-dev seed users (`user1@seed.kc.test`, `user2@seed.kc.test`,
+- **Users:** the e2e members of kc-dev (`user1@seed.kc.test` … `user4@seed.kc.test`, loaded by the **Seed KC dev** workflow, action `e2e-users`, from `supabase/seed/e2e/load.sql`; 
   password from the `E2E_SEED_PASSWORD` env / Actions secret, required). Override with `E2E_USER_A_EMAIL` / `E2E_USER_A_PASSWORD`
   and `E2E_USER_B_*`.
 - **Anon key:** read from the deployed bundle (it is the public publishable key), or set
