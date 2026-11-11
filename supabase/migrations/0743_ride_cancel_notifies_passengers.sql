@@ -394,11 +394,14 @@ begin
     -- passengers are told.
     perform kc_private.ride_series_close_booked_upcoming(s.series_id);
     -- 0666: what remains (departed dates) is detached from the ended series; `listings` is a view
-    -- over posts since 0667, so the post is the only row to write.
+    -- over posts since 0667, so the post is the only row to write. The dates just closed keep
+    -- their marker as their history: rewriting a closed post's details would replay its status
+    -- through the listing mirror.
     update public.posts p
        set details = p.details - 'ride_series', updated_at = now()
       from public.ride_post_details r
-     where r.post_id = p.post_id and r.series_id = s.series_id;
+     where r.post_id = p.post_id and r.series_id = s.series_id
+       and p.status <> 'deleted_no_recipient';
   end if;
 end;
 $$;
