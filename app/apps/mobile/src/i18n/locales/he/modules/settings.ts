@@ -97,6 +97,7 @@ export const settingsHe = {
     submitting: 'שולח...',
     errorGeneric: 'אירעה שגיאה. אפשר לנסות שוב.',
     errorAdminNotFound: 'שירות התמיכה לא זמין. אפשר לנסות שוב מאוחר יותר.',
+    errorTooLong: 'התיאור ארוך מ-500 תווים. אפשר לקצר ולשלוח שוב.',
   },
   devTools: 'כלי פיתוח',
   resetOnboarding: 'איפוס אונבורדינג (דיבוג)',

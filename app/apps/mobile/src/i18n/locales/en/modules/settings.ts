@@ -97,6 +97,7 @@ export const settingsEn = {
     submitting: 'Submitting...',
     errorGeneric: 'Something went wrong. Please try again.',
     errorAdminNotFound: 'Support is unavailable. Please try again later.',
+    errorTooLong: 'The description is over 500 characters. Shorten it and send again.',
   },
   devTools: 'Developer tools',
   resetOnboarding: 'Reset onboarding (debug)',

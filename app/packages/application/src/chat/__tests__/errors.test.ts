@@ -30,7 +30,7 @@ describe('ChatError', () => {
     for (const code of [
       'message_body_required', 'message_too_long', 'chat_not_found', 'chat_forbidden',
       'send_to_deleted_user', 'super_admin_not_found', 'support_thread_not_hideable',
-      'description_too_short', 'unknown',
+      'description_too_short', 'description_too_long', 'unknown',
     ] as const) {
       expect(new ChatError(code, code).code).toBe(code);
     }

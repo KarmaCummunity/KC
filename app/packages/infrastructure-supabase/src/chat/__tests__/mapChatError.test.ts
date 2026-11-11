@@ -20,6 +20,17 @@ describe('mapChatError', () => {
     expect((out as ChatError).code).toBe('message_too_long');
   });
 
+  // #2096: the support-issue RPC raises its length errors as 23514 too; the named code wins.
+  it('maps a 23514 "description_too_short" to description_too_short, not message_too_long', () => {
+    const out = mapChatError({ code: '23514', message: 'description_too_short' });
+    expect((out as ChatError).code).toBe('description_too_short');
+  });
+
+  it('maps a 23514 "description_too_long" to description_too_long, not message_too_long', () => {
+    const out = mapChatError({ code: '23514', message: 'description_too_long' });
+    expect((out as ChatError).code).toBe('description_too_long');
+  });
+
   // ── Message-substring branches ──────────────────────────────────────────
   it('matches "super_admin_not_found" in the message', () => {
     const out = mapChatError({ message: 'super_admin_not_found' });

@@ -11,6 +11,14 @@ export function mapChatError(err: { code?: string; message?: string }): Error {
   if (code === '42501') {
     return new ChatError('chat_forbidden', err.message ?? 'chat_forbidden', err);
   }
+  // Named support-issue length errors are raised as 23514 too (`description_too_short` today,
+  // `description_too_long` once #2138 lands), so they are matched before the generic CHECK branch.
+  const supportIssueCode = (['description_too_short', 'description_too_long'] as const).find((c) =>
+    err.message?.includes(c),
+  );
+  if (supportIssueCode) {
+    return new ChatError(supportIssueCode, err.message ?? supportIssueCode, err);
+  }
   if (code === '23514') {
     return new ChatError('message_too_long', err.message ?? 'message_too_long', err);
   }
