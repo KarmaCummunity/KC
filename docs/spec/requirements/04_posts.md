@@ -70,6 +70,7 @@ The set of required fields depends on `Post.type`.
 - AC2. For `type = Request`: only `title` (≤80 chars) is required.
 - AC3. For both types: `address` (city + street + number) is required (`R-MVP-Items-13`).
 - AC4. The "Publish" control stays tappable while required fields are incomplete. Tapping it reveals validation: **address** gaps (city / street / house number) show a persistent red inline message under the address block (including feed-projection copy when street or number is missing); **other** gaps (title, Give photo) show a short Hebrew toast. Inline address errors appear only after the first Publish attempt and stay until the address validates. When all required fields validate, publish proceeds as usual. A second "Publish" control appears at the bottom of the create form for users who scroll past the header action.
+- AC5. *(D132, KC#2020)* The server enforces the photo rule for offers in items, food, housing and animals, whichever app sends them: publishing such an offer with no photo is refused (`offer_photo_required`, shown with the same copy as the form's check), and its last photo can't be removed; deleting the whole post still removes its photos. Requests, rides and other worlds stay photo-optional. Offers published before the rule stay readable and editable.
 
 **Related.** Screens: 2.4 · Domain: `Post`, `Address`.
 

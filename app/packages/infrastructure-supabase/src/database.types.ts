@@ -13923,6 +13923,10 @@ export type Database = {
         }
         Returns: string
       }
+      create_post_with_media: {
+        Args: { p_media?: Json; p_post: Json }
+        Returns: string
+      }
       create_ride_series: {
         Args: {
           p_depart_time: string
@@ -15671,6 +15675,10 @@ export type Database = {
       }
       notifications_food_expiry_check: { Args: never; Returns: number }
       notifications_post_relevance_check: { Args: never; Returns: number }
+      offer_requires_photo: {
+        Args: { p_direction: string; p_world_slug: string }
+        Returns: boolean
+      }
       org_add_member: {
         Args: { p_org_id: string; p_role?: string; p_share_handle: string }
         Returns: string
