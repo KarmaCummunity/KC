@@ -11,9 +11,9 @@
 -- test harness) each one is created only when the server has it; the modules that use them
 -- degrade to a recorded warning (`ops.warnings`) instead of failing.
 --
--- pg_cron can only live in the database named by `cron.database_name` (`postgres` on
--- Supabase). The scratch databases the test runner creates on a Supabase stack are another
--- database, so there pg_cron is skipped with a notice.
+-- pg_cron and pg_net can only work in the database named by `cron.database_name` (`postgres`
+-- on Supabase). The scratch databases the test runner creates on a Supabase stack are another
+-- database, so there pg_cron, pg_net and Vault are skipped with a notice.
 
 do $$
 declare
@@ -34,8 +34,12 @@ begin
     raise notice 'pg_cron is not used in database %: jobs are registered, not scheduled', current_database();
   end if;
 
-  -- pg_net (creates the `net` schema itself) and Vault (creates the `vault` schema).
-  if v_platform then
+  -- pg_net (creates the `net` schema itself) and Vault (creates the `vault` schema). Like
+  -- pg_cron, pg_net's background worker serves one database (`postgres` on Supabase), so a
+  -- scratch database on a Supabase server gets neither.
+  if v_platform and current_database() <> v_cron_db then
+    raise notice 'pg_net and Vault are not used in database %', current_database();
+  elsif v_platform then
     create extension if not exists pg_net with schema extensions;
     create extension if not exists supabase_vault;
   else

@@ -116,6 +116,10 @@ jobs:
           CI_LOCAL_SUPABASE: 'true'
         run: pnpm --filter @kc/infrastructure-supabase test sqlProbes contract.integration
 
+      - name: Database container log (on failure)
+        if: failure()
+        run: docker ps --filter name=supabase_db -q | xargs -r -n1 docker logs --tail 120 2>&1 | sed -E 's/(password|secret|key)=[^ ]+/\1=***/Ig'
+
       - name: Stop Supabase
         if: always()
         run: supabase stop || true
