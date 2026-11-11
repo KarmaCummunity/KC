@@ -34,7 +34,6 @@ export function FinanceEntryFormModal({
   const isEdit = initial !== null;
   const [kind, setKind]           = useState<FinanceEntryKind>(initial?.kind ?? 'donation_in');
   const [amountText, setAmount]   = useState(initial ? (initial.amountCents / 100).toString() : '');
-  const [currency, setCurrency]   = useState(initial?.currency ?? 'ILS');
   const [occurredText, setOccurred] = useState(initial ? toIsoDate(initial.occurredAt) : toIsoDate(new Date()));
   const [counterparty, setCounter] = useState(initial?.counterparty ?? '');
   const [category, setCategory]   = useState(initial?.category ?? '');
@@ -45,7 +44,6 @@ export function FinanceEntryFormModal({
   const [accountId, setAccountId] = useState<string | null>(initial?.accountId ?? defaultAccountId);
   const [isPublic, setIsPublic]   = useState(initial?.isPublic ?? true);
   const [description, setDesc]    = useState(initial?.description ?? '');
-  const [referenceUrl, setRefUrl] = useState(initial?.referenceUrl ?? '');
   const [status, setStatus]       = useState<FinanceEntryStatus>(initial?.status ?? 'cleared');
   const [errorMsg, setErrorMsg]   = useState<string | null>(null);
 
@@ -60,14 +58,12 @@ export function FinanceEntryFormModal({
         entryId:      initial?.entryId ?? null,
         kind,
         amountCents:  cents,
-        currency:     currency.trim().toUpperCase() || 'ILS',
         occurredAt,
         counterparty: counterparty.trim() || null,
         category:     category.trim()     || null,
         accountId:    accountId ?? undefined,
         isPublic,
         description:  description.trim()  || null,
-        referenceUrl: referenceUrl.trim() || null,
         status,
       });
     },
@@ -103,7 +99,6 @@ export function FinanceEntryFormModal({
         </View>
 
         <AdminFormField label={t.form.amountLabel}        value={amountText}  onChange={setAmount}     keyboardNumeric />
-        <AdminFormField label={t.form.currencyLabel}      value={currency}    onChange={setCurrency} />
         <AdminFormField label={t.form.occurredAtLabel}    value={occurredText} onChange={setOccurred} />
         <AdminFormField label={t.form.counterpartyLabel}  value={counterparty} onChange={setCounter} />
         <Text style={styles.label}>{t.form.accountLabel}</Text>
@@ -119,7 +114,6 @@ export function FinanceEntryFormModal({
         />
         {customCategory && <AdminFormField label={t.form.categoryCustom} value={category} onChange={setCategory} />}
         <AdminFormField label={t.form.descriptionLabel}   value={description}  onChange={setDesc} multiline />
-        <AdminFormField label={t.form.referenceUrlLabel}  value={referenceUrl} onChange={setRefUrl} />
 
         <Text style={styles.label}>{t.form.statusLabel}</Text>
         <View style={styles.optionsRow}>
