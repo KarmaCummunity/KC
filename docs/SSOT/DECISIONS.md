@@ -1559,6 +1559,8 @@ Owner rules that go with it:
 2. **KC Pro pricing:** free for the first year after launch. After that, ~~$30/month~~ **$20/month** for a private person (mainly for the WhatsApp bot) and $100/month for an organization (includes the full admin portal). *Updated 2026-11-04 by the owner: the private-person price is $20/month, not $30; the free first year and the organization price stand.*
 3. **Support email:** the single operated KC mailbox of `D-59`, `karmacommunity2.0@gmail.com`, which the app, web pages and store copy already use.
 
+**Update 2026-11-11 (PM, #1088), product decision {{D:kc-pro-pricing}}:** the free first year is granted by KC to everyone (admin / promo grant through the RevenueCat webhook), not as a store free trial, so billing starts only when the product decides it. Prices are USD only (no ILS price tier). An organization holds its own `org` entitlement, separate from a person's `pro`. Store products: `org.karmacommunity.app.pro.monthly` ($20) and `org.karmacommunity.app.org.monthly` ($100); product ids cannot be renamed after creation. The `org` entitlement needs a schema change (`billing.user_entitlements` holds one row per member) and a webhook change, tracked in its own issue.
+
 **Why.** Store review needs live, stable policy URLs now; the custom domain is not available yet. Pricing and support contact are owner decisions recorded here so the store listing, paywall and support copy share one source.
 
 **Rejected.** Waiting for a purchased domain before submitting (blocks review with no benefit).
