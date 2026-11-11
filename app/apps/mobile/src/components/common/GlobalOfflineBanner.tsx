@@ -2,7 +2,7 @@ import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, spacing, typography, Text } from '@kc/ui';
+import { colors, spacing, typography, iconSize, Text } from '@kc/ui';
 import { useNetworkStatus } from '../../lib/networkStatusStore';
 
 export function GlobalOfflineBanner() {
@@ -22,7 +22,7 @@ export function GlobalOfflineBanner() {
     >
       <Ionicons
         name="cloud-offline-outline"
-        size={16}
+        size={iconSize.sm}
         color={colors.warning}
         style={styles.icon}
       />
@@ -48,6 +48,5 @@ const styles = StyleSheet.create({
   text: {
     ...typography.caption,
     color: colors.textPrimary,
-    fontWeight: '500',
   },
 });
