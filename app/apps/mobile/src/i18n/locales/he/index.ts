@@ -49,6 +49,7 @@ import { surveyDemoHe } from './modules/surveyDemo';
 import { surveyHe } from './modules/survey';
 import { researchHe } from './modules/research';
 import { adminHe } from './modules/admin';
+import { adminOrgApprovalsBaselineHe } from './modules/adminOrgApprovalsBaseline';
 import { karmaHe } from './modules/karma';
 import { karmaEventsHe } from './modules/karmaEvents';
 import { cardsHe } from './modules/cards';
@@ -106,7 +107,15 @@ const he = {
   restoreAccount: restoreAccountHe,
 
   // Admin portal (FR-ADMIN-010/011) — see modules/admin.ts
-  admin: adminHe,
+  // The baseline approval copy joins admin.orgApprovals — see modules/adminOrgApprovalsBaseline.ts.
+  admin: {
+    ...adminHe,
+    orgApprovals: {
+      ...adminHe.orgApprovals,
+      row: { ...adminHe.orgApprovals.row, ...adminOrgApprovalsBaselineHe.row },
+      errors: { ...adminHe.orgApprovals.errors, ...adminOrgApprovalsBaselineHe.errors },
+    },
+  },
 
   // Settings — see modules/settings.ts
   settings: settingsHe,
