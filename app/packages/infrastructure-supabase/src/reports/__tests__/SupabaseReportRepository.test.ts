@@ -136,6 +136,43 @@ describe('SupabaseReportRepository', () => {
       });
     });
 
+    it('maps the report_target_not_visible trigger error (23514) → ReportError("invalid_target")', async () => {
+      const { client } = makeFakeClient({
+        error: { code: '23514', message: 'report_target_not_visible' },
+      });
+      const repo = new SupabaseReportRepository(client);
+
+      await expect(repo.submit('u_reporter', POST_SUBMISSION)).rejects.toMatchObject({ code: 'invalid_target' });
+    });
+
+    // Regression for #2061: the self-report guard raises the same SQLSTATE as the target shape
+    // check (23514), so it must be told apart by message or it surfaces as a generic failure.
+    it('maps the cannot_report_self trigger error (23514) → ReportError("cannot_report_self")', async () => {
+      const { client } = makeFakeClient({
+        error: { code: '23514', message: 'cannot_report_self' },
+      });
+      const repo = new SupabaseReportRepository(client);
+
+      await expect(repo.submit('u_reporter', POST_SUBMISSION)).rejects.toMatchObject({
+        name: 'ReportError',
+        code: 'cannot_report_self',
+      });
+    });
+
+    // Regression for #2061: the per-reporter hourly cap (enforce_rate_limit, SQLSTATE 22023)
+    // used to fall into "unknown" and show the generic error.
+    it('maps rate_limit_exceeded (22023) → ReportError("rate_limited")', async () => {
+      const { client } = makeFakeClient({
+        error: { code: '22023', message: 'rate_limit_exceeded' },
+      });
+      const repo = new SupabaseReportRepository(client);
+
+      await expect(repo.submit('u_reporter', POST_SUBMISSION)).rejects.toMatchObject({
+        name: 'ReportError',
+        code: 'rate_limited',
+      });
+    });
+
     it('maps SQLSTATE 23514 (CHECK violation) → ReportError("invalid_target")', async () => {
       const { client } = makeFakeClient({
         error: { code: '23514', message: 'reports_target_check' },
