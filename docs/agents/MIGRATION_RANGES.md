@@ -5,8 +5,19 @@
 > `supabase/schemas/` and frozen (`node scripts/assemble-baseline.mjs --check` fails when it
 > changes). The old files are history in `supabase/migrations/archive/`. **The next free number is
 > `0002`.** Later changes are forward-only `supabase/migrations/NNNN_snake.sql` files with their
-> pgTAP test in `supabase/tests/`; claim a range below as before. The table that follows is the
-> record of the retired chain and is kept for reference only.
+> pgTAP test in `supabase/tests/`; claim a range in the first table below. The second table is
+> the record of the retired chain and is kept for reference only.
+
+## Ranges after the cut-over
+
+| Range | Owner / issue | Status |
+|---|---|---|
+| 0002 | #2150 organization entitlement (`0002_org_entitlements.sql`) | merged |
+| 0003–0019 | `claude/baseline-post-cutover`: the post-cut-over world, chat, research, housing, knowledge and money changes ported from the pre-cut-over baseline branches | in progress |
+
+Next free number: `0020`.
+
+## Retired chain (before D-228)
 
 **Rule:** before writing a migration, claim a range here, in your PR or a small docs PR to `dev`. Use only numbers inside your range. Files are `supabase/migrations/NNNN_snake_case.sql`. Gaps are fine; collisions are not.
 
