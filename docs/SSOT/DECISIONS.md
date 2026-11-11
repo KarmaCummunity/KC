@@ -1912,7 +1912,7 @@ Owner rules that go with it:
 
 **Affected.** `app/apps/mobile/src/config/launchSurfaces.ts`, `src/hooks/useLaunchSurface.ts`, `src/components/LaunchSurfaceGate.tsx`, `app/(auth)/{index,sign-in,sign-up,forgot-password}.tsx`, `app/auth/{verify,reset-password}.tsx`, `app/settings.tsx`, `app/settings/whatsapp.tsx`, `app/(admin)/whatsapp/index.tsx` (screen moved to `src/screens/admin/WhatsAppAdminScreen.tsx`), `src/components/admin/AdminNav.tsx`, `src/services/purchases/RevenueCatSync.tsx`; FR-AUTH-001 AC2 (the welcome email link is now environment-dependent).
 
-## {{ENG:knowledge-verified-user-only}} — Knowledge listings need a verified user, not moderator approval (2026-11-09)
+## D-232 — Knowledge listings need a verified user, not moderator approval (2026-11-09)
 
 **Decision.** The owner relaxes R-Knowledge-1 (#1037): a verified user can publish and book knowledge listings with no moderator approval step before booking. Moderators act on reports only. This supersedes the `pending_review` start state mentioned in D-224.
 
