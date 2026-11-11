@@ -1455,13 +1455,13 @@
     },
     {
      "file": "app/apps/mobile/src/services/imageUpload.ts",
-     "line": 179,
+     "line": 182,
      "symbol": "resizeAndUploadImage",
      "area": "mobile"
     },
     {
      "file": "app/apps/mobile/src/services/imageUpload.ts",
-     "line": 191,
+     "line": 194,
      "symbol": "resizeAndUploadImage",
      "area": "mobile"
     },
@@ -9856,7 +9856,7 @@
    "callSites": [
     {
      "file": "app/apps/mobile/src/services/featureFlagsComposition.ts",
-     "line": 9,
+     "line": 12,
      "symbol": "fetchRemoteFeatureFlags",
      "area": "mobile",
      "ops": [
