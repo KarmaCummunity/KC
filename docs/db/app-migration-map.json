@@ -2,8 +2,8 @@
  "generatedBy": "scripts/app-migration-map.mjs",
  "totals": {
   "rpc": {
-   "objects": 225,
-   "same": 96,
+   "objects": 226,
+   "same": 97,
    "renamed": 20,
    "changed": 47,
    "removed": 1,
@@ -52,8 +52,8 @@
    "missing": 0
   },
   "later": {
-   "objects": 136,
-   "same": 25,
+   "objects": 137,
+   "same": 26,
    "renamed": 4,
    "changed": 41,
    "removed": 1,
@@ -259,8 +259,8 @@
    "missing": 0
   },
   "matching": {
-   "callSites": 2,
-   "oneToOne": 2,
+   "callSites": 3,
+   "oneToOne": 3,
    "changed": 0,
    "removed": 0,
    "missing": 0
@@ -844,6 +844,7 @@
     "rpc:post_seat_counts",
     "rpc:accept_world_consent",
     "rpc:my_matches",
+    "rpc:admin_match_quality",
     "rpc:match_respond",
     "table:post_ride_details",
     "table:post_event_details",
@@ -855,8 +856,8 @@
     "table:post_ratings"
    ],
    "counts": {
-    "objects": 72,
-    "oneToOne": 61,
+    "objects": 73,
+    "oneToOne": 62,
     "changed": 11,
     "removed": 0,
     "missing": 0
@@ -2442,6 +2443,41 @@
      "line": 138,
      "symbol": "SupabaseOrgHierarchyRepository.getHierarchyCensus",
      "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "admin_match_quality",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "`p_days` (clamped 1..365); per giving world the alerted pairs, answers, acceptances, chats after the alert and completed handoffs, rates as numerics. Moderators and above (`forbidden` otherwise); lives in `76_matching/070_match_quality.sql`.",
+   "oldObject": {
+    "signature": [
+     "admin_match_quality(p_days?: number) → { accepted: number chat_pairs: number chat_rate: number completed_pairs: number completion_rate: number notified_pairs: number precision_proxy: number responses: number world_label_en: string world_label_he: string wo..."
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "admin_match_quality",
+     "signature": [
+      "admin_match_quality(p_days?: number) → { accepted: number chat_pairs: number chat_rate: number completed_pairs: number completion_rate: number notified_pairs: number precision_proxy: number responses: number world_label_en: string world_label_he: string wo..."
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "matching"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/matching/SupabaseMatchRepository.ts",
+     "line": 134,
+     "symbol": "SupabaseMatchRepository.qualityByWorld",
+     "area": "matching"
     }
    ]
   },
@@ -8644,7 +8680,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/matching/SupabaseMatchRepository.ts",
-     "line": 107,
+     "line": 127,
      "symbol": "SupabaseMatchRepository.respond",
      "area": "matching"
     }
@@ -8789,7 +8825,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/matching/SupabaseMatchRepository.ts",
-     "line": 99,
+     "line": 119,
      "symbol": "SupabaseMatchRepository.listMine",
      "area": "matching"
     }

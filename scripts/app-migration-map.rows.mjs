@@ -314,6 +314,7 @@ rpc('ride_occurrence_schedules', 'same', 'rpc:ride_occurrence_schedules', 'The s
 rpc('post_seat_counts', 'same', 'rpc:post_seat_counts', 'Places held, waiting registrations and seats left of event and ride posts the caller can read (`p_post_ids`, at most 100); the volunteering shifts and the occurrences of a ride series read their free places here.');
 rpc('accept_world_consent', 'same', 'rpc:accept_world_consent', 'Accepts the driver declaration in force (`p_kind`, `p_version`); `consent_version_stale` for an old version.');
 rpc('my_matches', 'same', 'rpc:my_matches', 'The caller\'s pairs, each with the other member\'s post as a card (`other_post`).');
+rpc('admin_match_quality', 'same', 'rpc:admin_match_quality', '`p_days` (clamped 1..365); per giving world the alerted pairs, answers, acceptances, chats after the alert and completed handoffs, rates as numerics. Moderators and above (`forbidden` otherwise); lives in `76_matching/070_match_quality.sql`.');
 rpc('match_respond', 'same', 'rpc:match_respond', '`p_match_id`, `p_accept`; answers the pair\'s status (`accepted` when both accepted).');
 table('post_ride_details', 'same', 'table:post_ride_details', 'Read for the route, time and seats of a ride and for the occurrences of a series; the owner edits it through the adapter.');
 table('post_event_details', 'same', 'table:post_event_details', 'Read for an event\'s window, capacity and policy; the organizer edits it through the adapter.');
