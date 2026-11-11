@@ -28,6 +28,7 @@ import { chatEn } from './modules/chat';
 import { chatNewEn } from './modules/chatNew';
 import { chatMessagingEn } from './modules/chatMessaging';
 import { marketplaceBaselineErrorsEn } from './modules/marketplaceBaselineErrors';
+import { challengeBaselineErrorsEn } from './modules/challengeBaselineErrors';
 import { notificationsEn } from './modules/notifications';
 import { emptyStatesEn, feedSettingsEn } from './modules/feedSettings';
 import { moderationEn, auditEn, accountBlockedEn } from './modules/moderation';
@@ -144,8 +145,9 @@ const en = {
   // Direct support for KC (FR-DONATE-011) — see donations.supportKc.ts
   supportKc,
   timeVolunteer,
-  // Challenges world (docs/spec/10_challenges.md) — see challenges.ts
-  challenges,
+  // Challenges world (docs/spec/10_challenges.md) — see challenges.ts; baseline refusals in
+  // modules/challengeBaselineErrors.ts.
+  challenges: { ...challenges, errors: { ...challenges.errors, ...challengeBaselineErrorsEn } },
   medicalBodies,
   givingHandoff,
   // Ride seat bookings (D73) — see rideBooking.ts

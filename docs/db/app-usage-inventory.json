@@ -20,12 +20,12 @@
    "distinct": 3
   },
   "rpc": {
-   "callSites": 243,
-   "distinct": 220
+   "callSites": 241,
+   "distinct": 219
   },
   "table": {
    "callSites": 162,
-   "distinct": 55
+   "distinct": 56
   }
  },
  "entries": [
@@ -73,18 +73,6 @@
    "symbol": "PostImageCarousel",
    "via": "const",
    "name": "post-images"
-  },
-  {
-   "kind": "table",
-   "file": "app/apps/mobile/src/hooks/useChallengeLinkedPost.ts",
-   "line": 11,
-   "area": "mobile",
-   "symbol": "resolveChallengePostId",
-   "via": "literal",
-   "ops": [
-    "select"
-   ],
-   "name": "posts"
   },
   {
    "kind": "table",
@@ -785,7 +773,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/challenges/SupabaseChallengeRepository.ts",
-   "line": 121,
+   "line": 150,
    "area": "challenges",
    "symbol": "SupabaseChallengeRepository.createChallenge",
    "via": "literal",
@@ -794,7 +782,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/challenges/SupabaseChallengeRepository.ts",
-   "line": 139,
+   "line": 169,
    "area": "challenges",
    "symbol": "SupabaseChallengeRepository.listChallenges",
    "via": "literal",
@@ -803,7 +791,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/challenges/SupabaseChallengeRepository.ts",
-   "line": 149,
+   "line": 180,
    "area": "challenges",
    "symbol": "SupabaseChallengeRepository.getChallenge",
    "via": "literal",
@@ -812,7 +800,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/challenges/SupabaseChallengeRepository.ts",
-   "line": 156,
+   "line": 187,
    "area": "challenges",
    "symbol": "SupabaseChallengeRepository.joinChallenge",
    "via": "literal",
@@ -821,16 +809,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/challenges/SupabaseChallengeRepository.ts",
-   "line": 163,
-   "area": "challenges",
-   "symbol": "SupabaseChallengeRepository.joinChallenge",
-   "via": "literal",
-   "name": "join_challenge"
-  },
-  {
-   "kind": "rpc",
-   "file": "app/packages/infrastructure-supabase/src/challenges/SupabaseChallengeRepository.ts",
-   "line": 171,
+   "line": 191,
    "area": "challenges",
    "symbol": "SupabaseChallengeRepository.leaveChallenge",
    "via": "literal",
@@ -839,7 +818,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/challenges/SupabaseChallengeRepository.ts",
-   "line": 176,
+   "line": 195,
    "area": "challenges",
    "symbol": "SupabaseChallengeRepository.endChallenge",
    "via": "literal",
@@ -848,25 +827,28 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/challenges/SupabaseChallengeRepository.ts",
-   "line": 181,
+   "line": 200,
    "area": "challenges",
    "symbol": "SupabaseChallengeRepository.reportProgress",
    "via": "literal",
    "name": "report_challenge_progress"
   },
   {
-   "kind": "rpc",
+   "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/challenges/SupabaseChallengeRepository.ts",
-   "line": 192,
+   "line": 217,
    "area": "challenges",
    "symbol": "SupabaseChallengeRepository.listMyEntries",
    "via": "literal",
-   "name": "list_my_challenge_entries"
+   "ops": [
+    "select"
+   ],
+   "name": "challenge_progress_entries"
   },
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/challenges/SupabaseChallengeRepository.ts",
-   "line": 201,
+   "line": 228,
    "area": "challenges",
    "symbol": "SupabaseChallengeRepository.listLeaderboard",
    "via": "literal",

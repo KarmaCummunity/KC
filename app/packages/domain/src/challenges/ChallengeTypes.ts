@@ -61,6 +61,8 @@ export interface ChallengeDraft {
 /** A challenge as listed, plus the viewer's own participation (null fields when not joined). */
 export interface ChallengeSummary extends Omit<ChallengeDraft, 'endsAt'> {
   readonly challengeId: string;
+  /** The challenge's feed post (title, audience, comments and reactions live on it). */
+  readonly postId: string;
   readonly creatorId: string;
   readonly creatorDisplayName: string;
   readonly status: 'active' | 'ended';
@@ -73,6 +75,15 @@ export interface ChallengeSummary extends Omit<ChallengeDraft, 'endsAt'> {
   readonly myBestStreak: number;
   readonly mySuccessfulCycles: number;
   readonly myCompleted: boolean;
+}
+
+/** Opaque keyset cursor of a challenge list; pass back the `nextCursor` of the previous page. */
+export type ChallengeListCursor = string;
+
+/** One keyset page of a challenge list; `nextCursor` is null on the last page. */
+export interface ChallengePage {
+  readonly challenges: readonly ChallengeSummary[];
+  readonly nextCursor: ChallengeListCursor | null;
 }
 
 /** What a participant reports for one cycle. */

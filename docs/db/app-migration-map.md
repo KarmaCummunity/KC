@@ -8,12 +8,12 @@ The application (`app/packages/infrastructure-supabase`, `app/apps/mobile`) and 
 
 | Kind | Objects used | 1:1 | 1:1 (renamed) | CHANGED | REMOVED | MISSING |
 | --- | --- | --- | --- | --- | --- | --- |
-| RPCs | 220 | 91 | 20 | 47 | 1 | 61 |
-| Tables and views | 55 | 35 | 0 | 16 | 0 | 4 |
+| RPCs | 219 | 91 | 20 | 46 | 1 | 61 |
+| Tables and views | 56 | 36 | 0 | 16 | 0 | 4 |
 | Storage buckets | 4 | 3 | 0 | 1 | 0 | 0 |
 | Realtime channels | 6 | 6 | 0 | 0 | 0 | 0 |
 | Edge Function invokes | 3 | 3 | 0 | 0 | 0 | 0 |
-| **Total** | 288 | 138 | 20 | 64 | 1 | 65 |
+| **Total** | 288 | 139 | 20 | 63 | 1 | 65 |
 
 ### Launch scope
 
@@ -23,7 +23,7 @@ Every row carries `launch` (spec D102, `docs/spec/96_launch_and_first_group_plan
 | --- | --- | --- | --- | --- | --- | --- |
 | core | 103 | 85 | 1 | 17 | 0 | 0 |
 | wedge | 54 | 33 | 15 | 6 | 0 | 0 |
-| later | 131 | 20 | 4 | 41 | 1 | 65 |
+| later | 131 | 21 | 4 | 40 | 1 | 65 |
 | **Launch-critical (core + wedge)** | 157 | 118 | 16 | 23 | 0 | 0 |
 
 Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename of the function or its arguments · **CHANGED** the caller's logic changes · **REMOVED** no replacement by design · **MISSING** the baseline has no equivalent although the code needs one (§4). Confidence: **high** read in the baseline source, **medium** inferred from names and generated types.
@@ -46,7 +46,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `infrastructure-supabase/src/admin/` | 54 | 6 | 18 | 0 | 30 |
 | `infrastructure-supabase/src/auth/` | 2 | 2 | 0 | 0 | 0 |
 | `infrastructure-supabase/src/blocks/` | 3 | 3 | 0 | 0 | 0 |
-| `infrastructure-supabase/src/challenges/` | 10 | 5 | 5 | 0 | 0 |
+| `infrastructure-supabase/src/challenges/` | 9 | 6 | 3 | 0 | 0 |
 | `infrastructure-supabase/src/chat/` | 20 | 19 | 1 | 0 | 0 |
 | `infrastructure-supabase/src/cities/` | 1 | 0 | 1 | 0 | 0 |
 | `infrastructure-supabase/src/donations/` | 7 | 3 | 4 | 0 | 0 |
@@ -71,7 +71,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `infrastructure-supabase/src/translations/` | 6 | 3 | 3 | 0 | 0 |
 | `infrastructure-supabase/src/users/` | 32 | 19 | 13 | 0 | 0 |
 | `infrastructure-supabase/src/volunteering/` | 9 | 3 | 6 | 0 | 0 |
-| `apps/mobile` (direct calls outside the adapters) | 21 | 16 | 2 | 0 | 3 |
+| `apps/mobile` (direct calls outside the adapters) | 20 | 16 | 1 | 0 | 3 |
 | Edge Function `_shared` | 11 | 0 | 0 | 0 | 11 |
 | Edge Function `backfill-image-thumbs` | 2 | 0 | 2 | 0 | 0 |
 | Edge Function `embed-worker` | 3 | 3 | 0 | 0 | 0 |
@@ -166,19 +166,19 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 
 ### `infrastructure-supabase/src/challenges/`
 
-10 call sites: 5 map 1:1, 5 need logic changes, 0 removed, 0 MISSING.
+9 call sites: 6 map 1:1, 3 need logic changes, 0 removed, 0 MISSING.
 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `create_challenge` | later | 1:1 | `create_challenge(p_cadence: string, p_city_id?: string, p_description?: string, p_difficulty?: string, p_ends_at?: string, p_goal_direction?: string, p_goal_value?: number, p_measurement: string, p_scope: string, p_target_cycles?: number, p_title: string, p_topic_label?: string) → string` | New optional `p_city_id` (required for a community challenge: `city_required`). | `account_not_active`, `challenge_world_not_configured` †, `city_required`, `invalid_input`, `unauthenticated` | high | SupabaseChallengeRepository.ts:121 |
-| `end_challenge` | later | 1:1 | `end_challenge(p_challenge_id: string) → undefined` | Signature unchanged. | `account_not_active`, `challenge_not_found`, `unauthenticated` | high | SupabaseChallengeRepository.ts:176 |
-| `get_challenge` | later | CHANGED | `get_challenge(p_challenge_id: string) → challenge_summary[]` | Returns the `challenge_summary` composite (re-map the fields). | `unauthenticated` | medium | SupabaseChallengeRepository.ts:149 |
-| `join_challenge` | later | CHANGED | `join_challenge(p_challenge_id: string) → undefined` | `p_show_on_profile` is gone. | `account_not_active`, `already_joined`, `challenge_not_active`, `challenge_not_found`, `unauthenticated` | high | SupabaseChallengeRepository.ts:156, SupabaseChallengeRepository.ts:163 |
-| `leave_challenge` | later | 1:1 | `leave_challenge(p_challenge_id: string) → undefined` | Signature unchanged. | `challenge_not_found`, `creator_cannot_leave`, `not_participant`, `unauthenticated` | high | SupabaseChallengeRepository.ts:171 |
-| `list_challenge_leaderboard` | later | 1:1 | `list_challenge_leaderboard(p_challenge_id: string, p_limit?: number) → { avatar_url: string best_streak: number completed: boolean current_streak: number display_name: string is_me: boolean successful_cycles: number user_id: string }[]` | Adds `avatar_url`. |  | high | SupabaseChallengeRepository.ts:201 |
-| `list_challenges` | later | CHANGED | `list_challenges(p_cursor?: Json, p_limit?: number, p_view?: string) → { challenge: challenge_summary next_cursor: Json }[]` | Offset → keyset `p_cursor`; each row is `{ challenge, next_cursor }`. | `invalid_input`, `unauthenticated` | high | SupabaseChallengeRepository.ts:139 |
-| `list_my_challenge_entries` | later | CHANGED | table `challenge_progress_entries` | Direct read of the caller's own entries (policy `challenge_progress_entries_select_own`). |  | high | SupabaseChallengeRepository.ts:192 |
-| `report_challenge_progress` | later | 1:1 | `report_challenge_progress(p_challenge_id: string, p_note?: string, p_report_date?: string, p_value: number) → Json` | Signature unchanged. | `account_not_active`, `challenge_not_active`, `challenge_not_found`, `invalid_input`, `not_participant`, `report_date_out_of_window`, `unauthenticated` | high | SupabaseChallengeRepository.ts:181 |
+| `create_challenge` | later | 1:1 | `create_challenge(p_cadence: string, p_city_id?: string, p_description?: string, p_difficulty?: string, p_ends_at?: string, p_goal_direction?: string, p_goal_value?: number, p_measurement: string, p_scope: string, p_target_cycles?: number, p_title: string, p_topic_label?: string) → string` | New optional `p_city_id` (required for a community challenge: `city_required`). | `account_not_active`, `challenge_world_not_configured`, `city_required`, `invalid_input`, `unauthenticated` | high | SupabaseChallengeRepository.ts:150 |
+| `end_challenge` | later | 1:1 | `end_challenge(p_challenge_id: string) → undefined` | Signature unchanged. | `account_not_active`, `challenge_not_found`, `unauthenticated` | high | SupabaseChallengeRepository.ts:195 |
+| `get_challenge` | later | CHANGED | `get_challenge(p_challenge_id: string) → challenge_summary[]` | Returns the `challenge_summary` composite (re-map the fields). | `unauthenticated` | medium | SupabaseChallengeRepository.ts:180 |
+| `join_challenge` | later | CHANGED | `join_challenge(p_challenge_id: string) → undefined` | `p_show_on_profile` is gone. | `account_not_active`, `already_joined`, `challenge_not_active`, `challenge_not_found`, `unauthenticated` | high | SupabaseChallengeRepository.ts:187 |
+| `leave_challenge` | later | 1:1 | `leave_challenge(p_challenge_id: string) → undefined` | Signature unchanged. | `challenge_not_found`, `creator_cannot_leave`, `not_participant`, `unauthenticated` | high | SupabaseChallengeRepository.ts:191 |
+| `list_challenge_leaderboard` | later | 1:1 | `list_challenge_leaderboard(p_challenge_id: string, p_limit?: number) → { avatar_url: string best_streak: number completed: boolean current_streak: number display_name: string is_me: boolean successful_cycles: number user_id: string }[]` | Adds `avatar_url`. |  | high | SupabaseChallengeRepository.ts:228 |
+| `list_challenges` | later | CHANGED | `list_challenges(p_cursor?: Json, p_limit?: number, p_view?: string) → { challenge: challenge_summary next_cursor: Json }[]` | Offset → keyset `p_cursor`; each row is `{ challenge, next_cursor }`. | `invalid_input`, `unauthenticated` | high | SupabaseChallengeRepository.ts:169 |
+| `report_challenge_progress` | later | 1:1 | `report_challenge_progress(p_challenge_id: string, p_note?: string, p_report_date?: string, p_value: number) → Json` | Signature unchanged. | `account_not_active`, `challenge_not_active`, `challenge_not_found`, `invalid_input`, `not_participant`, `report_date_out_of_window`, `unauthenticated` | high | SupabaseChallengeRepository.ts:200 |
+| `challenge_progress_entries` (table) | later | 1:1 | table `challenge_progress_entries` | The caller's own reports of a challenge, newest cycle first (policy `challenge_progress_entries_select_own`); replaces `list_my_challenge_entries`. |  | high | SupabaseChallengeRepository.ts:217 |
 
 ### `infrastructure-supabase/src/chat/`
 
@@ -572,7 +572,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 
 ### `apps/mobile` (direct calls outside the adapters)
 
-21 call sites: 16 map 1:1, 2 need logic changes, 0 removed, 3 MISSING.
+20 call sites: 16 map 1:1, 1 need logic changes, 0 removed, 3 MISSING.
 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -585,7 +585,6 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `api_whatsapp_unlink_me` | later | MISSING M22 | — | The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4). |  | high | whatsapp.tsx:52 |
 | `app_flags` (table) | core | 1:1 | table `app_flags` | Same `select key, enabled`, for signed-in members only (no `anon` grant): before sign-in the compiled defaults apply. After sign-in the same map is `bootstrap_session().flags`. The rows (`world_<slug>_enabled`) are seed data, not part of the baseline (M09, verified). |  | high | featureFlagsComposition.ts:9 |
 | `karma_ledger` (table) | wedge | CHANGED | table `karma_ledger` | `ledger_id` → `id`, `points_delta` → `points`, `ref_type` / `ref_id` → `subject` / `reference`. The total is `my_karma_points()`. |  | high | useKarmaHistory.ts:24 |
-| `posts` (table) | core | CHANGED | see `infrastructure-supabase/src/admin/` |  |  |  | useChallengeLinkedPost.ts:11 |
 
 ### Edge Function `_shared`
 
@@ -762,7 +761,7 @@ In launch order: after package *n* the app is shippable with everything up to *n
 | P6 — Edge Functions of the launch | core | 10 | 6 | 4 | 0 | 0 | P5 |
 | L1 — Housing world | later | 12 | 3 | 9 | 0 | 0 | L2, L3, L4, L5, L6, L7 |
 | L2 — Knowledge world | later | 12 | 1 | 5 | 0 | 6 | L1, L3, L4, L5, L6, L7 |
-| L3 — Challenges | later | 9 | 5 | 4 | 0 | 0 | L1, L2, L4, L5, L6, L7 |
+| L3 — Challenges | later | 9 | 6 | 3 | 0 | 0 | L1, L2, L4, L5, L6, L7 |
 | L4 — Money: donations to organizations, standing orders, org finance, org onboarding | later | 31 | 7 | 20 | 1 | 3 | L1, L2, L3, L5, L6, L7 |
 | L5 — Surveys, feedback, public research | later | 14 | 6 | 3 | 0 | 5 | L1, L2, L3, L4, L6, L7 |
 | L6 — Back-office tools: tasks, CRM, timesheets | later | 18 | 0 | 0 | 0 | 18 | L1, L2, L3, L4, L5, L7 |
