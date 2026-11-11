@@ -71,7 +71,7 @@ describe('listingImageUpload', () => {
         expect.any(Uint8Array),
         {
           contentType: 'image/jpeg',
-          upsert: true,
+          upsert: false,
           cacheControl: 'public, max-age=31536000, immutable',
         },
       );

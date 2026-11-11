@@ -2,7 +2,9 @@
 // (Nave, 2026-11-11): email sign-in/sign-up/reset, the WhatsApp bot, and payments (RevenueCat).
 //
 // Resolution, first match wins:
-//   1. remote row in public.app_flags (`launch_*_enabled`), set by the owner per Supabase project;
+//   1. remote row in public.app_flags (`launch_*_enabled`), set by the owner per Supabase project. The
+//      table is readable by signed-in members only (D-228), so this applies after sign-in; before it
+//      (the welcome screen) the next two steps decide;
 //   2. build-time override `EXPO_PUBLIC_LAUNCH_*` ("1"/"true"/"on" or "0"/"false"/"off");
 //   3. the environment default: ON in a development build, OFF in production. An unset or unknown
 //      EXPO_PUBLIC_ENVIRONMENT is production (see environment.ts), so a misconfigured build hides.
