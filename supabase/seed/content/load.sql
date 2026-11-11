@@ -24,6 +24,16 @@ create temporary table seed_survey_questions (
   survey_slug text, version integer, sort_order integer, question_type text, short_label_he text,
   prompt_he text, context_he text, text_placeholder_he text, rating_anchor_low_he text,
   rating_anchor_high_he text, choice_options jsonb) on commit drop;
+create temporary table seed_world_links (
+  from_world_slug text, to_world_slug text, link_slug text, label_he text, label_en text,
+  description text, is_active boolean) on commit drop;
+create temporary table seed_external_bodies (
+  slug text, world_slug text, label_he text, label_en text, body_type text, requires_routing boolean,
+  contact_url text, is_verified boolean, is_active boolean) on commit drop;
+create temporary table seed_knowledge_topics (
+  slug text, world_slug text, parent_slug text, label_he text, label_en text, description_he text,
+  sort_order integer) on commit drop;
+create temporary table seed_knowledge_topic_aliases (topic_slug text, alias text, lang text) on commit drop;
 
 \copy seed_link_categories from 'data/donation_link_categories.csv' with (format csv, header true)
 \copy seed_links from 'data/donation_links.csv' with (format csv, header true)
@@ -31,6 +41,10 @@ create temporary table seed_survey_questions (
 \copy seed_surveys from 'data/surveys.csv' with (format csv, header true)
 \copy seed_survey_versions from 'data/survey_versions.csv' with (format csv, header true)
 \copy seed_survey_questions from 'data/survey_questions.csv' with (format csv, header true)
+\copy seed_world_links from 'data/world_links.csv' with (format csv, header true)
+\copy seed_external_bodies from 'data/external_bodies.csv' with (format csv, header true)
+\copy seed_knowledge_topics from 'data/knowledge_topics.csv' with (format csv, header true)
+\copy seed_knowledge_topic_aliases from 'data/knowledge_topic_aliases.csv' with (format csv, header true)
 
 -- 1. Lists of organization links, then the links themselves. A curated link has no
 --    submitter and is already approved; it is matched by its list and address.
@@ -152,3 +166,79 @@ with accounts as (
 insert into seed_platform_changes select count(*) from accounts;
 select 'platform_organization' as seed_table, 1 as rows_in_file, coalesce(sum(n), 0) as rows_changed
   from seed_platform_changes;
+
+-- 5. Links and knowledge of the giving worlds (migration 0003). Every row is matched by its
+--    stable key: a link by its world and link slug, a body and a topic by their slug, an
+--    alias by its normalized text.
+with changed as (
+  insert into public.world_links as l (from_world_slug, to_world_slug, link_slug, label_he, label_en, description, is_active)
+  select s.from_world_slug, s.to_world_slug, s.link_slug, s.label_he, s.label_en, nullif(s.description, ''), s.is_active
+    from seed_world_links s
+  on conflict (from_world_slug, link_slug) do update
+     set to_world_slug = excluded.to_world_slug, label_he = excluded.label_he, label_en = excluded.label_en,
+         description = excluded.description, is_active = excluded.is_active
+   where (l.to_world_slug, l.label_he, l.label_en, l.description, l.is_active)
+         is distinct from (excluded.to_world_slug, excluded.label_he, excluded.label_en, excluded.description, excluded.is_active)
+  returning 1
+)
+select 'world_links' as seed_table, (select count(*) from seed_world_links) as rows_in_file,
+       (select count(*) from changed) as rows_changed;
+
+with changed as (
+  insert into public.external_bodies as b (slug, world_slug, label_he, label_en, body_type, requires_routing,
+                                           contact_url, is_verified, is_active)
+  select s.slug, s.world_slug, s.label_he, s.label_en, s.body_type, s.requires_routing,
+         nullif(s.contact_url, ''), s.is_verified, s.is_active
+    from seed_external_bodies s
+  on conflict (slug) do update
+     set world_slug = excluded.world_slug, label_he = excluded.label_he, label_en = excluded.label_en,
+         body_type = excluded.body_type, requires_routing = excluded.requires_routing,
+         contact_url = excluded.contact_url, is_verified = excluded.is_verified, is_active = excluded.is_active
+   where (b.world_slug, b.label_he, b.label_en, b.body_type, b.requires_routing, b.contact_url, b.is_verified, b.is_active)
+         is distinct from (excluded.world_slug, excluded.label_he, excluded.label_en, excluded.body_type,
+                           excluded.requires_routing, excluded.contact_url, excluded.is_verified, excluded.is_active)
+  returning 1
+)
+select 'external_bodies' as seed_table, (select count(*) from seed_external_bodies) as rows_in_file,
+       (select count(*) from changed) as rows_changed;
+
+-- Topics in two steps: the rows first, then their place in the tree, so a child may come
+-- before its parent in the file.
+create temporary table seed_topic_changes (n integer) on commit drop;
+with changed as (
+  insert into public.knowledge_topics as t (slug, world_slug, label_he, label_en, description_he, sort_order)
+  select s.slug, s.world_slug, s.label_he, s.label_en, nullif(s.description_he, ''), s.sort_order
+    from seed_knowledge_topics s
+  on conflict (slug) do update
+     set world_slug = excluded.world_slug, label_he = excluded.label_he, label_en = excluded.label_en,
+         description_he = excluded.description_he, sort_order = excluded.sort_order
+   where (t.world_slug, t.label_he, t.label_en, t.description_he, t.sort_order)
+         is distinct from (excluded.world_slug, excluded.label_he, excluded.label_en, excluded.description_he, excluded.sort_order)
+  returning 1
+)
+insert into seed_topic_changes select count(*) from changed;
+with placed as (
+  update public.knowledge_topics t
+     set parent_id = p.id
+    from seed_knowledge_topics s
+    left join public.knowledge_topics p on p.slug = nullif(s.parent_slug, '')
+   where t.slug = s.slug and t.parent_id is distinct from p.id
+  returning 1
+)
+insert into seed_topic_changes select count(*) from placed;
+-- A topic that was inserted and then placed is counted once.
+select 'knowledge_topics' as seed_table, (select count(*) from seed_knowledge_topics) as rows_in_file,
+       least((select sum(n) from seed_topic_changes), (select count(*) from seed_knowledge_topics)) as rows_changed;
+
+with changed as (
+  insert into public.knowledge_topic_aliases as a (topic_id, alias, lang)
+  select t.id, s.alias, s.lang
+    from seed_knowledge_topic_aliases s
+    join public.knowledge_topics t on t.slug = s.topic_slug
+  on conflict (alias_norm) do update
+     set topic_id = excluded.topic_id, alias = excluded.alias, lang = excluded.lang
+   where (a.topic_id, a.alias, a.lang) is distinct from (excluded.topic_id, excluded.alias, excluded.lang)
+  returning 1
+)
+select 'knowledge_topic_aliases' as seed_table, (select count(*) from seed_knowledge_topic_aliases) as rows_in_file,
+       (select count(*) from changed) as rows_changed;
