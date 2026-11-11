@@ -24,15 +24,15 @@
    "distinct": 177
   },
   "table": {
-   "callSites": 189,
-   "distinct": 60
+   "callSites": 192,
+   "distinct": 63
   }
  },
  "entries": [
   {
    "kind": "bucket",
    "file": "app/apps/mobile/app/edit-post/[id].tsx",
-   "line": 42,
+   "line": 43,
    "area": "mobile",
    "symbol": "assetUrl",
    "via": "const",
@@ -3916,6 +3916,42 @@
     "select"
    ],
    "name": "users"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/worlds/SupabaseWorldContentRepository.ts",
+   "line": 28,
+   "area": "worlds",
+   "symbol": "SupabaseWorldContentRepository.getWorldContent",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "world_links"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/worlds/SupabaseWorldContentRepository.ts",
+   "line": 35,
+   "area": "worlds",
+   "symbol": "SupabaseWorldContentRepository.getWorldContent",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "external_bodies"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/worlds/SupabaseWorldContentRepository.ts",
+   "line": 42,
+   "area": "worlds",
+   "symbol": "SupabaseWorldContentRepository.getWorldContent",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "knowledge_topics"
   },
   {
    "kind": "rpc",

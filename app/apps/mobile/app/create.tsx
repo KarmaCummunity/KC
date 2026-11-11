@@ -35,6 +35,7 @@ import { useKeyboardVerticalOffset } from '../src/lib/platform/useKeyboardVertic
 import { TAB_INLINE_FORM_HEADER_HEIGHT } from '../src/lib/platform/formChromeHeights';
 import { closeCreateForm } from '../src/navigation/closeCreateForm';
 import { CreatePostScreenOverlays } from '../src/screens/tabs/CreatePostScreenOverlays';
+import { resolveKeyboardAvoidingBehavior } from '../src/lib/platform/keyboardVerticalOffset';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../src/components/RouteErrorBoundary';
 
@@ -205,7 +206,7 @@ export default function CreatePostScreen() {
       ) : activeCategory.engine !== 'post' ? (
         <KeyboardAvoidingView
           style={styles.scroll}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          behavior={resolveKeyboardAvoidingBehavior(Platform.OS)}
           keyboardVerticalOffset={keyboardOffset}
         >
           <WorldCreateForm
@@ -223,7 +224,7 @@ export default function CreatePostScreen() {
       ) : (
       <KeyboardAvoidingView
         style={styles.scroll}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={resolveKeyboardAvoidingBehavior(Platform.OS)}
         keyboardVerticalOffset={keyboardOffset}
       >
         <CreatePostFormScrollContent

@@ -14,7 +14,9 @@ export type WorldChromeConfig = Readonly<{
 export const WORLD_CHROME_BY_SLUG: Record<string, WorldChromeConfig> = {
   items: {
     feedPath: '/(tabs)/donations/items',
-    subScreens: worldSubScreens('/(tabs)/donations/items/handoffs'),
+    subScreens: worldSubScreens('/(tabs)/donations/items/handoffs', [
+      worldLinksSubScreenLink('items'),
+    ]),
   },
   food: {
     feedPath: '/(tabs)/donations/food',
@@ -51,6 +53,11 @@ export const WORLD_CHROME_BY_SLUG: Record<string, WorldChromeConfig> = {
     subScreens: worldSubScreens('/(tabs)/donations/knowledge/handoffs', [
       worldLinksSubScreenLink('knowledge'),
     ]),
+  },
+  // Challenges have no handoffs: the world's menu holds its feed and its links and knowledge.
+  challenges: {
+    feedPath: '/(tabs)/donations/challenges',
+    subScreens: [worldLinksSubScreenLink('challenges')],
   },
   rides: {
     feedPath: '/(tabs)/donations/rides',

@@ -60,6 +60,7 @@ export * from './marketplace/mapPins';
 export * from './launch/launchWorlds';
 export * from './worlds/givingWorlds';
 export * from './worlds/worldAffinity';
+export * from './worlds/worldContent';
 export * from './payments/PaymentTypes';
 export * from './payments/standingOrderActions';
 export * from './payments/KcSupportChannel';

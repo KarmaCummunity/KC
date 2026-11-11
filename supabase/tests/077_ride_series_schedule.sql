@@ -69,7 +69,7 @@ select is(pg_temp.as_member('d', $$select count(*)::text from public.ride_occurr
 select is(pg_temp.as_member(null, $$select count(*)::text from public.ride_occurrence_schedules(array[gen_random_uuid()])$$),
   '42501', 'a signed-out caller cannot read a schedule');
 
--- Eve books the soonest occurrence; Alice cancels the series and the booked ride is cancelled with it ({{D:series-end-cancels-booked}}).
+-- Eve books the soonest occurrence; Alice cancels the series and the booked ride is cancelled with it (D146).
 select is(pg_temp.as_member('e', $$select (public.book_ride_seat((select r.post_id from public.post_ride_details r
       order by r.departs_at limit 1), 1)).status$$)
     || '|' || pg_temp.as_member('a', $$select 'ok' from public.set_ride_series_status((select id from public.ride_series), 'cancelled')$$),

@@ -35,6 +35,7 @@ import { usePostDetailStyles } from '../post/postDetailScreen.styles';
 import { ChallengePostDetailView } from './ChallengePostDetailView';
 import { ChallengePostDetailPanels } from './ChallengePostDetailPanels';
 import { ChallengeJoinPill } from './ChallengeJoinPill';
+import { resolveKeyboardAvoidingBehavior } from '../../lib/platform/keyboardVerticalOffset';
 
 function normalizeChallengeId(raw: string | string[] | undefined): string {
   const id = Array.isArray(raw) ? raw[0] : raw;
@@ -211,7 +212,7 @@ export default function ChallengePostDetail() {
         <PostEngagementProvider postId={post.postId} viewerId={myUserId}>
           <KeyboardAvoidingView
             style={{ flex: 1 }}
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            behavior={resolveKeyboardAvoidingBehavior(Platform.OS)}
             keyboardVerticalOffset={keyboardOffset}
           >
             {body}

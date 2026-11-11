@@ -12,7 +12,6 @@ export default function FoodWorldScreen() {
         worldSlug="food"
         icon="restaurant-outline"
         introKey="givingHandoff.foodHubIntro"
-        linksCategory="food"
         subScreens={WORLD_CHROME_BY_SLUG.food.subScreens}
       />
     </WorldLaunchGateBySlug>

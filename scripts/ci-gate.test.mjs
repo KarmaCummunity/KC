@@ -78,6 +78,21 @@ test('manual dispatch gates only dev and main', () => {
   assert.match(errors[0], /Manual runs gate only dev or main/);
 });
 
+// The Maestro Android lane is optional like `release`: absent from the plan it may only have been
+// skipped; planned, it must succeed, and a failed one fails the gate (that is what makes it required).
+test('a PR that does not touch the app passes with the maestro lane skipped', () => {
+  assert.deepEqual(evaluateGate({ ...PR, needs: { ...NEEDS, maestro: skipped }, plan: PLAN }), []);
+});
+
+test('a PR that touches the app cannot pass with the maestro lane failed, cancelled, skipped or unwired', () => {
+  const plan = { ...PLAN, maestro: true };
+  assert.deepEqual(evaluateGate({ ...PR, needs: { ...NEEDS, maestro: { result: 'failure' } }, plan }), ['job "maestro" failure']);
+  assert.deepEqual(evaluateGate({ ...PR, needs: { ...NEEDS, maestro: { result: 'cancelled' } }, plan }), ['job "maestro" cancelled']);
+  assert.deepEqual(evaluateGate({ ...PR, needs: { ...NEEDS, maestro: skipped }, plan }), ['job "maestro" is needed for this change but was skipped']);
+  assert.deepEqual(evaluateGate({ ...PR, needs: NEEDS, plan }), ['job "maestro" is planned but missing from the gate\'s needs: list']);
+  assert.deepEqual(evaluateGate({ ...PR, needs: { ...NEEDS, maestro: ok }, plan }), []);
+});
+
 // Review events re-run only the static lane and reuse the rest. `release` is
 // an optional lane: omitted from the plan, it is reused as skipped.
 const REVIEW_PLAN = { hygiene: true, static: true, frontend: true, backend: false, edge: false, bundles: false };

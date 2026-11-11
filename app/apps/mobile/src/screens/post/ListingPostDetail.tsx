@@ -21,6 +21,7 @@ import { ListingOwnerClosureBar } from '../../components/closure/ListingOwnerClo
 import { PostDetailBottomChrome } from '../../components/post-detail/PostDetailBottomChrome';
 import { ListingRepublishBar } from '../../components/closure/ListingRepublishBar';
 import { canRepublishListingPost } from '../../lib/unifiedCreate/listingRepublish';
+import { resolveKeyboardAvoidingBehavior } from '../../lib/platform/keyboardVerticalOffset';
 
 type Props = {
   readonly post: PostWithOwner;
@@ -70,7 +71,7 @@ export function ListingPostDetail({ post, listingId, viewerId, bottomInset }: Pr
       <PostEngagementProvider postId={post.postId} viewerId={viewerId}>
         <KeyboardAvoidingView
           style={{ flex: 1 }}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          behavior={resolveKeyboardAvoidingBehavior(Platform.OS)}
           keyboardVerticalOffset={keyboardOffset}
         >
           <MarketplaceListingDetailScreen
