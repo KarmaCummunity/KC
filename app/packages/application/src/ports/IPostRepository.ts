@@ -82,6 +82,12 @@ export interface PostWithOwner extends Post {
   recipientProfileNavigableFromPost?: boolean;
 }
 
+/** One page of the profile closed-posts tab; `nextCursor` is null on the last page. */
+export interface ProfileClosedPostsPage {
+  items: ProfileClosedPostsItem[];
+  nextCursor: string | null;
+}
+
 /** FR-CLOSURE-003 AC1/AC2 — chat-partner candidate for the recipient picker. */
 export interface ClosureCandidate {
   userId: string;
@@ -201,21 +207,13 @@ export interface IPostRepository {
     cursor?: string,
     visibility?: PostVisibility,
     excludeVisibility?: PostVisibility,
-    profileOpenLinks?: {
-      readonly viewerUserId: string | null;
-      readonly listMode: 'standard' | 'owner_only_me';
-    },
   ): Promise<{ posts: Post[]; nextCursor: string | null }>;
 
   /**
-   * Closed-posts tab on a profile screen.
-   * Returns the UNION of (posts profileUserId published) and (posts where
-   * profileUserId is the respondent), all in status `closed_delivered`,
-   * ordered by `closed_at` desc.
-   *
-   * Visibility for the viewer is enforced server-side via the RPC, which
-   * reuses `is_post_visible_to`. The viewer may be null for anon flows;
-   * the RPC will simply return Public closed posts only.
+   * Closed-posts tab on a profile screen: the posts `profileUserId` published that were
+   * delivered (or, for the owner, deleted without a recipient), newest first, paged by an
+   * opaque keyset cursor. Row-level security narrows the list to what `viewerUserId` may
+   * read. Every item is a `publisher` item: the baseline lists a member's own posts only.
    *
    * Mapped to FR-PROFILE-001 AC4 (revised), FR-PROFILE-002 AC2 (revised),
    * FR-POST-017 AC1 (revised).
@@ -226,7 +224,7 @@ export interface IPostRepository {
     limit: number,
     cursor?: string,
     listMode?: ProfileClosedPostsListMode,
-  ): Promise<ProfileClosedPostsItem[]>;
+  ): Promise<ProfileClosedPostsPage>;
 
   /** FR-POST-021 — per-actor identity exposure rows for a post. */
   listPostActorIdentities(postId: string): Promise<PostActorIdentityRow[]>;

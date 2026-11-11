@@ -5,7 +5,7 @@
 // (`contracts/postRepository.contract.ts`). Viewer-dependent reads, admin
 // flows and feed ranking are not modelled and fail loudly.
 
-import type { Post, PostStatus, PostVisibility, ProfileClosedPostsItem } from '@kc/domain';
+import type { Post, PostStatus, PostVisibility } from '@kc/domain';
 import type {
   ClosureCandidate,
   CreatePostInput,
@@ -13,6 +13,7 @@ import type {
   IPostRepository,
   PostFeedFilter,
   PostWithOwner,
+  ProfileClosedPostsPage,
   UpdatePostInput,
 } from '../../ports/IPostRepository';
 import type { PostActorIdentityRow, UpsertPostActorIdentityInput } from '../../ports/postActorIdentity';
@@ -188,7 +189,6 @@ export class InMemoryPostRepository implements IPostRepository {
     cursor?: string,
     visibility?: PostVisibility,
     excludeVisibility?: PostVisibility,
-    _profileOpenLinks?: { readonly viewerUserId: string | null; readonly listMode: 'standard' | 'owner_only_me' },
   ): Promise<{ posts: Post[]; nextCursor: string | null }> {
     if (status.length === 0) return { posts: [], nextCursor: null };
     const safeLimit = Math.max(1, Math.min(limit, PAGE_MAX));
@@ -205,7 +205,7 @@ export class InMemoryPostRepository implements IPostRepository {
     return { posts: page.map(clonePost), nextCursor };
   }
 
-  async getProfileClosedPosts(): Promise<ProfileClosedPostsItem[]> {
+  async getProfileClosedPosts(): Promise<ProfileClosedPostsPage> {
     return notModelled('getProfileClosedPosts');
   }
 
