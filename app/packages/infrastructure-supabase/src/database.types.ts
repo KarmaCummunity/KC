@@ -16816,6 +16816,7 @@ export type Database = {
           occurred_at: string
           post_id: string
           post_title: string
+          world_slug: string
         }[]
       }
       rpc_my_matches: {

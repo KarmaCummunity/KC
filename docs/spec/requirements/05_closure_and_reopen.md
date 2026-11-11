@@ -216,7 +216,7 @@ The owner of an open **give** offer can name the member who received it, using t
 - Decisions: D17, D19, D73, D104, D125, G34. Housing and rides defaults below.
 
 **Acceptance Criteria.**
-- AC1. On an open give listing post, the owner sees the world label («סומן כנמסר», «סומן כמסור», «סיום האירוח», «שיבוץ נוסע») and the existing closure steps.
+- AC1. On an open give listing post, the owner sees the world label («סומן כנמסר», «סומן כמסור», «סיום האירוח», «שיבוץ נוסע», «ההתנדבות התקיימה ✓») and the existing closure steps.
 - AC2. Step 2 is the existing picker: chats and search (`SearchUsersForClosureUseCase`). The primary action requires a selection.
 - AC3. «Close without marking» is available for items and animals offers with no live handoff, and hidden for rides and housing.
 - AC4. `owner_complete_offer_with_user` refuses a non-owner, a closed or paused offer, the owner as recipient, a blocked pair, and a recipient who cannot see the listing.
@@ -224,6 +224,7 @@ The owner of an open **give** offer can name the member who received it, using t
 - AC6. Assigning a passenger on a ride that has not left confirms one seat and does not close the ride. A further assign past the seat cap is refused.
 - AC7. Assigning a guest on a housing offer confirms that one stay (or completes it when the stay window is open) and does not close the listing.
 - AC8. Offer rows on My listings open this sheet when the listing has a feed post. Request listings keep `fulfill_my_listing`.
+- AC9. A time-world (volunteering) post, offer or request, is never "delivered": the button reads «ההתנדבות התקיימה ✓» / "Volunteering took place ✓", and the confirmation, picker and explainer speak of the volunteering taking place (#2078, {{D:volunteering-close-wording}}). The member's activity timeline (FR-STATS-003) words the close and the marks as volunteering too (`0742` returns each row's world). The stored status stays `closed_delivered`; the status badge already reads «הושלם». An organization's event ends through its own bar (G18).
 
 **Related.** Screens: listing post detail, My listings, ride bookings, housing host, animal handoff. RPC: `0658_owner_complete_offer_with_user`.
 
@@ -251,3 +252,4 @@ A post that has been reopened 5 or more times triggers a moderation flag.
 | ------- | ---- | ------- |
 | 0.1 | 2026-05-05 | Initial draft from PRD §3.3.6, Flow 7, and Decisions D-6, D-7. |
 | 0.2 | 2026-11-07 | FR-CLOSURE-011: owner assign / close of an open offer with a named member. |
+| 0.3 | 2026-11-11 | FR-CLOSURE-011 AC9: volunteering closes as "took place", not "delivered" (#2078). |

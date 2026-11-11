@@ -96,6 +96,7 @@ describe('SupabaseStatsRepository — listMyActivityTimeline', () => {
           post_id: 'p_1',
           post_title: 'Title',
           actor_display_name: 'Alice',
+          world_slug: 'time',
         },
       ],
     });
@@ -108,6 +109,7 @@ describe('SupabaseStatsRepository — listMyActivityTimeline', () => {
         postId: 'p_1',
         postTitle: 'Title',
         actorDisplayName: 'Alice',
+        worldSlug: 'time',
       },
     ]);
   });
@@ -120,6 +122,16 @@ describe('SupabaseStatsRepository — listMyActivityTimeline', () => {
     });
     const out = await new SupabaseStatsRepository(client).listMyActivityTimeline(10);
     expect(out[0]?.kind).toBe('post_created');
+  });
+
+  it('reads a row without a world (a server before 0742) as no world', async () => {
+    const { client } = makeFakeClient({
+      rpcData: [
+        { occurred_at: 't', kind: 'post_created', post_id: 'p', post_title: 't', actor_display_name: null },
+      ],
+    });
+    const out = await new SupabaseStatsRepository(client).listMyActivityTimeline(10);
+    expect(out[0]?.worldSlug).toBeNull();
   });
 
   it('returns [] when the RPC returns null data', async () => {

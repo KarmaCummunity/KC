@@ -105,10 +105,24 @@ const BY_WORLD: Record<string, ClosureCopyKeys> = {
     'closure.explainerKnowledgeTitle',
     'closure.explainerKnowledgeBody',
   ),
+  // #2078, {{D:volunteering-close-wording}}: volunteering "takes place" whichever side posted it.
+  time: worldCopy(
+    'closure.step1TimeTitle',
+    'closure.step1TimeBody',
+    'closure.step1TimeCta',
+    'closure.step2TimeTitle',
+    'closure.step2TimePrimary',
+    'closure.explainerTimeTitle',
+    'closure.explainerTimeBody',
+  ),
 };
+
+/** Worlds whose wording fits both an offer and a request, so a request does not fall back to items. */
+const DIRECTION_NEUTRAL_WORLDS = new Set(['time']);
 
 /** Give/request item copy, or the world's own wording. Unknown worlds stay on the item script. */
 export function closureCopyKeys(postType: PostType | null, worldSlug: string | null): ClosureCopyKeys {
+  if (worldSlug && DIRECTION_NEUTRAL_WORLDS.has(worldSlug)) return BY_WORLD[worldSlug];
   if (postType === 'Request') return REQUEST;
   if (worldSlug && BY_WORLD[worldSlug]) return BY_WORLD[worldSlug];
   return ITEM_GIVE;
