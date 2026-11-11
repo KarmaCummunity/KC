@@ -158,13 +158,17 @@ export function defineWorldJourney(journey: WorldJourney): void {
       await gotoApp(b.page, listingPath());
       await b.page.getByTestId('handoff-rating-star-5').click();
       await b.page.getByTestId('handoff-rating-submit').click();
-      // Once B has rated, the handoff no longer surfaces for B (get_listing_handoff), so the form goes away.
-      await expect(b.page.getByTestId('handoff-rating-form')).toHaveCount(0, { timeout: 20_000 });
-      await b.ctx.close();
-
+      // The page keeps showing the form after a rating (the handoff stays 'handed_over'), so the
+      // assertion is the stored row, not the form going away.
       const { token } = await tokenFor(USER_B);
-      const ratings = await rest<{ stars: number }[]>(token, `post_ratings?select=stars&handoff_id=eq.${handoffId}`);
-      expect(ratings.map((r) => r.stars)).toEqual([5]);
+      await expect
+        .poll(
+          async () =>
+            (await rest<{ stars: number }[]>(token, `post_ratings?select=stars&handoff_id=eq.${handoffId}`)).map((r) => r.stars),
+          { timeout: 20_000 },
+        )
+        .toEqual([5]);
+      await b.ctx.close();
     });
 
     test.afterAll(async () => {
