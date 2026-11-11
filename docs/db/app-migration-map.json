@@ -3838,7 +3838,7 @@
     {
      "type": "rpc",
      "name": "api_standing_orders_charge_due",
-     "source": "85_billing/080_provider_events.sql:104",
+     "source": "85_billing/080_provider_events.sql:107",
      "signature": [
       "api_standing_orders_charge_due(p_limit?: number) → { amount_agorot: number intent_id: string mandate_ref: string standing_order_id: string }[]"
      ],
@@ -10862,9 +10862,9 @@
     {
      "type": "rpc",
      "name": "provider_webhook_apply",
-     "source": "85_billing/080_provider_events.sql:15",
+     "source": "85_billing/080_provider_events.sql:17",
      "signature": [
-      "provider_webhook_apply(p_event_id: string, p_payload: Json, p_provider_slug: string) → string"
+      "provider_webhook_apply(p_event_id: string, p_payload: Json, p_provider_slug: string) → { event_error_code: string event_status: string webhook_event_id: string }[]"
      ],
      "errors": [
       {

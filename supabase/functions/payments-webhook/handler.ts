@@ -11,11 +11,18 @@
 // types listed in 080_provider_events.sql). The event id is the provider's own: it is the
 // idempotency key, so it is never generated here.
 
+/** The stored provider event and how applying it ended; `errorCode` is set when it failed. */
+export interface AppliedEvent {
+  readonly id: string;
+  readonly status: 'processed' | 'failed';
+  readonly errorCode: string | null;
+}
+
 export interface PaymentsWebhookDeps {
   /** The signing secret of a provider, or null when none is configured. */
   readonly secretFor: (providerSlug: string) => string | null;
-  /** Calls `provider_webhook_apply`; resolves to the stored event id, rejects on a database error. */
-  readonly apply: (providerSlug: string, eventId: string, payload: Record<string, unknown>) => Promise<string>;
+  /** Calls `provider_webhook_apply`; resolves to the stored event and its outcome, rejects on a database error. */
+  readonly apply: (providerSlug: string, eventId: string, payload: Record<string, unknown>) => Promise<AppliedEvent>;
   /** Receives an infrastructure failure; the response never carries its cause. */
   readonly report: (error: unknown) => Promise<void>;
 }
@@ -73,7 +80,12 @@ export function createPaymentsWebhookHandler(deps: PaymentsWebhookDeps): (req: R
       return json({ ok: false, error: 'invalid_event' }, 400);
     }
     try {
-      return json({ ok: true, webhook_event_id: await deps.apply(slug, eventId, payload) });
+      const applied = await deps.apply(slug, eventId, payload);
+      // A non-2xx answer makes the provider resend; the stored event is retried on the resend.
+      if (applied.status === 'failed') {
+        return json({ ok: false, error: 'event_failed', code: applied.errorCode, webhook_event_id: applied.id }, 422);
+      }
+      return json({ ok: true, webhook_event_id: applied.id });
     } catch (error) {
       await deps.report(error);
       return json({ ok: false, error: 'internal' }, 500);

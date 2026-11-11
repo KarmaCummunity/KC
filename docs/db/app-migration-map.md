@@ -661,7 +661,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `provider_webhook_apply` | later | 1:1 | `provider_webhook_apply(p_event_id: string, p_payload: Json, p_provider_slug: string) → string` | Signature unchanged; errors are stable snake_case messages. | `amount_mismatch` †, `intent_not_found` †, `intent_not_payable` †, `payment_not_found` †, `payout_not_found` †, `refund_not_found` †, `unknown_event_type` † | high | index.ts:23 |
+| `provider_webhook_apply` | later | 1:1 | `provider_webhook_apply(p_event_id: string, p_payload: Json, p_provider_slug: string) → { event_error_code: string event_status: string webhook_event_id: string }[]` | Signature unchanged; errors are stable snake_case messages. | `amount_mismatch` †, `intent_not_found` †, `intent_not_payable` †, `payment_not_found` †, `payout_not_found` †, `refund_not_found` †, `unknown_event_type` † | high | index.ts:23 |
 
 ### Edge Function `public-research-submit`
 

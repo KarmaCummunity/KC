@@ -9,11 +9,13 @@
 --   { "type": "standing_order.activated",               "standing_order_id", "provider_ref" }
 --   { "type": "kyc.updated", "party_type": "payer" | "recipient", "party_id", "status", "provider_ref"? }
 
--- Stores a provider event and applies it, once. A repeated event returns the stored id
+-- Stores a provider event and applies it, once. A repeated event returns its stored outcome
 -- and does nothing; an event that cannot be applied is kept as `failed` with its error
--- code, changes nothing else, and is applied again when the provider resends it.
+-- code, changes nothing else, and is applied again when the provider resends it. The caller
+-- gets the outcome (`processed` or `failed` plus the code) so the webhook can answer the
+-- provider with an error status and make it resend.
 create function public.provider_webhook_apply(p_provider_slug text, p_event_id text, p_payload jsonb)
-returns uuid
+returns table (webhook_event_id uuid, event_status text, event_error_code text)
 language plpgsql
 security definer
 set search_path = ''
@@ -33,7 +35,8 @@ begin
     select e.* into strict v_event from billing.webhook_events e
      where e.provider_slug = p_provider_slug and e.provider_event_id = p_event_id for update;
     if v_event.status = 'processed' then
-      return v_event.id;
+      return query select v_event.id, v_event.status, v_event.error_code;
+      return;
     end if;
   end if;
 
@@ -71,11 +74,11 @@ begin
          processed_at = case when v_error is null then now() end,
          error_code = v_error
    where e.id = v_event.id;
-  return v_event.id;
+  return query select v_event.id, case when v_error is null then 'processed' else 'failed' end, v_error;
 end;
 $$;
 comment on function public.provider_webhook_apply(text, text, jsonb) is
-  'Service role: stores and applies a provider event exactly once; returns the stored event id.';
+  'Service role: stores and applies a provider event exactly once; returns the stored event id with its outcome (processed or failed and the error code).';
 
 -- The checkout session the provider opened for an intent: the donor is sent to its page.
 -- Errors: P0001 intent_not_found (no such intent waiting for a checkout).

@@ -93,7 +93,7 @@ declare
   v_id uuid;
 begin
   perform pg_temp.become('service_role');
-  v_id := public.provider_webhook_apply('grow', p_event_id, p_payload);
+  select a.webhook_event_id into v_id from public.provider_webhook_apply('grow', p_event_id, p_payload) a;
   perform pg_temp.become('none');
   return (select e.status || coalesce(':' || e.error_code, '') from billing.webhook_events e where e.id = v_id);
 end;
@@ -156,7 +156,7 @@ select is((select count(*) from pg_tables t where t.schemaname = 'billing'
              and not (select c.relrowsecurity and c.relforcerowsecurity from pg_class c
                        where c.oid = format('billing.%I', t.tablename)::regclass)), 0::bigint,
   'row level security is enabled and forced on every billing table');
-select is(pg_temp.act('d', $$select public.provider_webhook_apply('grow', 'x', '{}')$$)
+select is(pg_temp.act('d', $$select webhook_event_id from public.provider_webhook_apply('grow', 'x', '{}')$$)
   || pg_temp.act('d', $$select public.api_donation_intent_set_checkout(gen_random_uuid(), 'x', 'https://x')$$)
   || pg_temp.act('d', $$select public.api_standing_orders_charge_due()$$)
   || pg_temp.act('d', $$select public.api_payout_open(&aid, 1, 'payout-key-1')$$)
@@ -223,7 +223,7 @@ select is(pg_temp.event('evt-early', '{"type":"payment.succeeded"}') || '|'
        || (select count(*) from billing.receipts) || (select count(*) from billing.org_finance_entries)$$)
   || '|' || pg_temp.told('donation_succeeded', 'd'),
   'processed|processed|1211|1', 'a replayed event and a second event for the same intent change nothing');
-select is(pg_temp.val('service_role', format($$select public.provider_webhook_apply('other', 'evt-x', %L)$$, jsonb_build_object(
+select is(pg_temp.val('service_role', format($$select webhook_event_id from public.provider_webhook_apply('other', 'evt-x', %L)$$, jsonb_build_object(
     'type', 'payment.succeeded', 'intent_id', pg_temp.intent('e', 'aid', 600, 'key-000e0')))) is not null
   and pg_temp.val(null, $$select e.status || ':' || e.error_code || ':' || i.status from billing.webhook_events e, billing.donation_intents i
        where e.provider_slug = 'other' and i.idempotency_key = 'key-000e0'$$) = 'failed:intent_not_found:checkout', true,

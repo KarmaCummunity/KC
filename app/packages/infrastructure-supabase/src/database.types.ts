@@ -4795,7 +4795,11 @@ export type Database = {
       }
       provider_webhook_apply: {
         Args: { p_event_id: string; p_payload: Json; p_provider_slug: string }
-        Returns: string
+        Returns: {
+          event_error_code: string
+          event_status: string
+          webhook_event_id: string
+        }[]
       }
       publish_post: { Args: { p_post_id: string }; Returns: undefined }
       publish_survey_version: {

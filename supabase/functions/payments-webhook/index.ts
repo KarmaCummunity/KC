@@ -26,7 +26,11 @@ Deno.serve(withObservability('payments-webhook', createPaymentsWebhookHandler({
       p_payload: payload,
     });
     if (error) throw new Error(error.message);
-    return String(data);
+    // A set-returning function arrives as an array with one row.
+    const row = (Array.isArray(data) ? data[0] : data) as {
+      webhook_event_id: string; event_status: 'processed' | 'failed'; event_error_code: string | null;
+    };
+    return { id: row.webhook_event_id, status: row.event_status, errorCode: row.event_error_code };
   },
   report: (error) => reportError(error, { fn: 'payments-webhook' }),
 })));

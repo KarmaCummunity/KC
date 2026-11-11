@@ -1,5 +1,5 @@
 import { assertEquals } from 'https://deno.land/std@0.224.0/assert/mod.ts';
-import { createPaymentsWebhookHandler, signBody } from './handler.ts';
+import { createPaymentsWebhookHandler, signBody, type AppliedEvent } from './handler.ts';
 
 const SECRET = 'sandbox-secret';
 const EVENT = {
@@ -19,7 +19,7 @@ async function post(body: unknown, opts: { secret?: string; signature?: string |
   });
 }
 
-function setup(over: { apply?: () => Promise<string>; secrets?: Record<string, string> } = {}) {
+function setup(over: { apply?: () => Promise<AppliedEvent>; secrets?: Record<string, string> } = {}) {
   const applied: { provider: string; eventId: string; payload: unknown }[] = [];
   const reported: unknown[] = [];
   const secrets = over.secrets ?? { sandbox: SECRET };
@@ -27,7 +27,7 @@ function setup(over: { apply?: () => Promise<string>; secrets?: Record<string, s
     secretFor: (slug) => secrets[slug] ?? null,
     apply: (provider, eventId, payload) => {
       applied.push({ provider, eventId, payload });
-      return over.apply ? over.apply() : Promise.resolve('we-1');
+      return over.apply ? over.apply() : Promise.resolve({ id: 'we-1', status: 'processed', errorCode: null });
     },
     report: (e) => { reported.push(e); return Promise.resolve(); },
   });
@@ -85,4 +85,11 @@ Deno.test('a database failure is reported and answered 500 without the cause, so
   assertEquals(res.status, 500);
   assertEquals(await res.json(), { ok: false, error: 'internal' });
   assertEquals(reported.length, 1);
+});
+
+Deno.test('an event the database recorded as failed is answered 422 so the provider resends it', async () => {
+  const { handler } = setup({ apply: () => Promise.resolve({ id: 'we-2', status: 'failed', errorCode: 'intent_not_found' }) });
+  const res = await handler(await post(EVENT));
+  assertEquals(res.status, 422);
+  assertEquals(await res.json(), { ok: false, error: 'event_failed', code: 'intent_not_found', webhook_event_id: 'we-2' });
 });
