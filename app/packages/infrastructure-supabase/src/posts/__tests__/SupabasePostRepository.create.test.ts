@@ -16,8 +16,8 @@ interface Op {
 }
 
 // Sequential step model: each terminal await consumes the NEXT step from the
-// queue. Lets us script multi-from() flows (posts insert → media insert →
-// orphan-cleanup delete → fetchPostById select).
+// queue. Lets us script multi-call flows (create RPC → fetchPostById select →
+// actor-identity RPC).
 function makeFakeClient(steps: Step[]): { client: SupabaseClient<any>; ops: Op[] } {
   const ops: Op[] = [];
   let stepIdx = 0;
@@ -79,26 +79,22 @@ const FETCH_ROW = {
 };
 
 describe('SupabasePostRepository.create — happy paths', () => {
-  it('inserts a post, skips media when mediaAssets=[], then re-fetches the row via fetchPostById', async () => {
+  it('creates the post through create_post_with_media, then re-fetches the row via fetchPostById', async () => {
     const { client, ops } = makeFakeClient([
-      { data: { post_id: 'p_new' } }, // posts insert
-      { data: FETCH_ROW },             // fetchPostById
+      { data: 'p_new' },   // create_post_with_media
+      { data: FETCH_ROW }, // fetchPostById
     ]);
     const repo = new SupabasePostRepository(client);
     const out = await repo.create({ ...VALID_INPUT, mediaAssets: [] });
     expect(out.postId).toBe('p_new');
 
-    // Should have hit `from('posts')` twice (insert + fetch), never `media_assets`.
-    const fromTables = ops.filter((o) => o.kind === 'from').map((o) => o.table);
-    expect(fromTables).toEqual(['posts', 'posts']);
+    // KC#2020: one RPC for the post and its photos; no direct table insert any more.
+    expect(ops.filter((o) => o.kind === 'insert')).toEqual([]);
+    expect(ops.filter((o) => o.kind === 'rpc').map((o) => o.args?.[0])).toEqual(['create_post_with_media']);
   });
 
-  it('inserts a post + then inserts media_assets with ordinal 0..n and field mapping (path, mime_type, size_bytes)', async () => {
-    const { client, ops } = makeFakeClient([
-      { data: { post_id: 'p_new' } }, // posts insert
-      { error: null },                 // media_assets insert
-      { data: FETCH_ROW },             // fetchPostById
-    ]);
+  it('sends the photos in order with field mapping (path, mime_type, size_bytes) in the same call', async () => {
+    const { client, ops } = makeFakeClient([{ data: 'p_new' }, { data: FETCH_ROW }]);
     const repo = new SupabasePostRepository(client);
     await repo.create({
       ...VALID_INPUT,
@@ -108,23 +104,23 @@ describe('SupabasePostRepository.create — happy paths', () => {
       ],
     });
 
-    const mediaInsert = ops.find((o) => o.kind === 'insert' && o.table === 'media_assets');
-    expect(mediaInsert?.args?.[0]).toEqual([
-      { post_id: 'p_new', ordinal: 0, path: 'a.jpg', mime_type: 'image/jpeg', size_bytes: 100 },
-      { post_id: 'p_new', ordinal: 1, path: 'b.jpg', mime_type: 'image/jpeg', size_bytes: 200 },
+    const params = ops.find((o) => o.kind === 'rpc')?.args?.[1] as { p_media: unknown };
+    expect(params.p_media).toEqual([
+      { path: 'a.jpg', mime_type: 'image/jpeg', size_bytes: 100 },
+      { path: 'b.jpg', mime_type: 'image/jpeg', size_bytes: 200 },
     ]);
   });
 
   it('calls upsert_post_actor_identity RPC when hideFromCounterparty is true (FR-POST-021)', async () => {
     const { client, ops } = makeFakeClient([
-      { data: { post_id: 'p_new' } },
+      { data: 'p_new' },
       { data: FETCH_ROW },
       { error: null },
     ]);
     const repo = new SupabasePostRepository(client);
     await repo.create({ ...VALID_INPUT, mediaAssets: [], hideFromCounterparty: true });
 
-    const rpcOp = ops.find((o) => o.kind === 'rpc');
+    const rpcOp = ops.find((o) => o.kind === 'rpc' && o.args?.[0] === 'upsert_post_actor_identity');
     expect(rpcOp?.args).toEqual([
       'upsert_post_actor_identity',
       {
@@ -135,64 +131,47 @@ describe('SupabasePostRepository.create — happy paths', () => {
     ]);
   });
 
-  it('inserts the posts row with the address fields flattened (city/street/street_number)', async () => {
-    const { client, ops } = makeFakeClient([
-      { data: { post_id: 'p_new' } },
-      { data: FETCH_ROW },
-    ]);
+  it('sends the post with the address fields flattened and no owner (the server uses the caller)', async () => {
+    const { client, ops } = makeFakeClient([{ data: 'p_new' }, { data: FETCH_ROW }]);
     const repo = new SupabasePostRepository(client);
     await repo.create(VALID_INPUT);
-    const insertOp = ops.find((o) => o.kind === 'insert' && o.table === 'posts');
-    const payload = insertOp?.args?.[0] as Record<string, unknown>;
-    expect(payload.city).toBe('IL-001');
-    expect(payload.street).toBe('Main');
-    expect(payload.street_number).toBe('12');
-    expect(payload.owner_id).toBe('u_me');
-    expect(payload.type).toBe('Give');
+    const params = ops.find((o) => o.kind === 'rpc')?.args?.[1] as { p_post: Record<string, unknown> };
+    expect(params.p_post.city).toBe('IL-001');
+    expect(params.p_post.street).toBe('Main');
+    expect(params.p_post.street_number).toBe('12');
+    expect(params.p_post.type).toBe('Give');
+    expect(params.p_post).not.toHaveProperty('owner_id');
   });
 });
 
 describe('SupabasePostRepository.create — error paths', () => {
-  it('routes posts-insert errors through mapInsertError (PostError surface, not raw Error)', async () => {
+  it('routes RPC errors through mapInsertError (PostError surface, not raw Error)', async () => {
     // 23502 = NOT NULL violation on title → mapInsertError → PostError('title_required').
     const { client } = makeFakeClient([
       { error: { message: 'null value in column "title"', code: '23502' } },
     ]);
     const repo = new SupabasePostRepository(client);
-    await expect(repo.create(VALID_INPUT)).rejects.toMatchObject({ name: 'PostError' });
+    await expect(repo.create(VALID_INPUT)).rejects.toMatchObject({ name: 'PostError', code: 'title_required' });
   });
 
-  it('throws "create.post: no row returned" when insert succeeds with null data (defensive)', async () => {
-    const { client } = makeFakeClient([
-      { data: null }, // PostgREST returned no row — shouldn't happen but defended.
-    ]);
+  it('maps the D132 commit check (offer_photo_required) to image_required_for_give', async () => {
+    const { client } = makeFakeClient([{ error: { message: 'offer_photo_required', code: '23514' } }]);
+    const repo = new SupabasePostRepository(client);
+    await expect(repo.create(VALID_INPUT)).rejects.toMatchObject({
+      name: 'PostError',
+      code: 'image_required_for_give',
+    });
+  });
+
+  it('throws "create.post: no row returned" when the RPC succeeds with null data (defensive)', async () => {
+    const { client } = makeFakeClient([{ data: null }]);
     const repo = new SupabasePostRepository(client);
     await expect(repo.create(VALID_INPUT)).rejects.toThrow('create.post: no row returned');
   });
 
-  it('on media-insert error: issues best-effort DELETE on posts and throws "create.media: <msg>"', async () => {
-    const { client, ops } = makeFakeClient([
-      { data: { post_id: 'p_new' } },              // posts insert succeeds
-      { error: { message: 'storage path invalid' } }, // media insert fails
-      { data: [{ post_id: 'p_new' }] },             // orphan-cleanup delete (ignored result)
-    ]);
-    const repo = new SupabasePostRepository(client);
-    await expect(
-      repo.create({ ...VALID_INPUT, mediaAssets: [{ path: 'x.jpg', mimeType: 'image/jpeg', sizeBytes: 1 }] }),
-    ).rejects.toThrow('create.media: storage path invalid');
-
-    // Verify the orphan cleanup actually fired: delete() on posts with eq('post_id', 'p_new').
-    const deleteOp = ops.find((o) => o.kind === 'delete' && o.table === 'posts');
-    expect(deleteOp).toBeDefined();
-    const eqAfterDelete = ops.find(
-      (o, i) => o.kind === 'eq' && o.table === 'posts' && i > ops.indexOf(deleteOp!),
-    );
-    expect(eqAfterDelete?.args).toEqual(['post_id', 'p_new']);
-  });
-
   it('throws "create: post <id> disappeared after insert" when fetchPostById returns null after success', async () => {
     const { client } = makeFakeClient([
-      { data: { post_id: 'p_new' } },
+      { data: 'p_new' },
       { data: null }, // fetchPostById finds nothing — race against external delete/RLS flip
     ]);
     const repo = new SupabasePostRepository(client);
