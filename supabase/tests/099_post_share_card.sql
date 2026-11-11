@@ -53,13 +53,13 @@ values
 -- Two photos: the first by gallery position shows; a video and an unprocessed photo never do.
 insert into public.post_media (post_id, owner_id, kind, storage_key, ordinal, mime_type, size_bytes, processing_status)
 values
-  ('10000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-00000000000a', 'image', 'a/second.jpg', 1, 'image/jpeg', 10, 'ready'),
-  ('10000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-00000000000a', 'image', 'a/first.jpg', 0, 'image/jpeg', 10, 'ready'),
-  ('10000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-00000000000a', 'image', 'a/pending.jpg', 2, 'image/jpeg', 10, 'pending');
+  ('10000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-00000000000a', 'image', '00000000-0000-4000-8000-00000000000a/second.jpg', 1, 'image/jpeg', 10, 'ready'),
+  ('10000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-00000000000a', 'image', '00000000-0000-4000-8000-00000000000a/first.jpg', 0, 'image/jpeg', 10, 'ready'),
+  ('10000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-00000000000a', 'image', '00000000-0000-4000-8000-00000000000a/pending.jpg', 2, 'image/jpeg', 10, 'pending');
 update public.user_account set status = 'suspended_admin' where user_id = '00000000-0000-4000-8000-00000000000b';
 
 select is(pg_temp.card_as_anon('10000000-0000-4000-8000-000000000001'),
-  'Sofa|three seats|offer|items|open|city-he|post-images:a/first.jpg',
+  'Sofa|three seats|offer|items|open|city-he|post-images:00000000-0000-4000-8000-00000000000a/first.jpg',
   'a signed-out caller gets the public facts and the first processed photo of a public open post');
 select is(pg_temp.card_as_anon('10000000-0000-4000-8000-000000000002'), 'none',
   'a followers-only post has no card');
@@ -77,7 +77,7 @@ select set_config('kc.fsm_role', 'owner', true);
 update public.posts set status = 'closed_delivered' where id = '10000000-0000-4000-8000-000000000001';
 select set_config('kc.fsm_role', '', true);
 select is(pg_temp.card_as_anon('10000000-0000-4000-8000-000000000001'),
-  'Sofa|three seats|offer|items|closed_delivered|city-he|post-images:a/first.jpg',
+  'Sofa|three seats|offer|items|closed_delivered|city-he|post-images:00000000-0000-4000-8000-00000000000a/first.jpg',
   'a delivered public post keeps its card');
 
 -- Moderation takes a post off the card.
