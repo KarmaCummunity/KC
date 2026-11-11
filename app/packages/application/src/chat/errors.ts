@@ -11,6 +11,14 @@ export type ChatErrorCode =
   | 'support_thread_not_hideable'
   | 'description_too_short'
   | 'both_anchors_forbidden'
+  | 'cannot_chat_self'
+  | 'blocked_relationship'
+  | 'account_not_active'
+  | 'post_unavailable'
+  | 'rate_limited'
+  | 'invalid_media_payload'
+  | 'message_not_found'
+  | 'invalid_reaction_type'
   | 'unknown';
 
 export class ChatError extends Error {

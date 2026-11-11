@@ -24,6 +24,7 @@ import { verificationHe } from './modules/verification';
 import { errorsHe } from './modules/errors';
 import { chatHe } from './modules/chat';
 import { chatNewHe } from './modules/chatNew';
+import { chatMessagingHe } from './modules/chatMessaging';
 import { notificationsHe } from './modules/notifications';
 import { emptyStatesHe, feedSettingsHe } from './modules/feedSettings';
 import { moderationHe, auditHe, accountBlockedHe } from './modules/moderation';
@@ -87,7 +88,7 @@ const he = {
   filters: filtersHe,
 
   // Chat — see modules/chat.ts (FR-CHAT-016)
-  chat: { ...chatHe, new: chatNewHe },
+  chat: { ...chatHe, new: chatNewHe, messaging: chatMessagingHe },
 
   // Notifications (FR-NOTIF-001..015) — see modules/notifications.ts
   notifications: notificationsHe,

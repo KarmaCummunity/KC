@@ -133,18 +133,18 @@ export const legacySupabase = bindSupabaseClient<LegacyDatabase>(isSupabaseConfi
 );
 
 const userRepo = new SupabaseUserRepository(supabase);
-const chatRepo = new SupabaseChatRepository(legacySupabase);
-const chatRealtime = new SupabaseChatRealtime(legacySupabase);
+const chatRepo = new SupabaseChatRepository(supabase);
+const chatRealtime = new SupabaseChatRealtime(supabase);
 const reportRepo = new SupabaseReportRepository(supabase);
 const blockRepo = new SupabaseBlockRepository(supabase);
 const donationLinksRepo = new SupabaseDonationLinksRepository(legacySupabase);
 const postRepo = new SupabasePostRepository(legacySupabase);
 const postEngagementRepo = new SupabasePostEngagementRepository(legacySupabase);
 const notificationInboxRepo = new SupabaseNotificationInboxRepository(supabase);
-const chatV2Realtime = new SupabaseChatV2Realtime(legacySupabase);
-const onlinePresence = new SupabaseOnlinePresence(legacySupabase);
+const chatV2Realtime = new SupabaseChatV2Realtime(supabase);
+const onlinePresence = new SupabaseOnlinePresence();
 const activeStatus = new SupabaseActiveStatusRepository(supabase);
-const chatV2Repo = new SupabaseChatV2Repository(legacySupabase);
+const chatV2Repo = new SupabaseChatV2Repository(supabase);
 const socialFeedRepo = new SupabaseSocialFeedRepository(legacySupabase);
 const followSuggestionsRepo = new SupabaseFollowSuggestionsRepository();
 const moderationAdminRepo = new SupabaseModerationAdminRepository(supabase);

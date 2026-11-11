@@ -91,19 +91,20 @@ rpc('search_all', 'changed', 'rpc:search_all', '`p_types` is gone: the preview a
 rpc('rpc_search_suggested_queries', 'missing', null, 'No suggested-queries source in the baseline.', { m: 'M05' });
 
 // ───────────────────────────── chat
-rpc('rpc_chat_mark_read', 'renamed', 'rpc:mark_chat_read', 'Same argument. Read state is `chat_members.last_read_at`, not a per-message status.');
-rpc('rpc_chat_unread_total', 'renamed', 'rpc:chat_unread_total', 'Also delivered in `bootstrap_session().unread.chats`.');
-rpc('rpc_unread_counts_for_chats', 'renamed', 'rpc:chat_unread_counts', '`p_viewer_id` is gone (the caller). `chat_inbox_page` already returns `unread_count` per chat.');
-rpc('rpc_chat_hide_for_viewer', 'renamed', 'rpc:hide_chat', 'Same argument; a support thread cannot be hidden (`support_thread_not_hideable`).');
-rpc('rpc_chat_set_anchor', 'changed', 'rpc:open_direct_chat', 'No separate anchor RPC: `open_direct_chat(p_user_id, p_anchor_post_id)` returns the existing chat and re-pins it.');
-rpc('rpc_chat_set_anchor_ride', 'changed', 'rpc:open_direct_chat', 'A ride is a post: same call as the post anchor.');
-rpc('rpc_get_or_create_support_thread', 'renamed', 'rpc:open_support_thread', 'Returns the `chats` row in its new shape (`kind = \'support\'`, `support_user_id`).');
-rpc('rpc_submit_support_issue', 'changed', ['rpc:open_support_thread', 'rpc:send_message'], 'Two calls: open the thread, then send the issue as a message (the category goes into the body; there is no category column).', { c: M });
-rpc('rpc_send_chat_media_message', 'renamed', 'rpc:send_message', '`send_message(p_chat_id, p_body, p_media_payload, p_message_id)`; pass a client id for idempotent retries.');
-rpc('rpc_set_message_reaction', 'changed', 'rpc:set_message_reaction', 'Returns void (was the reaction row); the change arrives as a `reaction` broadcast on the chat topic.');
-table('chats', 'changed', ['table:chats', 'rpc:chat_inbox_page', 'rpc:open_direct_chat'], '`participant_a/b` → `direct_user_a/b` + `chat_members`; `is_support_thread` → `kind`; `inbox_hidden_at_a/b` → `chat_members.hidden_at`; `anchor_listing_id` / `anchor_ride_id` → `anchor_post_id`. Read-only for clients: the inbox is `chat_inbox_page` (counterpart, preview, unread in one call), creation is `open_direct_chat`.');
-table('messages', 'changed', ['table:messages', 'rpc:chat_messages_page', 'rpc:send_message'], '`message_id` → `id`; `status` / `delivered_at` / `read_at` are gone (read receipt = the other member\'s `last_read_at`, returned by `chat_inbox_page` and broadcast as `read`). Read-only for clients: page with `chat_messages_page`, send with `send_message`.');
-table('message_reactions', 'same', 'table:message_reactions', '`reaction_id` is gone.');
+// Objects the messaging adapters address since they moved to the baseline (package P3): nothing left to change.
+rpc('chat_inbox_page', 'same', 'rpc:chat_inbox_page', '`p_limit`, `p_before_last_message_at`, `p_before_chat_id`, `p_search`; one row per visible chat with the counterpart, a 140-character preview of the newest message and the unread count. The app reads one page of 50; it carries no counterpart verification level and no media or system payload of the newest message.');
+rpc('chat_messages_page', 'same', 'rpc:chat_messages_page', '`p_chat_id`, `p_limit`, `p_before`, `p_after`; the `messages` rows, newest first when paging backwards. Refusal `chat_not_found`.');
+rpc('send_message', 'same', 'rpc:send_message', '`p_chat_id`, `p_body`, `p_media_payload`, `p_message_id` (the optimistic message id, so a retry returns the first copy); also carries media messages and the support issue. Refusals `account_not_active`, `blocked_relationship`, `chat_not_found`, `invalid_media_payload` †, `invalid_rate_limit_args` †, `message_body_invalid` †, `rate_limited`.');
+rpc('mark_chat_read', 'same', 'rpc:mark_chat_read', '`p_chat_id`; advances the caller\'s `chat_members.last_read_at`, which is the read receipt other members see.');
+rpc('chat_unread_total', 'same', 'rpc:chat_unread_total', 'The badge; also delivered in `bootstrap_session().unread.chats`.');
+rpc('hide_chat', 'same', 'rpc:hide_chat', '`p_chat_id`; a support thread cannot be hidden (`support_thread_not_hideable`).');
+rpc('open_direct_chat', 'same', 'rpc:open_direct_chat', '`p_user_id`, `p_anchor_post_id`; the caller\'s one chat with the member (created when missing, un-hidden when hidden), re-pinned when an anchor is given. A ride is a post, so a ride anchor is a post anchor; the old "second chat after a personal hide" no longer exists. Refusals `account_not_active`, `blocked_relationship`, `cannot_chat_self`, `post_unavailable` †, `user_unavailable`.');
+rpc('open_support_thread', 'same', 'rpc:open_support_thread', 'No arguments; the caller\'s support thread (`kind = \'support\'`, `support_user_id`), created on first use. A support issue is this call plus `send_message`: the category is the first line of the body (there is no category column).');
+rpc('set_message_reaction', 'same', 'rpc:set_message_reaction', '`p_message_id`, `p_reaction_type` (null clears); returns nothing, the change arrives as a `reaction` broadcast on the chat topic. Refusals `account_not_active`, `invalid_reaction_type` †, `message_not_found`.');
+table('chats', 'same', 'table:chats', 'Read by id for the chat screen (`id`, `kind`, `direct_user_a/b`, `support_user_id`, `anchor_post_id`, `last_message_at`, `created_at`); creation is `open_direct_chat`, the inbox is `chat_inbox_page`.');
+table('chat_members', 'same', 'table:chat_members', 'Read by chat for the members\' read markers (`user_id`, `last_read_at`): a message is read when another member\'s marker reached it. Writes only through `mark_chat_read` and `hide_chat`.');
+table('messages', 'same', 'table:messages', 'Read-only for clients: the "has this member ever sent a message" check selects the caller\'s `kind = \'user\'` rows; paging is `chat_messages_page`, sending is `send_message`.');
+table('message_reactions', 'same', 'table:message_reactions', 'Read for the reactions of the listed messages (`message_id`, `user_id`, `reaction_type`); writes only through `set_message_reaction`.');
 
 // ───────────────────────────── giving worlds: generic handoffs, marketplace
 for (const [name, note] of [
@@ -354,22 +355,13 @@ bucket('chat-media', 'same', 'bucket:chat-media', 'Declared in `95_platform/090_
 bucket('<bucket>', 'changed', 'bucket:post-images', '`backfill-image-thumbs` loops over a bucket list passed at run time; after the cut-over the list is `post-images` (plus `avatars` and `chat-media`).', { c: M });
 
 // ───────────────────────────── realtime
-channel('`chat:${chatId}:messages`', 'changed', 'topic:chat:<chat id>:messages', 'Same private topic; events are `message`, `read`, `reaction`, `chat_updated` broadcasts from triggers.', { c: M });
+channel('`chat:${chatId}:messages`', 'same', 'topic:chat:<chat id>:messages', 'Private topic of the chat; broadcast events `INSERT` (the message row), `read` (a member\'s marker), `reaction` and `chat_updated` (the pinned post). The app consumes `INSERT`, `read` and `chat_updated`; reactions are re-read on demand.');
+channel('`user:${userId}:chats`', 'same', 'topic:user:<user id>:chats', 'Private topic of the member; event `chat_updated` carries ids only, so the inbox refreshes and the unread total is re-read.');
 channel('`chat:${chatId}:typing`', 'same', 'topic:chat:<chat id>:typing', 'Members may send on `chat:%:typing` and `chat:%:presence`.');
-channel('chatTopic = `chat-row:${chatId}:${uniqueTopicSuffix()}`', 'changed', 'topic:chat:<chat id>:messages', 'No row subscription: `chat_updated` arrives on the chat topic.');
-channel('inboxTopic = `inbox:${userId}:${uniqueTopicSuffix()}`', 'changed', 'topic:user:<user id>:chats', 'Private topic of the member; event `chat_updated`.');
 channel('topic = `user:${userId}:notifications`', 'same', 'topic:user:<user id>:notifications', 'Already on the baseline contract (event `badge`).');
 channel('topic = `user:${userId}:account`', 'same', 'topic:user:<user_id>:account', 'Already on the baseline contract (event `account_changed` with `status`, `status_until`, `onboarding_state`; M24, built for the account gate): the account gate subscribes here instead of to a `users` row.');
-channel('FEED_PUBLIC_TOPIC = \'feed:public\'', 'missing', null, 'No broadcast of new public posts.', { m: 'M24' });
-channel('ONLINE_PRESENCE_TOPIC = \'presence:online\'', 'missing', null, 'No policy for a global presence topic.', { m: 'M24' });
-channel('uniqueTopic(\'rides:public-feed\')', 'missing', null, 'No ride topics.', { m: 'M24' });
-channel('uniqueTopic(`rides:participants:user:${userId}`)', 'missing', null, 'No ride topics.', { m: 'M24' });
-channel('uniqueTopic(`rides:participants:ride:${rideId}`)', 'missing', null, 'No ride topics.', { m: 'M24' });
 channel('topic = `community-stats-watch:${suffix}`', 'removed', null, 'The counters are an RPC (`community_stats()`); refresh on focus or on a timer.');
 channel('topic', 'same', 'client:openExactTopicChannel', 'The shared helper itself: unchanged, it opens whatever private topic it is given.');
-changes('chats', 'changed', 'topic:user:<user id>:chats', 'Publication tables are gone (design §8): `chat_updated` broadcasts replace both subscriptions.');
-changes('ride_listings', 'missing', null, 'No ride topics.', { m: 'M24' });
-changes('ride_participants', 'missing', null, 'No ride topics.', { m: 'M24' });
 changes('community_stats', 'removed', null, 'See the community-stats topic: poll the RPC.');
 
 // ───────────────────────────── Edge Function invokes from the app
@@ -390,7 +382,6 @@ export const missing = [
   { id: 'M20', title: 'KC support channels', usedBy: 'Donations → support KC card (SupabaseKcSupportChannelsRepository)', spec: 'FR-DONATE-010, FR-DONATE-011; launch plan A11 (only if the money world is on)', launch: 'no (money is a portal at launch)', action: 'defer', recommendation: 'The support card must render nothing when the call fails (today it throws: catch in the adapter). Later: a small reference table in `85_billing` (channel, label, url, payee phone; select for members), or ship the channels in app configuration.' },
   { id: 'M21', title: 'Organization finance summaries (ledger summary, donors summary)', usedBy: 'Org finance overview and donors screens (SupabaseFinanceLedgerRepository.summary, SupabaseFinanceDonorsRepository)', spec: 'FR-FIN-014, FR-FIN-017', launch: 'no', action: 'defer', recommendation: 'Org finance stays behind its flag. Later: two functions in `85_billing/100_org_finance_rpcs.sql` over the ledger, guarded like `finance_ledger_list`.' },
   { id: 'M22', title: 'WhatsApp bot, linking and admin console', usedBy: 'Three Edge Functions (webhook, intake worker, sender), mobile link screen, admin WhatsApp console — 32 RPCs and one table', spec: 'design Q4 (PM): not in the launch baseline', launch: 'no', action: 'defer', recommendation: 'Do not deploy the three functions; hide the link screen and the admin console behind a flag until the `integrations` module lands.' },
-  { id: 'M24', title: 'Realtime topics beyond chat, notifications and the account gate', usedBy: 'New-posts banner (`feed:public`), online presence (`presence:online`), rides feed and booking updates', spec: 'not specified per topic; design §9 requires Broadcast instead of postgres_changes', launch: 'no (the account gate, the only blocker, is built)', tier: 'later', action: 'defer', recommendation: 'The account gate is built: topic `user:<id>:account`, event `account_changed` (`40_messaging/090_account_realtime.sql`). Booking updates: reuse the notification badge event. Feed banner, presence, rides feed: drop to refresh-on-focus at launch.' },
 ];
 
 // ═════════════════════════════ Launch tier of a row (spec D102, docs/spec/96, docs/spec/14)
@@ -460,10 +451,10 @@ export const packages = [
   { id: 'P3', title: 'Chat and realtime', launch: 'core', parallelWith: ['P2', 'P4'],
     select: either(inArea('chat'), named(/^chat-media$/)),
     files: ['chat/**', 'feed/SupabaseFeedRealtime.ts', 'rides/SupabaseRidesRealtime.ts', 'apps/mobile: chat screens, chat media, inbox and notification badge hooks'],
-    work: 'Inbox and messages through the page RPCs, `chat_members` read markers, every `postgres_changes` subscription replaced by a private Broadcast topic or by refresh-on-focus.',
+    work: 'Done in P3: the inbox is `chat_inbox_page`, messages are `chat_messages_page` and `send_message` (the optimistic id is `p_message_id`), a chat opens through `open_direct_chat` / `open_support_thread`, read receipts come from `chat_members.last_read_at` (the `read` broadcast), and the chat and inbox subscriptions are the private topics `chat:<id>:messages` and `user:<id>:chats`. The new-posts banner, global online presence and the rides feed updates have no baseline topic and are degraded (M24): they open nothing and report `BackendUnavailableError`.',
     tests: ['vitest: chat suites, realtime/exactTopicChannel tests', 'pgTAP 045, 050'],
-    degrade: 'The chat tab shows an empty inbox and "contact" buttons on posts are disabled; a failed subscription is ignored (the screen refreshes on focus).',
-    risks: 'Contact phone: `chat_counterpart_contact` (M06). Optimistic send must pass `p_message_id`.' },
+    degrade: 'Before this package the chat tab shows an empty inbox and "contact" buttons on posts are disabled; a failed subscription is ignored (the screen refreshes on focus). After it: no green online dots, no live "new posts" pill, ride lists refresh on focus; the inbox preview of a system or media-only message carries no text and the counterpart verification badge is not shown in the inbox (the page RPC does not return them).',
+    risks: 'Contact phone: `chat_counterpart_contact` (M06). Optimistic send passes `p_message_id`. The baseline keeps one chat per pair, so the second chat after a personal hide (`preferNewThread`) no longer exists; a ride or listing anchor is a post anchor.' },
   { id: 'P4', title: 'Reports, moderation and admin basics', launch: 'core', parallelWith: ['P2', 'P3'],
     select: either(both(inArea('moderation', 'reports', 'admin'), tierIs('core')), named(/^admin_(demo|seed|wipe)_/)),
     files: ['moderation/**', 'reports/**', 'admin/fetchMyAdminRoles.ts', 'admin/SupabaseAdminRoleRepository.ts', 'admin/SupabaseAdminContentRepository.ts', 'admin/SupabaseDemoDataRepository.ts (deleted)', 'apps/mobile: report sheet, admin portal home, reports inbox, case detail, users / posts search, roles, audit'],

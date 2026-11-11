@@ -105,7 +105,7 @@ function getTemplateRepo(): IRideTemplateRepository {
 }
 
 export function getRidesRealtime(): IRidesRealtime {
-  if (!_realtime) _realtime = new SupabaseRidesRealtime(getClient());
+  if (!_realtime) _realtime = new SupabaseRidesRealtime();
   return _realtime;
 }
 

@@ -1,116 +1,108 @@
-// Supabase adapter for IChatRealtime. Per-chat messages use the private
-// Broadcast topic from 0259; chat rows use postgres_changes (chats is on the
-// supabase_realtime publication; messages is not, see 0349).
+// Supabase adapter for IChatRealtime over private Broadcast topics only (no postgres_changes):
+//   chat:<chat id>:messages  INSERT (the message row) · read · chat_updated
+//   user:<user id>:chats     chat_updated (ids only: the member's inbox or badge changed)
+// who may join is decided by the policies in supabase/schemas/40_messaging/060_realtime.sql;
+// a chat topic is open to the members who can currently use the chat (FR-CHAT-009 carve-out).
 //
-// RLS filters server-side: clients only receive events for rows they can SELECT,
-// preserving the FR-CHAT-009 carve-out.
-//
-// Mapped to SRS: FR-CHAT-003 (≤500ms p95), FR-CHAT-011, FR-CHAT-012.
+// Mapped to spec: FR-CHAT-003 (≤500ms p95), FR-CHAT-011, FR-CHAT-012.
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type {
-  IChatRealtime,
-  InboxStreamCallbacks,
-  SubscribeInboxOptions,
-  ChatStreamCallbacks,
-  Unsubscribe,
-} from '@kc/application';
-import type { Database } from '../database.legacy.types';
-import { rowToChat, rowToMessage } from './rowMappers';
-import { isChannelFailure, openExactTopicChannel, uniqueTopicSuffix } from '../realtime/exactTopicChannel';
+import type { IChatRealtime, InboxStreamCallbacks, SubscribeInboxOptions, ChatStreamCallbacks, Unsubscribe } from '@kc/application';
+import type { Database } from '../database.types';
+import { rowToMessage, type MessageRowSlice } from './rowMappers';
+import { isChannelFailure, openExactTopicChannel } from '../realtime/exactTopicChannel';
+import { unwrapCall } from '../rpc/mapRpcError';
 
-/** `realtime.broadcast_changes` payload → the changed row (null when absent). */
+/** `realtime.send` payload of the messages trigger → the inserted row (null when absent). */
 export function broadcastRecord(msg: { [key: string]: unknown }): Record<string, unknown> | null {
   const p = msg?.payload as { record?: Record<string, unknown> } | undefined;
   return p?.record && typeof p.record === 'object' ? p.record : null;
 }
 
+/** The payload of a broadcast event as a plain object (empty when it is not one). */
+function payloadOf(msg: { [key: string]: unknown }): Record<string, unknown> {
+  const p = msg?.payload;
+  return p && typeof p === 'object' ? (p as Record<string, unknown>) : {};
+}
+
+const asString = (value: unknown): string | null => (typeof value === 'string' ? value : null);
+
+/** Delay that folds a burst of `chat_updated` events into one unread-total read. */
 const UNREAD_DEBOUNCE_MS = 200;
 
 export class SupabaseChatRealtime implements IChatRealtime {
   constructor(private readonly client: SupabaseClient<Database>) {}
 
+  /**
+   * Listens to one chat: new messages, the other member's read marker (the receipt) and a change
+   * of the pinned post. Reactions arrive on the same topic as `reaction` and are not consumed here.
+   */
   subscribeToChat(chatId: string, cb: ChatStreamCallbacks): Unsubscribe {
-    // Messages arrive via the 0259 Broadcast trigger on the private
-    // `chat:<id>:messages` topic (messages is off the publication since 0349).
-    // INSERT → new message; UPDATE → delivered/read receipts.
-    const messages = openExactTopicChannel(
+    const managed = openExactTopicChannel(
       this.client,
       `chat:${chatId}:messages`,
       { private: true },
-      (ch) => {
-        ch.on('broadcast', { event: 'INSERT' }, (msg) => {
+      (channel) => {
+        channel.on('broadcast', { event: 'INSERT' }, (msg) => {
           const row = broadcastRecord(msg);
-          if (row) cb.onMessage(rowToMessage(row as never));
+          if (row) cb.onMessage(rowToMessage(row as unknown as MessageRowSlice));
         });
-        ch.on('broadcast', { event: 'UPDATE' }, (msg) => {
-          const row = broadcastRecord(msg);
-          if (!row) return;
-          const m = rowToMessage(row as never);
-          cb.onMessageStatusChanged({
-            messageId: m.messageId,
-            status: m.status,
-            deliveredAt: m.deliveredAt,
-            readAt: m.readAt,
-          });
+        channel.on('broadcast', { event: 'read' }, (msg) => {
+          const { user_id: userId, last_read_at: lastReadAt } = payloadOf(msg);
+          if (typeof userId === 'string' && typeof lastReadAt === 'string') cb.onReadMarker({ userId, lastReadAt });
+        });
+        channel.on('broadcast', { event: 'chat_updated' }, (msg) => {
+          cb.onChatChanged?.({ chatId, anchorPostId: asString(payloadOf(msg)['anchor_post_id']) });
         });
       },
       (status) => {
         if (isChannelFailure(status)) cb.onError(new Error(`chat channel ${status.toLowerCase()}`));
       },
     );
-
-    // chats stays on the publication; unique suffix avoids cached-channel reuse.
-    const chatTopic = `chat-row:${chatId}:${uniqueTopicSuffix()}`;
-    const chatRow = cb.onChatChanged
-      ? this.client
-          .channel(chatTopic)
-          .on(
-            'postgres_changes',
-            { event: 'UPDATE', schema: 'public', table: 'chats', filter: `chat_id=eq.${chatId}` },
-            (payload) => cb.onChatChanged?.(rowToChat(payload.new as never)),
-          )
-          .subscribe()
-      : null;
-
-    return () => {
-      messages.close();
-      if (chatRow) void this.client.removeChannel(chatRow);
-    };
+    return () => managed.close();
   }
 
+  /**
+   * Listens to the member's inbox topic. The event carries ids only, so every event tells the
+   * inbox to refresh and, debounced, re-reads the unread total (the result is dropped when the
+   * snapshot epoch moved meanwhile, FR-CHAT-012 race with mark-read).
+   */
   subscribeToInbox(userId: string, cb: InboxStreamCallbacks, options?: SubscribeInboxOptions): Unsubscribe {
     let unreadTimer: ReturnType<typeof setTimeout> | null = null;
     const fireUnreadDebounced = () => {
       if (unreadTimer) clearTimeout(unreadTimer);
-      unreadTimer = setTimeout(async () => {
-        const getE = options?.getSnapshotEpoch;
-        const e0 = getE?.() ?? 0;
-        const { data, error } = await this.client.rpc('rpc_chat_unread_total');
-        if (getE && getE() !== e0) return;
-        if (!error) cb.onUnreadTotalChanged(Number(data ?? 0));
-      }, UNREAD_DEBOUNCE_MS);
+      unreadTimer = setTimeout(() => void this.readUnreadTotal(cb, options), UNREAD_DEBOUNCE_MS);
     };
 
-    const inboxTopic = `inbox:${userId}:${uniqueTopicSuffix()}`;
-    const channel = this.client
-      .channel(inboxTopic)
-      // RLS filters server-side: only events on visible chats reach the client.
-      // A new message bumps chats.last_message_at, so chat UPDATEs also drive
-      // the unread total (messages itself is Broadcast-only since 0349).
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'chats' },
-        (payload) => {
-          cb.onChatChanged(rowToChat(payload.new as never));
+    const managed = openExactTopicChannel(
+      this.client,
+      `user:${userId}:chats`,
+      { private: true },
+      (channel) => {
+        channel.on('broadcast', { event: 'chat_updated' }, (msg) => {
+          const payload = payloadOf(msg);
+          cb.onInboxChanged({ chatId: asString(payload['chat_id']), lastMessageAt: asString(payload['last_message_at']) });
           fireUnreadDebounced();
-        },
-      )
-      .subscribe();
+        });
+      },
+    );
 
     return () => {
       if (unreadTimer) clearTimeout(unreadTimer);
-      void this.client.removeChannel(channel);
+      managed.close();
     };
+  }
+
+  /** Reads `chat_unread_total` and reports it unless the snapshot epoch moved or the call failed. */
+  private async readUnreadTotal(cb: InboxStreamCallbacks, options?: SubscribeInboxOptions): Promise<void> {
+    const epoch = options?.getSnapshotEpoch;
+    const before = epoch?.() ?? 0;
+    try {
+      const total = unwrapCall('rpc:chat_unread_total', await this.client.rpc('chat_unread_total'));
+      if (epoch && epoch() !== before) return;
+      cb.onUnreadTotalChanged(Number(total ?? 0));
+    } catch {
+      // The badge is refreshed again on the next event or on focus; a failed read changes nothing.
+    }
   }
 }

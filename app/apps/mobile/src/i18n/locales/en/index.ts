@@ -26,6 +26,7 @@ import { verificationEn } from './modules/verification';
 import { errorsEn } from './modules/errors';
 import { chatEn } from './modules/chat';
 import { chatNewEn } from './modules/chatNew';
+import { chatMessagingEn } from './modules/chatMessaging';
 import { notificationsEn } from './modules/notifications';
 import { emptyStatesEn, feedSettingsEn } from './modules/feedSettings';
 import { moderationEn, auditEn, accountBlockedEn } from './modules/moderation';
@@ -89,7 +90,7 @@ const en = {
   filters: filtersEn,
 
   // Chat — see modules/chat.ts (FR-CHAT-016)
-  chat: { ...chatEn, new: chatNewEn },
+  chat: { ...chatEn, new: chatNewEn, messaging: chatMessagingEn },
 
   // Notifications (FR-NOTIF-001..015) — see modules/notifications.ts
   notifications: notificationsEn,

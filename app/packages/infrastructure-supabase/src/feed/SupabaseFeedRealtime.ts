@@ -1,41 +1,23 @@
 // SupabaseFeedRealtime — adapter for IFeedRealtime.
-// Mapped to SRS: FR-FEED-009 ("↑ N new posts" banner, ≤2s freshness at p95).
+// Mapped to spec: FR-FEED-009 ("↑ N new posts" banner).
 //
-// Listens on the private `feed:public` Broadcast topic fed by the 0416 trigger
-// (Public + open posts; payload carries ids only). posts is deliberately not on
-// the supabase_realtime publication (KC#878), so postgres_changes never fired.
-//
-// Lifecycle: subscribe on feed mount, unsubscribe on unmount / 60s background
-// (FR-FEED-009 AC3). On resume the hook gap-fills via REST.
+// DEGRADED (map row M24): the baseline has no broadcast of new public posts — no `feed:public`
+// topic, no policy and no trigger (supabase/schemas/40_messaging/060_realtime.sql registers only
+// `chat:*` and `user:*`). Opening the old topic would only be refused by the realtime service
+// and retried forever, so the adapter opens nothing: it reports `BackendUnavailableError` once
+// through `onError` and hands back a no-op unsubscribe. The feed still refreshes on pull and on
+// focus; only the live "new posts" pill is gone. When the baseline gains the topic, this is the
+// one file to restore (the previous implementation is in git history).
 
-import type { SupabaseClient } from '@supabase/supabase-js';
+import { BackendUnavailableError } from '@kc/domain';
 import type { FeedRealtimeCallbacks, IFeedRealtime } from '@kc/application';
-import type { Database } from '../database.legacy.types';
-import { isChannelFailure, openExactTopicChannel } from '../realtime/exactTopicChannel';
 
+/** The topic the app used to listen to; named only so the degrade report says what is missing. */
 export const FEED_PUBLIC_TOPIC = 'feed:public';
 
 export class SupabaseFeedRealtime implements IFeedRealtime {
-  constructor(private readonly client: SupabaseClient<Database>) {}
-
   subscribeToPublicInserts(cb: FeedRealtimeCallbacks): () => void {
-    const managed = openExactTopicChannel(
-      this.client,
-      FEED_PUBLIC_TOPIC,
-      { private: true },
-      (ch) => {
-        ch.on('broadcast', { event: 'new_post' }, (msg) => {
-          const p = (msg.payload ?? {}) as { post_id?: unknown; owner_id?: unknown };
-          cb.onNewPublicPost({
-            postId: typeof p.post_id === 'string' ? p.post_id : null,
-            ownerId: typeof p.owner_id === 'string' ? p.owner_id : null,
-          });
-        });
-      },
-      (status) => {
-        if (isChannelFailure(status)) cb.onError?.(new Error(`feed channel ${status.toLowerCase()}`));
-      },
-    );
-    return () => managed.close();
+    cb.onError?.(new BackendUnavailableError(`channel:${FEED_PUBLIC_TOPIC}`, 'relation'));
+    return () => undefined;
   }
 }

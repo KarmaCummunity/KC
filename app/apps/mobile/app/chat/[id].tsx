@@ -198,7 +198,7 @@ export default function ChatScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <ChatConversationHeader
-        title={counterpart.displayName ?? t('common.deletedUser')}
+        title={counterpart.displayName ?? (chat?.isSupportThread ? t('chat.messaging.supportThreadTitle') : t('common.deletedUser'))}
         canOpenProfile={!counterpart.isDeleted && Boolean(counterpart.shareHandle)}
         shareHandle={counterpart.shareHandle ?? undefined}
         onOpenMenu={() => setMenuOpen(true)}

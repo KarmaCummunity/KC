@@ -2,18 +2,18 @@
  "generatedBy": "scripts/app-migration-map.mjs",
  "totals": {
   "rpc": {
-   "objects": 272,
-   "same": 49,
-   "renamed": 38,
-   "changed": 112,
+   "objects": 271,
+   "same": 58,
+   "renamed": 32,
+   "changed": 108,
    "removed": 8,
    "missing": 65
   },
   "table": {
-   "objects": 55,
-   "same": 14,
+   "objects": 56,
+   "same": 17,
    "renamed": 2,
-   "changed": 33,
+   "changed": 31,
    "removed": 2,
    "missing": 4
   },
@@ -26,20 +26,20 @@
    "missing": 0
   },
   "channel": {
-   "objects": 13,
-   "same": 4,
+   "objects": 7,
+   "same": 6,
    "renamed": 0,
-   "changed": 3,
+   "changed": 0,
    "removed": 1,
-   "missing": 5
+   "missing": 0
   },
   "postgres_changes": {
-   "objects": 4,
+   "objects": 1,
    "same": 0,
    "renamed": 0,
-   "changed": 1,
+   "changed": 0,
    "removed": 1,
-   "missing": 2
+   "missing": 0
   },
   "edge_function": {
    "objects": 3,
@@ -52,12 +52,12 @@
  },
  "launchTotals": {
   "core": {
-   "objects": 112,
-   "same": 50,
-   "renamed": 12,
-   "changed": 45,
+   "objects": 108,
+   "same": 64,
+   "renamed": 6,
+   "changed": 35,
    "removed": 3,
-   "missing": 2
+   "missing": 0
   },
   "later": {
    "objects": 134,
@@ -68,12 +68,12 @@
    "missing": 69
   },
   "wedge": {
-   "objects": 106,
+   "objects": 101,
    "same": 8,
    "renamed": 24,
    "changed": 63,
    "removed": 6,
-   "missing": 5
+   "missing": 0
   }
  },
  "modules": {
@@ -106,9 +106,9 @@
    "missing": 0
   },
   "chat": {
-   "callSites": 30,
-   "oneToOne": 9,
-   "changed": 21,
+   "callSites": 20,
+   "oneToOne": 19,
+   "changed": 1,
    "removed": 0,
    "missing": 0
   },
@@ -127,11 +127,11 @@
    "missing": 0
   },
   "feed": {
-   "callSites": 6,
+   "callSites": 5,
    "oneToOne": 0,
    "changed": 5,
    "removed": 0,
-   "missing": 1
+   "missing": 0
   },
   "fn:_shared": {
    "callSites": 11,
@@ -324,17 +324,17 @@
   },
   "posts": {
    "callSites": 51,
-   "oneToOne": 11,
-   "changed": 39,
+   "oneToOne": 12,
+   "changed": 38,
    "removed": 1,
    "missing": 0
   },
   "realtime": {
-   "callSites": 2,
+   "callSites": 1,
    "oneToOne": 1,
    "changed": 0,
    "removed": 0,
-   "missing": 1
+   "missing": 0
   },
   "reports": {
    "callSites": 8,
@@ -351,11 +351,11 @@
    "missing": 0
   },
   "rides": {
-   "callSites": 59,
+   "callSites": 53,
    "oneToOne": 10,
    "changed": 41,
    "removed": 2,
-   "missing": 6
+   "missing": 0
   },
   "search": {
    "callSites": 11,
@@ -527,17 +527,6 @@
    "recommendation": "Do not deploy the three functions; hide the link screen and the admin console behind a flag until the `integrations` module lands.",
    "tier": "later",
    "blocker": false
-  },
-  {
-   "id": "M24",
-   "title": "Realtime topics beyond chat, notifications and the account gate",
-   "usedBy": "New-posts banner (`feed:public`), online presence (`presence:online`), rides feed and booking updates",
-   "spec": "not specified per topic; design §9 requires Broadcast instead of postgres_changes",
-   "launch": "no (the account gate, the only blocker, is built)",
-   "tier": "later",
-   "action": "defer",
-   "recommendation": "The account gate is built: topic `user:<id>:account`, event `account_changed` (`40_messaging/090_account_realtime.sql`). Booking updates: reuse the notification badge event. Feed banner, presence, rides feed: drop to refresh-on-focus at launch.",
-   "blocker": false
   }
  ],
  "packages": [
@@ -571,15 +560,14 @@
    "risks": "Everything depends on it and it must not change behaviour: no adapter logic changed, only its type import. CI still diffs `database.types.ts` against the old migrations until the workflow change listed in the P0 report lands.",
    "rows": [
     "table:app_flags",
-    "channel:ONLINE_PRESENCE_TOPIC = 'presence:online'",
     "channel:topic"
    ],
    "counts": {
-    "objects": 3,
+    "objects": 2,
     "oneToOne": 2,
     "changed": 0,
     "removed": 0,
-    "missing": 1
+    "missing": 0
    }
   },
   {
@@ -716,17 +704,16 @@
     "table:donation_links",
     "rpc:get_post_translations",
     "table:content_translations",
-    "channel:FEED_PUBLIC_TOPIC = 'feed:public'",
     "channel:topic = `community-stats-watch:${suffix}`",
     "postgres_changes:community_stats",
     "edge_function:translate"
    ],
    "counts": {
-    "objects": 48,
-    "oneToOne": 11,
-    "changed": 30,
+    "objects": 47,
+    "oneToOne": 12,
+    "changed": 29,
     "removed": 3,
-    "missing": 4
+    "missing": 3
    }
   },
   {
@@ -743,39 +730,37 @@
     "rides/SupabaseRidesRealtime.ts",
     "apps/mobile: chat screens, chat media, inbox and notification badge hooks"
    ],
-   "work": "Inbox and messages through the page RPCs, `chat_members` read markers, every `postgres_changes` subscription replaced by a private Broadcast topic or by refresh-on-focus.",
+   "work": "Done in P3: the inbox is `chat_inbox_page`, messages are `chat_messages_page` and `send_message` (the optimistic id is `p_message_id`), a chat opens through `open_direct_chat` / `open_support_thread`, read receipts come from `chat_members.last_read_at` (the `read` broadcast), and the chat and inbox subscriptions are the private topics `chat:<id>:messages` and `user:<id>:chats`. The new-posts banner, global online presence and the rides feed updates have no baseline topic and are degraded (M24): they open nothing and report `BackendUnavailableError`.",
    "tests": [
     "vitest: chat suites, realtime/exactTopicChannel tests",
     "pgTAP 045, 050"
    ],
-   "degrade": "The chat tab shows an empty inbox and \"contact\" buttons on posts are disabled; a failed subscription is ignored (the screen refreshes on focus).",
-   "risks": "Contact phone: `chat_counterpart_contact` (M06). Optimistic send must pass `p_message_id`.",
+   "degrade": "Before this package the chat tab shows an empty inbox and \"contact\" buttons on posts are disabled; a failed subscription is ignored (the screen refreshes on focus). After it: no green online dots, no live \"new posts\" pill, ride lists refresh on focus; the inbox preview of a system or media-only message carries no text and the counterpart verification badge is not shown in the inbox (the page RPC does not return them).",
+   "risks": "Contact phone: `chat_counterpart_contact` (M06). Optimistic send passes `p_message_id`. The baseline keeps one chat per pair, so the second chat after a personal hide (`preferNewThread`) no longer exists; a ride or listing anchor is a post anchor.",
    "rows": [
     "table:users",
-    "rpc:rpc_chat_mark_read",
-    "rpc:rpc_chat_unread_total",
-    "rpc:rpc_unread_counts_for_chats",
-    "rpc:rpc_chat_hide_for_viewer",
-    "rpc:rpc_chat_set_anchor",
-    "rpc:rpc_chat_set_anchor_ride",
-    "rpc:rpc_get_or_create_support_thread",
-    "rpc:rpc_submit_support_issue",
-    "rpc:rpc_send_chat_media_message",
-    "rpc:rpc_set_message_reaction",
+    "rpc:chat_inbox_page",
+    "rpc:chat_messages_page",
+    "rpc:send_message",
+    "rpc:mark_chat_read",
+    "rpc:chat_unread_total",
+    "rpc:hide_chat",
+    "rpc:open_direct_chat",
+    "rpc:open_support_thread",
+    "rpc:set_message_reaction",
     "table:chats",
+    "table:chat_members",
     "table:messages",
     "table:message_reactions",
     "bucket:chat-media",
     "channel:`chat:${chatId}:messages`",
-    "channel:`chat:${chatId}:typing`",
-    "channel:chatTopic = `chat-row:${chatId}:${uniqueTopicSuffix()}`",
-    "channel:inboxTopic = `inbox:${userId}:${uniqueTopicSuffix()}`",
-    "postgres_changes:chats"
+    "channel:`user:${userId}:chats`",
+    "channel:`chat:${chatId}:typing`"
    ],
    "counts": {
-    "objects": 20,
-    "oneToOne": 9,
-    "changed": 11,
+    "objects": 18,
+    "oneToOne": 17,
+    "changed": 1,
     "removed": 0,
     "missing": 0
    }
@@ -952,19 +937,14 @@
     "rpc:admin_review_donation_link",
     "rpc:report_donation_link",
     "bucket:listing-images",
-    "channel:uniqueTopic('rides:public-feed')",
-    "channel:uniqueTopic(`rides:participants:user:${userId}`)",
-    "channel:uniqueTopic(`rides:participants:ride:${rideId}`)",
-    "postgres_changes:ride_listings",
-    "postgres_changes:ride_participants",
     "edge_function:validate-donation-link"
    ],
    "counts": {
-    "objects": 104,
+    "objects": 99,
     "oneToOne": 28,
     "changed": 64,
     "removed": 6,
-    "missing": 6
+    "missing": 1
    }
   },
   {
@@ -1727,11 +1707,11 @@
   {
    "old": "`chat:${chatId}:messages`",
    "kind": "channel",
-   "status": "changed",
+   "status": "same",
    "launch": "core",
-   "confidence": "medium",
+   "confidence": "high",
    "missing": null,
-   "note": "Same private topic; events are `message`, `read`, `reaction`, `chat_updated` broadcasts from triggers.",
+   "note": "Private topic of the chat; broadcast events `INSERT` (the message row), `read` (a member's marker), `reaction` and `chat_updated` (the pinned post). The app consumes `INSERT`, `read` and `chat_updated`; reactions are re-read on demand.",
    "oldObject": {},
    "targets": [
     {
@@ -1745,7 +1725,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRealtime.ts",
-     "line": 37,
+     "line": 41,
      "symbol": "SupabaseChatRealtime.subscribeToChat",
      "area": "chat"
     }
@@ -1779,62 +1759,13 @@
    ]
   },
   {
-   "old": "chatTopic = `chat-row:${chatId}:${uniqueTopicSuffix()}`",
+   "old": "`user:${userId}:chats`",
    "kind": "channel",
-   "status": "changed",
+   "status": "same",
    "launch": "core",
    "confidence": "high",
    "missing": null,
-   "note": "No row subscription: `chat_updated` arrives on the chat topic.",
-   "oldObject": {},
-   "targets": [
-    {
-     "type": "topic",
-     "name": "chat:<chat id>:messages"
-    }
-   ],
-   "areas": [
-    "chat"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRealtime.ts",
-     "line": 67,
-     "symbol": "SupabaseChatRealtime.subscribeToChat",
-     "area": "chat"
-    }
-   ]
-  },
-  {
-   "old": "FEED_PUBLIC_TOPIC = 'feed:public'",
-   "kind": "channel",
-   "status": "missing",
-   "launch": "core",
-   "confidence": "high",
-   "missing": "M24",
-   "note": "No broadcast of new public posts.",
-   "oldObject": {},
-   "targets": [],
-   "areas": [
-    "feed"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/feed/SupabaseFeedRealtime.ts",
-     "line": 22,
-     "symbol": "SupabaseFeedRealtime.subscribeToPublicInserts",
-     "area": "feed"
-    }
-   ]
-  },
-  {
-   "old": "inboxTopic = `inbox:${userId}:${uniqueTopicSuffix()}`",
-   "kind": "channel",
-   "status": "changed",
-   "launch": "core",
-   "confidence": "high",
-   "missing": null,
-   "note": "Private topic of the member; event `chat_updated`.",
+   "note": "Private topic of the member; event `chat_updated` carries ids only, so the inbox refreshes and the unread total is re-read.",
    "oldObject": {},
    "targets": [
     {
@@ -1848,31 +1779,9 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRealtime.ts",
-     "line": 97,
-     "symbol": "SupabaseChatRealtime.fireUnreadDebounced",
+     "line": 77,
+     "symbol": "SupabaseChatRealtime.subscribeToInbox",
      "area": "chat"
-    }
-   ]
-  },
-  {
-   "old": "ONLINE_PRESENCE_TOPIC = 'presence:online'",
-   "kind": "channel",
-   "status": "missing",
-   "launch": "core",
-   "confidence": "high",
-   "missing": "M24",
-   "note": "No policy for a global presence topic.",
-   "oldObject": {},
-   "targets": [],
-   "areas": [
-    "realtime"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/realtime/SupabaseOnlinePresence.ts",
-     "line": 26,
-     "symbol": "SupabaseOnlinePresence.start",
-     "area": "realtime"
     }
    ]
   },
@@ -1980,72 +1889,6 @@
    ]
   },
   {
-   "old": "uniqueTopic('rides:public-feed')",
-   "kind": "channel",
-   "status": "missing",
-   "launch": "wedge",
-   "confidence": "high",
-   "missing": "M24",
-   "note": "No ride topics.",
-   "oldObject": {},
-   "targets": [],
-   "areas": [
-    "rides"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRidesRealtime.ts",
-     "line": 25,
-     "symbol": "SupabaseRidesRealtime.subscribeToPublicRideInserts",
-     "area": "rides"
-    }
-   ]
-  },
-  {
-   "old": "uniqueTopic(`rides:participants:ride:${rideId}`)",
-   "kind": "channel",
-   "status": "missing",
-   "launch": "wedge",
-   "confidence": "high",
-   "missing": "M24",
-   "note": "No ride topics.",
-   "oldObject": {},
-   "targets": [],
-   "areas": [
-    "rides"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRidesRealtime.ts",
-     "line": 77,
-     "symbol": "SupabaseRidesRealtime.subscribeToRideParticipantInserts",
-     "area": "rides"
-    }
-   ]
-  },
-  {
-   "old": "uniqueTopic(`rides:participants:user:${userId}`)",
-   "kind": "channel",
-   "status": "missing",
-   "launch": "wedge",
-   "confidence": "high",
-   "missing": "M24",
-   "note": "No ride topics.",
-   "oldObject": {},
-   "targets": [],
-   "areas": [
-    "rides"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRidesRealtime.ts",
-     "line": 51,
-     "symbol": "SupabaseRidesRealtime.subscribeToUserParticipantUpdates",
-     "area": "rides"
-    }
-   ]
-  },
-  {
    "old": "public-research-submit",
    "kind": "edge_function",
    "status": "same",
@@ -2139,41 +1982,6 @@
    ]
   },
   {
-   "old": "chats",
-   "kind": "postgres_changes",
-   "status": "changed",
-   "launch": "core",
-   "confidence": "high",
-   "missing": null,
-   "note": "Publication tables are gone (design §8): `chat_updated` broadcasts replace both subscriptions.",
-   "oldObject": {},
-   "targets": [
-    {
-     "type": "topic",
-     "name": "user:<user id>:chats"
-    }
-   ],
-   "areas": [
-    "chat"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRealtime.ts",
-     "line": 69,
-     "symbol": "SupabaseChatRealtime.subscribeToChat",
-     "area": "chat",
-     "event": "UPDATE"
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRealtime.ts",
-     "line": 102,
-     "symbol": "SupabaseChatRealtime.fireUnreadDebounced",
-     "area": "chat",
-     "event": "UPDATE"
-    }
-   ]
-  },
-  {
    "old": "community_stats",
    "kind": "postgres_changes",
    "status": "removed",
@@ -2193,59 +2001,6 @@
      "symbol": "useEffect",
      "area": "mobile",
      "event": "*"
-    }
-   ]
-  },
-  {
-   "old": "ride_listings",
-   "kind": "postgres_changes",
-   "status": "missing",
-   "launch": "wedge",
-   "confidence": "high",
-   "missing": "M24",
-   "note": "No ride topics.",
-   "oldObject": {},
-   "targets": [],
-   "areas": [
-    "rides"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRidesRealtime.ts",
-     "line": 27,
-     "symbol": "SupabaseRidesRealtime.subscribeToPublicRideInserts",
-     "area": "rides",
-     "event": "INSERT"
-    }
-   ]
-  },
-  {
-   "old": "ride_participants",
-   "kind": "postgres_changes",
-   "status": "missing",
-   "launch": "wedge",
-   "confidence": "high",
-   "missing": "M24",
-   "note": "No ride topics.",
-   "oldObject": {},
-   "targets": [],
-   "areas": [
-    "rides"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRidesRealtime.ts",
-     "line": 53,
-     "symbol": "SupabaseRidesRealtime.subscribeToUserParticipantUpdates",
-     "area": "rides",
-     "event": "UPDATE"
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRidesRealtime.ts",
-     "line": 79,
-     "symbol": "SupabaseRidesRealtime.subscribeToRideParticipantInserts",
-     "area": "rides",
-     "event": "INSERT"
     }
    ]
   },
@@ -4941,7 +4696,7 @@
       },
       {
        "code": "invalid_rate_limit_args",
-       "knownToApp": false
+       "knownToApp": true
       },
       {
        "code": "item_already_reserved",
@@ -5014,7 +4769,7 @@
       },
       {
        "code": "invalid_rate_limit_args",
-       "knownToApp": false
+       "knownToApp": true
       },
       {
        "code": "item_already_reserved",
@@ -5505,6 +5260,127 @@
    ]
   },
   {
+   "old": "chat_inbox_page",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "`p_limit`, `p_before_last_message_at`, `p_before_chat_id`, `p_search`; one row per visible chat with the counterpart, a 140-character preview of the newest message and the unread count. The app reads one page of 50; it carries no counterpart verification level and no media or system payload of the newest message.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "chat_inbox_page",
+     "source": "40_messaging/040_chat_reads.sql:71",
+     "signature": [
+      "chat_inbox_page(p_before_chat_id?: string, p_before_last_message_at?: string, p_limit?: number, p_search?: string) → { anchor_post_id: string chat_id: string counterpart_avatar_url: string counterpart_display_name: string counterpart_id: string counterpart_last_read_at: string counterpart_share_handle: string kind: string last_messa..."
+     ],
+     "errors": [
+      {
+       "code": "unauthenticated",
+       "knownToApp": true
+      }
+     ]
+    }
+   ],
+   "areas": [
+    "chat"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/chat/getMyChats.ts",
+     "line": 72,
+     "symbol": "getMyChats",
+     "area": "chat"
+    }
+   ]
+  },
+  {
+   "old": "chat_messages_page",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "`p_chat_id`, `p_limit`, `p_before`, `p_after`; the `messages` rows, newest first when paging backwards. Refusal `chat_not_found`.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "chat_messages_page",
+     "source": "40_messaging/040_chat_reads.sql:144",
+     "signature": [
+      "chat_messages_page(p_after?: string, p_before?: string, p_chat_id: string, p_limit?: number) → messages row[]"
+     ],
+     "errors": [
+      {
+       "code": "chat_not_found",
+       "knownToApp": true
+      },
+      {
+       "code": "unauthenticated",
+       "knownToApp": true
+      }
+     ]
+    }
+   ],
+   "areas": [
+    "chat"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRepository.ts",
+     "line": 60,
+     "symbol": "SupabaseChatRepository.chatCall",
+     "area": "chat"
+    }
+   ]
+  },
+  {
+   "old": "chat_unread_total",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "The badge; also delivered in `bootstrap_session().unread.chats`.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "chat_unread_total",
+     "source": "40_messaging/040_chat_reads.sql:35",
+     "signature": [
+      "chat_unread_total() → number"
+     ],
+     "errors": [
+      {
+       "code": "unauthenticated",
+       "knownToApp": true
+      }
+     ]
+    }
+   ],
+   "areas": [
+    "chat"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRealtime.ts",
+     "line": 101,
+     "symbol": "SupabaseChatRealtime.readUnreadTotal",
+     "area": "chat"
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRepository.ts",
+     "line": 81,
+     "symbol": "SupabaseChatRepository.getUnreadTotal",
+     "area": "chat"
+    }
+   ]
+  },
+  {
    "old": "check_in_volunteer_shift",
    "kind": "rpc",
    "status": "changed",
@@ -5634,7 +5510,7 @@
       },
       {
        "code": "invalid_rate_limit_args",
-       "knownToApp": false
+       "knownToApp": true
       },
       {
        "code": "item_already_reserved",
@@ -6291,7 +6167,7 @@
       },
       {
        "code": "invalid_rate_limit_args",
-       "knownToApp": false
+       "knownToApp": true
       },
       {
        "code": "money_min_amount",
@@ -7828,7 +7704,7 @@
       },
       {
        "code": "invalid_rate_limit_args",
-       "knownToApp": false
+       "knownToApp": true
       },
       {
        "code": "rate_limited",
@@ -8462,6 +8338,51 @@
      "line": 156,
      "symbol": "SupabaseVolunteerRepository.getShiftIcs",
      "area": "volunteering"
+    }
+   ]
+  },
+  {
+   "old": "hide_chat",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "`p_chat_id`; a support thread cannot be hidden (`support_thread_not_hideable`).",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "hide_chat",
+     "source": "40_messaging/030_chat_rpcs.sql:180",
+     "signature": [
+      "hide_chat(p_chat_id: string) → undefined"
+     ],
+     "errors": [
+      {
+       "code": "chat_not_found",
+       "knownToApp": true
+      },
+      {
+       "code": "support_thread_not_hideable",
+       "knownToApp": true
+      },
+      {
+       "code": "unauthenticated",
+       "knownToApp": true
+      }
+     ]
+    }
+   ],
+   "areas": [
+    "chat"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/chat/supabaseDmChat.ts",
+     "line": 46,
+     "symbol": "hideChat",
+     "area": "chat"
     }
    ]
   },
@@ -10061,6 +9982,47 @@
    ]
   },
   {
+   "old": "mark_chat_read",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "`p_chat_id`; advances the caller's `chat_members.last_read_at`, which is the read receipt other members see.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "mark_chat_read",
+     "source": "40_messaging/030_chat_rpcs.sql:156",
+     "signature": [
+      "mark_chat_read(p_chat_id: string) → undefined"
+     ],
+     "errors": [
+      {
+       "code": "chat_not_found",
+       "knownToApp": true
+      },
+      {
+       "code": "unauthenticated",
+       "knownToApp": true
+      }
+     ]
+    }
+   ],
+   "areas": [
+    "chat"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRepository.ts",
+     "line": 77,
+     "symbol": "SupabaseChatRepository.markRead",
+     "area": "chat"
+    }
+   ]
+  },
+  {
    "old": "mark_event_attendance",
    "kind": "rpc",
    "status": "renamed",
@@ -10443,6 +10405,100 @@
      "line": 73,
      "symbol": "SupabaseNotificationInboxRepository.unreadCount",
      "area": "notifications"
+    }
+   ]
+  },
+  {
+   "old": "open_direct_chat",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "`p_user_id`, `p_anchor_post_id`; the caller's one chat with the member (created when missing, un-hidden when hidden), re-pinned when an anchor is given. A ride is a post, so a ride anchor is a post anchor; the old \"second chat after a personal hide\" no longer exists. Refusals `account_not_active`, `blocked_relationship`, `cannot_chat_self`, `post_unavailable` †, `user_unavailable`.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "open_direct_chat",
+     "source": "40_messaging/030_chat_rpcs.sql:11",
+     "signature": [
+      "open_direct_chat(p_anchor_post_id?: string, p_user_id: string) → chats row"
+     ],
+     "errors": [
+      {
+       "code": "account_not_active",
+       "knownToApp": true
+      },
+      {
+       "code": "blocked_relationship",
+       "knownToApp": true
+      },
+      {
+       "code": "cannot_chat_self",
+       "knownToApp": true
+      },
+      {
+       "code": "post_unavailable",
+       "knownToApp": true
+      },
+      {
+       "code": "unauthenticated",
+       "knownToApp": true
+      },
+      {
+       "code": "user_unavailable",
+       "knownToApp": true
+      }
+     ]
+    }
+   ],
+   "areas": [
+    "chat"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/chat/supabaseDmChat.ts",
+     "line": 30,
+     "symbol": "openDirectChat",
+     "area": "chat"
+    }
+   ]
+  },
+  {
+   "old": "open_support_thread",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "No arguments; the caller's support thread (`kind = 'support'`, `support_user_id`), created on first use. A support issue is this call plus `send_message`: the category is the first line of the body (there is no category column).",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "open_support_thread",
+     "source": "40_messaging/030_chat_rpcs.sql:61",
+     "signature": [
+      "open_support_thread(anchor_post_id: string | null, created_at: string, direct_user_a: string | null, direct_user_b: string | null, id: string, kind: string, last_message_at: string | null, moderation_hidden_at: string | null, support_user_id: string | null) → chats row"
+     ],
+     "errors": [
+      {
+       "code": "unauthenticated",
+       "knownToApp": true
+      }
+     ]
+    }
+   ],
+   "areas": [
+    "chat"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/chat/supabaseDmChat.ts",
+     "line": 40,
+     "symbol": "openSupportThread",
+     "area": "chat"
     }
    ]
   },
@@ -11089,7 +11145,7 @@
       },
       {
        "code": "invalid_rate_limit_args",
-       "knownToApp": false
+       "knownToApp": true
       },
       {
        "code": "item_already_reserved",
@@ -11540,7 +11596,7 @@
       },
       {
        "code": "invalid_rate_limit_args",
-       "knownToApp": false
+       "knownToApp": true
       },
       {
        "code": "item_already_reserved",
@@ -11613,7 +11669,7 @@
       },
       {
        "code": "invalid_rate_limit_args",
-       "knownToApp": false
+       "knownToApp": true
       },
       {
        "code": "item_already_reserved",
@@ -11977,269 +12033,6 @@
    ]
   },
   {
-   "old": "rpc_chat_hide_for_viewer",
-   "kind": "rpc",
-   "status": "renamed",
-   "launch": "core",
-   "confidence": "high",
-   "missing": null,
-   "note": "Same argument; a support thread cannot be hidden (`support_thread_not_hideable`).",
-   "oldObject": {
-    "signature": [
-     "rpc_chat_hide_for_viewer(p_chat_id: string) → undefined"
-    ]
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "hide_chat",
-     "source": "40_messaging/030_chat_rpcs.sql:180",
-     "signature": [
-      "hide_chat(p_chat_id: string) → undefined"
-     ],
-     "errors": [
-      {
-       "code": "chat_not_found",
-       "knownToApp": true
-      },
-      {
-       "code": "support_thread_not_hideable",
-       "knownToApp": true
-      },
-      {
-       "code": "unauthenticated",
-       "knownToApp": true
-      }
-     ]
-    }
-   ],
-   "areas": [
-    "chat"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/chat/supabaseDmChat.ts",
-     "line": 171,
-     "symbol": "hideDmChatFromInbox",
-     "area": "chat"
-    }
-   ]
-  },
-  {
-   "old": "rpc_chat_mark_read",
-   "kind": "rpc",
-   "status": "renamed",
-   "launch": "core",
-   "confidence": "high",
-   "missing": null,
-   "note": "Same argument. Read state is `chat_members.last_read_at`, not a per-message status.",
-   "oldObject": {
-    "signature": [
-     "rpc_chat_mark_read(p_chat_id: string) → undefined"
-    ]
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "mark_chat_read",
-     "source": "40_messaging/030_chat_rpcs.sql:156",
-     "signature": [
-      "mark_chat_read(p_chat_id: string) → undefined"
-     ],
-     "errors": [
-      {
-       "code": "chat_not_found",
-       "knownToApp": true
-      },
-      {
-       "code": "unauthenticated",
-       "knownToApp": true
-      }
-     ]
-    }
-   ],
-   "areas": [
-    "chat"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRepository.ts",
-     "line": 88,
-     "symbol": "SupabaseChatRepository.markRead",
-     "area": "chat"
-    }
-   ]
-  },
-  {
-   "old": "rpc_chat_set_anchor",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "core",
-   "confidence": "high",
-   "missing": null,
-   "note": "No separate anchor RPC: `open_direct_chat(p_user_id, p_anchor_post_id)` returns the existing chat and re-pins it.",
-   "oldObject": {
-    "signature": [
-     "rpc_chat_set_anchor(p_anchor_post_id: string, p_chat_id: string) → chats row"
-    ]
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "open_direct_chat",
-     "source": "40_messaging/030_chat_rpcs.sql:11",
-     "signature": [
-      "open_direct_chat(p_anchor_post_id?: string, p_user_id: string) → chats row"
-     ],
-     "errors": [
-      {
-       "code": "account_not_active",
-       "knownToApp": true
-      },
-      {
-       "code": "blocked_relationship",
-       "knownToApp": true
-      },
-      {
-       "code": "cannot_chat_self",
-       "knownToApp": true
-      },
-      {
-       "code": "post_unavailable",
-       "knownToApp": false
-      },
-      {
-       "code": "unauthenticated",
-       "knownToApp": true
-      },
-      {
-       "code": "user_unavailable",
-       "knownToApp": true
-      }
-     ]
-    }
-   ],
-   "areas": [
-    "chat"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/chat/supabaseDmChat.ts",
-     "line": 50,
-     "symbol": "maybeReanchorPost",
-     "area": "chat"
-    }
-   ]
-  },
-  {
-   "old": "rpc_chat_set_anchor_ride",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "core",
-   "confidence": "high",
-   "missing": null,
-   "note": "A ride is a post: same call as the post anchor.",
-   "oldObject": {
-    "signature": [
-     "rpc_chat_set_anchor_ride(p_anchor_ride_id: string, p_chat_id: string) → chats row"
-    ]
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "open_direct_chat",
-     "source": "40_messaging/030_chat_rpcs.sql:11",
-     "signature": [
-      "open_direct_chat(p_anchor_post_id?: string, p_user_id: string) → chats row"
-     ],
-     "errors": [
-      {
-       "code": "account_not_active",
-       "knownToApp": true
-      },
-      {
-       "code": "blocked_relationship",
-       "knownToApp": true
-      },
-      {
-       "code": "cannot_chat_self",
-       "knownToApp": true
-      },
-      {
-       "code": "post_unavailable",
-       "knownToApp": false
-      },
-      {
-       "code": "unauthenticated",
-       "knownToApp": true
-      },
-      {
-       "code": "user_unavailable",
-       "knownToApp": true
-      }
-     ]
-    }
-   ],
-   "areas": [
-    "chat"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/chat/supabaseDmChat.ts",
-     "line": 68,
-     "symbol": "maybeReanchorRide",
-     "area": "chat"
-    }
-   ]
-  },
-  {
-   "old": "rpc_chat_unread_total",
-   "kind": "rpc",
-   "status": "renamed",
-   "launch": "core",
-   "confidence": "high",
-   "missing": null,
-   "note": "Also delivered in `bootstrap_session().unread.chats`.",
-   "oldObject": {
-    "signature": [
-     "rpc_chat_unread_total() → number"
-    ]
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "chat_unread_total",
-     "source": "40_messaging/040_chat_reads.sql:35",
-     "signature": [
-      "chat_unread_total() → number"
-     ],
-     "errors": [
-      {
-       "code": "unauthenticated",
-       "knownToApp": true
-      }
-     ]
-    }
-   ],
-   "areas": [
-    "chat"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRealtime.ts",
-     "line": 89,
-     "symbol": "SupabaseChatRealtime.fireUnreadDebounced",
-     "area": "chat"
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRepository.ts",
-     "line": 95,
-     "symbol": "SupabaseChatRepository.getUnreadTotal",
-     "area": "chat"
-    }
-   ]
-  },
-  {
    "old": "rpc_create_post_comment",
    "kind": "rpc",
    "status": "changed",
@@ -12533,47 +12326,6 @@
      "line": 52,
      "symbol": "SupabaseSocialFeedRepository.removeMuteFilter",
      "area": "feed"
-    }
-   ]
-  },
-  {
-   "old": "rpc_get_or_create_support_thread",
-   "kind": "rpc",
-   "status": "renamed",
-   "launch": "core",
-   "confidence": "high",
-   "missing": null,
-   "note": "Returns the `chats` row in its new shape (`kind = 'support'`, `support_user_id`).",
-   "oldObject": {
-    "signature": [
-     "rpc_get_or_create_support_thread(anchor_listing_id: string | null, anchor_post_id: string | null, anchor_ride_id: string | null, chat_id: string, created_at: string, inbox_hidden_at_a: string | null, inbox_hidden_at_b: string | null, is_support_thread: boolean, last_message_at: string, participant_a: string | null, participant_b: string | null, removed_at: string | null) → chats row"
-    ]
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "open_support_thread",
-     "source": "40_messaging/030_chat_rpcs.sql:61",
-     "signature": [
-      "open_support_thread(anchor_post_id: string | null, created_at: string, direct_user_a: string | null, direct_user_b: string | null, id: string, kind: string, last_message_at: string | null, moderation_hidden_at: string | null, support_user_id: string | null) → chats row"
-     ],
-     "errors": [
-      {
-       "code": "unauthenticated",
-       "knownToApp": true
-      }
-     ]
-    }
-   ],
-   "areas": [
-    "chat"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRepository.ts",
-     "line": 116,
-     "symbol": "SupabaseChatRepository.getOrCreateSupportThread",
-     "area": "chat"
     }
    ]
   },
@@ -13173,7 +12925,7 @@
       },
       {
        "code": "invalid_rate_limit_args",
-       "knownToApp": false
+       "knownToApp": true
       },
       {
        "code": "item_already_reserved",
@@ -13423,128 +13175,6 @@
    ]
   },
   {
-   "old": "rpc_send_chat_media_message",
-   "kind": "rpc",
-   "status": "renamed",
-   "launch": "core",
-   "confidence": "high",
-   "missing": null,
-   "note": "`send_message(p_chat_id, p_body, p_media_payload, p_message_id)`; pass a client id for idempotent retries.",
-   "oldObject": {
-    "signature": [
-     "rpc_send_chat_media_message(p_body?: string, p_chat_id: string, p_media_payload: Json) → messages row"
-    ]
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "send_message",
-     "source": "40_messaging/030_chat_rpcs.sql:92",
-     "signature": [
-      "send_message(p_body: string, p_chat_id: string, p_media_payload?: Json, p_message_id?: string) → messages row"
-     ],
-     "errors": [
-      {
-       "code": "account_not_active",
-       "knownToApp": true
-      },
-      {
-       "code": "blocked_relationship",
-       "knownToApp": true
-      },
-      {
-       "code": "chat_not_found",
-       "knownToApp": true
-      },
-      {
-       "code": "invalid_media_payload",
-       "knownToApp": false
-      },
-      {
-       "code": "invalid_rate_limit_args",
-       "knownToApp": false
-      },
-      {
-       "code": "message_body_invalid",
-       "knownToApp": false
-      },
-      {
-       "code": "rate_limited",
-       "knownToApp": true
-      },
-      {
-       "code": "unauthenticated",
-       "knownToApp": true
-      }
-     ]
-    }
-   ],
-   "areas": [
-    "chat"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatV2Repository.ts",
-     "line": 27,
-     "symbol": "SupabaseChatV2Repository.sendMediaMessage",
-     "area": "chat"
-    }
-   ]
-  },
-  {
-   "old": "rpc_set_message_reaction",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "core",
-   "confidence": "high",
-   "missing": null,
-   "note": "Returns void (was the reaction row); the change arrives as a `reaction` broadcast on the chat topic.",
-   "oldObject": {
-    "signature": [
-     "rpc_set_message_reaction(p_message_id: string, p_reaction_type: string) → message_reactions row"
-    ]
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "set_message_reaction",
-     "source": "40_messaging/030_chat_rpcs.sql:209",
-     "signature": [
-      "set_message_reaction(p_message_id: string, p_reaction_type: string) → undefined"
-     ],
-     "errors": [
-      {
-       "code": "account_not_active",
-       "knownToApp": true
-      },
-      {
-       "code": "invalid_reaction_type",
-       "knownToApp": false
-      },
-      {
-       "code": "message_not_found",
-       "knownToApp": true
-      },
-      {
-       "code": "unauthenticated",
-       "knownToApp": true
-      }
-     ]
-    }
-   ],
-   "areas": [
-    "chat"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatV2Repository.ts",
-     "line": 15,
-     "symbol": "SupabaseChatV2Repository.setMessageReaction",
-     "area": "chat"
-    }
-   ]
-  },
-  {
    "old": "rpc_set_post_comment_like",
    "kind": "rpc",
    "status": "changed",
@@ -13613,7 +13243,7 @@
       },
       {
        "code": "invalid_reaction_type",
-       "knownToApp": false
+       "knownToApp": true
       },
       {
        "code": "post_not_found",
@@ -13635,130 +13265,6 @@
      "line": 69,
      "symbol": "SupabasePostEngagementRepository.setReaction",
      "area": "posts"
-    }
-   ]
-  },
-  {
-   "old": "rpc_submit_support_issue",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "core",
-   "confidence": "medium",
-   "missing": null,
-   "note": "Two calls: open the thread, then send the issue as a message (the category goes into the body; there is no category column).",
-   "oldObject": {
-    "signature": [
-     "rpc_submit_support_issue(p_category: string, p_description: string) → chats row"
-    ]
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "open_support_thread",
-     "source": "40_messaging/030_chat_rpcs.sql:61",
-     "signature": [
-      "open_support_thread(anchor_post_id: string | null, created_at: string, direct_user_a: string | null, direct_user_b: string | null, id: string, kind: string, last_message_at: string | null, moderation_hidden_at: string | null, support_user_id: string | null) → chats row"
-     ],
-     "errors": [
-      {
-       "code": "unauthenticated",
-       "knownToApp": true
-      }
-     ]
-    },
-    {
-     "type": "rpc",
-     "name": "send_message",
-     "source": "40_messaging/030_chat_rpcs.sql:92",
-     "signature": [
-      "send_message(p_body: string, p_chat_id: string, p_media_payload?: Json, p_message_id?: string) → messages row"
-     ],
-     "errors": [
-      {
-       "code": "account_not_active",
-       "knownToApp": true
-      },
-      {
-       "code": "blocked_relationship",
-       "knownToApp": true
-      },
-      {
-       "code": "chat_not_found",
-       "knownToApp": true
-      },
-      {
-       "code": "invalid_media_payload",
-       "knownToApp": false
-      },
-      {
-       "code": "invalid_rate_limit_args",
-       "knownToApp": false
-      },
-      {
-       "code": "message_body_invalid",
-       "knownToApp": false
-      },
-      {
-       "code": "rate_limited",
-       "knownToApp": true
-      },
-      {
-       "code": "unauthenticated",
-       "knownToApp": true
-      }
-     ]
-    }
-   ],
-   "areas": [
-    "chat"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRepository.ts",
-     "line": 101,
-     "symbol": "SupabaseChatRepository.submitSupportIssue",
-     "area": "chat"
-    }
-   ]
-  },
-  {
-   "old": "rpc_unread_counts_for_chats",
-   "kind": "rpc",
-   "status": "renamed",
-   "launch": "core",
-   "confidence": "high",
-   "missing": null,
-   "note": "`p_viewer_id` is gone (the caller). `chat_inbox_page` already returns `unread_count` per chat.",
-   "oldObject": {
-    "signature": [
-     "rpc_unread_counts_for_chats(p_chat_ids: string[], p_viewer_id: string) → { chat_id: string unread_count: number }[]"
-    ]
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "chat_unread_counts",
-     "source": "40_messaging/040_chat_reads.sql:49",
-     "signature": [
-      "chat_unread_counts(p_chat_ids: string[]) → { chat_id: string unread_count: number }[]"
-     ],
-     "errors": [
-      {
-       "code": "unauthenticated",
-       "knownToApp": true
-      }
-     ]
-    }
-   ],
-   "areas": [
-    "chat"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/chat/getMyChats.ts",
-     "line": 89,
-     "symbol": "getMyChats",
-     "area": "chat"
     }
    ]
   },
@@ -13964,6 +13470,83 @@
    ]
   },
   {
+   "old": "send_message",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "`p_chat_id`, `p_body`, `p_media_payload`, `p_message_id` (the optimistic message id, so a retry returns the first copy); also carries media messages and the support issue. Refusals `account_not_active`, `blocked_relationship`, `chat_not_found`, `invalid_media_payload` †, `invalid_rate_limit_args` †, `message_body_invalid` †, `rate_limited`.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "send_message",
+     "source": "40_messaging/030_chat_rpcs.sql:92",
+     "signature": [
+      "send_message(p_body: string, p_chat_id: string, p_media_payload?: Json, p_message_id?: string) → messages row"
+     ],
+     "errors": [
+      {
+       "code": "account_not_active",
+       "knownToApp": true
+      },
+      {
+       "code": "blocked_relationship",
+       "knownToApp": true
+      },
+      {
+       "code": "chat_not_found",
+       "knownToApp": true
+      },
+      {
+       "code": "invalid_media_payload",
+       "knownToApp": true
+      },
+      {
+       "code": "invalid_rate_limit_args",
+       "knownToApp": true
+      },
+      {
+       "code": "message_body_invalid",
+       "knownToApp": true
+      },
+      {
+       "code": "rate_limited",
+       "knownToApp": true
+      },
+      {
+       "code": "unauthenticated",
+       "knownToApp": true
+      }
+     ]
+    }
+   ],
+   "areas": [
+    "chat"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/chat/submitSupportIssue.ts",
+     "line": 27,
+     "symbol": "submitSupportIssue",
+     "area": "chat"
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRepository.ts",
+     "line": 71,
+     "symbol": "SupabaseChatRepository.sendMessage",
+     "area": "chat"
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatV2Repository.ts",
+     "line": 36,
+     "symbol": "SupabaseChatV2Repository.sendMediaMessage",
+     "area": "chat"
+    }
+   ]
+  },
+  {
    "old": "set_date_of_birth",
    "kind": "rpc",
    "status": "same",
@@ -14067,6 +13650,55 @@
      "line": 113,
      "symbol": "SupabaseHousingRepository.setPrivateDetails",
      "area": "housing"
+    }
+   ]
+  },
+  {
+   "old": "set_message_reaction",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "`p_message_id`, `p_reaction_type` (null clears); returns nothing, the change arrives as a `reaction` broadcast on the chat topic. Refusals `account_not_active`, `invalid_reaction_type` †, `message_not_found`.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "set_message_reaction",
+     "source": "40_messaging/030_chat_rpcs.sql:209",
+     "signature": [
+      "set_message_reaction(p_message_id: string, p_reaction_type: string) → undefined"
+     ],
+     "errors": [
+      {
+       "code": "account_not_active",
+       "knownToApp": true
+      },
+      {
+       "code": "invalid_reaction_type",
+       "knownToApp": true
+      },
+      {
+       "code": "message_not_found",
+       "knownToApp": true
+      },
+      {
+       "code": "unauthenticated",
+       "knownToApp": true
+      }
+     ]
+    }
+   ],
+   "areas": [
+    "chat"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatV2Repository.ts",
+     "line": 20,
+     "symbol": "SupabaseChatV2Repository.setMessageReaction",
+     "area": "chat"
     }
    ]
   },
@@ -14329,7 +13961,7 @@
       },
       {
        "code": "invalid_rate_limit_args",
-       "knownToApp": false
+       "knownToApp": true
       },
       {
        "code": "item_already_reserved",
@@ -14446,7 +14078,7 @@
       },
       {
        "code": "post_unavailable",
-       "knownToApp": false
+       "knownToApp": true
       },
       {
        "code": "unauthenticated",
@@ -14480,15 +14112,15 @@
       },
       {
        "code": "invalid_media_payload",
-       "knownToApp": false
+       "knownToApp": true
       },
       {
        "code": "invalid_rate_limit_args",
-       "knownToApp": false
+       "knownToApp": true
       },
       {
        "code": "message_body_invalid",
-       "knownToApp": false
+       "knownToApp": true
       },
       {
        "code": "rate_limited",
@@ -15273,13 +14905,60 @@
    ]
   },
   {
-   "old": "chats",
+   "old": "chat_members",
    "kind": "table",
-   "status": "changed",
+   "status": "same",
    "launch": "core",
    "confidence": "high",
    "missing": null,
-   "note": "`participant_a/b` → `direct_user_a/b` + `chat_members`; `is_support_thread` → `kind`; `inbox_hidden_at_a/b` → `chat_members.hidden_at`; `anchor_listing_id` / `anchor_ride_id` → `anchor_post_id`. Read-only for clients: the inbox is `chat_inbox_page` (counterpart, preview, unread in one call), creation is `open_direct_chat`.",
+   "note": "Read by chat for the members' read markers (`user_id`, `last_read_at`): a message is read when another member's marker reached it. Writes only through `mark_chat_read` and `hide_chat`.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "table",
+     "name": "chat_members",
+     "columns": [
+      "chat_id",
+      "hidden_at",
+      "joined_at",
+      "last_read_at",
+      "role",
+      "user_id"
+     ],
+     "clientGrants": {
+      "select": [
+       "chat_id",
+       "joined_at",
+       "last_read_at",
+       "role",
+       "user_id"
+      ]
+     }
+    }
+   ],
+   "areas": [
+    "chat"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRepository.ts",
+     "line": 138,
+     "symbol": "SupabaseChatRepository.readMarkers",
+     "area": "chat",
+     "ops": [
+      "select"
+     ]
+    }
+   ]
+  },
+  {
+   "old": "chats",
+   "kind": "table",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "Read by id for the chat screen (`id`, `kind`, `direct_user_a/b`, `support_user_id`, `anchor_post_id`, `last_message_at`, `created_at`); creation is `open_direct_chat`, the inbox is `chat_inbox_page`.",
    "oldObject": {
     "columns": [
      "anchor_listing_id",
@@ -15315,54 +14994,6 @@
      "clientGrants": {
       "select": true
      }
-    },
-    {
-     "type": "rpc",
-     "name": "chat_inbox_page",
-     "source": "40_messaging/040_chat_reads.sql:71",
-     "signature": [
-      "chat_inbox_page(p_before_chat_id?: string, p_before_last_message_at?: string, p_limit?: number, p_search?: string) → { anchor_post_id: string chat_id: string counterpart_avatar_url: string counterpart_display_name: string counterpart_id: string counterpart_last_read_at: string counterpart_share_handle: string kind: string last_messa..."
-     ],
-     "errors": [
-      {
-       "code": "unauthenticated",
-       "knownToApp": true
-      }
-     ]
-    },
-    {
-     "type": "rpc",
-     "name": "open_direct_chat",
-     "source": "40_messaging/030_chat_rpcs.sql:11",
-     "signature": [
-      "open_direct_chat(p_anchor_post_id?: string, p_user_id: string) → chats row"
-     ],
-     "errors": [
-      {
-       "code": "account_not_active",
-       "knownToApp": true
-      },
-      {
-       "code": "blocked_relationship",
-       "knownToApp": true
-      },
-      {
-       "code": "cannot_chat_self",
-       "knownToApp": true
-      },
-      {
-       "code": "post_unavailable",
-       "knownToApp": false
-      },
-      {
-       "code": "unauthenticated",
-       "knownToApp": true
-      },
-      {
-       "code": "user_unavailable",
-       "knownToApp": true
-      }
-     ]
     }
    ],
    "areas": [
@@ -15371,46 +15002,9 @@
    ],
    "callSites": [
     {
-     "file": "app/packages/infrastructure-supabase/src/chat/getMyChats.ts",
-     "line": 57,
-     "symbol": "getMyChats",
-     "area": "chat",
-     "ops": [
-      "select"
-     ]
-    },
-    {
      "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRepository.ts",
-     "line": 29,
+     "line": 32,
      "symbol": "SupabaseChatRepository.findById",
-     "area": "chat",
-     "ops": [
-      "select"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/chat/supabaseDmChat.ts",
-     "line": 30,
-     "symbol": "fetchSupportThreadForOrderedPair",
-     "area": "chat",
-     "ops": [
-      "select"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/chat/supabaseDmChat.ts",
-     "line": 101,
-     "symbol": "insertDmRowOrReuseSupportThread",
-     "area": "chat",
-     "ops": [
-      "select",
-      "insert"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/chat/supabaseDmChat.ts",
-     "line": 145,
-     "symbol": "findOrCreateDmChat",
      "area": "chat",
      "ops": [
       "select"
@@ -15986,7 +15580,7 @@
       },
       {
        "code": "invalid_rate_limit_args",
-       "knownToApp": false
+       "knownToApp": true
       },
       {
        "code": "rate_limited",
@@ -16080,7 +15674,7 @@
       },
       {
        "code": "invalid_rate_limit_args",
-       "knownToApp": false
+       "knownToApp": true
       },
       {
        "code": "rate_limited",
@@ -16886,7 +16480,7 @@
    "launch": "core",
    "confidence": "high",
    "missing": null,
-   "note": "`reaction_id` is gone.",
+   "note": "Read for the reactions of the listed messages (`message_id`, `user_id`, `reaction_type`); writes only through `set_message_reaction`.",
    "oldObject": {
     "columns": [
      "created_at",
@@ -16918,7 +16512,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatV2Repository.ts",
-     "line": 44,
+     "line": 52,
      "symbol": "SupabaseChatV2Repository.listMessageReactions",
      "area": "chat",
      "ops": [
@@ -16930,11 +16524,11 @@
   {
    "old": "messages",
    "kind": "table",
-   "status": "changed",
+   "status": "same",
    "launch": "core",
    "confidence": "high",
    "missing": null,
-   "note": "`message_id` → `id`; `status` / `delivered_at` / `read_at` are gone (read receipt = the other member's `last_read_at`, returned by `chat_inbox_page` and broadcast as `read`). Read-only for clients: page with `chat_messages_page`, send with `send_message`.",
+   "note": "Read-only for clients: the \"has this member ever sent a message\" check selects the caller's `kind = 'user'` rows; paging is `chat_messages_page`, sending is `send_message`.",
    "oldObject": {
     "columns": [
      "body",
@@ -16971,66 +16565,6 @@
      "clientGrants": {
       "select": true
      }
-    },
-    {
-     "type": "rpc",
-     "name": "chat_messages_page",
-     "source": "40_messaging/040_chat_reads.sql:144",
-     "signature": [
-      "chat_messages_page(p_after?: string, p_before?: string, p_chat_id: string, p_limit?: number) → messages row[]"
-     ],
-     "errors": [
-      {
-       "code": "chat_not_found",
-       "knownToApp": true
-      },
-      {
-       "code": "unauthenticated",
-       "knownToApp": true
-      }
-     ]
-    },
-    {
-     "type": "rpc",
-     "name": "send_message",
-     "source": "40_messaging/030_chat_rpcs.sql:92",
-     "signature": [
-      "send_message(p_body: string, p_chat_id: string, p_media_payload?: Json, p_message_id?: string) → messages row"
-     ],
-     "errors": [
-      {
-       "code": "account_not_active",
-       "knownToApp": true
-      },
-      {
-       "code": "blocked_relationship",
-       "knownToApp": true
-      },
-      {
-       "code": "chat_not_found",
-       "knownToApp": true
-      },
-      {
-       "code": "invalid_media_payload",
-       "knownToApp": false
-      },
-      {
-       "code": "invalid_rate_limit_args",
-       "knownToApp": false
-      },
-      {
-       "code": "message_body_invalid",
-       "knownToApp": false
-      },
-      {
-       "code": "rate_limited",
-       "knownToApp": true
-      },
-      {
-       "code": "unauthenticated",
-       "knownToApp": true
-      }
-     ]
     }
    ],
    "areas": [
@@ -17038,36 +16572,8 @@
    ],
    "callSites": [
     {
-     "file": "app/packages/infrastructure-supabase/src/chat/getMyChats.ts",
-     "line": 74,
-     "symbol": "raw",
-     "area": "chat",
-     "ops": [
-      "select"
-     ]
-    },
-    {
      "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRepository.ts",
-     "line": 56,
-     "symbol": "SupabaseChatRepository.getMessages",
-     "area": "chat",
-     "ops": [
-      "select"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRepository.ts",
-     "line": 73,
-     "symbol": "SupabaseChatRepository.sendMessage",
-     "area": "chat",
-     "ops": [
-      "select",
-      "insert"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRepository.ts",
-     "line": 136,
+     "line": 96,
      "symbol": "SupabaseChatRepository.hasSentAnyMessage",
      "area": "chat",
      "ops": [
@@ -19630,27 +19136,9 @@
      ]
     },
     {
-     "file": "app/packages/infrastructure-supabase/src/chat/getMyChats.ts",
-     "line": 103,
-     "symbol": "raw",
-     "area": "chat",
-     "ops": [
-      "select"
-     ]
-    },
-    {
      "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRepository.ts",
-     "line": 165,
+     "line": 117,
      "symbol": "SupabaseChatRepository.getCounterpart",
-     "area": "chat",
-     "ops": [
-      "select"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/chat/supabaseDmChat.ts",
-     "line": 128,
-     "symbol": "findOrCreateDmChat",
      "area": "chat",
      "ops": [
       "select"

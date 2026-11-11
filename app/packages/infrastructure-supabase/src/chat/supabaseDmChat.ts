@@ -1,175 +1,47 @@
-// DM-only Supabase helpers — keeps SupabaseChatRepository under file cap (TD-118).
+// Direct-chat and support-thread helpers over the baseline RPCs (kept apart from the repository
+// class for the file-size cap, TD-118).
+// Mapped to spec: FR-CHAT-004 (anchoring), FR-CHAT-006, FR-CHAT-007, FR-CHAT-016.
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { ChatError } from '@kc/application';
 import type { Chat } from '@kc/domain';
-import type { Database } from '../database.legacy.types';
-import { rowToChat } from './rowMappers';
-import { mapChatError } from './mapChatError';
+import type { Database } from '../database.types';
+import { rowToChat, type ChatRowSlice } from './rowMappers';
+import { chatCall, requireRow } from './mapChatError';
 
-type ChatRow = Database['public']['Tables']['chats']['Row'];
-
+/** The post a chat is opened from. A ride is a post, so both ids go to the same argument. */
 export type ChatAnchorInput = { postId?: string; rideId?: string };
 
-/** Support singleton index — see `chats_set_support_thread_flag` + `chats_unique_support_pair`. */
-function isUniqueSupportPairViolation(err: {
-  code?: string;
-  message?: string;
-  details?: string;
-}): boolean {
-  if (err.code !== '23505') return false;
-  const blob = `${err.message ?? ''} ${err.details ?? ''}`;
-  return blob.includes('chats_unique_support_pair');
+/** An RPC that returns one `chats` row may surface it bare or as a one-element array. */
+function singleChatRow(data: unknown, rpcName: string): ChatRowSlice {
+  return requireRow((Array.isArray(data) ? data[0] : data) as ChatRowSlice | null | undefined, rpcName);
 }
 
-async function fetchSupportThreadForOrderedPair(
+/**
+ * The caller's one direct chat with `otherUserId`, created when missing and un-hidden from the
+ * caller's inbox. Passing an anchor pins the chat to that post (the server rejects a post that
+ * is not open or belongs to neither member).
+ */
+export async function openDirectChat(
   client: SupabaseClient<Database>,
-  a: string,
-  b: string,
-): Promise<ChatRow | null> {
-  const { data, error } = await client
-    .from('chats')
-    .select('chat_id, participant_a, participant_b, anchor_post_id, anchor_ride_id, anchor_listing_id, is_support_thread, last_message_at, inbox_hidden_at_a, inbox_hidden_at_b, removed_at, created_at')
-    .eq('participant_a', a)
-    .eq('participant_b', b)
-    .eq('is_support_thread', true)
-    .maybeSingle();
-  if (error) throw mapChatError(error);
-  return data;
-}
-
-async function maybeReanchorPost(
-  client: SupabaseClient<Database>,
-  row: ChatRow,
-  postId: string,
-): Promise<Chat> {
-  // One context per chat (0464): a ride or listing anchor also gives way to the post.
-  const needsReanchor =
-    row.anchor_post_id !== postId || row.anchor_ride_id != null || row.anchor_listing_id != null;
-  if (!needsReanchor) return rowToChat(row);
-
-  const { data, error } = await client.rpc('rpc_chat_set_anchor', {
-    p_chat_id: row.chat_id,
-    p_anchor_post_id: postId,
-  });
-  if (error) throw mapChatError(error);
-  const out = Array.isArray(data) ? data[0] : data;
-  return rowToChat((out as ChatRow | undefined) ?? row);
-}
-
-async function maybeReanchorRide(
-  client: SupabaseClient<Database>,
-  row: ChatRow,
-  rideId: string,
-): Promise<Chat> {
-  const needsReanchor =
-    row.anchor_ride_id !== rideId || row.anchor_post_id != null || row.anchor_listing_id != null;
-  if (!needsReanchor) return rowToChat(row);
-
-  const { data, error } = await client.rpc('rpc_chat_set_anchor_ride', {
-    p_chat_id: row.chat_id,
-    p_anchor_ride_id: rideId,
-  });
-  if (error) throw mapChatError(error);
-  const out = Array.isArray(data) ? data[0] : data;
-  return rowToChat((out as ChatRow | undefined) ?? row);
-}
-
-async function maybeReanchorAndReturnChat(
-  client: SupabaseClient<Database>,
-  row: ChatRow,
-  anchor?: ChatAnchorInput,
-): Promise<Chat> {
-  if (anchor?.postId) return maybeReanchorPost(client, row, anchor.postId);
-  if (anchor?.rideId) return maybeReanchorRide(client, row, anchor.rideId);
-  return rowToChat(row);
-}
-
-function anchorInsertPayload(anchor?: ChatAnchorInput): Pick<ChatRow, 'anchor_post_id' | 'anchor_ride_id'> {
-  return {
-    anchor_post_id: anchor?.postId ?? null,
-    anchor_ride_id: anchor?.rideId ?? null,
-  };
-}
-
-async function insertDmRowOrReuseSupportThread(
-  client: SupabaseClient<Database>,
-  a: string,
-  b: string,
-  anchor?: ChatAnchorInput,
-): Promise<Chat> {
-  const insert = await client
-    .from('chats')
-    .insert({
-      participant_a: a,
-      participant_b: b,
-      ...anchorInsertPayload(anchor),
-    })
-    .select('chat_id, participant_a, participant_b, anchor_post_id, anchor_ride_id, anchor_listing_id, is_support_thread, last_message_at, inbox_hidden_at_a, inbox_hidden_at_b, removed_at, created_at')
-    .single();
-
-  if (!insert.error) return rowToChat(insert.data);
-
-  if (isUniqueSupportPairViolation(insert.error)) {
-    const support = await fetchSupportThreadForOrderedPair(client, a, b);
-    if (support) return maybeReanchorAndReturnChat(client, support, anchor);
-  }
-
-  throw mapChatError(insert.error);
-}
-
-export async function findOrCreateDmChat(
-  client: SupabaseClient<Database>,
-  userId: string,
   otherUserId: string,
   anchor?: ChatAnchorInput,
-  options?: { preferNewThread?: boolean },
 ): Promise<Chat> {
-  const { data: otherRow, error: otherErr } = await client
-    .from('users')
-    .select('user_id')
-    .eq('user_id', otherUserId)
-    .maybeSingle();
-  if (otherErr) throw mapChatError(otherErr);
-  if (!otherRow) {
-    throw new ChatError('send_to_deleted_user', 'counterpart_not_found');
-  }
-
-  const [a, b] =
-    userId < otherUserId ? [userId, otherUserId] : [otherUserId, userId];
-
-  if (options?.preferNewThread) {
-    return insertDmRowOrReuseSupportThread(client, a, b, anchor);
-  }
-
-  const list = await client
-    .from('chats')
-    .select('chat_id, participant_a, participant_b, anchor_post_id, anchor_ride_id, anchor_listing_id, is_support_thread, last_message_at, inbox_hidden_at_a, inbox_hidden_at_b, removed_at, created_at')
-    .eq('participant_a', a)
-    .eq('participant_b', b)
-    .eq('is_support_thread', false)
-    .order('last_message_at', { ascending: false })
-    .limit(50);
-  if (list.error) throw mapChatError(list.error);
-
-  const rows = list.data ?? [];
-  const viewerIsA = userId === a;
-  const visible = rows.find((r) =>
-    viewerIsA ? r.inbox_hidden_at_a == null : r.inbox_hidden_at_b == null,
+  const data = await chatCall(
+    'rpc:open_direct_chat',
+    client.rpc('open_direct_chat', {
+      p_user_id: otherUserId,
+      p_anchor_post_id: anchor?.postId ?? anchor?.rideId,
+    }),
   );
-
-  if (visible) {
-    return maybeReanchorAndReturnChat(client, visible, anchor);
-  }
-
-  return insertDmRowOrReuseSupportThread(client, a, b, anchor);
+  return rowToChat(singleChatRow(data, 'open_direct_chat'));
 }
 
-export async function hideDmChatFromInbox(
-  client: SupabaseClient<Database>,
-  chatId: string,
-): Promise<void> {
-  const { error } = await client.rpc('rpc_chat_hide_for_viewer', {
-    p_chat_id: chatId,
-  });
-  if (error) throw mapChatError(error);
+/** The caller's support thread; the server creates it on first use. */
+export async function openSupportThread(client: SupabaseClient<Database>): Promise<Chat> {
+  const data = await chatCall('rpc:open_support_thread', client.rpc('open_support_thread'));
+  return rowToChat(singleChatRow(data, 'open_support_thread'));
+}
+
+/** Hides a chat from the caller's inbox until its next message (a support thread cannot be hidden). */
+export async function hideChat(client: SupabaseClient<Database>, chatId: string): Promise<void> {
+  await chatCall('rpc:hide_chat', client.rpc('hide_chat', { p_chat_id: chatId }));
 }

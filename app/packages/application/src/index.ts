@@ -11,7 +11,7 @@ export type { BatchTranslationItem, ITranslationService } from './ports/ITransla
 export type { IPostTranslationReader, PostTranslationHit } from './ports/IPostTranslationReader';
 export type * from './ports/IMarketplaceRepository';
 export * from './translations';
-export type { IChatRealtime, InboxStreamCallbacks, SubscribeInboxOptions, ChatStreamCallbacks, Unsubscribe } from './ports/IChatRealtime';
+export type { IChatRealtime, InboxStreamCallbacks, InboxChange, SubscribeInboxOptions, ChatStreamCallbacks, ChatChange, Unsubscribe } from './ports/IChatRealtime';
 export type { IReportRepository } from './ports/IReportRepository';
 export type { IFeedRealtime, FeedRealtimeCallbacks, NewPublicPostSignal } from './ports/IFeedRealtime';
 export type { AccountChange, IUserRealtime } from './ports/IUserRealtime';

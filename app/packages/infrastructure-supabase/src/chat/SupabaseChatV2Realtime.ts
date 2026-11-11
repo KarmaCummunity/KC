@@ -1,9 +1,9 @@
-// KC#873 — chat typing indicator (client Broadcast on the private
-// `chat:<id>:typing` topic; send auth in 0415). Online presence lives in
-// SupabaseOnlinePresence (global `presence:online` topic).
+// KC#873 — chat typing indicator: client Broadcast on the private `chat:<id>:typing` topic. The
+// database policy lets the members of a chat, and only them, join and send on it
+// (supabase/schemas/40_messaging/060_realtime.sql). Online presence: SupabaseOnlinePresence.
 
 import type { RealtimeChannel, SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '../database.legacy.types';
+import type { Database } from '../database.types';
 import { isChannelFailure, openExactTopicChannel } from '../realtime/exactTopicChannel';
 
 export type TypingCallbacks = {

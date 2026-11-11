@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { QueryClient } from '@tanstack/react-query';
-import type { Chat, Message } from '@kc/domain';
+import type { Message } from '@kc/domain';
 import type {
   ChatWithPreview,
   IChatRealtime,
@@ -118,19 +118,19 @@ describe('runStartInboxSub', () => {
     expect(state.inboxSub).toBe(competingUnsub);
   });
 
-  it('wires onChatChanged → React Query cache upsert', async () => {
+  it('wires onInboxChanged → invalidates the inbox query (the topic carries ids only)', async () => {
     const qc = new QueryClient();
+    const invalidate = vi.spyOn(qc, 'invalidateQueries');
     const noopUnsub = vi.fn();
     let handlers: Record<string, (...args: unknown[]) => void> | null = null;
     const { api } = makeStoreApi({ inboxSub: noopUnsub });
     const realtime = makeRealtime({ capture: (h) => { handlers = h; } });
 
     await runStartInboxSub(api, noopUnsub, 'u_me', makeRepo(), realtime, qc);
-    const chat: Chat = { chatId: 'c_1', lastMessageAt: '2026-05-17T00:00:00.000Z' } as never;
-    handlers!.onChatChanged(chat);
+    invalidate.mockClear();
+    handlers!.onInboxChanged({ chatId: 'c_1', lastMessageAt: '2026-05-17T00:00:00.000Z' });
 
-    const snap = qc.getQueryData<{ chats: ChatWithPreview[] }>(chatInboxQueryKey('u_me'));
-    expect(snap?.chats[0]?.chatId).toBe('c_1');
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: chatInboxQueryKey('u_me') });
   });
 
   it('wires onUnreadTotalChanged → setState({ unreadTotal }) + cache', async () => {
@@ -145,21 +145,6 @@ describe('runStartInboxSub', () => {
 
     expect(state.unreadTotal).toBe(42);
     expect(qc.getQueryData(chatInboxQueryKey('u_me'))).toMatchObject({ unreadTotal: 42 });
-  });
-
-  it('invalidates inbox query when cache missing on chat change', async () => {
-    const qc = new QueryClient();
-    const invalidate = vi.spyOn(qc, 'invalidateQueries');
-    const noopUnsub = vi.fn();
-    let handlers: Record<string, (...args: unknown[]) => void> | null = null;
-    const { api } = makeStoreApi({ inboxSub: noopUnsub });
-    const realtime = makeRealtime({ capture: (h) => { handlers = h; } });
-
-    await runStartInboxSub(api, noopUnsub, 'u_me', makeRepo(), realtime, qc);
-    qc.removeQueries({ queryKey: chatInboxQueryKey('u_me') });
-    handlers!.onChatChanged({ chatId: 'c_1' } as Chat);
-
-    expect(invalidate).toHaveBeenCalledWith({ queryKey: chatInboxQueryKey('u_me') });
   });
 
   it('wires onInboxMessageInsert → cache bump', async () => {

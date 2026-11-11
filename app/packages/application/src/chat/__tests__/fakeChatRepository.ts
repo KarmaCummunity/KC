@@ -9,6 +9,8 @@ export class FakeChatRepository implements IChatRepository {
   messages: Message[] = [];
   unread: Record<string, number> = {};
   sendCallCount = 0;
+  /** The client message id the last `sendMessage` call carried, if any. */
+  lastSentMessageId: string | undefined;
   readonly inboxHidden: HiddenMap = new Map();
 
   private hiddenFor(chatId: string, viewerId: string): boolean {
@@ -129,8 +131,9 @@ export class FakeChatRepository implements IChatRepository {
     return this.messages.filter((m) => m.chatId === chatId).slice(-limit).reverse();
   }
 
-  async sendMessage(chatId: string, senderId: string, body: string): Promise<Message> {
+  async sendMessage(chatId: string, senderId: string, body: string, messageId?: string): Promise<Message> {
     this.sendCallCount += 1;
+    this.lastSentMessageId = messageId;
     const msg: Message = {
       messageId: `msg-${this.messages.length + 1}`,
       chatId,

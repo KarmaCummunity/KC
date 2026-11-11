@@ -12,24 +12,24 @@
    "distinct": 5
   },
   "channel": {
-   "callSites": 13,
-   "distinct": 13
+   "callSites": 7,
+   "distinct": 7
   },
   "edge_function": {
    "callSites": 5,
    "distinct": 3
   },
   "postgres_changes": {
-   "callSites": 6,
-   "distinct": 4
+   "callSites": 1,
+   "distinct": 1
   },
   "rpc": {
-   "callSites": 283,
-   "distinct": 272
+   "callSites": 284,
+   "distinct": 271
   },
   "table": {
-   "callSites": 166,
-   "distinct": 55
+   "callSites": 158,
+   "distinct": 56
   }
  },
  "entries": [
@@ -905,54 +905,27 @@
    "name": "list_challenge_leaderboard"
   },
   {
-   "kind": "table",
+   "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/chat/getMyChats.ts",
-   "line": 57,
+   "line": 72,
    "area": "chat",
    "symbol": "getMyChats",
    "via": "literal",
-   "ops": [
-    "select"
-   ],
-   "name": "chats"
-  },
-  {
-   "kind": "table",
-   "file": "app/packages/infrastructure-supabase/src/chat/getMyChats.ts",
-   "line": 74,
-   "area": "chat",
-   "symbol": "raw",
-   "via": "literal",
-   "ops": [
-    "select"
-   ],
-   "name": "messages"
+   "name": "chat_inbox_page"
   },
   {
    "kind": "rpc",
-   "file": "app/packages/infrastructure-supabase/src/chat/getMyChats.ts",
-   "line": 89,
+   "file": "app/packages/infrastructure-supabase/src/chat/submitSupportIssue.ts",
+   "line": 27,
    "area": "chat",
-   "symbol": "getMyChats",
+   "symbol": "submitSupportIssue",
    "via": "literal",
-   "name": "rpc_unread_counts_for_chats"
-  },
-  {
-   "kind": "table",
-   "file": "app/packages/infrastructure-supabase/src/chat/getMyChats.ts",
-   "line": 103,
-   "area": "chat",
-   "symbol": "raw",
-   "via": "literal",
-   "ops": [
-    "select"
-   ],
-   "name": "users"
+   "name": "send_message"
   },
   {
    "kind": "channel",
    "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRealtime.ts",
-   "line": 37,
+   "line": 41,
    "area": "chat",
    "symbol": "SupabaseChatRealtime.subscribeToChat",
    "via": "expression",
@@ -961,54 +934,25 @@
   {
    "kind": "channel",
    "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRealtime.ts",
-   "line": 67,
+   "line": 77,
    "area": "chat",
-   "symbol": "SupabaseChatRealtime.subscribeToChat",
+   "symbol": "SupabaseChatRealtime.subscribeToInbox",
    "via": "expression",
-   "name": "chatTopic = `chat-row:${chatId}:${uniqueTopicSuffix()}`"
-  },
-  {
-   "kind": "postgres_changes",
-   "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRealtime.ts",
-   "line": 69,
-   "area": "chat",
-   "symbol": "SupabaseChatRealtime.subscribeToChat",
-   "via": "literal",
-   "event": "UPDATE",
-   "name": "chats"
+   "name": "`user:${userId}:chats`"
   },
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRealtime.ts",
-   "line": 89,
+   "line": 101,
    "area": "chat",
-   "symbol": "SupabaseChatRealtime.fireUnreadDebounced",
+   "symbol": "SupabaseChatRealtime.readUnreadTotal",
    "via": "literal",
-   "name": "rpc_chat_unread_total"
-  },
-  {
-   "kind": "channel",
-   "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRealtime.ts",
-   "line": 97,
-   "area": "chat",
-   "symbol": "SupabaseChatRealtime.fireUnreadDebounced",
-   "via": "expression",
-   "name": "inboxTopic = `inbox:${userId}:${uniqueTopicSuffix()}`"
-  },
-  {
-   "kind": "postgres_changes",
-   "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRealtime.ts",
-   "line": 102,
-   "area": "chat",
-   "symbol": "SupabaseChatRealtime.fireUnreadDebounced",
-   "via": "literal",
-   "event": "UPDATE",
-   "name": "chats"
+   "name": "chat_unread_total"
   },
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRepository.ts",
-   "line": 29,
+   "line": 32,
    "area": "chat",
    "symbol": "SupabaseChatRepository.findById",
    "via": "literal",
@@ -1018,70 +962,45 @@
    "name": "chats"
   },
   {
-   "kind": "table",
+   "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRepository.ts",
-   "line": 56,
+   "line": 60,
    "area": "chat",
-   "symbol": "SupabaseChatRepository.getMessages",
+   "symbol": "SupabaseChatRepository.chatCall",
    "via": "literal",
-   "ops": [
-    "select"
-   ],
-   "name": "messages"
+   "name": "chat_messages_page"
   },
   {
-   "kind": "table",
+   "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRepository.ts",
-   "line": 73,
+   "line": 71,
    "area": "chat",
    "symbol": "SupabaseChatRepository.sendMessage",
    "via": "literal",
-   "ops": [
-    "select",
-    "insert"
-   ],
-   "name": "messages"
+   "name": "send_message"
   },
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRepository.ts",
-   "line": 88,
+   "line": 77,
    "area": "chat",
    "symbol": "SupabaseChatRepository.markRead",
    "via": "literal",
-   "name": "rpc_chat_mark_read"
+   "name": "mark_chat_read"
   },
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRepository.ts",
-   "line": 95,
+   "line": 81,
    "area": "chat",
    "symbol": "SupabaseChatRepository.getUnreadTotal",
    "via": "literal",
-   "name": "rpc_chat_unread_total"
-  },
-  {
-   "kind": "rpc",
-   "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRepository.ts",
-   "line": 101,
-   "area": "chat",
-   "symbol": "SupabaseChatRepository.submitSupportIssue",
-   "via": "literal",
-   "name": "rpc_submit_support_issue"
-  },
-  {
-   "kind": "rpc",
-   "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRepository.ts",
-   "line": 116,
-   "area": "chat",
-   "symbol": "SupabaseChatRepository.getOrCreateSupportThread",
-   "via": "literal",
-   "name": "rpc_get_or_create_support_thread"
+   "name": "chat_unread_total"
   },
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRepository.ts",
-   "line": 136,
+   "line": 96,
    "area": "chat",
    "symbol": "SupabaseChatRepository.hasSentAnyMessage",
    "via": "literal",
@@ -1093,7 +1012,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRepository.ts",
-   "line": 165,
+   "line": 117,
    "area": "chat",
    "symbol": "SupabaseChatRepository.getCounterpart",
    "via": "literal",
@@ -1101,6 +1020,18 @@
     "select"
    ],
    "name": "users"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRepository.ts",
+   "line": 138,
+   "area": "chat",
+   "symbol": "SupabaseChatRepository.readMarkers",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "chat_members"
   },
   {
    "kind": "channel",
@@ -1114,25 +1045,25 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatV2Repository.ts",
-   "line": 15,
+   "line": 20,
    "area": "chat",
    "symbol": "SupabaseChatV2Repository.setMessageReaction",
    "via": "literal",
-   "name": "rpc_set_message_reaction"
+   "name": "set_message_reaction"
   },
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatV2Repository.ts",
-   "line": 27,
+   "line": 36,
    "area": "chat",
    "symbol": "SupabaseChatV2Repository.sendMediaMessage",
    "via": "literal",
-   "name": "rpc_send_chat_media_message"
+   "name": "send_message"
   },
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatV2Repository.ts",
-   "line": 44,
+   "line": 52,
    "area": "chat",
    "symbol": "SupabaseChatV2Repository.listMessageReactions",
    "via": "literal",
@@ -1142,80 +1073,31 @@
    "name": "message_reactions"
   },
   {
-   "kind": "table",
+   "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/chat/supabaseDmChat.ts",
    "line": 30,
    "area": "chat",
-   "symbol": "fetchSupportThreadForOrderedPair",
+   "symbol": "openDirectChat",
    "via": "literal",
-   "ops": [
-    "select"
-   ],
-   "name": "chats"
+   "name": "open_direct_chat"
   },
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/chat/supabaseDmChat.ts",
-   "line": 50,
+   "line": 40,
    "area": "chat",
-   "symbol": "maybeReanchorPost",
+   "symbol": "openSupportThread",
    "via": "literal",
-   "name": "rpc_chat_set_anchor"
+   "name": "open_support_thread"
   },
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/chat/supabaseDmChat.ts",
-   "line": 68,
+   "line": 46,
    "area": "chat",
-   "symbol": "maybeReanchorRide",
+   "symbol": "hideChat",
    "via": "literal",
-   "name": "rpc_chat_set_anchor_ride"
-  },
-  {
-   "kind": "table",
-   "file": "app/packages/infrastructure-supabase/src/chat/supabaseDmChat.ts",
-   "line": 101,
-   "area": "chat",
-   "symbol": "insertDmRowOrReuseSupportThread",
-   "via": "literal",
-   "ops": [
-    "select",
-    "insert"
-   ],
-   "name": "chats"
-  },
-  {
-   "kind": "table",
-   "file": "app/packages/infrastructure-supabase/src/chat/supabaseDmChat.ts",
-   "line": 128,
-   "area": "chat",
-   "symbol": "findOrCreateDmChat",
-   "via": "literal",
-   "ops": [
-    "select"
-   ],
-   "name": "users"
-  },
-  {
-   "kind": "table",
-   "file": "app/packages/infrastructure-supabase/src/chat/supabaseDmChat.ts",
-   "line": 145,
-   "area": "chat",
-   "symbol": "findOrCreateDmChat",
-   "via": "literal",
-   "ops": [
-    "select"
-   ],
-   "name": "chats"
-  },
-  {
-   "kind": "rpc",
-   "file": "app/packages/infrastructure-supabase/src/chat/supabaseDmChat.ts",
-   "line": 171,
-   "area": "chat",
-   "symbol": "hideDmChatFromInbox",
-   "via": "literal",
-   "name": "rpc_chat_hide_for_viewer"
+   "name": "hide_chat"
   },
   {
    "kind": "table",
@@ -1309,15 +1191,6 @@
    "symbol": "SupabaseDonationLinksRepository.review",
    "via": "literal",
    "name": "admin_review_donation_link"
-  },
-  {
-   "kind": "channel",
-   "file": "app/packages/infrastructure-supabase/src/feed/SupabaseFeedRealtime.ts",
-   "line": 22,
-   "area": "feed",
-   "symbol": "SupabaseFeedRealtime.subscribeToPublicInserts",
-   "via": "expression",
-   "name": "FEED_PUBLIC_TOPIC = 'feed:public'"
   },
   {
    "kind": "rpc",
@@ -2891,15 +2764,6 @@
    "name": "topic"
   },
   {
-   "kind": "channel",
-   "file": "app/packages/infrastructure-supabase/src/realtime/SupabaseOnlinePresence.ts",
-   "line": 26,
-   "area": "realtime",
-   "symbol": "SupabaseOnlinePresence.start",
-   "via": "expression",
-   "name": "ONLINE_PRESENCE_TOPIC = 'presence:online'"
-  },
-  {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/reports/reportTargetPreviews.ts",
    "line": 33,
@@ -3473,63 +3337,6 @@
    "symbol": "SupabaseRidesFeedRepository.list",
    "via": "literal",
    "name": "list_rides_feed"
-  },
-  {
-   "kind": "channel",
-   "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRidesRealtime.ts",
-   "line": 25,
-   "area": "rides",
-   "symbol": "SupabaseRidesRealtime.subscribeToPublicRideInserts",
-   "via": "expression",
-   "name": "uniqueTopic('rides:public-feed')"
-  },
-  {
-   "kind": "postgres_changes",
-   "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRidesRealtime.ts",
-   "line": 27,
-   "area": "rides",
-   "symbol": "SupabaseRidesRealtime.subscribeToPublicRideInserts",
-   "via": "literal",
-   "event": "INSERT",
-   "name": "ride_listings"
-  },
-  {
-   "kind": "channel",
-   "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRidesRealtime.ts",
-   "line": 51,
-   "area": "rides",
-   "symbol": "SupabaseRidesRealtime.subscribeToUserParticipantUpdates",
-   "via": "expression",
-   "name": "uniqueTopic(`rides:participants:user:${userId}`)"
-  },
-  {
-   "kind": "postgres_changes",
-   "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRidesRealtime.ts",
-   "line": 53,
-   "area": "rides",
-   "symbol": "SupabaseRidesRealtime.subscribeToUserParticipantUpdates",
-   "via": "literal",
-   "event": "UPDATE",
-   "name": "ride_participants"
-  },
-  {
-   "kind": "channel",
-   "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRidesRealtime.ts",
-   "line": 77,
-   "area": "rides",
-   "symbol": "SupabaseRidesRealtime.subscribeToRideParticipantInserts",
-   "via": "expression",
-   "name": "uniqueTopic(`rides:participants:ride:${rideId}`)"
-  },
-  {
-   "kind": "postgres_changes",
-   "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRidesRealtime.ts",
-   "line": 79,
-   "area": "rides",
-   "symbol": "SupabaseRidesRealtime.subscribeToRideParticipantInserts",
-   "via": "literal",
-   "event": "INSERT",
-   "name": "ride_participants"
   },
   {
    "kind": "table",
