@@ -12,8 +12,6 @@ export const timeVolunteer = {
   signUp: 'Sign up',
   waitlist: 'Join waitlist',
   cancelSignup: 'Cancel registration',
-  checkIn: 'Check in',
-  checkInDone: 'Checked in — {{hours}}h logged, +{{karma}} karma',
   addCalendar: 'Add to calendar',
   calendarShareTitle: 'Volunteer shift',
   statusRegistered: 'Registered',
