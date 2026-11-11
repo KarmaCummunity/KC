@@ -101,7 +101,7 @@ describe('resizeAndUploadImage', () => {
     const asset = await resizeAndUploadImage(picked, 'u1', 'b1', 2);
     expect(asset).toEqual({ path: 'u1/b1/2.jpg', mimeType: 'image/jpeg', sizeBytes: 100, previewUri: 'file://p.jpg' });
     expect(client.storage.from).toHaveBeenCalledWith('post-images');
-    const cache = expect.objectContaining({ cacheControl: 'public, max-age=31536000, immutable', upsert: true });
+    const cache = expect.objectContaining({ cacheControl: 'public, max-age=31536000, immutable', upsert: false });
     expect(storageBucket.upload).toHaveBeenNthCalledWith(1, 'u1/b1/2.jpg', expect.any(Uint8Array), cache);
     expect(storageBucket.upload).toHaveBeenNthCalledWith(2, 'u1/b1/2-thumb.jpg', expect.any(Uint8Array), cache);
   });
