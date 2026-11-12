@@ -37,6 +37,7 @@ import { pickChatImage, uploadChatImageAndSend } from '../../src/services/chatMe
 import type { MessageReactionType } from '@kc/infrastructure-supabase';
 import { webEnterToSend } from '../../src/components/chat/webEnterToSend';
 import { firstParam } from '../../src/lib/postChatPrefillDecision';
+import { resolveKeyboardAvoidingBehavior } from '../../src/lib/platform/keyboardVerticalOffset';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
 
@@ -205,7 +206,7 @@ export default function ChatScreen() {
         peerVerificationLevel={counterpart.verificationLevel}
       />
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={resolveKeyboardAvoidingBehavior(Platform.OS)}
         style={{ flex: 1 }}
         keyboardVerticalOffset={keyboardOffset}
       >

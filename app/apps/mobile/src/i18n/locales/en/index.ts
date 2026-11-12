@@ -17,6 +17,7 @@ import { knowledgeBooking } from './knowledgeBooking';
 import { housingStay } from './housingStay';
 import { eventPost } from './eventPost';
 import { organizations } from './organizations';
+import { postSeries } from './postSeries';
 import { ridePlaces } from './ridePlaces';
 import { dateTimeField, rideFeed, rideRoutes, rideSafety, rideSchedule, rideSeries } from './rideSchedule';
 import { authEn } from './modules/auth';
@@ -172,6 +173,8 @@ const en = {
   eventPost,
   // Organizations (FR-ORG-002, G18) — see organizations.ts
   organizations,
+  // Recurring time posts (FR-POST-024) — see postSeries.ts
+  postSeries,
   // Ride places (D71) — see ridePlaces.ts
   ridePlaces,
   // Ride quick publish (D75) and the shared date-time field — see rideSchedule.ts

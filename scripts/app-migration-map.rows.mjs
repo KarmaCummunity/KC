@@ -286,6 +286,11 @@ rpc('report_post_emergency', 'same', 'rpc:report_post_emergency', '`p_post_id`, 
 rpc('rides_feed', 'same', 'rpc:rides_feed', 'The rides feed; with `p_filters.origin` / `dest` / `radius_km` it is the route search. The app reads the first page; an occurrence of a recurring ride carries `series_on`, `series_weekdays` and `series_depart_time` for its series marker.');
 rpc('ride_occurrence_schedules', 'same', 'rpc:ride_occurrence_schedules', 'The series day, weekdays, departure time and last day of ride occurrences the caller can read (`p_post_ids`); the ride detail builds its series marker from it, since `ride_series` is its owner\'s alone.');
 rpc('post_seat_counts', 'same', 'rpc:post_seat_counts', 'Places held, waiting registrations and seats left of event and ride posts the caller can read (`p_post_ids`, at most 100); the volunteering shifts and the occurrences of a ride series read their free places here.');
+table('post_series', 'same', 'table:post_series', 'The recurring-event series of a post (schedule plus post and event templates); read through the series RPCs, written only by them.');
+rpc('create_post_series', 'same', 'rpc:create_post_series', 'Creates a series and publishes its dates of the next 30 days; any active member, for an organization only one who may act for it.');
+rpc('update_post_series', 'same', 'rpc:update_post_series', 'Edits the series template and schedule; the owner only (`post_series_not_found`).');
+rpc('set_post_series_status', 'same', 'rpc:set_post_series_status', '`p_series_id`, `p_status`: active, paused or ended; ending cancels every upcoming date and tells its registrants. The owner only.');
+rpc('cancel_post_series_date', 'same', 'rpc:cancel_post_series_date', 'Cancels one date of a series without ending it; the owner only.');
 rpc('accept_world_consent', 'same', 'rpc:accept_world_consent', 'Accepts the driver declaration in force (`p_kind`, `p_version`); `consent_version_stale` for an old version.');
 rpc('my_matches', 'same', 'rpc:my_matches', 'The caller\'s pairs, each with the other member\'s post as a card (`other_post`).');
 rpc('admin_match_quality', 'same', 'rpc:admin_match_quality', '`p_days` (clamped 1..365); per giving world the alerted pairs, answers, acceptances, chats after the alert and completed handoffs, rates as numerics. Moderators and above (`forbidden` otherwise); lives in `76_matching/070_match_quality.sql`.');
@@ -294,6 +299,10 @@ table('post_ride_details', 'same', 'table:post_ride_details', 'Read for the rout
 table('post_event_details', 'same', 'table:post_event_details', 'Read for an event\'s window, capacity and policy; the organizer edits it through the adapter.');
 table('post_food_details', 'same', 'table:post_food_details', 'Read for a food offer\'s expiry and contents; the giver edits it through the adapter.');
 table('worlds', 'same', 'table:worlds', 'The world labels shown on a listing detail.');
+// Links and knowledge of a giving world (migration `0024`), read by `SupabaseWorldContentRepository`.
+table('world_links', 'same', 'table:world_links', 'Curated links from one world to a related one; readable signed-out too.');
+table('knowledge_topics', 'changed', 'table:knowledge_topics', 'The topic tree, read-only for members: `id` (not `topic_id`), `world_slug` added, no `created_by` / `approved_by` / `legacy_category_slug`. Proposals, review and follows are not in the baseline.');
+table('external_bodies', 'changed', 'table:external_bodies', '`id` (not `body_id`); read directly, the search and admin RPCs of the old picker are not in the baseline.');
 table('organizations', 'same', 'table:organizations', 'The routed worlds\' body picker (organizations by name).');
 table('road_junctions', 'same', 'table:road_junctions', 'The junctions of the ride place catalog (name and position).');
 table('user_consents', 'same', 'table:user_consents', 'The acceptance record of the driver declaration.');
@@ -383,7 +392,7 @@ export const packages = [
     degrade: 'Reporting a post or member shows "not available yet"; the admin portal entry is hidden for everyone until the package lands (staff use the dashboard of the database meanwhile).',
     risks: 'Staff deletion of a chat message is `admin_delete_message` (M18).' },
   { id: 'P5', title: 'Launch worlds: items, food, rides, time (events), matching, donation links', launch: 'wedge', parallelWith: ['P6'],
-    select: either(inArea('marketplace', 'rides', 'volunteering', 'matching', 'donations', 'organizations'), both(inArea('mobile'), tierIs('wedge'))),
+    select: either(inArea('marketplace', 'rides', 'volunteering', 'matching', 'donations', 'organizations', 'series', 'worlds'), both(inArea('mobile'), tierIs('wedge'))),
     files: ['marketplace/**', 'rides/** (except rides/SupabaseRidesRealtime.ts)', 'volunteering/**', 'matching/**', 'donations/**', 'organizations/**', 'apps/mobile: world screens, ridesKnowledgeComposition, listing image upload, karma history'],
     work: 'Listings become posts; one handoff row shape; the legacy ride tables and their repositories are deleted; volunteering maps onto event posts; matches as cards. Two agents may split it by folder (rides / the rest): no shared file.',
     tests: ['vitest: marketplace, rides, volunteering, matching, donations suites', 'pgTAP 035, 070, 072 (events, karma), 073 (food), 076, 080'],

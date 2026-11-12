@@ -14,7 +14,9 @@ export type WorldChromeConfig = Readonly<{
 export const WORLD_CHROME_BY_SLUG: Record<string, WorldChromeConfig> = {
   items: {
     feedPath: '/(tabs)/donations/items',
-    subScreens: worldSubScreens('/(tabs)/donations/items/handoffs'),
+    subScreens: worldSubScreens('/(tabs)/donations/items/handoffs', [
+      worldLinksSubScreenLink('items'),
+    ]),
   },
   food: {
     feedPath: '/(tabs)/donations/food',
@@ -41,6 +43,7 @@ export const WORLD_CHROME_BY_SLUG: Record<string, WorldChromeConfig> = {
     subScreens: worldSubScreens('/(tabs)/donations/time/handoffs', [
       { labelKey: 'timeVolunteer.myShiftsLink', path: '/(tabs)/donations/time/my-shifts', testID: 'time-my-shifts' },
       { labelKey: 'timeVolunteer.organizerLink', path: '/(tabs)/donations/time/organizer', testID: 'time-organizer' },
+      { labelKey: 'postSeries.mine', path: '/(tabs)/donations/time/series', testID: 'world-hub-post-series' },
       { labelKey: 'timeVolunteer.contactKcLink', path: '/(tabs)/donations/time/support', testID: 'time-contact-kc' },
       worldLinksSubScreenLink('time'),
     ]),
@@ -50,6 +53,11 @@ export const WORLD_CHROME_BY_SLUG: Record<string, WorldChromeConfig> = {
     subScreens: worldSubScreens('/(tabs)/donations/knowledge/handoffs', [
       worldLinksSubScreenLink('knowledge'),
     ]),
+  },
+  // Challenges have no handoffs: the world's menu holds its feed and its links and knowledge.
+  challenges: {
+    feedPath: '/(tabs)/donations/challenges',
+    subScreens: [worldLinksSubScreenLink('challenges')],
   },
   rides: {
     feedPath: '/(tabs)/donations/rides',

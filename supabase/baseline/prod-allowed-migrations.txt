@@ -20,6 +20,10 @@
 0009_research_feedback_survey_reports.sql
 0010_housing_knowledge_finance_reads.sql
 0020_org_sec46_machine.sql
+0021_post_series.sql
+0022_post_series_rpcs.sql
+0023_series_feed_folding.sql
+0024_world_content.sql
 0026_member_realtime.sql
 0027_rich_notifications.sql
 0028_chat_fresh_thread.sql

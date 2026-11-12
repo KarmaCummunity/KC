@@ -13,7 +13,7 @@ existing = (bid.get_capabilities rescue []).map(&:capability_type)
 puts "existing capabilities: #{existing.join(',')}"
 { 'APPLE_ID_AUTH' => [{ key: 'APPLE_ID_AUTH_APP_CONSENT', options: [{ key: 'PRIMARY_APP_CONSENT' }] }],
   'ASSOCIATED_DOMAINS' => [], 'PUSH_NOTIFICATIONS' => [],
-  'USERNOTIFICATIONS_TIME_SENSITIVE' => [] }.each do |cap, settings|
+  'USERNOTIFICATIONS_TIMESENSITIVE' => [] }.each do |cap, settings|
   next puts("capability #{cap}: already on") if existing.include?(cap)
   begin
     bid.create_capability(cap, settings: settings)
