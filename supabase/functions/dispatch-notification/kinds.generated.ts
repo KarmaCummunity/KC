@@ -4,7 +4,7 @@
 // change the SQL rows or the locale strings and run the script again.
 
 /** Arguments a notification text may interpolate. */
-export const NOTIFICATION_TEXT_ARGS = ['actorName', 'count', 'othersCount', 'messagePreview', 'postTitle', 'details'] as const;
+export const NOTIFICATION_TEXT_ARGS = ['actorName', 'count', 'othersCount', 'messagePreview', 'taskTitle', 'postTitle', 'details'] as const;
 
 /** Every notification kind with its rules, as registered in the database. */
 export const NOTIFICATION_KINDS = {
@@ -97,4 +97,5 @@ export const NOTIFICATION_KINDS = {
   knowledge_booking_no_show: { category: 'critical', defaultEnabled: true, bypassPreferences: false, bypassQuietHours: false, sendsPush: true, groupWindowSeconds: null, titleKey: 'notifications.knowledgeBookingNoShowTitle', bodyKey: 'notifications.knowledgeBookingNoShowBody', groupedBodyKey: null, textArgs: ['postTitle'] },
   knowledge_booking_waitlist_promoted: { category: 'critical', defaultEnabled: true, bypassPreferences: false, bypassQuietHours: false, sendsPush: true, groupWindowSeconds: null, titleKey: 'notifications.knowledgeBookingWaitlistPromotedTitle', bodyKey: 'notifications.knowledgeBookingWaitlistPromotedBody', groupedBodyKey: null, textArgs: ['postTitle', 'details'] },
   knowledge_booking_reinstated: { category: 'critical', defaultEnabled: true, bypassPreferences: false, bypassQuietHours: false, sendsPush: true, groupWindowSeconds: null, titleKey: 'notifications.knowledgeBookingReinstatedTitle', bodyKey: 'notifications.knowledgeBookingReinstatedBody', groupedBodyKey: null, textArgs: ['postTitle', 'details'] },
+  task_assigned: { category: 'social', defaultEnabled: true, bypassPreferences: false, bypassQuietHours: false, sendsPush: true, groupWindowSeconds: null, titleKey: 'notifications.taskAssignedTitle', bodyKey: 'notifications.taskAssignedBody', groupedBodyKey: null, textArgs: ['taskTitle'] },
 } as const;

@@ -185,6 +185,9 @@
   "notifications.supportTitle": "תמיכת קהילת קארמה",
   "notifications.systemBody": "יש עדכון חדש בשיחה שלך",
   "notifications.systemTitle": "הודעת מערכת",
+  "notifications.taskAssignedBody": "{{taskTitle}}",
+  "notifications.taskAssignedTitle": "משימת ניהול חדשה הוקצתה לך",
+  "notifications.taskTitleFallback": "משימה חדשה",
   "notifications.unmarkRecipientBody": "הסיר/ה את הסימון שלך מהפוסט",
   "notifications.unmarkRecipientTitle": "{{actorName}}"
 }

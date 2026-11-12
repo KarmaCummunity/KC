@@ -42,12 +42,15 @@ export function notificationTextArgs(
   t: Translate,
 ): Record<NotificationTextArg, string | number> {
   const count = Math.max(1, notification.groupCount);
+  const taskTitle = notification.args?.task_title;
   return {
     actorName: notification.actorDisplayName?.trim() || t('notifications.actorNameFallback'),
     count,
     othersCount: count - 1,
     // The centre does not load message text; the conversation shows it.
     messagePreview: t('notifications.messagePreviewFallback'),
+    // `data.task_title` of an admin task notification (FR-ADMIN-018).
+    taskTitle: typeof taskTitle === 'string' && taskTitle.trim() !== '' ? taskTitle : t('notifications.taskTitleFallback'),
     ...richTextArgs(notification.args, t),
   };
 }

@@ -32,3 +32,6 @@
 0031_member_discovery.sql
 0032_member_verification_level.sql
 0033_housing_private_details.sql
+0034_back_office_admin_tasks.sql
+0035_back_office_crm.sql
+0036_back_office_timesheets.sql

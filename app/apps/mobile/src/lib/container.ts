@@ -79,6 +79,7 @@ import {
   GetHierarchySnapshotUseCase,
   SetManagerUseCase,
   ListAdminTasksUseCase,
+  CountOpenAdminTasksUseCase,
   GetAdminTaskDetailUseCase,
   CreateAdminTaskUseCase,
   UpdateAdminTaskUseCase,
@@ -99,6 +100,7 @@ import {
   RejectTimesheetUseCase,
   DeleteTimesheetUseCase,
   ListCrmContactsUseCase,
+  ListCrmOrgsUseCase,
   UpsertCrmContactUseCase,
   DeleteCrmContactUseCase,
   MarkCrmContactContactedUseCase,
@@ -145,11 +147,11 @@ const moderationAdminRepo = new SupabaseModerationAdminRepository(supabase);
 const accountGateRepo = new SupabaseAccountGateRepository(supabase);
 const deviceRepo = new SupabaseDeviceRepository(supabase);
 const adminRoleRepo = new SupabaseAdminRoleRepository(supabase);
-const adminTaskRepo = new SupabaseAdminTaskRepository();
+const adminTaskRepo = new SupabaseAdminTaskRepository(supabase);
 const orgHierarchyRepo = new SupabaseOrgHierarchyRepository(supabase);
 const adminContentRepo = new SupabaseAdminContentRepository(supabase);
-const timesheetsRepo = new SupabaseTimesheetsRepository();
-const crmContactsRepo = new SupabaseCrmContactsRepository();
+const timesheetsRepo = new SupabaseTimesheetsRepository(supabase);
+const crmContactsRepo = new SupabaseCrmContactsRepository(supabase);
 const orgApplicationsRepo = new SupabaseOrgApplicationsRepository(supabase);
 const reportsRepo = new SupabaseReportsRepository(supabase);
 const surveyRepo = new SupabaseSurveyRepository(supabase);
@@ -192,6 +194,7 @@ export const container = {
   getHierarchySnapshot: new GetHierarchySnapshotUseCase(orgHierarchyRepo),
   setManager: new SetManagerUseCase(orgHierarchyRepo, adminRoleRepo),
   listAdminTasks: new ListAdminTasksUseCase(adminTaskRepo),
+  countOpenAdminTasks: new CountOpenAdminTasksUseCase(adminTaskRepo),
   getAdminTaskDetail: new GetAdminTaskDetailUseCase(adminTaskRepo),
   createAdminTask: new CreateAdminTaskUseCase(adminTaskRepo),
   updateAdminTask: new UpdateAdminTaskUseCase(adminTaskRepo),
@@ -203,7 +206,7 @@ export const container = {
   adminFindMembers: new AdminFindMembersUseCase(adminContentRepo),
   adminSearchPosts: new AdminSearchPostsUseCase(adminContentRepo),
   adminSearchAudit: new AdminSearchAuditUseCase(adminContentRepo),
-  // V2-ADMIN-TIME-10
+  // FR-ADMIN-033
   listTimesheets:   new ListTimesheetsUseCase(timesheetsRepo),
   upsertTimesheet:  new UpsertTimesheetUseCase(timesheetsRepo),
   submitTimesheet:  new SubmitTimesheetUseCase(timesheetsRepo),
@@ -213,7 +216,8 @@ export const container = {
   // V2-ADMIN-MONEY-9 (+ accounts, donors, public display: FR-FIN-003/022/023)
   ...createFinanceUseCases(supabase),
   ...createWhatsAppAdminUseCases(),
-  // V2-ADMIN-CRM-8
+  // FR-ADMIN-032
+  listCrmOrgs: new ListCrmOrgsUseCase(crmContactsRepo),
   listCrmContacts: new ListCrmContactsUseCase(crmContactsRepo),
   upsertCrmContact: new UpsertCrmContactUseCase(crmContactsRepo),
   deleteCrmContact: new DeleteCrmContactUseCase(crmContactsRepo),

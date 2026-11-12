@@ -17,7 +17,8 @@ export type NotificationPathname =
   | '/settings/follow-requests'
   | '/settings/audit'
   | '/account-blocked'
-  | '/matches';
+  | '/matches'
+  | '/(admin)/tasks/[taskId]';
 
 export type ResolvedRoute = { pathname: NotificationPathname; params: Record<string, string> };
 
@@ -50,6 +51,12 @@ const post: RouteBuilder = (target) => {
 };
 
 const inbox = screen('/notifications/inbox');
+
+/** The admin task the notification is about (FR-ADMIN-018). */
+const adminTask: RouteBuilder = (target) => {
+  const id = entityId(target, 'admin_task') ?? uuid(target.args?.task_id);
+  return id ? { pathname: '/(admin)/tasks/[taskId]', params: { taskId: id } } : null;
+};
 
 export const NOTIFICATION_ROUTES: Record<NotificationKind, RouteBuilder> = {
   // FR-NOTIF-001..004 — conversations.
@@ -156,6 +163,8 @@ export const NOTIFICATION_ROUTES: Record<NotificationKind, RouteBuilder> = {
   donation_succeeded: inbox,
   donation_refunded: inbox,
   standing_order_charge_failed: inbox,
+  // FR-ADMIN-018 — a staff task was assigned to the member.
+  task_assigned: adminTask,
 };
 
 /**

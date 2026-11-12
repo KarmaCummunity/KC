@@ -57,9 +57,16 @@ describe('AdminPermission matrix', () => {
   it('permissionsOfRole lists exactly the matrix rows that include the role', () => {
     expect(permissionsOfRole('org_volunteer')).toEqual([]);
     expect(permissionsOfRole('org_manager')).toEqual([
-      'admins.view', 'admins.grant_role', 'admins.revoke_role', 'admins.set_manager',
+      'admins.view', 'admins.grant_role', 'admins.revoke_role', 'admins.set_manager', 'crm.manage',
     ]);
     expect(permissionsOfRole('super_admin')).toEqual([...ADMIN_PERMISSIONS]);
+  });
+
+  it('crm.manage reaches the organization managers but not their employees (FR-ADMIN-032)', () => {
+    expect(hasPermission(['org_admin'], 'crm.manage')).toBe(true);
+    expect(hasPermission(['org_manager'], 'crm.manage')).toBe(true);
+    expect(hasPermission(['org_employee'], 'crm.manage')).toBe(false);
+    expect(hasPermission(['support'], 'crm.manage')).toBe(false);
   });
 
   it('chat.delete_message is granted to super_admin and moderator only', () => {
