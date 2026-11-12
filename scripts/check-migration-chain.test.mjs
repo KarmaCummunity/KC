@@ -40,3 +40,30 @@ test('rejects invalid filename pattern', () => {
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test('accepts pending files and ignores them in the prefix check', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'migrations-pending-'));
+  try {
+    writeFileSync(join(dir, '0001_init.sql'), '-- ok');
+    writeFileSync(join(dir, 'next-01_a.sql'), '-- ok');
+    writeFileSync(join(dir, 'next-01_b.sql'), '-- ok');
+    assert.deepEqual(checkMigrationChain(dir), { ok: true, errors: [] });
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('rejects a malformed or repeated pending migration', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'migrations-pending-bad-'));
+  try {
+    writeFileSync(join(dir, 'next-1_a.sql'), '-- bad');
+    writeFileSync(join(dir, 'next-01_b.sql'), '-- b');
+    writeFileSync(join(dir, 'next-02_b.sql'), '-- b again');
+    const result = checkMigrationChain(dir);
+    assert.equal(result.ok, false);
+    assert.match(result.errors.join('\n'), /invalid pending migration filename: next-1_a\.sql/);
+    assert.match(result.errors.join('\n'), /duplicate pending migration slug "b"/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
