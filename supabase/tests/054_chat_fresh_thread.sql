@@ -63,8 +63,9 @@ select is(pg_temp.as_member('b', 'select count(*)::text from public.messages'), 
 select is(pg_temp.as_member('a', $$select count(*)::text from public.chat_messages_page(
       (public.open_direct_chat('00000000-0000-4000-8000-00000000000b')).id)$$),
   '0', 'contacting Bob again opens a clean thread for Alice');
-select is(pg_temp.as_member('a', 'select count(*)::text from public.chat_inbox_page()'), '0',
-  'a reopened chat with nothing new is not listed in her inbox yet');
+select is(pg_temp.as_member('a', $$select count(*) || '|' || coalesce(max(last_message_preview), 'none') || '|' || max(unread_count)
+      from public.chat_inbox_page()$$),
+  '1|none|0', 'the reopened chat is in her inbox at once, as a clean thread: no old preview, nothing unread');
 
 -- Bob writes; the chat returns to Alice's inbox with only the new message.
 select pg_temp.say('b', 'new one');

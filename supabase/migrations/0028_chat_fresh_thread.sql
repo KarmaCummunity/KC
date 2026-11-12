@@ -122,8 +122,9 @@ begin
 end;
 $$;
 
--- The inbox: a chat without a message since the caller's history start is not listed, and
--- its preview and unread count start there.
+-- The inbox: the preview and unread count start at the caller's history start. A chat the
+-- caller reopened after removing it is listed at once (its hide is cleared by the reopen), as a
+-- clean thread with no preview until its next message.
 create or replace function public.chat_inbox_page(
   p_limit integer default 30,
   p_before_last_message_at timestamptz default null,
@@ -166,7 +167,7 @@ as $$
         on u.is_active
        and u.id <> me.id
        and u.id in (c.direct_user_a, c.direct_user_b, c.support_user_id)
-     where c.last_message_at > coalesce(cm.history_from, '-infinity')
+     where c.last_message_at is not null
        and not (c.kind = 'direct' and kc_access.is_blocked_between(c.direct_user_a, c.direct_user_b))
        and (p_before_last_message_at is null
             or (c.last_message_at, c.id) < (p_before_last_message_at, p_before_chat_id))
