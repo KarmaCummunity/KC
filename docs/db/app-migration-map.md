@@ -8,12 +8,12 @@ The application (`app/packages/infrastructure-supabase`, `app/apps/mobile`) and 
 
 | Kind | Objects used | 1:1 | 1:1 (renamed) | CHANGED | REMOVED | MISSING |
 | --- | --- | --- | --- | --- | --- | --- |
-| RPCs | 177 | 110 | 20 | 28 | 0 | 19 |
+| RPCs | 181 | 114 | 20 | 28 | 0 | 19 |
 | Tables and views | 60 | 44 | 0 | 15 | 0 | 1 |
 | Storage buckets | 4 | 3 | 0 | 1 | 0 | 0 |
 | Realtime channels | 6 | 6 | 0 | 0 | 0 | 0 |
 | Edge Function invokes | 3 | 3 | 0 | 0 | 0 | 0 |
-| **Total** | 250 | 166 | 20 | 44 | 0 | 20 |
+| **Total** | 254 | 170 | 20 | 44 | 0 | 20 |
 
 ### Launch scope
 
@@ -21,10 +21,10 @@ Every row carries `launch` (spec D102, `docs/spec/96_launch_and_first_group_plan
 
 | Launch tier | Objects used | 1:1 | 1:1 (renamed) | CHANGED | REMOVED | MISSING |
 | --- | --- | --- | --- | --- | --- | --- |
-| core | 106 | 88 | 1 | 17 | 0 | 0 |
+| core | 108 | 89 | 1 | 18 | 0 | 0 |
 | wedge | 53 | 32 | 15 | 6 | 0 | 0 |
-| later | 91 | 46 | 4 | 21 | 0 | 20 |
-| **Launch-critical (core + wedge)** | 159 | 120 | 16 | 23 | 0 | 0 |
+| later | 93 | 49 | 4 | 20 | 0 | 20 |
+| **Launch-critical (core + wedge)** | 161 | 121 | 16 | 24 | 0 | 0 |
 
 Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename of the function or its arguments · **CHANGED** the caller's logic changes · **REMOVED** no replacement by design · **MISSING** the baseline has no equivalent although the code needs one (§4). Confidence: **high** read in the baseline source, **medium** inferred from names and generated types.
 
@@ -44,7 +44,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 
 | Module | Call sites | 1:1 | Logic changes | Removed | MISSING |
 | --- | --- | --- | --- | --- | --- |
-| `infrastructure-supabase/src/admin/` | 30 | 11 | 19 | 0 | 0 |
+| `infrastructure-supabase/src/admin/` | 28 | 14 | 14 | 0 | 0 |
 | `infrastructure-supabase/src/auth/` | 2 | 2 | 0 | 0 | 0 |
 | `infrastructure-supabase/src/blocks/` | 3 | 3 | 0 | 0 | 0 |
 | `infrastructure-supabase/src/challenges/` | 9 | 6 | 3 | 0 | 0 |
@@ -93,32 +93,35 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 
 ### `infrastructure-supabase/src/admin/`
 
-30 call sites: 11 map 1:1, 19 need logic changes, 0 removed, 0 MISSING.
+28 call sites: 14 map 1:1, 14 need logic changes, 0 removed, 0 MISSING.
 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `admin_audit_search` | core | CHANGED | `admin_audit_search(p_action?: string, p_actor_id?: string, p_before_id?: number, p_before_occurred_at?: string, p_from?: string, p_limit?: number, p_target_id?: string, p_to?: string) → { action: string actor_id: string id: number metadata: Json occurred_at: string target_id: string target_type: string }[]` | Offset → keyset (`p_before_occurred_at`, `p_before_id`); `p_target_user_id` → `p_target_id`; no display names and no `total_count` (join `users` on the device). | `forbidden`, `unauthenticated` | high | auditSearchCall.ts:20 |
-| `admin_change_role` | core | 1:1 | `admin_change_role(p_grant_id: string, p_new_role: string) → string` | Signature unchanged. | `account_not_active`, `forbidden_grant`, `forbidden_revoke`, `grant_already_revoked`, `grant_not_found`, `invalid_role`, `invalid_scope`, `role_already_active`, `unauthenticated` | high | SupabaseAdminRoleRepository.ts:148 |
-| `admin_grant_role` | core | 1:1 | `admin_grant_role(p_role: string, p_scope_org_id?: string, p_target_user_id: string) → string` | Signature unchanged. | `account_not_active`, `forbidden_grant`, `invalid_role`, `invalid_scope`, `role_already_active`, `target_not_active`, `target_not_found`, `unauthenticated` | high | SupabaseAdminRoleRepository.ts:130 |
+| `admin_change_role` | core | 1:1 | `admin_change_role(p_grant_id: string, p_new_role: string) → string` | Signature unchanged. | `account_not_active`, `forbidden_grant`, `forbidden_revoke`, `grant_already_revoked`, `grant_not_found`, `invalid_role`, `invalid_scope`, `role_already_active`, `unauthenticated` | high | SupabaseAdminRoleRepository.ts:125 |
+| `admin_grant_role` | core | 1:1 | `admin_grant_role(p_role: string, p_scope_org_id?: string, p_target_user_id: string) → string` | Signature unchanged. | `account_not_active`, `forbidden_grant`, `invalid_role`, `invalid_scope`, `role_already_active`, `target_not_active`, `target_not_found`, `unauthenticated` | high | SupabaseAdminRoleRepository.ts:107 |
+| `admin_hierarchy_census` | later | 1:1 | `admin_hierarchy_census() → Json` | Restored by migration 0013: community and role-holder totals and, per visible organization, its slug, verification and affiliates (`user_profile_fields.affiliated_org_id`) without a role. |  | high | SupabaseOrgHierarchyRepository.ts:123 |
+| `admin_list_admins` | core | 1:1 | `admin_list_admins(p_include_revoked?: boolean) → { avatar_url: string display_name: string grant_id: string granted_at: string granted_by: string granted_by_display_name: string last_seen_at: string manager_grant_id: string revoked_at: string revoked_by: string role...` | Restored by migration 0012: the roster the caller may read (platform admins all, others the organizations their grants reach) with names, manager edge and `last_seen_at`. |  | high | SupabaseAdminRoleRepository.ts:94 |
 | `admin_org_application_approve` | later | CHANGED | `admin_org_application_approve(p_application_id: string, p_note?: string, p_slug?: string) → string` | New required `p_slug`; returns the organization id. | `application_already_decided`, `application_not_found`, `forbidden`, `unauthenticated` | high | SupabaseOrgApplicationsRepository.ts:96 |
 | `admin_org_application_reject` | later | 1:1 | `admin_org_application_reject(p_application_id: string, p_note?: string) → undefined` | Signature unchanged. | `application_already_decided`, `application_not_found`, `forbidden`, `unauthenticated` | high | SupabaseOrgApplicationsRepository.ts:103 |
-| `admin_revoke_role` | core | 1:1 | `admin_revoke_role(p_grant_id: string) → undefined` | Signature unchanged. | `account_not_active`, `forbidden_revoke`, `grant_already_revoked`, `grant_not_found`, `unauthenticated` | high | SupabaseAdminRoleRepository.ts:143 |
-| `admin_set_manager` | later | CHANGED | `admin_set_manager(p_grant_id: string, p_manager_grant_id: string) → undefined` | `p_manager_grant_id` is required: a grant can be moved under another grant but not detached. | `account_not_active`, `forbidden_revoke`, `grant_already_revoked`, `grant_not_found`, `invalid_manager`, `unauthenticated` | high | SupabaseOrgHierarchyRepository.ts:103 |
+| `admin_org_tree` | later | 1:1 | `admin_org_tree(p_org_id?: string) → { avatar_url: string display_name: string effective_org_id: string grant_id: string is_platform: boolean last_seen_at: string manager_grant_id: string org_name: string role: string scope_org_id: string user_id: string...` | Restored by migration 0012: active grants with `effective_org_id`, organization name, manager edge and `last_seen_at`; same visibility as `admin_list_admins`. |  | high | SupabaseOrgHierarchyRepository.ts:104 |
+| `admin_revoke_role` | core | 1:1 | `admin_revoke_role(p_grant_id: string) → undefined` | Signature unchanged. | `account_not_active`, `forbidden_revoke`, `grant_already_revoked`, `grant_not_found`, `unauthenticated` | high | SupabaseAdminRoleRepository.ts:120 |
+| `admin_set_manager` | later | 1:1 | `admin_set_manager(p_grant_id: string, p_manager_grant_id?: string) → undefined` | Signature unchanged: `p_manager_grant_id` optional again; only the super admin detaches (no manager) or skips the seniority rule; errors `forbidden_manage`, `manager_not_found`, `manager_revoked`, `manager_other_org`, `manager_cycle`, `manager_rank` (migration 0011). | `account_not_active`, `forbidden_revoke`, `grant_already_revoked`, `grant_not_found`, `invalid_manager`, `unauthenticated` | high | SupabaseOrgHierarchyRepository.ts:116 |
+| `admin_set_org_slug` | core | CHANGED | `admin_set_org_slug(p_org_id: string, p_slug: string) → string` | New in migration 0014 (no old object): the super admin changes an organization page slug (`invalid_slug`, `slug_taken`, `org_not_found`). |  | high | SupabaseOrgHierarchyRepository.ts:127 |
 | `finance_account_upsert` | later | CHANGED | `finance_account_upsert(p_account_id?: string, p_is_active?: boolean, p_kind?: string, p_last4?: string, p_name?: string, p_opening_balance_agorot?: number, p_opening_balance_at?: string, p_org_id: string) → string` | New required `p_org_id`; `p_opening_balance_cents` → `_agorot`; `p_sort_order` is gone. | `account_not_active`, `account_not_found`, `forbidden`, `unauthenticated` | high | SupabaseFinanceAccountsRepository.ts:53 |
 | `finance_accounts_list` | later | CHANGED | `finance_accounts_list(p_org_id: string) → { balance_agorot: number id: string is_active: boolean kind: string last4: string name: string opening_balance_agorot: number opening_balance_at: string sort_order: number }[]` | New required `p_org_id`; `*_cents` → `*_agorot`; `account_id` → `id`; no `entry_count`. | `account_not_active`, `forbidden`, `unauthenticated` | high | SupabaseFinanceAccountsRepository.ts:44 |
 | `finance_donors_summary` | later | CHANGED | `finance_donors_summary(p_limit?: number, p_org_id: string) → { donations_count: number donor_name: string first_at: string last_at: string total_agorot: number }[]` | New required `p_org_id`; `total_cents` → `total_agorot`; in-app donations grouped by member, typed ones by party name; organization admins only (M21, built in `85_billing/140`). |  | high | SupabaseFinanceDonorsRepository.ts:30 |
-| `finance_ledger_list` | later | CHANGED | `finance_ledger_list(p_after_id?: string, p_after_occurred_at?: string, p_direction?: string, p_from?: string, p_limit?: number, p_org_id: string, p_status?: string, p_to?: string) → { account_id: string amount_agorot: number category: string counterparty: string created_at: string currency: string description: string direction: string id: string is_public: boolean kind: string occurred_at: string...` | New required `p_org_id`; offset → keyset (`p_after_occurred_at`, `p_after_id`); `amount_cents` → `amount_agorot`; `p_kind` filter and `reference_url` are gone. | `account_not_active`, `forbidden`, `unauthenticated` | high | SupabaseFinanceLedgerRepository.ts:62 |
-| `finance_ledger_mark` | later | 1:1 | `finance_ledger_mark(p_entry_id: string, p_org_id: string, p_reconciled?: boolean, p_void_reason?: string) → undefined` | Voids an entry with a reason (the admin delete action) or sets its reconciliation; the entry stays in the books. | `account_not_active`, `entry_not_found`, `forbidden`, `unauthenticated` | high | SupabaseFinanceLedgerRepository.ts:126 |
-| `finance_ledger_summary` | later | CHANGED | `finance_ledger_summary(p_from?: string, p_org_id: string, p_to?: string) → { currency: string entry_count: number expense_agorot: number income_agorot: number net_agorot: number }[]` | New required `p_org_id`; `*_cents` → `*_agorot`; cleared entries only, transfers aside (M21, built in `85_billing/140`). |  | high | SupabaseFinanceLedgerRepository.ts:84 |
-| `finance_ledger_upsert` | later | CHANGED | `finance_ledger_upsert(p_account_id?: string, p_amount_agorot?: number, p_category?: string, p_counterparty?: string, p_description?: string, p_entry_id?: string, p_is_public?: boolean, p_kind?: string, p_occurred_at?: string, p_org_id: string, p_status?: string) → string` | New required `p_org_id`; `p_amount_cents` → `_agorot`; `p_currency` and `p_reference_url` are gone. | `account_not_active`, `account_not_found`, `entry_not_found`, `forbidden`, `invalid_date` †, `unauthenticated` | high | SupabaseFinanceLedgerRepository.ts:103 |
+| `finance_ledger_list` | later | CHANGED | `finance_ledger_list(p_after_id?: string, p_after_occurred_at?: string, p_direction?: string, p_from?: string, p_limit?: number, p_org_id: string, p_status?: string, p_to?: string) → { account_id: string amount_agorot: number category: string counterparty: string created_at: string currency: string description: string direction: string id: string is_public: boolean kind: string occurred_at: string...` | New required `p_org_id`; offset → keyset (`p_after_occurred_at`, `p_after_id`); `amount_cents` → `amount_agorot`; `p_kind` filter and `reference_url` are gone. | `account_not_active`, `forbidden`, `unauthenticated` | high | SupabaseFinanceLedgerRepository.ts:57 |
+| `finance_ledger_mark` | later | 1:1 | `finance_ledger_mark(p_entry_id: string, p_org_id: string, p_reconciled?: boolean, p_void_reason?: string) → undefined` | Voids an entry with the admin's reason (3 to 500 characters, `void_reason_required` otherwise; migration 0014) or sets its reconciliation; the entry stays in the books. | `account_not_active`, `entry_not_found`, `forbidden`, `unauthenticated` | high | SupabaseFinanceLedgerRepository.ts:124 |
+| `finance_ledger_summary` | later | CHANGED | `finance_ledger_summary(p_from?: string, p_org_id: string, p_to?: string) → { currency: string entry_count: number expense_agorot: number income_agorot: number net_agorot: number }[]` | New required `p_org_id`; `*_cents` → `*_agorot`; cleared entries only, transfers aside (M21, built in `85_billing/140`). |  | high | SupabaseFinanceLedgerRepository.ts:79 |
+| `finance_ledger_upsert` | later | CHANGED | `finance_ledger_upsert(p_account_id?: string, p_amount_agorot?: number, p_category?: string, p_counterparty?: string, p_description?: string, p_entry_id?: string, p_is_public?: boolean, p_kind?: string, p_occurred_at?: string, p_org_id: string, p_status?: string) → string` | New required `p_org_id`; `p_amount_cents` → `_agorot`; `p_currency` and `p_reference_url` are gone. | `account_not_active`, `account_not_found`, `entry_not_found`, `forbidden`, `invalid_date` †, `unauthenticated` | high | SupabaseFinanceLedgerRepository.ts:98 |
 | `finance_transparency_settings_set` | later | CHANGED | `finance_transparency_settings_set(p_org_id: string, p_settings: Json) → undefined` | New required `p_org_id`; returns void. | `account_not_active`, `forbidden`, `invalid_settings`, `unauthenticated` | high | SupabaseOrgTransparencyRepository.ts:102 |
 | `get_my_admin_roles` | core | 1:1 | `get_my_admin_roles() → string[]` | Signature unchanged. |  | high | fetchMyAdminRoles.ts:15 |
 | `rpc_org_transparency` | later | 1:1 | `rpc_org_transparency(p_slug?: string) → Json` | Signature unchanged; totals only, in agorot. | `unauthenticated` | medium | SupabaseOrgTransparencyRepository.ts:77 |
-| `admin_role_grants` (table) | core | CHANGED | table `admin_role_grants` | `grant_id` → `id`; read-only for clients. mock-login's insert goes away with the function. |  | high | SupabaseAdminRoleRepository.ts:100, SupabaseOrgHierarchyRepository.ts:131 |
 | `org_applications` (table) | later | 1:1 | table `org_applications` | Read-only: the applicant reads their own rows, and platform admins read the review queue directly (policy `org_applications_select_reviewers`) with an exact count; written through `submit_org_application`. |  | high | SupabaseOrgApplicationsRepository.ts:75 |
-| `organizations` (table) | core | 1:1 | table `organizations` | The routed worlds' body picker (organizations by name). |  | high | financeOrg.ts:20, SupabaseOrgHierarchyRepository.ts:140, SupabaseOrgTransparencyRepository.ts:91 |
+| `organizations` (table) | core | 1:1 | table `organizations` | The routed worlds' body picker (organizations by name). |  | high | financeOrg.ts:20, SupabaseOrgTransparencyRepository.ts:91 |
 | `posts` (table) | core | CHANGED | table `posts`<br>`post_cards(p_post_ids: string[]) → post_card[]`<br>`post_detail(p_post_id: string) → Json`<br>`create_post_with_details(p_details: Json, p_post: Json) → string`<br>`delete_post(p_post_id: string) → undefined` | Columns: `post_id` → `id`, `type` → `direction`, `category` / `category_id` → `item_subcategory_id`, `city` → `city_id`, `urgency` → `urgency_level`, `street` / `street_number` → `post_private_locations`, `availability_status` / `moderation_status` / `feed_hidden` → `status`, `status_before_admin_removal` → `status_before_removal`; `delete_after` / `reopen_count` → `post_closures`; `estimated_value`, `item_condition`, `external_body_id`, listing columns: gone. Reads of lists should use the card RPCs (`post_cards`, `feed_page`, `profile_posts_page`, `post_detail`). Insert is direct (column grants; status `draft` or `open`), rides / stays / events / food go through `create_post_with_details`. Update is direct for content columns only; status never (owner RPCs). Delete: direct only for a draft, otherwise `delete_post`. | `account_not_active`, `post_details_not_supported`, `unauthenticated`, `listing_wrong_status`, `post_not_found` | high | SupabaseAdminContentRepository.ts:147 |
-| `users` (table) | core | CHANGED | table `users`<br>table `user_private`<br>table `user_account`<br>table `user_stats` | Split in four. Public profile stays in `users` (`user_id` → `id`, `city` → `city_id`, `city_name` gone: join `cities`). Contact phone, date of birth, address lines, notification preferences, dismiss flags, `basic_info_skipped` → `user_private` (own row). Account status, onboarding state, deletion dates, verification → `user_account` (read-only; moves through RPCs). Counters → `user_stats` (read-only). `is_super_admin` → `get_my_admin_roles()`. Client updates on `users` are limited to display_name, biography, avatar_url, city_id, preferred_language; `privacy_mode` moves through `set_privacy_mode`. mock-login's upsert goes away with the function. |  | high | SupabaseAdminContentRepository.ts:98, SupabaseAdminContentRepository.ts:114, SupabaseAdminRoleRepository.ts:120, SupabaseOrgApplicationsRepository.ts:84, SupabaseOrgHierarchyRepository.ts:88, SupabaseOrgHierarchyRepository.ts:111 |
+| `users` (table) | core | CHANGED | table `users`<br>table `user_private`<br>table `user_account`<br>table `user_stats` | Split in four. Public profile stays in `users` (`user_id` → `id`, `city` → `city_id`, `city_name` gone: join `cities`). Contact phone, date of birth, address lines, notification preferences, dismiss flags, `basic_info_skipped` → `user_private` (own row). Account status, onboarding state, deletion dates, verification → `user_account` (read-only; moves through RPCs). Counters → `user_stats` (read-only). `is_super_admin` → `get_my_admin_roles()`. Client updates on `users` are limited to display_name, biography, avatar_url, city_id, preferred_language; `privacy_mode` moves through `set_privacy_mode`. mock-login's upsert goes away with the function. |  | high | SupabaseAdminContentRepository.ts:98, SupabaseAdminContentRepository.ts:114, SupabaseOrgApplicationsRepository.ts:84 |
 
 ### `infrastructure-supabase/src/auth/`
 
@@ -320,7 +323,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `admin_dismiss_report` | core | 1:1 | `admin_dismiss_report(p_report_id: string) → undefined` | Signature unchanged. | `forbidden`, `report_not_open`, `target_not_found`, `unauthenticated` | high | SupabaseModerationAdminRepository.ts:98 |
 | `admin_restore_post` | core | 1:1 | `admin_restore_post(p_post_id: string) → undefined` | Staff: returns a removed post to its previous status, a post hidden for review to open. | `forbidden`, `target_not_found`, `unauthenticated` | high | SupabaseModerationAdminRepository.ts:87 |
 | `admin_restore_user` | core | 1:1 | `admin_restore_user(p_user_id: string) → undefined` | Staff: lifts a suspension; only the super admin lifts a ban. | `forbidden`, `invalid_restore_state`, `target_not_found`, `unauthenticated` | high | SupabaseModerationAdminRepository.ts:89 |
-| `admin_role_grants` (table) | core | CHANGED | see `infrastructure-supabase/src/admin/` |  |  |  | SupabaseModerationAdminRepository.ts:71 |
+| `admin_role_grants` (table) | core | CHANGED | table `admin_role_grants` | `grant_id` → `id`; read-only for clients. mock-login's insert goes away with the function. |  | high | SupabaseModerationAdminRepository.ts:71 |
 
 ### `infrastructure-supabase/src/notifications/`
 
@@ -747,13 +750,13 @@ In launch order: after package *n* the app is shippable with everything up to *n
 | P1 — Identity: session start, profile, privacy, follow, block, legal, account deletion, devices | core | 32 | 28 | 4 | 0 | 0 | — |
 | P2 — Posts, feed, search, closure, translations | core | 42 | 31 | 11 | 0 | 0 | P3, P4 |
 | P3 — Chat and realtime | core | 18 | 17 | 1 | 0 | 0 | P2, P4 |
-| P4 — Reports, moderation and admin basics | core | 18 | 13 | 5 | 0 | 0 | P2, P3 |
+| P4 — Reports, moderation and admin basics | core | 20 | 14 | 6 | 0 | 0 | P2, P3 |
 | P5 — Launch worlds: items, food, rides, time (events), matching, donation links | wedge | 78 | 67 | 11 | 0 | 0 | P6 |
 | P6 — Edge Functions of the launch | core | 10 | 6 | 4 | 0 | 0 | P5 |
 | L1 — Housing world | later | 15 | 11 | 4 | 0 | 0 | L2, L3, L4, L5, L6, L7 |
 | L2 — Knowledge world | later | 8 | 6 | 2 | 0 | 0 | L1, L3, L4, L5, L6, L7 |
 | L3 — Challenges | later | 9 | 6 | 3 | 0 | 0 | L1, L2, L4, L5, L6, L7 |
-| L4 — Money: donations to organizations, standing orders, org finance, org onboarding | later | 27 | 10 | 17 | 0 | 0 | L1, L2, L3, L5, L6, L7 |
+| L4 — Money: donations to organizations, standing orders, org finance, org onboarding | later | 29 | 13 | 16 | 0 | 0 | L1, L2, L3, L5, L6, L7 |
 | L5 — Surveys, feedback, public research | later | 15 | 14 | 1 | 0 | 0 | L1, L2, L3, L4, L6, L7 |
 | L6 — Back-office tools: tasks, CRM, timesheets | later | 0 | 0 | 0 | 0 | 0 | L1, L2, L3, L4, L5, L7 |
 | L7 — WhatsApp bot, linking, admin console | later | 20 | 0 | 0 | 0 | 20 | L1, L2, L3, L4, L5, L6 |
