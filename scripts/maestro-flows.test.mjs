@@ -104,6 +104,8 @@ test('the runner redacts the seed password from the output before it is uploaded
 test('a failed flow is retried once and a pass on the retry is reported, so the gate is not held by a blip on kc-dev', () => {
   const runner = readFileSync(join(ROOT, 'scripts', 'maestro-run-android.sh'), 'utf8');
   assert.match(runner, /run_flow "\$flow" "\$name-retry"/);
+  // The retry waits for kc-dev to sign someone in first: a deploy can leave it unable to for minutes.
+  assert.match(runner, /maestro-wait-kc-dev\.mjs" \|\| true[\s\S]*run_flow "\$flow" "\$name-retry"/);
   assert.match(runner, /Maestro flows that passed only on retry/);
   assert.match(runner, /Maestro flows failed: /);
 });
