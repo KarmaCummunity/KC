@@ -4,6 +4,10 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = extensions, public;
+-- "Today" is the Israeli date everywhere in this file: the machine (migration 0020) and the helper
+-- below read the date in Asia/Jerusalem, so the fixtures' `current_date` must be that date too.
+-- With a UTC session the two differ by one day between midnight in Israel and midnight UTC.
+set local time zone 'Asia/Jerusalem';
 
 -- Records a status for the organization `aid` as a member: 'ok', the P0001 message, or the SQLSTATE.
 create function pg_temp.record(p_who text, p_args text)
