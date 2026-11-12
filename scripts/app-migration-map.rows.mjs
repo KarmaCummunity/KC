@@ -187,7 +187,7 @@ rpc('admin_set_manager', 'changed', 'rpc:admin_set_manager', '`p_manager_grant_i
 rpc('admin_org_application_approve', 'changed', 'rpc:admin_org_application_approve', 'New required `p_slug`; returns the organization id.');
 rpc('admin_org_application_reject', 'same', 'rpc:admin_org_application_reject', 'Signature unchanged.');
 // Admin tasks, CRM and timesheets (old M19): rebuilt after the baseline as forward migrations
-// 0021-0023 (package L6). Lists page by the `cursor` of the last row.
+// 0034-0036 (package L6). Lists page by the `cursor` of the last row.
 rpc('admin_task_list', 'changed', 'rpc:admin_task_list', 'Rows are `(task jsonb, cursor jsonb)`; `p_offset` → `p_cursor` (keyset). `task_id` keeps its name inside the record; `created_by` may be null after a purge.');
 rpc('admin_task_detail', 'changed', 'rpc:admin_task_detail', 'Returns one JSON record with `activities` (write order), or null for an unknown task.');
 rpc('admin_task_open_count', 'same', 'rpc:admin_task_open_count', 'New: open and in-progress tasks for the dashboard card.');
@@ -304,6 +304,11 @@ rpc('report_post_emergency', 'same', 'rpc:report_post_emergency', '`p_post_id`, 
 rpc('rides_feed', 'same', 'rpc:rides_feed', 'The rides feed; with `p_filters.origin` / `dest` / `radius_km` it is the route search. The app reads the first page; an occurrence of a recurring ride carries `series_on`, `series_weekdays` and `series_depart_time` for its series marker.');
 rpc('ride_occurrence_schedules', 'same', 'rpc:ride_occurrence_schedules', 'The series day, weekdays, departure time and last day of ride occurrences the caller can read (`p_post_ids`); the ride detail builds its series marker from it, since `ride_series` is its owner\'s alone.');
 rpc('post_seat_counts', 'same', 'rpc:post_seat_counts', 'Places held, waiting registrations and seats left of event and ride posts the caller can read (`p_post_ids`, at most 100); the volunteering shifts and the occurrences of a ride series read their free places here.');
+table('post_series', 'same', 'table:post_series', 'The recurring-event series of a post (schedule plus post and event templates); read through the series RPCs, written only by them.');
+rpc('create_post_series', 'same', 'rpc:create_post_series', 'Creates a series and publishes its dates of the next 30 days; any active member, for an organization only one who may act for it.');
+rpc('update_post_series', 'same', 'rpc:update_post_series', 'Edits the series template and schedule; the owner only (`post_series_not_found`).');
+rpc('set_post_series_status', 'same', 'rpc:set_post_series_status', '`p_series_id`, `p_status`: active, paused or ended; ending cancels every upcoming date and tells its registrants. The owner only.');
+rpc('cancel_post_series_date', 'same', 'rpc:cancel_post_series_date', 'Cancels one date of a series without ending it; the owner only.');
 rpc('accept_world_consent', 'same', 'rpc:accept_world_consent', 'Accepts the driver declaration in force (`p_kind`, `p_version`); `consent_version_stale` for an old version.');
 rpc('my_matches', 'same', 'rpc:my_matches', 'The caller\'s pairs, each with the other member\'s post as a card (`other_post`).');
 rpc('admin_match_quality', 'same', 'rpc:admin_match_quality', '`p_days` (clamped 1..365); per giving world the alerted pairs, answers, acceptances, chats after the alert and completed handoffs, rates as numerics. Moderators and above (`forbidden` otherwise); lives in `76_matching/070_match_quality.sql`.');
@@ -312,6 +317,10 @@ table('post_ride_details', 'same', 'table:post_ride_details', 'Read for the rout
 table('post_event_details', 'same', 'table:post_event_details', 'Read for an event\'s window, capacity and policy; the organizer edits it through the adapter.');
 table('post_food_details', 'same', 'table:post_food_details', 'Read for a food offer\'s expiry and contents; the giver edits it through the adapter.');
 table('worlds', 'same', 'table:worlds', 'The world labels shown on a listing detail.');
+// Links and knowledge of a giving world (migration `0024`), read by `SupabaseWorldContentRepository`.
+table('world_links', 'same', 'table:world_links', 'Curated links from one world to a related one; readable signed-out too.');
+table('knowledge_topics', 'changed', 'table:knowledge_topics', 'The topic tree, read-only for members: `id` (not `topic_id`), `world_slug` added, no `created_by` / `approved_by` / `legacy_category_slug`. Proposals, review and follows are not in the baseline.');
+table('external_bodies', 'changed', 'table:external_bodies', '`id` (not `body_id`); read directly, the search and admin RPCs of the old picker are not in the baseline.');
 table('organizations', 'same', 'table:organizations', 'The routed worlds\' body picker (organizations by name).');
 table('road_junctions', 'same', 'table:road_junctions', 'The junctions of the ride place catalog (name and position).');
 table('user_consents', 'same', 'table:user_consents', 'The acceptance record of the driver declaration.');
@@ -368,7 +377,7 @@ export const packages = [
   { id: 'P0', title: 'Contract switch and the degrade rule (first, alone)', launch: 'core', parallelWith: [],
     select: either(inArea('(root)', 'realtime'), named(/^app_flags$/)),
     files: ['infrastructure-supabase/src/database.types.ts (replaced by the baseline types)', 'infrastructure-supabase/src/index.ts', 'infrastructure-supabase/src/client.ts', 'infrastructure-supabase/src/rpc/**', 'infrastructure-supabase/src/lib/**', 'infrastructure-supabase/src/fsm/**', 'infrastructure-supabase/src/realtime/**', 'packages/domain/src (status lists, FSM machines, money value objects)', 'apps/mobile/src/services/featureFlagsComposition.ts', 'scripts/check-rpc-contract.mjs + allowlist'],
-    work: 'Done in P0 (see docs/db/app-migration-playbook.md): `database.types.ts` is the generated baseline types and `database.legacy.types.ts` a frozen copy of the old ones, imported only by the files listed in `infrastructure-supabase/src/migrationStatus/<package>.ts` (the client factory is generic: `getSupabaseClient()` is baseline-typed, `getLegacySupabaseClient()` / `legacySupabase` are the same connection typed against the old schema). `FSM_MACHINES` equals the baseline seeds (`catalogMatchesSql.test.ts` reads `supabase/schemas`); the machines without a baseline seed sat in `LEGACY_FSM_MACHINES` until their modules moved (the list is gone since L6 seeded the last two in `0021` and `0023`). `rpc/backendUnavailable.ts` holds `isBackendObjectMissing` and `rpc/mapRpcError.ts` the P0001 mapper and `unwrapCall`; `BackendUnavailableError` and `BackendRuleError` are domain errors. UI helpers: `apps/mobile/src/lib/backendAvailability.ts` and the `backend.*` locale keys. `src/__tests__/baselineCompatibility.test.ts` fails when an unlisted file still needs the old schema or a listed file no longer does.',
+    work: 'Done in P0 (see docs/db/app-migration-playbook.md): `database.types.ts` is the generated baseline types and `database.legacy.types.ts` a frozen copy of the old ones, imported only by the files listed in `infrastructure-supabase/src/migrationStatus/<package>.ts` (the client factory is generic: `getSupabaseClient()` is baseline-typed, `getLegacySupabaseClient()` / `legacySupabase` are the same connection typed against the old schema). `FSM_MACHINES` equals the baseline seeds (`catalogMatchesSql.test.ts` reads `supabase/schemas`); the machines without a baseline seed sat in `LEGACY_FSM_MACHINES` until their modules moved (the list is gone since L6 seeded the last two in `0034` and `0036`). `rpc/backendUnavailable.ts` holds `isBackendObjectMissing` and `rpc/mapRpcError.ts` the P0001 mapper and `unwrapCall`; `BackendUnavailableError` and `BackendRuleError` are domain errors. UI helpers: `apps/mobile/src/lib/backendAvailability.ts` and the `backend.*` locale keys. `src/__tests__/baselineCompatibility.test.ts` fails when an unlisted file still needs the old schema or a listed file no longer does.',
     tests: ['pnpm typecheck, pnpm test, pnpm lint from app/', 'src/fsm/__tests__/catalogMatchesSql.test.ts against supabase/schemas', 'src/__tests__/baselineCompatibility.test.ts', 'src/rpc/__tests__/degradeRule.test.ts', 'node --test scripts/*.test.mjs', 'node scripts/gen-baseline-types.mjs --check'],
     degrade: 'This package defines the rule for all others: an adapter call that hits a missing function or table throws `BackendUnavailableError`; a list screen shows its empty state, an action shows the generic "not available yet" message, a world whose `world_<slug>_enabled` flag is off never renders its entry points. No screen reads `error.message` of an unknown error.',
     risks: 'Everything depends on it and it must not change behaviour: no adapter logic changed, only its type import. CI still diffs `database.types.ts` against the old migrations until the workflow change listed in the P0 report lands.' },
@@ -401,7 +410,7 @@ export const packages = [
     degrade: 'Reporting a post or member shows "not available yet"; the admin portal entry is hidden for everyone until the package lands (staff use the dashboard of the database meanwhile).',
     risks: 'Staff deletion of a chat message is `admin_delete_message` (M18).' },
   { id: 'P5', title: 'Launch worlds: items, food, rides, time (events), matching, donation links', launch: 'wedge', parallelWith: ['P6'],
-    select: either(inArea('marketplace', 'rides', 'volunteering', 'matching', 'donations', 'organizations'), both(inArea('mobile'), tierIs('wedge'))),
+    select: either(inArea('marketplace', 'rides', 'volunteering', 'matching', 'donations', 'organizations', 'series', 'worlds'), both(inArea('mobile'), tierIs('wedge'))),
     files: ['marketplace/**', 'rides/** (except rides/SupabaseRidesRealtime.ts)', 'volunteering/**', 'matching/**', 'donations/**', 'organizations/**', 'apps/mobile: world screens, ridesKnowledgeComposition, listing image upload, karma history'],
     work: 'Listings become posts; one handoff row shape; the legacy ride tables and their repositories are deleted; volunteering maps onto event posts; matches as cards. Two agents may split it by folder (rides / the rest): no shared file.',
     tests: ['vitest: marketplace, rides, volunteering, matching, donations suites', 'pgTAP 035, 070, 072 (events, karma), 073 (food), 076, 080'],
@@ -452,7 +461,7 @@ export const packages = [
   { id: 'L6', title: 'Back-office tools: tasks, CRM, timesheets', launch: 'later', parallelWith: ['L1', 'L2', 'L3', 'L4', 'L5', 'L7'],
     select: (row) => /^(admin_task_|crm_|timesheet_)/.test(row.old),
     files: ['admin/SupabaseAdminTaskRepository.ts', 'admin/SupabaseCrmContactsRepository.ts', 'admin/SupabaseTimesheetsRepository.ts', 'apps/mobile: admin tasks, CRM, timesheets screens'],
-    work: 'Done: rebuilt as forward migrations `0021` (tasks), `0022` (CRM per organization) and `0023` (timesheets decided by the direct manager); the three adapters call them again, with keyset paging.',
+    work: 'Done: rebuilt as forward migrations `0034` (tasks), `0035` (CRM per organization) and `0036` (timesheets decided by the direct manager); the three adapters call them again, with keyset paging.',
     tests: ['pgTAP: 099_back_office_tasks, 100_back_office_crm, 101_back_office_timesheets', 'vitest: SupabaseAdminTaskRepository, SupabaseCrmTimesheetsRepository, adminSectionAvailability, backOfficeDestinations'],
     degrade: 'One switch per tool in apps/mobile/src/lib/parkedFeatures.ts (`ADMIN_TASKS_AVAILABLE`, `CRM_AVAILABLE`, `TIMESHEETS_AVAILABLE`, all on); a tool switched off hides its nav entry and renders the not-available notice.',
     risks: 'None known.' },
@@ -493,7 +502,7 @@ export const edgeFunctions = [
 // ═════════════════════════════ Rules that hold across the whole map
 export const notes = [
   'Capabilities the baseline does not provide and the identity adapters therefore do not call (they report `BackendUnavailableError` and the screens degrade): the blocked-users list (M01, the screen shows its empty state; unblock from a profile is not reachable because `users_hide_blocked` hides it), follow suggestions (M03) and the profile completeness nudge (M04), both hidden on the suggestions screen, and the About team roster (M08, no team section).',
-  'The internal back-office tools (formerly M19) were rebuilt after the baseline as forward migrations: the admin task tracker (FR-ADMIN-018, `0021`), CRM contacts per organization (FR-ADMIN-032, `0022`) and staff timesheets (FR-ADMIN-033, `0023`).',
+  'The internal back-office tools (formerly M19) were rebuilt after the baseline as forward migrations: the admin task tracker (FR-ADMIN-018, `0034`), CRM contacts per organization (FR-ADMIN-032, `0035`) and staff timesheets (FR-ADMIN-033, `0036`).',
   'Errors: every baseline RPC raises `P0001` with a stable snake_case message (`unauthenticated` uses `42501`). Map on `error.message`, never on a SQLSTATE or on Hebrew text. Codes marked † in the tables are not referenced anywhere in the app today and need a user-visible mapping.',
   'Paging: no OFFSET anywhere. Lists take the `next_cursor` JSON of the last row (cards) or explicit `p_before_*` / `p_after_*` values; application ports that expose `offset` change to an opaque cursor.',
   'Money: integer agorot (`*_agorot`), never ILS floats or `*_cents` names.',

@@ -1,4 +1,4 @@
--- Staff timesheets (FR-ADMIN-033, migration 0023): reporting is for platform staff; the
+-- Staff timesheets (FR-ADMIN-033, migration 0036): reporting is for platform staff; the
 -- reporter's direct manager (or a super admin) decides, nobody decides their own entry; the
 -- `timesheet` machine (edit of a rejected entry → draft, approved is final, decide only from
 -- submitted, delete only draft or rejected); visibility; keyset order; audit of decisions.

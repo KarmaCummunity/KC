@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 // Admin sections and their availability switches (src/lib/parkedFeatures.ts): the back-office
-// tools (migrations 0021–0023) render their screens; the WhatsApp console, still parked, renders
+// tools (migrations 0034–0036) render their screens; the WhatsApp console, still parked, renders
 // the "not available yet" notice so a direct link never fires a refused call.
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import React from 'react';

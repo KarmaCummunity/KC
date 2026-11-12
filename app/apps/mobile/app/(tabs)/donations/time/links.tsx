@@ -7,7 +7,7 @@ export { RouteErrorBoundary as ErrorBoundary } from '../../../../src/components/
 export default function TimeLinksScreen() {
   return (
     <WorldLaunchGateByFlag flagKey="world_time_enabled">
-      <WorldDedicatedLinksScreen worldSlug="time" categorySlug="time" />
+      <WorldDedicatedLinksScreen worldSlug="time" />
     </WorldLaunchGateByFlag>
   );
 }

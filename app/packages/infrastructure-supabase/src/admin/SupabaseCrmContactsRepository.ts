@@ -1,4 +1,4 @@
-// FR-ADMIN-032 — CRM contacts per organization over the crm_* RPCs (supabase/migrations/0022).
+// FR-ADMIN-032 — CRM contacts per organization over the crm_* RPCs (supabase/migrations/0035).
 //
 // Each organization keeps its own book; the server lets only its managers in (org_admin,
 // org_manager, and platform staff for the platform organization). The list is keyset-paged

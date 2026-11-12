@@ -1,4 +1,4 @@
-// FR-ADMIN-018 — maps the JSON records of the admin_task_* RPCs (migration 0021) to domain tasks.
+// FR-ADMIN-018 — maps the JSON records of the admin_task_* RPCs (migration 0034) to domain tasks.
 import {
   AdminTaskError,
   coerceAdminTaskCategory,

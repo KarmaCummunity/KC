@@ -18,6 +18,7 @@ import { useKeyboardVerticalOffset } from '../../src/lib/platform/useKeyboardVer
 import { TAB_INLINE_FORM_HEADER_HEIGHT } from '../../src/lib/platform/formChromeHeights';
 import { EmptyState } from '../../src/components/EmptyState';
 import type { CreateDirection } from '../../src/lib/unifiedCreate/createCategories';
+import { resolveKeyboardAvoidingBehavior } from '../../src/lib/platform/keyboardVerticalOffset';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
 
@@ -120,7 +121,7 @@ export default function EditListingScreen() {
       </View>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={resolveKeyboardAvoidingBehavior(Platform.OS)}
         keyboardVerticalOffset={keyboardOffset}
       >
         <ListingCreateForm

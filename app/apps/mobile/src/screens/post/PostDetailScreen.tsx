@@ -36,6 +36,7 @@ import { postDetailScrollBottomInset } from '../../components/post-detail/postDe
 import { useKeyboardVerticalOffset } from '../../lib/platform/useKeyboardVerticalOffset';
 import { postShowsEngagementSection } from '../../lib/postEngagementVisible';
 import { useSeededFeedPost } from '../../hooks/useSeededFeedPost';
+import { resolveKeyboardAvoidingBehavior } from '../../lib/platform/keyboardVerticalOffset';
 
 function normalizeRoutePostId(raw: string | string[] | undefined): string | undefined {
   const id = Array.isArray(raw) ? raw[0] : raw;
@@ -234,7 +235,7 @@ export function PostDetailScreen() {
       <PostEngagementProvider postId={post.postId} viewerId={viewerId}>
         <KeyboardAvoidingView
           style={{ flex: 1 }}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          behavior={resolveKeyboardAvoidingBehavior(Platform.OS)}
           keyboardVerticalOffset={keyboardOffset}
         >
           <PostDetailScrollContent

@@ -4,13 +4,13 @@
 // themselves render `ParkedFeatureNotice` when reached by a direct link. Turn a switch on in
 // the change that adds the backend objects and moves the adapter back onto them.
 
-/** FR-ADMIN-018 admin tasks — migration 0021 (admin_task_* RPCs). */
+/** FR-ADMIN-018 admin tasks — migration 0034 (admin_task_* RPCs). */
 export const ADMIN_TASKS_AVAILABLE: boolean = true;
 
-/** FR-ADMIN-032 CRM contacts per organization — migration 0022 (crm_* RPCs). */
+/** FR-ADMIN-032 CRM contacts per organization — migration 0035 (crm_* RPCs). */
 export const CRM_AVAILABLE: boolean = true;
 
-/** FR-ADMIN-033 staff timesheets — migration 0023 (timesheet_* RPCs). */
+/** FR-ADMIN-033 staff timesheets — migration 0036 (timesheet_* RPCs). */
 export const TIMESHEETS_AVAILABLE: boolean = true;
 
 /** M22: WhatsApp bot linking and its admin console — waits for the `integrations` module. */

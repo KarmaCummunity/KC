@@ -1,4 +1,4 @@
-// FR-ADMIN-018 — admin task tracker over the admin_task_* RPCs (supabase/migrations/0021).
+// FR-ADMIN-018 — admin task tracker over the admin_task_* RPCs (supabase/migrations/0034).
 //
 // The tables live in kc_private; every call goes through a definer RPC that checks the
 // caller's staff role. The list is keyset-paged (`cursor`), and refusals map to

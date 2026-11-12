@@ -8,12 +8,12 @@ The application (`app/packages/infrastructure-supabase`, `app/apps/mobile`) and 
 
 | Kind | Objects used | 1:1 | 1:1 (renamed) | CHANGED | REMOVED | MISSING |
 | --- | --- | --- | --- | --- | --- | --- |
-| RPCs | 195 | 123 | 20 | 33 | 0 | 19 |
-| Tables and views | 59 | 43 | 0 | 15 | 0 | 1 |
+| RPCs | 199 | 127 | 20 | 33 | 0 | 19 |
+| Tables and views | 63 | 45 | 0 | 17 | 0 | 1 |
 | Storage buckets | 4 | 3 | 0 | 1 | 0 | 0 |
 | Realtime channels | 6 | 6 | 0 | 0 | 0 | 0 |
 | Edge Function invokes | 3 | 3 | 0 | 0 | 0 | 0 |
-| **Total** | 267 | 178 | 20 | 49 | 0 | 20 |
+| **Total** | 275 | 184 | 20 | 51 | 0 | 20 |
 
 ### Launch scope
 
@@ -23,7 +23,7 @@ Every row carries `launch` (spec D102, `docs/spec/96_launch_and_first_group_plan
 | --- | --- | --- | --- | --- | --- | --- |
 | core | 106 | 88 | 1 | 17 | 0 | 0 |
 | wedge | 53 | 32 | 15 | 6 | 0 | 0 |
-| later | 108 | 58 | 4 | 26 | 0 | 20 |
+| later | 116 | 64 | 4 | 28 | 0 | 20 |
 | **Launch-critical (core + wedge)** | 159 | 120 | 16 | 23 | 0 | 0 |
 
 Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename of the function or its arguments · **CHANGED** the caller's logic changes · **REMOVED** no replacement by design · **MISSING** the baseline has no equivalent although the code needs one (§4). Confidence: **high** read in the baseline source, **medium** inferred from names and generated types.
@@ -31,7 +31,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 ## 2. Rules that hold everywhere
 
 - Capabilities the baseline does not provide and the identity adapters therefore do not call (they report `BackendUnavailableError` and the screens degrade): the blocked-users list (M01, the screen shows its empty state; unblock from a profile is not reachable because `users_hide_blocked` hides it), follow suggestions (M03) and the profile completeness nudge (M04), both hidden on the suggestions screen, and the About team roster (M08, no team section).
-- The internal back-office tools (formerly M19) were rebuilt after the baseline as forward migrations: the admin task tracker (FR-ADMIN-018, `0021`), CRM contacts per organization (FR-ADMIN-032, `0022`) and staff timesheets (FR-ADMIN-033, `0023`).
+- The internal back-office tools (formerly M19) were rebuilt after the baseline as forward migrations: the admin task tracker (FR-ADMIN-018, `0025`), CRM contacts per organization (FR-ADMIN-032, `0026`) and staff timesheets (FR-ADMIN-033, `0027`).
 - Errors: every baseline RPC raises `P0001` with a stable snake_case message (`unauthenticated` uses `42501`). Map on `error.message`, never on a SQLSTATE or on Hebrew text. Codes marked † in the tables are not referenced anywhere in the app today and need a user-visible mapping.
 - Paging: no OFFSET anywhere. Lists take the `next_cursor` JSON of the last row (cards) or explicit `p_before_*` / `p_after_*` values; application ports that expose `offset` change to an opaque cursor.
 - Money: integer agorot (`*_agorot`), never ILS floats or `*_cents` names.
@@ -67,12 +67,14 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `infrastructure-supabase/src/research/` | 2 | 2 | 0 | 0 | 0 |
 | `infrastructure-supabase/src/rides/` | 28 | 19 | 9 | 0 | 0 |
 | `infrastructure-supabase/src/search/` | 6 | 1 | 5 | 0 | 0 |
+| `infrastructure-supabase/src/series/` | 6 | 6 | 0 | 0 | 0 |
 | `infrastructure-supabase/src/stats/` | 2 | 2 | 0 | 0 | 0 |
 | `infrastructure-supabase/src/streets/` | 1 | 0 | 1 | 0 | 0 |
 | `infrastructure-supabase/src/survey/` | 13 | 12 | 1 | 0 | 0 |
 | `infrastructure-supabase/src/translations/` | 6 | 3 | 3 | 0 | 0 |
 | `infrastructure-supabase/src/users/` | 33 | 20 | 13 | 0 | 0 |
 | `infrastructure-supabase/src/volunteering/` | 9 | 3 | 6 | 0 | 0 |
+| `infrastructure-supabase/src/worlds/` | 3 | 1 | 2 | 0 | 0 |
 | `apps/mobile` (direct calls outside the adapters) | 18 | 17 | 1 | 0 | 0 |
 | Edge Function `_shared` | 11 | 0 | 0 | 0 | 11 |
 | Edge Function `backfill-image-thumbs` | 2 | 0 | 2 | 0 | 0 |
@@ -294,7 +296,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `message_event_registrants` | wedge | 1:1 | `message_event_registrants(p_body: string, p_post_id: string) → number` | The organizer's message to everyone registered for an event; answers how many were told (`event_message_invalid`). | `account_not_active`, `event_message_invalid`, `post_not_found`, `unauthenticated` | high | eventRegistrations.ts:100 |
 | `pause_post` | wedge | 1:1 | `pause_post(p_post_id: string) → undefined` | Pauses the owner's open post (`listing_wrong_status`, `listing_has_active_handoff`). | `account_not_active`, `listing_has_active_handoff`, `listing_wrong_status`, `post_not_found`, `unauthenticated` | high | listingOwnerActions.ts:29 |
 | `post_cards` | core | 1:1 | `post_cards(p_post_ids: string[]) → post_card[]` | Cards of up to 100 post ids the caller can read, in no particular order: the adapter restores the order of the ids (saved posts, a member's posts by status, one post). |  | high | listingMapping.ts:93 |
-| `post_detail` | wedge | 1:1 | `post_detail(p_post_id: string) → Json` | Card, gallery and first comments as one JSON; the adapter adds the world detail row and the world labels to build the listing detail. |  | high | mapListingDetail.ts:104 |
+| `post_detail` | wedge | 1:1 | `post_detail(p_post_id: string) → Json` | Card, gallery and first comments as one JSON; the adapter adds the world detail row and the world labels to build the listing detail. |  | high | mapListingDetail.ts:106 |
 | `post_seat_counts` | wedge | 1:1 | `post_seat_counts(p_post_ids: string[]) → { capacity: number post_id: string seats_left: number seats_taken: number waitlisted: number }[]` | Places held, waiting registrations and seats left of event and ride posts the caller can read (`p_post_ids`, at most 100); the volunteering shifts and the occurrences of a ride series read their free places here. |  | high | postSeatCounts.ts:22 |
 | `profile_posts_page` | core | 1:1 | `profile_posts_page(p_cursor?: Json, p_limit?: number, p_statuses?: string[], p_tab?: string, p_user_id: string) → { card: post_card next_cursor: Json }[]` | `p_tab` open \| closed \| hidden \| mine, keyset `p_cursor`; the closed tab of a profile. `mine` is the owner's own posts in every status and audience, narrowed by `p_statuses` (`forbidden` on another member's profile): "my listings" reads it. The owner's delivered or deleted "only me" posts still come from `posts` ids completed by `post_cards`. | `invalid_input` | high | SupabaseMarketplaceRepository.ts:68, SupabaseMarketplaceRepository.ts:89 |
 | `publish_post` | core | 1:1 | `publish_post(p_post_id: string) → undefined` | Publishes the draft the adapter wrote (draft → open); a failed create deletes the draft, which a device may delete. Refusals: `listing_wrong_status`, `post_limit_exceeded`. | `account_not_active`, `listing_wrong_status`, `offer_photo_required`, `post_not_found`, `unauthenticated` | high | listingWrites.ts:97 |
@@ -310,14 +312,14 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `org_memberships` (table) | wedge | CHANGED | table `org_memberships` | `role` → `roles` (array), `membership_id` gone (key is org + user), new `can_post`. |  | high | eventRegistrations.ts:154 |
 | `organizations` (table) | core | 1:1 | see `infrastructure-supabase/src/admin/` |  |  |  | mapExternalBody.ts:38 |
 | `post_event_details` (table) | wedge | 1:1 | table `post_event_details` | Read for an event's window, capacity and policy; the organizer edits it through the adapter. |  | high | mapListingDetail.ts:76 |
-| `post_food_details` (table) | wedge | 1:1 | table `post_food_details` | Read for a food offer's expiry and contents; the giver edits it through the adapter. |  | high | mapListingDetail.ts:95 |
+| `post_food_details` (table) | wedge | 1:1 | table `post_food_details` | Read for a food offer's expiry and contents; the giver edits it through the adapter. |  | high | mapListingDetail.ts:97 |
 | `post_handoffs` (table) | core | CHANGED | see `infrastructure-supabase/src/housing/` |  |  |  | eventRegistrations.ts:114, eventRegistrations.ts:136, givingHandoffs.ts:61, givingHandoffs.ts:79 |
 | `post_kinds` (table) | core | 1:1 | table `post_kinds` | Read-only catalog; a new generic post needs the items world's offer / request kind id. |  | high | kindCatalog.ts:31 |
 | `post_media` (table) | core | 1:1 | table `post_media` | One row per photo, inserted `pending` by the owner after the upload to `post-images`; delete by the owner. An edit keeps the rows whose file and position are unchanged (no update grant). Every row records the real `mime_type` and `size_bytes` of the uploaded file (JPEG or PNG, at most 8 MB); `post_detail` returns both, so a republish attaches the same files again. |  | high | listingOwnerActions.ts:89, listingWrites.ts:55 |
 | `post_ride_details` (table) | wedge | 1:1 | table `post_ride_details` | Read for the route, time and seats of a ride and for the occurrences of a series; the owner edits it through the adapter. |  | high | mapListingDetail.ts:38 |
-| `posts` (table) | core | CHANGED | see `infrastructure-supabase/src/admin/` |  |  |  | givingHandoffs.ts:25, listingOwnerActions.ts:46, listingOwnerActions.ts:71, listingWrites.ts:89, listingWrites.ts:100, mapListingDetail.ts:77, mapListingDetail.ts:112 |
+| `posts` (table) | core | CHANGED | see `infrastructure-supabase/src/admin/` |  |  |  | givingHandoffs.ts:25, listingOwnerActions.ts:46, listingOwnerActions.ts:71, listingWrites.ts:89, listingWrites.ts:100, mapListingDetail.ts:77, mapListingDetail.ts:114 |
 | `users` (table) | core | CHANGED | see `infrastructure-supabase/src/admin/` |  |  |  | eventRegistrations.ts:120 |
-| `worlds` (table) | wedge | 1:1 | table `worlds` | The world labels shown on a listing detail. |  | high | mapListingDetail.ts:111 |
+| `worlds` (table) | wedge | 1:1 | table `worlds` | The world labels shown on a listing detail. |  | high | mapListingDetail.ts:113 |
 
 ### `infrastructure-supabase/src/matching/`
 
@@ -495,6 +497,19 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `user_stats` (table) | core | 1:1 | table `user_stats` | Counters, select only; `open_posts_only_me` is not client-readable. |  | high | searchUserReads.ts:26 |
 | `users` (table) | core | CHANGED | see `infrastructure-supabase/src/admin/` |  |  |  | searchUserReads.ts:20, searchUserReads.ts:41 |
 
+### `infrastructure-supabase/src/series/`
+
+6 call sites: 6 map 1:1, 0 need logic changes, 0 removed, 0 MISSING.
+
+| Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `cancel_post_series_date` | later | 1:1 | `cancel_post_series_date(p_post_id: string) → undefined` | Cancels one date of a series without ending it; the owner only. |  | high | SupabasePostSeriesRepository.ts:92 |
+| `create_post_series` | later | 1:1 | `create_post_series(p_duration_minutes: number, p_ends_on?: string, p_event: Json, p_org_id?: string, p_post: Json, p_start_time: string, p_time_zone?: string, p_weekdays: number) → string` | Creates a series and publishes its dates of the next 30 days; any active member, for an organization only one who may act for it. |  | high | SupabasePostSeriesRepository.ts:56 |
+| `set_post_series_status` | later | 1:1 | `set_post_series_status(p_series_id: string, p_status: string) → undefined` | `p_series_id`, `p_status`: active, paused or ended; ending cancels every upcoming date and tells its registrants. The owner only. |  | high | SupabasePostSeriesRepository.ts:88 |
+| `update_post_series` | later | 1:1 | `update_post_series(p_duration_minutes: number, p_ends_on?: string, p_event?: Json, p_post?: Json, p_series_id: string, p_start_time: string, p_weekdays: number) → undefined` | Edits the series template and schedule; the owner only (`post_series_not_found`). |  | high | SupabasePostSeriesRepository.ts:77 |
+| `post_event_details` (table) | wedge | 1:1 | see `infrastructure-supabase/src/marketplace/` |  |  |  | SupabasePostSeriesRepository.ts:101 |
+| `post_series` (table) | later | 1:1 | table `post_series` | The recurring-event series of a post (schedule plus post and event templates); read through the series RPCs, written only by them. |  | high | SupabasePostSeriesRepository.ts:40 |
+
 ### `infrastructure-supabase/src/stats/`
 
 2 call sites: 2 map 1:1, 0 need logic changes, 0 removed, 0 MISSING.
@@ -576,6 +591,16 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `posts` (table) | core | CHANGED | see `infrastructure-supabase/src/admin/` |  |  |  | SupabaseVolunteerRepository.ts:143, SupabaseVolunteerRepository.ts:177 |
 | `users` (table) | core | CHANGED | see `infrastructure-supabase/src/admin/` |  |  |  | SupabaseVolunteerRepository.ts:204 |
 
+### `infrastructure-supabase/src/worlds/`
+
+3 call sites: 1 map 1:1, 2 need logic changes, 0 removed, 0 MISSING.
+
+| Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `external_bodies` (table) | later | CHANGED | table `external_bodies` | `id` (not `body_id`); read directly, the search and admin RPCs of the old picker are not in the baseline. |  | high | SupabaseWorldContentRepository.ts:35 |
+| `knowledge_topics` (table) | later | CHANGED | table `knowledge_topics` | The topic tree, read-only for members: `id` (not `topic_id`), `world_slug` added, no `created_by` / `approved_by` / `legacy_category_slug`. Proposals, review and follows are not in the baseline. |  | high | SupabaseWorldContentRepository.ts:42 |
+| `world_links` (table) | later | 1:1 | table `world_links` | Curated links from one world to a related one; readable signed-out too. |  | high | SupabaseWorldContentRepository.ts:28 |
+
 ### `apps/mobile` (direct calls outside the adapters)
 
 18 call sites: 17 map 1:1, 1 need logic changes, 0 removed, 0 MISSING.
@@ -584,7 +609,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `avatars` (bucket) | core | 1:1 | bucket `avatars` | Declared in `95_platform/090_storage.sql`: public, JPEG, 512 KB, `<user_id>/avatar.jpg` (and the thumb in the same folder) (M23, verified). |  | high | avatarUpload.ts:132, avatarUpload.ts:143, avatarUpload.ts:153, avatarUpload.ts:167 |
 | `chat-media` (bucket) | core | 1:1 | bucket `chat-media` | Declared in `95_platform/090_storage.sql`: private, `<user_id>/<chat_id>/<file>`, read through signed URLs by chat members (M23, verified). |  | high | chatMediaUpload.ts:44, chatMediaUrl.ts:17 |
-| `post-images` (bucket) | core | 1:1 | bucket `post-images` | Declared by the baseline (own-folder insert / delete policies); `post_media.storage_bucket` points at it. |  | high | [id].tsx:42, PostImageCarousel.tsx:72, usePostShare.ts:64, probeDraftImageAvailability.ts:30, imageUpload.ts:182, imageUpload.ts:194, listingImageUpload.ts:42, listingImageUpload.ts:56 |
+| `post-images` (bucket) | core | 1:1 | bucket `post-images` | Declared by the baseline (own-folder insert / delete policies); `post_media.storage_bucket` points at it. |  | high | [id].tsx:43, PostImageCarousel.tsx:72, usePostShare.ts:64, probeDraftImageAvailability.ts:30, imageUpload.ts:182, imageUpload.ts:194, listingImageUpload.ts:42, listingImageUpload.ts:56 |
 | `topic = 'user:${userId}:notifications'` (channel) | core | 1:1 | topic `user:<user id>:notifications` | Already on the baseline contract (event `badge`). |  | high | useNotificationInboxBadge.ts:30 |
 | `api_my_pro_status` | core | 1:1 | `api_my_pro_status() → Json` | The caller's Pro status (`is_pro`); the Pro screen reads it. |  | high | pro.tsx:38 |
 | `app_flags` (table) | core | 1:1 | table `app_flags` | Same `select key, enabled`, for signed-in members only (no `anon` grant): before sign-in the compiled defaults apply. After sign-in the same map is `bootstrap_session().flags`. The rows (`world_<slug>_enabled`) are seed data, not part of the baseline (M09, verified). |  | high | featureFlagsComposition.ts:12 |
@@ -756,7 +781,7 @@ In launch order: after package *n* the app is shippable with everything up to *n
 | P2 — Posts, feed, search, closure, translations | core | 42 | 31 | 11 | 0 | 0 | P3, P4 |
 | P3 — Chat and realtime | core | 18 | 17 | 1 | 0 | 0 | P2, P4 |
 | P4 — Reports, moderation and admin basics | core | 18 | 13 | 5 | 0 | 0 | P2, P3 |
-| P5 — Launch worlds: items, food, rides, time (events), matching, donation links | wedge | 73 | 62 | 11 | 0 | 0 | P6 |
+| P5 — Launch worlds: items, food, rides, time (events), matching, donation links | wedge | 81 | 68 | 13 | 0 | 0 | P6 |
 | P6 — Edge Functions of the launch | core | 10 | 6 | 4 | 0 | 0 | P5 |
 | L1 — Housing world | later | 15 | 11 | 4 | 0 | 0 | L2, L3, L4, L5, L6, L7 |
 | L2 — Knowledge world | later | 8 | 6 | 2 | 0 | 0 | L1, L3, L4, L5, L6, L7 |
@@ -769,7 +794,7 @@ In launch order: after package *n* the app is shippable with everything up to *n
 ### P0 — Contract switch and the degrade rule (first, alone)
 
 - **Owns:** `infrastructure-supabase/src/database.types.ts (replaced by the baseline types)`, `infrastructure-supabase/src/index.ts`, `infrastructure-supabase/src/client.ts`, `infrastructure-supabase/src/rpc/**`, `infrastructure-supabase/src/lib/**`, `infrastructure-supabase/src/fsm/**`, `infrastructure-supabase/src/realtime/**`, `packages/domain/src (status lists, FSM machines, money value objects)`, `apps/mobile/src/services/featureFlagsComposition.ts`, `scripts/check-rpc-contract.mjs + allowlist`
-- **Work:** Done in P0 (see docs/db/app-migration-playbook.md): `database.types.ts` is the generated baseline types and `database.legacy.types.ts` a frozen copy of the old ones, imported only by the files listed in `infrastructure-supabase/src/migrationStatus/<package>.ts` (the client factory is generic: `getSupabaseClient()` is baseline-typed, `getLegacySupabaseClient()` / `legacySupabase` are the same connection typed against the old schema). `FSM_MACHINES` equals the baseline seeds (`catalogMatchesSql.test.ts` reads `supabase/schemas`); the machines without a baseline seed sat in `LEGACY_FSM_MACHINES` until their modules moved (the list is gone since L6 seeded the last two in `0021` and `0023`). `rpc/backendUnavailable.ts` holds `isBackendObjectMissing` and `rpc/mapRpcError.ts` the P0001 mapper and `unwrapCall`; `BackendUnavailableError` and `BackendRuleError` are domain errors. UI helpers: `apps/mobile/src/lib/backendAvailability.ts` and the `backend.*` locale keys. `src/__tests__/baselineCompatibility.test.ts` fails when an unlisted file still needs the old schema or a listed file no longer does.
+- **Work:** Done in P0 (see docs/db/app-migration-playbook.md): `database.types.ts` is the generated baseline types and `database.legacy.types.ts` a frozen copy of the old ones, imported only by the files listed in `infrastructure-supabase/src/migrationStatus/<package>.ts` (the client factory is generic: `getSupabaseClient()` is baseline-typed, `getLegacySupabaseClient()` / `legacySupabase` are the same connection typed against the old schema). `FSM_MACHINES` equals the baseline seeds (`catalogMatchesSql.test.ts` reads `supabase/schemas`); the machines without a baseline seed sat in `LEGACY_FSM_MACHINES` until their modules moved (the list is gone since L6 seeded the last two in `0025` and `0027`). `rpc/backendUnavailable.ts` holds `isBackendObjectMissing` and `rpc/mapRpcError.ts` the P0001 mapper and `unwrapCall`; `BackendUnavailableError` and `BackendRuleError` are domain errors. UI helpers: `apps/mobile/src/lib/backendAvailability.ts` and the `backend.*` locale keys. `src/__tests__/baselineCompatibility.test.ts` fails when an unlisted file still needs the old schema or a listed file no longer does.
 - **Must pass:** pnpm typecheck, pnpm test, pnpm lint from app/; src/fsm/__tests__/catalogMatchesSql.test.ts against supabase/schemas; src/__tests__/baselineCompatibility.test.ts; src/rpc/__tests__/degradeRule.test.ts; node --test scripts/*.test.mjs; node scripts/gen-baseline-types.mjs --check
 - **If reached before it is migrated:** This package defines the rule for all others: an adapter call that hits a missing function or table throws `BackendUnavailableError`; a list screen shows its empty state, an action shows the generic "not available yet" message, a world whose `world_<slug>_enabled` flag is off never renders its entry points. No screen reads `error.message` of an unknown error.
 - **Risks:** Everything depends on it and it must not change behaviour: no adapter logic changed, only its type import. CI still diffs `database.types.ts` against the old migrations until the workflow change listed in the P0 report lands.
@@ -865,7 +890,7 @@ In launch order: after package *n* the app is shippable with everything up to *n
 ### L6 — Back-office tools: tasks, CRM, timesheets
 
 - **Owns:** `admin/SupabaseAdminTaskRepository.ts`, `admin/SupabaseCrmContactsRepository.ts`, `admin/SupabaseTimesheetsRepository.ts`, `apps/mobile: admin tasks, CRM, timesheets screens`
-- **Work:** Done: rebuilt as forward migrations `0021` (tasks), `0022` (CRM per organization) and `0023` (timesheets decided by the direct manager); the three adapters call them again, with keyset paging.
+- **Work:** Done: rebuilt as forward migrations `0025` (tasks), `0026` (CRM per organization) and `0027` (timesheets decided by the direct manager); the three adapters call them again, with keyset paging.
 - **Must pass:** pgTAP: 099_back_office_tasks, 100_back_office_crm, 101_back_office_timesheets; vitest: SupabaseAdminTaskRepository, SupabaseCrmTimesheetsRepository, adminSectionAvailability, backOfficeDestinations
 - **If reached before it is migrated:** One switch per tool in apps/mobile/src/lib/parkedFeatures.ts (`ADMIN_TASKS_AVAILABLE`, `CRM_AVAILABLE`, `TIMESHEETS_AVAILABLE`, all on); a tool switched off hides its nav entry and renders the not-available notice.
 - **Risks:** None known.

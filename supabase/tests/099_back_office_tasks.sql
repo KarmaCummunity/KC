@@ -1,4 +1,4 @@
--- Admin tasks (FR-ADMIN-018, migration 0021): role gates, the creator-or-assignee rule, the
+-- Admin tasks (FR-ADMIN-018, migration 0034): role gates, the creator-or-assignee rule, the
 -- `admin_task` machine and its error mapping, one activity per changed field, the
 -- `task_assigned` notification (never to the actor), audit events on topic `audit`, keyset
 -- order, hard delete with its history, and the creator's account purge keeping the task.

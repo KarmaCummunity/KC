@@ -1,4 +1,4 @@
--- CRM contacts per organization (FR-ADMIN-032, migration 0022): each organization's book is
+-- CRM contacts per organization (FR-ADMIN-032, migration 0035): each organization's book is
 -- reached only by its org_admin / org_manager, and the platform organization's by platform
 -- staff (moderator and above); patch semantics, validation, soft delete, search, keyset
 -- order, and ids-only audit events.

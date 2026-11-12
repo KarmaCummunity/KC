@@ -345,7 +345,7 @@ Originally `FR-ADMIN-006 AC2` read "only one row may carry `is_super_admin`". Wi
 
 A3 ships an internal-only task tracker for the admin team. On the production baseline the tasks live in `kc_private.admin_tasks` + `kc_private.admin_task_activities` (forced RLS, no policies): every read and write goes through a SECURITY DEFINER RPC. Visibility is strictly internal — tasks are never joined to end-user surfaces.
 
-Migration: `supabase/migrations/0021_back_office_admin_tasks.sql` (rebuilt after the baseline cut-over; the pre-cut-over `0144` / `0145` / `0165` / `0680` are history). Mobile route: `(admin)/tasks` + `(admin)/tasks/new` + `(admin)/tasks/[taskId]`. Notifications: an outbox event on topic `notification` naming the kind `task_assigned`.
+Migration: `supabase/migrations/0034_back_office_admin_tasks.sql` (rebuilt after the baseline cut-over; the pre-cut-over `0144` / `0145` / `0165` / `0680` are history). Mobile route: `(admin)/tasks` + `(admin)/tasks/new` + `(admin)/tasks/[taskId]`. Notifications: an outbox event on topic `notification` naming the kind `task_assigned`.
 
 **Role mapping.** Platform roles are ranked (`kc_private.admin_roles`): "staff" below means `support` and above (`support`, `moderator`, `admin`, `super_admin`); "moderator and above" admits `admin` and `super_admin` too.
 
@@ -630,7 +630,7 @@ Every organization keeps its own contact book (partners, donors, suppliers, volu
 - AC6. The list searches name, company and email (case-insensitive substring), filters by status and tag, sorts by last update (newest first), pages by cursor and shows the matching total (`crm_contact_count`).
 - AC7. Create, edit (with the names of the changed fields), delete and "mark contacted" each write an audit event (outbox topic `audit`, target `crm_contact`, with the organization id) that never carries the contact's name, email or phone.
 
-**Related.** Migration `0022_back_office_crm.sql`. RPCs: `crm_my_orgs / crm_contact_upsert / crm_contact_delete / crm_contact_mark_contacted / crm_contact_list / crm_contact_count`. Permission `crm.manage` = super_admin, moderator, org_admin, org_manager (the server checks the organization). Tests: `supabase/tests/100_back_office_crm.sql`, `SupabaseCrmTimesheetsRepository.unit.test.ts`.
+**Related.** Migration `0035_back_office_crm.sql`. RPCs: `crm_my_orgs / crm_contact_upsert / crm_contact_delete / crm_contact_mark_contacted / crm_contact_list / crm_contact_count`. Permission `crm.manage` = super_admin, moderator, org_admin, org_manager (the server checks the organization). Tests: `supabase/tests/100_back_office_crm.sql`, `SupabaseCrmTimesheetsRepository.unit.test.ts`.
 
 ## FR-ADMIN-033 — Staff timesheets
 
@@ -644,7 +644,7 @@ Platform staff report the hours they worked; the reporter's direct manager appro
 - AC4. A member sees their own entries, their direct reports' entries and — as super admin — every entry. `(admin)/time` offers the tabs "mine", "waiting for my decision" and "all" (the last two for approvers), pages by cursor, shows the matching total, and offers approve / reject only on rows the server marks decidable.
 - AC5. Each decision writes an audit event (outbox topic `audit`, target `timesheet_entry`, the decision and the entry owner's id; the note stays on the row), and each delete one more.
 
-**Related.** Migration `0023_back_office_timesheets.sql`. RPCs: `timesheet_upsert / timesheet_submit / timesheet_approve / timesheet_reject / timesheet_delete / timesheet_list / timesheet_count`. Domain: `TimesheetEntry`, `TimesheetScope`, `timesheetMachine` (FSM catalog), `timesheetActions`. Tests: `supabase/tests/101_back_office_timesheets.sql`.
+**Related.** Migration `0036_back_office_timesheets.sql`. RPCs: `timesheet_upsert / timesheet_submit / timesheet_approve / timesheet_reject / timesheet_delete / timesheet_list / timesheet_count`. Domain: `TimesheetEntry`, `TimesheetScope`, `timesheetMachine` (FSM catalog), `timesheetActions`. Tests: `supabase/tests/101_back_office_timesheets.sql`.
 
 ---
 
@@ -670,4 +670,4 @@ Platform staff report the hours they worked; the reporter's direct manager appro
 | 0.18 | 2026-11-04 | `FR-ADMIN-025 AC4` — the tree shows one card per person per org (all roles on the card, report count instead of the level badge), grouped by org, with nested connector lines. |
 | 0.19 | 2026-11-04 | `FR-ADMIN-031 AC6` — the platform org admin may manage demo data too (`can_manage_demo_data`, `0611`; `demo_data.manage` = super admin + org admin, scope checked by the server). See `D-225`. |
 | 0.20 | 2026-11-11 | `FR-ADMIN-031` removed: the baseline has no `admin_demo_data_status` / `admin_wipe_demo_data` / `admin_seed_demo_data` RPCs; screen, repository and `demo_data.manage` deleted from the app (application migration package P4). |
-| 0.21 | 2026-11-12 | FR-ADMIN-018 rebuilt on the baseline (`0021`): `kc_private` tables, keyset list, category / assignee / due-range filters, audit (AC7), purge keeps the task (AC8), the `taskTitle` text argument. Added §19: FR-ADMIN-032 CRM contacts per organization (`0022`, `{{D:back-office-crm-per-org}}`) and FR-ADMIN-033 staff timesheets decided by the direct manager (`0023`, `{{D:timesheet-approval-by-manager}}`). |
+| 0.21 | 2026-11-12 | FR-ADMIN-018 rebuilt on the baseline (`0034`): `kc_private` tables, keyset list, category / assignee / due-range filters, audit (AC7), purge keeps the task (AC8), the `taskTitle` text argument. Added §19: FR-ADMIN-032 CRM contacts per organization (`0035`, `{{D:back-office-crm-per-org}}`) and FR-ADMIN-033 staff timesheets decided by the direct manager (`0036`, `{{D:timesheet-approval-by-manager}}`). |

@@ -2,18 +2,18 @@
  "generatedBy": "scripts/app-migration-map.mjs",
  "totals": {
   "rpc": {
-   "objects": 195,
-   "same": 123,
+   "objects": 199,
+   "same": 127,
    "renamed": 20,
    "changed": 33,
    "removed": 0,
    "missing": 19
   },
   "table": {
-   "objects": 59,
-   "same": 43,
+   "objects": 63,
+   "same": 45,
    "renamed": 0,
-   "changed": 15,
+   "changed": 17,
    "removed": 0,
    "missing": 1
   },
@@ -52,10 +52,10 @@
    "missing": 0
   },
   "later": {
-   "objects": 108,
-   "same": 58,
+   "objects": 116,
+   "same": 64,
    "renamed": 4,
-   "changed": 26,
+   "changed": 28,
    "removed": 0,
    "missing": 20
   },
@@ -342,6 +342,13 @@
    "removed": 0,
    "missing": 0
   },
+  "series": {
+   "callSites": 6,
+   "oneToOne": 6,
+   "changed": 0,
+   "removed": 0,
+   "missing": 0
+  },
   "stats": {
    "callSites": 2,
    "oneToOne": 2,
@@ -383,11 +390,18 @@
    "changed": 6,
    "removed": 0,
    "missing": 0
+  },
+  "worlds": {
+   "callSites": 3,
+   "oneToOne": 1,
+   "changed": 2,
+   "removed": 0,
+   "missing": 0
   }
  },
  "notes": [
   "Capabilities the baseline does not provide and the identity adapters therefore do not call (they report `BackendUnavailableError` and the screens degrade): the blocked-users list (M01, the screen shows its empty state; unblock from a profile is not reachable because `users_hide_blocked` hides it), follow suggestions (M03) and the profile completeness nudge (M04), both hidden on the suggestions screen, and the About team roster (M08, no team section).",
-  "The internal back-office tools (formerly M19) were rebuilt after the baseline as forward migrations: the admin task tracker (FR-ADMIN-018, `0021`), CRM contacts per organization (FR-ADMIN-032, `0022`) and staff timesheets (FR-ADMIN-033, `0023`).",
+  "The internal back-office tools (formerly M19) were rebuilt after the baseline as forward migrations: the admin task tracker (FR-ADMIN-018, `0025`), CRM contacts per organization (FR-ADMIN-032, `0026`) and staff timesheets (FR-ADMIN-033, `0027`).",
   "Errors: every baseline RPC raises `P0001` with a stable snake_case message (`unauthenticated` uses `42501`). Map on `error.message`, never on a SQLSTATE or on Hebrew text. Codes marked † in the tables are not referenced anywhere in the app today and need a user-visible mapping.",
   "Paging: no OFFSET anywhere. Lists take the `next_cursor` JSON of the last row (cards) or explicit `p_before_*` / `p_after_*` values; application ports that expose `offset` change to an opaque cursor.",
   "Money: integer agorot (`*_agorot`), never ILS floats or `*_cents` names.",
@@ -427,7 +441,7 @@
     "apps/mobile/src/services/featureFlagsComposition.ts",
     "scripts/check-rpc-contract.mjs + allowlist"
    ],
-   "work": "Done in P0 (see docs/db/app-migration-playbook.md): `database.types.ts` is the generated baseline types and `database.legacy.types.ts` a frozen copy of the old ones, imported only by the files listed in `infrastructure-supabase/src/migrationStatus/<package>.ts` (the client factory is generic: `getSupabaseClient()` is baseline-typed, `getLegacySupabaseClient()` / `legacySupabase` are the same connection typed against the old schema). `FSM_MACHINES` equals the baseline seeds (`catalogMatchesSql.test.ts` reads `supabase/schemas`); the machines without a baseline seed sat in `LEGACY_FSM_MACHINES` until their modules moved (the list is gone since L6 seeded the last two in `0021` and `0023`). `rpc/backendUnavailable.ts` holds `isBackendObjectMissing` and `rpc/mapRpcError.ts` the P0001 mapper and `unwrapCall`; `BackendUnavailableError` and `BackendRuleError` are domain errors. UI helpers: `apps/mobile/src/lib/backendAvailability.ts` and the `backend.*` locale keys. `src/__tests__/baselineCompatibility.test.ts` fails when an unlisted file still needs the old schema or a listed file no longer does.",
+   "work": "Done in P0 (see docs/db/app-migration-playbook.md): `database.types.ts` is the generated baseline types and `database.legacy.types.ts` a frozen copy of the old ones, imported only by the files listed in `infrastructure-supabase/src/migrationStatus/<package>.ts` (the client factory is generic: `getSupabaseClient()` is baseline-typed, `getLegacySupabaseClient()` / `legacySupabase` are the same connection typed against the old schema). `FSM_MACHINES` equals the baseline seeds (`catalogMatchesSql.test.ts` reads `supabase/schemas`); the machines without a baseline seed sat in `LEGACY_FSM_MACHINES` until their modules moved (the list is gone since L6 seeded the last two in `0025` and `0027`). `rpc/backendUnavailable.ts` holds `isBackendObjectMissing` and `rpc/mapRpcError.ts` the P0001 mapper and `unwrapCall`; `BackendUnavailableError` and `BackendRuleError` are domain errors. UI helpers: `apps/mobile/src/lib/backendAvailability.ts` and the `backend.*` locale keys. `src/__tests__/baselineCompatibility.test.ts` fails when an unlisted file still needs the old schema or a listed file no longer does.",
    "tests": [
     "pnpm typecheck, pnpm test, pnpm lint from app/",
     "src/fsm/__tests__/catalogMatchesSql.test.ts against supabase/schemas",
@@ -779,6 +793,11 @@
     "rpc:rides_feed",
     "rpc:ride_occurrence_schedules",
     "rpc:post_seat_counts",
+    "table:post_series",
+    "rpc:create_post_series",
+    "rpc:update_post_series",
+    "rpc:set_post_series_status",
+    "rpc:cancel_post_series_date",
     "rpc:accept_world_consent",
     "rpc:my_matches",
     "rpc:admin_match_quality",
@@ -787,15 +806,18 @@
     "table:post_event_details",
     "table:post_food_details",
     "table:worlds",
+    "table:world_links",
+    "table:knowledge_topics",
+    "table:external_bodies",
     "table:organizations",
     "table:road_junctions",
     "table:user_consents",
     "table:post_ratings"
    ],
    "counts": {
-    "objects": 73,
-    "oneToOne": 62,
-    "changed": 11,
+    "objects": 81,
+    "oneToOne": 68,
+    "changed": 13,
     "removed": 0,
     "missing": 0
    }
@@ -1106,7 +1128,7 @@
     "admin/SupabaseTimesheetsRepository.ts",
     "apps/mobile: admin tasks, CRM, timesheets screens"
    ],
-   "work": "Done: rebuilt as forward migrations `0021` (tasks), `0022` (CRM per organization) and `0023` (timesheets decided by the direct manager); the three adapters call them again, with keyset paging.",
+   "work": "Done: rebuilt as forward migrations `0025` (tasks), `0026` (CRM per organization) and `0027` (timesheets decided by the direct manager); the three adapters call them again, with keyset paging.",
    "tests": [
     "pgTAP: 099_back_office_tasks, 100_back_office_crm, 101_back_office_timesheets",
     "vitest: SupabaseAdminTaskRepository, SupabaseCrmTimesheetsRepository, adminSectionAvailability, backOfficeDestinations"
@@ -1456,7 +1478,7 @@
    "callSites": [
     {
      "file": "app/apps/mobile/app/edit-post/[id].tsx",
-     "line": 42,
+     "line": 43,
      "symbol": "assetUrl",
      "area": "mobile"
     },
@@ -4326,6 +4348,37 @@
    ]
   },
   {
+   "old": "cancel_post_series_date",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Cancels one date of a series without ending it; the owner only.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "cancel_post_series_date",
+     "signature": [
+      "cancel_post_series_date(p_post_id: string) → undefined"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "series"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/series/SupabasePostSeriesRepository.ts",
+     "line": 92,
+     "symbol": "SupabasePostSeriesRepository.cancelOccurrence",
+     "area": "series"
+    }
+   ]
+  },
+  {
    "old": "cancel_ride_booking",
    "kind": "rpc",
    "status": "renamed",
@@ -5259,6 +5312,37 @@
      "line": 61,
      "symbol": "SupabasePaymentsRepository.createDonationIntent",
      "area": "payments"
+    }
+   ]
+  },
+  {
+   "old": "create_post_series",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Creates a series and publishes its dates of the next 30 days; any active member, for an organization only one who may act for it.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "create_post_series",
+     "signature": [
+      "create_post_series(p_duration_minutes: number, p_ends_on?: string, p_event: Json, p_org_id?: string, p_post: Json, p_start_time: string, p_time_zone?: string, p_weekdays: number) → string"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "series"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/series/SupabasePostSeriesRepository.ts",
+     "line": 56,
+     "symbol": "SupabasePostSeriesRepository.kind",
+     "area": "series"
     }
    ]
   },
@@ -8228,7 +8312,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-     "line": 104,
+     "line": 106,
      "symbol": "fetchListingDetail",
      "area": "marketplace"
     }
@@ -9875,6 +9959,37 @@
    ]
   },
   {
+   "old": "set_post_series_status",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "`p_series_id`, `p_status`: active, paused or ended; ending cancels every upcoming date and tells its registrants. The owner only.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "set_post_series_status",
+     "signature": [
+      "set_post_series_status(p_series_id: string, p_status: string) → undefined"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "series"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/series/SupabasePostSeriesRepository.ts",
+     "line": 88,
+     "symbol": "SupabasePostSeriesRepository.setStatus",
+     "area": "series"
+    }
+   ]
+  },
+  {
    "old": "set_privacy_mode",
    "kind": "rpc",
    "status": "same",
@@ -10372,6 +10487,37 @@
      "line": 96,
      "symbol": "SupabaseTimesheetsRepository.upsert",
      "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "update_post_series",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Edits the series template and schedule; the owner only (`post_series_not_found`).",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "update_post_series",
+     "signature": [
+      "update_post_series(p_duration_minutes: number, p_ends_on?: string, p_event?: Json, p_post?: Json, p_series_id: string, p_start_time: string, p_weekdays: number) → undefined"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "series"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/series/SupabasePostSeriesRepository.ts",
+     "line": 77,
+     "symbol": "SupabasePostSeriesRepository.unwrapCall",
+     "area": "series"
     }
    ]
   },
@@ -11320,6 +11466,67 @@
    ]
   },
   {
+   "old": "external_bodies",
+   "kind": "table",
+   "status": "changed",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "`id` (not `body_id`); read directly, the search and admin RPCs of the old picker are not in the baseline.",
+   "oldObject": {
+    "columns": [
+     "body_id",
+     "body_type",
+     "contact_url",
+     "created_at",
+     "is_active",
+     "is_verified",
+     "label_en",
+     "label_he",
+     "requires_routing",
+     "slug",
+     "world_slug"
+    ],
+    "isView": false
+   },
+   "targets": [
+    {
+     "type": "table",
+     "name": "external_bodies",
+     "columns": [
+      "body_type",
+      "contact_url",
+      "created_at",
+      "id",
+      "is_active",
+      "is_verified",
+      "label_en",
+      "label_he",
+      "requires_routing",
+      "slug",
+      "sort_order",
+      "updated_at",
+      "world_slug"
+     ],
+     "clientGrants": {}
+    }
+   ],
+   "areas": [
+    "worlds"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/worlds/SupabaseWorldContentRepository.ts",
+     "line": 35,
+     "symbol": "SupabaseWorldContentRepository.getWorldContent",
+     "area": "worlds",
+     "ops": [
+      "select"
+     ]
+    }
+   ]
+  },
+  {
    "old": "feed_hides",
    "kind": "table",
    "status": "same",
@@ -11876,6 +12083,69 @@
      "line": 24,
      "symbol": "useKarmaHistory",
      "area": "mobile",
+     "ops": [
+      "select"
+     ]
+    }
+   ]
+  },
+  {
+   "old": "knowledge_topics",
+   "kind": "table",
+   "status": "changed",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "The topic tree, read-only for members: `id` (not `topic_id`), `world_slug` added, no `created_by` / `approved_by` / `legacy_category_slug`. Proposals, review and follows are not in the baseline.",
+   "oldObject": {
+    "columns": [
+     "approved_by",
+     "created_at",
+     "created_by",
+     "description_he",
+     "label_en",
+     "label_he",
+     "legacy_category_slug",
+     "merged_into_id",
+     "parent_id",
+     "slug",
+     "sort_order",
+     "status",
+     "topic_id",
+     "updated_at"
+    ],
+    "isView": false
+   },
+   "targets": [
+    {
+     "type": "table",
+     "name": "knowledge_topics",
+     "columns": [
+      "created_at",
+      "description_he",
+      "id",
+      "label_en",
+      "label_he",
+      "merged_into_id",
+      "parent_id",
+      "slug",
+      "sort_order",
+      "status",
+      "updated_at",
+      "world_slug"
+     ],
+     "clientGrants": {}
+    }
+   ],
+   "areas": [
+    "worlds"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/worlds/SupabaseWorldContentRepository.ts",
+     "line": 42,
+     "symbol": "SupabaseWorldContentRepository.getWorldContent",
+     "area": "worlds",
      "ops": [
       "select"
      ]
@@ -12645,6 +12915,8 @@
       "ends_at",
       "post_id",
       "registration_policy",
+      "series_id",
+      "series_on",
       "starts_at",
       "updated_at"
      ],
@@ -12663,6 +12935,7 @@
    ],
    "areas": [
     "marketplace",
+    "series",
     "volunteering"
    ],
    "callSites": [
@@ -12671,6 +12944,15 @@
      "line": 76,
      "symbol": "loadEventDetails",
      "area": "marketplace",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/series/SupabasePostSeriesRepository.ts",
+     "line": 101,
+     "symbol": "SupabasePostSeriesRepository.unwrapCall",
+     "area": "series",
      "ops": [
       "select"
      ]
@@ -12737,7 +13019,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-     "line": 95,
+     "line": 97,
      "symbol": "loadFoodDetails",
      "area": "marketplace",
      "ops": [
@@ -13467,6 +13749,53 @@
    ]
   },
   {
+   "old": "post_series",
+   "kind": "table",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "The recurring-event series of a post (schedule plus post and event templates); read through the series RPCs, written only by them.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "table",
+     "name": "post_series",
+     "columns": [
+      "beneficiary_org_id",
+      "created_at",
+      "duration_minutes",
+      "ends_on",
+      "event_template",
+      "id",
+      "owner_id",
+      "post_template",
+      "start_time",
+      "starts_on",
+      "status",
+      "time_zone",
+      "updated_at",
+      "weekdays"
+     ],
+     "clientGrants": {}
+    }
+   ],
+   "areas": [
+    "series"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/series/SupabasePostSeriesRepository.ts",
+     "line": 40,
+     "symbol": "SupabasePostSeriesRepository.unwrapCall",
+     "area": "series",
+     "ops": [
+      "select"
+     ]
+    }
+   ]
+  },
+  {
    "old": "post_stats",
    "kind": "table",
    "status": "same",
@@ -13584,6 +13913,7 @@
       "details",
       "direction",
       "expires_at",
+      "feed_folded",
       "geo_approx",
       "id",
       "item_subcategory_id",
@@ -13784,7 +14114,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-     "line": 112,
+     "line": 114,
      "symbol": "fetchListingDetail",
      "area": "marketplace",
      "ops": [
@@ -15385,6 +15715,63 @@
    ]
   },
   {
+   "old": "world_links",
+   "kind": "table",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Curated links from one world to a related one; readable signed-out too.",
+   "oldObject": {
+    "columns": [
+     "created_at",
+     "description",
+     "from_world_slug",
+     "is_active",
+     "label_en",
+     "label_he",
+     "link_id",
+     "link_slug",
+     "to_world_slug"
+    ],
+    "isView": false
+   },
+   "targets": [
+    {
+     "type": "table",
+     "name": "world_links",
+     "columns": [
+      "created_at",
+      "description",
+      "from_world_slug",
+      "id",
+      "is_active",
+      "label_en",
+      "label_he",
+      "link_slug",
+      "sort_order",
+      "to_world_slug",
+      "updated_at"
+     ],
+     "clientGrants": {}
+    }
+   ],
+   "areas": [
+    "worlds"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/worlds/SupabaseWorldContentRepository.ts",
+     "line": 28,
+     "symbol": "SupabaseWorldContentRepository.getWorldContent",
+     "area": "worlds",
+     "ops": [
+      "select"
+     ]
+    }
+   ]
+  },
+  {
    "old": "worlds",
    "kind": "table",
    "status": "same",
@@ -15444,7 +15831,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-     "line": 111,
+     "line": 113,
      "symbol": "fetchListingDetail",
      "area": "marketplace",
      "ops": [

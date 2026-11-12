@@ -1,4 +1,4 @@
-// FR-ADMIN-033 — staff timesheets over the timesheet_* RPCs (supabase/migrations/0023).
+// FR-ADMIN-033 — staff timesheets over the timesheet_* RPCs (supabase/migrations/0036).
 //
 // A member reports their own hours; the reporter's direct manager (or a super admin) decides
 // a submitted entry, and the server marks each row it may decide (`can_decide`). The list is

@@ -13,11 +13,14 @@
 | Range | Owner / issue | Status |
 |---|---|---|
 | 0002 | #2150 organization entitlement (`0002_org_entitlements.sql`) | merged |
-| 0003–0019 | `claude/baseline-post-cutover`: the post-cut-over world, chat, research, housing, knowledge and money changes ported from the pre-cut-over baseline branches. `0003` post seat counts, `0004` ride series schedule, `0005` match quality, `0006` profile mine tab, `0007` chat inbox previews, `0008` post media sizes, `0009` research feedback and survey reports, `0010` housing, knowledge and finance reads | merged (#2155) |
+| 0003–0010 | `claude/baseline-post-cutover`: the post-cut-over world, chat, research, housing, knowledge and money changes ported from the pre-cut-over baseline branches. `0003` post seat counts, `0004` ride series schedule, `0005` match quality, `0006` profile mine tab, `0007` chat inbox previews, `0008` post media sizes, `0009` research feedback and survey reports, `0010` housing, knowledge and finance reads | merged (#2155) |
 | 0011–0014 | `claude/parity-*` feature-parity restore: admin roles, hierarchy, census, last seen, role vocabulary, org slug, finance ledger | in progress |
 | 0015–0019 | `claude/parity-moderation-support` feature-parity restore of moderation, support and statistics: `0015` blocked users list and the staff support inbox (FR-MOD-004, FR-MOD-002, FR-ADMIN-013), `0016` report case tools (chat restore, restore dismisses the case, server inbox, case timeline, audit lookup by actor or target, comment restore; FR-ADMIN-002/007/012/013), `0017` report SLA alert sweep and `report_sla_warning` (FR-ADMIN-012 AC6), `0018` world flow funnel and my givings by world (FR-STATS-007/008, D106), `0019` KC support channels table (FR-DONATE-011, M20) | in progress |
-| 0020 | #2154 Section 46(a) status on the kernel (`0020_org_sec46_machine.sql`) | in progress |
-| 0021–0049 | feature-parity restore (back-office, WhatsApp, member features), handed out by the parity coordinator; `0020` was already taken by #2154, so the block starts at `0021` | claimed |
+| 0020 | #2154 Section 46(a) status on the kernel (`0020_org_sec46_machine.sql`) | merged |
+| 0021–0023 | #2086 recurring events: `0021` post series, `0022` series RPCs and the end of a recurring ride, `0023` one date of a series in the feeds | in progress |
+| 0024 | #2163 links and knowledge of the giving worlds: `world_links`, `external_bodies`, `knowledge_topics`, `knowledge_topic_aliases` (`0024_world_content.sql`) | in progress |
+| 0025–0049 | feature-parity restore (back-office, WhatsApp, member features), handed out by the parity coordinator (`0020`–`0024` were taken on `dev` before this claim) | claimed |
+| 0034–0036 | `claude/parity-back-office` (inside the parity claim): `0034` admin tasks (FR-ADMIN-018), `0035` CRM contacts per organization (FR-ADMIN-032), `0036` staff timesheets (FR-ADMIN-033); `0037`–`0038` held | in progress |
 
 Next free number: `0050`.
 

@@ -1,4 +1,4 @@
-// FR-ADMIN-018 — the admin task adapter: argument shapes of the 0021 RPCs, keyset paging,
+// FR-ADMIN-018 — the admin task adapter: argument shapes of the 0034 RPCs, keyset paging,
 // record mapping (nullable creator) and error mapping by stable message.
 import { describe, expect, it, vi } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';

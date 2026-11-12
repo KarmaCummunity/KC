@@ -13,7 +13,7 @@ import { defineMachine } from '../machine';
  * Who may make each move stays in the RPCs (author or manager); the graph holds what
  * may follow what. Deleting an entry is a soft delete (`deleted_at`), not a status.
  *
- * SQL copy: `supabase/migrations/0023_back_office_timesheets.sql`.
+ * SQL copy: `supabase/migrations/0036_back_office_timesheets.sql`.
  */
 export const timesheetMachine = defineMachine({
   id: 'timesheet',
