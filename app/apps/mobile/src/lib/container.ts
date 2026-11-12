@@ -28,8 +28,6 @@ import {
   SupabaseOrgHierarchyRepository,
   SupabaseOrgApplicationsRepository,
   SupabaseAdminContentRepository,
-  SupabaseTimesheetsRepository,
-  SupabaseCrmContactsRepository,
   SupabaseReportsRepository,
   SupabaseSurveyRepository,
   SupabaseSurveyAdminRepository,
@@ -94,17 +92,6 @@ import {
   AdminFindMembersUseCase,
   AdminSearchPostsUseCase,
   AdminSearchAuditUseCase,
-  ListTimesheetsUseCase,
-  UpsertTimesheetUseCase,
-  SubmitTimesheetUseCase,
-  ApproveTimesheetUseCase,
-  RejectTimesheetUseCase,
-  DeleteTimesheetUseCase,
-  ListCrmContactsUseCase,
-  ListCrmOrgsUseCase,
-  UpsertCrmContactUseCase,
-  DeleteCrmContactUseCase,
-  MarkCrmContactContactedUseCase,
   ListOpenReportsUseCase,
   GetReportCaseDetailUseCase,
   ListActiveSurveysUseCase,
@@ -120,6 +107,7 @@ import {
   LoadPublicResearchBundleUseCase,
   SubmitPublicResearchResponseUseCase,
 } from '@kc/application';
+import { createBackOfficeUseCases } from './backOfficeContainer';
 import { createFinanceUseCases } from './financeContainer';
 import { createModerationStaffUseCases } from './moderationContainer';
 import { isSupabaseConfigured } from './supabasePublicConfig';
@@ -152,8 +140,6 @@ const adminRoleRepo = new SupabaseAdminRoleRepository(supabase);
 const adminTaskRepo = new SupabaseAdminTaskRepository(supabase);
 const orgHierarchyRepo = new SupabaseOrgHierarchyRepository(supabase);
 const adminContentRepo = new SupabaseAdminContentRepository(supabase);
-const timesheetsRepo = new SupabaseTimesheetsRepository(supabase);
-const crmContactsRepo = new SupabaseCrmContactsRepository(supabase);
 const orgApplicationsRepo = new SupabaseOrgApplicationsRepository(supabase);
 const reportsRepo = new SupabaseReportsRepository(supabase);
 const surveyRepo = new SupabaseSurveyRepository(supabase);
@@ -209,23 +195,12 @@ export const container = {
   adminFindMembers: new AdminFindMembersUseCase(adminContentRepo),
   adminSearchPosts: new AdminSearchPostsUseCase(adminContentRepo),
   adminSearchAudit: new AdminSearchAuditUseCase(adminContentRepo),
-  // FR-ADMIN-033
-  listTimesheets:   new ListTimesheetsUseCase(timesheetsRepo),
-  upsertTimesheet:  new UpsertTimesheetUseCase(timesheetsRepo),
-  submitTimesheet:  new SubmitTimesheetUseCase(timesheetsRepo),
-  approveTimesheet: new ApproveTimesheetUseCase(timesheetsRepo),
-  rejectTimesheet:  new RejectTimesheetUseCase(timesheetsRepo),
-  deleteTimesheet:  new DeleteTimesheetUseCase(timesheetsRepo),
   // V2-ADMIN-MONEY-9 (+ accounts, donors, public display: FR-FIN-003/022/023)
   ...createFinanceUseCases(supabase),
+  // FR-ADMIN-032 / FR-ADMIN-033
+  ...createBackOfficeUseCases(supabase),
   ...createModerationStaffUseCases(supabase),
   ...createWhatsAppAdminUseCases(),
-  // FR-ADMIN-032
-  listCrmOrgs: new ListCrmOrgsUseCase(crmContactsRepo),
-  listCrmContacts: new ListCrmContactsUseCase(crmContactsRepo),
-  upsertCrmContact: new UpsertCrmContactUseCase(crmContactsRepo),
-  deleteCrmContact: new DeleteCrmContactUseCase(crmContactsRepo),
-  markCrmContactContacted: new MarkCrmContactContactedUseCase(crmContactsRepo),
   // V2-ADMIN-ORG-7
   listOrgApplications: new ListOrgApplicationsUseCase(orgApplicationsRepo),
   decideOrgApplication: new DecideOrgApplicationUseCase(orgApplicationsRepo),
