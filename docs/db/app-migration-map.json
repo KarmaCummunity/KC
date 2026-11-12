@@ -12822,6 +12822,7 @@
       "edited_at",
       "id",
       "mention_user_ids",
+      "moderation_removed_at",
       "parent_comment_id",
       "post_id",
       "status",
