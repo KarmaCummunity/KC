@@ -112,6 +112,40 @@ describe('fetchBootstrapSession', () => {
     expect(calls[0]).toMatchObject({ kind: 'rpc', fn: 'bootstrap_session' });
   });
 
+  it('shares one round trip between callers that ask at the same moment', async () => {
+    const { client, calls } = createFakeClient({ rpc: { bootstrap_session: { data: FULL_PAYLOAD, error: null } } });
+
+    const [gate, onboarding, profile] = await Promise.all([
+      fetchBootstrapSession(client),
+      fetchBootstrapSession(client),
+      fetchBootstrapSession(client),
+    ]);
+
+    expect(calls).toHaveLength(1);
+    expect(onboarding).toBe(gate);
+    expect(profile).toBe(gate);
+  });
+
+  it('reads again once the previous read has settled, so state is never served stale', async () => {
+    const { client, calls } = createFakeClient({ rpc: { bootstrap_session: { data: FULL_PAYLOAD, error: null } } });
+
+    await fetchBootstrapSession(client);
+    await fetchBootstrapSession(client);
+
+    expect(calls).toHaveLength(2);
+  });
+
+  it('does not replay a failed read to the next caller', async () => {
+    const config = {
+      rpc: { bootstrap_session: { data: null as unknown, error: { code: '42501', message: 'unauthenticated' } as unknown } },
+    };
+    const { client } = createFakeClient(config as Parameters<typeof createFakeClient>[0]);
+    await expect(fetchBootstrapSession(client)).rejects.toBeInstanceOf(BackendRuleError);
+
+    config.rpc.bootstrap_session = { data: FULL_PAYLOAD, error: null };
+    await expect(fetchBootstrapSession(client)).resolves.toMatchObject({ userId: 'u1' });
+  });
+
   it('refuses with the stable reason `unauthenticated` for a signed-out caller', async () => {
     const { client } = createFakeClient({
       rpc: { bootstrap_session: { data: null, error: { code: '42501', message: 'unauthenticated' } } },
