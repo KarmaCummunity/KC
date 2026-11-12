@@ -86,17 +86,31 @@ export const LANE_JOBS = ['hygiene', 'static', ...LANES, ...HEAVY_LANES];
 /**
  * Lanes that appear in the plan only when needed: `release`, the dev → main
  * lane (source branch, strict migration scan, VERSION bump, dev E2E), needed
- * for every PR or merge group whose base is main, whatever it touches. Never
+ * for every PR or merge group whose base is main, whatever it touches, and
+ * `maestro`, the Android journeys on an emulator against kc-dev (about 45
+ * minutes), needed on a PR whose diff touches MAESTRO_RULES. It is not run by
+ * a merge group, a push or a dispatch: the PR already ran it, and a push to
+ * dev has its own non-blocking run (maestro-dev-health.yml) so that a shared,
+ * mutable kc-dev can never hold a deploy. Never
  * planned as `false`, so a ci.yml without the job (and the gate copy that
  * predates it) keeps passing; scripts/ci-gate.mjs accepts the job as skipped
  * when the plan omits it. Keep in sync with OPTIONAL_LANES there.
- *
- * `maestro` (the Android journeys on an emulator against kc-dev) is registered here first and planned
- * by nothing yet. The gate judges a PR with this file from the base commit, so a PR that adds the
- * `maestro` job to ci.yml can only pass once the base already knows it as an optional lane: this
- * registration lands first, and the next change plans it and adds the job.
  */
 export const OPTIONAL_LANES = ['release', 'maestro'];
+
+/**
+ * Paths that change what the Maestro Android journeys see: the app, its packages and lockfile, the
+ * flows and their runner, and the workflow itself. The `maestro` lane is needed on a PR that touches
+ * one of them; nothing else plans it (see `plan`).
+ */
+export const MAESTRO_RULES = [
+  /^app\/apps\/mobile\//,
+  /^app\/packages\//,
+  /^app\/pnpm-lock\.yaml$/,
+  /^\.maestro\//,
+  /^scripts\/maestro-/,
+  /^\.github\/workflows\/ci-maestro-android\.yml$/,
+];
 
 /** Map changed paths to the heavy lanes they need. */
 export function classify(files) {
@@ -151,7 +165,17 @@ export function plan({ event, draft, actor, ref, baseRef, files, action, baseCha
   // gone from PRs into dev (D-195 addendum, TD-236), it gates PRs into main
   // and main pushes. Dependabot-triggered runs get no secrets.
   const sonarTarget = (isPr && base === 'main' && actor !== 'dependabot[bot]') || (!isPr && event !== 'merge_group' && ref === 'refs/heads/main');
-  const needed = { hygiene: isPr, static: true, ...lanes, ...heavy, ...(release ? { release: true } : {}) };
+  // The seed password reaches only runs that get secrets, so a Dependabot PR does not plan Maestro.
+  // An undiffable PR (files === null) runs it: fail closed.
+  const maestro = isPr && actor !== 'dependabot[bot]' && (files === null || files.some((f) => MAESTRO_RULES.some((re) => re.test(f))));
+  const needed = {
+    hygiene: isPr,
+    static: true,
+    ...lanes,
+    ...heavy,
+    ...(release ? { release: true } : {}),
+    ...(maestro ? { maestro: true } : {}),
+  };
   if (event === 'pull_request_review') {
     const jobs = [...LANE_JOBS, ...OPTIONAL_LANES];
     const run = Object.fromEntries(jobs.map((j) => [j, needed[j] === true && REVIEW_LANES.includes(j)]));
