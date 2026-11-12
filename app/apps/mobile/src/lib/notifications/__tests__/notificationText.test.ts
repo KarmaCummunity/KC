@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import he from '../../../i18n/locales/he';
+import { bothLocaleBundles } from '../../../i18n/useLocaleBundle';
 import { DETAILS_SEPARATOR, notificationText, richTextArgs } from '../notificationText';
 
+const { he } = bothLocaleBundles();
 /** Strict i18next-like translate over the Hebrew bundle. */
 const t = (key: string, args: Record<string, string | number> = {}) => {
   const template = key.split('.').reduce<unknown>((node, part) => (node as Record<string, unknown>)?.[part], he);
