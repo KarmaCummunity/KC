@@ -57,7 +57,7 @@ begin
 end;
 $$;
 
-select plan(11);
+select plan(15);
 
 -- a platform admin · b an ordinary member.
 insert into auth.users (id, email, raw_app_meta_data)
@@ -125,6 +125,23 @@ select throws_ok(
 select throws_ok(
   $$update public.knowledge_topics set status = 'merged' where slug = 'proposed-topic'$$,
   '23514', null, 'a merged topic names the topic that replaced it');
+
+-- ── The topic graph (machine `knowledge_topic`, 0050) ─────────────────────
+-- `proposed-topic` was approved above, so it is active now.
+select throws_ok(
+  $$update public.knowledge_topics set status = 'proposed' where slug = 'proposed-topic'$$,
+  'P0001', 'illegal_transition', 'an approved topic never goes back to a suggestion');
+select lives_ok(
+  $$update public.knowledge_topics set status = 'merged',
+           merged_into_id = (select id from public.knowledge_topics where slug = 'live-topic')
+     where slug = 'proposed-topic'$$,
+  'an active topic is merged into another');
+select throws_ok(
+  $$update public.knowledge_topics set status = 'active', merged_into_id = null where slug = 'proposed-topic'$$,
+  'P0001', 'illegal_transition', 'a merged topic is never revived');
+select throws_ok(
+  $$insert into public.knowledge_topics (slug, world_slug, label_he, label_en, status) values ('odd', 'w_one', 'x', 'X', 'archived')$$,
+  'P0001', 'unknown_state', 'a topic is created only in a state of the graph');
 
 -- ── Content leaves with its world ───────────────────────────────────────────
 delete from public.worlds where slug = 'w_one';

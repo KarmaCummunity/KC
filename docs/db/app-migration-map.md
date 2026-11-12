@@ -152,7 +152,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `bootstrap_session` | core | 1:1 | `bootstrap_session() → Json` | Session start in one call: the account gate (`account.status`, `status_until`), the caller's `private_profile`, the staff `admin.roles` and the pending `legal.documents`. The app reads those blocks and nothing else. | `unauthenticated` | high | bootstrapSession.ts:138 |
+| `bootstrap_session` | core | 1:1 | `bootstrap_session() → Json` | Session start in one call: the account gate (`account.status`, `status_until`), the caller's `private_profile`, the staff `admin.roles` and the pending `legal.documents`. The app reads those blocks and nothing else. | `unauthenticated` | high | bootstrapSession.ts:155 |
 | `restore_account` | core | 1:1 | `restore_account() → undefined` | Restores the caller's account during the 30-day grace period (refusals `not_pending_deletion`, `grace_expired`). | `grace_expired`, `not_pending_deletion`, `unauthenticated` | high | SupabaseAccountGateRepository.ts:53 |
 
 ### `infrastructure-supabase/src/blocks/`

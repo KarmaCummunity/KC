@@ -83,7 +83,7 @@ as $$
     from generate_series(1, 1536) i;
 $$;
 
-select plan(48);
+select plan(50);
 
 -- Alice offers. Bob, Carol, Dan and Eve ask. Carol and Alice are blocked.
 insert into auth.users (id, email, raw_app_meta_data)
@@ -150,6 +150,11 @@ select lives_ok($$select public.embedding_job_store(('10000000-0000-4000-8000-00
 select lives_ok($$select public.embedding_job_fail('10000000-0000-4000-8000-000000000005', 'provider error')$$, 'a failure is recorded');
 select is((select string_agg(status, ',' order by post_id) from kc_private.embedding_jobs),
   'done,done,done,done,failed,processing', 'each job shows where it stands');
+-- The queue moves along the graph (machine `embedding_job`, 0050).
+select throws_ok($$update kc_private.embedding_jobs set status = 'failed' where post_id = '10000000-0000-4000-8000-000000000001'$$,
+  'P0001', 'illegal_transition', 'a stored job is not marked failed afterwards');
+select throws_ok($$update kc_private.embedding_jobs set status = 'stuck' where post_id = '10000000-0000-4000-8000-000000000006'$$,
+  'P0001', 'unknown_state', 'a job takes only a state of the graph');
 select throws_ok($$select public.embedding_job_store(gen_random_uuid(), pg_temp.axis(1), 'm')$$, 'P0001', 'embedding_job_not_found',
   'an unknown job is refused');
 select is(pg_temp.act('a', 'select public.embedding_jobs_claim(1)') || '/' || pg_temp.act('a', 'select 1 from public.post_embeddings')

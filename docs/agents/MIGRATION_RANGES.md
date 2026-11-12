@@ -23,8 +23,9 @@
 | 0026–0033 | `claude/parity-member-features` member features (handed out by the parity coordinator) | claimed |
 | 0034–0038 | `claude/parity-back-office` (inside the parity claim): `0034` admin tasks (FR-ADMIN-018), `0035` CRM contacts per organization (FR-ADMIN-032), `0036` staff timesheets (FR-ADMIN-033); `0037`–`0038` held | in progress |
 | 0039–0049 | feature-parity restore (WhatsApp and the rest), held by the parity coordinator | claimed |
+| 0050 | #2202 knowledge topics and embedding jobs on the FSM kernel (`0050_knowledge_topic_embedding_job_machines.sql`) | in progress |
 
-Next free number: `0050`.
+Next free number: `0051`.
 
 ## Retired chain (before D-228)
 
