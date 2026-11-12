@@ -1902,7 +1902,7 @@ Owner rules that go with it:
 
 **Affected.** `supabase/migrations/0741_offer_photo_required.sql`, `supabase/tests/0741_offer_photo_required.sql`, `supabase/tests/0351_items_image_photo_or_details.sql`, `supabase/tests/_harness/10_fixtures.sql`, `app/packages/infrastructure-supabase/src/posts/createPostWithMedia.ts`, `app/packages/application/src/contracts/postRepository.contract.ts`, `docs/spec/requirements/04_posts.md` (FR-POST-002 AC5).
 
-## {{ENG:maestro-android-gate-lane}} — The Android journeys are a lane of the CI gate, and `dev` has a non-blocking run (2026-11-11)
+## D-233 — The Android journeys are a lane of the CI gate, and `dev` has a non-blocking run (2026-11-11)
 
 **Decision.** `maestro` joins the `CI gate` as an optional lane (the `release` pattern: named in the plan only when needed, so a gate copy that predates it keeps passing). `scripts/ci-changes.mjs` plans it on a PR whose diff touches `MAESTRO_RULES` (the mobile app, `app/packages`, the lockfile, the flows and their runner, the workflow), fail-closed when the diff cannot be read, and never for a Dependabot PR (it gets no secrets), a merge group, a push or a dispatch. A failed lane fails the gate, which makes the journeys required where they can break without adding a second required check (the gate stays the only one, D-195). `maestro-dev-health.yml` runs the same workflow after a push to `dev` that touches the app and on demand, outside `CI`, with one run in flight per ref. The runner retries a failed flow once and reports a pass on the retry as a warning.
 
