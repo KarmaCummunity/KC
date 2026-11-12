@@ -254,4 +254,8 @@ export const notificationsHe = {
   donationRefundedBody: 'בוצע החזר על התרומה שלך.',
   standingOrderChargeFailedTitle: 'החיוב החודשי נכשל',
   standingOrderChargeFailedBody: 'לא הצלחנו לחייב את הוראת הקבע. כדאי לבדוק את אמצעי התשלום.',
+  // FR-ADMIN-018 — a staff task was assigned to the member; the body is the task title.
+  taskAssignedTitle: 'משימת ניהול חדשה הוקצתה לך',
+  taskAssignedBody: '{{taskTitle}}',
+  taskTitleFallback: 'משימה חדשה',
 } as const;

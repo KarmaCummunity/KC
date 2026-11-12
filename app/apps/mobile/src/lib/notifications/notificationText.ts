@@ -6,20 +6,24 @@ import { isNotificationKind, notificationKindSpec } from '@kc/domain';
 
 type Translate = (key: string, args?: Record<string, string | number>) => string;
 
-type TextSource = Pick<InboxNotification, 'kind' | 'titleKey' | 'bodyKey' | 'groupCount' | 'actorDisplayName'>;
+type TextSource = Pick<InboxNotification, 'kind' | 'titleKey' | 'bodyKey' | 'groupCount' | 'actorDisplayName'> &
+  Partial<Pick<InboxNotification, 'args'>>;
 
 /** The arguments every notification text may use, with their fallbacks. */
 export function notificationTextArgs(
-  notification: Pick<InboxNotification, 'groupCount' | 'actorDisplayName'>,
+  notification: Pick<InboxNotification, 'groupCount' | 'actorDisplayName'> & Partial<Pick<InboxNotification, 'args'>>,
   t: Translate,
 ): Record<NotificationTextArg, string | number> {
   const count = Math.max(1, notification.groupCount);
+  const taskTitle = notification.args?.task_title;
   return {
     actorName: notification.actorDisplayName?.trim() || t('notifications.actorNameFallback'),
     count,
     othersCount: count - 1,
     // The centre does not load message text; the conversation shows it.
     messagePreview: t('notifications.messagePreviewFallback'),
+    // `data.task_title` of an admin task notification (FR-ADMIN-018).
+    taskTitle: typeof taskTitle === 'string' && taskTitle.trim() !== '' ? taskTitle : t('notifications.taskTitleFallback'),
   };
 }
 

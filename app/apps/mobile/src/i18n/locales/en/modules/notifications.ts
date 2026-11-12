@@ -254,4 +254,8 @@ export const notificationsEn = {
   donationRefundedBody: 'Your donation was refunded.',
   standingOrderChargeFailedTitle: 'Monthly charge failed',
   standingOrderChargeFailedBody: 'We could not charge your standing order. Please check your payment method.',
+  // FR-ADMIN-018 — a staff task was assigned to the member; the body is the task title.
+  taskAssignedTitle: 'A new admin task was assigned to you',
+  taskAssignedBody: '{{taskTitle}}',
+  taskTitleFallback: 'New task',
 } as const;

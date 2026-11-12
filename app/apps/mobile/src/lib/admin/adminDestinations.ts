@@ -6,7 +6,9 @@ import type { Ionicons } from '@expo/vector-icons';
 import type { Href } from 'expo-router';
 import type { AdminPermission } from '@kc/domain';
 import type { LocaleBundle } from '../../i18n/useLocaleBundle';
-import { BACK_OFFICE_TOOLS_AVAILABLE, WHATSAPP_BOT_AVAILABLE } from '../parkedFeatures';
+import {
+  ADMIN_TASKS_AVAILABLE, CRM_AVAILABLE, TIMESHEETS_AVAILABLE, WHATSAPP_BOT_AVAILABLE,
+} from '../parkedFeatures';
 
 type IconName = ComponentProps<typeof Ionicons>['name'];
 
@@ -24,7 +26,9 @@ export interface AdminDestination {
 export const ADMIN_DESTINATIONS: readonly AdminDestination[] = [
   { key: 'dashboard', href: '/(admin)',         icon: 'grid-outline',             perm: null },
   { key: 'reports',   href: '/(admin)/reports', icon: 'flag-outline',             perm: null },
-  { key: 'tasks',     href: '/(admin)/tasks',   icon: 'checkbox-outline',         perm: 'tasks.view', available: BACK_OFFICE_TOOLS_AVAILABLE },
+  { key: 'tasks',     href: '/(admin)/tasks',   icon: 'checkbox-outline',         perm: 'tasks.view', available: ADMIN_TASKS_AVAILABLE },
+  { key: 'time',      href: '/(admin)/time',    icon: 'hourglass-outline',        perm: 'time.report', available: TIMESHEETS_AVAILABLE },
+  { key: 'crm',       href: '/(admin)/crm',     icon: 'people-circle-outline',    perm: 'crm.manage', available: CRM_AVAILABLE },
   { key: 'admins',    href: '/(admin)/admins',  icon: 'shield-checkmark-outline', perm: 'admins.view' },
   { key: 'users',     href: '/(admin)/users',   icon: 'people-outline',           perm: 'users.search' },
   { key: 'posts',     href: '/(admin)/posts',   icon: 'document-text-outline',    perm: 'posts.search' },
