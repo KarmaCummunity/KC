@@ -48,7 +48,7 @@ describe('useBlockedUsers', () => {
     await waitFor(() => expect(result.current.users).toEqual([ROW]));
   });
 
-  it('degrades to an empty, flagged list while the backend cannot list blocked members (M01)', async () => {
+  it('degrades to an empty, flagged list when the backend lacks list_my_blocked_users', async () => {
     m.list.mockRejectedValue(new BackendUnavailableError('rpc:list_my_blocked_users', 'function'));
     const { result } = renderHook(() => useBlockedUsers(), { wrapper });
     await waitFor(() => expect(result.current.unavailable).toBe(true));

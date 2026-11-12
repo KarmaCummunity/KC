@@ -1,7 +1,7 @@
 // FR-STATS-008 — the signed-in member's own givings per world on the statistics screen:
 // given, received (handed over) and own listings closed.
-// Owner only by construction: the call reads the session user (FR-STATS-006 AC1). The baseline has
-// no source for it yet (M15), so the block is not rendered while the backend lacks it.
+// Owner only by construction: the call reads the session user (FR-STATS-006 AC1) through
+// `my_world_givings` (migration 0018); the block is not rendered while a backend lacks it.
 import React from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { useQuery } from '@tanstack/react-query';

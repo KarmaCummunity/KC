@@ -46,13 +46,42 @@ describe('SupabaseBlockRepository', () => {
     expect(calls[0]?.filters).toEqual([['eq', 'blocker_id', 'a'], ['eq', 'blocked_id', 'b']]);
   });
 
-  it('listMyBlockedUsers reports the capability as missing (M01) without calling the database', async () => {
-    const { client, calls } = createFakeClient();
+  it('listMyBlockedUsers maps the rows of list_my_blocked_users (FR-MOD-004 AC1)', async () => {
+    const { client, calls } = createFakeClient({
+      rpc: {
+        list_my_blocked_users: {
+          data: [{ user_id: 'b', display_name: 'Bee', avatar_url: null, blocked_at: '2026-11-03T10:00:00Z' }],
+          error: null,
+        },
+      },
+    });
 
-    const error = await new SupabaseBlockRepository(client).listMyBlockedUsers().catch((e: unknown) => e);
+    await expect(new SupabaseBlockRepository(client).listMyBlockedUsers()).resolves.toEqual([
+      { userId: 'b', displayName: 'Bee', avatarUrl: null, blockedAt: '2026-11-03T10:00:00Z' },
+    ]);
+    expect(calls).toHaveLength(1);
+    expect(calls[0]).toMatchObject({ fn: 'list_my_blocked_users', args: { p_limit: 100 } });
+  });
 
-    expect(error).toBeInstanceOf(BackendUnavailableError);
-    expect(error).toMatchObject({ object: 'rpc:list_my_blocked_users' });
-    expect(calls).toHaveLength(0);
+  it('listMyBlockedUsers reads the next keyset page while a page comes back full', async () => {
+    const full = Array.from({ length: 100 }, (_, i) => ({
+      user_id: `u${i}`, display_name: null, avatar_url: null, blocked_at: `2026-11-03T10:00:${String(59 - (i % 60)).padStart(2, '0')}Z`,
+    }));
+    const { client, calls } = createFakeClient({ rpc: { list_my_blocked_users: { data: full, error: null } } });
+
+    const users = await new SupabaseBlockRepository(client).listMyBlockedUsers();
+
+    // The fake answers every page with the same full page, so the loop stops at its bound.
+    expect(calls).toHaveLength(20);
+    expect(users).toHaveLength(2000);
+    expect(calls[1]?.args).toMatchObject({ p_before_user_id: 'u99', p_before_blocked_at: full[99]!.blocked_at });
+  });
+
+  it('listMyBlockedUsers reports a missing function as BackendUnavailableError', async () => {
+    const { client } = createFakeClient({
+      rpc: { list_my_blocked_users: { data: null, error: { code: 'PGRST202', message: 'not in the schema cache' } } },
+    });
+
+    await expect(new SupabaseBlockRepository(client).listMyBlockedUsers()).rejects.toBeInstanceOf(BackendUnavailableError);
   });
 });
