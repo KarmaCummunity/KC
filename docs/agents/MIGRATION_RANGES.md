@@ -17,8 +17,9 @@
 | 0011–0014 | `claude/parity-admin-hierarchy`: admin hierarchy parity. `0011` grant authority of the role functions (revoke / change authority, last organization administrator, `admin_set_manager` detach and errors, linked audit rows), `0012` staff roster and organization tree with last seen (`admin_list_admins`, `admin_org_tree`, `kc_private.user_last_seen`, team-manager read of grants), `0013` `admin_hierarchy_census` and `kc_private.bootstrap_super_admin`, `0014` `admin_set_org_slug` and the void reason of `finance_ledger_mark` | in progress |
 | 0020 | #2154 Section 46(a) status on the kernel (`0020_org_sec46_machine.sql`) | merged |
 | 0021–0023 | #2086 recurring events: `0021` post series, `0022` series RPCs and the end of a recurring ride, `0023` one date of a series in the feeds | in progress |
+| 0024 | #2163 links and knowledge of the giving worlds: `world_links`, `external_bodies`, `knowledge_topics`, `knowledge_topic_aliases` (`0024_world_content.sql`) | in progress |
 
-Next free number: `0024`.
+Next free number: `0025`.
 
 ## Retired chain (before D-228)
 

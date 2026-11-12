@@ -546,6 +546,61 @@ export type Database = {
           },
         ]
       }
+      external_bodies: {
+        Row: {
+          body_type: string
+          contact_url: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          is_verified: boolean
+          label_en: string
+          label_he: string
+          requires_routing: boolean
+          slug: string
+          sort_order: number
+          updated_at: string
+          world_slug: string
+        }
+        Insert: {
+          body_type: string
+          contact_url?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_verified?: boolean
+          label_en: string
+          label_he: string
+          requires_routing?: boolean
+          slug: string
+          sort_order?: number
+          updated_at?: string
+          world_slug: string
+        }
+        Update: {
+          body_type?: string
+          contact_url?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_verified?: boolean
+          label_en?: string
+          label_he?: string
+          requires_routing?: boolean
+          slug?: string
+          sort_order?: number
+          updated_at?: string
+          world_slug?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "external_bodies_world_slug_fkey"
+            columns: ["world_slug"]
+            referencedRelation: "worlds"
+            referencedColumns: ["slug"]
+          },
+        ]
+      }
       feed_hides: {
         Row: {
           hidden_at: string
@@ -932,6 +987,104 @@ export type Database = {
             columns: ["user_id"]
             referencedRelation: "users"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      knowledge_topic_aliases: {
+        Row: {
+          alias: string
+          alias_norm: string | null
+          created_at: string
+          id: string
+          lang: string
+          topic_id: string
+        }
+        Insert: {
+          alias: string
+          alias_norm?: string | null
+          created_at?: string
+          id?: string
+          lang?: string
+          topic_id: string
+        }
+        Update: {
+          alias?: string
+          alias_norm?: string | null
+          created_at?: string
+          id?: string
+          lang?: string
+          topic_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "knowledge_topic_aliases_topic_id_fkey"
+            columns: ["topic_id"]
+            referencedRelation: "knowledge_topics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      knowledge_topics: {
+        Row: {
+          created_at: string
+          description_he: string | null
+          id: string
+          label_en: string
+          label_he: string
+          merged_into_id: string | null
+          parent_id: string | null
+          slug: string
+          sort_order: number
+          status: string
+          updated_at: string
+          world_slug: string
+        }
+        Insert: {
+          created_at?: string
+          description_he?: string | null
+          id?: string
+          label_en: string
+          label_he: string
+          merged_into_id?: string | null
+          parent_id?: string | null
+          slug: string
+          sort_order?: number
+          status?: string
+          updated_at?: string
+          world_slug: string
+        }
+        Update: {
+          created_at?: string
+          description_he?: string | null
+          id?: string
+          label_en?: string
+          label_he?: string
+          merged_into_id?: string | null
+          parent_id?: string | null
+          slug?: string
+          sort_order?: number
+          status?: string
+          updated_at?: string
+          world_slug?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "knowledge_topics_merged_into_id_fkey"
+            columns: ["merged_into_id"]
+            referencedRelation: "knowledge_topics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "knowledge_topics_parent_id_fkey"
+            columns: ["parent_id"]
+            referencedRelation: "knowledge_topics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "knowledge_topics_world_slug_fkey"
+            columns: ["world_slug"]
+            referencedRelation: "worlds"
+            referencedColumns: ["slug"]
           },
         ]
       }
@@ -3554,6 +3707,61 @@ export type Database = {
             columns: ["city_id"]
             referencedRelation: "cities"
             referencedColumns: ["city_id"]
+          },
+        ]
+      }
+      world_links: {
+        Row: {
+          created_at: string
+          description: string | null
+          from_world_slug: string
+          id: string
+          is_active: boolean
+          label_en: string
+          label_he: string
+          link_slug: string
+          sort_order: number
+          to_world_slug: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          from_world_slug: string
+          id?: string
+          is_active?: boolean
+          label_en: string
+          label_he: string
+          link_slug: string
+          sort_order?: number
+          to_world_slug: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          from_world_slug?: string
+          id?: string
+          is_active?: boolean
+          label_en?: string
+          label_he?: string
+          link_slug?: string
+          sort_order?: number
+          to_world_slug?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "world_links_from_world_slug_fkey"
+            columns: ["from_world_slug"]
+            referencedRelation: "worlds"
+            referencedColumns: ["slug"]
+          },
+          {
+            foreignKeyName: "world_links_to_world_slug_fkey"
+            columns: ["to_world_slug"]
+            referencedRelation: "worlds"
+            referencedColumns: ["slug"]
           },
         ]
       }

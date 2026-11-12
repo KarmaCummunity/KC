@@ -15,7 +15,6 @@ export default function TimeWorldScreen() {
         worldSlug="time"
         icon="time-outline"
         introKey="timeVolunteer.hubIntro"
-        linksCategory="time"
         subScreens={WORLD_CHROME_BY_SLUG.time.subScreens}
         headerExtra={<TimeOpportunitiesSection />}
       />

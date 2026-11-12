@@ -303,6 +303,10 @@ table('post_ride_details', 'same', 'table:post_ride_details', 'Read for the rout
 table('post_event_details', 'same', 'table:post_event_details', 'Read for an event\'s window, capacity and policy; the organizer edits it through the adapter.');
 table('post_food_details', 'same', 'table:post_food_details', 'Read for a food offer\'s expiry and contents; the giver edits it through the adapter.');
 table('worlds', 'same', 'table:worlds', 'The world labels shown on a listing detail.');
+// Links and knowledge of a giving world (migration `0024`), read by `SupabaseWorldContentRepository`.
+table('world_links', 'same', 'table:world_links', 'Curated links from one world to a related one; readable signed-out too.');
+table('knowledge_topics', 'changed', 'table:knowledge_topics', 'The topic tree, read-only for members: `id` (not `topic_id`), `world_slug` added, no `created_by` / `approved_by` / `legacy_category_slug`. Proposals, review and follows are not in the baseline.');
+table('external_bodies', 'changed', 'table:external_bodies', '`id` (not `body_id`); read directly, the search and admin RPCs of the old picker are not in the baseline.');
 table('organizations', 'same', 'table:organizations', 'The routed worlds\' body picker (organizations by name).');
 table('road_junctions', 'same', 'table:road_junctions', 'The junctions of the ride place catalog (name and position).');
 table('user_consents', 'same', 'table:user_consents', 'The acceptance record of the driver declaration.');
@@ -392,7 +396,7 @@ export const packages = [
     degrade: 'Reporting a post or member shows "not available yet"; the admin portal entry is hidden for everyone until the package lands (staff use the dashboard of the database meanwhile).',
     risks: 'Staff deletion of a chat message is `admin_delete_message` (M18).' },
   { id: 'P5', title: 'Launch worlds: items, food, rides, time (events), matching, donation links', launch: 'wedge', parallelWith: ['P6'],
-    select: either(inArea('marketplace', 'rides', 'volunteering', 'matching', 'donations', 'organizations', 'series'), both(inArea('mobile'), tierIs('wedge'))),
+    select: either(inArea('marketplace', 'rides', 'volunteering', 'matching', 'donations', 'organizations', 'series', 'worlds'), both(inArea('mobile'), tierIs('wedge'))),
     files: ['marketplace/**', 'rides/** (except rides/SupabaseRidesRealtime.ts)', 'volunteering/**', 'matching/**', 'donations/**', 'organizations/**', 'apps/mobile: world screens, ridesKnowledgeComposition, listing image upload, karma history'],
     work: 'Listings become posts; one handoff row shape; the legacy ride tables and their repositories are deleted; volunteering maps onto event posts; matches as cards. Two agents may split it by folder (rides / the rest): no shared file.',
     tests: ['vitest: marketplace, rides, volunteering, matching, donations suites', 'pgTAP 035, 070, 072 (events, karma), 073 (food), 076, 080'],

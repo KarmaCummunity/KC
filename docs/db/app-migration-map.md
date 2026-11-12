@@ -9,11 +9,11 @@ The application (`app/packages/infrastructure-supabase`, `app/apps/mobile`) and 
 | Kind | Objects used | 1:1 | 1:1 (renamed) | CHANGED | REMOVED | MISSING |
 | --- | --- | --- | --- | --- | --- | --- |
 | RPCs | 181 | 114 | 20 | 28 | 0 | 19 |
-| Tables and views | 60 | 44 | 0 | 15 | 0 | 1 |
+| Tables and views | 63 | 45 | 0 | 17 | 0 | 1 |
 | Storage buckets | 4 | 3 | 0 | 1 | 0 | 0 |
 | Realtime channels | 6 | 6 | 0 | 0 | 0 | 0 |
 | Edge Function invokes | 3 | 3 | 0 | 0 | 0 | 0 |
-| **Total** | 254 | 170 | 20 | 44 | 0 | 20 |
+| **Total** | 257 | 171 | 20 | 46 | 0 | 20 |
 
 ### Launch scope
 
@@ -23,7 +23,7 @@ Every row carries `launch` (spec D102, `docs/spec/96_launch_and_first_group_plan
 | --- | --- | --- | --- | --- | --- | --- |
 | core | 108 | 89 | 1 | 18 | 0 | 0 |
 | wedge | 53 | 32 | 15 | 6 | 0 | 0 |
-| later | 93 | 49 | 4 | 20 | 0 | 20 |
+| later | 96 | 50 | 4 | 22 | 0 | 20 |
 | **Launch-critical (core + wedge)** | 161 | 121 | 16 | 24 | 0 | 0 |
 
 Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename of the function or its arguments · **CHANGED** the caller's logic changes · **REMOVED** no replacement by design · **MISSING** the baseline has no equivalent although the code needs one (§4). Confidence: **high** read in the baseline source, **medium** inferred from names and generated types.
@@ -74,6 +74,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `infrastructure-supabase/src/translations/` | 6 | 3 | 3 | 0 | 0 |
 | `infrastructure-supabase/src/users/` | 33 | 20 | 13 | 0 | 0 |
 | `infrastructure-supabase/src/volunteering/` | 9 | 3 | 6 | 0 | 0 |
+| `infrastructure-supabase/src/worlds/` | 3 | 1 | 2 | 0 | 0 |
 | `apps/mobile` (direct calls outside the adapters) | 18 | 17 | 1 | 0 | 0 |
 | Edge Function `_shared` | 11 | 0 | 0 | 0 | 11 |
 | Edge Function `backfill-image-thumbs` | 2 | 0 | 2 | 0 | 0 |
@@ -571,6 +572,16 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `posts` (table) | core | CHANGED | see `infrastructure-supabase/src/admin/` |  |  |  | SupabaseVolunteerRepository.ts:143, SupabaseVolunteerRepository.ts:177 |
 | `users` (table) | core | CHANGED | see `infrastructure-supabase/src/admin/` |  |  |  | SupabaseVolunteerRepository.ts:204 |
 
+### `infrastructure-supabase/src/worlds/`
+
+3 call sites: 1 map 1:1, 2 need logic changes, 0 removed, 0 MISSING.
+
+| Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `external_bodies` (table) | later | CHANGED | table `external_bodies` | `id` (not `body_id`); read directly, the search and admin RPCs of the old picker are not in the baseline. |  | high | SupabaseWorldContentRepository.ts:35 |
+| `knowledge_topics` (table) | later | CHANGED | table `knowledge_topics` | The topic tree, read-only for members: `id` (not `topic_id`), `world_slug` added, no `created_by` / `approved_by` / `legacy_category_slug`. Proposals, review and follows are not in the baseline. |  | high | SupabaseWorldContentRepository.ts:42 |
+| `world_links` (table) | later | 1:1 | table `world_links` | Curated links from one world to a related one; readable signed-out too. |  | high | SupabaseWorldContentRepository.ts:28 |
+
 ### `apps/mobile` (direct calls outside the adapters)
 
 18 call sites: 17 map 1:1, 1 need logic changes, 0 removed, 0 MISSING.
@@ -579,7 +590,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `avatars` (bucket) | core | 1:1 | bucket `avatars` | Declared in `95_platform/090_storage.sql`: public, JPEG, 512 KB, `<user_id>/avatar.jpg` (and the thumb in the same folder) (M23, verified). |  | high | avatarUpload.ts:132, avatarUpload.ts:143, avatarUpload.ts:153, avatarUpload.ts:167 |
 | `chat-media` (bucket) | core | 1:1 | bucket `chat-media` | Declared in `95_platform/090_storage.sql`: private, `<user_id>/<chat_id>/<file>`, read through signed URLs by chat members (M23, verified). |  | high | chatMediaUpload.ts:44, chatMediaUrl.ts:17 |
-| `post-images` (bucket) | core | 1:1 | bucket `post-images` | Declared by the baseline (own-folder insert / delete policies); `post_media.storage_bucket` points at it. |  | high | [id].tsx:42, PostImageCarousel.tsx:72, usePostShare.ts:64, probeDraftImageAvailability.ts:30, imageUpload.ts:182, imageUpload.ts:194, listingImageUpload.ts:42, listingImageUpload.ts:56 |
+| `post-images` (bucket) | core | 1:1 | bucket `post-images` | Declared by the baseline (own-folder insert / delete policies); `post_media.storage_bucket` points at it. |  | high | [id].tsx:43, PostImageCarousel.tsx:72, usePostShare.ts:64, probeDraftImageAvailability.ts:30, imageUpload.ts:182, imageUpload.ts:194, listingImageUpload.ts:42, listingImageUpload.ts:56 |
 | `topic = 'user:${userId}:notifications'` (channel) | core | 1:1 | topic `user:<user id>:notifications` | Already on the baseline contract (event `badge`). |  | high | useNotificationInboxBadge.ts:30 |
 | `api_my_pro_status` | core | 1:1 | `api_my_pro_status() → Json` | The caller's Pro status (`is_pro`); the Pro screen reads it. |  | high | pro.tsx:38 |
 | `app_flags` (table) | core | 1:1 | table `app_flags` | Same `select key, enabled`, for signed-in members only (no `anon` grant): before sign-in the compiled defaults apply. After sign-in the same map is `bootstrap_session().flags`. The rows (`world_<slug>_enabled`) are seed data, not part of the baseline (M09, verified). |  | high | featureFlagsComposition.ts:12 |
@@ -751,7 +762,7 @@ In launch order: after package *n* the app is shippable with everything up to *n
 | P2 — Posts, feed, search, closure, translations | core | 42 | 31 | 11 | 0 | 0 | P3, P4 |
 | P3 — Chat and realtime | core | 18 | 17 | 1 | 0 | 0 | P2, P4 |
 | P4 — Reports, moderation and admin basics | core | 20 | 14 | 6 | 0 | 0 | P2, P3 |
-| P5 — Launch worlds: items, food, rides, time (events), matching, donation links | wedge | 78 | 67 | 11 | 0 | 0 | P6 |
+| P5 — Launch worlds: items, food, rides, time (events), matching, donation links | wedge | 81 | 68 | 13 | 0 | 0 | P6 |
 | P6 — Edge Functions of the launch | core | 10 | 6 | 4 | 0 | 0 | P5 |
 | L1 — Housing world | later | 15 | 11 | 4 | 0 | 0 | L2, L3, L4, L5, L6, L7 |
 | L2 — Knowledge world | later | 8 | 6 | 2 | 0 | 0 | L1, L3, L4, L5, L6, L7 |

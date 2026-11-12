@@ -15,7 +15,6 @@ export default function HousingWorldScreen() {
         worldSlug="housing"
         icon="home-outline"
         introKey="donations.worldFeed.housingIntro"
-        linksCategory="housing"
         subScreens={WORLD_CHROME_BY_SLUG.housing.subScreens}
       />
     </WorldLaunchGateBySlug>
