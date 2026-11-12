@@ -49,6 +49,16 @@ describe('usePostSavedActions', () => {
     await act(async () => result.current.toggleSave());
     expect(result.current.isSaved).toBe(true); expect(m.toast).toHaveBeenCalledWith('post.unsaveError', 'error', 2800);
   });
+  it('sends no saved-state lookup while disabled, and one once enabled (one request per opened menu, not per card)', async () => {
+    m.isSaved.mockResolvedValue(true);
+    const { result, rerender } = renderHook(({ enabled }) => usePostSavedActions('p5', { enabled }), { wrapper, initialProps: { enabled: false } });
+    await new Promise((r) => setTimeout(r, 20));
+    expect(m.isSaved).not.toHaveBeenCalled();
+    expect(result.current.isSaved).toBe(false);
+    rerender({ enabled: true });
+    await waitFor(() => expect(result.current.isSaved).toBe(true));
+    expect(m.isSaved).toHaveBeenCalledTimes(1);
+  });
   it('reports not-saved for a guest without a saved-state lookup', async () => {
     m.userId = null;
     const { result } = renderHook(() => usePostSavedActions('guest-post'), { wrapper });
