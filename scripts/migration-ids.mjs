@@ -7,7 +7,11 @@
  * never picks a number. It adds `supabase/migrations/next-NN_snake_slug.sql`,
  * where `NN` (01-99) only orders the PR's own files. After the merge into `dev`,
  * `assign` renames every pending file to the next free `NNNN_snake_slug.sql`
- * (.github/workflows/bump-version-on-merge.yml), in a commit CI certifies.
+ * (.github/workflows/bump-version-on-merge.yml), in a commit CI certifies, and
+ * lists each new name in the production manifest
+ * (supabase/baseline/prod-allowed-migrations.txt), which a PR cannot do because
+ * it does not know its numbers. Listing a file does not open production
+ * (scripts/check-prod-schema-mode.mjs).
  *
  * CI jobs that need a runnable stack call `assign` on their throwaway checkout
  * first, so the pending files are tested under the numbers they will receive.
@@ -19,16 +23,33 @@
  *   node scripts/migration-ids.mjs list      print the pending files (exit 1 when any)
  * Env: MIGRATION_IDS_DIR - override the migrations directory (tests).
  *      MIGRATION_IDS_MAP - override where `assign` records its renames (tests).
+ *      MIGRATION_IDS_MANIFEST - override the production manifest `assign` appends to (tests);
+ *        with MIGRATION_IDS_DIR set and this unset, no manifest is touched.
  */
-import { existsSync, readFileSync, readdirSync, renameSync, unlinkSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, '..');
 const DEFAULT_DIR = join(repoRoot, 'supabase', 'migrations');
-// Inside `.git`, so a local `assign` can be undone but its record is never committed.
-const DEFAULT_MAP = join(repoRoot, '.git', 'kc-migration-ids.json');
+/**
+ * The git directory of this checkout, or null outside a repository. In a linked worktree
+ * `.git` is a file that names the directory (`gitdir: <path>`), not the directory itself.
+ */
+function gitDir() {
+  const dotGit = join(repoRoot, '.git');
+  if (!existsSync(dotGit)) return null;
+  if (statSync(dotGit).isDirectory()) return dotGit;
+  const pointer = readFileSync(dotGit, 'utf8').match(/^gitdir:\s*(.+)$/m);
+  return pointer ? resolve(repoRoot, pointer[1].trim()) : null;
+}
+
+// Inside the git directory, so a local `assign` can be undone but its record is never committed.
+const GIT_DIR = gitDir();
+const DEFAULT_MAP = GIT_DIR ? join(GIT_DIR, 'kc-migration-ids.json') : null;
+// The D-228 manifest of migrations approved for production, one basename per line.
+const DEFAULT_MANIFEST = join(repoRoot, 'supabase', 'baseline', 'prod-allowed-migrations.txt');
 
 /**
  * Numbers below this are handed out by hand (the retired claim table in
@@ -99,24 +120,47 @@ export function planAssignments(files) {
   });
 }
 
+/** The manifest text with `names` appended, one per line, skipping names it already lists. */
+function withManifestEntries(text, names) {
+  const listed = new Set(text.split(/\r?\n/).map((line) => line.trim()));
+  const missing = names.filter((name) => !listed.has(name));
+  if (missing.length === 0) return text;
+  return `${text.replace(/\n*$/, '\n')}${missing.join('\n')}\n`;
+}
+
+/** The manifest text without the lines that name one of `names`. */
+function withoutManifestEntries(text, names) {
+  const drop = new Set(names);
+  return text.split('\n').filter((line) => !drop.has(line.trim())).join('\n');
+}
+
 /**
- * Renames the pending files of `dir` in place and records the renames in `mapFile`.
+ * Renames the pending files of `dir` in place, records the renames in `mapFile`, and lists
+ * the new names in `manifestFile` so the manifest stays in step with the tree.
  * @returns {{from: string, to: string}[]} the renames applied
  */
-export function assign(dir = DEFAULT_DIR, mapFile = null) {
+export function assign(dir = DEFAULT_DIR, mapFile = null, manifestFile = null) {
   const plan = planAssignments(sqlFiles(dir));
   for (const { from, to } of plan) renameSync(join(dir, from), join(dir, to));
   if (plan.length > 0 && mapFile) writeFileSync(mapFile, JSON.stringify(plan), 'utf8');
+  if (plan.length > 0 && manifestFile && existsSync(manifestFile)) {
+    const text = readFileSync(manifestFile, 'utf8');
+    writeFileSync(manifestFile, withManifestEntries(text, plan.map(({ to }) => to)), 'utf8');
+  }
   return plan;
 }
 
-/** Undoes the renames recorded by the last `assign` that wrote `mapFile`. */
-export function restore(dir = DEFAULT_DIR, mapFile = DEFAULT_MAP) {
-  if (!existsSync(mapFile)) return [];
+/** Undoes the renames, and the manifest lines, recorded by the last `assign` that wrote `mapFile`. */
+export function restore(dir = DEFAULT_DIR, mapFile = DEFAULT_MAP, manifestFile = null) {
+  if (!mapFile || !existsSync(mapFile)) return [];
   const plan = JSON.parse(readFileSync(mapFile, 'utf8'));
   for (const { from, to } of plan) {
     // A file the user already renamed or deleted is left alone.
     if (existsSync(join(dir, to))) renameSync(join(dir, to), join(dir, from));
+  }
+  if (manifestFile && existsSync(manifestFile)) {
+    const text = readFileSync(manifestFile, 'utf8');
+    writeFileSync(manifestFile, withoutManifestEntries(text, plan.map(({ to }) => to)), 'utf8');
   }
   unlinkSync(mapFile);
   return plan;
@@ -125,18 +169,20 @@ export function restore(dir = DEFAULT_DIR, mapFile = DEFAULT_MAP) {
 function main() {
   const command = process.argv[2];
   const dir = process.env.MIGRATION_IDS_DIR || DEFAULT_DIR;
-  const mapFile = process.env.MIGRATION_IDS_MAP || (existsSync(dirname(DEFAULT_MAP)) ? DEFAULT_MAP : null);
+  const mapFile = process.env.MIGRATION_IDS_MAP || DEFAULT_MAP;
+  // The real manifest goes with the real migrations directory only.
+  const manifestFile = process.env.MIGRATION_IDS_MANIFEST || (process.env.MIGRATION_IDS_DIR ? null : DEFAULT_MANIFEST);
   try {
     if (command === 'check') {
       const errors = pendingErrors(sqlFiles(dir));
       if (errors.length > 0) throw new Error(errors.join('\n'));
       console.log(`Pending migrations OK (${sqlFiles(dir).filter(isPending).length} waiting for a number on merge).`);
     } else if (command === 'assign') {
-      const plan = assign(dir, mapFile);
+      const plan = assign(dir, mapFile, manifestFile);
       for (const { from, to } of plan) console.log(`${from} -> ${to}`);
       if (plan.length === 0) console.log('No pending migrations to number.');
     } else if (command === 'restore') {
-      for (const { from, to } of restore(dir, mapFile ?? DEFAULT_MAP)) console.log(`${to} -> ${from}`);
+      for (const { from, to } of restore(dir, mapFile, manifestFile)) console.log(`${to} -> ${from}`);
     } else if (command === 'list') {
       const pending = sqlFiles(dir).filter(isPending);
       pending.forEach((file) => console.log(file));
