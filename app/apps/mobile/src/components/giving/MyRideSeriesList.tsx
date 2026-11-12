@@ -1,7 +1,7 @@
 // "My recurring rides" (docs/spec/05_giving_worlds.md §5.3 step 1, FR-RIDE-046): every
 // series the member runs, with pause / resume, reschedule and cancel. The server keeps the
-// occurrences in step: a paused or cancelled series drops its upcoming unbooked rides, a booked
-// ride stays an agreed ride.
+// occurrences in step: a paused series drops its upcoming unbooked rides and keeps a booked one;
+// a cancelled series ends every upcoming ride and tells the booked passengers (FR-RIDE-046 AC6).
 import React, { useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { useTranslation } from 'react-i18next';

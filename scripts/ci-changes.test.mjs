@@ -124,7 +124,7 @@ test('the release lane is left out of the plan, never planned false, unless the 
   for (const event of ['push', 'workflow_dispatch']) {
     assert.equal('release' in plan({ event, draft: false, actor: 'x', ref: 'refs/heads/main', baseRef: '', files: [] }).plan, false);
   }
-  assert.deepEqual(OPTIONAL_LANES, ['release']);
+  assert.deepEqual(OPTIONAL_LANES, ['release', 'maestro']);
 });
 
 test('a merge group for main plans the release lane; one for dev does not', () => {
@@ -138,7 +138,7 @@ test('a review event plans like its PR but runs only the review lanes', () => {
   const review = plan({ ...PR, event: 'pull_request_review', files });
   assert.deepEqual(review.plan, plan({ ...PR, files }).plan);
   assert.deepEqual(REVIEW_LANES, ['static']);
-  assert.deepEqual(review.run, { hygiene: false, static: true, release: false, bundles: false, frontend: false, backend: false, edge: false });
+  assert.deepEqual(review.run, { hygiene: false, static: true, release: false, maestro: false, bundles: false, frontend: false, backend: false, edge: false });
   assert.equal(review.sonar, false);
 });
 
@@ -158,7 +158,7 @@ test('an edited event without a base change keeps the full plan but runs only hy
   const files = ['app/apps/mobile/src/lib/x.ts'];
   const edited = plan({ ...PR, action: 'edited', baseChanged: false, files });
   assert.deepEqual(edited.plan, plan({ ...PR, files }).plan);
-  assert.deepEqual(edited.run, { hygiene: true, static: true, release: false, bundles: false, frontend: false, backend: false, edge: false });
+  assert.deepEqual(edited.run, { hygiene: true, static: true, release: false, maestro: false, bundles: false, frontend: false, backend: false, edge: false });
   assert.equal(edited.sonar, false);
 });
 
@@ -305,4 +305,13 @@ test('moving a migration out of supabase/migrations still runs backend', () => {
 test('an unresolvable base yields null (every lane runs)', () => {
   assert.equal(changedFiles('0000000000000000000000000000000000000000', 'HEAD'), null);
   assert.equal(changedFiles('', 'HEAD'), null);
+});
+
+// `maestro` is registered as an optional lane ahead of its job (see OPTIONAL_LANES): nothing plans it yet,
+// so a ci.yml that already has the job and a ci.yml that does not both pass the gate.
+test('the maestro lane is registered but not yet planned by any event', () => {
+  const files = ['app/apps/mobile/src/lib/x.ts', '.maestro/flows/01-auth-email-sign-in.yaml'];
+  for (const event of ['pull_request', 'pull_request_review', 'merge_group', 'push', 'workflow_dispatch']) {
+    assert.equal('maestro' in plan({ ...PR, event, files }).plan, false, event);
+  }
 });

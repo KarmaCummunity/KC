@@ -36,6 +36,7 @@ import { getUserRepo } from '../../src/services/userComposition';
 import { useEditPostScreenStyles } from '../../src/screens/edit-post/editPostScreen.styles';
 import { useKeyboardVerticalOffset } from '../../src/lib/platform/useKeyboardVerticalOffset';
 import { TAB_INLINE_FORM_HEADER_HEIGHT } from '../../src/lib/platform/formChromeHeights';
+import { resolveKeyboardAvoidingBehavior } from '../../src/lib/platform/keyboardVerticalOffset';
 
 const POST_IMAGES_BUCKET = 'post-images';
 function assetUrl(path: string): string {
@@ -312,7 +313,7 @@ export default function EditPostScreen() {
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={resolveKeyboardAvoidingBehavior(Platform.OS)}
         keyboardVerticalOffset={keyboardOffset}
       >
         <EditPostFormScrollContent

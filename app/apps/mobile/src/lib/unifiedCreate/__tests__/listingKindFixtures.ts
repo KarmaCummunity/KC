@@ -184,7 +184,8 @@ export const KINDS_BY_WORLD: Readonly<Record<string, readonly ListingKindOption[
       support_type: { enum: ['emotional', 'companionship', 'practical', 'escort'] },
       duration_minutes: { type: 'integer' },
     })),
-    // An organization's event (0563), offered only to members of an organization.
+    // An event: a member's own volunteering with sign-up, or an organization's event, which
+    // also names its organization (`org_id`, optional).
     kind('event', 'give', obj({
       org_id: { type: 'string', minLength: 36, maxLength: 36 },
       starts_at: { type: 'string', format: 'date-time' },
@@ -192,6 +193,6 @@ export const KINDS_BY_WORLD: Readonly<Record<string, readonly ListingKindOption[
       capacity: { type: 'integer', minimum: 1, maximum: 5000 },
       registration_policy: { enum: ['automatic', 'manual', 'verified_only'] },
       address: { type: 'string', minLength: 2, maxLength: 160 },
-    }, ['org_id', 'starts_at', 'ends_at', 'registration_policy'])),
+    }, ['starts_at', 'ends_at', 'registration_policy'])),
   ],
 };

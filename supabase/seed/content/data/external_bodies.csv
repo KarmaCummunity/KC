@@ -1,0 +1,8 @@
+slug,world_slug,label_he,label_en,body_type,requires_routing,contact_url,is_verified,is_active
+adi,medical,אדי — איגוד להתנדבות,ADI organ registry,organ_registry,true,https://www.adi.org.il,true,true
+ezer_lamaret,medical,עזר מלרת,Ezer Lamaret,ngo,true,,true,true
+ezra_lemaret_bone_marrow,medical,עזר מציון — מח עצם,Ezer Mizion bone marrow,ngo,true,https://ezermizion.org,true,true
+let_animals_live,animals,תנו לחיות לחיות,Let the Animals Live,ngo,true,,true,true
+mda,medical,מגן דוד אדום,Magen David Adom,blood_services,true,https://www.mdais.org,true,true
+spca_israel,animals,צער בעלי חיים בישראל,SPCA Israel,ngo,true,,true,true
+yad_sarah,medical,יד שרה,Yad Sarah,ngo,true,https://yadsarah.org,true,true

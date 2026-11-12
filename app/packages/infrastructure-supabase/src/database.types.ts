@@ -546,6 +546,61 @@ export type Database = {
           },
         ]
       }
+      external_bodies: {
+        Row: {
+          body_type: string
+          contact_url: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          is_verified: boolean
+          label_en: string
+          label_he: string
+          requires_routing: boolean
+          slug: string
+          sort_order: number
+          updated_at: string
+          world_slug: string
+        }
+        Insert: {
+          body_type: string
+          contact_url?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_verified?: boolean
+          label_en: string
+          label_he: string
+          requires_routing?: boolean
+          slug: string
+          sort_order?: number
+          updated_at?: string
+          world_slug: string
+        }
+        Update: {
+          body_type?: string
+          contact_url?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_verified?: boolean
+          label_en?: string
+          label_he?: string
+          requires_routing?: boolean
+          slug?: string
+          sort_order?: number
+          updated_at?: string
+          world_slug?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "external_bodies_world_slug_fkey"
+            columns: ["world_slug"]
+            referencedRelation: "worlds"
+            referencedColumns: ["slug"]
+          },
+        ]
+      }
       feed_hides: {
         Row: {
           hidden_at: string
@@ -961,6 +1016,104 @@ export type Database = {
           url?: string
         }
         Relationships: []
+      }
+      knowledge_topic_aliases: {
+        Row: {
+          alias: string
+          alias_norm: string | null
+          created_at: string
+          id: string
+          lang: string
+          topic_id: string
+        }
+        Insert: {
+          alias: string
+          alias_norm?: string | null
+          created_at?: string
+          id?: string
+          lang?: string
+          topic_id: string
+        }
+        Update: {
+          alias?: string
+          alias_norm?: string | null
+          created_at?: string
+          id?: string
+          lang?: string
+          topic_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "knowledge_topic_aliases_topic_id_fkey"
+            columns: ["topic_id"]
+            referencedRelation: "knowledge_topics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      knowledge_topics: {
+        Row: {
+          created_at: string
+          description_he: string | null
+          id: string
+          label_en: string
+          label_he: string
+          merged_into_id: string | null
+          parent_id: string | null
+          slug: string
+          sort_order: number
+          status: string
+          updated_at: string
+          world_slug: string
+        }
+        Insert: {
+          created_at?: string
+          description_he?: string | null
+          id?: string
+          label_en: string
+          label_he: string
+          merged_into_id?: string | null
+          parent_id?: string | null
+          slug: string
+          sort_order?: number
+          status?: string
+          updated_at?: string
+          world_slug: string
+        }
+        Update: {
+          created_at?: string
+          description_he?: string | null
+          id?: string
+          label_en?: string
+          label_he?: string
+          merged_into_id?: string | null
+          parent_id?: string | null
+          slug?: string
+          sort_order?: number
+          status?: string
+          updated_at?: string
+          world_slug?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "knowledge_topics_merged_into_id_fkey"
+            columns: ["merged_into_id"]
+            referencedRelation: "knowledge_topics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "knowledge_topics_parent_id_fkey"
+            columns: ["parent_id"]
+            referencedRelation: "knowledge_topics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "knowledge_topics_world_slug_fkey"
+            columns: ["world_slug"]
+            referencedRelation: "worlds"
+            referencedColumns: ["slug"]
+          },
+        ]
       }
       legal_document_versions: {
         Row: {
@@ -1717,6 +1870,8 @@ export type Database = {
           ends_at: string
           post_id: string
           registration_policy: string
+          series_id: string | null
+          series_on: string | null
           starts_at: string
           updated_at: string
         }
@@ -1728,6 +1883,8 @@ export type Database = {
           ends_at: string
           post_id: string
           registration_policy?: string
+          series_id?: string | null
+          series_on?: string | null
           starts_at: string
           updated_at?: string
         }
@@ -1739,6 +1896,8 @@ export type Database = {
           ends_at?: string
           post_id?: string
           registration_policy?: string
+          series_id?: string | null
+          series_on?: string | null
           starts_at?: string
           updated_at?: string
         }
@@ -1747,6 +1906,12 @@ export type Database = {
             foreignKeyName: "post_event_details_post_id_fkey"
             columns: ["post_id"]
             referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_event_details_series_id_fkey"
+            columns: ["series_id"]
+            referencedRelation: "post_series"
             referencedColumns: ["id"]
           },
         ]
@@ -2349,6 +2514,70 @@ export type Database = {
           },
         ]
       }
+      post_series: {
+        Row: {
+          beneficiary_org_id: string | null
+          created_at: string
+          duration_minutes: number
+          ends_on: string | null
+          event_template: Json
+          id: string
+          owner_id: string
+          post_template: Json
+          start_time: string
+          starts_on: string
+          status: string
+          time_zone: string
+          updated_at: string
+          weekdays: number
+        }
+        Insert: {
+          beneficiary_org_id?: string | null
+          created_at?: string
+          duration_minutes: number
+          ends_on?: string | null
+          event_template: Json
+          id?: string
+          owner_id: string
+          post_template: Json
+          start_time: string
+          starts_on?: string
+          status?: string
+          time_zone?: string
+          updated_at?: string
+          weekdays: number
+        }
+        Update: {
+          beneficiary_org_id?: string | null
+          created_at?: string
+          duration_minutes?: number
+          ends_on?: string | null
+          event_template?: Json
+          id?: string
+          owner_id?: string
+          post_template?: Json
+          start_time?: string
+          starts_on?: string
+          status?: string
+          time_zone?: string
+          updated_at?: string
+          weekdays?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_series_beneficiary_org_id_fkey"
+            columns: ["beneficiary_org_id"]
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_series_owner_id_fkey"
+            columns: ["owner_id"]
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       post_shares: {
         Row: {
           created_at: string
@@ -2429,6 +2658,7 @@ export type Database = {
           details: Json
           direction: string
           expires_at: string | null
+          feed_folded: boolean
           geo_approx: unknown
           id: string
           item_subcategory_id: string | null
@@ -2457,6 +2687,7 @@ export type Database = {
           details?: Json
           direction: string
           expires_at?: string | null
+          feed_folded?: boolean
           geo_approx?: unknown
           id?: string
           item_subcategory_id?: string | null
@@ -2485,6 +2716,7 @@ export type Database = {
           details?: Json
           direction?: string
           expires_at?: string | null
+          feed_folded?: boolean
           geo_approx?: unknown
           id?: string
           item_subcategory_id?: string | null
@@ -3508,6 +3740,61 @@ export type Database = {
           },
         ]
       }
+      world_links: {
+        Row: {
+          created_at: string
+          description: string | null
+          from_world_slug: string
+          id: string
+          is_active: boolean
+          label_en: string
+          label_he: string
+          link_slug: string
+          sort_order: number
+          to_world_slug: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          from_world_slug: string
+          id?: string
+          is_active?: boolean
+          label_en: string
+          label_he: string
+          link_slug: string
+          sort_order?: number
+          to_world_slug: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          from_world_slug?: string
+          id?: string
+          is_active?: boolean
+          label_en?: string
+          label_he?: string
+          link_slug?: string
+          sort_order?: number
+          to_world_slug?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "world_links_from_world_slug_fkey"
+            columns: ["from_world_slug"]
+            referencedRelation: "worlds"
+            referencedColumns: ["slug"]
+          },
+          {
+            foreignKeyName: "world_links_to_world_slug_fkey"
+            columns: ["to_world_slug"]
+            referencedRelation: "worlds"
+            referencedColumns: ["slug"]
+          },
+        ]
+      }
       worlds: {
         Row: {
           created_at: string
@@ -4129,6 +4416,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      cancel_post_series_date: {
+        Args: { p_post_id: string }
+        Returns: undefined
+      }
       cancel_ride_booking: {
         Args: { p_handoff_id: string }
         Returns: {
@@ -4462,6 +4753,19 @@ export type Database = {
           p_post_id?: string
         }
         Returns: Json
+      }
+      create_post_series: {
+        Args: {
+          p_duration_minutes: number
+          p_ends_on?: string
+          p_event: Json
+          p_org_id?: string
+          p_post: Json
+          p_start_time: string
+          p_time_zone?: string
+          p_weekdays: number
+        }
+        Returns: string
       }
       create_post_with_details: {
         Args: { p_details: Json; p_post: Json }
@@ -5457,6 +5761,10 @@ export type Database = {
         Args: { p_post_id: string; p_reaction_type: string }
         Returns: string
       }
+      set_post_series_status: {
+        Args: { p_series_id: string; p_status: string }
+        Returns: undefined
+      }
       set_privacy_mode: { Args: { p_mode: string }; Returns: undefined }
       set_ride_series_status: {
         Args: { p_series_id: string; p_status: string }
@@ -5516,6 +5824,18 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      update_post_series: {
+        Args: {
+          p_duration_minutes: number
+          p_ends_on?: string
+          p_event?: Json
+          p_post?: Json
+          p_series_id: string
+          p_start_time: string
+          p_weekdays: number
+        }
+        Returns: undefined
       }
       update_ride_series: {
         Args: {

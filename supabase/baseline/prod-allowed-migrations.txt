@@ -25,3 +25,7 @@
 0018_world_flow_stats.sql
 0019_kc_support_channels.sql
 0020_org_sec46_machine.sql
+0021_post_series.sql
+0022_post_series_rpcs.sql
+0023_series_feed_folding.sql
+0024_world_content.sql
