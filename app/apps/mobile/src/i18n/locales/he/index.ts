@@ -31,6 +31,7 @@ import { chatMessagingHe } from './modules/chatMessaging';
 import { marketplaceBaselineErrorsHe } from './modules/marketplaceBaselineErrors';
 import { challengeBaselineErrorsHe } from './modules/challengeBaselineErrors';
 import { notificationsHe } from './modules/notifications';
+import { notificationsRichHe } from './modules/notificationsRich';
 import { emptyStatesHe, feedSettingsHe } from './modules/feedSettings';
 import { moderationHe, auditHe, accountBlockedHe } from './modules/moderation';
 import { restoreAccountHe } from './modules/restoreAccount';
@@ -99,7 +100,7 @@ const he = {
   chat: { ...chatHe, new: chatNewHe, messaging: chatMessagingHe },
 
   // Notifications (FR-NOTIF-001..015) — see modules/notifications.ts
-  notifications: notificationsHe,
+  notifications: { ...notificationsHe, ...notificationsRichHe },
   feedSettings: feedSettingsHe,
   emptyStates: emptyStatesHe,
 

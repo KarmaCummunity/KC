@@ -68,6 +68,8 @@ export const NOTIFICATION_ROUTES: Record<NotificationKind, RouteBuilder> = {
   follow_approved: inbox,
   // FR-NOTIF-011 and the suspension notice.
   auto_removed: screen('/settings/audit'),
+  // The chat itself is hidden for review; the member's record of moderation explains it.
+  chat_auto_removed: screen('/settings/audit'),
   account_suspended: screen('/account-blocked'),
   // FR-NOTIF-017.
   match_suggested: screen('/matches'),
@@ -85,6 +87,18 @@ export const NOTIFICATION_ROUTES: Record<NotificationKind, RouteBuilder> = {
   giving_handoff_no_show: post,
   giving_handoff_waitlist_promoted: post,
   giving_handoff_reinstated: post,
+  knowledge_booking_requested: post,
+  knowledge_booking_claimed: post,
+  knowledge_booking_confirmed: post,
+  knowledge_booking_declined: post,
+  knowledge_booking_cancelled: post,
+  knowledge_booking_expired: post,
+  knowledge_booking_completed: post,
+  knowledge_booking_no_show: post,
+  knowledge_booking_waitlist_promoted: post,
+  knowledge_booking_reinstated: post,
+  food_expiring: post,
+  food_expired: post,
   ride_booking_requested: post,
   ride_booking_claimed: post,
   ride_booking_confirmed: post,

@@ -10,7 +10,10 @@
  *   insert into kc_private.fsm_edge (machine_id, from_status, to_status[, role]) values ('m', 'f', 't'[, 'r']), ...;
  *   ... the same two inserts written as `select ... from (values (...)) ...` where a cell may
  *   be `array['a', 'b']` (a state list, or a role list that expands to one edge row per role).
- * An edge without a role column or with `''` is unrestricted (`role = ''`). Any other
+ * An edge without a role column or with `''` is unrestricted (`role = ''`). A trailing
+ * `on conflict … do nothing` is accepted, and a row seeded again by a later file (a forward
+ * migration re-asserting a state or an edge) is kept once, as the catalog's primary keys keep
+ * it in the database. Any other
  * statement that changes a catalog table throws, so a write this reader cannot understand
  * is never silently ignored.
  */
@@ -181,9 +184,23 @@ function namesCatalog(keyword: string, statement: string): boolean {
 
 /**
  * Reads the catalog seeds of `files` in path order (the order they are assembled into
- * `supabase/migrations/0001_baseline.sql`) and returns the resulting rows.
+ * `supabase/migrations/0001_baseline.sql`, then the forward migrations named after it) and
+ * returns the resulting rows, each once.
  */
 export function readBaselineFsmSeeds(files: readonly SchemaFile[]): FsmCatalogSnapshot {
+  const { states, edges } = readAllSeeds(files);
+  const once = <T>(rows: T[], key: (row: T) => string): T[] => {
+    const seen = new Set<string>();
+    return rows.filter((row) => !seen.has(key(row)) && Boolean(seen.add(key(row))));
+  };
+  return {
+    states: once(states, (r) => `${r.machineId}\u0000${r.status}`),
+    edges: once(edges, (r) => `${r.machineId}\u0000${r.from}\u0000${r.to}\u0000${r.role}`),
+  };
+}
+
+/** Every catalog row of `files`, in file order, duplicates included. */
+function readAllSeeds(files: readonly SchemaFile[]): FsmCatalogSnapshot {
   const states: FsmStateRow[] = [];
   const edges: FsmEdgeRow[] = [];
   const ordered = [...files].sort((a, b) => a.name.localeCompare(b.name));
