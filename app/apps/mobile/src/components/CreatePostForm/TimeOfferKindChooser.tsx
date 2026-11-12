@@ -1,6 +1,7 @@
-// Mapped to spec: docs/spec/08_organizations.md Events (G1 step 5, D31) — a member of an
-// organization chooses what a time offer is: a volunteer shift (the default) or the
-// organization's event, which then needs the organization it is published for.
+// Mapped to spec: docs/spec/08_organizations.md Events (G1 step 5, D31), FR-POST-024 — what a
+// time offer is: a volunteer shift (the default, a plain offer), the member's own volunteering
+// with sign-up (an event of theirs: a date, places, registration, and it may recur), or, for a
+// member of an organization, the organization's event, which needs the organization.
 import React from 'react';
 import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -28,17 +29,26 @@ export function TimeOfferKindChooser({ choice, disabled = false }: Props) {
           <Chip
             testID="time-offer-kind-shift"
             label={t('eventPost.create.kindShift')}
-            selected={!choice.isOrgEvent}
+            selected={!choice.isEvent}
             onPress={() => choice.setWantsOrgEvent(false)}
             disabled={disabled}
           />
           <Chip
-            testID="time-offer-kind-event"
-            label={t('eventPost.create.kindEvent')}
-            selected={choice.isOrgEvent}
-            onPress={() => choice.setWantsOrgEvent(true)}
+            testID="time-offer-kind-personal-event"
+            label={t('eventPost.create.kindPersonalEvent')}
+            selected={choice.isPersonalEvent}
+            onPress={() => choice.setWantsPersonalEvent(true)}
             disabled={disabled}
           />
+          {choice.available ? (
+            <Chip
+              testID="time-offer-kind-event"
+              label={t('eventPost.create.kindEvent')}
+              selected={choice.isOrgEvent}
+              onPress={() => choice.setWantsOrgEvent(true)}
+              disabled={disabled}
+            />
+          ) : null}
         </ChipSelectRow>
       </View>
       {choice.isOrgEvent ? (

@@ -1559,6 +1559,8 @@ Owner rules that go with it:
 2. **KC Pro pricing:** free for the first year after launch. After that, ~~$30/month~~ **$20/month** for a private person (mainly for the WhatsApp bot) and $100/month for an organization (includes the full admin portal). *Updated 2026-11-04 by the owner: the private-person price is $20/month, not $30; the free first year and the organization price stand.*
 3. **Support email:** the single operated KC mailbox of `D-59`, `karmacommunity2.0@gmail.com`, which the app, web pages and store copy already use.
 
+**Update 2026-11-11 (PM, #1088), product decision D143:** the free first year is granted by KC to everyone (admin / promo grant through the RevenueCat webhook), not as a store free trial, so billing starts only when the product decides it. Prices are USD only (no ILS price tier). An organization holds its own `org` entitlement, separate from a person's `pro`. Store products: `org.karmacommunity.app.pro.monthly` ($20) and `org.karmacommunity.app.org.monthly` ($100); product ids cannot be renamed after creation. The `org` entitlement belongs to the organization itself (PM, 2026-11-11), not to the admin who bought it: `billing.organization_entitlements` (migration `0002`, #2150), set only through service-role functions and readable by the organization's managers through `api_org_entitlement_status`. The `revenuecat-webhook` routes an event by its entitlement: `org` events go to the organization named by the RevenueCat app user id `org:<organization uuid>` (RevenueCat sends subscriber attributes only on some events), `pro` events to the member. The paywall must therefore log RevenueCat in as `org:<id>` before an organization purchase. Nothing is gated on either entitlement during the free first year.
+
 **Why.** Store review needs live, stable policy URLs now; the custom domain is not available yet. Pricing and support contact are owner decisions recorded here so the store listing, paywall and support copy share one source.
 
 **Rejected.** Waiting for a purchased domain before submitting (blocks review with no benefit).
@@ -1704,7 +1706,7 @@ Owner rules that go with it:
 | 4.41 | 2026-11-03 | Added `D-216` (G1 step 2: the listing worlds' RPCs write posts and derive a native listing that syncs back; items unchanged; `0554`). |
 | 4.40 | 2026-11-03 | Added `D-214` (G1 plan: reverse the listing mirror, move flows one PR at a time, drop `listings` last; ADR-006). |
 | 4.39 | 2026-11-03 | Added `D-213` (live public finance numbers behind organization-controlled toggles, default off; refines `D-196` for the public view; `FIN-P0`). |
-| 4.38 | 2026-11-03 | Added `D-210` (store review on the Cloudflare Pages domain until a domain is bought; KC Pro free year then $30/$100 monthly; support mailbox). |
+| 4.38 | 2026-11-03 | Added `D-210` (store review on the Cloudflare Pages domain until a domain is bought; KC Pro free year then $20 (private person; $30 until 2026-11-04) / $100 (organization) monthly; support mailbox). |
 | 4.37 | 2026-11-03 | Added `D-209` (one dependency audit over every lockfile; reviewed exceptions expire within 90 days; gate audits on dependency changes, daily schedule otherwise; #1373). |
 | 4.36 | 2026-11-02 | `D-195` addendum: an owner's approval is required for gate-weakening changes only into `main`; on `dev` the judges pass with warnings and the release PR surfaces the changes to the owner. |
 | 4.35 | 2026-11-01 | Added `D-207` (five create categories with remembered choice, items on the post engine, curated listing fields, marketplace browse removed, no inline native pickers). |
@@ -1877,3 +1879,59 @@ Owner rules that go with it:
 **Open.** Retention period for billing records after account deletion (legal advice pending). Video provider.
 
 **Affected.** `docs/db/**`; later `supabase/schemas/**`, `supabase/migrations/**`, `supabase/tests/**`, `app/packages/infrastructure-supabase/**`, `supabase/functions/**`, CI workflows.
+
+## D-229 — Who sees a delivered listing: the union of the two sides' surfaces (2026-11-11)
+
+**Decision.** Migration `0740`. A delivered listing (`closed_delivered`) is visible to the union of each side's own surface: the giver's `post_actor_identity.surface_visibility` (default: the post's visibility) and the recipient's (default `Public`). `Public` admits everyone including guests, `FollowersOnly` admits that side's followers, `OnlyMe` admits nobody else. The side that chose not to be exposed shows as anonymous to the other side's audience (identity masking, FR-POST-021). The recipient always sees the listing and can rate it, even if the giver chose `OnlyMe`, and still sees it after rating; an admin sees every delivered listing. A `Private` profile counts as `FollowersOnly` for its deliveries. The recipient is the one on the `handed_over` `post_handoffs` row, not the `recipients` row. The listing screens (`post_listing_visible_to`) delegate delivered posts to `is_post_visible_to`, so the post and listing screens cannot diverge. The hand-over of an items, food or animals post now records its `recipients` row through a trigger on `post_handoffs` (single recipient per post, 0658); existing rows are backfilled. Knowledge, rides, housing and events keep several handoffs per post and no recipients row.
+
+**Why.** Before, a delivered public listing disappeared for everyone but its owner on the listing screen, so the recipient could not open it to rate (the food and items E2E rating step failed), and food and animals hand-overs never wrote a `recipients` row (the carve-out of D-219 kept the items-only closure path, and 0683 repeated it), so the recipient's profile "received" list, counters and activity were empty. The trigger covers every writer of a hand-over; post karma stays items-only, so nobody is paid twice.
+
+**Rejected.** Intersection of the two surfaces (one side's hide would hide the listing from the other's audience too). Editing every hand-over RPC (large, easy to miss a writer). Keeping the recipient lookup on `recipients` (fails for worlds without a row).
+
+**Open.** Deleted accounts: visibility follows the remaining party, but the purge still cascades the delivered posts (retention is #2088). Knowledge posts close on the first hand-over without a recipient row.
+
+**Affected.** `supabase/migrations/0740_delivered_listing_visibility.sql`, `supabase/tests/0740_delivered_listing_visibility.sql`, `supabase/tests/0628_g1_visibility_on_posts.sql`, `docs/spec/requirements/04_posts.md` (FR-POST-021), `docs/agents/MIGRATION_RANGES.md`.
+
+## D-230 — The offer photo rule is a commit-time check on member writes (2026-11-11)
+
+**Decision.** Migration `0741` (KC#2020) enforces D132 on the server. `offer_photo_check()` runs at commit from two deferred constraint triggers, one on every new post and one on every deleted `listing_media` row, and refuses (`offer_photo_required`) an offer in items, food, housing or animals that has no `listing_media` row, no `media_assets` row and no legacy details image. The triggers queue only when `auth.uid()` is set: a trigger's `WHEN` clause is evaluated when the row changes, so system writers that clear the JWT claims (the kc-dev demo seed) are exempt, as they are from the write caps. Updates never queue the check, so offers published before the rule stay readable and editable. The items post engine creates through `create_post_with_media(p_post, p_media)`, a `SECURITY INVOKER` RPC: the caller's RLS on `posts` and `media_assets` applies exactly as it did to the two direct inserts it replaces, and the owner is always the caller.
+
+**Why.** The photos of a native listing are attached after its post row in the same RPC, and a deleted post removes its photos first, so a check at commit is the only point that sees the final state (the 0351 precedent). A `SECURITY DEFINER` create RPC would have had to re-implement the `posts` insert policy (owner, active member, FollowersOnly needs a Private profile).
+
+**Rejected.** An immediate check inside `create_marketplace_listing` only (misses the last-photo delete and the items post engine). Guarding `media_assets` deletes now: the items edit still replaces its photos in two requests (delete, then insert), so that guard would refuse every photo change on an items offer; KC#2118. Backfilling photos onto existing offers.
+
+**Affected.** `supabase/migrations/0741_offer_photo_required.sql`, `supabase/tests/0741_offer_photo_required.sql`, `supabase/tests/0351_items_image_photo_or_details.sql`, `supabase/tests/_harness/10_fixtures.sql`, `app/packages/infrastructure-supabase/src/posts/createPostWithMedia.ts`, `app/packages/application/src/contracts/postRepository.contract.ts`, `docs/spec/requirements/04_posts.md` (FR-POST-002 AC5).
+
+## D-233 — The Android journeys are a lane of the CI gate, and `dev` has a non-blocking run (2026-11-11)
+
+**Decision.** `maestro` joins the `CI gate` as an optional lane (the `release` pattern: named in the plan only when needed, so a gate copy that predates it keeps passing). `scripts/ci-changes.mjs` plans it on a PR whose diff touches `MAESTRO_RULES` (the mobile app, `app/packages`, the lockfile, the flows and their runner, the workflow), fail-closed when the diff cannot be read, and never for a Dependabot PR (it gets no secrets), a merge group, a push or a dispatch. A failed lane fails the gate, which makes the journeys required where they can break without adding a second required check (the gate stays the only one, D-195). `maestro-dev-health.yml` runs the same workflow after a push to `dev` that touches the app and on demand, outside `CI`, with one run in flight per ref. The runner retries a failed flow once and reports a pass on the retry as a warning.
+
+**Why.** The job had been advisory and red on every PR for days, so real regressions (the keyboard hiding the save button on Android, Back from a ride leaving the app, launch worlds shown as portals after login) went unseen until the failure videos were read. A required check on a 45-minute run against a shared, mutable kc-dev can stall merges, so it is scoped to the diffs that need it, kept out of the merge queue and out of `CI` (deploys), and given one retry that stays visible.
+
+**Rejected.** A second required status check in the ruleset (a path-filtered required check hangs "Expected", and the drift guard allows only the gate). Running it in the merge queue (45 minutes per merge). Running it inside `CI` on `dev` pushes (a deploy would wait for, and race, a run against the environment it changes). A scheduled run (a schedule runs the default branch's workflow file, not `dev`'s). Retrying without a warning (a flow that is often retried would hide).
+
+**Open.** Every flow signs in from scratch (about a minute of a minute and a half); sharing a session would cut the 45 minutes. The seed password is still passed to Maestro with `-e` and redacted from the artifact afterwards.
+
+**Affected.** `.github/workflows/ci.yml`, `ci-maestro-android.yml`, `maestro-dev-health.yml`, `scripts/ci-changes.mjs`, `scripts/maestro-run-android.sh`, their tests, `docs/process/MAESTRO.md`.
+
+## D-231 — First-launch surfaces are hidden in production builds, not removed (2026-11-11)
+
+**Decision.** The first public launch hides what has no provider yet: email auth (sign-in link, sign-up, forgot / reset password, email verification), the WhatsApp bot (the Settings row, the admin nav entry and both routes) and payments (RevenueCat is not configured). One config, `app/apps/mobile/src/config/launchSurfaces.ts`, resolves `emailAuth`, `whatsappBot` and `payments` in this order: a remote `public.app_flags` row (`launch_email_auth_enabled`, `launch_whatsapp_bot_enabled`, `launch_payments_enabled`), then the build override `EXPO_PUBLIC_LAUNCH_EMAIL_AUTH` / `_WHATSAPP_BOT` / `_PAYMENTS` (`1`/`true`/`on` or `0`/`false`/`off`), then the environment default: on when `EXPO_PUBLIC_ENVIRONMENT=development`, off otherwise (an unset or unknown value is production). The email sign-in route `/sign-in` is the one exception to "hidden": it renders in every build and nothing links to it while `emailAuth` is off, so the store-review demo account can log in by direct link (`karmacommunity://sign-in`, or `https://karma-community-kc.com/sign-in` on the web). Google and Apple sign-in are unaffected. Pro and the in-app donations keep their own flags (`pro_paywall`, `money_in_app_org_payments`, both off).
+
+**Why.** Email needs an SMTP provider and SMS a phone provider; Pro and the bot need their providers and store products. Anything that cannot work on day one is hidden, not shipped broken (Nave, 2026-11-11). Defaults follow the environment that every build already sets, so no workflow or build profile changes, and development keeps email for E2E and Maestro.
+
+**Rejected.** A compile-time `__DEV__` check (it is false in preview builds that run against kc-dev). Removing the routes (the review account would have no way in). Gating `/sign-in` too (same). A separate remote-config service (`app_flags` already exists and is owner-writable).
+
+**Update (2026-11-11, #2148).** Since the D-228 baseline `public.app_flags` is readable by signed-in members only, so the remote row of a launch surface applies after sign-in; on the welcome screen the build override and the environment default decide. All flag reads (`useFeatureFlag`, `useLaunchSurface`, `useLaunchWorldFlags`) go through one hook, `useAppFlags`, which waits for a signed-in member, is keyed by that member, and treats a failed read as "not loaded" (compiled defaults) instead of caching it as "no flags". Before, the welcome screen's denied read stayed cached for five minutes and a member who had just signed in saw rides, a launch world, as a portal.
+
+**Affected.** `app/apps/mobile/src/config/launchSurfaces.ts`, `src/hooks/useLaunchSurface.ts`, `src/components/LaunchSurfaceGate.tsx`, `app/(auth)/{index,sign-in,sign-up,forgot-password}.tsx`, `app/auth/{verify,reset-password}.tsx`, `app/settings.tsx`, `app/settings/whatsapp.tsx`, `app/(admin)/whatsapp/index.tsx` (screen moved to `src/screens/admin/WhatsAppAdminScreen.tsx`), `src/components/admin/AdminNav.tsx`, `src/services/purchases/RevenueCatSync.tsx`; FR-AUTH-001 AC2 (the welcome email link is now environment-dependent).
+
+## D-232 — Knowledge listings need a verified user, not moderator approval (2026-11-09)
+
+**Decision.** The owner relaxes R-Knowledge-1 (#1037): a verified user can publish and book knowledge listings with no moderator approval step before booking. Moderators act on reports only. This supersedes the `pending_review` start state mentioned in D-224.
+
+**Why.** The approval step slows every lesson and mentorship offer, and the report path (#1302) already covers abuse.
+
+**Rejected.** Keeping the moderator approval (safer, but slower for a small team of moderators). Removing the verified-user requirement (opens the world to unverified accounts).
+
+**Affected.** Docs only in this entry. Follow-up (not done here): a migration so new knowledge listings start as published instead of `pending_review`, plus updating the R-Knowledge-1 catalog row (`0265`) and `docs/spec/requirements/23_knowledge.md`.

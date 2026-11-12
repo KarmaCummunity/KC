@@ -6,10 +6,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import {
+  ORG_EVENT_KIND_SLUG,
   hasInvalidRideHouseNumber,
-  localIsoDate,
-  localTimeHHmm,
-  rideDurationMinutes,
   validateListingDetails,
   withLeaveNowDeparture,
   type RideHouseNumbers,
@@ -37,7 +35,8 @@ import { useAuthStore } from '../store/authStore';
 import { trackActivationIfFirst, trackCoreLoop } from '../lib/analyticsCoreLoop';
 import { rememberRideRoute } from '../lib/rides/rideStartDetails';
 import { afterRidePublished } from '../lib/rides/afterRidePublished';
-import { rideSeriesUseCases } from '../services/rideSeriesComposition';
+import { isEventSeriesDuration, publishEventSeries, publishRideSeries } from '../lib/unifiedCreate/seriesPublish';
+import { postSeriesErrorKey } from '../lib/postSeriesError';
 import type { RideRecurrenceDraft } from '../components/giving/RideRecurrenceFields';
 import { useOrgEventChoice } from './useOrgEventChoice';
 import { useListingFormSource } from './useListingFormSource';
@@ -87,8 +86,8 @@ export function useListingCreateForm({
   const [chosenKindSlug, setChosenKindSlug] = useState<string | null>(null);
   const choices = useMemo(() => kindChoices(kindsQuery.data ?? [], direction), [kindsQuery.data, direction]);
   const kind = useMemo(
-    () => kindForCreate(kindsQuery.data ?? [], direction, eventChoice.isOrgEvent, chosenKindSlug),
-    [kindsQuery.data, direction, eventChoice.isOrgEvent, chosenKindSlug],
+    () => kindForCreate(kindsQuery.data ?? [], direction, eventChoice.isEvent, chosenKindSlug),
+    [kindsQuery.data, direction, eventChoice.isEvent, chosenKindSlug],
   );
   const specs = useMemo(() => (kind ? fieldsForKind(kind) : []), [kind]);
 
@@ -98,7 +97,8 @@ export function useListingCreateForm({
   const [subcategoryId, setSubcategoryId] = useState<string | null>(null);
   // Additional worlds this listing should appear in (#1475).
   const [additionalWorlds, setAdditionalWorlds] = useState<string[]>([]);
-  // Rides only: a recurring ride publishes a series instead of one listing (FR-RIDE-046).
+  // A recurring ride (FR-RIDE-046) or a recurring event (FR-POST-024) publishes a series
+  // instead of one listing; null while the post is a single one.
   const [recurrence, setRecurrence] = useState<RideRecurrenceDraft | null>(null);
   // Rides only: "leave now" departs a few minutes after publishing, whenever that is (#1411).
   const [leaveNow, setLeaveNow] = useState(false);
@@ -126,10 +126,14 @@ export function useListingCreateForm({
     setError,
     eventChoice,
   });
-  const photoCount = photos.length + source.carriedMediaPaths.length;
+  const photoCount = photos.length + source.carriedMedia.length;
 
   const setDetail = (key: string, value: unknown) => setDetails((prev) => ({ ...prev, [key]: value }));
   const isRides = worldSlug === 'rides';
+  // The recurrence of an event (a volunteering shift or an organization's); null on a single
+  // event, an edit or another kind.
+  const isEvent = kind?.slug === ORG_EVENT_KIND_SLUG;
+  const eventSeries = isEvent && !editListingId ? recurrence : null;
   const showSubcategory = WORLDS_WITH_SUBCATEGORY_PICKER.includes(worldSlug);
   const effectiveTitle = isRides
     ? rideAutoTitle(details, (origin, dest) => t('post.unifiedCreate.rideAutoTitle', { origin, dest })) ||
@@ -156,32 +160,13 @@ export function useListingCreateForm({
     if (isRides && recurrence && recurrence.weekdays.length === 0) {
       return { message: t('rideSeries.errors.weekdaysRequired'), field: 'ride:recurrence' };
     }
+    if (eventSeries && eventSeries.weekdays.length === 0) return { message: t('postSeries.errors.weekdaysRequired'), field: null };
+    if (eventSeries && !isEventSeriesDuration(submitted)) return { message: t('postSeries.errors.durationInvalid'), field: null };
     if (isRides && !recurrence && hasInvalidRideHouseNumber(houseNumbers)) {
       return { message: t('ridePlaces.houseNumberInvalid'), field: fieldForHouseNumbers(houseNumbers) };
     }
     const schemaErr = kind ? validateListingDetails(kind.detailSchema, submitted) : null;
     return schemaErr ? { message: t('marketplace.validationFailed', { code: schemaErr }), field: null } : null;
-  };
-
-  /** A recurring ride: the series the server materializes, from the form's ride details. */
-  const publishSeries = async (submitted: Record<string, unknown>, draft: RideRecurrenceDraft): Promise<string> => {
-    if (!kind) throw new Error('kind_not_found');
-    // The departure field's time of day is the series time; its day is only the first occurrence.
-    const { departs_at: departsAt, arrives_at: _arrivesAt, ...template } = submitted;
-    const created = await rideSeriesUseCases.create().execute({
-      kindId: kind.kindId,
-      direction,
-      title: effectiveTitle,
-      summary: summary.trim() || null,
-      details: template,
-      schedule: {
-        weekdays: draft.weekdays,
-        time: localTimeHHmm(new Date(String(departsAt))),
-        endsOn: draft.endsOn ? localIsoDate(draft.endsOn) : null,
-      },
-      durationMinutes: rideDurationMinutes(submitted),
-    });
-    return created.firstListingId;
   };
 
   const publish = async () => {
@@ -205,16 +190,19 @@ export function useListingCreateForm({
         onSaved?.();
         return;
       }
-      if (isRides && recurrence) {
-        const firstId = await publishSeries(submitted, recurrence);
-        trackCoreLoop('listing_created', { world: worldSlug, cityId: null });
-        void rememberRideRoute(submitted);
+      // A series: the server publishes each date; the form opens the first one.
+      const seriesDraft = isRides ? recurrence : eventSeries;
+      if (seriesDraft) {
+        const args = { kindId: kind.kindId, title: effectiveTitle, summary, submitted, draft: seriesDraft };
+        const firstId = isRides ? await publishRideSeries(args, direction) : await publishEventSeries(args, city?.id ?? '');
+        trackCoreLoop('listing_created', { world: worldSlug, cityId: isRides ? null : city?.id ?? null });
+        if (isRides) void rememberRideRoute(submitted);
         onPublished(firstId);
         return;
       }
       // A republish reuses the source's photos (already in the owner's folder) before new ones.
       const uploaded = photos.length > 0 ? await uploadListingImages(userId, photos) : [];
-      const mediaPaths = [...source.carriedMediaPaths, ...uploaded];
+      const media = [...source.carriedMedia, ...uploaded];
       const id = await marketplaceRepository().createListing(
         buildListingCreatePayload({
           kindId: kind.kindId,
@@ -228,7 +216,7 @@ export function useListingCreateForm({
           lat: null,
           lng: null,
           radiusKm: DEFAULT_RADIUS_KM,
-          mediaPaths,
+          media,
           worldSubcategoryId: showSubcategory ? subcategoryId : null,
           additionalWorldSlugs: additionalWorlds.filter((w) => w !== worldSlug),
         }),
@@ -245,7 +233,7 @@ export function useListingCreateForm({
       }
       onPublished(id);
     } catch (err) {
-      setError({ message: t(marketplaceServerErrorKey(err)), field: null });
+      setError({ message: t(postSeriesErrorKey(err) ?? marketplaceServerErrorKey(err)), field: null });
     } finally {
       publishLock.current = false;
       setBusy(false);
@@ -265,7 +253,7 @@ export function useListingCreateForm({
     setCity,
     photos,
     setPhotos,
-    carriedMediaPaths: source.carriedMediaPaths,
+    carriedMedia: source.carriedMedia,
     removeCarriedMedia: source.removeCarriedMedia,
     subcategoryId,
     setSubcategoryId,
@@ -286,6 +274,8 @@ export function useListingCreateForm({
     eventChoice,
     showSubcategory,
     isRides,
+    /** The form publishes an event, which may recur (FR-POST-024). */
+    isEvent: isEvent && !editListingId,
     busy,
     error,
     publish,

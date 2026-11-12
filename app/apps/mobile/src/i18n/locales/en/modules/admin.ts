@@ -7,7 +7,6 @@ import { adminOrgApprovalsEn } from './adminOrgApprovals';
 import { adminDonationLinksEn } from './adminDonationLinks';
 import { adminWhatsAppEn } from './adminWhatsApp';
 import { adminMatchingEn } from './adminMatching';
-import { adminDemoDataEn } from './adminDemoData';
 import { adminOrgTreeEn } from './adminOrgTree';
 import { adminStatsEn } from './adminStats';
 import { adminSurveysEn } from './adminSurveys';
@@ -32,7 +31,6 @@ export const adminEn = {
     audit:         'Audit Log',
     whatsapp:      'WhatsApp',
     matching:      'Match quality',
-    demoData:      'Demo data',
     donationLinks: 'Donation links',
     stats:         'Statistics',
   },
@@ -48,6 +46,22 @@ export const adminEn = {
     volunteer_manager: 'Volunteer Manager',
     org_volunteer: 'Org Volunteer',
   },
+  // Extra words the portal search (#2081) matches besides the screen title, space-separated.
+  searchKeywords: {
+    dashboard: 'home overview main',
+    reports: 'report complaint abuse moderation',
+    tasks: 'task todo ticket',
+    admins: 'admin permission role team',
+    users: 'user member account ban block',
+    posts: 'post listing content',
+    surveys: 'survey poll questionnaire research',
+    audit: 'audit log history activity',
+    whatsapp: 'whatsapp bot chat',
+    matching: 'match quality algorithm',
+    money: 'money payment finance wallet',
+    donationLinks: 'donate link url',
+    stats: 'stats analytics metrics kpi numbers',
+  },
   dashboard: {
     welcome: 'Welcome to the Admin Portal',
     rolesLabel: 'Your Roles',
@@ -62,6 +76,8 @@ export const adminEn = {
     auditKpi: 'Audit Log',
     auditOpenLabel: 'Open',
     noCount: '—',
+    searchPlaceholder: 'Search admin screens and settings',
+    searchEmpty: 'No matching screen',
   },
   comingSoon: {
     title: 'This screen is coming soon',
@@ -81,7 +97,7 @@ export const adminEn = {
       posts:      'Posts',
       users:      'Users',
       chats:      'Chats',
-      listings:   'Listings',
+      comments:   'Comments',
       last7Days:  'Last 7 days',
       last30Days: 'Last 30 days',
       search:     'Search by target ID or reporter name',
@@ -124,9 +140,7 @@ export const adminEn = {
       postKind:    'Post',
       userKind:    'User',
       chatKind:    'Chat',
-      listingKind: 'Listing',
-      openListing: 'Open listing',
-      openOwner:   'Open owner profile',
+      commentKind: 'Comment',
       noPreview:   '(No preview)',
       unnamedUser: '(Unnamed user)',
       openPost:    'Open the post',
@@ -151,7 +165,6 @@ export const adminEn = {
   money: adminMoneyEn,
   whatsapp: adminWhatsAppEn,
   matching: adminMatchingEn,
-  demoData: adminDemoDataEn,
   orgTree: adminOrgTreeEn,
   stats: adminStatsEn,
   crm: adminCrmEn,

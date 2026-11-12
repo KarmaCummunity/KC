@@ -1,0 +1,18 @@
+rule_code,world_slug,label_en,is_active
+R-Animals-1,animals,"Animals: direct give and take (external-body routing lifted, 0612)",true
+R-Env-1,environment,Environment routes via external body,true
+R-Food-1,food,Food listing requires expiry,true
+R-Food-2,food,Food expiry auto-block,true
+R-Food-7,food,Food posting ban flag,true
+R-Housing-2,housing,Housing code of conduct accepted before the first publish or booking,true
+R-Items-1,items,Items listing requires image reference,true
+R-Items-5,items,Items 30-day TTL cap,true
+R-Knowledge-1,knowledge,Knowledge pending approval,true
+R-Match-6,romantic_matchmaking,Matchmaking 18+ only,true
+R-Med-6,medical,Medical routes via external body,true
+R-Money-3,money,Max 5 active money campaigns per owner,true
+R-Rides-1,rides,Ride cost-share cap offer,true
+R-Rides-2,rides,Ride cost-share cap request,true
+R-SEC-Follow-Write,,Follow write rate limit,true
+R-SEC-Handoff-Write,,Giving handoff request rate limit,true
+R-SEC-Listing-Write,,Listing write rate limit,true

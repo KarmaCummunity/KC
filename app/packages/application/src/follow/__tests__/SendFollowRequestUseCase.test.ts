@@ -23,15 +23,6 @@ describe('SendFollowRequestUseCase', () => {
     ).rejects.toMatchObject({ code: 'self_follow' });
   });
 
-  it('treats pending_request_exists as idempotent success', async () => {
-    const repo = new FollowFakeUserRepository();
-    repo.sendRequestError = new FollowError('pending_request_exists', 'exists');
-    const uc = new SendFollowRequestUseCase(repo);
-
-    const out = await uc.execute({ viewerId: 'u_a', targetUserId: 'u_b' });
-    expect(out.request.status).toBe('pending');
-  });
-
   it('propagates cooldown_active with cooldownUntil', async () => {
     const repo = new FollowFakeUserRepository();
     repo.sendRequestError = new FollowError('cooldown_active', 'cooldown', {

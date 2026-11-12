@@ -14,6 +14,7 @@ import { HandoffActionButton } from '../HandoffActionButton';
 import { HandoffRatingForm } from '../HandoffRatingForm';
 import { useRideBookingStyles } from '../rides/rideBookingStyles';
 import { useKnowledgeBookingAction } from './useKnowledgeBookingAction';
+import { listOrEmpty } from '../../../lib/backendAvailability';
 
 interface Props {
   readonly listingId: string;
@@ -29,7 +30,7 @@ export function KnowledgeSlotPicker({ listingId, cityId }: Props) {
   const { busy, run } = useKnowledgeBookingAction(listingId, cityId);
   const slots = useQuery({
     queryKey: knowledgeSlotsQueryKey(listingId),
-    queryFn: () => knowledgeBookingUseCases.listSlots().execute(listingId),
+    queryFn: () => listOrEmpty(() => knowledgeBookingUseCases.listSlots().execute(listingId)),
   });
   const firstBookable = (slots.data ?? []).find((slot) => canBookKnowledgeSlot(slot));
 

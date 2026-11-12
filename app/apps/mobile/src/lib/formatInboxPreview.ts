@@ -16,6 +16,21 @@ import { systemMessageText } from './chat/systemMessageText';
 
 const isSystemKind = (kind: string | undefined | null) => kind === 'system';
 
+/** Icon of a media message's content in the inbox preview; null for every other message. */
+const MEDIA_ICONS = {
+  image: 'image-outline',
+  video: 'videocam-outline',
+  voice: 'mic-outline',
+  location: 'location-outline',
+  post_share: 'share-social-outline',
+} as const;
+export type InboxMediaIcon = (typeof MEDIA_ICONS)[keyof typeof MEDIA_ICONS];
+
+export function inboxMediaIcon(lastMessage: Message | null | undefined): InboxMediaIcon | null {
+  const type = lastMessage?.kind === 'media' ? lastMessage.mediaPayload?.['type'] : undefined;
+  return typeof type === 'string' && type in MEDIA_ICONS ? MEDIA_ICONS[type as keyof typeof MEDIA_ICONS] : null;
+}
+
 export function formatInboxPreview(
   lastMessage: Message | null | undefined,
   t: TFunction,
@@ -26,5 +41,7 @@ export function formatInboxPreview(
     const prefix = t('chat.inboxSystemPrefix');
     return body ? `${prefix} ${body}` : prefix;
   }
+  // A media message without a caption is shown by its icon alone (inboxMediaIcon).
+  if (inboxMediaIcon(lastMessage)) return body;
   return body || t('chat.inboxNewConversation');
 }

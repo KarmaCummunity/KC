@@ -43,14 +43,12 @@ export class InMemoryChatStore {
   }
 
   /** Inserts a `chats` row for the ordered pair; `last_message_at` defaults to the creation time. */
-  insertChat(participantA: string, participantB: string, anchor?: { postId?: string; rideId?: string }): Chat {
+  insertChat(participantA: string, participantB: string, anchor?: { postId?: string }): Chat {
     const createdAt = this.now();
     const chat: Chat = {
       chatId: crypto.randomUUID(),
       participantIds: [participantA, participantB],
       anchorPostId: anchor?.postId ?? null,
-      anchorRideId: anchor?.rideId ?? null,
-      anchorListingId: null,
       isSupportThread: false,
       lastMessageAt: createdAt,
       createdAt,

@@ -9,7 +9,7 @@ import { execFileSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { countAssertions, findViolations, isTest, loadDiff, parseDiff, stripComments } from './check-test-integrity.mjs';
+import { ancestryGapMessage, countAssertions, findViolations, isTest, loadDiff, parseDiff, stripComments } from './check-test-integrity.mjs';
 
 const SK = '.sk' + 'ip';
 const MARKER_LINES = [
@@ -192,5 +192,32 @@ test('loadDiff counts whole files, so a commented-out assertion is caught', () =
     git(dir, 'commit', '-qam', 'comment out');
     const files = loadDiff(base, git(dir, 'rev-parse', 'HEAD'), dir);
     assert.deepEqual(findViolations(files), ['removes 1 assertion(s) net from tests (2 before, 1 after; files losing some: app/a.test.ts)']);
+  });
+});
+
+test('ancestryGapMessage is null when base is an ancestor of head', () => {
+  withRepo((dir, base) => {
+    writeFileSync(join(dir, 'app/a.test.ts'), 'expect(1).toBe(1);\nexpect(2).toBe(2);\nexpect(3).toBe(3);\n');
+    git(dir, 'commit', '-qam', 'on head');
+    assert.equal(ancestryGapMessage(base, git(dir, 'rev-parse', 'HEAD'), dir), null);
+  });
+});
+
+test('ancestryGapMessage names the stale merge-base when main is not an ancestor of head', () => {
+  withRepo((dir, first) => {
+    git(dir, 'checkout', '-q', '-b', 'dev');
+    writeFileSync(join(dir, 'app/a.test.ts'), 'expect(1).toBe(1);\n');
+    git(dir, 'commit', '-qam', 'delete assertions on dev');
+    const head = git(dir, 'rev-parse', 'HEAD');
+    git(dir, 'checkout', '-q', 'main');
+    writeFileSync(join(dir, 'app/other.ts'), '1\n');
+    git(dir, 'add', '-A');
+    git(dir, 'commit', '-q', '-m', 'later commit on main (as after a squash)');
+    const mainTip = git(dir, 'rev-parse', 'HEAD');
+    const msg = ancestryGapMessage(mainTip, head, dir);
+    assert.equal(typeof msg, 'string');
+    assert.match(msg, /is not an ancestor/);
+    assert.match(msg, new RegExp(first.slice(0, 12)));
+    assert.match(msg, /Sync main → dev/);
   });
 });

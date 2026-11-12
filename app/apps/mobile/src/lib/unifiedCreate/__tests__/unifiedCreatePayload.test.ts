@@ -41,26 +41,26 @@ describe('unified create — listing payload per category', () => {
   it.each(listings.map((c) => [c.id, c] as const))('%s builds the listing write', (_id, c) => {
     const p = buildListingCreatePayload({
       kindId: `k-${c.id}`, kindDirection: 'either', direction: 'request', title: ' כותרת ', summary: ' ',
-      details: { a: 1 }, cityId: 'c1', lat: 1, lng: 2, radiusKm: 25, mediaPaths: ['m'],
+      details: { a: 1 }, cityId: 'c1', lat: 1, lng: 2, radiusKm: 25, media: [{ path: 'm', mimeType: 'image/jpeg', sizeBytes: 512 }],
       worldSubcategoryId: 'cat-1',
     });
     expect(p).toEqual({
       kindId: `k-${c.id}`, title: 'כותרת', summary: null, details: { a: 1 }, direction: 'request',
-      cityId: 'c1', lat: 1, lng: 2, maxRadiusKm: 25, mediaPaths: ['m'], externalBodyId: null,
+      cityId: 'c1', lat: 1, lng: 2, maxRadiusKm: 25, media: [{ path: 'm', mimeType: 'image/jpeg', sizeBytes: 512 }], externalBodyId: null,
       categoryId: 'cat-1',
     });
   });
   it('fixed-direction kinds send null direction', () => {
     const p = buildListingCreatePayload({
       kindId: 'k', kindDirection: 'give', direction: 'give', title: 't', summary: 's', details: {},
-      cityId: null, lat: null, lng: null, radiusKm: 5, mediaPaths: [], worldSubcategoryId: null,
+      cityId: null, lat: null, lng: null, radiusKm: 5, media: [], worldSubcategoryId: null,
     });
     expect(p).toMatchObject({ direction: null, summary: 's', externalBodyId: null, categoryId: null });
   });
   it('passes additionalWorldSlugs when provided', () => {
     const p = buildListingCreatePayload({
       kindId: 'k', kindDirection: 'give', direction: 'give', title: 't', summary: 's', details: {},
-      cityId: null, lat: null, lng: null, radiusKm: 5, mediaPaths: [], worldSubcategoryId: null,
+      cityId: null, lat: null, lng: null, radiusKm: 5, media: [], worldSubcategoryId: null,
       additionalWorldSlugs: ['knowledge', 'employment'],
     });
     expect(p.additionalWorldSlugs).toEqual(['knowledge', 'employment']);

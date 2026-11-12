@@ -1,128 +1,54 @@
 import { describe, it, expect } from 'vitest';
-import { FollowError, isFollowError } from '@kc/application';
+import { FollowError } from '@kc/application';
+import { BackendRuleError } from '@kc/domain';
 import { mapFollowError } from '../mapFollowError';
 
+const rule = (reason: string, details?: string) => new BackendRuleError(reason, 'rpc:follow_user', { details });
+
 describe('mapFollowError', () => {
-  describe('check_violation markers (RAISE from migration 0003 triggers)', () => {
-    it('maps self_follow_forbidden → self_follow', () => {
-      const out = mapFollowError({ message: 'self_follow_forbidden' });
-      expect(isFollowError(out)).toBe(true);
-      expect((out as FollowError).code).toBe('self_follow');
-    });
+  it.each([
+    ['self_follow_forbidden', 'self_follow'],
+    ['blocked_relationship', 'blocked_relationship'],
+    ['account_not_active', 'account_not_active'],
+    ['rate_limited', 'rate_limited'],
+    ['user_unavailable', 'user_not_found'],
+  ])('maps the stable reason %s to the code %s', (reason, code) => {
+    const mapped = mapFollowError(rule(reason));
 
-    it('maps self_follow_request_forbidden → self_follow', () => {
-      const out = mapFollowError({ message: 'self_follow_request_forbidden' });
-      expect((out as FollowError).code).toBe('self_follow');
-    });
-
-    it('maps blocked_relationship marker → blocked_relationship', () => {
-      const out = mapFollowError({ message: 'blocked_relationship' });
-      expect((out as FollowError).code).toBe('blocked_relationship');
-    });
-
-    it('maps already_following marker → already_following', () => {
-      const out = mapFollowError({ message: 'already_following' });
-      expect((out as FollowError).code).toBe('already_following');
-    });
+    expect(mapped).toBeInstanceOf(FollowError);
+    expect(mapped.code).toBe(code);
+    expect(mapped.cooldownUntil).toBeUndefined();
   });
 
-  describe('cooldown_active extraction', () => {
-    it('maps follow_request_cooldown_active without a parsable cooldown_until', () => {
-      const out = mapFollowError({ message: 'follow_request_cooldown_active' });
-      expect(isFollowError(out)).toBe(true);
-      expect((out as FollowError).code).toBe('cooldown_active');
-      expect((out as FollowError).cooldownUntil).toBeUndefined();
-    });
+  it('reads the end of the cooldown from the detail of the refusal', () => {
+    const mapped = mapFollowError(
+      rule('follow_request_cooldown_active', 'cooldown_until=2026-06-01T12:30:00Z'),
+    );
 
-    it('extracts cooldown_until from the details string when present', () => {
-      const out = mapFollowError({
-        message: 'follow_request_cooldown_active',
-        details: 'cooldown_until=2026-06-01T12:34:56.000Z',
-      });
-      expect((out as FollowError).code).toBe('cooldown_active');
-      expect((out as FollowError).cooldownUntil).toBe('2026-06-01T12:34:56.000Z');
-    });
-
-    it('finds cooldown_until in the message body as well as details', () => {
-      // The mapper concatenates message + details before matching, so the
-      // marker can appear in either column without losing the timestamp.
-      const out = mapFollowError({
-        message: 'follow_request_cooldown_active cooldown_until=2026-05-20T00:00:00Z',
-      });
-      expect((out as FollowError).cooldownUntil).toBe('2026-05-20T00:00:00Z');
-    });
+    expect(mapped.code).toBe('cooldown_active');
+    expect(mapped.cooldownUntil).toBe('2026-06-01T12:30:00Z');
   });
 
-  describe('Postgres SQLSTATE codes', () => {
-    it('23505 + follow_requests_one_pending_per_pair_idx → pending_request_exists', () => {
-      const out = mapFollowError({
-        code: '23505',
-        message: 'duplicate key value violates unique constraint "follow_requests_one_pending_per_pair_idx"',
-      });
-      expect((out as FollowError).code).toBe('pending_request_exists');
-    });
+  it('keeps the cooldown code without a date when the detail is missing', () => {
+    const mapped = mapFollowError(rule('follow_request_cooldown_active'));
 
-    it('23505 + follow_edges_pkey → already_following (PK collision)', () => {
-      const out = mapFollowError({
-        code: '23505',
-        message: 'duplicate key value violates unique constraint "follow_edges_pkey"',
-      });
-      expect((out as FollowError).code).toBe('already_following');
-    });
-
-    it('42501 with no marker → blocked_relationship (RLS denial surfaces as blocked)', () => {
-      const out = mapFollowError({ code: '42501', message: 'new row violates RLS policy' });
-      expect((out as FollowError).code).toBe('blocked_relationship');
-    });
-
-    it('23505 without a recognised constraint → unknown (no double-handling)', () => {
-      const out = mapFollowError({ code: '23505', message: 'duplicate key value' });
-      expect((out as FollowError).code).toBe('unknown');
-    });
+    expect(mapped.code).toBe('cooldown_active');
+    expect(mapped.cooldownUntil).toBeUndefined();
   });
 
-  describe('marker precedence + null safety', () => {
-    it('returns unknown for an empty error object', () => {
-      const out = mapFollowError({});
-      expect((out as FollowError).code).toBe('unknown');
-    });
+  it.each(['invalid_rate_limit_args', 'unauthenticated', 'invalid_decision', 'something_new'])(
+    'maps the refusal %s that the follow flow has no code for to `unknown`',
+    (reason) => {
+      expect(mapFollowError(rule(reason)).code).toBe('unknown');
+    },
+  );
 
-    it('returns unknown when passed null', () => {
-      const out = mapFollowError(null);
-      expect((out as FollowError).code).toBe('unknown');
-    });
+  it('keeps the refusal as the cause and its reason as the message', () => {
+    const refusal = rule('blocked_relationship');
 
-    it('returns unknown when passed undefined', () => {
-      const out = mapFollowError(undefined);
-      expect((out as FollowError).code).toBe('unknown');
-    });
+    const mapped = mapFollowError(refusal);
 
-    it('returns unknown for an error with no markers (random message)', () => {
-      const out = mapFollowError({ message: 'something unrelated' });
-      expect((out as FollowError).code).toBe('unknown');
-    });
-
-    it('forwards the original error object as cause on every branch', () => {
-      const original = { message: 'self_follow_forbidden' };
-      const out = mapFollowError(original);
-      expect((out as FollowError).cause).toBe(original);
-    });
-
-    it('uses the message as the FollowError message for unknown errors', () => {
-      const out = mapFollowError({ message: 'some random text' });
-      expect(out.message).toBe('some random text');
-    });
-
-    it('falls back to "unknown" as the message when no message field is present', () => {
-      const out = mapFollowError({});
-      expect(out.message).toBe('unknown');
-    });
-
-    it('finds a marker in the details column when message is empty', () => {
-      // Concatenation is `${message ?? ''} ${details ?? ''}`, so a marker in
-      // details alone still matches.
-      const out = mapFollowError({ details: 'self_follow_forbidden' });
-      expect((out as FollowError).code).toBe('self_follow');
-    });
+    expect(mapped.message).toBe('blocked_relationship');
+    expect(mapped.cause).toBe(refusal);
   });
 });

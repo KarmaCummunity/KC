@@ -19,6 +19,11 @@
 // REVIEW_LANES; scripts/ci-gate.mjs takes every other lane's result from the
 // PR's latest completed `pull_request` run for the same head SHA.
 //
+// A `pull_request` `edited` event (title/body change, no base change) keeps
+// that full `plan` but runs only hygiene and REVIEW_LANES, and reuses the
+// rest the same way. A base-branch change still runs every planned lane.
+// The action is read from the event payload (`GITHUB_EVENT_PATH`).
+//
 // Inputs (env): EVENT_NAME, DRAFT, ACTOR, REF, BASE_REF (PR / merge-group
 // target branch), BASE_SHA, HEAD_SHA.
 // Outputs ($GITHUB_OUTPUT): draft, one true/false flag per lane job and per
@@ -28,7 +33,7 @@
 // optional lane is named only when it is needed.
 
 import { execFileSync } from 'node:child_process';
-import { appendFileSync } from 'node:fs';
+import { appendFileSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 // CI plumbing and the Node pin can break any lane, so they trigger all of them.
@@ -81,12 +86,31 @@ export const LANE_JOBS = ['hygiene', 'static', ...LANES, ...HEAVY_LANES];
 /**
  * Lanes that appear in the plan only when needed: `release`, the dev → main
  * lane (source branch, strict migration scan, VERSION bump, dev E2E), needed
- * for every PR or merge group whose base is main, whatever it touches. Never
+ * for every PR or merge group whose base is main, whatever it touches, and
+ * `maestro`, the Android journeys on an emulator against kc-dev (about 45
+ * minutes), needed on a PR whose diff touches MAESTRO_RULES. It is not run by
+ * a merge group, a push or a dispatch: the PR already ran it, and a push to
+ * dev has its own non-blocking run (maestro-dev-health.yml) so that a shared,
+ * mutable kc-dev can never hold a deploy. Never
  * planned as `false`, so a ci.yml without the job (and the gate copy that
  * predates it) keeps passing; scripts/ci-gate.mjs accepts the job as skipped
  * when the plan omits it. Keep in sync with OPTIONAL_LANES there.
  */
-export const OPTIONAL_LANES = ['release'];
+export const OPTIONAL_LANES = ['release', 'maestro'];
+
+/**
+ * Paths that change what the Maestro Android journeys see: the app, its packages and lockfile, the
+ * flows and their runner, and the workflow itself. The `maestro` lane is needed on a PR that touches
+ * one of them; nothing else plans it (see `plan`).
+ */
+export const MAESTRO_RULES = [
+  /^app\/apps\/mobile\//,
+  /^app\/packages\//,
+  /^app\/pnpm-lock\.yaml$/,
+  /^\.maestro\//,
+  /^scripts\/maestro-/,
+  /^\.github\/workflows\/ci-maestro-android\.yml$/,
+];
 
 /** Map changed paths to the heavy lanes they need. */
 export function classify(files) {
@@ -117,10 +141,11 @@ export const REVIEW_LANES = ['static'];
  * Build the CI plan. `files` is null when the diff could not be computed;
  * that (like a merge group, a push or a manual dispatch) runs every lane.
  * `plan` is what the change needs; `run` is what this workflow run executes
- * (they differ only on review events, which run REVIEW_LANES and reuse the
- * rest).
+ * (they differ on review events, which run REVIEW_LANES and reuse the rest,
+ * and on `edited` events without a base change, which also re-run hygiene).
+ * `action` and `baseChanged` come from the GitHub event payload.
  */
-export function plan({ event, draft, actor, ref, baseRef, files }) {
+export function plan({ event, draft, actor, ref, baseRef, files, action, baseChanged }) {
   const isPr = PR_EVENTS.has(event);
   if (isPr && draft) {
     const none = Object.fromEntries(LANE_JOBS.map((j) => [j, false]));
@@ -140,10 +165,26 @@ export function plan({ event, draft, actor, ref, baseRef, files }) {
   // gone from PRs into dev (D-195 addendum, TD-236), it gates PRs into main
   // and main pushes. Dependabot-triggered runs get no secrets.
   const sonarTarget = (isPr && base === 'main' && actor !== 'dependabot[bot]') || (!isPr && event !== 'merge_group' && ref === 'refs/heads/main');
-  const needed = { hygiene: isPr, static: true, ...lanes, ...heavy, ...(release ? { release: true } : {}) };
+  // The seed password reaches only runs that get secrets, so a Dependabot PR does not plan Maestro.
+  // An undiffable PR (files === null) runs it: fail closed.
+  const maestro = isPr && actor !== 'dependabot[bot]' && (files === null || files.some((f) => MAESTRO_RULES.some((re) => re.test(f))));
+  const needed = {
+    hygiene: isPr,
+    static: true,
+    ...lanes,
+    ...heavy,
+    ...(release ? { release: true } : {}),
+    ...(maestro ? { maestro: true } : {}),
+  };
   if (event === 'pull_request_review') {
     const jobs = [...LANE_JOBS, ...OPTIONAL_LANES];
     const run = Object.fromEntries(jobs.map((j) => [j, needed[j] === true && REVIEW_LANES.includes(j)]));
+    return { draft: false, sonar: false, plan: needed, run };
+  }
+  if (event === 'pull_request' && action === 'edited' && !baseChanged) {
+    const keep = new Set(['hygiene', ...REVIEW_LANES]);
+    const jobs = [...LANE_JOBS, ...OPTIONAL_LANES];
+    const run = Object.fromEntries(jobs.map((j) => [j, needed[j] === true && keep.has(j)]));
     return { draft: false, sonar: false, plan: needed, run };
   }
   return { draft: false, sonar: lanes.frontend && sonarTarget, plan: needed, run: needed };
@@ -172,9 +213,25 @@ export function changedFiles(base, head, cwd = process.cwd()) {
   }
 }
 
+/**
+ * Action and base-branch change from a GitHub event payload (`GITHUB_EVENT_PATH`).
+ * Missing or unreadable payloads yield no action, so the plan runs every needed
+ * lane (fail closed: an `edited` run without a payload must not skip lanes).
+ */
+export function readPrAction(eventPath) {
+  if (!eventPath) return { action: undefined, baseChanged: false };
+  try {
+    const event = JSON.parse(readFileSync(eventPath, 'utf8'));
+    return { action: event.action, baseChanged: Boolean(event.changes?.base) };
+  } catch {
+    return { action: undefined, baseChanged: false };
+  }
+}
+
 function main() {
   const env = process.env;
   const files = DIFF_EVENTS.has(env.EVENT_NAME) ? changedFiles(env.BASE_SHA, env.HEAD_SHA) : null;
+  const { action, baseChanged } = readPrAction(env.GITHUB_EVENT_PATH);
   const result = plan({
     event: env.EVENT_NAME,
     draft: env.DRAFT === 'true',
@@ -182,6 +239,8 @@ function main() {
     ref: env.REF,
     baseRef: env.BASE_REF,
     files,
+    action,
+    baseChanged,
   });
   const lines = [
     `draft=${result.draft}`,

@@ -1,47 +1,110 @@
 name: Seed KC dev
 
-# Manual only. Loads (or wipes) Hebrew fake data on the KC dev Supabase project.
-# Never targets prod: environment is fixed to supabase-dev and the project ref is checked.
+# Manual only. Loads the versioned seeds into the KC dev Supabase project (kc-dev) over a
+# direct Postgres connection (the loaders use \copy). Never targets prod: the environment is
+# fixed to supabase-dev and the project ref is checked before anything runs.
+#
+#   reference   cities, streets, road junctions            supabase/seed/reference/load.sh
+#   content     organization links, legal texts, surveys,  supabase/seed/content/load.sh
+#               the platform organization
+#   e2e-users   user1 … user4 @seed.kc.test for tests/e2e  supabase/seed/e2e/load.sql
+#   all         the three above, in that order
+#   vault       the two Vault secrets the database needs to start Edge Functions from its jobs
+#               (kc_project_url, kc_service_role_key): created or updated, never printed. Not
+#               part of `all`: it is an operator step after the schema is applied.
+#
+# Every seed is idempotent, so running one again changes nothing that is already loaded. The
+# old Hebrew demo dataset (posts, chats, follows) was retired with the migration chain; it is
+# kept for reference in supabase/archive/seed-kc-dev-demo.
 on:
   workflow_dispatch:
     inputs:
       action:
-        description: 'seed (wipe + reseed) or wipe'
+        description: 'which seed to load'
         type: choice
-        options: [seed, wipe]
-        default: seed
+        options: [all, reference, content, e2e-users, vault]
+        default: all
 
 permissions:
   contents: read
 
 jobs:
   seed:
+    name: seed kc-dev · ${{ inputs.action }}
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     environment: supabase-dev
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+      # Read by psql; never written to a file or a command line.
+      PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
       KC_DEV_REF: enbqriuxvvuontiwslun
+      ACTION: ${{ inputs.action }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
       - name: Guard – dev project only
         run: |
           set -euo pipefail
           if [ "$SUPABASE_PROJECT_REF" != "$KC_DEV_REF" ]; then
             echo "::error::supabase-dev SUPABASE_PROJECT_REF is not kc-dev; refusing."; exit 1
           fi
-      - name: Run SQL via Management API
+
+      - uses: ./.github/actions/setup-supabase-cli
+
+      # `supabase link` records the pooler address of the project (no password in it).
+      - name: Link to kc-dev
+        run: supabase link --project-ref "$SUPABASE_PROJECT_REF" --yes >/dev/null
+
+      - name: Load the seeds
+        if: inputs.action != 'vault'
         env:
           E2E_SEED_PASSWORD: ${{ secrets.E2E_SEED_PASSWORD }}
         run: |
           set -euo pipefail
-          file=supabase/seed/kc-dev/${{ inputs.action }}.sql
-          [ -n "${E2E_SEED_PASSWORD:-}" ] || { echo "::error::E2E_SEED_PASSWORD secret is not set"; exit 1; }
-          body=$(python3 -c 'import json,os,sys;pw=os.environ["E2E_SEED_PASSWORD"].replace("\x27","\x27\x27");print(json.dumps({"query":"set kc.seed_target=\x27dev\x27;\nset kc.seed_password=\x27"+pw+"\x27;\n"+open(sys.argv[1]).read()}))' "$file")
-          code=$(curl -sS -o out.json -w '%{http_code}' -X POST \
-            "https://api.supabase.com/v1/projects/$KC_DEV_REF/database/query" \
-            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" -H 'Content-Type: application/json' \
-            --data-binary "$body")
-          cat out.json; echo
-          [ "$code" -lt 300 ] || { echo "::error::HTTP $code"; exit 1; }
+          url="$(cat supabase/.temp/pooler-url)"
+          case "$url" in postgres*://*) ;; *) echo "::error::no pooler address recorded by supabase link"; exit 1 ;; esac
+          case "$url" in *"$KC_DEV_REF"*) ;; *) echo "::error::pooler address is not kc-dev's; refusing."; exit 1 ;; esac
+          if [ "$ACTION" = all ] || [ "$ACTION" = reference ]; then
+            echo "── reference ──"
+            REFERENCE_DB_URL="$url" supabase/seed/reference/load.sh
+          fi
+          if [ "$ACTION" = all ] || [ "$ACTION" = content ]; then
+            echo "── content ──"
+            CONTENT_DB_URL="$url" supabase/seed/content/load.sh
+          fi
+          if [ "$ACTION" = all ] || [ "$ACTION" = e2e-users ]; then
+            echo "── e2e users ──"
+            [ -n "${E2E_SEED_PASSWORD:-}" ] || { echo "::error::E2E_SEED_PASSWORD secret is not set"; exit 1; }
+            {
+              echo "select set_config('kc.seed_target', 'dev', false), set_config('kc.seed_password', :'pw', false) \gset"
+              cat supabase/seed/e2e/load.sql
+            } | psql "$url" -v ON_ERROR_STOP=1 -v pw="$E2E_SEED_PASSWORD" -qAt -f -
+          fi
+
+      # The service-role key is read from the Management API with the environment's access
+      # token, masked at once, handed to psql through the environment (never an argument),
+      # and stored with vault.create_secret / vault.update_secret. Only names are printed.
+      - name: Set the Vault secrets
+        if: inputs.action == 'vault'
+        run: |
+          set -euo pipefail
+          url="$(cat supabase/.temp/pooler-url)"
+          case "$url" in *"$KC_DEV_REF"*) ;; *) echo "::error::pooler address is not kc-dev's; refusing."; exit 1 ;; esac
+          key="$(supabase projects api-keys --project-ref "$KC_DEV_REF" -o json | jq -r '[.[] | select(.name == "service_role" or .id == "service_role")][0].api_key // empty')"
+          [ -n "$key" ] || { echo "::error::no service_role key returned for kc-dev"; exit 1; }
+          echo "::add-mask::$key"
+          export KC_VAULT_URL="https://${KC_DEV_REF}.supabase.co" KC_VAULT_KEY="$key"
+          psql "$url" -v ON_ERROR_STOP=1 -qAt <<'SQL'
+          \getenv vault_url KC_VAULT_URL
+          \getenv vault_key KC_VAULT_KEY
+          select vault.create_secret(:'vault_url', 'kc_project_url') where not exists (select 1 from vault.secrets where name = 'kc_project_url');
+          select vault.update_secret(id, :'vault_url') from vault.secrets where name = 'kc_project_url';
+          select vault.create_secret(:'vault_key', 'kc_service_role_key') where not exists (select 1 from vault.secrets where name = 'kc_service_role_key');
+          select vault.update_secret(id, :'vault_key') from vault.secrets where name = 'kc_service_role_key';
+          SQL
+          echo "vault secrets present:"
+          psql "$url" -v ON_ERROR_STOP=1 -qAt -c "select name from vault.secrets where name in ('kc_project_url','kc_service_role_key') order by name"

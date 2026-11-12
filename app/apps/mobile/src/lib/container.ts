@@ -55,7 +55,6 @@ import {
   ReportListingUseCase,
   DeletePostUseCase,
   AdminRemovePostUseCase,
-  AdminRemoveListingUseCase,
   ListDonationLinksUseCase,
   AddDonationLinkUseCase,
   RemoveDonationLinkUseCase,
@@ -90,6 +89,7 @@ import {
   ListOrgApplicationsUseCase,
   DecideOrgApplicationUseCase,
   AdminSearchUsersUseCase,
+  AdminFindMembersUseCase,
   AdminSearchPostsUseCase,
   AdminSearchAuditUseCase,
   ListTimesheetsUseCase,
@@ -121,6 +121,7 @@ import { createFinanceUseCases } from './financeContainer';
 import { isSupabaseConfigured } from './supabasePublicConfig';
 import { bindSupabaseClient } from './bindSupabaseClient';
 
+// The one Supabase connection of the app, typed against the production baseline schema.
 export const supabase = bindSupabaseClient(isSupabaseConfigured(), () =>
   getSupabaseClient({ storage: pickAuthStorage() }),
 );
@@ -135,20 +136,20 @@ const postRepo = new SupabasePostRepository(supabase);
 const postEngagementRepo = new SupabasePostEngagementRepository(supabase);
 const notificationInboxRepo = new SupabaseNotificationInboxRepository(supabase);
 const chatV2Realtime = new SupabaseChatV2Realtime(supabase);
-const onlinePresence = new SupabaseOnlinePresence(supabase);
+const onlinePresence = new SupabaseOnlinePresence();
 const activeStatus = new SupabaseActiveStatusRepository(supabase);
 const chatV2Repo = new SupabaseChatV2Repository(supabase);
 const socialFeedRepo = new SupabaseSocialFeedRepository(supabase);
-const followSuggestionsRepo = new SupabaseFollowSuggestionsRepository(supabase);
+const followSuggestionsRepo = new SupabaseFollowSuggestionsRepository();
 const moderationAdminRepo = new SupabaseModerationAdminRepository(supabase);
 const accountGateRepo = new SupabaseAccountGateRepository(supabase);
 const deviceRepo = new SupabaseDeviceRepository(supabase);
 const adminRoleRepo = new SupabaseAdminRoleRepository(supabase);
-const adminTaskRepo = new SupabaseAdminTaskRepository(supabase);
+const adminTaskRepo = new SupabaseAdminTaskRepository();
 const orgHierarchyRepo = new SupabaseOrgHierarchyRepository(supabase);
 const adminContentRepo = new SupabaseAdminContentRepository(supabase);
-const timesheetsRepo = new SupabaseTimesheetsRepository(supabase);
-const crmContactsRepo = new SupabaseCrmContactsRepository(supabase);
+const timesheetsRepo = new SupabaseTimesheetsRepository();
+const crmContactsRepo = new SupabaseCrmContactsRepository();
 const orgApplicationsRepo = new SupabaseOrgApplicationsRepository(supabase);
 const reportsRepo = new SupabaseReportsRepository(supabase);
 const surveyRepo = new SupabaseSurveyRepository(supabase);
@@ -174,7 +175,7 @@ export const container = {
   followSuggestions: followSuggestionsRepo,
   postEngagement: postEngagementRepo,
   notificationInbox: notificationInboxRepo,
-  moderationAdminRepo, // exposed for hooks that need adminRepo.isUserAdmin pre-checks
+  moderationAdminRepo,
   deviceRepo,
   adminRoleRepo,
   reportsRepo,
@@ -199,6 +200,7 @@ export const container = {
   addAdminTaskComment: new AddAdminTaskCommentUseCase(adminTaskRepo),
   deleteAdminTask: new DeleteAdminTaskUseCase(adminTaskRepo),
   adminSearchUsers: new AdminSearchUsersUseCase(adminContentRepo),
+  adminFindMembers: new AdminFindMembersUseCase(adminContentRepo),
   adminSearchPosts: new AdminSearchPostsUseCase(adminContentRepo),
   adminSearchAudit: new AdminSearchAuditUseCase(adminContentRepo),
   // V2-ADMIN-TIME-10
@@ -210,7 +212,7 @@ export const container = {
   deleteTimesheet:  new DeleteTimesheetUseCase(timesheetsRepo),
   // V2-ADMIN-MONEY-9 (+ accounts, donors, public display: FR-FIN-003/022/023)
   ...createFinanceUseCases(supabase),
-  ...createWhatsAppAdminUseCases(supabase),
+  ...createWhatsAppAdminUseCases(),
   // V2-ADMIN-CRM-8
   listCrmContacts: new ListCrmContactsUseCase(crmContactsRepo),
   upsertCrmContact: new UpsertCrmContactUseCase(crmContactsRepo),
@@ -245,7 +247,6 @@ export const container = {
   // Post moderation
   deletePost: new DeletePostUseCase(postRepo),
   adminRemovePost: new AdminRemovePostUseCase(postRepo),
-  adminRemoveListing: new AdminRemoveListingUseCase(moderationAdminRepo),
 
   // Moderation admin actions (FR-MOD-007 + FR-ADMIN-002..007)
   restoreTarget: new RestoreTargetUseCase(moderationAdminRepo),

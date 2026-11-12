@@ -130,9 +130,11 @@ function isSkippedContentTreeRel(relPosix) {
     return true;
   }
   if (relPosix === "supabase/seed.sql") return true;
+  // Archived pre-baseline material (legacy DB tests, the old demo seed): history, not UI copy.
+  if (relPosix === "supabase/archive" || relPosix.startsWith("supabase/archive/")) return true;
   // DB regression tests (supabase/tests/**) are fixtures like __tests__/**, not UI copy.
   if (relPosix === "supabase/tests" || relPosix.startsWith("supabase/tests/")) return true;
-  // Fake Hebrew test data for kc-dev (supabase/seed/kc-dev/**) – data, not UI copy.
+  // Seed data (reference, content, e2e) – data, not UI copy.
   if (relPosix.startsWith("supabase/seed/")) return true;
   if (relPosix === "app/apps/mobile/src/i18n" || relPosix.startsWith("app/apps/mobile/src/i18n/")) {
     return true;

@@ -1,8 +1,10 @@
-// Matching v2 (0420–0423): "Matches for you" + accept/decline. The engine runs in Postgres
-// (pg_cron + listing trigger); the client only reads its own pairs and answers them.
+// "Matches for you" (matching v2): the caller's pairs + accept/decline. The engine runs inside the
+// database (a post is matched when it is published or changed); the client only reads its own
+// pairs, as the other member's post card, and answers them.
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '../database.types';
+import { unwrapCall } from '../rpc/mapRpcError';
 
 export type MatchRole = 'offer' | 'request';
 export type MatchStatus = 'suggested' | 'accepted';
@@ -21,6 +23,7 @@ export interface MatchSuggestion {
   readonly otherListingId: string;
   readonly otherListingTitle: string;
   readonly otherListingSummary: string | null;
+  /** The other member; the ids are empty and the names null while the poster is masked (FR-POST-021). */
   readonly otherOwner: {
     readonly userId: string;
     readonly displayName: string | null;
@@ -38,7 +41,7 @@ export interface MatchRespondResult {
   readonly mutual: boolean;
 }
 
-/** KC#1122 / FR-ADMIN-029 — one world's match quality over the requested window (0454). */
+/** KC#1122 / FR-ADMIN-029 — one world's match quality over the requested window. */
 export interface MatchQualityByWorld {
   readonly worldSlug: string;
   readonly worldLabelHe: string;
@@ -51,54 +54,56 @@ export interface MatchQualityByWorld {
   readonly chatPairs: number;
   /** chat pairs / notified pairs; null when nothing was notified. */
   readonly chatRate: number | null;
-  /** null for worlds that do not hand off through giving_handoffs. */
+  /** null for worlds that do not hand off through handoffs. */
   readonly completedPairs: number | null;
   readonly completionRate: number | null;
 }
 
-type Row = Database['public']['Functions']['rpc_my_matches']['Returns'][number];
+type Row = Database['public']['Functions']['my_matches']['Returns'][number];
 type QualityRow = Database['public']['Functions']['admin_match_quality']['Returns'][number];
 
-// PostgREST returns numeric columns as strings and SQL nulls as null; keep nulls meaningful.
-const numOrNull = (v: unknown): number | null => (v === null || v === undefined ? null : Number(v));
+/** A rate column: PostgREST returns numerics as strings, and null when the denominator is zero. */
+const rate = (value: number | string | null): number | null => (value === null ? null : Number(value));
 
-export function mapMatchQualityRow(r: QualityRow): MatchQualityByWorld {
+/** One `admin_match_quality` row. */
+export function mapQualityRow(r: QualityRow): MatchQualityByWorld {
   return {
     worldSlug: r.world_slug,
-    worldLabelHe: r.world_label_he ?? r.world_slug,
-    worldLabelEn: r.world_label_en ?? r.world_slug,
-    notifiedPairs: Number(r.notified_pairs ?? 0),
-    responses: Number(r.responses ?? 0),
-    accepted: Number(r.accepted ?? 0),
-    precisionProxy: numOrNull(r.precision_proxy),
-    chatPairs: Number(r.chat_pairs ?? 0),
-    chatRate: numOrNull(r.chat_rate),
-    completedPairs: numOrNull(r.completed_pairs),
-    completionRate: numOrNull(r.completion_rate),
+    worldLabelHe: r.world_label_he,
+    worldLabelEn: r.world_label_en,
+    notifiedPairs: r.notified_pairs,
+    responses: r.responses,
+    accepted: r.accepted,
+    precisionProxy: rate(r.precision_proxy),
+    chatPairs: r.chat_pairs,
+    chatRate: rate(r.chat_rate),
+    completedPairs: r.completed_pairs,
+    completionRate: rate(r.completion_rate),
   };
 }
 
-const asResponse = (v: string | null): MatchResponse | null =>
-  v === 'accepted' || v === 'declined' ? v : null;
+const asResponse = (v: string | null): MatchResponse | null => (v === 'accepted' || v === 'declined' ? v : null);
 
+/** One `my_matches` row; PostgREST returns numerics as strings, so the numbers are converted. */
 export function mapMatchRow(r: Row): MatchSuggestion {
+  const other = r.other_post;
   return {
-    candidateId: r.candidate_id,
+    candidateId: r.match_id,
     status: r.status === 'accepted' ? 'accepted' : 'suggested',
     score: Number(r.score ?? 0),
     distanceKm: r.distance_km == null ? null : Number(r.distance_km),
     worldSlug: r.world_slug,
     myRole: r.my_role === 'offer' ? 'offer' : 'request',
-    myListingId: r.my_listing_id,
-    myListingTitle: r.my_listing_title,
-    otherListingId: r.other_listing_id,
-    otherListingTitle: r.other_listing_title,
-    otherListingSummary: r.other_listing_summary ?? null,
+    myListingId: r.my_post_id,
+    myListingTitle: r.my_post_title,
+    otherListingId: other.id ?? '',
+    otherListingTitle: other.title ?? '',
+    otherListingSummary: other.description ?? null,
     otherOwner: {
-      userId: r.other_owner_id,
-      displayName: r.other_owner_name ?? null,
-      avatarUrl: r.other_owner_avatar ?? null,
-      shareHandle: r.other_owner_handle ?? null,
+      userId: other.owner_id ?? '',
+      displayName: other.owner_display_name ?? null,
+      avatarUrl: other.owner_avatar_url ?? null,
+      shareHandle: other.owner_share_handle ?? null,
     },
     myResponse: asResponse(r.my_response),
     otherResponse: asResponse(r.other_response),
@@ -111,32 +116,22 @@ export class SupabaseMatchRepository {
   constructor(private readonly client: SupabaseClient<Database>) {}
 
   async listMine(limit = 20): Promise<MatchSuggestion[]> {
-    const { data, error } = await this.client.rpc('rpc_my_matches', { p_limit: limit });
-    if (error) throw new Error(`listMyMatches: ${error.message}`);
-    return (data ?? []).map(mapMatchRow);
+    const rows = unwrapCall('rpc:my_matches', await this.client.rpc('my_matches', { p_limit: limit }));
+    return (rows ?? []).map(mapMatchRow);
   }
 
+  /** Answers a pair; `mutual` is true when both owners have now accepted. */
   async respond(candidateId: string, response: 'accept' | 'decline'): Promise<MatchRespondResult> {
-    const { data, error } = await this.client.rpc('rpc_match_respond', {
-      p_candidate_id: candidateId,
-      p_response: response,
-    });
-    if (error) throw new Error(`respondToMatch: ${error.message}`);
-    const out = (data ?? {}) as { status?: unknown; mutual?: unknown };
-    return { status: String(out.status ?? ''), mutual: out.mutual === true };
+    const status = unwrapCall(
+      'rpc:match_respond',
+      await this.client.rpc('match_respond', { p_match_id: candidateId, p_accept: response === 'accept' }),
+    );
+    return { status: status ?? '', mutual: status === 'accepted' };
   }
 
-  /** Admin-only (super admin / moderator): per-world quality over the last `days` (server clamps 1..365). */
+  /** Match quality per world over the last `days` (moderators and above; the server clamps 1..365). */
   async qualityByWorld(days = 30): Promise<MatchQualityByWorld[]> {
-    const { data, error } = await this.client.rpc('admin_match_quality', { p_days: days });
-    if (error) throw new Error(`matchQualityByWorld: ${error.message}`);
-    return (data ?? []).map(mapMatchQualityRow);
-  }
-
-  /** Recomputes the caller's open listings (server-throttled to once per 10 min each). */
-  async refreshMine(): Promise<number> {
-    const { data, error } = await this.client.rpc('rpc_match_refresh_mine');
-    if (error) throw new Error(`refreshMyMatches: ${error.message}`);
-    return Number(data ?? 0);
+    const rows = unwrapCall('rpc:admin_match_quality', await this.client.rpc('admin_match_quality', { p_days: days }));
+    return (rows ?? []).map(mapQualityRow);
   }
 }

@@ -25,7 +25,14 @@ export type FunnelAnalyticsEvent =
   | 'return_visit'
   | 'donation';
 
-export type AnalyticsEvent = SurveyAnalyticsEvent | FunnelAnalyticsEvent;
+/** Pro paywall funnel (#1085). */
+export type PaywallAnalyticsEvent =
+  | 'paywall_viewed'
+  | 'purchase_started'
+  | 'purchase_completed'
+  | 'purchase_failed';
+
+export type AnalyticsEvent = SurveyAnalyticsEvent | FunnelAnalyticsEvent | PaywallAnalyticsEvent;
 
 type EventProperties = Record<string, unknown>;
 

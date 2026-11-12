@@ -8,6 +8,7 @@ import type {
   PostType,
   PostVisibility,
 } from '@kc/domain';
+import type { MediaAssetInput } from '@kc/application';
 import type { CreateDirection } from './createCategories';
 
 export interface PostPayloadArgs {
@@ -63,7 +64,8 @@ export interface ListingPayloadArgs {
   lat: number | null;
   lng: number | null;
   radiusKm: number;
-  mediaPaths: string[];
+  /** Uploaded photos in order, with their real type and size. */
+  media: MediaAssetInput[];
   /** The picked world subcategory (food), null when none (KC#1296). */
   worldSubcategoryId: string | null;
   /** Additional worlds this listing should appear in (#1475). */
@@ -81,7 +83,7 @@ export function buildListingCreatePayload(a: ListingPayloadArgs) {
     lat: a.lat,
     lng: a.lng,
     maxRadiusKm: a.radiusKm,
-    mediaPaths: a.mediaPaths,
+    media: a.media,
     // No create category is a routed world (medical / animals / environment), so no listing
     // from this form is ever attached to an external body.
     externalBodyId: null,

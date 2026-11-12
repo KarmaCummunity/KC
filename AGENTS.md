@@ -52,7 +52,7 @@ Store builds (TestFlight / Play internal): see [`app/apps/mobile/README.md`](app
 
 ## Migrations rule
 
-Every schema change must be a committed file in `supabase/migrations/NNNN_snake.sql`, applied only via `supabase db push` / the **Deploy** workflow. **Never** use the Supabase MCP `apply_migration` tool on any KC project (dev or prod). The `CI — migration drift` workflow scans the dev ledger against the **dev** branch's files (pinned with `ref: dev`, since scheduled runs execute from `main`). See `AGENTS.md` §9 and `docs/SSOT/OPERATOR_RUNBOOK.md` → "Migration application rules".
+Every schema change must be a committed file in `supabase/migrations/NNNN_snake.sql` (after the D-228 cut-over `0001_baseline.sql` is frozen history; the next file is `0002_…`; the retired chain is in `supabase/migrations/archive/`), applied only via `supabase db push` / the **Deploy** workflow. **Never** use the Supabase MCP `apply_migration` tool on any KC project (dev or prod). The `CI — migration drift` workflow scans the dev ledger against the **dev** branch's files (pinned with `ref: dev`, since scheduled runs execute from `main`). See `AGENTS.md` §9 and `docs/SSOT/OPERATOR_RUNBOOK.md` → "Migration application rules".
 
 ---
 
@@ -138,7 +138,8 @@ docs/spec/requirements/
 ├── 20_organizations.md           FR-ORG-*
 ├── 21_housing.md                FR-HOUSING-*
 ├── 22_identity_verification.md  FR-VERIFY-*
-└── 23_knowledge.md              FR-KNOW-*
+├── 23_knowledge.md              FR-KNOW-*
+└── 24_ride_event_groups.md      FR-EVRIDE-*
 ```
 
 Note: `17_responsive_desktop.md` was formerly `14_responsive_desktop.md` (renamed 2026-10-30 to remove the duplicate `14_` and fill the missing `17_`). FR-RESP-* IDs are unchanged.

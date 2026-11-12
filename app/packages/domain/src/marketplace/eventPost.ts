@@ -1,10 +1,10 @@
-// An organization's event (G1 step 5, D31, S13): a time-world listing of kind `org_event` whose
+// An organization's event (G1 step 5, D31, S13): a time-world listing of kind `event` whose
 // post carries a date window, an optional capacity and a registration policy. Registrations are
 // post handoffs, one seat each; a full event waitlists, and attendance is marked by the organizer
 // (supabase/migrations/0563_event_posts.sql, 0564_event_attendance_waitlist.sql).
 
 /** The time world's listing kind slug of an organization's event (`listing_kinds.slug`). */
-export const ORG_EVENT_KIND_SLUG = 'org_event';
+export const ORG_EVENT_KIND_SLUG = 'event';
 
 /**
  * How a registration is accepted: `automatic` confirms at once, `manual` waits for the organizer,
@@ -61,7 +61,7 @@ export interface OrganizationMembershipOption {
   readonly name: string;
 }
 
-/** The event fields of an `org_event` listing's details, parsed for display. */
+/** The event fields of an `event` listing's details, parsed for display. */
 export interface EventPostDetails {
   readonly orgId: string | null;
   readonly startsAt: string;
@@ -95,7 +95,7 @@ function isTimestamp(value: unknown): value is string {
 }
 
 /**
- * Reads the event fields of an `org_event` listing's details; null when the window or the policy
+ * Reads the event fields of an `event` listing's details; null when the window or the policy
  * is missing or malformed (the server guarantees both, so null means "not an event").
  */
 export function parseEventPostDetails(details: Readonly<Record<string, unknown>>): EventPostDetails | null {

@@ -1,0 +1,18 @@
+world_slug,slug,label_he,label_en,direction,sort_order
+items,item_offer,אני נותן חפץ,I am giving an item,offer,10
+items,item_request,אני מחפש חפץ,I am looking for an item,request,20
+food,food_offer,אני נותן אוכל,I am giving food,offer,10
+food,food_request,אני מחפש אוכל,I am looking for food,request,20
+rides,ride_offer,אני מציע טרמפ,I am offering a ride,offer,10
+rides,ride_request,אני מבקש טרמפ,I am asking for a ride,request,20
+time,volunteer_offer,אני מתנדב בזמני,I am volunteering my time,offer,10
+time,volunteer_request,אני צריך עזרה,I need help,request,20
+time,event,אירוע התנדבות,Volunteering event,offer,30
+knowledge,lesson_offer,שיעור,Lesson,offer,10
+knowledge,mentoring_offer,חונכות,Mentoring,offer,20
+knowledge,consulting_hour,שעת ייעוץ,Consulting hour,offer,30
+knowledge,learning_request,רוצה ללמוד,Want to learn,request,40
+knowledge,mentoring_request,מחפש/ת מנטור,Looking for a mentor,request,50
+knowledge,question,שאלה,Question,request,60
+housing,host_offer,הצעת אירוח,Hosting offer,offer,10
+housing,stay_request,בקשת אירוח,Stay request,request,20

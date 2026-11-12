@@ -37,8 +37,8 @@ describe('validateChallengeDraft', () => {
 
   it('bounds the title by its trimmed length', () => {
     expect(codeOfDraft({ title: '  ab  ' })).toBe('title_too_short');
-    expect(codeOfDraft({ title: 'x'.repeat(121) })).toBe('title_too_long');
-    expect(codeOfDraft({ title: 'x'.repeat(120) })).toBeNull();
+    expect(codeOfDraft({ title: 'x'.repeat(81) })).toBe('title_too_long');
+    expect(codeOfDraft({ title: 'x'.repeat(80) })).toBeNull();
   });
 
   it('bounds description and topic', () => {

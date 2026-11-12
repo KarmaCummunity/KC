@@ -73,7 +73,6 @@ function fullProfile(city: ProfileCity, tag: string): FullProfileEdit {
   return {
     displayName: `member ${tag}`,
     city: city.id,
-    cityName: city.name,
     profileStreet: `street ${tag}`,
     profileStreetNumber: HEBREW_SUFFIX_NUMBER,
     contactPhone: '050-1234567',
@@ -82,8 +81,8 @@ function fullProfile(city: ProfileCity, tag: string): FullProfileEdit {
   };
 }
 
-/** Field-by-field comparison, so a failure names the field that drifted. */
-function assertProfile(actual: EditableProfile, expected: EditableProfile, what: string): void {
+/** Field-by-field comparison of the fields `expected` names, so a failure names the field that drifted. */
+function assertProfile(actual: EditableProfile, expected: Partial<EditableProfile>, what: string): void {
   for (const key of Object.keys(expected) as Array<keyof EditableProfile>) {
     assertEqual(actual[key], expected[key], `${what} — ${key}`);
   }
@@ -182,9 +181,9 @@ const unknownCityRefused: ContractCase<Ctx> = {
   async run(ctx) {
     const me = await ctx.newActor();
     const [city] = ctx.cities;
-    await me.users.updateEditableProfile(me.userId, { city: city.id, cityName: city.name });
+    await me.users.updateEditableProfile(me.userId, { city: city.id });
     await assertRejects(
-      me.users.updateEditableProfile(me.userId, { city: 'no-such-city', cityName: 'nowhere' }),
+      me.users.updateEditableProfile(me.userId, { city: 'no-such-city' }),
       'an unknown city id',
     );
     assertEqual((await me.users.getEditableProfile(me.userId)).city, city.id, 'city after the refused edit');

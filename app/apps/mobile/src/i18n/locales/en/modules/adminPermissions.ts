@@ -35,5 +35,4 @@ export const adminPermissionsEn: Readonly<Record<AdminPermission, string>> = {
   'matching.view_quality':      'View match quality',
   'donation_links.review':      'Review donation links',
   'stats.view_platform':        'View platform statistics',
-  'demo_data.manage':           'Manage demo data',
 };

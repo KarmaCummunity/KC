@@ -1,0 +1,4451 @@
+{
+ "generatedBy": "scripts/db-usage-inventory.mjs",
+ "roots": [
+  "app/packages/infrastructure-supabase/src",
+  "app/apps/mobile/src",
+  "app/apps/mobile/app",
+  "supabase/functions"
+ ],
+ "summary": {
+  "bucket": {
+   "callSites": 19,
+   "distinct": 4
+  },
+  "channel": {
+   "callSites": 6,
+   "distinct": 6
+  },
+  "edge_function": {
+   "callSites": 4,
+   "distinct": 3
+  },
+  "rpc": {
+   "callSites": 205,
+   "distinct": 177
+  },
+  "table": {
+   "callSites": 192,
+   "distinct": 63
+  }
+ },
+ "entries": [
+  {
+   "kind": "bucket",
+   "file": "app/apps/mobile/app/edit-post/[id].tsx",
+   "line": 43,
+   "area": "mobile",
+   "symbol": "assetUrl",
+   "via": "const",
+   "name": "post-images"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/apps/mobile/app/pro.tsx",
+   "line": 38,
+   "area": "mobile",
+   "symbol": "ProPaywallScreen",
+   "via": "literal",
+   "name": "api_my_pro_status"
+  },
+  {
+   "kind": "bucket",
+   "file": "app/apps/mobile/src/components/PostImageCarousel.tsx",
+   "line": 72,
+   "area": "mobile",
+   "symbol": "PostImageCarousel",
+   "via": "const",
+   "name": "post-images"
+  },
+  {
+   "kind": "table",
+   "file": "app/apps/mobile/src/hooks/useKarmaHistory.ts",
+   "line": 24,
+   "area": "mobile",
+   "symbol": "useKarmaHistory",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "karma_ledger"
+  },
+  {
+   "kind": "channel",
+   "file": "app/apps/mobile/src/hooks/useNotificationInboxBadge.ts",
+   "line": 30,
+   "area": "mobile",
+   "symbol": "useEffect",
+   "via": "expression",
+   "name": "topic = `user:${userId}:notifications`"
+  },
+  {
+   "kind": "bucket",
+   "file": "app/apps/mobile/src/hooks/usePostShare.ts",
+   "line": 64,
+   "area": "mobile",
+   "symbol": "recipientNavigable",
+   "via": "const",
+   "name": "post-images"
+  },
+  {
+   "kind": "bucket",
+   "file": "app/apps/mobile/src/lib/probeDraftImageAvailability.ts",
+   "line": 30,
+   "area": "mobile",
+   "symbol": "defaultStorageProbe",
+   "via": "const",
+   "name": "post-images"
+  },
+  {
+   "kind": "bucket",
+   "file": "app/apps/mobile/src/services/avatarUpload.ts",
+   "line": 132,
+   "area": "mobile",
+   "symbol": "resizeAndUploadAvatar",
+   "via": "const",
+   "name": "avatars"
+  },
+  {
+   "kind": "bucket",
+   "file": "app/apps/mobile/src/services/avatarUpload.ts",
+   "line": 143,
+   "area": "mobile",
+   "symbol": "resizeAndUploadAvatar",
+   "via": "const",
+   "name": "avatars"
+  },
+  {
+   "kind": "bucket",
+   "file": "app/apps/mobile/src/services/avatarUpload.ts",
+   "line": 153,
+   "area": "mobile",
+   "symbol": "resizeAndUploadAvatar",
+   "via": "const",
+   "name": "avatars"
+  },
+  {
+   "kind": "bucket",
+   "file": "app/apps/mobile/src/services/avatarUpload.ts",
+   "line": 167,
+   "area": "mobile",
+   "symbol": "removeUploadedAvatar",
+   "via": "const",
+   "name": "avatars"
+  },
+  {
+   "kind": "bucket",
+   "file": "app/apps/mobile/src/services/chatMediaUpload.ts",
+   "line": 44,
+   "area": "mobile",
+   "symbol": "uploadChatImageAndSend",
+   "via": "const",
+   "name": "chat-media"
+  },
+  {
+   "kind": "bucket",
+   "file": "app/apps/mobile/src/services/chatMediaUrl.ts",
+   "line": 17,
+   "area": "mobile",
+   "symbol": "signWithSupabase",
+   "via": "const",
+   "name": "chat-media"
+  },
+  {
+   "kind": "table",
+   "file": "app/apps/mobile/src/services/featureFlagsComposition.ts",
+   "line": 12,
+   "area": "mobile",
+   "symbol": "fetchRemoteFeatureFlags",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "app_flags"
+  },
+  {
+   "kind": "bucket",
+   "file": "app/apps/mobile/src/services/imageUpload.ts",
+   "line": 182,
+   "area": "mobile",
+   "symbol": "resizeAndUploadImage",
+   "via": "const",
+   "name": "post-images"
+  },
+  {
+   "kind": "bucket",
+   "file": "app/apps/mobile/src/services/imageUpload.ts",
+   "line": 194,
+   "area": "mobile",
+   "symbol": "resizeAndUploadImage",
+   "via": "const",
+   "name": "post-images"
+  },
+  {
+   "kind": "bucket",
+   "file": "app/apps/mobile/src/services/listingImageUpload.ts",
+   "line": 42,
+   "area": "mobile",
+   "symbol": "uploadListingImages",
+   "via": "const",
+   "name": "post-images"
+  },
+  {
+   "kind": "bucket",
+   "file": "app/apps/mobile/src/services/listingImageUpload.ts",
+   "line": 56,
+   "area": "mobile",
+   "symbol": "listingImagePublicUrl",
+   "via": "const",
+   "name": "post-images"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/auditSearchCall.ts",
+   "line": 20,
+   "area": "admin",
+   "symbol": "callAuditSearch",
+   "via": "literal",
+   "name": "admin_audit_search"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/fetchMyAdminRoles.ts",
+   "line": 15,
+   "area": "admin",
+   "symbol": "fetchMyAdminRoles",
+   "via": "literal",
+   "name": "get_my_admin_roles"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/admin/financeOrg.ts",
+   "line": 20,
+   "area": "admin",
+   "symbol": "readPlatformOrgId",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "organizations"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminContentRepository.ts",
+   "line": 98,
+   "area": "admin",
+   "symbol": "SupabaseAdminContentRepository.findActiveMembers",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "users"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminContentRepository.ts",
+   "line": 114,
+   "area": "admin",
+   "symbol": "SupabaseAdminContentRepository.searchUsers",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "users"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminContentRepository.ts",
+   "line": 147,
+   "area": "admin",
+   "symbol": "SupabaseAdminContentRepository.searchPosts",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "posts"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminRoleRepository.ts",
+   "line": 100,
+   "area": "admin",
+   "symbol": "SupabaseAdminRoleRepository.listAdmins",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "admin_role_grants"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminRoleRepository.ts",
+   "line": 120,
+   "area": "admin",
+   "symbol": "SupabaseAdminRoleRepository.loadPeople",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "users"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminRoleRepository.ts",
+   "line": 130,
+   "area": "admin",
+   "symbol": "SupabaseAdminRoleRepository.grantRole",
+   "via": "literal",
+   "name": "admin_grant_role"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminRoleRepository.ts",
+   "line": 143,
+   "area": "admin",
+   "symbol": "SupabaseAdminRoleRepository.revokeRole",
+   "via": "literal",
+   "name": "admin_revoke_role"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminRoleRepository.ts",
+   "line": 148,
+   "area": "admin",
+   "symbol": "SupabaseAdminRoleRepository.changeRole",
+   "via": "literal",
+   "name": "admin_change_role"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseFinanceAccountsRepository.ts",
+   "line": 44,
+   "area": "admin",
+   "symbol": "SupabaseFinanceAccountsRepository.list",
+   "via": "literal",
+   "name": "finance_accounts_list"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseFinanceAccountsRepository.ts",
+   "line": 53,
+   "area": "admin",
+   "symbol": "SupabaseFinanceAccountsRepository.upsert",
+   "via": "literal",
+   "name": "finance_account_upsert"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseFinanceDonorsRepository.ts",
+   "line": 30,
+   "area": "admin",
+   "symbol": "SupabaseFinanceDonorsRepository.summary",
+   "via": "literal",
+   "name": "finance_donors_summary"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseFinanceLedgerRepository.ts",
+   "line": 62,
+   "area": "admin",
+   "symbol": "SupabaseFinanceLedgerRepository.list",
+   "via": "literal",
+   "name": "finance_ledger_list"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseFinanceLedgerRepository.ts",
+   "line": 84,
+   "area": "admin",
+   "symbol": "SupabaseFinanceLedgerRepository.summary",
+   "via": "literal",
+   "name": "finance_ledger_summary"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseFinanceLedgerRepository.ts",
+   "line": 103,
+   "area": "admin",
+   "symbol": "SupabaseFinanceLedgerRepository.upsert",
+   "via": "literal",
+   "name": "finance_ledger_upsert"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseFinanceLedgerRepository.ts",
+   "line": 126,
+   "area": "admin",
+   "symbol": "SupabaseFinanceLedgerRepository.unwrapFinance",
+   "via": "literal",
+   "name": "finance_ledger_mark"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseOrgApplicationsRepository.ts",
+   "line": 75,
+   "area": "admin",
+   "symbol": "SupabaseOrgApplicationsRepository.list",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "org_applications"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseOrgApplicationsRepository.ts",
+   "line": 84,
+   "area": "admin",
+   "symbol": "SupabaseOrgApplicationsRepository.list",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "users"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseOrgApplicationsRepository.ts",
+   "line": 96,
+   "area": "admin",
+   "symbol": "SupabaseOrgApplicationsRepository.unwrap",
+   "via": "literal",
+   "name": "admin_org_application_approve"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseOrgApplicationsRepository.ts",
+   "line": 103,
+   "area": "admin",
+   "symbol": "SupabaseOrgApplicationsRepository.unwrap",
+   "via": "literal",
+   "name": "admin_org_application_reject"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseOrgHierarchyRepository.ts",
+   "line": 88,
+   "area": "admin",
+   "symbol": "SupabaseOrgHierarchyRepository.getOrgTree",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "users"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseOrgHierarchyRepository.ts",
+   "line": 103,
+   "area": "admin",
+   "symbol": "SupabaseOrgHierarchyRepository.unwrap",
+   "via": "literal",
+   "name": "admin_set_manager"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseOrgHierarchyRepository.ts",
+   "line": 111,
+   "area": "admin",
+   "symbol": "SupabaseOrgHierarchyRepository.getHierarchyCensus",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "users"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseOrgHierarchyRepository.ts",
+   "line": 131,
+   "area": "admin",
+   "symbol": "SupabaseOrgHierarchyRepository.snapshot",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "admin_role_grants"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseOrgHierarchyRepository.ts",
+   "line": 140,
+   "area": "admin",
+   "symbol": "SupabaseOrgHierarchyRepository.snapshot",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "organizations"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseOrgTransparencyRepository.ts",
+   "line": 77,
+   "area": "admin",
+   "symbol": "SupabaseOrgTransparencyRepository.getPublic",
+   "via": "literal",
+   "name": "rpc_org_transparency"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseOrgTransparencyRepository.ts",
+   "line": 91,
+   "area": "admin",
+   "symbol": "SupabaseTransparencySettingsRepository.get",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "organizations"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseOrgTransparencyRepository.ts",
+   "line": 102,
+   "area": "admin",
+   "symbol": "SupabaseTransparencySettingsRepository.unwrapFinance",
+   "via": "literal",
+   "name": "finance_transparency_settings_set"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/auth/bootstrapSession.ts",
+   "line": 138,
+   "area": "auth",
+   "symbol": "fetchBootstrapSession",
+   "via": "literal",
+   "name": "bootstrap_session"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/auth/SupabaseAccountGateRepository.ts",
+   "line": 53,
+   "area": "auth",
+   "symbol": "SupabaseAccountGateRepository.restoreAccount",
+   "via": "literal",
+   "name": "restore_account"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/blocks/SupabaseBlockRepository.ts",
+   "line": 18,
+   "area": "blocks",
+   "symbol": "SupabaseBlockRepository.isBlocking",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "blocks"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/blocks/SupabaseBlockRepository.ts",
+   "line": 28,
+   "area": "blocks",
+   "symbol": "SupabaseBlockRepository.block",
+   "via": "literal",
+   "ops": [
+    "insert"
+   ],
+   "name": "blocks"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/blocks/SupabaseBlockRepository.ts",
+   "line": 36,
+   "area": "blocks",
+   "symbol": "SupabaseBlockRepository.unwrapCall",
+   "via": "literal",
+   "ops": [
+    "delete"
+   ],
+   "name": "blocks"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/challenges/SupabaseChallengeRepository.ts",
+   "line": 150,
+   "area": "challenges",
+   "symbol": "SupabaseChallengeRepository.createChallenge",
+   "via": "literal",
+   "name": "create_challenge"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/challenges/SupabaseChallengeRepository.ts",
+   "line": 169,
+   "area": "challenges",
+   "symbol": "SupabaseChallengeRepository.listChallenges",
+   "via": "literal",
+   "name": "list_challenges"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/challenges/SupabaseChallengeRepository.ts",
+   "line": 180,
+   "area": "challenges",
+   "symbol": "SupabaseChallengeRepository.getChallenge",
+   "via": "literal",
+   "name": "get_challenge"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/challenges/SupabaseChallengeRepository.ts",
+   "line": 187,
+   "area": "challenges",
+   "symbol": "SupabaseChallengeRepository.joinChallenge",
+   "via": "literal",
+   "name": "join_challenge"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/challenges/SupabaseChallengeRepository.ts",
+   "line": 191,
+   "area": "challenges",
+   "symbol": "SupabaseChallengeRepository.leaveChallenge",
+   "via": "literal",
+   "name": "leave_challenge"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/challenges/SupabaseChallengeRepository.ts",
+   "line": 195,
+   "area": "challenges",
+   "symbol": "SupabaseChallengeRepository.endChallenge",
+   "via": "literal",
+   "name": "end_challenge"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/challenges/SupabaseChallengeRepository.ts",
+   "line": 200,
+   "area": "challenges",
+   "symbol": "SupabaseChallengeRepository.reportProgress",
+   "via": "literal",
+   "name": "report_challenge_progress"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/challenges/SupabaseChallengeRepository.ts",
+   "line": 217,
+   "area": "challenges",
+   "symbol": "SupabaseChallengeRepository.listMyEntries",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "challenge_progress_entries"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/challenges/SupabaseChallengeRepository.ts",
+   "line": 228,
+   "area": "challenges",
+   "symbol": "SupabaseChallengeRepository.listLeaderboard",
+   "via": "literal",
+   "name": "list_challenge_leaderboard"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/chat/getMyChats.ts",
+   "line": 75,
+   "area": "chat",
+   "symbol": "getMyChats",
+   "via": "literal",
+   "name": "chat_inbox_page"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/chat/submitSupportIssue.ts",
+   "line": 27,
+   "area": "chat",
+   "symbol": "submitSupportIssue",
+   "via": "literal",
+   "name": "send_message"
+  },
+  {
+   "kind": "channel",
+   "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRealtime.ts",
+   "line": 41,
+   "area": "chat",
+   "symbol": "SupabaseChatRealtime.subscribeToChat",
+   "via": "expression",
+   "name": "`chat:${chatId}:messages`"
+  },
+  {
+   "kind": "channel",
+   "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRealtime.ts",
+   "line": 77,
+   "area": "chat",
+   "symbol": "SupabaseChatRealtime.subscribeToInbox",
+   "via": "expression",
+   "name": "`user:${userId}:chats`"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRealtime.ts",
+   "line": 101,
+   "area": "chat",
+   "symbol": "SupabaseChatRealtime.readUnreadTotal",
+   "via": "literal",
+   "name": "chat_unread_total"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRepository.ts",
+   "line": 32,
+   "area": "chat",
+   "symbol": "SupabaseChatRepository.findById",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "chats"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRepository.ts",
+   "line": 61,
+   "area": "chat",
+   "symbol": "SupabaseChatRepository.chatCall",
+   "via": "literal",
+   "name": "chat_messages_page"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRepository.ts",
+   "line": 79,
+   "area": "chat",
+   "symbol": "SupabaseChatRepository.sendMessage",
+   "via": "literal",
+   "name": "send_message"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRepository.ts",
+   "line": 93,
+   "area": "chat",
+   "symbol": "SupabaseChatRepository.markRead",
+   "via": "literal",
+   "name": "mark_chat_read"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRepository.ts",
+   "line": 97,
+   "area": "chat",
+   "symbol": "SupabaseChatRepository.getUnreadTotal",
+   "via": "literal",
+   "name": "chat_unread_total"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRepository.ts",
+   "line": 112,
+   "area": "chat",
+   "symbol": "SupabaseChatRepository.hasSentAnyMessage",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "messages"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRepository.ts",
+   "line": 133,
+   "area": "chat",
+   "symbol": "SupabaseChatRepository.getCounterpart",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "users"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRepository.ts",
+   "line": 154,
+   "area": "chat",
+   "symbol": "SupabaseChatRepository.readMarkers",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "chat_members"
+  },
+  {
+   "kind": "channel",
+   "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatV2Realtime.ts",
+   "line": 30,
+   "area": "chat",
+   "symbol": "SupabaseChatV2Realtime.subscribeTyping",
+   "via": "expression",
+   "name": "`chat:${chatId}:typing`"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatV2Repository.ts",
+   "line": 20,
+   "area": "chat",
+   "symbol": "SupabaseChatV2Repository.setMessageReaction",
+   "via": "literal",
+   "name": "set_message_reaction"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatV2Repository.ts",
+   "line": 36,
+   "area": "chat",
+   "symbol": "SupabaseChatV2Repository.sendMediaMessage",
+   "via": "literal",
+   "name": "send_message"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatV2Repository.ts",
+   "line": 52,
+   "area": "chat",
+   "symbol": "SupabaseChatV2Repository.listMessageReactions",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "message_reactions"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/chat/supabaseDmChat.ts",
+   "line": 30,
+   "area": "chat",
+   "symbol": "openDirectChat",
+   "via": "literal",
+   "name": "open_direct_chat"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/chat/supabaseDmChat.ts",
+   "line": 40,
+   "area": "chat",
+   "symbol": "openSupportThread",
+   "via": "literal",
+   "name": "open_support_thread"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/chat/supabaseDmChat.ts",
+   "line": 46,
+   "area": "chat",
+   "symbol": "hideChat",
+   "via": "literal",
+   "name": "hide_chat"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/cities/SupabaseCityRepository.ts",
+   "line": 42,
+   "area": "cities",
+   "symbol": "SupabaseCityRepository.listAll",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "cities"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/donations/SupabaseDonationLinksRepository.ts",
+   "line": 60,
+   "area": "donations",
+   "symbol": "SupabaseDonationLinksRepository.unwrapCall",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "donation_links"
+  },
+  {
+   "kind": "edge_function",
+   "file": "app/packages/infrastructure-supabase/src/donations/SupabaseDonationLinksRepository.ts",
+   "line": 90,
+   "area": "donations",
+   "symbol": "SupabaseDonationLinksRepository.invoke",
+   "via": "literal",
+   "name": "validate-donation-link"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/donations/SupabaseDonationLinksRepository.ts",
+   "line": 99,
+   "area": "donations",
+   "symbol": "SupabaseDonationLinksRepository.deleteById",
+   "via": "literal",
+   "ops": [
+    "delete"
+   ],
+   "name": "donation_links"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/donations/SupabaseDonationLinksRepository.ts",
+   "line": 106,
+   "area": "donations",
+   "symbol": "SupabaseDonationLinksRepository.report",
+   "via": "literal",
+   "name": "report_donation_link"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/donations/SupabaseDonationLinksRepository.ts",
+   "line": 116,
+   "area": "donations",
+   "symbol": "SupabaseDonationLinksRepository.unwrapCall",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "donation_links"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/donations/SupabaseDonationLinksRepository.ts",
+   "line": 123,
+   "area": "donations",
+   "symbol": "SupabaseDonationLinksRepository.unwrapCall",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "users"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/donations/SupabaseDonationLinksRepository.ts",
+   "line": 146,
+   "area": "donations",
+   "symbol": "SupabaseDonationLinksRepository.unwrapCall",
+   "via": "literal",
+   "name": "admin_review_donation_link"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/feed/SupabaseSocialFeedRepository.ts",
+   "line": 51,
+   "area": "feed",
+   "symbol": "SupabaseSocialFeedRepository.unwrapCall",
+   "via": "literal",
+   "ops": [
+    "upsert"
+   ],
+   "name": "feed_hides"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/feed/SupabaseSocialFeedRepository.ts",
+   "line": 61,
+   "area": "feed",
+   "symbol": "SupabaseSocialFeedRepository.unwrapCall",
+   "via": "literal",
+   "ops": [
+    "insert"
+   ],
+   "name": "feed_impressions"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/feed/SupabaseSocialFeedRepository.ts",
+   "line": 69,
+   "area": "feed",
+   "symbol": "SupabaseSocialFeedRepository.listMuteFilters",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "feed_mute_filters"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/feed/SupabaseSocialFeedRepository.ts",
+   "line": 86,
+   "area": "feed",
+   "symbol": "SupabaseSocialFeedRepository.unwrapCall",
+   "via": "literal",
+   "ops": [
+    "upsert"
+   ],
+   "name": "feed_mute_filters"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/feed/SupabaseSocialFeedRepository.ts",
+   "line": 91,
+   "area": "feed",
+   "symbol": "SupabaseSocialFeedRepository.removeMuteFilter",
+   "via": "literal",
+   "ops": [
+    "delete"
+   ],
+   "name": "feed_mute_filters"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/housing/housingReads.ts",
+   "line": 32,
+   "area": "housing",
+   "symbol": "detailsOf",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "handoff_booking_details"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/housing/housingReads.ts",
+   "line": 41,
+   "area": "housing",
+   "symbol": "ratedOf",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "post_ratings"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/housing/housingReads.ts",
+   "line": 50,
+   "area": "housing",
+   "symbol": "completedStaysOf",
+   "via": "literal",
+   "name": "housing_completed_stays"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/housing/housingReads.ts",
+   "line": 67,
+   "area": "housing",
+   "symbol": "unwrapCall",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "post_handoffs"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/housing/housingReads.ts",
+   "line": 76,
+   "area": "housing",
+   "symbol": "listHostBookings",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "users"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/housing/housingReads.ts",
+   "line": 98,
+   "area": "housing",
+   "symbol": "unwrapCall",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "post_handoffs"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/housing/housingReads.ts",
+   "line": 111,
+   "area": "housing",
+   "symbol": "listGuestStays",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "posts"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/housing/housingReads.ts",
+   "line": 112,
+   "area": "housing",
+   "symbol": "listGuestStays",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "users"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/housing/SupabaseHousingRepository.ts",
+   "line": 50,
+   "area": "housing",
+   "symbol": "SupabaseHousingRepository.conduct",
+   "via": "literal",
+   "name": "bootstrap_session"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/housing/SupabaseHousingRepository.ts",
+   "line": 66,
+   "area": "housing",
+   "symbol": "SupabaseHousingRepository.unwrapCall",
+   "via": "literal",
+   "name": "accept_world_consent"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/housing/SupabaseHousingRepository.ts",
+   "line": 73,
+   "area": "housing",
+   "symbol": "SupabaseHousingRepository.requestStay",
+   "via": "literal",
+   "name": "request_housing_booking"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/housing/SupabaseHousingRepository.ts",
+   "line": 89,
+   "area": "housing",
+   "symbol": "SupabaseHousingRepository.unwrapCall",
+   "via": "literal",
+   "name": "decide_housing_booking"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/housing/SupabaseHousingRepository.ts",
+   "line": 96,
+   "area": "housing",
+   "symbol": "SupabaseHousingRepository.unwrapCall",
+   "via": "literal",
+   "name": "cancel_housing_booking"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/housing/SupabaseHousingRepository.ts",
+   "line": 111,
+   "area": "housing",
+   "symbol": "SupabaseHousingRepository.unwrapCall",
+   "via": "literal",
+   "name": "close_housing_booking"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/housing/SupabaseHousingRepository.ts",
+   "line": 129,
+   "area": "housing",
+   "symbol": "SupabaseHousingRepository.getPrivateDetails",
+   "via": "literal",
+   "name": "get_post_private_location"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/housing/SupabaseHousingRepository.ts",
+   "line": 144,
+   "area": "housing",
+   "symbol": "SupabaseHousingRepository.setPrivateDetails",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "streets"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/housing/SupabaseHousingRepository.ts",
+   "line": 148,
+   "area": "housing",
+   "symbol": "SupabaseHousingRepository.unwrapCall",
+   "via": "literal",
+   "ops": [
+    "upsert"
+   ],
+   "name": "post_private_locations"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/housing/SupabaseHousingRepository.ts",
+   "line": 164,
+   "area": "housing",
+   "symbol": "SupabaseHousingRepository.cityOf",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "posts"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/knowledge/SupabaseKnowledgeBookingRepository.ts",
+   "line": 31,
+   "area": "knowledge",
+   "symbol": "SupabaseKnowledgeBookingRepository.listSlots",
+   "via": "literal",
+   "name": "knowledge_slot_seats"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/knowledge/SupabaseKnowledgeBookingRepository.ts",
+   "line": 40,
+   "area": "knowledge",
+   "symbol": "SupabaseKnowledgeBookingRepository.bookSeat",
+   "via": "literal",
+   "name": "book_knowledge_seat"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/knowledge/SupabaseKnowledgeBookingRepository.ts",
+   "line": 49,
+   "area": "knowledge",
+   "symbol": "SupabaseKnowledgeBookingRepository.unwrapCall",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "post_handoffs"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/knowledge/SupabaseKnowledgeBookingRepository.ts",
+   "line": 53,
+   "area": "knowledge",
+   "symbol": "SupabaseKnowledgeBookingRepository.listBookings",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "post_knowledge_slots"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/knowledge/SupabaseKnowledgeBookingRepository.ts",
+   "line": 54,
+   "area": "knowledge",
+   "symbol": "SupabaseKnowledgeBookingRepository.listBookings",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "users"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/knowledge/SupabaseKnowledgeBookingRepository.ts",
+   "line": 82,
+   "area": "knowledge",
+   "symbol": "SupabaseKnowledgeBookingRepository.unwrapCall",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "post_handoffs"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/knowledge/SupabaseKnowledgeBookingRepository.ts",
+   "line": 92,
+   "area": "knowledge",
+   "symbol": "SupabaseKnowledgeBookingRepository.move",
+   "via": "type-union",
+   "name": "cancel_giving_handoff"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/knowledge/SupabaseKnowledgeBookingRepository.ts",
+   "line": 92,
+   "area": "knowledge",
+   "symbol": "SupabaseKnowledgeBookingRepository.move",
+   "via": "type-union",
+   "name": "confirm_item_handoff"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/knowledge/SupabaseKnowledgeBookingRepository.ts",
+   "line": 92,
+   "area": "knowledge",
+   "symbol": "SupabaseKnowledgeBookingRepository.move",
+   "via": "type-union",
+   "name": "mark_giving_handed_over"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/legal/SupabaseLegalDocumentRepository.ts",
+   "line": 72,
+   "area": "legal",
+   "symbol": "SupabaseLegalDocumentRepository.getCurrentContent",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "legal_documents"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/legal/SupabaseLegalDocumentRepository.ts",
+   "line": 82,
+   "area": "legal",
+   "symbol": "SupabaseLegalDocumentRepository.getCurrentContent",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "legal_document_versions"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/legal/SupabaseLegalDocumentRepository.ts",
+   "line": 117,
+   "area": "legal",
+   "symbol": "SupabaseLegalDocumentRepository.unwrapCall",
+   "via": "literal",
+   "name": "accept_legal_document"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/marketplace/eventRegistrations.ts",
+   "line": 66,
+   "area": "marketplace",
+   "symbol": "registerForEvent",
+   "via": "literal",
+   "name": "register_for_event"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/marketplace/eventRegistrations.ts",
+   "line": 78,
+   "area": "marketplace",
+   "symbol": "unwrapCall",
+   "via": "literal",
+   "name": "decide_event_registration"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/marketplace/eventRegistrations.ts",
+   "line": 84,
+   "area": "marketplace",
+   "symbol": "cancelEventRegistration",
+   "via": "literal",
+   "name": "cancel_event_registration"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/marketplace/eventRegistrations.ts",
+   "line": 91,
+   "area": "marketplace",
+   "symbol": "unwrapCall",
+   "via": "literal",
+   "name": "mark_event_attendance"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/marketplace/eventRegistrations.ts",
+   "line": 100,
+   "area": "marketplace",
+   "symbol": "unwrapCall",
+   "via": "literal",
+   "name": "message_event_registrants"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/marketplace/eventRegistrations.ts",
+   "line": 114,
+   "area": "marketplace",
+   "symbol": "unwrapCall",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "post_handoffs"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/marketplace/eventRegistrations.ts",
+   "line": 120,
+   "area": "marketplace",
+   "symbol": "unwrapCall",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "users"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/marketplace/eventRegistrations.ts",
+   "line": 136,
+   "area": "marketplace",
+   "symbol": "getMyEventRegistration",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "post_handoffs"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/marketplace/eventRegistrations.ts",
+   "line": 154,
+   "area": "marketplace",
+   "symbol": "listMyOrganizations",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "org_memberships"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/marketplace/givingHandoffs.ts",
+   "line": 25,
+   "area": "marketplace",
+   "symbol": "postWorldSlug",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "posts"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/marketplace/givingHandoffs.ts",
+   "line": 61,
+   "area": "marketplace",
+   "symbol": "getListingHandoff",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "post_handoffs"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/marketplace/givingHandoffs.ts",
+   "line": 79,
+   "area": "marketplace",
+   "symbol": "listMyGivingHandoffs",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "post_handoffs"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/marketplace/givingHandoffs.ts",
+   "line": 115,
+   "area": "marketplace",
+   "symbol": "reserveItemGiving",
+   "via": "literal",
+   "name": "reserve_item_giving"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/marketplace/givingHandoffs.ts",
+   "line": 128,
+   "area": "marketplace",
+   "symbol": "confirmItemHandoff",
+   "via": "literal",
+   "name": "confirm_item_handoff"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/marketplace/givingHandoffs.ts",
+   "line": 144,
+   "area": "marketplace",
+   "symbol": "claimFoodGiving",
+   "via": "literal",
+   "name": "claim_food_giving"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/marketplace/givingHandoffs.ts",
+   "line": 155,
+   "area": "marketplace",
+   "symbol": "cancelGivingHandoff",
+   "via": "literal",
+   "name": "cancel_giving_handoff"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/marketplace/givingHandoffs.ts",
+   "line": 163,
+   "area": "marketplace",
+   "symbol": "markGivingHandedOver",
+   "via": "literal",
+   "name": "mark_giving_handed_over"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/marketplace/givingHandoffs.ts",
+   "line": 177,
+   "area": "marketplace",
+   "symbol": "unwrapCall",
+   "via": "literal",
+   "name": "rate_handoff"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/marketplace/kindCatalog.ts",
+   "line": 31,
+   "area": "marketplace",
+   "symbol": "readCatalog",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "post_kinds"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/marketplace/listingMapping.ts",
+   "line": 93,
+   "area": "marketplace",
+   "symbol": "fetchCardsInOrder",
+   "via": "literal",
+   "name": "post_cards"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/marketplace/listingOwnerActions.ts",
+   "line": 29,
+   "area": "marketplace",
+   "symbol": "runOwnerAction",
+   "via": "literal",
+   "name": "pause_post"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/marketplace/listingOwnerActions.ts",
+   "line": 32,
+   "area": "marketplace",
+   "symbol": "runOwnerAction",
+   "via": "literal",
+   "name": "resume_post"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/marketplace/listingOwnerActions.ts",
+   "line": 35,
+   "area": "marketplace",
+   "symbol": "runOwnerAction",
+   "via": "literal",
+   "name": "close_post_without_recipient"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/marketplace/listingOwnerActions.ts",
+   "line": 38,
+   "area": "marketplace",
+   "symbol": "runOwnerAction",
+   "via": "literal",
+   "name": "delete_post"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/marketplace/listingOwnerActions.ts",
+   "line": 46,
+   "area": "marketplace",
+   "symbol": "loadShape",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "posts"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/marketplace/listingOwnerActions.ts",
+   "line": 71,
+   "area": "marketplace",
+   "symbol": "updateMyListing",
+   "via": "literal",
+   "ops": [
+    "select",
+    "update"
+   ],
+   "name": "posts"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/marketplace/listingOwnerActions.ts",
+   "line": 89,
+   "area": "marketplace",
+   "symbol": "addMyListingMedia",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "post_media"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/marketplace/listingWrites.ts",
+   "line": 55,
+   "area": "marketplace",
+   "symbol": "recordPhotos",
+   "via": "literal",
+   "ops": [
+    "insert"
+   ],
+   "name": "post_media"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/marketplace/listingWrites.ts",
+   "line": 78,
+   "area": "marketplace",
+   "symbol": "unwrapCall",
+   "via": "literal",
+   "name": "create_post_with_details"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/marketplace/listingWrites.ts",
+   "line": 89,
+   "area": "marketplace",
+   "symbol": "createPlain",
+   "via": "literal",
+   "ops": [
+    "select",
+    "insert"
+   ],
+   "name": "posts"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/marketplace/listingWrites.ts",
+   "line": 97,
+   "area": "marketplace",
+   "symbol": "postId",
+   "via": "literal",
+   "name": "publish_post"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/marketplace/listingWrites.ts",
+   "line": 100,
+   "area": "marketplace",
+   "symbol": "postId",
+   "via": "literal",
+   "ops": [
+    "delete"
+   ],
+   "name": "posts"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/marketplace/listingWrites.ts",
+   "line": 129,
+   "area": "marketplace",
+   "symbol": "createListing",
+   "via": "literal",
+   "name": "set_post_organization"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/marketplace/listWorldSubcategories.ts",
+   "line": 33,
+   "area": "marketplace",
+   "symbol": "listWorldSubcategories",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "item_subcategories"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/marketplace/mapExternalBody.ts",
+   "line": 38,
+   "area": "marketplace",
+   "symbol": "searchExternalBodies",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "organizations"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
+   "line": 38,
+   "area": "marketplace",
+   "symbol": "loadRideDetails",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "post_ride_details"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
+   "line": 68,
+   "area": "marketplace",
+   "symbol": "seriesMarker",
+   "via": "literal",
+   "name": "ride_occurrence_schedules"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
+   "line": 76,
+   "area": "marketplace",
+   "symbol": "loadEventDetails",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "post_event_details"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
+   "line": 77,
+   "area": "marketplace",
+   "symbol": "loadEventDetails",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "posts"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
+   "line": 97,
+   "area": "marketplace",
+   "symbol": "loadFoodDetails",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "post_food_details"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
+   "line": 106,
+   "area": "marketplace",
+   "symbol": "fetchListingDetail",
+   "via": "literal",
+   "name": "post_detail"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
+   "line": 113,
+   "area": "marketplace",
+   "symbol": "fetchListingDetail",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "worlds"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
+   "line": 114,
+   "area": "marketplace",
+   "symbol": "fetchListingDetail",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "posts"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/marketplace/postSeatCounts.ts",
+   "line": 22,
+   "area": "marketplace",
+   "symbol": "loadSeatCounts",
+   "via": "literal",
+   "name": "post_seat_counts"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/marketplace/SupabaseMarketplaceRepository.ts",
+   "line": 33,
+   "area": "marketplace",
+   "symbol": "SupabaseMarketplaceRepository.similarListings",
+   "via": "literal",
+   "name": "similar_posts"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/marketplace/SupabaseMarketplaceRepository.ts",
+   "line": 54,
+   "area": "marketplace",
+   "symbol": "SupabaseMarketplaceRepository.startChat",
+   "via": "literal",
+   "name": "send_message"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/marketplace/SupabaseMarketplaceRepository.ts",
+   "line": 68,
+   "area": "marketplace",
+   "symbol": "SupabaseMarketplaceRepository.listMyListingsPage",
+   "via": "literal",
+   "name": "profile_posts_page"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/marketplace/SupabaseMarketplaceRepository.ts",
+   "line": 89,
+   "area": "marketplace",
+   "symbol": "SupabaseMarketplaceRepository.listProfileListings",
+   "via": "literal",
+   "name": "profile_posts_page"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/matching/SupabaseMatchRepository.ts",
+   "line": 119,
+   "area": "matching",
+   "symbol": "SupabaseMatchRepository.listMine",
+   "via": "literal",
+   "name": "my_matches"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/matching/SupabaseMatchRepository.ts",
+   "line": 127,
+   "area": "matching",
+   "symbol": "SupabaseMatchRepository.respond",
+   "via": "literal",
+   "name": "match_respond"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/matching/SupabaseMatchRepository.ts",
+   "line": 134,
+   "area": "matching",
+   "symbol": "SupabaseMatchRepository.qualityByWorld",
+   "via": "literal",
+   "name": "admin_match_quality"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/moderation/SupabaseModerationAdminRepository.ts",
+   "line": 71,
+   "area": "moderation",
+   "symbol": "SupabaseModerationAdminRepository.isPlatformStaff",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "admin_role_grants"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/moderation/SupabaseModerationAdminRepository.ts",
+   "line": 87,
+   "area": "moderation",
+   "symbol": "SupabaseModerationAdminRepository.restoreTarget",
+   "via": "literal",
+   "name": "admin_restore_post"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/moderation/SupabaseModerationAdminRepository.ts",
+   "line": 89,
+   "area": "moderation",
+   "symbol": "SupabaseModerationAdminRepository.restoreTarget",
+   "via": "literal",
+   "name": "admin_restore_user"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/moderation/SupabaseModerationAdminRepository.ts",
+   "line": 98,
+   "area": "moderation",
+   "symbol": "SupabaseModerationAdminRepository.dismissReport",
+   "via": "literal",
+   "name": "admin_dismiss_report"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/moderation/SupabaseModerationAdminRepository.ts",
+   "line": 103,
+   "area": "moderation",
+   "symbol": "SupabaseModerationAdminRepository.confirmReport",
+   "via": "literal",
+   "name": "admin_confirm_report"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/moderation/SupabaseModerationAdminRepository.ts",
+   "line": 110,
+   "area": "moderation",
+   "symbol": "SupabaseModerationAdminRepository.banUser",
+   "via": "literal",
+   "name": "admin_ban_user"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/moderation/SupabaseModerationAdminRepository.ts",
+   "line": 119,
+   "area": "moderation",
+   "symbol": "SupabaseModerationAdminRepository.deleteMessage",
+   "via": "literal",
+   "name": "admin_delete_message"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/notifications/SupabaseDeviceRepository.ts",
+   "line": 41,
+   "area": "notifications",
+   "symbol": "SupabaseDeviceRepository.upsert",
+   "via": "literal",
+   "ops": [
+    "select",
+    "upsert"
+   ],
+   "name": "user_devices"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/notifications/SupabaseDeviceRepository.ts",
+   "line": 59,
+   "area": "notifications",
+   "symbol": "SupabaseDeviceRepository.deactivate",
+   "via": "literal",
+   "ops": [
+    "delete"
+   ],
+   "name": "user_devices"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/notifications/SupabaseDeviceRepository.ts",
+   "line": 66,
+   "area": "notifications",
+   "symbol": "SupabaseDeviceRepository.listForUser",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "user_devices"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/notifications/SupabaseNotificationInboxRepository.ts",
+   "line": 62,
+   "area": "notifications",
+   "symbol": "SupabaseNotificationInboxRepository.page",
+   "via": "literal",
+   "name": "notifications_page"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/notifications/SupabaseNotificationInboxRepository.ts",
+   "line": 73,
+   "area": "notifications",
+   "symbol": "SupabaseNotificationInboxRepository.unreadCount",
+   "via": "literal",
+   "name": "notifications_unread_count"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/notifications/SupabaseNotificationInboxRepository.ts",
+   "line": 80,
+   "area": "notifications",
+   "symbol": "SupabaseNotificationInboxRepository.markRead",
+   "via": "literal",
+   "name": "notifications_mark_read"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/notifications/SupabaseNotificationInboxRepository.ts",
+   "line": 86,
+   "area": "notifications",
+   "symbol": "SupabaseNotificationInboxRepository.markAllRead",
+   "via": "literal",
+   "name": "notifications_mark_all_read"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/organizations/SupabaseOrganizationsRepository.ts",
+   "line": 45,
+   "area": "organizations",
+   "symbol": "SupabaseOrganizationsRepository.submitApplication",
+   "via": "literal",
+   "name": "submit_org_application"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/organizations/SupabaseOrganizationsRepository.ts",
+   "line": 60,
+   "area": "organizations",
+   "symbol": "SupabaseOrganizationsRepository.getMyLatestApplication",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "org_applications"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/organizations/SupabaseOrganizationsRepository.ts",
+   "line": 84,
+   "area": "organizations",
+   "symbol": "SupabaseOrganizationsRepository.listMyOrganizations",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "org_memberships"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/organizations/SupabaseOrganizationsRepository.ts",
+   "line": 104,
+   "area": "organizations",
+   "symbol": "SupabaseOrganizationsRepository.listMembers",
+   "via": "literal",
+   "name": "list_org_members"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/organizations/SupabaseOrganizationsRepository.ts",
+   "line": 112,
+   "area": "organizations",
+   "symbol": "SupabaseOrganizationsRepository.addMember",
+   "via": "literal",
+   "name": "org_add_member"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/organizations/SupabaseOrganizationsRepository.ts",
+   "line": 119,
+   "area": "organizations",
+   "symbol": "SupabaseOrganizationsRepository.removeMember",
+   "via": "literal",
+   "name": "org_remove_member"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/payments/SupabasePaymentsRepository.ts",
+   "line": 33,
+   "area": "payments",
+   "symbol": "SupabasePaymentsRepository.listVerifiedNonprofits",
+   "via": "literal",
+   "name": "list_verified_nonprofits"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/payments/SupabasePaymentsRepository.ts",
+   "line": 48,
+   "area": "payments",
+   "symbol": "SupabasePaymentsRepository.getNonprofitPublicPage",
+   "via": "literal",
+   "name": "get_nonprofit_public_page"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/payments/SupabasePaymentsRepository.ts",
+   "line": 61,
+   "area": "payments",
+   "symbol": "SupabasePaymentsRepository.createDonationIntent",
+   "via": "literal",
+   "name": "create_donation_intent"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/payments/SupabasePaymentsRepository.ts",
+   "line": 75,
+   "area": "payments",
+   "symbol": "SupabasePaymentsRepository.createStandingOrder",
+   "via": "literal",
+   "name": "create_standing_order"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/payments/SupabasePaymentsRepository.ts",
+   "line": 87,
+   "area": "payments",
+   "symbol": "SupabasePaymentsRepository.listMyStandingOrders",
+   "via": "literal",
+   "name": "list_my_standing_orders"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/payments/SupabasePaymentsRepository.ts",
+   "line": 109,
+   "area": "payments",
+   "symbol": "SupabasePaymentsRepository.listDonationHistory",
+   "via": "literal",
+   "name": "list_my_donation_history"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/payments/SupabasePaymentsRepository.ts",
+   "line": 129,
+   "area": "payments",
+   "symbol": "SupabasePaymentsRepository.getDonationReceipt",
+   "via": "literal",
+   "name": "get_donation_receipt"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/payments/SupabasePaymentsRepository.ts",
+   "line": 135,
+   "area": "payments",
+   "symbol": "SupabasePaymentsRepository.moveStandingOrder",
+   "via": "type-union",
+   "name": "cancel_standing_order"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/payments/SupabasePaymentsRepository.ts",
+   "line": 135,
+   "area": "payments",
+   "symbol": "SupabasePaymentsRepository.moveStandingOrder",
+   "via": "type-union",
+   "name": "pause_standing_order"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/payments/SupabasePaymentsRepository.ts",
+   "line": 135,
+   "area": "payments",
+   "symbol": "SupabasePaymentsRepository.moveStandingOrder",
+   "via": "type-union",
+   "name": "resume_standing_order"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/posts/closureMethods.ts",
+   "line": 30,
+   "area": "posts",
+   "symbol": "unwrapCall",
+   "via": "literal",
+   "name": "close_post_with_recipient"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/posts/closureMethods.ts",
+   "line": 35,
+   "area": "posts",
+   "symbol": "unwrapCall",
+   "via": "literal",
+   "name": "close_post_without_recipient"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/posts/closureMethods.ts",
+   "line": 61,
+   "area": "posts",
+   "symbol": "reopenPost",
+   "via": "literal",
+   "name": "reopen_post"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/posts/closureMethods.ts",
+   "line": 71,
+   "area": "posts",
+   "symbol": "unmarkRecipientSelf",
+   "via": "literal",
+   "name": "recipient_unmark_self"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/posts/closureMethods.ts",
+   "line": 107,
+   "area": "posts",
+   "symbol": "chatPartners",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "chats"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/posts/closureMethods.ts",
+   "line": 127,
+   "area": "posts",
+   "symbol": "getClosureCandidates",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "posts"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/posts/closureMethods.ts",
+   "line": 134,
+   "area": "posts",
+   "symbol": "getClosureCandidates",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "users"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/posts/getMyPostsPage.ts",
+   "line": 34,
+   "area": "posts",
+   "symbol": "listOwnerPostsPage",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "posts"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/posts/postActorIdentityMethods.ts",
+   "line": 27,
+   "area": "posts",
+   "symbol": "listPostActorIdentitiesForPost",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "post_actor_identity"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/posts/postActorIdentityMethods.ts",
+   "line": 47,
+   "area": "posts",
+   "symbol": "unwrapCall",
+   "via": "literal",
+   "name": "upsert_post_actor_identity"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/posts/postCardExtras.ts",
+   "line": 25,
+   "area": "posts",
+   "symbol": "loadPostColumns",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "posts"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/posts/postCardExtras.ts",
+   "line": 32,
+   "area": "posts",
+   "symbol": "loadChallengeIds",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "challenges"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/posts/postCardExtras.ts",
+   "line": 40,
+   "area": "posts",
+   "symbol": "loadPurgeDeadlines",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "post_closures"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/posts/postCardExtras.ts",
+   "line": 52,
+   "area": "posts",
+   "symbol": "loadRecipients",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "post_handoffs"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/posts/postCardExtras.ts",
+   "line": 61,
+   "area": "posts",
+   "symbol": "loadRecipients",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "users"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/posts/postCardPages.ts",
+   "line": 68,
+   "area": "posts",
+   "symbol": "fetchPostsByIds",
+   "via": "literal",
+   "name": "post_cards"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/posts/postCardPages.ts",
+   "line": 86,
+   "area": "posts",
+   "symbol": "fetchFeedPage",
+   "via": "literal",
+   "name": "feed_page"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/posts/postCardPages.ts",
+   "line": 105,
+   "area": "posts",
+   "symbol": "fetchSearchPage",
+   "via": "literal",
+   "name": "search_posts_page"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/posts/postCardPages.ts",
+   "line": 125,
+   "area": "posts",
+   "symbol": "fetchProfileTabPage",
+   "via": "literal",
+   "name": "profile_posts_page"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/posts/postCatalog.ts",
+   "line": 54,
+   "area": "posts",
+   "symbol": "readCatalog",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "item_subcategories"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/posts/postCatalog.ts",
+   "line": 56,
+   "area": "posts",
+   "symbol": "readCatalog",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "post_kinds"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/posts/postMediaWrites.ts",
+   "line": 40,
+   "area": "posts",
+   "symbol": "unwrapCall",
+   "via": "literal",
+   "ops": [
+    "insert"
+   ],
+   "name": "post_media"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/posts/postMediaWrites.ts",
+   "line": 54,
+   "area": "posts",
+   "symbol": "unwrapCall",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "post_media"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/posts/postMediaWrites.ts",
+   "line": 65,
+   "area": "posts",
+   "symbol": "replacePostMedia",
+   "via": "literal",
+   "ops": [
+    "delete"
+   ],
+   "name": "post_media"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/posts/postMediaWrites.ts",
+   "line": 70,
+   "area": "posts",
+   "symbol": "replacePostMedia",
+   "via": "literal",
+   "ops": [
+    "insert"
+   ],
+   "name": "post_media"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/posts/postRepoQueries.ts",
+   "line": 23,
+   "area": "posts",
+   "symbol": "loadGallery",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "post_media"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/posts/postRepoQueries.ts",
+   "line": 34,
+   "area": "posts",
+   "symbol": "loadOwnStreet",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "post_private_locations"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/posts/postRepoQueries.ts",
+   "line": 41,
+   "area": "posts",
+   "symbol": "fetchPostDetail",
+   "via": "literal",
+   "name": "post_cards"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/posts/postRepoQueries.ts",
+   "line": 64,
+   "area": "posts",
+   "symbol": "baseCount",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "posts"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/posts/postRepoQueries.ts",
+   "line": 106,
+   "area": "posts",
+   "symbol": "countProfileClosedPosts",
+   "via": "literal",
+   "name": "profile_closed_posts_count"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/posts/postWriteMethods.ts",
+   "line": 47,
+   "area": "posts",
+   "symbol": "unwrapCall",
+   "via": "literal",
+   "ops": [
+    "upsert"
+   ],
+   "name": "post_private_locations"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/posts/postWriteMethods.ts",
+   "line": 60,
+   "area": "posts",
+   "symbol": "insertDraft",
+   "via": "literal",
+   "ops": [
+    "select",
+    "insert"
+   ],
+   "name": "posts"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/posts/postWriteMethods.ts",
+   "line": 94,
+   "area": "posts",
+   "symbol": "completeDraft",
+   "via": "literal",
+   "name": "publish_post"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/posts/postWriteMethods.ts",
+   "line": 105,
+   "area": "posts",
+   "symbol": "createPost",
+   "via": "literal",
+   "ops": [
+    "delete"
+   ],
+   "name": "posts"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/posts/postWriteMethods.ts",
+   "line": 127,
+   "area": "posts",
+   "symbol": "mergedDetails",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "posts"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/posts/postWriteMethods.ts",
+   "line": 150,
+   "area": "posts",
+   "symbol": "updatePost",
+   "via": "literal",
+   "ops": [
+    "select",
+    "update"
+   ],
+   "name": "posts"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/posts/postWriteMethods.ts",
+   "line": 170,
+   "area": "posts",
+   "symbol": "deletePost",
+   "via": "literal",
+   "name": "delete_post"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/posts/postWriteMethods.ts",
+   "line": 180,
+   "area": "posts",
+   "symbol": "adminRemovePost",
+   "via": "literal",
+   "name": "admin_remove_post"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/posts/savedPostsMethods.ts",
+   "line": 26,
+   "area": "posts",
+   "symbol": "unwrapCall",
+   "via": "literal",
+   "ops": [
+    "upsert"
+   ],
+   "name": "saved_posts"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/posts/savedPostsMethods.ts",
+   "line": 32,
+   "area": "posts",
+   "symbol": "unsavePostRow",
+   "via": "literal",
+   "ops": [
+    "delete"
+   ],
+   "name": "saved_posts"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/posts/savedPostsMethods.ts",
+   "line": 38,
+   "area": "posts",
+   "symbol": "isPostSavedRow",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "saved_posts"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/posts/savedPostsMethods.ts",
+   "line": 55,
+   "area": "posts",
+   "symbol": "listSavedPostsPage",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "saved_posts"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/posts/SupabasePostEngagementRepository.ts",
+   "line": 71,
+   "area": "posts",
+   "symbol": "SupabasePostEngagementRepository.getStats",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "post_stats"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/posts/SupabasePostEngagementRepository.ts",
+   "line": 88,
+   "area": "posts",
+   "symbol": "SupabasePostEngagementRepository.getViewerReaction",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "post_reactions"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/posts/SupabasePostEngagementRepository.ts",
+   "line": 101,
+   "area": "posts",
+   "symbol": "SupabasePostEngagementRepository.setReaction",
+   "via": "literal",
+   "ops": [
+    "delete"
+   ],
+   "name": "post_reactions"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/posts/SupabasePostEngagementRepository.ts",
+   "line": 106,
+   "area": "posts",
+   "symbol": "SupabasePostEngagementRepository.unwrapCall",
+   "via": "literal",
+   "name": "set_post_reaction"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/posts/SupabasePostEngagementRepository.ts",
+   "line": 120,
+   "area": "posts",
+   "symbol": "SupabasePostEngagementRepository.createComment",
+   "via": "literal",
+   "ops": [
+    "select",
+    "insert"
+   ],
+   "name": "post_comments"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/posts/SupabasePostEngagementRepository.ts",
+   "line": 146,
+   "area": "posts",
+   "symbol": "SupabasePostEngagementRepository.unwrapCall",
+   "via": "literal",
+   "ops": [
+    "delete"
+   ],
+   "name": "post_comment_reactions"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/posts/SupabasePostEngagementRepository.ts",
+   "line": 153,
+   "area": "posts",
+   "symbol": "SupabasePostEngagementRepository.unwrapCall",
+   "via": "literal",
+   "ops": [
+    "upsert"
+   ],
+   "name": "post_comment_reactions"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/posts/SupabasePostEngagementRepository.ts",
+   "line": 161,
+   "area": "posts",
+   "symbol": "SupabasePostEngagementRepository.commentsPage",
+   "via": "literal",
+   "name": "post_comments_page"
+  },
+  {
+   "kind": "channel",
+   "file": "app/packages/infrastructure-supabase/src/realtime/exactTopicChannel.ts",
+   "line": 52,
+   "area": "realtime",
+   "symbol": "ready",
+   "via": "expression",
+   "name": "topic"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/reports/reportTargetPreviews.ts",
+   "line": 33,
+   "area": "reports",
+   "symbol": "postPreviews",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "posts"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/reports/reportTargetPreviews.ts",
+   "line": 50,
+   "area": "reports",
+   "symbol": "userPreviews",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "users"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/reports/reportTargetPreviews.ts",
+   "line": 54,
+   "area": "reports",
+   "symbol": "userPreviews",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "user_account"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/reports/reportTargetPreviews.ts",
+   "line": 71,
+   "area": "reports",
+   "symbol": "commentPreviews",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "post_comments"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/reports/reportTargetPreviews.ts",
+   "line": 106,
+   "area": "reports",
+   "symbol": "loadDisplayNames",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "users"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/reports/SupabaseReportRepository.ts",
+   "line": 39,
+   "area": "reports",
+   "symbol": "SupabaseReportRepository.submit",
+   "via": "literal",
+   "ops": [
+    "insert"
+   ],
+   "name": "reports"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/reports/SupabaseReportsRepository.ts",
+   "line": 45,
+   "area": "reports",
+   "symbol": "SupabaseReportsRepository.listOpenInbox",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "reports"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/reports/SupabaseReportsRepository.ts",
+   "line": 76,
+   "area": "reports",
+   "symbol": "SupabaseReportsRepository.getCaseDetail",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "reports"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/research/SupabasePublicResearchRepository.ts",
+   "line": 91,
+   "area": "research",
+   "symbol": "SupabasePublicResearchRepository.loadBundle",
+   "via": "literal",
+   "name": "get_public_research_questions"
+  },
+  {
+   "kind": "edge_function",
+   "file": "app/packages/infrastructure-supabase/src/research/SupabasePublicResearchRepository.ts",
+   "line": 108,
+   "area": "research",
+   "symbol": "SupabasePublicResearchRepository.submit",
+   "via": "const",
+   "name": "public-research-submit"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/rides/ridePlaces.ts",
+   "line": 94,
+   "area": "rides",
+   "symbol": "resolvePlaces",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "road_junctions"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/rides/ridePlaces.ts",
+   "line": 97,
+   "area": "rides",
+   "symbol": "resolvePlaces",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "cities"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/rides/ridePlaces.ts",
+   "line": 101,
+   "area": "rides",
+   "symbol": "resolvePlaces",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "streets"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/rides/SupabaseDriverDeclarationRepository.ts",
+   "line": 39,
+   "area": "rides",
+   "symbol": "SupabaseDriverDeclarationRepository.state",
+   "via": "literal",
+   "name": "bootstrap_session"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/rides/SupabaseDriverDeclarationRepository.ts",
+   "line": 47,
+   "area": "rides",
+   "symbol": "SupabaseDriverDeclarationRepository.getMine",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "user_consents"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/rides/SupabaseDriverDeclarationRepository.ts",
+   "line": 61,
+   "area": "rides",
+   "symbol": "SupabaseDriverDeclarationRepository.requireRpcRow",
+   "via": "literal",
+   "name": "accept_world_consent"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideBookingRepository.ts",
+   "line": 27,
+   "area": "rides",
+   "symbol": "SupabaseRideBookingRepository.bookSeat",
+   "via": "literal",
+   "name": "book_ride_seat"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideBookingRepository.ts",
+   "line": 41,
+   "area": "rides",
+   "symbol": "SupabaseRideBookingRepository.unwrapCall",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "post_handoffs"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideBookingRepository.ts",
+   "line": 45,
+   "area": "rides",
+   "symbol": "SupabaseRideBookingRepository.listForRide",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "users"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideBookingRepository.ts",
+   "line": 46,
+   "area": "rides",
+   "symbol": "SupabaseRideBookingRepository.listForRide",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "post_ratings"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideBookingRepository.ts",
+   "line": 59,
+   "area": "rides",
+   "symbol": "SupabaseRideBookingRepository.approve",
+   "via": "literal",
+   "name": "confirm_ride_booking"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideBookingRepository.ts",
+   "line": 66,
+   "area": "rides",
+   "symbol": "SupabaseRideBookingRepository.cancel",
+   "via": "literal",
+   "name": "cancel_ride_booking"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideBookingRepository.ts",
+   "line": 70,
+   "area": "rides",
+   "symbol": "SupabaseRideBookingRepository.complete",
+   "via": "literal",
+   "name": "complete_ride_trip"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideBookingRepository.ts",
+   "line": 74,
+   "area": "rides",
+   "symbol": "SupabaseRideBookingRepository.reinstate",
+   "via": "literal",
+   "name": "reinstate_ride_booking"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideBookingRepository.ts",
+   "line": 79,
+   "area": "rides",
+   "symbol": "SupabaseRideBookingRepository.completeRide",
+   "via": "literal",
+   "name": "complete_ride"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideHouseNumberRepository.ts",
+   "line": 22,
+   "area": "rides",
+   "symbol": "SupabaseRideHouseNumberRepository.unwrapCall",
+   "via": "literal",
+   "ops": [
+    "upsert"
+   ],
+   "name": "post_private_locations"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideHouseNumberRepository.ts",
+   "line": 37,
+   "area": "rides",
+   "symbol": "SupabaseRideHouseNumberRepository.get",
+   "via": "literal",
+   "name": "get_post_private_location"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideSafetyRepository.ts",
+   "line": 17,
+   "area": "rides",
+   "symbol": "SupabaseRideSafetyRepository.unwrapCall",
+   "via": "literal",
+   "name": "report_post_emergency"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideSavedRoutesRepository.ts",
+   "line": 32,
+   "area": "rides",
+   "symbol": "SupabaseRideSavedRoutesRepository.listMine",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "ride_saved_routes"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideSavedRoutesRepository.ts",
+   "line": 47,
+   "area": "rides",
+   "symbol": "SupabaseRideSavedRoutesRepository.unwrapCall",
+   "via": "literal",
+   "ops": [
+    "insert"
+   ],
+   "name": "ride_saved_routes"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideSavedRoutesRepository.ts",
+   "line": 66,
+   "area": "rides",
+   "symbol": "SupabaseRideSavedRoutesRepository.remove",
+   "via": "literal",
+   "ops": [
+    "delete"
+   ],
+   "name": "ride_saved_routes"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideSeriesRepository.ts",
+   "line": 48,
+   "area": "rides",
+   "symbol": "SupabaseRideSeriesRepository.unwrapCall",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "ride_series"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideSeriesRepository.ts",
+   "line": 69,
+   "area": "rides",
+   "symbol": "SupabaseRideSeriesRepository.kind",
+   "via": "literal",
+   "name": "create_ride_series"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideSeriesRepository.ts",
+   "line": 85,
+   "area": "rides",
+   "symbol": "SupabaseRideSeriesRepository.setStatus",
+   "via": "literal",
+   "name": "set_ride_series_status"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideSeriesRepository.ts",
+   "line": 94,
+   "area": "rides",
+   "symbol": "SupabaseRideSeriesRepository.unwrapCall",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "post_ride_details"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideSeriesRepository.ts",
+   "line": 117,
+   "area": "rides",
+   "symbol": "SupabaseRideSeriesRepository.unwrapCall",
+   "via": "literal",
+   "name": "update_ride_series"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideSeriesRepository.ts",
+   "line": 131,
+   "area": "rides",
+   "symbol": "SupabaseRideSeriesRepository.soonestOccurrence",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "post_ride_details"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRidesFeedRepository.ts",
+   "line": 19,
+   "area": "rides",
+   "symbol": "SupabaseRidesFeedRepository.list",
+   "via": "literal",
+   "name": "rides_feed"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/search/searchExploreHelpers.ts",
+   "line": 33,
+   "area": "search",
+   "symbol": "exploreLinks",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "donation_links"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/search/searchQueryHelpers.ts",
+   "line": 53,
+   "area": "search",
+   "symbol": "searchUsers",
+   "via": "literal",
+   "name": "search_users_page"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/search/searchQueryHelpers.ts",
+   "line": 70,
+   "area": "search",
+   "symbol": "searchLinks",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "donation_links"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/search/searchUserReads.ts",
+   "line": 20,
+   "area": "search",
+   "symbol": "usersByIds",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "users"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/search/searchUserReads.ts",
+   "line": 26,
+   "area": "search",
+   "symbol": "followerCounts",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "user_stats"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/search/searchUserReads.ts",
+   "line": 41,
+   "area": "search",
+   "symbol": "topMemberIds",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "users"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/series/SupabasePostSeriesRepository.ts",
+   "line": 40,
+   "area": "series",
+   "symbol": "SupabasePostSeriesRepository.unwrapCall",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "post_series"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/series/SupabasePostSeriesRepository.ts",
+   "line": 56,
+   "area": "series",
+   "symbol": "SupabasePostSeriesRepository.kind",
+   "via": "literal",
+   "name": "create_post_series"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/series/SupabasePostSeriesRepository.ts",
+   "line": 77,
+   "area": "series",
+   "symbol": "SupabasePostSeriesRepository.unwrapCall",
+   "via": "literal",
+   "name": "update_post_series"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/series/SupabasePostSeriesRepository.ts",
+   "line": 88,
+   "area": "series",
+   "symbol": "SupabasePostSeriesRepository.setStatus",
+   "via": "literal",
+   "name": "set_post_series_status"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/series/SupabasePostSeriesRepository.ts",
+   "line": 92,
+   "area": "series",
+   "symbol": "SupabasePostSeriesRepository.cancelOccurrence",
+   "via": "literal",
+   "name": "cancel_post_series_date"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/series/SupabasePostSeriesRepository.ts",
+   "line": 101,
+   "area": "series",
+   "symbol": "SupabasePostSeriesRepository.unwrapCall",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "post_event_details"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/stats/SupabaseStatsRepository.ts",
+   "line": 35,
+   "area": "stats",
+   "symbol": "SupabaseStatsRepository.getCommunityStatsSnapshot",
+   "via": "literal",
+   "name": "community_stats"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/stats/SupabaseStatsRepository.ts",
+   "line": 52,
+   "area": "stats",
+   "symbol": "SupabaseStatsRepository.listMyActivityTimeline",
+   "via": "literal",
+   "name": "my_activity_timeline"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/streets/SupabaseStreetRepository.ts",
+   "line": 41,
+   "area": "streets",
+   "symbol": "SupabaseStreetRepository.listByCity",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "streets"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/survey/SupabaseSurveyAdminRepository.ts",
+   "line": 185,
+   "area": "survey",
+   "symbol": "SupabaseSurveyAdminRepository.listOverview",
+   "via": "literal",
+   "name": "admin_survey_overview"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/survey/SupabaseSurveyAdminRepository.ts",
+   "line": 191,
+   "area": "survey",
+   "symbol": "SupabaseSurveyAdminRepository.getResults",
+   "via": "literal",
+   "name": "admin_survey_results"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/survey/SupabaseSurveyAdminRepository.ts",
+   "line": 198,
+   "area": "survey",
+   "symbol": "SupabaseSurveyAdminRepository.getPmfReport",
+   "via": "literal",
+   "name": "admin_pmf_survey_report"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/survey/SupabaseSurveyAdminRepository.ts",
+   "line": 208,
+   "area": "survey",
+   "symbol": "SupabaseSurveyAdminRepository.listFeedback",
+   "via": "literal",
+   "name": "admin_user_feedback_list"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/survey/SupabaseSurveyRepository.ts",
+   "line": 67,
+   "area": "survey",
+   "symbol": "SupabaseSurveyRepository.upsertAnswers",
+   "via": "literal",
+   "name": "upsert_survey_answers"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/survey/SupabaseSurveyRepository.ts",
+   "line": 73,
+   "area": "survey",
+   "symbol": "SupabaseSurveyRepository.checkPromptEligibility",
+   "via": "literal",
+   "name": "check_survey_prompt_eligibility"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/survey/SupabaseSurveyRepository.ts",
+   "line": 84,
+   "area": "survey",
+   "symbol": "SupabaseSurveyRepository.raw",
+   "via": "literal",
+   "ops": [
+    "insert"
+   ],
+   "name": "user_feedback"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/survey/SupabaseUserActivityRepository.ts",
+   "line": 18,
+   "area": "survey",
+   "symbol": "SupabaseUserActivityRepository.recordActiveDay",
+   "via": "literal",
+   "name": "record_active_day"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/survey/surveyReads.ts",
+   "line": 77,
+   "area": "survey",
+   "symbol": "listActiveSurveys",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "surveys"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/survey/surveyReads.ts",
+   "line": 83,
+   "area": "survey",
+   "symbol": "listActiveSurveys",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "survey_answers"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/survey/surveyReads.ts",
+   "line": 100,
+   "area": "survey",
+   "symbol": "loadSurveyBundle",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "surveys"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/survey/surveyReads.ts",
+   "line": 109,
+   "area": "survey",
+   "symbol": "loadSurveyBundle",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "survey_questions"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/survey/surveyReads.ts",
+   "line": 115,
+   "area": "survey",
+   "symbol": "ids",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "survey_answers"
+  },
+  {
+   "kind": "edge_function",
+   "file": "app/packages/infrastructure-supabase/src/translations/EdgeFnTranslationService.ts",
+   "line": 32,
+   "area": "translations",
+   "symbol": "EdgeFnTranslationService.requestTranslation",
+   "via": "literal",
+   "name": "translate"
+  },
+  {
+   "kind": "edge_function",
+   "file": "app/packages/infrastructure-supabase/src/translations/EdgeFnTranslationService.ts",
+   "line": 50,
+   "area": "translations",
+   "symbol": "EdgeFnTranslationService.requestTranslationsBatch",
+   "via": "literal",
+   "name": "translate"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/translations/SupabasePostTranslationReader.ts",
+   "line": 15,
+   "area": "translations",
+   "symbol": "SupabasePostTranslationReader.getForPosts",
+   "via": "literal",
+   "name": "get_post_translations"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/translations/SupabaseTranslationCacheRepository.ts",
+   "line": 17,
+   "area": "translations",
+   "symbol": "SupabaseTranslationCacheRepository.get",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "content_translations"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/translations/SupabaseTranslationCacheRepository.ts",
+   "line": 29,
+   "area": "translations",
+   "symbol": "SupabaseTranslationCacheRepository.putIfAbsent",
+   "via": "literal",
+   "ops": [
+    "insert"
+   ],
+   "name": "content_translations"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/translations/SupabaseTranslationCacheRepository.ts",
+   "line": 46,
+   "area": "translations",
+   "symbol": "SupabaseTranslationCacheRepository.deleteForContent",
+   "via": "literal",
+   "ops": [
+    "delete"
+   ],
+   "name": "content_translations"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/users/editableProfileSupabase.ts",
+   "line": 24,
+   "area": "users",
+   "symbol": "readOwnPrivateFields",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "user_private"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/users/editableProfileSupabase.ts",
+   "line": 40,
+   "area": "users",
+   "symbol": "readCityName",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "cities"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/users/editableProfileSupabase.ts",
+   "line": 51,
+   "area": "users",
+   "symbol": "supabaseGetEditableProfile",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "users"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/users/follow/followMethods.ts",
+   "line": 41,
+   "area": "users",
+   "symbol": "unwrapCall",
+   "via": "literal",
+   "ops": [
+    "delete"
+   ],
+   "name": "follows"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/users/follow/followMethods.ts",
+   "line": 53,
+   "area": "users",
+   "symbol": "isFollowingEdge",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "follows"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/users/follow/followMethods.ts",
+   "line": 80,
+   "area": "users",
+   "symbol": "cursorStamp",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "follows"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/users/follow/followMethods.ts",
+   "line": 100,
+   "area": "users",
+   "symbol": "listSide",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "follows"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/users/follow/followMethods.ts",
+   "line": 108,
+   "area": "users",
+   "symbol": "listSide",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "users"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/users/follow/followRequestMethods.ts",
+   "line": 77,
+   "area": "users",
+   "symbol": "cancelRequest",
+   "via": "literal",
+   "name": "follow_request_cancel"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/users/follow/followRequestMethods.ts",
+   "line": 85,
+   "area": "users",
+   "symbol": "unwrapCall",
+   "via": "literal",
+   "name": "follow_request_decide"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/users/follow/followRequestMethods.ts",
+   "line": 104,
+   "area": "users",
+   "symbol": "listPendingRaw",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "follow_requests"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/users/follow/followRequestMethods.ts",
+   "line": 120,
+   "area": "users",
+   "symbol": "listPendingWithUsers",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "follow_requests"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/users/follow/followRequestMethods.ts",
+   "line": 130,
+   "area": "users",
+   "symbol": "listPendingWithUsers",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "users"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/users/follow/followUserRpc.ts",
+   "line": 16,
+   "area": "users",
+   "symbol": "callFollowUser",
+   "via": "literal",
+   "name": "follow_user"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/users/follow/getFollowState.ts",
+   "line": 16,
+   "area": "users",
+   "symbol": "fetchFollowStateRaw",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "users"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/users/follow/getFollowState.ts",
+   "line": 17,
+   "area": "users",
+   "symbol": "fetchFollowStateRaw",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "follows"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/users/follow/getFollowState.ts",
+   "line": 19,
+   "area": "users",
+   "symbol": "fetchFollowStateRaw",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "follow_requests"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/users/follow/getFollowState.ts",
+   "line": 26,
+   "area": "users",
+   "symbol": "fetchFollowStateRaw",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "follow_requests"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/users/getChatCounterpartyContact.ts",
+   "line": 16,
+   "area": "users",
+   "symbol": "getChatCounterpartyContact",
+   "via": "literal",
+   "name": "chat_counterpart_contact"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/users/onboardingSupabase.ts",
+   "line": 46,
+   "area": "users",
+   "symbol": "supabaseSetDateOfBirth",
+   "via": "literal",
+   "name": "set_date_of_birth"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/users/onboardingSupabase.ts",
+   "line": 60,
+   "area": "users",
+   "symbol": "supabaseSetOnboardingState",
+   "via": "literal",
+   "name": "set_onboarding_state"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/users/ownPrivateUpdate.ts",
+   "line": 27,
+   "area": "users",
+   "symbol": "updateUserPrivate",
+   "via": "literal",
+   "ops": [
+    "update"
+   ],
+   "name": "user_private"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/users/ownUserUpdate.ts",
+   "line": 20,
+   "area": "users",
+   "symbol": "updateOwnUser",
+   "via": "literal",
+   "ops": [
+    "update"
+   ],
+   "name": "users"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/users/searchUsers.ts",
+   "line": 28,
+   "area": "users",
+   "symbol": "searchUsers",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "users"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/users/SupabaseActiveStatusRepository.ts",
+   "line": 20,
+   "area": "users",
+   "symbol": "SupabaseActiveStatusRepository.get",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "user_private"
+  },
+  {
+   "kind": "channel",
+   "file": "app/packages/infrastructure-supabase/src/users/SupabaseUserRealtime.ts",
+   "line": 37,
+   "area": "users",
+   "symbol": "SupabaseUserRealtime.subscribeToAccount",
+   "via": "expression",
+   "name": "topic = `user:${userId}:account`"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/users/SupabaseUserRepository.ts",
+   "line": 94,
+   "area": "users",
+   "symbol": "SupabaseUserRepository.setPrivacyMode",
+   "via": "literal",
+   "name": "set_privacy_mode"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/users/SupabaseUserRepository.ts",
+   "line": 169,
+   "area": "users",
+   "symbol": "SupabaseUserRepository.requestAccountDeletion",
+   "via": "literal",
+   "name": "request_account_deletion"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/users/SupabaseUserRepository.ts",
+   "line": 230,
+   "area": "users",
+   "symbol": "SupabaseUserRepository.updateNotificationPreferences",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "user_private"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/users/userReads.ts",
+   "line": 36,
+   "area": "users",
+   "symbol": "loadOwnerSlice",
+   "via": "literal",
+   "name": "my_karma_points"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/users/userReads.ts",
+   "line": 49,
+   "area": "users",
+   "symbol": "loadCityNames",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "cities"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/users/userReads.ts",
+   "line": 60,
+   "area": "users",
+   "symbol": "loadStats",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "user_stats"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/users/userReads.ts",
+   "line": 97,
+   "area": "users",
+   "symbol": "fetchUserBy",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "users"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
+   "line": 37,
+   "area": "volunteering",
+   "symbol": "loadEventRows",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "post_event_details"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
+   "line": 53,
+   "area": "volunteering",
+   "symbol": "SupabaseVolunteerRepository.listOpportunities",
+   "via": "literal",
+   "name": "feed_page"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
+   "line": 114,
+   "area": "volunteering",
+   "symbol": "SupabaseVolunteerRepository.myRegistrationStatus",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "post_handoffs"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
+   "line": 138,
+   "area": "volunteering",
+   "symbol": "SupabaseVolunteerRepository.unwrapCall",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "post_handoffs"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
+   "line": 143,
+   "area": "volunteering",
+   "symbol": "SupabaseVolunteerRepository.listMySignups",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "posts"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
+   "line": 166,
+   "area": "volunteering",
+   "symbol": "SupabaseVolunteerRepository.closeOpportunity",
+   "via": "literal",
+   "name": "close_post_without_recipient"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
+   "line": 177,
+   "area": "volunteering",
+   "symbol": "SupabaseVolunteerRepository.unwrapCall",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "posts"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
+   "line": 201,
+   "area": "volunteering",
+   "symbol": "SupabaseVolunteerRepository.listShiftVolunteers",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "post_handoffs"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
+   "line": 204,
+   "area": "volunteering",
+   "symbol": "SupabaseVolunteerRepository.listShiftVolunteers",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "users"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/worlds/SupabaseWorldContentRepository.ts",
+   "line": 28,
+   "area": "worlds",
+   "symbol": "SupabaseWorldContentRepository.getWorldContent",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "world_links"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/worlds/SupabaseWorldContentRepository.ts",
+   "line": 35,
+   "area": "worlds",
+   "symbol": "SupabaseWorldContentRepository.getWorldContent",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "external_bodies"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/worlds/SupabaseWorldContentRepository.ts",
+   "line": 42,
+   "area": "worlds",
+   "symbol": "SupabaseWorldContentRepository.getWorldContent",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "knowledge_topics"
+  },
+  {
+   "kind": "rpc",
+   "file": "supabase/functions/_shared/whatsapp/agent/run.ts",
+   "line": 30,
+   "area": "fn:_shared",
+   "symbol": "runAgent",
+   "via": "literal",
+   "name": "api_whatsapp_llm_budget_take"
+  },
+  {
+   "kind": "rpc",
+   "file": "supabase/functions/_shared/whatsapp/agent/run.ts",
+   "line": 46,
+   "area": "fn:_shared",
+   "symbol": "runAgent",
+   "via": "literal",
+   "name": "api_whatsapp_queue_reply"
+  },
+  {
+   "kind": "rpc",
+   "name": "api_bot_search_listings",
+   "file": "supabase/functions/_shared/whatsapp/agent/tools.ts",
+   "line": 50,
+   "area": "fn:_shared",
+   "symbol": "call",
+   "via": "wrapper:call"
+  },
+  {
+   "kind": "rpc",
+   "name": "api_bot_listing_cards",
+   "file": "supabase/functions/_shared/whatsapp/agent/tools.ts",
+   "line": 58,
+   "area": "fn:_shared",
+   "symbol": "call",
+   "via": "wrapper:call"
+  },
+  {
+   "kind": "rpc",
+   "name": "api_bot_open_session",
+   "file": "supabase/functions/_shared/whatsapp/agent/tools.ts",
+   "line": 85,
+   "area": "fn:_shared",
+   "symbol": "call",
+   "via": "wrapper:call"
+  },
+  {
+   "kind": "rpc",
+   "name": "api_bot_apply_extraction",
+   "file": "supabase/functions/_shared/whatsapp/agent/tools.ts",
+   "line": 86,
+   "area": "fn:_shared",
+   "symbol": "call",
+   "via": "wrapper:call"
+  },
+  {
+   "kind": "rpc",
+   "name": "api_bot_publish_listing",
+   "file": "supabase/functions/_shared/whatsapp/agent/tools.ts",
+   "line": 96,
+   "area": "fn:_shared",
+   "symbol": "call",
+   "via": "wrapper:call"
+  },
+  {
+   "kind": "rpc",
+   "name": "api_bot_my_listings",
+   "file": "supabase/functions/_shared/whatsapp/agent/tools.ts",
+   "line": 104,
+   "area": "fn:_shared",
+   "symbol": "call",
+   "via": "wrapper:call"
+  },
+  {
+   "kind": "rpc",
+   "name": "api_bot_my_matches",
+   "file": "supabase/functions/_shared/whatsapp/agent/tools.ts",
+   "line": 110,
+   "area": "fn:_shared",
+   "symbol": "call",
+   "via": "wrapper:call"
+  },
+  {
+   "kind": "rpc",
+   "file": "supabase/functions/_shared/whatsapp/sender.ts",
+   "line": 47,
+   "area": "fn:_shared",
+   "symbol": "runSenderBatch",
+   "via": "literal",
+   "name": "api_whatsapp_outbound_claim"
+  },
+  {
+   "kind": "rpc",
+   "file": "supabase/functions/_shared/whatsapp/sender.ts",
+   "line": 60,
+   "area": "fn:_shared",
+   "symbol": "rows",
+   "via": "literal",
+   "name": "api_whatsapp_outbound_result"
+  },
+  {
+   "kind": "bucket",
+   "file": "supabase/functions/backfill-image-thumbs/index.ts",
+   "line": 180,
+   "area": "fn:backfill-image-thumbs",
+   "symbol": "recordError",
+   "via": "unresolved",
+   "name": "<bucket>"
+  },
+  {
+   "kind": "bucket",
+   "file": "supabase/functions/backfill-image-thumbs/index.ts",
+   "line": 194,
+   "area": "fn:backfill-image-thumbs",
+   "symbol": "recordError",
+   "via": "unresolved",
+   "name": "<bucket>"
+  },
+  {
+   "kind": "rpc",
+   "file": "supabase/functions/embed-worker/handler.ts",
+   "line": 57,
+   "area": "fn:embed-worker",
+   "symbol": "createEmbedWorkerHandler",
+   "via": "literal",
+   "name": "embedding_jobs_claim"
+  },
+  {
+   "kind": "rpc",
+   "file": "supabase/functions/embed-worker/handler.ts",
+   "line": 65,
+   "area": "fn:embed-worker",
+   "symbol": "jobs",
+   "via": "literal",
+   "name": "embedding_job_store"
+  },
+  {
+   "kind": "rpc",
+   "file": "supabase/functions/embed-worker/handler.ts",
+   "line": 71,
+   "area": "fn:embed-worker",
+   "symbol": "jobs",
+   "via": "literal",
+   "name": "embedding_job_fail"
+  },
+  {
+   "kind": "rpc",
+   "file": "supabase/functions/match-rerank/handler.ts",
+   "line": 30,
+   "area": "fn:match-rerank",
+   "symbol": "createRerankHandler",
+   "via": "literal",
+   "name": "api_match_llm_pending"
+  },
+  {
+   "kind": "rpc",
+   "file": "supabase/functions/match-rerank/handler.ts",
+   "line": 47,
+   "area": "fn:match-rerank",
+   "symbol": "pairs",
+   "via": "literal",
+   "name": "api_match_llm_store"
+  },
+  {
+   "kind": "rpc",
+   "file": "supabase/functions/payments-webhook/index.ts",
+   "line": 23,
+   "area": "fn:payments-webhook",
+   "symbol": "apply",
+   "via": "literal",
+   "name": "provider_webhook_apply"
+  },
+  {
+   "kind": "rpc",
+   "file": "supabase/functions/public-research-submit/index.ts",
+   "line": 21,
+   "area": "fn:public-research-submit",
+   "symbol": "getSalt",
+   "via": "literal",
+   "name": "get_research_salt"
+  },
+  {
+   "kind": "rpc",
+   "file": "supabase/functions/public-research-submit/index.ts",
+   "line": 26,
+   "area": "fn:public-research-submit",
+   "symbol": "submit",
+   "via": "literal",
+   "name": "submit_public_research_response"
+  },
+  {
+   "kind": "rpc",
+   "file": "supabase/functions/revenuecat-webhook/handler.ts",
+   "line": 62,
+   "area": "fn:revenuecat-webhook",
+   "symbol": "now",
+   "via": "literal",
+   "name": "api_revenuecat_set_org_entitlement"
+  },
+  {
+   "kind": "rpc",
+   "file": "supabase/functions/revenuecat-webhook/handler.ts",
+   "line": 63,
+   "area": "fn:revenuecat-webhook",
+   "symbol": "now",
+   "via": "literal",
+   "name": "api_revenuecat_set_pro"
+  },
+  {
+   "kind": "rpc",
+   "file": "supabase/functions/rotate-research-salt/index.ts",
+   "line": 17,
+   "area": "fn:rotate-research-salt",
+   "symbol": "rotate",
+   "via": "literal",
+   "name": "rotate_research_salt"
+  },
+  {
+   "kind": "bucket",
+   "file": "supabase/functions/strip-exif/index.ts",
+   "line": 112,
+   "area": "fn:strip-exif",
+   "symbol": "listRecentPaths",
+   "via": "const",
+   "name": "post-images"
+  },
+  {
+   "kind": "bucket",
+   "file": "supabase/functions/strip-exif/index.ts",
+   "line": 170,
+   "area": "fn:strip-exif",
+   "symbol": "serve",
+   "via": "const",
+   "name": "post-images"
+  },
+  {
+   "kind": "bucket",
+   "file": "supabase/functions/strip-exif/index.ts",
+   "line": 180,
+   "area": "fn:strip-exif",
+   "symbol": "serve",
+   "via": "const",
+   "name": "post-images"
+  },
+  {
+   "kind": "rpc",
+   "file": "supabase/functions/subscriptions-charger/index.ts",
+   "line": 18,
+   "area": "fn:subscriptions-charger",
+   "symbol": "openDueCharges",
+   "via": "literal",
+   "name": "api_standing_orders_charge_due"
+  },
+  {
+   "kind": "table",
+   "file": "supabase/functions/translate/cache.ts",
+   "line": 25,
+   "area": "fn:translate",
+   "symbol": "getCached",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "content_translations"
+  },
+  {
+   "kind": "table",
+   "file": "supabase/functions/translate/cache.ts",
+   "line": 38,
+   "area": "fn:translate",
+   "symbol": "putIfAbsent",
+   "via": "literal",
+   "ops": [
+    "insert"
+   ],
+   "name": "content_translations"
+  },
+  {
+   "kind": "table",
+   "file": "supabase/functions/translate/cache.ts",
+   "line": 56,
+   "area": "fn:translate",
+   "symbol": "deleteCached",
+   "via": "literal",
+   "ops": [
+    "delete"
+   ],
+   "name": "content_translations"
+  },
+  {
+   "kind": "table",
+   "file": "supabase/functions/validate-donation-link/index.ts",
+   "line": 23,
+   "area": "fn:validate-donation-link",
+   "symbol": "find",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "donation_links"
+  },
+  {
+   "kind": "table",
+   "file": "supabase/functions/validate-donation-link/index.ts",
+   "line": 28,
+   "area": "fn:validate-donation-link",
+   "symbol": "update",
+   "via": "literal",
+   "ops": [
+    "select",
+    "update"
+   ],
+   "name": "donation_links"
+  },
+  {
+   "kind": "table",
+   "file": "supabase/functions/validate-donation-link/index.ts",
+   "line": 34,
+   "area": "fn:validate-donation-link",
+   "symbol": "countSince",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "donation_links"
+  },
+  {
+   "kind": "table",
+   "file": "supabase/functions/validate-donation-link/index.ts",
+   "line": 42,
+   "area": "fn:validate-donation-link",
+   "symbol": "insert",
+   "via": "literal",
+   "ops": [
+    "select",
+    "insert"
+   ],
+   "name": "donation_links"
+  },
+  {
+   "kind": "rpc",
+   "file": "supabase/functions/validate-donation-link/index.ts",
+   "line": 58,
+   "area": "fn:validate-donation-link",
+   "symbol": "authenticate",
+   "via": "literal",
+   "name": "get_my_admin_roles"
+  },
+  {
+   "kind": "rpc",
+   "file": "supabase/functions/whatsapp-intake-worker/index.ts",
+   "line": 44,
+   "area": "fn:whatsapp-intake-worker",
+   "symbol": "serve",
+   "via": "literal",
+   "name": "api_bot_open_session"
+  },
+  {
+   "kind": "rpc",
+   "file": "supabase/functions/whatsapp-intake-worker/index.ts",
+   "line": 55,
+   "area": "fn:whatsapp-intake-worker",
+   "symbol": "body",
+   "via": "literal",
+   "name": "api_whatsapp_llm_budget_take"
+  },
+  {
+   "kind": "rpc",
+   "file": "supabase/functions/whatsapp-intake-worker/index.ts",
+   "line": 78,
+   "area": "fn:whatsapp-intake-worker",
+   "symbol": "serve",
+   "via": "literal",
+   "name": "api_bot_apply_extraction"
+  },
+  {
+   "kind": "rpc",
+   "file": "supabase/functions/whatsapp-intake-worker/index.ts",
+   "line": 94,
+   "area": "fn:whatsapp-intake-worker",
+   "symbol": "body",
+   "via": "literal",
+   "name": "api_bot_publish_listing"
+  },
+  {
+   "kind": "rpc",
+   "file": "supabase/functions/whatsapp-intake-worker/index.ts",
+   "line": 103,
+   "area": "fn:whatsapp-intake-worker",
+   "symbol": "body",
+   "via": "literal",
+   "name": "api_bot_find_matches"
+  },
+  {
+   "kind": "table",
+   "file": "supabase/functions/whatsapp-sender/index.ts",
+   "line": 19,
+   "area": "fn:whatsapp-sender",
+   "symbol": "serve",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "whatsapp_channel_config"
+  },
+  {
+   "kind": "rpc",
+   "file": "supabase/functions/whatsapp-webhook/handler.ts",
+   "line": 71,
+   "area": "fn:whatsapp-webhook",
+   "symbol": "handleMessage",
+   "via": "literal",
+   "name": "api_whatsapp_claim_inbound"
+  },
+  {
+   "kind": "rpc",
+   "file": "supabase/functions/whatsapp-webhook/handler.ts",
+   "line": 81,
+   "area": "fn:whatsapp-webhook",
+   "symbol": "handleMessage",
+   "via": "literal",
+   "name": "api_whatsapp_release_inbound"
+  },
+  {
+   "kind": "rpc",
+   "file": "supabase/functions/whatsapp-webhook/handler.ts",
+   "line": 95,
+   "area": "fn:whatsapp-webhook",
+   "symbol": "processClaimed",
+   "via": "literal",
+   "name": "api_whatsapp_inbound_allowed"
+  },
+  {
+   "kind": "rpc",
+   "file": "supabase/functions/whatsapp-webhook/handler.ts",
+   "line": 104,
+   "area": "fn:whatsapp-webhook",
+   "symbol": "processClaimed",
+   "via": "literal",
+   "name": "api_whatsapp_ingest_inbound"
+  },
+  {
+   "kind": "rpc",
+   "file": "supabase/functions/whatsapp-webhook/handler.ts",
+   "line": 115,
+   "area": "fn:whatsapp-webhook",
+   "symbol": "processClaimed",
+   "via": "literal",
+   "name": "api_whatsapp_handle_keyword"
+  },
+  {
+   "kind": "rpc",
+   "file": "supabase/functions/whatsapp-webhook/handler.ts",
+   "line": 130,
+   "area": "fn:whatsapp-webhook",
+   "symbol": "processClaimed",
+   "via": "literal",
+   "name": "api_whatsapp_queue_reply"
+  },
+  {
+   "kind": "rpc",
+   "file": "supabase/functions/whatsapp-webhook/handler.ts",
+   "line": 144,
+   "area": "fn:whatsapp-webhook",
+   "symbol": "maybeRedeemLinkCode",
+   "via": "literal",
+   "name": "api_whatsapp_redeem_link_code"
+  },
+  {
+   "kind": "rpc",
+   "file": "supabase/functions/whatsapp-webhook/handler.ts",
+   "line": 152,
+   "area": "fn:whatsapp-webhook",
+   "symbol": "maybeRedeemLinkCode",
+   "via": "literal",
+   "name": "api_whatsapp_queue_reply"
+  },
+  {
+   "kind": "rpc",
+   "file": "supabase/functions/whatsapp-webhook/handler.ts",
+   "line": 164,
+   "area": "fn:whatsapp-webhook",
+   "symbol": "gateBot",
+   "via": "literal",
+   "name": "api_whatsapp_bot_access"
+  },
+  {
+   "kind": "rpc",
+   "file": "supabase/functions/whatsapp-webhook/handler.ts",
+   "line": 175,
+   "area": "fn:whatsapp-webhook",
+   "symbol": "access",
+   "via": "literal",
+   "name": "api_whatsapp_queue_reply"
+  }
+ ]
+}

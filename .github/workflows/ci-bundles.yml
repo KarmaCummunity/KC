@@ -51,6 +51,10 @@ jobs:
       - name: Verify dist output
         run: test -f apps/mobile/dist/index.html && test -f apps/mobile/dist/_headers
 
+      # The AASA / assetlinks files must survive the export (dot-directory) and be served as JSON via _headers.
+      - name: Deep-link manifests shipped in the web export
+        run: node scripts/check-well-known-links.mjs --dist apps/mobile/dist
+
       # Reads the export above; fails if the bundle is missing or over budget.
       - name: Web bundle gzip budget (#901)
         run: |
@@ -73,9 +77,11 @@ jobs:
           npm install --no-save --silent "playwright@${PLAYWRIGHT_VERSION}"
           if [ "$CACHE_HIT" = "true" ]; then
             # Browser binaries restored from cache — only OS deps needed.
-            npx playwright install-deps chromium
+            npx playwright install-deps chromium || echo "::warning::apt unavailable, using the runner's preinstalled libraries"
           else
-            npx playwright install --with-deps chromium
+            # An apt mirror outage must not fail the lane: fall back to the
+            # browser alone, the runner image already carries the system libraries.
+            npx playwright install --with-deps chromium || npx playwright install chromium
           fi
 
       - name: Smoke-load web bundle (headless Chromium)

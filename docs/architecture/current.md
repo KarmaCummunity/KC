@@ -111,8 +111,8 @@ flowchart TB
       FnTranslate["translate\nAI content translation worker"]
       FnMatching["match-rerank & embed-worker\nSemantic matching & vector embeddings"]
       FnRevenueCat["revenuecat-webhook\nPro entitlement sync handler"]
-      FnPayments["payments-webhook / receipts / subscriptions\nPayments intake, receipt generation, dunning"]
-      FnMaintenance["delete-account / strip-exif / thumbs / reconcile\nAccount anonymization & media storage maintenance"]
+      FnPayments["payments-webhook / subscriptions-charger\nPayments intake, standing-order charging"]
+      FnMaintenance["purge-deleted-accounts / strip-exif / thumbs / reconcile\nAccount purge after the grace period & media storage maintenance"]
       FnShared["_shared/\nObservability, CORS, serviceRoleGuard"]
     end
   end
@@ -258,11 +258,11 @@ KC relies on two scheduling planes: database-level `pg_cron` jobs running direct
 ### Edge Functions (by purpose)
 | Area | Functions |
 |---|---|
-| Account & auth | `delete-account`, `mock-login` (dev) |
+| Account | `purge-deleted-accounts` (daily job `account_purge`; deletion itself is the `request_account_deletion` RPC) |
 | Notifications | `dispatch-notification` |
 | Matching | `embed-worker`, `match-rerank` |
 | Media | `strip-exif`, `backfill-image-thumbs`, `reconcile-storage-orphans` |
-| Money | `payments-webhook`, `receipts-issuer`, `subscriptions-charger`, `revenuecat-webhook`, `validate-donation-link` |
+| Money | `payments-webhook`, `subscriptions-charger`, `revenuecat-webhook`, `validate-donation-link` |
 | WhatsApp | `whatsapp-intake-worker`, `whatsapp-sender`, `whatsapp-webhook` |
 | Research & i18n | `public-research-submit`, `rotate-research-salt`, `translate` |
 | Shared | `_shared/` |

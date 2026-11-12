@@ -1,111 +1,107 @@
-import { describe, expect, it, vi } from 'vitest';
-import type { CreateRideSeriesInput } from '@kc/domain';
-import { SupabaseRideSeriesRepository, mapRideSeriesRow } from '../SupabaseRideSeriesRepository';
+import { describe, expect, it } from 'vitest';
+import { BackendRuleError, BackendUnavailableError } from '@kc/domain';
+import { callsTo, createFakeClient } from '../../__tests__/fakeBaselineClient';
+import { fail, ok } from '../../posts/__tests__/cardFixtures';
+import { SupabaseRideSeriesRepository } from '../SupabaseRideSeriesRepository';
+import { HAIFA, TEL_AVIV } from './placeFixtures';
 
-type AnyClient = ConstructorParameters<typeof SupabaseRideSeriesRepository>[0];
-
-const ROW = {
-  series_id: 's1', direction: 'give', title: 'TLV → JLM', details: { seats_available: 3 },
-  depart_time: '07:30:00', weekdays: 0b11111, duration_minutes: 75, ends_on: null, status: 'active',
+const SERIES_ROW = {
+  id: 's1', status: 'active', weekdays: 31, depart_time: '07:30:00', duration_minutes: 60, ends_on: null,
+  post_template: { title: 'Commute', direction: 'offer' },
+  ride_template: { origin_city_id: 'IL-001', dest_city_id: 'IL-002', seats: 3, luggage: false, reward_model: 'free', meeting_points: [] },
 };
-const INPUT: CreateRideSeriesInput = {
-  kindId: 'k1', direction: 'give', title: 'TLV → JLM', summary: 'daily', details: { seats_available: 3 },
-  schedule: { weekdays: [0, 4], time: '07:30', endsOn: '2026-12-31' }, durationMinutes: 75,
+const KIND = { id: 'k1', slug: 'ride_offer', world_slug: 'rides', direction: 'offer', label_he: 'a', label_en: 'a', detail_schema: {} };
+const ROUTE_DETAILS = {
+  origin_place_kind: 'city', origin_place_id: 'IL-001', origin_label: 'Tel Aviv', origin_lat: 32.08, origin_lng: 34.78, origin_city_id: 'IL-001',
+  dest_place_kind: 'city', dest_place_id: 'IL-002', dest_label: 'Haifa', dest_lat: 32.79, dest_lng: 34.99, dest_city_id: 'IL-002',
+  seats_available: 3,
 };
-
-/** A fake client: `from()` yields a builder chain resolving to `select`, `rpc()` resolves to `rpc`. */
-function clientWith(select: { data?: unknown; error: { message: string } | null }, rpc: { data?: unknown; error: { message: string } | null }) {
-  const chain: Record<string, unknown> = {};
-  for (const m of ['select', 'neq', 'order']) chain[m] = vi.fn(() => chain);
-  chain.then = (resolve: (v: unknown) => unknown) => resolve(select);
-  const from = vi.fn(() => chain);
-  const rpcFn = vi.fn().mockResolvedValue(rpc);
-  return { from, chain, rpc: rpcFn, repo: new SupabaseRideSeriesRepository({ from, rpc: rpcFn } as unknown as AnyClient) };
-}
 
 describe('SupabaseRideSeriesRepository', () => {
-  it('lists my series with their schedule, leaving cancelled ones out', async () => {
-    const { from, chain, repo } = clientWith({ data: [ROW, { ...ROW, series_id: 's2', status: 'gone' }], error: null }, { error: null });
-    await expect(repo.listMine()).resolves.toEqual([{
-      id: 's1', direction: 'give', title: 'TLV → JLM', details: { seats_available: 3 },
-      schedule: { weekdays: [0, 1, 2, 3, 4], time: '07:30', endsOn: null }, durationMinutes: 75, status: 'active',
-    }]);
-    expect(from).toHaveBeenCalledWith('ride_series');
-    expect(chain.neq).toHaveBeenCalledWith('status', 'cancelled');
-  });
-
-  it('publishes a series through the RPC with the weekday mask and hands back the first ride', async () => {
-    const { rpc, repo } = clientWith({ error: null }, { data: [{ series_id: 's1', first_listing_id: 'l1' }], error: null });
-    await expect(repo.create(INPUT)).resolves.toEqual({ seriesId: 's1', firstListingId: 'l1' });
-    expect(rpc).toHaveBeenCalledWith('create_ride_series', {
-      p_kind_id: 'k1', p_title: 'TLV → JLM', p_details: { seats_available: 3 }, p_direction: 'give',
-      p_depart_time: '07:30', p_weekdays: 0b10001, p_summary: 'daily', p_duration_minutes: 75, p_ends_on: '2026-12-31',
+  it('lists the series with the template turned back into form details', async () => {
+    const { client } = createFakeClient({
+      tables: { ride_series: ok([SERIES_ROW]), cities: ok([TEL_AVIV, HAIFA]), road_junctions: ok([]), streets: ok([]) },
     });
-  });
-
-  it('throws when create_ride_series returns no row', async () => {
-    const { repo } = clientWith({ error: null }, { data: [], error: null });
-    await expect(repo.create(INPUT)).rejects.toThrow('create_ride_series returned no row');
-  });
-
-  it('throws when create_ride_series returns an error', async () => {
-    const { repo } = clientWith({ error: null }, { data: null, error: { message: 'limit reached' } });
-    await expect(repo.create(INPUT)).rejects.toThrow('limit reached');
-  });
-
-  it('changes the status and the schedule through their RPCs', async () => {
-    const { rpc, repo } = clientWith({ error: null }, { error: null });
-    await repo.setStatus('s1', 'paused');
-    expect(rpc).toHaveBeenCalledWith('set_ride_series_status', { p_series_id: 's1', p_status: 'paused' });
-    await repo.updateSchedule('s1', { weekdays: [2], time: '18:00', endsOn: null }, null);
-    expect(rpc).toHaveBeenCalledWith('update_ride_series', {
-      p_series_id: 's1', p_depart_time: '18:00', p_weekdays: 0b100, p_duration_minutes: undefined, p_ends_on: undefined,
+    const [series] = await new SupabaseRideSeriesRepository(client).listMine();
+    expect(series).toMatchObject({
+      id: 's1', direction: 'give', title: 'Commute', status: 'active', durationMinutes: 60,
+      schedule: { weekdays: [0, 1, 2, 3, 4], time: '07:30', endsOn: null },
     });
+    expect(series?.details).toMatchObject({ origin_label: 'Tel Aviv', dest_label: 'Haifa', seats_available: 3 });
+    expect(series?.details).not.toHaveProperty('departs_at');
   });
 
-  it('throws when updateSchedule returns an error', async () => {
-    const { repo } = clientWith({ error: null }, { data: null, error: { message: 'update failed' } });
+  it('creates a series from post and ride payloads without times and returns its soonest ride', async () => {
+    const { client, calls } = createFakeClient({
+      tables: { post_kinds: ok([KIND]), post_ride_details: ok({ post_id: 'p-first' }) },
+      rpc: { create_ride_series: ok('s1') },
+    });
+    const created = await new SupabaseRideSeriesRepository(client).create({
+      kindId: 'k1', direction: 'give', title: 'Commute', summary: null, details: ROUTE_DETAILS,
+      schedule: { weekdays: [0, 1], time: '07:30', endsOn: null }, durationMinutes: 45,
+    });
+    expect(created).toEqual({ seriesId: 's1', firstListingId: 'p-first' });
+    const args = callsTo(calls, 'create_ride_series')[0]?.args as Record<string, unknown> & { p_post: object; p_ride: object };
+    expect(args.p_weekdays).toBe(3);
+    expect(args.p_depart_time).toBe('07:30');
+    expect(args.p_post).toMatchObject({ world_slug: 'rides', kind_id: 'k1', direction: 'offer', title: 'Commute', city_id: 'IL-001' });
+    expect(args.p_ride).toMatchObject({ origin_city_id: 'IL-001', dest_city_id: 'IL-002', seats: 3 });
+    expect(args.p_ride).not.toHaveProperty('departs_at');
+  });
+
+  it('refuses a route without official places before calling the server', async () => {
+    const { client } = createFakeClient({ tables: { post_kinds: ok([KIND]) } });
     await expect(
-      repo.updateSchedule('s1', { weekdays: [2], time: '18:00', endsOn: null }, 60),
-    ).rejects.toThrow('update failed');
+      new SupabaseRideSeriesRepository(client).create({
+        kindId: 'k1', direction: 'give', title: 't', summary: null, details: {},
+        schedule: { weekdays: [0], time: '07:30', endsOn: null }, durationMinutes: null,
+      }),
+    ).rejects.toMatchObject({ reason: 'ride_place_invalid' });
   });
 
-  it('lists the upcoming dates of a series', async () => {
-    const { rpc, repo } = clientWith({ error: null }, {
-      data: [{ listing_id: 'l2', departs_at: '2026-11-03T05:30:00Z', seats_left: 2, passengers: null }], error: null,
+  it('lists the open upcoming occurrences, soonest first, with the free seats of each', async () => {
+    const { client, calls } = createFakeClient({
+      rpc: { post_seat_counts: ok([{ post_id: 'a', capacity: 3, seats_taken: 2, waitlisted: 0, seats_left: 1 }]) },
+      tables: {
+        post_ride_details: ok([
+          { post_id: 'a', departs_at: '2030-01-01T07:00:00Z', seats: 3, posts: { status: 'open', direction: 'offer' } },
+          { post_id: 'b', departs_at: '2030-01-02T07:00:00Z', seats: 3, posts: { status: 'closed_delivered', direction: 'offer' } },
+          { post_id: 'c', departs_at: '2030-01-03T07:00:00Z', seats: 3, posts: { status: 'open', direction: 'offer' } },
+        ]),
+      },
     });
-    await expect(repo.listOccurrences('s1')).resolves.toEqual([
-      { listingId: 'l2', departsAt: '2026-11-03T05:30:00Z', seatsLeft: 2, passengers: null },
+    expect(await new SupabaseRideSeriesRepository(client).listOccurrences('s1')).toEqual([
+      { listingId: 'a', departsAt: '2030-01-01T07:00:00Z', seatsLeft: 1, passengers: null },
+      { listingId: 'c', departsAt: '2030-01-03T07:00:00Z', seatsLeft: 3, passengers: null },
     ]);
-    expect(rpc).toHaveBeenCalledWith('list_ride_series_occurrences', { p_series_id: 's1' });
+    expect(callsTo(calls, 'post_seat_counts')[0]?.args).toEqual({ p_post_ids: ['a', 'c'] });
   });
 
-  it('throws when listOccurrences returns an error', async () => {
-    const { repo } = clientWith({ error: null }, { data: null, error: { message: 'not found' } });
-    await expect(repo.listOccurrences('s1')).rejects.toThrow('not found');
-  });
-
-  it('surfaces server errors', async () => {
-    const { repo } = clientWith({ data: null, error: { message: 'boom' } }, { data: null, error: { message: 'nope' } });
-    await expect(repo.listMine()).rejects.toThrow('boom');
-    await expect(repo.setStatus('s1', 'active')).rejects.toThrow('nope');
-  });
-
-  describe('mapRideSeriesRow edge cases', () => {
-    it('maps request direction with null details', () => {
-      const mapped = mapRideSeriesRow({
-        ...ROW,
-        direction: 'request',
-        details: null,
-      } as unknown as Parameters<typeof mapRideSeriesRow>[0]);
-
-      expect(mapped).not.toBeNull();
-      expect(mapped?.direction).toBe('request');
-      expect(mapped?.details).toEqual({});
+  it('asks no seat counts for a request series', async () => {
+    const { client, calls } = createFakeClient({
+      tables: { post_ride_details: ok([{ post_id: 'a', departs_at: '2030-01-01T07:00:00Z', seats: 2, posts: { status: 'open', direction: 'request' } }]) },
     });
+    expect(await new SupabaseRideSeriesRepository(client).listOccurrences('s1')).toEqual([
+      { listingId: 'a', departsAt: '2030-01-01T07:00:00Z', seatsLeft: null, passengers: 2 },
+    ]);
+    expect(callsTo(calls, 'post_seat_counts')).toEqual([]);
+  });
 
-    it('returns null for unknown direction', () => {
-      expect(mapRideSeriesRow({ ...ROW, direction: 'other' } as unknown as Parameters<typeof mapRideSeriesRow>[0])).toBeNull();
+  it('updates the schedule and sets the status through the RPCs', async () => {
+    const { client, calls } = createFakeClient({ rpc: { update_ride_series: ok(null), set_ride_series_status: ok(null) } });
+    const repo = new SupabaseRideSeriesRepository(client);
+    await repo.updateSchedule('s1', { weekdays: [1], time: '08:00', endsOn: '2030-06-01' }, null);
+    await repo.setStatus('s1', 'paused');
+    expect(callsTo(calls, 'update_ride_series')[0]?.args).toEqual({
+      p_series_id: 's1', p_depart_time: '08:00', p_weekdays: 2, p_duration_minutes: undefined, p_ends_on: '2030-06-01',
     });
+    expect(callsTo(calls, 'set_ride_series_status')[0]?.args).toEqual({ p_series_id: 's1', p_status: 'paused' });
+  });
+
+  it('keeps refusal reasons and reports missing objects', async () => {
+    const refused = createFakeClient({ rpc: { set_ride_series_status: fail('P0001', 'ride_series_cancelled') } });
+    await expect(new SupabaseRideSeriesRepository(refused.client).setStatus('s1', 'active')).rejects.toBeInstanceOf(BackendRuleError);
+    const missing = createFakeClient({ tables: { ride_series: fail('PGRST205', 'nope') } });
+    await expect(new SupabaseRideSeriesRepository(missing.client).listMine()).rejects.toBeInstanceOf(BackendUnavailableError);
   });
 });

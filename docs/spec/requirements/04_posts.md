@@ -70,6 +70,7 @@ The set of required fields depends on `Post.type`.
 - AC2. For `type = Request`: only `title` (≤80 chars) is required.
 - AC3. For both types: `address` (city + street + number) is required (`R-MVP-Items-13`).
 - AC4. The "Publish" control stays tappable while required fields are incomplete. Tapping it reveals validation: **address** gaps (city / street / house number) show a persistent red inline message under the address block (including feed-projection copy when street or number is missing); **other** gaps (title, Give photo) show a short Hebrew toast. Inline address errors appear only after the first Publish attempt and stay until the address validates. When all required fields validate, publish proceeds as usual. A second "Publish" control appears at the bottom of the create form for users who scroll past the header action.
+- AC5. *(D132, KC#2020)* The server enforces the photo rule for offers in items, food, housing and animals, whichever app sends them: publishing such an offer with no photo is refused (`offer_photo_required`, shown with the same copy as the form's check), and its last photo can't be removed; deleting the whole post still removes its photos. Requests, rides and other worlds stay photo-optional. Offers published before the rule stay readable and editable.
 
 **Related.** Screens: 2.4 · Domain: `Post`, `Address`.
 
@@ -466,6 +467,7 @@ The column `identity_visibility` remains in `public.post_actor_identity` for pro
 - AC5. When projection marks an identity as anonymous, post-detail must not offer a one-tap profile deep-link from that row (`ownerProfileNavigableFromPost` / `recipientProfileNavigableFromPost = false`).
 - AC6. Chat headers and profile shells remain real-user surfaces; masking applies to **post chrome** only (`D-26`).
 - AC7. **Create-time preference.** The new-post screen lets the publisher set `hide_from_counterparty` before publish. When enabled, the client upserts the owner's `post_actor_identity` row at publish time with `surface_visibility = posts.visibility` (at publish), `identity_visibility = Public`, and `hide_from_counterparty = true` (semantics per **`D-31`** — third parties on the counterparty's closed-post profile surface, not hiding from the counterparty in chat). When disabled, no row is written at create unless the user later changes closed-post surface settings from the post-detail **⋮** menu.
+- AC8. **Delivered listing (D-229, migration `0740`).** The recipient is the user on the `handed_over` `post_handoffs` row (not the `recipients` row, which food and animals did not write before `0740`). The recipient always sees the delivered post and its listing screen and can rate it, even if the owner chose `OnlyMe`, and still sees it after rating; an admin or moderator sees every delivered listing. A participant with a `Private` profile counts as `FollowersOnly` for the third-party union in AC3; the recipient's default surface is `Public`, so a guest can open a share link to a delivered `Public` listing. The listing screens delegate delivered posts to `is_post_visible_to` so the post and listing screens never diverge. Items, food and animals hand-overs record the `recipients` row (single recipient per post); knowledge, rides, housing and events keep the handoffs as the record. Deleted accounts: visibility follows the remaining party; retention of the delivered post after account purge is #2088.
 
 **Migrations.** `0083_post_actor_identity.sql`, `0085_post_actor_identity_audience_split.sql`, `0092_post_actor_identity_public_chrome.sql`, `0106_recipients_select_visible_viewers.sql`, `0107_profile_closed_posts_surface_visibility.sql`.
 
@@ -537,10 +539,35 @@ A signed-in viewer of a `Public` post that is `open` or `closed_delivered` may s
 
 **Related.** Screens: 2.3 (post detail). Domain: `Post.visibility`, `Post.status`. Cross-refs: `FR-POST-014` (viewer detail), `FR-AUTH-014` (guest entry), `TD-66` (deep-link manifests). Server: `app/apps/mobile/web-server/server.mjs`. Decision: `D-38`.
 
+## FR-POST-024 — Recurring time posts (a series of occurrences) 🟡
+> Issue #2086; PM decisions `D145`, `D146`, `D147` (2026-11-11). Rides keep their own series (FR-RIDE-046) and move onto this model later.
+
+**Description.**
+A member who volunteers on a fixed schedule (for example every Tuesday at 17:00, three places), or an organization that runs the same event every week, publishes it once as a **series** from the regular time form. The series publishes each upcoming date as an ordinary time post (an **occurrence**), and each occurrence takes its own registrations, waitlist and attendance, exactly like a single event (G18). The owner manages the whole series in one place.
+
+**Acceptance Criteria.**
+- AC1. The time form (an event, which a volunteering shift is too) has a "recurring" switch under the schedule: weekdays, a start time and duration, an optional end date. The series' time zone is the member's (Israel by default); the first date opens after publishing. Any member publishes their own event from the time form by picking "volunteering with sign-up" (`time-offer-kind-personal-event`); a member of an organization may instead pick the organization's event. ✅
+- AC2. A series publishes its dates for the coming 30 days and keeps that window filled; one date per series and day, never two, also when two runs overlap. ✅
+- AC3. Each date is an event post with its own registrations: capacity, waiting list and registration policy come from the series, and the organizer marks attendance per date; only marked attendance earns karma (D124). A person's series (regular volunteering) and an organization's follow the same rules; an organization's dates are published only while the owner may act for it. ✅
+- AC4. A local start time that does not exist on a clock-change day moves forward by the jump (02:30 → 03:30, as calendars do); a time that occurs twice takes the first. ✅
+- AC5. **Edit all**: the owner edits the series (schedule, and the title, description and capacity of its template); upcoming dates nobody registered for are replaced; a date that has registrations keeps its time and details. ✅ server; the app edits the schedule, ⏳ the template text
+- AC6. **Cancel one**: the owner cancels a single date, from the series or by deleting the date's post; its registrations are cancelled, each registrant gets a notification, and the day is not published again. ✅
+- AC7. **Pause / resume**: pausing stops publishing new dates and removes the upcoming dates nobody registered for; dates with registrations go ahead. Resuming publishes again. ✅
+- AC8. **End**: ending a series is final. Every upcoming date is cancelled, including those with registrations, and each registrant gets a notification. Past dates stay as they were. The scheduler also ends a series whose last day has passed. ✅
+- AC9. The series moves on the kernel: `active ⇄ paused → ended`; any other move is refused (`illegal_transition`). ✅
+- AC10. Not in the first version: editing a single date, and "this and the following".
+- AC11. **One card per series** (`D148`). In the main feed, a world feed and post search a series is one card: its soonest open date. The later dates are reachable from that card ("other dates"), the map and the publisher's profile. When the date in the feed ends, is paused or is cancelled, the next one steps in; a date moved to be the soonest takes the place; a date that leaves its series is an ordinary post again. The series keeps one place in the feed and takes a new one at most once in 7 days: the date that steps in inherits the place of the one before it, or is published anew when that place is a week old. The same rule holds for recurring rides (FR-RIDE-046 AC4). The rule is kept on write (triggers, with a nightly repair job), so reading a feed page costs nothing more. ✅
+- AC12. "My recurring events" is in the time world's menu (`world-hub-post-series`), next to "my shifts", and is linked from every date's post and from "my organizations". ✅
+- Server (`0021_post_series.sql`, `0022_post_series_rpcs.sql`): `post_series` (schedule + post and event templates, optional organization), `post_event_details.series_id / series_on` (one date per series and day), `kc_private.post_series_skipped_days` (cancelled days), machine `post_series`, `kc_private.series_local_instant`, `kc_private.post_series_materialize` (daily job, and on every series RPC), RPCs `create_post_series`, `update_post_series`, `set_post_series_status`, `cancel_post_series_date`. `0023_series_feed_folding.sql`: `posts.feed_folded`, `kc_private.series_refold` (one series), its triggers on `posts.status` and on the event and ride detail rows, the nightly `series_feed_refold` job, `feed_page` and the main feed index without folded dates. Tests: `supabase/tests/075_post_series.sql`, `supabase/tests/077_series_feed_folding.sql`.
+
+---
+
 ---
 
 | Version | Date | Summary |
 | ------- | ---- | ------- |
+| 0.21 | 2026-11-11 | `FR-POST-024` AC1, AC11, AC12 — a member publishes their own recurring volunteering; a series is one card in the feeds; "my recurring events" moves to the time world's menu (#2086). |
+| 0.20 | 2026-11-11 | `FR-POST-024` — recurring time posts: a series publishes occurrences that each take registrations; edit all, cancel one, pause / resume, end (#2086). |
 | 0.19 | 2026-11-07 | `FR-POST-001` AC6 — a blocked publish scrolls to the field with the problem and outlines it in red, with the message under it, instead of one message above the bottom Publish button. |
 | 0.18 | 2026-11-04 | `FR-POST-001` AC6 (#1411) — the rides form gets "from my current location" (origin) and "leave now" (departure) switches; see `FR-RIDE-003` AC6–AC7. |
 | 0.17 | 2026-11-04 | `FR-POST-001` AC6 + AC8 (KC#1741) — the create category picker is one horizontally scrolling row of chips instead of a 4x3 grid; labels, helper text and inline links in every create sub-form align to the reading-start edge in Hebrew and English. |

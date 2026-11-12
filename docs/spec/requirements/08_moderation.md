@@ -41,6 +41,7 @@ A user reports a post, another user, a comment (none in MVP UI but reserved), or
 - AC5. The target post / profile is **immediately hidden** from the reporter (client-side) regardless of whether the auto-removal threshold is reached.
 - AC6. The reporter receives a confirmation toast: *"✅ Report received. Our team will review."*
 - AC7. Duplicate reports from the same reporter on the same target within 24 hours are rejected with `DUPLICATE_REPORT` (idempotency).
+- AC8. A report the server rejects shows the cause, never only the generic error: the item is no longer available (sheet closes), the content is the reporter's own (sheet closes), or the hourly report cap is reached (sheet stays open, note kept). A failure with no such cause is sent to Sentry with its database code and keeps the generic notice (#2061).
 
 **Related.** Screens: 6.1 · Domain: `Report`.
 
@@ -63,8 +64,11 @@ A user files a support / bug / feedback report from Settings, which becomes a ch
 - AC3. The system message contains a stable internal ID that lets the Super Admin reference the thread when replying or escalating.
 - AC4. The user is dropped onto the conversation screen after submission.
 - AC5. **No** auto-removal counter increments for this kind of report (it has no content target — `R-MVP-Privacy-4a`).
+- AC6. *(#2096)* The description is at most 500 characters after trim. The form stops typing at 500 and shows the count, and the app refuses a longer one (`description_too_long`). The server half (`rpc_submit_support_issue` refuses it too, so no client can bypass it) is held by the DB schema freeze until the production baseline cut-over (#2138).
+- AC7. *(#2096)* One tap burst files one report: Send is disabled below 10 characters and while a report is being sent, and a second tap before the screen updates is ignored. A failed send (network, server) explains itself in a dialog and keeps the category and the text for another try.
+- AC8. *(#2096)* The description hint sits on the reading-start edge of the app language (right in Hebrew, left in English) on iOS, Android and web; typed text follows its own language (`FR-RESP-006` AC21). The four categories show as an even two-by-two grid.
 
-**Related.** Screens: 6.1b · Domain: `Report` (with `target_type = none`).
+**Related.** Screens: 6.1b · Domain: `Report` (with `target_type = none`) · Code: `app/settings/report-issue.tsx`, `src/components/settings/ReportIssueForm.tsx`, `src/hooks/useReportIssueSubmit.ts`, `rpc_submit_support_issue` · E2E: `tests/e2e/journeys/qa/report-issue.spec.ts`.
 
 ---
 
@@ -90,6 +94,7 @@ A user blocks another user.
    - The blocked user's posts are filtered from my feed.
    - My posts are filtered from the blocked user's feed.
 - AC5. The blocked user is never notified.
+- AC6. The confirmation appears from every entry point (feed post menu, profile menu, chat menu): the menu sheet closes first and the confirmation opens only after the sheet has finished dismissing, because iOS drops a native alert raised over a closing modal (#2062).
 
 **Related.** Screens: 6.2 · Domain: `Block`, `FollowEdge`, `FollowRequest`, `Chat`.
 

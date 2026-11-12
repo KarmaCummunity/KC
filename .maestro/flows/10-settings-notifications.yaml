@@ -8,11 +8,13 @@ tags: [settings]
 - tapOn:
     id: topbar-settings
 # The donation card at the top of settings pushes this row below the fold on a phone screen.
+# `centerElement`: the row is near the bottom, where the floating tab bar can cover it and catch the tap.
 - scrollUntilVisible:
     element:
       id: settings-row-notifications
     direction: DOWN
     timeout: 20000
+    centerElement: true
 - tapOn:
     id: settings-row-notifications
 - extendedWaitUntil:

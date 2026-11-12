@@ -14,7 +14,6 @@ export function makeLink(overrides: Partial<DonationLink> = {}): DonationLink {
     description: null,
     submittedBy: 'u_1',
     validatedAt: '2026-05-10T00:00:00.000Z',
-    hiddenAt: null,
     createdAt: '2026-05-10T00:00:00.000Z',
     reviewStatus: 'approved',
     reviewNote: null,
@@ -54,11 +53,6 @@ export class FakeDonationLinksRepository implements IDonationLinksRepository {
     this.lastUpdateInput = input;
     if (this.updateError) throw this.updateError;
     return this.updateResult;
-  }
-
-  async softHide(linkId: string): Promise<void> {
-    this.lastHideId = linkId;
-    if (this.hideError) throw this.hideError;
   }
 
   async deleteById(linkId: string): Promise<void> {

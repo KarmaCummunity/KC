@@ -18,8 +18,6 @@ import { ChatDaySeparator } from '../../src/components/chat/ChatDaySeparator';
 import { buildChatThreadRowsNewestFirst, type ChatThreadListRow } from '../../src/lib/chatThreadListRows';
 import { computeHandledIds } from '../../src/components/chat/system/handledIds';
 import { AnchoredPostCard } from '../../src/components/chat/AnchoredPostCard';
-import { AnchoredRideCard } from '../../src/components/chat/AnchoredRideCard';
-import { AnchoredListingCard } from '../../src/components/chat/AnchoredListingCard';
 import { ChatScreenOverlays } from '../../src/components/chat/ChatScreenOverlays';
 import { useChatInit } from '../../src/components/useChatInit';
 import { useChatSend } from '../../src/hooks/useChatSend';
@@ -38,6 +36,7 @@ import { pickChatImage, uploadChatImageAndSend } from '../../src/services/chatMe
 import type { MessageReactionType } from '@kc/infrastructure-supabase';
 import { webEnterToSend } from '../../src/components/chat/webEnterToSend';
 import { firstParam } from '../../src/lib/postChatPrefillDecision';
+import { resolveKeyboardAvoidingBehavior } from '../../src/lib/platform/keyboardVerticalOffset';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
 
@@ -198,7 +197,7 @@ export default function ChatScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <ChatConversationHeader
-        title={counterpart.displayName ?? t('common.deletedUser')}
+        title={counterpart.displayName ?? (chat?.isSupportThread ? t('chat.messaging.supportThreadTitle') : t('common.deletedUser'))}
         canOpenProfile={!counterpart.isDeleted && Boolean(counterpart.shareHandle)}
         shareHandle={counterpart.shareHandle ?? undefined}
         onOpenMenu={() => setMenuOpen(true)}
@@ -206,15 +205,11 @@ export default function ChatScreen() {
         peerVerificationLevel={counterpart.verificationLevel}
       />
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={resolveKeyboardAvoidingBehavior(Platform.OS)}
         style={{ flex: 1 }}
         keyboardVerticalOffset={keyboardOffset}
       >
-        {chat?.anchorRideId ? (
-          <AnchoredRideCard anchorRideId={chat.anchorRideId} />
-        ) : chat?.anchorListingId ? (
-          <AnchoredListingCard anchorListingId={chat.anchorListingId} />
-        ) : chat ? (
+        {chat ? (
           <AnchoredPostCard
             chatId={chatId}
             anchorPostId={chat.anchorPostId}

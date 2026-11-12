@@ -9,7 +9,7 @@ export const FINANCE_ENTRY_KINDS = [
 ] as const;
 export type FinanceEntryKind = (typeof FINANCE_ENTRY_KINDS)[number];
 
-export const FINANCE_ENTRY_STATUSES = ['pending', 'cleared', 'canceled'] as const;
+export const FINANCE_ENTRY_STATUSES = ['pending', 'cleared', 'cancelled'] as const;
 export type FinanceEntryStatus = (typeof FINANCE_ENTRY_STATUSES)[number];
 
 export type FinanceDirection = 'in' | 'out';
@@ -43,7 +43,6 @@ export interface FinanceEntry {
   readonly counterparty: string | null;
   readonly category: string | null;
   readonly description: string | null;
-  readonly referenceUrl: string | null;
   readonly status: FinanceEntryStatus;
   /** FR-FIN-003: the financial account the money moved through; null for legacy entries. */
   readonly accountId: string | null;
@@ -53,9 +52,16 @@ export interface FinanceEntry {
   readonly updatedAt: Date;
 }
 
+/** Keyset position after an entry: the list is ordered by occurrence time, then id, newest first. */
+export interface FinanceLedgerCursor {
+  readonly occurredAt: Date;
+  readonly entryId: string;
+}
+
 export interface FinanceLedgerPage {
   readonly rows: readonly FinanceEntry[];
-  readonly totalCount: number;
+  /** Where the next page starts; null on the last page. */
+  readonly nextCursor: FinanceLedgerCursor | null;
 }
 
 export interface FinanceSummaryRow {

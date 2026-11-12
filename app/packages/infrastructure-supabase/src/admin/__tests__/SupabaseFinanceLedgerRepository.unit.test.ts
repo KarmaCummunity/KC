@@ -1,194 +1,89 @@
-import { describe, expect, it, vi } from 'vitest';
-import type { SupabaseClient } from '@supabase/supabase-js';
-import { isFinanceLedgerError } from '@kc/domain';
-import { SupabaseFinanceLedgerRepository } from '../SupabaseFinanceLedgerRepository';
+// V2-ADMIN-MONEY-9, FR-FIN-005, FR-FIN-014 — the ledger adapter on the org-scoped baseline RPCs.
+import { describe, expect, it } from 'vitest';
+import { BackendUnavailableError, FinanceLedgerError } from '@kc/domain';
+import { callsTo, createFakeClient, type FakeClientConfig } from '../../__tests__/fakeBaselineClient';
+import { fail, ok } from '../../posts/__tests__/cardFixtures';
+import { SupabaseFinanceLedgerRepository, mapFinanceEntryRow } from '../SupabaseFinanceLedgerRepository';
 
-function mockClient(rpcImpl: (name: string, args?: unknown) => unknown): SupabaseClient {
-  return { rpc: vi.fn(rpcImpl as never) } as unknown as SupabaseClient;
-}
+const ORG = { organizations: ok({ id: 'kc-org' }) };
+type EntryRow = Parameters<typeof mapFinanceEntryRow>[0];
+const ROW: EntryRow = {
+  id: 'e1', kind: 'donation_in', direction: 'in', amount_agorot: 12345, currency: 'ILS',
+  occurred_at: '2030-01-02T10:00:00Z', account_id: 'a1', counterparty: 'Dana', category: 'donations',
+  description: '', status: 'cleared', void_reason: '', is_public: true, source: 'manual', reconciled_at: '',
+  created_at: '2030-01-02T10:00:00Z', updated_at: '2030-01-02T10:00:00Z',
+};
 
-const validRow = {
-  entry_id:     'e1',
-  kind:         'donation_in',
-  direction:    'in',
-  amount_cents: 1000,
-  currency:     'ILS',
-  occurred_at:  '2026-01-01T00:00:00.000Z',
-  counterparty: 'Donor',
-  category:     null,
-  description:  null,
-  reference_url: null,
-  status:       'cleared',
-  created_at:   '2026-01-01T00:00:00.000Z',
-  updated_at:   '2026-01-01T00:00:00.000Z',
-  total_count:  1,
+const repoOf = (rpc: FakeClientConfig['rpc'], tables: FakeClientConfig['tables'] = ORG) => {
+  const fake = createFakeClient({ rpc, tables });
+  return { ...fake, repo: new SupabaseFinanceLedgerRepository(fake.client) };
 };
 
 describe('SupabaseFinanceLedgerRepository — list', () => {
-  it('maps a row, parses amount + dates, and forwards filters', async () => {
-    const spy = vi.fn(() => ({ data: [validRow], error: null }));
-    const repo = new SupabaseFinanceLedgerRepository(mockClient(spy as never));
-    const from = new Date('2026-01-01T00:00:00.000Z');
-    const to   = new Date('2026-01-31T23:59:59.999Z');
-    const page = await repo.list({
-      direction: 'in', kind: 'donation_in', status: 'cleared',
-      fromDate: from, toDate: to, limit: 10, offset: 5,
+  it('reads the platform organization books with the filters and maps the rows', async () => {
+    const { repo, calls } = repoOf({ finance_ledger_list: ok([ROW]) });
+    const page = await repo.list({ direction: 'in', status: 'cleared', limit: 10 });
+    expect(page.rows[0]).toMatchObject({ entryId: 'e1', amountCents: 12345, accountId: 'a1', isPublic: true });
+    expect(page.nextCursor).toBeNull();
+    expect(callsTo(calls, 'organizations')[0]?.filters).toEqual([['eq', 'is_platform', true]]);
+    expect(callsTo(calls, 'finance_ledger_list')[0]?.args).toMatchObject({
+      p_org_id: 'kc-org', p_direction: 'in', p_status: 'cleared', p_limit: 10, p_after_id: undefined,
     });
-    expect(spy).toHaveBeenCalledWith('finance_ledger_list', {
-      p_direction: 'in',
-      p_kind:      'donation_in',
-      p_status:    'cleared',
-      p_from:      from.toISOString(),
-      p_to:        to.toISOString(),
-      p_limit:     10,
-      p_offset:    5,
+  });
+
+  it('gives a full page the cursor of its last row and pages after it', async () => {
+    const { repo, calls } = repoOf({ finance_ledger_list: ok([ROW, { ...ROW, id: 'e2', occurred_at: '2030-01-01T00:00:00Z' }]) });
+    const page = await repo.list({ limit: 2 });
+    expect(page.nextCursor).toEqual({ occurredAt: new Date('2030-01-01T00:00:00Z'), entryId: 'e2' });
+    await repo.list({ limit: 2, after: page.nextCursor! });
+    expect(callsTo(calls, 'finance_ledger_list')[1]?.args).toMatchObject({
+      p_after_occurred_at: '2030-01-01T00:00:00.000Z', p_after_id: 'e2',
     });
-    expect(page.totalCount).toBe(1);
-    expect(page.rows[0]?.entryId).toBe('e1');
-    expect(page.rows[0]?.amountCents).toBe(1000);
-    expect(page.rows[0]?.occurredAt).toBeInstanceOf(Date);
   });
 
-  it('drops rows with an unparseable kind/status/direction', async () => {
-    const repo = new SupabaseFinanceLedgerRepository(
-      mockClient(() => ({ data: [{ ...validRow, direction: 'sideways' }], error: null })),
-    );
-    expect((await repo.list({})).rows).toEqual([]);
+  it('drops transfers and unknown kinds', () => {
+    expect(mapFinanceEntryRow({ ...ROW, kind: 'transfer', direction: null as unknown as string })).toBeNull();
+    expect(mapFinanceEntryRow({ ...ROW, kind: 'other_in' })).toBeNull();
   });
 
-  it('parses string amount_cents and total_count', async () => {
-    const repo = new SupabaseFinanceLedgerRepository(
-      mockClient(() => ({ data: [{ ...validRow, amount_cents: '2500', total_count: '7' }], error: null })),
-    );
-    const page = await repo.list({});
-    expect(page.rows[0]?.amountCents).toBe(2500);
-    expect(page.totalCount).toBe(7);
-  });
-
-  it('returns an empty page when data is null', async () => {
-    const repo = new SupabaseFinanceLedgerRepository(
-      mockClient(() => ({ data: null, error: null })),
-    );
-    expect(await repo.list({})).toEqual({ rows: [], totalCount: 0 });
-  });
-
-  it('maps SQLSTATE 42501 to forbidden', async () => {
-    const repo = new SupabaseFinanceLedgerRepository(
-      mockClient(() => ({ data: null, error: { code: '42501', message: 'denied' } })),
-    );
-    await expect(repo.list({})).rejects.toSatisfy((e) =>
-      isFinanceLedgerError(e) && e.code === 'forbidden',
-    );
-  });
-
-  it('maps known error messages to domain codes', async () => {
-    const repo = new SupabaseFinanceLedgerRepository(
-      mockClient(() => ({ data: null, error: { message: 'invalid_amount' } })),
-    );
-    await expect(repo.list({})).rejects.toSatisfy((e) =>
-      isFinanceLedgerError(e) && e.code === 'invalid_amount',
-    );
+  it('maps refusals to finance codes and a missing function to unavailable', async () => {
+    await expect(repoOf({ finance_ledger_list: fail('42501', 'forbidden') }).repo.list({})).rejects.toMatchObject({ code: 'forbidden' });
+    await expect(repoOf({ finance_ledger_list: fail('PGRST202', 'nope') }).repo.list({})).rejects.toBeInstanceOf(BackendUnavailableError);
+    await expect(repoOf({}, { organizations: ok(null) }).repo.list({})).rejects.toMatchObject({ code: 'org_not_found' });
   });
 });
 
-describe('SupabaseFinanceLedgerRepository — summary / upsert / delete', () => {
-  it('summary forwards date range and parses cents', async () => {
-    const spy = vi.fn(() => ({
-      data: [{ currency: 'ILS', income_cents: '1000', expense_cents: 200, net_cents: '800', entry_count: 3 }],
-      error: null,
-    }));
-    const repo = new SupabaseFinanceLedgerRepository(mockClient(spy as never));
-    const from = new Date('2026-01-01T00:00:00.000Z');
-    const out = await repo.summary(from, undefined);
-    expect(spy).toHaveBeenCalledWith('finance_ledger_summary', {
-      p_from: from.toISOString(),
-      p_to:   null,
+describe('SupabaseFinanceLedgerRepository — summary, upsert, void', () => {
+  it('reads the period totals in agorot', async () => {
+    const { repo, calls } = repoOf({ finance_ledger_summary: ok([
+      { currency: 'ILS', income_agorot: 4500, expense_agorot: 300, net_agorot: 4200, entry_count: 7 },
+    ]) });
+    expect(await repo.summary(new Date('2030-01-01T00:00:00Z'))).toEqual([
+      { currency: 'ILS', incomeCents: 4500, expenseCents: 300, netCents: 4200, entryCount: 7 },
+    ]);
+    expect(callsTo(calls, 'finance_ledger_summary')[0]?.args).toEqual({
+      p_org_id: 'kc-org', p_from: '2030-01-01T00:00:00.000Z', p_to: undefined,
     });
-    expect(out[0]).toMatchObject({ currency: 'ILS', incomeCents: 1000, expenseCents: 200, netCents: 800, entryCount: 3 });
   });
 
-  it('summary returns empty when data is not an array', async () => {
-    const repo = new SupabaseFinanceLedgerRepository(
-      mockClient(() => ({ data: null, error: null })),
-    );
-    expect(await repo.summary()).toEqual([]);
+  it('writes an entry in agorot and returns its id', async () => {
+    const { repo, calls } = repoOf({ finance_ledger_upsert: ok('e9') });
+    await expect(repo.upsert({ kind: 'expense', amountCents: 2500, accountId: 'a1', isPublic: false, counterparty: null }))
+      .resolves.toBe('e9');
+    expect(callsTo(calls, 'finance_ledger_upsert')[0]?.args).toMatchObject({
+      p_org_id: 'kc-org', p_kind: 'expense', p_amount_agorot: 2500, p_account_id: 'a1', p_is_public: false, p_counterparty: undefined,
+    });
+    await expect(repoOf({ finance_ledger_upsert: ok(null) }).repo.upsert({ kind: 'expense', amountCents: 1 }))
+      .rejects.toBeInstanceOf(FinanceLedgerError);
   });
 
-  it('upsert forwards args and returns the id', async () => {
-    const spy = vi.fn(() => ({ data: 'new-id', error: null }));
-    const repo = new SupabaseFinanceLedgerRepository(mockClient(spy as never));
-    const id = await repo.upsert({ kind: 'expense', amountCents: 500, currency: 'ILS' } as never);
-    expect(id).toBe('new-id');
-    expect(spy).toHaveBeenCalledWith('finance_ledger_upsert', expect.objectContaining({
-      p_entry_id: null,
-      p_kind:     'expense',
-      p_amount_cents: 500,
-      p_currency: 'ILS',
-    }));
-  });
-
-  it('upsert maps entry_not_found from P0002 code', async () => {
-    const repo = new SupabaseFinanceLedgerRepository(
-      mockClient(() => ({ data: null, error: { code: 'P0002', message: 'gone' } })),
-    );
-    await expect(repo.upsert({ entryId: 'x' } as never)).rejects.toSatisfy((e) =>
-      isFinanceLedgerError(e) && e.code === 'entry_not_found',
-    );
-  });
-
-  it('upsert throws unknown when data is not a string', async () => {
-    const repo = new SupabaseFinanceLedgerRepository(
-      mockClient(() => ({ data: null, error: null })),
-    );
-    await expect(repo.upsert({ kind: 'expense' } as never)).rejects.toSatisfy((e) =>
-      isFinanceLedgerError(e) && e.code === 'unknown',
-    );
-  });
-
-  it('delete forwards the id', async () => {
-    const spy = vi.fn(() => ({ data: null, error: null }));
-    const repo = new SupabaseFinanceLedgerRepository(mockClient(spy as never));
+  it('voids an entry instead of deleting it', async () => {
+    const { repo, calls } = repoOf({ finance_ledger_mark: ok(null) });
     await repo.delete('e1');
-    expect(spy).toHaveBeenCalledWith('finance_ledger_delete', { p_entry_id: 'e1' });
-  });
-
-  it('delete falls back to unknown for unmapped errors', async () => {
-    const repo = new SupabaseFinanceLedgerRepository(
-      mockClient(() => ({ data: null, error: { message: 'boom' } })),
-    );
-    await expect(repo.delete('e2')).rejects.toSatisfy((e) =>
-      isFinanceLedgerError(e) && e.code === 'unknown',
-    );
-  });
-});
-
-describe('SupabaseFinanceLedgerRepository — account_id / is_public (0470)', () => {
-  it('maps the new columns', async () => {
-    const repo = new SupabaseFinanceLedgerRepository(mockClient(() => ({
-      data: [{ ...validRow, account_id: 'acc-1', is_public: false }], error: null,
-    })));
-    const row = (await repo.list({})).rows[0];
-    expect(row?.accountId).toBe('acc-1');
-    expect(row?.isPublic).toBe(false);
-  });
-
-  it('falls back to legacy-safe defaults when an older server omits them', async () => {
-    const repo = new SupabaseFinanceLedgerRepository(mockClient(() => ({ data: [validRow], error: null })));
-    const row = (await repo.list({})).rows[0];
-    expect(row?.accountId).toBeNull();
-    expect(row?.isPublic).toBe(true);
-  });
-
-  it('upsert forwards accountId and isPublic (null = keep)', async () => {
-    const spy = vi.fn(() => ({ data: 'id', error: null }));
-    const repo = new SupabaseFinanceLedgerRepository(mockClient(spy as never));
-    await repo.upsert({ kind: 'expense', amountCents: 1, accountId: 'acc-1', isPublic: false } as never);
-    expect(spy).toHaveBeenLastCalledWith('finance_ledger_upsert', expect.objectContaining({
-      p_account_id: 'acc-1', p_is_public: false,
-    }));
-    await repo.upsert({ entryId: 'e1' } as never);
-    expect(spy).toHaveBeenLastCalledWith('finance_ledger_upsert', expect.objectContaining({
-      p_account_id: null, p_is_public: null,
-    }));
+    expect(callsTo(calls, 'finance_ledger_mark')[0]?.args).toEqual({
+      p_org_id: 'kc-org', p_entry_id: 'e1', p_void_reason: 'removed_by_admin',
+    });
+    await expect(repoOf({ finance_ledger_mark: fail('P0001', 'entry_not_found') }).repo.delete('e1'))
+      .rejects.toMatchObject({ code: 'entry_not_found' });
   });
 });
