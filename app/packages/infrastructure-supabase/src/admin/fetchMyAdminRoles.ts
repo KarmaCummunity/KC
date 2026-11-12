@@ -9,9 +9,17 @@ import { parseAdminRole, type AdminRole } from '@kc/domain';
  * Shared by the admin-role and moderation adapters so the parsing lives once
  * (avoids duplicated logic — SonarCloud new-code duplication gate).
  */
-export async function fetchMyAdminRoles(client: SupabaseClient): Promise<readonly AdminRole[]> {
+export async function fetchMyAdminRoles(
+  client: SupabaseClient,
+  options: { readonly throwOnError?: boolean } = {},
+): Promise<readonly AdminRole[]> {
   const { data, error } = await client.rpc('get_my_admin_roles');
-  if (error) return [];
+  if (error) {
+    // Callers that cache the result (the admin portal gate) must see the failure, otherwise a
+    // transient error is stored as "no roles" and the portal stays hidden for the whole session.
+    if (options.throwOnError) throw error;
+    return [];
+  }
   if (!Array.isArray(data)) return [];
   const out: AdminRole[] = [];
   for (const raw of data) {

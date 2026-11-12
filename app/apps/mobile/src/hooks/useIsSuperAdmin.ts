@@ -12,9 +12,11 @@ import { useAuthStore } from '../store/authStore';
 async function fetchIsSuperAdmin(userId: string): Promise<boolean> {
   // TD-163: the `is_super_admin` column is no longer client-readable (migration
   // 0163 revoked the SELECT grant). Resolve admin status via the SECURITY
-  // DEFINER is_admin(uid) RPC. On any failure, fail closed → treat as non-admin.
+  // DEFINER is_admin(uid) RPC. The hook fails closed (non-admin) while the query has no data;
+  // the error is thrown, not returned as `false`, so a transient failure is never cached
+  // forever by `staleTime: Infinity` and the query is retried on the next mount.
   const { data, error } = await supabase.rpc('is_admin', { uid: userId });
-  if (error) return false;
+  if (error) throw error;
   return data === true;
 }
 

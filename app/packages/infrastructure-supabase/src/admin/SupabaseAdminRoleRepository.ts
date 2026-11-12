@@ -74,7 +74,7 @@ export class SupabaseAdminRoleRepository implements IAdminRoleRepository {
   constructor(private readonly client: SupabaseClient) {}
 
   async getMyRoles(): Promise<readonly AdminRole[]> {
-    return fetchMyAdminRoles(this.client);
+    return fetchMyAdminRoles(this.client, { throwOnError: true });
   }
 
   async listAdmins(includeRevoked: boolean): Promise<readonly AdminGrant[]> {
