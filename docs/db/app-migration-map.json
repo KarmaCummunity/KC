@@ -2,8 +2,8 @@
  "generatedBy": "scripts/app-migration-map.mjs",
  "totals": {
   "rpc": {
-   "objects": 177,
-   "same": 110,
+   "objects": 183,
+   "same": 116,
    "renamed": 20,
    "changed": 28,
    "removed": 0,
@@ -26,8 +26,8 @@
    "missing": 0
   },
   "channel": {
-   "objects": 6,
-   "same": 6,
+   "objects": 9,
+   "same": 9,
    "renamed": 0,
    "changed": 0,
    "removed": 0,
@@ -44,16 +44,16 @@
  },
  "launchTotals": {
   "core": {
-   "objects": 106,
-   "same": 88,
+   "objects": 112,
+   "same": 94,
    "renamed": 1,
    "changed": 17,
    "removed": 0,
    "missing": 0
   },
   "later": {
-   "objects": 94,
-   "same": 47,
+   "objects": 97,
+   "same": 50,
    "renamed": 4,
    "changed": 23,
    "removed": 0,
@@ -69,6 +69,13 @@
   }
  },
  "modules": {
+  "about": {
+   "callSites": 1,
+   "oneToOne": 1,
+   "changed": 0,
+   "removed": 0,
+   "missing": 0
+  },
   "admin": {
    "callSites": 30,
    "oneToOne": 11,
@@ -119,8 +126,8 @@
    "missing": 0
   },
   "feed": {
-   "callSites": 5,
-   "oneToOne": 5,
+   "callSites": 6,
+   "oneToOne": 6,
    "changed": 0,
    "removed": 0,
    "missing": 0
@@ -301,15 +308,15 @@
    "missing": 0
   },
   "posts": {
-   "callSites": 50,
-   "oneToOne": 34,
+   "callSites": 51,
+   "oneToOne": 35,
    "changed": 16,
    "removed": 0,
    "missing": 0
   },
   "realtime": {
-   "callSites": 1,
-   "oneToOne": 1,
+   "callSites": 2,
+   "oneToOne": 2,
    "changed": 0,
    "removed": 0,
    "missing": 0
@@ -336,8 +343,8 @@
    "missing": 0
   },
   "search": {
-   "callSites": 6,
-   "oneToOne": 1,
+   "callSites": 9,
+   "oneToOne": 4,
    "changed": 5,
    "removed": 0,
    "missing": 0
@@ -345,6 +352,13 @@
   "series": {
    "callSites": 6,
    "oneToOne": 6,
+   "changed": 0,
+   "removed": 0,
+   "missing": 0
+  },
+  "social": {
+   "callSites": 2,
+   "oneToOne": 2,
    "changed": 0,
    "removed": 0,
    "missing": 0
@@ -378,8 +392,8 @@
    "missing": 0
   },
   "users": {
-   "callSites": 33,
-   "oneToOne": 20,
+   "callSites": 34,
+   "oneToOne": 21,
    "changed": 13,
    "removed": 0,
    "missing": 0
@@ -400,7 +414,7 @@
   }
  },
  "notes": [
-  "Capabilities the baseline does not provide and the identity adapters therefore do not call (they report `BackendUnavailableError` and the screens degrade): the blocked-users list (M01, the screen shows its empty state; unblock from a profile is not reachable because `users_hide_blocked` hides it), follow suggestions (M03) and the profile completeness nudge (M04), both hidden on the suggestions screen, and the About team roster (M08, no team section).",
+  "Capabilities the baseline does not provide and the identity adapters therefore do not call (they report `BackendUnavailableError` and the screens degrade): the blocked-users list (M01, the screen shows its empty state; unblock from a profile is not reachable because `users_hide_blocked` hides it). Follow suggestions (M03), the completeness nudge (M04) and the About roster (M08) are built (migration 0031).",
   "Internal back-office tools the baseline does not provide and whose adapters therefore make no call (they report `BackendUnavailableError`; the sections are parked behind `BACK_OFFICE_TOOLS_AVAILABLE`): the admin task tracker (FR-ADMIN-018), the CRM contacts (roadmap phase 3) and the timesheets (not in the spec), formerly M19. Whether they belong in this database is a product decision.",
   "Errors: every baseline RPC raises `P0001` with a stable snake_case message (`unauthenticated` uses `42501`). Map on `error.message`, never on a SQLSTATE or on Hebrew text. Codes marked † in the tables are not referenced anywhere in the app today and need a user-visible mapping.",
   "Paging: no OFFSET anywhere. Lists take the `next_cursor` JSON of the last row (cards) or explicit `p_before_*` / `p_after_*` values; application ports that expose `offset` change to an opaque cursor.",
@@ -454,11 +468,12 @@
    "risks": "Everything depends on it and it must not change behaviour: no adapter logic changed, only its type import. CI still diffs `database.types.ts` against the old migrations until the workflow change listed in the P0 report lands.",
    "rows": [
     "table:app_flags",
+    "channel:ONLINE_PRESENCE_TOPIC = 'presence:online'",
     "channel:topic"
    ],
    "counts": {
-    "objects": 2,
-    "oneToOne": 2,
+    "objects": 3,
+    "oneToOne": 3,
     "changed": 0,
     "removed": 0,
     "missing": 0
@@ -482,13 +497,13 @@
     "survey/SupabaseUserActivityRepository.ts",
     "apps/mobile: auth gate, onboarding, settings, edit profile, avatar upload, notification badge hook, devIdentityVerification (deleted)"
    ],
-   "work": "Done in P1: the account gate, private profile, onboarding state and pending legal documents read `bootstrap_session`; `users/mapUserRow.ts` maps the public `users` row plus `user_stats` and, for the caller's own row, the `bootstrap_session` private blocks (`user_private`, `user_account`, staff roles); follows go through `follow_user`, `follow_request_decide` and `follow_request_cancel`; account deletion through `request_account_deletion` and `restore_account`; the account gate listens on `user:<id>:account`. M01, M03, M04 and M08 are hidden or empty (no call is made); the dev-only identity and onboarding helpers are gone.",
+   "work": "Done in P1: the account gate, private profile, onboarding state and pending legal documents read `bootstrap_session`; `users/mapUserRow.ts` maps the public `users` row plus `user_stats` and, for the caller's own row, the `bootstrap_session` private blocks (`user_private`, `user_account`, staff roles); follows go through `follow_user`, `follow_request_decide` and `follow_request_cancel`; account deletion through `request_account_deletion` and `restore_account`; the account gate listens on `user:<id>:account`. M01 is hidden; follow suggestions, the completeness nudge (M03, M04) and the About roster (M08) are built (migration 0031); the dev-only identity and onboarding helpers are gone.",
    "tests": [
     "vitest: auth, users, legal, blocks, social, notifications suites",
     "contract tests against a baseline database (sqlProbes, contract.integration)",
     "pgTAP 010, 011, 020, 021, 050, 051"
    ],
-   "degrade": "Nothing works before this package (no session): it is the first one after P0. The blocked-users row, follow suggestions, the completeness hint and the About team list are hidden (M01, M03, M04, M08).",
+   "degrade": "Nothing works before this package (no session): it is the first one after P0. The blocked-users row is hidden (M01).",
    "risks": "Owns `users/mapUserRow.ts`, which chat, posts and search read: it lands before P2 and P3 start. Account gate: topic `user:<id>:account` (M24).",
    "rows": [
     "rpc:bootstrap_session",
@@ -501,6 +516,9 @@
     "rpc:follow_request_decide",
     "rpc:follow_request_cancel",
     "rpc:chat_counterpart_contact",
+    "rpc:rpc_follow_suggestions",
+    "rpc:rpc_profile_completeness",
+    "rpc:about_team_profiles",
     "rpc:record_active_day",
     "table:user_private",
     "table:user_stats",
@@ -522,11 +540,12 @@
     "rpc:api_my_pro_status",
     "bucket:avatars",
     "channel:topic = `user:${userId}:notifications`",
-    "channel:topic = `user:${userId}:account`"
+    "channel:topic = `user:${userId}:account`",
+    "channel:`user:${userId}:stats`"
    ],
    "counts": {
-    "objects": 32,
-    "oneToOne": 28,
+    "objects": 36,
+    "oneToOne": 32,
     "changed": 4,
     "removed": 0,
     "missing": 0
@@ -556,6 +575,9 @@
    "degrade": "Until it lands the feed and profile tabs show their empty state and the create-post button is disabled; nothing else in the app depends on a post list. The statistics screen shows the community counters and the timeline only: its per-world block and the admin funnel are hidden (M14, M15).",
    "risks": "Largest behavioural change: cursor and card shape reach the application ports. Owns `posts/mapPostRow.ts`, read by P5. The card carries `owner_identity_masked` (M02).",
    "rows": [
+    "rpc:search_organizations",
+    "rpc:search_hashtags",
+    "rpc:search_suggested_queries",
     "table:user_stats",
     "table:users",
     "rpc:profile_closed_posts_count",
@@ -597,11 +619,13 @@
     "table:donation_links",
     "rpc:get_post_translations",
     "table:content_translations",
+    "bucket:post-images",
+    "channel:FEED_PUBLIC_TOPIC = 'feed:public'",
     "edge_function:translate"
    ],
    "counts": {
-    "objects": 42,
-    "oneToOne": 31,
+    "objects": 47,
+    "oneToOne": 36,
     "changed": 11,
     "removed": 0,
     "missing": 0
@@ -621,13 +645,13 @@
     "rides/SupabaseRidesRealtime.ts",
     "apps/mobile: chat screens, chat media, inbox and notification badge hooks"
    ],
-   "work": "Done in P3: the inbox is `chat_inbox_page`, messages are `chat_messages_page` and `send_message` (the optimistic id is `p_message_id`), a chat opens through `open_direct_chat` / `open_support_thread`, read receipts come from `chat_members.last_read_at` (the `read` broadcast), and the chat and inbox subscriptions are the private topics `chat:<id>:messages` and `user:<id>:chats`. The new-posts banner, global online presence and the rides feed updates have no baseline topic and are degraded (M24): they open nothing and report `BackendUnavailableError`.",
+   "work": "Done in P3: the inbox is `chat_inbox_page`, messages are `chat_messages_page` and `send_message` (the optimistic id is `p_message_id`), a chat opens through `open_direct_chat` / `open_support_thread`, read receipts come from `chat_members.last_read_at` (the `read` broadcast), and the chat and inbox subscriptions are the private topics `chat:<id>:messages` and `user:<id>:chats`. The new-posts banner (`feed:public`) and global online presence (`presence:online`) are built (migration 0026); the rides feed updates have no baseline topic and are degraded (M24): they open nothing and report `BackendUnavailableError`.",
    "tests": [
     "vitest: chat suites, realtime/exactTopicChannel tests",
     "pgTAP 045, 050"
    ],
    "degrade": "Before this package the chat tab shows an empty inbox and \"contact\" buttons on posts are disabled; a failed subscription is ignored (the screen refreshes on focus). After it: no green online dots, no live \"new posts\" pill, ride lists refresh on focus; the inbox preview of a system or media-only message carries no text and the counterpart verification badge is not shown in the inbox (the page RPC does not return them).",
-   "risks": "Contact phone: `chat_counterpart_contact` (M06). Optimistic send passes `p_message_id`. The baseline keeps one chat per pair, so the second chat after a personal hide (`preferNewThread`) no longer exists; a ride or listing anchor is a post anchor.",
+   "risks": "Contact phone: `chat_counterpart_contact` (M06). Optimistic send passes `p_message_id`. The baseline keeps one chat per pair; after a personal hide the member's history starts at the hide (migration 0028), so contacting again opens a clean thread for them (`preferNewThread` needs no second chat); a ride or listing anchor is a post anchor.",
    "rows": [
     "table:users",
     "rpc:chat_inbox_page",
@@ -1449,12 +1473,13 @@
    ],
    "areas": [
     "fn:strip-exif",
-    "mobile"
+    "mobile",
+    "posts"
    ],
    "callSites": [
     {
      "file": "app/apps/mobile/app/edit-post/[id].tsx",
-     "line": 42,
+     "line": 43,
      "symbol": "assetUrl",
      "area": "mobile"
     },
@@ -1499,6 +1524,12 @@
      "line": 56,
      "symbol": "listingImagePublicUrl",
      "area": "mobile"
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/posts/postMediaCopy.ts",
+     "line": 33,
+     "symbol": "copyObject",
+     "area": "posts"
     },
     {
      "file": "supabase/functions/strip-exif/index.ts",
@@ -1602,6 +1633,87 @@
    ]
   },
   {
+   "old": "`user:${userId}:stats`",
+   "kind": "channel",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "Private topic of the member (migration 0026); event `stats_changed` carries the own counters (karma, followers, following, given, received, open posts) when one changes. `useMeRealtime` patches the own-profile cache (FR-KARMA-009, M24 built).",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "topic",
+     "name": "user:<user id>:stats"
+    }
+   ],
+   "areas": [
+    "users"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/users/SupabaseUserRealtime.ts",
+     "line": 86,
+     "symbol": "SupabaseUserRealtime.subscribeToStats",
+     "area": "users"
+    }
+   ]
+  },
+  {
+   "old": "FEED_PUBLIC_TOPIC = 'feed:public'",
+   "kind": "channel",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "Private topic (migration 0026); event `new_post` with `post_id` and `owner_id` when a post becomes open and Public. The feed counts the pill and re-reads through RLS on tap (FR-FEED-009 AC2, M24 built).",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "topic",
+     "name": "feed:public"
+    }
+   ],
+   "areas": [
+    "feed"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/feed/SupabaseFeedRealtime.ts",
+     "line": 20,
+     "symbol": "SupabaseFeedRealtime.subscribeToPublicInserts",
+     "area": "feed"
+    }
+   ]
+  },
+  {
+   "old": "ONLINE_PRESENCE_TOPIC = 'presence:online'",
+   "kind": "channel",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "Presence, key = member id (migration 0026); tracking and receiving both need an active account with \"show my active status\" on, and in-chat presence follows the same rule (M24 built).",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "topic",
+     "name": "presence:online"
+    }
+   ],
+   "areas": [
+    "realtime"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/realtime/SupabaseOnlinePresence.ts",
+     "line": 29,
+     "symbol": "SupabaseOnlinePresence.start",
+     "area": "realtime"
+    }
+   ]
+  },
+  {
    "old": "topic",
    "kind": "channel",
    "status": "same",
@@ -1649,7 +1761,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/users/SupabaseUserRealtime.ts",
-     "line": 37,
+     "line": 64,
      "symbol": "SupabaseUserRealtime.subscribeToAccount",
      "area": "users"
     }
@@ -1766,6 +1878,37 @@
      "line": 90,
      "symbol": "SupabaseDonationLinksRepository.invoke",
      "area": "donations"
+    }
+   ]
+  },
+  {
+   "old": "about_team_profiles",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "The About roster: role key and the linked active member's public fields, from the service-role table `about_team_members` (migration 0031, M08 built).",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "about_team_profiles",
+     "signature": [
+      "about_team_profiles(avatar_url: string, display_name: string, role_key: string, share_handle: string, sort_order: number) → { avatar_url: string display_name: string role_key: string share_handle: string sort_order: number }[]"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "about"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/about/SupabaseAboutRepository.ts",
+     "line": 17,
+     "symbol": "SupabaseAboutRepository.listTeamMembers",
+     "area": "about"
     }
    ]
   },
@@ -4250,7 +4393,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRepository.ts",
-     "line": 61,
+     "line": 62,
      "symbol": "SupabaseChatRepository.chatCall",
      "area": "chat"
     }
@@ -4293,7 +4436,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRepository.ts",
-     "line": 97,
+     "line": 98,
      "symbol": "SupabaseChatRepository.getUnreadTotal",
      "area": "chat"
     }
@@ -4517,7 +4660,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/posts/closureMethods.ts",
-     "line": 30,
+     "line": 31,
      "symbol": "unwrapCall",
      "area": "posts"
     }
@@ -4578,7 +4721,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/posts/closureMethods.ts",
-     "line": 35,
+     "line": 36,
      "symbol": "unwrapCall",
      "area": "posts"
     },
@@ -6911,7 +7054,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRepository.ts",
-     "line": 93,
+     "line": 94,
      "symbol": "SupabaseChatRepository.markRead",
      "area": "chat"
     }
@@ -8119,7 +8262,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/posts/closureMethods.ts",
-     "line": 71,
+     "line": 72,
      "symbol": "unmarkRecipientSelf",
      "area": "posts"
     }
@@ -8351,7 +8494,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/posts/closureMethods.ts",
-     "line": 61,
+     "line": 62,
      "symbol": "reopenPost",
      "area": "posts"
     }
@@ -8975,6 +9118,41 @@
    ]
   },
   {
+   "old": "rpc_follow_suggestions",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "`p_limit` (1-30); members with a public profile the caller does not follow and has no block with, ranked by mutual follows, city and followers, with a `reason` (migration 0031, M03 built).",
+   "oldObject": {
+    "signature": [
+     "rpc_follow_suggestions(p_limit?: number) → { avatar_url: string city_name: string display_name: string followers_count: number reason: string score: number share_handle: string user_id: string verification_level: number }[]"
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "rpc_follow_suggestions",
+     "signature": [
+      "rpc_follow_suggestions(p_limit?: number) → { avatar_url: string city_name: string display_name: string followers_count: number reason: string score: number share_handle: string user_id: string verification_level: number }[]"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "social"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/social/SupabaseFollowSuggestionsRepository.ts",
+     "line": 35,
+     "symbol": "SupabaseFollowSuggestionsRepository.listSuggestions",
+     "area": "social"
+    }
+   ]
+  },
+  {
    "old": "rpc_org_transparency",
    "kind": "rpc",
    "status": "same",
@@ -9012,6 +9190,103 @@
      "line": 77,
      "symbol": "SupabaseOrgTransparencyRepository.getPublic",
      "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "rpc_profile_completeness",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "The caller's own score (0-100), `missing` parts and verification flags; another member's id is refused `forbidden` (migration 0031, M04 built).",
+   "oldObject": {
+    "signature": [
+     "rpc_profile_completeness(p_user_id?: string) → Json"
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "rpc_profile_completeness",
+     "signature": [
+      "rpc_profile_completeness(p_user_id?: string) → Json"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "social"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/social/SupabaseFollowSuggestionsRepository.ts",
+     "line": 51,
+     "symbol": "SupabaseFollowSuggestionsRepository.getProfileCompleteness",
+     "area": "social"
+    }
+   ]
+  },
+  {
+   "old": "search_hashtags",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "`p_query` (with or without `#`), `p_limit`; tags of the open posts the caller can read, most used first (migration 0031, M05 built).",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "search_hashtags",
+     "signature": [
+      "search_hashtags(p_limit?: number, p_query: string) → { tag: string use_count: number }[]"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "search"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/search/searchSocialReads.ts",
+     "line": 28,
+     "symbol": "searchTags",
+     "area": "search"
+    }
+   ]
+  },
+  {
+   "old": "search_organizations",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "`p_query` (2+ characters), `p_limit`; active organizations by name or slug (migration 0031, M05 built).",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "search_organizations",
+     "signature": [
+      "search_organizations(p_limit?: number, p_query: string) → { name: string org_id: string slug: string }[]"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "search"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/search/searchSocialReads.ts",
+     "line": 23,
+     "symbol": "searchOrgs",
+     "area": "search"
     }
    ]
   },
@@ -9057,6 +9332,37 @@
      "line": 105,
      "symbol": "fetchSearchPage",
      "area": "posts"
+    }
+   ]
+  },
+  {
+   "old": "search_suggested_queries",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "`p_limit`; the most used tags of the last 30 days, shown for an empty query (migration 0031, M05 built).",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "search_suggested_queries",
+     "signature": [
+      "search_suggested_queries(p_limit?: number) → string[]"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "search"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/search/searchSocialReads.ts",
+     "line": 33,
+     "symbol": "suggestedQueries",
+     "area": "search"
     }
    ]
   },
@@ -9162,7 +9468,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRepository.ts",
-     "line": 79,
+     "line": 80,
      "symbol": "SupabaseChatRepository.sendMessage",
      "area": "chat"
     },
@@ -10231,7 +10537,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/posts/postCardExtras.ts",
-     "line": 32,
+     "line": 36,
      "symbol": "loadChallengeIds",
      "area": "posts",
      "ops": [
@@ -10256,6 +10562,7 @@
      "columns": [
       "chat_id",
       "hidden_at",
+      "history_from",
       "joined_at",
       "last_read_at",
       "role",
@@ -10278,7 +10585,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRepository.ts",
-     "line": 154,
+     "line": 155,
      "symbol": "SupabaseChatRepository.readMarkers",
      "area": "chat",
      "ops": [
@@ -10348,7 +10655,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/posts/closureMethods.ts",
-     "line": 107,
+     "line": 110,
      "symbol": "chatPartners",
      "area": "posts",
      "ops": [
@@ -11589,7 +11896,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRepository.ts",
-     "line": 112,
+     "line": 113,
      "symbol": "SupabaseChatRepository.hasSentAnyMessage",
      "area": "chat",
      "ops": [
@@ -11944,7 +12251,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/posts/postCardExtras.ts",
-     "line": 40,
+     "line": 44,
      "symbol": "loadPurgeDeadlines",
      "area": "posts",
      "ops": [
@@ -12399,7 +12706,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/posts/postCardExtras.ts",
-     "line": 52,
+     "line": 56,
      "symbol": "loadRecipients",
      "area": "posts",
      "ops": [
@@ -12681,7 +12988,7 @@
    "launch": "core",
    "confidence": "high",
    "missing": null,
-   "note": "The exact street and number, readable and writable by the post's owner only; other members see the city.",
+   "note": "The exact street and number, readable and writable by the post's owner only (also the apartment, floor and entrance of a stay, migration 0033); other members read the part the display level shows from `posts.shown_street` / `shown_street_number` (migration 0029).",
    "oldObject": {},
    "targets": [
     {
@@ -12689,8 +12996,11 @@
      "name": "post_private_locations",
      "columns": [
       "access_notes",
+      "apartment",
       "destination_street_number",
+      "entrance_notes",
       "exact_point",
+      "floor",
       "post_id",
       "street",
       "street_number",
@@ -13145,6 +13455,8 @@
       "post_type",
       "published_at",
       "search_vector",
+      "shown_street",
+      "shown_street_number",
       "source",
       "source_language",
       "status",
@@ -13271,7 +13583,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/housing/SupabaseHousingRepository.ts",
-     "line": 164,
+     "line": 167,
      "symbol": "SupabaseHousingRepository.cityOf",
      "area": "housing",
      "ops": [
@@ -13345,7 +13657,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/posts/closureMethods.ts",
-     "line": 127,
+     "line": 130,
      "symbol": "getClosureCandidates",
      "area": "posts",
      "ops": [
@@ -13363,7 +13675,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/posts/postCardExtras.ts",
-     "line": 25,
+     "line": 27,
      "symbol": "loadPostColumns",
      "area": "posts",
      "ops": [
@@ -14712,7 +15024,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRepository.ts",
-     "line": 133,
+     "line": 134,
      "symbol": "SupabaseChatRepository.getCounterpart",
      "area": "chat",
      "ops": [
@@ -14766,7 +15078,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/posts/closureMethods.ts",
-     "line": 134,
+     "line": 137,
      "symbol": "getClosureCandidates",
      "area": "posts",
      "ops": [
@@ -14775,7 +15087,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/posts/postCardExtras.ts",
-     "line": 61,
+     "line": 65,
      "symbol": "loadRecipients",
      "area": "posts",
      "ops": [

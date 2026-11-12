@@ -91,6 +91,7 @@ Shared optional fields and their defaults.
    - `CityOnly` 🏙️
    - `CityAndStreet` 🗺️ *(default)*
    - `FullAddress` 📍
+   Other members see the address as the poster chose ({{D:street-follows-display-level}}): the street with `CityAndStreet` (the default of a new post), the street and number with `FullAddress`, the city alone with `CityOnly`. The server derives what is shown onto the post (`posts.shown_street`, `shown_street_number`, migration `0029`), so the post's own visibility decides who reads it; the exact point and arrival notes stay owner-only.
 - AC4. `visibility` is one of:
    - `Public` 🌍 *(default)*
    - `FollowersOnly` 👥 *(disabled when `User.privacy_mode = Public`)*
@@ -422,6 +423,7 @@ Address fields are validated for shape only, not against a geocoder.
    - `CityOnly` → "Tel Aviv"
    - `CityAndStreet` → "Tel Aviv · Hayarkon"
    - `FullAddress` → "Tel Aviv · Hayarkon 12A"
+   The same string is shown to every member who can see the post, not only to its owner ({{D:street-follows-display-level}}); a post without a stored street shows the city alone. ✅ (migration `0029`, `postLocationText`).
 
 **Related.** Domain: `Address`, `LocationDisplayLevel`.
 

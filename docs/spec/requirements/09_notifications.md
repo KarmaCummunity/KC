@@ -118,6 +118,7 @@ The owner of a `Private` profile receives a notification on a new follow request
 - AC1. Title: requester's `display_name`. Body: "Wants to follow you".
 - AC2. Quick actions on the OS notification (where supported): "View", "Approve", "Reject".
 - AC3. Tap (no quick action chosen) → Follow Requests screen (5.4).
+- AC4. Pushed, not only shown in the notification centre, like FR-NOTIF-007/008 (restored 2026-11-11, migration `0027`; the baseline had made the follow kinds centre-only). The social switch still turns all three off.
 
 **Related.** Domain: `Notification`, `FollowRequest`.
 
@@ -312,7 +313,7 @@ Every change to an item or food handoff (`giving_handoffs`) pushes the other sid
 - AC3b. A request the giver did not answer within its 24 h confirm window lapses; both sides are pushed `giving_handoff_expired` (D138, `0716`).
 - AC4. Marking the handoff handed over pushes the other side to rate it (`giving_handoff_completed`).
 - AC5. The side that acted is never pushed about its own action. Each recipient gets each change once (dedupe per kind, handoff and recipient).
-- AC6. The push names the other side and the listing, in Hebrew. Tapping it opens the listing's post — the one detail screen (G1 step 4c, `0562`; the same holds for every notification about a listing: food expiry, ride bookings and routes, housing stays).
+- AC6. The push names the other side and the listing, in Hebrew. Rich text (D26, migration `0027`): every notification about a post carries the post title and, for a booking, the seats, the time (Israel time) and a ride's route; the push worker and the notification centre render the same `{{postTitle}}` and `{{details}}`. Food expiry has its own kinds (`food_expiring`, `food_expired`), knowledge bookings their own wording (`knowledge_booking_*`), and a chat hidden after reports tells its members (`chat_auto_removed`). Tapping it opens the listing's post — the one detail screen (G1 step 4c, `0562`; the same holds for every notification about a listing: food expiry, ride bookings and routes, housing stays).
 - AC7. Rides and knowledge handoffs are not affected: rides keep their booking pushes (0511).
 
 **Related.** Migration `0528` · Domain `NotificationKind` · Mobile `pushRouteAllowlist` · Copy `dispatch-notification/i18n.json` + `notifications` locales · Tests `supabase/tests/0528_giving_handoff_notifications.sql`, `src/lib/notifications/__tests__/pushRouteAllowlist.test.ts`, `src/i18n/__tests__/handoffPushCopy.test.ts`.
