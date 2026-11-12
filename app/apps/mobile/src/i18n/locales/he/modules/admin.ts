@@ -11,7 +11,8 @@ import { adminOrgTreeHe } from './adminOrgTree';
 import { adminStatsHe } from './adminStats';
 import { adminSurveysHe } from './adminSurveys';
 import { adminTasksHe } from './adminTasks';
-import { adminAdminsParityHe, adminRolesParityHe } from './adminHierarchyParity';
+import { adminAdminsParityHe } from './adminAdminsParity';
+import { adminRolesParityHe } from './adminHierarchyParity';
 
 export const adminHe = {
   portalTitle: 'פורטל ניהול',

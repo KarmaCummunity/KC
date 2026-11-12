@@ -11,7 +11,8 @@ import { adminOrgTreeEn } from './adminOrgTree';
 import { adminStatsEn } from './adminStats';
 import { adminSurveysEn } from './adminSurveys';
 import { adminTasksEn } from './adminTasks';
-import { adminAdminsParityEn, adminRolesParityEn } from './adminHierarchyParity';
+import { adminAdminsParityEn } from './adminAdminsParity';
+import { adminRolesParityEn } from './adminHierarchyParity';
 
 export const adminEn = {
   portalTitle: 'Admin Portal',

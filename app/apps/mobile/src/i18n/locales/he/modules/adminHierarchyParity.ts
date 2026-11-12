@@ -3,7 +3,6 @@
 // portal did not name yet, the last-administrator refusal, the finance permissions, the reason
 // asked when a ledger entry is voided, and the super admin's change of an organization's page
 // address. Mirrored key for key in `en/modules/adminHierarchyParity.ts`.
-import { adminAdminsHe } from './adminAdmins';
 
 /** Labels of the baseline roles added to the role vocabulary (FR-ADMIN-027 AC6, FR-FIN-002). */
 export const adminRolesParityHe = {
@@ -59,20 +58,5 @@ export const orgSlugHe = {
     org_not_found: 'הארגון לא נמצא.',
     forbidden:     'רק מנהל-העל יכול לשנות כתובת של דף ארגון.',
     unknown:       'משהו השתבש. אפשר לנסות שוב.',
-  },
-};
-
-/**
- * The staff-team bundle with the additions above: the last-administrator refusal in the
- * revoke and grant/change errors, and the page-address card. Kept here so the existing
- * team module stays as it is.
- */
-export const adminAdminsParityHe = {
-  ...adminAdminsHe,
-  orgSlug: orgSlugHe,
-  revokeErrors: { ...adminAdminsHe.revokeErrors, ...orgLastAdminErrorHe },
-  grantModal: {
-    ...adminAdminsHe.grantModal,
-    errors: { ...adminAdminsHe.grantModal.errors, ...orgLastAdminErrorHe },
   },
 };
