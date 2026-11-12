@@ -11,7 +11,7 @@ KC (Karma Community) is built largely by AI agents. **Part A** is the quick entr
 | [`.claude/skills/kc-issue-to-merge/SKILL.md`](.claude/skills/kc-issue-to-merge/SKILL.md) | **Working an issue end to end**: pick, de-duplicate, claim, define, test-first, findings, PR, merge. Follow it for every task |
 | [`docs/agents/OPERATING_MODEL.md`](docs/agents/OPERATING_MODEL.md) | Roles, the issue → PR → dev → kc-dev flow, labels, auto-merge |
 | [`docs/agents/ISSUE_CLAIMS.md`](docs/agents/ISSUE_CLAIMS.md) | **Claim an issue before starting it**: skip `in-progress` issues |
-| [`docs/agents/MIGRATION_RANGES.md`](docs/agents/MIGRATION_RANGES.md) | **Claim a migration number range before writing SQL** |
+| [`docs/agents/MIGRATION_RANGES.md`](docs/agents/MIGRATION_RANGES.md) | **Migration numbering**: add `next-NN_slug.sql`; the number is assigned on merge |
 | [`docs/agents/STACK_MAP.md`](docs/agents/STACK_MAP.md) | Open stacked PRs and merge order |
 | [`docs/agents/ARCHITECTURE.md`](docs/agents/ARCHITECTURE.md) | Apps / packages / supabase / workflows map |
 | [`docs/architecture/current.md`](docs/architecture/current.md) | **Current architecture**: C4 diagrams, package boundaries, services, crons |
@@ -52,7 +52,7 @@ Store builds (TestFlight / Play internal): see [`app/apps/mobile/README.md`](app
 
 ## Migrations rule
 
-Every schema change must be a committed file in `supabase/migrations/NNNN_snake.sql` (after the D-228 cut-over `0001_baseline.sql` is frozen history; the next file is `0002_…`; the retired chain is in `supabase/migrations/archive/`), applied only via `supabase db push` / the **Deploy** workflow. **Never** use the Supabase MCP `apply_migration` tool on any KC project (dev or prod). The `CI — migration drift` workflow scans the dev ledger against the **dev** branch's files (pinned with `ref: dev`, since scheduled runs execute from `main`). See `AGENTS.md` §9 and `docs/SSOT/OPERATOR_RUNBOOK.md` → "Migration application rules".
+Every schema change must be a committed file in `supabase/migrations/`. **A PR names it `next-NN_snake_slug.sql` and never picks a number**: the post-merge workflow renames it to the next free `NNNN_snake_slug.sql` (`docs/agents/MIGRATION_RANGES.md`). Numbered files are `NNNN_snake.sql` (after the D-228 cut-over `0001_baseline.sql` is frozen history; the next file is `0002_…`; the retired chain is in `supabase/migrations/archive/`), applied only via `supabase db push` / the **Deploy** workflow. **Never** use the Supabase MCP `apply_migration` tool on any KC project (dev or prod). The `CI — migration drift` workflow scans the dev ledger against the **dev** branch's files (pinned with `ref: dev`, since scheduled runs execute from `main`). See `AGENTS.md` §9 and `docs/SSOT/OPERATOR_RUNBOOK.md` → "Migration application rules".
 
 ---
 

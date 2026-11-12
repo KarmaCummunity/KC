@@ -1892,6 +1892,16 @@ Owner rules that go with it:
 
 **Affected.** `supabase/migrations/0740_delivered_listing_visibility.sql`, `supabase/tests/0740_delivered_listing_visibility.sql`, `supabase/tests/0628_g1_visibility_on_posts.sql`, `docs/spec/requirements/04_posts.md` (FR-POST-021), `docs/agents/MIGRATION_RANGES.md`.
 
+## {{ENG:merge-time-migration-numbers}} — Migration numbers are assigned on merge, not claimed (2026-11-12)
+
+**Decision.** A PR adds `supabase/migrations/next-NN_snake_slug.sql` (`NN` orders only its own files) and never a number. After the merge into `dev`, `bump-version-on-merge.yml` runs `scripts/migration-ids.mjs assign`, which renames each pending file to the next free `NNNN_slug.sql` (after the highest existing file, never below `0050`), in the same commit as the spec IDs so CI certifies it. CI jobs that need a stack run `assign` on their throwaway checkout first; the Deploy workflow fails when a `next-*` file is still present. The claim table in `docs/agents/MIGRATION_RANGES.md` is retired.
+
+**Why.** Claimed ranges forced every PR through a hot file: one PR was renumbered three times in the merge queue (`0548` to `0590`), and each renumber re-ran CI and dequeued it (KC#1619). Spec IDs already use merge-time numbering; migrations get the same rule.
+
+**Rejected.** A placeholder inside the file name without an order prefix (a PR with dependent migrations has no order). Timestamp versions (a different ledger format from the committed chain). Keeping claims but splitting the file (still a number to guess and to collide on).
+
+**Affected.** `scripts/migration-ids.mjs` (+ test), `scripts/check-migration-chain.mjs`, `scripts/dev-up.sh`, `.github/workflows/{bump-version-on-merge,ci-backend,deploy-db}.yml`, `AGENTS.md`, `docs/agents/MIGRATION_RANGES.md`, the agent-task issue form.
+
 ## D-230 — The offer photo rule is a commit-time check on member writes (2026-11-11)
 
 **Decision.** Migration `0741` (KC#2020) enforces D132 on the server. `offer_photo_check()` runs at commit from two deferred constraint triggers, one on every new post and one on every deleted `listing_media` row, and refuses (`offer_photo_required`) an offer in items, food, housing or animals that has no `listing_media` row, no `media_assets` row and no legacy details image. The triggers queue only when `auth.uid()` is set: a trigger's `WHEN` clause is evaluated when the row changes, so system writers that clear the JWT claims (the kc-dev demo seed) are exempt, as they are from the write caps. Updates never queue the check, so offers published before the rule stay readable and editable. The items post engine creates through `create_post_with_media(p_post, p_media)`, a `SECURITY INVOKER` RPC: the caller's RLS on `posts` and `media_assets` applies exactly as it did to the two direct inserts it replaces, and the owner is always the caller.
