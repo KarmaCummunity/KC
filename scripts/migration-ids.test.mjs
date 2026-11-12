@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { AUTO_ASSIGN_FLOOR, assign, pendingErrors, planAssignments, restore } from './migration-ids.mjs';
@@ -54,6 +54,30 @@ test('assign renames on disk and restore undoes it', () => {
     restore(dir, mapFile);
     assert.ok(existsSync(join(dir, 'next-01_x.sql')));
     assert.ok(!existsSync(mapFile));
+  });
+});
+
+test('assign lists the numbered files in the production manifest and restore takes them out', () => {
+  withDir(['0001_baseline.sql', 'next-01_x.sql', 'next-02_y.sql'], (dir) => {
+    const mapFile = join(dir, 'map.json');
+    const manifest = join(dir, 'manifest.txt');
+    writeFileSync(manifest, '# approved\n0001_baseline.sql\n');
+    assign(dir, mapFile, manifest);
+    assert.equal(readFileSync(manifest, 'utf8'), '# approved\n0001_baseline.sql\n0050_x.sql\n0051_y.sql\n');
+    restore(dir, mapFile, manifest);
+    assert.equal(readFileSync(manifest, 'utf8'), '# approved\n0001_baseline.sql\n');
+  });
+});
+
+test('a name the manifest already lists is not listed twice, and a missing manifest is ignored', () => {
+  withDir(['0001_baseline.sql', 'next-01_x.sql'], (dir) => {
+    const manifest = join(dir, 'manifest.txt');
+    writeFileSync(manifest, '0001_baseline.sql\n0050_x.sql');
+    assign(dir, null, manifest);
+    assert.equal(readFileSync(manifest, 'utf8'), '0001_baseline.sql\n0050_x.sql');
+  });
+  withDir(['0001_baseline.sql', 'next-01_x.sql'], (dir) => {
+    assert.deepEqual(assign(dir, null, join(dir, 'absent.txt')), [{ from: 'next-01_x.sql', to: '0050_x.sql' }]);
   });
 });
 
