@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
-// The admin sections whose backend is parked (src/lib/parkedFeatures.ts) render the "not
-// available yet" notice instead of their screens, so a direct link never fires a refused call.
+// Admin sections and their availability switches (src/lib/parkedFeatures.ts): the back-office
+// tools (migrations 0021–0023) render their screens; the WhatsApp console, still parked, renders
+// the "not available yet" notice so a direct link never fires a refused call.
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import React from 'react';
 import { cleanup, render } from '@testing-library/react';
@@ -30,16 +31,15 @@ function renderLayout(Layout: () => React.ReactElement) {
   return render(<Layout />);
 }
 
-describe('parked back-office sections (M19)', () => {
+describe('back-office sections (FR-ADMIN-018, FR-ADMIN-032, FR-ADMIN-033)', () => {
   it.each([
-    ['tasks', AdminTasksLayout, 'admin-tasks-parked'],
-    ['crm', AdminCrmLayout, 'admin-crm-parked'],
-    ['time', AdminTimeLayout, 'admin-time-parked'],
-  ] as const)('the %s section shows the not-available notice, not its screens', (_name, Layout, testId) => {
+    ['tasks', AdminTasksLayout, 'admin-tasks-parked', 'stack'],
+    ['crm', AdminCrmLayout, 'admin-crm-parked', 'slot'],
+    ['time', AdminTimeLayout, 'admin-time-parked', 'slot'],
+  ] as const)('the %s section renders its screens, not the not-available notice', (_name, Layout, parkedId, screenId) => {
     const { getByTestId, queryByTestId } = renderLayout(Layout);
-    expect(getByTestId(testId)).toBeTruthy();
-    expect(queryByTestId('slot')).toBeNull();
-    expect(queryByTestId('stack')).toBeNull();
+    expect(getByTestId(screenId)).toBeTruthy();
+    expect(queryByTestId(parkedId)).toBeNull();
   });
 });
 
