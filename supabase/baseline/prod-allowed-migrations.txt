@@ -23,6 +23,11 @@
 0012_admin_team_roster.sql
 0013_admin_census_and_bootstrap.sql
 0014_org_slug_and_void_reason.sql
+0015_blocked_users_and_support_inbox.sql
+0016_report_case_tools.sql
+0017_report_sla_alert.sql
+0018_world_flow_stats.sql
+0019_kc_support_channels.sql
 0020_org_sec46_machine.sql
 0021_post_series.sql
 0022_post_series_rpcs.sql

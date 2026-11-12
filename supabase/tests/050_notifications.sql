@@ -82,8 +82,9 @@ update public.users set display_name = 'Member ' || right(id::text, 1);
 insert into public.blocks (blocker_id, blocked_id) values (pg_temp.id('d'), pg_temp.id('b'));
 
 -- ── Registry ────────────────────────────────────────────────────────────────
--- 76 kinds from the baseline, plus those of later migrations: task_assigned (0034).
-select is((select count(*) from kc_private.notification_kinds), 77::bigint, 'the registry holds every kind');
+-- 76 kinds from the baseline, plus those of later migrations: support_issue_received (0015),
+-- report_sla_warning (0017), task_assigned (0034).
+select is((select count(*) from kc_private.notification_kinds), 79::bigint, 'the registry holds every kind');
 select is((select title_key || '|' || bypass_quiet_hours || '|' || category from kc_private.notification_kinds
             where kind = 'ride_booking_waitlist_promoted'),
   'notifications.rideBookingWaitlistPromotedTitle|true|critical', 'a handoff kind has its camelCase keys and rules');
