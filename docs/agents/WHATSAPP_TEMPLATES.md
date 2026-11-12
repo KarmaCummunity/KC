@@ -24,7 +24,7 @@ fails the row; a broken template is never sent. Code refers to names through `TE
    name format, `_vN` suffix, he/en parity, placeholder count equals params, examples, 1024 chars,
    no leading/trailing or adjacent params, opt-out wording.
 3. `node scripts/whatsapp-templates.mjs sql`, then paste the rows into a **new** forward
-   migration (reserve the number in `MIGRATION_RANGES.md`). The upsert resets `is_approved` /
+   migration (a `next-NN_slug.sql` file; the number is assigned on merge, see `MIGRATION_RANGES.md`). The upsert resets `is_approved` /
    `meta_status` when the wording changed. The sync test points at the migration that holds the
    current seed. Update it in the same PR.
 

@@ -1,12 +1,19 @@
-# Migration range registry
+# Migration numbering
 
-> **Reset by the production baseline cut-over (D-228).** The incremental chain `0001`–`0742` was
-> replaced by one migration, `supabase/migrations/0001_baseline.sql`, assembled from
-> `supabase/schemas/` and frozen (`node scripts/assemble-baseline.mjs --check` fails when it
-> changes). The old files are history in `supabase/migrations/archive/`. **The next free number is
-> `0002`.** Later changes are forward-only `supabase/migrations/NNNN_snake.sql` files with their
-> pgTAP test in `supabase/tests/`; claim a range in the first table below. The second table is
-> the record of the retired chain and is kept for reference only.
+> **Numbers are assigned on merge (D-234).** A PR never picks a migration number, so there is nothing to claim and no hot file to conflict on.
+> Before this, each PR claimed a range here; one PR was renumbered three times in the merge queue (KC#1619).
+
+## How to add a migration
+
+1. Create `supabase/migrations/next-NN_snake_slug.sql`. `NN` (`01`-`99`) only orders the files of your own PR: `next-01_…` runs before `next-02_…`. Use a slug that says what the file does; it must be unique among pending files.
+2. Write the pgTAP test in `supabase/tests/` as usual. Do not write a number anywhere (file name, comments, docs, PR body); refer to the migration by its slug.
+3. CI numbers the files in its throwaway checkout (`node scripts/migration-ids.mjs assign`), so the stack applies and tests them under the numbers they will receive.
+4. After the merge into `dev`, `bump-version-on-merge.yml` renames each `next-NN_slug.sql` to the next free `NNNN_slug.sql` after the highest existing file (never below `0050`) lists each new name in the production manifest (`supabase/baseline/prod-allowed-migrations.txt`; a PR never edits it for a pending file), and pushes one commit that CI certifies. The Deploy workflow refuses a tree that still holds a `next-*` file.
+5. A destructive-SQL waiver in the PR body names the pending file: `Migration safety: next-01_slug.sql - reason`.
+
+Locally, `scripts/dev-up.sh` numbers your pending files for its run and puts the names back on exit. To do it by hand: `node scripts/migration-ids.mjs assign`, then `node scripts/migration-ids.mjs restore`.
+
+The numbered files of the cut-over (`0001`-`0036`) and the hand-claimed numbers `0037`-`0049` below stay as they are. Automatic numbering starts at `0050`, so a branch still holding a number below that keeps it.
 
 ## Ranges after the cut-over
 
@@ -24,7 +31,7 @@
 | 0034–0038 | `claude/parity-back-office` (inside the parity claim): `0034` admin tasks (FR-ADMIN-018), `0035` CRM contacts per organization (FR-ADMIN-032), `0036` staff timesheets (FR-ADMIN-033); `0037`–`0038` held | in progress |
 | 0039–0049 | feature-parity restore (WhatsApp and the rest), held by the parity coordinator | claimed |
 
-Next free number: `0050`.
+Hand-claimed numbers end at `0049`; later numbers are assigned on merge.
 
 ## Retired chain (before D-228)
 
