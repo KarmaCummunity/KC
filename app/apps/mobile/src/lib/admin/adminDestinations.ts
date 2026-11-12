@@ -32,7 +32,7 @@ export const ADMIN_DESTINATIONS: readonly AdminDestination[] = [
   { key: 'audit',     href: '/(admin)/audit',   icon: 'time-outline',             perm: 'audit.view_own' },
   { key: 'whatsapp',  href: '/(admin)/whatsapp', icon: 'logo-whatsapp',            perm: 'whatsapp.manage', available: WHATSAPP_BOT_AVAILABLE },
   { key: 'matching',  href: '/(admin)/matching', icon: 'git-compare-outline',      perm: 'matching.view_quality' },
-  { key: 'money',     href: '/(admin)/money',    icon: 'wallet-outline',           perm: 'money.manage' },
+  { key: 'money',     href: '/(admin)/money',    icon: 'wallet-outline',           perm: 'money.view' },
   { key: 'donationLinks', href: '/(admin)/donation-links', icon: 'link-outline',     perm: 'donation_links.review' },
   { key: 'stats',     href: '/(admin)/stats',    icon: 'stats-chart-outline',      perm: 'stats.view_platform' },
 ];

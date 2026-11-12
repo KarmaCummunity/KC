@@ -86,7 +86,19 @@ export type FinanceLedgerErrorCode =
   | 'invalid_last4'
   | 'invalid_settings'
   | 'org_not_found'
+  /** A void needs the admin's reason, 3 to 500 characters (FR-FIN-005 AC2). */
+  | 'void_reason_required'
   | 'unknown';
+
+/** Shortest and longest reason of a voided entry, after trimming (FR-FIN-005 AC2). */
+export const VOID_REASON_MIN = 3;
+export const VOID_REASON_MAX = 500;
+
+/** Whether `reason` may void an entry: 3 to 500 characters once trimmed. */
+export function isValidVoidReason(reason: string): boolean {
+  const length = reason.trim().length;
+  return length >= VOID_REASON_MIN && length <= VOID_REASON_MAX;
+}
 
 export class FinanceLedgerError extends Error {
   constructor(public readonly code: FinanceLedgerErrorCode, message?: string) {

@@ -16,11 +16,6 @@ type Client = SupabaseClient<Database>;
 type EntryRow = Database['public']['Functions']['finance_ledger_list']['Returns'][number];
 
 const DEFAULT_PAGE = 100;
-/**
- * Why an entry the admin removes is voided: the books keep every entry (FR-FIN-005 AC2) and the
- * screen asks for no reason, so the void records that it came from the admin's delete action.
- */
-const ADMIN_VOID_REASON = 'removed_by_admin';
 
 /** One entry; transfers (no direction) and kinds or states this client does not know are dropped. */
 export function mapFinanceEntryRow(row: EntryRow): FinanceEntry | null {
@@ -118,12 +113,15 @@ export class SupabaseFinanceLedgerRepository implements IFinanceLedgerRepository
     return id;
   }
 
-  /** Voids the entry: it stays in the books, leaves the default list and counts nowhere. */
-  async delete(entryId: string): Promise<void> {
+  /**
+   * Voids the entry with the admin's reason: it stays in the books, leaves the default list and
+   * counts nowhere (FR-FIN-005 AC2).
+   */
+  async delete(entryId: string, reason: string): Promise<void> {
     const orgId = await platformOrgId(this.client);
     unwrapFinance(
       'rpc:finance_ledger_mark',
-      await this.client.rpc('finance_ledger_mark', { p_org_id: orgId, p_entry_id: entryId, p_void_reason: ADMIN_VOID_REASON }),
+      await this.client.rpc('finance_ledger_mark', { p_org_id: orgId, p_entry_id: entryId, p_void_reason: reason }),
     );
   }
 }

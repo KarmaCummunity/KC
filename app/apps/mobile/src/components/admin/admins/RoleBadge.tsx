@@ -18,6 +18,13 @@ const ROLE_TOKEN: Readonly<Record<AdminRole, ColorToken>> = {
   volunteer_manager: 'roleVolunteerManager',
   org_employee:      'roleOrgEmployee',
   org_volunteer:     'roleOrgVolunteer',
+  // The baseline roles share the accent of their nearest role (no new brand colours):
+  // the platform admin that of the super admin, the finance roles those of the org's
+  // manager and employee, the legacy volunteer that of the org volunteer.
+  admin:             'roleSuperAdmin',
+  org_treasurer:     'roleOrgManager',
+  org_accountant:    'roleOrgEmployee',
+  volunteer:         'roleOrgVolunteer',
 };
 
 export interface RoleBadgeProps {
