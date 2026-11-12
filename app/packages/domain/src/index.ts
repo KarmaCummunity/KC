@@ -9,6 +9,7 @@ export * from './survey/SurveyError';
 export * from './entities';
 export * from './audit';
 export * from './posts';
+export * from './postActions';
 export * from './donations';
 export * from './value-objects';
 export * from './dateOfBirth';

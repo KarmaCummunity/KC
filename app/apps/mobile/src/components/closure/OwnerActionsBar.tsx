@@ -10,7 +10,7 @@ import { View, ActivityIndicator } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import { makeUseStyles, spacing, useTheme } from '@kc/ui';
-import type { Post } from '@kc/domain';
+import { postOwnerActions, type Post } from '@kc/domain';
 import { isPostError, type PostErrorCode } from '@kc/application';
 import { useClosureStore } from '../../store/closureStore';
 import { getReopenPostUseCase } from '../../services/postsComposition';
@@ -107,12 +107,14 @@ export function OwnerActionsBar(props: Readonly<Props>) {
     void onClosed(outcome);
   }, [closureStep, closureInitiator, resetClosure, onClosed, queryClient, ownerId]);
 
-  const isOpen = post.status === 'open';
-  const isReopenable =
-    post.status === 'closed_delivered' ||
-    (post.status === 'deleted_no_recipient' &&
-      post.deleteAfter !== null &&
-      new Date(post.deleteAfter).getTime() > Date.now());
+  // Close and reopen are moves of the post machine; the bar offers what the server accepts.
+  const actions = postOwnerActions(post.status);
+  const isOpen = actions.close;
+  // A deleted post comes back only before its purge time; a delivered one has no deadline.
+  const purgeTimePassed =
+    post.status === 'deleted_no_recipient' &&
+    (post.deleteAfter === null || new Date(post.deleteAfter).getTime() <= Date.now());
+  const isReopenable = actions.reopen && !purgeTimePassed;
 
   if (!isOpen && !isReopenable) {
     // No CTA — post is in a terminal state.
