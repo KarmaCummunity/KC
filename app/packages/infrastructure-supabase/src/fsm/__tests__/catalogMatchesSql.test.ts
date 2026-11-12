@@ -61,7 +61,8 @@ const BASELINE_MIGRATION = '0001_baseline.sql';
  */
 function readForwardMigrations(): SchemaFile[] {
   return fs.readdirSync(MIGRATIONS_DIR, { withFileTypes: true })
-    .filter((entry) => entry.isFile() && /^\d{4}_.+\.sql$/.test(entry.name) && entry.name !== BASELINE_MIGRATION)
+    // Numbered files, and the pending `next-NN_slug.sql` files of an open PR (numbered on merge).
+    .filter((entry) => entry.isFile() && /^(\d{4}|next-\d{2})_.+\.sql$/.test(entry.name) && entry.name !== BASELINE_MIGRATION)
     .map((entry) => ({
       name: `~migrations/${entry.name}`,
       sql: fs.readFileSync(path.join(MIGRATIONS_DIR, entry.name), 'utf8'),
