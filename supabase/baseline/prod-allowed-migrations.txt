@@ -44,3 +44,4 @@
 0034_back_office_admin_tasks.sql
 0035_back_office_crm.sql
 0036_back_office_timesheets.sql
+0050_community_stats_for_guests.sql
