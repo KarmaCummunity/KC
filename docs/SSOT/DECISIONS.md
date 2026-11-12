@@ -1892,7 +1892,7 @@ Owner rules that go with it:
 
 **Affected.** `supabase/migrations/0740_delivered_listing_visibility.sql`, `supabase/tests/0740_delivered_listing_visibility.sql`, `supabase/tests/0628_g1_visibility_on_posts.sql`, `docs/spec/requirements/04_posts.md` (FR-POST-021), `docs/agents/MIGRATION_RANGES.md`.
 
-## {{ENG:merge-time-migration-numbers}} — Migration numbers are assigned on merge, not claimed (2026-11-12)
+## D-234 — Migration numbers are assigned on merge, not claimed (2026-11-12)
 
 **Decision.** A PR adds `supabase/migrations/next-NN_snake_slug.sql` (`NN` orders only its own files) and never a number. After the merge into `dev`, `bump-version-on-merge.yml` runs `scripts/migration-ids.mjs assign`, which renames each pending file to the next free `NNNN_slug.sql` (after the highest existing file, never below `0050`), in the same commit as the spec IDs so CI certifies it. CI jobs that need a stack run `assign` on their throwaway checkout first; the Deploy workflow fails when a `next-*` file is still present. The claim table in `docs/agents/MIGRATION_RANGES.md` is retired.
 

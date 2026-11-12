@@ -1,6 +1,6 @@
 # Migration numbering
 
-> **Numbers are assigned on merge ({{ENG:merge-time-migration-numbers}}).** A PR never picks a migration number, so there is nothing to claim and no hot file to conflict on.
+> **Numbers are assigned on merge (D-234).** A PR never picks a migration number, so there is nothing to claim and no hot file to conflict on.
 > Before this, each PR claimed a range here; one PR was renumbered three times in the merge queue (KC#1619).
 
 ## How to add a migration
