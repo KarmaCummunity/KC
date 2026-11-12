@@ -2,10 +2,10 @@
  "generatedBy": "scripts/app-migration-map.mjs",
  "totals": {
   "rpc": {
-   "objects": 173,
-   "same": 106,
+   "objects": 195,
+   "same": 123,
    "renamed": 20,
-   "changed": 28,
+   "changed": 33,
    "removed": 0,
    "missing": 19
   },
@@ -52,10 +52,10 @@
    "missing": 0
   },
   "later": {
-   "objects": 86,
-   "same": 41,
+   "objects": 108,
+   "same": 58,
    "renamed": 4,
-   "changed": 21,
+   "changed": 26,
    "removed": 0,
    "missing": 20
   },
@@ -70,9 +70,9 @@
  },
  "modules": {
   "admin": {
-   "callSites": 30,
-   "oneToOne": 11,
-   "changed": 19,
+   "callSites": 52,
+   "oneToOne": 28,
+   "changed": 24,
    "removed": 0,
    "missing": 0
   },
@@ -387,7 +387,7 @@
  },
  "notes": [
   "Capabilities the baseline does not provide and the identity adapters therefore do not call (they report `BackendUnavailableError` and the screens degrade): the blocked-users list (M01, the screen shows its empty state; unblock from a profile is not reachable because `users_hide_blocked` hides it), follow suggestions (M03) and the profile completeness nudge (M04), both hidden on the suggestions screen, and the About team roster (M08, no team section).",
-  "Internal back-office tools the baseline does not provide and whose adapters therefore make no call (they report `BackendUnavailableError`; the sections are parked behind `BACK_OFFICE_TOOLS_AVAILABLE`): the admin task tracker (FR-ADMIN-018), the CRM contacts (roadmap phase 3) and the timesheets (not in the spec), formerly M19. Whether they belong in this database is a product decision.",
+  "The internal back-office tools (formerly M19) were rebuilt after the baseline as forward migrations: the admin task tracker (FR-ADMIN-018, `0021`), CRM contacts per organization (FR-ADMIN-032, `0022`) and staff timesheets (FR-ADMIN-033, `0023`).",
   "Errors: every baseline RPC raises `P0001` with a stable snake_case message (`unauthenticated` uses `42501`). Map on `error.message`, never on a SQLSTATE or on Hebrew text. Codes marked † in the tables are not referenced anywhere in the app today and need a user-visible mapping.",
   "Paging: no OFFSET anywhere. Lists take the `next_cursor` JSON of the last row (cards) or explicit `p_before_*` / `p_after_*` values; application ports that expose `offset` change to an opaque cursor.",
   "Money: integer agorot (`*_agorot`), never ILS floats or `*_cents` names.",
@@ -427,7 +427,7 @@
     "apps/mobile/src/services/featureFlagsComposition.ts",
     "scripts/check-rpc-contract.mjs + allowlist"
    ],
-   "work": "Done in P0 (see docs/db/app-migration-playbook.md): `database.types.ts` is the generated baseline types and `database.legacy.types.ts` a frozen copy of the old ones, imported only by the files listed in `infrastructure-supabase/src/migrationStatus/<package>.ts` (the client factory is generic: `getSupabaseClient()` is baseline-typed, `getLegacySupabaseClient()` / `legacySupabase` are the same connection typed against the old schema). `FSM_MACHINES` equals the baseline seeds (`catalogMatchesSql.test.ts` reads `supabase/schemas`); the four machines without a baseline seed sit in `LEGACY_FSM_MACHINES` until L2, L6 and L7 move. `rpc/backendUnavailable.ts` holds `isBackendObjectMissing` and `rpc/mapRpcError.ts` the P0001 mapper and `unwrapCall`; `BackendUnavailableError` and `BackendRuleError` are domain errors. UI helpers: `apps/mobile/src/lib/backendAvailability.ts` and the `backend.*` locale keys. `src/__tests__/baselineCompatibility.test.ts` fails when an unlisted file still needs the old schema or a listed file no longer does.",
+   "work": "Done in P0 (see docs/db/app-migration-playbook.md): `database.types.ts` is the generated baseline types and `database.legacy.types.ts` a frozen copy of the old ones, imported only by the files listed in `infrastructure-supabase/src/migrationStatus/<package>.ts` (the client factory is generic: `getSupabaseClient()` is baseline-typed, `getLegacySupabaseClient()` / `legacySupabase` are the same connection typed against the old schema). `FSM_MACHINES` equals the baseline seeds (`catalogMatchesSql.test.ts` reads `supabase/schemas`); the machines without a baseline seed sat in `LEGACY_FSM_MACHINES` until their modules moved (the list is gone since L6 seeded the last two in `0021` and `0023`). `rpc/backendUnavailable.ts` holds `isBackendObjectMissing` and `rpc/mapRpcError.ts` the P0001 mapper and `unwrapCall`; `BackendUnavailableError` and `BackendRuleError` are domain errors. UI helpers: `apps/mobile/src/lib/backendAvailability.ts` and the `backend.*` locale keys. `src/__tests__/baselineCompatibility.test.ts` fails when an unlisted file still needs the old schema or a listed file no longer does.",
    "tests": [
     "pnpm typecheck, pnpm test, pnpm lint from app/",
     "src/fsm/__tests__/catalogMatchesSql.test.ts against supabase/schemas",
@@ -1106,17 +1106,41 @@
     "admin/SupabaseTimesheetsRepository.ts",
     "apps/mobile: admin tasks, CRM, timesheets screens"
    ],
-   "work": "Done: nothing to migrate to (the baseline has no task tracker, CRM or timesheets, old M19). The three adapters make no call and reject with `BackendUnavailableError`; whether these internal tools belong in this database is still an open product decision.",
+   "work": "Done: rebuilt as forward migrations `0021` (tasks), `0022` (CRM per organization) and `0023` (timesheets decided by the direct manager); the three adapters call them again, with keyset paging.",
    "tests": [
-    "vitest: parkedBackOffice, parkedAdminSections"
+    "pgTAP: 099_back_office_tasks, 100_back_office_crm, 101_back_office_timesheets",
+    "vitest: SupabaseAdminTaskRepository, SupabaseCrmTimesheetsRepository, adminSectionAvailability, backOfficeDestinations"
    ],
-   "degrade": "Parked behind `BACK_OFFICE_TOOLS_AVAILABLE` (apps/mobile/src/lib/parkedFeatures.ts): the tasks nav entry and dashboard card are hidden, and the tasks, CRM and timesheets routes render the not-available notice.",
-   "risks": "Product decision, not engineering.",
-   "rows": [],
+   "degrade": "One switch per tool in apps/mobile/src/lib/parkedFeatures.ts (`ADMIN_TASKS_AVAILABLE`, `CRM_AVAILABLE`, `TIMESHEETS_AVAILABLE`, all on); a tool switched off hides its nav entry and renders the not-available notice.",
+   "risks": "None known.",
+   "rows": [
+    "rpc:admin_task_list",
+    "rpc:admin_task_detail",
+    "rpc:admin_task_open_count",
+    "rpc:admin_task_create",
+    "rpc:admin_task_update",
+    "rpc:admin_task_set_status",
+    "rpc:admin_task_assign",
+    "rpc:admin_task_add_comment",
+    "rpc:admin_task_delete",
+    "rpc:crm_my_orgs",
+    "rpc:crm_contact_list",
+    "rpc:crm_contact_count",
+    "rpc:crm_contact_upsert",
+    "rpc:crm_contact_delete",
+    "rpc:crm_contact_mark_contacted",
+    "rpc:timesheet_list",
+    "rpc:timesheet_count",
+    "rpc:timesheet_upsert",
+    "rpc:timesheet_submit",
+    "rpc:timesheet_approve",
+    "rpc:timesheet_reject",
+    "rpc:timesheet_delete"
+   ],
    "counts": {
-    "objects": 0,
-    "oneToOne": 0,
-    "changed": 0,
+    "objects": 22,
+    "oneToOne": 17,
+    "changed": 5,
     "removed": 0,
     "missing": 0
    }
@@ -2816,6 +2840,317 @@
      "line": 191,
      "symbol": "SupabaseSurveyAdminRepository.getResults",
      "area": "survey"
+    }
+   ]
+  },
+  {
+   "old": "admin_task_add_comment",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Same arguments; refusals are P0001 with the old codes (`invalid_transition`, `assignee_not_admin`, …), `forbidden` is 42501.",
+   "oldObject": {
+    "signature": [
+     "admin_task_add_comment(p_body: string, p_task_id: string) → string"
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "admin_task_add_comment",
+     "signature": [
+      "admin_task_add_comment(p_body: string, p_task_id: string) → string"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminTaskRepository.ts",
+     "line": 112,
+     "symbol": "SupabaseAdminTaskRepository.addComment",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "admin_task_assign",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Same arguments; refusals are P0001 with the old codes (`invalid_transition`, `assignee_not_admin`, …), `forbidden` is 42501.",
+   "oldObject": {
+    "signature": [
+     "admin_task_assign(p_new_assignee: string, p_task_id: string) → undefined"
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "admin_task_assign",
+     "signature": [
+      "admin_task_assign(p_new_assignee: string, p_task_id: string) → undefined"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminTaskRepository.ts",
+     "line": 104,
+     "symbol": "SupabaseAdminTaskRepository.assign",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "admin_task_create",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Same arguments; refusals are P0001 with the old codes (`invalid_transition`, `assignee_not_admin`, …), `forbidden` is 42501.",
+   "oldObject": {
+    "signature": [
+     "admin_task_create(p_assignee_id?: string, p_category?: string, p_description?: string, p_due_at?: string, p_labels?: string[], p_priority?: string, p_title: string) → string"
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "admin_task_create",
+     "signature": [
+      "admin_task_create(p_assignee_id?: string, p_category?: string, p_description?: string, p_due_at?: string, p_labels?: string[], p_priority?: string, p_title: string) → string"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminTaskRepository.ts",
+     "line": 70,
+     "symbol": "SupabaseAdminTaskRepository.create",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "admin_task_delete",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Same arguments; refusals are P0001 with the old codes (`invalid_transition`, `assignee_not_admin`, …), `forbidden` is 42501.",
+   "oldObject": {
+    "signature": [
+     "admin_task_delete(p_task_id: string) → undefined"
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "admin_task_delete",
+     "signature": [
+      "admin_task_delete(p_task_id: string) → undefined"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminTaskRepository.ts",
+     "line": 120,
+     "symbol": "SupabaseAdminTaskRepository.delete",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "admin_task_detail",
+   "kind": "rpc",
+   "status": "changed",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Returns one JSON record with `activities` (write order), or null for an unknown task.",
+   "oldObject": {
+    "signature": [
+     "admin_task_detail(p_task_id: string) → { activities: Json assignee_display_name: string assignee_id: string category: string created_at: string created_by: string created_by_display_name: string description: string due_at: string labels: string[] priority:..."
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "admin_task_detail",
+     "signature": [
+      "admin_task_detail(p_task_id: string) → Json"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminTaskRepository.ts",
+     "line": 63,
+     "symbol": "SupabaseAdminTaskRepository.getDetail",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "admin_task_list",
+   "kind": "rpc",
+   "status": "changed",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Rows are `(task jsonb, cursor jsonb)`; `p_offset` → `p_cursor` (keyset). `task_id` keeps its name inside the record; `created_by` may be null after a purge.",
+   "oldObject": {
+    "signature": [
+     "admin_task_list(p_assignee?: string, p_category?: string, p_due_from?: string, p_due_to?: string, p_label?: string, p_limit?: number, p_offset?: number, p_only_mine?: boolean, p_overdue?: boolean, p_priority?: string, p_status?: string, p_unassigned_only?: boolean) → { assignee_display_name: string assignee_id: string category: string comment_count: number created_at: string created_by: string created_by_display_name: string description: string due_at: string labels: string[] prio..."
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "admin_task_list",
+     "signature": [
+      "admin_task_list(p_assignee?: string, p_category?: string, p_cursor?: Json, p_due_from?: string, p_due_to?: string, p_label?: string, p_limit?: number, p_only_mine?: boolean, p_overdue?: boolean, p_priority?: string, p_status?: string, p_unassigned_only?: boolean) → { cursor: Json task: Json }[]"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminTaskRepository.ts",
+     "line": 41,
+     "symbol": "SupabaseAdminTaskRepository.list",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "admin_task_open_count",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "New: open and in-progress tasks for the dashboard card.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "admin_task_open_count",
+     "signature": [
+      "admin_task_open_count() → number"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminTaskRepository.ts",
+     "line": 59,
+     "symbol": "SupabaseAdminTaskRepository.openCount",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "admin_task_set_status",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Same arguments; refusals are P0001 with the old codes (`invalid_transition`, `assignee_not_admin`, …), `forbidden` is 42501.",
+   "oldObject": {
+    "signature": [
+     "admin_task_set_status(p_new_status: string, p_task_id: string) → undefined"
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "admin_task_set_status",
+     "signature": [
+      "admin_task_set_status(p_new_status: string, p_task_id: string) → undefined"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminTaskRepository.ts",
+     "line": 98,
+     "symbol": "SupabaseAdminTaskRepository.setStatus",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "admin_task_update",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Same arguments; refusals are P0001 with the old codes (`invalid_transition`, `assignee_not_admin`, …), `forbidden` is 42501.",
+   "oldObject": {
+    "signature": [
+     "admin_task_update(p_category?: string, p_clear_due?: boolean, p_description?: string, p_due_at?: string, p_labels?: string[], p_priority?: string, p_task_id: string, p_title?: string) → undefined"
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "admin_task_update",
+     "signature": [
+      "admin_task_update(p_category?: string, p_clear_due?: boolean, p_description?: string, p_due_at?: string, p_labels?: string[], p_priority?: string, p_task_id: string, p_title?: string) → undefined"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminTaskRepository.ts",
+     "line": 84,
+     "symbol": "SupabaseAdminTaskRepository.update",
+     "area": "admin"
     }
    ]
   },
@@ -5091,6 +5426,208 @@
      "line": 75,
      "symbol": "SupabasePaymentsRepository.createStandingOrder",
      "area": "payments"
+    }
+   ]
+  },
+  {
+   "old": "crm_contact_count",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "New: the total of the list filters.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "crm_contact_count",
+     "signature": [
+      "crm_contact_count(p_org_id: string, p_query?: string, p_status?: string, p_tag?: string) → number"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseCrmContactsRepository.ts",
+     "line": 91,
+     "symbol": "SupabaseCrmContactsRepository.list",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "crm_contact_delete",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Same arguments; the caller must manage the contact's organization.",
+   "oldObject": {
+    "signature": [
+     "crm_contact_delete(p_contact_id: string) → undefined"
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "crm_contact_delete",
+     "signature": [
+      "crm_contact_delete(p_contact_id: string) → undefined"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseCrmContactsRepository.ts",
+     "line": 115,
+     "symbol": "SupabaseCrmContactsRepository.delete",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "crm_contact_list",
+   "kind": "rpc",
+   "status": "changed",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "New `p_org_id`; rows are `(contact jsonb, cursor jsonb)`; the total moves to `crm_contact_count`.",
+   "oldObject": {
+    "signature": [
+     "crm_contact_list(p_limit?: number, p_offset?: number, p_query?: string, p_status?: string, p_tag?: string) → { contact_id: string created_at: string email: string last_contacted_at: string name: string notes: string organization: string phone: string role_title: string status: string tags: string[] total_count: number update..."
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "crm_contact_list",
+     "signature": [
+      "crm_contact_list(p_cursor?: Json, p_limit?: number, p_org_id: string, p_query?: string, p_status?: string, p_tag?: string) → { contact: Json cursor: Json }[]"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseCrmContactsRepository.ts",
+     "line": 90,
+     "symbol": "SupabaseCrmContactsRepository.list",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "crm_contact_mark_contacted",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Same arguments; the caller must manage the contact's organization.",
+   "oldObject": {
+    "signature": [
+     "crm_contact_mark_contacted(p_contact_id: string) → undefined"
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "crm_contact_mark_contacted",
+     "signature": [
+      "crm_contact_mark_contacted(p_contact_id: string) → undefined"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseCrmContactsRepository.ts",
+     "line": 119,
+     "symbol": "SupabaseCrmContactsRepository.markContacted",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "crm_contact_upsert",
+   "kind": "rpc",
+   "status": "changed",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "New `p_org_id`; new refusals `invalid_email`, `invalid_phone`, `invalid_input`.",
+   "oldObject": {
+    "signature": [
+     "crm_contact_upsert(p_contact_id?: string, p_email?: string, p_name?: string, p_notes?: string, p_organization?: string, p_phone?: string, p_role_title?: string, p_status?: string, p_tags?: string[]) → string"
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "crm_contact_upsert",
+     "signature": [
+      "crm_contact_upsert(p_contact_id?: string, p_email?: string, p_name?: string, p_notes?: string, p_org_id: string, p_organization?: string, p_phone?: string, p_role_title?: string, p_status?: string, p_tags?: string[]) → string"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseCrmContactsRepository.ts",
+     "line": 98,
+     "symbol": "SupabaseCrmContactsRepository.upsert",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "crm_my_orgs",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "New: the organizations whose contact book the caller manages (FR-ADMIN-032).",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "crm_my_orgs",
+     "signature": [
+      "crm_my_orgs(is_platform: boolean, name: string, org_id: string) → { is_platform: boolean name: string org_id: string }[]"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseCrmContactsRepository.ts",
+     "line": 77,
+     "symbol": "SupabaseCrmContactsRepository.listOrgs",
+     "area": "admin"
     }
    ]
   },
@@ -9594,6 +10131,247 @@
      "line": 26,
      "symbol": "submit",
      "area": "fn:public-research-submit"
+    }
+   ]
+  },
+  {
+   "old": "timesheet_approve",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Same arguments; a decision is the reporter's direct manager's or a super admin's, never the reporter's own.",
+   "oldObject": {
+    "signature": [
+     "timesheet_approve(p_entry_id: string, p_note?: string) → undefined"
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "timesheet_approve",
+     "signature": [
+      "timesheet_approve(p_entry_id: string, p_note?: string) → undefined"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseTimesheetsRepository.ts",
+     "line": 112,
+     "symbol": "SupabaseTimesheetsRepository.approve",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "timesheet_count",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "New: the total of the list filters.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "timesheet_count",
+     "signature": [
+      "timesheet_count(p_from?: string, p_scope?: string, p_status?: string, p_to?: string, p_user_id?: string) → number"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseTimesheetsRepository.ts",
+     "line": 89,
+     "symbol": "SupabaseTimesheetsRepository.list",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "timesheet_delete",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Same arguments; a decision is the reporter's direct manager's or a super admin's, never the reporter's own.",
+   "oldObject": {
+    "signature": [
+     "timesheet_delete(p_entry_id: string) → undefined"
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "timesheet_delete",
+     "signature": [
+      "timesheet_delete(p_entry_id: string) → undefined"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseTimesheetsRepository.ts",
+     "line": 120,
+     "symbol": "SupabaseTimesheetsRepository.delete",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "timesheet_list",
+   "kind": "rpc",
+   "status": "changed",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "New `p_scope` (mine, to_decide, all); rows are `(entry jsonb, cursor jsonb)` with `can_decide`; the total moves to `timesheet_count`.",
+   "oldObject": {
+    "signature": [
+     "timesheet_list(p_from?: string, p_limit?: number, p_offset?: number, p_status?: string, p_to?: string, p_user_id?: string) → { approval_note: string approved_at: string approved_by: string approver_name: string created_at: string description: string entry_id: string hours_x100: number project: string status: string submitted_at: string tota..."
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "timesheet_list",
+     "signature": [
+      "timesheet_list(p_cursor?: Json, p_from?: string, p_limit?: number, p_scope?: string, p_status?: string, p_to?: string, p_user_id?: string) → { cursor: Json entry: Json }[]"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseTimesheetsRepository.ts",
+     "line": 88,
+     "symbol": "SupabaseTimesheetsRepository.list",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "timesheet_reject",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Same arguments; a decision is the reporter's direct manager's or a super admin's, never the reporter's own.",
+   "oldObject": {
+    "signature": [
+     "timesheet_reject(p_entry_id: string, p_note?: string) → undefined"
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "timesheet_reject",
+     "signature": [
+      "timesheet_reject(p_entry_id: string, p_note?: string) → undefined"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseTimesheetsRepository.ts",
+     "line": 116,
+     "symbol": "SupabaseTimesheetsRepository.reject",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "timesheet_submit",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Same arguments; a decision is the reporter's direct manager's or a super admin's, never the reporter's own.",
+   "oldObject": {
+    "signature": [
+     "timesheet_submit(p_entry_id: string) → undefined"
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "timesheet_submit",
+     "signature": [
+      "timesheet_submit(p_entry_id: string) → undefined"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseTimesheetsRepository.ts",
+     "line": 108,
+     "symbol": "SupabaseTimesheetsRepository.submit",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "timesheet_upsert",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Same arguments; a decision is the reporter's direct manager's or a super admin's, never the reporter's own.",
+   "oldObject": {
+    "signature": [
+     "timesheet_upsert(p_description?: string, p_entry_id?: string, p_hours_x100?: number, p_project?: string, p_work_date?: string) → string"
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "timesheet_upsert",
+     "signature": [
+      "timesheet_upsert(p_description?: string, p_entry_id?: string, p_hours_x100?: number, p_project?: string, p_work_date?: string) → string"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseTimesheetsRepository.ts",
+     "line": 96,
+     "symbol": "SupabaseTimesheetsRepository.upsert",
+     "area": "admin"
     }
    ]
   },
