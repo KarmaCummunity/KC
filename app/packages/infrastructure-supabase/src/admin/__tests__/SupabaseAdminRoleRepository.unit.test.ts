@@ -12,17 +12,21 @@ function repoWith(options: Parameters<typeof fakeStaffClient>[0] = {}) {
   return { ...fake, repo: new SupabaseAdminRoleRepository(fake.client) };
 }
 
-const grantRow = (over: Record<string, unknown> = {}) => ({
-  id: 'g1',
+/** One `admin_list_admins` row (migration 0012). */
+const rosterRow = (over: Record<string, unknown> = {}) => ({
+  grant_id: 'g1',
   user_id: 'u1',
+  display_name: 'Alice',
+  avatar_url: 'a.png',
   role: 'moderator',
   scope_org_id: null,
-  is_platform: true,
   manager_grant_id: null,
-  granted_by: 'super-1',
   granted_at: '2026-01-01T00:00:00.000Z',
+  granted_by: 'super-1',
+  granted_by_display_name: 'Root',
   revoked_at: null,
   revoked_by: null,
+  last_seen_at: '2026-03-02T10:00:00.000Z',
   ...over,
 });
 
@@ -87,6 +91,7 @@ describe('SupabaseAdminRoleRepository — role RPCs', () => {
     ['grant_not_found', 'P0001'],
     ['grant_already_revoked', 'P0001'],
     ['forbidden_revoke', '42501'],
+    ['org_last_admin', 'P0001'],
   ])('revokeRole maps %s', async (message, sqlstate) => {
     const { repo } = repoWith({ rpc: { admin_revoke_role: refuse(message, sqlstate) } });
 
@@ -112,73 +117,65 @@ describe('SupabaseAdminRoleRepository — role RPCs', () => {
   });
 });
 
-describe('SupabaseAdminRoleRepository — listAdmins (direct staff read)', () => {
-  const people = [
-    { id: 'u1', display_name: 'Alice', avatar_url: 'a.png' },
-    { id: 'super-1', display_name: 'Root', avatar_url: null },
-  ];
-
-  it('reads active grants joined to member names, and parses timestamps', async () => {
-    const { repo, chains } = repoWith({
-      tables: { admin_role_grants: ok([grantRow()]), users: ok(people) },
-    });
+describe('SupabaseAdminRoleRepository — listAdmins (admin_list_admins)', () => {
+  it('reads the roster with names, scope, manager and last seen, and parses timestamps', async () => {
+    const { repo, rpcCalls } = repoWith({ rpc: { admin_list_admins: ok([rosterRow()]) } });
 
     const out = await repo.listAdmins(false);
 
+    expect(rpcCalls).toEqual([{ name: 'admin_list_admins', args: { p_include_revoked: false } }]);
     expect(out).toHaveLength(1);
     expect(out[0]).toMatchObject({
       grantId: 'g1', userId: 'u1', role: 'moderator', displayName: 'Alice', avatarUrl: 'a.png',
-      scopeOrgId: null, grantedByDisplayName: 'Root', revokedAt: null, lastSeenAt: null,
+      scopeOrgId: null, grantedByDisplayName: 'Root', revokedAt: null,
     });
     expect(out[0]?.grantedAt).toBeInstanceOf(Date);
-    const grants = chains.find((c) => c.table === 'admin_role_grants');
-    expect(grants?.calls).toEqual(expect.arrayContaining([['is', ['revoked_at', null]]]));
-    const users = chains.find((c) => c.table === 'users');
-    expect(users?.calls).toEqual(expect.arrayContaining([['in', ['id', ['u1', 'super-1']]]]));
+    expect(out[0]?.lastSeenAt?.toISOString()).toBe('2026-03-02T10:00:00.000Z');
   });
 
-  it('includes revoked grants (no revoked_at filter) when asked', async () => {
-    const { repo, chains } = repoWith({
-      tables: { admin_role_grants: ok([grantRow({ revoked_at: '2026-02-01T00:00:00.000Z', revoked_by: 'super-1' })]), users: ok(people) },
-    });
+  it('asks for revoked grants when the toggle is on, and keeps the revocation time', async () => {
+    const revoked = rosterRow({ revoked_at: '2026-02-01T00:00:00.000Z', revoked_by: 'super-1', last_seen_at: null });
+    const { repo, rpcCalls } = repoWith({ rpc: { admin_list_admins: ok([revoked]) } });
 
     const out = await repo.listAdmins(true);
 
+    expect(rpcCalls[0]?.args).toEqual({ p_include_revoked: true });
     expect(out[0]?.revokedAt).toBeInstanceOf(Date);
-    expect(chains[0]?.calls.some(([m]) => m === 'is')).toBe(false);
+    expect(out[0]?.lastSeenAt).toBeNull();
   });
 
-  it('maps the grant scope', async () => {
-    const { repo } = repoWith({
-      tables: { admin_role_grants: ok([grantRow({ role: 'org_admin', scope_org_id: 'org-a', is_platform: false })]), users: ok(people) },
-    });
+  it('keeps every baseline role and the grant scope', async () => {
+    const rows = ['admin', 'org_treasurer', 'org_accountant', 'volunteer']
+      .map((role, i) => rosterRow({ grant_id: `g${i}`, role, scope_org_id: role === 'admin' ? null : 'org-a' }));
+    const { repo } = repoWith({ rpc: { admin_list_admins: ok(rows) } });
 
-    expect((await repo.listAdmins(false))[0]?.scopeOrgId).toBe('org-a');
+    const out = await repo.listAdmins(false);
+
+    expect(out.map((g) => g.role)).toEqual(['admin', 'org_treasurer', 'org_accountant', 'volunteer']);
+    expect(out[1]?.scopeOrgId).toBe('org-a');
   });
 
-  it('drops rows with an unparseable role', async () => {
-    const { repo } = repoWith({
-      tables: { admin_role_grants: ok([grantRow({ role: 'not_a_real_role' })]), users: ok(people) },
-    });
+  it('drops rows with an unparseable role and reads nothing else', async () => {
+    const { repo, chains } = repoWith({ rpc: { admin_list_admins: ok([rosterRow({ role: 'not_a_real_role' })]) } });
 
     expect(await repo.listAdmins(false)).toEqual([]);
+    expect(chains).toEqual([]);
   });
 
-  it('returns an empty list for no grants, without reading users', async () => {
-    const { repo, chains } = repoWith({ tables: { admin_role_grants: ok(null) } });
+  it('returns an empty list for no rows', async () => {
+    const { repo } = repoWith({ rpc: { admin_list_admins: ok(null) } });
 
     expect(await repo.listAdmins(false)).toEqual([]);
-    expect(chains.map((c) => c.table)).toEqual(['admin_role_grants']);
   });
 
   it('maps a refusal to forbidden', async () => {
-    const { repo } = repoWith({ tables: { admin_role_grants: refuse('permission denied', '42501') } });
+    const { repo } = repoWith({ rpc: { admin_list_admins: refuse('forbidden', '42501') } });
 
     await expect(repo.listAdmins(false)).rejects.toMatchObject({ code: 'forbidden' });
   });
 
-  it('degrades to BackendUnavailableError when the table is not deployed', async () => {
-    const { repo } = repoWith({ tables: { admin_role_grants: refuse("Could not find the table 'public.admin_role_grants'", 'PGRST205') } });
+  it('degrades to BackendUnavailableError when the function is not deployed', async () => {
+    const { repo } = repoWith({ rpc: { admin_list_admins: refuse('Could not find the function', 'PGRST202') } });
 
     await expect(repo.listAdmins(false)).rejects.toBeInstanceOf(BackendUnavailableError);
   });
