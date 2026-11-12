@@ -176,7 +176,7 @@ select is(pg_temp.stats(2), '0/0/0', 'a deletion is counted once');
 select throws_ok($$update public.post_comments set status = 'deleted' where body like 'thanks%'$$,
   'P0001', 'forbidden_role', 'a comment is not deleted without a role');
 select throws_ok($$select pg_temp.as_role('author', 'update public.post_comments set status = ''active''')$$,
-  'P0001', 'illegal_transition', 'a deleted comment is never restored');
+  'P0001', 'forbidden_role', 'its author never restores a deleted comment (only staff, 0016)');
 select throws_ok($$select pg_temp.as_role('admin', 'update public.post_comments set status = ''hidden''')$$,
   'P0001', 'unknown_state', 'an unknown comment status is refused');
 

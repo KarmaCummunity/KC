@@ -17,7 +17,8 @@ export type NotificationPathname =
   | '/settings/follow-requests'
   | '/settings/audit'
   | '/account-blocked'
-  | '/matches';
+  | '/matches'
+  | '/(admin)/reports';
 
 export type ResolvedRoute = { pathname: NotificationPathname; params: Record<string, string> };
 
@@ -131,6 +132,11 @@ export const NOTIFICATION_ROUTES: Record<NotificationKind, RouteBuilder> = {
   post_removed: post,
   post_restored: post,
   moderation_review_needed: inbox,
+  // FR-ADMIN-012 AC6 — a case waiting past the SLA warning time opens the reports inbox, oldest
+  // case first with its warning badge (route params carry ids only, never a "type:id" case key).
+  report_sla_warning: screen('/(admin)/reports'),
+  // FR-MOD-002 — a new support issue; the centre until the app has a staff support inbox.
+  support_issue_received: inbox,
   // World notices (70_worlds).
   ride_route_match: post,
   post_emergency: post,
