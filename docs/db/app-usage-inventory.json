@@ -20,11 +20,11 @@
    "distinct": 3
   },
   "rpc": {
-   "callSites": 242,
-   "distinct": 215
+   "callSites": 246,
+   "distinct": 219
   },
   "table": {
-   "callSites": 193,
+   "callSites": 187,
    "distinct": 64
   }
  },
@@ -264,33 +264,18 @@
    "name": "posts"
   },
   {
-   "kind": "table",
+   "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminRoleRepository.ts",
-   "line": 100,
+   "line": 94,
    "area": "admin",
    "symbol": "SupabaseAdminRoleRepository.listAdmins",
    "via": "literal",
-   "ops": [
-    "select"
-   ],
-   "name": "admin_role_grants"
-  },
-  {
-   "kind": "table",
-   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminRoleRepository.ts",
-   "line": 120,
-   "area": "admin",
-   "symbol": "SupabaseAdminRoleRepository.loadPeople",
-   "via": "literal",
-   "ops": [
-    "select"
-   ],
-   "name": "users"
+   "name": "admin_list_admins"
   },
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminRoleRepository.ts",
-   "line": 130,
+   "line": 107,
    "area": "admin",
    "symbol": "SupabaseAdminRoleRepository.grantRole",
    "via": "literal",
@@ -299,7 +284,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminRoleRepository.ts",
-   "line": 143,
+   "line": 120,
    "area": "admin",
    "symbol": "SupabaseAdminRoleRepository.revokeRole",
    "via": "literal",
@@ -308,7 +293,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminRoleRepository.ts",
-   "line": 148,
+   "line": 125,
    "area": "admin",
    "symbol": "SupabaseAdminRoleRepository.changeRole",
    "via": "literal",
@@ -479,7 +464,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/admin/SupabaseFinanceLedgerRepository.ts",
-   "line": 62,
+   "line": 57,
    "area": "admin",
    "symbol": "SupabaseFinanceLedgerRepository.list",
    "via": "literal",
@@ -488,7 +473,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/admin/SupabaseFinanceLedgerRepository.ts",
-   "line": 84,
+   "line": 79,
    "area": "admin",
    "symbol": "SupabaseFinanceLedgerRepository.summary",
    "via": "literal",
@@ -497,7 +482,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/admin/SupabaseFinanceLedgerRepository.ts",
-   "line": 103,
+   "line": 98,
    "area": "admin",
    "symbol": "SupabaseFinanceLedgerRepository.upsert",
    "via": "literal",
@@ -506,7 +491,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/admin/SupabaseFinanceLedgerRepository.ts",
-   "line": 126,
+   "line": 124,
    "area": "admin",
    "symbol": "SupabaseFinanceLedgerRepository.unwrapFinance",
    "via": "literal",
@@ -555,61 +540,40 @@
    "name": "admin_org_application_reject"
   },
   {
-   "kind": "table",
+   "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/admin/SupabaseOrgHierarchyRepository.ts",
-   "line": 88,
+   "line": 104,
    "area": "admin",
    "symbol": "SupabaseOrgHierarchyRepository.getOrgTree",
    "via": "literal",
-   "ops": [
-    "select"
-   ],
-   "name": "users"
+   "name": "admin_org_tree"
   },
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/admin/SupabaseOrgHierarchyRepository.ts",
-   "line": 103,
+   "line": 116,
    "area": "admin",
    "symbol": "SupabaseOrgHierarchyRepository.unwrap",
    "via": "literal",
    "name": "admin_set_manager"
   },
   {
-   "kind": "table",
+   "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/admin/SupabaseOrgHierarchyRepository.ts",
-   "line": 111,
+   "line": 123,
    "area": "admin",
    "symbol": "SupabaseOrgHierarchyRepository.getHierarchyCensus",
    "via": "literal",
-   "ops": [
-    "select"
-   ],
-   "name": "users"
+   "name": "admin_hierarchy_census"
   },
   {
-   "kind": "table",
+   "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/admin/SupabaseOrgHierarchyRepository.ts",
-   "line": 131,
+   "line": 127,
    "area": "admin",
-   "symbol": "SupabaseOrgHierarchyRepository.snapshot",
+   "symbol": "SupabaseOrgHierarchyRepository.setOrgSlug",
    "via": "literal",
-   "ops": [
-    "select"
-   ],
-   "name": "admin_role_grants"
-  },
-  {
-   "kind": "table",
-   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseOrgHierarchyRepository.ts",
-   "line": 140,
-   "area": "admin",
-   "symbol": "SupabaseOrgHierarchyRepository.snapshot",
-   "via": "literal",
-   "ops": [
-    "select"
-   ],
-   "name": "organizations"
+   "name": "admin_set_org_slug"
   },
   {
    "kind": "rpc",
@@ -707,9 +671,9 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/auth/bootstrapSession.ts",
-   "line": 138,
+   "line": 155,
    "area": "auth",
-   "symbol": "fetchBootstrapSession",
+   "symbol": "readBootstrapSession",
    "via": "literal",
    "name": "bootstrap_session"
   },

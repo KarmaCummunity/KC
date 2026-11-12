@@ -77,13 +77,15 @@ describe('SupabaseFinanceLedgerRepository — summary, upsert, void', () => {
       .rejects.toBeInstanceOf(FinanceLedgerError);
   });
 
-  it('voids an entry instead of deleting it', async () => {
+  it('voids an entry with the admin\'s reason instead of deleting it', async () => {
     const { repo, calls } = repoOf({ finance_ledger_mark: ok(null) });
-    await repo.delete('e1');
+    await repo.delete('e1', 'typed twice');
     expect(callsTo(calls, 'finance_ledger_mark')[0]?.args).toEqual({
-      p_org_id: 'kc-org', p_entry_id: 'e1', p_void_reason: 'removed_by_admin',
+      p_org_id: 'kc-org', p_entry_id: 'e1', p_void_reason: 'typed twice',
     });
-    await expect(repoOf({ finance_ledger_mark: fail('P0001', 'entry_not_found') }).repo.delete('e1'))
+    await expect(repoOf({ finance_ledger_mark: fail('P0001', 'entry_not_found') }).repo.delete('e1', 'typed twice'))
       .rejects.toMatchObject({ code: 'entry_not_found' });
+    await expect(repoOf({ finance_ledger_mark: fail('P0001', 'void_reason_required') }).repo.delete('e1', 'x'))
+      .rejects.toMatchObject({ code: 'void_reason_required' });
   });
 });

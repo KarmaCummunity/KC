@@ -11,6 +11,8 @@ export type AdminRoleErrorCode =
   | 'grant_not_found'
   | 'grant_already_revoked'
   | 'cannot_revoke_last_super_admin'
+  /** The grant is the last administrator of its organization (migration 0011). */
+  | 'org_last_admin'
   | 'unknown';
 
 export class AdminRoleError extends Error {

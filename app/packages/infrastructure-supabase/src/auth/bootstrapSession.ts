@@ -134,6 +134,23 @@ export function parseBootstrapSession(payload: Json): BootstrapSession {
  * One round trip with everything the app decides on after sign-in. Refuses with the stable
  * reason `unauthenticated` (a `BackendRuleError`) when nobody is signed in.
  */
-export async function fetchBootstrapSession(client: SupabaseClient<Database>): Promise<BootstrapSession> {
+export function fetchBootstrapSession(client: SupabaseClient<Database>): Promise<BootstrapSession> {
+  const pending = inFlightBootstrapReads.get(client);
+  if (pending) return pending;
+  const read = readBootstrapSession(client).finally(() => inFlightBootstrapReads.delete(client));
+  inFlightBootstrapReads.set(client, read);
+  return read;
+}
+
+/**
+ * The `bootstrap_session()` read that is on the wire right now, per client. Several features
+ * ask for the same document at the same moment after sign-in and cold start (account gate,
+ * onboarding routing, own profile, legal documents), so concurrent callers share one round
+ * trip. Nothing is kept once the read settles: the next call always reads fresh state, and a
+ * failed read is never replayed.
+ */
+const inFlightBootstrapReads = new WeakMap<SupabaseClient<Database>, Promise<BootstrapSession>>();
+
+async function readBootstrapSession(client: SupabaseClient<Database>): Promise<BootstrapSession> {
   return parseBootstrapSession(unwrapCall('rpc:bootstrap_session', await client.rpc('bootstrap_session')));
 }
