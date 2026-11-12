@@ -3,6 +3,8 @@
 // 0602–0603); the server stays the source of truth.
 // Spec: docs/spec/requirements/21_housing.md FR-HOUSING-015 (request), 018 (cancel), 019 (complete),
 // 020 (no-show), 012 AC2 (address window); limits S54.
+import { allowsMove } from '../fsm/machine';
+import { housingBookingMachine } from '../fsm/machines/housingBooking';
 import type { HousingErrorCode } from './HousingError';
 import type {
   HousingBookingStatus,
@@ -97,20 +99,23 @@ export function hostBookingActions(booking: HousingHostBooking, now: Date): read
   const at = now.getTime();
   const start = Date.parse(booking.startsAt);
   const end = Date.parse(booking.endsAt);
-  if (booking.status === 'reserved') return ['approve', 'decline'];
-  if (booking.status !== 'confirmed') return [];
+  // Which moves the graph gives the host from this status; the clock then narrows them.
+  const may = (to: HousingBookingStatus): boolean => allowsMove(housingBookingMachine, booking.status, to, 'owner');
+  // A request still waits for an answer while it can be approved: both answers are offered.
+  if (may('confirmed')) return may('cancelled') ? ['approve', 'decline'] : ['approve'];
   const actions: HousingHostAction[] = [];
-  if (beforeStart(booking.startsAt, now)) actions.push('cancel');
-  if (at >= start && at <= end + 7 * DAY_MS) actions.push('complete');
-  if (at >= start + 3 * HOUR_MS && at <= start + DAY_MS) actions.push('no_show');
+  if (may('cancelled') && beforeStart(booking.startsAt, now)) actions.push('cancel');
+  if (may('handed_over') && at >= start && at <= end + 7 * DAY_MS) actions.push('complete');
+  if (may('no_show') && at >= start + 3 * HOUR_MS && at <= start + DAY_MS) actions.push('no_show');
   return actions;
 }
 
 /** What the guest may do with their own booking right now (FR-HOUSING-012, 018, 021). */
 export function guestStayActions(stay: HousingGuestStay, now: Date): readonly HousingGuestAction[] {
   const actions: HousingGuestAction[] = [];
-  const live: readonly HousingBookingStatus[] = ['reserved', 'confirmed'];
-  if (live.includes(stay.status) && beforeStart(stay.startsAt, now)) actions.push('cancel');
+  // The guest cancels where the graph lets a recipient cancel (a request or an approved stay).
+  const mayCancel = allowsMove(housingBookingMachine, stay.status, 'cancelled', 'recipient');
+  if (mayCancel && beforeStart(stay.startsAt, now)) actions.push('cancel');
   if (stay.canViewAddress) actions.push('show_address');
   // Ratings open after completion, for 7 days (FR-HOUSING-021 AC1).
   if (stay.status === 'handed_over' && !stay.ratedByMe) actions.push('rate');

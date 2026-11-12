@@ -8,6 +8,8 @@ import { eventRegistrationMachine } from './machines/eventRegistration';
 import { followRequestMachine } from './machines/followRequest';
 import { givingHandoffMachine } from './machines/givingHandoff';
 import { housingBookingMachine } from './machines/housingBooking';
+import { embeddingJobMachine } from './machines/embeddingJob';
+import { knowledgeTopicMachine } from './machines/knowledgeTopic';
 import { kycMachine } from './machines/kyc';
 import { matchMachine } from './machines/match';
 import { moderationQueueMachine } from './machines/moderationQueue';
@@ -55,7 +57,9 @@ export const FSM_MACHINES: readonly FsmMachine<string, string>[] = [
   rideSeriesMachine,
   postSeriesMachine,
   challengeMachine,
+  knowledgeTopicMachine,
   matchMachine,
+  embeddingJobMachine,
   organizationMachine,
   orgSec46Machine,
   orgApplicationMachine,
