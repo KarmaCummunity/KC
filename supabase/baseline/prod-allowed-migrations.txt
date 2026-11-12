@@ -26,3 +26,4 @@
 0029_post_public_street.sql
 0030_public_org_pages_anon.sql
 0031_member_discovery.sql
+0032_member_verification_level.sql
