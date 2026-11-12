@@ -4,6 +4,10 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = extensions, public;
+-- The validity of an approval is judged on the Israel calendar day, so `current_date` in this
+-- file is that day too. In UTC the day turns two or three hours later, and in that window a
+-- date written as `current_date + n` would be one day short of what the record is compared with.
+set local time zone 'Asia/Jerusalem';
 
 -- Records a status for the organization `aid` as a member: 'ok', the P0001 message, or the SQLSTATE.
 create function pg_temp.record(p_who text, p_args text)
