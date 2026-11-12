@@ -4,7 +4,7 @@
 // change the SQL rows or the locale strings and run the script again.
 
 /** Arguments a notification text may interpolate. */
-export const NOTIFICATION_TEXT_ARGS = ['actorName', 'count', 'othersCount', 'messagePreview'] as const;
+export const NOTIFICATION_TEXT_ARGS = ['actorName', 'count', 'othersCount', 'messagePreview', 'taskTitle'] as const;
 
 /** Every notification kind with its rules, as registered in the database. */
 export const NOTIFICATION_KINDS = {
@@ -86,4 +86,5 @@ export const NOTIFICATION_KINDS = {
   standing_order_charge_failed: { category: 'critical', defaultEnabled: true, bypassPreferences: false, bypassQuietHours: false, sendsPush: true, groupWindowSeconds: null, titleKey: 'notifications.standingOrderChargeFailedTitle', bodyKey: 'notifications.standingOrderChargeFailedBody', groupedBodyKey: null, textArgs: [] },
   support_issue_received: { category: 'critical', defaultEnabled: true, bypassPreferences: false, bypassQuietHours: false, sendsPush: true, groupWindowSeconds: null, titleKey: 'notifications.supportIssueReceivedTitle', bodyKey: 'notifications.supportIssueReceivedBody', groupedBodyKey: null, textArgs: [] },
   report_sla_warning: { category: 'critical', defaultEnabled: true, bypassPreferences: false, bypassQuietHours: false, sendsPush: true, groupWindowSeconds: null, titleKey: 'notifications.reportSlaWarningTitle', bodyKey: 'notifications.reportSlaWarningBody', groupedBodyKey: null, textArgs: [] },
+  task_assigned: { category: 'social', defaultEnabled: true, bypassPreferences: false, bypassQuietHours: false, sendsPush: true, groupWindowSeconds: null, titleKey: 'notifications.taskAssignedTitle', bodyKey: 'notifications.taskAssignedBody', groupedBodyKey: null, textArgs: ['taskTitle'] },
 } as const;

@@ -186,8 +186,26 @@ table('reports', 'same', 'table:reports', 'Direct insert of (reporter_id, target
 rpc('admin_set_manager', 'changed', 'rpc:admin_set_manager', '`p_manager_grant_id` is required: a grant can be moved under another grant but not detached.');
 rpc('admin_org_application_approve', 'changed', 'rpc:admin_org_application_approve', 'New required `p_slug`; returns the organization id.');
 rpc('admin_org_application_reject', 'same', 'rpc:admin_org_application_reject', 'Signature unchanged.');
-// Admin tasks, CRM and timesheets (old M19): the baseline has none of them and the adapters make
-// no call (package L6, `notes`).
+// Admin tasks, CRM and timesheets (old M19): rebuilt after the baseline as forward migrations
+// 0034-0036 (package L6). Lists page by the `cursor` of the last row.
+rpc('admin_task_list', 'changed', 'rpc:admin_task_list', 'Rows are `(task jsonb, cursor jsonb)`; `p_offset` → `p_cursor` (keyset). `task_id` keeps its name inside the record; `created_by` may be null after a purge.');
+rpc('admin_task_detail', 'changed', 'rpc:admin_task_detail', 'Returns one JSON record with `activities` (write order), or null for an unknown task.');
+rpc('admin_task_open_count', 'same', 'rpc:admin_task_open_count', 'New: open and in-progress tasks for the dashboard card.');
+for (const name of ['admin_task_create', 'admin_task_update', 'admin_task_set_status', 'admin_task_assign', 'admin_task_add_comment', 'admin_task_delete']) {
+  rpc(name, 'same', `rpc:${name}`, 'Same arguments; refusals are P0001 with the old codes (`invalid_transition`, `assignee_not_admin`, …), `forbidden` is 42501.');
+}
+rpc('crm_my_orgs', 'same', 'rpc:crm_my_orgs', 'New: the organizations whose contact book the caller manages (FR-ADMIN-032).');
+rpc('crm_contact_list', 'changed', 'rpc:crm_contact_list', 'New `p_org_id`; rows are `(contact jsonb, cursor jsonb)`; the total moves to `crm_contact_count`.');
+rpc('crm_contact_count', 'same', 'rpc:crm_contact_count', 'New: the total of the list filters.');
+rpc('crm_contact_upsert', 'changed', 'rpc:crm_contact_upsert', 'New `p_org_id`; new refusals `invalid_email`, `invalid_phone`, `invalid_input`.');
+for (const name of ['crm_contact_delete', 'crm_contact_mark_contacted']) {
+  rpc(name, 'same', `rpc:${name}`, 'Same arguments; the caller must manage the contact\'s organization.');
+}
+rpc('timesheet_list', 'changed', 'rpc:timesheet_list', 'New `p_scope` (mine, to_decide, all); rows are `(entry jsonb, cursor jsonb)` with `can_decide`; the total moves to `timesheet_count`.');
+rpc('timesheet_count', 'same', 'rpc:timesheet_count', 'New: the total of the list filters.');
+for (const name of ['timesheet_upsert', 'timesheet_submit', 'timesheet_approve', 'timesheet_reject', 'timesheet_delete']) {
+  rpc(name, 'same', `rpc:${name}`, 'Same arguments; a decision is the reporter\'s direct manager\'s or a super admin\'s, never the reporter\'s own.');
+}
 table('user_account', 'same', 'table:user_account', 'Staff read the account row of every member (`user_account_select_staff`): status, sanction state.');
 table('admin_role_grants', 'changed', 'table:admin_role_grants', '`grant_id` → `id`; read-only for clients. mock-login\'s insert goes away with the function.');
 
@@ -377,7 +395,7 @@ export const packages = [
   { id: 'P0', title: 'Contract switch and the degrade rule (first, alone)', launch: 'core', parallelWith: [],
     select: either(inArea('(root)', 'realtime'), named(/^app_flags$/)),
     files: ['infrastructure-supabase/src/database.types.ts (replaced by the baseline types)', 'infrastructure-supabase/src/index.ts', 'infrastructure-supabase/src/client.ts', 'infrastructure-supabase/src/rpc/**', 'infrastructure-supabase/src/lib/**', 'infrastructure-supabase/src/fsm/**', 'infrastructure-supabase/src/realtime/**', 'packages/domain/src (status lists, FSM machines, money value objects)', 'apps/mobile/src/services/featureFlagsComposition.ts', 'scripts/check-rpc-contract.mjs + allowlist'],
-    work: 'Done in P0 (see docs/db/app-migration-playbook.md): `database.types.ts` is the generated baseline types and `database.legacy.types.ts` a frozen copy of the old ones, imported only by the files listed in `infrastructure-supabase/src/migrationStatus/<package>.ts` (the client factory is generic: `getSupabaseClient()` is baseline-typed, `getLegacySupabaseClient()` / `legacySupabase` are the same connection typed against the old schema). `FSM_MACHINES` equals the baseline seeds (`catalogMatchesSql.test.ts` reads `supabase/schemas`); the four machines without a baseline seed sit in `LEGACY_FSM_MACHINES` until L2, L6 and L7 move. `rpc/backendUnavailable.ts` holds `isBackendObjectMissing` and `rpc/mapRpcError.ts` the P0001 mapper and `unwrapCall`; `BackendUnavailableError` and `BackendRuleError` are domain errors. UI helpers: `apps/mobile/src/lib/backendAvailability.ts` and the `backend.*` locale keys. `src/__tests__/baselineCompatibility.test.ts` fails when an unlisted file still needs the old schema or a listed file no longer does.',
+    work: 'Done in P0 (see docs/db/app-migration-playbook.md): `database.types.ts` is the generated baseline types and `database.legacy.types.ts` a frozen copy of the old ones, imported only by the files listed in `infrastructure-supabase/src/migrationStatus/<package>.ts` (the client factory is generic: `getSupabaseClient()` is baseline-typed, `getLegacySupabaseClient()` / `legacySupabase` are the same connection typed against the old schema). `FSM_MACHINES` equals the baseline seeds (`catalogMatchesSql.test.ts` reads `supabase/schemas`); the machines without a baseline seed sat in `LEGACY_FSM_MACHINES` until their modules moved (the list is gone since L6 seeded the last two in `0034` and `0036`). `rpc/backendUnavailable.ts` holds `isBackendObjectMissing` and `rpc/mapRpcError.ts` the P0001 mapper and `unwrapCall`; `BackendUnavailableError` and `BackendRuleError` are domain errors. UI helpers: `apps/mobile/src/lib/backendAvailability.ts` and the `backend.*` locale keys. `src/__tests__/baselineCompatibility.test.ts` fails when an unlisted file still needs the old schema or a listed file no longer does.',
     tests: ['pnpm typecheck, pnpm test, pnpm lint from app/', 'src/fsm/__tests__/catalogMatchesSql.test.ts against supabase/schemas', 'src/__tests__/baselineCompatibility.test.ts', 'src/rpc/__tests__/degradeRule.test.ts', 'node --test scripts/*.test.mjs', 'node scripts/gen-baseline-types.mjs --check'],
     degrade: 'This package defines the rule for all others: an adapter call that hits a missing function or table throws `BackendUnavailableError`; a list screen shows its empty state, an action shows the generic "not available yet" message, a world whose `world_<slug>_enabled` flag is off never renders its entry points. No screen reads `error.message` of an unknown error.',
     risks: 'Everything depends on it and it must not change behaviour: no adapter logic changed, only its type import. CI still diffs `database.types.ts` against the old migrations until the workflow change listed in the P0 report lands.' },
@@ -461,10 +479,10 @@ export const packages = [
   { id: 'L6', title: 'Back-office tools: tasks, CRM, timesheets', launch: 'later', parallelWith: ['L1', 'L2', 'L3', 'L4', 'L5', 'L7'],
     select: (row) => /^(admin_task_|crm_|timesheet_)/.test(row.old),
     files: ['admin/SupabaseAdminTaskRepository.ts', 'admin/SupabaseCrmContactsRepository.ts', 'admin/SupabaseTimesheetsRepository.ts', 'apps/mobile: admin tasks, CRM, timesheets screens'],
-    work: 'Done: nothing to migrate to (the baseline has no task tracker, CRM or timesheets, old M19). The three adapters make no call and reject with `BackendUnavailableError`; whether these internal tools belong in this database is still an open product decision.',
-    tests: ['vitest: parkedBackOffice, parkedAdminSections'],
-    degrade: 'Parked behind `BACK_OFFICE_TOOLS_AVAILABLE` (apps/mobile/src/lib/parkedFeatures.ts): the tasks nav entry and dashboard card are hidden, and the tasks, CRM and timesheets routes render the not-available notice.',
-    risks: 'Product decision, not engineering.' },
+    work: 'Done: rebuilt as forward migrations `0034` (tasks), `0035` (CRM per organization) and `0036` (timesheets decided by the direct manager); the three adapters call them again, with keyset paging.',
+    tests: ['pgTAP: 099_back_office_tasks, 100_back_office_crm, 101_back_office_timesheets', 'vitest: SupabaseAdminTaskRepository, SupabaseCrmTimesheetsRepository, adminSectionAvailability, backOfficeDestinations'],
+    degrade: 'One switch per tool in apps/mobile/src/lib/parkedFeatures.ts (`ADMIN_TASKS_AVAILABLE`, `CRM_AVAILABLE`, `TIMESHEETS_AVAILABLE`, all on); a tool switched off hides its nav entry and renders the not-available notice.',
+    risks: 'None known.' },
   { id: 'L7', title: 'WhatsApp bot, linking, admin console', launch: 'later', parallelWith: ['L1', 'L2', 'L3', 'L4', 'L5', 'L6'],
     select: (row) => /^(api_whatsapp|api_bot|whatsapp_)/.test(row.old),
     files: ['admin/SupabaseWhatsAppAdminRepository.ts', 'supabase/functions/{whatsapp-webhook,whatsapp-intake-worker,whatsapp-sender}', 'supabase/functions/_shared/whatsapp/**', 'apps/mobile: WhatsApp link screen'],
@@ -502,7 +520,7 @@ export const edgeFunctions = [
 // ═════════════════════════════ Rules that hold across the whole map
 export const notes = [
   'Capabilities the baseline does not provide and the identity adapters therefore do not call (they report `BackendUnavailableError` and the screens degrade): follow suggestions (M03) and the profile completeness nudge (M04), both hidden on the suggestions screen, and the About team roster (M08, no team section).',
-  'Internal back-office tools the baseline does not provide and whose adapters therefore make no call (they report `BackendUnavailableError`; the sections are parked behind `BACK_OFFICE_TOOLS_AVAILABLE`): the admin task tracker (FR-ADMIN-018), the CRM contacts (roadmap phase 3) and the timesheets (not in the spec), formerly M19. Whether they belong in this database is a product decision.',
+  'The internal back-office tools (formerly M19) were rebuilt after the baseline as forward migrations: the admin task tracker (FR-ADMIN-018, `0034`), CRM contacts per organization (FR-ADMIN-032, `0035`) and staff timesheets (FR-ADMIN-033, `0036`).',
   'Errors: every baseline RPC raises `P0001` with a stable snake_case message (`unauthenticated` uses `42501`). Map on `error.message`, never on a SQLSTATE or on Hebrew text. Codes marked † in the tables are not referenced anywhere in the app today and need a user-visible mapping.',
   'Paging: no OFFSET anywhere. Lists take the `next_cursor` JSON of the last row (cards) or explicit `p_before_*` / `p_after_*` values; application ports that expose `offset` change to an opaque cursor.',
   'Money: integer agorot (`*_agorot`), never ILS floats or `*_cents` names.',

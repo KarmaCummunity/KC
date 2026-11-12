@@ -29,3 +29,6 @@
 0022_post_series_rpcs.sql
 0023_series_feed_folding.sql
 0024_world_content.sql
+0034_back_office_admin_tasks.sql
+0035_back_office_crm.sql
+0036_back_office_timesheets.sql

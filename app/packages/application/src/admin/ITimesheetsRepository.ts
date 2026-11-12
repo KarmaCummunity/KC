@@ -1,13 +1,16 @@
-// V2-ADMIN-TIME-10 — port for the timesheets workflow.
-import type { TimesheetPage, TimesheetStatus } from '@kc/domain';
+// FR-ADMIN-033 — port for staff timesheets.
+import type { TimesheetPage, TimesheetScope, TimesheetStatus } from '@kc/domain';
 
 export interface TimesheetListFilters {
+  /** Defaults to the viewer's own entries. */
+  readonly scope?: TimesheetScope;
   readonly userId?: string;
   readonly status?: TimesheetStatus;
   readonly fromDate?: string;
   readonly toDate?: string;
   readonly limit?: number;
-  readonly offset?: number;
+  /** `nextCursor` of the previous page; omitted for the first page. */
+  readonly cursor?: string;
 }
 
 export interface TimesheetUpsertInput {

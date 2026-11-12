@@ -20,8 +20,8 @@
    "distinct": 3
   },
   "rpc": {
-   "callSites": 220,
-   "distinct": 193
+   "callSites": 242,
+   "distinct": 215
   },
   "table": {
    "callSites": 193,
@@ -316,6 +316,141 @@
   },
   {
    "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminTaskRepository.ts",
+   "line": 41,
+   "area": "admin",
+   "symbol": "SupabaseAdminTaskRepository.list",
+   "via": "literal",
+   "name": "admin_task_list"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminTaskRepository.ts",
+   "line": 59,
+   "area": "admin",
+   "symbol": "SupabaseAdminTaskRepository.openCount",
+   "via": "literal",
+   "name": "admin_task_open_count"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminTaskRepository.ts",
+   "line": 63,
+   "area": "admin",
+   "symbol": "SupabaseAdminTaskRepository.getDetail",
+   "via": "literal",
+   "name": "admin_task_detail"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminTaskRepository.ts",
+   "line": 70,
+   "area": "admin",
+   "symbol": "SupabaseAdminTaskRepository.create",
+   "via": "literal",
+   "name": "admin_task_create"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminTaskRepository.ts",
+   "line": 84,
+   "area": "admin",
+   "symbol": "SupabaseAdminTaskRepository.update",
+   "via": "literal",
+   "name": "admin_task_update"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminTaskRepository.ts",
+   "line": 98,
+   "area": "admin",
+   "symbol": "SupabaseAdminTaskRepository.setStatus",
+   "via": "literal",
+   "name": "admin_task_set_status"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminTaskRepository.ts",
+   "line": 104,
+   "area": "admin",
+   "symbol": "SupabaseAdminTaskRepository.assign",
+   "via": "literal",
+   "name": "admin_task_assign"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminTaskRepository.ts",
+   "line": 112,
+   "area": "admin",
+   "symbol": "SupabaseAdminTaskRepository.addComment",
+   "via": "literal",
+   "name": "admin_task_add_comment"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminTaskRepository.ts",
+   "line": 120,
+   "area": "admin",
+   "symbol": "SupabaseAdminTaskRepository.delete",
+   "via": "literal",
+   "name": "admin_task_delete"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseCrmContactsRepository.ts",
+   "line": 77,
+   "area": "admin",
+   "symbol": "SupabaseCrmContactsRepository.listOrgs",
+   "via": "literal",
+   "name": "crm_my_orgs"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseCrmContactsRepository.ts",
+   "line": 90,
+   "area": "admin",
+   "symbol": "SupabaseCrmContactsRepository.list",
+   "via": "literal",
+   "name": "crm_contact_list"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseCrmContactsRepository.ts",
+   "line": 91,
+   "area": "admin",
+   "symbol": "SupabaseCrmContactsRepository.list",
+   "via": "literal",
+   "name": "crm_contact_count"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseCrmContactsRepository.ts",
+   "line": 98,
+   "area": "admin",
+   "symbol": "SupabaseCrmContactsRepository.upsert",
+   "via": "literal",
+   "name": "crm_contact_upsert"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseCrmContactsRepository.ts",
+   "line": 115,
+   "area": "admin",
+   "symbol": "SupabaseCrmContactsRepository.delete",
+   "via": "literal",
+   "name": "crm_contact_delete"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseCrmContactsRepository.ts",
+   "line": 119,
+   "area": "admin",
+   "symbol": "SupabaseCrmContactsRepository.markContacted",
+   "via": "literal",
+   "name": "crm_contact_mark_contacted"
+  },
+  {
+   "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/admin/SupabaseFinanceAccountsRepository.ts",
    "line": 44,
    "area": "admin",
@@ -505,6 +640,69 @@
    "symbol": "SupabaseTransparencySettingsRepository.unwrapFinance",
    "via": "literal",
    "name": "finance_transparency_settings_set"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseTimesheetsRepository.ts",
+   "line": 88,
+   "area": "admin",
+   "symbol": "SupabaseTimesheetsRepository.list",
+   "via": "literal",
+   "name": "timesheet_list"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseTimesheetsRepository.ts",
+   "line": 89,
+   "area": "admin",
+   "symbol": "SupabaseTimesheetsRepository.list",
+   "via": "literal",
+   "name": "timesheet_count"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseTimesheetsRepository.ts",
+   "line": 96,
+   "area": "admin",
+   "symbol": "SupabaseTimesheetsRepository.upsert",
+   "via": "literal",
+   "name": "timesheet_upsert"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseTimesheetsRepository.ts",
+   "line": 108,
+   "area": "admin",
+   "symbol": "SupabaseTimesheetsRepository.submit",
+   "via": "literal",
+   "name": "timesheet_submit"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseTimesheetsRepository.ts",
+   "line": 112,
+   "area": "admin",
+   "symbol": "SupabaseTimesheetsRepository.approve",
+   "via": "literal",
+   "name": "timesheet_approve"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseTimesheetsRepository.ts",
+   "line": 116,
+   "area": "admin",
+   "symbol": "SupabaseTimesheetsRepository.reject",
+   "via": "literal",
+   "name": "timesheet_reject"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseTimesheetsRepository.ts",
+   "line": 120,
+   "area": "admin",
+   "symbol": "SupabaseTimesheetsRepository.delete",
+   "via": "literal",
+   "name": "timesheet_delete"
   },
   {
    "kind": "rpc",
