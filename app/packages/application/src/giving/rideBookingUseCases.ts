@@ -108,7 +108,7 @@ export class CancelRideBookingUseCase {
   constructor(private readonly repo: IRideBookingRepository) {}
   execute(handoffId: string, context?: CancelRideBookingContext): Promise<void> {
     const status = context?.status ?? context?.bookings?.find((b) => b.handoffId === handoffId)?.status;
-    if (status && !canPerformBookingAction(status as RideBookingStatus, 'cancel')) {
+    if (status && !canPerformBookingAction(status, 'cancel')) {
       return Promise.reject(new RideError('invalid_status', 'only reserved or confirmed bookings can be cancelled'));
     }
     return this.repo.cancel(handoffId);
@@ -126,7 +126,7 @@ export class CompleteRideTripUseCase {
   constructor(private readonly repo: IRideBookingRepository) {}
   execute(handoffId: string, context?: CompleteRideTripContext): Promise<void> {
     const status = context?.status ?? context?.bookings?.find((b) => b.handoffId === handoffId)?.status;
-    if (status && !canPerformBookingAction(status as RideBookingStatus, 'complete')) {
+    if (status && !canPerformBookingAction(status, 'complete')) {
       return Promise.reject(new RideError('invalid_status', 'only reserved or confirmed bookings can be completed'));
     }
     if (context?.departsAt && !isRideTripCompletable(context.departsAt, context.now)) {
