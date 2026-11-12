@@ -23,9 +23,15 @@ type ExpoConfigLike = {
   updates?: { requestHeaders?: Record<string, string> };
 };
 
-/** DSN from the build-time env var, else from `app.config` extra. */
-function resolveDsn(config: ExpoConfigLike | undefined): string | undefined {
-  return (process.env.EXPO_PUBLIC_SENTRY_DSN as string | undefined) ?? config?.extra?.sentryDsn;
+/**
+ * DSN from the build-time env var, else from `app.config` extra.
+ * `||` (not `??`) on purpose: CI exports an unset repo variable as an EMPTY
+ * string, which must fall through to the config default instead of silently
+ * disabling Sentry for the whole build.
+ */
+export function resolveDsn(config: ExpoConfigLike | undefined): string | undefined {
+  const fromEnv = (process.env.EXPO_PUBLIC_SENTRY_DSN as string | undefined)?.trim();
+  return fromEnv || config?.extra?.sentryDsn?.trim() || undefined;
 }
 
 /**
