@@ -41,6 +41,7 @@ export * from './rides/rideSchedule';
 export * from './rides/RideFeedItem';
 export * from './rides/RideSavedRoute';
 export * from './rides/RideSeries';
+export * from './rides/rideSeriesActions';
 export * from './series/PostSeries';
 export * from './series/postSeriesActions';
 export * from './series/PostSeriesError';

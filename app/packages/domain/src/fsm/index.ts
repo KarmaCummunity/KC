@@ -2,7 +2,7 @@
 export { TransitionError } from './TransitionError';
 export type { TransitionErrorCode, TransitionErrorDetails } from './TransitionError';
 export {
-  assertTransition, canTransition, defineMachine, hasEdge, isTerminal,
+  allowsMove, assertTransition, canTransition, defineMachine, hasEdge, isTerminal,
 } from './machine';
 export type {
   FsmEdge, FsmMachine, TransitionAnswer, TransitionFail, TransitionOk,
