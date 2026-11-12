@@ -54,7 +54,7 @@ When a target reaches the 3-report threshold and is auto-removed, a system messa
    - For `target_type = user`: `account_status = active`; the user can sign in again.
    - For `target_type = chat`: the chat is unhidden for both parties.
 - AC3. Restore actions are idempotent and audit-logged.
-- AC4. After restore, the corresponding `Report` rows are stamped `dismissed_no_violation`, which feeds into `FR-MOD-010`.
+- AC4. After restore, the corresponding `Report` rows are stamped `dismissed_no_violation`, which feeds into `FR-MOD-010`. *(Every staff restore does this server-side since migration `0016` (`kc_private.report_dismiss_open`).)*
 
 **Related.** Domain: `Post`, `User`, `Chat`, `Report`.
 
@@ -137,7 +137,7 @@ The Super Admin can read the audit log for any user via a Settings sub-page acce
 
 **Acceptance Criteria.**
 - AC1. The sub-page is hidden for non-admins.
-- AC2. It shows the last 200 audit events of any user (lookup by ID or display name).
+- AC2. It shows the last 200 audit events of any user (lookup by ID or display name): the events the user performed and the events about them (`admin_audit_lookup`, migration `0016`).
 - AC3. Audit lines are read-only and the screen has no edit controls.
 
 **Related.** Domain: `AuditEvent`.
@@ -239,9 +239,9 @@ A new Expo Router group `(admin)` accessible only to users with an active admin 
 - AC3. Search bar accepts target ID or reporter display name; powered by `audit_search` + `reports` query.
 - AC4. Default sort: oldest unresolved first.
 - AC5. *(#1039, PM 2026-11-04.)* A row whose oldest open report is **12 h old** shows a *warning* badge and **24 h old** an *overdue* badge; younger rows show none. Thresholds: `REPORT_SLA_WARNING_HOURS` / `REPORT_SLA_DEADLINE_HOURS` in `@kc/domain` (`reportSlaState`).
-- AC6. *(#1039.)* `report_sla_alert_sweep()` (migration `0611`, hourly via pg_cron) sends every active `super_admin` / `moderator` one `report_sla_warning` push per open case that has waited 12 h, deep-linking to the case; the dedupe key carries the case's oldest report, so a case is alerted once and a case reopened later alerts again. Resolved cases never alert.
+- AC6. *(#1039.)* `kc_private.report_sla_alert_sweep()` (migration `0017` after the baseline cut-over; the hourly job `report_sla_alert`) sends every active `super_admin` / `moderator` one `report_sla_warning` push per open case that has waited 12 h, deep-linking to the case; the dedupe key carries the case's oldest report, so a case is alerted once and a case reopened later alerts again. Resolved cases never alert.
 
-**Related.** Database: `reports_open_inbox(...)` RPC (migration 0120). Database: `report_sla_alert_sweep()` (migration 0611). Domain: `ReportInboxPage`, `ReportInboxCursor`, `ReportInboxRow`, `reportSlaState`. Application: `IReportsRepository.listOpenReports`, `ListOpenReportsUseCase`. Infrastructure: `SupabaseReportsRepository`. Mobile: `useReportsInbox` (infinite query), `ReportRow`, `ReportFilters`, `(admin)/reports/index.tsx`.
+**Related.** Database: `admin_reports_inbox(...)` RPC (migration 0016: grouped and keyset paged on the server, `p_search` by target id or reporter name; was `reports_open_inbox`, 0120). Database: `kc_private.report_sla_alert_sweep()` (migration 0017; was 0611). Domain: `ReportInboxPage`, `ReportInboxCursor`, `ReportInboxRow`, `reportSlaState`. Application: `IReportsRepository.listOpenReports`, `ListOpenReportsUseCase`. Infrastructure: `SupabaseReportsRepository`. Mobile: `useReportsInbox` (infinite query), `ReportRow`, `ReportFilters`, `(admin)/reports/index.tsx`.
 
 ---
 
@@ -252,7 +252,7 @@ A new Expo Router group `(admin)` accessible only to users with an active admin 
 - AC3. Restore action no longer cascades-dismisses reports across unrelated cases (closes `TD-94`); each case is dismissed independently.
 - AC4. All actions emit `audit_events` rows; the timeline updates optimistically + reconciles on success.
 
-**Related.** Database: `reports_case_detail(...)` RPC (migration 0121); `admin_restore_target` rewritten in migration 0119 (per-case dismiss). Migration 0118 widens `admin_dismiss_report` / `admin_remove_post` / `admin_confirm_report` from `is_admin()` to `admin_assert_role(['super_admin','moderator'])`. Domain: `ReportCaseDetail`, `ReportCaseReporter`, `ReportCaseTimelineEntry`. Application: `IReportsRepository.getCaseDetail`, `GetReportCaseDetailUseCase`. Mobile: `useReportCaseDetail`, `CaseActions`, `CaseReporterList`, `CaseAuditTimeline`, `(admin)/reports/[caseId].tsx`.
+**Related.** Database: `reports` + `admin_report_case_timeline(...)` (migration 0016: the whole history of the target and its reports for every staff role; was `reports_case_detail`, 0121); `admin_restore_chat` / `admin_restore_comment` (0016); Open support thread = `admin_open_member_support_thread` (0015); `admin_restore_target` rewritten in migration 0119 (per-case dismiss). Migration 0118 widens `admin_dismiss_report` / `admin_remove_post` / `admin_confirm_report` from `is_admin()` to `admin_assert_role(['super_admin','moderator'])`. Domain: `ReportCaseDetail`, `ReportCaseReporter`, `ReportCaseTimelineEntry`. Application: `IReportsRepository.getCaseDetail`, `GetReportCaseDetailUseCase`. Mobile: `useReportCaseDetail`, `CaseActions`, `CaseReporterList`, `CaseAuditTimeline`, `(admin)/reports/[caseId].tsx`.
 
 ---
 

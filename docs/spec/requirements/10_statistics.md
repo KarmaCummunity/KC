@@ -155,7 +155,7 @@ The team sees the whole platform's statistics in the admin portal (D106).
 **Acceptance Criteria.**
 - AC1. Admin portal → "Statistics" (`/admin/stats`), for the roles with `stats.view_platform` (super admin, moderator); the server re-checks the roles.
 - AC2. A window of 7 / 30 / 90 days. On top, the north-star total: givings closed in the window (`docs/spec/16_kpis.md`).
-- AC3. One card per world and direction: published, booked, confirmed, handed over, cancelled, closed, and median hours to the first booking and to the first handover, from `admin_world_flow_funnel` (`0542`, G43). Handoff stages read "not tracked" for worlds without giving handoffs.
+- AC3. One card per world and direction: published, booked, confirmed, handed over, cancelled, closed, and median hours to the first booking and to the first handover, from `admin_world_flow_funnel` (`0542`, G43; migration `0018` after the baseline cut-over, money has no handoff stages). Handoff stages read "not tracked" for worlds without giving handoffs.
 - AC4. Shows counts only; no member is identified.
 
 ## FR-STATS-008 — My givings by world
@@ -165,7 +165,7 @@ A member's statistics screen also breaks their givings down by world (D106).
 
 **Acceptance Criteria.**
 - AC1. Below the personal counters (`FR-STATS-001`): one row per world in which the member has activity, with **given** (handoffs on their listings that were handed over), **received** (handoffs they received that were handed over) and **closed** (their own listings closed).
-- AC2. Owner only (`FR-STATS-006` AC1): `my_world_givings` (`0547`) reads the session user and takes no user id.
+- AC2. Owner only (`FR-STATS-006` AC1): `my_world_givings` (`0547`; migration `0018` after the baseline cut-over) reads the session user and takes no user id.
 - AC3. With no activity yet, a short hint explains that handed-over givings will appear here.
 
 ## FR-STATS-009 — Organization impact
