@@ -2109,8 +2109,11 @@ export type Database = {
       post_private_locations: {
         Row: {
           access_notes: string | null
+          apartment: string | null
           destination_street_number: string | null
+          entrance_notes: string | null
           exact_point: unknown
+          floor: string | null
           post_id: string
           street: string | null
           street_number: string | null
@@ -2118,8 +2121,11 @@ export type Database = {
         }
         Insert: {
           access_notes?: string | null
+          apartment?: string | null
           destination_street_number?: string | null
+          entrance_notes?: string | null
           exact_point?: unknown
+          floor?: string | null
           post_id: string
           street?: string | null
           street_number?: string | null
@@ -2127,8 +2133,11 @@ export type Database = {
         }
         Update: {
           access_notes?: string | null
+          apartment?: string | null
           destination_street_number?: string | null
+          entrance_notes?: string | null
           exact_point?: unknown
+          floor?: string | null
           post_id?: string
           street?: string | null
           street_number?: string | null
@@ -3753,6 +3762,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      admin_set_verification_level: {
+        Args: { p_level: number; p_reason: string; p_user_id: string }
+        Returns: number
+      }
       admin_survey_overview: { Args: never; Returns: Json }
       admin_survey_results: { Args: { p_slug: string }; Returns: Json }
       admin_suspend_user: {
@@ -4615,8 +4628,11 @@ export type Database = {
         Args: { p_post_id: string }
         Returns: {
           access_notes: string | null
+          apartment: string | null
           destination_street_number: string | null
+          entrance_notes: string | null
           exact_point: unknown
+          floor: string | null
           post_id: string
           street: string | null
           street_number: string | null

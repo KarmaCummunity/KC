@@ -10,7 +10,7 @@ import type { HousingPrivateDetailsInput, IHousingRepository } from '@kc/applica
 import type { Database, Json } from '../database.types';
 import { unwrapCall } from '../rpc/mapRpcError';
 import { requireRpcRow } from '../marketplace/rpcRow';
-import { foldAccessNotes, mapPrivateDetails, pointEwkt } from './housingMappers';
+import { mapPrivateDetails, pointEwkt, trimmedOrNull } from './housingMappers';
 import { listGuestStays, listHostBookings } from './housingReads';
 
 type Client = SupabaseClient<Database>;
@@ -150,7 +150,10 @@ export class SupabaseHousingRepository implements IHousingRepository {
           post_id: input.listingId,
           street: street?.name_he ?? null,
           street_number: input.houseNumber.trim() || null,
-          access_notes: foldAccessNotes([input.apartment, input.floor, input.entranceNotes, input.accessInstructions]),
+          apartment: trimmedOrNull(input.apartment),
+          floor: trimmedOrNull(input.floor),
+          entrance_notes: trimmedOrNull(input.entranceNotes),
+          access_notes: trimmedOrNull(input.accessInstructions),
           exact_point: pointEwkt(input.lat, input.lng),
         },
         { onConflict: 'post_id' },
