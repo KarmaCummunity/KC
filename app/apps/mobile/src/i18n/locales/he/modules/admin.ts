@@ -11,7 +11,8 @@ import { adminOrgTreeHe } from './adminOrgTree';
 import { adminStatsHe } from './adminStats';
 import { adminSurveysHe } from './adminSurveys';
 import { adminTasksHe } from './adminTasks';
-import { adminAdminsHe } from './adminAdmins';
+import { adminAdminsParityHe } from './adminAdminsParity';
+import { adminRolesParityHe } from './adminHierarchyParity';
 
 export const adminHe = {
   portalTitle: 'פורטל ניהול',
@@ -45,6 +46,7 @@ export const adminHe = {
     org_employee: 'עובד עמותה',
     volunteer_manager: 'מנהל מתנדבים',
     org_volunteer: 'מתנדב בארגון',
+    ...adminRolesParityHe,
   },
   // Extra words the portal search (#2081) matches besides the screen title, space-separated.
   searchKeywords: {
@@ -158,7 +160,7 @@ export const adminHe = {
     bubbleReadOnly: 'הפעולות זמינות בפורטל הניהול',
     bubbleOpenInPortal: 'פתיחה בפורטל',
   },
-  admins: adminAdminsHe,
+  admins: adminAdminsParityHe,
   tasks: adminTasksHe,
   content: adminContentHe,
   time: adminTimeHe,

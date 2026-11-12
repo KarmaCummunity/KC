@@ -183,7 +183,11 @@ rpc('admin_restore_user', 'same', 'rpc:admin_restore_user', 'Staff: lifts a susp
 rpc('admin_delete_message', 'same', 'rpc:admin_delete_message', 'Same name and argument (`p_message_id`); it lives in `40_messaging/070_chat_moderation.sql` and is audited by the moderation module (M18, verified).');
 rpc('admin_audit_search', 'changed', 'rpc:admin_audit_search', 'Offset → keyset (`p_before_occurred_at`, `p_before_id`); `p_target_user_id` → `p_target_id`; no display names and no `total_count` (join `users` on the device).');
 table('reports', 'same', 'table:reports', 'Direct insert of (reporter_id, target_type, target_id, reason, note); `report_id` → `id`.');
-rpc('admin_set_manager', 'changed', 'rpc:admin_set_manager', '`p_manager_grant_id` is required: a grant can be moved under another grant but not detached.');
+rpc('admin_set_manager', 'same', 'rpc:admin_set_manager', 'Signature unchanged: `p_manager_grant_id` optional again; only the super admin detaches (no manager) or skips the seniority rule; errors `forbidden_manage`, `manager_not_found`, `manager_revoked`, `manager_other_org`, `manager_cycle`, `manager_rank` (migration 0011).');
+rpc('admin_list_admins', 'same', 'rpc:admin_list_admins', 'Restored by migration 0012: the roster the caller may read (platform admins all, others the organizations their grants reach) with names, manager edge and `last_seen_at`.');
+rpc('admin_org_tree', 'same', 'rpc:admin_org_tree', 'Restored by migration 0012: active grants with `effective_org_id`, organization name, manager edge and `last_seen_at`; same visibility as `admin_list_admins`.');
+rpc('admin_hierarchy_census', 'same', 'rpc:admin_hierarchy_census', 'Restored by migration 0013: community and role-holder totals and, per visible organization, its slug, verification and affiliates (`user_profile_fields.affiliated_org_id`) without a role.');
+rpc('admin_set_org_slug', 'changed', 'rpc:admin_set_org_slug', 'New in migration 0014 (no old object): the super admin changes an organization page slug (`invalid_slug`, `slug_taken`, `org_not_found`).');
 rpc('admin_org_application_approve', 'changed', 'rpc:admin_org_application_approve', 'New required `p_slug`; returns the organization id.');
 rpc('admin_org_application_reject', 'same', 'rpc:admin_org_application_reject', 'Signature unchanged.');
 // Admin tasks, CRM and timesheets (old M19): rebuilt after the baseline as forward migrations
@@ -230,7 +234,7 @@ rpc('finance_account_upsert', 'changed', 'rpc:finance_account_upsert', 'New requ
 rpc('finance_ledger_list', 'changed', 'rpc:finance_ledger_list', 'New required `p_org_id`; offset → keyset (`p_after_occurred_at`, `p_after_id`); `amount_cents` → `amount_agorot`; `p_kind` filter and `reference_url` are gone.');
 rpc('finance_ledger_upsert', 'changed', 'rpc:finance_ledger_upsert', 'New required `p_org_id`; `p_amount_cents` → `_agorot`; `p_currency` and `p_reference_url` are gone.');
 rpc('finance_ledger_summary', 'changed', 'rpc:finance_ledger_summary', 'New required `p_org_id`; `*_cents` → `*_agorot`; cleared entries only, transfers aside (M21, built in `85_billing/140`).');
-rpc('finance_ledger_mark', 'same', 'rpc:finance_ledger_mark', 'Voids an entry with a reason (the admin delete action) or sets its reconciliation; the entry stays in the books.');
+rpc('finance_ledger_mark', 'same', 'rpc:finance_ledger_mark', 'Voids an entry with the admin\'s reason (3 to 500 characters, `void_reason_required` otherwise; migration 0014) or sets its reconciliation; the entry stays in the books.');
 rpc('finance_donors_summary', 'changed', 'rpc:finance_donors_summary', 'New required `p_org_id`; `total_cents` → `total_agorot`; in-app donations grouped by member, typed ones by party name; organization admins only (M21, built in `85_billing/140`).');
 
 // ───────────────────────────── translation, notifications

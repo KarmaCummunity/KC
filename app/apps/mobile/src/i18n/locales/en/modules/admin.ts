@@ -11,7 +11,8 @@ import { adminOrgTreeEn } from './adminOrgTree';
 import { adminStatsEn } from './adminStats';
 import { adminSurveysEn } from './adminSurveys';
 import { adminTasksEn } from './adminTasks';
-import { adminAdminsEn } from './adminAdmins';
+import { adminAdminsParityEn } from './adminAdminsParity';
+import { adminRolesParityEn } from './adminHierarchyParity';
 
 export const adminEn = {
   portalTitle: 'Admin Portal',
@@ -45,6 +46,7 @@ export const adminEn = {
     org_employee: 'Org Employee',
     volunteer_manager: 'Volunteer Manager',
     org_volunteer: 'Org Volunteer',
+    ...adminRolesParityEn,
   },
   // Extra words the portal search (#2081) matches besides the screen title, space-separated.
   searchKeywords: {
@@ -158,7 +160,7 @@ export const adminEn = {
     bubbleReadOnly: 'Actions are available in the Admin Portal',
     bubbleOpenInPortal: 'Open in Portal',
   },
-  admins: adminAdminsEn,
+  admins: adminAdminsParityEn,
   tasks: adminTasksEn,
   content: adminContentEn,
   time: adminTimeEn,

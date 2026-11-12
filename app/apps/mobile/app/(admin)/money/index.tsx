@@ -2,39 +2,26 @@
 // V2-ADMIN-MONEY-9 — V2 §13.3 Admin Money — minimal donations / expenses ledger.
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Alert, Platform, RefreshControl, StyleSheet, View } from 'react-native';
+import { RefreshControl, StyleSheet, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import {
-  hasPermission, isFinanceLedgerError,
-  type AdminPermission, type AdminRole,
-  type FinanceDirection, type FinanceEntry,
-} from '@kc/domain';
+import type { FinanceDirection, FinanceEntry } from '@kc/domain';
 import { makeUseStyles, radius, spacing, Text, typography } from '@kc/ui';
 import { PrimaryButton } from '../../../src/components/ui/Buttons';
-import { useAdminRoles } from '../../../src/hooks/useAdminRoles';
+import { useMoneyPermissions } from '../../../src/hooks/useMoneyPermissions';
 import { container } from '../../../src/lib/container';
 import { FinanceEntryCard } from '../../../src/components/admin/money/FinanceEntryCard';
 import { FinanceEntryFormModal } from '../../../src/components/admin/money/FinanceEntryFormModal';
+import { VoidEntryModal } from '../../../src/components/admin/money/VoidEntryModal';
 import { AdminFilterTopBarButton } from '../../../src/components/admin/AdminSearchFilterToolbar';
 import { FilterSection } from '../../../src/components/filterKit/FilterSection';
 import { MoneySubNav } from '../../../src/components/admin/money/MoneySubNav';
 import { AdminListEmpty } from '../../../src/components/admin/AdminListEmpty';
-import { confirmAction as platformConfirm } from '../../../src/services/platformConfirm';
-import { useLocaleBundle, type LocaleBundle } from '../../../src/i18n/useLocaleBundle';
+import { useLocaleBundle } from '../../../src/i18n/useLocaleBundle';
 import { KcFlashList } from '../../../src/components/lists/KcFlashList';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../../src/components/RouteErrorBoundary';
 
 type DirFilter = FinanceDirection | 'all';
-
-function confirmDelete(message: string, L: LocaleBundle): Promise<boolean> {
-  const t = L.admin.money.confirm;
-  return platformConfirm(t.deleteTitle, message, {
-    confirmLabel: t.deleteOk,
-    cancelLabel:  t.deleteCancel,
-    destructive:  true,
-  });
-}
 
 function fmtAmount(cents: number, currency: string): string {
   const major = cents / 100;
@@ -52,22 +39,24 @@ const FinanceRowItem = React.memo(function FinanceRowItem({
 }: {
   entry: FinanceEntry;
   accountName: string | null;
-  onEdit: (entry: FinanceEntry) => void;
-  onDelete: (entryId: string) => void;
+  /** Both omitted for a viewer who only reads the books. */
+  onEdit?: (entry: FinanceEntry) => void;
+  onDelete?: (entryId: string) => void;
 }) {
-  const handleEdit = useCallback(() => onEdit(entry), [entry, onEdit]);
-  const handleDelete = useCallback(() => onDelete(entry.entryId), [entry.entryId, onDelete]);
+  const handleEdit = useCallback(() => onEdit?.(entry), [entry, onEdit]);
+  const handleDelete = useCallback(() => onDelete?.(entry.entryId), [entry.entryId, onDelete]);
+  const actions = onEdit && onDelete ? { onEdit: handleEdit, onDelete: handleDelete } : {};
 
-  return <FinanceEntryCard entry={entry} accountName={accountName} onEdit={handleEdit} onDelete={handleDelete} />;
+  return <FinanceEntryCard entry={entry} accountName={accountName} {...actions} />;
 });
 
 export default function MoneyScreen() {
   const styles = useStyles();
-  const L = useLocaleBundle();
-  const t = L.admin.money;
+  const t = useLocaleBundle().admin.money;
   const { t: tFilters } = useTranslation();
-  const { roles, isLoading: rolesLoading } = useAdminRoles();
-  const can = (perm: AdminPermission) => hasPermission(roles as readonly AdminRole[], perm);
+  // Readers of the books (moderators on the platform books, accountants) see the ledger;
+  // only those who keep the books add, edit or void entries (FR-FIN-002).
+  const { isLoading: rolesLoading, canView, canManage } = useMoneyPermissions();
   const queryClient = useQueryClient();
 
   const [dirFilter, setDirFilter] = useState<DirFilter>('all');
@@ -75,6 +64,7 @@ export default function MoneyScreen() {
 
   const [editing, setEditing] = useState<FinanceEntry | null>(null);
   const [creating, setCreating] = useState(false);
+  const [voidingId, setVoidingId] = useState<string | null>(null);
 
   const filters = useMemo(() => ({
     direction: dirFilter === 'all' ? undefined : dirFilter,
@@ -84,13 +74,13 @@ export default function MoneyScreen() {
   const list = useQuery({
     queryKey: ['admin.money.list', filters],
     queryFn:  () => container.listFinanceLedger.execute(filters),
-    enabled:  can('money.manage'),
+    enabled:  canView,
     staleTime: 15_000,
   });
   const accounts = useQuery({
     queryKey: ['admin.money.accounts'],
     queryFn:  () => container.listFinanceAccounts.execute(),
-    enabled:  can('money.manage'),
+    enabled:  canView,
     staleTime: 60_000,
   });
   const accountNames = useMemo(
@@ -103,12 +93,12 @@ export default function MoneyScreen() {
   const summary = useQuery({
     queryKey: ['admin.money.summary'],
     queryFn:  () => container.getFinanceSummary.execute({}),
-    enabled:  can('money.manage'),
+    enabled:  canView,
     staleTime: 15_000,
   });
 
   const remove = useMutation({
-    mutationFn: (id: string) => container.deleteFinanceEntry.execute(id),
+    mutationFn: (vars: { entryId: string; reason: string }) => container.deleteFinanceEntry.execute(vars.entryId, vars.reason),
     onSuccess:  () => {
       void queryClient.invalidateQueries({ queryKey: ['admin.money.list'] });
       void queryClient.invalidateQueries({ queryKey: ['admin.money.summary'] });
@@ -118,23 +108,13 @@ export default function MoneyScreen() {
   });
 
   const handleEdit = useCallback((entry: FinanceEntry) => setEditing(entry), []);
-  const handleDelete = useCallback(
-    async (entryId: string) => {
-      const ok = await confirmDelete(t.confirm.delete, L);
-      if (!ok) return;
-      try {
-        await remove.mutateAsync(entryId);
-      } catch (err) {
-        const code = isFinanceLedgerError(err) ? err.code : 'unknown';
-        const msg = t.errors[code as keyof typeof t.errors] ?? t.errors.unknown;
-        if (Platform.OS === 'web') {
-          if (typeof window !== 'undefined') window.alert(msg);
-        } else {
-          Alert.alert(msg);
-        }
-      }
+  // A void asks for the admin's reason in a dialog, which also shows a refusal (FR-FIN-005 AC2).
+  const handleDelete = useCallback((entryId: string) => setVoidingId(entryId), []);
+  const confirmVoid = useCallback(
+    async (reason: string) => {
+      if (voidingId !== null) await remove.mutateAsync({ entryId: voidingId, reason });
     },
-    [L, remove, t],
+    [remove, voidingId],
   );
 
   const renderItem = useCallback(
@@ -142,17 +122,17 @@ export default function MoneyScreen() {
       <FinanceRowItem
         entry={item}
         accountName={item.accountId ? (accountNames.get(item.accountId) ?? null) : null}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
+        onEdit={canManage ? handleEdit : undefined}
+        onDelete={canManage ? handleDelete : undefined}
       />
     ),
-    [accountNames, handleDelete, handleEdit],
+    [accountNames, canManage, handleDelete, handleEdit],
   );
 
   if (rolesLoading) {
     return <View style={styles.center}><Text>{t.loading}</Text></View>;
   }
-  if (!can('money.manage')) {
+  if (!canView) {
     return <View style={styles.center}><Text style={styles.deniedTitle}>{t.forbiddenTitle}</Text></View>;
   }
 
@@ -160,7 +140,9 @@ export default function MoneyScreen() {
     <View style={styles.root}>
       <View style={styles.header}>
         <Text style={styles.title}>{t.title}</Text>
-        <PrimaryButton testID="admin-money-new" label={t.newBtn} size="sm" onPress={() => setCreating(true)} />
+        {canManage && (
+          <PrimaryButton testID="admin-money-new" label={t.newBtn} size="sm" onPress={() => setCreating(true)} />
+        )}
       </View>
 
       <MoneySubNav active="ledger" />
@@ -221,6 +203,12 @@ export default function MoneyScreen() {
         ListEmptyComponent={
           !list.isLoading ? <AdminListEmpty title={t.emptyTitle} hint={t.emptyHint} /> : null
         }
+      />
+
+      <VoidEntryModal
+        visible={voidingId !== null}
+        onConfirm={confirmVoid}
+        onClose={() => setVoidingId(null)}
       />
 
       {(creating || editing) && (

@@ -2,8 +2,8 @@
  "generatedBy": "scripts/app-migration-map.mjs",
  "totals": {
   "rpc": {
-   "objects": 199,
-   "same": 127,
+   "objects": 203,
+   "same": 131,
    "renamed": 20,
    "changed": 33,
    "removed": 0,
@@ -44,18 +44,18 @@
  },
  "launchTotals": {
   "core": {
-   "objects": 106,
-   "same": 88,
+   "objects": 108,
+   "same": 89,
    "renamed": 1,
-   "changed": 17,
+   "changed": 18,
    "removed": 0,
    "missing": 0
   },
   "later": {
-   "objects": 116,
-   "same": 64,
+   "objects": 118,
+   "same": 67,
    "renamed": 4,
-   "changed": 28,
+   "changed": 27,
    "removed": 0,
    "missing": 20
   },
@@ -70,9 +70,9 @@
  },
  "modules": {
   "admin": {
-   "callSites": 52,
-   "oneToOne": 28,
-   "changed": 24,
+   "callSites": 50,
+   "oneToOne": 31,
+   "changed": 19,
    "removed": 0,
    "missing": 0
   },
@@ -696,14 +696,16 @@
     "rpc:admin_delete_message",
     "rpc:admin_audit_search",
     "table:reports",
+    "rpc:admin_list_admins",
+    "rpc:admin_set_org_slug",
     "table:user_account",
     "table:admin_role_grants",
     "table:organizations"
    ],
    "counts": {
-    "objects": 18,
-    "oneToOne": 13,
-    "changed": 5,
+    "objects": 20,
+    "oneToOne": 14,
+    "changed": 6,
     "removed": 0,
     "missing": 0
    }
@@ -1025,6 +1027,8 @@
    "rows": [
     "table:org_applications",
     "rpc:admin_set_manager",
+    "rpc:admin_org_tree",
+    "rpc:admin_hierarchy_census",
     "rpc:admin_org_application_approve",
     "rpc:admin_org_application_reject",
     "rpc:create_donation_intent",
@@ -1052,9 +1056,9 @@
     "rpc:api_standing_orders_charge_due"
    ],
    "counts": {
-    "objects": 27,
-    "oneToOne": 10,
-    "changed": 17,
+    "objects": 29,
+    "oneToOne": 13,
+    "changed": 16,
     "removed": 0,
     "missing": 0
    }
@@ -2071,7 +2075,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminRoleRepository.ts",
-     "line": 148,
+     "line": 125,
      "symbol": "SupabaseAdminRoleRepository.changeRole",
      "area": "admin"
     }
@@ -2299,8 +2303,78 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminRoleRepository.ts",
-     "line": 130,
+     "line": 107,
      "symbol": "SupabaseAdminRoleRepository.grantRole",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "admin_hierarchy_census",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Restored by migration 0013: community and role-holder totals and, per visible organization, its slug, verification and affiliates (`user_profile_fields.affiliated_org_id`) without a role.",
+   "oldObject": {
+    "signature": [
+     "admin_hierarchy_census() → Json"
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "admin_hierarchy_census",
+     "signature": [
+      "admin_hierarchy_census() → Json"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseOrgHierarchyRepository.ts",
+     "line": 123,
+     "symbol": "SupabaseOrgHierarchyRepository.getHierarchyCensus",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "admin_list_admins",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "Restored by migration 0012: the roster the caller may read (platform admins all, others the organizations their grants reach) with names, manager edge and `last_seen_at`.",
+   "oldObject": {
+    "signature": [
+     "admin_list_admins(p_include_revoked?: boolean) → { avatar_url: string display_name: string grant_id: string granted_at: string granted_by: string granted_by_display_name: string last_seen_at: string revoked_at: string revoked_by: string role: string scope_org_id: st..."
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "admin_list_admins",
+     "signature": [
+      "admin_list_admins(p_include_revoked?: boolean) → { avatar_url: string display_name: string grant_id: string granted_at: string granted_by: string granted_by_display_name: string last_seen_at: string manager_grant_id: string revoked_at: string revoked_by: string role..."
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminRoleRepository.ts",
+     "line": 94,
+     "symbol": "SupabaseAdminRoleRepository.listAdmins",
      "area": "admin"
     }
    ]
@@ -2442,6 +2516,41 @@
      "file": "app/packages/infrastructure-supabase/src/admin/SupabaseOrgApplicationsRepository.ts",
      "line": 103,
      "symbol": "SupabaseOrgApplicationsRepository.unwrap",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "admin_org_tree",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Restored by migration 0012: active grants with `effective_org_id`, organization name, manager edge and `last_seen_at`; same visibility as `admin_list_admins`.",
+   "oldObject": {
+    "signature": [
+     "admin_org_tree(p_org_id?: string) → { avatar_url: string display_name: string effective_org_id: string grant_id: string is_platform: boolean last_seen_at: string manager_grant_id: string org_name: string role: string scope_org_id: string user_id: string..."
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "admin_org_tree",
+     "signature": [
+      "admin_org_tree(p_org_id?: string) → { avatar_url: string display_name: string effective_org_id: string grant_id: string is_platform: boolean last_seen_at: string manager_grant_id: string org_name: string role: string scope_org_id: string user_id: string..."
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseOrgHierarchyRepository.ts",
+     "line": 104,
+     "symbol": "SupabaseOrgHierarchyRepository.getOrgTree",
      "area": "admin"
     }
    ]
@@ -2728,7 +2837,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminRoleRepository.ts",
-     "line": 143,
+     "line": 120,
      "symbol": "SupabaseAdminRoleRepository.revokeRole",
      "area": "admin"
     }
@@ -2737,11 +2846,11 @@
   {
    "old": "admin_set_manager",
    "kind": "rpc",
-   "status": "changed",
+   "status": "same",
    "launch": "later",
    "confidence": "high",
    "missing": null,
-   "note": "`p_manager_grant_id` is required: a grant can be moved under another grant but not detached.",
+   "note": "Signature unchanged: `p_manager_grant_id` optional again; only the super admin detaches (no manager) or skips the seniority rule; errors `forbidden_manage`, `manager_not_found`, `manager_revoked`, `manager_other_org`, `manager_cycle`, `manager_rank` (migration 0011).",
    "oldObject": {
     "signature": [
      "admin_set_manager(p_grant_id: string, p_manager_grant_id?: string) → undefined"
@@ -2753,7 +2862,7 @@
      "name": "admin_set_manager",
      "source": "60_moderation/020_admin_role_rpcs.sql:205",
      "signature": [
-      "admin_set_manager(p_grant_id: string, p_manager_grant_id: string) → undefined"
+      "admin_set_manager(p_grant_id: string, p_manager_grant_id?: string) → undefined"
      ],
      "errors": [
       {
@@ -2789,8 +2898,39 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/admin/SupabaseOrgHierarchyRepository.ts",
-     "line": 103,
+     "line": 116,
      "symbol": "SupabaseOrgHierarchyRepository.unwrap",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "admin_set_org_slug",
+   "kind": "rpc",
+   "status": "changed",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "New in migration 0014 (no old object): the super admin changes an organization page slug (`invalid_slug`, `slug_taken`, `org_not_found`).",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "admin_set_org_slug",
+     "signature": [
+      "admin_set_org_slug(p_org_id: string, p_slug: string) → string"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseOrgHierarchyRepository.ts",
+     "line": 127,
+     "symbol": "SupabaseOrgHierarchyRepository.setOrgSlug",
      "area": "admin"
     }
    ]
@@ -4155,8 +4295,8 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/auth/bootstrapSession.ts",
-     "line": 138,
-     "symbol": "fetchBootstrapSession",
+     "line": 155,
+     "symbol": "readBootstrapSession",
      "area": "auth"
     },
     {
@@ -6295,7 +6435,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/admin/SupabaseFinanceLedgerRepository.ts",
-     "line": 62,
+     "line": 57,
      "symbol": "SupabaseFinanceLedgerRepository.list",
      "area": "admin"
     }
@@ -6308,7 +6448,7 @@
    "launch": "later",
    "confidence": "high",
    "missing": null,
-   "note": "Voids an entry with a reason (the admin delete action) or sets its reconciliation; the entry stays in the books.",
+   "note": "Voids an entry with the admin's reason (3 to 500 characters, `void_reason_required` otherwise; migration 0014) or sets its reconciliation; the entry stays in the books.",
    "oldObject": {},
    "targets": [
     {
@@ -6344,7 +6484,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/admin/SupabaseFinanceLedgerRepository.ts",
-     "line": 126,
+     "line": 124,
      "symbol": "SupabaseFinanceLedgerRepository.unwrapFinance",
      "area": "admin"
     }
@@ -6379,7 +6519,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/admin/SupabaseFinanceLedgerRepository.ts",
-     "line": 84,
+     "line": 79,
      "symbol": "SupabaseFinanceLedgerRepository.summary",
      "area": "admin"
     }
@@ -6440,7 +6580,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/admin/SupabaseFinanceLedgerRepository.ts",
-     "line": 103,
+     "line": 98,
      "symbol": "SupabaseFinanceLedgerRepository.upsert",
      "area": "admin"
     }
@@ -10740,28 +10880,9 @@
     }
    ],
    "areas": [
-    "admin",
     "moderation"
    ],
    "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminRoleRepository.ts",
-     "line": 100,
-     "symbol": "SupabaseAdminRoleRepository.listAdmins",
-     "area": "admin",
-     "ops": [
-      "select"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseOrgHierarchyRepository.ts",
-     "line": 131,
-     "symbol": "SupabaseOrgHierarchyRepository.snapshot",
-     "area": "admin",
-     "ops": [
-      "select"
-     ]
-    },
     {
      "file": "app/packages/infrastructure-supabase/src/moderation/SupabaseModerationAdminRepository.ts",
      "line": 71,
@@ -12602,15 +12723,6 @@
      "file": "app/packages/infrastructure-supabase/src/admin/financeOrg.ts",
      "line": 20,
      "symbol": "readPlatformOrgId",
-     "area": "admin",
-     "ops": [
-      "select"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseOrgHierarchyRepository.ts",
-     "line": 140,
-     "symbol": "SupabaseOrgHierarchyRepository.snapshot",
      "area": "admin",
      "ops": [
       "select"
@@ -15460,36 +15572,9 @@
      ]
     },
     {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminRoleRepository.ts",
-     "line": 120,
-     "symbol": "SupabaseAdminRoleRepository.loadPeople",
-     "area": "admin",
-     "ops": [
-      "select"
-     ]
-    },
-    {
      "file": "app/packages/infrastructure-supabase/src/admin/SupabaseOrgApplicationsRepository.ts",
      "line": 84,
      "symbol": "SupabaseOrgApplicationsRepository.list",
-     "area": "admin",
-     "ops": [
-      "select"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseOrgHierarchyRepository.ts",
-     "line": 88,
-     "symbol": "SupabaseOrgHierarchyRepository.getOrgTree",
-     "area": "admin",
-     "ops": [
-      "select"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseOrgHierarchyRepository.ts",
-     "line": 111,
-     "symbol": "SupabaseOrgHierarchyRepository.getHierarchyCensus",
      "area": "admin",
      "ops": [
       "select"

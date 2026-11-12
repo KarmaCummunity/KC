@@ -5,9 +5,9 @@ import { PrimaryButton } from '../../../src/components/ui/Buttons';
 import { useAdminPortalChrome } from '../../../src/components/admin/AdminPortalChrome';
 import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { hasPermission, isFinanceLedgerError, type AdminRole, type FinanceAccount } from '@kc/domain';
+import { isFinanceLedgerError, type FinanceAccount } from '@kc/domain';
 import { makeUseStyles, radius, spacing, Text, typography } from '@kc/ui';
-import { useAdminRoles } from '../../../src/hooks/useAdminRoles';
+import { useMoneyPermissions } from '../../../src/hooks/useMoneyPermissions';
 import { container } from '../../../src/lib/container';
 import { formatMoney } from '../../../src/lib/formatMoney';
 import { AdminListEmpty } from '../../../src/components/admin/AdminListEmpty';
@@ -23,23 +23,23 @@ export { RouteErrorBoundary as ErrorBoundary } from '../../../src/components/Rou
 export default function MoneyAccountsScreen() {
   const styles = useStyles();
   const t = useLocaleBundle().admin.money;
-  const { roles, isLoading: rolesLoading } = useAdminRoles();
-  const allowed = hasPermission(roles as readonly AdminRole[], 'money.manage');
+  // Readers of the books see the accounts; only those who keep the books edit them.
+  const { isLoading: rolesLoading, canView: allowed, canManage } = useMoneyPermissions();
   const queryClient = useQueryClient();
 
   const [editing, setEditing] = useState<FinanceAccount | null>(null);
   const [creating, setCreating] = useState(false);
 
   const newAccountBtn = useMemo(
-    () => (
+    () => (canManage ? (
       <PrimaryButton
         label={t.accounts.newBtn}
         size="sm"
         onPress={() => setCreating(true)}
         testID="admin-money-account-new"
       />
-    ),
-    [t.accounts.newBtn],
+    ) : null),
+    [canManage, t.accounts.newBtn],
   );
   useAdminPortalChrome({ headerRight: newAccountBtn });
 
@@ -72,8 +72,8 @@ export default function MoneyAccountsScreen() {
     <FinanceAccountCard
       key={a.accountId}
       account={a}
-      onEdit={() => setEditing(a)}
-      onToggleActive={() => toggleActive.mutate(a)}
+      onEdit={canManage ? () => setEditing(a) : undefined}
+      onToggleActive={canManage ? () => toggleActive.mutate(a) : undefined}
     />
   );
 
