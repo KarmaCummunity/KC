@@ -143,7 +143,7 @@ Personal statistics are visible only to the user themselves.
 
 **Acceptance Criteria.**
 - AC1. The personal stats screen requires authentication and never exposes data about other users (counters of other users are exposed only as the public counters on `Other Profile`, with the public/internal split per `FR-PROFILE-013`).
-- AC2. Community stats (`FR-STATS-004`) are readable by anyone, guests included, because the public About page shows them; they are counts only and never include identifying information. {{D:community-stats-open-to-guests}}
+- AC2. Community stats (`FR-STATS-004`) are readable by anyone, guests included, because the public About page shows them; they are counts only and never include identifying information. D152
 
 ---
 
