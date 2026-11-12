@@ -3714,6 +3714,66 @@ export type Database = {
         }
         Returns: undefined
       }
+      admin_task_add_comment: {
+        Args: { p_body: string; p_task_id: string }
+        Returns: string
+      }
+      admin_task_assign: {
+        Args: { p_new_assignee: string; p_task_id: string }
+        Returns: undefined
+      }
+      admin_task_create: {
+        Args: {
+          p_assignee_id?: string
+          p_category?: string
+          p_description?: string
+          p_due_at?: string
+          p_labels?: string[]
+          p_priority?: string
+          p_title: string
+        }
+        Returns: string
+      }
+      admin_task_delete: { Args: { p_task_id: string }; Returns: undefined }
+      admin_task_detail: { Args: { p_task_id: string }; Returns: Json }
+      admin_task_list: {
+        Args: {
+          p_assignee?: string
+          p_category?: string
+          p_cursor?: Json
+          p_due_from?: string
+          p_due_to?: string
+          p_label?: string
+          p_limit?: number
+          p_only_mine?: boolean
+          p_overdue?: boolean
+          p_priority?: string
+          p_status?: string
+          p_unassigned_only?: boolean
+        }
+        Returns: {
+          cursor: Json
+          task: Json
+        }[]
+      }
+      admin_task_open_count: { Args: never; Returns: number }
+      admin_task_set_status: {
+        Args: { p_new_status: string; p_task_id: string }
+        Returns: undefined
+      }
+      admin_task_update: {
+        Args: {
+          p_category?: string
+          p_clear_due?: boolean
+          p_description?: string
+          p_due_at?: string
+          p_labels?: string[]
+          p_priority?: string
+          p_task_id: string
+          p_title?: string
+        }
+        Returns: undefined
+      }
       admin_user_feedback_list: {
         Args: { p_cursor?: Json; p_limit?: number }
         Returns: {
@@ -4327,6 +4387,57 @@ export type Database = {
           p_org_id: string
         }
         Returns: Json
+      }
+      crm_contact_count: {
+        Args: {
+          p_org_id: string
+          p_query?: string
+          p_status?: string
+          p_tag?: string
+        }
+        Returns: number
+      }
+      crm_contact_delete: { Args: { p_contact_id: string }; Returns: undefined }
+      crm_contact_list: {
+        Args: {
+          p_cursor?: Json
+          p_limit?: number
+          p_org_id: string
+          p_query?: string
+          p_status?: string
+          p_tag?: string
+        }
+        Returns: {
+          contact: Json
+          cursor: Json
+        }[]
+      }
+      crm_contact_mark_contacted: {
+        Args: { p_contact_id: string }
+        Returns: undefined
+      }
+      crm_contact_upsert: {
+        Args: {
+          p_contact_id?: string
+          p_email?: string
+          p_name?: string
+          p_notes?: string
+          p_org_id: string
+          p_organization?: string
+          p_phone?: string
+          p_role_title?: string
+          p_status?: string
+          p_tags?: string[]
+        }
+        Returns: string
+      }
+      crm_my_orgs: {
+        Args: never
+        Returns: {
+          is_platform: boolean
+          name: string
+          org_id: string
+        }[]
       }
       decide_event_registration: {
         Args: { p_approve: boolean; p_handoff_id: string }
@@ -5302,6 +5413,51 @@ export type Database = {
           p_source: string
           p_user_agent_hash: string
           p_version: number
+        }
+        Returns: string
+      }
+      timesheet_approve: {
+        Args: { p_entry_id: string; p_note?: string }
+        Returns: undefined
+      }
+      timesheet_count: {
+        Args: {
+          p_from?: string
+          p_scope?: string
+          p_status?: string
+          p_to?: string
+          p_user_id?: string
+        }
+        Returns: number
+      }
+      timesheet_delete: { Args: { p_entry_id: string }; Returns: undefined }
+      timesheet_list: {
+        Args: {
+          p_cursor?: Json
+          p_from?: string
+          p_limit?: number
+          p_scope?: string
+          p_status?: string
+          p_to?: string
+          p_user_id?: string
+        }
+        Returns: {
+          cursor: Json
+          entry: Json
+        }[]
+      }
+      timesheet_reject: {
+        Args: { p_entry_id: string; p_note?: string }
+        Returns: undefined
+      }
+      timesheet_submit: { Args: { p_entry_id: string }; Returns: undefined }
+      timesheet_upsert: {
+        Args: {
+          p_description?: string
+          p_entry_id?: string
+          p_hours_x100?: number
+          p_project?: string
+          p_work_date?: string
         }
         Returns: string
       }
