@@ -74,9 +74,9 @@ export class SupabaseAuthService implements IAuthService {
     return data.session ? toSession(data.session) : null;
   }
 
-  onSessionChange(listener: (session: AuthSession | null) => void): () => void {
-    const { data } = this.client.auth.onAuthStateChange((_event, session) => {
-      listener(session ? toSession(session) : null);
+  onSessionChange(listener: (session: AuthSession | null, event?: string) => void): () => void {
+    const { data } = this.client.auth.onAuthStateChange((event, session) => {
+      listener(session ? toSession(session) : null, event);
     });
     return () => data.subscription.unsubscribe();
   }
