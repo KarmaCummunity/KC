@@ -3,7 +3,7 @@
 // bounded. Cache hits render inline; eligible misses materialize in the
 // background and swap in on the next read. Failed/skipped fields are remembered
 // (session skip-map) so they never re-fire.
-import { useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   toTranslatableFields,
@@ -21,6 +21,9 @@ export interface TranslatedFields {
   title?: string;
   description?: string;
 }
+
+/** Shared value for a post with no translation, so memoized cards keep the same prop. */
+const NO_TRANSLATED_FIELDS: TranslatedFields = Object.freeze({});
 
 // `fields` restricts which translatable fields the overlay materializes (e.g.
 // the feed grid renders only the title, so it should not pay for description
@@ -83,21 +86,40 @@ export function useTranslatedPosts(
     return () => { cancelled = true; };
   }, [hitsQuery.data, hitMap, readerLanguage, postIds, queryClient]);
 
-  const eligibleKeys = useMemo(() => new Set(eligible.map((f) => key(f.postId, f.field))), [eligible]);
+  // Keyed by content, not by array identity: the visible set is a new array on every viewport
+  // change, but the status lookup below should only change when the eligible fields do.
+  const eligibleSignature = eligible.map((f) => key(f.postId, f.field)).join('|');
+  const eligibleKeys = useMemo(
+    () => new Set<FieldKey>(eligibleSignature === '' ? [] : eligibleSignature.split('|')),
+    [eligibleSignature],
+  );
 
-  function getTranslatedFields(postId: string): TranslatedFields {
-    return {
-      title: hitMap.get(key(postId, 'title')),
-      description: hitMap.get(key(postId, 'description')),
-    };
-  }
-  function getStatus(postId: string, field: 'title' | 'description'): TranslationStatus {
-    const k = key(postId, field);
-    return deriveTranslationStatus({
-      hasTranslation: hitMap.has(k),
-      isEligible: eligibleKeys.has(k),
-      inFlight: inFlightRef.current.has(k),
-    });
-  }
-  return { getTranslatedFields, getStatus };
+  // One fields object per translated post, rebuilt only when the hits change. Returning a
+  // fresh object per call would defeat React.memo on every card of the list.
+  const fieldsByPost = useMemo(() => {
+    const m = new Map<string, TranslatedFields>();
+    for (const h of hitsQuery.data?.hits ?? []) {
+      const fieldsOfPost = m.get(h.postId) ?? {};
+      m.set(h.postId, { ...fieldsOfPost, [h.field]: h.translatedText });
+    }
+    return m;
+  }, [hitsQuery.data]);
+
+  const getTranslatedFields = useCallback(
+    (postId: string): TranslatedFields => fieldsByPost.get(postId) ?? NO_TRANSLATED_FIELDS,
+    [fieldsByPost],
+  );
+  const getStatus = useCallback(
+    (postId: string, field: 'title' | 'description'): TranslationStatus => {
+      const k = key(postId, field);
+      return deriveTranslationStatus({
+        hasTranslation: hitMap.has(k),
+        isEligible: eligibleKeys.has(k),
+        inFlight: inFlightRef.current.has(k),
+      });
+    },
+    [hitMap, eligibleKeys],
+  );
+  // Memoized so list consumers (renderItem dependencies) do not change on unrelated renders.
+  return useMemo(() => ({ getTranslatedFields, getStatus }), [getTranslatedFields, getStatus]);
 }

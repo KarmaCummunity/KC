@@ -45,7 +45,13 @@ export function PostMenuButton({
   const { roles } = useAdminRoles();
   const canManuallyRemovePost = hasPermission(roles as readonly AdminRole[], 'reports.manual_remove_post');
   const [open, setOpen] = useState(false);
-  const { isSaved, busy: saveBusy, toggleSave } = usePostSavedActions(post.postId);
+  // The saved state is only shown inside the sheet, so it is looked up when the sheet opens
+  // (not once per rendered card). The toggle stays disabled until that first lookup resolves,
+  // so a tap can never act on an unknown state.
+  const { isSaved, isLoading: savedLoading, busy: saveBusy, toggleSave } = usePostSavedActions(
+    post.postId,
+    { enabled: open },
+  );
 
   if (viewerId === null) {
     // Guests don't get a menu (no actions available to them).
@@ -83,7 +89,7 @@ export function PostMenuButton({
         viewerId={viewerId}
         isSuperAdmin={canManuallyRemovePost}
         isSaved={isSaved}
-        saveBusy={saveBusy}
+        saveBusy={saveBusy || savedLoading}
         onToggleSave={toggleSave}
         onAfterRemoval={() => {
           void queryClient.invalidateQueries({ queryKey: ['my-posts'] });

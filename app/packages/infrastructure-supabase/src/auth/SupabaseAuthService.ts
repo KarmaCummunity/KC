@@ -61,7 +61,11 @@ export class SupabaseAuthService implements IAuthService {
 
   async signOut(): Promise<void> {
     const { error } = await this.client.auth.signOut();
-    if (error) throw mapAuthError(error);
+    if (!error) return;
+    // The server revoke failed (offline, timeout). supabase-js keeps the stored session in that
+    // case, so drop it locally: the user must be signed out on this device regardless of network.
+    const { error: localError } = await this.client.auth.signOut({ scope: 'local' });
+    if (localError) throw mapAuthError(localError);
   }
 
   async getCurrentSession(): Promise<AuthSession | null> {
