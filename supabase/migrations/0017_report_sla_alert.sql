@@ -17,7 +17,7 @@ insert into kc_private.notification_kinds (kind, category, title_key, body_key) 
   ('report_sla_warning', 'critical', 'notifications.reportSlaWarningTitle', 'notifications.reportSlaWarningBody');
 
 -- Enqueues one `report_sla_warning` per overdue case and moderation staff member who has not
--- been alerted about it yet; the notification opens the case (entity = the reported target).
+-- been alerted about it yet; the notification names the case (entity = the reported target).
 -- Returns the number of notifications enqueued. Run hourly by the scheduler.
 create function kc_private.report_sla_alert_sweep()
 returns integer
