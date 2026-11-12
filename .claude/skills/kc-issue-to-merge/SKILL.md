@@ -102,7 +102,7 @@ Read [`references/testing-matrix.md`](references/testing-matrix.md).
    ```
 
    If your runtime assigns a branch name, use that name, still based on `origin/dev`. If that branch already carried a PR that merged, recreate it from `origin/dev` (`git checkout -B <branch> origin/dev`); never stack new work on merged history.
-3. **Migrations.** Writing SQL? Claim a migration range first ([MIGRATION_RANGES](../../../docs/agents/MIGRATION_RANGES.md)).
+3. **Migrations.** Writing SQL? Name the file `next-NN_slug.sql`; the number is assigned on merge ([MIGRATION_RANGES](../../../docs/agents/MIGRATION_RANGES.md)). Never pick a number.
 
 ## Phase 5: Implement test-first
 

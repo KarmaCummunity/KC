@@ -48,6 +48,11 @@ jobs:
           ACTOR: ${{ github.actor }}
         run: echo "$GH_TOKEN" | docker login ghcr.io -u "$ACTOR" --password-stdin
 
+      # A PR adds `next-NN_slug.sql` and the number is assigned on merge (scripts/migration-ids.mjs).
+      # Numbering the throwaway checkout first applies and tests the files under the numbers they get.
+      - name: Number pending migrations (this checkout only)
+        run: node scripts/migration-ids.mjs assign
+
       - name: Start Supabase (applies supabase/migrations, the baseline and any later ones)
         run: |
           # Image pulls hit registry rate limits intermittently (`toomanyrequests`

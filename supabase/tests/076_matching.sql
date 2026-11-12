@@ -150,7 +150,7 @@ select lives_ok($$select public.embedding_job_store(('10000000-0000-4000-8000-00
 select lives_ok($$select public.embedding_job_fail('10000000-0000-4000-8000-000000000005', 'provider error')$$, 'a failure is recorded');
 select is((select string_agg(status, ',' order by post_id) from kc_private.embedding_jobs),
   'done,done,done,done,failed,processing', 'each job shows where it stands');
--- The queue moves along the graph (machine `embedding_job`, 0050).
+-- The queue moves along the graph (machine `embedding_job`).
 select throws_ok($$update kc_private.embedding_jobs set status = 'failed' where post_id = '10000000-0000-4000-8000-000000000001'$$,
   'P0001', 'illegal_transition', 'a stored job is not marked failed afterwards');
 select throws_ok($$update kc_private.embedding_jobs set status = 'stuck' where post_id = '10000000-0000-4000-8000-000000000006'$$,

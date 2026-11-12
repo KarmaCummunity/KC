@@ -9,7 +9,7 @@ import { defineMachine } from '../machine';
  * - A post that changes asks for a fresh embedding from any state (`→ pending`).
  * - Taking over a job whose worker went silent keeps it `processing`: no move.
  *
- * SQL copy: `supabase/migrations/0050_knowledge_topic_embedding_job_machines.sql`.
+ * SQL copy: the forward migration `knowledge_topic_embedding_job_machines` (`supabase/migrations/`).
  */
 export const embeddingJobMachine = defineMachine({
   id: 'embedding_job',

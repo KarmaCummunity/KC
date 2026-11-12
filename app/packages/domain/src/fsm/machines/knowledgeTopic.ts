@@ -9,7 +9,7 @@ import { defineMachine } from '../machine';
  * - `merged` is final: the slug of a merged topic keeps resolving to its replacement.
  *   Rejecting a suggestion deletes the row, so it is not a state.
  *
- * SQL copy: `supabase/migrations/0050_knowledge_topic_embedding_job_machines.sql`.
+ * SQL copy: the forward migration `knowledge_topic_embedding_job_machines` (`supabase/migrations/`).
  */
 export const knowledgeTopicMachine = defineMachine({
   id: 'knowledge_topic',

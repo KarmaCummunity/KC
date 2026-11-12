@@ -126,7 +126,7 @@ select throws_ok(
   $$update public.knowledge_topics set status = 'merged' where slug = 'proposed-topic'$$,
   '23514', null, 'a merged topic names the topic that replaced it');
 
--- ── The topic graph (machine `knowledge_topic`, 0050) ─────────────────────
+-- ── The topic graph (machine `knowledge_topic`) ─────────────────────
 -- `proposed-topic` was approved above, so it is active now.
 select throws_ok(
   $$update public.knowledge_topics set status = 'proposed' where slug = 'proposed-topic'$$,

@@ -36,4 +36,3 @@
 0034_back_office_admin_tasks.sql
 0035_back_office_crm.sql
 0036_back_office_timesheets.sql
-0050_knowledge_topic_embedding_job_machines.sql
