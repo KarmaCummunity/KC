@@ -17,7 +17,9 @@ export type NotificationPathname =
   | '/settings/follow-requests'
   | '/settings/audit'
   | '/account-blocked'
-  | '/matches';
+  | '/matches'
+  | '/(admin)/reports/[caseId]'
+  | '/(admin)/support';
 
 export type ResolvedRoute = { pathname: NotificationPathname; params: Record<string, string> };
 
@@ -50,6 +52,16 @@ const post: RouteBuilder = (target) => {
 };
 
 const inbox = screen('/notifications/inbox');
+
+const REPORT_TARGET_TYPES: readonly string[] = ['post', 'user', 'chat', 'comment'];
+
+/** The report case about the notification's entity (the reported target), FR-ADMIN-013. */
+const reportCase: RouteBuilder = (target) => {
+  const type = target.entity?.type;
+  const id = uuid(target.entity?.id);
+  if (!type || !REPORT_TARGET_TYPES.includes(type) || !id) return null;
+  return { pathname: '/(admin)/reports/[caseId]', params: { caseId: `${type}:${id}` } };
+};
 
 export const NOTIFICATION_ROUTES: Record<NotificationKind, RouteBuilder> = {
   // FR-NOTIF-001..004 — conversations.
@@ -131,6 +143,10 @@ export const NOTIFICATION_ROUTES: Record<NotificationKind, RouteBuilder> = {
   post_removed: post,
   post_restored: post,
   moderation_review_needed: inbox,
+  // FR-ADMIN-012 AC6 — a case waiting past the SLA warning time opens that case.
+  report_sla_warning: reportCase,
+  // FR-MOD-002 — a new support issue opens the staff support inbox (the thread needs a join).
+  support_issue_received: screen('/(admin)/support'),
   // World notices (70_worlds).
   ride_route_match: post,
   post_emergency: post,
