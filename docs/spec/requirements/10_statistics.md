@@ -1,6 +1,6 @@
 # 2.10 Personal & Community Statistics
 
-> **Status:** 🟡 FR-STATS-001..008 ✅ (platform statistics for admins and givings by world since 2026-11-03); FR-STATS-009 waits for ORG-P1. Personal stats screen (`/stats`), counters from `users`, community panel from `community_stats`, activity timeline from `user_personal_activity_log` + `rpc_my_activity_timeline` (migrations `0044_personal_activity_log`, `0045_stats_recompute_nightly`). Nightly `stats_recompute_personal_counters_nightly` + `stats_drift_events` + pg_cron job `stats_recompute_nightly` satisfy **FR-STATS-005** (operator: enable `pg_cron`, see `OPERATOR_RUNBOOK.md`). ⚠️ Audit 2026-05-16 (partial): FR-STATS-001 AC2 "reactive" focus-only gap **closed by FR-KARMA-009** — `useMeRealtime` (`_layout.tsx`) subscribes persistently to `postgres_changes UPDATE` on own `users` row and patches the React Query cache, so counters update live without a focus-refetch. Remaining open items tracked in TD-98: FR-STATS-006 AC2 says auth-only but view is granted to `anon` to satisfy FR-FEED-014 (spec contradiction); FR-STATS-003 AC1 caps at 30 but use case allows 50; section order on screen is community-first, spec is counters-first. See `docs/SSOT/archive/audit/2026-05-16/06_donations_stats_settings.md`.
+> **Status:** 🟡 FR-STATS-001..008 ✅ (platform statistics for admins and givings by world since 2026-11-03); FR-STATS-009 waits for ORG-P1. Personal stats screen (`/stats`), counters from `users`, community panel from `community_stats`, activity timeline from `user_personal_activity_log` + `rpc_my_activity_timeline` (migrations `0044_personal_activity_log`, `0045_stats_recompute_nightly`). Nightly `stats_recompute_personal_counters_nightly` + `stats_drift_events` + pg_cron job `stats_recompute_nightly` satisfy **FR-STATS-005** (operator: enable `pg_cron`, see `OPERATOR_RUNBOOK.md`). ⚠️ Audit 2026-05-16 (partial): FR-STATS-001 AC2 "reactive" focus-only gap **closed by FR-KARMA-009** — `useMeRealtime` (`_layout.tsx`) subscribes persistently to `postgres_changes UPDATE` on own `users` row and patches the React Query cache, so counters update live without a focus-refetch. Remaining open items tracked in TD-98: FR-STATS-006 AC2 now allows guests (the contradiction with FR-FEED-014 is closed); FR-STATS-003 AC1 caps at 30 but use case allows 50; section order on screen is community-first, spec is counters-first. See `docs/SSOT/archive/audit/2026-05-16/06_donations_stats_settings.md`.
 
 
 
@@ -143,7 +143,7 @@ Personal statistics are visible only to the user themselves.
 
 **Acceptance Criteria.**
 - AC1. The personal stats screen requires authentication and never exposes data about other users (counters of other users are exposed only as the public counters on `Other Profile`, with the public/internal split per `FR-PROFILE-013`).
-- AC2. Community stats are accessible to any authenticated user but never include identifying information.
+- AC2. Community stats (`FR-STATS-004`) are readable by anyone, guests included, because the public About page shows them; they are counts only and never include identifying information. {{D:community-stats-open-to-guests}}
 
 ---
 
