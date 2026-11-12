@@ -7,7 +7,7 @@ export {
 export type {
   FsmEdge, FsmMachine, TransitionAnswer, TransitionFail, TransitionOk,
 } from './machine';
-export { FSM_MACHINES, LEGACY_FSM_MACHINES } from './catalog';
+export { FSM_MACHINES } from './catalog';
 export { adminTaskMachine } from './machines/adminTask';
 export { postMachine } from './machines/post';
 export { givingHandoffMachine } from './machines/givingHandoff';

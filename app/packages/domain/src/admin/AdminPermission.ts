@@ -91,7 +91,9 @@ export const PERMISSION_MATRIX: Readonly<Record<AdminPermission, readonly AdminR
   'money.manage':               [...ADMIN_UP, 'org_admin', 'org_treasurer'],
   // Public finance switches and the donors overview: platform admins and org admins.
   'money.transparency':         [...ADMIN_UP, 'org_admin'],
-  'crm.manage':                 MODERATOR_UP,
+  // FR-ADMIN-032 — an organization's managers run its contact book; platform staff run the
+  // platform organization's (the server scopes every call, kc_private.crm_assert).
+  'crm.manage':                 [...MODERATOR_UP, 'org_admin', 'org_manager'],
   // 20_organizations `org.review_applications`: the server opens the queue to admins and up.
   'org.review_applications':    ADMIN_UP,
   'whatsapp.manage':            MODERATOR_UP,

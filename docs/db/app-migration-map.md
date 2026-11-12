@@ -8,12 +8,12 @@ The application (`app/packages/infrastructure-supabase`, `app/apps/mobile`) and 
 
 | Kind | Objects used | 1:1 | 1:1 (renamed) | CHANGED | REMOVED | MISSING |
 | --- | --- | --- | --- | --- | --- | --- |
-| RPCs | 181 | 114 | 20 | 28 | 0 | 19 |
+| RPCs | 203 | 131 | 20 | 33 | 0 | 19 |
 | Tables and views | 63 | 45 | 0 | 17 | 0 | 1 |
 | Storage buckets | 4 | 3 | 0 | 1 | 0 | 0 |
 | Realtime channels | 6 | 6 | 0 | 0 | 0 | 0 |
 | Edge Function invokes | 3 | 3 | 0 | 0 | 0 | 0 |
-| **Total** | 257 | 171 | 20 | 46 | 0 | 20 |
+| **Total** | 279 | 188 | 20 | 51 | 0 | 20 |
 
 ### Launch scope
 
@@ -23,7 +23,7 @@ Every row carries `launch` (spec D102, `docs/spec/96_launch_and_first_group_plan
 | --- | --- | --- | --- | --- | --- | --- |
 | core | 108 | 89 | 1 | 18 | 0 | 0 |
 | wedge | 53 | 32 | 15 | 6 | 0 | 0 |
-| later | 96 | 50 | 4 | 22 | 0 | 20 |
+| later | 118 | 67 | 4 | 27 | 0 | 20 |
 | **Launch-critical (core + wedge)** | 161 | 121 | 16 | 24 | 0 | 0 |
 
 Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename of the function or its arguments · **CHANGED** the caller's logic changes · **REMOVED** no replacement by design · **MISSING** the baseline has no equivalent although the code needs one (§4). Confidence: **high** read in the baseline source, **medium** inferred from names and generated types.
@@ -31,7 +31,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 ## 2. Rules that hold everywhere
 
 - Capabilities the baseline does not provide and the identity adapters therefore do not call (they report `BackendUnavailableError` and the screens degrade): the blocked-users list (M01, the screen shows its empty state; unblock from a profile is not reachable because `users_hide_blocked` hides it), follow suggestions (M03) and the profile completeness nudge (M04), both hidden on the suggestions screen, and the About team roster (M08, no team section).
-- Internal back-office tools the baseline does not provide and whose adapters therefore make no call (they report `BackendUnavailableError`; the sections are parked behind `BACK_OFFICE_TOOLS_AVAILABLE`): the admin task tracker (FR-ADMIN-018), the CRM contacts (roadmap phase 3) and the timesheets (not in the spec), formerly M19. Whether they belong in this database is a product decision.
+- The internal back-office tools (formerly M19) were rebuilt after the baseline as forward migrations: the admin task tracker (FR-ADMIN-018, `0034`), CRM contacts per organization (FR-ADMIN-032, `0035`) and staff timesheets (FR-ADMIN-033, `0036`).
 - Errors: every baseline RPC raises `P0001` with a stable snake_case message (`unauthenticated` uses `42501`). Map on `error.message`, never on a SQLSTATE or on Hebrew text. Codes marked † in the tables are not referenced anywhere in the app today and need a user-visible mapping.
 - Paging: no OFFSET anywhere. Lists take the `next_cursor` JSON of the last row (cards) or explicit `p_before_*` / `p_after_*` values; application ports that expose `offset` change to an opaque cursor.
 - Money: integer agorot (`*_agorot`), never ILS floats or `*_cents` names.
@@ -44,7 +44,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 
 | Module | Call sites | 1:1 | Logic changes | Removed | MISSING |
 | --- | --- | --- | --- | --- | --- |
-| `infrastructure-supabase/src/admin/` | 28 | 14 | 14 | 0 | 0 |
+| `infrastructure-supabase/src/admin/` | 50 | 31 | 19 | 0 | 0 |
 | `infrastructure-supabase/src/auth/` | 2 | 2 | 0 | 0 | 0 |
 | `infrastructure-supabase/src/blocks/` | 3 | 3 | 0 | 0 | 0 |
 | `infrastructure-supabase/src/challenges/` | 9 | 6 | 3 | 0 | 0 |
@@ -94,7 +94,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 
 ### `infrastructure-supabase/src/admin/`
 
-28 call sites: 14 map 1:1, 14 need logic changes, 0 removed, 0 MISSING.
+50 call sites: 31 map 1:1, 19 need logic changes, 0 removed, 0 MISSING.
 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -109,6 +109,21 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `admin_revoke_role` | core | 1:1 | `admin_revoke_role(p_grant_id: string) → undefined` | Signature unchanged. | `account_not_active`, `forbidden_revoke`, `grant_already_revoked`, `grant_not_found`, `unauthenticated` | high | SupabaseAdminRoleRepository.ts:120 |
 | `admin_set_manager` | later | 1:1 | `admin_set_manager(p_grant_id: string, p_manager_grant_id?: string) → undefined` | Signature unchanged: `p_manager_grant_id` optional again; only the super admin detaches (no manager) or skips the seniority rule; errors `forbidden_manage`, `manager_not_found`, `manager_revoked`, `manager_other_org`, `manager_cycle`, `manager_rank` (migration 0011). | `account_not_active`, `forbidden_revoke`, `grant_already_revoked`, `grant_not_found`, `invalid_manager`, `unauthenticated` | high | SupabaseOrgHierarchyRepository.ts:116 |
 | `admin_set_org_slug` | core | CHANGED | `admin_set_org_slug(p_org_id: string, p_slug: string) → string` | New in migration 0014 (no old object): the super admin changes an organization page slug (`invalid_slug`, `slug_taken`, `org_not_found`). |  | high | SupabaseOrgHierarchyRepository.ts:127 |
+| `admin_task_add_comment` | later | 1:1 | `admin_task_add_comment(p_body: string, p_task_id: string) → string` | Same arguments; refusals are P0001 with the old codes (`invalid_transition`, `assignee_not_admin`, …), `forbidden` is 42501. |  | high | SupabaseAdminTaskRepository.ts:112 |
+| `admin_task_assign` | later | 1:1 | `admin_task_assign(p_new_assignee: string, p_task_id: string) → undefined` | Same arguments; refusals are P0001 with the old codes (`invalid_transition`, `assignee_not_admin`, …), `forbidden` is 42501. |  | high | SupabaseAdminTaskRepository.ts:104 |
+| `admin_task_create` | later | 1:1 | `admin_task_create(p_assignee_id?: string, p_category?: string, p_description?: string, p_due_at?: string, p_labels?: string[], p_priority?: string, p_title: string) → string` | Same arguments; refusals are P0001 with the old codes (`invalid_transition`, `assignee_not_admin`, …), `forbidden` is 42501. |  | high | SupabaseAdminTaskRepository.ts:70 |
+| `admin_task_delete` | later | 1:1 | `admin_task_delete(p_task_id: string) → undefined` | Same arguments; refusals are P0001 with the old codes (`invalid_transition`, `assignee_not_admin`, …), `forbidden` is 42501. |  | high | SupabaseAdminTaskRepository.ts:120 |
+| `admin_task_detail` | later | CHANGED | `admin_task_detail(p_task_id: string) → Json` | Returns one JSON record with `activities` (write order), or null for an unknown task. |  | high | SupabaseAdminTaskRepository.ts:63 |
+| `admin_task_list` | later | CHANGED | `admin_task_list(p_assignee?: string, p_category?: string, p_cursor?: Json, p_due_from?: string, p_due_to?: string, p_label?: string, p_limit?: number, p_only_mine?: boolean, p_overdue?: boolean, p_priority?: string, p_status?: string, p_unassigned_only?: boolean) → { cursor: Json task: Json }[]` | Rows are `(task jsonb, cursor jsonb)`; `p_offset` → `p_cursor` (keyset). `task_id` keeps its name inside the record; `created_by` may be null after a purge. |  | high | SupabaseAdminTaskRepository.ts:41 |
+| `admin_task_open_count` | later | 1:1 | `admin_task_open_count() → number` | New: open and in-progress tasks for the dashboard card. |  | high | SupabaseAdminTaskRepository.ts:59 |
+| `admin_task_set_status` | later | 1:1 | `admin_task_set_status(p_new_status: string, p_task_id: string) → undefined` | Same arguments; refusals are P0001 with the old codes (`invalid_transition`, `assignee_not_admin`, …), `forbidden` is 42501. |  | high | SupabaseAdminTaskRepository.ts:98 |
+| `admin_task_update` | later | 1:1 | `admin_task_update(p_category?: string, p_clear_due?: boolean, p_description?: string, p_due_at?: string, p_labels?: string[], p_priority?: string, p_task_id: string, p_title?: string) → undefined` | Same arguments; refusals are P0001 with the old codes (`invalid_transition`, `assignee_not_admin`, …), `forbidden` is 42501. |  | high | SupabaseAdminTaskRepository.ts:84 |
+| `crm_contact_count` | later | 1:1 | `crm_contact_count(p_org_id: string, p_query?: string, p_status?: string, p_tag?: string) → number` | New: the total of the list filters. |  | high | SupabaseCrmContactsRepository.ts:91 |
+| `crm_contact_delete` | later | 1:1 | `crm_contact_delete(p_contact_id: string) → undefined` | Same arguments; the caller must manage the contact's organization. |  | high | SupabaseCrmContactsRepository.ts:115 |
+| `crm_contact_list` | later | CHANGED | `crm_contact_list(p_cursor?: Json, p_limit?: number, p_org_id: string, p_query?: string, p_status?: string, p_tag?: string) → { contact: Json cursor: Json }[]` | New `p_org_id`; rows are `(contact jsonb, cursor jsonb)`; the total moves to `crm_contact_count`. |  | high | SupabaseCrmContactsRepository.ts:90 |
+| `crm_contact_mark_contacted` | later | 1:1 | `crm_contact_mark_contacted(p_contact_id: string) → undefined` | Same arguments; the caller must manage the contact's organization. |  | high | SupabaseCrmContactsRepository.ts:119 |
+| `crm_contact_upsert` | later | CHANGED | `crm_contact_upsert(p_contact_id?: string, p_email?: string, p_name?: string, p_notes?: string, p_org_id: string, p_organization?: string, p_phone?: string, p_role_title?: string, p_status?: string, p_tags?: string[]) → string` | New `p_org_id`; new refusals `invalid_email`, `invalid_phone`, `invalid_input`. |  | high | SupabaseCrmContactsRepository.ts:98 |
+| `crm_my_orgs` | later | 1:1 | `crm_my_orgs(is_platform: boolean, name: string, org_id: string) → { is_platform: boolean name: string org_id: string }[]` | New: the organizations whose contact book the caller manages (FR-ADMIN-032). |  | high | SupabaseCrmContactsRepository.ts:77 |
 | `finance_account_upsert` | later | CHANGED | `finance_account_upsert(p_account_id?: string, p_is_active?: boolean, p_kind?: string, p_last4?: string, p_name?: string, p_opening_balance_agorot?: number, p_opening_balance_at?: string, p_org_id: string) → string` | New required `p_org_id`; `p_opening_balance_cents` → `_agorot`; `p_sort_order` is gone. | `account_not_active`, `account_not_found`, `forbidden`, `unauthenticated` | high | SupabaseFinanceAccountsRepository.ts:53 |
 | `finance_accounts_list` | later | CHANGED | `finance_accounts_list(p_org_id: string) → { balance_agorot: number id: string is_active: boolean kind: string last4: string name: string opening_balance_agorot: number opening_balance_at: string sort_order: number }[]` | New required `p_org_id`; `*_cents` → `*_agorot`; `account_id` → `id`; no `entry_count`. | `account_not_active`, `forbidden`, `unauthenticated` | high | SupabaseFinanceAccountsRepository.ts:44 |
 | `finance_donors_summary` | later | CHANGED | `finance_donors_summary(p_limit?: number, p_org_id: string) → { donations_count: number donor_name: string first_at: string last_at: string total_agorot: number }[]` | New required `p_org_id`; `total_cents` → `total_agorot`; in-app donations grouped by member, typed ones by party name; organization admins only (M21, built in `85_billing/140`). |  | high | SupabaseFinanceDonorsRepository.ts:30 |
@@ -119,6 +134,13 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `finance_transparency_settings_set` | later | CHANGED | `finance_transparency_settings_set(p_org_id: string, p_settings: Json) → undefined` | New required `p_org_id`; returns void. | `account_not_active`, `forbidden`, `invalid_settings`, `unauthenticated` | high | SupabaseOrgTransparencyRepository.ts:102 |
 | `get_my_admin_roles` | core | 1:1 | `get_my_admin_roles() → string[]` | Signature unchanged. |  | high | fetchMyAdminRoles.ts:15 |
 | `rpc_org_transparency` | later | 1:1 | `rpc_org_transparency(p_slug?: string) → Json` | Signature unchanged; totals only, in agorot. | `unauthenticated` | medium | SupabaseOrgTransparencyRepository.ts:77 |
+| `timesheet_approve` | later | 1:1 | `timesheet_approve(p_entry_id: string, p_note?: string) → undefined` | Same arguments; a decision is the reporter's direct manager's or a super admin's, never the reporter's own. |  | high | SupabaseTimesheetsRepository.ts:112 |
+| `timesheet_count` | later | 1:1 | `timesheet_count(p_from?: string, p_scope?: string, p_status?: string, p_to?: string, p_user_id?: string) → number` | New: the total of the list filters. |  | high | SupabaseTimesheetsRepository.ts:89 |
+| `timesheet_delete` | later | 1:1 | `timesheet_delete(p_entry_id: string) → undefined` | Same arguments; a decision is the reporter's direct manager's or a super admin's, never the reporter's own. |  | high | SupabaseTimesheetsRepository.ts:120 |
+| `timesheet_list` | later | CHANGED | `timesheet_list(p_cursor?: Json, p_from?: string, p_limit?: number, p_scope?: string, p_status?: string, p_to?: string, p_user_id?: string) → { cursor: Json entry: Json }[]` | New `p_scope` (mine, to_decide, all); rows are `(entry jsonb, cursor jsonb)` with `can_decide`; the total moves to `timesheet_count`. |  | high | SupabaseTimesheetsRepository.ts:88 |
+| `timesheet_reject` | later | 1:1 | `timesheet_reject(p_entry_id: string, p_note?: string) → undefined` | Same arguments; a decision is the reporter's direct manager's or a super admin's, never the reporter's own. |  | high | SupabaseTimesheetsRepository.ts:116 |
+| `timesheet_submit` | later | 1:1 | `timesheet_submit(p_entry_id: string) → undefined` | Same arguments; a decision is the reporter's direct manager's or a super admin's, never the reporter's own. |  | high | SupabaseTimesheetsRepository.ts:108 |
+| `timesheet_upsert` | later | 1:1 | `timesheet_upsert(p_description?: string, p_entry_id?: string, p_hours_x100?: number, p_project?: string, p_work_date?: string) → string` | Same arguments; a decision is the reporter's direct manager's or a super admin's, never the reporter's own. |  | high | SupabaseTimesheetsRepository.ts:96 |
 | `org_applications` (table) | later | 1:1 | table `org_applications` | Read-only: the applicant reads their own rows, and platform admins read the review queue directly (policy `org_applications_select_reviewers`) with an exact count; written through `submit_org_application`. |  | high | SupabaseOrgApplicationsRepository.ts:75 |
 | `organizations` (table) | core | 1:1 | table `organizations` | The routed worlds' body picker (organizations by name). |  | high | financeOrg.ts:20, SupabaseOrgTransparencyRepository.ts:91 |
 | `posts` (table) | core | CHANGED | table `posts`<br>`post_cards(p_post_ids: string[]) → post_card[]`<br>`post_detail(p_post_id: string) → Json`<br>`create_post_with_details(p_details: Json, p_post: Json) → string`<br>`delete_post(p_post_id: string) → undefined` | Columns: `post_id` → `id`, `type` → `direction`, `category` / `category_id` → `item_subcategory_id`, `city` → `city_id`, `urgency` → `urgency_level`, `street` / `street_number` → `post_private_locations`, `availability_status` / `moderation_status` / `feed_hidden` → `status`, `status_before_admin_removal` → `status_before_removal`; `delete_after` / `reopen_count` → `post_closures`; `estimated_value`, `item_condition`, `external_body_id`, listing columns: gone. Reads of lists should use the card RPCs (`post_cards`, `feed_page`, `profile_posts_page`, `post_detail`). Insert is direct (column grants; status `draft` or `open`), rides / stays / events / food go through `create_post_with_details`. Update is direct for content columns only; status never (owner RPCs). Delete: direct only for a draft, otherwise `delete_post`. | `account_not_active`, `post_details_not_supported`, `unauthenticated`, `listing_wrong_status`, `post_not_found` | high | SupabaseAdminContentRepository.ts:147 |
@@ -769,13 +791,13 @@ In launch order: after package *n* the app is shippable with everything up to *n
 | L3 — Challenges | later | 9 | 6 | 3 | 0 | 0 | L1, L2, L4, L5, L6, L7 |
 | L4 — Money: donations to organizations, standing orders, org finance, org onboarding | later | 29 | 13 | 16 | 0 | 0 | L1, L2, L3, L5, L6, L7 |
 | L5 — Surveys, feedback, public research | later | 15 | 14 | 1 | 0 | 0 | L1, L2, L3, L4, L6, L7 |
-| L6 — Back-office tools: tasks, CRM, timesheets | later | 0 | 0 | 0 | 0 | 0 | L1, L2, L3, L4, L5, L7 |
+| L6 — Back-office tools: tasks, CRM, timesheets | later | 22 | 17 | 5 | 0 | 0 | L1, L2, L3, L4, L5, L7 |
 | L7 — WhatsApp bot, linking, admin console | later | 20 | 0 | 0 | 0 | 20 | L1, L2, L3, L4, L5, L6 |
 
 ### P0 — Contract switch and the degrade rule (first, alone)
 
 - **Owns:** `infrastructure-supabase/src/database.types.ts (replaced by the baseline types)`, `infrastructure-supabase/src/index.ts`, `infrastructure-supabase/src/client.ts`, `infrastructure-supabase/src/rpc/**`, `infrastructure-supabase/src/lib/**`, `infrastructure-supabase/src/fsm/**`, `infrastructure-supabase/src/realtime/**`, `packages/domain/src (status lists, FSM machines, money value objects)`, `apps/mobile/src/services/featureFlagsComposition.ts`, `scripts/check-rpc-contract.mjs + allowlist`
-- **Work:** Done in P0 (see docs/db/app-migration-playbook.md): `database.types.ts` is the generated baseline types and `database.legacy.types.ts` a frozen copy of the old ones, imported only by the files listed in `infrastructure-supabase/src/migrationStatus/<package>.ts` (the client factory is generic: `getSupabaseClient()` is baseline-typed, `getLegacySupabaseClient()` / `legacySupabase` are the same connection typed against the old schema). `FSM_MACHINES` equals the baseline seeds (`catalogMatchesSql.test.ts` reads `supabase/schemas`); the four machines without a baseline seed sit in `LEGACY_FSM_MACHINES` until L2, L6 and L7 move. `rpc/backendUnavailable.ts` holds `isBackendObjectMissing` and `rpc/mapRpcError.ts` the P0001 mapper and `unwrapCall`; `BackendUnavailableError` and `BackendRuleError` are domain errors. UI helpers: `apps/mobile/src/lib/backendAvailability.ts` and the `backend.*` locale keys. `src/__tests__/baselineCompatibility.test.ts` fails when an unlisted file still needs the old schema or a listed file no longer does.
+- **Work:** Done in P0 (see docs/db/app-migration-playbook.md): `database.types.ts` is the generated baseline types and `database.legacy.types.ts` a frozen copy of the old ones, imported only by the files listed in `infrastructure-supabase/src/migrationStatus/<package>.ts` (the client factory is generic: `getSupabaseClient()` is baseline-typed, `getLegacySupabaseClient()` / `legacySupabase` are the same connection typed against the old schema). `FSM_MACHINES` equals the baseline seeds (`catalogMatchesSql.test.ts` reads `supabase/schemas`); the machines without a baseline seed sat in `LEGACY_FSM_MACHINES` until their modules moved (the list is gone since L6 seeded the last two in `0034` and `0036`). `rpc/backendUnavailable.ts` holds `isBackendObjectMissing` and `rpc/mapRpcError.ts` the P0001 mapper and `unwrapCall`; `BackendUnavailableError` and `BackendRuleError` are domain errors. UI helpers: `apps/mobile/src/lib/backendAvailability.ts` and the `backend.*` locale keys. `src/__tests__/baselineCompatibility.test.ts` fails when an unlisted file still needs the old schema or a listed file no longer does.
 - **Must pass:** pnpm typecheck, pnpm test, pnpm lint from app/; src/fsm/__tests__/catalogMatchesSql.test.ts against supabase/schemas; src/__tests__/baselineCompatibility.test.ts; src/rpc/__tests__/degradeRule.test.ts; node --test scripts/*.test.mjs; node scripts/gen-baseline-types.mjs --check
 - **If reached before it is migrated:** This package defines the rule for all others: an adapter call that hits a missing function or table throws `BackendUnavailableError`; a list screen shows its empty state, an action shows the generic "not available yet" message, a world whose `world_<slug>_enabled` flag is off never renders its entry points. No screen reads `error.message` of an unknown error.
 - **Risks:** Everything depends on it and it must not change behaviour: no adapter logic changed, only its type import. CI still diffs `database.types.ts` against the old migrations until the workflow change listed in the P0 report lands.
@@ -871,10 +893,10 @@ In launch order: after package *n* the app is shippable with everything up to *n
 ### L6 — Back-office tools: tasks, CRM, timesheets
 
 - **Owns:** `admin/SupabaseAdminTaskRepository.ts`, `admin/SupabaseCrmContactsRepository.ts`, `admin/SupabaseTimesheetsRepository.ts`, `apps/mobile: admin tasks, CRM, timesheets screens`
-- **Work:** Done: nothing to migrate to (the baseline has no task tracker, CRM or timesheets, old M19). The three adapters make no call and reject with `BackendUnavailableError`; whether these internal tools belong in this database is still an open product decision.
-- **Must pass:** vitest: parkedBackOffice, parkedAdminSections
-- **If reached before it is migrated:** Parked behind `BACK_OFFICE_TOOLS_AVAILABLE` (apps/mobile/src/lib/parkedFeatures.ts): the tasks nav entry and dashboard card are hidden, and the tasks, CRM and timesheets routes render the not-available notice.
-- **Risks:** Product decision, not engineering.
+- **Work:** Done: rebuilt as forward migrations `0034` (tasks), `0035` (CRM per organization) and `0036` (timesheets decided by the direct manager); the three adapters call them again, with keyset paging.
+- **Must pass:** pgTAP: 099_back_office_tasks, 100_back_office_crm, 101_back_office_timesheets; vitest: SupabaseAdminTaskRepository, SupabaseCrmTimesheetsRepository, adminSectionAvailability, backOfficeDestinations
+- **If reached before it is migrated:** One switch per tool in apps/mobile/src/lib/parkedFeatures.ts (`ADMIN_TASKS_AVAILABLE`, `CRM_AVAILABLE`, `TIMESHEETS_AVAILABLE`, all on); a tool switched off hides its nav entry and renders the not-available notice.
+- **Risks:** None known.
 
 ### L7 — WhatsApp bot, linking, admin console
 

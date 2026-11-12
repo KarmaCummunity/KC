@@ -59,6 +59,17 @@ describe('useCreatePostPublish', () => {
     expect(haptic).toHaveBeenCalled();
   });
 
+  it('closes the form without waiting for the cache refetches to finish', async () => {
+    const client = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
+    // A refetch that never settles: the exit must not depend on it.
+    vi.spyOn(client, 'invalidateQueries').mockReturnValue(new Promise<void>(() => {}));
+    const pendingWrapper = ({ children }: { children: ReactNode }) => <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+    const { result } = renderHook(() => useCreatePostPublish(baseArgs()), { wrapper: pendingWrapper });
+    act(() => result.current.tryPublish());
+    await waitFor(() => expect(back).toHaveBeenCalledOnce());
+    expect(client.invalidateQueries).toHaveBeenCalledWith({ queryKey: ['feed'] });
+  });
+
   it('shows a failure toast for rejected publishing and prevents publishing during uploads', async () => {
     const args = baseArgs();
     args.uploadingCount = 1;

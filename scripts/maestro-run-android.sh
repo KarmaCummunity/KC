@@ -54,10 +54,12 @@ run_flow() {
   return "$status"
 }
 
-# A flow that fails is run once more: the journeys run against the shared kc-dev, which a deploy, a
-# reseed or another run can slow down for a minute, and this job fails the CI gate. A flow that passes
-# only on the retry is reported as a warning (and its first attempt keeps its video and debug output),
-# so an unstable flow stays visible; a flow that fails twice is a real failure.
+# A flow that fails is run once more: the journeys run against the shared kc-dev, which a deploy
+# (migrations), a reseed or another run can leave unable to sign anyone in for minutes, and this job
+# fails the CI gate. Before the retry the runner waits (up to ten minutes) until a seed user can sign in,
+# so the retry meets a working environment instead of the same outage. A flow that passes only on the
+# retry is reported as a warning (and its first attempt keeps its video and debug output), so an
+# unstable flow stays visible; a flow that fails twice is a real failure.
 failed=()
 retried=()
 for flow in .maestro/flows/*.yaml; do
@@ -67,7 +69,9 @@ for flow in .maestro/flows/*.yaml; do
   if run_flow "$flow" "$name"; then
     result=passed
   else
-    echo "::warning::$name failed; running it once more"
+    echo "::warning::$name failed; waiting for kc-dev sign-in, then running it once more"
+    # Exit 1 means no sign-in worked within the wait: the retry still runs, and its failure reads as the outage.
+    node "$(dirname "$0")/maestro-wait-kc-dev.mjs" || true
     if run_flow "$flow" "$name-retry"; then
       result="passed on retry"
       retried+=("$name")

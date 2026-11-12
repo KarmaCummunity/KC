@@ -149,7 +149,11 @@ export default function HomeFeedScreen() {
   const onViewableItemsChanged = useRef(
     (info: { viewableItems: ViewToken[]; changed: ViewToken[] }) => {
       const ids = info.viewableItems.map((v) => String(v.key));
-      setVisibleIds(ids);
+      // Keep the previous array when the visible set did not change, so this callback does
+      // not re-render the whole feed screen for nothing.
+      setVisibleIds((prev) =>
+        prev.length === ids.length && prev.every((id, i) => id === ids[i]) ? prev : ids,
+      );
       const fresh = ids.filter((id) => !loggedImpressionsRef.current.has(id));
       if (fresh.length > 0 && viewerId) {
         fresh.forEach((id) => loggedImpressionsRef.current.add(id));

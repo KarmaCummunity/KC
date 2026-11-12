@@ -5,6 +5,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import React from 'react';
 import { cleanup, render } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from '@kc/ui';
 import type { PostWithOwner } from '@kc/application';
 
@@ -20,6 +21,8 @@ vi.mock('../AvatarInitials', () => ({ AvatarInitials: () => null }));
 vi.mock('../../lib/imageUrl', () => ({ getSupabasePublicImageUrl: () => null, getSupabaseFeedImageUrl: () => null }));
 // The overflow menu has its own tests (PostMenuSheet.test.tsx).
 vi.mock('../post/PostMenuButton', () => ({ PostMenuButton: () => null }));
+// The press-down prefetch reads the marketplace repository (PostCardGrid.prefetch.test.tsx).
+vi.mock('../../services/marketplaceComposition', () => ({ marketplaceRepository: () => ({}) }));
 
 import { PostCardGrid } from '../PostCardGrid';
 
@@ -59,9 +62,11 @@ const BASE: PostWithOwner = {
 
 function renderCard(post: PostWithOwner) {
   return render(
-    <ThemeProvider mode="light" systemScheme="light" setMode={() => {}}>
-      <PostCardGrid post={post} />
-    </ThemeProvider>,
+    <QueryClientProvider client={new QueryClient()}>
+      <ThemeProvider mode="light" systemScheme="light" setMode={() => {}}>
+        <PostCardGrid post={post} />
+      </ThemeProvider>
+    </QueryClientProvider>,
   );
 }
 

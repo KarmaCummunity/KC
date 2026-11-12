@@ -47,6 +47,21 @@ describe('useTranslatedPosts', () => {
   });
 });
 
+describe('useTranslatedPosts render stability', () => {
+  it('keeps the overlay and the per-post fields identical when the visible array is re-created with the same posts', async () => {
+    getExec.mockResolvedValue({ hits: [{ postId: 'p1', field: 'title', translatedText: 'שלום' }], misses: [] });
+    const { result, rerender } = renderHook(({ posts }) => useTranslatedPosts(posts, 'he'), { wrapper, initialProps: { posts: [post] } });
+    await waitFor(() => expect(result.current.getTranslatedFields('p1').title).toBe('שלום'));
+    const overlay = result.current;
+    const fields = overlay.getTranslatedFields('p1');
+    rerender({ posts: [post] }); // a new array, as every viewport change produces
+    expect(result.current).toBe(overlay);
+    expect(result.current.getTranslatedFields('p1')).toBe(fields);
+    // Posts without a translation share one value, so memoized cards do not re-render.
+    expect(result.current.getTranslatedFields('other')).toBe(result.current.getTranslatedFields('another'));
+  });
+});
+
 describe('useTranslatedPosts flag off', () => {
   it('does not call translation when ugc_auto_translation is off', async () => {
     flagOn.value = false;
