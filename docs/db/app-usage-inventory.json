@@ -509,9 +509,9 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/auth/bootstrapSession.ts",
-   "line": 138,
+   "line": 155,
    "area": "auth",
-   "symbol": "fetchBootstrapSession",
+   "symbol": "readBootstrapSession",
    "via": "literal",
    "name": "bootstrap_session"
   },
