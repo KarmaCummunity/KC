@@ -110,7 +110,10 @@ describe.each(NOTIFICATION_KIND_LIST)('notification kind %s', (kind) => {
 
   it('opens its own target, not only the fallback, when the payload carries the ids', () => {
     const full = { entity: { type: 'chat', id: UUID }, args: { post_id: OTHER } };
-    const built = NOTIFICATION_ROUTES[kind](full) ?? NOTIFICATION_ROUTES[kind]({ entity: { type: 'post', id: UUID }, args: {} });
+    const built = NOTIFICATION_ROUTES[kind](full)
+      ?? NOTIFICATION_ROUTES[kind]({ entity: { type: 'post', id: UUID }, args: {} })
+      // A staff task notification names its task (FR-ADMIN-018).
+      ?? NOTIFICATION_ROUTES[kind]({ entity: { type: 'admin_task', id: UUID }, args: {} });
     expect(built, 'the builder never produces a route').not.toBeNull();
   });
 

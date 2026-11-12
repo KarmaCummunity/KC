@@ -75,7 +75,9 @@ export const PERMISSION_MATRIX: Readonly<Record<AdminPermission, readonly AdminR
   'time.report':                ['super_admin', 'moderator', 'support'],
   'time.approve':               ['super_admin', 'moderator'],
   'money.manage':               ['super_admin', 'moderator'],
-  'crm.manage':                 ['super_admin', 'moderator'],
+  // FR-ADMIN-032 — an organization's managers run its contact book; platform staff run the
+  // platform organization's (the server scopes every call, kc_private.crm_assert).
+  'crm.manage':                 ['super_admin', 'moderator', 'org_admin', 'org_manager'],
   'org.review_applications':    ['super_admin', 'moderator'],
   'whatsapp.manage':            ['super_admin', 'moderator'],
   // KC#1122 / FR-ADMIN-029 — the server opens admin_match_quality to moderators and above.

@@ -19,7 +19,7 @@ function makeRepo(): ITimesheetsRepository & {
   delete:  ReturnType<typeof vi.fn>;
 } {
   return {
-    list:    vi.fn(async () => ({ rows: [], totalCount: 0 })),
+    list:    vi.fn(async () => ({ rows: [], totalCount: 0, nextCursor: null })),
     upsert:  vi.fn(async () => 't1'),
     submit:  vi.fn(async () => undefined),
     approve: vi.fn(async () => undefined),

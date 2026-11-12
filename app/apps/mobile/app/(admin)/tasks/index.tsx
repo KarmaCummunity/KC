@@ -59,7 +59,7 @@ export default function TasksScreen() {
   const [overdueOnly, setOverdueOnly] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
 
-  const filters = useMemo<AdminTaskListFilters>(() => {
+  const filters = useMemo<Omit<AdminTaskListFilters, 'cursor'>>(() => {
     const baseAssignee = assigneeFilter && assigneeFilter !== UNASSIGNED_TOKEN
       ? assigneeFilter
       : undefined;
@@ -203,6 +203,8 @@ export default function TasksScreen() {
         estimatedItemSize={80}
         renderItem={renderItem}
         contentContainerStyle={styles.listContent}
+        onEndReached={q.fetchMore}
+        onEndReachedThreshold={0.5}
         refreshControl={
           <RefreshControl refreshing={q.isRefetching} onRefresh={q.refetch} />
         }

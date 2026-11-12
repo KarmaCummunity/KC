@@ -1,12 +1,11 @@
-// Timesheets admin section (V2-ADMIN-TIME-10). Parked: the production baseline has no timesheets
-// (M19), so a direct link shows the "not available yet" state instead of the screen
-// (src/lib/parkedFeatures.ts).
+// Timesheets admin section (FR-ADMIN-033). While the switch in src/lib/parkedFeatures.ts is off,
+// a direct link shows the "not available yet" state instead of the screen.
 import { Slot } from 'expo-router';
 import { ParkedFeatureNotice } from '../../../src/components/ParkedFeatureNotice';
-import { BACK_OFFICE_TOOLS_AVAILABLE } from '../../../src/lib/parkedFeatures';
+import { TIMESHEETS_AVAILABLE } from '../../../src/lib/parkedFeatures';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../../src/components/RouteErrorBoundary';
 
 export default function AdminTimeLayout() {
-  return BACK_OFFICE_TOOLS_AVAILABLE ? <Slot /> : <ParkedFeatureNotice testID="admin-time-parked" />;
+  return TIMESHEETS_AVAILABLE ? <Slot /> : <ParkedFeatureNotice testID="admin-time-parked" />;
 }
