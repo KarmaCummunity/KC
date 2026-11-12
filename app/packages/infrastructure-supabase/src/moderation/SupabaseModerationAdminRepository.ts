@@ -11,7 +11,6 @@ import {
 } from '@kc/application';
 import { BackendUnavailableError, type AdminRole, type AuditEvent } from '@kc/domain';
 import { fetchMyAdminRoles } from '../admin/fetchMyAdminRoles';
-import { callAuditSearch } from '../admin/auditSearchCall';
 import { refusalReason } from '../admin/refusalReason';
 import type { Database } from '../database.types';
 import { unwrapCall, type CallResult } from '../rpc/mapRpcError';
@@ -26,6 +25,8 @@ const PLAIN_REASONS: ReadonlySet<ModerationError['code']> = new Set([
   'account_pending_deletion',
   'target_not_found',
   'message_not_found',
+  'queue_entry_not_open',
+  'assignee_not_staff',
 ]);
 
 /**
@@ -33,7 +34,7 @@ const PLAIN_REASONS: ReadonlySet<ModerationError['code']> = new Set([
  * with (never by SQLSTATE or text). A missing backend object stays a `BackendUnavailableError`
  * so the screen can degrade.
  */
-function toModerationError(error: unknown): unknown {
+export function toModerationError(error: unknown): unknown {
   if (error instanceof BackendUnavailableError) return error;
   const reason = refusalReason(error);
   const cause = error instanceof Error ? error : undefined;
@@ -82,15 +83,27 @@ export class SupabaseModerationAdminRepository implements IModerationAdminReposi
     return fetchMyAdminRoles(this.client);
   }
 
+  /** Each restore also dismisses the target's open reports server-side (FR-ADMIN-002 AC4). */
   async restoreTarget(targetType: ModerationTargetType, targetId: string): Promise<void> {
-    if (targetType === 'post') {
-      await this.call('rpc:admin_restore_post', () => this.client.rpc('admin_restore_post', { p_post_id: targetId }));
-    } else if (targetType === 'user') {
-      await this.call('rpc:admin_restore_user', () => this.client.rpc('admin_restore_user', { p_user_id: targetId }));
-    } else {
-      // The baseline has no staff restore of a chat: a dismissed report restores it server-side.
-      throw new BackendUnavailableError('rpc:admin_restore_chat', 'function');
+    switch (targetType) {
+      case 'post':
+        await this.call('rpc:admin_restore_post', () => this.client.rpc('admin_restore_post', { p_post_id: targetId }));
+        return;
+      case 'user':
+        await this.call('rpc:admin_restore_user', () => this.client.rpc('admin_restore_user', { p_user_id: targetId }));
+        return;
+      case 'chat':
+        await this.call('rpc:admin_restore_chat', () => this.client.rpc('admin_restore_chat', { p_chat_id: targetId }));
+        return;
+      case 'comment':
+        await this.call('rpc:admin_restore_comment', () =>
+          this.client.rpc('admin_restore_comment', { p_comment_id: targetId }));
     }
+  }
+
+  async removeComment(commentId: string): Promise<void> {
+    await this.call('rpc:admin_delete_comment', () =>
+      this.client.rpc('admin_delete_comment', { p_comment_id: commentId }));
   }
 
   async dismissReport(reportId: string): Promise<void> {
@@ -119,14 +132,11 @@ export class SupabaseModerationAdminRepository implements IModerationAdminReposi
       this.client.rpc('admin_delete_message', { p_message_id: messageId }));
   }
 
+  /** FR-ADMIN-007 — `admin_audit_lookup` (0016): events by the member or about them. */
   async auditLookup(userId: string, limit = 200): Promise<readonly AuditEvent[]> {
-    let rows;
-    try {
-      rows = await callAuditSearch(this.client, { p_target_id: userId, p_limit: limit });
-    } catch (error) {
-      throw toModerationError(error);
-    }
-    return rows.map((row) => ({
+    const rows = await this.call('rpc:admin_audit_lookup', () =>
+      this.client.rpc('admin_audit_lookup', { p_user_id: userId, p_limit: limit }));
+    return (rows ?? []).map((row) => ({
       eventId: String(row.id),
       actorId: row.actor_id ?? null,
       action: row.action as AuditEvent['action'],

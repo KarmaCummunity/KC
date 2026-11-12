@@ -1,30 +1,29 @@
-// Support issue = the member's support thread plus one message with the issue in it.
-// Mapped to spec: FR-MOD-002, FR-CHAT-007 AC3.
+// Support issue = one `support_issue` system message in the member's support thread.
+// Mapped to spec: FR-MOD-002 AC2–AC6, FR-CHAT-007 AC3.
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Chat } from '@kc/domain';
 import type { Database } from '../database.types';
-import { chatCall } from './mapChatError';
-import { openSupportThread } from './supabaseDmChat';
+import { chatCall, requireRow } from './mapChatError';
+import { rowToChat, type ChatRowSlice } from './rowMappers';
 
 /**
- * The text of the support message. The baseline has no category column, so a chosen category is
- * the first line and the description follows after a blank line.
+ * Files the issue through `submit_support_issue` (migration 0015): the server opens or reuses the
+ * caller's support thread, writes the category and description as a system message with a stable
+ * issue id, refuses a description outside 10..500 characters, and returns the thread.
  */
-export function supportIssueBody(category: string | null, description: string): string {
-  const topic = category?.trim() ?? '';
-  return topic.length > 0 ? `${topic}\n\n${description}` : description;
-}
-
-/** Opens (or reuses) the caller's support thread and sends the issue into it. */
 export async function submitSupportIssue(
   client: SupabaseClient<Database>,
   category: string | null,
   description: string,
 ): Promise<Chat> {
-  const thread = await openSupportThread(client);
-  await chatCall(
-    'rpc:send_message',
-    client.rpc('send_message', { p_chat_id: thread.chatId, p_body: supportIssueBody(category, description) }),
+  // No category is sent as an empty one; the server reads a blank category as none.
+  const data = await chatCall(
+    'rpc:submit_support_issue',
+    client.rpc('submit_support_issue', {
+      p_category: category?.trim() ?? '',
+      p_description: description,
+    }),
   );
-  return thread;
+  const row = (Array.isArray(data) ? data[0] : data) as ChatRowSlice | null | undefined;
+  return rowToChat(requireRow(row, 'submit_support_issue'));
 }

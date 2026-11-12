@@ -128,6 +128,15 @@ export { DeleteMessageUseCase } from './moderation/DeleteMessageUseCase';
 export type { DeleteMessageInput } from './moderation/DeleteMessageUseCase';
 export { LookupAuditUseCase } from './moderation/LookupAuditUseCase';
 export type { LookupAuditInput } from './moderation/LookupAuditUseCase';
+export { RemoveCommentUseCase, type RemoveCommentInput } from './moderation/RemoveCommentUseCase';
+export * from './moderation/ISupportInboxRepository';
+export {
+  ListSupportThreadsUseCase, JoinSupportThreadUseCase, OpenMemberSupportThreadUseCase, SUPPORT_INBOX_PAGE_SIZE,
+} from './moderation/SupportInboxUseCases';
+export * from './moderation/IModerationQueueRepository';
+export {
+  ListModerationQueueUseCase, AssignQueueEntryUseCase, ResolveQueueEntryUseCase, MODERATION_QUEUE_PAGE_SIZE,
+} from './moderation/ModerationQueueUseCases';
 export { ReportUserUseCase } from './moderation/ReportUserUseCase';
 export type { ReportUserInput } from './moderation/ReportUserUseCase';
 export { CheckAccountGateUseCase } from './moderation/CheckAccountGateUseCase';

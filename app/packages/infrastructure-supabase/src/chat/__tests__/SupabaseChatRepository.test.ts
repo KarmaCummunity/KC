@@ -185,15 +185,13 @@ describe('SupabaseChatRepository support thread', () => {
     expect(await r.getOrCreateSupportThread('u_me')).toMatchObject({ isSupportThread: true });
   });
 
-  it('submitSupportIssue opens the thread, then sends the issue into it', async () => {
-    const { repo: r, calls } = repo({
-      rpc: { open_support_thread: { data: SUPPORT_ROW, error: null }, send_message: { data: MESSAGE_ROW, error: null } },
-    });
+  it('submitSupportIssue files the issue as a system message in one server call', async () => {
+    const { repo: r, calls } = repo({ rpc: { submit_support_issue: { data: SUPPORT_ROW, error: null } } });
 
     const chat = await r.submitSupportIssue('Bug', 'The map does not load for me');
 
-    expect(calls.map((c) => c.fn)).toEqual(['open_support_thread', 'send_message']);
-    expect(calls[1]?.args).toEqual({ p_chat_id: 'c_1', p_body: 'Bug\n\nThe map does not load for me' });
+    expect(calls.map((c) => c.fn)).toEqual(['submit_support_issue']);
+    expect(calls[0]?.args).toEqual({ p_category: 'Bug', p_description: 'The map does not load for me' });
     expect(chat.isSupportThread).toBe(true);
   });
 });

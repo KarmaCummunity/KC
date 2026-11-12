@@ -118,6 +118,7 @@ import {
   SubmitPublicResearchResponseUseCase,
 } from '@kc/application';
 import { createFinanceUseCases } from './financeContainer';
+import { createModerationStaffUseCases } from './moderationContainer';
 import { isSupabaseConfigured } from './supabasePublicConfig';
 import { bindSupabaseClient } from './bindSupabaseClient';
 
@@ -212,6 +213,7 @@ export const container = {
   deleteTimesheet:  new DeleteTimesheetUseCase(timesheetsRepo),
   // V2-ADMIN-MONEY-9 (+ accounts, donors, public display: FR-FIN-003/022/023)
   ...createFinanceUseCases(supabase),
+  ...createModerationStaffUseCases(supabase),
   ...createWhatsAppAdminUseCases(),
   // V2-ADMIN-CRM-8
   listCrmContacts: new ListCrmContactsUseCase(crmContactsRepo),
