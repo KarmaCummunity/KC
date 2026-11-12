@@ -23,13 +23,13 @@ test('the plan names every lane job explicitly', () => {
 
 test('app change into dev runs frontend only: bundles wait for the merge queue, Sonar for main', () => {
   const r = plan({ ...PR, files: ['app/apps/mobile/src/lib/x.ts'] });
-  assert.deepEqual(r.plan, { hygiene: true, static: true, frontend: true, backend: false, edge: false, bundles: false });
+  assert.deepEqual(r.plan, { hygiene: true, static: true, frontend: true, backend: false, edge: false, bundles: false, maestro: true });
   assert.equal(r.sonar, false);
 });
 
 test('app change into main runs frontend, bundles and Sonar', () => {
   const r = plan({ ...PR, baseRef: 'main', files: ['app/apps/mobile/src/lib/x.ts'] });
-  assert.deepEqual(r.plan, { hygiene: true, static: true, frontend: true, backend: false, edge: false, bundles: true, release: true });
+  assert.deepEqual(r.plan, { hygiene: true, static: true, frontend: true, backend: false, edge: false, bundles: true, release: true, maestro: true });
   assert.equal(r.sonar, true);
 });
 
@@ -72,7 +72,7 @@ test('draft PR plans every lane as not needed and flags draft', () => {
 });
 
 test('unknown diff runs every lane, except the heavy ones on a PR into dev', () => {
-  assert.deepEqual(plan({ ...PR, files: null }).plan, { ...ALL, bundles: false });
+  assert.deepEqual(plan({ ...PR, files: null }).plan, { ...ALL, bundles: false, maestro: true });
 });
 
 test('dependabot PR skips sonar (no secrets)', () => {
@@ -221,7 +221,7 @@ test('the heavy lanes are regular lane jobs, named in every plan', () => {
 
 test('a PR into dev plans the heavy lanes as not needed, even for an app change', () => {
   const r = plan({ ...PR, baseRef: 'dev', files: APP });
-  assert.deepEqual(r.plan, { hygiene: true, static: true, frontend: true, backend: false, edge: false, bundles: false });
+  assert.deepEqual(r.plan, { hygiene: true, static: true, frontend: true, backend: false, edge: false, bundles: false, maestro: true });
   assert.equal(r.run.bundles, false);
 });
 
@@ -307,11 +307,43 @@ test('an unresolvable base yields null (every lane runs)', () => {
   assert.equal(changedFiles('', 'HEAD'), null);
 });
 
-// `maestro` is registered as an optional lane ahead of its job (see OPTIONAL_LANES): nothing plans it yet,
-// so a ci.yml that already has the job and a ci.yml that does not both pass the gate.
-test('the maestro lane is registered but not yet planned by any event', () => {
-  const files = ['app/apps/mobile/src/lib/x.ts', '.maestro/flows/01-auth-email-sign-in.yaml'];
-  for (const event of ['pull_request', 'pull_request_review', 'merge_group', 'push', 'workflow_dispatch']) {
-    assert.equal('maestro' in plan({ ...PR, event, files }).plan, false, event);
+// The Maestro Android lane: needed on a PR that touches what the journeys see, never planned otherwise.
+test('the maestro lane is needed on a PR that touches the app, its packages, the flows or their runner', () => {
+  for (const f of [
+    'app/apps/mobile/src/lib/x.ts',
+    'app/packages/domain/src/a.ts',
+    'app/pnpm-lock.yaml',
+    '.maestro/flows/01-auth-email-sign-in.yaml',
+    'scripts/maestro-run-android.sh',
+    '.github/workflows/ci-maestro-android.yml',
+  ]) {
+    assert.equal(plan({ ...PR, files: [f] }).plan.maestro, true, f);
+  }
+});
+
+test('the maestro lane is left out of the plan, never planned false, when the diff touches nothing the journeys see', () => {
+  for (const files of [['docs/spec/README.md'], ['supabase/migrations/0010_x.sql'], ['.github/workflows/ci.yml'], ['scripts/ci-gate.mjs'], []]) {
+    assert.equal('maestro' in plan({ ...PR, files }).plan, false, files.join());
+  }
+});
+
+test('the maestro lane fails closed: an undiffable PR plans it, a Dependabot PR (no secrets) does not', () => {
+  assert.equal(plan({ ...PR, files: null }).plan.maestro, true);
+  assert.equal('maestro' in plan({ ...PR, actor: 'dependabot[bot]', files: ['app/pnpm-lock.yaml'] }).plan, false);
+});
+
+test('a merge group, a push and a dispatch do not plan the maestro lane (a dev push has its own non-blocking run)', () => {
+  for (const event of ['merge_group', 'push', 'workflow_dispatch']) {
+    const r = plan({ event, draft: false, actor: 'x', ref: 'refs/heads/dev', baseRef: 'dev', files: null });
+    assert.equal('maestro' in r.plan, false, event);
+    assert.equal(r.run.maestro === true, false, event);
+  }
+});
+
+test('a review or an edit plans the maestro lane but does not re-run it (the gate reuses the PR run)', () => {
+  const files = ['app/apps/mobile/src/lib/x.ts'];
+  for (const r of [plan({ ...PR, event: 'pull_request_review', files }), plan({ ...PR, action: 'edited', baseChanged: false, files })]) {
+    assert.equal(r.plan.maestro, true);
+    assert.equal(r.run.maestro, false);
   }
 });
