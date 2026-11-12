@@ -8,7 +8,7 @@
 1. Create `supabase/migrations/next-NN_snake_slug.sql`. `NN` (`01`-`99`) only orders the files of your own PR: `next-01_…` runs before `next-02_…`. Use a slug that says what the file does; it must be unique among pending files.
 2. Write the pgTAP test in `supabase/tests/` as usual. Do not write a number anywhere (file name, comments, docs, PR body); refer to the migration by its slug.
 3. CI numbers the files in its throwaway checkout (`node scripts/migration-ids.mjs assign`), so the stack applies and tests them under the numbers they will receive.
-4. After the merge into `dev`, `bump-version-on-merge.yml` renames each `next-NN_slug.sql` to the next free `NNNN_slug.sql` after the highest existing file (never below `0050`) and pushes one commit that CI certifies. The Deploy workflow refuses a tree that still holds a `next-*` file.
+4. After the merge into `dev`, `bump-version-on-merge.yml` renames each `next-NN_slug.sql` to the next free `NNNN_slug.sql` after the highest existing file (never below `0050`) lists each new name in the production manifest (`supabase/baseline/prod-allowed-migrations.txt`; a PR never edits it for a pending file), and pushes one commit that CI certifies. The Deploy workflow refuses a tree that still holds a `next-*` file.
 5. A destructive-SQL waiver in the PR body names the pending file: `Migration safety: next-01_slug.sql - reason`.
 
 Locally, `scripts/dev-up.sh` numbers your pending files for its run and puts the names back on exit. To do it by hand: `node scripts/migration-ids.mjs assign`, then `node scripts/migration-ids.mjs restore`.
