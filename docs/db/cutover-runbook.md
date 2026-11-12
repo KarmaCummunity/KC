@@ -21,7 +21,7 @@ Decision D-228 (approved by the owner 2026-11-11). Design: [target-design.md](./
 1. `supabase/migrations/0002_<name>.sql` (next free number, see `docs/agents/MIGRATION_RANGES.md`).
 2. A pgTAP file in `supabase/tests/`.
 3. `node scripts/gen-baseline-types.mjs` to refresh `database.types.ts`.
-4. Add the file name to `supabase/baseline/prod-allowed-migrations.txt` in the release that ships it to prod.
+4. The file name reaches `supabase/baseline/prod-allowed-migrations.txt` on merge: the numbering step (`scripts/migration-ids.mjs assign`) appends it. Listing a file does not open prod.
 
 ## CI after the cut-over
 
