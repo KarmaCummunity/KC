@@ -6,7 +6,7 @@
 | Domain / use cases | `app/packages/{domain,application}/` | Pure TS; no I/O |
 | Supabase adapters | `app/packages/infrastructure-supabase/` | Repos + generated `database.types.ts` |
 | UI kit | `app/packages/ui/` | Shared RN components |
-| Schema + RLS + RPCs | `supabase/migrations/` | Numbered; claim ranges in [MIGRATION_RANGES.md](./MIGRATION_RANGES.md) |
+| Schema + RLS + RPCs | `supabase/migrations/` | Numbered on merge (`next-NN_slug.sql` in a PR); see [MIGRATION_RANGES.md](./MIGRATION_RANGES.md) |
 | Edge Functions | `supabase/functions/` | Deno; WhatsApp, workers |
 | CI / deploy workflows | `.github/workflows/` | PRs → `dev`; push to `dev` deploys kc-dev + Pages. Table in [DEPLOY.md](./DEPLOY.md#all-workflows) |
 | Seeds | `supabase/seed/{reference,content,e2e}/` | Versioned, idempotent data loaders. See [DEPLOY.md](./DEPLOY.md#seeding-kc-dev-only) |

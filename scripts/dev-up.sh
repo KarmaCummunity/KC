@@ -26,6 +26,11 @@ if ! docker info >/dev/null 2>&1; then
   exit 1
 fi
 
+# A branch carries `next-NN_slug.sql` files; the real number is assigned on merge. Number them for
+# this run so the stack applies them, and put the names back on exit so no rename gets committed.
+node "$(dirname "$0")/migration-ids.mjs" assign
+trap 'node "$(dirname "$0")/migration-ids.mjs" restore' EXIT
+
 echo "Starting local Supabase..."
 supabase start
 
