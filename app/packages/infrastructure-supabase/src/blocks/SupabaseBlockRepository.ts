@@ -1,6 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { BlockedUser, IBlockRepository } from '@kc/application';
-import { BackendUnavailableError } from '@kc/domain';
 import type { Database } from '../database.types';
 import { unwrapCall } from '../rpc/mapRpcError';
 
@@ -38,12 +37,18 @@ export class SupabaseBlockRepository implements IBlockRepository {
   }
 
   /**
-   * FR-MOD-004 AC1 — M01: the baseline has no way to read a blocked member's name or avatar (the
-   * restrictive policy `users_hide_blocked` hides the row from the blocker and no function
-   * returns it). Without them the list cannot be shown, so this reports the capability as
-   * missing and the screen degrades to its empty state. No call is made.
+   * FR-MOD-004 AC1 — the caller's own blocks, newest first, with the blocked member's display
+   * fields. The blocker cannot read those rows directly (the restrictive policy
+   * `users_hide_blocked` hides them), so the security-definer RPC `list_my_blocked_users`
+   * (migration 0015) returns them. One page: the server default of 50 covers the screen.
    */
-  listMyBlockedUsers(): Promise<BlockedUser[]> {
-    return Promise.reject(new BackendUnavailableError('rpc:list_my_blocked_users', 'function'));
+  async listMyBlockedUsers(): Promise<BlockedUser[]> {
+    const rows = unwrapCall('rpc:list_my_blocked_users', await this.client.rpc('list_my_blocked_users'));
+    return (rows ?? []).map((row) => ({
+      userId: row.user_id,
+      displayName: row.display_name,
+      avatarUrl: row.avatar_url,
+      blockedAt: row.blocked_at,
+    }));
   }
 }

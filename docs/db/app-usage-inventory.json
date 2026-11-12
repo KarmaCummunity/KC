@@ -20,8 +20,8 @@
    "distinct": 3
   },
   "rpc": {
-   "callSites": 231,
-   "distinct": 203
+   "callSites": 233,
+   "distinct": 205
   },
   "table": {
    "callSites": 186,
@@ -689,7 +689,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/blocks/SupabaseBlockRepository.ts",
-   "line": 18,
+   "line": 17,
    "area": "blocks",
    "symbol": "SupabaseBlockRepository.isBlocking",
    "via": "literal",
@@ -701,7 +701,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/blocks/SupabaseBlockRepository.ts",
-   "line": 28,
+   "line": 27,
    "area": "blocks",
    "symbol": "SupabaseBlockRepository.block",
    "via": "literal",
@@ -713,7 +713,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/blocks/SupabaseBlockRepository.ts",
-   "line": 36,
+   "line": 35,
    "area": "blocks",
    "symbol": "SupabaseBlockRepository.unwrapCall",
    "via": "literal",
@@ -721,6 +721,15 @@
     "delete"
    ],
    "name": "blocks"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/blocks/SupabaseBlockRepository.ts",
+   "line": 46,
+   "area": "blocks",
+   "symbol": "SupabaseBlockRepository.listMyBlockedUsers",
+   "via": "literal",
+   "name": "list_my_blocked_users"
   },
   {
    "kind": "rpc",
@@ -2191,6 +2200,15 @@
    "symbol": "SupabaseOrganizationsRepository.removeMember",
    "via": "literal",
    "name": "org_remove_member"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/payments/SupabaseKcSupportChannelsRepository.ts",
+   "line": 17,
+   "area": "payments",
+   "symbol": "SupabaseKcSupportChannelsRepository.listActiveChannels",
+   "via": "literal",
+   "name": "list_kc_support_channels"
   },
   {
    "kind": "rpc",

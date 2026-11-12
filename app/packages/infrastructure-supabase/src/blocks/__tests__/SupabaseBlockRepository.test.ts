@@ -46,13 +46,32 @@ describe('SupabaseBlockRepository', () => {
     expect(calls[0]?.filters).toEqual([['eq', 'blocker_id', 'a'], ['eq', 'blocked_id', 'b']]);
   });
 
-  it('listMyBlockedUsers reports the capability as missing (M01) without calling the database', async () => {
-    const { client, calls } = createFakeClient();
+  it('listMyBlockedUsers maps the rows of list_my_blocked_users', async () => {
+    const rows = [
+      { user_id: 'u1', display_name: 'Dana', avatar_url: null, blocked_at: '2026-01-02T00:00:00Z' },
+      { user_id: 'u2', display_name: null, avatar_url: 'https://img/x.png', blocked_at: '2026-01-01T00:00:00Z' },
+    ];
+    const { client, calls } = createFakeClient({ rpc: { list_my_blocked_users: { data: rows, error: null } } });
 
-    const error = await new SupabaseBlockRepository(client).listMyBlockedUsers().catch((e: unknown) => e);
+    const users = await new SupabaseBlockRepository(client).listMyBlockedUsers();
 
-    expect(error).toBeInstanceOf(BackendUnavailableError);
-    expect(error).toMatchObject({ object: 'rpc:list_my_blocked_users' });
-    expect(calls).toHaveLength(0);
+    expect(calls).toHaveLength(1);
+    expect(calls[0]).toMatchObject({ kind: 'rpc', fn: 'list_my_blocked_users' });
+    expect(users).toEqual([
+      { userId: 'u1', displayName: 'Dana', avatarUrl: null, blockedAt: '2026-01-02T00:00:00Z' },
+      { userId: 'u2', displayName: null, avatarUrl: 'https://img/x.png', blockedAt: '2026-01-01T00:00:00Z' },
+    ]);
+  });
+
+  it('listMyBlockedUsers is empty with no blocks and degrades when the function is missing', async () => {
+    const none = createFakeClient({ rpc: { list_my_blocked_users: { data: null, error: null } } });
+    const missing = createFakeClient({
+      rpc: { list_my_blocked_users: { data: null, error: { code: 'PGRST202', message: 'not found' } } },
+    });
+
+    await expect(new SupabaseBlockRepository(none.client).listMyBlockedUsers()).resolves.toEqual([]);
+    await expect(new SupabaseBlockRepository(missing.client).listMyBlockedUsers()).rejects.toBeInstanceOf(
+      BackendUnavailableError,
+    );
   });
 });

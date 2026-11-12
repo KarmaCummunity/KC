@@ -40,7 +40,9 @@ export const paymentsUseCases = {
   listHistory: () => new ListDonationHistoryUseCase(repo()),
   getReceipt: () => new GetDonationReceiptUseCase(repo()),
   /** FR-DONATE-011 — direct support for KC; channels are server config only (D20, D64). */
-  kcSupportOptions: () => new GetKcSupportOptionsUseCase(new SupabaseKcSupportChannelsRepository()),
+  kcSupportOptions: () => new GetKcSupportOptionsUseCase(
+      new SupabaseKcSupportChannelsRepository(getSupabaseClient({ storage: pickAuthStorage() })),
+    ),
 };
 
 export function newIdempotencyKey(prefix: string): string {

@@ -2,8 +2,8 @@
  "generatedBy": "scripts/app-migration-map.mjs",
  "totals": {
   "rpc": {
-   "objects": 203,
-   "same": 131,
+   "objects": 205,
+   "same": 133,
    "renamed": 20,
    "changed": 33,
    "removed": 0,
@@ -52,8 +52,8 @@
    "missing": 0
   },
   "later": {
-   "objects": 118,
-   "same": 67,
+   "objects": 120,
+   "same": 69,
    "renamed": 4,
    "changed": 27,
    "removed": 0,
@@ -84,8 +84,8 @@
    "missing": 0
   },
   "blocks": {
-   "callSites": 3,
-   "oneToOne": 3,
+   "callSites": 4,
+   "oneToOne": 4,
    "changed": 0,
    "removed": 0,
    "missing": 0
@@ -294,8 +294,8 @@
    "missing": 0
   },
   "payments": {
-   "callSites": 10,
-   "oneToOne": 2,
+   "callSites": 11,
+   "oneToOne": 3,
    "changed": 8,
    "removed": 0,
    "missing": 0
@@ -400,7 +400,7 @@
   }
  },
  "notes": [
-  "Capabilities the baseline does not provide and the identity adapters therefore do not call (they report `BackendUnavailableError` and the screens degrade): the blocked-users list (M01, the screen shows its empty state; unblock from a profile is not reachable because `users_hide_blocked` hides it), follow suggestions (M03) and the profile completeness nudge (M04), both hidden on the suggestions screen, and the About team roster (M08, no team section).",
+  "Capabilities the baseline does not provide and the identity adapters therefore do not call (they report `BackendUnavailableError` and the screens degrade): follow suggestions (M03) and the profile completeness nudge (M04), both hidden on the suggestions screen, and the About team roster (M08, no team section).",
   "The internal back-office tools (formerly M19) were rebuilt after the baseline as forward migrations: the admin task tracker (FR-ADMIN-018, `0034`), CRM contacts per organization (FR-ADMIN-032, `0035`) and staff timesheets (FR-ADMIN-033, `0036`).",
   "Errors: every baseline RPC raises `P0001` with a stable snake_case message (`unauthenticated` uses `42501`). Map on `error.message`, never on a SQLSTATE or on Hebrew text. Codes marked † in the tables are not referenced anywhere in the app today and need a user-visible mapping.",
   "Paging: no OFFSET anywhere. Lists take the `next_cursor` JSON of the last row (cards) or explicit `p_before_*` / `p_after_*` values; application ports that expose `offset` change to an opaque cursor.",
@@ -488,7 +488,7 @@
     "contract tests against a baseline database (sqlProbes, contract.integration)",
     "pgTAP 010, 011, 020, 021, 050, 051"
    ],
-   "degrade": "Nothing works before this package (no session): it is the first one after P0. The blocked-users row, follow suggestions, the completeness hint and the About team list are hidden (M01, M03, M04, M08).",
+   "degrade": "Nothing works before this package (no session): it is the first one after P0. Follow suggestions, the completeness hint and the About team list are hidden (M03, M04, M08).",
    "risks": "Owns `users/mapUserRow.ts`, which chat, posts and search read: it lands before P2 and P3 start. Account gate: topic `user:<id>:account` (M24).",
    "rows": [
     "rpc:bootstrap_session",
@@ -513,6 +513,7 @@
     "table:legal_document_versions",
     "table:cities",
     "table:streets",
+    "rpc:list_my_blocked_users",
     "rpc:my_karma_points",
     "rpc:notifications_page",
     "rpc:notifications_unread_count",
@@ -525,8 +526,8 @@
     "channel:topic = `user:${userId}:account`"
    ],
    "counts": {
-    "objects": 32,
-    "oneToOne": 28,
+    "objects": 33,
+    "oneToOne": 29,
     "changed": 4,
     "removed": 0,
     "missing": 0
@@ -1025,6 +1026,7 @@
    "degrade": "`world_money_enabled` off: the money world is a portal of links; the support card shows its unavailable state (no channel list); a donation without a checkout page says \"not available yet\".",
    "risks": "No checkout Edge Function sets `checkout_url` yet. A KC support-channel list (a small reference table in `85_billing`, or app configuration) is still to be decided. Retention of billing rows is an open legal question (design Q5).",
    "rows": [
+    "rpc:list_kc_support_channels",
     "table:org_applications",
     "rpc:admin_set_manager",
     "rpc:admin_org_tree",
@@ -1056,8 +1058,8 @@
     "rpc:api_standing_orders_charge_due"
    ],
    "counts": {
-    "objects": 29,
-    "oneToOne": 13,
+    "objects": 30,
+    "oneToOne": 14,
     "changed": 16,
     "removed": 0,
     "missing": 0
@@ -4295,8 +4297,8 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/auth/bootstrapSession.ts",
-     "line": 138,
-     "symbol": "fetchBootstrapSession",
+     "line": 155,
+     "symbol": "readBootstrapSession",
      "area": "auth"
     },
     {
@@ -7397,6 +7399,76 @@
      "line": 169,
      "symbol": "SupabaseChallengeRepository.listChallenges",
      "area": "challenges"
+    }
+   ]
+  },
+  {
+   "old": "list_kc_support_channels",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "No arguments; the active KC support channels (`channel`, `url`, `provider_label`, `payee_phone`, masked for guests; migration 0019). The support card shows its unavailable state when the list is empty or the call fails.",
+   "oldObject": {
+    "signature": [
+     "list_kc_support_channels(channel: string, payee_phone: string, provider_label: string, url: string) → { channel: string payee_phone: string provider_label: string url: string }[]"
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "list_kc_support_channels",
+     "signature": [
+      "list_kc_support_channels(channel: string, payee_phone: string, provider_label: string, url: string) → { channel: string payee_phone: string provider_label: string url: string }[]"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "payments"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/payments/SupabaseKcSupportChannelsRepository.ts",
+     "line": 17,
+     "symbol": "SupabaseKcSupportChannelsRepository.listActiveChannels",
+     "area": "payments"
+    }
+   ]
+  },
+  {
+   "old": "list_my_blocked_users",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "`p_before_blocked_at`, `p_before_user_id`, `p_limit` (default 50, cap 100); the caller's blocks newest first with the member's display name and avatar (migration 0015). The blocked-users screen reads one page.",
+   "oldObject": {
+    "signature": [
+     "list_my_blocked_users(avatar_url: string, blocked_at: string, display_name: string, user_id: string) → { avatar_url: string blocked_at: string display_name: string user_id: string }[]"
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "list_my_blocked_users",
+     "signature": [
+      "list_my_blocked_users(p_before_blocked_at?: string, p_before_user_id?: string, p_limit?: number) → { avatar_url: string blocked_at: string display_name: string user_id: string }[]"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "blocks"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/blocks/SupabaseBlockRepository.ts",
+     "line": 46,
+     "symbol": "SupabaseBlockRepository.listMyBlockedUsers",
+     "area": "blocks"
     }
    ]
   },
@@ -10985,7 +11057,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/blocks/SupabaseBlockRepository.ts",
-     "line": 18,
+     "line": 17,
      "symbol": "SupabaseBlockRepository.isBlocking",
      "area": "blocks",
      "ops": [
@@ -10994,7 +11066,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/blocks/SupabaseBlockRepository.ts",
-     "line": 28,
+     "line": 27,
      "symbol": "SupabaseBlockRepository.block",
      "area": "blocks",
      "ops": [
@@ -11003,7 +11075,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/blocks/SupabaseBlockRepository.ts",
-     "line": 36,
+     "line": 35,
      "symbol": "SupabaseBlockRepository.unwrapCall",
      "area": "blocks",
      "ops": [

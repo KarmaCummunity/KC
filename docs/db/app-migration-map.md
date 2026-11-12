@@ -8,12 +8,12 @@ The application (`app/packages/infrastructure-supabase`, `app/apps/mobile`) and 
 
 | Kind | Objects used | 1:1 | 1:1 (renamed) | CHANGED | REMOVED | MISSING |
 | --- | --- | --- | --- | --- | --- | --- |
-| RPCs | 203 | 131 | 20 | 33 | 0 | 19 |
+| RPCs | 205 | 133 | 20 | 33 | 0 | 19 |
 | Tables and views | 63 | 45 | 0 | 17 | 0 | 1 |
 | Storage buckets | 4 | 3 | 0 | 1 | 0 | 0 |
 | Realtime channels | 6 | 6 | 0 | 0 | 0 | 0 |
 | Edge Function invokes | 3 | 3 | 0 | 0 | 0 | 0 |
-| **Total** | 279 | 188 | 20 | 51 | 0 | 20 |
+| **Total** | 281 | 190 | 20 | 51 | 0 | 20 |
 
 ### Launch scope
 
@@ -23,14 +23,14 @@ Every row carries `launch` (spec D102, `docs/spec/96_launch_and_first_group_plan
 | --- | --- | --- | --- | --- | --- | --- |
 | core | 108 | 89 | 1 | 18 | 0 | 0 |
 | wedge | 53 | 32 | 15 | 6 | 0 | 0 |
-| later | 118 | 67 | 4 | 27 | 0 | 20 |
+| later | 120 | 69 | 4 | 27 | 0 | 20 |
 | **Launch-critical (core + wedge)** | 161 | 121 | 16 | 24 | 0 | 0 |
 
 Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename of the function or its arguments · **CHANGED** the caller's logic changes · **REMOVED** no replacement by design · **MISSING** the baseline has no equivalent although the code needs one (§4). Confidence: **high** read in the baseline source, **medium** inferred from names and generated types.
 
 ## 2. Rules that hold everywhere
 
-- Capabilities the baseline does not provide and the identity adapters therefore do not call (they report `BackendUnavailableError` and the screens degrade): the blocked-users list (M01, the screen shows its empty state; unblock from a profile is not reachable because `users_hide_blocked` hides it), follow suggestions (M03) and the profile completeness nudge (M04), both hidden on the suggestions screen, and the About team roster (M08, no team section).
+- Capabilities the baseline does not provide and the identity adapters therefore do not call (they report `BackendUnavailableError` and the screens degrade): follow suggestions (M03) and the profile completeness nudge (M04), both hidden on the suggestions screen, and the About team roster (M08, no team section).
 - The internal back-office tools (formerly M19) were rebuilt after the baseline as forward migrations: the admin task tracker (FR-ADMIN-018, `0034`), CRM contacts per organization (FR-ADMIN-032, `0035`) and staff timesheets (FR-ADMIN-033, `0036`).
 - Errors: every baseline RPC raises `P0001` with a stable snake_case message (`unauthenticated` uses `42501`). Map on `error.message`, never on a SQLSTATE or on Hebrew text. Codes marked † in the tables are not referenced anywhere in the app today and need a user-visible mapping.
 - Paging: no OFFSET anywhere. Lists take the `next_cursor` JSON of the last row (cards) or explicit `p_before_*` / `p_after_*` values; application ports that expose `offset` change to an opaque cursor.
@@ -46,7 +46,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | --- | --- | --- | --- | --- | --- |
 | `infrastructure-supabase/src/admin/` | 50 | 31 | 19 | 0 | 0 |
 | `infrastructure-supabase/src/auth/` | 2 | 2 | 0 | 0 | 0 |
-| `infrastructure-supabase/src/blocks/` | 3 | 3 | 0 | 0 | 0 |
+| `infrastructure-supabase/src/blocks/` | 4 | 4 | 0 | 0 | 0 |
 | `infrastructure-supabase/src/challenges/` | 9 | 6 | 3 | 0 | 0 |
 | `infrastructure-supabase/src/chat/` | 20 | 19 | 1 | 0 | 0 |
 | `infrastructure-supabase/src/cities/` | 1 | 0 | 1 | 0 | 0 |
@@ -60,7 +60,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `infrastructure-supabase/src/moderation/` | 7 | 6 | 1 | 0 | 0 |
 | `infrastructure-supabase/src/notifications/` | 7 | 7 | 0 | 0 | 0 |
 | `infrastructure-supabase/src/organizations/` | 6 | 5 | 1 | 0 | 0 |
-| `infrastructure-supabase/src/payments/` | 10 | 2 | 8 | 0 | 0 |
+| `infrastructure-supabase/src/payments/` | 11 | 3 | 8 | 0 | 0 |
 | `infrastructure-supabase/src/posts/` | 50 | 34 | 16 | 0 | 0 |
 | `infrastructure-supabase/src/realtime/` | 1 | 1 | 0 | 0 | 0 |
 | `infrastructure-supabase/src/reports/` | 8 | 4 | 4 | 0 | 0 |
@@ -152,16 +152,17 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `bootstrap_session` | core | 1:1 | `bootstrap_session() → Json` | Session start in one call: the account gate (`account.status`, `status_until`), the caller's `private_profile`, the staff `admin.roles` and the pending `legal.documents`. The app reads those blocks and nothing else. | `unauthenticated` | high | bootstrapSession.ts:138 |
+| `bootstrap_session` | core | 1:1 | `bootstrap_session() → Json` | Session start in one call: the account gate (`account.status`, `status_until`), the caller's `private_profile`, the staff `admin.roles` and the pending `legal.documents`. The app reads those blocks and nothing else. | `unauthenticated` | high | bootstrapSession.ts:155 |
 | `restore_account` | core | 1:1 | `restore_account() → undefined` | Restores the caller's account during the 30-day grace period (refusals `not_pending_deletion`, `grace_expired`). | `grace_expired`, `not_pending_deletion`, `unauthenticated` | high | SupabaseAccountGateRepository.ts:53 |
 
 ### `infrastructure-supabase/src/blocks/`
 
-3 call sites: 3 map 1:1, 0 need logic changes, 0 removed, 0 MISSING.
+4 call sites: 4 map 1:1, 0 need logic changes, 0 removed, 0 MISSING.
 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `blocks` (table) | core | 1:1 | table `blocks` | Same columns, same direct select / insert / delete. |  | high | SupabaseBlockRepository.ts:18, SupabaseBlockRepository.ts:28, SupabaseBlockRepository.ts:36 |
+| `list_my_blocked_users` | later | 1:1 | `list_my_blocked_users(p_before_blocked_at?: string, p_before_user_id?: string, p_limit?: number) → { avatar_url: string blocked_at: string display_name: string user_id: string }[]` | `p_before_blocked_at`, `p_before_user_id`, `p_limit` (default 50, cap 100); the caller's blocks newest first with the member's display name and avatar (migration 0015). The blocked-users screen reads one page. |  | high | SupabaseBlockRepository.ts:46 |
+| `blocks` (table) | core | 1:1 | table `blocks` | Same columns, same direct select / insert / delete. |  | high | SupabaseBlockRepository.ts:17, SupabaseBlockRepository.ts:27, SupabaseBlockRepository.ts:35 |
 
 ### `infrastructure-supabase/src/challenges/`
 
@@ -375,7 +376,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 
 ### `infrastructure-supabase/src/payments/`
 
-10 call sites: 2 map 1:1, 8 need logic changes, 0 removed, 0 MISSING.
+11 call sites: 3 map 1:1, 8 need logic changes, 0 removed, 0 MISSING.
 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -384,6 +385,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `create_standing_order` | later | CHANGED | `create_standing_order(p_amount_agorot: number, p_cadence?: string, p_idempotency_key: string, p_org_id: string) → Json` | `p_amount_ils` → `p_amount_agorot`; returns JSON. | `account_not_active`, `cadence_not_supported` †, `idempotency_key_conflict` †, `money_min_amount`, `payments_unavailable`, `unauthenticated`, `verified_org_required` | high | SupabasePaymentsRepository.ts:75 |
 | `get_donation_receipt` | later | 1:1 | `get_donation_receipt(p_payment_id: string) → Json` | Signature unchanged; amounts in the JSON are agorot. |  | medium | SupabasePaymentsRepository.ts:129 |
 | `get_nonprofit_public_page` | later | 1:1 | `get_nonprofit_public_page(p_org_slug: string) → Json` | Signature unchanged; totals in agorot. |  | medium | SupabasePaymentsRepository.ts:48 |
+| `list_kc_support_channels` | later | 1:1 | `list_kc_support_channels(channel: string, payee_phone: string, provider_label: string, url: string) → { channel: string payee_phone: string provider_label: string url: string }[]` | No arguments; the active KC support channels (`channel`, `url`, `provider_label`, `payee_phone`, masked for guests; migration 0019). The support card shows its unavailable state when the list is empty or the call fails. |  | high | SupabaseKcSupportChannelsRepository.ts:17 |
 | `list_my_donation_history` | later | CHANGED | `list_my_donation_history(p_after_id?: string, p_after_paid_at?: string, p_limit?: number) → { amount_agorot: number currency: string org_id: string org_name: string paid_at: string payment_id: string receipt_serial: number refunded_agorot: number sec46_eligible: boolean standing_order_id: string status: stri...` | Keyset (`p_after_paid_at`, `p_after_id`); `amount_ils` → `amount_agorot`, plus refunded_agorot, status, `receipt_serial`, `sec46_eligible`. |  | high | SupabasePaymentsRepository.ts:109 |
 | `list_my_standing_orders` | later | CHANGED | `list_my_standing_orders() → Json[]` | No `p_limit`; rows are JSON with `amount_agorot`. |  | high | SupabasePaymentsRepository.ts:87 |
 | `list_verified_nonprofits` | later | CHANGED | `list_verified_nonprofits(p_after_id?: string, p_after_name?: string, p_limit?: number) → { id: string name: string slug: string tagline_en: string tagline_he: string verification_level: number }[]` | Keyset (`p_after_name`, `p_after_id`); `org_id` → `id`; `verification_level` replaces `is_verified_nonprofit`. |  | high | SupabasePaymentsRepository.ts:33 |
@@ -780,7 +782,7 @@ In launch order: after package *n* the app is shippable with everything up to *n
 | Package | Launch | Objects | 1:1 | Changed | Removed | MISSING | May run in parallel with |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | P0 — Contract switch and the degrade rule (first, alone) | core | 2 | 2 | 0 | 0 | 0 | — |
-| P1 — Identity: session start, profile, privacy, follow, block, legal, account deletion, devices | core | 32 | 28 | 4 | 0 | 0 | — |
+| P1 — Identity: session start, profile, privacy, follow, block, legal, account deletion, devices | core | 33 | 29 | 4 | 0 | 0 | — |
 | P2 — Posts, feed, search, closure, translations | core | 42 | 31 | 11 | 0 | 0 | P3, P4 |
 | P3 — Chat and realtime | core | 18 | 17 | 1 | 0 | 0 | P2, P4 |
 | P4 — Reports, moderation and admin basics | core | 20 | 14 | 6 | 0 | 0 | P2, P3 |
@@ -789,7 +791,7 @@ In launch order: after package *n* the app is shippable with everything up to *n
 | L1 — Housing world | later | 15 | 11 | 4 | 0 | 0 | L2, L3, L4, L5, L6, L7 |
 | L2 — Knowledge world | later | 8 | 6 | 2 | 0 | 0 | L1, L3, L4, L5, L6, L7 |
 | L3 — Challenges | later | 9 | 6 | 3 | 0 | 0 | L1, L2, L4, L5, L6, L7 |
-| L4 — Money: donations to organizations, standing orders, org finance, org onboarding | later | 29 | 13 | 16 | 0 | 0 | L1, L2, L3, L5, L6, L7 |
+| L4 — Money: donations to organizations, standing orders, org finance, org onboarding | later | 30 | 14 | 16 | 0 | 0 | L1, L2, L3, L5, L6, L7 |
 | L5 — Surveys, feedback, public research | later | 15 | 14 | 1 | 0 | 0 | L1, L2, L3, L4, L6, L7 |
 | L6 — Back-office tools: tasks, CRM, timesheets | later | 22 | 17 | 5 | 0 | 0 | L1, L2, L3, L4, L5, L7 |
 | L7 — WhatsApp bot, linking, admin console | later | 20 | 0 | 0 | 0 | 20 | L1, L2, L3, L4, L5, L6 |
@@ -807,7 +809,7 @@ In launch order: after package *n* the app is shippable with everything up to *n
 - **Owns:** `auth/**`, `users/**`, `legal/**`, `blocks/**`, `social/**`, `cities/**`, `streets/**`, `about/**`, `notifications/**`, `survey/SupabaseUserActivityRepository.ts`, `apps/mobile: auth gate, onboarding, settings, edit profile, avatar upload, notification badge hook, devIdentityVerification (deleted)`
 - **Work:** Done in P1: the account gate, private profile, onboarding state and pending legal documents read `bootstrap_session`; `users/mapUserRow.ts` maps the public `users` row plus `user_stats` and, for the caller's own row, the `bootstrap_session` private blocks (`user_private`, `user_account`, staff roles); follows go through `follow_user`, `follow_request_decide` and `follow_request_cancel`; account deletion through `request_account_deletion` and `restore_account`; the account gate listens on `user:<id>:account`. M01, M03, M04 and M08 are hidden or empty (no call is made); the dev-only identity and onboarding helpers are gone.
 - **Must pass:** vitest: auth, users, legal, blocks, social, notifications suites; contract tests against a baseline database (sqlProbes, contract.integration); pgTAP 010, 011, 020, 021, 050, 051
-- **If reached before it is migrated:** Nothing works before this package (no session): it is the first one after P0. The blocked-users row, follow suggestions, the completeness hint and the About team list are hidden (M01, M03, M04, M08).
+- **If reached before it is migrated:** Nothing works before this package (no session): it is the first one after P0. Follow suggestions, the completeness hint and the About team list are hidden (M03, M04, M08).
 - **Risks:** Owns `users/mapUserRow.ts`, which chat, posts and search read: it lands before P2 and P3 start. Account gate: topic `user:<id>:account` (M24).
 
 ### P2 — Posts, feed, search, closure, translations
