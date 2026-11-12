@@ -8,6 +8,7 @@ import { Screen } from '../../../../../src/components/ui/Screen';
 import { PrimaryButton, SecondaryButton } from '../../../../../src/components/ui/Buttons';
 import { paymentsUseCases } from '../../../../../src/services/paymentsComposition';
 import { shekelsText } from '../../../../../src/components/money/moneyAmount';
+import { CampaignProgressBar } from '../../../../../src/components/money/CampaignProgressBar';
 import { valueOrNull } from '../../../../../src/lib/backendAvailability';
 import { useShellTabBarScrollInset } from '../../../../../src/navigation/useShellTabBarVisibility';
 import { useExternalDonations } from '../../../../../src/hooks/useExternalDonations';
@@ -106,7 +107,9 @@ export default function NonprofitPublicScreen() {
           p.campaigns.map((c) => (
             <View key={c.postId} style={styles.campaign}>
               <Text style={styles.campaignTitle}>{c.title}</Text>
+              {c.summary ? <Text style={styles.about}>{c.summary}</Text> : null}
               <Text style={styles.about}>{t('moneyPayments.totalRaised', { amount: shekelsText(c.raisedAgorot) })}</Text>
+              <CampaignProgressBar raisedAgorot={c.raisedAgorot} goalAgorot={c.goalAgorot} />
             </View>
           ))
         )}

@@ -20,6 +20,10 @@ export interface MoneyCampaignProgress {
   readonly status: string;
   readonly publishedAt: string | null;
   readonly raisedAgorot: number;
+  /** The campaign's goal; 0 when it set none (no progress bar then). */
+  readonly goalAgorot: number;
+  /** The campaign post's description; null when it has none. */
+  readonly summary: string | null;
 }
 
 export interface NonprofitPublicPage {

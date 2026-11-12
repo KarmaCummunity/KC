@@ -314,7 +314,7 @@ insert into public.organizations (slug, name, is_verified_nonprofit) values ('ai
 select is(pg_temp.val('1', $$select string_agg(slug, ',' order by name) from public.list_verified_nonprofits()$$)
   || '|' || pg_temp.val('1', $$select string_agg(slug, ',') from public.list_verified_nonprofits(1, 'Aid', &aid)$$)
   || '|' || pg_temp.act('anon', $$select public.list_verified_nonprofits()$$),
-  'aid,helpers|helpers|42501', 'the directory lists verified nonprofits by name with keyset pages, for signed-in members');
+  'aid,helpers|helpers|ok', 'the directory lists verified nonprofits by name with keyset pages, also to signed-out visitors');
 
 -- ── Donation links ──────────────────────────────────────────────────────────
 insert into public.donation_link_categories (slug, icon_name, sort_order) values ('food', 'restaurant-outline', 1);
