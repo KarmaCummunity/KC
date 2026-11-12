@@ -9,6 +9,37 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      about_team_members: {
+        Row: {
+          created_at: string
+          is_active: boolean
+          role_key: string
+          sort_order: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          is_active?: boolean
+          role_key: string
+          sort_order?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          is_active?: boolean
+          role_key?: string
+          sort_order?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "about_team_members_user_id_fkey"
+            columns: ["user_id"]
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       admin_role_grants: {
         Row: {
           granted_at: string
@@ -3543,6 +3574,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      about_team_profiles: {
+        Args: never
+        Returns: {
+          avatar_url: string
+          display_name: string
+          role_key: string
+          share_handle: string
+          sort_order: number
+        }[]
+      }
       accept_legal_document: {
         Args: {
           p_doc_type: string
@@ -5186,8 +5227,38 @@ export type Database = {
         }[]
       }
       rotate_research_salt: { Args: never; Returns: string }
+      rpc_follow_suggestions: {
+        Args: { p_limit?: number }
+        Returns: {
+          avatar_url: string
+          city_name: string
+          display_name: string
+          followers_count: number
+          reason: string
+          score: number
+          share_handle: string
+          user_id: string
+          verification_level: number
+        }[]
+      }
       rpc_org_transparency: { Args: { p_slug?: string }; Returns: Json }
+      rpc_profile_completeness: { Args: { p_user_id?: string }; Returns: Json }
       search_all: { Args: { p_limit?: number; p_query: string }; Returns: Json }
+      search_hashtags: {
+        Args: { p_limit?: number; p_query: string }
+        Returns: {
+          tag: string
+          use_count: number
+        }[]
+      }
+      search_organizations: {
+        Args: { p_limit?: number; p_query: string }
+        Returns: {
+          name: string
+          org_id: string
+          slug: string
+        }[]
+      }
       search_places: {
         Args: { p_kinds?: string[]; p_limit?: number; p_query: string }
         Returns: {
@@ -5214,6 +5285,10 @@ export type Database = {
           distance_m: number
           next_cursor: Json
         }[]
+      }
+      search_suggested_queries: {
+        Args: { p_limit?: number }
+        Returns: string[]
       }
       search_users_page: {
         Args: {

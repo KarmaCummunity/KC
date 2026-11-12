@@ -25,3 +25,4 @@
 0028_chat_fresh_thread.sql
 0029_post_public_street.sql
 0030_public_org_pages_anon.sql
+0031_member_discovery.sql
