@@ -134,7 +134,7 @@ A future enhancement (`TD-112`) may mirror the Money and Time sub-screens into a
 - AC2. A guest who attempts deep-link navigation to `/donations`, `/donations/money`, `/donations/time`, or `/search` is redirected to `1.2 Auth` per PRD §6.8.1.
 - AC3. After authentication, the user lands on the home feed (`/(tabs)`) per existing post-auth flow; the originally requested route is **not** preserved in MVP-core (TD-111).
 
-**Related.** Screens: 1.7, 2.5, 2.6, 2.7, 2.8 · `FR-AUTH-014`, `FR-FEED-012`, PRD §6.8.1.
+**Related.** Screens: 2.5, 2.6, 2.7, 2.8 · `FR-AUTH-001 AC4`, PRD §6.8.1.
 
 ---
 

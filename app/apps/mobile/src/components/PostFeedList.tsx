@@ -29,7 +29,7 @@ interface Props {
   onRetry: () => void;
   onEndReached?: () => void;
   hasMore?: boolean;
-  /** Override card-tap handler (used by guest feed for the join modal). */
+  /** Override card-tap handler; without it a card opens its post. */
   onCardPress?: (post: PostWithOwner) => void;
   /** Optional override for the empty state — Home Feed passes the warm empty state. */
   emptyComponent?: React.ReactNode;

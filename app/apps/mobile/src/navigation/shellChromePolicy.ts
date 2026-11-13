@@ -4,7 +4,6 @@
 /** Routes that hide the floating TabBar (composer overlap, public surfaces, etc.). */
 export const SHELL_TAB_BAR_HIDDEN_ROUTE_PREFIXES = [
   '(auth)',
-  '(guest)',
   '(onboarding)',
   'research',
 ] as const;

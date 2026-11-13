@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// Action menus and the guest join prompt on the kit `BottomSheet` (spec 17 §4.1.1,
+// Action menus on the kit `BottomSheet` (spec 17 §4.1.1,
 // TD-243): each renders its rows, runs the picked action, and dismisses from the
 // footer cancel and the ✕. Destructive rows are tinted `error`.
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -42,7 +42,6 @@ vi.mock('../donationLinkRowHandlers', () => linkHandlers);
 import { finishModalAnimation, renderInTheme, rgb } from '../ui/__tests__/kitDialogTestKit';
 import { ChatActionMenu } from '../ChatActionMenu';
 import { DonationLinkRowMenu } from '../DonationLinkRowMenu';
-import { GuestJoinModal } from '../GuestJoinModal';
 import { MyProfileOverflowMenu } from '../profile/MyProfileOverflowMenu';
 import { ProfileOverflowMenu } from '../profile/ProfileOverflowMenu';
 
@@ -189,29 +188,5 @@ describe('ProfileOverflowMenu', () => {
     openMenu('moderation.report.user.title');
     fireEvent.click(screen.getByRole('button', { name: 'moderation.actions.ban' }));
     expect(screen.getByText('ban-user-sheet')).toBeTruthy();
-  });
-});
-
-describe('GuestJoinModal', () => {
-  function renderPrompt() {
-    const handlers = { onJoin: vi.fn(), onDismiss: vi.fn() };
-    renderInTheme(<GuestJoinModal visible message="Join to like posts" joinLabel="Join now" {...handlers} />);
-    return handlers;
-  }
-
-  it('shows the message and joins from the primary button', () => {
-    const { onJoin } = renderPrompt();
-    expect(screen.getByText('Join to like posts')).toBeTruthy();
-    const join = screen.getByRole('button', { name: 'Join now' });
-    expect(getComputedStyle(join).backgroundColor).toBe(rgb(lightColors.primary));
-    fireEvent.click(join);
-    expect(onJoin).toHaveBeenCalledTimes(1);
-  });
-
-  it('dismisses from the close button, the ✕ and Escape', () => {
-    const { onDismiss } = renderPrompt();
-    for (const close of screen.getAllByRole('button', { name: 'general.close' })) fireEvent.click(close);
-    fireEvent.keyUp(document, { key: 'Escape' });
-    expect(onDismiss).toHaveBeenCalledTimes(3);
   });
 });

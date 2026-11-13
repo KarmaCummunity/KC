@@ -17,7 +17,7 @@ export function AppThemeProvider({ children }: Readonly<{ children: React.ReactN
   const osScheme = useColorScheme();
   const systemScheme: ResolvedScheme = osScheme === 'dark' ? 'dark' : 'light';
 
-  // Signed-out surfaces (welcome, guest preview) always render light. The user's
+  // Signed-out surfaces (welcome, sign-in) always render light. The user's
   // persisted choice (FR-SETTINGS-014 AC3) is kept in storage and applies again
   // after sign-in — avoids a dark welcome when the device/OS prefers dark mode.
   const mode: ThemeMode =

@@ -1,6 +1,6 @@
 // AuthGate — cold-start session restore + onboarding-state read + redirect
-// rules between (auth) / (guest) / (onboarding) / (tabs).
-// Mapped to SRS: FR-AUTH-007 AC2, FR-AUTH-013 (cold-start), FR-AUTH-014 (guest),
+// rules between (auth) / (onboarding) / (tabs).
+// Mapped to SRS: FR-AUTH-007 AC2, FR-AUTH-013 (cold-start),
 // FR-AUTH-010 AC3 (Skip preserves location).
 // FR-CHAT-001: inbox subscription started on sign-in, torn down on sign-out.
 import React, { useEffect, useState } from 'react';
@@ -23,9 +23,7 @@ import { useRedirectIntentStore } from '../store/redirectIntentStore';
 import { container } from '../lib/container';
 import { useEnforceAccountGate } from '../hooks/useEnforceAccountGate';
 import { finishMark } from '../lib/observability/perfMarks';
-import { isPublicResearchPath } from '../navigation/publicResearchPaths';
-import { isPublicLegalSegment } from '../navigation/publicLegalPaths';
-import { isPublicOrgPagePath } from '../navigation/publicOrgPaths';
+import { isSignedOutSurface } from '../navigation/signedOutSurfaces';
 import { PrimaryButton } from './ui/Buttons';
 
 export function AuthGate({ children }: Readonly<{ children: React.ReactNode }>) {
@@ -155,55 +153,16 @@ export function AuthGate({ children }: Readonly<{ children: React.ReactNode }>) 
   }, [session?.userId]);
 
   // Redirect rules:
-  //   - Unauth + outside (auth)/(guest)/auth/callback/auth/verify → (auth).
-  //   - Auth + just landed in (auth) or (guest) → onboarding step matching
+  //   - Unauth + outside the signed-out surfaces (navigation/signedOutSurfaces.ts) → (auth).
+  //   - Auth + just landed in (auth) or an auth return route → onboarding step matching
   //     onboarding_state, or (tabs) when completed.
   //   - Auth + already past the gates → no auto-redirect (FR-AUTH-015 soft-gate
   //     handles pending_basic_info on first meaningful action; auto-redirecting
   //     from tabs back to onboarding would loop after the FR-AUTH-010 AC3 Skip).
   useEffect(() => {
     if (isLoading) return;
-    const inAuthGroup = segments[0] === '(auth)';
-    const inGuestGroup = (segments[0] as string | undefined) === '(guest)';
-    const isOAuthCallback =
-      (segments[0] as string | undefined) === 'auth' && segments[1] === 'callback';
-    // FR-AUTH-006 — email verification landing route is reachable while signed
-    // out; the route itself exchanges the token and sets the session.
-    const isEmailVerify =
-      (segments[0] as string | undefined) === 'auth' && segments[1] === 'verify';
-    // FR-AUTH-008 — reset-password opens from an email link while signed out and
-    // must not be redirected once the recovery token creates a session.
-    const isPasswordReset =
-      (segments[0] as string | undefined) === 'auth' && segments[1] === 'reset-password';
-    // FR-MOD-010 AC4 — account-blocked is a terminal screen reachable while
-    // signed out; do not bounce the user back to (auth).
-    const isAccountBlocked = (segments[0] as string | undefined) === 'account-blocked';
-    const isAboutSurface =
-      (segments[0] as string | undefined) === 'about' ||
-      (segments[0] as string | undefined) === 'about-site';
-    // FR-RESEARCH-001 AC2 / FR-RESEARCH-004 AC7 — public survey is web-only and
-    // must stay reachable from shared links without sign-in.
-    const isResearchSurface =
-      (segments[0] as string | undefined) === 'research' ||
-      (typeof pathname === 'string' && isPublicResearchPath(pathname));
-    // Terms / privacy must be readable before sign-up (store review, D-47).
-    const isLegalSurface = isPublicLegalSegment(segments as readonly string[]);
-    // FR-ORG-001 AC4 — a nonprofit's public page opens from a shared link without sign-in.
-    const isPublicOrgSurface = typeof pathname === 'string' && isPublicOrgPagePath(pathname);
-
     if (!isAuthenticated) {
-      if (
-        !inAuthGroup &&
-        !inGuestGroup &&
-        !isOAuthCallback &&
-        !isEmailVerify &&
-        !isPasswordReset &&
-        !isAccountBlocked &&
-        !isAboutSurface &&
-        !isResearchSurface &&
-        !isLegalSurface &&
-        !isPublicOrgSurface
-      ) {
+      if (!isSignedOutSurface(segments, typeof pathname === 'string' ? pathname : '')) {
         // FR-POST-023 AC6 — remember the deep-link target so we can restore
         // it after the user completes sign-in / onboarding.
         if (typeof pathname === 'string') capturePendingPath(pathname);
@@ -212,7 +171,11 @@ export function AuthGate({ children }: Readonly<{ children: React.ReactNode }>) 
       return;
     }
 
-    if (!inAuthGroup && !inGuestGroup && !isOAuthCallback && !isEmailVerify) return;
+    // A session exists: only the entry routes (welcome group, OAuth return, email verification)
+    // forward into onboarding or the tabs.
+    const inAuthGroup = segments[0] === '(auth)';
+    const isAuthReturn = segments[0] === 'auth' && (segments[1] === 'callback' || segments[1] === 'verify');
+    if (!inAuthGroup && !isAuthReturn) return;
     if (onboardingState === null) return;
 
     if (onboardingState === 'pending_basic_info' && basicInfoSkipped === true) {
