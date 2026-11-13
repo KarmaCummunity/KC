@@ -27,7 +27,6 @@ const OVERLAY_ICON = avatarPalette.foreground;
 
 interface PostCardGridProps {
   post: PostWithOwner;
-  onPressOverride?: () => void;
   /** Per-post press handler — receives the full post so the parent avoids per-item closures. */
   onCardPress?: (post: PostWithOwner) => void;
   /** Grid density — home feed uses 2; profile grids use 3. */
@@ -46,7 +45,6 @@ interface PostCardGridProps {
 
 function PostCardGridInner({
   post,
-  onPressOverride,
   onCardPress,
   columns = 2,
   gap = spacing.sm,
@@ -114,10 +112,6 @@ function PostCardGridInner({
       onCardPress(post);
       return;
     }
-    if (onPressOverride) {
-      onPressOverride();
-      return;
-    }
     if (post.challengeId) {
       router.push({
         pathname: '/(tabs)/donations/challenges/[challengeId]',
@@ -130,7 +124,7 @@ function PostCardGridInner({
         ? `?fromProfile=${encodeURIComponent(closedPostsProfileUserId)}`
         : '';
     router.push(`/post/${post.postId}${q}`);
-  }, [onCardPress, onPressOverride, post, closedPostsProfileUserId, router]);
+  }, [onCardPress, post, closedPostsProfileUserId, router]);
 
   let roleBadgeLabel: string | null = null;
   if (economicRole) roleBadgeLabel = economicRole === 'giver' ? t('feed.giverBadge') : t('feed.receiverBadge');

@@ -1,6 +1,6 @@
 // FeedCommunityCounter — small text counter rendered via a caller-supplied
-// `template(count)` function so the i18n key lives at the call site (guest
-// banner, warm empty state). Mapped to FR-FEED-014 + FR-AUTH-014 AC3.
+// `template(count)` function so the i18n key lives at the call site (warm
+// empty state). Mapped to FR-FEED-014.
 // Fetched on mount, refreshed every 60 seconds per FR-FEED-014.
 
 import React from 'react';

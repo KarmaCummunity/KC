@@ -27,7 +27,6 @@ export function useShellTabBarVisibility(): boolean {
     !isLoading &&
     isAuthenticated &&
     head !== '(auth)' &&
-    head !== '(guest)' &&
     head !== '(onboarding)' &&
     !onResearchSurface &&
     !shellTabBarHiddenForSegments(segments);

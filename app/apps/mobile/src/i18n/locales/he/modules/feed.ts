@@ -14,8 +14,6 @@ export const feedHe = {
   noResults: 'לא נמצאו פוסטים',
   noResultsDesc: 'אפשר לשנות את הסינון או לחפש בכל הערים.',
   loadMore: 'טעון עוד',
-  guestBanner: 'להצטרף לקהילה כדי לראות את כל הפוסטים הפעילים באזור שלך',
-  guestBannerWithCount: 'להצטרף לקהילה כדי לראות עוד {{count}} פוסטים פעילים באזור שלך',
   joinNow: 'להצטרף עכשיו',
   firstPostNudge: 'לפרסם את הפוסט הראשון שלך! 🎁',
   closedTag: '🔒 נמסר',

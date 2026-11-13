@@ -1,6 +1,5 @@
 // Splash + Welcome / Auth-method picker.
-// Mapped to SRS: FR-AUTH-001 (splash), FR-AUTH-002 (auth entry, all methods),
-// FR-AUTH-014 (guest preview entry point).
+// Mapped to SRS: FR-AUTH-001 (splash), FR-AUTH-002 (auth entry, all methods).
 // docs/spec/requirements/01_auth_and_onboarding.md
 import React, { useEffect, useState } from 'react';
 import { View, TouchableOpacity, Platform, ScrollView, Image, ActivityIndicator } from 'react-native';
@@ -47,7 +46,6 @@ export default function WelcomeScreen() {
   const { t } = useTranslation();
   const styles = useWelcomeScreenStyles();
   const { colors } = useTheme();
-  const setGuest = useAuthStore((s) => s.setGuest);
   const setSession = useAuthStore((s) => s.setSession);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [googleError, setGoogleError] = useState<string | null>(null);
@@ -216,18 +214,11 @@ export default function WelcomeScreen() {
             loading={googleLoading}
             icon={<Text style={styles.googleGLetter}>G</Text>}
           />
-          <TouchableOpacity
-            testID="auth-guest-preview"
-            style={styles.guestBtn}
-            onPress={() => { setGuest(true); router.replace('/(guest)/feed'); }}
-          >
-            <Text style={styles.guestBtnText}>{t('auth.guestPreviewCta')}</Text>
-          </TouchableOpacity>
           {/* FR-AUTH-001 AC2: route to email sign-in; hidden in a production first launch (config/launchSurfaces.ts). */}
           {emailAuthVisible ? (
             <TouchableOpacity
               testID="auth-email-entry"
-              style={styles.guestBtn}
+              style={styles.textLinkBtn}
               onPress={() => router.push('/(auth)/sign-in')}
               accessibilityRole="link"
             >

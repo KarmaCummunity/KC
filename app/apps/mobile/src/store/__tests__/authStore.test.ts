@@ -13,15 +13,13 @@ describe('useAuthStore', () => {
       session: null,
       isLoading: true,
       isAuthenticated: false,
-      isGuest: false,
       onboardingState: null,
       basicInfoSkipped: null,
     });
   });
 
-  it('a session signs in, ends guest mode and resets the basic-info flag', () => {
+  it('a session signs in and resets the basic-info flag', () => {
     const s = useAuthStore.getState();
-    s.setGuest(true);
     s.setBasicInfoSkipped(true);
     s.setOnboardingState('completed');
     s.setSession(session);
@@ -29,21 +27,18 @@ describe('useAuthStore', () => {
       session,
       isAuthenticated: true,
       isLoading: false,
-      isGuest: false,
       basicInfoSkipped: null,
       onboardingState: 'completed',
     });
   });
 
-  it('a null session clears the onboarding state but keeps guest mode', () => {
+  it('a null session clears the onboarding state', () => {
     const s = useAuthStore.getState();
-    s.setGuest(true);
     s.setOnboardingState('completed');
     s.setSession(null);
     expect(useAuthStore.getState()).toMatchObject({
       isAuthenticated: false,
       isLoading: false,
-      isGuest: true,
       onboardingState: null,
     });
   });
@@ -58,14 +53,12 @@ describe('useAuthStore', () => {
   it('signOut resets everything', () => {
     const s = useAuthStore.getState();
     s.setSession(session);
-    s.setGuest(true);
     s.setOnboardingState('completed');
     s.signOut();
     expect(useAuthStore.getState()).toMatchObject({
       session: null,
       isAuthenticated: false,
       isLoading: false,
-      isGuest: false,
       onboardingState: null,
       basicInfoSkipped: null,
     });
