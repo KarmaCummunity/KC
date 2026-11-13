@@ -43,7 +43,7 @@ describe('SupabaseMarketplaceRepository', () => {
       rpc: { post_detail: ok({ post: card, media: [{ id: 'm1', storage_key: 'o/a.jpg', mime_type: 'image/png', size_bytes: 2048 }], comments: [] }) },
       tables: {
         post_kinds: ok(KINDS),
-        worlds: ok({ label_he: 'items-he', label_en: 'Items' }),
+        worlds: ok([{ slug: 'items', label_he: 'items-he', label_en: 'Items' }]),
         posts: ok({ geo_approx: point(34.7, 32.1) }),
       },
     });
@@ -62,7 +62,7 @@ describe('SupabaseMarketplaceRepository', () => {
     const { client } = createFakeClient({
       rpc: { post_detail: ok({ post: card, media: [], comments: [] }) },
       tables: {
-        post_kinds: ok(KINDS), worlds: ok({ label_he: 'r', label_en: 'Rides' }), posts: ok({ geo_approx: null }),
+        post_kinds: ok(KINDS), worlds: ok([{ slug: 'rides', label_he: 'r', label_en: 'Rides' }]), posts: ok({ geo_approx: null }),
         post_ride_details: ok(rideRow),
         cities: ok([{ city_id: 'IL-001', name_he: 'Lod', location: point(34.9, 31.9) }, { city_id: 'IL-002', name_he: 'Haifa', location: point(35, 32.8) }]),
         road_junctions: ok([]), streets: ok([]),
@@ -85,7 +85,7 @@ describe('SupabaseMarketplaceRepository', () => {
         ]),
       },
       tables: {
-        post_kinds: ok(KINDS), worlds: ok({ label_he: 'r', label_en: 'Rides' }), posts: ok({ geo_approx: null }),
+        post_kinds: ok(KINDS), worlds: ok([{ slug: 'rides', label_he: 'r', label_en: 'Rides' }]), posts: ok({ geo_approx: null }),
         post_ride_details: ok({ ...RIDE_ROW, post_id: 'p3', series_id: 's1', series_on: '2030-01-07' }),
         cities: ok([]), road_junctions: ok([]), streets: ok([]),
       },
