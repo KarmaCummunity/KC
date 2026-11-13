@@ -38,3 +38,4 @@
 0036_back_office_timesheets.sql
 0050_community_stats_for_guests.sql
 0051_knowledge_topic_embedding_job_machines.sql
+0052_post_status_events.sql
