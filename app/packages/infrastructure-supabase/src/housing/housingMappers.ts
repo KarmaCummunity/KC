@@ -98,9 +98,8 @@ export function mapGuestStay(
 }
 
 /**
- * The exact place of a stay offer. The baseline keeps one free-text `access_notes` for everything a
- * guest needs on arrival (apartment, floor, entrance, access), so it comes back as the access
- * instructions and the separate fields stay empty.
+ * The exact place of a stay offer: street and number, the apartment, floor and entrance as the host
+ * wrote them (migration 0033), the free-text access instructions and the point.
  */
 export function mapPrivateDetails(row: PrivateLocationRow, cityId: string): HousingPrivateDetails {
   const point = parseWkbPoint(row.exact_point);
@@ -109,19 +108,19 @@ export function mapPrivateDetails(row: PrivateLocationRow, cityId: string): Hous
     cityId,
     streetName: row.street ?? '',
     houseNumber: row.street_number ?? '',
-    apartment: null,
-    floor: null,
-    entranceNotes: null,
+    apartment: row.apartment ?? null,
+    floor: row.floor ?? null,
+    entranceNotes: row.entrance_notes ?? null,
     accessInstructions: row.access_notes ?? null,
     lat: point?.lat ?? null,
     lng: point?.lng ?? null,
   };
 }
 
-/** The arrival notes the host typed, one per line, in the order the guest needs them. */
-export function foldAccessNotes(parts: readonly (string | null | undefined)[]): string | null {
-  const lines = parts.map((part) => part?.trim() ?? '').filter((part) => part.length > 0);
-  return lines.length > 0 ? lines.join('\n') : null;
+/** A typed field as stored: trimmed, or null when empty. */
+export function trimmedOrNull(value: string | null | undefined): string | null {
+  const trimmed = value?.trim() ?? '';
+  return trimmed.length > 0 ? trimmed : null;
 }
 
 /** EWKT of a point for a `geography(Point, 4326)` column; null when either coordinate is missing. */

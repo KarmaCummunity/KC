@@ -6,7 +6,7 @@ import { detectLang, isKeywordAction, keywordReply, replyKind, upsellReply } fro
 import { isLinkStatus, linkReply, parseLinkCode } from '../_shared/whatsapp/link.ts';
 import type { RpcFn } from '../_shared/whatsapp/sender.ts';
 
-export type BotAccess = { access: 'pro' | 'unlinked' | 'not_pro'; user_id: string | null; upsell: boolean };
+export type BotAccess = { access: 'pro' | 'unlinked' | 'not_pro' | 'inactive'; user_id: string | null; upsell: boolean };
 
 export type WebhookDeps = {
   rpc: RpcFn;
@@ -165,6 +165,8 @@ async function gateBot(deps: WebhookDeps, from: string, text: string, outcome: M
   if (error) throw new Error(error.message);
   const access = (data ?? {}) as Partial<BotAccess>;
   outcome.access = access.access;
+  // A number linked to a deactivated account gets no agent and no upsell: silence.
+  if (access.access === 'inactive') return;
   if (access.access === 'pro' && access.user_id) {
     if (deps.onProMessage) {
       await deps.onProMessage({ waId: from, userId: access.user_id, text, recordId: outcome.record_id });

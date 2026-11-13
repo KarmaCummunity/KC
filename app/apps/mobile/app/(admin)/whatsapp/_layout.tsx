@@ -1,6 +1,5 @@
-// WhatsApp console admin section (#1090). Parked: the WhatsApp bot waits for the integrations
-// module (M22), so a direct link shows the "not available yet" state instead of the screen
-// (src/lib/parkedFeatures.ts).
+// WhatsApp console admin section (#939). The availability switch (src/lib/parkedFeatures.ts) is on
+// now that the integrations module ships (M22); off, a direct link shows the "not available yet" state.
 import { Slot } from 'expo-router';
 import { ParkedFeatureNotice } from '../../../src/components/ParkedFeatureNotice';
 import { WHATSAPP_BOT_AVAILABLE } from '../../../src/lib/parkedFeatures';

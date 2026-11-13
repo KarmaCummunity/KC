@@ -1,24 +1,37 @@
-# Migration range registry
+# Migration numbering
 
-> **Reset by the production baseline cut-over (D-228).** The incremental chain `0001`–`0742` was
-> replaced by one migration, `supabase/migrations/0001_baseline.sql`, assembled from
-> `supabase/schemas/` and frozen (`node scripts/assemble-baseline.mjs --check` fails when it
-> changes). The old files are history in `supabase/migrations/archive/`. **The next free number is
-> `0002`.** Later changes are forward-only `supabase/migrations/NNNN_snake.sql` files with their
-> pgTAP test in `supabase/tests/`; claim a range in the first table below. The second table is
-> the record of the retired chain and is kept for reference only.
+> **Numbers are assigned on merge (D-234).** A PR never picks a migration number, so there is nothing to claim and no hot file to conflict on.
+> Before this, each PR claimed a range here; one PR was renumbered three times in the merge queue (KC#1619).
+
+## How to add a migration
+
+1. Create `supabase/migrations/next-NN_snake_slug.sql`. `NN` (`01`-`99`) only orders the files of your own PR: `next-01_…` runs before `next-02_…`. Use a slug that says what the file does; it must be unique among pending files.
+2. Write the pgTAP test in `supabase/tests/` as usual. Do not write a number anywhere (file name, comments, docs, PR body); refer to the migration by its slug.
+3. CI numbers the files in its throwaway checkout (`node scripts/migration-ids.mjs assign`), so the stack applies and tests them under the numbers they will receive.
+4. After the merge into `dev`, `bump-version-on-merge.yml` renames each `next-NN_slug.sql` to the next free `NNNN_slug.sql` after the highest existing file (never below `0050`) lists each new name in the production manifest (`supabase/baseline/prod-allowed-migrations.txt`; a PR never edits it for a pending file), and pushes one commit that CI certifies. The Deploy workflow refuses a tree that still holds a `next-*` file.
+5. A destructive-SQL waiver in the PR body names the pending file: `Migration safety: next-01_slug.sql - reason`.
+
+Locally, `scripts/dev-up.sh` numbers your pending files for its run and puts the names back on exit. To do it by hand: `node scripts/migration-ids.mjs assign`, then `node scripts/migration-ids.mjs restore`.
+
+The numbered files of the cut-over (`0001`-`0036`) and the hand-claimed numbers `0037`-`0049` below stay as they are. Automatic numbering starts at `0050`, so a branch still holding a number below that keeps it.
 
 ## Ranges after the cut-over
 
 | Range | Owner / issue | Status |
 |---|---|---|
 | 0002 | #2150 organization entitlement (`0002_org_entitlements.sql`) | merged |
-| 0003–0019 | `claude/baseline-post-cutover`: the post-cut-over world, chat, research, housing, knowledge and money changes ported from the pre-cut-over baseline branches. `0003` post seat counts, `0004` ride series schedule, `0005` match quality, `0006` profile mine tab, `0007` chat inbox previews, `0008` post media sizes, `0009` research feedback and survey reports, `0010` housing, knowledge and finance reads; `0011`–`0019` held for follow-ups | in progress |
+| 0003–0010 | `claude/baseline-post-cutover`: the post-cut-over world, chat, research, housing, knowledge and money changes ported from the pre-cut-over baseline branches. `0003` post seat counts, `0004` ride series schedule, `0005` match quality, `0006` profile mine tab, `0007` chat inbox previews, `0008` post media sizes, `0009` research feedback and survey reports, `0010` housing, knowledge and finance reads | merged (#2155) |
+| 0011–0014 | `claude/parity-admin-hierarchy`: admin hierarchy parity. `0011` grant authority of the role functions (revoke / change authority, last organization administrator, `admin_set_manager` detach and errors, linked audit rows), `0012` staff roster and organization tree with last seen (`admin_list_admins`, `admin_org_tree`, `kc_private.user_last_seen`, team-manager read of grants), `0013` `admin_hierarchy_census` and `kc_private.bootstrap_super_admin`, `0014` `admin_set_org_slug` and the void reason of `finance_ledger_mark` | in progress |
+| 0015–0019 | `claude/parity-moderation-support` feature-parity restore of moderation, support and statistics: `0015` blocked users list and the staff support inbox (FR-MOD-004, FR-MOD-002, FR-ADMIN-013), `0016` report case tools (chat restore, restore dismisses the case, server inbox, case timeline, audit lookup by actor or target, comment restore; FR-ADMIN-002/007/012/013), `0017` report SLA alert sweep and `report_sla_warning` (FR-ADMIN-012 AC6), `0018` world flow funnel and my givings by world (FR-STATS-007/008, D106), `0019` KC support channels table (FR-DONATE-011, M20) | in progress |
 | 0020 | #2154 Section 46(a) status on the kernel (`0020_org_sec46_machine.sql`) | merged |
 | 0021–0023 | #2086 recurring events: `0021` post series, `0022` series RPCs and the end of a recurring ride, `0023` one date of a series in the feeds | in progress |
 | 0024 | #2163 links and knowledge of the giving worlds: `world_links`, `external_bodies`, `knowledge_topics`, `knowledge_topic_aliases` (`0024_world_content.sql`) | in progress |
+| 0025 | — | free |
+| 0026–0033 | `claude/parity-member-features` member features: `0026` member realtime (own counters, feed new-posts ping, online presence), `0027` rich notifications and the lost kinds, `0028` a hidden chat comes back clean, `0029` the street others see follows the display level, `0030` public nonprofit and transparency pages for `anon`, `0031` follow suggestions, profile nudge, org and tag search, About roster, `0032` staff set the verification level, `0033` housing apartment, floor and entrance | in progress |
+| 0034–0038 | `claude/parity-back-office` (inside the parity claim): `0034` admin tasks (FR-ADMIN-018), `0035` CRM contacts per organization (FR-ADMIN-032), `0036` staff timesheets (FR-ADMIN-033); `0037`–`0038` held | in progress |
+| 0039–0049 | feature-parity restore (WhatsApp and the rest), held by the parity coordinator | claimed |
 
-Next free number: `0025`.
+Hand-claimed numbers end at `0049`; later numbers are assigned on merge.
 
 ## Retired chain (before D-228)
 

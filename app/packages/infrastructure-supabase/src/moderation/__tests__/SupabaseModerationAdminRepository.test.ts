@@ -20,7 +20,7 @@ function repoWith(result: FakeResult, rpcNames: readonly string[] = []) {
 
 const ALL_RPCS = [
   'admin_dismiss_report', 'admin_confirm_report', 'admin_restore_post', 'admin_restore_user',
-  'admin_ban_user', 'admin_delete_message',
+  'admin_ban_user', 'admin_delete_message', 'admin_restore_chat', 'admin_restore_comment', 'admin_delete_comment',
 ];
 
 describe('SupabaseModerationAdminRepository — refusal mapping (stable message → typed error)', () => {
@@ -115,13 +115,27 @@ describe('SupabaseModerationAdminRepository — admin RPCs', () => {
     expect(rpcCalls).toEqual([{ name: 'admin_restore_user', args: { p_user_id: 'u_1' } }]);
   });
 
-  it('restoreTarget(chat) has no baseline RPC: degrades to BackendUnavailableError without a call', async () => {
+  it('restoreTarget(chat) → admin_restore_chat(p_chat_id)', async () => {
     const { repo, rpcCalls } = repoWith(OK, ALL_RPCS);
+    await repo.restoreTarget('chat', 'c_1');
+    expect(rpcCalls).toEqual([{ name: 'admin_restore_chat', args: { p_chat_id: 'c_1' } }]);
+  });
 
-    const failure = await repo.restoreTarget('chat', 'c_1').catch((e: unknown) => e);
+  it('restoreTarget(comment) → admin_restore_comment(p_comment_id)', async () => {
+    const { repo, rpcCalls } = repoWith(OK, ALL_RPCS);
+    await repo.restoreTarget('comment', 'k_1');
+    expect(rpcCalls).toEqual([{ name: 'admin_restore_comment', args: { p_comment_id: 'k_1' } }]);
+  });
 
-    expect(failure).toBeInstanceOf(BackendUnavailableError);
-    expect(rpcCalls).toEqual([]);
+  it('restoreTarget(comment) maps an author-deleted comment to InvalidRestoreStateError', async () => {
+    const { repo } = repoWith(refuse('invalid_restore_state'), ALL_RPCS);
+    await expect(repo.restoreTarget('comment', 'k_1')).rejects.toBeInstanceOf(InvalidRestoreStateError);
+  });
+
+  it('removeComment → admin_delete_comment', async () => {
+    const { repo, rpcCalls } = repoWith(OK, ALL_RPCS);
+    await repo.removeComment('k_1');
+    expect(rpcCalls).toEqual([{ name: 'admin_delete_comment', args: { p_comment_id: 'k_1' } }]);
   });
 
   it('dismissReport → admin_dismiss_report', async () => {
@@ -160,14 +174,14 @@ describe('SupabaseModerationAdminRepository — admin RPCs', () => {
 describe('SupabaseModerationAdminRepository — auditLookup', () => {
   const auditRows = (rows: unknown[]) => ({ data: rows, error: null });
 
-  it('calls admin_audit_search with p_target_id + p_limit (default 200)', async () => {
-    const fake = fakeStaffClient({ rpc: { admin_audit_search: auditRows([]) } });
+  it('calls admin_audit_lookup with p_user_id + p_limit (default 200): events by or about the member', async () => {
+    const fake = fakeStaffClient({ rpc: { admin_audit_lookup: auditRows([]) } });
     await new SupabaseModerationAdminRepository(fake.client).auditLookup('u_1');
-    expect(fake.rpcCalls).toEqual([{ name: 'admin_audit_search', args: { p_target_id: 'u_1', p_limit: 200 } }]);
+    expect(fake.rpcCalls).toEqual([{ name: 'admin_audit_lookup', args: { p_user_id: 'u_1', p_limit: 200 } }]);
   });
 
   it('forwards an explicit limit verbatim', async () => {
-    const fake = fakeStaffClient({ rpc: { admin_audit_search: auditRows([]) } });
+    const fake = fakeStaffClient({ rpc: { admin_audit_lookup: auditRows([]) } });
     await new SupabaseModerationAdminRepository(fake.client).auditLookup('u_1', 50);
     expect((fake.rpcCalls[0]?.args as { p_limit: number }).p_limit).toBe(50);
   });
@@ -175,7 +189,7 @@ describe('SupabaseModerationAdminRepository — auditLookup', () => {
   it('maps id / occurred_at rows to the AuditEvent shape with null/{}-coalesced defaults', async () => {
     const fake = fakeStaffClient({
       rpc: {
-        admin_audit_search: auditRows([
+        admin_audit_lookup: auditRows([
           {
             id: 17, actor_id: 'u_admin', action: 'ban_user', target_type: 'user', target_id: 'u_t',
             metadata: { reason: 'abuse' }, occurred_at: '2026-05-16T12:00:00.000Z',
@@ -197,8 +211,8 @@ describe('SupabaseModerationAdminRepository — auditLookup', () => {
     expect(out[1]).toMatchObject({ actorId: null, targetType: null, targetId: null, metadata: {} });
   });
 
-  it('maps a refusal of the audit search (a role without audit access) to forbidden', async () => {
-    const fake = fakeStaffClient({ rpc: { admin_audit_search: refuse('forbidden', '42501') } });
+  it('maps a refusal of the audit lookup (not the super admin) to forbidden', async () => {
+    const fake = fakeStaffClient({ rpc: { admin_audit_lookup: refuse('forbidden', '42501') } });
 
     await expect(new SupabaseModerationAdminRepository(fake.client).auditLookup('u_1')).rejects.toBeInstanceOf(
       ModerationForbiddenError,

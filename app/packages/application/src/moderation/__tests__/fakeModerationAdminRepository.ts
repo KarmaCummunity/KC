@@ -14,6 +14,7 @@ export class FakeModerationAdminRepository implements IModerationAdminRepository
   public confirmCalls: string[] = [];
   public banCalls: Array<{ userId: string; reason: BanReason; note: string }> = [];
   public deleteMessageCalls: string[] = [];
+  public removeCommentCalls: string[] = [];
   public auditLookupCalls: Array<{ userId: string; limit?: number }> = [];
   public auditLookupResult: readonly AuditEvent[] = [];
   public adminIds: Set<string> = new Set();
@@ -46,6 +47,10 @@ export class FakeModerationAdminRepository implements IModerationAdminRepository
   async deleteMessage(messageId: string) {
     this.maybeThrow();
     this.deleteMessageCalls.push(messageId);
+  }
+  async removeComment(commentId: string) {
+    this.maybeThrow();
+    this.removeCommentCalls.push(commentId);
   }
   async auditLookup(userId: string, limit?: number) {
     this.maybeThrow();

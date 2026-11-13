@@ -1,27 +1,18 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { IReportsRepository, ListOpenReportsFilters } from '@kc/application';
 import {
-  groupOpenReports, pageInboxGroups, reportMachine,
-  type AdminReportStatus, type AdminReportTargetType, type OpenReportRecord,
-  type ReportCaseAuditEntry, type ReportCaseDetail, type ReportCaseReporter,
-  type ReportInboxCursor, type ReportInboxPage,
+  reportMachine,
+  type AdminReportStatus, type AdminReportTargetType, type ReportCaseAuditEntry, type ReportCaseDetail,
+  type ReportCaseReporter, type ReportInboxCursor, type ReportInboxGroup, type ReportInboxPage,
 } from '@kc/domain';
 import type { Database } from '../database.types';
-import { callAuditSearch } from '../admin/auditSearchCall';
 import { unwrapCall } from '../rpc/mapRpcError';
 import { loadDisplayNames, loadTargetPreviews, previewKey } from './reportTargetPreviews';
 
 type Client = SupabaseClient<Database>;
 
-/**
- * Open reports read per inbox page. The server has no inbox function, so cases are grouped on
- * the device from the oldest open reports (the order staff work them). Past this many open
- * reports the newest ones wait until older cases are resolved.
- */
-const INBOX_SCAN_LIMIT = 1000;
-/** Audit events shown on a case timeline. */
-const TIMELINE_LIMIT = 50;
-const DAY_MS = 86_400_000;
+/** Audit events shown on a case timeline (the newest ones, oldest first). */
+const TIMELINE_LIMIT = 100;
 
 const REPORT_TARGET_TYPES: readonly string[] = ['post', 'user', 'chat', 'comment'];
 const REPORT_STATES: readonly string[] = reportMachine.states;
@@ -36,36 +27,46 @@ const asStatus = (value: string): AdminReportStatus =>
 export class SupabaseReportsRepository implements IReportsRepository {
   constructor(private readonly client: Client) {}
 
+  /**
+   * One page of cases from `admin_reports_inbox` (0016): grouped, filtered and keyset paged on the
+   * server over every open report, oldest case first. Previews are read for the page's targets.
+   */
   async listOpenInbox(
     filters: ListOpenReportsFilters,
     cursor: ReportInboxCursor | null,
     limit: number,
   ): Promise<ReportInboxPage> {
-    let query = this.client
-      .from('reports')
-      .select('reporter_id, target_type, target_id, created_at')
-      .eq('status', 'open')
-      .order('created_at', { ascending: true })
-      .limit(INBOX_SCAN_LIMIT);
-    if (filters.targetType) query = query.eq('target_type', filters.targetType);
-    if (filters.reporterId) query = query.eq('reporter_id', filters.reporterId);
-    if (filters.maxAgeDays) {
-      query = query.gte('created_at', new Date(Date.now() - filters.maxAgeDays * DAY_MS).toISOString());
-    }
-    const rows = unwrapCall('table:reports', await query) ?? [];
+    const search = filters.search?.trim();
+    const rows = unwrapCall('rpc:admin_reports_inbox', await this.client.rpc('admin_reports_inbox', {
+      p_target_type: filters.targetType ?? undefined,
+      p_max_age_days: filters.maxAgeDays ?? undefined,
+      p_reporter_id: filters.reporterId?.trim() || undefined,
+      p_search: search || undefined,
+      p_after_oldest_at: cursor?.oldestAt,
+      p_after_target_type: cursor?.targetType,
+      p_after_target_id: cursor?.targetId,
+      p_limit: limit,
+    })) ?? [];
 
-    const records: OpenReportRecord[] = [];
+    const groups: ReportInboxGroup[] = [];
     for (const row of rows) {
       const targetType = asTargetType(row.target_type);
-      if (targetType) {
-        records.push({ reporterId: row.reporter_id, targetType, targetId: row.target_id, createdAt: row.created_at });
-      }
+      if (!targetType) continue;
+      groups.push({
+        targetType,
+        targetId: row.target_id,
+        reporterCount: row.reporter_count,
+        oldestAt: row.oldest_at,
+        latestReporterId: row.latest_reporter_id ?? null,
+      });
     }
-    const page = pageInboxGroups(groupOpenReports(records), cursor, limit);
-    const previews = await loadTargetPreviews(this.client, page.groups);
+    const previews = await loadTargetPreviews(this.client, groups);
+    const last = rows[rows.length - 1];
     return {
-      rows: page.groups.map((group) => ({ ...group, target: previews.get(previewKey(group)) ?? {} })),
-      nextCursor: page.nextCursor,
+      rows: groups.map((group) => ({ ...group, target: previews.get(previewKey(group)) ?? {} })),
+      nextCursor: rows.length === limit && last && asTargetType(last.target_type)
+        ? { oldestAt: last.oldest_at, targetType: last.target_type as AdminReportTargetType, targetId: last.target_id }
+        : null,
     };
   }
 
@@ -99,23 +100,26 @@ export class SupabaseReportsRepository implements IReportsRepository {
       targetId,
       target: previews.get(previewKey({ targetType, targetId })) ?? {},
       reporters,
-      timeline: await this.loadTimeline(targetId),
+      timeline: await this.loadTimeline(targetType, targetId),
     };
   }
 
-  /** Audit events about the target, oldest first. The server scopes them by the caller's role. */
-  private async loadTimeline(targetId: string): Promise<ReportCaseAuditEntry[]> {
-    const events = await callAuditSearch(this.client, { p_target_id: targetId, p_limit: TIMELINE_LIMIT });
-    return events
-      .map((e) => ({
-        eventId: String(e.id),
-        actorId: e.actor_id ?? null,
-        action: e.action,
-        metadata: (e.metadata && typeof e.metadata === 'object' && !Array.isArray(e.metadata)
-          ? e.metadata
-          : {}) as Record<string, unknown>,
-        createdAt: e.occurred_at,
-      }))
-      .reverse();
+  /**
+   * The case history from `admin_report_case_timeline` (0016), oldest first: what was done to the
+   * target and its reports, whoever acted, for every staff role that reads the case.
+   */
+  private async loadTimeline(targetType: AdminReportTargetType, targetId: string): Promise<ReportCaseAuditEntry[]> {
+    const events = unwrapCall('rpc:admin_report_case_timeline', await this.client.rpc('admin_report_case_timeline', {
+      p_target_type: targetType, p_target_id: targetId, p_limit: TIMELINE_LIMIT,
+    })) ?? [];
+    return events.map((e) => ({
+      eventId: String(e.id),
+      actorId: e.actor_id ?? null,
+      action: e.action,
+      metadata: (e.metadata && typeof e.metadata === 'object' && !Array.isArray(e.metadata)
+        ? e.metadata
+        : {}) as Record<string, unknown>,
+      createdAt: e.occurred_at,
+    }));
   }
 }

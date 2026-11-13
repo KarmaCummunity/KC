@@ -87,7 +87,7 @@ export default function AdminsScreen() {
         )}
       </View>
 
-      {viewMode === 'layers' && <AdminsLayersView isWide={isWide} onSelect={openDetail} />}
+      {viewMode === 'layers' && <AdminsLayersView isWide={isWide} onSelect={openDetail} canChangeSlug={roles.includes('super_admin')} />}
       {viewMode === 'list' && <AdminsListView isWide={isWide} onSelect={openDetail} />}
       {viewMode === 'tree' && (
         <AdminsTreeView isWide={isWide} isSuper={roles.includes('super_admin')} onSelect={openDetail} />

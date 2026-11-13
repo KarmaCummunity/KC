@@ -6,7 +6,7 @@ import { point } from '../../rides/__tests__/placeFixtures';
 import { SupabaseMarketplaceRepository } from '../SupabaseMarketplaceRepository';
 import { listWorldSubcategories } from '../listWorldSubcategories';
 import { searchExternalBodies } from '../mapExternalBody';
-import { listingStatusOf, availabilityOf } from '../listingMapping';
+import { availabilityOf, cardToMyListingRow } from '../listingMapping';
 
 const KINDS = [
   { id: 'kind-offer', slug: 'item_offer', world_slug: 'items', direction: 'offer', label_he: 'a', label_en: 'Give', detail_schema: {} },
@@ -19,11 +19,12 @@ const RIDE_ROW = {
   meeting_points: [], series_id: null, series_on: null,
 };
 
-describe('listing status words', () => {
-  it('maps post statuses to the listing vocabulary the screens render', () => {
-    expect(['open', 'paused', 'closed_delivered', 'deleted_no_recipient', 'expired', 'hidden_pending_review'].map(listingStatusOf)).toEqual([
-      'open', 'cancelled', 'closed', 'closed', 'closed', 'hidden_pending_review',
-    ]);
+describe('listing status', () => {
+  it('is the status of the post, unchanged', () => {
+    const kinds = { kinds: [], byId: new Map() };
+    for (const status of ['open', 'paused', 'closed_delivered', 'deleted_no_recipient', 'expired', 'hidden_pending_review']) {
+      expect(cardToMyListingRow({ id: 'p1', status } as never, kinds).status).toBe(status);
+    }
     expect([availabilityOf('paused'), availabilityOf('open')]).toEqual(['paused', 'ongoing']);
   });
 });
@@ -135,7 +136,7 @@ describe('SupabaseMarketplaceRepository', () => {
     });
     const repo = new SupabaseMarketplaceRepository(client);
     const page = await repo.listMyListingsPage(1);
-    expect(page.rows[0]).toMatchObject({ listingId: 'a', status: 'cancelled', kindSlug: 'item_offer', feedPostId: 'a' });
+    expect(page.rows[0]).toMatchObject({ listingId: 'a', status: 'paused', kindSlug: 'item_offer', feedPostId: 'a' });
     expect(JSON.parse(page.nextCursor ?? '{}')).toEqual(cursor);
     const args = callsTo(calls, 'profile_posts_page')[0]?.args as { p_tab: string; p_statuses: string[]; p_user_id: string };
     expect(args).toMatchObject({ p_user_id: 'me', p_tab: 'mine', p_limit: 1 });

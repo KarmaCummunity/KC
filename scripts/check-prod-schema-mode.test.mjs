@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { isPending } from './migration-ids.mjs';
 import {
   MANIFEST_REL,
   checkProdSchemaMode,
@@ -81,11 +82,12 @@ test('parseAllowedManifest ignores comments and blank lines', () => {
 test('the committed manifest lists exactly the migrations in the tree; prod stays blocked by default', () => {
   const root = join(import.meta.dirname, '..');
   const allowed = loadAllowedManifest(root);
-  const migrations = listMigrationFiles(root);
-  // Each forward-only migration after the cut-over is listed here with the PR that adds it (docs/db/cutover-runbook.md).
-  const expected = ['0001_baseline.sql', '0002_org_entitlements.sql', '0003_post_seat_counts.sql', '0004_ride_series_schedule.sql', '0005_match_quality.sql', '0006_profile_posts_mine_tab.sql', '0007_chat_inbox_previews.sql', '0008_post_media_sizes.sql', '0009_research_feedback_survey_reports.sql', '0010_housing_knowledge_finance_reads.sql', '0020_org_sec46_machine.sql', '0021_post_series.sql', '0022_post_series_rpcs.sql', '0023_series_feed_folding.sql', '0024_world_content.sql'];
-  assert.deepEqual(allowed, expected, 'the manifest approves the baseline and the forward-only migrations');
-  assert.deepEqual(migrations, expected, 'supabase/migrations holds the baseline and the forward-only migrations (legacy chain is in archive/)');
+  // The manifest follows the numbered files of the tree: merge-time numbering appends each
+  // new file to it (scripts/migration-ids.mjs). A pending `next-NN_slug.sql` of an open PR
+  // has no number yet, so it is not listed and not counted here.
+  const migrations = listMigrationFiles(root).filter((name) => !isPending(name));
+  assert.equal(migrations[0], '0001_baseline.sql', 'the baseline is the first migration');
+  assert.deepEqual(allowed, migrations, 'the manifest lists exactly the numbered migrations of the tree (legacy chain is in archive/)');
   const blocked = checkProdSchemaMode({ mode: 'block', migrations, allowed });
   assert.equal(blocked.ok, false, 'unset / block still refuses a prod push');
   assert.equal(checkProdSchemaMode({ mode: 'baseline', migrations, allowed }).ok, true);

@@ -50,8 +50,8 @@ body:
   - type: input
     id: migration_range
     attributes:
-      label: Migration range
-      description: Claimed in docs/agents/MIGRATION_RANGES.md, e.g. 0350-0354. "none" if no SQL.
+      label: Migration
+      description: Slug of each supabase/migrations/next-NN_slug.sql file (the number is assigned on merge, see docs/agents/MIGRATION_RANGES.md). "none" if no SQL.
       placeholder: none
     validations: { required: true }
   - type: textarea

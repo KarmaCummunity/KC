@@ -17,7 +17,10 @@ export type NotificationPathname =
   | '/settings/follow-requests'
   | '/settings/audit'
   | '/account-blocked'
-  | '/matches';
+  | '/matches'
+  | '/(admin)/reports'
+  | '/(admin)/support'
+  | '/(admin)/tasks/[taskId]';
 
 export type ResolvedRoute = { pathname: NotificationPathname; params: Record<string, string> };
 
@@ -51,6 +54,12 @@ const post: RouteBuilder = (target) => {
 
 const inbox = screen('/notifications/inbox');
 
+/** The admin task the notification is about (FR-ADMIN-018). */
+const adminTask: RouteBuilder = (target) => {
+  const id = entityId(target, 'admin_task') ?? uuid(target.args?.task_id);
+  return id ? { pathname: '/(admin)/tasks/[taskId]', params: { taskId: id } } : null;
+};
+
 export const NOTIFICATION_ROUTES: Record<NotificationKind, RouteBuilder> = {
   // FR-NOTIF-001..004 — conversations.
   chat_message: chat,
@@ -68,6 +77,8 @@ export const NOTIFICATION_ROUTES: Record<NotificationKind, RouteBuilder> = {
   follow_approved: inbox,
   // FR-NOTIF-011 and the suspension notice.
   auto_removed: screen('/settings/audit'),
+  // The chat itself is hidden for review; the member's record of moderation explains it.
+  chat_auto_removed: screen('/settings/audit'),
   account_suspended: screen('/account-blocked'),
   // FR-NOTIF-017.
   match_suggested: screen('/matches'),
@@ -85,6 +96,18 @@ export const NOTIFICATION_ROUTES: Record<NotificationKind, RouteBuilder> = {
   giving_handoff_no_show: post,
   giving_handoff_waitlist_promoted: post,
   giving_handoff_reinstated: post,
+  knowledge_booking_requested: post,
+  knowledge_booking_claimed: post,
+  knowledge_booking_confirmed: post,
+  knowledge_booking_declined: post,
+  knowledge_booking_cancelled: post,
+  knowledge_booking_expired: post,
+  knowledge_booking_completed: post,
+  knowledge_booking_no_show: post,
+  knowledge_booking_waitlist_promoted: post,
+  knowledge_booking_reinstated: post,
+  food_expiring: post,
+  food_expired: post,
   ride_booking_requested: post,
   ride_booking_claimed: post,
   ride_booking_confirmed: post,
@@ -131,6 +154,11 @@ export const NOTIFICATION_ROUTES: Record<NotificationKind, RouteBuilder> = {
   post_removed: post,
   post_restored: post,
   moderation_review_needed: inbox,
+  // FR-ADMIN-012 AC6 — a case waiting past the SLA warning time opens the reports inbox, oldest
+  // case first with its warning badge (route params carry ids only, never a "type:id" case key).
+  report_sla_warning: screen('/(admin)/reports'),
+  // FR-MOD-002 — a new support issue opens the staff support inbox (the thread needs a join).
+  support_issue_received: screen('/(admin)/support'),
   // World notices (70_worlds).
   ride_route_match: post,
   post_emergency: post,
@@ -142,6 +170,8 @@ export const NOTIFICATION_ROUTES: Record<NotificationKind, RouteBuilder> = {
   donation_succeeded: inbox,
   donation_refunded: inbox,
   standing_order_charge_failed: inbox,
+  // FR-ADMIN-018 — a staff task was assigned to the member.
+  task_assigned: adminTask,
 };
 
 /**

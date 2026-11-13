@@ -176,16 +176,17 @@ select is(pg_temp.act('f', $$select public.admin_grant_role(@3, 'org_manager', '
 select is(pg_temp.act('d', 'select public.admin_revoke_role(~b/moderator)'), '42501', 'a grant outside the caller''s tree is not revoked');
 select is(pg_temp.act('b', 'select public.admin_revoke_role(~c/support)'), '42501', 'a moderator revokes nothing');
 select is(pg_temp.act('d', 'select public.admin_revoke_role(~1/moderator)'), 'ok', 'a manager revokes a grant below their own');
-select is(pg_temp.act('a', 'select public.admin_revoke_role(~f/org_admin)')
+select is(pg_temp.act('a', $$select public.admin_grant_role(@5, 'org_admin', '60000000-0000-4000-8000-000000000001')$$)
+  || pg_temp.act('a', 'select public.admin_revoke_role(~f/org_admin)')
   || pg_temp.val('select manager_grant_id = ~a/super_admin from public.admin_role_grants where id = ~2/org_manager'),
-  'oktrue', 'the reports of a revoked grant move up to its manager');
+  'okoktrue', 'the reports of a revoked grant move up to its manager');
 select is(pg_temp.act('a', $$select public.admin_change_role(~c/support, 'moderator')$$)
   || pg_temp.val($$select count(*) filter (where revoked_at is null) || '/' || count(*)
        from public.admin_role_grants where user_id = @c$$), 'ok1/2', 'a role change replaces the grant and keeps the history');
 select is(pg_temp.act('a', 'select public.admin_set_manager(~c/moderator, ~d/admin)')
-  || pg_temp.act('a', 'select public.admin_set_manager(~c/moderator, ~b/moderator)')
+  || pg_temp.act('d', 'select public.admin_set_manager(~c/moderator, gen_random_uuid())')
   || pg_temp.act('a', 'select public.admin_set_manager(~d/admin, ~c/moderator)'),
-  'okinvalid_managerinvalid_manager', 'a grant moves only under a more senior grant');
+  'okmanager_not_foundmanager_cycle', 'a grant moves only under an active grant that is not below it');
 select is(pg_temp.act('a', $$select public.admin_change_role(~c/moderator, 'support')$$), 'ok', 'the support member is support again');
 select is(pg_temp.act('b', $$insert into public.admin_role_grants (user_id, role) values (@b, 'admin')$$)
   || pg_temp.act('b', 'update public.admin_role_grants set revoked_at = now()'), '4250142501', 'grants are not writable from a device');
@@ -195,7 +196,7 @@ select is(pg_temp.seen('b', $$select 1 where public.bootstrap_session() -> 'admi
   3::bigint, 'session start carries the caller''s staff roles');
 select is(pg_temp.seen('2', 'select 1 from public.admin_role_grants') || '/' || pg_temp.seen('3', 'select 1 from public.admin_role_grants')
   || '/' || (pg_temp.seen('c', 'select 1 from public.admin_role_grants') = pg_temp.val('select count(*) from public.admin_role_grants')::bigint),
-  '2/0/true', 'a member reads their own grants (an org manager also their organization''s team), staff read the roster');
+  '3/0/true', 'a member reads their own grants (an org manager also their organization''s team), staff read the roster');
 
 -- ── Staff read access, and what stays closed ────────────────────────────────
 select is(pg_temp.seen('2', 'select 1 from public.users'), 14::bigint, 'a member still sees active profiles only');

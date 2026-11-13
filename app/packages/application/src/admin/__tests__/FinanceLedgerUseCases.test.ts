@@ -21,10 +21,17 @@ function makeRepo(): IFinanceLedgerRepository & {
 }
 
 describe('Finance ledger use cases — pass-throughs', () => {
-  it('Delete forwards the id', async () => {
+  it('Delete voids the entry with the trimmed reason', async () => {
     const repo = makeRepo();
-    await new DeleteFinanceEntryUseCase(repo).execute('e1');
-    expect(repo.delete).toHaveBeenCalledWith('e1');
+    await new DeleteFinanceEntryUseCase(repo).execute('e1', '  typed twice ');
+    expect(repo.delete).toHaveBeenCalledWith('e1', 'typed twice');
+  });
+
+  it('Delete refuses a missing or too short reason before any call (FR-FIN-005 AC2)', async () => {
+    const repo = makeRepo();
+    await expect(new DeleteFinanceEntryUseCase(repo).execute('e1', '  ab ')).rejects.toMatchObject({ code: 'void_reason_required' });
+    await expect(new DeleteFinanceEntryUseCase(repo).execute('e1', '')).rejects.toBeInstanceOf(FinanceLedgerError);
+    expect(repo.delete).not.toHaveBeenCalled();
   });
 
   it('List forwards filters', async () => {

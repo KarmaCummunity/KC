@@ -40,10 +40,12 @@ test('the real tree deploys every function except the local-only ones', () => {
 });
 
 test('skips the functions switched off in the pipeline', () => {
-  const dir = makeFunctionsDir({ 'whatsapp-sender': ['index.ts'], translate: ['index.ts'] });
+  const dir = makeFunctionsDir({ 'parked-fn': ['index.ts'], translate: ['index.ts'] });
+  NOT_DEPLOYED.set('parked-fn', 'test');
   try {
     assert.deepEqual(listDeployableFunctions(dir), ['translate']);
   } finally {
+    NOT_DEPLOYED.delete('parked-fn');
     rmSync(dir, { recursive: true, force: true });
   }
 });
@@ -56,9 +58,9 @@ test('NOT_DEPLOYED names a reason for each entry and overlaps neither LOCAL_ONLY
   }
 });
 
-test('the real tree deploys no whatsapp-* function and no NOT_DEPLOYED one', () => {
+test('the real tree deploys the WhatsApp bot functions and no NOT_DEPLOYED one', () => {
   const names = listDeployableFunctions();
-  for (const n of names) assert.ok(!n.startsWith('whatsapp-'), `${n} must be listed in NOT_DEPLOYED (or the policy changed on purpose)`);
+  assert.deepEqual(names.filter((n) => n.startsWith('whatsapp-')), ['whatsapp-sender', 'whatsapp-webhook']);
   for (const n of NOT_DEPLOYED.keys()) assert.ok(!names.includes(n), `${n} must not deploy`);
 });
 

@@ -3,11 +3,13 @@
 // pairs, as the other member's post card, and answers them.
 
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { matchMachine } from '@kc/domain';
 import type { Database } from '../database.types';
 import { unwrapCall } from '../rpc/mapRpcError';
 
 export type MatchRole = 'offer' | 'request';
-export type MatchStatus = 'suggested' | 'accepted';
+/** The status of a pair: the states of the `match` machine. */
+export type MatchStatus = (typeof matchMachine.states)[number];
 export type MatchResponse = 'accepted' | 'declined';
 
 export interface MatchSuggestion {
@@ -84,12 +86,21 @@ export function mapQualityRow(r: QualityRow): MatchQualityByWorld {
 
 const asResponse = (v: string | null): MatchResponse | null => (v === 'accepted' || v === 'declined' ? v : null);
 
+/**
+ * The status of a row as the machine names it. A status this build does not know (a newer
+ * server) reads as `expired`: the pair is shown without an answer to give.
+ */
+function asMatchStatus(v: string | null): MatchStatus {
+  const known: readonly string[] = matchMachine.states;
+  return v !== null && known.includes(v) ? (v as MatchStatus) : 'expired';
+}
+
 /** One `my_matches` row; PostgREST returns numerics as strings, so the numbers are converted. */
 export function mapMatchRow(r: Row): MatchSuggestion {
   const other = r.other_post;
   return {
     candidateId: r.match_id,
-    status: r.status === 'accepted' ? 'accepted' : 'suggested',
+    status: asMatchStatus(r.status),
     score: Number(r.score ?? 0),
     distanceKm: r.distance_km == null ? null : Number(r.distance_km),
     worldSlug: r.world_slug,

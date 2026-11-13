@@ -1,5 +1,6 @@
 // What a `post_card` leaves out and the screens still show, loaded for a whole page at once:
-// the approximate map point, the detected language, the status an admin removal will restore, the
+// the approximate map point, the street the poster chose to show (migration 0029), the detected
+// language, the status an admin removal will restore, the
 // challenge a post belongs to, the restore window of a deleted post, and the recipient of a
 // delivered post. One query per source for the page (never one per post); a source is skipped
 // when no card of the page can use it.
@@ -22,7 +23,10 @@ const idsWhere = (cards: readonly PostCardRow[], keep: (card: PostCardRow) => bo
 async function loadPostColumns(client: Client, ids: string[]) {
   const rows = unwrapCall(
     'table:posts',
-    await client.from('posts').select('id, geo_approx, source_language, status_before_removal').in('id', ids),
+    await client
+      .from('posts')
+      .select('id, geo_approx, source_language, status_before_removal, shown_street, shown_street_number')
+      .in('id', ids),
   );
   return new Map((rows ?? []).map((row) => [row.id, row]));
 }
@@ -103,6 +107,8 @@ export async function loadCardExtras(
       id,
       {
         geo: columns.get(id)?.geo_approx ?? null,
+        shownStreet: columns.get(id)?.shown_street ?? null,
+        shownStreetNumber: columns.get(id)?.shown_street_number ?? null,
         sourceLanguage: columns.get(id)?.source_language ?? null,
         statusBeforeRemoval: columns.get(id)?.status_before_removal ?? null,
         challengeId: challenges.get(id) ?? null,

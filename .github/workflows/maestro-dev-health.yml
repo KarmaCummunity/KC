@@ -1,0 +1,40 @@
+name: Maestro — dev health
+
+# Non-blocking run of the Android journeys on `dev` (KC#1619). On a PR the journeys are a lane of the
+# CI gate (ci.yml `maestro`); this workflow is the signal for the integration branch itself: whatever
+# several merged PRs did together, or a change to kc-dev or its seed, shows up here within the hour
+# instead of on the next unrelated PR.
+#
+# It is deliberately not part of `CI`: deploy.yml deploys on a green `CI` push run, and kc-dev is the
+# environment those deploys and reseeds change, so a 45-minute run that needs kc-dev quiet must never
+# hold or be held by a deploy. A red run here is a signal to look at, and the artifact has the
+# screenshots, view hierarchies and videos.
+
+on:
+  push:
+    branches: [dev]
+    paths:
+      - 'app/apps/mobile/**'
+      - 'app/packages/**'
+      - 'app/pnpm-lock.yaml'
+      - '.maestro/**'
+      - 'scripts/maestro-*'
+      - '.github/workflows/ci-maestro-android.yml'
+      - '.github/workflows/maestro-dev-health.yml'
+  # A manual run on any branch, for example to check kc-dev after a rebuild or a reseed.
+  workflow_dispatch:
+
+# One run per ref: a newer push replaces the one in flight, so a burst of merges costs one run.
+concurrency:
+  group: maestro-dev-health-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  maestro:
+    name: maestro · android emulator (dev)
+    uses: ./.github/workflows/ci-maestro-android.yml
+    secrets:
+      E2E_SEED_PASSWORD: ${{ secrets.E2E_SEED_PASSWORD }}

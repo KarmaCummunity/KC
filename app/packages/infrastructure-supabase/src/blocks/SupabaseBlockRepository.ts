@@ -1,11 +1,14 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { BlockedUser, IBlockRepository } from '@kc/application';
-import { BackendUnavailableError } from '@kc/domain';
 import type { Database } from '../database.types';
 import { unwrapCall } from '../rpc/mapRpcError';
 
 /** Postgres `unique_violation`: the block row already exists. */
 const UNIQUE_VIOLATION = '23505';
+/** Rows per `list_my_blocked_users` page (the server's maximum). */
+const BLOCKED_PAGE_SIZE = 100;
+/** Pages read at most: a member blocks a handful of people, this only bounds a runaway loop. */
+const BLOCKED_MAX_PAGES = 20;
 
 /** `public.blocks` — RLS lets a user read/insert/delete only rows where they are the blocker. */
 export class SupabaseBlockRepository implements IBlockRepository {
@@ -38,12 +41,31 @@ export class SupabaseBlockRepository implements IBlockRepository {
   }
 
   /**
-   * FR-MOD-004 AC1 — M01: the baseline has no way to read a blocked member's name or avatar (the
-   * restrictive policy `users_hide_blocked` hides the row from the blocker and no function
-   * returns it). Without them the list cannot be shown, so this reports the capability as
-   * missing and the screen degrades to its empty state. No call is made.
+   * FR-MOD-004 AC1 — every block of the caller, newest first. The blocked member's profile row is
+   * hidden from the blocker (`users_hide_blocked`), so the names come from the definer RPC
+   * `list_my_blocked_users` (migration 0015), read one keyset page after another.
    */
-  listMyBlockedUsers(): Promise<BlockedUser[]> {
-    return Promise.reject(new BackendUnavailableError('rpc:list_my_blocked_users', 'function'));
+  async listMyBlockedUsers(): Promise<BlockedUser[]> {
+    const users: BlockedUser[] = [];
+    let cursor: BlockedUser | undefined;
+    for (let page = 0; page < BLOCKED_MAX_PAGES; page += 1) {
+      const rows = unwrapCall(
+        'rpc:list_my_blocked_users',
+        await this.client.rpc('list_my_blocked_users', {
+          p_before_blocked_at: cursor?.blockedAt,
+          p_before_user_id: cursor?.userId,
+          p_limit: BLOCKED_PAGE_SIZE,
+        }),
+      ) ?? [];
+      users.push(...rows.map((row) => ({
+        userId: row.user_id,
+        displayName: row.display_name,
+        avatarUrl: row.avatar_url,
+        blockedAt: row.blocked_at,
+      })));
+      if (rows.length < BLOCKED_PAGE_SIZE) break;
+      cursor = users[users.length - 1];
+    }
+    return users;
   }
 }

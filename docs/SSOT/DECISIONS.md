@@ -1892,6 +1892,16 @@ Owner rules that go with it:
 
 **Affected.** `supabase/migrations/0740_delivered_listing_visibility.sql`, `supabase/tests/0740_delivered_listing_visibility.sql`, `supabase/tests/0628_g1_visibility_on_posts.sql`, `docs/spec/requirements/04_posts.md` (FR-POST-021), `docs/agents/MIGRATION_RANGES.md`.
 
+## D-234 — Migration numbers are assigned on merge, not claimed (2026-11-12)
+
+**Decision.** A PR adds `supabase/migrations/next-NN_snake_slug.sql` (`NN` orders only its own files) and never a number. After the merge into `dev`, `bump-version-on-merge.yml` runs `scripts/migration-ids.mjs assign`, which renames each pending file to the next free `NNNN_slug.sql` (after the highest existing file, never below `0050`), in the same commit as the spec IDs so CI certifies it. CI jobs that need a stack run `assign` on their throwaway checkout first; the Deploy workflow fails when a `next-*` file is still present. The claim table in `docs/agents/MIGRATION_RANGES.md` is retired.
+
+**Why.** Claimed ranges forced every PR through a hot file: one PR was renumbered three times in the merge queue (`0548` to `0590`), and each renumber re-ran CI and dequeued it (KC#1619). Spec IDs already use merge-time numbering; migrations get the same rule.
+
+**Rejected.** A placeholder inside the file name without an order prefix (a PR with dependent migrations has no order). Timestamp versions (a different ledger format from the committed chain). Keeping claims but splitting the file (still a number to guess and to collide on).
+
+**Affected.** `scripts/migration-ids.mjs` (+ test), `scripts/check-migration-chain.mjs`, `scripts/dev-up.sh`, `.github/workflows/{bump-version-on-merge,ci-backend,deploy-db}.yml`, `AGENTS.md`, `docs/agents/MIGRATION_RANGES.md`, the agent-task issue form.
+
 ## D-230 — The offer photo rule is a commit-time check on member writes (2026-11-11)
 
 **Decision.** Migration `0741` (KC#2020) enforces D132 on the server. `offer_photo_check()` runs at commit from two deferred constraint triggers, one on every new post and one on every deleted `listing_media` row, and refuses (`offer_photo_required`) an offer in items, food, housing or animals that has no `listing_media` row, no `media_assets` row and no legacy details image. The triggers queue only when `auth.uid()` is set: a trigger's `WHEN` clause is evaluated when the row changes, so system writers that clear the JWT claims (the kc-dev demo seed) are exempt, as they are from the write caps. Updates never queue the check, so offers published before the rule stay readable and editable. The items post engine creates through `create_post_with_media(p_post, p_media)`, a `SECURITY INVOKER` RPC: the caller's RLS on `posts` and `media_assets` applies exactly as it did to the two direct inserts it replaces, and the owner is always the caller.
@@ -1901,6 +1911,18 @@ Owner rules that go with it:
 **Rejected.** An immediate check inside `create_marketplace_listing` only (misses the last-photo delete and the items post engine). Guarding `media_assets` deletes now: the items edit still replaces its photos in two requests (delete, then insert), so that guard would refuse every photo change on an items offer; KC#2118. Backfilling photos onto existing offers.
 
 **Affected.** `supabase/migrations/0741_offer_photo_required.sql`, `supabase/tests/0741_offer_photo_required.sql`, `supabase/tests/0351_items_image_photo_or_details.sql`, `supabase/tests/_harness/10_fixtures.sql`, `app/packages/infrastructure-supabase/src/posts/createPostWithMedia.ts`, `app/packages/application/src/contracts/postRepository.contract.ts`, `docs/spec/requirements/04_posts.md` (FR-POST-002 AC5).
+
+## D-233 — The Android journeys are a lane of the CI gate, and `dev` has a non-blocking run (2026-11-11)
+
+**Decision.** `maestro` joins the `CI gate` as an optional lane (the `release` pattern: named in the plan only when needed, so a gate copy that predates it keeps passing). `scripts/ci-changes.mjs` plans it on a PR whose diff touches `MAESTRO_RULES` (the mobile app, `app/packages`, the lockfile, the flows and their runner, the workflow), fail-closed when the diff cannot be read, and never for a Dependabot PR (it gets no secrets), a merge group, a push or a dispatch. A failed lane fails the gate, which makes the journeys required where they can break without adding a second required check (the gate stays the only one, D-195). `maestro-dev-health.yml` runs the same workflow after a push to `dev` that touches the app and on demand, outside `CI`, with one run in flight per ref. The runner retries a failed flow once and reports a pass on the retry as a warning.
+
+**Why.** The job had been advisory and red on every PR for days, so real regressions (the keyboard hiding the save button on Android, Back from a ride leaving the app, launch worlds shown as portals after login) went unseen until the failure videos were read. A required check on a 45-minute run against a shared, mutable kc-dev can stall merges, so it is scoped to the diffs that need it, kept out of the merge queue and out of `CI` (deploys), and given one retry that stays visible.
+
+**Rejected.** A second required status check in the ruleset (a path-filtered required check hangs "Expected", and the drift guard allows only the gate). Running it in the merge queue (45 minutes per merge). Running it inside `CI` on `dev` pushes (a deploy would wait for, and race, a run against the environment it changes). A scheduled run (a schedule runs the default branch's workflow file, not `dev`'s). Retrying without a warning (a flow that is often retried would hide).
+
+**Open.** Every flow signs in from scratch (about a minute of a minute and a half); sharing a session would cut the 45 minutes. The seed password is still passed to Maestro with `-e` and redacted from the artifact afterwards.
+
+**Affected.** `.github/workflows/ci.yml`, `ci-maestro-android.yml`, `maestro-dev-health.yml`, `scripts/ci-changes.mjs`, `scripts/maestro-run-android.sh`, their tests, `docs/process/MAESTRO.md`.
 
 ## D-231 — First-launch surfaces are hidden in production builds, not removed (2026-11-11)
 

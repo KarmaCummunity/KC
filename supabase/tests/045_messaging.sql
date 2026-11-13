@@ -253,7 +253,8 @@ select is(pg_temp.val_as('b', 'select public.chat_unread_total()'), '0', 'a hidd
 select is(pg_temp.seen('a', 'select * from public.chat_inbox_page()'), 2::bigint, 'the other member still has it');
 select is(pg_temp.act('a', $$select public.send_message(#ab, 'are you there?')$$), 'ok', 'a new message');
 select is(pg_temp.seen('b', 'select * from public.chat_inbox_page()'), 1::bigint, '… brings the chat back');
-select is(pg_temp.val_as('b', 'select public.chat_unread_total()'), '2', '… with its unread messages');
+select is(pg_temp.val_as('b', 'select public.chat_unread_total()'), '1',
+  '… with only the new message: the history before the hide is gone for the member who hid it (FR-CHAT-016)');
 
 -- ── A block closes the chat to both (D105) ──────────────────────────────────
 insert into public.blocks (blocker_id, blocked_id) values
@@ -265,7 +266,8 @@ select is(pg_temp.act('b', $$select public.send_message(#ab, 'no')$$), 'blocked_
 select is(pg_temp.val_as('b', 'select public.chat_unread_total()') || '/' || pg_temp.seen('b', 'select * from public.chat_inbox_page()'),
   '0/0', 'the chat leaves the badge and the inbox');
 delete from public.blocks where blocker_id = '00000000-0000-4000-8000-00000000000b';
-select is(pg_temp.seen('b', 'select 1 from public.messages where chat_id = #ab'), 5::bigint, 'lifting the block brings the thread back');
+select is(pg_temp.seen('b', 'select 1 from public.messages where chat_id = #ab') || '/' || pg_temp.seen('a', 'select 1 from public.messages where chat_id = #ab'),
+  '1/5', 'lifting the block brings the thread back: Bob from his hide on, Alice all of it');
 
 -- ── Reactions ───────────────────────────────────────────────────────────────
 select is(pg_temp.act('b', $$select public.set_message_reaction('30000000-0000-4000-8000-000000000001', 'love')$$), 'ok', 'a member reacts to a message');

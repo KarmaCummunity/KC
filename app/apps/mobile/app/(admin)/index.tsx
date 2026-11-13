@@ -13,12 +13,12 @@ import { iconSize, makeUseStyles, radius, shadow, spacing, Text, typography, use
 import { rowDirectionStart, textAlignStart } from '../../src/lib/rtlLayout';
 import { useAdminRoles } from '../../src/hooks/useAdminRoles';
 import { useAdminsList } from '../../src/hooks/useAdminsList';
-import { useAdminTasksList } from '../../src/hooks/useAdminTasks';
+import { useAdminOpenTaskCount } from '../../src/hooks/useAdminTasks';
 import { useReportsInbox } from '../../src/hooks/useReportsInbox';
 import { getCommunityStatsSnapshotUseCase } from '../../src/services/postsComposition';
 import { useLocaleBundle } from '../../src/i18n/useLocaleBundle';
 import { useAdminPortalChrome } from '../../src/components/admin/AdminPortalChrome';
-import { BACK_OFFICE_TOOLS_AVAILABLE } from '../../src/lib/parkedFeatures';
+import { ADMIN_TASKS_AVAILABLE } from '../../src/lib/parkedFeatures';
 import { AdminDashboardSearch } from '../../src/components/admin/AdminDashboardSearch';
 import { useLaunchSurface } from '../../src/hooks/useLaunchSurface';
 
@@ -51,14 +51,8 @@ export default function AdminDashboard(): ReactElement {
     ? `${firstPage.rows.length}${firstPage.nextCursor ? '+' : ''}`
     : t.noCount;
 
-  const tasksQuery = useAdminTasksList({});
-  const openTasksLabel = tasksQuery.isLoading
-    ? t.noCount
-    : String(
-        tasksQuery.tasks.filter(
-          (task) => task.status === 'open' || task.status === 'in_progress',
-        ).length,
-      );
+  const openTasks = useAdminOpenTaskCount(hasPermission(roles, 'tasks.view'));
+  const openTasksLabel = openTasks.count === null ? t.noCount : String(openTasks.count);
 
   const canViewAdmins = hasPermission(roles, 'admins.view');
   const canSearchUsers = hasPermission(roles, 'users.search');
@@ -91,8 +85,7 @@ export default function AdminDashboard(): ReactElement {
   const cards: Card[] = [
     { key: 'reports', label: t.openReportsKpi, value: reportsLabel, icon: 'flag-outline', accent: colors.error, accentBg: colors.errorLight, href: '/(admin)/reports' },
   ];
-  // M19: the tasks card stays hidden while the back-office tools are parked.
-  if (BACK_OFFICE_TOOLS_AVAILABLE) cards.push({ key: 'tasks', label: t.openTasksKpi, value: openTasksLabel, icon: 'checkbox-outline', accent: colors.info, accentBg: colors.infoLight, href: '/(admin)/tasks' });
+  if (ADMIN_TASKS_AVAILABLE && hasPermission(roles, 'tasks.view')) cards.push({ key: 'tasks', label: t.openTasksKpi, value: openTasksLabel, icon: 'checkbox-outline', accent: colors.info, accentBg: colors.infoLight, href: '/(admin)/tasks' });
   if (canViewAdmins) cards.push({ key: 'admins', label: t.adminsKpi, value: adminsLabel, icon: 'shield-checkmark-outline', accent: colors.secondary, accentBg: colors.secondaryLight, href: '/(admin)/admins' });
   if (canSearchUsers) cards.push({ key: 'users', label: t.usersKpi, value: usersLabel, icon: 'people-outline', accent: colors.success, accentBg: colors.successLight, href: '/(admin)/users' });
   if (canSearchPosts) cards.push({ key: 'posts', label: t.postsKpi, value: postsLabel, icon: 'document-text-outline', accent: colors.primary, accentBg: colors.primaryLight, href: '/(admin)/posts' });

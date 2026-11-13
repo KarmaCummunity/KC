@@ -348,9 +348,9 @@ select is(pg_temp.act('b', $$select * from public.rides_feed(null, 10, '{"origin
   'a route filter names official places');
 update public.posts set expires_at = now() - interval '1 minute' where title = 'r1';
 select is(kc_private.post_expiry_sweep() || '|' || pg_temp.val(null, $$select p.status || '|' || (select string_agg(
-    h.status || ':' || h.cancel_reason, ' ' order by h.recipient_id) from public.post_handoffs h where h.post_id = p.id and h.recipient_id in (@b, @c))
+    h.status || ':' || h.cancel_reason, ' ' order by h.cancel_reason) from public.post_handoffs h where h.post_id = p.id and h.recipient_id in (@b, @c))
     from public.posts p where p.title = 'r1'$$) || '|' || pg_temp.told('post_expired', 'a'),
-  '1|expired|cancelled:not_completed cancelled:passenger_cancelled cancelled:expired|1', 'the sweep expires a ride and ends its bookings with their reasons');
+  '1|expired|cancelled:expired cancelled:not_completed cancelled:passenger_cancelled|1', 'the sweep expires a ride and ends its bookings with their reasons');
 select is(pg_temp.told('ride_booking_lapsed', 'b') || '|' || pg_temp.told('ride_booking_cancelled', 'b'), '1|2',
   'a passenger whose seat went with an expired ride hears that the ride did not run; the cancellations they heard before (a withdrawn seat, the cancelled series) stay the only ones');
 select is(pg_temp.act('b', $$select public.book_ride_seat(#r6)$$) || pg_temp.act('a', $$select public.delete_post(#r6)$$)

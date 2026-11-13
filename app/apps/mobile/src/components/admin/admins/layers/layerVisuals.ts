@@ -24,6 +24,11 @@ export const ROLE_ICON: Readonly<Record<AdminRole, LayerIconName>> = {
   volunteer_manager: 'hand-left',
   org_employee:      'briefcase',
   org_volunteer:     'heart',
+  admin:             'shield-half',
+  // FR-FIN-002 AC2: the treasurer is a wallet, the accountant a calculator.
+  org_treasurer:     'wallet',
+  org_accountant:    'calculator',
+  volunteer:         'heart-outline',
 };
 
 /**

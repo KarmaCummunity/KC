@@ -68,7 +68,7 @@ begin
 end;
 $$;
 
-select plan(46);
+select plan(47);
 
 insert into auth.users (id, email, raw_app_meta_data)
 select ('00000000-0000-4000-8000-00000000000' || m)::uuid, m || '@example.test', '{"provider":"google"}'
@@ -141,6 +141,9 @@ select is(pg_temp.thrice('e', $$select public.create_donation_intent('60000000-0
   'ok|ok|rate_limited', 'starting a donation is limited');
 select is(pg_temp.act('e', $$select public.create_donation_intent('60000000-0000-4000-8000-000000000001', 1000, 'key-00001')$$),
   'ok', 'repeating a donation call with its key is not a new attempt');
+insert into billing.user_entitlements (user_id, source) values ('00000000-0000-4000-8000-00000000000e', 'admin');
+select is(pg_temp.thrice('e', 'select public.api_whatsapp_create_link_code()'),
+  'ok|ok|rate_limited', 'issuing WhatsApp link codes is limited');
 select is((select count(*) from kc_private.rate_limits l
             where not exists (select 1 from kc_private.rate_limit_counters c where c.key like l.action || ':%')),
   0::bigint, 'every configured limit was exercised by this file');

@@ -110,7 +110,7 @@ as $$
     p_post, now() + p_in, now() + p_in + p_length));
 $$;
 
-select plan(39);
+select plan(40);
 
 -- Alice gives. Bob and Carol take. Dan and Alice are blocked.
 insert into auth.users (id, email, raw_app_meta_data)
@@ -158,14 +158,14 @@ select is(pg_temp.act('b', $$select public.claim_food_giving(#f2)$$) || '|' || p
     $$select status || '|' || (pickup_window_end = now() + interval '10 hours') from public.post_handoffs where id = ~f2.b$$),
   'ok|confirmed|true', 'a claim is confirmed at once and is collected by the expiry');
 update public.posts set urgency_level = 2 where title = 'f1';
-select is(kc_private.food_expiry_alert_sweep() || '|' || kc_private.food_expiry_alert_sweep() || '|' || pg_temp.told('post_expiring', 'a')
+select is(kc_private.food_expiry_alert_sweep() || '|' || kc_private.food_expiry_alert_sweep() || '|' || pg_temp.told('food_expiring', 'a')
     || '|' || pg_temp.val(null, $$select urgency_level from public.posts where title = 'f1'$$), '2|0|2|3',
   'offers inside 24 hours are alerted once and urgency is refreshed');
 select is(pg_temp.act('a', $$update public.post_food_details set expires_at = now() + interval '5 hours' where post_id = #f1$$)
     || '|' || kc_private.food_expiry_alert_sweep(), 'ok|1', 'a moved expiry is alerted again');
 update public.posts set expires_at = now() - interval '1 minute' where title = 'f2';
 select is(kc_private.post_expiry_sweep() || '|' || pg_temp.val(null, $$select p.status || '|' || h.status || ':' || h.cancel_reason
-    from public.posts p join public.post_handoffs h on h.post_id = p.id where p.title = 'f2'$$) || '|' || pg_temp.told('post_expired', 'a'),
+    from public.posts p join public.post_handoffs h on h.post_id = p.id where p.title = 'f2'$$) || '|' || pg_temp.told('food_expired', 'a'),
   '1|expired|cancelled:not_completed|1', 'the sweep expires the offer, ends its claim and tells the giver');
 select is(pg_temp.act('c', $$select public.claim_food_giving(#f2)$$), 'listing_not_available', 'an expired offer is not claimed');
 
@@ -188,6 +188,8 @@ select is(pg_temp.act('b', $$select public.book_knowledge_seat((select id from p
     || '|' || pg_temp.val(null, $$select status || '|' || machine_id || '|' || (confirm_by = now() + interval '24 hours') || '|'
          || (slot_starts_at = now() + interval '1 day') from public.post_handoffs where id = ~k1.b$$),
   'ok|reserved|giving_handoff|true|true', 'a learner books a place; the giver has 24 hours');
+select is(pg_temp.told('knowledge_booking_requested', 'a') || '|' || pg_temp.told('giving_handoff_requested', 'a'), '1|0',
+  'the giver is told about a booking in the knowledge wording, not the item handoff one');
 select is(pg_temp.act('c', $$select public.book_knowledge_seat((select id from public.post_knowledge_slots order by starts_at limit 1))$$),
   'slots_exhausted', 'a full slot is not booked');
 select is(pg_temp.act('a', $$select public.book_knowledge_seat((select id from public.post_knowledge_slots order by starts_at desc limit 1))$$),

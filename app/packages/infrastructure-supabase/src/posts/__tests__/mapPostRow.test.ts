@@ -87,6 +87,22 @@ describe('mapCardToPost', () => {
     expect(post).toMatchObject({ sourceLanguage: 'he', challengeId: 'ch-1', deleteAfter: '2026-02-01T00:00:00Z' });
   });
 
+  it('gives another member the street the poster chose to show (0029); the owner\'s own address wins', async () => {
+    const extras = {
+      geo: null, sourceLanguage: null, statusBeforeRemoval: null, challengeId: null, purgeAfter: null, recipient: null,
+      shownStreet: 'Herzl', shownStreetNumber: null,
+    };
+    const shown = mapCardToPost(makeCard(), { catalog: await catalog(), extras });
+    expect(shown.address).toMatchObject({ street: 'Herzl', streetNumber: '' });
+
+    const own = mapCardToPost(makeCard(), {
+      catalog: await catalog(),
+      extras,
+      street: { street: 'Herzl', streetNumber: '5' },
+    });
+    expect(own.address).toMatchObject({ street: 'Herzl', streetNumber: '5' });
+  });
+
   it('uses the whole gallery when the detail loaded it', async () => {
     const gallery = [
       mapMediaRow({

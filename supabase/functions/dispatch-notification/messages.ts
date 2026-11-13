@@ -51,11 +51,42 @@ function template(key: string): string {
   return STRINGS[key];
 }
 
+/** An auxiliary text with its own placeholders; an unknown one is left as written. */
+function fill(key: string, values: Readonly<Record<string, string>>): string {
+  return template(key).replace(/\{\{(\w+)\}\}/g, (match, name: string) => (Object.hasOwn(values, name) ? values[name] : match));
+}
+
 function interpolate(key: string, args: Readonly<Record<string, string>>): string {
   return template(key).replace(/\{\{(\w+)\}\}/g, (_match, name: string) => {
     if (!Object.hasOwn(args, name)) throw new PayloadError('missing_text', `${key} {{${name}}}`);
     return args[name];
   });
+}
+
+/** Separator between the pieces of `details` and before the first one. */
+export const DETAILS_SEPARATOR = ' · ';
+
+const text = (value: unknown): string | null => (typeof value === 'string' && value.trim() !== '' ? value : null);
+
+/**
+ * D26: `postTitle` and `details` from the arguments the database adds to a notification about a
+ * post (migration 0027: post_title, when_label, seats, route_from, route_to). `details` is empty
+ * or starts with the separator, so a text writes `({{postTitle}}{{details}})`. The app renders
+ * the same pieces (apps/mobile/src/lib/notifications/notificationText.ts).
+ */
+export function richTextArgs(args: Readonly<Record<string, unknown>>): { postTitle: string; details: string } {
+  const pieces: string[] = [];
+  const when = text(args.when_label);
+  if (when) pieces.push(when);
+  const seats = Number(args.seats);
+  if (Number.isInteger(seats) && seats > 1) pieces.push(fill('notifications.detailsSeats', { seats: String(seats) }));
+  const from = text(args.route_from);
+  const to = text(args.route_to);
+  if (from && to) pieces.push(fill('notifications.detailsRoute', { from, to }));
+  return {
+    postTitle: text(args.post_title) ?? template('notifications.postTitleFallback'),
+    details: pieces.map((piece) => DETAILS_SEPARATOR + piece).join(''),
+  };
 }
 
 /** Title and body of a push. A grouped notification uses the kind's grouped body. */
@@ -64,11 +95,15 @@ export function renderText(push: Push, preview: string | null | undefined): { ti
   if (!spec) throw new PayloadError('unknown_kind', push.data.kind);
   const count = Math.max(1, Math.trunc(Number(push.data.group_count) || 1));
   const actor = push.args.actor_display_name;
+  const taskTitle = push.args.task_title;
   const args = {
     actorName: typeof actor === 'string' && actor.trim() !== '' ? actor : template('notifications.actorNameFallback'),
     count: String(count),
     othersCount: String(count - 1),
     messagePreview: preview ? preview : template('notifications.messagePreviewFallback'),
+    // `data.task_title` of an admin task notification (FR-ADMIN-018).
+    taskTitle: typeof taskTitle === 'string' && taskTitle.trim() !== '' ? taskTitle : template('notifications.taskTitleFallback'),
+    ...richTextArgs(push.args),
   };
   const grouped = count > 1 && spec.groupedBodyKey !== null && push.body_key === spec.bodyKey;
   return {

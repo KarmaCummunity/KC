@@ -85,7 +85,43 @@ describe('grantableRolesIn', () => {
   });
 
   it('lists only platform roles on the platform', () => {
-    expect(grantableRolesIn([SUPER], null)).toEqual(['moderator', 'support']);
+    expect(grantableRolesIn([SUPER], null)).toEqual(['admin', 'moderator', 'support']);
+  });
+
+  it('lets a platform admin grant junior roles anywhere, never another admin', () => {
+    const ADMIN: AuthorityGrant = { role: 'admin', scopeOrgId: null };
+    expect(grantableRolesIn([ADMIN], null)).toEqual(['moderator', 'support']);
+    expect(canGrantRole([ADMIN], 'org_admin', 'org-b')).toBe(true);
+    expect(canGrantRole([ADMIN], 'org_treasurer', 'org-b')).toBe(true);
+  });
+
+  it('lets a treasurer grant accountants only, and an org admin both finance roles (FR-FIN-002)', () => {
+    const TREASURER_A: AuthorityGrant = { role: 'org_treasurer', scopeOrgId: 'org-a' };
+    expect(grantableRolesIn([TREASURER_A], 'org-a')).toEqual(['org_accountant']);
+    expect(grantableRolesIn([ADMIN_A], 'org-a')).toEqual(expect.arrayContaining(['org_treasurer', 'org_accountant']));
+    expect(grantableRolesIn([MANAGER_A], 'org-a')).not.toContain('org_treasurer');
+  });
+});
+
+describe('restored grant-authority rules (migration 0011)', () => {
+  const G_TREASURER = grant('g-tr', 'u-tr', { role: 'org_treasurer', scopeOrgId: 'org-a' });
+  // The super admin placed the employee under the treasurer, who outranks it.
+  const tree = new Map<string, string | null>([...TREE, ['g-tr', null], ['g-side', 'g-tr']]);
+  const AS_TREASURER: ViewerAuthority = { userId: 'u-tr', grants: [G_TREASURER], managerOf: tree };
+
+  it('a senior grant that may not grant a role neither revokes nor changes it', () => {
+    expect(canManageGrant(AS_TREASURER, G_SIDE)).toBe(true);
+    expect(canRevokeGrant(AS_TREASURER, G_SIDE)).toBe(false);
+    expect(changeTargetsFor(AS_TREASURER, G_SIDE)).toEqual([]);
+  });
+
+  it('the super admin manages their own organization grant, never the super admin grant', () => {
+    const own = grant('g-own', 'u-super', ADMIN_A);
+    const superGrant = grant('g-super', 'u-super', SUPER);
+    const asSuper: ViewerAuthority = { userId: 'u-super', grants: [superGrant, own], managerOf: TREE };
+    expect(canRevokeGrant(asSuper, own)).toBe(true);
+    expect(canManageGrant(asSuper, superGrant)).toBe(false);
+    expect(canManageGrant(AS_MGR, G_MGR)).toBe(false);
   });
 });
 

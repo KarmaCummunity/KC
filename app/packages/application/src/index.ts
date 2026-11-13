@@ -14,7 +14,7 @@ export * from './translations';
 export type { IChatRealtime, InboxStreamCallbacks, InboxChange, SubscribeInboxOptions, ChatStreamCallbacks, ChatChange, Unsubscribe } from './ports/IChatRealtime';
 export type { IReportRepository } from './ports/IReportRepository';
 export type { IFeedRealtime, FeedRealtimeCallbacks, NewPublicPostSignal } from './ports/IFeedRealtime';
-export type { AccountChange, IUserRealtime } from './ports/IUserRealtime';
+export type { AccountChange, IUserRealtime, StatsChange } from './ports/IUserRealtime';
 export type { IRidesRealtime, RidesRealtimeCallbacks } from './ports/IRidesRealtime';
 export type { CommunityStatsSnapshot, IStatsRepository, MyWorldGivings, WorldFlowFunnelRow } from './ports/IStatsRepository';
 export type { IAboutRepository } from './ports/IAboutRepository';
@@ -130,6 +130,15 @@ export { DeleteMessageUseCase } from './moderation/DeleteMessageUseCase';
 export type { DeleteMessageInput } from './moderation/DeleteMessageUseCase';
 export { LookupAuditUseCase } from './moderation/LookupAuditUseCase';
 export type { LookupAuditInput } from './moderation/LookupAuditUseCase';
+export { RemoveCommentUseCase, type RemoveCommentInput } from './moderation/RemoveCommentUseCase';
+export * from './moderation/ISupportInboxRepository';
+export {
+  ListSupportThreadsUseCase, JoinSupportThreadUseCase, OpenMemberSupportThreadUseCase, SUPPORT_INBOX_PAGE_SIZE,
+} from './moderation/SupportInboxUseCases';
+export * from './moderation/IModerationQueueRepository';
+export {
+  ListModerationQueueUseCase, AssignQueueEntryUseCase, ResolveQueueEntryUseCase, MODERATION_QUEUE_PAGE_SIZE,
+} from './moderation/ModerationQueueUseCases';
 export { ReportUserUseCase } from './moderation/ReportUserUseCase';
 export type { ReportUserInput } from './moderation/ReportUserUseCase';
 export { CheckAccountGateUseCase } from './moderation/CheckAccountGateUseCase';
@@ -179,6 +188,7 @@ export * from './admin/DecideOrgApplicationUseCase';
 export * from './admin/IOrgHierarchyRepository';
 export * from './admin/GetOrgTreeUseCase';
 export * from './admin/SetManagerUseCase';
+export * from './admin/SetOrgSlugUseCase';
 export * from './admin/GetHierarchySnapshotUseCase';
 
 // A1 — admin reports inbox & case detail
@@ -224,5 +234,7 @@ export * from './series';
 export * from './giving';
 export * from './housing';
 export * from './admin/whatsapp';
+export * from './whatsapp/IWhatsAppLinkRepository';
+export * from './whatsapp/WhatsAppLinkUseCases';
 export * from './challenges';
 export * from './knowledge';

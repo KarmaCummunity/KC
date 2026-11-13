@@ -52,6 +52,8 @@ export { SupabaseAboutRepository } from './about/SupabaseAboutRepository';
 export { SupabaseReportRepository } from './reports/SupabaseReportRepository';
 export { SupabaseBlockRepository } from './blocks/SupabaseBlockRepository';
 export { SupabaseModerationAdminRepository } from './moderation/SupabaseModerationAdminRepository';
+export { SupabaseSupportInboxRepository } from './moderation/SupabaseSupportInboxRepository';
+export { SupabaseModerationQueueRepository } from './moderation/SupabaseModerationQueueRepository';
 export { SupabaseAccountGateRepository } from './auth/SupabaseAccountGateRepository';
 export { SupabaseDonationLinksRepository } from './donations/SupabaseDonationLinksRepository';
 export { SupabaseWorldContentRepository } from './worlds/SupabaseWorldContentRepository';
@@ -96,5 +98,6 @@ export { SupabaseVolunteerRepository } from './volunteering/SupabaseVolunteerRep
 export { SupabaseOrganizationsRepository } from './organizations/SupabaseOrganizationsRepository';
 export { SupabaseChallengeRepository } from './challenges/SupabaseChallengeRepository';
 export * from './admin/SupabaseWhatsAppAdminRepository';
+export { SupabaseWhatsAppLinkRepository } from './whatsapp/SupabaseWhatsAppLinkRepository';
 export { SupabaseKnowledgeTopicRepository } from './knowledge/SupabaseKnowledgeTopicRepository';
 export { SupabaseKnowledgeBookingRepository } from './knowledge/SupabaseKnowledgeBookingRepository';

@@ -58,6 +58,8 @@ function mapCampaign(o: JsonObject): MoneyCampaignProgress {
     status: text(o, 'status'),
     publishedAt: textOrNull(o, 'published_at'),
     raisedAgorot: num(o, 'raised_agorot'),
+    goalAgorot: num(o, 'goal_agorot'),
+    summary: textOrNull(o, 'summary'),
   };
 }
 

@@ -122,7 +122,7 @@ describe('GivingHandoffActions', () => {
   it('offers no assign once the listing is no longer open (owner_complete_offer_with_user refuses it)', async () => {
     getForListing.mockResolvedValue(null);
     currentUserId = 'u_owner';
-    for (const listingStatus of ['closed', 'cancelled', 'expired']) {
+    for (const listingStatus of ['closed_delivered', 'paused', 'expired']) {
       const owned = { ...ITEM, ownerId: 'u_owner', listingStatus } as MarketplaceListingDetail;
       const { findByTestId, queryByTestId } = renderInProviders(<GivingHandoffActions detail={owned} />);
       await findByTestId('giving-handoff');
@@ -230,7 +230,7 @@ describe('GivingHandoffActions', () => {
 
   it('shows handed over status and hides reserve buttons if listing is ongoing/closed', async () => {
     getForListing.mockResolvedValue(null);
-    const ongoing = { ...ITEM, availabilityStatus: 'ongoing', listingStatus: 'closed' } as MarketplaceListingDetail;
+    const ongoing = { ...ITEM, availabilityStatus: 'ongoing', listingStatus: 'closed_delivered' } as MarketplaceListingDetail;
     const { findByTestId, queryByTestId } = renderInProviders(<GivingHandoffActions detail={ongoing} />);
 
     expect(await findByTestId('giving-handoff-status')).toBeTruthy();

@@ -2,20 +2,20 @@
  "generatedBy": "scripts/app-migration-map.mjs",
  "totals": {
   "rpc": {
-   "objects": 177,
-   "same": 110,
-   "renamed": 20,
-   "changed": 28,
+   "objects": 244,
+   "same": 169,
+   "renamed": 22,
+   "changed": 53,
    "removed": 0,
-   "missing": 19
+   "missing": 0
   },
   "table": {
    "objects": 63,
-   "same": 45,
+   "same": 46,
    "renamed": 0,
    "changed": 17,
    "removed": 0,
-   "missing": 1
+   "missing": 0
   },
   "bucket": {
    "objects": 4,
@@ -26,8 +26,8 @@
    "missing": 0
   },
   "channel": {
-   "objects": 6,
-   "same": 6,
+   "objects": 9,
+   "same": 9,
    "renamed": 0,
    "changed": 0,
    "removed": 0,
@@ -44,20 +44,20 @@
  },
  "launchTotals": {
   "core": {
-   "objects": 106,
-   "same": 88,
+   "objects": 127,
+   "same": 103,
    "renamed": 1,
-   "changed": 17,
+   "changed": 23,
    "removed": 0,
    "missing": 0
   },
   "later": {
-   "objects": 94,
-   "same": 47,
-   "renamed": 4,
-   "changed": 23,
+   "objects": 143,
+   "same": 95,
+   "renamed": 6,
+   "changed": 42,
    "removed": 0,
-   "missing": 20
+   "missing": 0
   },
   "wedge": {
    "objects": 53,
@@ -69,10 +69,17 @@
   }
  },
  "modules": {
+  "about": {
+   "callSites": 1,
+   "oneToOne": 1,
+   "changed": 0,
+   "removed": 0,
+   "missing": 0
+  },
   "admin": {
-   "callSites": 30,
-   "oneToOne": 11,
-   "changed": 19,
+   "callSites": 66,
+   "oneToOne": 37,
+   "changed": 29,
    "removed": 0,
    "missing": 0
   },
@@ -84,8 +91,8 @@
    "missing": 0
   },
   "blocks": {
-   "callSites": 3,
-   "oneToOne": 3,
+   "callSites": 4,
+   "oneToOne": 4,
    "changed": 0,
    "removed": 0,
    "missing": 0
@@ -99,8 +106,8 @@
   },
   "chat": {
    "callSites": 20,
-   "oneToOne": 19,
-   "changed": 1,
+   "oneToOne": 18,
+   "changed": 2,
    "removed": 0,
    "missing": 0
   },
@@ -119,18 +126,18 @@
    "missing": 0
   },
   "feed": {
-   "callSites": 5,
-   "oneToOne": 5,
+   "callSites": 6,
+   "oneToOne": 6,
    "changed": 0,
    "removed": 0,
    "missing": 0
   },
   "fn:_shared": {
-   "callSites": 11,
-   "oneToOne": 0,
-   "changed": 0,
+   "callSites": 10,
+   "oneToOne": 8,
+   "changed": 2,
    "removed": 0,
-   "missing": 11
+   "missing": 0
   },
   "fn:backfill-image-thumbs": {
    "callSites": 2,
@@ -209,26 +216,19 @@
    "removed": 0,
    "missing": 0
   },
-  "fn:whatsapp-intake-worker": {
-   "callSites": 5,
-   "oneToOne": 0,
-   "changed": 0,
-   "removed": 0,
-   "missing": 5
-  },
   "fn:whatsapp-sender": {
    "callSites": 1,
    "oneToOne": 0,
-   "changed": 0,
+   "changed": 1,
    "removed": 0,
-   "missing": 1
+   "missing": 0
   },
   "fn:whatsapp-webhook": {
    "callSites": 10,
-   "oneToOne": 0,
+   "oneToOne": 10,
    "changed": 0,
    "removed": 0,
-   "missing": 10
+   "missing": 0
   },
   "housing": {
    "callSites": 18,
@@ -273,9 +273,9 @@
    "missing": 0
   },
   "moderation": {
-   "callSites": 7,
-   "oneToOne": 6,
-   "changed": 1,
+   "callSites": 17,
+   "oneToOne": 14,
+   "changed": 3,
    "removed": 0,
    "missing": 0
   },
@@ -294,30 +294,30 @@
    "missing": 0
   },
   "payments": {
-   "callSites": 10,
-   "oneToOne": 2,
+   "callSites": 11,
+   "oneToOne": 3,
    "changed": 8,
    "removed": 0,
    "missing": 0
   },
   "posts": {
-   "callSites": 50,
-   "oneToOne": 34,
+   "callSites": 51,
+   "oneToOne": 35,
    "changed": 16,
    "removed": 0,
    "missing": 0
   },
   "realtime": {
-   "callSites": 1,
-   "oneToOne": 1,
+   "callSites": 2,
+   "oneToOne": 2,
    "changed": 0,
    "removed": 0,
    "missing": 0
   },
   "reports": {
-   "callSites": 8,
+   "callSites": 10,
    "oneToOne": 4,
-   "changed": 4,
+   "changed": 6,
    "removed": 0,
    "missing": 0
   },
@@ -336,8 +336,8 @@
    "missing": 0
   },
   "search": {
-   "callSites": 6,
-   "oneToOne": 1,
+   "callSites": 9,
+   "oneToOne": 4,
    "changed": 5,
    "removed": 0,
    "missing": 0
@@ -349,9 +349,16 @@
    "removed": 0,
    "missing": 0
   },
-  "stats": {
+  "social": {
    "callSites": 2,
    "oneToOne": 2,
+   "changed": 0,
+   "removed": 0,
+   "missing": 0
+  },
+  "stats": {
+   "callSites": 4,
+   "oneToOne": 4,
    "changed": 0,
    "removed": 0,
    "missing": 0
@@ -378,8 +385,8 @@
    "missing": 0
   },
   "users": {
-   "callSites": 33,
-   "oneToOne": 20,
+   "callSites": 34,
+   "oneToOne": 21,
    "changed": 13,
    "removed": 0,
    "missing": 0
@@ -388,6 +395,13 @@
    "callSites": 9,
    "oneToOne": 3,
    "changed": 6,
+   "removed": 0,
+   "missing": 0
+  },
+  "whatsapp": {
+   "callSites": 4,
+   "oneToOne": 2,
+   "changed": 2,
    "removed": 0,
    "missing": 0
   },
@@ -400,8 +414,8 @@
   }
  },
  "notes": [
-  "Capabilities the baseline does not provide and the identity adapters therefore do not call (they report `BackendUnavailableError` and the screens degrade): the blocked-users list (M01, the screen shows its empty state; unblock from a profile is not reachable because `users_hide_blocked` hides it), follow suggestions (M03) and the profile completeness nudge (M04), both hidden on the suggestions screen, and the About team roster (M08, no team section).",
-  "Internal back-office tools the baseline does not provide and whose adapters therefore make no call (they report `BackendUnavailableError`; the sections are parked behind `BACK_OFFICE_TOOLS_AVAILABLE`): the admin task tracker (FR-ADMIN-018), the CRM contacts (roadmap phase 3) and the timesheets (not in the spec), formerly M19. Whether they belong in this database is a product decision.",
+  "Every identity capability the baseline lacked is now built: the blocked-users list (M01, `0015`), follow suggestions (M03), the completeness nudge (M04) and the About roster (M08, all `0031`).",
+  "The internal back-office tools (formerly M19) were rebuilt after the baseline as forward migrations: the admin task tracker (FR-ADMIN-018, `0034`), CRM contacts per organization (FR-ADMIN-032, `0035`) and staff timesheets (FR-ADMIN-033, `0036`).",
   "Errors: every baseline RPC raises `P0001` with a stable snake_case message (`unauthenticated` uses `42501`). Map on `error.message`, never on a SQLSTATE or on Hebrew text. Codes marked † in the tables are not referenced anywhere in the app today and need a user-visible mapping.",
   "Paging: no OFFSET anywhere. Lists take the `next_cursor` JSON of the last row (cards) or explicit `p_before_*` / `p_after_*` values; application ports that expose `offset` change to an opaque cursor.",
   "Money: integer agorot (`*_agorot`), never ILS floats or `*_cents` names.",
@@ -410,19 +424,7 @@
   "Signed-out access: only `legal_documents` and `legal_document_versions`. Every other call needs a session.",
   "Workers that need `kc_private` connect over Postgres (as `dispatch-notification` does); only `public` is reachable through the HTTP API."
  ],
- "missing": [
-  {
-   "id": "M22",
-   "title": "WhatsApp bot, linking and admin console",
-   "usedBy": "Three Edge Functions (webhook, intake worker, sender) — 19 RPCs and one table; the mobile link screen and the admin WhatsApp console are parked and make no call",
-   "spec": "design Q4 (PM): not in the launch baseline",
-   "launch": "no",
-   "action": "defer",
-   "recommendation": "Do not deploy the three functions; hide the link screen and the admin console behind a flag until the `integrations` module lands.",
-   "tier": "later",
-   "blocker": false
-  }
- ],
+ "missing": [],
  "packages": [
   {
    "id": "P0",
@@ -441,7 +443,7 @@
     "apps/mobile/src/services/featureFlagsComposition.ts",
     "scripts/check-rpc-contract.mjs + allowlist"
    ],
-   "work": "Done in P0 (see docs/db/app-migration-playbook.md): `database.types.ts` is the generated baseline types and `database.legacy.types.ts` a frozen copy of the old ones, imported only by the files listed in `infrastructure-supabase/src/migrationStatus/<package>.ts` (the client factory is generic: `getSupabaseClient()` is baseline-typed, `getLegacySupabaseClient()` / `legacySupabase` are the same connection typed against the old schema). `FSM_MACHINES` equals the baseline seeds (`catalogMatchesSql.test.ts` reads `supabase/schemas`); the four machines without a baseline seed sit in `LEGACY_FSM_MACHINES` until L2, L6 and L7 move. `rpc/backendUnavailable.ts` holds `isBackendObjectMissing` and `rpc/mapRpcError.ts` the P0001 mapper and `unwrapCall`; `BackendUnavailableError` and `BackendRuleError` are domain errors. UI helpers: `apps/mobile/src/lib/backendAvailability.ts` and the `backend.*` locale keys. `src/__tests__/baselineCompatibility.test.ts` fails when an unlisted file still needs the old schema or a listed file no longer does.",
+   "work": "Done in P0 (see docs/db/app-migration-playbook.md): `database.types.ts` is the generated baseline types and `database.legacy.types.ts` a frozen copy of the old ones, imported only by the files listed in `infrastructure-supabase/src/migrationStatus/<package>.ts` (the client factory is generic: `getSupabaseClient()` is baseline-typed, `getLegacySupabaseClient()` / `legacySupabase` are the same connection typed against the old schema). `FSM_MACHINES` equals the baseline seeds (`catalogMatchesSql.test.ts` reads `supabase/schemas`); the machines without a baseline seed sat in `LEGACY_FSM_MACHINES` until their modules moved (the list is gone since L6 seeded the last two in `0034` and `0036`). `rpc/backendUnavailable.ts` holds `isBackendObjectMissing` and `rpc/mapRpcError.ts` the P0001 mapper and `unwrapCall`; `BackendUnavailableError` and `BackendRuleError` are domain errors. UI helpers: `apps/mobile/src/lib/backendAvailability.ts` and the `backend.*` locale keys. `src/__tests__/baselineCompatibility.test.ts` fails when an unlisted file still needs the old schema or a listed file no longer does.",
    "tests": [
     "pnpm typecheck, pnpm test, pnpm lint from app/",
     "src/fsm/__tests__/catalogMatchesSql.test.ts against supabase/schemas",
@@ -454,11 +456,12 @@
    "risks": "Everything depends on it and it must not change behaviour: no adapter logic changed, only its type import. CI still diffs `database.types.ts` against the old migrations until the workflow change listed in the P0 report lands.",
    "rows": [
     "table:app_flags",
+    "channel:ONLINE_PRESENCE_TOPIC = 'presence:online'",
     "channel:topic"
    ],
    "counts": {
-    "objects": 2,
-    "oneToOne": 2,
+    "objects": 3,
+    "oneToOne": 3,
     "changed": 0,
     "removed": 0,
     "missing": 0
@@ -482,13 +485,13 @@
     "survey/SupabaseUserActivityRepository.ts",
     "apps/mobile: auth gate, onboarding, settings, edit profile, avatar upload, notification badge hook, devIdentityVerification (deleted)"
    ],
-   "work": "Done in P1: the account gate, private profile, onboarding state and pending legal documents read `bootstrap_session`; `users/mapUserRow.ts` maps the public `users` row plus `user_stats` and, for the caller's own row, the `bootstrap_session` private blocks (`user_private`, `user_account`, staff roles); follows go through `follow_user`, `follow_request_decide` and `follow_request_cancel`; account deletion through `request_account_deletion` and `restore_account`; the account gate listens on `user:<id>:account`. M01, M03, M04 and M08 are hidden or empty (no call is made); the dev-only identity and onboarding helpers are gone.",
+   "work": "Done in P1: the account gate, private profile, onboarding state and pending legal documents read `bootstrap_session`; `users/mapUserRow.ts` maps the public `users` row plus `user_stats` and, for the caller's own row, the `bootstrap_session` private blocks (`user_private`, `user_account`, staff roles); follows go through `follow_user`, `follow_request_decide` and `follow_request_cancel`; account deletion through `request_account_deletion` and `restore_account`; the account gate listens on `user:<id>:account`. the blocked-users list reads `list_my_blocked_users` (`0015`); follow suggestions, the completeness nudge (M03, M04) and the About roster (M08) are built (`0031`); the dev-only identity and onboarding helpers are gone.",
    "tests": [
     "vitest: auth, users, legal, blocks, social, notifications suites",
     "contract tests against a baseline database (sqlProbes, contract.integration)",
     "pgTAP 010, 011, 020, 021, 050, 051"
    ],
-   "degrade": "Nothing works before this package (no session): it is the first one after P0. The blocked-users row, follow suggestions, the completeness hint and the About team list are hidden (M01, M03, M04, M08).",
+   "degrade": "Nothing works before this package (no session): it is the first one after P0.",
    "risks": "Owns `users/mapUserRow.ts`, which chat, posts and search read: it lands before P2 and P3 start. Account gate: topic `user:<id>:account` (M24).",
    "rows": [
     "rpc:bootstrap_session",
@@ -501,6 +504,9 @@
     "rpc:follow_request_decide",
     "rpc:follow_request_cancel",
     "rpc:chat_counterpart_contact",
+    "rpc:rpc_follow_suggestions",
+    "rpc:rpc_profile_completeness",
+    "rpc:about_team_profiles",
     "rpc:record_active_day",
     "table:user_private",
     "table:user_stats",
@@ -522,11 +528,13 @@
     "rpc:api_my_pro_status",
     "bucket:avatars",
     "channel:topic = `user:${userId}:notifications`",
-    "channel:topic = `user:${userId}:account`"
+    "channel:topic = `user:${userId}:account`",
+    "channel:`user:${userId}:stats`",
+    "rpc:list_my_blocked_users"
    ],
    "counts": {
-    "objects": 32,
-    "oneToOne": 28,
+    "objects": 37,
+    "oneToOne": 33,
     "changed": 4,
     "removed": 0,
     "missing": 0
@@ -553,9 +561,12 @@
     "vitest: posts, feed, search, translations suites",
     "pgTAP 030, 035, 040, 041, 042, 078"
    ],
-   "degrade": "Until it lands the feed and profile tabs show their empty state and the create-post button is disabled; nothing else in the app depends on a post list. The statistics screen shows the community counters and the timeline only: its per-world block and the admin funnel are hidden (M14, M15).",
+   "degrade": "Until it lands the feed and profile tabs show their empty state and the create-post button is disabled; nothing else in the app depends on a post list.",
    "risks": "Largest behavioural change: cursor and card shape reach the application ports. Owns `posts/mapPostRow.ts`, read by P5. The card carries `owner_identity_masked` (M02).",
    "rows": [
+    "rpc:search_organizations",
+    "rpc:search_hashtags",
+    "rpc:search_suggested_queries",
     "table:user_stats",
     "table:users",
     "rpc:profile_closed_posts_count",
@@ -597,11 +608,15 @@
     "table:donation_links",
     "rpc:get_post_translations",
     "table:content_translations",
-    "edge_function:translate"
+    "bucket:post-images",
+    "channel:FEED_PUBLIC_TOPIC = 'feed:public'",
+    "edge_function:translate",
+    "rpc:admin_world_flow_funnel",
+    "rpc:my_world_givings"
    ],
    "counts": {
-    "objects": 42,
-    "oneToOne": 31,
+    "objects": 49,
+    "oneToOne": 38,
     "changed": 11,
     "removed": 0,
     "missing": 0
@@ -621,13 +636,13 @@
     "rides/SupabaseRidesRealtime.ts",
     "apps/mobile: chat screens, chat media, inbox and notification badge hooks"
    ],
-   "work": "Done in P3: the inbox is `chat_inbox_page`, messages are `chat_messages_page` and `send_message` (the optimistic id is `p_message_id`), a chat opens through `open_direct_chat` / `open_support_thread`, read receipts come from `chat_members.last_read_at` (the `read` broadcast), and the chat and inbox subscriptions are the private topics `chat:<id>:messages` and `user:<id>:chats`. The new-posts banner, global online presence and the rides feed updates have no baseline topic and are degraded (M24): they open nothing and report `BackendUnavailableError`.",
+   "work": "Done in P3: the inbox is `chat_inbox_page`, messages are `chat_messages_page` and `send_message` (the optimistic id is `p_message_id`), a chat opens through `open_direct_chat` / `open_support_thread`, read receipts come from `chat_members.last_read_at` (the `read` broadcast), and the chat and inbox subscriptions are the private topics `chat:<id>:messages` and `user:<id>:chats`. The new-posts banner (`feed:public`) and global online presence (`presence:online`) are built (migration 0026); the rides feed updates have no baseline topic and are degraded (M24): they open nothing and report `BackendUnavailableError`.",
    "tests": [
     "vitest: chat suites, realtime/exactTopicChannel tests",
     "pgTAP 045, 050"
    ],
    "degrade": "Before this package the chat tab shows an empty inbox and \"contact\" buttons on posts are disabled; a failed subscription is ignored (the screen refreshes on focus). After it: no green online dots, no live \"new posts\" pill, ride lists refresh on focus; the inbox preview of a system or media-only message carries no text and the counterpart verification badge is not shown in the inbox (the page RPC does not return them).",
-   "risks": "Contact phone: `chat_counterpart_contact` (M06). Optimistic send passes `p_message_id`. The baseline keeps one chat per pair, so the second chat after a personal hide (`preferNewThread`) no longer exists; a ride or listing anchor is a post anchor.",
+   "risks": "Contact phone: `chat_counterpart_contact` (M06). Optimistic send passes `p_message_id`. The baseline keeps one chat per pair; after a personal hide the member's history starts at the hide (migration 0028), so contacting again opens a clean thread for them (`preferNewThread` needs no second chat); a ride or listing anchor is a post anchor.",
    "rows": [
     "table:users",
     "rpc:chat_inbox_page",
@@ -646,12 +661,13 @@
     "bucket:chat-media",
     "channel:`chat:${chatId}:messages`",
     "channel:`user:${userId}:chats`",
-    "channel:`chat:${chatId}:typing`"
+    "channel:`chat:${chatId}:typing`",
+    "rpc:submit_support_issue"
    ],
    "counts": {
-    "objects": 18,
+    "objects": 19,
     "oneToOne": 17,
-    "changed": 1,
+    "changed": 2,
     "removed": 0,
     "missing": 0
    }
@@ -684,6 +700,7 @@
     "table:users",
     "table:posts",
     "table:post_comments",
+    "table:chats",
     "rpc:get_my_admin_roles",
     "rpc:admin_confirm_report",
     "rpc:admin_dismiss_report",
@@ -696,14 +713,28 @@
     "rpc:admin_delete_message",
     "rpc:admin_audit_search",
     "table:reports",
+    "rpc:admin_list_admins",
+    "rpc:admin_set_org_slug",
     "table:user_account",
     "table:admin_role_grants",
+    "rpc:admin_list_support_threads",
+    "rpc:admin_join_support_thread",
+    "rpc:admin_open_member_support_thread",
+    "rpc:admin_restore_chat",
+    "rpc:admin_restore_comment",
+    "rpc:admin_delete_comment",
+    "rpc:admin_reports_inbox",
+    "rpc:admin_report_case_timeline",
+    "rpc:admin_audit_lookup",
+    "table:moderation_queue",
+    "rpc:admin_assign_queue_entry",
+    "rpc:admin_resolve_queue_entry",
     "table:organizations"
    ],
    "counts": {
-    "objects": 18,
-    "oneToOne": 13,
-    "changed": 5,
+    "objects": 33,
+    "oneToOne": 23,
+    "changed": 10,
     "removed": 0,
     "missing": 0
    }
@@ -1025,6 +1056,8 @@
    "rows": [
     "table:org_applications",
     "rpc:admin_set_manager",
+    "rpc:admin_org_tree",
+    "rpc:admin_hierarchy_census",
     "rpc:admin_org_application_approve",
     "rpc:admin_org_application_reject",
     "rpc:create_donation_intent",
@@ -1049,12 +1082,13 @@
     "rpc:provider_webhook_apply",
     "rpc:api_revenuecat_set_pro",
     "rpc:api_revenuecat_set_org_entitlement",
-    "rpc:api_standing_orders_charge_due"
+    "rpc:api_standing_orders_charge_due",
+    "rpc:list_kc_support_channels"
    ],
    "counts": {
-    "objects": 27,
-    "oneToOne": 10,
-    "changed": 17,
+    "objects": 30,
+    "oneToOne": 14,
+    "changed": 16,
     "removed": 0,
     "missing": 0
    }
@@ -1128,17 +1162,41 @@
     "admin/SupabaseTimesheetsRepository.ts",
     "apps/mobile: admin tasks, CRM, timesheets screens"
    ],
-   "work": "Done: nothing to migrate to (the baseline has no task tracker, CRM or timesheets, old M19). The three adapters make no call and reject with `BackendUnavailableError`; whether these internal tools belong in this database is still an open product decision.",
+   "work": "Done: rebuilt as forward migrations `0034` (tasks), `0035` (CRM per organization) and `0036` (timesheets decided by the direct manager); the three adapters call them again, with keyset paging.",
    "tests": [
-    "vitest: parkedBackOffice, parkedAdminSections"
+    "pgTAP: 099_back_office_tasks, 100_back_office_crm, 101_back_office_timesheets",
+    "vitest: SupabaseAdminTaskRepository, SupabaseCrmTimesheetsRepository, adminSectionAvailability, backOfficeDestinations"
    ],
-   "degrade": "Parked behind `BACK_OFFICE_TOOLS_AVAILABLE` (apps/mobile/src/lib/parkedFeatures.ts): the tasks nav entry and dashboard card are hidden, and the tasks, CRM and timesheets routes render the not-available notice.",
-   "risks": "Product decision, not engineering.",
-   "rows": [],
+   "degrade": "One switch per tool in apps/mobile/src/lib/parkedFeatures.ts (`ADMIN_TASKS_AVAILABLE`, `CRM_AVAILABLE`, `TIMESHEETS_AVAILABLE`, all on); a tool switched off hides its nav entry and renders the not-available notice.",
+   "risks": "None known.",
+   "rows": [
+    "rpc:admin_task_list",
+    "rpc:admin_task_detail",
+    "rpc:admin_task_open_count",
+    "rpc:admin_task_create",
+    "rpc:admin_task_update",
+    "rpc:admin_task_set_status",
+    "rpc:admin_task_assign",
+    "rpc:admin_task_add_comment",
+    "rpc:admin_task_delete",
+    "rpc:crm_my_orgs",
+    "rpc:crm_contact_list",
+    "rpc:crm_contact_count",
+    "rpc:crm_contact_upsert",
+    "rpc:crm_contact_delete",
+    "rpc:crm_contact_mark_contacted",
+    "rpc:timesheet_list",
+    "rpc:timesheet_count",
+    "rpc:timesheet_upsert",
+    "rpc:timesheet_submit",
+    "rpc:timesheet_approve",
+    "rpc:timesheet_reject",
+    "rpc:timesheet_delete"
+   ],
    "counts": {
-    "objects": 0,
-    "oneToOne": 0,
-    "changed": 0,
+    "objects": 22,
+    "oneToOne": 17,
+    "changed": 5,
     "removed": 0,
     "missing": 0
    }
@@ -1157,15 +1215,18 @@
    ],
    "files": [
     "admin/SupabaseWhatsAppAdminRepository.ts",
-    "supabase/functions/{whatsapp-webhook,whatsapp-intake-worker,whatsapp-sender}",
+    "whatsapp/SupabaseWhatsAppLinkRepository.ts",
+    "supabase/functions/{whatsapp-webhook,whatsapp-sender}",
     "supabase/functions/_shared/whatsapp/**",
-    "apps/mobile: WhatsApp link screen"
+    "apps/mobile: admin WhatsApp console, Settings → WhatsApp"
    ],
-   "work": "App side done: the admin console adapter makes no call and rejects with `BackendUnavailableError`, and the link screen is a not-available notice. The bot itself waits for the `integrations` module (M22, design Q4).",
+   "work": "Done: the `integrations` module (five `whatsapp_*` migrations); the webhook and sender deploy (the intake worker is retired); the admin console adapter pages by cursor and adds the review queue, templates and send limits; the member link port backs Settings → WhatsApp with the match-alert switch.",
    "tests": [
-    "deno test supabase/functions/_shared/whatsapp"
+    "pgTAP: 102_whatsapp_channel, 103_whatsapp_linking_bot, 104_whatsapp_admin, 105_whatsapp_match_alerts_jobs",
+    "deno test supabase/functions",
+    "vitest: SupabaseWhatsAppAdminRepository, SupabaseWhatsAppLinkRepository, WhatsAppAdminScreen, whatsappLinkScreen"
    ],
-   "degrade": "The three functions are not deployed; the settings row and the admin nav entry are hidden behind `WHATSAPP_BOT_AVAILABLE` (apps/mobile/src/lib/parkedFeatures.ts), and both routes render the not-available notice.",
+   "degrade": "`WHATSAPP_BOT_AVAILABLE` is on; the launch flag `launch_whatsapp_bot_enabled` still hides the settings row and the admin nav entry per environment. The functions do nothing until the channel is switched on and the Meta secrets exist.",
    "risks": "None for launch.",
    "rows": [
     "rpc:api_whatsapp_llm_budget_take",
@@ -1179,22 +1240,40 @@
     "rpc:api_whatsapp_handle_keyword",
     "rpc:api_whatsapp_redeem_link_code",
     "rpc:api_whatsapp_bot_access",
-    "rpc:api_bot_search_listings",
-    "rpc:api_bot_listing_cards",
+    "rpc:api_whatsapp_channel_config",
+    "rpc:api_bot_search_posts",
     "rpc:api_bot_open_session",
     "rpc:api_bot_apply_extraction",
-    "rpc:api_bot_publish_listing",
-    "rpc:api_bot_my_listings",
+    "rpc:api_bot_publish_post",
+    "rpc:api_bot_my_posts",
     "rpc:api_bot_my_matches",
-    "rpc:api_bot_find_matches",
-    "table:whatsapp_channel_config"
+    "rpc:api_whatsapp_my_link_status",
+    "rpc:api_whatsapp_create_link_code",
+    "rpc:api_whatsapp_unlink_me",
+    "rpc:api_whatsapp_set_match_consent",
+    "rpc:api_whatsapp_admin_get_channel",
+    "rpc:api_whatsapp_admin_set_channel_enabled",
+    "rpc:api_whatsapp_admin_overview",
+    "rpc:api_whatsapp_admin_list_consent",
+    "rpc:api_whatsapp_admin_list_outbound",
+    "rpc:api_whatsapp_admin_list_rate_hits",
+    "rpc:api_whatsapp_admin_list_recent_matches",
+    "rpc:api_whatsapp_admin_list_conversations",
+    "rpc:api_whatsapp_admin_resend",
+    "rpc:api_whatsapp_admin_block_user",
+    "rpc:api_whatsapp_admin_review_list",
+    "rpc:api_whatsapp_admin_review_resolve",
+    "rpc:api_whatsapp_admin_list_templates",
+    "rpc:api_whatsapp_admin_get_send_limits",
+    "rpc:api_whatsapp_admin_set_send_limits",
+    "rpc:api_whatsapp_admin_set_template_status"
    ],
    "counts": {
-    "objects": 20,
-    "oneToOne": 0,
-    "changed": 0,
+    "objects": 38,
+    "oneToOne": 23,
+    "changed": 15,
     "removed": 0,
-    "missing": 20
+    "missing": 0
    }
   }
  ],
@@ -1303,21 +1382,21 @@
   },
   {
    "name": "whatsapp-webhook",
-   "verdict": "park",
-   "uses": "8 api_whatsapp_* RPCs",
-   "change": "No `integrations` objects yet (M22): not deployed at launch."
+   "verdict": "done",
+   "uses": "api_whatsapp_* webhook RPCs and the agent's api_bot_* tools",
+   "change": "Retargeted: the agent searches with `api_bot_search_posts`, posts with `api_bot_publish_post` (draft outcomes told to the user), lists with `api_bot_my_posts`; an `inactive` member gets no agent and no upsell. Deployed."
   },
   {
    "name": "whatsapp-intake-worker",
-   "verdict": "park",
-   "uses": "api_bot_* and api_whatsapp_llm_budget_take",
-   "change": "Same (M22)."
+   "verdict": "obsolete",
+   "uses": "none",
+   "change": "Deleted: the agent's posting tool replaces it, and `api_bot_find_matches` is gone."
   },
   {
    "name": "whatsapp-sender",
-   "verdict": "park",
-   "uses": "whatsapp_channel_config, api_whatsapp_outbound_*",
-   "change": "Same (M22)."
+   "verdict": "done",
+   "uses": "api_whatsapp_channel_config, api_whatsapp_outbound_*",
+   "change": "Retargeted: reads the channel through `api_whatsapp_channel_config()`; started by the `whatsapp_send` job. Deployed."
   }
  ],
  "rows": [
@@ -1449,12 +1528,13 @@
    ],
    "areas": [
     "fn:strip-exif",
-    "mobile"
+    "mobile",
+    "posts"
    ],
    "callSites": [
     {
      "file": "app/apps/mobile/app/edit-post/[id].tsx",
-     "line": 42,
+     "line": 46,
      "symbol": "assetUrl",
      "area": "mobile"
     },
@@ -1499,6 +1579,12 @@
      "line": 56,
      "symbol": "listingImagePublicUrl",
      "area": "mobile"
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/posts/postMediaCopy.ts",
+     "line": 33,
+     "symbol": "copyObject",
+     "area": "posts"
     },
     {
      "file": "supabase/functions/strip-exif/index.ts",
@@ -1602,6 +1688,87 @@
    ]
   },
   {
+   "old": "`user:${userId}:stats`",
+   "kind": "channel",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "Private topic of the member (migration 0026); event `stats_changed` carries the own counters (karma, followers, following, given, received, open posts) when one changes. `useMeRealtime` patches the own-profile cache (FR-KARMA-009, M24 built).",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "topic",
+     "name": "user:<user id>:stats"
+    }
+   ],
+   "areas": [
+    "users"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/users/SupabaseUserRealtime.ts",
+     "line": 86,
+     "symbol": "SupabaseUserRealtime.subscribeToStats",
+     "area": "users"
+    }
+   ]
+  },
+  {
+   "old": "FEED_PUBLIC_TOPIC = 'feed:public'",
+   "kind": "channel",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "Private topic (migration 0026); event `new_post` with `post_id` and `owner_id` when a post becomes open and Public. The feed counts the pill and re-reads through RLS on tap (FR-FEED-009 AC2, M24 built).",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "topic",
+     "name": "feed:public"
+    }
+   ],
+   "areas": [
+    "feed"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/feed/SupabaseFeedRealtime.ts",
+     "line": 20,
+     "symbol": "SupabaseFeedRealtime.subscribeToPublicInserts",
+     "area": "feed"
+    }
+   ]
+  },
+  {
+   "old": "ONLINE_PRESENCE_TOPIC = 'presence:online'",
+   "kind": "channel",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "Presence, key = member id (migration 0026); tracking and receiving both need an active account with \"show my active status\" on, and in-chat presence follows the same rule (M24 built).",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "topic",
+     "name": "presence:online"
+    }
+   ],
+   "areas": [
+    "realtime"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/realtime/SupabaseOnlinePresence.ts",
+     "line": 29,
+     "symbol": "SupabaseOnlinePresence.start",
+     "area": "realtime"
+    }
+   ]
+  },
+  {
    "old": "topic",
    "kind": "channel",
    "status": "same",
@@ -1649,7 +1816,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/users/SupabaseUserRealtime.ts",
-     "line": 37,
+     "line": 64,
      "symbol": "SupabaseUserRealtime.subscribeToAccount",
      "area": "users"
     }
@@ -1770,6 +1937,37 @@
    ]
   },
   {
+   "old": "about_team_profiles",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "The About roster: role key and the linked active member's public fields, from the service-role table `about_team_members` (migration 0031, M08 built).",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "about_team_profiles",
+     "signature": [
+      "about_team_profiles(avatar_url: string, display_name: string, role_key: string, share_handle: string, sort_order: number) → { avatar_url: string display_name: string role_key: string share_handle: string sort_order: number }[]"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "about"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/about/SupabaseAboutRepository.ts",
+     "line": 17,
+     "symbol": "SupabaseAboutRepository.listTeamMembers",
+     "area": "about"
+    }
+   ]
+  },
+  {
    "old": "accept_legal_document",
    "kind": "rpc",
    "status": "same",
@@ -1867,6 +2065,90 @@
      "line": 61,
      "symbol": "SupabaseDriverDeclarationRepository.requireRpcRow",
      "area": "rides"
+    }
+   ]
+  },
+  {
+   "old": "admin_assign_queue_entry",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "A moderator takes an open review entry or hands it to another staff member.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "admin_assign_queue_entry",
+     "source": "60_moderation/050_moderation_queue.sql:129",
+     "signature": [
+      "admin_assign_queue_entry(p_assignee_id?: string, p_entry_id: string) → undefined"
+     ],
+     "errors": [
+      {
+       "code": "assignee_not_staff",
+       "knownToApp": true
+      },
+      {
+       "code": "forbidden",
+       "knownToApp": true
+      },
+      {
+       "code": "queue_entry_not_open",
+       "knownToApp": true
+      },
+      {
+       "code": "unauthenticated",
+       "knownToApp": true
+      }
+     ]
+    }
+   ],
+   "areas": [
+    "moderation"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/moderation/SupabaseModerationQueueRepository.ts",
+     "line": 67,
+     "symbol": "SupabaseModerationQueueRepository.assign",
+     "area": "moderation"
+    }
+   ]
+  },
+  {
+   "old": "admin_audit_lookup",
+   "kind": "rpc",
+   "status": "changed",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "Was `admin_audit_lookup_guarded`. Super admin: events by or about a member (`p_user_id`), keyset, ≤ 200; `0016`.",
+   "oldObject": {
+    "signature": [
+     "admin_audit_lookup(p_limit?: number, p_user_id: string) → audit_events row[]"
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "admin_audit_lookup",
+     "signature": [
+      "admin_audit_lookup(p_before_id?: number, p_before_occurred_at?: string, p_limit?: number, p_user_id: string) → { action: string actor_id: string id: number metadata: Json occurred_at: string target_id: string target_type: string }[]"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "moderation"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/moderation/SupabaseModerationAdminRepository.ts",
+     "line": 138,
+     "symbol": "SupabaseModerationAdminRepository.auditLookup",
+     "area": "moderation"
     }
    ]
   },
@@ -1974,7 +2256,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/moderation/SupabaseModerationAdminRepository.ts",
-     "line": 110,
+     "line": 123,
      "symbol": "SupabaseModerationAdminRepository.banUser",
      "area": "moderation"
     }
@@ -2047,7 +2329,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminRoleRepository.ts",
-     "line": 148,
+     "line": 125,
      "symbol": "SupabaseAdminRoleRepository.changeRole",
      "area": "admin"
     }
@@ -2104,8 +2386,53 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/moderation/SupabaseModerationAdminRepository.ts",
-     "line": 103,
+     "line": 116,
      "symbol": "SupabaseModerationAdminRepository.confirmReport",
+     "area": "moderation"
+    }
+   ]
+  },
+  {
+   "old": "admin_delete_comment",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "Staff remove a comment with its replies; `0016` stamps `moderation_removed_at` so `admin_restore_comment` can bring them back.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "admin_delete_comment",
+     "source": "60_moderation/080_content_moderation.sql:103",
+     "signature": [
+      "admin_delete_comment(p_comment_id: string) → undefined"
+     ],
+     "errors": [
+      {
+       "code": "forbidden",
+       "knownToApp": true
+      },
+      {
+       "code": "target_not_found",
+       "knownToApp": true
+      },
+      {
+       "code": "unauthenticated",
+       "knownToApp": true
+      }
+     ]
+    }
+   ],
+   "areas": [
+    "moderation"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/moderation/SupabaseModerationAdminRepository.ts",
+     "line": 106,
+     "symbol": "SupabaseModerationAdminRepository.removeComment",
      "area": "moderation"
     }
    ]
@@ -2153,7 +2480,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/moderation/SupabaseModerationAdminRepository.ts",
-     "line": 119,
+     "line": 132,
      "symbol": "SupabaseModerationAdminRepository.deleteMessage",
      "area": "moderation"
     }
@@ -2206,7 +2533,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/moderation/SupabaseModerationAdminRepository.ts",
-     "line": 98,
+     "line": 111,
      "symbol": "SupabaseModerationAdminRepository.dismissReport",
      "area": "moderation"
     }
@@ -2275,9 +2602,141 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminRoleRepository.ts",
-     "line": 130,
+     "line": 107,
      "symbol": "SupabaseAdminRoleRepository.grantRole",
      "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "admin_hierarchy_census",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Restored by migration 0013: community and role-holder totals and, per visible organization, its slug, verification and affiliates (`user_profile_fields.affiliated_org_id`) without a role.",
+   "oldObject": {
+    "signature": [
+     "admin_hierarchy_census() → Json"
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "admin_hierarchy_census",
+     "signature": [
+      "admin_hierarchy_census() → Json"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseOrgHierarchyRepository.ts",
+     "line": 123,
+     "symbol": "SupabaseOrgHierarchyRepository.getHierarchyCensus",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "admin_join_support_thread",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "Staff join a support thread as its `support_agent`; idempotent, audited; `0015`.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "admin_join_support_thread",
+     "signature": [
+      "admin_join_support_thread(p_chat_id: string) → chats row"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "moderation"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/moderation/SupabaseSupportInboxRepository.ts",
+     "line": 64,
+     "symbol": "SupabaseSupportInboxRepository.joinThread",
+     "area": "moderation"
+    }
+   ]
+  },
+  {
+   "old": "admin_list_admins",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "Restored by migration 0012: the roster the caller may read (platform admins all, others the organizations their grants reach) with names, manager edge and `last_seen_at`.",
+   "oldObject": {
+    "signature": [
+     "admin_list_admins(p_include_revoked?: boolean) → { avatar_url: string display_name: string grant_id: string granted_at: string granted_by: string granted_by_display_name: string last_seen_at: string revoked_at: string revoked_by: string role: string scope_org_id: st..."
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "admin_list_admins",
+     "signature": [
+      "admin_list_admins(p_include_revoked?: boolean) → { avatar_url: string display_name: string grant_id: string granted_at: string granted_by: string granted_by_display_name: string last_seen_at: string manager_grant_id: string revoked_at: string revoked_by: string role..."
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminRoleRepository.ts",
+     "line": 94,
+     "symbol": "SupabaseAdminRoleRepository.listAdmins",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "admin_list_support_threads",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "Staff: support threads with messages, newest first, keyset; `0015`.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "admin_list_support_threads",
+     "signature": [
+      "admin_list_support_threads(p_before_id?: string, p_before_last_message_at?: string, p_limit?: number) → { chat_id: string created_at: string joined: boolean last_message_at: string member_avatar_url: string member_display_name: string member_id: string }[]"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "moderation"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/moderation/SupabaseSupportInboxRepository.ts",
+     "line": 40,
+     "symbol": "SupabaseSupportInboxRepository.listThreads",
+     "area": "moderation"
     }
    ]
   },
@@ -2310,9 +2769,40 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/matching/SupabaseMatchRepository.ts",
-     "line": 134,
+     "line": 145,
      "symbol": "SupabaseMatchRepository.qualityByWorld",
      "area": "matching"
+    }
+   ]
+  },
+  {
+   "old": "admin_open_member_support_thread",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "Staff open a member's support thread (created if needed) from a report case; `0015`.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "admin_open_member_support_thread",
+     "signature": [
+      "admin_open_member_support_thread(p_user_id: string) → chats row"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "moderation"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/moderation/SupabaseSupportInboxRepository.ts",
+     "line": 72,
+     "symbol": "SupabaseSupportInboxRepository.openMemberThread",
+     "area": "moderation"
     }
    ]
   },
@@ -2423,6 +2913,41 @@
    ]
   },
   {
+   "old": "admin_org_tree",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Restored by migration 0012: active grants with `effective_org_id`, organization name, manager edge and `last_seen_at`; same visibility as `admin_list_admins`.",
+   "oldObject": {
+    "signature": [
+     "admin_org_tree(p_org_id?: string) → { avatar_url: string display_name: string effective_org_id: string grant_id: string is_platform: boolean last_seen_at: string manager_grant_id: string org_name: string role: string scope_org_id: string user_id: string..."
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "admin_org_tree",
+     "signature": [
+      "admin_org_tree(p_org_id?: string) → { avatar_url: string display_name: string effective_org_id: string grant_id: string is_platform: boolean last_seen_at: string manager_grant_id: string org_name: string role: string scope_org_id: string user_id: string..."
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseOrgHierarchyRepository.ts",
+     "line": 104,
+     "symbol": "SupabaseOrgHierarchyRepository.getOrgTree",
+     "area": "admin"
+    }
+   ]
+  },
+  {
    "old": "admin_pmf_survey_report",
    "kind": "rpc",
    "status": "same",
@@ -2511,6 +3036,175 @@
    ]
   },
   {
+   "old": "admin_report_case_timeline",
+   "kind": "rpc",
+   "status": "changed",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "Was the timeline of `reports_case_detail` (reporters come from `reports`): the whole audit history of the target and its reports from `admin_report_case_timeline` (every staff role); `0016`.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "admin_report_case_timeline",
+     "signature": [
+      "admin_report_case_timeline(p_limit?: number, p_target_id: string, p_target_type: string) → { action: string actor_id: string id: number metadata: Json occurred_at: string target_id: string target_type: string }[]"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "reports"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/reports/SupabaseReportsRepository.ts",
+     "line": 112,
+     "symbol": "SupabaseReportsRepository.loadTimeline",
+     "area": "reports"
+    }
+   ]
+  },
+  {
+   "old": "admin_reports_inbox",
+   "kind": "rpc",
+   "status": "changed",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "Was `reports_open_inbox`. Server-grouped open cases, oldest first, keyset (`p_after_oldest_at`, `p_after_target_type`, `p_after_target_id`), filters and `p_search` (target id or reporter name); `0016`.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "admin_reports_inbox",
+     "signature": [
+      "admin_reports_inbox(p_after_oldest_at?: string, p_after_target_id?: string, p_after_target_type?: string, p_limit?: number, p_max_age_days?: number, p_reporter_id?: string, p_search?: string, p_target_type?: string) → { latest_at: string latest_reporter_id: string oldest_at: string report_count: number reporter_count: number target_hidden_at: string target_id: string target_type: string }[]"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "reports"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/reports/SupabaseReportsRepository.ts",
+     "line": 40,
+     "symbol": "SupabaseReportsRepository.listOpenInbox",
+     "area": "reports"
+    }
+   ]
+  },
+  {
+   "old": "admin_resolve_queue_entry",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "A moderator closes an open review entry.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "admin_resolve_queue_entry",
+     "source": "60_moderation/050_moderation_queue.sql:158",
+     "signature": [
+      "admin_resolve_queue_entry(p_entry_id: string) → undefined"
+     ],
+     "errors": [
+      {
+       "code": "forbidden",
+       "knownToApp": true
+      },
+      {
+       "code": "queue_entry_not_open",
+       "knownToApp": true
+      },
+      {
+       "code": "unauthenticated",
+       "knownToApp": true
+      }
+     ]
+    }
+   ],
+   "areas": [
+    "moderation"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/moderation/SupabaseModerationQueueRepository.ts",
+     "line": 74,
+     "symbol": "SupabaseModerationQueueRepository.resolve",
+     "area": "moderation"
+    }
+   ]
+  },
+  {
+   "old": "admin_restore_chat",
+   "kind": "rpc",
+   "status": "changed",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "Was the chat branch of `admin_restore_target`: unhides a chat hidden for review and dismisses its open reports (FR-ADMIN-002 AC2/AC4); `0016`.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "admin_restore_chat",
+     "signature": [
+      "admin_restore_chat(p_chat_id: string) → undefined"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "moderation"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/moderation/SupabaseModerationAdminRepository.ts",
+     "line": 96,
+     "symbol": "SupabaseModerationAdminRepository.restoreTarget",
+     "area": "moderation"
+    }
+   ]
+  },
+  {
+   "old": "admin_restore_comment",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "Brings back a comment staff removed, with the replies removed alongside; dismisses its open reports; `0016`.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "admin_restore_comment",
+     "signature": [
+      "admin_restore_comment(p_comment_id: string) → undefined"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "moderation"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/moderation/SupabaseModerationAdminRepository.ts",
+     "line": 100,
+     "symbol": "SupabaseModerationAdminRepository.restoreTarget",
+     "area": "moderation"
+    }
+   ]
+  },
+  {
    "old": "admin_restore_post",
    "kind": "rpc",
    "status": "same",
@@ -2549,7 +3243,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/moderation/SupabaseModerationAdminRepository.ts",
-     "line": 87,
+     "line": 90,
      "symbol": "SupabaseModerationAdminRepository.restoreTarget",
      "area": "moderation"
     }
@@ -2598,7 +3292,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/moderation/SupabaseModerationAdminRepository.ts",
-     "line": 89,
+     "line": 93,
      "symbol": "SupabaseModerationAdminRepository.restoreTarget",
      "area": "moderation"
     }
@@ -2704,7 +3398,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminRoleRepository.ts",
-     "line": 143,
+     "line": 120,
      "symbol": "SupabaseAdminRoleRepository.revokeRole",
      "area": "admin"
     }
@@ -2713,11 +3407,11 @@
   {
    "old": "admin_set_manager",
    "kind": "rpc",
-   "status": "changed",
+   "status": "same",
    "launch": "later",
    "confidence": "high",
    "missing": null,
-   "note": "`p_manager_grant_id` is required: a grant can be moved under another grant but not detached.",
+   "note": "Signature unchanged: `p_manager_grant_id` optional again; only the super admin detaches (no manager) or skips the seniority rule; errors `forbidden_manage`, `manager_not_found`, `manager_revoked`, `manager_other_org`, `manager_cycle`, `manager_rank` (migration 0011).",
    "oldObject": {
     "signature": [
      "admin_set_manager(p_grant_id: string, p_manager_grant_id?: string) → undefined"
@@ -2729,7 +3423,7 @@
      "name": "admin_set_manager",
      "source": "60_moderation/020_admin_role_rpcs.sql:205",
      "signature": [
-      "admin_set_manager(p_grant_id: string, p_manager_grant_id: string) → undefined"
+      "admin_set_manager(p_grant_id: string, p_manager_grant_id?: string) → undefined"
      ],
      "errors": [
       {
@@ -2765,8 +3459,39 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/admin/SupabaseOrgHierarchyRepository.ts",
-     "line": 103,
+     "line": 116,
      "symbol": "SupabaseOrgHierarchyRepository.unwrap",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "admin_set_org_slug",
+   "kind": "rpc",
+   "status": "changed",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "New in migration 0014 (no old object): the super admin changes an organization page slug (`invalid_slug`, `slug_taken`, `org_not_found`).",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "admin_set_org_slug",
+     "signature": [
+      "admin_set_org_slug(p_org_id: string, p_slug: string) → string"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseOrgHierarchyRepository.ts",
+     "line": 127,
+     "symbol": "SupabaseOrgHierarchyRepository.setOrgSlug",
      "area": "admin"
     }
    ]
@@ -2842,6 +3567,317 @@
    ]
   },
   {
+   "old": "admin_task_add_comment",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Same arguments; refusals are P0001 with the old codes (`invalid_transition`, `assignee_not_admin`, …), `forbidden` is 42501.",
+   "oldObject": {
+    "signature": [
+     "admin_task_add_comment(p_body: string, p_task_id: string) → string"
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "admin_task_add_comment",
+     "signature": [
+      "admin_task_add_comment(p_body: string, p_task_id: string) → string"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminTaskRepository.ts",
+     "line": 112,
+     "symbol": "SupabaseAdminTaskRepository.addComment",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "admin_task_assign",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Same arguments; refusals are P0001 with the old codes (`invalid_transition`, `assignee_not_admin`, …), `forbidden` is 42501.",
+   "oldObject": {
+    "signature": [
+     "admin_task_assign(p_new_assignee: string, p_task_id: string) → undefined"
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "admin_task_assign",
+     "signature": [
+      "admin_task_assign(p_new_assignee: string, p_task_id: string) → undefined"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminTaskRepository.ts",
+     "line": 104,
+     "symbol": "SupabaseAdminTaskRepository.assign",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "admin_task_create",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Same arguments; refusals are P0001 with the old codes (`invalid_transition`, `assignee_not_admin`, …), `forbidden` is 42501.",
+   "oldObject": {
+    "signature": [
+     "admin_task_create(p_assignee_id?: string, p_category?: string, p_description?: string, p_due_at?: string, p_labels?: string[], p_priority?: string, p_title: string) → string"
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "admin_task_create",
+     "signature": [
+      "admin_task_create(p_assignee_id?: string, p_category?: string, p_description?: string, p_due_at?: string, p_labels?: string[], p_priority?: string, p_title: string) → string"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminTaskRepository.ts",
+     "line": 70,
+     "symbol": "SupabaseAdminTaskRepository.create",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "admin_task_delete",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Same arguments; refusals are P0001 with the old codes (`invalid_transition`, `assignee_not_admin`, …), `forbidden` is 42501.",
+   "oldObject": {
+    "signature": [
+     "admin_task_delete(p_task_id: string) → undefined"
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "admin_task_delete",
+     "signature": [
+      "admin_task_delete(p_task_id: string) → undefined"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminTaskRepository.ts",
+     "line": 120,
+     "symbol": "SupabaseAdminTaskRepository.delete",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "admin_task_detail",
+   "kind": "rpc",
+   "status": "changed",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Returns one JSON record with `activities` (write order), or null for an unknown task.",
+   "oldObject": {
+    "signature": [
+     "admin_task_detail(p_task_id: string) → { activities: Json assignee_display_name: string assignee_id: string category: string created_at: string created_by: string created_by_display_name: string description: string due_at: string labels: string[] priority:..."
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "admin_task_detail",
+     "signature": [
+      "admin_task_detail(p_task_id: string) → Json"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminTaskRepository.ts",
+     "line": 63,
+     "symbol": "SupabaseAdminTaskRepository.getDetail",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "admin_task_list",
+   "kind": "rpc",
+   "status": "changed",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Rows are `(task jsonb, cursor jsonb)`; `p_offset` → `p_cursor` (keyset). `task_id` keeps its name inside the record; `created_by` may be null after a purge.",
+   "oldObject": {
+    "signature": [
+     "admin_task_list(p_assignee?: string, p_category?: string, p_due_from?: string, p_due_to?: string, p_label?: string, p_limit?: number, p_offset?: number, p_only_mine?: boolean, p_overdue?: boolean, p_priority?: string, p_status?: string, p_unassigned_only?: boolean) → { assignee_display_name: string assignee_id: string category: string comment_count: number created_at: string created_by: string created_by_display_name: string description: string due_at: string labels: string[] prio..."
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "admin_task_list",
+     "signature": [
+      "admin_task_list(p_assignee?: string, p_category?: string, p_cursor?: Json, p_due_from?: string, p_due_to?: string, p_label?: string, p_limit?: number, p_only_mine?: boolean, p_overdue?: boolean, p_priority?: string, p_status?: string, p_unassigned_only?: boolean) → { cursor: Json task: Json }[]"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminTaskRepository.ts",
+     "line": 41,
+     "symbol": "SupabaseAdminTaskRepository.list",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "admin_task_open_count",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "New: open and in-progress tasks for the dashboard card.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "admin_task_open_count",
+     "signature": [
+      "admin_task_open_count() → number"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminTaskRepository.ts",
+     "line": 59,
+     "symbol": "SupabaseAdminTaskRepository.openCount",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "admin_task_set_status",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Same arguments; refusals are P0001 with the old codes (`invalid_transition`, `assignee_not_admin`, …), `forbidden` is 42501.",
+   "oldObject": {
+    "signature": [
+     "admin_task_set_status(p_new_status: string, p_task_id: string) → undefined"
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "admin_task_set_status",
+     "signature": [
+      "admin_task_set_status(p_new_status: string, p_task_id: string) → undefined"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminTaskRepository.ts",
+     "line": 98,
+     "symbol": "SupabaseAdminTaskRepository.setStatus",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "admin_task_update",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Same arguments; refusals are P0001 with the old codes (`invalid_transition`, `assignee_not_admin`, …), `forbidden` is 42501.",
+   "oldObject": {
+    "signature": [
+     "admin_task_update(p_category?: string, p_clear_due?: boolean, p_description?: string, p_due_at?: string, p_labels?: string[], p_priority?: string, p_task_id: string, p_title?: string) → undefined"
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "admin_task_update",
+     "signature": [
+      "admin_task_update(p_category?: string, p_clear_due?: boolean, p_description?: string, p_due_at?: string, p_labels?: string[], p_priority?: string, p_task_id: string, p_title?: string) → undefined"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminTaskRepository.ts",
+     "line": 84,
+     "symbol": "SupabaseAdminTaskRepository.update",
+     "area": "admin"
+    }
+   ]
+  },
+  {
    "old": "admin_user_feedback_list",
    "kind": "rpc",
    "status": "changed",
@@ -2877,112 +3913,71 @@
    ]
   },
   {
-   "old": "api_bot_apply_extraction",
+   "old": "admin_world_flow_funnel",
    "kind": "rpc",
-   "status": "missing",
+   "status": "same",
    "launch": "later",
    "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
+   "missing": null,
+   "note": "`p_days` (1..365); per world and direction (`give` / `request`) the posts published in the window through their handoffs; money has no handoff stages. Moderators and above; `0018` (M14, built).",
+   "oldObject": {
+    "signature": [
+     "admin_world_flow_funnel(p_days?: number) → { booked: number cancelled: number closed: number completed: number confirmed: number direction: string median_hours_to_booking: number median_hours_to_completion: number published: number world_label_en: string world..."
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "admin_world_flow_funnel",
+     "signature": [
+      "admin_world_flow_funnel(p_days?: number) → { booked: number cancelled: number closed: number completed: number confirmed: number direction: string median_hours_to_booking: number median_hours_to_completion: number published: number world_label_en: string world..."
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "stats"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/stats/SupabaseStatsRepository.ts",
+     "line": 68,
+     "symbol": "SupabaseStatsRepository.getWorldFlowFunnel",
+     "area": "stats"
+    }
+   ]
+  },
+  {
+   "old": "api_bot_apply_extraction",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Same arguments; kind slugs are the posts catalog's (`item_offer`, `item_request`, `food_offer`, `food_request`); returns the session id; titles are cut to 80 characters.",
    "oldObject": {
     "signature": [
      "api_bot_apply_extraction(p_confidence?: number, p_details?: Json, p_direction: string, p_kind_slug: string, p_session_id: string, p_summary?: string, p_title: string, p_world_slug: string) → string"
     ]
    },
-   "targets": [],
-   "areas": [
-    "fn:_shared",
-    "fn:whatsapp-intake-worker"
-   ],
-   "callSites": [
+   "targets": [
     {
-     "file": "supabase/functions/_shared/whatsapp/agent/tools.ts",
-     "line": 86,
-     "symbol": "call",
-     "area": "fn:_shared"
-    },
-    {
-     "file": "supabase/functions/whatsapp-intake-worker/index.ts",
-     "line": 78,
-     "symbol": "serve",
-     "area": "fn:whatsapp-intake-worker"
+     "type": "rpc",
+     "name": "api_bot_apply_extraction",
+     "signature": [
+      "api_bot_apply_extraction(p_confidence?: number, p_details?: Json, p_direction: string, p_kind_slug: string, p_session_id: string, p_summary?: string, p_title: string, p_world_slug: string) → string"
+     ],
+     "errors": []
     }
-   ]
-  },
-  {
-   "old": "api_bot_find_matches",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
-   "oldObject": {
-    "signature": [
-     "api_bot_find_matches(p_limit?: number, p_listing_id: string, p_owner_id: string) → { candidate_listing_id: string fts_score: number geo_score: number match_status: string score: number trust_score: number vector_score: number }[]"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "fn:whatsapp-intake-worker"
    ],
-   "callSites": [
-    {
-     "file": "supabase/functions/whatsapp-intake-worker/index.ts",
-     "line": 103,
-     "symbol": "body",
-     "area": "fn:whatsapp-intake-worker"
-    }
-   ]
-  },
-  {
-   "old": "api_bot_listing_cards",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
-   "oldObject": {
-    "signature": [
-     "api_bot_listing_cards(p_ids: string[], p_viewer_id: string) → { city_id: string created_at: string direction: string listing_id: string summary: string title: string world_slug: string }[]"
-    ]
-   },
-   "targets": [],
    "areas": [
     "fn:_shared"
    ],
    "callSites": [
     {
      "file": "supabase/functions/_shared/whatsapp/agent/tools.ts",
-     "line": 58,
-     "symbol": "call",
-     "area": "fn:_shared"
-    }
-   ]
-  },
-  {
-   "old": "api_bot_my_listings",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
-   "oldObject": {
-    "signature": [
-     "api_bot_my_listings(p_limit?: number, p_user_id: string) → { created_at: string direction: string listing_id: string title: string world_slug: string }[]"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "fn:_shared"
-   ],
-   "callSites": [
-    {
-     "file": "supabase/functions/_shared/whatsapp/agent/tools.ts",
-     "line": 104,
-     "symbol": "call",
+     "line": 83,
+     "symbol": "postListing",
      "area": "fn:_shared"
     }
    ]
@@ -2990,25 +3985,65 @@
   {
    "old": "api_bot_my_matches",
    "kind": "rpc",
-   "status": "missing",
+   "status": "same",
    "launch": "later",
    "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
+   "missing": null,
+   "note": "Same shape; reads matching v2 pairs and leaves out a pair whose other post the member may not read.",
    "oldObject": {
     "signature": [
      "api_bot_my_matches(p_limit?: number, p_user_id: string) → { candidate_id: string distance_km: number my_listing_title: string other_listing_id: string other_title: string score: number status: string world_slug: string }[]"
     ]
    },
-   "targets": [],
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_bot_my_matches",
+     "signature": [
+      "api_bot_my_matches(p_limit?: number, p_user_id: string) → { candidate_id: string distance_km: number my_post_title: string other_post_id: string other_title: string score: number status: string world_slug: string }[]"
+     ],
+     "errors": []
+    }
+   ],
    "areas": [
     "fn:_shared"
    ],
    "callSites": [
     {
      "file": "supabase/functions/_shared/whatsapp/agent/tools.ts",
-     "line": 110,
-     "symbol": "call",
+     "line": 159,
+     "symbol": "published",
+     "area": "fn:_shared"
+    }
+   ]
+  },
+  {
+   "old": "api_bot_my_posts",
+   "kind": "rpc",
+   "status": "renamed",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Was `api_bot_my_listings`; same arguments; rows carry `post_id` (was `listing_id`).",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_bot_my_posts",
+     "signature": [
+      "api_bot_my_posts(p_limit?: number, p_user_id: string) → { created_at: string direction: string post_id: string title: string world_slug: string }[]"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "fn:_shared"
+   ],
+   "callSites": [
+    {
+     "file": "supabase/functions/_shared/whatsapp/agent/tools.ts",
+     "line": 151,
+     "symbol": "published",
      "area": "fn:_shared"
     }
    ]
@@ -3016,91 +4051,96 @@
   {
    "old": "api_bot_open_session",
    "kind": "rpc",
-   "status": "missing",
+   "status": "renamed",
    "launch": "later",
    "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
+   "missing": null,
+   "note": "`p_record_id` → `p_inbound_message_id` (the inbound row id returned by `api_whatsapp_ingest_inbound`; may be null).",
    "oldObject": {
     "signature": [
      "api_bot_open_session(p_record_id?: string, p_wa_id: string) → string"
     ]
    },
-   "targets": [],
-   "areas": [
-    "fn:_shared",
-    "fn:whatsapp-intake-worker"
-   ],
-   "callSites": [
+   "targets": [
     {
-     "file": "supabase/functions/_shared/whatsapp/agent/tools.ts",
-     "line": 85,
-     "symbol": "call",
-     "area": "fn:_shared"
-    },
-    {
-     "file": "supabase/functions/whatsapp-intake-worker/index.ts",
-     "line": 44,
-     "symbol": "serve",
-     "area": "fn:whatsapp-intake-worker"
+     "type": "rpc",
+     "name": "api_bot_open_session",
+     "signature": [
+      "api_bot_open_session(p_inbound_message_id?: string, p_wa_id: string) → string"
+     ],
+     "errors": []
     }
-   ]
-  },
-  {
-   "old": "api_bot_publish_listing",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
-   "oldObject": {
-    "signature": [
-     "api_bot_publish_listing(p_owner_id: string, p_session_id: string) → string"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "fn:_shared",
-    "fn:whatsapp-intake-worker"
    ],
-   "callSites": [
-    {
-     "file": "supabase/functions/_shared/whatsapp/agent/tools.ts",
-     "line": 96,
-     "symbol": "call",
-     "area": "fn:_shared"
-    },
-    {
-     "file": "supabase/functions/whatsapp-intake-worker/index.ts",
-     "line": 94,
-     "symbol": "body",
-     "area": "fn:whatsapp-intake-worker"
-    }
-   ]
-  },
-  {
-   "old": "api_bot_search_listings",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
-   "oldObject": {
-    "signature": [
-     "api_bot_search_listings(p_limit?: number, p_owner_id: string, p_query: string, p_world_slug?: string) → { fts_rank: number geo_rank: number listing_id: string rrf_score: number trgm_rank: number vector_rank: number }[]"
-    ]
-   },
-   "targets": [],
    "areas": [
     "fn:_shared"
    ],
    "callSites": [
     {
      "file": "supabase/functions/_shared/whatsapp/agent/tools.ts",
-     "line": 50,
-     "symbol": "call",
+     "line": 79,
+     "symbol": "postListing",
+     "area": "fn:_shared"
+    }
+   ]
+  },
+  {
+   "old": "api_bot_publish_post",
+   "kind": "rpc",
+   "status": "changed",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Was `api_bot_publish_listing` (returned the listing id): returns `{post_id, status, review, photo_required}`, a draft when confidence is below 0.85 (review item) or when an offer in a photo world needs its photo (D132); a food offer needs `details.expires_at`.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_bot_publish_post",
+     "signature": [
+      "api_bot_publish_post(p_owner_id: string, p_session_id: string) → Json"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "fn:_shared"
+   ],
+   "callSites": [
+    {
+     "file": "supabase/functions/_shared/whatsapp/agent/tools.ts",
+     "line": 93,
+     "symbol": "postListing",
+     "area": "fn:_shared"
+    }
+   ]
+  },
+  {
+   "old": "api_bot_search_posts",
+   "kind": "rpc",
+   "status": "changed",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Was `api_bot_search_listings(p_owner_id, …)` + `api_bot_listing_cards`: `(p_user_id, p_query, p_world_slug, p_limit ≤ 8)` returns the post cards themselves (`post_id`, `world_slug`, `direction`, `title`, `description`, `city_id`, `published_at`) visible to that member.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_bot_search_posts",
+     "signature": [
+      "api_bot_search_posts(p_limit?: number, p_query: string, p_user_id: string, p_world_slug?: string) → { city_id: string description: string direction: string post_id: string published_at: string title: string world_slug: string }[]"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "fn:_shared"
+   ],
+   "callSites": [
+    {
+     "file": "supabase/functions/_shared/whatsapp/agent/tools.ts",
+     "line": 115,
+     "symbol": "published",
      "area": "fn:_shared"
     }
    ]
@@ -3322,19 +4362,564 @@
    ]
   },
   {
-   "old": "api_whatsapp_bot_access",
+   "old": "api_whatsapp_admin_block_user",
    "kind": "rpc",
-   "status": "missing",
+   "status": "same",
    "launch": "later",
    "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
+   "missing": null,
+   "note": "Same shape; audited.",
+   "oldObject": {
+    "signature": [
+     "api_whatsapp_admin_block_user(p_user_id: string) → undefined"
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_whatsapp_admin_block_user",
+     "signature": [
+      "api_whatsapp_admin_block_user(p_user_id: string) → undefined"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
+     "line": 140,
+     "symbol": "SupabaseWhatsAppAdminRepository.blockUser",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "api_whatsapp_admin_get_channel",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Same shape plus `updated_by`; the switch is audited (`whatsapp_channel_toggle`).",
+   "oldObject": {
+    "signature": [
+     "api_whatsapp_admin_get_channel() → Json"
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_whatsapp_admin_get_channel",
+     "signature": [
+      "api_whatsapp_admin_get_channel() → Json"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
+     "line": 59,
+     "symbol": "SupabaseWhatsAppAdminRepository.getChannel",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "api_whatsapp_admin_get_send_limits",
+   "kind": "rpc",
+   "status": "changed",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "New, moderator and above: the current send limits for the console panel.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_whatsapp_admin_get_send_limits",
+     "signature": [
+      "api_whatsapp_admin_get_send_limits() → Json"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
+     "line": 168,
+     "symbol": "SupabaseWhatsAppAdminRepository.getSendLimits",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "api_whatsapp_admin_list_consent",
+   "kind": "rpc",
+   "status": "changed",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "`p_offset` → `p_cursor` (keyset); no `total_count`; rows add `identity_id` and `cursor`.",
+   "oldObject": {
+    "signature": [
+     "api_whatsapp_admin_list_consent(p_limit?: number, p_offset?: number) → { consent_status: string last_inbound_at: string opted_in: boolean opted_in_at: string opted_out_at: string preferred_language: string total_count: number updated_at: string user_id: string wa_id_masked: string }[]"
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_whatsapp_admin_list_consent",
+     "signature": [
+      "api_whatsapp_admin_list_consent(p_cursor?: Json, p_limit?: number) → { consent_status: string cursor: Json identity_id: string last_inbound_at: string opted_in: boolean opted_in_at: string opted_out_at: string preferred_language: string updated_at: string user_id: string wa_id_masked: ..."
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
+     "line": 74,
+     "symbol": "SupabaseWhatsAppAdminRepository.listConsent",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "api_whatsapp_admin_list_conversations",
+   "kind": "rpc",
+   "status": "changed",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "`listing_id` → `post_id`; rows add `confidence`.",
+   "oldObject": {
+    "signature": [
+     "api_whatsapp_admin_list_conversations(p_limit?: number) → { created_at: string listing_id: string session_id: string state: string updated_at: string user_id: string wa_id_masked: string }[]"
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_whatsapp_admin_list_conversations",
+     "signature": [
+      "api_whatsapp_admin_list_conversations(p_limit?: number) → { confidence: number created_at: string post_id: string session_id: string state: string updated_at: string user_id: string wa_id_masked: string }[]"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
+     "line": 120,
+     "symbol": "SupabaseWhatsAppAdminRepository.listConversations",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "api_whatsapp_admin_list_outbound",
+   "kind": "rpc",
+   "status": "changed",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "`p_offset` → `p_cursor` (keyset) with `p_status`; no `total_count`; rows add `cursor`; `invalid_status` for an unknown status.",
+   "oldObject": {
+    "signature": [
+     "api_whatsapp_admin_list_outbound(p_limit?: number, p_offset?: number, p_status?: string) → { attempts: number created_at: string kind: string language: string last_error: string next_attempt_at: string outbound_id: string sent_at: string status: string template_name: string total_count: number user_id: stri..."
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_whatsapp_admin_list_outbound",
+     "signature": [
+      "api_whatsapp_admin_list_outbound(p_cursor?: Json, p_limit?: number, p_status?: string) → { attempts: number created_at: string cursor: Json kind: string language: string last_error: string next_attempt_at: string outbound_id: string sent_at: string status: string template_name: string user_id: string wa_i..."
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
+     "line": 83,
+     "symbol": "SupabaseWhatsAppAdminRepository.listOutbound",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "api_whatsapp_admin_list_rate_hits",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Same arguments; rows add `expires_at`; the number inside a bucket key is masked.",
+   "oldObject": {
+    "signature": [
+     "api_whatsapp_admin_list_rate_hits(p_limit?: number) → whatsapp_rate_counters row[]"
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_whatsapp_admin_list_rate_hits",
+     "signature": [
+      "api_whatsapp_admin_list_rate_hits(p_limit?: number) → { bucket: string expires_at: string hits: number window_start: string }[]"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
+     "line": 93,
+     "symbol": "SupabaseWhatsAppAdminRepository.listRateHits",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "api_whatsapp_admin_list_recent_matches",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Same shape; `match_found_v1` and `confirm_handoff_v1` of the last 7 days.",
+   "oldObject": {
+    "signature": [
+     "api_whatsapp_admin_list_recent_matches(p_limit?: number) → { created_at: string language: string outbound_id: string payload: Json sent_at: string status: string user_id: string wa_id_masked: string }[]"
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_whatsapp_admin_list_recent_matches",
+     "signature": [
+      "api_whatsapp_admin_list_recent_matches(p_limit?: number) → { created_at: string language: string outbound_id: string payload: Json sent_at: string status: string template_name: string user_id: string wa_id_masked: string }[]"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
+     "line": 104,
+     "symbol": "SupabaseWhatsAppAdminRepository.listRecentMatches",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "api_whatsapp_admin_list_templates",
+   "kind": "rpc",
+   "status": "changed",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "New: the templates and their Meta state.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_whatsapp_admin_list_templates",
+     "signature": [
+      "api_whatsapp_admin_list_templates(body_preview: string, category: string, is_approved: boolean, language_code: string, meta_status: string, meta_template_id: string, params: Json, registry_version: number, template_name: string, updated_at: string) → { body_preview: string category: string is_approved: boolean language_code: string meta_status: string meta_template_id: string params: Json registry_version: number template_name: string updated_at: string }[]"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
+     "line": 162,
+     "symbol": "SupabaseWhatsAppAdminRepository.listTemplates",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "api_whatsapp_admin_overview",
+   "kind": "rpc",
+   "status": "changed",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Adds `review_pending`; rate hits read `kc_private.rate_limit_counters`.",
+   "oldObject": {
+    "signature": [
+     "api_whatsapp_admin_overview() → Json"
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_whatsapp_admin_overview",
+     "signature": [
+      "api_whatsapp_admin_overview() → Json"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
+     "line": 69,
+     "symbol": "SupabaseWhatsAppAdminRepository.overview",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "api_whatsapp_admin_resend",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Same shape (`outbound_not_found`, `not_resendable`); audited.",
+   "oldObject": {
+    "signature": [
+     "api_whatsapp_admin_resend(p_outbound_id: string) → string"
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_whatsapp_admin_resend",
+     "signature": [
+      "api_whatsapp_admin_resend(p_outbound_id: string) → string"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
+     "line": 135,
+     "symbol": "SupabaseWhatsAppAdminRepository.resend",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "api_whatsapp_admin_review_list",
+   "kind": "rpc",
+   "status": "changed",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "New: the review queue of bot posts, keyset-paged (`p_status`, `p_cursor`, `p_limit`).",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_whatsapp_admin_review_list",
+     "signature": [
+      "api_whatsapp_admin_review_list(p_cursor?: Json, p_limit?: number, p_status?: string) → { confidence: number created_at: string cursor: Json owner_id: string post_id: string post_status: string post_title: string reason: string resolved_at: string review_id: string reviewer_id: string session_id: string ..."
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
+     "line": 145,
+     "symbol": "SupabaseWhatsAppAdminRepository.listReviews",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "api_whatsapp_admin_review_resolve",
+   "kind": "rpc",
+   "status": "changed",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "New: `approved` publishes the draft for its owner (`offer_photo_required` without a photo), `rejected` leaves it (`invalid_decision`, `invalid_transition`); audited.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_whatsapp_admin_review_resolve",
+     "signature": [
+      "api_whatsapp_admin_review_resolve(p_decision: string, p_review_id: string) → string"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
+     "line": 154,
+     "symbol": "SupabaseWhatsAppAdminRepository.resolveReview",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "api_whatsapp_admin_set_channel_enabled",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Same shape plus `updated_by`; the switch is audited (`whatsapp_channel_toggle`).",
+   "oldObject": {
+    "signature": [
+     "api_whatsapp_admin_set_channel_enabled(p_enabled: boolean) → Json"
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_whatsapp_admin_set_channel_enabled",
+     "signature": [
+      "api_whatsapp_admin_set_channel_enabled(p_enabled: boolean) → Json"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
+     "line": 64,
+     "symbol": "SupabaseWhatsAppAdminRepository.setChannelEnabled",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "api_whatsapp_admin_set_send_limits",
+   "kind": "rpc",
+   "status": "changed",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "New, super admin: patches the send limits (`invalid_limits`); audited.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_whatsapp_admin_set_send_limits",
+     "signature": [
+      "api_whatsapp_admin_set_send_limits(p_limits: Json) → Json"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
+     "line": 173,
+     "symbol": "SupabaseWhatsAppAdminRepository.setSendLimits",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "api_whatsapp_admin_set_template_status",
+   "kind": "rpc",
+   "status": "changed",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "New, super admin: a template's Meta status (`invalid_status`, `template_not_found`); audited.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_whatsapp_admin_set_template_status",
+     "signature": [
+      "api_whatsapp_admin_set_template_status(p_language_code: string, p_meta_status: string, p_meta_template_id?: string, p_template_name: string) → undefined"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
+     "line": 178,
+     "symbol": "SupabaseWhatsAppAdminRepository.setTemplateStatus",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "api_whatsapp_bot_access",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Same shape; `access` may also be `inactive` (a linked member whose account is not active): no upsell, no agent.",
    "oldObject": {
     "signature": [
      "api_whatsapp_bot_access(p_wa_id: string) → Json"
     ]
    },
-   "targets": [],
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_whatsapp_bot_access",
+     "signature": [
+      "api_whatsapp_bot_access(p_wa_id: string) → Json"
+     ],
+     "errors": []
+    }
+   ],
    "areas": [
     "fn:whatsapp-webhook"
    ],
@@ -3348,19 +4933,59 @@
    ]
   },
   {
-   "old": "api_whatsapp_claim_inbound",
+   "old": "api_whatsapp_channel_config",
    "kind": "rpc",
-   "status": "missing",
+   "status": "changed",
    "launch": "later",
    "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
+   "missing": null,
+   "note": "New (the old sender read `whatsapp_channel_config` directly): `{is_enabled, phone_number_id, graph_api_version}`; the table moved to `integrations`.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_whatsapp_channel_config",
+     "signature": [
+      "api_whatsapp_channel_config() → Json"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "fn:whatsapp-sender"
+   ],
+   "callSites": [
+    {
+     "file": "supabase/functions/whatsapp-sender/handler.ts",
+     "line": 16,
+     "symbol": "loadChannelConfigViaRpc",
+     "area": "fn:whatsapp-sender"
+    }
+   ]
+  },
+  {
+   "old": "api_whatsapp_claim_inbound",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Same name, arguments and return shape; tables live in `integrations` (service role only).",
    "oldObject": {
     "signature": [
      "api_whatsapp_claim_inbound(p_message_id: string) → boolean"
     ]
    },
-   "targets": [],
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_whatsapp_claim_inbound",
+     "signature": [
+      "api_whatsapp_claim_inbound(p_message_id: string) → boolean"
+     ],
+     "errors": []
+    }
+   ],
    "areas": [
     "fn:whatsapp-webhook"
    ],
@@ -3374,19 +4999,63 @@
    ]
   },
   {
-   "old": "api_whatsapp_handle_keyword",
+   "old": "api_whatsapp_create_link_code",
    "kind": "rpc",
-   "status": "missing",
+   "status": "same",
    "launch": "later",
    "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
+   "missing": null,
+   "note": "`{code, expires_at}`; `pro_required` for a member without Pro, `rate_limited` after 10 codes an hour (new).",
+   "oldObject": {
+    "signature": [
+     "api_whatsapp_create_link_code() → Json"
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_whatsapp_create_link_code",
+     "signature": [
+      "api_whatsapp_create_link_code() → Json"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "whatsapp"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/whatsapp/SupabaseWhatsAppLinkRepository.ts",
+     "line": 64,
+     "symbol": "SupabaseWhatsAppLinkRepository.createLinkCode",
+     "area": "whatsapp"
+    }
+   ]
+  },
+  {
+   "old": "api_whatsapp_handle_keyword",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Same name, arguments and return shape; tables live in `integrations` (service role only).",
    "oldObject": {
     "signature": [
      "api_whatsapp_handle_keyword(p_record_id?: string, p_text: string, p_wa_id: string) → Json"
     ]
    },
-   "targets": [],
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_whatsapp_handle_keyword",
+     "signature": [
+      "api_whatsapp_handle_keyword(p_record_id?: string, p_text: string, p_wa_id: string) → Json"
+     ],
+     "errors": []
+    }
+   ],
    "areas": [
     "fn:whatsapp-webhook"
    ],
@@ -3402,17 +5071,26 @@
   {
    "old": "api_whatsapp_inbound_allowed",
    "kind": "rpc",
-   "status": "missing",
+   "status": "same",
    "launch": "later",
    "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
+   "missing": null,
+   "note": "Same name, arguments and return shape; tables live in `integrations` (service role only).",
    "oldObject": {
     "signature": [
      "api_whatsapp_inbound_allowed(p_wa_id: string) → boolean"
     ]
    },
-   "targets": [],
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_whatsapp_inbound_allowed",
+     "signature": [
+      "api_whatsapp_inbound_allowed(p_wa_id: string) → boolean"
+     ],
+     "errors": []
+    }
+   ],
    "areas": [
     "fn:whatsapp-webhook"
    ],
@@ -3428,17 +5106,26 @@
   {
    "old": "api_whatsapp_ingest_inbound",
    "kind": "rpc",
-   "status": "missing",
+   "status": "same",
    "launch": "later",
    "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
+   "missing": null,
+   "note": "Same name, arguments and return shape; tables live in `integrations` (service role only).",
    "oldObject": {
     "signature": [
      "api_whatsapp_ingest_inbound(p_message_id: string, p_payload: Json, p_run_id?: string) → string"
     ]
    },
-   "targets": [],
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_whatsapp_ingest_inbound",
+     "signature": [
+      "api_whatsapp_ingest_inbound(p_message_id: string, p_payload: Json, p_run_id?: string) → string"
+     ],
+     "errors": []
+    }
+   ],
    "areas": [
     "fn:whatsapp-webhook"
    ],
@@ -3454,50 +5141,96 @@
   {
    "old": "api_whatsapp_llm_budget_take",
    "kind": "rpc",
-   "status": "missing",
+   "status": "same",
    "launch": "later",
    "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
+   "missing": null,
+   "note": "Same name, arguments and return shape; tables live in `integrations` (service role only).",
    "oldObject": {
     "signature": [
      "api_whatsapp_llm_budget_take(p_wa_id: string) → boolean"
     ]
    },
-   "targets": [],
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_whatsapp_llm_budget_take",
+     "signature": [
+      "api_whatsapp_llm_budget_take(p_wa_id: string) → boolean"
+     ],
+     "errors": []
+    }
+   ],
    "areas": [
-    "fn:_shared",
-    "fn:whatsapp-intake-worker"
+    "fn:_shared"
    ],
    "callSites": [
     {
      "file": "supabase/functions/_shared/whatsapp/agent/run.ts",
-     "line": 30,
+     "line": 55,
      "symbol": "runAgent",
      "area": "fn:_shared"
-    },
+    }
+   ]
+  },
+  {
+   "old": "api_whatsapp_my_link_status",
+   "kind": "rpc",
+   "status": "changed",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Adds `consent_opted_in` and `phone_opted_out` to `{linked, wa_id_masked, is_pro}`.",
+   "oldObject": {
+    "signature": [
+     "api_whatsapp_my_link_status() → Json"
+    ]
+   },
+   "targets": [
     {
-     "file": "supabase/functions/whatsapp-intake-worker/index.ts",
-     "line": 55,
-     "symbol": "body",
-     "area": "fn:whatsapp-intake-worker"
+     "type": "rpc",
+     "name": "api_whatsapp_my_link_status",
+     "signature": [
+      "api_whatsapp_my_link_status() → Json"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "whatsapp"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/whatsapp/SupabaseWhatsAppLinkRepository.ts",
+     "line": 60,
+     "symbol": "SupabaseWhatsAppLinkRepository.getMyStatus",
+     "area": "whatsapp"
     }
    ]
   },
   {
    "old": "api_whatsapp_outbound_claim",
    "kind": "rpc",
-   "status": "missing",
+   "status": "same",
    "launch": "later",
    "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
+   "missing": null,
+   "note": "Same name, arguments and return shape; tables live in `integrations` (service role only).",
    "oldObject": {
     "signature": [
      "api_whatsapp_outbound_claim(p_batch?: number, p_visibility_seconds?: number) → bot_outbound_messages row[]"
     ]
    },
-   "targets": [],
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_whatsapp_outbound_claim",
+     "signature": [
+      "api_whatsapp_outbound_claim(p_batch?: number, p_visibility_seconds?: number) → { attempts: number body: string kind: string language: string outbound_id: string payload: Json template_name: string to_wa_id: string user_id: string }[]"
+     ],
+     "errors": []
+    }
+   ],
    "areas": [
     "fn:_shared"
    ],
@@ -3513,17 +5246,26 @@
   {
    "old": "api_whatsapp_outbound_result",
    "kind": "rpc",
-   "status": "missing",
+   "status": "same",
    "launch": "later",
    "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
+   "missing": null,
+   "note": "Same name, arguments and return shape; tables live in `integrations` (service role only).",
    "oldObject": {
     "signature": [
      "api_whatsapp_outbound_result(p_error?: string, p_ok: boolean, p_outbound_id: string, p_retryable?: boolean, p_wa_message_id?: string) → string"
     ]
    },
-   "targets": [],
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_whatsapp_outbound_result",
+     "signature": [
+      "api_whatsapp_outbound_result(p_error?: string, p_ok: boolean, p_outbound_id: string, p_retryable?: boolean, p_wa_message_id?: string) → string"
+     ],
+     "errors": []
+    }
+   ],
    "areas": [
     "fn:_shared"
    ],
@@ -3539,17 +5281,26 @@
   {
    "old": "api_whatsapp_queue_reply",
    "kind": "rpc",
-   "status": "missing",
+   "status": "same",
    "launch": "later",
    "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
+   "missing": null,
+   "note": "Same name, arguments and return shape; tables live in `integrations` (service role only).",
    "oldObject": {
     "signature": [
      "api_whatsapp_queue_reply(p_body: string, p_reply_kind?: string, p_wa_id: string) → string"
     ]
    },
-   "targets": [],
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_whatsapp_queue_reply",
+     "signature": [
+      "api_whatsapp_queue_reply(p_body: string, p_reply_kind?: string, p_wa_id: string) → string"
+     ],
+     "errors": []
+    }
+   ],
    "areas": [
     "fn:_shared",
     "fn:whatsapp-webhook"
@@ -3557,7 +5308,7 @@
    "callSites": [
     {
      "file": "supabase/functions/_shared/whatsapp/agent/run.ts",
-     "line": 46,
+     "line": 72,
      "symbol": "runAgent",
      "area": "fn:_shared"
     },
@@ -3575,7 +5326,7 @@
     },
     {
      "file": "supabase/functions/whatsapp-webhook/handler.ts",
-     "line": 175,
+     "line": 177,
      "symbol": "access",
      "area": "fn:whatsapp-webhook"
     }
@@ -3584,17 +5335,26 @@
   {
    "old": "api_whatsapp_redeem_link_code",
    "kind": "rpc",
-   "status": "missing",
+   "status": "same",
    "launch": "later",
    "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
+   "missing": null,
+   "note": "Same name, arguments and return shape; tables live in `integrations` (service role only).",
    "oldObject": {
     "signature": [
      "api_whatsapp_redeem_link_code(p_code: string, p_wa_id: string) → Json"
     ]
    },
-   "targets": [],
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_whatsapp_redeem_link_code",
+     "signature": [
+      "api_whatsapp_redeem_link_code(p_code: string, p_wa_id: string) → Json"
+     ],
+     "errors": []
+    }
+   ],
    "areas": [
     "fn:whatsapp-webhook"
    ],
@@ -3610,17 +5370,26 @@
   {
    "old": "api_whatsapp_release_inbound",
    "kind": "rpc",
-   "status": "missing",
+   "status": "same",
    "launch": "later",
    "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
+   "missing": null,
+   "note": "Same name, arguments and return shape; tables live in `integrations` (service role only).",
    "oldObject": {
     "signature": [
      "api_whatsapp_release_inbound(p_message_id: string) → undefined"
     ]
    },
-   "targets": [],
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_whatsapp_release_inbound",
+     "signature": [
+      "api_whatsapp_release_inbound(p_message_id: string) → undefined"
+     ],
+     "errors": []
+    }
+   ],
    "areas": [
     "fn:whatsapp-webhook"
    ],
@@ -3630,6 +5399,72 @@
      "line": 81,
      "symbol": "handleMessage",
      "area": "fn:whatsapp-webhook"
+    }
+   ]
+  },
+  {
+   "old": "api_whatsapp_set_match_consent",
+   "kind": "rpc",
+   "status": "changed",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "New app path (the old `api_bot_set_match_consent` had no caller): the caller's own match-alert switch; returns the link status.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_whatsapp_set_match_consent",
+     "signature": [
+      "api_whatsapp_set_match_consent(p_opted_in: boolean) → Json"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "whatsapp"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/whatsapp/SupabaseWhatsAppLinkRepository.ts",
+     "line": 73,
+     "symbol": "SupabaseWhatsAppLinkRepository.setMatchConsent",
+     "area": "whatsapp"
+    }
+   ]
+  },
+  {
+   "old": "api_whatsapp_unlink_me",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Unlinks the caller's number; the phone row and its consent history stay.",
+   "oldObject": {
+    "signature": [
+     "api_whatsapp_unlink_me() → undefined"
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_whatsapp_unlink_me",
+     "signature": [
+      "api_whatsapp_unlink_me() → undefined"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "whatsapp"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/whatsapp/SupabaseWhatsAppLinkRepository.ts",
+     "line": 68,
+     "symbol": "SupabaseWhatsAppLinkRepository.unlink",
+     "area": "whatsapp"
     }
    ]
   },
@@ -3820,8 +5655,8 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/auth/bootstrapSession.ts",
-     "line": 138,
-     "symbol": "fetchBootstrapSession",
+     "line": 155,
+     "symbol": "readBootstrapSession",
      "area": "auth"
     },
     {
@@ -4250,7 +6085,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRepository.ts",
-     "line": 61,
+     "line": 62,
      "symbol": "SupabaseChatRepository.chatCall",
      "area": "chat"
     }
@@ -4293,7 +6128,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRepository.ts",
-     "line": 97,
+     "line": 98,
      "symbol": "SupabaseChatRepository.getUnreadTotal",
      "area": "chat"
     }
@@ -4517,7 +6352,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/posts/closureMethods.ts",
-     "line": 30,
+     "line": 31,
      "symbol": "unwrapCall",
      "area": "posts"
     }
@@ -4578,7 +6413,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/posts/closureMethods.ts",
-     "line": 35,
+     "line": 36,
      "symbol": "unwrapCall",
      "area": "posts"
     },
@@ -5179,6 +7014,208 @@
    ]
   },
   {
+   "old": "crm_contact_count",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "New: the total of the list filters.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "crm_contact_count",
+     "signature": [
+      "crm_contact_count(p_org_id: string, p_query?: string, p_status?: string, p_tag?: string) → number"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseCrmContactsRepository.ts",
+     "line": 91,
+     "symbol": "SupabaseCrmContactsRepository.list",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "crm_contact_delete",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Same arguments; the caller must manage the contact's organization.",
+   "oldObject": {
+    "signature": [
+     "crm_contact_delete(p_contact_id: string) → undefined"
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "crm_contact_delete",
+     "signature": [
+      "crm_contact_delete(p_contact_id: string) → undefined"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseCrmContactsRepository.ts",
+     "line": 115,
+     "symbol": "SupabaseCrmContactsRepository.delete",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "crm_contact_list",
+   "kind": "rpc",
+   "status": "changed",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "New `p_org_id`; rows are `(contact jsonb, cursor jsonb)`; the total moves to `crm_contact_count`.",
+   "oldObject": {
+    "signature": [
+     "crm_contact_list(p_limit?: number, p_offset?: number, p_query?: string, p_status?: string, p_tag?: string) → { contact_id: string created_at: string email: string last_contacted_at: string name: string notes: string organization: string phone: string role_title: string status: string tags: string[] total_count: number update..."
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "crm_contact_list",
+     "signature": [
+      "crm_contact_list(p_cursor?: Json, p_limit?: number, p_org_id: string, p_query?: string, p_status?: string, p_tag?: string) → { contact: Json cursor: Json }[]"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseCrmContactsRepository.ts",
+     "line": 90,
+     "symbol": "SupabaseCrmContactsRepository.list",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "crm_contact_mark_contacted",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Same arguments; the caller must manage the contact's organization.",
+   "oldObject": {
+    "signature": [
+     "crm_contact_mark_contacted(p_contact_id: string) → undefined"
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "crm_contact_mark_contacted",
+     "signature": [
+      "crm_contact_mark_contacted(p_contact_id: string) → undefined"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseCrmContactsRepository.ts",
+     "line": 119,
+     "symbol": "SupabaseCrmContactsRepository.markContacted",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "crm_contact_upsert",
+   "kind": "rpc",
+   "status": "changed",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "New `p_org_id`; new refusals `invalid_email`, `invalid_phone`, `invalid_input`.",
+   "oldObject": {
+    "signature": [
+     "crm_contact_upsert(p_contact_id?: string, p_email?: string, p_name?: string, p_notes?: string, p_organization?: string, p_phone?: string, p_role_title?: string, p_status?: string, p_tags?: string[]) → string"
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "crm_contact_upsert",
+     "signature": [
+      "crm_contact_upsert(p_contact_id?: string, p_email?: string, p_name?: string, p_notes?: string, p_org_id: string, p_organization?: string, p_phone?: string, p_role_title?: string, p_status?: string, p_tags?: string[]) → string"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseCrmContactsRepository.ts",
+     "line": 98,
+     "symbol": "SupabaseCrmContactsRepository.upsert",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "crm_my_orgs",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "New: the organizations whose contact book the caller manages (FR-ADMIN-032).",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "crm_my_orgs",
+     "signature": [
+      "crm_my_orgs(is_platform: boolean, name: string, org_id: string) → { is_platform: boolean name: string org_id: string }[]"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseCrmContactsRepository.ts",
+     "line": 77,
+     "symbol": "SupabaseCrmContactsRepository.listOrgs",
+     "area": "admin"
+    }
+   ]
+  },
+  {
    "old": "decide_event_registration",
    "kind": "rpc",
    "status": "renamed",
@@ -5758,7 +7795,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/admin/SupabaseFinanceLedgerRepository.ts",
-     "line": 62,
+     "line": 57,
      "symbol": "SupabaseFinanceLedgerRepository.list",
      "area": "admin"
     }
@@ -5771,7 +7808,7 @@
    "launch": "later",
    "confidence": "high",
    "missing": null,
-   "note": "Voids an entry with a reason (the admin delete action) or sets its reconciliation; the entry stays in the books.",
+   "note": "Voids an entry with the admin's reason (3 to 500 characters, `void_reason_required` otherwise; migration 0014) or sets its reconciliation; the entry stays in the books.",
    "oldObject": {},
    "targets": [
     {
@@ -5807,7 +7844,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/admin/SupabaseFinanceLedgerRepository.ts",
-     "line": 126,
+     "line": 124,
      "symbol": "SupabaseFinanceLedgerRepository.unwrapFinance",
      "area": "admin"
     }
@@ -5842,7 +7879,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/admin/SupabaseFinanceLedgerRepository.ts",
-     "line": 84,
+     "line": 79,
      "symbol": "SupabaseFinanceLedgerRepository.summary",
      "area": "admin"
     }
@@ -5903,7 +7940,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/admin/SupabaseFinanceLedgerRepository.ts",
-     "line": 103,
+     "line": 98,
      "symbol": "SupabaseFinanceLedgerRepository.upsert",
      "area": "admin"
     }
@@ -6031,7 +8068,7 @@
       },
       {
        "code": "invalid_decision",
-       "knownToApp": false
+       "knownToApp": true
       },
       {
        "code": "unauthenticated",
@@ -6724,6 +8761,76 @@
    ]
   },
   {
+   "old": "list_kc_support_channels",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Active KC support channels; the payee phone only for signed-in callers; the table is edited by the super admin; `0019` (M20, built).",
+   "oldObject": {
+    "signature": [
+     "list_kc_support_channels(channel: string, payee_phone: string, provider_label: string, url: string) → { channel: string payee_phone: string provider_label: string url: string }[]"
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "list_kc_support_channels",
+     "signature": [
+      "list_kc_support_channels(channel: string, payee_phone: string, provider_label: string, url: string) → { channel: string payee_phone: string provider_label: string url: string }[]"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "payments"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/payments/SupabaseKcSupportChannelsRepository.ts",
+     "line": 34,
+     "symbol": "SupabaseKcSupportChannelsRepository.listActiveChannels",
+     "area": "payments"
+    }
+   ]
+  },
+  {
+   "old": "list_my_blocked_users",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "The caller's blocks with the blocked member's name and avatar, newest first, keyset (`p_before_blocked_at`, `p_before_user_id`, `p_limit` ≤ 100); `0015` (M01, built).",
+   "oldObject": {
+    "signature": [
+     "list_my_blocked_users(avatar_url: string, blocked_at: string, display_name: string, user_id: string) → { avatar_url: string blocked_at: string display_name: string user_id: string }[]"
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "list_my_blocked_users",
+     "signature": [
+      "list_my_blocked_users(p_before_blocked_at?: string, p_before_user_id?: string, p_limit?: number) → { avatar_url: string blocked_at: string display_name: string user_id: string }[]"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "blocks"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/blocks/SupabaseBlockRepository.ts",
+     "line": 54,
+     "symbol": "SupabaseBlockRepository.listMyBlockedUsers",
+     "area": "blocks"
+    }
+   ]
+  },
+  {
    "old": "list_my_donation_history",
    "kind": "rpc",
    "status": "changed",
@@ -6911,7 +9018,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRepository.ts",
-     "line": 93,
+     "line": 94,
      "symbol": "SupabaseChatRepository.markRead",
      "area": "chat"
     }
@@ -7081,7 +9188,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/matching/SupabaseMatchRepository.ts",
-     "line": 127,
+     "line": 138,
      "symbol": "SupabaseMatchRepository.respond",
      "area": "matching"
     }
@@ -7226,9 +9333,44 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/matching/SupabaseMatchRepository.ts",
-     "line": 119,
+     "line": 130,
      "symbol": "SupabaseMatchRepository.listMine",
      "area": "matching"
+    }
+   ]
+  },
+  {
+   "old": "my_world_givings",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "The caller's handed-over givings (given / received) and closed posts per world; `0018` (M15, built).",
+   "oldObject": {
+    "signature": [
+     "my_world_givings(closed: number, given: number, received: number, world_label_en: string, world_label_he: string, world_slug: string) → { closed: number given: number received: number world_label_en: string world_label_he: string world_slug: string }[]"
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "my_world_givings",
+     "signature": [
+      "my_world_givings(closed: number, given: number, received: number, world_label_en: string, world_label_he: string, world_slug: string) → { closed: number given: number received: number world_label_en: string world_label_he: string world_slug: string }[]"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "stats"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/stats/SupabaseStatsRepository.ts",
+     "line": 88,
+     "symbol": "SupabaseStatsRepository.listMyWorldGivings",
+     "area": "stats"
     }
    ]
   },
@@ -7699,7 +9841,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/listingMapping.ts",
-     "line": 93,
+     "line": 76,
      "symbol": "fetchCardsInOrder",
      "area": "marketplace"
     },
@@ -7775,7 +9917,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-     "line": 106,
+     "line": 108,
      "symbol": "fetchListingDetail",
      "area": "marketplace"
     }
@@ -8119,7 +10261,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/posts/closureMethods.ts",
-     "line": 71,
+     "line": 72,
      "symbol": "unmarkRecipientSelf",
      "area": "posts"
     }
@@ -8351,7 +10493,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/posts/closureMethods.ts",
-     "line": 61,
+     "line": 62,
      "symbol": "reopenPost",
      "area": "posts"
     }
@@ -8899,7 +11041,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-     "line": 68,
+     "line": 70,
      "symbol": "seriesMarker",
      "area": "marketplace"
     }
@@ -8975,6 +11117,41 @@
    ]
   },
   {
+   "old": "rpc_follow_suggestions",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "`p_limit` (1-30); members with a public profile the caller does not follow and has no block with, ranked by mutual follows, city and followers, with a `reason` (migration 0031, M03 built).",
+   "oldObject": {
+    "signature": [
+     "rpc_follow_suggestions(p_limit?: number) → { avatar_url: string city_name: string display_name: string followers_count: number reason: string score: number share_handle: string user_id: string verification_level: number }[]"
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "rpc_follow_suggestions",
+     "signature": [
+      "rpc_follow_suggestions(p_limit?: number) → { avatar_url: string city_name: string display_name: string followers_count: number reason: string score: number share_handle: string user_id: string verification_level: number }[]"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "social"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/social/SupabaseFollowSuggestionsRepository.ts",
+     "line": 35,
+     "symbol": "SupabaseFollowSuggestionsRepository.listSuggestions",
+     "area": "social"
+    }
+   ]
+  },
+  {
    "old": "rpc_org_transparency",
    "kind": "rpc",
    "status": "same",
@@ -9012,6 +11189,103 @@
      "line": 77,
      "symbol": "SupabaseOrgTransparencyRepository.getPublic",
      "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "rpc_profile_completeness",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "The caller's own score (0-100), `missing` parts and verification flags; another member's id is refused `forbidden` (migration 0031, M04 built).",
+   "oldObject": {
+    "signature": [
+     "rpc_profile_completeness(p_user_id?: string) → Json"
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "rpc_profile_completeness",
+     "signature": [
+      "rpc_profile_completeness(p_user_id?: string) → Json"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "social"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/social/SupabaseFollowSuggestionsRepository.ts",
+     "line": 51,
+     "symbol": "SupabaseFollowSuggestionsRepository.getProfileCompleteness",
+     "area": "social"
+    }
+   ]
+  },
+  {
+   "old": "search_hashtags",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "`p_query` (with or without `#`), `p_limit`; tags of the open posts the caller can read, most used first (migration 0031, M05 built).",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "search_hashtags",
+     "signature": [
+      "search_hashtags(p_limit?: number, p_query: string) → { tag: string use_count: number }[]"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "search"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/search/searchSocialReads.ts",
+     "line": 28,
+     "symbol": "searchTags",
+     "area": "search"
+    }
+   ]
+  },
+  {
+   "old": "search_organizations",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "`p_query` (2+ characters), `p_limit`; active organizations by name or slug (migration 0031, M05 built).",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "search_organizations",
+     "signature": [
+      "search_organizations(p_limit?: number, p_query: string) → { name: string org_id: string slug: string }[]"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "search"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/search/searchSocialReads.ts",
+     "line": 23,
+     "symbol": "searchOrgs",
+     "area": "search"
     }
    ]
   },
@@ -9057,6 +11331,37 @@
      "line": 105,
      "symbol": "fetchSearchPage",
      "area": "posts"
+    }
+   ]
+  },
+  {
+   "old": "search_suggested_queries",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "`p_limit`; the most used tags of the last 30 days, shown for an empty query (migration 0031, M05 built).",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "search_suggested_queries",
+     "signature": [
+      "search_suggested_queries(p_limit?: number) → string[]"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "search"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/search/searchSocialReads.ts",
+     "line": 33,
+     "symbol": "suggestedQueries",
+     "area": "search"
     }
    ]
   },
@@ -9155,14 +11460,8 @@
    ],
    "callSites": [
     {
-     "file": "app/packages/infrastructure-supabase/src/chat/submitSupportIssue.ts",
-     "line": 27,
-     "symbol": "submitSupportIssue",
-     "area": "chat"
-    },
-    {
      "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRepository.ts",
-     "line": 79,
+     "line": 80,
      "symbol": "SupabaseChatRepository.sendMessage",
      "area": "chat"
     },
@@ -9713,6 +12012,278 @@
    ]
   },
   {
+   "old": "submit_support_issue",
+   "kind": "rpc",
+   "status": "changed",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "Was `rpc_submit_support_issue`. `(p_category, p_description, p_issue_id)` writes a `support_issue` system message (`issue_id`, `category`, `description`) and returns the thread; refusals `description_too_short`, `description_too_long` (500), `invalid_support_category`; `0015`.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "submit_support_issue",
+     "signature": [
+      "submit_support_issue(p_category: string, p_description: string, p_issue_id?: string) → chats row"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "chat"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/chat/submitSupportIssue.ts",
+     "line": 22,
+     "symbol": "submitSupportIssue",
+     "area": "chat"
+    }
+   ]
+  },
+  {
+   "old": "timesheet_approve",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Same arguments; a decision is the reporter's direct manager's or a super admin's, never the reporter's own.",
+   "oldObject": {
+    "signature": [
+     "timesheet_approve(p_entry_id: string, p_note?: string) → undefined"
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "timesheet_approve",
+     "signature": [
+      "timesheet_approve(p_entry_id: string, p_note?: string) → undefined"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseTimesheetsRepository.ts",
+     "line": 112,
+     "symbol": "SupabaseTimesheetsRepository.approve",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "timesheet_count",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "New: the total of the list filters.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "timesheet_count",
+     "signature": [
+      "timesheet_count(p_from?: string, p_scope?: string, p_status?: string, p_to?: string, p_user_id?: string) → number"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseTimesheetsRepository.ts",
+     "line": 89,
+     "symbol": "SupabaseTimesheetsRepository.list",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "timesheet_delete",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Same arguments; a decision is the reporter's direct manager's or a super admin's, never the reporter's own.",
+   "oldObject": {
+    "signature": [
+     "timesheet_delete(p_entry_id: string) → undefined"
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "timesheet_delete",
+     "signature": [
+      "timesheet_delete(p_entry_id: string) → undefined"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseTimesheetsRepository.ts",
+     "line": 120,
+     "symbol": "SupabaseTimesheetsRepository.delete",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "timesheet_list",
+   "kind": "rpc",
+   "status": "changed",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "New `p_scope` (mine, to_decide, all); rows are `(entry jsonb, cursor jsonb)` with `can_decide`; the total moves to `timesheet_count`.",
+   "oldObject": {
+    "signature": [
+     "timesheet_list(p_from?: string, p_limit?: number, p_offset?: number, p_status?: string, p_to?: string, p_user_id?: string) → { approval_note: string approved_at: string approved_by: string approver_name: string created_at: string description: string entry_id: string hours_x100: number project: string status: string submitted_at: string tota..."
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "timesheet_list",
+     "signature": [
+      "timesheet_list(p_cursor?: Json, p_from?: string, p_limit?: number, p_scope?: string, p_status?: string, p_to?: string, p_user_id?: string) → { cursor: Json entry: Json }[]"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseTimesheetsRepository.ts",
+     "line": 88,
+     "symbol": "SupabaseTimesheetsRepository.list",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "timesheet_reject",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Same arguments; a decision is the reporter's direct manager's or a super admin's, never the reporter's own.",
+   "oldObject": {
+    "signature": [
+     "timesheet_reject(p_entry_id: string, p_note?: string) → undefined"
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "timesheet_reject",
+     "signature": [
+      "timesheet_reject(p_entry_id: string, p_note?: string) → undefined"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseTimesheetsRepository.ts",
+     "line": 116,
+     "symbol": "SupabaseTimesheetsRepository.reject",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "timesheet_submit",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Same arguments; a decision is the reporter's direct manager's or a super admin's, never the reporter's own.",
+   "oldObject": {
+    "signature": [
+     "timesheet_submit(p_entry_id: string) → undefined"
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "timesheet_submit",
+     "signature": [
+      "timesheet_submit(p_entry_id: string) → undefined"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseTimesheetsRepository.ts",
+     "line": 108,
+     "symbol": "SupabaseTimesheetsRepository.submit",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "timesheet_upsert",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Same arguments; a decision is the reporter's direct manager's or a super admin's, never the reporter's own.",
+   "oldObject": {
+    "signature": [
+     "timesheet_upsert(p_description?: string, p_entry_id?: string, p_hours_x100?: number, p_project?: string, p_work_date?: string) → string"
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "timesheet_upsert",
+     "signature": [
+      "timesheet_upsert(p_description?: string, p_entry_id?: string, p_hours_x100?: number, p_project?: string, p_work_date?: string) → string"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseTimesheetsRepository.ts",
+     "line": 96,
+     "symbol": "SupabaseTimesheetsRepository.upsert",
+     "area": "admin"
+    }
+   ]
+  },
+  {
    "old": "update_post_series",
    "kind": "rpc",
    "status": "same",
@@ -9962,31 +12533,12 @@
     }
    ],
    "areas": [
-    "admin",
     "moderation"
    ],
    "callSites": [
     {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminRoleRepository.ts",
-     "line": 100,
-     "symbol": "SupabaseAdminRoleRepository.listAdmins",
-     "area": "admin",
-     "ops": [
-      "select"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseOrgHierarchyRepository.ts",
-     "line": 131,
-     "symbol": "SupabaseOrgHierarchyRepository.snapshot",
-     "area": "admin",
-     "ops": [
-      "select"
-     ]
-    },
-    {
      "file": "app/packages/infrastructure-supabase/src/moderation/SupabaseModerationAdminRepository.ts",
-     "line": 71,
+     "line": 72,
      "symbol": "SupabaseModerationAdminRepository.isPlatformStaff",
      "area": "moderation",
      "ops": [
@@ -10086,7 +12638,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/blocks/SupabaseBlockRepository.ts",
-     "line": 18,
+     "line": 21,
      "symbol": "SupabaseBlockRepository.isBlocking",
      "area": "blocks",
      "ops": [
@@ -10095,7 +12647,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/blocks/SupabaseBlockRepository.ts",
-     "line": 28,
+     "line": 31,
      "symbol": "SupabaseBlockRepository.block",
      "area": "blocks",
      "ops": [
@@ -10104,7 +12656,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/blocks/SupabaseBlockRepository.ts",
-     "line": 36,
+     "line": 39,
      "symbol": "SupabaseBlockRepository.unwrapCall",
      "area": "blocks",
      "ops": [
@@ -10231,7 +12783,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/posts/postCardExtras.ts",
-     "line": 32,
+     "line": 36,
      "symbol": "loadChallengeIds",
      "area": "posts",
      "ops": [
@@ -10256,6 +12808,7 @@
      "columns": [
       "chat_id",
       "hidden_at",
+      "history_from",
       "joined_at",
       "last_read_at",
       "role",
@@ -10278,7 +12831,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRepository.ts",
-     "line": 154,
+     "line": 155,
      "symbol": "SupabaseChatRepository.readMarkers",
      "area": "chat",
      "ops": [
@@ -10334,7 +12887,8 @@
    ],
    "areas": [
     "chat",
-    "posts"
+    "posts",
+    "reports"
    ],
    "callSites": [
     {
@@ -10348,9 +12902,18 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/posts/closureMethods.ts",
-     "line": 107,
+     "line": 110,
      "symbol": "chatPartners",
      "area": "posts",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/reports/reportTargetPreviews.ts",
+     "line": 89,
+     "symbol": "chatPreviews",
+     "area": "reports",
      "ops": [
       "select"
      ]
@@ -11013,7 +13576,7 @@
       },
       {
        "code": "invalid_decision",
-       "knownToApp": false
+       "knownToApp": true
       },
       {
        "code": "unauthenticated",
@@ -11589,9 +14152,54 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRepository.ts",
-     "line": 112,
+     "line": 113,
      "symbol": "SupabaseChatRepository.hasSentAnyMessage",
      "area": "chat",
+     "ops": [
+      "select"
+     ]
+    }
+   ]
+  },
+  {
+   "old": "moderation_queue",
+   "kind": "table",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "Staff read the open review entries directly (oldest first, keyset); writes through `admin_assign_queue_entry` / `admin_resolve_queue_entry` (FR-MOD-008).",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "table",
+     "name": "moderation_queue",
+     "columns": [
+      "assignee_id",
+      "created_at",
+      "id",
+      "metadata",
+      "reason",
+      "resolved_at",
+      "resolved_by",
+      "status",
+      "target_id",
+      "target_type"
+     ],
+     "clientGrants": {
+      "select": true
+     }
+    }
+   ],
+   "areas": [
+    "moderation"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/moderation/SupabaseModerationQueueRepository.ts",
+     "line": 35,
+     "symbol": "SupabaseModerationQueueRepository.listOpen",
+     "area": "moderation",
      "ops": [
       "select"
      ]
@@ -11829,15 +14437,6 @@
      ]
     },
     {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseOrgHierarchyRepository.ts",
-     "line": 140,
-     "symbol": "SupabaseOrgHierarchyRepository.snapshot",
-     "area": "admin",
-     "ops": [
-      "select"
-     ]
-    },
-    {
      "file": "app/packages/infrastructure-supabase/src/admin/SupabaseOrgTransparencyRepository.ts",
      "line": 91,
      "symbol": "SupabaseTransparencySettingsRepository.get",
@@ -11944,7 +14543,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/posts/postCardExtras.ts",
-     "line": 40,
+     "line": 44,
      "symbol": "loadPurgeDeadlines",
      "area": "posts",
      "ops": [
@@ -12043,6 +14642,7 @@
       "edited_at",
       "id",
       "mention_user_ids",
+      "moderation_removed_at",
       "parent_comment_id",
       "post_id",
       "status",
@@ -12163,7 +14763,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-     "line": 76,
+     "line": 78,
      "symbol": "loadEventDetails",
      "area": "marketplace",
      "ops": [
@@ -12241,7 +14841,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-     "line": 97,
+     "line": 99,
      "symbol": "loadFoodDetails",
      "area": "marketplace",
      "ops": [
@@ -12399,7 +14999,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/posts/postCardExtras.ts",
-     "line": 52,
+     "line": 56,
      "symbol": "loadRecipients",
      "area": "posts",
      "ops": [
@@ -12681,7 +15281,7 @@
    "launch": "core",
    "confidence": "high",
    "missing": null,
-   "note": "The exact street and number, readable and writable by the post's owner only; other members see the city.",
+   "note": "The exact street and number, readable and writable by the post's owner only (also the apartment, floor and entrance of a stay, migration 0033); other members read the part the display level shows from `posts.shown_street` / `shown_street_number` (migration 0029).",
    "oldObject": {},
    "targets": [
     {
@@ -12689,8 +15289,11 @@
      "name": "post_private_locations",
      "columns": [
       "access_notes",
+      "apartment",
       "destination_street_number",
+      "entrance_notes",
       "exact_point",
+      "floor",
       "post_id",
       "street",
       "street_number",
@@ -13145,6 +15748,8 @@
       "post_type",
       "published_at",
       "search_vector",
+      "shown_street",
+      "shown_street_number",
       "source",
       "source_language",
       "status",
@@ -13271,7 +15876,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/housing/SupabaseHousingRepository.ts",
-     "line": 164,
+     "line": 167,
      "symbol": "SupabaseHousingRepository.cityOf",
      "area": "housing",
      "ops": [
@@ -13327,7 +15932,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-     "line": 77,
+     "line": 79,
      "symbol": "loadEventDetails",
      "area": "marketplace",
      "ops": [
@@ -13336,7 +15941,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-     "line": 114,
+     "line": 116,
      "symbol": "fetchListingDetail",
      "area": "marketplace",
      "ops": [
@@ -13345,7 +15950,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/posts/closureMethods.ts",
-     "line": 127,
+     "line": 130,
      "symbol": "getClosureCandidates",
      "area": "posts",
      "ops": [
@@ -13363,7 +15968,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/posts/postCardExtras.ts",
-     "line": 25,
+     "line": 27,
      "symbol": "loadPostColumns",
      "area": "posts",
      "ops": [
@@ -13515,16 +16120,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/reports/SupabaseReportsRepository.ts",
-     "line": 45,
-     "symbol": "SupabaseReportsRepository.listOpenInbox",
-     "area": "reports",
-     "ops": [
-      "select"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/reports/SupabaseReportsRepository.ts",
-     "line": 76,
+     "line": 77,
      "symbol": "SupabaseReportsRepository.getCaseDetail",
      "area": "reports",
      "ops": [
@@ -14675,15 +17271,6 @@
      ]
     },
     {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminRoleRepository.ts",
-     "line": 120,
-     "symbol": "SupabaseAdminRoleRepository.loadPeople",
-     "area": "admin",
-     "ops": [
-      "select"
-     ]
-    },
-    {
      "file": "app/packages/infrastructure-supabase/src/admin/SupabaseOrgApplicationsRepository.ts",
      "line": 84,
      "symbol": "SupabaseOrgApplicationsRepository.list",
@@ -14693,26 +17280,8 @@
      ]
     },
     {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseOrgHierarchyRepository.ts",
-     "line": 88,
-     "symbol": "SupabaseOrgHierarchyRepository.getOrgTree",
-     "area": "admin",
-     "ops": [
-      "select"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseOrgHierarchyRepository.ts",
-     "line": 111,
-     "symbol": "SupabaseOrgHierarchyRepository.getHierarchyCensus",
-     "area": "admin",
-     "ops": [
-      "select"
-     ]
-    },
-    {
      "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRepository.ts",
-     "line": 133,
+     "line": 134,
      "symbol": "SupabaseChatRepository.getCounterpart",
      "area": "chat",
      "ops": [
@@ -14766,7 +17335,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/posts/closureMethods.ts",
-     "line": 134,
+     "line": 137,
      "symbol": "getClosureCandidates",
      "area": "posts",
      "ops": [
@@ -14775,7 +17344,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/posts/postCardExtras.ts",
-     "line": 61,
+     "line": 65,
      "symbol": "loadRecipients",
      "area": "posts",
      "ops": [
@@ -14793,7 +17362,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/reports/reportTargetPreviews.ts",
-     "line": 106,
+     "line": 121,
      "symbol": "loadDisplayNames",
      "area": "reports",
      "ops": [
@@ -14895,41 +17464,6 @@
      "line": 204,
      "symbol": "SupabaseVolunteerRepository.listShiftVolunteers",
      "area": "volunteering",
-     "ops": [
-      "select"
-     ]
-    }
-   ]
-  },
-  {
-   "old": "whatsapp_channel_config",
-   "kind": "table",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M22",
-   "note": "Same: no `integrations` tables yet.",
-   "oldObject": {
-    "columns": [
-     "config_id",
-     "graph_api_version",
-     "is_enabled",
-     "phone_number_id",
-     "source_id",
-     "updated_at"
-    ],
-    "isView": false
-   },
-   "targets": [],
-   "areas": [
-    "fn:whatsapp-sender"
-   ],
-   "callSites": [
-    {
-     "file": "supabase/functions/whatsapp-sender/index.ts",
-     "line": 19,
-     "symbol": "serve",
-     "area": "fn:whatsapp-sender",
      "ops": [
       "select"
      ]
@@ -15053,7 +17587,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-     "line": 113,
+     "line": 115,
      "symbol": "fetchListingDetail",
      "area": "marketplace",
      "ops": [
