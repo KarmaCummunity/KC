@@ -35,9 +35,10 @@ export class SupabaseChatRepository implements IChatRepository {
   }
 
   /**
-   * The baseline keeps exactly one direct chat per pair and un-hides it on open, so the
-   * `preferNewThread` option (a second chat after a personal hide) has nothing left to do and is
-   * ignored. A ride anchor is a post anchor.
+   * The baseline keeps exactly one direct chat per pair and un-hides it on open. A member who
+   * removed the chat from their inbox gets it back clean: the server started their history at the
+   * removal (migration 0028_chat_fresh_thread.sql, FR-CHAT-016), so the `preferNewThread` option
+   * needs no second chat and is ignored. A ride anchor is a post anchor.
    */
   async findOrCreateChat(
     _userId: string,

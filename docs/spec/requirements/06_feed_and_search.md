@@ -262,7 +262,7 @@ A new public post created elsewhere appears in the feed without manual refresh, 
 
 **Acceptance Criteria.**
 - AC1. New posts visible to the viewer surface within `NFR-PERF-005` (≤2s end-to-end at p95).
-- AC2. The newly arrived post(s) are not silently injected into the user's scroll position; instead, a "↑ N new posts" banner appears at the top until the user taps it or scrolls to the top.
+- AC2. The newly arrived post(s) are not silently injected into the user's scroll position; instead, a "↑ N new posts" banner appears at the top until the user taps it or scrolls to the top. ✅ Restored 2026-11-11: the server pings the private `feed:public` topic when a post becomes open and Public (migration `0026`); the banner was lost at the baseline cut-over while this section still read done.
 - AC3. The realtime channel disconnects when the screen is backgrounded for >60 seconds and reconnects on foreground; on reconnect, a single REST query reconciles missed posts.
 
 **Related.** Domain: `Feed`, `RealtimeChannel`.

@@ -8,20 +8,20 @@
  ],
  "summary": {
   "bucket": {
-   "callSites": 19,
+   "callSites": 20,
    "distinct": 4
   },
   "channel": {
-   "callSites": 6,
-   "distinct": 6
+   "callSites": 9,
+   "distinct": 9
   },
   "edge_function": {
    "callSites": 4,
    "distinct": 3
   },
   "rpc": {
-   "callSites": 246,
-   "distinct": 219
+   "callSites": 252,
+   "distinct": 225
   },
   "table": {
    "callSites": 187,
@@ -196,6 +196,15 @@
    "symbol": "listingImagePublicUrl",
    "via": "const",
    "name": "post-images"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/about/SupabaseAboutRepository.ts",
+   "line": 17,
+   "area": "about",
+   "symbol": "SupabaseAboutRepository.listTeamMembers",
+   "via": "literal",
+   "name": "about_team_profiles"
   },
   {
    "kind": "rpc",
@@ -875,7 +884,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRepository.ts",
-   "line": 61,
+   "line": 62,
    "area": "chat",
    "symbol": "SupabaseChatRepository.chatCall",
    "via": "literal",
@@ -884,7 +893,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRepository.ts",
-   "line": 79,
+   "line": 80,
    "area": "chat",
    "symbol": "SupabaseChatRepository.sendMessage",
    "via": "literal",
@@ -893,7 +902,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRepository.ts",
-   "line": 93,
+   "line": 94,
    "area": "chat",
    "symbol": "SupabaseChatRepository.markRead",
    "via": "literal",
@@ -902,7 +911,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRepository.ts",
-   "line": 97,
+   "line": 98,
    "area": "chat",
    "symbol": "SupabaseChatRepository.getUnreadTotal",
    "via": "literal",
@@ -911,7 +920,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRepository.ts",
-   "line": 112,
+   "line": 113,
    "area": "chat",
    "symbol": "SupabaseChatRepository.hasSentAnyMessage",
    "via": "literal",
@@ -923,7 +932,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRepository.ts",
-   "line": 133,
+   "line": 134,
    "area": "chat",
    "symbol": "SupabaseChatRepository.getCounterpart",
    "via": "literal",
@@ -935,7 +944,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRepository.ts",
-   "line": 154,
+   "line": 155,
    "area": "chat",
    "symbol": "SupabaseChatRepository.readMarkers",
    "via": "literal",
@@ -1096,6 +1105,15 @@
    "symbol": "SupabaseDonationLinksRepository.unwrapCall",
    "via": "literal",
    "name": "admin_review_donation_link"
+  },
+  {
+   "kind": "channel",
+   "file": "app/packages/infrastructure-supabase/src/feed/SupabaseFeedRealtime.ts",
+   "line": 20,
+   "area": "feed",
+   "symbol": "SupabaseFeedRealtime.subscribeToPublicInserts",
+   "via": "expression",
+   "name": "FEED_PUBLIC_TOPIC = 'feed:public'"
   },
   {
    "kind": "table",
@@ -1340,7 +1358,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/housing/SupabaseHousingRepository.ts",
-   "line": 164,
+   "line": 167,
    "area": "housing",
    "symbol": "SupabaseHousingRepository.cityOf",
    "via": "literal",
@@ -2396,7 +2414,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/posts/closureMethods.ts",
-   "line": 30,
+   "line": 31,
    "area": "posts",
    "symbol": "unwrapCall",
    "via": "literal",
@@ -2405,7 +2423,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/posts/closureMethods.ts",
-   "line": 35,
+   "line": 36,
    "area": "posts",
    "symbol": "unwrapCall",
    "via": "literal",
@@ -2414,7 +2432,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/posts/closureMethods.ts",
-   "line": 61,
+   "line": 62,
    "area": "posts",
    "symbol": "reopenPost",
    "via": "literal",
@@ -2423,7 +2441,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/posts/closureMethods.ts",
-   "line": 71,
+   "line": 72,
    "area": "posts",
    "symbol": "unmarkRecipientSelf",
    "via": "literal",
@@ -2432,7 +2450,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/posts/closureMethods.ts",
-   "line": 107,
+   "line": 110,
    "area": "posts",
    "symbol": "chatPartners",
    "via": "literal",
@@ -2444,7 +2462,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/posts/closureMethods.ts",
-   "line": 127,
+   "line": 130,
    "area": "posts",
    "symbol": "getClosureCandidates",
    "via": "literal",
@@ -2456,7 +2474,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/posts/closureMethods.ts",
-   "line": 134,
+   "line": 137,
    "area": "posts",
    "symbol": "getClosureCandidates",
    "via": "literal",
@@ -2501,7 +2519,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/posts/postCardExtras.ts",
-   "line": 25,
+   "line": 27,
    "area": "posts",
    "symbol": "loadPostColumns",
    "via": "literal",
@@ -2513,7 +2531,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/posts/postCardExtras.ts",
-   "line": 32,
+   "line": 36,
    "area": "posts",
    "symbol": "loadChallengeIds",
    "via": "literal",
@@ -2525,7 +2543,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/posts/postCardExtras.ts",
-   "line": 40,
+   "line": 44,
    "area": "posts",
    "symbol": "loadPurgeDeadlines",
    "via": "literal",
@@ -2537,7 +2555,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/posts/postCardExtras.ts",
-   "line": 52,
+   "line": 56,
    "area": "posts",
    "symbol": "loadRecipients",
    "via": "literal",
@@ -2549,7 +2567,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/posts/postCardExtras.ts",
-   "line": 61,
+   "line": 65,
    "area": "posts",
    "symbol": "loadRecipients",
    "via": "literal",
@@ -2617,6 +2635,15 @@
     "select"
    ],
    "name": "post_kinds"
+  },
+  {
+   "kind": "bucket",
+   "file": "app/packages/infrastructure-supabase/src/posts/postMediaCopy.ts",
+   "line": 33,
+   "area": "posts",
+   "symbol": "copyObject",
+   "via": "const",
+   "name": "post-images"
   },
   {
    "kind": "table",
@@ -2956,6 +2983,15 @@
    "symbol": "ready",
    "via": "expression",
    "name": "topic"
+  },
+  {
+   "kind": "channel",
+   "file": "app/packages/infrastructure-supabase/src/realtime/SupabaseOnlinePresence.ts",
+   "line": 29,
+   "area": "realtime",
+   "symbol": "SupabaseOnlinePresence.start",
+   "via": "expression",
+   "name": "ONLINE_PRESENCE_TOPIC = 'presence:online'"
   },
   {
    "kind": "table",
@@ -3417,6 +3453,33 @@
    "name": "donation_links"
   },
   {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/search/searchSocialReads.ts",
+   "line": 23,
+   "area": "search",
+   "symbol": "searchOrgs",
+   "via": "literal",
+   "name": "search_organizations"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/search/searchSocialReads.ts",
+   "line": 28,
+   "area": "search",
+   "symbol": "searchTags",
+   "via": "literal",
+   "name": "search_hashtags"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/search/searchSocialReads.ts",
+   "line": 33,
+   "area": "search",
+   "symbol": "suggestedQueries",
+   "via": "literal",
+   "name": "search_suggested_queries"
+  },
+  {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/search/searchUserReads.ts",
    "line": 20,
@@ -3511,6 +3574,24 @@
     "select"
    ],
    "name": "post_event_details"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/social/SupabaseFollowSuggestionsRepository.ts",
+   "line": 35,
+   "area": "social",
+   "symbol": "SupabaseFollowSuggestionsRepository.listSuggestions",
+   "via": "literal",
+   "name": "rpc_follow_suggestions"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/social/SupabaseFollowSuggestionsRepository.ts",
+   "line": 51,
+   "area": "social",
+   "symbol": "SupabaseFollowSuggestionsRepository.getProfileCompleteness",
+   "via": "literal",
+   "name": "rpc_profile_completeness"
   },
   {
    "kind": "rpc",
@@ -4043,11 +4124,20 @@
   {
    "kind": "channel",
    "file": "app/packages/infrastructure-supabase/src/users/SupabaseUserRealtime.ts",
-   "line": 37,
+   "line": 64,
    "area": "users",
    "symbol": "SupabaseUserRealtime.subscribeToAccount",
    "via": "expression",
    "name": "topic = `user:${userId}:account`"
+  },
+  {
+   "kind": "channel",
+   "file": "app/packages/infrastructure-supabase/src/users/SupabaseUserRealtime.ts",
+   "line": 86,
+   "area": "users",
+   "symbol": "SupabaseUserRealtime.subscribeToStats",
+   "via": "expression",
+   "name": "`user:${userId}:stats`"
   },
   {
    "kind": "rpc",

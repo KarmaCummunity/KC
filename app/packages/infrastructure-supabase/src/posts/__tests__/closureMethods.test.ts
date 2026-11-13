@@ -115,7 +115,7 @@ describe('reopenPost / unmarkRecipientSelf', () => {
 });
 
 describe('republishPost', () => {
-  it('publishes a new post with the old one\'s fields and no photos', async () => {
+  it('publishes a new post with the old one\'s fields (no photos to copy here)', async () => {
     const { client, calls } = setup(
       { post_cards: ok([makeCard({ status: 'expired' })]), publish_post: ok(null) },
       { posts: (call) => ok(call.kind === 'insert' ? { id: 'new-2' } : []) },

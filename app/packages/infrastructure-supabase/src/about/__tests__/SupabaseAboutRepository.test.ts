@@ -1,14 +1,20 @@
 import { describe, it, expect } from 'vitest';
-import { BackendUnavailableError } from '@kc/domain';
+import { createFakeClient } from '../../__tests__/fakeBaselineClient';
 import { SupabaseAboutRepository } from '../SupabaseAboutRepository';
 
-// M08: the baseline does not carry `about_team_profiles` over, so the roster is reported as
-// missing without a call and the About screen shows no team section.
-describe('SupabaseAboutRepository — listTeamMembers (capability missing from the baseline)', () => {
-  it('reports the team roster as unavailable', async () => {
-    const error = await new SupabaseAboutRepository().listTeamMembers().catch((e: unknown) => e);
-
-    expect(error).toBeInstanceOf(BackendUnavailableError);
-    expect(error).toMatchObject({ object: 'table:about_team_profiles', kind: 'relation' });
+// M08 — migration 0031: the About roster is read through about_team_profiles().
+describe('SupabaseAboutRepository — listTeamMembers', () => {
+  it('maps the roster rows in the server order', async () => {
+    const { client } = createFakeClient({
+      rpc: {
+        about_team_profiles: {
+          data: [{ role_key: 'founder', sort_order: 1, display_name: 'Dana', avatar_url: null, share_handle: 'dana' }],
+          error: null,
+        },
+      },
+    });
+    expect(await new SupabaseAboutRepository(client as never).listTeamMembers()).toEqual([
+      { roleKey: 'founder', sortOrder: 1, displayName: 'Dana', avatarUrl: null, shareHandle: 'dana' },
+    ]);
   });
 });

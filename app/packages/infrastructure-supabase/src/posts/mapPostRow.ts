@@ -40,6 +40,9 @@ export interface CardRecipient {
 export interface CardExtras {
   /** `posts.geo_approx` as PostgREST serialises it (hex WKB). */
   readonly geo: unknown;
+  /** The street and (with FullAddress) number the poster's display level shows to others. */
+  readonly shownStreet?: string | null;
+  readonly shownStreetNumber?: string | null;
   readonly sourceLanguage: string | null;
   readonly statusBeforeRemoval: string | null;
   /** `challenges.id` when the post is a challenge's post. */
@@ -54,7 +57,7 @@ export interface MapCardContext {
   readonly extras?: CardExtras;
   /** Every media row of the post (detail); a list carries the cover only. */
   readonly media?: readonly MediaAsset[];
-  /** The exact address, readable by the owner only (`post_private_locations`). */
+  /** The exact address, readable by the owner only (`post_private_locations`); wins over the shown one. */
   readonly street?: { readonly street: string; readonly streetNumber: string };
   /** Metres from the proximity-sort centre (`feed_page` with the nearest sort). */
   readonly distanceM?: number | null;
@@ -121,8 +124,8 @@ function mapAddress(card: PostCardRow, ctx: MapCardContext): Address {
   return {
     city: card.city_id ?? '',
     cityName: card.city_name_he ?? card.city_id ?? '',
-    street: ctx.street?.street ?? '',
-    streetNumber: ctx.street?.streetNumber ?? '',
+    street: ctx.street?.street ?? ctx.extras?.shownStreet ?? '',
+    streetNumber: ctx.street?.streetNumber ?? ctx.extras?.shownStreetNumber ?? '',
   };
 }
 
@@ -132,7 +135,8 @@ function mapAddress(card: PostCardRow, ctx: MapCardContext): Address {
  * - `category` is the item category of the subcategory, 'Other' for a post of another world;
  * - `itemCondition`, `estimatedValue` and `urgency` live in the free `details` document
  *   (`item_condition`, `estimated_value`, `urgency_note`);
- * - the street is known only to the owner, so `address.street` is '' for everybody else;
+ * - the exact street is known only to the owner; everybody else gets the street (and with
+ *   FullAddress the number) the poster's display level shows, or '' (migration 0029);
  * - a post of a world other than items is a "listing": `listingId` is the post's own id and
  *   `listingWorldSlug` its world, which routes its detail and edit screens to the world's flow;
  * - `reopenCount` is not readable (an internal moderation signal) and stays 0.

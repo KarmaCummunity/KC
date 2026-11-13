@@ -20,6 +20,7 @@ import { prefetchMarketplaceListingDetail } from '../hooks/useMarketplaceListing
 import { finishMark } from '../lib/observability/perfMarks';
 import { cleanDisplayTitle } from '../lib/displayTitle';
 import { feedCardCategory } from '../lib/feedCardCategory';
+import { postLocationText } from '../lib/postLocationText';
 
 // The menu sits on the image scrim, which is dark in both themes, so the icon is always white.
 const OVERLAY_ICON = avatarPalette.foreground;
@@ -72,9 +73,7 @@ function PostCardGridInner({
     [post.createdAt, dateLocale],
   );
 
-  const locationText = post.locationDisplayLevel === 'CityOnly'
-    ? post.address.cityName
-    : `${post.address.cityName}, ${post.address.street}`;
+  const locationText = postLocationText(post);
 
   const firstImage = post.mediaAssets[0] ?? null;
   const firstImagePath = firstImage?.path ?? null;
