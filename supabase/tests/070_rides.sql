@@ -7,6 +7,11 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = extensions, public;
 
+-- Every handoff, in the order the test made it. The `~` shorthand names a member's latest
+-- booking by this order: `ctid` (a row's physical place) moves when a row is rewritten, and
+-- `created_at` is the same for every row of the one transaction a test runs in.
+create temp table handoff_order (seq bigint generated always as identity, id uuid primary key) on commit drop;
+
 -- Shorthand inside SQL text: @a … @e members, #name the post titled `name`, ~name.x the
 -- booking of member x on that post (a live one first). Posts and bookings are resolved
 -- here, as the database owner, so a statement can name a row its caller cannot read.
@@ -18,11 +23,19 @@ declare
   v_sql text := p_sql;
   v_match text[];
 begin
+  -- Record the handoffs made since the last call. Statements run one at a time and a member
+  -- holds at most one live booking per post, so one member's bookings on one post arrive here
+  -- in the order they were made.
+  insert into pg_temp.handoff_order (id)
+  select h.id from public.post_handoffs h
+   where not exists (select 1 from pg_temp.handoff_order o where o.id = h.id)
+   order by h.id;
   for v_match in select regexp_matches(p_sql, '~(\w+)\.([a-e])', 'g') loop
     v_sql := replace(v_sql, '~' || v_match[1] || '.' || v_match[2], coalesce(quote_literal((
       select h.id from public.post_handoffs h join public.posts p on p.id = h.post_id
        where p.title = v_match[1] and h.recipient_id = ('00000000-0000-4000-8000-00000000000' || v_match[2])::uuid
-       order by (h.status = 'cancelled'), h.ctid desc limit 1)), 'null') || '::uuid');
+       order by (h.status = 'cancelled'),
+                (select o.seq from pg_temp.handoff_order o where o.id = h.id) desc limit 1)), 'null') || '::uuid');
   end loop;
   for v_match in select regexp_matches(v_sql, '#(\w+)', 'g') loop
     v_sql := regexp_replace(v_sql, '#' || v_match[1] || '\M', coalesce(quote_literal((
@@ -103,7 +116,7 @@ as $$
       'seats', p_seats) || p_extra));
 $$;
 
-select plan(113);
+select plan(114);
 
 -- Alice drives. Bob, Carol and Eve ride. Dan and Alice are blocked.
 insert into auth.users (id, email, raw_app_meta_data)
@@ -207,6 +220,14 @@ select is(pg_temp.act('c', $$select public.book_ride_seat(#r1)$$), 'ok', 'the pa
 select is(pg_temp.act('a', $$select public.cancel_ride_booking(~r1.c)$$)
     || '|' || pg_temp.val(null, $$select cancel_reason from public.post_handoffs where id = ~r1.c$$),
   'ok|declined', 'a driver cancelling a waiting booking declines it');
+-- Rewriting the older booking moves its row to a later physical place; the shorthand must
+-- still name the member's latest booking, not the row stored last.
+update public.post_handoffs set pickup_mode = pickup_mode
+ where id = (select h.id from public.post_handoffs h join public.posts p on p.id = h.post_id
+              where p.title = 'r1' and h.recipient_id = '00000000-0000-4000-8000-00000000000c'
+                and h.cancel_reason = 'passenger_cancelled');
+select is(pg_temp.val(null, $$select cancel_reason from public.post_handoffs where id = ~r1.c$$), 'declined',
+  'the shorthand names the member''s latest booking, wherever its row is stored');
 select is(pg_temp.act('c', $$select public.reinstate_ride_booking(~r1.c)$$), 'handoff_not_found', 'only the driver reinstates');
 select is(pg_temp.act('a', $$select public.reinstate_ride_booking(~r1.c)$$)
     || '|' || pg_temp.val(null, $$select status || '|' || (confirm_by is not null) from public.post_handoffs where id = ~r1.c$$),
