@@ -1,5 +1,6 @@
 const { getDefaultConfig } = require('expo/metro-config');
 const path = require('node:path');
+const { redirectVectorIcons } = require('./metro/vectorIconsRedirect');
 
 const projectRoot = __dirname;
 const workspaceRoot = path.resolve(projectRoot, '../..');
@@ -32,6 +33,8 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
       filePath: require.resolve(moduleName, { paths: [projectRoot] }),
     };
   }
+  const vectorIcons = redirectVectorIcons(moduleName, context.originModulePath, projectRoot);
+  if (vectorIcons) return vectorIcons;
   const isReactNative = moduleName === 'react-native' || moduleName.startsWith('react-native/');
   const ctx = isReactNative ? { ...context, originModulePath: appOrigin } : context;
   if (upstreamResolve) {
