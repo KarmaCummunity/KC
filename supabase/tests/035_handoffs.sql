@@ -6,6 +6,11 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = extensions, public;
 
+-- Every handoff, in the order the test made it. The `~` shorthand names a member's latest
+-- booking by this order: `ctid` (a row's physical place) moves when a row is rewritten, and
+-- `created_at` is the same for every row of the one transaction a test runs in.
+create temp table handoff_order (seq bigint generated always as identity, id uuid primary key) on commit drop;
+
 -- Test shorthand inside SQL text: @a … @e are the members, #NN a post, ~NNx the handoff of
 -- member x on post NN (a live one first).
 create function pg_temp.expand(p_sql text)
@@ -16,12 +21,20 @@ declare
   v_sql text := p_sql;
   v_match text[];
 begin
+  -- Record the handoffs made since the last call. Statements run one at a time and a member
+  -- holds at most one live booking per post, so one member's bookings on one post arrive here
+  -- in the order they were made.
+  insert into pg_temp.handoff_order (id)
+  select h.id from public.post_handoffs h
+   where not exists (select 1 from pg_temp.handoff_order o where o.id = h.id)
+   order by h.id;
   for v_match in select regexp_matches(p_sql, '~(\d\d)([a-e])', 'g') loop
     v_sql := replace(v_sql, '~' || v_match[1] || v_match[2], coalesce(quote_literal((
       select h.id from public.post_handoffs h
        where h.post_id = ('10000000-0000-4000-8000-0000000000' || v_match[1])::uuid
          and h.recipient_id = ('00000000-0000-4000-8000-00000000000' || v_match[2])::uuid
-       order by (h.status = 'cancelled'), h.ctid desc limit 1)), 'null') || '::uuid');
+       order by (h.status = 'cancelled'),
+                (select o.seq from pg_temp.handoff_order o where o.id = h.id) desc limit 1)), 'null') || '::uuid');
   end loop;
   v_sql := regexp_replace(v_sql, '@([a-e])', '''00000000-0000-4000-8000-00000000000\1''::uuid', 'g');
   return regexp_replace(v_sql, '#(\d\d)', '''10000000-0000-4000-8000-0000000000\1''::uuid', 'g');

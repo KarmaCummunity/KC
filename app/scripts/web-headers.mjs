@@ -30,6 +30,16 @@ export const WELL_KNOWN_JSON_PATHS = ['/.well-known/apple-app-site-association',
  */
 export const VERSION_PATH = '/version.json';
 
+/**
+ * Metro writes every script and stylesheet of the export under this path with a content hash in
+ * the file name (`entry-<hash>.js`), so a given URL never changes. Without an explicit rule
+ * Pages answers `max-age=0, must-revalidate` and a returning visitor pays one conditional request
+ * per file before the app can start (NFR-PERF-005). A year plus `immutable` skips that entirely.
+ * `index.html`, `sw.js` and the other unhashed files are outside this path and keep Pages' default.
+ */
+export const HASHED_ASSETS_PATH = '/_expo/static/*';
+export const IMMUTABLE_CACHE_CONTROL = 'public, max-age=31536000, immutable';
+
 /** Renders the `_headers` file body. */
 export function renderHeadersFile() {
   const block = (path, headers) =>
@@ -38,6 +48,7 @@ export function renderHeadersFile() {
     block('/*', BASELINE_HEADERS),
     ...WELL_KNOWN_JSON_PATHS.map((path) => block(path, { 'Content-Type': 'application/json' })),
     block(VERSION_PATH, { 'Cache-Control': 'no-store' }),
+    block(HASHED_ASSETS_PATH, { 'Cache-Control': IMMUTABLE_CACHE_CONTROL }),
   ];
   return `${blocks.join('\n\n')}\n`;
 }

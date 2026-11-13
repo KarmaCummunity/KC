@@ -39,10 +39,10 @@ git branch --show-current
 
 | Agent | Label suffix | Reads the skill from |
 |---|---|---|
-| Claude Code (CLI, desktop, cloud) | `claude` | Auto-discovered in `.claude/skills/` |
-| Cursor | `cursor` | `.cursor/rules/git-workflow.mdc` points here |
+| Claude Code (CLI, desktop, cloud) | `claude` | `/kc` (`.claude/commands/kc.md`); the skill is auto-discovered in `.claude/skills/` |
+| Cursor | `cursor` | `/kc` (`.cursor/commands/kc.md`); `.cursor/rules/git-workflow.mdc` points here |
 | Codex | `codex` | `AGENTS.md` points here |
-| Antigravity | `antigravity` | `AGENTS.md` points here |
+| Antigravity | `antigravity` | `/kc` (`.agent/workflows/kc.md`); `AGENTS.md` points here |
 | KC bot workers | `kc-bot` | `AGENTS.md` points here |
 
 All agents post to GitHub as the same user. The `agent:*` label, the `Opened by:` line and the claim's session id are what tell them apart: always set them.
@@ -55,6 +55,7 @@ All agents post to GitHub as the same user. The `agent:*` label, the `Opened by:
 - Open findings and verification issues: always with `needs-triage` and `found-by-agent` for findings, and with `verification` and `human` for verification issues.
 - Comment `possible-duplicate` evidence on another issue and add that label.
 - Push your branch, open and update your PR to `dev`, re-run your PR's failed job once, and release your own claim.
+- Run `seed-kc-dev.yml` (the action your merged PR changed) and `e2e-nightly-dev.yml` on `dev`, to prove merged work on kc-dev (`ci-and-merge.md`). Both are idempotent and touch kc-dev only. Never run its `vault` action.
 
 **Only with the PM's approval** (ask when the PM is in the conversation; otherwise skip and say so in the report):
 - **Product decisions.** Behavior a user will see that the spec does not settle. In a loop: release as blocked.
