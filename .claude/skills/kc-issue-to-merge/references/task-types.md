@@ -13,6 +13,7 @@ Read at Phase 3. What "done" means depends on the type, and only what CI can pro
 | CI / tooling (`area:ci`) | Script self-test (`scripts/*.test.mjs`) and actionlint pass | The workflow still runs the checks it ran before | Never weaken a gate to get green |
 | Database (`database`) | pgTAP test with allowed and denied actor passes in CI | `next-NN_slug.sql`; types regenerated if the API surface changed | No destructive SQL without a waiver line; no MCP `apply_migration` |
 | Security (`area:security`) | As its type, plus no public detail anywhere | Generic public title; details only to the PM | Never describe the hole in commits, PRs or comments |
+| E2E test owed (`needs-e2e`, "[NEEDS E2E VERIFY]") | The automated journey passes against kc-dev | The journey (`tests/e2e/journeys/`, or a Maestro flow for native-only behavior). First confirm the feature can run on kc-dev: its reference data, kinds and flags are there | A feature that cannot run on kc-dev is not test work: it is a finding, or a product question when making it run is a launch decision. The proof runs after the merge (`ci-and-merge.md`) |
 | Verification (`verification`) | A person ran the checklist and closed it | Steps, environment, expected result | Agents never take these |
 | Epic (`epic`) | Its children are done | Children fully defined | Take the first child, not the epic |
 | Ops alert (`ops-alert`) | Not agent queue work | — | Skip |

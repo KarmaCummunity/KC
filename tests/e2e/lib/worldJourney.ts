@@ -20,7 +20,7 @@ import { STORAGE_B, USER_A, USER_B } from './env';
 
 export interface WorldJourney {
   /** Marketplace world slug — the fixture that plugs a world into this journey. */
-  readonly world: 'items' | 'food';
+  readonly world: 'items' | 'food' | 'animals';
   /** `post_kinds.slug` of the "offer" kind the post is published under. */
   readonly kindSlug: string;
   /**
@@ -32,7 +32,7 @@ export interface WorldJourney {
   readonly titleHe: string;
   /**
    * The recipient's first action on the listing page: testID + Hebrew label fallback, and
-   * the handoff status it produces — items reserve and wait for the owner (`reserved`),
+   * the handoff status it produces — items and animal adoption reserve and wait for the owner (`reserved`),
    * the food quick claim is confirmed at once (`confirmed`, 0383; no owner approval step).
    */
   readonly claim: { readonly testId: string; readonly label: string; readonly resultsIn: 'reserved' | 'confirmed' };

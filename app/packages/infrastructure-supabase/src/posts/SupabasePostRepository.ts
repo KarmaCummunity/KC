@@ -64,7 +64,7 @@ export class SupabasePostRepository implements IPostRepository {
   // ── Single post ─────────────────────────────────────────────────────────
   // The server masks the poster per viewer, so the identity listing host of the old projection is no longer needed.
   async findById(postId: string): Promise<PostWithOwner | null> {
-    return fetchPostDetail(this.client, postId);
+    return fetchPostDetail(this.client, postId, { warmListingDetail: true });
   }
 
   // ── Mutations ───────────────────────────────────────────────────────────

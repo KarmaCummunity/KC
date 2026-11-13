@@ -40,6 +40,12 @@ describe('restoreSessionReporting', () => {
     expect(report).toHaveBeenCalledWith('gate_check_failed', { phase: 'cold_start' });
   });
 
+  it('reports a gate check that did not answer in time when the session was kept', async () => {
+    execute.mockResolvedValue({ session, gateCheckTimedOut: true });
+    expect(await restoreSessionReporting()).toBe(session);
+    expect(report).toHaveBeenCalledWith('gate_check_failed', { phase: 'cold_start_timeout' });
+  });
+
   it('reports and rethrows a restore failure', async () => {
     const err = new Error('keychain locked');
     execute.mockRejectedValue(err);
