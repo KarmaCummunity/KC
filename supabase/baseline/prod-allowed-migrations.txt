@@ -47,3 +47,8 @@
 0050_community_stats_for_guests.sql
 0051_knowledge_topic_embedding_job_machines.sql
 0052_post_status_events.sql
+0053_whatsapp_channel_schema.sql
+0054_whatsapp_webhook_and_queue.sql
+0055_whatsapp_linking_and_bot_tools.sql
+0056_whatsapp_admin_console.sql
+0057_whatsapp_match_alerts_and_jobs.sql
