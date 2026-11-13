@@ -38,6 +38,7 @@ import { emptyStatesEn, feedSettingsEn } from './modules/feedSettings';
 import { moderationEn, auditEn, accountBlockedEn } from './modules/moderation';
 import { restoreAccountEn } from './modules/restoreAccount';
 import { postEn } from './modules/post';
+import { shareEn } from './modules/share';
 import { settingsEn } from './modules/settings';
 import { stats } from './stats';
 import { transparencyEn } from './modules/transparency';
@@ -90,6 +91,9 @@ const en = {
 
   // Post — see modules/post.ts
   post: postEn,
+
+  // Share texts — see modules/share.ts
+  share: shareEn,
 
   // Profile — see modules/profile.ts
   profile: profileEn,

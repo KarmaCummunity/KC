@@ -81,7 +81,7 @@ playwright.config.*                         @navesarussi
 /app/turbo.json                             @navesarussi
 /app/package.json                           @navesarussi
 /app/apps/mobile/package.json               @navesarussi
-/app/apps/mobile/web-server/package.json    @navesarussi
+/app/apps/mobile/web-edge/package.json    @navesarussi
 /app/packages/*/package.json                @navesarussi
 /tests/e2e/package.json                     @navesarussi
 /sonar-project.properties                   @navesarussi

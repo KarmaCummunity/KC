@@ -9,12 +9,14 @@ import { resolveWebBaseUrl } from '../lib/buildPostShareUrl';
 import { resolveDateFnsLocale } from '../lib/resolveDateFnsLocale';
 import { sharePost } from '../lib/sharePost';
 import { buildPostShareMessage } from '../lib/buildPostShareMessage';
+import { resolvePostShareKind } from '../lib/postShareKind';
 import { postOwnerDisplayLabel } from '../lib/postOwnerDisplayLabel';
 import { postRecipientDisplayLabel } from '../lib/postRecipientDisplayLabel';
 import { useAuthStore } from '../store/authStore';
 import { useFeedSessionStore } from '../store/feedSessionStore';
 import { hapticLightTap, hapticSuccess } from '../lib/haptics';
 
+/** The one public media bucket of the baseline (the post-detail carousel reads the same one). */
 const POST_IMAGES_BUCKET = 'post-images';
 
 export function usePostShare(post: PostWithOwner) {
@@ -37,16 +39,20 @@ export function usePostShare(post: PostWithOwner) {
         addSuffix: true,
         locale: resolveDateFnsLocale(i18n.language),
       });
-      const shareStatus = post.status === 'closed_delivered' ? 'closed_delivered' : 'open';
+      const kind = resolvePostShareKind({
+        type: post.type,
+        status: post.status,
+        listingWorldSlug: post.listingWorldSlug,
+        challengeId: post.challengeId,
+      });
       const recipientNavigable = (post.recipientProfileNavigableFromPost ?? true) === true;
       const counterpartyLabel =
-        shareStatus === 'closed_delivered' && post.recipientUser
+        kind.lifecycle === 'closed' && post.recipientUser
           ? postRecipientDisplayLabel(post.recipientUser, recipientNavigable, t)
           : null;
       const message = buildPostShareMessage(
         {
-          type: post.type,
-          status: shareStatus,
+          kind,
           title: post.title,
           description: post.description,
           category: post.category,
@@ -60,9 +66,7 @@ export function usePostShare(post: PostWithOwner) {
       );
       const firstAsset = post.mediaAssets[0];
       const remoteImageUrl = firstAsset
-        ? getSupabaseClient().storage
-            .from(POST_IMAGES_BUCKET)
-            .getPublicUrl(firstAsset.path).data.publicUrl
+        ? getSupabaseClient().storage.from(POST_IMAGES_BUCKET).getPublicUrl(firstAsset.path).data.publicUrl
         : undefined;
       const outcome = await sharePost({
         postId: post.postId,
@@ -73,13 +77,13 @@ export function usePostShare(post: PostWithOwner) {
       });
       if (outcome.kind === 'shared' || outcome.kind === 'copied') hapticSuccess();
       if (outcome.kind === 'copied') {
-        showToast(t('post.detail.shareCopiedToast'), 'success', 1800);
+        showToast(t('share.copiedToast'), 'success', 1800);
       } else if (outcome.kind === 'failed') {
-        showToast(t('post.detail.shareFailedToast'), 'error', 2200);
+        showToast(t('share.failedToast'), 'error', 2200);
       }
     } catch (err) {
       console.warn('[usePostShare] share failed', err);
-      showToast(t('post.detail.shareFailedToast'), 'error', 2200);
+      showToast(t('share.failedToast'), 'error', 2200);
     } finally {
       setBusy(false);
     }
@@ -90,6 +94,8 @@ export function usePostShare(post: PostWithOwner) {
     post.title,
     post.type,
     post.status,
+    post.listingWorldSlug,
+    post.challengeId,
     post.description,
     post.category,
     post.address,

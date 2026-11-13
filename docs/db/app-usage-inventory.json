@@ -80,7 +80,7 @@
   {
    "kind": "bucket",
    "file": "app/apps/mobile/src/hooks/usePostShare.ts",
-   "line": 64,
+   "line": 69,
    "area": "mobile",
    "symbol": "recipientNavigable",
    "via": "const",

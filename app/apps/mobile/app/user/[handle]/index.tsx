@@ -161,7 +161,12 @@ export default function OtherProfileScreen() {
         options={{
           headerTitle: '',
           ...(!isMe
-            ? nativeStackHeaderRightIconOnly(() => <ProfileOverflowMenu targetUserId={u.userId} />)
+            ? nativeStackHeaderRightIconOnly(() => (
+                <ProfileOverflowMenu
+                  targetUserId={u.userId}
+                  profileShare={{ shareHandle: u.shareHandle, displayName: u.displayName }}
+                />
+              ))
             : { headerRight: undefined }),
         }}
       />

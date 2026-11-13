@@ -3,6 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   checkAppLinks,
+  checkSharedLinks,
   checkFunctions,
   checkPages,
   extractTitle,
@@ -218,4 +219,27 @@ test('checkAppLinks fails on a redirect, a wrong content type and a stale body',
   assert.match(result.detail, /apple-app-site-association → HTTP 301 \(redirect/);
   assert.match(result.detail, /assetlinks\.json content-type is "application\/octet-stream"/);
   assert.match(result.detail, /assetlinks\.json body differs/);
+});
+
+const OG_CARD = '<meta property="og:title" content="x" /><meta property="og:image" content="y" />';
+/** Answers by User-Agent like the Pages function: a crawler gets the card, a browser the SPA. */
+const sharedLinksFetch = (card, spa) => async (_url, init = {}) =>
+  /WhatsApp/.test(init.headers['user-agent']) ? card : spa;
+
+test('checkSharedLinks passes when crawlers get the card and browsers get the app', async () => {
+  const result = await checkSharedLinks({ webUrl: WEB, fetch: sharedLinksFetch(response(200, OG_CARD), response(200, '<html>SPA</html>')) });
+  assert.equal(result.ok, true, result.detail);
+});
+
+test('checkSharedLinks fails when the function is missing (crawler gets the SPA shell)', async () => {
+  const result = await checkSharedLinks({ webUrl: WEB, fetch: sharedLinksFetch(response(200, '<html>SPA</html>'), response(200, '<html>SPA</html>')) });
+  assert.equal(result.ok, false);
+  assert.match(result.detail, /\/post\/.* as a crawler has no Open Graph card/);
+});
+
+test('checkSharedLinks fails when a browser is served the crawler card or an error', async () => {
+  const leaked = await checkSharedLinks({ webUrl: WEB, fetch: sharedLinksFetch(response(200, OG_CARD), response(200, OG_CARD)) });
+  assert.match(leaked.detail, /as a browser is served the crawler card/);
+  const broken = await checkSharedLinks({ webUrl: WEB, fetch: sharedLinksFetch(response(200, OG_CARD), response(500)) });
+  assert.match(broken.detail, /as a browser → HTTP 500/);
 });

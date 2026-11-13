@@ -18,6 +18,9 @@
 //   applinks   /.well-known/apple-app-site-association and assetlinks.json answer
 //              200 directly (no redirect: Apple and Google do not follow one),
 //              as application/json, with the same JSON as the checkout.
+//   sharedlinks  a link-preview crawler asking for /post/<id> and /user/<handle> is answered with
+//              an Open Graph card (the Pages function is deployed and boots), while a desktop
+//              browser still gets the SPA (FR-POST-023).
 //   supabase   Auth health (/auth/v1/health) answers 200 with the anon key.
 //   functions  every Edge Function with a probe in scripts/edge-functions.mjs
 //              (SMOKE_PROBES) answers one OPTIONS request with exactly the
@@ -37,7 +40,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { SMOKE_PROBES, listDeployableFunctions } from './edge-functions.mjs';
 
-export const ALL_CHECKS = ['version', 'web', 'pages', 'applinks', 'supabase', 'functions'];
+export const ALL_CHECKS = ['version', 'web', 'pages', 'applinks', 'sharedlinks', 'supabase', 'functions'];
 const PUBLIC_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'app', 'apps', 'mobile', 'public');
 const FIRST_DELAY_MS = 5_000;
 const MAX_DELAY_MS = 30_000;
@@ -178,6 +181,31 @@ export async function checkAppLinks({ webUrl, fetch, readSource = (name) => read
   return bad.length ? { ok: false, detail: bad.join('; ') } : { ok: true, detail: `${WELL_KNOWN.length} manifests: 200, application/json, no redirect, match the checkout` };
 }
 
+const CRAWLER_UA = 'WhatsApp/2.23.20.0';
+const BROWSER_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0 Safari/537.36';
+/** A well-formed id nobody owns: the function must still answer a crawler with the generic card. */
+const SHARED_LINK_PATHS = ['/post/00000000-0000-4000-8000-000000000000', '/user/kc-smoke'];
+
+/**
+ * Shared links (FR-POST-023): the Pages function answers a preview crawler with an Open Graph
+ * card and leaves every other visitor on the SPA. A deploy that dropped the function would hand
+ * crawlers the plain SPA shell, i.e. a WhatsApp preview with no title or image.
+ */
+export async function checkSharedLinks({ webUrl, fetch }) {
+  const bad = [];
+  for (const path of SHARED_LINK_PATHS) {
+    const asCrawler = await request(fetch, `${webUrl}${path}`, { redirect: 'manual', headers: { 'user-agent': CRAWLER_UA } });
+    const card = asCrawler.status === 200 ? await asCrawler.text() : '';
+    if (asCrawler.status !== 200) bad.push(`${path} as a crawler → HTTP ${asCrawler.status}`);
+    else if (!/property="og:title"/.test(card) || !/property="og:image"/.test(card)) bad.push(`${path} as a crawler has no Open Graph card`);
+    const asBrowser = await request(fetch, `${webUrl}${path}`, { redirect: 'manual', headers: { 'user-agent': BROWSER_UA } });
+    const page = asBrowser.status === 200 ? await asBrowser.text() : '';
+    if (asBrowser.status !== 200) bad.push(`${path} as a browser → HTTP ${asBrowser.status}`);
+    else if (/property="og:title"/.test(page)) bad.push(`${path} as a browser is served the crawler card instead of the app`);
+  }
+  return bad.length ? { ok: false, detail: bad.join('; ') } : { ok: true, detail: `${SHARED_LINK_PATHS.length} links: crawler gets the card, browser gets the app` };
+}
+
 /** Supabase Auth health with the public anon key: proves URL, key and project are live. */
 export async function checkSupabase({ supabaseUrl, anonKey, fetch }) {
   const res = await request(fetch, `${supabaseUrl}/auth/v1/health`, { headers: { apikey: anonKey } });
@@ -221,6 +249,7 @@ export async function runSmoke(opts) {
     web: () => checkWeb(opts),
     pages: () => checkPages(opts),
     applinks: () => checkAppLinks(opts),
+    sharedlinks: () => checkSharedLinks(opts),
     supabase: () => checkSupabase(opts),
     functions: () => checkFunctions(opts),
   };

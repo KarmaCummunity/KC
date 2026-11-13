@@ -29,9 +29,9 @@ on:
         type: string
         required: true
       checks:
-        description: Comma-separated subset of version,web,pages,applinks,supabase,functions
+        description: Comma-separated subset of version,web,pages,applinks,sharedlinks,supabase,functions
         type: string
-        default: version,web,pages,applinks,supabase,functions
+        default: version,web,pages,applinks,sharedlinks,supabase,functions
   workflow_dispatch:
     inputs:
       target:
@@ -71,7 +71,7 @@ jobs:
         env:
           SMOKE_WEB_URL: ${{ inputs.target == 'prod' && vars.KC_PROD_URL || vars.DEV_WEB_URL }}
           SMOKE_SHA: ${{ inputs.sha }}
-          SMOKE_CHECKS: ${{ inputs.checks || 'version,web,pages,applinks,supabase,functions' }}
+          SMOKE_CHECKS: ${{ inputs.checks || 'version,web,pages,applinks,sharedlinks,supabase,functions' }}
           SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
         run: node scripts/smoke-deploy.mjs

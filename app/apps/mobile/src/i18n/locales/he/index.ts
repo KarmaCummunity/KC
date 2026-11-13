@@ -36,6 +36,7 @@ import { emptyStatesHe, feedSettingsHe } from './modules/feedSettings';
 import { moderationHe, auditHe, accountBlockedHe } from './modules/moderation';
 import { restoreAccountHe } from './modules/restoreAccount';
 import { postHe } from './modules/post';
+import { shareHe } from './modules/share';
 import { settingsHe } from './modules/settings';
 import { stats } from './stats';
 import { transparencyHe } from './modules/transparency';
@@ -88,6 +89,9 @@ const he = {
 
   // Post — see modules/post.ts
   post: postHe,
+
+  // Share texts — see modules/share.ts
+  share: shareHe,
 
   // Profile — see modules/profile.ts
   profile: profileHe,

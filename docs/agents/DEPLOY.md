@@ -60,4 +60,4 @@ Playwright QA suite against `https://dev.karma-community.pages.dev` + kc-dev: [`
 
 ## Web (Cloudflare Pages)
 
-Runbook: [docs/DEPLOY_WEB.md](../DEPLOY_WEB.md). The only web path is Cloudflare Pages through `deploy.yml` (dev and prod); Railway is retired, and the repo-root `Dockerfile` / `railway.json` are no longer deployed.
+Runbook: [docs/DEPLOY_WEB.md](../DEPLOY_WEB.md). The only web path is Cloudflare Pages through `deploy.yml` (dev and prod); Railway is retired and its `Dockerfile` / `railway.json` / Hono server are removed; shared-link cards and the store redirect run as Pages Functions in the same upload (see the runbook).
