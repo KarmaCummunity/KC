@@ -71,6 +71,26 @@ describe('runStartInboxSub', () => {
     expect(state.inboxSub).toBe(realUnsub);
   });
 
+  // Regression (KC#2213): a first snapshot that fails (timeout at sign-in) used to abort the start,
+  // so the member had no live inbox for the whole session and the rejection reached nobody.
+  it('still subscribes when the first snapshot fails, and leaves the inbox query to refetch', async () => {
+    const qc = new QueryClient();
+    const invalidate = vi.spyOn(qc, 'invalidateQueries');
+    const noopUnsub = vi.fn();
+    const realUnsub = vi.fn();
+    const { state, api } = makeStoreApi({ inboxSub: noopUnsub });
+    const repo = {
+      getMyChats: () => Promise.reject(new Error('Request to rpc/chat_inbox_page timed out after 25000ms')),
+      getUnreadTotal: () => Promise.resolve(2),
+    } as unknown as IChatRepository;
+
+    await runStartInboxSub(api, noopUnsub, 'u_me', repo, makeRealtime({ unsub: realUnsub }), qc);
+
+    expect(state.inboxSub).toBe(realUnsub);
+    expect(qc.getQueryData(chatInboxQueryKey('u_me'))).toBeUndefined();
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: chatInboxQueryKey('u_me') });
+  });
+
   it('bails early WITHOUT subscribing when inboxSub no longer matches noopUnsub after refresh', async () => {
     const qc = new QueryClient();
     const noopUnsub = vi.fn();
