@@ -120,7 +120,7 @@ select is(kc_private.karma_award('00000000-0000-4000-8000-00000000000c', 'handof
                                  'handoff:x:giver', 'event:x', '{"night": 10}'), 210,
   'a per-unit value is capped at its maximum units (7 nights)');
 -- An animal handed over (adoption or foster) pays like an item, without the value bonus
--- (docs/spec/07_cross_cutting_systems.md §7.6, {{D:animals-handoff-karma}}).
+-- (docs/spec/07_cross_cutting_systems.md §7.6, D164).
 select is(kc_private.karma_award('00000000-0000-4000-8000-00000000000c', 'handoff_giver', 'animals',
                                  'handoff:y:giver', 'event:y', '{}'), 20, 'the giver of an animal earns 20');
 select is(kc_private.karma_award('00000000-0000-4000-8000-00000000000c', 'handoff_receiver', 'animals',
