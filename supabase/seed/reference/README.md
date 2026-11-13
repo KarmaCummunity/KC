@@ -13,7 +13,7 @@ reaches kc-prod, reference data is loaded into kc-prod, kc-dev and local stacks 
 | `data/streets.csv` | 63,565 | `city_id`, `street_id`, `name_he` |
 | `data/road_junctions.csv` | 449 | `junction_id`, `kind`, `name_he`, `name_en`, `name_ar`, `roads`, `lat`, `lng` |
 | `data/worlds.csv` | 12 | giving worlds with sensitivity, geo mode and main-feed flag |
-| `data/post_kinds.csv` | 17 | kinds of post of the launch worlds (items, food, rides, time) and of the housing and knowledge worlds, which open behind their flags |
+| `data/post_kinds.csv` | 21 | kinds of post of the launch worlds (items, food, rides, time) and of the housing, knowledge and animals worlds, which open behind their flags |
 | `data/item_subcategories.csv` | 15 | item and food subcategories |
 | `data/app_flags.csv` | 12 | one `world_<slug>_enabled` flag per world; launch worlds on (D102), the rest off. Created only when missing: a re-run never undoes the super admin's switch |
 | `load.sql`, `load.sh` | | the idempotent loader |
