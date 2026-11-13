@@ -14,6 +14,7 @@ export async function restoreSessionReporting(): Promise<AuthSession | null> {
       reportAuthEvent('restore_gate_denied', { account_status: out.gateReason });
     }
     if (out.gateCheckFailed) reportAuthEvent('gate_check_failed', { phase: 'cold_start' });
+    if (out.gateCheckTimedOut) reportAuthEvent('gate_check_failed', { phase: 'cold_start_timeout' });
     return out.session;
   } catch (err) {
     reportAuthEvent('restore_failed', {}, err);
