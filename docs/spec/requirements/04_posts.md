@@ -542,7 +542,7 @@ A signed-in viewer of a `Public` post that is `open` or `closed_delivered` may s
 - User offline at share time: OS share sheet still opens. Recipient's connectivity governs link resolution.
 - Image download failure on iOS: fall back to URL-only share. OG preview on the recipient still renders the image.
 
-**Related.** Screens: 2.3 (post detail). Domain: `Post.visibility`, `Post.status`. Cross-refs: `FR-POST-014` (viewer detail), `FR-AUTH-014` (guest entry), `TD-66` (deep-link manifests). Edge: `app/apps/mobile/web-edge/`, `app/apps/mobile/functions/`. Decisions: `D-38` (superseded for hosting), `D-235`.
+**Related.** Screens: 2.3 (post detail). Domain: `Post.visibility`, `Post.status`. Cross-refs: `FR-POST-014` (viewer detail), `FR-AUTH-001 AC4` (a signed-out visitor is sent to sign-in first), `TD-66` (deep-link manifests). Edge: `app/apps/mobile/web-edge/`, `app/apps/mobile/functions/`. Decisions: `D-38` (superseded for hosting), `D-235`.
 
 ## FR-POST-024 — Recurring time posts (a series of occurrences) 🟡
 > Issue #2086; PM decisions `D145`, `D146`, `D147` (2026-11-11). Rides keep their own series (FR-RIDE-046) and move onto this model later.
