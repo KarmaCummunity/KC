@@ -20,7 +20,7 @@
 #            MOBILE_SUPABASE_ANON_KEY (kc-dev publishable key, mobile-store environment)
 #   vars     KC_ASC_APP_ID (numeric App Store Connect app id), KC_EAS_PROJECT_ID, KC_IOS_DIST_CERT_ID
 # Optional: secret SENTRY_AUTH_TOKEN; vars SENTRY_ORG, SENTRY_URL, EXPO_PUBLIC_SENTRY_DSN, EXPO_PUBLIC_POSTHOG_KEY.
-name: TestFlight iOS
+name: AA — TestFlight iOS (dev)
 
 on:
   workflow_call:
