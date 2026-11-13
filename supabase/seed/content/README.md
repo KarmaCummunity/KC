@@ -4,7 +4,7 @@ Rows a new environment ships with that are **content, not schema and not demo da
 lists of organization links, the links and knowledge of the giving worlds, the legal texts,
 the in-app surveys and the platform organization. They were exported once, read-only, from kc-dev (2026-11-11) and are the
 version-controlled source from now on. Reference data (cities, streets, junctions, worlds,
-post kinds, subcategories, world flags) stays in `../reference/`; the retired demo data is in `../../archive/seed-kc-dev-demo/`
+post kinds, subcategories, world flags) stays in `../reference/`; the demo data is made by the dev-only tools in `../demo/`
 and never reaches kc-prod.
 
 ```bash
