@@ -665,6 +665,22 @@ The super admin decides, per giving world and per environment, whether the world
 
 ---
 
+## FR-ADMIN-035 — Onboarding replay
+
+**Description.**
+An admin walks through the full onboarding again, as often as needed, to review or test it. The replay is a sandboxed preview: it shows what a new member sees and changes nothing of the admin's account. Requested by the PM (KC#2080).
+
+**Acceptance Criteria.**
+- AC1. The admin dashboard (`(admin)/index`) shows a "Replay onboarding" card to every member who can open the admin portal. Tapping it opens the first onboarding step (`FR-AUTH-018`), and it can be used any number of times; every run starts clean.
+- AC2. **Sandbox.** During a replay each step validates its fields and moves on exactly as in the real flow (`FR-AUTH-010`, `FR-AUTH-011`, `FR-AUTH-012`), but nothing is written: the profile, the avatar in storage, the onboarding state and the "skipped basic info" flag stay as they were. The photo step starts without a photo, as for a new member, and a picked photo is shown as a local preview only.
+- AC3. A banner above every step says the flow is an admin preview and offers a one-tap exit back to the admin portal.
+- AC4. Finishing the tour, skipping it, or using the banner's exit returns the admin to the admin portal. The replay ends whenever the onboarding is left, however that happens, so it can never carry over into a real onboarding.
+- AC5. The replay is client-side only: it needs no database object and no permission beyond access to the admin portal.
+
+**Related.** Screens: `(admin)/index`, `(onboarding)/*`. State: `onboardingReplayStore`. Domain: none.
+
+---
+
 | Version | Date | Summary |
 | ------- | ---- | ------- |
 | 0.1 | 2026-05-05 | Initial draft from PRD §2.2 and Flow 9. |
@@ -690,3 +706,4 @@ The super admin decides, per giving world and per environment, whether the world
 | 0.21 | 2026-11-12 | FR-ADMIN-018 rebuilt on the baseline (`0034`): `kc_private` tables, keyset list, category / assignee / due-range filters, audit (AC7), purge keeps the task (AC8), the `taskTitle` text argument. Added §19: FR-ADMIN-032 CRM contacts per organization (`0035`, `D150`) and FR-ADMIN-033 staff timesheets decided by the direct manager (`0036`, `D151`). |
 | 0.22 | 2026-11-13 | Admin WhatsApp console (`(admin)/whatsapp`, #939) restored on the `integrations` module: kill switch, seven-day overview (with pending reviews), review queue of bot posts (approve publishes on the owner's behalf, reject keeps the draft; D156), outbound queue with Resend, consent with Block, activity, templates. Permission `whatsapp.manage` (moderator+); the new `whatsapp.configure` (super admin only) gates the send limits and template status (D161). Every console write is audited. |
 | 0.23 | 2026-11-13 | `FR-ADMIN-031` restored (`D168`): the Demo data screen, `demo_data.manage` and the three demo-data RPCs come back for kc-dev as dev-only seed tools (`supabase/seed/demo/`, `D-239`), rewritten for the baseline, stepped, with ACs 1–11. |
+| 0.24 | 2026-11-16 | Added FR-ADMIN-035 (onboarding replay for admins, sandboxed; KC#2080). |

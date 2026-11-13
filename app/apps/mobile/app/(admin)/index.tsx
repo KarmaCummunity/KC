@@ -21,6 +21,7 @@ import { useAdminPortalChrome } from '../../src/components/admin/AdminPortalChro
 import { ADMIN_TASKS_AVAILABLE } from '../../src/lib/parkedFeatures';
 import { AdminDashboardSearch } from '../../src/components/admin/AdminDashboardSearch';
 import { useLaunchSurface } from '../../src/hooks/useLaunchSurface';
+import { useOnboardingReplayStore } from '../../src/store/onboardingReplayStore';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
 
@@ -34,6 +35,8 @@ interface Card {
   accent: string;
   accentBg: string;
   href: string;
+  /** Runs before the navigation, for a card that has to prepare its destination. */
+  onOpen?: () => void;
 }
 
 export default function AdminDashboard(): ReactElement {
@@ -92,6 +95,9 @@ export default function AdminDashboard(): ReactElement {
   if (canViewSurveys) cards.push({ key: 'surveys', label: t.surveysKpi, value: t.auditOpenLabel, icon: 'bar-chart-outline', accent: colors.secondary, accentBg: colors.secondaryLight, href: '/(admin)/surveys' });
   if (canViewAudit) cards.push({ key: 'audit', label: t.auditKpi, value: t.auditOpenLabel, icon: 'time-outline', accent: colors.warning, accentBg: colors.warningLight, href: '/(admin)/audit' });
 
+  // FR-ADMIN-035: every admin can walk through the onboarding again as a sandboxed preview.
+  cards.push({ key: 'onboardingReplay', label: t.onboardingReplayKpi, value: t.auditOpenLabel, icon: 'refresh-circle-outline', accent: colors.info, accentBg: colors.infoLight, href: '/(onboarding)/about-intro', onOpen: () => useOnboardingReplayStore.getState().start() });
+
   // The WhatsApp bot screen is hidden at launch; keep it out of the search too, like the nav rail.
   const whatsappBotVisible = useLaunchSurface('whatsappBot');
   const isHiddenFromSearch = useCallback((key: string) => key === 'whatsapp' && !whatsappBotVisible, [whatsappBotVisible]);
@@ -122,7 +128,11 @@ export default function AdminDashboard(): ReactElement {
           <Pressable
             key={c.key}
             style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
-            onPress={() => goTo(c.href)}
+            testID={`admin-card-${c.key}`}
+            onPress={() => {
+              c.onOpen?.();
+              goTo(c.href);
+            }}
             accessibilityRole="button"
             accessibilityLabel={c.label}
           >
