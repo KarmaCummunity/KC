@@ -8,7 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
-import { he as dateFnsHe } from 'date-fns/locale';
+import { he as dateFnsHe } from 'date-fns/locale/he';
 import { iconSize, makeUseStyles, radius, shadow, spacing, typography, useTheme, Text } from '@kc/ui';
 import { useAuthStore } from '../src/store/authStore';
 import { getUserRepo } from '../src/services/userComposition';
