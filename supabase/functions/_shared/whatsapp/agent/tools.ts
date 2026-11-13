@@ -4,8 +4,9 @@
 // the api_bot_* RPCs (migration whatsapp_linking_and_bot_tools).
 
 import type { RpcFn } from '../sender.ts';
+import { postEditLink } from '../appLink.ts';
 
-export type ToolCtx = { rpc: RpcFn; userId: string; waId: string; recordId: string | null };
+export type ToolCtx = { rpc: RpcFn; userId: string; waId: string; recordId: string | null; appBaseUrl?: string };
 
 export type ToolDef = {
   name: string;
@@ -94,7 +95,9 @@ async function postListing(ctx: ToolCtx, a: Record<string, unknown>) {
     p_session_id: sessionId,
     p_owner_id: ctx.userId,
   })) as PublishResult;
-  return { ok: true, ...published, outcome: publishOutcome(published) };
+  // A draft can be finished in the app; a photo sent in the chat also completes it (photo.ts).
+  const appLink = published.status === 'draft' ? postEditLink(published.post_id, w, ctx.appBaseUrl) : undefined;
+  return { ok: true, ...published, outcome: publishOutcome(published), app_link: appLink };
 }
 
 export const TOOLS: ToolDef[] = [
@@ -127,7 +130,8 @@ export const TOOLS: ToolDef[] = [
       'Create a post for the user (give or request an item or food). Only call with confirmed=true ' +
       'after the user explicitly approved the exact title in this conversation. A food offer needs ' +
       'expires_at, the time the user said the food is good until; ask for it, never guess it. ' +
-      'The result says whether the post was published or stayed a draft (photo needed, or staff review).',
+      'The result says whether the post was published or stayed a draft (photo needed, or staff review); ' +
+      'a draft comes with app_link, where the user can finish it in the app.',
     parameters: {
       type: 'object',
       properties: {

@@ -31,6 +31,12 @@ function metaBody(text: string, from = '972500000001') {
   });
 }
 
+function imageBody(image: Record<string, unknown>, from = '972500000001') {
+  return JSON.stringify({
+    entry: [{ changes: [{ value: { messages: [{ id: 'wamid.img1', from, type: 'image', image }] } }] }],
+  });
+}
+
 async function post(handler: (r: Request) => Promise<Response>, body: string, sign = true) {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (sign) headers['x-hub-signature-256'] = `sha256=${await hmacSha256Hex(SECRET, body)}`;
@@ -204,4 +210,46 @@ Deno.test('#1089: no app secret and no dev override → POST rejected (fails clo
   const h = createWebhookHandler({ ...deps({}, calls), appSecret: '' });
   assertEquals((await post(h, metaBody('hi'))).status, 401);
   assertEquals(calls.length, 0);
+});
+
+Deno.test('D158: a photo from a Pro member goes to the photo flow, never to the agent', async () => {
+  const calls: Call[] = [];
+  const photos: unknown[] = [];
+  const texts: string[] = [];
+  const h = createWebhookHandler({
+    ...deps({ access: { access: 'pro', user_id: 'u-pro', upsell: false } }, calls),
+    onProMessage: ({ text }) => { texts.push(text); return Promise.resolve(); },
+    onProPhoto: (p) => { photos.push(p); return Promise.resolve(); },
+  });
+  const res = await post(h, imageBody({ id: 'media-1', mime_type: 'image/jpeg', caption: 'הספה' }));
+  assertEquals(res.status, 200);
+  assertEquals(photos, [{
+    waId: '972500000001', userId: 'u-pro', mediaId: 'media-1', mimeType: 'image/jpeg', caption: 'הספה', recordId: 'rec-1',
+  }]);
+  assertEquals(texts, []);
+  assertEquals(calls.some((c) => c.fn === 'api_whatsapp_handle_keyword'), false);
+});
+
+Deno.test('D158: a photo from an unlinked number gets the upsell, not the photo flow', async () => {
+  const calls: Call[] = [];
+  const photos: unknown[] = [];
+  const h = createWebhookHandler({
+    ...deps({ access: { access: 'unlinked', user_id: null, upsell: true } }, calls),
+    onProPhoto: (p) => { photos.push(p); return Promise.resolve(); },
+  });
+  await post(h, imageBody({ id: 'media-1', mime_type: 'image/jpeg' }));
+  assertEquals(photos, []);
+  assertEquals(String(calls.find((c) => c.fn === 'api_whatsapp_queue_reply')!.args.p_body).includes('Pro'), true);
+});
+
+Deno.test('D158: a throttled photo is neither stored nor handled', async () => {
+  const calls: Call[] = [];
+  const photos: unknown[] = [];
+  const h = createWebhookHandler({
+    ...deps({ allowed: false, access: { access: 'pro', user_id: 'u-pro', upsell: false } }, calls),
+    onProPhoto: (p) => { photos.push(p); return Promise.resolve(); },
+  });
+  await post(h, imageBody({ id: 'media-1' }));
+  assertEquals(photos, []);
+  assertEquals(calls.map((c) => c.fn), ['api_whatsapp_claim_inbound', 'api_whatsapp_inbound_allowed']);
 });

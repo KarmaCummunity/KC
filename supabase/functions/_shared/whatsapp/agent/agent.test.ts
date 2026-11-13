@@ -138,6 +138,21 @@ Deno.test('a draft publish says why: photo first, then staff review', async () =
   const ctx = { rpc: rpc(calls, canned), userId: 'u-pro', waId: 'w', recordId: 'rec-1' };
   const r = await runTool(ctx, 'post_listing', { world: 'items', direction: 'give', title: 'Sofa', confirmed: true });
   assertEquals((r as { outcome: string }).outcome, 'draft_photo_required');
+  assertEquals((r as { app_link: string }).app_link, 'https://karma-community-kc.com/edit-post/p');
+});
+
+Deno.test('a draft carries its app link (photo here or finish in the app); a published post does not', async () => {
+  const draft = { post_id: 'p9', status: 'draft', review: false, photo_required: true };
+  const ctx = { rpc: rpc([], { api_bot_publish_post: draft }), userId: 'u', waId: 'w', recordId: null, appBaseUrl: 'https://dev.kc.test' };
+  const food = await runTool(ctx, 'post_listing', {
+    world: 'food', direction: 'give', title: 'Soup', expires_at: '2099-01-01T10:00:00Z', confirmed: true,
+  });
+  assertEquals((food as { app_link: string }).app_link, 'https://dev.kc.test/edit-listing/p9');
+  const open = await runTool({ ...ctx, rpc: rpc([]) }, 'post_listing', { world: 'items', direction: 'request', title: 'Sofa', confirmed: true });
+  assertEquals((open as { app_link?: string }).app_link, undefined);
+  assertEquals(PUBLISH_OUTCOME_TEXT.draft_photo_required.he.includes('{app_link}'), true);
+  assertEquals(PUBLISH_OUTCOME_TEXT.draft_photo_required.en.includes('Send a photo here'), true);
+  assertEquals(SYSTEM_PROMPT.includes('app_link'), true);
 });
 
 Deno.test('a publish error reaches the model as a tool error', async () => {

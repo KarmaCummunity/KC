@@ -27,7 +27,8 @@ Per inbound message:
 |------|---------|
 | `WHATSAPP_VERIFY_TOKEN` | Meta webhook verify token (GET challenge) |
 | `WHATSAPP_APP_SECRET` | Meta app secret for HMAC signature verification |
-| `WHATSAPP_CLOUD_API_TOKEN` | Graph API bearer token for outbound sends (`whatsapp-sender`) |
+| `WHATSAPP_CLOUD_API_TOKEN` | Graph API bearer token for outbound sends (`whatsapp-sender`) and photo downloads (here) |
+| `KC_APP_BASE_URL` | Optional web origin of the "finish in the app" links (default `https://karma-community-kc.com`) |
 | `WHATSAPP_PHONE_NUMBER_ID` | Sending phone number id (`whatsapp-sender`) |
 | `WHATSAPP_GRAPH_API_VERSION` | e.g. `v21.0` (optional; DB config has default) |
 | `GOOGLE_GENERATIVE_AI_API_KEY` | Gemini key for the Pro agent (#1091). Unset → agent disabled, no LLM calls |
@@ -62,7 +63,16 @@ Free text (not a STOP/START/HELP keyword) goes through, in order:
    `api_bot_publish_post`, `api_bot_my_posts`, `api_bot_my_matches`. A bot post is a native,
    Public, city-level post of the linked owner and counts against the post rate limit. It is
    published at confidence ≥ 0.85; otherwise it stays a draft for staff review. An offer in a
-   photo world stays a draft until the owner adds a photo in the app. A food offer needs the
-   expiry the user states; the agent asks for it.
+   photo world stays a draft until it has a photo: the bot asks for one in the chat and gives the
+   draft's edit link in the app (`/edit-post/<id>` for items, `/edit-listing/<id>` otherwise). A food
+   offer needs the expiry the user states; the agent asks for it and never invents one.
+4. Photo (D158): an `image` message from a linked Pro member goes to `_shared/whatsapp/photo.ts`,
+   never to the language model. `api_bot_pending_photo_draft` names the member's bot draft of the
+   last 24 hours; with none, the bot says so and the image is not downloaded or stored. Otherwise
+   the photo is fetched from the Graph API (`GET /{media-id}` → URL → bytes, with
+   `WHATSAPP_CLOUD_API_TOKEN`), checked as a post photo (JPEG or PNG by its bytes, at most 8 MB),
+   uploaded to `post-images/<owner>/<uuid>/0.<ext>` and attached by `api_bot_attach_post_photo`,
+   which publishes the post through the bot gates (below 0.85 confidence it stays in staff review).
+   A refused attach removes the uploaded file.
    Runs after the 200 (EdgeRuntime.waitUntil), metered by `api_whatsapp_llm_budget_take`, replies via the
    outbound queue.
