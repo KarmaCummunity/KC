@@ -25,14 +25,17 @@ import { DonationLinkRowMenu } from './DonationLinkRowMenu';
 import { useDonationLinkActions } from './useDonationLinkActions';
 import { useAdminRoles } from '../hooks/useAdminRoles';
 import { useDonationLinksListState } from './useDonationLinksListState';
+import { filterAndSortLinks, type WorldLinksSort } from '../lib/worldLinksCatalog';
 
 interface Props {
   readonly categorySlug: DonationCategorySlug;
   /** False when a parent already titles the list (a collapsible section, #1626). */
   readonly showTitle?: boolean;
+  /** Optional search + sort applied to the loaded links (the world links screen, FR-DONATE-007). */
+  readonly view?: { readonly query: string; readonly sort: WorldLinksSort };
 }
 
-export function DonationLinksList({ categorySlug, showTitle = true }: Readonly<Props>) {
+export function DonationLinksList({ categorySlug, showTitle = true, view }: Readonly<Props>) {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const styles = useDonationLinksListStyles();
@@ -42,6 +45,12 @@ export function DonationLinksList({ categorySlug, showTitle = true }: Readonly<P
 
   const { links, loading, errored, load, onAdded, onUpdated, onRemoved } =
     useDonationLinksListState(categorySlug);
+
+  // Search and sort never touch the fetched array, so clearing the search restores the full list.
+  const visibleLinks = useMemo(
+    () => (view ? filterAndSortLinks(links, view) : links),
+    [links, view],
+  );
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editingLink, setEditingLink] = useState<DonationLink | null>(null);
@@ -124,9 +133,18 @@ export function DonationLinksList({ categorySlug, showTitle = true }: Readonly<P
         </View>
       );
     }
+    if (visibleLinks.length === 0) {
+      // Links exist but the search hid them all: say so instead of inviting a first link.
+      return (
+        <View style={styles.empty}>
+          <Text style={styles.emptyTitle}>{t('donations.worldLinks.noResultsTitle')}</Text>
+          <Text style={styles.emptyBody}>{t('donations.worldLinks.noResultsBody')}</Text>
+        </View>
+      );
+    }
     return (
       <View style={styles.list}>
-        {links.map((link) => (
+        {visibleLinks.map((link) => (
           <View key={link.id}>{renderRow(link)}</View>
         ))}
       </View>

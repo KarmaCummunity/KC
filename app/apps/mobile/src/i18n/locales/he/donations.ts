@@ -10,6 +10,7 @@ import { worldLaunch } from './donations.worldLaunch';
 import { linkWorldCategories } from './donations.linkWorlds';
 import { marketplaceMyListings } from './donations.myListings';
 import { worldFeed } from './donations.worldFeed';
+import { worldLinks } from './donations.worldLinks';
 export { moneyPayments } from './donations.moneyPayments';
 export { timeVolunteer } from './donations.timeVolunteer';
 
@@ -34,6 +35,7 @@ export const donations = {
   },
   worldLaunch,
   worldFeed,
+  worldLinks,
   items: { title: 'חפצים', subtitle: 'תרומה ובקשת חפצים' },
   time: { title: 'זמן', subtitle: 'התנדבות וזמן פנוי' },
   money: { title: 'כסף', subtitle: 'תרומה כספית' },

@@ -1,8 +1,9 @@
 // Mapped to spec: FR-FEED-020 AC2 / FR-DONATE-007 / FR-DONATE-011 / FR-KNOW-001 — a giving
 // world's "links and knowledge" screen (#1963): the world's community links (when it has a
 // list), then its curated content — organizations, related worlds and knowledge topics. A
-// world with neither shows an empty state.
-import React from 'react';
+// world with neither shows an empty state. A toolbar searches, filters (links / info posts) and
+// sorts the links and the knowledge posts relevant to the world (FR-DONATE-007 AC8).
+import React, { useMemo, useState } from 'react';
 import { ActivityIndicator, ScrollView, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { isWorldContentEmpty, worldLinkListSlug } from '@kc/domain';
@@ -13,8 +14,14 @@ import { EmptyState } from '../EmptyState';
 import { DonationLinksList } from '../DonationLinksList';
 import { WorldSubScreenChrome } from './useWorldHeader';
 import { WorldContentSections } from './WorldContentSections';
+import { WorldLinksToolbar } from './WorldLinksToolbar';
+import { WorldInfoPostsSection } from './WorldInfoPostsSection';
 import { useWorldContent } from '../../hooks/useWorldContent';
 import { useShellTabBarScrollInset } from '../../navigation/useShellTabBarVisibility';
+import { visibleSections, type WorldLinksKind, type WorldLinksSort } from '../../lib/worldLinksCatalog';
+
+/** The knowledge world lists every knowledge post, so its subject keyword is empty. */
+const KNOWLEDGE_WORLD_SLUG = 'knowledge';
 
 const useStyles = makeUseStyles(({ colors }) => ({
   scroll: { padding: spacing.lg, gap: spacing.xl },
@@ -28,7 +35,7 @@ export interface WorldDedicatedLinksScreenProps {
 
 export function WorldDedicatedLinksScreen({ worldSlug }: WorldDedicatedLinksScreenProps) {
   const styles = useStyles();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { colors } = useTheme();
   const tabBarPad = useShellTabBarScrollInset();
   const listSlug = worldLinkListSlug(worldSlug);
@@ -36,6 +43,16 @@ export function WorldDedicatedLinksScreen({ worldSlug }: WorldDedicatedLinksScre
   const hasCurated = !isWorldContentEmpty(content);
   // The community list brings its own empty state; this one is for a world with no list at all.
   const showEmpty = !listSlug && !hasCurated && !isLoading && !isError;
+
+  const [query, setQuery] = useState('');
+  const [kind, setKind] = useState<WorldLinksKind>('all');
+  const [sort, setSort] = useState<WorldLinksSort>('newest');
+  const view = useMemo(() => ({ query, sort }), [query, sort]);
+  const sections = visibleSections(kind);
+  // null = the world has no subject keyword, so no info-posts section (never "all posts").
+  const subjectKey = `donations.worldLinks.subject.${worldSlug}`;
+  const subjectKeyword =
+    worldSlug === KNOWLEDGE_WORLD_SLUG ? '' : i18n.exists(subjectKey) ? t(subjectKey) : null;
 
   return (
     <>
@@ -48,8 +65,20 @@ export function WorldDedicatedLinksScreen({ worldSlug }: WorldDedicatedLinksScre
         <ScrollView
           contentContainerStyle={[styles.scroll, { paddingBottom: tabBarPad + spacing.lg }]}
           testID="world-dedicated-links-scroll"
+          keyboardShouldPersistTaps="handled"
         >
-          {listSlug ? <DonationLinksList categorySlug={listSlug} /> : null}
+          <WorldLinksToolbar
+            query={query}
+            onQueryChange={setQuery}
+            kind={kind}
+            onKindChange={setKind}
+            sort={sort}
+            onSortChange={setSort}
+          />
+          {listSlug && sections.links ? <DonationLinksList categorySlug={listSlug} view={view} /> : null}
+          {subjectKeyword !== null && sections.posts ? (
+            <WorldInfoPostsSection subjectKeyword={subjectKeyword} query={query} sort={sort} />
+          ) : null}
           {isLoading ? (
             <View style={styles.status}>
               <ActivityIndicator color={colors.primary} />
@@ -61,7 +90,7 @@ export function WorldDedicatedLinksScreen({ worldSlug }: WorldDedicatedLinksScre
               <PrimaryButton testID="world-content-retry" label={t('donations.links.retry')} size="md" onPress={retry} />
             </View>
           ) : null}
-          {hasCurated ? <WorldContentSections content={content} /> : null}
+          {hasCurated && kind === 'all' ? <WorldContentSections content={content} /> : null}
           {showEmpty ? (
             <View testID="world-content-empty">
               <EmptyState
