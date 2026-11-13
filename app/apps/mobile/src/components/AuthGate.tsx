@@ -22,6 +22,7 @@ import { usePostDraftStore } from '../store/postDraftStore';
 import { useRedirectIntentStore } from '../store/redirectIntentStore';
 import { container } from '../lib/container';
 import { useEnforceAccountGate } from '../hooks/useEnforceAccountGate';
+import { finishMark } from '../lib/observability/perfMarks';
 import { isPublicResearchPath } from '../navigation/publicResearchPaths';
 import { isPublicLegalSegment } from '../navigation/publicLegalPaths';
 import { isPublicOrgPagePath } from '../navigation/publicOrgPaths';
@@ -73,7 +74,10 @@ export function AuthGate({ children }: Readonly<{ children: React.ReactNode }>) 
   }, [setSession]);
 
   useEffect(() => {
-    if (!isLoading) void SplashScreen.hideAsync();
+    if (isLoading) return;
+    void SplashScreen.hideAsync();
+    // Cold start ends when the splash is hidden: that is when the member first sees the app.
+    finishMark('app.cold_start');
   }, [isLoading]);
 
   // FR-AUTH-007 AC2: read users.onboarding_state once we know the user.
