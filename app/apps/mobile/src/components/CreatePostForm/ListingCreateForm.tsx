@@ -28,6 +28,7 @@ import { OrgEventMembershipHint } from './OrgEventMembershipHint';
 import { EventRecurrenceSection } from './EventRecurrenceSection';
 import { FormScrollView } from '../ui/FormScrollView';
 import { FormSection } from '../ui/FormSection';
+import { ExposureSettingsSection } from '../post/ExposureSettingsSection';
 
 const TITLE_MAX = 80;
 const SUMMARY_MAX = 500;
@@ -237,6 +238,21 @@ export function ListingCreateForm({
             >
               <CityPicker value={form.city} onChange={form.setCity} disabled={form.busy} />
             </ListingFieldFrame>
+          )}
+
+          {/* A recurring ride or event is published by the server date by date, with the usual defaults: no exposure to set. */}
+          {form.recurrence && !form.isEdit ? null : (
+            <ExposureSettingsSection
+              // A ride has no address of its own to display: only the audience and the identity mask apply.
+              locationDisplayLevel={form.exposure.locationDisplayLevel ?? undefined}
+              onLocationDisplayLevelChange={form.exposure.setLocationDisplayLevel}
+              visibility={form.exposure.visibility}
+              onVisibilityChange={form.exposure.setVisibility}
+              profilePrivacy={form.exposure.profilePrivacy}
+              hideFromCounterparty={form.exposure.hideFromCounterparty}
+              onHideFromCounterpartyChange={form.exposure.setHideFromCounterparty}
+              disabled={form.busy}
+            />
           )}
 
           {/* Only problems no section owns (server errors) sit above Publish. */}

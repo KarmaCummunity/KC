@@ -67,6 +67,9 @@ function postDocument(input: CreateInput, kind: { world_slug: string }, directio
     city_id: cityId,
     item_subcategory_id: input.categoryId ?? null,
     urgency_level: input.urgencyLevel ?? null,
+    // Only what the member chose: the database defaults (public, city and street) cover the rest.
+    ...(input.visibility ? { visibility: input.visibility } : {}),
+    ...(input.locationDisplayLevel ? { location_display_level: input.locationDisplayLevel } : {}),
   };
 }
 

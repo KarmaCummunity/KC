@@ -10,7 +10,8 @@ import { MOBILE_ROOT } from './guardKit/ratchet';
 
 const SCANNED_DIRS = ['src', 'app'] as const;
 const FIELD = /<(TextField|AnimatedAuthInput)\b/;
-const BARE_VERTICAL_SCROLLVIEW = /<ScrollView\b(?![^>]*\bhorizontal\b)/;
+// A JSX tag (not a generic such as useRef<ScrollView>) that is not a horizontal scroller.
+const BARE_VERTICAL_SCROLLVIEW = /(?<!\w)<ScrollView\b(?![^>]*\bhorizontal\b)/;
 /** Mounts its own `FormScope` around a bare ScrollView because it needs that ScrollView's ref. */
 const OWN_SCOPE = /<FormScope>/;
 
@@ -33,6 +34,18 @@ describe('form scope coverage', () => {
       return FIELD.test(source) && BARE_VERTICAL_SCROLLVIEW.test(source) && !OWN_SCOPE.test(source);
     });
     expect(offenders, 'use FormScrollView (or wrap the ScrollView in <FormScope>) so the fields join the form scope').toEqual([]);
+  });
+
+  // The create / edit form folders hold only forms, so even a file whose fields live in a child
+  // component (the link form) must not scroll through a bare vertical ScrollView.
+  it('no create or edit form folder scrolls through a bare ScrollView', () => {
+    const FORM_DIRS = ['src/components/CreatePostForm/', 'src/components/post/', 'src/components/challenges/'];
+    const offenders = SCANNED_DIRS.flatMap(listSources).filter((file) => {
+      if (!FORM_DIRS.some((dir) => file.startsWith(dir))) return false;
+      const source = readFileSync(path.join(MOBILE_ROOT, file), 'utf8');
+      return BARE_VERTICAL_SCROLLVIEW.test(source) && !OWN_SCOPE.test(source);
+    });
+    expect(offenders, 'use FormScrollView so the form gets the form scope').toEqual([]);
   });
 
   it('the manual per-form focus wiring is gone', () => {

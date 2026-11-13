@@ -1,7 +1,6 @@
 // FR-AUTH-015 dialog — display_name + city + date of birth + optional address, "Save and continue".
 // Built on the kit `Modal` (spec 17 §4.1).
 import { useState } from 'react';
-import { formPhoneInputProps } from '../lib/platform/formTextInputHints';
 import { FormScrollView } from './ui/FormScrollView';
 import { dateOfBirthIssue } from '@kc/domain';
 import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
@@ -143,7 +142,7 @@ export function OnboardingSoftGateModal({ visible, onClose, onSaved }: Props) {
             placeholder={t('onboarding.contactPhonePlaceholder')}
             maxLength={20}
             editable={!saving}
-            {...formPhoneInputProps}
+            inputKind="phone"
           />
         </FormScrollView>
       </Modal>

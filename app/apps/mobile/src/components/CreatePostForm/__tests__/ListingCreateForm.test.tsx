@@ -9,6 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from '@kc/ui';
 import { KINDS_BY_WORLD } from '../../../lib/unifiedCreate/__tests__/listingKindFixtures';
+import { exposureSpies } from '../../../lib/unifiedCreate/__tests__/listingExposureDoubles';
 
 // vi.mock factories are hoisted above imports, so their spies must be hoisted too.
 const mocks = vi.hoisted(() => ({
@@ -19,6 +20,8 @@ const mocks = vi.hoisted(() => ({
   nativeDatePicker: vi.fn(() => null),
 }));
 
+vi.mock('../../../services/postsComposition', async () => (await import('../../../lib/unifiedCreate/__tests__/listingExposureDoubles')).postsCompositionDouble);
+vi.mock('../../../services/userComposition', async () => (await import('../../../lib/unifiedCreate/__tests__/listingExposureDoubles')).userCompositionDouble);
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (k: string, o?: Record<string, unknown>) => (o?.field ? `${k}:${String(o.field)}` : k),
@@ -223,6 +226,58 @@ describe('ListingCreateForm — publish', () => {
         externalBodyId: null,
       }),
     );
+  });
+
+  // FR-POST-003 / FR-POST-009 — every listing form ends with the same exposure settings block.
+  it('ends with the exposure settings, closed, and publishes with the default audience and address level', async () => {
+    const { onPublished } = renderForm('time', 'give');
+    const toggle = await screen.findByRole('button', { name: 'post.exposureSettingsSectionTitle' });
+    expect(toggle.getAttribute('aria-expanded')).not.toBe('true');
+    expect(screen.queryByText('post.locationDisplayLabel')).toBeNull();
+    fireEvent.click(toggle);
+    // Opened: an address-bearing listing offers the address level (a ride does not, below).
+    expect(await screen.findByText('post.locationDisplayLabel')).toBeTruthy();
+    fireEvent.click(await screen.findByTestId('city-picker'));
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('listing-publish'));
+    });
+    await waitFor(() => expect(onPublished).toHaveBeenCalledWith('listing-1'));
+    expect(mocks.createListing).toHaveBeenCalledWith(expect.objectContaining({ visibility: 'Public', locationDisplayLevel: 'CityAndStreet' }));
+    // Nothing differs from a fresh post, so the identity row is left alone.
+    expect(exposureSpies.upsertIdentity).not.toHaveBeenCalled();
+  });
+
+  it('writes the identity mask after publishing when the member hides who published it', async () => {
+    const { onPublished } = renderForm('time', 'give');
+    fireEvent.click(await screen.findByRole('button', { name: 'post.exposureSettingsSectionTitle' }));
+    fireEvent.click(await screen.findByRole('switch'));
+    fireEvent.click(await screen.findByTestId('city-picker'));
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('listing-publish'));
+    });
+    await waitFor(() => expect(onPublished).toHaveBeenCalledWith('listing-1'));
+    expect(exposureSpies.upsertIdentity).toHaveBeenCalledWith(expect.objectContaining({ postId: 'listing-1', hideFromCounterparty: true }));
+  });
+
+  it('a ride offers the audience but no address level, and sends none', async () => {
+    renderForm('rides', 'give');
+    fireEvent.click(await screen.findByRole('button', { name: 'post.exposureSettingsSectionTitle' }));
+    expect(screen.queryByText('post.locationDisplayLabel')).toBeNull();
+    fireEvent.click(await screen.findByTestId('ride-section-fill'));
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('listing-publish'));
+    });
+    await waitFor(() => expect(mocks.createListing).toHaveBeenCalled());
+    const payload = mocks.createListing.mock.calls[0]![0] as Record<string, unknown>;
+    expect(payload).toMatchObject({ visibility: 'Public' });
+    expect(payload).not.toHaveProperty('locationDisplayLevel');
+  });
+
+  it('offers no exposure settings while the ride recurs: the series is published with the usual defaults', async () => {
+    renderForm('rides', 'give');
+    expect(await screen.findByRole('button', { name: 'post.exposureSettingsSectionTitle' })).toBeTruthy();
+    fireEvent.click(await screen.findByTestId('ride-section-recur'));
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'post.exposureSettingsSectionTitle' })).toBeNull());
   });
 
   it('a ride needs its route before it can publish', async () => {

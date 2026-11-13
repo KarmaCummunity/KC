@@ -8,7 +8,6 @@ import { TextField } from '../../ui/TextField';
 import { AdminFormActions } from '../AdminFormActions';
 import { container } from '../../../lib/container';
 import { useLocaleBundle } from '../../../i18n/useLocaleBundle';
-import { formDecimalInputProps, formIsoDateInputProps } from '../../../lib/platform/formTextInputHints';
 import { FormScrollView } from '../../ui/FormScrollView';
 
 export interface TimesheetFormModalProps {
@@ -56,8 +55,8 @@ export function TimesheetFormModal({ initial, onClose, onSaved }: TimesheetFormM
       <FormScrollView style={styles.sheet} contentContainerStyle={styles.content}>
         <Text style={styles.title}>{isEdit ? t.form.editTitle : t.form.createTitle}</Text>
 
-        <TextField label={t.form.workDateLabel} value={workDate} onChangeText={setWorkDate} {...formIsoDateInputProps} />
-        <TextField label={t.form.hoursLabel} value={hoursText} onChangeText={setHoursText} {...formDecimalInputProps} />
+        <TextField label={t.form.workDateLabel} value={workDate} onChangeText={setWorkDate} inputKind="date" />
+        <TextField label={t.form.hoursLabel} value={hoursText} onChangeText={setHoursText} inputKind="decimal" />
         <TextField label={t.form.projectLabel}     value={project}     onChangeText={setProject} />
         <TextField label={t.form.descriptionLabel} value={description} onChangeText={setDescription} multiline />
 

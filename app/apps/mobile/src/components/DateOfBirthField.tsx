@@ -7,7 +7,6 @@ import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { composeIsoDate, dateOfBirthIssue, parseIsoDate } from '@kc/domain';
 import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
-import { formIntegerInputProps } from '../lib/platform/formTextInputHints';
 import { TextField } from './ui/TextField';
 import { rtlTextAlignStart } from '../lib/rtlTextAlignStart';
 
@@ -47,7 +46,7 @@ export function DateOfBirthField({ value, onChange, disabled }: Props) {
         set(clean);
         next(clean);
       }}
-      {...formIntegerInputProps}
+      inputKind="integer"
       maxLength={max}
       editable={!disabled}
       containerStyle={styles.part}

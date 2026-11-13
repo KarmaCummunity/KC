@@ -9,7 +9,6 @@ import { TextField } from '../../components/ui/TextField';
 import type { SurveyQuestion } from '@kc/domain';
 import { SurveyRatingRow } from '../../components/survey/SurveyRatingRow';
 import { webTextRtl } from '../../lib/webRtlStyle';
-import { formEmailInputProps } from '../../lib/platform/formTextInputHints';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 
 // Q11 is the final "contact us" question — identified by its position as the
@@ -90,7 +89,7 @@ export function ResearchQuestionPanel({
             placeholderTextColor={colors.textDisabled}
             textAlign={rtlTextAlignStart}
             maxLength={320}
-            {...formEmailInputProps}
+            inputKind="email"
             accessibilityLabel={t('research.contactEmailLabel')}
           />
           <TextField

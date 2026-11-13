@@ -5,7 +5,6 @@ import React from 'react';
 import { format } from 'date-fns';
 import { Switch } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { formDecimalInputProps, formIntegerInputProps } from '../../lib/platform/formTextInputHints';
 import { TextField } from '../ui/TextField';
 import { useCreatePostStyles } from '../../screens/tabs/create.styles';
 import { DateTimeField } from '../ui/DateTimeField';
@@ -158,7 +157,7 @@ function FieldControl({ spec, value, onChange, disabled }: ControlProps) {
         <TextField
           label={label}
           errorText={errorText}
-          {...formDecimalInputProps}
+          inputKind="decimal"
           value={typeof value === 'number' ? String(value) : ''}
           onChangeText={(text) => {
             const n = Number.parseFloat(text);
@@ -174,7 +173,7 @@ function FieldControl({ spec, value, onChange, disabled }: ControlProps) {
           testID={`listing-integer-${spec.key}`}
           label={label}
           errorText={errorText}
-          {...formIntegerInputProps}
+          inputKind="integer"
           value={typeof value === 'number' ? String(value) : ''}
           onChangeText={(text) => set(clampWholeNumber(text, spec.min, spec.max))}
           placeholder={t('post.unifiedCreate.integerPlaceholder', { min: spec.min, max: spec.max })}

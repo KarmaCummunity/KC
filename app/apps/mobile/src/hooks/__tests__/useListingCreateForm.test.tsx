@@ -10,6 +10,8 @@ const { repo, auth, upload, track, activation, remember } = vi.hoisted(() => ({
 }));
 vi.hoisted(() => { (globalThis as { __DEV__?: boolean }).__DEV__ = false; });
 vi.mock('../../components/giving/RideCreateSection', () => ({ RIDE_CREATE_DETAIL_KEYS: [] }));
+vi.mock('../../services/postsComposition', async () => (await import('../../lib/unifiedCreate/__tests__/listingExposureDoubles')).postsCompositionDouble);
+vi.mock('../../services/userComposition', async () => (await import('../../lib/unifiedCreate/__tests__/listingExposureDoubles')).userCompositionDouble);
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
 vi.mock('../../store/authStore', () => ({ useAuthStore: Object.assign((selector: (s: { session: { userId: string } | null }) => unknown) => selector({ session: auth.current ? { userId: auth.current } : null }), { getState: () => ({ session: { accountCreatedAt: 'today' } }) }) }));
 vi.mock('../../services/marketplaceComposition', () => ({ marketplaceRepository: () => repo }));
@@ -62,7 +64,7 @@ describe('useListingCreateForm', () => {
     act(() => { result.current.setPhotos([{ uri: 'file://bread.jpg' } as never]); });
     await act(() => result.current.publish());
     expect(upload).toHaveBeenCalledWith('u1', [{ uri: 'file://bread.jpg' }]);
-    expect(repo.createListing).toHaveBeenCalledWith({ kindId: 'k1', title: 'Bread', summary: 'fresh', details: { expires_at: '2030-01-01' }, direction: null, cityId: 'city-1', lat: null, lng: null, maxRadiusKm: 25, media: [{ path: 'u1/bread.jpg', mimeType: 'image/jpeg', sizeBytes: 81920 }], externalBodyId: null, categoryId: 'cat-cooked' });
+    expect(repo.createListing).toHaveBeenCalledWith({ kindId: 'k1', title: 'Bread', summary: 'fresh', details: { expires_at: '2030-01-01' }, direction: null, cityId: 'city-1', lat: null, lng: null, maxRadiusKm: 25, media: [{ path: 'u1/bread.jpg', mimeType: 'image/jpeg', sizeBytes: 81920 }], externalBodyId: null, categoryId: 'cat-cooked', visibility: 'Public', locationDisplayLevel: 'CityAndStreet' });
     expect(onPublished).toHaveBeenCalledWith('l1');
     expect(track).toHaveBeenCalledWith('listing_created', { world: 'food', cityId: 'city-1' });
     expect(activation).toHaveBeenCalledWith({ world: 'food', cityId: 'city-1', accountCreatedAt: 'today' });

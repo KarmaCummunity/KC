@@ -70,6 +70,10 @@ export interface ListingPayloadArgs {
   worldSubcategoryId: string | null;
   /** Additional worlds this listing should appear in (#1475). */
   additionalWorldSlugs?: string[] | null;
+  /** Who may see the listing (exposure settings). */
+  visibility: PostVisibility;
+  /** How much of the address it shows; null for a listing with no address of its own (a ride). */
+  locationDisplayLevel: LocationDisplayLevel | null;
 }
 
 export function buildListingCreatePayload(a: ListingPayloadArgs) {
@@ -91,5 +95,7 @@ export function buildListingCreatePayload(a: ListingPayloadArgs) {
     ...(a.additionalWorldSlugs && a.additionalWorldSlugs.length > 0
       ? { additionalWorldSlugs: a.additionalWorldSlugs }
       : {}),
+    visibility: a.visibility,
+    ...(a.locationDisplayLevel ? { locationDisplayLevel: a.locationDisplayLevel } : {}),
   };
 }

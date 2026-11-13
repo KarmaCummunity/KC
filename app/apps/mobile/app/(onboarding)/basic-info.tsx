@@ -13,7 +13,6 @@ import { staggerDelay } from '../../src/lib/animations/motion';
 import { rtlTextAlignStart } from '../../src/lib/rtlTextAlignStart';
 import { TextField, FormScreen, PrimaryButton } from '../../src/components/ui';
 import { CompactStreetNumberField } from '../../src/components/address/CompactStreetNumberField';
-import { formPhoneInputProps } from '../../src/lib/platform/formTextInputHints';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
 
@@ -125,7 +124,7 @@ export default function OnboardingBasicInfoScreen() {
           placeholder={t('onboarding.contactPhonePlaceholder')}
           maxLength={20}
           editable={!loading}
-          {...formPhoneInputProps}
+          inputKind="phone"
         />
       </AnimatedEntry>
     </FormScreen>

@@ -12,7 +12,6 @@ import { Chip } from '../../ui/Chip';
 import { AdminFormActions } from '../AdminFormActions';
 import { container } from '../../../lib/container';
 import { useLocaleBundle } from '../../../i18n/useLocaleBundle';
-import { formEmailInputProps, formPhoneInputProps } from '../../../lib/platform/formTextInputHints';
 import { FormScrollView } from '../../ui/FormScrollView';
 
 export interface ContactFormModalProps {
@@ -66,8 +65,8 @@ export function ContactFormModal({ initial, orgId, onClose, onSaved }: ContactFo
 
         <TextField label={t.form.nameLabel}         value={name}         onChangeText={setName} />
         <TextField label={t.form.organizationLabel} value={organization} onChangeText={setOrg} />
-        <TextField label={t.form.emailLabel} value={email} onChangeText={setEmail} {...formEmailInputProps} />
-        <TextField label={t.form.phoneLabel} value={phone} onChangeText={setPhone} {...formPhoneInputProps} />
+        <TextField label={t.form.emailLabel} value={email} onChangeText={setEmail} inputKind="email" />
+        <TextField label={t.form.phoneLabel} value={phone} onChangeText={setPhone} inputKind="phone" />
         <TextField label={t.form.roleLabel}         value={roleTitle}    onChangeText={setRoleTitle} />
 
         <Text style={styles.label}>{t.form.statusLabel}</Text>

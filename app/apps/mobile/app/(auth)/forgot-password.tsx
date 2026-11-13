@@ -11,7 +11,6 @@ import { AnimatedAuthInput } from '../../src/components/auth/AnimatedAuthInput';
 import { usePasswordResetStyles } from '../../src/components/auth/passwordResetScreen.styles';
 import { AuthStatusScreen } from '../../src/components/auth/AuthStatusScreen';
 import { FormScreen, GhostButton, PrimaryButton } from '../../src/components/ui';
-import { formEmailInputProps } from '../../src/lib/platform/formTextInputHints';
 import { LaunchSurfaceGate } from '../../src/components/LaunchSurfaceGate';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
@@ -91,7 +90,7 @@ function ForgotPasswordScreenContent() {
         onChangeText={setEmail}
         placeholder={t('auth.emailPlaceholder')}
         editable={!loading}
-        {...formEmailInputProps}
+        inputKind="email"
       />
       {error ? <Text style={styles.error}>{error}</Text> : null}
     </FormScreen>

@@ -1,5 +1,6 @@
 // Unified giving marketplace (Epic #893).
 import type { VerificationLevel } from '../verificationLevel';
+import type { LocationDisplayLevel, PostVisibility } from '../value-objects';
 
 export const MARKETPLACE_WORLD_SLUGS = [
   'money',
@@ -88,6 +89,10 @@ export interface MarketplaceListingDetail {
   readonly summary: string | null;
   readonly details: Record<string, unknown>;
   readonly cityId: string | null;
+  /** Who may see the listing; absent when the source does not say. */
+  readonly visibility?: PostVisibility;
+  /** How much of the address the listing shows; absent when the source does not say. */
+  readonly locationDisplayLevel?: LocationDisplayLevel;
   readonly urgencyLevel: number;
   readonly availabilityStatus: string;
   /** Lifecycle state of the listing row (open, closed, cancelled, etc.). */

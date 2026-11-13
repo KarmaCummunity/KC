@@ -14,7 +14,6 @@ import { EditProfileDateOfBirthBlock } from '../src/components/profile/EditProfi
 import { EditProfileCompletenessCard } from '../src/components/profile/EditProfileCompletenessCard';
 import { useUnsavedChangesGuard } from '../src/hooks/useUnsavedChangesGuard';
 import { useEditProfileStyles } from '../src/screens/edit-profile.styles';
-import { formPhoneInputProps } from '../src/lib/platform/formTextInputHints';
 import { useEditProfileController } from '../src/hooks/useEditProfileController';
 
 
@@ -107,7 +106,7 @@ export default function EditProfileScreen() {
             value={form.contactPhone}
             onChangeText={form.setContactPhone}
             maxLength={20}
-            {...formPhoneInputProps}
+            inputKind="phone"
             textAlign={inputTextAlignStart()}
             editable={!form.saving}
             placeholder={t('profile.editScreen.contactPhonePlaceholder')}

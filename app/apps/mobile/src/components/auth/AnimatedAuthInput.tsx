@@ -10,10 +10,13 @@ import { makeUseStyles, spacing, radius, typography, shadow, useTheme, TextInput
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 import { inputTextAlignStart } from '../../lib/rtlLayout';
 import { useFormScopeField } from '../ui/useFormScopeField';
+import { formInputKindProps, type FormInputKind } from '../../lib/platform/formTextInputHints';
 
 interface AnimatedAuthInputProps extends TextInputProps {
   label: string;
   testID?: string;
+  /** What the field holds; picks the matching keyboard and autofill hints (explicit props still win). */
+  inputKind?: FormInputKind;
 }
 
 const AuthFieldInput = TextInput;
@@ -55,6 +58,7 @@ export const AnimatedAuthInput = forwardRef<UiTextInput, AnimatedAuthInputProps>
     onFocus,
     onBlur,
     onSubmitEditing,
+    inputKind = 'text',
     ...rest
   },
   ref,
@@ -107,6 +111,7 @@ export const AnimatedAuthInput = forwardRef<UiTextInput, AnimatedAuthInputProps>
           textAlign={inputTextAlignStart()}
           onFocus={handleFocus}
           onBlur={handleBlur}
+          {...formInputKindProps[inputKind]}
           {...scope.inputProps}
           {...rest}
           onSubmitEditing={(e) => {
