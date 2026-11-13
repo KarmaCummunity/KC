@@ -51,7 +51,7 @@ as $$
    where user_id = ('00000000-0000-4000-8000-00000000000' || p_who)::uuid;
 $$;
 
-select plan(32);
+select plan(34);
 
 insert into auth.users (id, email, raw_app_meta_data)
 select ('00000000-0000-4000-8000-00000000000' || x)::uuid, x || '@example.test', '{"provider":"google"}'
@@ -119,6 +119,12 @@ select is((select last_error from kc_private.outbox_events where payload ->> 'ki
 select is(kc_private.karma_award('00000000-0000-4000-8000-00000000000c', 'handoff_giver', 'housing_stay',
                                  'handoff:x:giver', 'event:x', '{"night": 10}'), 210,
   'a per-unit value is capped at its maximum units (7 nights)');
+-- An animal handed over (adoption or foster) pays like an item, without the value bonus
+-- (docs/spec/07_cross_cutting_systems.md §7.6, {{D:animals-handoff-karma}}).
+select is(kc_private.karma_award('00000000-0000-4000-8000-00000000000c', 'handoff_giver', 'animals',
+                                 'handoff:y:giver', 'event:y', '{}'), 20, 'the giver of an animal earns 20');
+select is(kc_private.karma_award('00000000-0000-4000-8000-00000000000c', 'handoff_receiver', 'animals',
+                                 'handoff:y:receiver', 'event:y', '{}'), 15, 'the receiver of an animal earns 15');
 select is(kc_private.karma_apply('00000000-0000-4000-8000-00000000000a', 'penalty', -5, 'post:x', 'event:y'), 0,
   'a penalty never takes a total below zero');
 
