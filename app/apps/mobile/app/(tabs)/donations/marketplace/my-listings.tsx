@@ -5,10 +5,11 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { makeUseStyles, radius, spacing, typography, Text } from '@kc/ui';
 import { textAlignStart } from '../../../../src/lib/rtlLayout';
-import type { MyListingRow } from '@kc/domain';
+import { isPostEnded, type MyListingRow } from '@kc/domain';
 import { KcRowCard } from '../../../../src/components/cards/KcRowCard';
 import { listingWorldIcon } from '../../../../src/components/cards/ListingCard';
 import { cleanDisplayTitle } from '../../../../src/lib/displayTitle';
+import { myListingRowActions } from '../../../../src/lib/myListingRowActions';
 import { Screen } from '../../../../src/components/ui/Screen';
 import { useMyMarketplaceListings } from '../../../../src/hooks/useMyMarketplaceListings';
 import { useMyListingActions } from '../../../../src/hooks/useMyListingActions';
@@ -75,42 +76,44 @@ const MyListingRowItem = React.memo(function MyListingRowItem({
         date: new Date(item.updatedAt).toLocaleDateString(),
       })}`,
       item.status === 'hidden_pending_review' ? t('marketplace.myListingsHiddenHint') : null,
-      item.status === 'cancelled' ? t('marketplace.myListingsPausedHint') : null,
-      item.status === 'closed' ? t('marketplace.myListingsClosedHint') : null,
+      item.status === 'paused' ? t('marketplace.myListingsPausedHint') : null,
+      isPostEnded(item.status) ? t('marketplace.myListingsClosedHint') : null,
     ],
     [item.status, item.updatedAt, item.worldSlug, t],
   );
 
+  // The buttons follow the post machine: what the server accepts for this status.
+  const actions = myListingRowActions(item.status);
   const footer = (
     <View style={styles.actions}>
-      {item.status === 'open' || item.status === 'cancelled' ? (
+      {actions.edit ? (
         <Pressable style={styles.btn} disabled={busy} onPress={handleEdit}>
           <Text style={styles.btnText}>{t('marketplace.myListingsEdit')}</Text>
         </Pressable>
       ) : null}
-      {item.status === 'open' ? (
-        <>
-          <Pressable style={styles.btn} disabled={busy} onPress={handlePause}>
-            <Text style={styles.btnText}>{t('marketplace.myListingsPause')}</Text>
-          </Pressable>
-          <Pressable style={styles.btn} disabled={busy} onPress={handleFulfill}>
-            <Text style={styles.btnText}>
-              {item.direction === 'give' ? t('closure.assignUserCta') : t('marketplace.myListingsFulfill')}
-            </Text>
-          </Pressable>
-        </>
+      {actions.pause ? (
+        <Pressable style={styles.btn} disabled={busy} onPress={handlePause}>
+          <Text style={styles.btnText}>{t('marketplace.myListingsPause')}</Text>
+        </Pressable>
       ) : null}
-      {item.status === 'cancelled' ? (
+      {actions.fulfill ? (
+        <Pressable style={styles.btn} disabled={busy} onPress={handleFulfill}>
+          <Text style={styles.btnText}>
+            {item.direction === 'give' ? t('closure.assignUserCta') : t('marketplace.myListingsFulfill')}
+          </Text>
+        </Pressable>
+      ) : null}
+      {actions.resume ? (
         <Pressable style={styles.btn} disabled={busy} onPress={handleResume}>
           <Text style={styles.btnText}>{t('marketplace.myListingsResume')}</Text>
         </Pressable>
       ) : null}
-      {['open', 'cancelled', 'closed'].includes(item.status) ? (
+      {actions.addPhotos ? (
         <Pressable style={styles.btn} disabled={busy} onPress={handleAddPhotos} testID={`my-listing-add-photos-${item.listingId}`}>
           <Text style={styles.btnText}>{t('marketplace.myListingsAddPhotos')}</Text>
         </Pressable>
       ) : null}
-      {['open', 'cancelled', 'closed'].includes(item.status) ? (
+      {actions.delete ? (
         <Pressable style={[styles.btn, styles.btnDanger]} disabled={busy} onPress={handleDelete}>
           <Text style={styles.btnText}>{t('marketplace.myListingsDelete')}</Text>
         </Pressable>
@@ -128,7 +131,7 @@ const MyListingRowItem = React.memo(function MyListingRowItem({
       title={cleanDisplayTitle(item.title)}
       meta={meta}
       statusLabel={t(`marketplace.listingStatus.${item.status}`, { defaultValue: item.status })}
-      closed={item.status === 'closed'}
+      closed={isPostEnded(item.status)}
       closedLabel={t('cards.closed')}
       onPress={handleOpen}
       footer={footer}

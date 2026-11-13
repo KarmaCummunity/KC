@@ -9,7 +9,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { iconSize, useTheme, Text } from '@kc/ui';
-import type { Category, ItemCondition, LocationDisplayLevel, PostVisibility } from '@kc/domain';
+import {
+  isPostEditableByOwner, postOwnerActions,
+  type Category, type ItemCondition, type LocationDisplayLevel, type PostVisibility,
+} from '@kc/domain';
 import { isPostError } from '@kc/application';
 import { getSupabaseClient } from '@kc/infrastructure-supabase';
 import { useAuthStore } from '../../src/store/authStore';
@@ -250,8 +253,8 @@ export default function EditPostScreen() {
     );
   }
 
-  if (post.status !== 'open') {
-    if (post.status === 'expired' && viewerId && post.ownerId === viewerId) {
+  if (!isPostEditableByOwner(post.status)) {
+    if (postOwnerActions(post.status).republish && viewerId && post.ownerId === viewerId) {
       return (
         <SafeAreaView style={styles.container}>
           <ExpiredRepublishView

@@ -70,7 +70,7 @@ export class ApproveRideBookingUseCase {
     if (context) {
       const target = context.bookings.find((b) => b.handoffId === handoffId);
       if (target) {
-        if (target.status !== 'reserved') {
+        if (!canPerformBookingAction(target.status, 'approve')) {
           return Promise.reject(new RideError('invalid_status', 'only reserved bookings can be approved'));
         }
         if (!canApproveRideBooking(context.capacity, context.bookings, target)) {
@@ -91,7 +91,7 @@ export class DeclineRideBookingUseCase {
   execute(handoffId: string, context?: DeclineRideBookingContext): Promise<void> {
     if (context?.bookings) {
       const target = context.bookings.find((b) => b.handoffId === handoffId);
-      if (target && target.status !== 'reserved') {
+      if (target && !canPerformBookingAction(target.status, 'decline')) {
         return Promise.reject(new RideError('invalid_status', 'only reserved bookings can be declined'));
       }
     }
