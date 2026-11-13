@@ -42,7 +42,7 @@ as $$
     from audit.events e where e.action = p_action order by e.id desc limit 1;
 $$;
 
-select plan(44);
+select plan(46);
 
 -- s super admin · m moderator · p support · x member · u a member with a WhatsApp number.
 insert into auth.users (id, email, raw_app_meta_data)
@@ -78,6 +78,10 @@ select is(pg_temp.run('m', $$select public.api_whatsapp_admin_set_send_limits('{
   '42501|42501', 'a moderator cannot change the limits or a template''s status');
 select is(pg_temp.run('m', 'select public.api_whatsapp_admin_get_channel()') ::jsonb ->> 'is_enabled', 'false',
   'a moderator reads the channel');
+select is(pg_temp.run('p', 'select public.api_whatsapp_admin_get_send_limits()'), '42501',
+  'support staff cannot read the send limits');
+select is(pg_temp.run('m', 'select public.api_whatsapp_admin_get_send_limits()') ::jsonb ->> 'per_user_hour', '5',
+  'a moderator reads the seeded send limits');
 
 -- ── Kill switch ─────────────────────────────────────────────────────────────
 select is(pg_temp.run('m', 'select public.api_whatsapp_admin_set_channel_enabled(null)'), 'enabled_required', 'the value is required');

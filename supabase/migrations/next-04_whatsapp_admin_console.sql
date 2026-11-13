@@ -393,7 +393,24 @@ comment on function public.api_whatsapp_admin_review_resolve(uuid, text) is
   'Staff (moderator+): approves (publishes) or rejects a WhatsApp bot post under review; audited.';
 grant execute on function public.api_whatsapp_admin_review_resolve(uuid, text) to authenticated;
 
--- ── Configuration (super admin) ─────────────────────────────────────────────
+-- ── Configuration ───────────────────────────────────────────────────────────
+-- Reads the send limits for the console (moderator+); only a super admin may change them.
+create function public.api_whatsapp_admin_get_send_limits()
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+begin
+  perform kc_private.require_admin_role('moderator');
+  return (select to_jsonb(l) - 'id' from integrations.whatsapp_send_limits l where l.id);
+end;
+$$;
+comment on function public.api_whatsapp_admin_get_send_limits() is 'Staff (moderator+): the current WhatsApp send limits.';
+grant execute on function public.api_whatsapp_admin_get_send_limits() to authenticated;
+
+-- Writers (super admin).
 -- Patches the send limits from a JSON object of known integer fields; returns the row.
 create function public.api_whatsapp_admin_set_send_limits(p_limits jsonb)
 returns jsonb
