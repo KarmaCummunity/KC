@@ -2,18 +2,18 @@
  "generatedBy": "scripts/app-migration-map.mjs",
  "totals": {
   "rpc": {
-   "objects": 225,
-   "same": 161,
-   "renamed": 23,
-   "changed": 40,
-   "removed": 1,
+   "objects": 243,
+   "same": 169,
+   "renamed": 22,
+   "changed": 52,
+   "removed": 0,
    "missing": 0
   },
   "table": {
-   "objects": 64,
+   "objects": 63,
    "same": 46,
    "renamed": 0,
-   "changed": 18,
+   "changed": 17,
    "removed": 0,
    "missing": 0
   },
@@ -52,11 +52,11 @@
    "missing": 0
   },
   "later": {
-   "objects": 125,
-   "same": 87,
-   "renamed": 7,
-   "changed": 30,
-   "removed": 1,
+   "objects": 142,
+   "same": 95,
+   "renamed": 6,
+   "changed": 41,
+   "removed": 0,
    "missing": 0
   },
   "wedge": {
@@ -77,9 +77,9 @@
    "missing": 0
   },
   "admin": {
-   "callSites": 50,
-   "oneToOne": 31,
-   "changed": 19,
+   "callSites": 65,
+   "oneToOne": 37,
+   "changed": 28,
    "removed": 0,
    "missing": 0
   },
@@ -133,8 +133,8 @@
    "missing": 0
   },
   "fn:_shared": {
-   "callSites": 11,
-   "oneToOne": 9,
+   "callSites": 10,
+   "oneToOne": 8,
    "changed": 2,
    "removed": 0,
    "missing": 0
@@ -214,13 +214,6 @@
    "oneToOne": 1,
    "changed": 4,
    "removed": 0,
-   "missing": 0
-  },
-  "fn:whatsapp-intake-worker": {
-   "callSites": 5,
-   "oneToOne": 3,
-   "changed": 1,
-   "removed": 1,
    "missing": 0
   },
   "fn:whatsapp-sender": {
@@ -402,6 +395,13 @@
    "callSites": 9,
    "oneToOne": 3,
    "changed": 6,
+   "removed": 0,
+   "missing": 0
+  },
+  "whatsapp": {
+   "callSites": 4,
+   "oneToOne": 2,
+   "changed": 2,
    "removed": 0,
    "missing": 0
   },
@@ -1215,16 +1215,18 @@
    ],
    "files": [
     "admin/SupabaseWhatsAppAdminRepository.ts",
-    "supabase/functions/{whatsapp-webhook,whatsapp-intake-worker,whatsapp-sender}",
+    "whatsapp/SupabaseWhatsAppLinkRepository.ts",
+    "supabase/functions/{whatsapp-webhook,whatsapp-sender}",
     "supabase/functions/_shared/whatsapp/**",
-    "apps/mobile: WhatsApp link screen"
+    "apps/mobile: admin WhatsApp console, Settings → WhatsApp"
    ],
-   "work": "Database done: the `integrations` module (five `whatsapp_*` migrations) with the webhook, sender, agent, member and console RPCs. Still to do: retarget the three Edge Functions (sender config RPC, agent tool names), restore the admin adapter with cursor paging and add the link port and screen.",
+   "work": "Done: the `integrations` module (five `whatsapp_*` migrations); the webhook and sender deploy (the intake worker is retired); the admin console adapter pages by cursor and adds the review queue, templates and send limits; the member link port backs Settings → WhatsApp with the match-alert switch.",
    "tests": [
     "pgTAP: 102_whatsapp_channel, 103_whatsapp_linking_bot, 104_whatsapp_admin, 105_whatsapp_match_alerts_jobs",
-    "deno test supabase/functions/_shared/whatsapp"
+    "deno test supabase/functions",
+    "vitest: SupabaseWhatsAppAdminRepository, SupabaseWhatsAppLinkRepository, WhatsAppAdminScreen, whatsappLinkScreen"
    ],
-   "degrade": "The three functions are not deployed; the settings row and the admin nav entry are hidden behind `WHATSAPP_BOT_AVAILABLE` (apps/mobile/src/lib/parkedFeatures.ts), and both routes render the not-available notice.",
+   "degrade": "`WHATSAPP_BOT_AVAILABLE` is on; the launch flag `launch_whatsapp_bot_enabled` still hides the settings row and the admin nav entry per environment. The functions do nothing until the channel is switched on and the Meta secrets exist.",
    "risks": "None for launch.",
    "rows": [
     "rpc:api_whatsapp_llm_budget_take",
@@ -1238,21 +1240,38 @@
     "rpc:api_whatsapp_handle_keyword",
     "rpc:api_whatsapp_redeem_link_code",
     "rpc:api_whatsapp_bot_access",
-    "rpc:api_bot_search_listings",
-    "rpc:api_bot_listing_cards",
+    "rpc:api_whatsapp_channel_config",
+    "rpc:api_bot_search_posts",
     "rpc:api_bot_open_session",
     "rpc:api_bot_apply_extraction",
-    "rpc:api_bot_publish_listing",
-    "rpc:api_bot_my_listings",
+    "rpc:api_bot_publish_post",
+    "rpc:api_bot_my_posts",
     "rpc:api_bot_my_matches",
-    "rpc:api_bot_find_matches",
-    "table:whatsapp_channel_config"
+    "rpc:api_whatsapp_my_link_status",
+    "rpc:api_whatsapp_create_link_code",
+    "rpc:api_whatsapp_unlink_me",
+    "rpc:api_whatsapp_set_match_consent",
+    "rpc:api_whatsapp_admin_get_channel",
+    "rpc:api_whatsapp_admin_set_channel_enabled",
+    "rpc:api_whatsapp_admin_overview",
+    "rpc:api_whatsapp_admin_list_consent",
+    "rpc:api_whatsapp_admin_list_outbound",
+    "rpc:api_whatsapp_admin_list_rate_hits",
+    "rpc:api_whatsapp_admin_list_recent_matches",
+    "rpc:api_whatsapp_admin_list_conversations",
+    "rpc:api_whatsapp_admin_resend",
+    "rpc:api_whatsapp_admin_block_user",
+    "rpc:api_whatsapp_admin_review_list",
+    "rpc:api_whatsapp_admin_review_resolve",
+    "rpc:api_whatsapp_admin_list_templates",
+    "rpc:api_whatsapp_admin_set_send_limits",
+    "rpc:api_whatsapp_admin_set_template_status"
    ],
    "counts": {
-    "objects": 20,
-    "oneToOne": 16,
-    "changed": 3,
-    "removed": 1,
+    "objects": 37,
+    "oneToOne": 23,
+    "changed": 14,
+    "removed": 0,
     "missing": 0
    }
   }
@@ -1362,21 +1381,21 @@
   },
   {
    "name": "whatsapp-webhook",
-   "verdict": "park",
-   "uses": "8 api_whatsapp_* RPCs",
-   "change": "The database contract is back with the same names and shapes (M22); not deployed until the bot launches."
+   "verdict": "done",
+   "uses": "api_whatsapp_* webhook RPCs and the agent's api_bot_* tools",
+   "change": "Retargeted: the agent searches with `api_bot_search_posts`, posts with `api_bot_publish_post` (draft outcomes told to the user), lists with `api_bot_my_posts`; an `inactive` member gets no agent and no upsell. Deployed."
   },
   {
    "name": "whatsapp-intake-worker",
    "verdict": "obsolete",
-   "uses": "api_bot_* and api_whatsapp_llm_budget_take",
-   "change": "Retired: the agent's posting tool replaces it, and `api_bot_find_matches` is gone."
+   "uses": "none",
+   "change": "Deleted: the agent's posting tool replaces it, and `api_bot_find_matches` is gone."
   },
   {
    "name": "whatsapp-sender",
-   "verdict": "park",
-   "uses": "whatsapp_channel_config, api_whatsapp_outbound_*",
-   "change": "Read the channel through `api_whatsapp_channel_config()` instead of the table; started by the `whatsapp_send` job."
+   "verdict": "done",
+   "uses": "api_whatsapp_channel_config, api_whatsapp_outbound_*",
+   "change": "Retargeted: reads the channel through `api_whatsapp_channel_config()`; started by the `whatsapp_send` job. Deployed."
   }
  ],
  "rows": [
@@ -3951,116 +3970,13 @@
     }
    ],
    "areas": [
-    "fn:_shared",
-    "fn:whatsapp-intake-worker"
-   ],
-   "callSites": [
-    {
-     "file": "supabase/functions/_shared/whatsapp/agent/tools.ts",
-     "line": 86,
-     "symbol": "call",
-     "area": "fn:_shared"
-    },
-    {
-     "file": "supabase/functions/whatsapp-intake-worker/index.ts",
-     "line": 78,
-     "symbol": "serve",
-     "area": "fn:whatsapp-intake-worker"
-    }
-   ]
-  },
-  {
-   "old": "api_bot_find_matches",
-   "kind": "rpc",
-   "status": "removed",
-   "launch": "later",
-   "confidence": "high",
-   "missing": null,
-   "note": "Only the retired intake worker called it; matches reach the member as notifications (and WhatsApp alerts) and through `api_bot_my_matches`.",
-   "oldObject": {
-    "signature": [
-     "api_bot_find_matches(p_limit?: number, p_listing_id: string, p_owner_id: string) → { candidate_listing_id: string fts_score: number geo_score: number match_status: string score: number trust_score: number vector_score: number }[]"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "fn:whatsapp-intake-worker"
-   ],
-   "callSites": [
-    {
-     "file": "supabase/functions/whatsapp-intake-worker/index.ts",
-     "line": 103,
-     "symbol": "body",
-     "area": "fn:whatsapp-intake-worker"
-    }
-   ]
-  },
-  {
-   "old": "api_bot_listing_cards",
-   "kind": "rpc",
-   "status": "renamed",
-   "launch": "later",
-   "confidence": "high",
-   "missing": null,
-   "note": "Same arguments; rows carry `post_id` (was `listing_id`) and `description` (was `summary`).",
-   "oldObject": {
-    "signature": [
-     "api_bot_listing_cards(p_ids: string[], p_viewer_id: string) → { city_id: string created_at: string direction: string listing_id: string summary: string title: string world_slug: string }[]"
-    ]
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "api_bot_post_cards",
-     "signature": [
-      "api_bot_post_cards(p_ids: string[], p_viewer_id: string) → { city_id: string description: string direction: string post_id: string published_at: string title: string world_slug: string }[]"
-     ],
-     "errors": []
-    }
-   ],
-   "areas": [
     "fn:_shared"
    ],
    "callSites": [
     {
      "file": "supabase/functions/_shared/whatsapp/agent/tools.ts",
-     "line": 58,
-     "symbol": "call",
-     "area": "fn:_shared"
-    }
-   ]
-  },
-  {
-   "old": "api_bot_my_listings",
-   "kind": "rpc",
-   "status": "renamed",
-   "launch": "later",
-   "confidence": "high",
-   "missing": null,
-   "note": "Same arguments; rows carry `post_id` (was `listing_id`).",
-   "oldObject": {
-    "signature": [
-     "api_bot_my_listings(p_limit?: number, p_user_id: string) → { created_at: string direction: string listing_id: string title: string world_slug: string }[]"
-    ]
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "api_bot_my_posts",
-     "signature": [
-      "api_bot_my_posts(p_limit?: number, p_user_id: string) → { created_at: string direction: string post_id: string title: string world_slug: string }[]"
-     ],
-     "errors": []
-    }
-   ],
-   "areas": [
-    "fn:_shared"
-   ],
-   "callSites": [
-    {
-     "file": "supabase/functions/_shared/whatsapp/agent/tools.ts",
-     "line": 104,
-     "symbol": "call",
+     "line": 83,
+     "symbol": "postListing",
      "area": "fn:_shared"
     }
    ]
@@ -4094,8 +4010,39 @@
    "callSites": [
     {
      "file": "supabase/functions/_shared/whatsapp/agent/tools.ts",
-     "line": 110,
-     "symbol": "call",
+     "line": 159,
+     "symbol": "published",
+     "area": "fn:_shared"
+    }
+   ]
+  },
+  {
+   "old": "api_bot_my_posts",
+   "kind": "rpc",
+   "status": "renamed",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Was `api_bot_my_listings`; same arguments; rows carry `post_id` (was `listing_id`).",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_bot_my_posts",
+     "signature": [
+      "api_bot_my_posts(p_limit?: number, p_user_id: string) → { created_at: string direction: string post_id: string title: string world_slug: string }[]"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "fn:_shared"
+   ],
+   "callSites": [
+    {
+     "file": "supabase/functions/_shared/whatsapp/agent/tools.ts",
+     "line": 151,
+     "symbol": "published",
      "area": "fn:_shared"
     }
    ]
@@ -4107,7 +4054,7 @@
    "launch": "later",
    "confidence": "high",
    "missing": null,
-   "note": "`p_record_id` → `p_inbound_message_id` (the inbound row id returned by `api_whatsapp_ingest_inbound`).",
+   "note": "`p_record_id` → `p_inbound_message_id` (the inbound row id returned by `api_whatsapp_ingest_inbound`; may be null).",
    "oldObject": {
     "signature": [
      "api_bot_open_session(p_record_id?: string, p_wa_id: string) → string"
@@ -4124,37 +4071,26 @@
     }
    ],
    "areas": [
-    "fn:_shared",
-    "fn:whatsapp-intake-worker"
+    "fn:_shared"
    ],
    "callSites": [
     {
      "file": "supabase/functions/_shared/whatsapp/agent/tools.ts",
-     "line": 85,
-     "symbol": "call",
+     "line": 79,
+     "symbol": "postListing",
      "area": "fn:_shared"
-    },
-    {
-     "file": "supabase/functions/whatsapp-intake-worker/index.ts",
-     "line": 44,
-     "symbol": "serve",
-     "area": "fn:whatsapp-intake-worker"
     }
    ]
   },
   {
-   "old": "api_bot_publish_listing",
+   "old": "api_bot_publish_post",
    "kind": "rpc",
    "status": "changed",
    "launch": "later",
    "confidence": "high",
    "missing": null,
-   "note": "Returns `{post_id, status, review, photo_required}`: a draft when confidence is below 0.85 (review item) or when an offer in a photo world needs its photo (D132); a food offer needs `details.expires_at`.",
-   "oldObject": {
-    "signature": [
-     "api_bot_publish_listing(p_owner_id: string, p_session_id: string) → string"
-    ]
-   },
+   "note": "Was `api_bot_publish_listing` (returned the listing id): returns `{post_id, status, review, photo_required}`, a draft when confidence is below 0.85 (review item) or when an offer in a photo world needs its photo (D132); a food offer needs `details.expires_at`.",
+   "oldObject": {},
    "targets": [
     {
      "type": "rpc",
@@ -4166,37 +4102,26 @@
     }
    ],
    "areas": [
-    "fn:_shared",
-    "fn:whatsapp-intake-worker"
+    "fn:_shared"
    ],
    "callSites": [
     {
      "file": "supabase/functions/_shared/whatsapp/agent/tools.ts",
-     "line": 96,
-     "symbol": "call",
+     "line": 93,
+     "symbol": "postListing",
      "area": "fn:_shared"
-    },
-    {
-     "file": "supabase/functions/whatsapp-intake-worker/index.ts",
-     "line": 94,
-     "symbol": "body",
-     "area": "fn:whatsapp-intake-worker"
     }
    ]
   },
   {
-   "old": "api_bot_search_listings",
+   "old": "api_bot_search_posts",
    "kind": "rpc",
    "status": "changed",
    "launch": "later",
    "confidence": "high",
    "missing": null,
-   "note": "`(p_user_id, p_query, p_world_slug, p_limit ≤ 8)`; returns the post cards themselves (`post_id`, `world_slug`, `direction`, `title`, `description`, `city_id`, `published_at`) visible to that member, so no second cards call is needed.",
-   "oldObject": {
-    "signature": [
-     "api_bot_search_listings(p_limit?: number, p_owner_id: string, p_query: string, p_world_slug?: string) → { fts_rank: number geo_rank: number listing_id: string rrf_score: number trgm_rank: number vector_rank: number }[]"
-    ]
-   },
+   "note": "Was `api_bot_search_listings(p_owner_id, …)` + `api_bot_listing_cards`: `(p_user_id, p_query, p_world_slug, p_limit ≤ 8)` returns the post cards themselves (`post_id`, `world_slug`, `direction`, `title`, `description`, `city_id`, `published_at`) visible to that member.",
+   "oldObject": {},
    "targets": [
     {
      "type": "rpc",
@@ -4213,8 +4138,8 @@
    "callSites": [
     {
      "file": "supabase/functions/_shared/whatsapp/agent/tools.ts",
-     "line": 50,
-     "symbol": "call",
+     "line": 115,
+     "symbol": "published",
      "area": "fn:_shared"
     }
    ]
@@ -4436,6 +4361,511 @@
    ]
   },
   {
+   "old": "api_whatsapp_admin_block_user",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Same shape; audited.",
+   "oldObject": {
+    "signature": [
+     "api_whatsapp_admin_block_user(p_user_id: string) → undefined"
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_whatsapp_admin_block_user",
+     "signature": [
+      "api_whatsapp_admin_block_user(p_user_id: string) → undefined"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
+     "line": 140,
+     "symbol": "SupabaseWhatsAppAdminRepository.blockUser",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "api_whatsapp_admin_get_channel",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Same shape plus `updated_by`; the switch is audited (`whatsapp_channel_toggle`).",
+   "oldObject": {
+    "signature": [
+     "api_whatsapp_admin_get_channel() → Json"
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_whatsapp_admin_get_channel",
+     "signature": [
+      "api_whatsapp_admin_get_channel() → Json"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
+     "line": 59,
+     "symbol": "SupabaseWhatsAppAdminRepository.getChannel",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "api_whatsapp_admin_list_consent",
+   "kind": "rpc",
+   "status": "changed",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "`p_offset` → `p_cursor` (keyset); no `total_count`; rows add `identity_id` and `cursor`.",
+   "oldObject": {
+    "signature": [
+     "api_whatsapp_admin_list_consent(p_limit?: number, p_offset?: number) → { consent_status: string last_inbound_at: string opted_in: boolean opted_in_at: string opted_out_at: string preferred_language: string total_count: number updated_at: string user_id: string wa_id_masked: string }[]"
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_whatsapp_admin_list_consent",
+     "signature": [
+      "api_whatsapp_admin_list_consent(p_cursor?: Json, p_limit?: number) → { consent_status: string cursor: Json identity_id: string last_inbound_at: string opted_in: boolean opted_in_at: string opted_out_at: string preferred_language: string updated_at: string user_id: string wa_id_masked: ..."
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
+     "line": 74,
+     "symbol": "SupabaseWhatsAppAdminRepository.listConsent",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "api_whatsapp_admin_list_conversations",
+   "kind": "rpc",
+   "status": "changed",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "`listing_id` → `post_id`; rows add `confidence`.",
+   "oldObject": {
+    "signature": [
+     "api_whatsapp_admin_list_conversations(p_limit?: number) → { created_at: string listing_id: string session_id: string state: string updated_at: string user_id: string wa_id_masked: string }[]"
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_whatsapp_admin_list_conversations",
+     "signature": [
+      "api_whatsapp_admin_list_conversations(p_limit?: number) → { confidence: number created_at: string post_id: string session_id: string state: string updated_at: string user_id: string wa_id_masked: string }[]"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
+     "line": 120,
+     "symbol": "SupabaseWhatsAppAdminRepository.listConversations",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "api_whatsapp_admin_list_outbound",
+   "kind": "rpc",
+   "status": "changed",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "`p_offset` → `p_cursor` (keyset) with `p_status`; no `total_count`; rows add `cursor`; `invalid_status` for an unknown status.",
+   "oldObject": {
+    "signature": [
+     "api_whatsapp_admin_list_outbound(p_limit?: number, p_offset?: number, p_status?: string) → { attempts: number created_at: string kind: string language: string last_error: string next_attempt_at: string outbound_id: string sent_at: string status: string template_name: string total_count: number user_id: stri..."
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_whatsapp_admin_list_outbound",
+     "signature": [
+      "api_whatsapp_admin_list_outbound(p_cursor?: Json, p_limit?: number, p_status?: string) → { attempts: number created_at: string cursor: Json kind: string language: string last_error: string next_attempt_at: string outbound_id: string sent_at: string status: string template_name: string user_id: string wa_i..."
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
+     "line": 83,
+     "symbol": "SupabaseWhatsAppAdminRepository.listOutbound",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "api_whatsapp_admin_list_rate_hits",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Same arguments; rows add `expires_at`; the number inside a bucket key is masked.",
+   "oldObject": {
+    "signature": [
+     "api_whatsapp_admin_list_rate_hits(p_limit?: number) → whatsapp_rate_counters row[]"
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_whatsapp_admin_list_rate_hits",
+     "signature": [
+      "api_whatsapp_admin_list_rate_hits(p_limit?: number) → { bucket: string expires_at: string hits: number window_start: string }[]"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
+     "line": 93,
+     "symbol": "SupabaseWhatsAppAdminRepository.listRateHits",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "api_whatsapp_admin_list_recent_matches",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Same shape; `match_found_v1` and `confirm_handoff_v1` of the last 7 days.",
+   "oldObject": {
+    "signature": [
+     "api_whatsapp_admin_list_recent_matches(p_limit?: number) → { created_at: string language: string outbound_id: string payload: Json sent_at: string status: string user_id: string wa_id_masked: string }[]"
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_whatsapp_admin_list_recent_matches",
+     "signature": [
+      "api_whatsapp_admin_list_recent_matches(p_limit?: number) → { created_at: string language: string outbound_id: string payload: Json sent_at: string status: string template_name: string user_id: string wa_id_masked: string }[]"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
+     "line": 104,
+     "symbol": "SupabaseWhatsAppAdminRepository.listRecentMatches",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "api_whatsapp_admin_list_templates",
+   "kind": "rpc",
+   "status": "changed",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "New: the templates and their Meta state.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_whatsapp_admin_list_templates",
+     "signature": [
+      "api_whatsapp_admin_list_templates(body_preview: string, category: string, is_approved: boolean, language_code: string, meta_status: string, meta_template_id: string, params: Json, registry_version: number, template_name: string, updated_at: string) → { body_preview: string category: string is_approved: boolean language_code: string meta_status: string meta_template_id: string params: Json registry_version: number template_name: string updated_at: string }[]"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
+     "line": 162,
+     "symbol": "SupabaseWhatsAppAdminRepository.listTemplates",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "api_whatsapp_admin_overview",
+   "kind": "rpc",
+   "status": "changed",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Adds `review_pending`; rate hits read `kc_private.rate_limit_counters`.",
+   "oldObject": {
+    "signature": [
+     "api_whatsapp_admin_overview() → Json"
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_whatsapp_admin_overview",
+     "signature": [
+      "api_whatsapp_admin_overview() → Json"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
+     "line": 69,
+     "symbol": "SupabaseWhatsAppAdminRepository.overview",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "api_whatsapp_admin_resend",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Same shape (`outbound_not_found`, `not_resendable`); audited.",
+   "oldObject": {
+    "signature": [
+     "api_whatsapp_admin_resend(p_outbound_id: string) → string"
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_whatsapp_admin_resend",
+     "signature": [
+      "api_whatsapp_admin_resend(p_outbound_id: string) → string"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
+     "line": 135,
+     "symbol": "SupabaseWhatsAppAdminRepository.resend",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "api_whatsapp_admin_review_list",
+   "kind": "rpc",
+   "status": "changed",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "New: the review queue of bot posts, keyset-paged (`p_status`, `p_cursor`, `p_limit`).",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_whatsapp_admin_review_list",
+     "signature": [
+      "api_whatsapp_admin_review_list(p_cursor?: Json, p_limit?: number, p_status?: string) → { confidence: number created_at: string cursor: Json owner_id: string post_id: string post_status: string post_title: string reason: string resolved_at: string review_id: string reviewer_id: string session_id: string ..."
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
+     "line": 145,
+     "symbol": "SupabaseWhatsAppAdminRepository.listReviews",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "api_whatsapp_admin_review_resolve",
+   "kind": "rpc",
+   "status": "changed",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "New: `approved` publishes the draft for its owner (`offer_photo_required` without a photo), `rejected` leaves it (`invalid_decision`, `invalid_transition`); audited.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_whatsapp_admin_review_resolve",
+     "signature": [
+      "api_whatsapp_admin_review_resolve(p_decision: string, p_review_id: string) → string"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
+     "line": 154,
+     "symbol": "SupabaseWhatsAppAdminRepository.resolveReview",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "api_whatsapp_admin_set_channel_enabled",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Same shape plus `updated_by`; the switch is audited (`whatsapp_channel_toggle`).",
+   "oldObject": {
+    "signature": [
+     "api_whatsapp_admin_set_channel_enabled(p_enabled: boolean) → Json"
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_whatsapp_admin_set_channel_enabled",
+     "signature": [
+      "api_whatsapp_admin_set_channel_enabled(p_enabled: boolean) → Json"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
+     "line": 64,
+     "symbol": "SupabaseWhatsAppAdminRepository.setChannelEnabled",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "api_whatsapp_admin_set_send_limits",
+   "kind": "rpc",
+   "status": "changed",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "New, super admin: patches the send limits (`invalid_limits`); audited.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_whatsapp_admin_set_send_limits",
+     "signature": [
+      "api_whatsapp_admin_set_send_limits(p_limits: Json) → Json"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
+     "line": 168,
+     "symbol": "SupabaseWhatsAppAdminRepository.setSendLimits",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "api_whatsapp_admin_set_template_status",
+   "kind": "rpc",
+   "status": "changed",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "New, super admin: a template's Meta status (`invalid_status`, `template_not_found`); audited.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_whatsapp_admin_set_template_status",
+     "signature": [
+      "api_whatsapp_admin_set_template_status(p_language_code: string, p_meta_status: string, p_meta_template_id?: string, p_template_name: string) → undefined"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
+     "line": 173,
+     "symbol": "SupabaseWhatsAppAdminRepository.setTemplateStatus",
+     "area": "admin"
+    }
+   ]
+  },
+  {
    "old": "api_whatsapp_bot_access",
    "kind": "rpc",
    "status": "same",
@@ -4471,6 +4901,37 @@
    ]
   },
   {
+   "old": "api_whatsapp_channel_config",
+   "kind": "rpc",
+   "status": "changed",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "New (the old sender read `whatsapp_channel_config` directly): `{is_enabled, phone_number_id, graph_api_version}`; the table moved to `integrations`.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_whatsapp_channel_config",
+     "signature": [
+      "api_whatsapp_channel_config() → Json"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "fn:whatsapp-sender"
+   ],
+   "callSites": [
+    {
+     "file": "supabase/functions/whatsapp-sender/handler.ts",
+     "line": 16,
+     "symbol": "loadChannelConfigViaRpc",
+     "area": "fn:whatsapp-sender"
+    }
+   ]
+  },
+  {
    "old": "api_whatsapp_claim_inbound",
    "kind": "rpc",
    "status": "same",
@@ -4502,6 +4963,41 @@
      "line": 71,
      "symbol": "handleMessage",
      "area": "fn:whatsapp-webhook"
+    }
+   ]
+  },
+  {
+   "old": "api_whatsapp_create_link_code",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "`{code, expires_at}`; `pro_required` for a member without Pro, `rate_limited` after 10 codes an hour (new).",
+   "oldObject": {
+    "signature": [
+     "api_whatsapp_create_link_code() → Json"
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_whatsapp_create_link_code",
+     "signature": [
+      "api_whatsapp_create_link_code() → Json"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "whatsapp"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/whatsapp/SupabaseWhatsAppLinkRepository.ts",
+     "line": 64,
+     "symbol": "SupabaseWhatsAppLinkRepository.createLinkCode",
+     "area": "whatsapp"
     }
    ]
   },
@@ -4634,21 +5130,49 @@
     }
    ],
    "areas": [
-    "fn:_shared",
-    "fn:whatsapp-intake-worker"
+    "fn:_shared"
    ],
    "callSites": [
     {
      "file": "supabase/functions/_shared/whatsapp/agent/run.ts",
-     "line": 30,
+     "line": 55,
      "symbol": "runAgent",
      "area": "fn:_shared"
-    },
+    }
+   ]
+  },
+  {
+   "old": "api_whatsapp_my_link_status",
+   "kind": "rpc",
+   "status": "changed",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Adds `consent_opted_in` and `phone_opted_out` to `{linked, wa_id_masked, is_pro}`.",
+   "oldObject": {
+    "signature": [
+     "api_whatsapp_my_link_status() → Json"
+    ]
+   },
+   "targets": [
     {
-     "file": "supabase/functions/whatsapp-intake-worker/index.ts",
-     "line": 55,
-     "symbol": "body",
-     "area": "fn:whatsapp-intake-worker"
+     "type": "rpc",
+     "name": "api_whatsapp_my_link_status",
+     "signature": [
+      "api_whatsapp_my_link_status() → Json"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "whatsapp"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/whatsapp/SupabaseWhatsAppLinkRepository.ts",
+     "line": 60,
+     "symbol": "SupabaseWhatsAppLinkRepository.getMyStatus",
+     "area": "whatsapp"
     }
    ]
   },
@@ -4752,7 +5276,7 @@
    "callSites": [
     {
      "file": "supabase/functions/_shared/whatsapp/agent/run.ts",
-     "line": 46,
+     "line": 72,
      "symbol": "runAgent",
      "area": "fn:_shared"
     },
@@ -4770,7 +5294,7 @@
     },
     {
      "file": "supabase/functions/whatsapp-webhook/handler.ts",
-     "line": 175,
+     "line": 177,
      "symbol": "access",
      "area": "fn:whatsapp-webhook"
     }
@@ -4843,6 +5367,72 @@
      "line": 81,
      "symbol": "handleMessage",
      "area": "fn:whatsapp-webhook"
+    }
+   ]
+  },
+  {
+   "old": "api_whatsapp_set_match_consent",
+   "kind": "rpc",
+   "status": "changed",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "New app path (the old `api_bot_set_match_consent` had no caller): the caller's own match-alert switch; returns the link status.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_whatsapp_set_match_consent",
+     "signature": [
+      "api_whatsapp_set_match_consent(p_opted_in: boolean) → Json"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "whatsapp"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/whatsapp/SupabaseWhatsAppLinkRepository.ts",
+     "line": 73,
+     "symbol": "SupabaseWhatsAppLinkRepository.setMatchConsent",
+     "area": "whatsapp"
+    }
+   ]
+  },
+  {
+   "old": "api_whatsapp_unlink_me",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Unlinks the caller's number; the phone row and its consent history stay.",
+   "oldObject": {
+    "signature": [
+     "api_whatsapp_unlink_me() → undefined"
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_whatsapp_unlink_me",
+     "signature": [
+      "api_whatsapp_unlink_me() → undefined"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "whatsapp"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/whatsapp/SupabaseWhatsAppLinkRepository.ts",
+     "line": 68,
+     "symbol": "SupabaseWhatsAppLinkRepository.unlink",
+     "area": "whatsapp"
     }
    ]
   },
@@ -7446,7 +8036,7 @@
       },
       {
        "code": "invalid_decision",
-       "knownToApp": false
+       "knownToApp": true
       },
       {
        "code": "unauthenticated",
@@ -12954,7 +13544,7 @@
       },
       {
        "code": "invalid_decision",
-       "knownToApp": false
+       "knownToApp": true
       },
       {
        "code": "unauthenticated",
@@ -16842,50 +17432,6 @@
      "line": 204,
      "symbol": "SupabaseVolunteerRepository.listShiftVolunteers",
      "area": "volunteering",
-     "ops": [
-      "select"
-     ]
-    }
-   ]
-  },
-  {
-   "old": "whatsapp_channel_config",
-   "kind": "table",
-   "status": "changed",
-   "launch": "later",
-   "confidence": "high",
-   "missing": null,
-   "note": "The table moved to `integrations`; the sender reads `api_whatsapp_channel_config()` → `{is_enabled, phone_number_id, graph_api_version}`.",
-   "oldObject": {
-    "columns": [
-     "config_id",
-     "graph_api_version",
-     "is_enabled",
-     "phone_number_id",
-     "source_id",
-     "updated_at"
-    ],
-    "isView": false
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "api_whatsapp_channel_config",
-     "signature": [
-      "api_whatsapp_channel_config() → Json"
-     ],
-     "errors": []
-    }
-   ],
-   "areas": [
-    "fn:whatsapp-sender"
-   ],
-   "callSites": [
-    {
-     "file": "supabase/functions/whatsapp-sender/index.ts",
-     "line": 19,
-     "symbol": "serve",
-     "area": "fn:whatsapp-sender",
      "ops": [
       "select"
      ]

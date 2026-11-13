@@ -292,10 +292,11 @@ Besides the two category toggles (FR-NOTIF-014), the user can turn off a single 
 - AC1. Preferences carry an optional `kinds` map (`{ <notification kind>: false }`). Opt-out model: a missing key means "on", so existing users keep every notification (no backfill).
 - AC2. Updating one kind keeps the other kinds (`users_merge_notification_preferences` merges `kinds` per key; a non-object `kinds` is rejected with `22023`). Only the caller's own row is written.
 - AC3. Settings → Notifications shows a "Match suggestions" toggle (he + en), default on, applied optimistically.
-- AC4. With `match_suggested` off, `match_deliver_pending` sends no in-app, push or WhatsApp match alert to that user; their side is settled (`delivery.<side>.opted_out = true`) and does not count toward the daily cap (§7.11: 3/day).
+- AC4. With `match_suggested` off, `match_deliver_pending` sends no in-app, push or WhatsApp match alert to that user; their side is settled (`delivery.<side>.opted_out = true`) and does not count toward the daily cap (§7.11: 3/day). The WhatsApp alert is queued from the delivered notification itself (a `match_suggested` or `match_accepted` row of `notifications` queues `match_found_v1` / `confirm_handoff_v1`, migration `whatsapp_match_alerts_and_jobs`), so a kind that is off, or a capped alert, never reaches WhatsApp either.
+- AC6. A WhatsApp match alert also needs the WhatsApp channel switched on (admin console kill switch), a number linked to the member (Settings → WhatsApp, Pro only, D143), the member's own **Match alerts on WhatsApp** switch on (Settings → WhatsApp, `api_whatsapp_set_match_consent`; off by default), no STOP sent from that phone (only START from the phone lifts it; the app switch does not), an approved template, and the send limits. A member without a linked number is skipped before any message row is written. Staff can stop every message to a member (Block). The phone row and its consent history outlive an unlink or a purge ({{D:whatsapp-phone-kept-after-purge}}).
 - AC5. Opting out of alerts does not hide the match itself: it stays in "Matches for you" (`rpc_my_matches`).
 
-**Related.** Migration `0460` · Domain `isNotificationKindEnabled` · Application `applyNotificationPreferencesPatch` · Tests `supabase/tests/0460_notification_kind_preferences.sql`, `packages/domain/src/__tests__/notifications.test.ts`, `packages/application/src/notifications/__tests__/`.
+**Related.** Migration `0460` · Domain `isNotificationKindEnabled` · Application `applyNotificationPreferencesPatch` · Tests `supabase/tests/0460_notification_kind_preferences.sql`, `packages/domain/src/__tests__/notifications.test.ts`, `packages/application/src/notifications/__tests__/`. WhatsApp (AC4, AC6): migrations `whatsapp_*` (module `integrations`) · Domain `WhatsAppLink` · Application `SetWhatsAppMatchConsentUseCase` · Tests `supabase/tests/105_whatsapp_match_alerts_jobs.sql`, `app/apps/mobile/src/hooks/__tests__/whatsappLinkScreen.test.tsx`.
 
 ---
 
@@ -325,3 +326,4 @@ Every change to an item or food handoff (`giving_handoffs`) pushes the other sid
 | 0.1 | 2026-05-05 | Initial draft. Master list synthesized from PRD flows + Decisions D-5, D-6, D-7. |
 | 0.2 | 2026-10-30 | FR-NOTIF-017 per-type opt-out (match suggestions); FR-NOTIF-016 marked superseded by D26. |
 | 0.3 | 2026-11-02 | FR-NOTIF-018 item and food handoff pushes (KC#1391). |
+| 0.4 | 2026-11-13 | FR-NOTIF-017 AC4 and new AC6: WhatsApp match alerts restored on the notification centre, with the member's own WhatsApp alert switch. |

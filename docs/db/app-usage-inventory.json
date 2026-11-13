@@ -20,12 +20,12 @@
    "distinct": 3
   },
   "rpc": {
-   "callSites": 252,
-   "distinct": 225
+   "callSites": 266,
+   "distinct": 243
   },
   "table": {
-   "callSites": 187,
-   "distinct": 64
+   "callSites": 186,
+   "distinct": 63
   }
  },
  "entries": [
@@ -676,6 +676,141 @@
    "symbol": "SupabaseTimesheetsRepository.delete",
    "via": "literal",
    "name": "timesheet_delete"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
+   "line": 59,
+   "area": "admin",
+   "symbol": "SupabaseWhatsAppAdminRepository.getChannel",
+   "via": "literal",
+   "name": "api_whatsapp_admin_get_channel"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
+   "line": 64,
+   "area": "admin",
+   "symbol": "SupabaseWhatsAppAdminRepository.setChannelEnabled",
+   "via": "literal",
+   "name": "api_whatsapp_admin_set_channel_enabled"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
+   "line": 69,
+   "area": "admin",
+   "symbol": "SupabaseWhatsAppAdminRepository.overview",
+   "via": "literal",
+   "name": "api_whatsapp_admin_overview"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
+   "line": 74,
+   "area": "admin",
+   "symbol": "SupabaseWhatsAppAdminRepository.listConsent",
+   "via": "literal",
+   "name": "api_whatsapp_admin_list_consent"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
+   "line": 83,
+   "area": "admin",
+   "symbol": "SupabaseWhatsAppAdminRepository.listOutbound",
+   "via": "literal",
+   "name": "api_whatsapp_admin_list_outbound"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
+   "line": 93,
+   "area": "admin",
+   "symbol": "SupabaseWhatsAppAdminRepository.listRateHits",
+   "via": "literal",
+   "name": "api_whatsapp_admin_list_rate_hits"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
+   "line": 104,
+   "area": "admin",
+   "symbol": "SupabaseWhatsAppAdminRepository.listRecentMatches",
+   "via": "literal",
+   "name": "api_whatsapp_admin_list_recent_matches"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
+   "line": 120,
+   "area": "admin",
+   "symbol": "SupabaseWhatsAppAdminRepository.listConversations",
+   "via": "literal",
+   "name": "api_whatsapp_admin_list_conversations"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
+   "line": 135,
+   "area": "admin",
+   "symbol": "SupabaseWhatsAppAdminRepository.resend",
+   "via": "literal",
+   "name": "api_whatsapp_admin_resend"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
+   "line": 140,
+   "area": "admin",
+   "symbol": "SupabaseWhatsAppAdminRepository.blockUser",
+   "via": "literal",
+   "name": "api_whatsapp_admin_block_user"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
+   "line": 145,
+   "area": "admin",
+   "symbol": "SupabaseWhatsAppAdminRepository.listReviews",
+   "via": "literal",
+   "name": "api_whatsapp_admin_review_list"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
+   "line": 154,
+   "area": "admin",
+   "symbol": "SupabaseWhatsAppAdminRepository.resolveReview",
+   "via": "literal",
+   "name": "api_whatsapp_admin_review_resolve"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
+   "line": 162,
+   "area": "admin",
+   "symbol": "SupabaseWhatsAppAdminRepository.listTemplates",
+   "via": "literal",
+   "name": "api_whatsapp_admin_list_templates"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
+   "line": 168,
+   "area": "admin",
+   "symbol": "SupabaseWhatsAppAdminRepository.setSendLimits",
+   "via": "literal",
+   "name": "api_whatsapp_admin_set_send_limits"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
+   "line": 173,
+   "area": "admin",
+   "symbol": "SupabaseWhatsAppAdminRepository.setTemplateStatus",
+   "via": "literal",
+   "name": "api_whatsapp_admin_set_template_status"
   },
   {
    "kind": "rpc",
@@ -4317,6 +4452,42 @@
    "name": "users"
   },
   {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/whatsapp/SupabaseWhatsAppLinkRepository.ts",
+   "line": 60,
+   "area": "whatsapp",
+   "symbol": "SupabaseWhatsAppLinkRepository.getMyStatus",
+   "via": "literal",
+   "name": "api_whatsapp_my_link_status"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/whatsapp/SupabaseWhatsAppLinkRepository.ts",
+   "line": 64,
+   "area": "whatsapp",
+   "symbol": "SupabaseWhatsAppLinkRepository.createLinkCode",
+   "via": "literal",
+   "name": "api_whatsapp_create_link_code"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/whatsapp/SupabaseWhatsAppLinkRepository.ts",
+   "line": 68,
+   "area": "whatsapp",
+   "symbol": "SupabaseWhatsAppLinkRepository.unlink",
+   "via": "literal",
+   "name": "api_whatsapp_unlink_me"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/whatsapp/SupabaseWhatsAppLinkRepository.ts",
+   "line": 73,
+   "area": "whatsapp",
+   "symbol": "SupabaseWhatsAppLinkRepository.setMatchConsent",
+   "via": "literal",
+   "name": "api_whatsapp_set_match_consent"
+  },
+  {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/worlds/SupabaseWorldContentRepository.ts",
    "line": 28,
@@ -4355,7 +4526,7 @@
   {
    "kind": "rpc",
    "file": "supabase/functions/_shared/whatsapp/agent/run.ts",
-   "line": 30,
+   "line": 55,
    "area": "fn:_shared",
    "symbol": "runAgent",
    "via": "literal",
@@ -4364,7 +4535,7 @@
   {
    "kind": "rpc",
    "file": "supabase/functions/_shared/whatsapp/agent/run.ts",
-   "line": 46,
+   "line": 72,
    "area": "fn:_shared",
    "symbol": "runAgent",
    "via": "literal",
@@ -4372,65 +4543,56 @@
   },
   {
    "kind": "rpc",
-   "name": "api_bot_search_listings",
-   "file": "supabase/functions/_shared/whatsapp/agent/tools.ts",
-   "line": 50,
-   "area": "fn:_shared",
-   "symbol": "call",
-   "via": "wrapper:call"
-  },
-  {
-   "kind": "rpc",
-   "name": "api_bot_listing_cards",
-   "file": "supabase/functions/_shared/whatsapp/agent/tools.ts",
-   "line": 58,
-   "area": "fn:_shared",
-   "symbol": "call",
-   "via": "wrapper:call"
-  },
-  {
-   "kind": "rpc",
    "name": "api_bot_open_session",
    "file": "supabase/functions/_shared/whatsapp/agent/tools.ts",
-   "line": 85,
+   "line": 79,
    "area": "fn:_shared",
-   "symbol": "call",
+   "symbol": "postListing",
    "via": "wrapper:call"
   },
   {
    "kind": "rpc",
    "name": "api_bot_apply_extraction",
    "file": "supabase/functions/_shared/whatsapp/agent/tools.ts",
-   "line": 86,
+   "line": 83,
    "area": "fn:_shared",
-   "symbol": "call",
+   "symbol": "postListing",
    "via": "wrapper:call"
   },
   {
    "kind": "rpc",
-   "name": "api_bot_publish_listing",
+   "name": "api_bot_publish_post",
    "file": "supabase/functions/_shared/whatsapp/agent/tools.ts",
-   "line": 96,
+   "line": 93,
    "area": "fn:_shared",
-   "symbol": "call",
+   "symbol": "postListing",
    "via": "wrapper:call"
   },
   {
    "kind": "rpc",
-   "name": "api_bot_my_listings",
+   "name": "api_bot_search_posts",
    "file": "supabase/functions/_shared/whatsapp/agent/tools.ts",
-   "line": 104,
+   "line": 115,
    "area": "fn:_shared",
-   "symbol": "call",
+   "symbol": "published",
+   "via": "wrapper:call"
+  },
+  {
+   "kind": "rpc",
+   "name": "api_bot_my_posts",
+   "file": "supabase/functions/_shared/whatsapp/agent/tools.ts",
+   "line": 151,
+   "area": "fn:_shared",
+   "symbol": "published",
    "via": "wrapper:call"
   },
   {
    "kind": "rpc",
    "name": "api_bot_my_matches",
    "file": "supabase/functions/_shared/whatsapp/agent/tools.ts",
-   "line": 110,
+   "line": 159,
    "area": "fn:_shared",
-   "symbol": "call",
+   "symbol": "published",
    "via": "wrapper:call"
   },
   {
@@ -4701,60 +4863,12 @@
   },
   {
    "kind": "rpc",
-   "file": "supabase/functions/whatsapp-intake-worker/index.ts",
-   "line": 44,
-   "area": "fn:whatsapp-intake-worker",
-   "symbol": "serve",
-   "via": "literal",
-   "name": "api_bot_open_session"
-  },
-  {
-   "kind": "rpc",
-   "file": "supabase/functions/whatsapp-intake-worker/index.ts",
-   "line": 55,
-   "area": "fn:whatsapp-intake-worker",
-   "symbol": "body",
-   "via": "literal",
-   "name": "api_whatsapp_llm_budget_take"
-  },
-  {
-   "kind": "rpc",
-   "file": "supabase/functions/whatsapp-intake-worker/index.ts",
-   "line": 78,
-   "area": "fn:whatsapp-intake-worker",
-   "symbol": "serve",
-   "via": "literal",
-   "name": "api_bot_apply_extraction"
-  },
-  {
-   "kind": "rpc",
-   "file": "supabase/functions/whatsapp-intake-worker/index.ts",
-   "line": 94,
-   "area": "fn:whatsapp-intake-worker",
-   "symbol": "body",
-   "via": "literal",
-   "name": "api_bot_publish_listing"
-  },
-  {
-   "kind": "rpc",
-   "file": "supabase/functions/whatsapp-intake-worker/index.ts",
-   "line": 103,
-   "area": "fn:whatsapp-intake-worker",
-   "symbol": "body",
-   "via": "literal",
-   "name": "api_bot_find_matches"
-  },
-  {
-   "kind": "table",
-   "file": "supabase/functions/whatsapp-sender/index.ts",
-   "line": 19,
+   "file": "supabase/functions/whatsapp-sender/handler.ts",
+   "line": 16,
    "area": "fn:whatsapp-sender",
-   "symbol": "serve",
+   "symbol": "loadChannelConfigViaRpc",
    "via": "literal",
-   "ops": [
-    "select"
-   ],
-   "name": "whatsapp_channel_config"
+   "name": "api_whatsapp_channel_config"
   },
   {
    "kind": "rpc",
@@ -4840,7 +4954,7 @@
   {
    "kind": "rpc",
    "file": "supabase/functions/whatsapp-webhook/handler.ts",
-   "line": 175,
+   "line": 177,
    "area": "fn:whatsapp-webhook",
    "symbol": "access",
    "via": "literal",

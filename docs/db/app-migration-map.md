@@ -8,12 +8,12 @@ The application (`app/packages/infrastructure-supabase`, `app/apps/mobile`) and 
 
 | Kind | Objects used | 1:1 | 1:1 (renamed) | CHANGED | REMOVED | MISSING |
 | --- | --- | --- | --- | --- | --- | --- |
-| RPCs | 225 | 161 | 23 | 40 | 1 | 0 |
-| Tables and views | 64 | 46 | 0 | 18 | 0 | 0 |
+| RPCs | 243 | 169 | 22 | 52 | 0 | 0 |
+| Tables and views | 63 | 46 | 0 | 17 | 0 | 0 |
 | Storage buckets | 4 | 3 | 0 | 1 | 0 | 0 |
 | Realtime channels | 9 | 9 | 0 | 0 | 0 | 0 |
 | Edge Function invokes | 3 | 3 | 0 | 0 | 0 | 0 |
-| **Total** | 305 | 222 | 23 | 59 | 1 | 0 |
+| **Total** | 322 | 230 | 22 | 70 | 0 | 0 |
 
 ### Launch scope
 
@@ -23,7 +23,7 @@ Every row carries `launch` (spec D102, `docs/spec/96_launch_and_first_group_plan
 | --- | --- | --- | --- | --- | --- | --- |
 | core | 127 | 103 | 1 | 23 | 0 | 0 |
 | wedge | 53 | 32 | 15 | 6 | 0 | 0 |
-| later | 125 | 87 | 7 | 30 | 1 | 0 |
+| later | 142 | 95 | 6 | 41 | 0 | 0 |
 | **Launch-critical (core + wedge)** | 180 | 135 | 16 | 29 | 0 | 0 |
 
 Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename of the function or its arguments · **CHANGED** the caller's logic changes · **REMOVED** no replacement by design · **MISSING** the baseline has no equivalent although the code needs one (§4). Confidence: **high** read in the baseline source, **medium** inferred from names and generated types.
@@ -45,7 +45,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | Module | Call sites | 1:1 | Logic changes | Removed | MISSING |
 | --- | --- | --- | --- | --- | --- |
 | `infrastructure-supabase/src/about/` | 1 | 1 | 0 | 0 | 0 |
-| `infrastructure-supabase/src/admin/` | 50 | 31 | 19 | 0 | 0 |
+| `infrastructure-supabase/src/admin/` | 65 | 37 | 28 | 0 | 0 |
 | `infrastructure-supabase/src/auth/` | 2 | 2 | 0 | 0 | 0 |
 | `infrastructure-supabase/src/blocks/` | 4 | 4 | 0 | 0 | 0 |
 | `infrastructure-supabase/src/challenges/` | 9 | 6 | 3 | 0 | 0 |
@@ -76,9 +76,10 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `infrastructure-supabase/src/translations/` | 6 | 3 | 3 | 0 | 0 |
 | `infrastructure-supabase/src/users/` | 34 | 21 | 13 | 0 | 0 |
 | `infrastructure-supabase/src/volunteering/` | 9 | 3 | 6 | 0 | 0 |
+| `infrastructure-supabase/src/whatsapp/` | 4 | 2 | 2 | 0 | 0 |
 | `infrastructure-supabase/src/worlds/` | 3 | 1 | 2 | 0 | 0 |
 | `apps/mobile` (direct calls outside the adapters) | 18 | 17 | 1 | 0 | 0 |
-| Edge Function `_shared` | 11 | 9 | 2 | 0 | 0 |
+| Edge Function `_shared` | 10 | 8 | 2 | 0 | 0 |
 | Edge Function `backfill-image-thumbs` | 2 | 0 | 2 | 0 | 0 |
 | Edge Function `embed-worker` | 3 | 3 | 0 | 0 | 0 |
 | Edge Function `match-rerank` | 2 | 1 | 1 | 0 | 0 |
@@ -90,7 +91,6 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | Edge Function `subscriptions-charger` | 1 | 1 | 0 | 0 | 0 |
 | Edge Function `translate` | 3 | 0 | 3 | 0 | 0 |
 | Edge Function `validate-donation-link` | 5 | 1 | 4 | 0 | 0 |
-| Edge Function `whatsapp-intake-worker` | 5 | 3 | 1 | 1 | 0 |
 | Edge Function `whatsapp-sender` | 1 | 0 | 1 | 0 | 0 |
 | Edge Function `whatsapp-webhook` | 10 | 10 | 0 | 0 | 0 |
 
@@ -104,7 +104,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 
 ### `infrastructure-supabase/src/admin/`
 
-50 call sites: 31 map 1:1, 19 need logic changes, 0 removed, 0 MISSING.
+65 call sites: 37 map 1:1, 28 need logic changes, 0 removed, 0 MISSING.
 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -128,6 +128,21 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `admin_task_open_count` | later | 1:1 | `admin_task_open_count() → number` | New: open and in-progress tasks for the dashboard card. |  | high | SupabaseAdminTaskRepository.ts:59 |
 | `admin_task_set_status` | later | 1:1 | `admin_task_set_status(p_new_status: string, p_task_id: string) → undefined` | Same arguments; refusals are P0001 with the old codes (`invalid_transition`, `assignee_not_admin`, …), `forbidden` is 42501. |  | high | SupabaseAdminTaskRepository.ts:98 |
 | `admin_task_update` | later | 1:1 | `admin_task_update(p_category?: string, p_clear_due?: boolean, p_description?: string, p_due_at?: string, p_labels?: string[], p_priority?: string, p_task_id: string, p_title?: string) → undefined` | Same arguments; refusals are P0001 with the old codes (`invalid_transition`, `assignee_not_admin`, …), `forbidden` is 42501. |  | high | SupabaseAdminTaskRepository.ts:84 |
+| `api_whatsapp_admin_block_user` | later | 1:1 | `api_whatsapp_admin_block_user(p_user_id: string) → undefined` | Same shape; audited. |  | high | SupabaseWhatsAppAdminRepository.ts:140 |
+| `api_whatsapp_admin_get_channel` | later | 1:1 | `api_whatsapp_admin_get_channel() → Json` | Same shape plus `updated_by`; the switch is audited (`whatsapp_channel_toggle`). |  | high | SupabaseWhatsAppAdminRepository.ts:59 |
+| `api_whatsapp_admin_list_consent` | later | CHANGED | `api_whatsapp_admin_list_consent(p_cursor?: Json, p_limit?: number) → { consent_status: string cursor: Json identity_id: string last_inbound_at: string opted_in: boolean opted_in_at: string opted_out_at: string preferred_language: string updated_at: string user_id: string wa_id_masked: ...` | `p_offset` → `p_cursor` (keyset); no `total_count`; rows add `identity_id` and `cursor`. |  | high | SupabaseWhatsAppAdminRepository.ts:74 |
+| `api_whatsapp_admin_list_conversations` | later | CHANGED | `api_whatsapp_admin_list_conversations(p_limit?: number) → { confidence: number created_at: string post_id: string session_id: string state: string updated_at: string user_id: string wa_id_masked: string }[]` | `listing_id` → `post_id`; rows add `confidence`. |  | high | SupabaseWhatsAppAdminRepository.ts:120 |
+| `api_whatsapp_admin_list_outbound` | later | CHANGED | `api_whatsapp_admin_list_outbound(p_cursor?: Json, p_limit?: number, p_status?: string) → { attempts: number created_at: string cursor: Json kind: string language: string last_error: string next_attempt_at: string outbound_id: string sent_at: string status: string template_name: string user_id: string wa_i...` | `p_offset` → `p_cursor` (keyset) with `p_status`; no `total_count`; rows add `cursor`; `invalid_status` for an unknown status. |  | high | SupabaseWhatsAppAdminRepository.ts:83 |
+| `api_whatsapp_admin_list_rate_hits` | later | 1:1 | `api_whatsapp_admin_list_rate_hits(p_limit?: number) → { bucket: string expires_at: string hits: number window_start: string }[]` | Same arguments; rows add `expires_at`; the number inside a bucket key is masked. |  | high | SupabaseWhatsAppAdminRepository.ts:93 |
+| `api_whatsapp_admin_list_recent_matches` | later | 1:1 | `api_whatsapp_admin_list_recent_matches(p_limit?: number) → { created_at: string language: string outbound_id: string payload: Json sent_at: string status: string template_name: string user_id: string wa_id_masked: string }[]` | Same shape; `match_found_v1` and `confirm_handoff_v1` of the last 7 days. |  | high | SupabaseWhatsAppAdminRepository.ts:104 |
+| `api_whatsapp_admin_list_templates` | later | CHANGED | `api_whatsapp_admin_list_templates(body_preview: string, category: string, is_approved: boolean, language_code: string, meta_status: string, meta_template_id: string, params: Json, registry_version: number, template_name: string, updated_at: string) → { body_preview: string category: string is_approved: boolean language_code: string meta_status: string meta_template_id: string params: Json registry_version: number template_name: string updated_at: string }[]` | New: the templates and their Meta state. |  | high | SupabaseWhatsAppAdminRepository.ts:162 |
+| `api_whatsapp_admin_overview` | later | CHANGED | `api_whatsapp_admin_overview() → Json` | Adds `review_pending`; rate hits read `kc_private.rate_limit_counters`. |  | high | SupabaseWhatsAppAdminRepository.ts:69 |
+| `api_whatsapp_admin_resend` | later | 1:1 | `api_whatsapp_admin_resend(p_outbound_id: string) → string` | Same shape (`outbound_not_found`, `not_resendable`); audited. |  | high | SupabaseWhatsAppAdminRepository.ts:135 |
+| `api_whatsapp_admin_review_list` | later | CHANGED | `api_whatsapp_admin_review_list(p_cursor?: Json, p_limit?: number, p_status?: string) → { confidence: number created_at: string cursor: Json owner_id: string post_id: string post_status: string post_title: string reason: string resolved_at: string review_id: string reviewer_id: string session_id: string ...` | New: the review queue of bot posts, keyset-paged (`p_status`, `p_cursor`, `p_limit`). |  | high | SupabaseWhatsAppAdminRepository.ts:145 |
+| `api_whatsapp_admin_review_resolve` | later | CHANGED | `api_whatsapp_admin_review_resolve(p_decision: string, p_review_id: string) → string` | New: `approved` publishes the draft for its owner (`offer_photo_required` without a photo), `rejected` leaves it (`invalid_decision`, `invalid_transition`); audited. |  | high | SupabaseWhatsAppAdminRepository.ts:154 |
+| `api_whatsapp_admin_set_channel_enabled` | later | 1:1 | `api_whatsapp_admin_set_channel_enabled(p_enabled: boolean) → Json` | Same shape plus `updated_by`; the switch is audited (`whatsapp_channel_toggle`). |  | high | SupabaseWhatsAppAdminRepository.ts:64 |
+| `api_whatsapp_admin_set_send_limits` | later | CHANGED | `api_whatsapp_admin_set_send_limits(p_limits: Json) → Json` | New, super admin: patches the send limits (`invalid_limits`); audited. |  | high | SupabaseWhatsAppAdminRepository.ts:168 |
+| `api_whatsapp_admin_set_template_status` | later | CHANGED | `api_whatsapp_admin_set_template_status(p_language_code: string, p_meta_status: string, p_meta_template_id?: string, p_template_name: string) → undefined` | New, super admin: a template's Meta status (`invalid_status`, `template_not_found`); audited. |  | high | SupabaseWhatsAppAdminRepository.ts:173 |
 | `crm_contact_count` | later | 1:1 | `crm_contact_count(p_org_id: string, p_query?: string, p_status?: string, p_tag?: string) → number` | New: the total of the list filters. |  | high | SupabaseCrmContactsRepository.ts:91 |
 | `crm_contact_delete` | later | 1:1 | `crm_contact_delete(p_contact_id: string) → undefined` | Same arguments; the caller must manage the contact's organization. |  | high | SupabaseCrmContactsRepository.ts:115 |
 | `crm_contact_list` | later | CHANGED | `crm_contact_list(p_cursor?: Json, p_limit?: number, p_org_id: string, p_query?: string, p_status?: string, p_tag?: string) → { contact: Json cursor: Json }[]` | New `p_org_id`; rows are `(contact jsonb, cursor jsonb)`; the total moves to `crm_contact_count`. |  | high | SupabaseCrmContactsRepository.ts:90 |
@@ -611,7 +626,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `topic = 'user:${userId}:account'` (channel) | core | 1:1 | topic `user:<user_id>:account` | Already on the baseline contract (event `account_changed` with `status`, `status_until`, `onboarding_state`; M24, built for the account gate): the account gate subscribes here instead of to a `users` row. |  | high | SupabaseUserRealtime.ts:64 |
 | `chat_counterpart_contact` | core | 1:1 | `chat_counterpart_contact(p_chat_id: string) → string` | `p_chat_id`; the counterpart's phone as text, null when the caller cannot use the chat, it is a support thread, the counterpart is inactive or has no phone (M06, built). | `unauthenticated` | high | getChatCounterpartyContact.ts:16 |
 | `follow_request_cancel` | core | 1:1 | `follow_request_cancel(p_target: string) → undefined` | `p_target`; a request that is no longer pending is treated as already cancelled. | `follow_request_not_pending`, `unauthenticated` | high | followRequestMethods.ts:77 |
-| `follow_request_decide` | core | 1:1 | `follow_request_decide(p_accept: boolean, p_requester: string) → undefined` | `p_requester`, `p_accept`; a request that is no longer pending (`follow_request_not_pending`) is treated as already decided. | `account_not_active`, `follow_request_not_pending`, `invalid_decision` †, `unauthenticated` | high | followRequestMethods.ts:85 |
+| `follow_request_decide` | core | 1:1 | `follow_request_decide(p_accept: boolean, p_requester: string) → undefined` | `p_requester`, `p_accept`; a request that is no longer pending (`follow_request_not_pending`) is treated as already decided. | `account_not_active`, `follow_request_not_pending`, `invalid_decision`, `unauthenticated` | high | followRequestMethods.ts:85 |
 | `follow_user` | core | 1:1 | `follow_user(p_target: string) → string` | `p_target`; answers `following` or `requested`, idempotent. Refusals: `self_follow_forbidden`, `blocked_relationship`, `follow_request_cooldown_active` (detail `cooldown_until=`), `account_not_active`, `rate_limited`, `user_unavailable`. | `account_not_active`, `blocked_relationship`, `follow_request_cooldown_active`, `invalid_rate_limit_args`, `rate_limited`, `self_follow_forbidden`, `unauthenticated`, `user_unavailable` | high | followUserRpc.ts:16 |
 | `my_karma_points` | core | 1:1 | `my_karma_points() → number` | The caller's own karma total (the `user_stats.karma_points` column is not readable by clients). |  | high | userReads.ts:36 |
 | `request_account_deletion` | core | 1:1 | `request_account_deletion() → string` | Deactivates the caller's account for 30 days and returns the purge date (refusals `suspended`, `user_not_found`); the app calls it directly. | `suspended`, `unauthenticated`, `user_not_found` | high | SupabaseUserRepository.ts:169 |
@@ -619,7 +634,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `set_onboarding_state` | core | 1:1 | `set_onboarding_state(p_state: string) → undefined` | `p_state`; refusals `onboarding_basic_info_missing`, `onboarding_transition_invalid`. | `onboarding_basic_info_missing`, `onboarding_transition_invalid`, `unauthenticated`, `user_not_found` | high | onboardingSupabase.ts:60 |
 | `set_privacy_mode` | core | 1:1 | `set_privacy_mode(p_mode: string) → undefined` | `p_mode` 'Public' \| 'Private'; going public accepts every pending follow request. | `account_not_active`, `invalid_privacy_mode` †, `unauthenticated` | high | SupabaseUserRepository.ts:94 |
 | `cities` (table) | core | CHANGED | see `infrastructure-supabase/src/cities/` |  |  |  | editableProfileSupabase.ts:40, userReads.ts:49 |
-| `follow_requests` (table) | core | CHANGED | table `follow_requests`<br>`follow_user(p_target: string) → string`<br>`follow_request_decide(p_accept: boolean, p_requester: string) → undefined`<br>`follow_request_cancel(p_target: string) → undefined` | Read-only for clients. Insert → `follow_user`; accept / reject → `follow_request_decide(p_requester, p_accept)`; cancel → `follow_request_cancel(p_target)`. Status column is ruled by the follow_request machine. | `account_not_active`, `blocked_relationship`, `follow_request_cooldown_active`, `invalid_rate_limit_args`, `rate_limited`, `self_follow_forbidden`, `unauthenticated`, `user_unavailable`, `follow_request_not_pending`, `invalid_decision` † | high | followRequestMethods.ts:104, followRequestMethods.ts:120, getFollowState.ts:19, getFollowState.ts:26 |
+| `follow_requests` (table) | core | CHANGED | table `follow_requests`<br>`follow_user(p_target: string) → string`<br>`follow_request_decide(p_accept: boolean, p_requester: string) → undefined`<br>`follow_request_cancel(p_target: string) → undefined` | Read-only for clients. Insert → `follow_user`; accept / reject → `follow_request_decide(p_requester, p_accept)`; cancel → `follow_request_cancel(p_target)`. Status column is ruled by the follow_request machine. | `account_not_active`, `blocked_relationship`, `follow_request_cooldown_active`, `invalid_rate_limit_args`, `rate_limited`, `self_follow_forbidden`, `unauthenticated`, `user_unavailable`, `follow_request_not_pending`, `invalid_decision` | high | followRequestMethods.ts:104, followRequestMethods.ts:120, getFollowState.ts:19, getFollowState.ts:26 |
 | `follows` (table) | core | 1:1 | table `follows` | Select and delete direct (`follower_id`, `followed_id`); an edge is created only by `follow_user`. |  | high | followMethods.ts:41, followMethods.ts:53, followMethods.ts:80, followMethods.ts:100, getFollowState.ts:17 |
 | `user_private` (table) | core | 1:1 | table `user_private` | The caller's own row: select, and update of the granted columns (contact phone, address lines, notification preferences, dismiss flags, `basic_info_skipped`, `show_active_status`). |  | high | editableProfileSupabase.ts:24, ownPrivateUpdate.ts:27, SupabaseActiveStatusRepository.ts:20, SupabaseUserRepository.ts:230 |
 | `user_stats` (table) | core | 1:1 | see `infrastructure-supabase/src/search/` |  |  |  | userReads.ts:60 |
@@ -637,6 +652,17 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `post_handoffs` (table) | core | CHANGED | see `infrastructure-supabase/src/housing/` |  |  |  | SupabaseVolunteerRepository.ts:114, SupabaseVolunteerRepository.ts:138, SupabaseVolunteerRepository.ts:201 |
 | `posts` (table) | core | CHANGED | see `infrastructure-supabase/src/admin/` |  |  |  | SupabaseVolunteerRepository.ts:143, SupabaseVolunteerRepository.ts:177 |
 | `users` (table) | core | CHANGED | see `infrastructure-supabase/src/admin/` |  |  |  | SupabaseVolunteerRepository.ts:204 |
+
+### `infrastructure-supabase/src/whatsapp/`
+
+4 call sites: 2 map 1:1, 2 need logic changes, 0 removed, 0 MISSING.
+
+| Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `api_whatsapp_create_link_code` | later | 1:1 | `api_whatsapp_create_link_code() → Json` | `{code, expires_at}`; `pro_required` for a member without Pro, `rate_limited` after 10 codes an hour (new). |  | high | SupabaseWhatsAppLinkRepository.ts:64 |
+| `api_whatsapp_my_link_status` | later | CHANGED | `api_whatsapp_my_link_status() → Json` | Adds `consent_opted_in` and `phone_opted_out` to `{linked, wa_id_masked, is_pro}`. |  | high | SupabaseWhatsAppLinkRepository.ts:60 |
+| `api_whatsapp_set_match_consent` | later | CHANGED | `api_whatsapp_set_match_consent(p_opted_in: boolean) → Json` | New app path (the old `api_bot_set_match_consent` had no caller): the caller's own match-alert switch; returns the link status. |  | high | SupabaseWhatsAppLinkRepository.ts:73 |
+| `api_whatsapp_unlink_me` | later | 1:1 | `api_whatsapp_unlink_me() → undefined` | Unlinks the caller's number; the phone row and its consent history stay. |  | high | SupabaseWhatsAppLinkRepository.ts:68 |
 
 ### `infrastructure-supabase/src/worlds/`
 
@@ -664,21 +690,20 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 
 ### Edge Function `_shared`
 
-11 call sites: 9 map 1:1, 2 need logic changes, 0 removed, 0 MISSING.
+10 call sites: 8 map 1:1, 2 need logic changes, 0 removed, 0 MISSING.
 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `api_bot_apply_extraction` | later | 1:1 | `api_bot_apply_extraction(p_confidence?: number, p_details?: Json, p_direction: string, p_kind_slug: string, p_session_id: string, p_summary?: string, p_title: string, p_world_slug: string) → string` | Same arguments; kind slugs are the posts catalog's (`item_offer`, `item_request`, `food_offer`, `food_request`); returns the session id; titles are cut to 80 characters. |  | high | tools.ts:86 |
-| `api_bot_listing_cards` | later | 1:1 (renamed) | `api_bot_post_cards(p_ids: string[], p_viewer_id: string) → { city_id: string description: string direction: string post_id: string published_at: string title: string world_slug: string }[]` | Same arguments; rows carry `post_id` (was `listing_id`) and `description` (was `summary`). |  | high | tools.ts:58 |
-| `api_bot_my_listings` | later | 1:1 (renamed) | `api_bot_my_posts(p_limit?: number, p_user_id: string) → { created_at: string direction: string post_id: string title: string world_slug: string }[]` | Same arguments; rows carry `post_id` (was `listing_id`). |  | high | tools.ts:104 |
-| `api_bot_my_matches` | later | 1:1 | `api_bot_my_matches(p_limit?: number, p_user_id: string) → { candidate_id: string distance_km: number my_post_title: string other_post_id: string other_title: string score: number status: string world_slug: string }[]` | Same shape; reads matching v2 pairs and leaves out a pair whose other post the member may not read. |  | high | tools.ts:110 |
-| `api_bot_open_session` | later | 1:1 (renamed) | `api_bot_open_session(p_inbound_message_id?: string, p_wa_id: string) → string` | `p_record_id` → `p_inbound_message_id` (the inbound row id returned by `api_whatsapp_ingest_inbound`). |  | high | tools.ts:85 |
-| `api_bot_publish_listing` | later | CHANGED | `api_bot_publish_post(p_owner_id: string, p_session_id: string) → Json` | Returns `{post_id, status, review, photo_required}`: a draft when confidence is below 0.85 (review item) or when an offer in a photo world needs its photo (D132); a food offer needs `details.expires_at`. |  | high | tools.ts:96 |
-| `api_bot_search_listings` | later | CHANGED | `api_bot_search_posts(p_limit?: number, p_query: string, p_user_id: string, p_world_slug?: string) → { city_id: string description: string direction: string post_id: string published_at: string title: string world_slug: string }[]` | `(p_user_id, p_query, p_world_slug, p_limit ≤ 8)`; returns the post cards themselves (`post_id`, `world_slug`, `direction`, `title`, `description`, `city_id`, `published_at`) visible to that member, so no second cards call is needed. |  | high | tools.ts:50 |
-| `api_whatsapp_llm_budget_take` | later | 1:1 | `api_whatsapp_llm_budget_take(p_wa_id: string) → boolean` | Same name, arguments and return shape; tables live in `integrations` (service role only). |  | high | run.ts:30 |
+| `api_bot_apply_extraction` | later | 1:1 | `api_bot_apply_extraction(p_confidence?: number, p_details?: Json, p_direction: string, p_kind_slug: string, p_session_id: string, p_summary?: string, p_title: string, p_world_slug: string) → string` | Same arguments; kind slugs are the posts catalog's (`item_offer`, `item_request`, `food_offer`, `food_request`); returns the session id; titles are cut to 80 characters. |  | high | tools.ts:83 |
+| `api_bot_my_matches` | later | 1:1 | `api_bot_my_matches(p_limit?: number, p_user_id: string) → { candidate_id: string distance_km: number my_post_title: string other_post_id: string other_title: string score: number status: string world_slug: string }[]` | Same shape; reads matching v2 pairs and leaves out a pair whose other post the member may not read. |  | high | tools.ts:159 |
+| `api_bot_my_posts` | later | 1:1 (renamed) | `api_bot_my_posts(p_limit?: number, p_user_id: string) → { created_at: string direction: string post_id: string title: string world_slug: string }[]` | Was `api_bot_my_listings`; same arguments; rows carry `post_id` (was `listing_id`). |  | high | tools.ts:151 |
+| `api_bot_open_session` | later | 1:1 (renamed) | `api_bot_open_session(p_inbound_message_id?: string, p_wa_id: string) → string` | `p_record_id` → `p_inbound_message_id` (the inbound row id returned by `api_whatsapp_ingest_inbound`; may be null). |  | high | tools.ts:79 |
+| `api_bot_publish_post` | later | CHANGED | `api_bot_publish_post(p_owner_id: string, p_session_id: string) → Json` | Was `api_bot_publish_listing` (returned the listing id): returns `{post_id, status, review, photo_required}`, a draft when confidence is below 0.85 (review item) or when an offer in a photo world needs its photo (D132); a food offer needs `details.expires_at`. |  | high | tools.ts:93 |
+| `api_bot_search_posts` | later | CHANGED | `api_bot_search_posts(p_limit?: number, p_query: string, p_user_id: string, p_world_slug?: string) → { city_id: string description: string direction: string post_id: string published_at: string title: string world_slug: string }[]` | Was `api_bot_search_listings(p_owner_id, …)` + `api_bot_listing_cards`: `(p_user_id, p_query, p_world_slug, p_limit ≤ 8)` returns the post cards themselves (`post_id`, `world_slug`, `direction`, `title`, `description`, `city_id`, `published_at`) visible to that member. |  | high | tools.ts:115 |
+| `api_whatsapp_llm_budget_take` | later | 1:1 | `api_whatsapp_llm_budget_take(p_wa_id: string) → boolean` | Same name, arguments and return shape; tables live in `integrations` (service role only). |  | high | run.ts:55 |
 | `api_whatsapp_outbound_claim` | later | 1:1 | `api_whatsapp_outbound_claim(p_batch?: number, p_visibility_seconds?: number) → { attempts: number body: string kind: string language: string outbound_id: string payload: Json template_name: string to_wa_id: string user_id: string }[]` | Same name, arguments and return shape; tables live in `integrations` (service role only). |  | high | sender.ts:47 |
 | `api_whatsapp_outbound_result` | later | 1:1 | `api_whatsapp_outbound_result(p_error?: string, p_ok: boolean, p_outbound_id: string, p_retryable?: boolean, p_wa_message_id?: string) → string` | Same name, arguments and return shape; tables live in `integrations` (service role only). |  | high | sender.ts:60 |
-| `api_whatsapp_queue_reply` | later | 1:1 | `api_whatsapp_queue_reply(p_body: string, p_reply_kind?: string, p_wa_id: string) → string` | Same name, arguments and return shape; tables live in `integrations` (service role only). |  | high | run.ts:46 |
+| `api_whatsapp_queue_reply` | later | 1:1 | `api_whatsapp_queue_reply(p_body: string, p_reply_kind?: string, p_wa_id: string) → string` | Same name, arguments and return shape; tables live in `integrations` (service role only). |  | high | run.ts:72 |
 
 ### Edge Function `backfill-image-thumbs`
 
@@ -774,25 +799,13 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `get_my_admin_roles` | core | 1:1 | see `infrastructure-supabase/src/admin/` |  |  |  | index.ts:58 |
 | `donation_links` (table) | core | CHANGED | see `infrastructure-supabase/src/donations/` |  |  |  | index.ts:23, index.ts:28, index.ts:34, index.ts:42 |
 
-### Edge Function `whatsapp-intake-worker`
-
-5 call sites: 3 map 1:1, 1 need logic changes, 1 removed, 0 MISSING.
-
-| Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| `api_bot_apply_extraction` | later | 1:1 | see Edge Function `_shared` |  |  |  | index.ts:78 |
-| `api_bot_find_matches` | later | REMOVED | — | Only the retired intake worker called it; matches reach the member as notifications (and WhatsApp alerts) and through `api_bot_my_matches`. |  | high | index.ts:103 |
-| `api_bot_open_session` | later | 1:1 (renamed) | see Edge Function `_shared` |  |  |  | index.ts:44 |
-| `api_bot_publish_listing` | later | CHANGED | see Edge Function `_shared` |  |  |  | index.ts:94 |
-| `api_whatsapp_llm_budget_take` | later | 1:1 | see Edge Function `_shared` |  |  |  | index.ts:55 |
-
 ### Edge Function `whatsapp-sender`
 
 1 call sites: 0 map 1:1, 1 need logic changes, 0 removed, 0 MISSING.
 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `whatsapp_channel_config` (table) | later | CHANGED | `api_whatsapp_channel_config() → Json` | The table moved to `integrations`; the sender reads `api_whatsapp_channel_config()` → `{is_enabled, phone_number_id, graph_api_version}`. |  | high | index.ts:19 |
+| `api_whatsapp_channel_config` | later | CHANGED | `api_whatsapp_channel_config() → Json` | New (the old sender read `whatsapp_channel_config` directly): `{is_enabled, phone_number_id, graph_api_version}`; the table moved to `integrations`. |  | high | handler.ts:16 |
 
 ### Edge Function `whatsapp-webhook`
 
@@ -805,7 +818,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `api_whatsapp_handle_keyword` | later | 1:1 | `api_whatsapp_handle_keyword(p_record_id?: string, p_text: string, p_wa_id: string) → Json` | Same name, arguments and return shape; tables live in `integrations` (service role only). |  | high | handler.ts:115 |
 | `api_whatsapp_inbound_allowed` | later | 1:1 | `api_whatsapp_inbound_allowed(p_wa_id: string) → boolean` | Same name, arguments and return shape; tables live in `integrations` (service role only). |  | high | handler.ts:95 |
 | `api_whatsapp_ingest_inbound` | later | 1:1 | `api_whatsapp_ingest_inbound(p_message_id: string, p_payload: Json, p_run_id?: string) → string` | Same name, arguments and return shape; tables live in `integrations` (service role only). |  | high | handler.ts:104 |
-| `api_whatsapp_queue_reply` | later | 1:1 | see Edge Function `_shared` |  |  |  | handler.ts:130, handler.ts:152, handler.ts:175 |
+| `api_whatsapp_queue_reply` | later | 1:1 | see Edge Function `_shared` |  |  |  | handler.ts:130, handler.ts:152, handler.ts:177 |
 | `api_whatsapp_redeem_link_code` | later | 1:1 | `api_whatsapp_redeem_link_code(p_code: string, p_wa_id: string) → Json` | Same name, arguments and return shape; tables live in `integrations` (service role only). |  | high | handler.ts:144 |
 | `api_whatsapp_release_inbound` | later | 1:1 | `api_whatsapp_release_inbound(p_message_id: string) → undefined` | Same name, arguments and return shape; tables live in `integrations` (service role only). |  | high | handler.ts:81 |
 
@@ -835,7 +848,7 @@ In launch order: after package *n* the app is shippable with everything up to *n
 | L4 — Money: donations to organizations, standing orders, org finance, org onboarding | later | 30 | 14 | 16 | 0 | 0 | L1, L2, L3, L5, L6, L7 |
 | L5 — Surveys, feedback, public research | later | 15 | 14 | 1 | 0 | 0 | L1, L2, L3, L4, L6, L7 |
 | L6 — Back-office tools: tasks, CRM, timesheets | later | 22 | 17 | 5 | 0 | 0 | L1, L2, L3, L4, L5, L7 |
-| L7 — WhatsApp bot, linking, admin console | later | 20 | 16 | 3 | 1 | 0 | L1, L2, L3, L4, L5, L6 |
+| L7 — WhatsApp bot, linking, admin console | later | 37 | 23 | 14 | 0 | 0 | L1, L2, L3, L4, L5, L6 |
 
 ### P0 — Contract switch and the degrade rule (first, alone)
 
@@ -943,10 +956,10 @@ In launch order: after package *n* the app is shippable with everything up to *n
 
 ### L7 — WhatsApp bot, linking, admin console
 
-- **Owns:** `admin/SupabaseWhatsAppAdminRepository.ts`, `supabase/functions/{whatsapp-webhook,whatsapp-intake-worker,whatsapp-sender}`, `supabase/functions/_shared/whatsapp/**`, `apps/mobile: WhatsApp link screen`
-- **Work:** Database done: the `integrations` module (five `whatsapp_*` migrations) with the webhook, sender, agent, member and console RPCs. Still to do: retarget the three Edge Functions (sender config RPC, agent tool names), restore the admin adapter with cursor paging and add the link port and screen.
-- **Must pass:** pgTAP: 102_whatsapp_channel, 103_whatsapp_linking_bot, 104_whatsapp_admin, 105_whatsapp_match_alerts_jobs; deno test supabase/functions/_shared/whatsapp
-- **If reached before it is migrated:** The three functions are not deployed; the settings row and the admin nav entry are hidden behind `WHATSAPP_BOT_AVAILABLE` (apps/mobile/src/lib/parkedFeatures.ts), and both routes render the not-available notice.
+- **Owns:** `admin/SupabaseWhatsAppAdminRepository.ts`, `whatsapp/SupabaseWhatsAppLinkRepository.ts`, `supabase/functions/{whatsapp-webhook,whatsapp-sender}`, `supabase/functions/_shared/whatsapp/**`, `apps/mobile: admin WhatsApp console, Settings → WhatsApp`
+- **Work:** Done: the `integrations` module (five `whatsapp_*` migrations); the webhook and sender deploy (the intake worker is retired); the admin console adapter pages by cursor and adds the review queue, templates and send limits; the member link port backs Settings → WhatsApp with the match-alert switch.
+- **Must pass:** pgTAP: 102_whatsapp_channel, 103_whatsapp_linking_bot, 104_whatsapp_admin, 105_whatsapp_match_alerts_jobs; deno test supabase/functions; vitest: SupabaseWhatsAppAdminRepository, SupabaseWhatsAppLinkRepository, WhatsAppAdminScreen, whatsappLinkScreen
+- **If reached before it is migrated:** `WHATSAPP_BOT_AVAILABLE` is on; the launch flag `launch_whatsapp_bot_enabled` still hides the settings row and the admin nav entry per environment. The functions do nothing until the channel is switched on and the Meta secrets exist.
 - **Risks:** None for launch.
 
 ## 6. Edge Functions
@@ -972,6 +985,6 @@ In launch order: after package *n* the app is shippable with everything up to *n
 | `strip-exif` | done | bucket post-images | Verified; storage only. Only its header comment changed. |
 | `backfill-image-thumbs` | done | buckets passed at run time | Service-role key only (a JWT claiming the role is refused); buckets `post-images` and `avatars`; one-off tool, may be dropped after the cut-over. |
 | `mock-login` | obsolete | none | Deleted: demo users are dev seed data (design §9). |
-| `whatsapp-webhook` | park | 8 api_whatsapp_* RPCs | The database contract is back with the same names and shapes (M22); not deployed until the bot launches. |
-| `whatsapp-intake-worker` | obsolete | api_bot_* and api_whatsapp_llm_budget_take | Retired: the agent's posting tool replaces it, and `api_bot_find_matches` is gone. |
-| `whatsapp-sender` | park | whatsapp_channel_config, api_whatsapp_outbound_* | Read the channel through `api_whatsapp_channel_config()` instead of the table; started by the `whatsapp_send` job. |
+| `whatsapp-webhook` | done | api_whatsapp_* webhook RPCs and the agent's api_bot_* tools | Retargeted: the agent searches with `api_bot_search_posts`, posts with `api_bot_publish_post` (draft outcomes told to the user), lists with `api_bot_my_posts`; an `inactive` member gets no agent and no upsell. Deployed. |
+| `whatsapp-intake-worker` | obsolete | none | Deleted: the agent's posting tool replaces it, and `api_bot_find_matches` is gone. |
+| `whatsapp-sender` | done | api_whatsapp_channel_config, api_whatsapp_outbound_* | Retargeted: reads the channel through `api_whatsapp_channel_config()`; started by the `whatsapp_send` job. Deployed. |

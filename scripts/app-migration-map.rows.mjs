@@ -254,8 +254,8 @@ table('user_devices', 'same', 'table:user_devices', 'Already moved to the baseli
 // ───────────────────────────── WhatsApp bot and dev helpers
 // The `integrations` module (M22 / L7): migrations `whatsapp_channel_schema`,
 // `whatsapp_webhook_and_queue`, `whatsapp_linking_and_bot_tools`, `whatsapp_admin_console`,
-// `whatsapp_match_alerts_and_jobs`. These are the parked Edge Functions' own calls; the link
-// screen and the admin console make no call yet.
+// `whatsapp_match_alerts_and_jobs`. Called by the two bot Edge Functions, the admin console
+// adapter (SupabaseWhatsAppAdminRepository) and the member link adapter (SupabaseWhatsAppLinkRepository).
 for (const name of [
   'api_whatsapp_llm_budget_take', 'api_whatsapp_queue_reply', 'api_whatsapp_outbound_claim',
   'api_whatsapp_outbound_result', 'api_whatsapp_claim_inbound', 'api_whatsapp_release_inbound',
@@ -263,15 +263,35 @@ for (const name of [
   'api_whatsapp_redeem_link_code',
 ]) rpc(name, 'same', `rpc:${name}`, 'Same name, arguments and return shape; tables live in `integrations` (service role only).');
 rpc('api_whatsapp_bot_access', 'same', 'rpc:api_whatsapp_bot_access', 'Same shape; `access` may also be `inactive` (a linked member whose account is not active): no upsell, no agent.');
-rpc('api_bot_search_listings', 'changed', 'rpc:api_bot_search_posts', '`(p_user_id, p_query, p_world_slug, p_limit ≤ 8)`; returns the post cards themselves (`post_id`, `world_slug`, `direction`, `title`, `description`, `city_id`, `published_at`) visible to that member, so no second cards call is needed.');
-rpc('api_bot_listing_cards', 'renamed', 'rpc:api_bot_post_cards', 'Same arguments; rows carry `post_id` (was `listing_id`) and `description` (was `summary`).');
-rpc('api_bot_open_session', 'renamed', 'rpc:api_bot_open_session', '`p_record_id` → `p_inbound_message_id` (the inbound row id returned by `api_whatsapp_ingest_inbound`).');
+rpc('api_whatsapp_channel_config', 'changed', 'rpc:api_whatsapp_channel_config', 'New (the old sender read `whatsapp_channel_config` directly): `{is_enabled, phone_number_id, graph_api_version}`; the table moved to `integrations`.');
+rpc('api_bot_search_posts', 'changed', 'rpc:api_bot_search_posts', 'Was `api_bot_search_listings(p_owner_id, …)` + `api_bot_listing_cards`: `(p_user_id, p_query, p_world_slug, p_limit ≤ 8)` returns the post cards themselves (`post_id`, `world_slug`, `direction`, `title`, `description`, `city_id`, `published_at`) visible to that member.');
+rpc('api_bot_open_session', 'renamed', 'rpc:api_bot_open_session', '`p_record_id` → `p_inbound_message_id` (the inbound row id returned by `api_whatsapp_ingest_inbound`; may be null).');
 rpc('api_bot_apply_extraction', 'same', 'rpc:api_bot_apply_extraction', 'Same arguments; kind slugs are the posts catalog\'s (`item_offer`, `item_request`, `food_offer`, `food_request`); returns the session id; titles are cut to 80 characters.');
-rpc('api_bot_publish_listing', 'changed', 'rpc:api_bot_publish_post', 'Returns `{post_id, status, review, photo_required}`: a draft when confidence is below 0.85 (review item) or when an offer in a photo world needs its photo (D132); a food offer needs `details.expires_at`.');
-rpc('api_bot_my_listings', 'renamed', 'rpc:api_bot_my_posts', 'Same arguments; rows carry `post_id` (was `listing_id`).');
+rpc('api_bot_publish_post', 'changed', 'rpc:api_bot_publish_post', 'Was `api_bot_publish_listing` (returned the listing id): returns `{post_id, status, review, photo_required}`, a draft when confidence is below 0.85 (review item) or when an offer in a photo world needs its photo (D132); a food offer needs `details.expires_at`.');
+rpc('api_bot_my_posts', 'renamed', 'rpc:api_bot_my_posts', 'Was `api_bot_my_listings`; same arguments; rows carry `post_id` (was `listing_id`).');
 rpc('api_bot_my_matches', 'same', 'rpc:api_bot_my_matches', 'Same shape; reads matching v2 pairs and leaves out a pair whose other post the member may not read.');
-rpc('api_bot_find_matches', 'removed', null, 'Only the retired intake worker called it; matches reach the member as notifications (and WhatsApp alerts) and through `api_bot_my_matches`.');
-table('whatsapp_channel_config', 'changed', 'rpc:api_whatsapp_channel_config', 'The table moved to `integrations`; the sender reads `api_whatsapp_channel_config()` → `{is_enabled, phone_number_id, graph_api_version}`.');
+// Member link screen (Settings → WhatsApp), through IWhatsAppLinkRepository.
+rpc('api_whatsapp_my_link_status', 'changed', 'rpc:api_whatsapp_my_link_status', 'Adds `consent_opted_in` and `phone_opted_out` to `{linked, wa_id_masked, is_pro}`.');
+rpc('api_whatsapp_create_link_code', 'same', 'rpc:api_whatsapp_create_link_code', '`{code, expires_at}`; `pro_required` for a member without Pro, `rate_limited` after 10 codes an hour (new).');
+rpc('api_whatsapp_unlink_me', 'same', 'rpc:api_whatsapp_unlink_me', 'Unlinks the caller\'s number; the phone row and its consent history stay.');
+rpc('api_whatsapp_set_match_consent', 'changed', 'rpc:api_whatsapp_set_match_consent', 'New app path (the old `api_bot_set_match_consent` had no caller): the caller\'s own match-alert switch; returns the link status.');
+// Admin console (moderator+; the two configuration writers are super admin).
+for (const name of ['api_whatsapp_admin_get_channel', 'api_whatsapp_admin_set_channel_enabled']) {
+  rpc(name, 'same', `rpc:${name}`, 'Same shape plus `updated_by`; the switch is audited (`whatsapp_channel_toggle`).');
+}
+rpc('api_whatsapp_admin_overview', 'changed', 'rpc:api_whatsapp_admin_overview', 'Adds `review_pending`; rate hits read `kc_private.rate_limit_counters`.');
+rpc('api_whatsapp_admin_list_consent', 'changed', 'rpc:api_whatsapp_admin_list_consent', '`p_offset` → `p_cursor` (keyset); no `total_count`; rows add `identity_id` and `cursor`.');
+rpc('api_whatsapp_admin_list_outbound', 'changed', 'rpc:api_whatsapp_admin_list_outbound', '`p_offset` → `p_cursor` (keyset) with `p_status`; no `total_count`; rows add `cursor`; `invalid_status` for an unknown status.');
+rpc('api_whatsapp_admin_list_rate_hits', 'same', 'rpc:api_whatsapp_admin_list_rate_hits', 'Same arguments; rows add `expires_at`; the number inside a bucket key is masked.');
+rpc('api_whatsapp_admin_list_recent_matches', 'same', 'rpc:api_whatsapp_admin_list_recent_matches', 'Same shape; `match_found_v1` and `confirm_handoff_v1` of the last 7 days.');
+rpc('api_whatsapp_admin_list_conversations', 'changed', 'rpc:api_whatsapp_admin_list_conversations', '`listing_id` → `post_id`; rows add `confidence`.');
+rpc('api_whatsapp_admin_resend', 'same', 'rpc:api_whatsapp_admin_resend', 'Same shape (`outbound_not_found`, `not_resendable`); audited.');
+rpc('api_whatsapp_admin_block_user', 'same', 'rpc:api_whatsapp_admin_block_user', 'Same shape; audited.');
+rpc('api_whatsapp_admin_review_list', 'changed', 'rpc:api_whatsapp_admin_review_list', 'New: the review queue of bot posts, keyset-paged (`p_status`, `p_cursor`, `p_limit`).');
+rpc('api_whatsapp_admin_review_resolve', 'changed', 'rpc:api_whatsapp_admin_review_resolve', 'New: `approved` publishes the draft for its owner (`offer_photo_required` without a photo), `rejected` leaves it (`invalid_decision`, `invalid_transition`); audited.');
+rpc('api_whatsapp_admin_list_templates', 'changed', 'rpc:api_whatsapp_admin_list_templates', 'New: the templates and their Meta state.');
+rpc('api_whatsapp_admin_set_send_limits', 'changed', 'rpc:api_whatsapp_admin_set_send_limits', 'New, super admin: patches the send limits (`invalid_limits`); audited.');
+rpc('api_whatsapp_admin_set_template_status', 'changed', 'rpc:api_whatsapp_admin_set_template_status', 'New, super admin: a template\'s Meta status (`invalid_status`, `template_not_found`); audited.');
 
 // ───────────────────────────── Edge Function workers (service role)
 rpc('embedding_jobs_claim', 'renamed', 'rpc:embedding_jobs_claim', 'Returned `listing_id` → `post_id`.');
@@ -506,10 +526,10 @@ export const packages = [
     risks: 'None known.' },
   { id: 'L7', title: 'WhatsApp bot, linking, admin console', launch: 'later', parallelWith: ['L1', 'L2', 'L3', 'L4', 'L5', 'L6'],
     select: (row) => /^(api_whatsapp|api_bot|whatsapp_)/.test(row.old),
-    files: ['admin/SupabaseWhatsAppAdminRepository.ts', 'supabase/functions/{whatsapp-webhook,whatsapp-intake-worker,whatsapp-sender}', 'supabase/functions/_shared/whatsapp/**', 'apps/mobile: WhatsApp link screen'],
-    work: 'Database done: the `integrations` module (five `whatsapp_*` migrations) with the webhook, sender, agent, member and console RPCs. Still to do: retarget the three Edge Functions (sender config RPC, agent tool names), restore the admin adapter with cursor paging and add the link port and screen.',
-    tests: ['pgTAP: 102_whatsapp_channel, 103_whatsapp_linking_bot, 104_whatsapp_admin, 105_whatsapp_match_alerts_jobs', 'deno test supabase/functions/_shared/whatsapp'],
-    degrade: 'The three functions are not deployed; the settings row and the admin nav entry are hidden behind `WHATSAPP_BOT_AVAILABLE` (apps/mobile/src/lib/parkedFeatures.ts), and both routes render the not-available notice.',
+    files: ['admin/SupabaseWhatsAppAdminRepository.ts', 'whatsapp/SupabaseWhatsAppLinkRepository.ts', 'supabase/functions/{whatsapp-webhook,whatsapp-sender}', 'supabase/functions/_shared/whatsapp/**', 'apps/mobile: admin WhatsApp console, Settings → WhatsApp'],
+    work: 'Done: the `integrations` module (five `whatsapp_*` migrations); the webhook and sender deploy (the intake worker is retired); the admin console adapter pages by cursor and adds the review queue, templates and send limits; the member link port backs Settings → WhatsApp with the match-alert switch.',
+    tests: ['pgTAP: 102_whatsapp_channel, 103_whatsapp_linking_bot, 104_whatsapp_admin, 105_whatsapp_match_alerts_jobs', 'deno test supabase/functions', 'vitest: SupabaseWhatsAppAdminRepository, SupabaseWhatsAppLinkRepository, WhatsAppAdminScreen, whatsappLinkScreen'],
+    degrade: '`WHATSAPP_BOT_AVAILABLE` is on; the launch flag `launch_whatsapp_bot_enabled` still hides the settings row and the admin nav entry per environment. The functions do nothing until the channel is switched on and the Meta secrets exist.',
     risks: 'None for launch.' },
 ];
 
@@ -533,9 +553,9 @@ export const edgeFunctions = [
   { name: 'strip-exif', verdict: 'done', uses: 'bucket post-images', change: 'Verified; storage only. Only its header comment changed.' },
   { name: 'backfill-image-thumbs', verdict: 'done', uses: 'buckets passed at run time', change: 'Service-role key only (a JWT claiming the role is refused); buckets `post-images` and `avatars`; one-off tool, may be dropped after the cut-over.' },
   { name: 'mock-login', verdict: 'obsolete', uses: 'none', change: 'Deleted: demo users are dev seed data (design §9).' },
-  { name: 'whatsapp-webhook', verdict: 'park', uses: '8 api_whatsapp_* RPCs', change: 'The database contract is back with the same names and shapes (M22); not deployed until the bot launches.' },
-  { name: 'whatsapp-intake-worker', verdict: 'obsolete', uses: 'api_bot_* and api_whatsapp_llm_budget_take', change: 'Retired: the agent\'s posting tool replaces it, and `api_bot_find_matches` is gone.' },
-  { name: 'whatsapp-sender', verdict: 'park', uses: 'whatsapp_channel_config, api_whatsapp_outbound_*', change: 'Read the channel through `api_whatsapp_channel_config()` instead of the table; started by the `whatsapp_send` job.' },
+  { name: 'whatsapp-webhook', verdict: 'done', uses: 'api_whatsapp_* webhook RPCs and the agent\'s api_bot_* tools', change: 'Retargeted: the agent searches with `api_bot_search_posts`, posts with `api_bot_publish_post` (draft outcomes told to the user), lists with `api_bot_my_posts`; an `inactive` member gets no agent and no upsell. Deployed.' },
+  { name: 'whatsapp-intake-worker', verdict: 'obsolete', uses: 'none', change: 'Deleted: the agent\'s posting tool replaces it, and `api_bot_find_matches` is gone.' },
+  { name: 'whatsapp-sender', verdict: 'done', uses: 'api_whatsapp_channel_config, api_whatsapp_outbound_*', change: 'Retargeted: reads the channel through `api_whatsapp_channel_config()`; started by the `whatsapp_send` job. Deployed.' },
 ];
 
 // ═════════════════════════════ Rules that hold across the whole map
