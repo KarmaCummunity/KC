@@ -2649,6 +2649,52 @@ export type Database = {
           },
         ]
       }
+      post_status_events: {
+        Row: {
+          actor_id: string | null
+          from_status: string
+          id: number
+          occurred_at: string
+          post_id: string
+          reason: string | null
+          role: string | null
+          to_status: string
+        }
+        Insert: {
+          actor_id?: string | null
+          from_status: string
+          id?: never
+          occurred_at?: string
+          post_id: string
+          reason?: string | null
+          role?: string | null
+          to_status: string
+        }
+        Update: {
+          actor_id?: string | null
+          from_status?: string
+          id?: never
+          occurred_at?: string
+          post_id?: string
+          reason?: string | null
+          role?: string | null
+          to_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_status_events_actor_id_fkey"
+            columns: ["actor_id"]
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_status_events_post_id_fkey"
+            columns: ["post_id"]
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       posts: {
         Row: {
           beneficiary_org_id: string | null
