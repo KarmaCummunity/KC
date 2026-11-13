@@ -8,12 +8,13 @@
 import type { AdminGrant } from './AdminGrant';
 import type { AdminRole } from './AdminRole';
 
-/** Authority order: lower index = higher in the hierarchy. Mirrors the
- *  `admin_list_admins` SQL ordering so FE and DB agree on role precedence. */
+/** Display order of roles: lower index = shown first. Platform staff come first, then the
+ *  operations roles, then each organization's team from its administrator down. */
 export const ADMIN_ROLE_ORDER: readonly AdminRole[] = [
-  'super_admin', 'moderator', 'support',
+  'super_admin', 'admin', 'moderator', 'support',
   'operators_manager', 'operator',
-  'org_admin', 'org_manager', 'volunteer_manager', 'org_employee', 'org_volunteer',
+  'org_admin', 'org_manager', 'org_treasurer', 'volunteer_manager', 'org_employee', 'org_accountant',
+  'org_volunteer', 'volunteer',
 ];
 
 export function adminRoleRank(role: AdminRole): number {

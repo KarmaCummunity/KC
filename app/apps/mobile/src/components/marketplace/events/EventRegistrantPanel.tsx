@@ -6,7 +6,7 @@ import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { Text } from '@kc/ui';
-import type { EventPostDetails } from '@kc/domain';
+import { canLeaveEventRegistration, type EventPostDetails } from '@kc/domain';
 import { eventHasStarted, registerActionLabelKey } from '../../../lib/eventPost';
 import { eventRegistrationUseCases, myEventRegistrationQueryKey } from '../../../services/eventRegistrationComposition';
 import { HandoffActionButton } from '../HandoffActionButton';
@@ -41,7 +41,7 @@ export function EventRegistrantPanel({ postId, event }: Props) {
       {registration?.status === 'waitlisted' ? (
         <Text style={styles.caption} testID="event-status-waitlisted">{t('eventPost.registration.statusWaitlisted')}</Text>
       ) : null}
-      {registration ? (
+      {registration && canLeaveEventRegistration(registration.status) ? (
         <HandoffActionButton
           testID="event-cancel"
           label={t(registration.status === 'waitlisted' ? 'eventPost.registration.leaveWaitlist' : 'eventPost.registration.cancel')}

@@ -231,6 +231,10 @@ export const notificationsHe = {
   postRestoredBody: 'הבדיקה הסתיימה והפוסט מוצג שוב.',
   moderationReviewNeededTitle: 'נדרשת בדיקת תוכן',
   moderationReviewNeededBody: 'פריט חדש ממתין בתור הבדיקה.',
+  reportSlaWarningTitle: 'דיווח ממתין 12 שעות',
+  reportSlaWarningBody: 'תיק דיווח פתוח ממתין לטיפול כבר 12 שעות. יש לטפל בו תוך 24 שעות מהדיווח.',
+  supportIssueReceivedTitle: 'פנייה חדשה לתמיכה',
+  supportIssueReceivedBody: 'חבר/ת קהילה פתח/ה פנייה. אפשר לענות מתיבת התמיכה בפורטל הניהול.',
   postEmergencyTitle: 'דיווח חירום',
   postEmergencyBody: '{{actorName}} דיווח/ה על מצב חירום. פתחו את הפוסט לפרטים.',
   eventOrganizerMessageTitle: 'הודעה ממארגן האירוע',
@@ -254,4 +258,8 @@ export const notificationsHe = {
   donationRefundedBody: 'בוצע החזר על התרומה שלך.',
   standingOrderChargeFailedTitle: 'החיוב החודשי נכשל',
   standingOrderChargeFailedBody: 'לא הצלחנו לחייב את הוראת הקבע. כדאי לבדוק את אמצעי התשלום.',
+  // FR-ADMIN-018 — a staff task was assigned to the member; the body is the task title.
+  taskAssignedTitle: 'משימת ניהול חדשה הוקצתה לך',
+  taskAssignedBody: '{{taskTitle}}',
+  taskTitleFallback: 'משימה חדשה',
 } as const;

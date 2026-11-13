@@ -20,11 +20,11 @@
    "distinct": 3
   },
   "rpc": {
-   "callSites": 211,
-   "distinct": 183
+   "callSites": 237,
+   "distinct": 209
   },
   "table": {
-   "callSites": 192,
+   "callSites": 186,
    "distinct": 63
   }
  },
@@ -32,7 +32,7 @@
   {
    "kind": "bucket",
    "file": "app/apps/mobile/app/edit-post/[id].tsx",
-   "line": 43,
+   "line": 46,
    "area": "mobile",
    "symbol": "assetUrl",
    "via": "const",
@@ -273,33 +273,18 @@
    "name": "posts"
   },
   {
-   "kind": "table",
+   "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminRoleRepository.ts",
-   "line": 100,
+   "line": 94,
    "area": "admin",
    "symbol": "SupabaseAdminRoleRepository.listAdmins",
    "via": "literal",
-   "ops": [
-    "select"
-   ],
-   "name": "admin_role_grants"
-  },
-  {
-   "kind": "table",
-   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminRoleRepository.ts",
-   "line": 120,
-   "area": "admin",
-   "symbol": "SupabaseAdminRoleRepository.loadPeople",
-   "via": "literal",
-   "ops": [
-    "select"
-   ],
-   "name": "users"
+   "name": "admin_list_admins"
   },
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminRoleRepository.ts",
-   "line": 130,
+   "line": 107,
    "area": "admin",
    "symbol": "SupabaseAdminRoleRepository.grantRole",
    "via": "literal",
@@ -308,7 +293,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminRoleRepository.ts",
-   "line": 143,
+   "line": 120,
    "area": "admin",
    "symbol": "SupabaseAdminRoleRepository.revokeRole",
    "via": "literal",
@@ -317,11 +302,146 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminRoleRepository.ts",
-   "line": 148,
+   "line": 125,
    "area": "admin",
    "symbol": "SupabaseAdminRoleRepository.changeRole",
    "via": "literal",
    "name": "admin_change_role"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminTaskRepository.ts",
+   "line": 41,
+   "area": "admin",
+   "symbol": "SupabaseAdminTaskRepository.list",
+   "via": "literal",
+   "name": "admin_task_list"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminTaskRepository.ts",
+   "line": 59,
+   "area": "admin",
+   "symbol": "SupabaseAdminTaskRepository.openCount",
+   "via": "literal",
+   "name": "admin_task_open_count"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminTaskRepository.ts",
+   "line": 63,
+   "area": "admin",
+   "symbol": "SupabaseAdminTaskRepository.getDetail",
+   "via": "literal",
+   "name": "admin_task_detail"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminTaskRepository.ts",
+   "line": 70,
+   "area": "admin",
+   "symbol": "SupabaseAdminTaskRepository.create",
+   "via": "literal",
+   "name": "admin_task_create"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminTaskRepository.ts",
+   "line": 84,
+   "area": "admin",
+   "symbol": "SupabaseAdminTaskRepository.update",
+   "via": "literal",
+   "name": "admin_task_update"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminTaskRepository.ts",
+   "line": 98,
+   "area": "admin",
+   "symbol": "SupabaseAdminTaskRepository.setStatus",
+   "via": "literal",
+   "name": "admin_task_set_status"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminTaskRepository.ts",
+   "line": 104,
+   "area": "admin",
+   "symbol": "SupabaseAdminTaskRepository.assign",
+   "via": "literal",
+   "name": "admin_task_assign"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminTaskRepository.ts",
+   "line": 112,
+   "area": "admin",
+   "symbol": "SupabaseAdminTaskRepository.addComment",
+   "via": "literal",
+   "name": "admin_task_add_comment"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminTaskRepository.ts",
+   "line": 120,
+   "area": "admin",
+   "symbol": "SupabaseAdminTaskRepository.delete",
+   "via": "literal",
+   "name": "admin_task_delete"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseCrmContactsRepository.ts",
+   "line": 77,
+   "area": "admin",
+   "symbol": "SupabaseCrmContactsRepository.listOrgs",
+   "via": "literal",
+   "name": "crm_my_orgs"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseCrmContactsRepository.ts",
+   "line": 90,
+   "area": "admin",
+   "symbol": "SupabaseCrmContactsRepository.list",
+   "via": "literal",
+   "name": "crm_contact_list"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseCrmContactsRepository.ts",
+   "line": 91,
+   "area": "admin",
+   "symbol": "SupabaseCrmContactsRepository.list",
+   "via": "literal",
+   "name": "crm_contact_count"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseCrmContactsRepository.ts",
+   "line": 98,
+   "area": "admin",
+   "symbol": "SupabaseCrmContactsRepository.upsert",
+   "via": "literal",
+   "name": "crm_contact_upsert"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseCrmContactsRepository.ts",
+   "line": 115,
+   "area": "admin",
+   "symbol": "SupabaseCrmContactsRepository.delete",
+   "via": "literal",
+   "name": "crm_contact_delete"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseCrmContactsRepository.ts",
+   "line": 119,
+   "area": "admin",
+   "symbol": "SupabaseCrmContactsRepository.markContacted",
+   "via": "literal",
+   "name": "crm_contact_mark_contacted"
   },
   {
    "kind": "rpc",
@@ -353,7 +473,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/admin/SupabaseFinanceLedgerRepository.ts",
-   "line": 62,
+   "line": 57,
    "area": "admin",
    "symbol": "SupabaseFinanceLedgerRepository.list",
    "via": "literal",
@@ -362,7 +482,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/admin/SupabaseFinanceLedgerRepository.ts",
-   "line": 84,
+   "line": 79,
    "area": "admin",
    "symbol": "SupabaseFinanceLedgerRepository.summary",
    "via": "literal",
@@ -371,7 +491,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/admin/SupabaseFinanceLedgerRepository.ts",
-   "line": 103,
+   "line": 98,
    "area": "admin",
    "symbol": "SupabaseFinanceLedgerRepository.upsert",
    "via": "literal",
@@ -380,7 +500,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/admin/SupabaseFinanceLedgerRepository.ts",
-   "line": 126,
+   "line": 124,
    "area": "admin",
    "symbol": "SupabaseFinanceLedgerRepository.unwrapFinance",
    "via": "literal",
@@ -429,61 +549,40 @@
    "name": "admin_org_application_reject"
   },
   {
-   "kind": "table",
+   "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/admin/SupabaseOrgHierarchyRepository.ts",
-   "line": 88,
+   "line": 104,
    "area": "admin",
    "symbol": "SupabaseOrgHierarchyRepository.getOrgTree",
    "via": "literal",
-   "ops": [
-    "select"
-   ],
-   "name": "users"
+   "name": "admin_org_tree"
   },
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/admin/SupabaseOrgHierarchyRepository.ts",
-   "line": 103,
+   "line": 116,
    "area": "admin",
    "symbol": "SupabaseOrgHierarchyRepository.unwrap",
    "via": "literal",
    "name": "admin_set_manager"
   },
   {
-   "kind": "table",
+   "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/admin/SupabaseOrgHierarchyRepository.ts",
-   "line": 111,
+   "line": 123,
    "area": "admin",
    "symbol": "SupabaseOrgHierarchyRepository.getHierarchyCensus",
    "via": "literal",
-   "ops": [
-    "select"
-   ],
-   "name": "users"
+   "name": "admin_hierarchy_census"
   },
   {
-   "kind": "table",
+   "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/admin/SupabaseOrgHierarchyRepository.ts",
-   "line": 131,
+   "line": 127,
    "area": "admin",
-   "symbol": "SupabaseOrgHierarchyRepository.snapshot",
+   "symbol": "SupabaseOrgHierarchyRepository.setOrgSlug",
    "via": "literal",
-   "ops": [
-    "select"
-   ],
-   "name": "admin_role_grants"
-  },
-  {
-   "kind": "table",
-   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseOrgHierarchyRepository.ts",
-   "line": 140,
-   "area": "admin",
-   "symbol": "SupabaseOrgHierarchyRepository.snapshot",
-   "via": "literal",
-   "ops": [
-    "select"
-   ],
-   "name": "organizations"
+   "name": "admin_set_org_slug"
   },
   {
    "kind": "rpc",
@@ -517,10 +616,73 @@
   },
   {
    "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseTimesheetsRepository.ts",
+   "line": 88,
+   "area": "admin",
+   "symbol": "SupabaseTimesheetsRepository.list",
+   "via": "literal",
+   "name": "timesheet_list"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseTimesheetsRepository.ts",
+   "line": 89,
+   "area": "admin",
+   "symbol": "SupabaseTimesheetsRepository.list",
+   "via": "literal",
+   "name": "timesheet_count"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseTimesheetsRepository.ts",
+   "line": 96,
+   "area": "admin",
+   "symbol": "SupabaseTimesheetsRepository.upsert",
+   "via": "literal",
+   "name": "timesheet_upsert"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseTimesheetsRepository.ts",
+   "line": 108,
+   "area": "admin",
+   "symbol": "SupabaseTimesheetsRepository.submit",
+   "via": "literal",
+   "name": "timesheet_submit"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseTimesheetsRepository.ts",
+   "line": 112,
+   "area": "admin",
+   "symbol": "SupabaseTimesheetsRepository.approve",
+   "via": "literal",
+   "name": "timesheet_approve"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseTimesheetsRepository.ts",
+   "line": 116,
+   "area": "admin",
+   "symbol": "SupabaseTimesheetsRepository.reject",
+   "via": "literal",
+   "name": "timesheet_reject"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseTimesheetsRepository.ts",
+   "line": 120,
+   "area": "admin",
+   "symbol": "SupabaseTimesheetsRepository.delete",
+   "via": "literal",
+   "name": "timesheet_delete"
+  },
+  {
+   "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/auth/bootstrapSession.ts",
-   "line": 138,
+   "line": 155,
    "area": "auth",
-   "symbol": "fetchBootstrapSession",
+   "symbol": "readBootstrapSession",
    "via": "literal",
    "name": "bootstrap_session"
   },
@@ -1520,7 +1682,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/marketplace/listingMapping.ts",
-   "line": 93,
+   "line": 76,
    "area": "marketplace",
    "symbol": "fetchCardsInOrder",
    "via": "literal",
@@ -1702,7 +1864,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-   "line": 68,
+   "line": 70,
    "area": "marketplace",
    "symbol": "seriesMarker",
    "via": "literal",
@@ -1711,7 +1873,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-   "line": 76,
+   "line": 78,
    "area": "marketplace",
    "symbol": "loadEventDetails",
    "via": "literal",
@@ -1723,7 +1885,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-   "line": 77,
+   "line": 79,
    "area": "marketplace",
    "symbol": "loadEventDetails",
    "via": "literal",
@@ -1735,7 +1897,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-   "line": 97,
+   "line": 99,
    "area": "marketplace",
    "symbol": "loadFoodDetails",
    "via": "literal",
@@ -1747,7 +1909,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-   "line": 106,
+   "line": 108,
    "area": "marketplace",
    "symbol": "fetchListingDetail",
    "via": "literal",
@@ -1756,7 +1918,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-   "line": 113,
+   "line": 115,
    "area": "marketplace",
    "symbol": "fetchListingDetail",
    "via": "literal",
@@ -1768,7 +1930,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-   "line": 114,
+   "line": 116,
    "area": "marketplace",
    "symbol": "fetchListingDetail",
    "via": "literal",
@@ -1825,7 +1987,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/matching/SupabaseMatchRepository.ts",
-   "line": 119,
+   "line": 130,
    "area": "matching",
    "symbol": "SupabaseMatchRepository.listMine",
    "via": "literal",
@@ -1834,7 +1996,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/matching/SupabaseMatchRepository.ts",
-   "line": 127,
+   "line": 138,
    "area": "matching",
    "symbol": "SupabaseMatchRepository.respond",
    "via": "literal",
@@ -1843,7 +2005,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/matching/SupabaseMatchRepository.ts",
-   "line": 134,
+   "line": 145,
    "area": "matching",
    "symbol": "SupabaseMatchRepository.qualityByWorld",
    "via": "literal",

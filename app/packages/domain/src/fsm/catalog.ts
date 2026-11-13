@@ -8,6 +8,8 @@ import { eventRegistrationMachine } from './machines/eventRegistration';
 import { followRequestMachine } from './machines/followRequest';
 import { givingHandoffMachine } from './machines/givingHandoff';
 import { housingBookingMachine } from './machines/housingBooking';
+import { embeddingJobMachine } from './machines/embeddingJob';
+import { knowledgeTopicMachine } from './machines/knowledgeTopic';
 import { kycMachine } from './machines/kyc';
 import { matchMachine } from './machines/match';
 import { moderationQueueMachine } from './machines/moderationQueue';
@@ -32,12 +34,12 @@ import { webhookEventMachine } from './machines/webhookEvent';
 
 /**
  * The only registry of kernel machines. Every machine listed here has exactly the same rows
- * in the Postgres catalog (`kc_private.fsm_state` / `fsm_edge`, seeded by `supabase/schemas`);
- * the infrastructure contract test (`catalogMatchesSql.test.ts`) reads the schema sources and
- * fails when the two differ.
+ * in the Postgres catalog (`kc_private.fsm_state` / `fsm_edge`, seeded by `supabase/schemas` and
+ * by the forward migrations after the baseline); the infrastructure contract test
+ * (`catalogMatchesSql.test.ts`) reads both and fails when the two differ.
  *
  * To register a machine: add its module under `machines/`, list it here, and ship the matching
- * catalog insert next to its table in `supabase/schemas` (design spec §4.1).
+ * catalog insert in the forward migration that creates its table (design spec §4.1).
  */
 export const FSM_MACHINES: readonly FsmMachine<string, string>[] = [
   accountStatusMachine,
@@ -55,7 +57,9 @@ export const FSM_MACHINES: readonly FsmMachine<string, string>[] = [
   rideSeriesMachine,
   postSeriesMachine,
   challengeMachine,
+  knowledgeTopicMachine,
   matchMachine,
+  embeddingJobMachine,
   organizationMachine,
   orgSec46Machine,
   orgApplicationMachine,
@@ -68,15 +72,7 @@ export const FSM_MACHINES: readonly FsmMachine<string, string>[] = [
   kycMachine,
   webhookEventMachine,
   orgFinanceEntryMachine,
-];
-
-/**
- * Machines the baseline does not seed: the parked back-office tools (admin tasks and
- * timesheets, `parkedFeatures.ts`) still derive their screen actions from them. They are not
- * in the catalog, so the contract test does not compare them; they leave with those tools or
- * move into the catalog when the baseline gains the owning module.
- */
-export const LEGACY_FSM_MACHINES: readonly FsmMachine<string, string>[] = [
   adminTaskMachine,
   timesheetMachine,
 ];
+

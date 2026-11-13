@@ -117,6 +117,12 @@ Deno.test('a chat push shows the preview, and a count once it groups', () => {
   assertEquals(renderText(pushFor('chat_message'), null).body, STRINGS['notifications.messagePreviewFallback']);
 });
 
+Deno.test('an admin task push shows the task title, or a fallback without one', () => {
+  const titled = pushFor('task_assigned', { args: { task_id: ENTITY_ID, task_title: 'Review reports' } });
+  assertEquals(renderText(titled, null).body, 'Review reports');
+  assertEquals(renderText(pushFor('task_assigned', { args: {} }), null).body, STRINGS['notifications.taskTitleFallback']);
+});
+
 Deno.test('a push that cannot be rendered is a PayloadError, never a half-built message', () => {
   assertThrows(() => buildMessages(pushFor('no_such_kind')), PayloadError, 'unknown_kind');
   assertThrows(() => buildMessages(pushFor('chat_message', { title_key: 'notifications.gone' })), PayloadError, 'missing_text');

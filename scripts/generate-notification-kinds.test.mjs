@@ -90,8 +90,8 @@ test('every missing piece of a kind is named', () => {
   assert.match(both, /kind k1:[\s\S]*kind k2:/, 'all problems are listed at once');
 });
 
-test('the text arguments are the six both renderers provide', () => {
-  assert.deepEqual(TEXT_ARGS, ['actorName', 'count', 'othersCount', 'messagePreview', 'postTitle', 'details']);
+test('the text arguments are the seven both renderers provide', () => {
+  assert.deepEqual(TEXT_ARGS, ['actorName', 'count', 'othersCount', 'messagePreview', 'taskTitle', 'postTitle', 'details']);
 });
 
 test('the repository registry parses and the generated files are up to date', () => {

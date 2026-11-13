@@ -18,6 +18,7 @@ const BY_MESSAGE: Readonly<Record<string, FinanceLedgerErrorCode>> = {
   invalid_last4: 'invalid_last4',
   invalid_settings: 'invalid_settings',
   org_not_found: 'org_not_found',
+  void_reason_required: 'void_reason_required',
   // The baseline finance RPCs (supabase/schemas/85_billing/060, 100, 140).
   forbidden: 'forbidden',
   unauthenticated: 'forbidden',

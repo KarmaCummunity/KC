@@ -46,10 +46,10 @@ export const PATHS = {
 };
 
 /** Arguments a notification text may interpolate; both renderers provide exactly these. */
-export const TEXT_ARGS = ['actorName', 'count', 'othersCount', 'messagePreview', 'postTitle', 'details'];
+export const TEXT_ARGS = ['actorName', 'count', 'othersCount', 'messagePreview', 'taskTitle', 'postTitle', 'details'];
 /** Texts the worker needs besides the kinds' own (fallbacks of the arguments above). */
 export const AUXILIARY_KEYS = [
-  'notifications.messagePreviewFallback', 'notifications.actorNameFallback',
+  'notifications.messagePreviewFallback', 'notifications.actorNameFallback', 'notifications.taskTitleFallback',
   // D26: the fallback of `postTitle` and the pieces `details` is built from.
   'notifications.postTitleFallback', 'notifications.detailsSeats', 'notifications.detailsRoute',
 ];

@@ -189,6 +189,14 @@ jobs:
       - name: Preflight (secrets present, project ref matches the target)
         run: node scripts/deploy-preflight.mjs supabase "$TARGET"
 
+      # The CLI silently skips a file without a number, so an unnumbered migration would ship
+      # the app without its schema. The post-merge numbering commit must have run first.
+      - name: No migration is still waiting for its number
+        run: |
+          if pending=$(node scripts/migration-ids.mjs list); then exit 0; fi
+          echo "::error::Unnumbered migrations: $pending (the numbering commit on dev has not landed)"
+          exit 1
+
       - uses: ./.github/actions/setup-supabase-cli
 
       - name: Link to remote project

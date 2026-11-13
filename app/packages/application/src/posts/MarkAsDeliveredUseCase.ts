@@ -1,5 +1,5 @@
 /** FR-CLOSURE-001..003: validate owner + status + recipient, then close. */
-import type { Post } from '@kc/domain';
+import { postOwnerActions, type Post } from '@kc/domain';
 import type { IPostRepository } from '../ports/IPostRepository';
 import { PostError } from './errors';
 
@@ -21,7 +21,8 @@ export class MarkAsDeliveredUseCase {
     if (!post) throw new PostError('forbidden', 'post_not_found');
     if (post.ownerId !== input.ownerId)
       throw new PostError('closure_not_owner', 'closure_not_owner');
-    if (post.status !== 'open')
+    // Closing as delivered is a move of the post machine; the server holds the same graph.
+    if (!postOwnerActions(post.status).close)
       throw new PostError('closure_wrong_status', 'closure_wrong_status');
 
     // Reject marking self as recipient — handled defensively here AND in the

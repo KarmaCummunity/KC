@@ -9,7 +9,7 @@ import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
 import { Screen } from '../../../../src/components/ui/Screen';
 import { TimeWorldSubScreenChrome } from '../../../../src/components/giving/TimeWorldSubScreenChrome';
 import { buildShiftIcs } from '@kc/application';
-import type { MyVolunteerSignupRow } from '@kc/domain';
+import { canLeaveEventRegistration, type MyVolunteerSignupRow } from '@kc/domain';
 import { volunteerUseCases } from '../../../../src/services/volunteerComposition';
 import { useShellTabBarScrollInset } from '../../../../src/navigation/useShellTabBarVisibility';
 
@@ -93,7 +93,7 @@ export default function MyVolunteerShiftsScreen() {
               }
               footer={
                 <>
-                  {item.status === 'confirmed' || item.status === 'reserved' || item.status === 'waitlisted' ? (
+                  {canLeaveEventRegistration(item.status) ? (
                     <Pressable onPress={() => onCancel(item.signupId)}>
                       <Text style={styles.action}>{t('timeVolunteer.cancelSignup')}</Text>
                     </Pressable>

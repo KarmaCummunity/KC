@@ -6,7 +6,7 @@ import { Pressable, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { iconSize, Text, useTheme } from '@kc/ui';
-import type { RideBooking } from '@kc/domain';
+import { canPerformBookingAction, type RideBooking, type RideBookingAction } from '@kc/domain';
 import { HandoffRatingForm } from '../HandoffRatingForm';
 import { HandoffActionButton } from '../HandoffActionButton';
 import { formatRideTime } from '../../cards/ListingCard';
@@ -29,6 +29,7 @@ interface Props {
   readonly actions: RideBookingRowActions;
   /** False when approving this booking would exceed remaining ride capacity. */
   readonly canApprove?: boolean;
+  /** True when the driver may bring this booking back now: one they declined or cancelled, on a ride that can take it. */
   readonly canReinstate?: boolean;
   /** False before the trip may be completed (from an hour before departure). */
   readonly canComplete?: boolean;
@@ -36,10 +37,13 @@ interface Props {
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
 
-/** The driver's action pair per booking state: the main action and its outlined alternative. */
+/**
+ * The driver's two action pairs, the main action and its outlined alternative: a waiting
+ * booking is answered, an approved one is settled.
+ */
 const ACTION_PAIRS = {
-  reserved: { main: 'approve', mainLabel: 'rideBooking.approve', other: 'decline', otherLabel: 'rideBooking.decline' },
-  confirmed: { main: 'complete', mainLabel: 'rideBooking.completeTrip', other: 'cancel', otherLabel: 'rideBooking.cancel' },
+  answer: { main: 'approve', mainLabel: 'rideBooking.approve', other: 'decline', otherLabel: 'rideBooking.decline' },
+  settle: { main: 'complete', mainLabel: 'rideBooking.completeTrip', other: 'cancel', otherLabel: 'rideBooking.cancel' },
 } as const;
 
 function InfoLine({ icon, text, warning = false, testID }: { icon: IconName; text: string; warning?: boolean; testID?: string }) {
@@ -66,10 +70,14 @@ export function RideBookingRow({
   const styles = useRideBookingsPanelStyles();
   const id = booking.handoffId;
   const name = booking.passengerName || t('rideBooking.passengerFallback');
-  const deadline = booking.status === 'reserved' ? formatRideTime(booking.confirmBy) : null;
-  const pair = booking.status === 'reserved' || booking.status === 'confirmed' ? ACTION_PAIRS[booking.status] : null;
-  const isApproveBlocked = booking.status === 'reserved' && !canApprove;
-  const isCompleteBlocked = booking.status === 'confirmed' && !canComplete;
+  // What the driver may do with the booking, read from the ride booking graph.
+  const may = (action: RideBookingAction): boolean =>
+    canPerformBookingAction(booking.status, action, booking.ratedByMe, 'owner');
+  // A booking that can still be answered shows the answer pair; the driver settles it afterwards.
+  const pair = may('approve') ? ACTION_PAIRS.answer : may('complete') ? ACTION_PAIRS.settle : null;
+  const deadline = pair === ACTION_PAIRS.answer ? formatRideTime(booking.confirmBy) : null;
+  const isApproveBlocked = pair === ACTION_PAIRS.answer && !canApprove;
+  const isCompleteBlocked = pair === ACTION_PAIRS.settle && !canComplete;
   const tone = statusTone(booking.status, colors);
 
   return (
@@ -118,7 +126,7 @@ export function RideBookingRow({
         <InfoLine icon="time-outline" testID={`ride-booking-complete-later-${id}`} text={t('rideBooking.completeFromHourBefore')} />
       ) : null}
 
-      {booking.status === 'cancelled' && canReinstate && actions.reinstate ? (
+      {canReinstate && actions.reinstate ? (
         <View style={styles.actions}>
           <HandoffActionButton
             inRow
@@ -144,7 +152,7 @@ export function RideBookingRow({
         </View>
       ) : null}
 
-      {booking.status === 'handed_over' && !booking.ratedByMe ? (
+      {may('rate') ? (
         <HandoffRatingForm busy={busy} onSubmit={(rating, note) => actions.rate(id, rating, note)} />
       ) : null}
     </View>

@@ -10,8 +10,9 @@ import { useLocaleBundle } from '../../../i18n/useLocaleBundle';
 
 export interface FinanceAccountCardProps {
   readonly account: FinanceAccount;
-  readonly onEdit: () => void;
-  readonly onToggleActive: () => void;
+  /** Edit and (de)activate; both omitted for a viewer who only reads the books. */
+  readonly onEdit?: () => void;
+  readonly onToggleActive?: () => void;
 }
 
 function FinanceAccountCardInner({ account, onEdit, onToggleActive }: FinanceAccountCardProps) {
@@ -34,10 +35,12 @@ function FinanceAccountCardInner({ account, onEdit, onToggleActive }: FinanceAcc
       <Text style={[styles.balance, account.balanceCents >= 0 ? styles.positive : styles.negative]}>
         {formatMoney(account.balanceCents)}
       </Text>
-      <View style={styles.actions}>
-        <PrimaryButton label={t.edit} size="sm" onPress={onEdit} />
-        <GhostButton label={account.isActive ? t.deactivate : t.activate} size="sm" onPress={onToggleActive} />
-      </View>
+      {onEdit && onToggleActive && (
+        <View style={styles.actions}>
+          <PrimaryButton label={t.edit} size="sm" onPress={onEdit} />
+          <GhostButton label={account.isActive ? t.deactivate : t.activate} size="sm" onPress={onToggleActive} />
+        </View>
+      )}
     </View>
   );
 }

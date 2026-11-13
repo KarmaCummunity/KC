@@ -3,7 +3,10 @@ name: Bump app version on merge
 # Post-merge bookkeeping on `dev`, in one commit per merge:
 # 1. Assigns registry IDs: each ID placeholder a PR added becomes the next free
 #    number (scripts/spec-ids.mjs), so parallel PRs never collide on a
-#    D# / TD-# / S# / G# / engineering D-# number.
+#    D# / TD-# / S# / G# / engineering D-# number. The same commit numbers the
+#    migrations: each `supabase/migrations/next-NN_slug.sql` becomes the next free
+#    `NNNN_slug.sql` (scripts/migration-ids.mjs), so parallel PRs never collide on
+#    a migration number or wait in the merge queue for a renumber.
 # 2. Bumps `app/VERSION` PATCH, so PRs no longer edit the file themselves
 #    (TD-196): two open PRs that both bump it always conflict.
 #
@@ -110,7 +113,10 @@ jobs:
             #    bump below stays a VERSION-only child of a gated commit. A
             #    retry after this push finds no placeholders left.
             node scripts/spec-ids.mjs assign
+            node scripts/migration-ids.mjs assign
+            # `-u` stages edits and deletions; the renamed migrations are new paths.
             git add -u
+            git add -A supabase/migrations
             if ! git diff --cached --quiet; then
               git commit -m "chore(release): assign spec ids"
               if ! git push origin HEAD:dev; then

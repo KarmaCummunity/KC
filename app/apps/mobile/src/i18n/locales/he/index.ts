@@ -53,6 +53,7 @@ import { surveyHe } from './modules/survey';
 import { researchHe } from './modules/research';
 import { adminHe } from './modules/admin';
 import { adminOrgApprovalsBaselineHe } from './modules/adminOrgApprovalsBaseline';
+import { adminCrmBaselineHe, adminTimeBaselineHe } from './modules/adminBackOfficeBaseline';
 import { karmaHe } from './modules/karma';
 import { karmaEventsHe } from './modules/karmaEvents';
 import { cardsHe } from './modules/cards';
@@ -111,7 +112,8 @@ const he = {
   restoreAccount: restoreAccountHe,
 
   // Admin portal (FR-ADMIN-010/011) — see modules/admin.ts
-  // The baseline approval copy joins admin.orgApprovals — see modules/adminOrgApprovalsBaseline.ts.
+  // The baseline approval copy joins admin.orgApprovals — see modules/adminOrgApprovalsBaseline.ts;
+  // the back-office copy joins admin.crm and admin.time — see modules/adminBackOfficeBaseline.ts.
   admin: {
     ...adminHe,
     orgApprovals: {
@@ -119,6 +121,12 @@ const he = {
       row: { ...adminHe.orgApprovals.row, ...adminOrgApprovalsBaselineHe.row },
       errors: { ...adminHe.orgApprovals.errors, ...adminOrgApprovalsBaselineHe.errors },
     },
+    crm: {
+      ...adminHe.crm,
+      noOrgsTitle: adminCrmBaselineHe.noOrgsTitle,
+      errors: { ...adminHe.crm.errors, ...adminCrmBaselineHe.errors },
+    },
+    time: { ...adminHe.time, errors: { ...adminHe.time.errors, ...adminTimeBaselineHe.errors } },
   },
 
   // Settings — see modules/settings.ts

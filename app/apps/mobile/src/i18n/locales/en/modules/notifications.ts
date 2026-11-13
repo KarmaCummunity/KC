@@ -231,6 +231,10 @@ export const notificationsEn = {
   postRestoredBody: 'The review ended and the post is shown again.',
   moderationReviewNeededTitle: 'Content review needed',
   moderationReviewNeededBody: 'A new item is waiting in the review queue.',
+  reportSlaWarningTitle: 'A report has waited 12 hours',
+  reportSlaWarningBody: 'An open report case has waited 12 hours. Act on it within 24 hours of the report.',
+  supportIssueReceivedTitle: 'New support request',
+  supportIssueReceivedBody: 'A member opened a support request. Answer it from the support inbox in the admin portal.',
   postEmergencyTitle: 'Emergency report',
   postEmergencyBody: '{{actorName}} reported an emergency. Open the post for details.',
   eventOrganizerMessageTitle: 'Message from the event organizer',
@@ -254,4 +258,8 @@ export const notificationsEn = {
   donationRefundedBody: 'Your donation was refunded.',
   standingOrderChargeFailedTitle: 'Monthly charge failed',
   standingOrderChargeFailedBody: 'We could not charge your standing order. Please check your payment method.',
+  // FR-ADMIN-018 — a staff task was assigned to the member; the body is the task title.
+  taskAssignedTitle: 'A new admin task was assigned to you',
+  taskAssignedBody: '{{taskTitle}}',
+  taskTitleFallback: 'New task',
 } as const;

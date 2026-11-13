@@ -180,7 +180,7 @@ The form persists its state to local storage to survive accidental closure.
 ## FR-POST-008 — Edit an existing post
 
 **Description.**
-The post owner **or** the Super Admin (`users.is_super_admin = true`) can re-open the form to edit fields of an `open` post. The Super Admin uses the same screen and update path; `posts.owner_id` stays immutable on the server.
+The post owner **or** the Super Admin (`users.is_super_admin = true`) can re-open the form to edit fields of an `open` or a `paused` post (`docs/spec/07_cross_cutting_systems.md` §7.1; one list for every entry point, `isPostEditableByOwner` in `@kc/domain`, the same statuses as the server's row policy). The Super Admin uses the same screen and update path; `posts.owner_id` stays immutable on the server.
 
 **Source.**
 - PRD: `03_Core_Features.md` §3.3.5, `04_User_Flows.md` Flow 10.
@@ -568,6 +568,7 @@ A member who volunteers on a fixed schedule (for example every Tuesday at 17:00,
 
 | Version | Date | Summary |
 | ------- | ---- | ------- |
+| 0.22 | 2026-11-12 | `FR-POST-008` — a paused post is editable from every entry point; the owner's and the staff's post actions in the app are read from the post machine (#2204). |
 | 0.21 | 2026-11-11 | `FR-POST-024` AC1, AC11, AC12 — a member publishes their own recurring volunteering; a series is one card in the feeds; "my recurring events" moves to the time world's menu (#2086). |
 | 0.20 | 2026-11-11 | `FR-POST-024` — recurring time posts: a series publishes occurrences that each take registrations; edit all, cancel one, pause / resume, end (#2086). |
 | 0.19 | 2026-11-07 | `FR-POST-001` AC6 — a blocked publish scrolls to the field with the problem and outlines it in red, with the message under it, instead of one message above the bottom Publish button. |

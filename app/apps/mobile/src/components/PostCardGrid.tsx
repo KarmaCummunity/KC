@@ -1,6 +1,7 @@
 // app/apps/mobile/src/components/PostCardGrid.tsx
 import React from 'react';
 import { useRouter } from 'expo-router';
+import { useQueryClient } from '@tanstack/react-query';
 import { formatDistanceToNow } from 'date-fns';
 import { useTranslation } from 'react-i18next';
 import { resolveDateFnsLocale } from '../lib/resolveDateFnsLocale';
@@ -15,6 +16,7 @@ import { PostMenuButton } from './post/PostMenuButton';
 import { KcCard } from './cards/KcCard';
 import { usePostCardGridStyles } from './PostCardGrid.styles';
 import { prefetchImages } from '../lib/imagePrefetch';
+import { prefetchMarketplaceListingDetail } from '../hooks/useMarketplaceListingDetail';
 import { finishMark } from '../lib/observability/perfMarks';
 import { cleanDisplayTitle } from '../lib/displayTitle';
 import { feedCardCategory } from '../lib/feedCardCategory';
@@ -56,6 +58,7 @@ function PostCardGridInner({
   // renders only the title; description is translated for post-detail reuse.
 }: PostCardGridProps) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { t, i18n } = useTranslation();
   const styles = usePostCardGridStyles();
   const cardWidth = usePostGridCardWidth(columns, gap);
@@ -99,9 +102,12 @@ function PostCardGridInner({
     finishMark('image.first_paint');
   }, []);
 
-  const warmPostImage = React.useCallback(() => {
+  // Press-down warm-up: the photo for every post, and for a listing-world post (rides, food,
+  // housing…) also the listing detail its screen waits for.
+  const warmPostDetail = React.useCallback(() => {
     prefetchImages([thumbUrl, fullUrl]);
-  }, [thumbUrl, fullUrl]);
+    if (post.listingId) prefetchMarketplaceListingDetail(queryClient, post.listingId);
+  }, [thumbUrl, fullUrl, post.listingId, queryClient]);
 
   const navigateToPost = React.useCallback(() => {
     if (onCardPress) {
@@ -135,7 +141,7 @@ function PostCardGridInner({
       width={cardWidth}
       dense={isProfileGrid}
       onPress={navigateToPost}
-      onPressIn={warmPostImage}
+      onPressIn={warmPostDetail}
       accessibilityLabel={cleanDisplayTitle(post.title)}
       imageUri={thumbUrl}
       fallbackUri={fullUrl}

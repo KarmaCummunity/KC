@@ -36,6 +36,7 @@ describe('RestoreSessionUseCase', () => {
     const out = await uc.execute();
     expect(out.session).toBeNull();
     expect(auth.signOutCalled).toBe(1);
+    expect(out.endedBy).toBe('session_expired');
     // Gate should not be consulted for an already-expired session.
     expect(gate.calls).toHaveLength(0);
   });
@@ -50,6 +51,8 @@ describe('RestoreSessionUseCase', () => {
     const out = await uc.execute();
     expect(out.session).toBeNull();
     expect(auth.signOutCalled).toBe(1);
+    expect(out.endedBy).toBe('account_gate_denied');
+    expect(out.gateReason).toBe('banned');
     expect(gate.calls).toEqual(['u_1']);
   });
 
@@ -66,6 +69,7 @@ describe('RestoreSessionUseCase', () => {
     const out = await uc.execute();
     expect(out.session).not.toBeNull();
     expect(out.session?.userId).toBe('u_1');
+    expect(out.gateCheckFailed).toBe(true);
     expect(auth.signOutCalled).toBe(0);
   });
 });

@@ -21,7 +21,7 @@ Decision D-228 (approved by the owner 2026-11-11). Design: [target-design.md](./
 1. `supabase/migrations/0002_<name>.sql` (next free number, see `docs/agents/MIGRATION_RANGES.md`).
 2. A pgTAP file in `supabase/tests/`.
 3. `node scripts/gen-baseline-types.mjs` to refresh `database.types.ts`.
-4. Add the file name to `supabase/baseline/prod-allowed-migrations.txt` in the release that ships it to prod.
+4. The file name reaches `supabase/baseline/prod-allowed-migrations.txt` on merge: the numbering step (`scripts/migration-ids.mjs assign`) appends it. Listing a file does not open prod.
 
 ## CI after the cut-over
 
@@ -37,6 +37,15 @@ Decision D-228 (approved by the owner 2026-11-11). Design: [target-design.md](./
 4. **Seed KC dev** (`all`): reference, content, e2e members.
 5. Vault secrets `kc_project_url` and `kc_service_role_key` are set on kc-dev (see below).
 6. Verify: ledger = baseline only, `pg_cron` / `pg_net` / `supabase_vault` present, Deploy and the nightly E2E green.
+
+## First super admin
+
+A database built from the baseline has no staff at all, and no RPC hands out `super_admin` (FR-ADMIN-016, FR-ADMIN-017), so until the first super admin exists nobody can grant any role. The operator creates that grant once per project (kc-dev after a rebuild, kc-prod after its first build), as follows:
+
+1. The future super admin signs in to the app once, so their member row exists and their account is `active`.
+2. The operator finds the member id (Supabase dashboard → Authentication → Users, or `select id from public.users where share_handle = '<handle>'` in the SQL editor).
+3. In the SQL editor of that project (it runs as the database owner; a service-role connection works too), the operator runs `select kc_private.bootstrap_super_admin('<member id>');`. It returns the new grant id. The grant is audited (`admin_role_grant`).
+4. The function refuses with `super_admin_exists` while an active super admin exists and with `target_not_active` for a member who is not active; signed-in members and signed-out callers cannot call it. Changing the super admin later means revoking the current grant by a direct database operation first (FR-ADMIN-006 AC2), then running step 3 again.
 
 ## Rollback
 

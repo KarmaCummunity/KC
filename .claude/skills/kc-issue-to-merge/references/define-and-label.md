@@ -12,7 +12,7 @@ Read at Phase 3. Goal: the issue alone is enough for any agent to finish it in o
 | Acceptance criteria | Testable checkboxes, each observable from outside the code. |
 | Test plan | The levels from `testing-matrix.md` and what each test proves. |
 | Likely files | Paths, so the next agent searches less. |
-| Migration range | A claimed range, or `none`. |
+| Migration | The slug of each `next-NN_slug.sql` file, or `none`. |
 | Out of scope | What this issue does not do. Prevents scope creep. |
 
 The `Agent task` issue form (`.github/ISSUE_TEMPLATE/agent-task.yml`) has these fields; mirror them when you edit or create an issue body.

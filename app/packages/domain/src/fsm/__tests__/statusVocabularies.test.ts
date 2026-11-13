@@ -5,6 +5,7 @@ import { KNOWLEDGE_BOOKING_STATUSES } from '../../knowledge/knowledgeSlots';
 import { EVENT_REGISTRATION_STATUSES } from '../../marketplace/eventPost';
 import { RIDE_BOOKING_CANCELLED_STATUS, RIDE_BOOKING_STATUSES } from '../../rides/RideBooking';
 import { RIDE_SERIES_STATUSES } from '../../rides/RideSeries';
+import { STANDING_ORDER_STATUSES } from '../../payments/PaymentTypes';
 import { POST_STATUSES } from '../../posts';
 import type {
   AccountStatus, FollowRequestStatus, OnboardingState, PostStatus,
@@ -12,7 +13,7 @@ import type {
 import {
   accountStatusMachine, eventRegistrationMachine, followRequestMachine, givingHandoffMachine,
   housingBookingMachine, onboardingMachine, orgFinanceEntryMachine, postMachine,
-  rideBookingMachine, rideSeriesMachine,
+  rideBookingMachine, rideSeriesMachine, standingOrderMachine,
 } from '..';
 
 /**
@@ -47,5 +48,10 @@ describe('status vocabularies mirror the baseline machines', () => {
   it('money and series lists use the double-l spelling of the baseline', () => {
     expect(sorted(FINANCE_ENTRY_STATUSES)).toEqual(sorted(orgFinanceEntryMachine.states));
     expect(sorted(RIDE_SERIES_STATUSES)).toEqual(sorted(rideSeriesMachine.states));
+  });
+
+  it('a standing order can wait for its first charge', () => {
+    expect(sorted(STANDING_ORDER_STATUSES)).toEqual(sorted(standingOrderMachine.states));
+    expect(STANDING_ORDER_STATUSES).toContain('pending');
   });
 });

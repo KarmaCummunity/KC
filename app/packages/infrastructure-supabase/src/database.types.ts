@@ -1024,6 +1024,33 @@ export type Database = {
           },
         ]
       }
+      kc_support_channels: {
+        Row: {
+          channel: string
+          is_active: boolean
+          payee_phone: string | null
+          provider_label: string
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          channel: string
+          is_active?: boolean
+          payee_phone?: string | null
+          provider_label: string
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          channel?: string
+          is_active?: boolean
+          payee_phone?: string | null
+          provider_label?: string
+          updated_at?: string
+          url?: string
+        }
+        Relationships: []
+      }
       knowledge_topic_aliases: {
         Row: {
           alias: string
@@ -1747,6 +1774,7 @@ export type Database = {
           edited_at: string | null
           id: string
           mention_user_ids: string[]
+          moderation_removed_at: string | null
           parent_comment_id: string | null
           post_id: string
           status: string
@@ -1759,6 +1787,7 @@ export type Database = {
           edited_at?: string | null
           id?: string
           mention_user_ids?: string[]
+          moderation_removed_at?: string | null
           parent_comment_id?: string | null
           post_id: string
           status?: string
@@ -1771,6 +1800,7 @@ export type Database = {
           edited_at?: string | null
           id?: string
           mention_user_ids?: string[]
+          moderation_removed_at?: string | null
           parent_comment_id?: string | null
           post_id?: string
           status?: string
@@ -2656,6 +2686,52 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "post_stats_post_id_fkey"
+            columns: ["post_id"]
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_status_events: {
+        Row: {
+          actor_id: string | null
+          from_status: string
+          id: number
+          occurred_at: string
+          post_id: string
+          reason: string | null
+          role: string | null
+          to_status: string
+        }
+        Insert: {
+          actor_id?: string | null
+          from_status: string
+          id?: never
+          occurred_at?: string
+          post_id: string
+          reason?: string | null
+          role?: string | null
+          to_status: string
+        }
+        Update: {
+          actor_id?: string | null
+          from_status?: string
+          id?: never
+          occurred_at?: string
+          post_id?: string
+          reason?: string | null
+          role?: string | null
+          to_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_status_events_actor_id_fkey"
+            columns: ["actor_id"]
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_status_events_post_id_fkey"
             columns: ["post_id"]
             referencedRelation: "posts"
             referencedColumns: ["id"]
@@ -3917,6 +3993,23 @@ export type Database = {
         Args: { p_assignee_id?: string; p_entry_id: string }
         Returns: undefined
       }
+      admin_audit_lookup: {
+        Args: {
+          p_before_id?: number
+          p_before_occurred_at?: string
+          p_limit?: number
+          p_user_id: string
+        }
+        Returns: {
+          action: string
+          actor_id: string
+          id: number
+          metadata: Json
+          occurred_at: string
+          target_id: string
+          target_type: string
+        }[]
+      }
       admin_audit_search: {
         Args: {
           p_action?: string
@@ -3970,6 +4063,61 @@ export type Database = {
         }
         Returns: string
       }
+      admin_hierarchy_census: { Args: never; Returns: Json }
+      admin_join_support_thread: {
+        Args: { p_chat_id: string }
+        Returns: {
+          anchor_post_id: string | null
+          created_at: string
+          direct_user_a: string | null
+          direct_user_b: string | null
+          id: string
+          kind: string
+          last_message_at: string | null
+          moderation_hidden_at: string | null
+          support_user_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "chats"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      admin_list_admins: {
+        Args: { p_include_revoked?: boolean }
+        Returns: {
+          avatar_url: string
+          display_name: string
+          grant_id: string
+          granted_at: string
+          granted_by: string
+          granted_by_display_name: string
+          last_seen_at: string
+          manager_grant_id: string
+          revoked_at: string
+          revoked_by: string
+          role: string
+          scope_org_id: string
+          user_id: string
+        }[]
+      }
+      admin_list_support_threads: {
+        Args: {
+          p_before_id?: string
+          p_before_last_message_at?: string
+          p_limit?: number
+        }
+        Returns: {
+          chat_id: string
+          created_at: string
+          joined: boolean
+          last_message_at: string
+          member_avatar_url: string
+          member_display_name: string
+          member_id: string
+        }[]
+      }
       admin_match_quality: {
         Args: { p_days?: number }
         Returns: {
@@ -3986,6 +4134,26 @@ export type Database = {
           world_slug: string
         }[]
       }
+      admin_open_member_support_thread: {
+        Args: { p_user_id: string }
+        Returns: {
+          anchor_post_id: string | null
+          created_at: string
+          direct_user_a: string | null
+          direct_user_b: string | null
+          id: string
+          kind: string
+          last_message_at: string | null
+          moderation_hidden_at: string | null
+          support_user_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "chats"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       admin_org_application_approve: {
         Args: { p_application_id: string; p_note?: string; p_slug?: string }
         Returns: string
@@ -3993,6 +4161,22 @@ export type Database = {
       admin_org_application_reject: {
         Args: { p_application_id: string; p_note?: string }
         Returns: undefined
+      }
+      admin_org_tree: {
+        Args: { p_org_id?: string }
+        Returns: {
+          avatar_url: string
+          display_name: string
+          effective_org_id: string
+          grant_id: string
+          is_platform: boolean
+          last_seen_at: string
+          manager_grant_id: string
+          org_name: string
+          role: string
+          scope_org_id: string
+          user_id: string
+        }[]
       }
       admin_pmf_survey_report: { Args: { p_slug?: string }; Returns: Json }
       admin_refund_payment: {
@@ -4005,8 +4189,47 @@ export type Database = {
         Returns: string
       }
       admin_remove_post: { Args: { p_post_id: string }; Returns: undefined }
+      admin_report_case_timeline: {
+        Args: { p_limit?: number; p_target_id: string; p_target_type: string }
+        Returns: {
+          action: string
+          actor_id: string
+          id: number
+          metadata: Json
+          occurred_at: string
+          target_id: string
+          target_type: string
+        }[]
+      }
+      admin_reports_inbox: {
+        Args: {
+          p_after_oldest_at?: string
+          p_after_target_id?: string
+          p_after_target_type?: string
+          p_limit?: number
+          p_max_age_days?: number
+          p_reporter_id?: string
+          p_search?: string
+          p_target_type?: string
+        }
+        Returns: {
+          latest_at: string
+          latest_reporter_id: string
+          oldest_at: string
+          report_count: number
+          reporter_count: number
+          target_hidden_at: string
+          target_id: string
+          target_type: string
+        }[]
+      }
       admin_resolve_queue_entry: {
         Args: { p_entry_id: string }
+        Returns: undefined
+      }
+      admin_restore_chat: { Args: { p_chat_id: string }; Returns: undefined }
+      admin_restore_comment: {
+        Args: { p_comment_id: string }
         Returns: undefined
       }
       admin_restore_post: { Args: { p_post_id: string }; Returns: undefined }
@@ -4033,8 +4256,12 @@ export type Database = {
         }
       }
       admin_set_manager: {
-        Args: { p_grant_id: string; p_manager_grant_id: string }
+        Args: { p_grant_id: string; p_manager_grant_id?: string }
         Returns: undefined
+      }
+      admin_set_org_slug: {
+        Args: { p_org_id: string; p_slug: string }
+        Returns: string
       }
       admin_set_org_status: {
         Args: { p_org_id: string; p_status: string }
@@ -4064,6 +4291,66 @@ export type Database = {
         }
         Returns: undefined
       }
+      admin_task_add_comment: {
+        Args: { p_body: string; p_task_id: string }
+        Returns: string
+      }
+      admin_task_assign: {
+        Args: { p_new_assignee: string; p_task_id: string }
+        Returns: undefined
+      }
+      admin_task_create: {
+        Args: {
+          p_assignee_id?: string
+          p_category?: string
+          p_description?: string
+          p_due_at?: string
+          p_labels?: string[]
+          p_priority?: string
+          p_title: string
+        }
+        Returns: string
+      }
+      admin_task_delete: { Args: { p_task_id: string }; Returns: undefined }
+      admin_task_detail: { Args: { p_task_id: string }; Returns: Json }
+      admin_task_list: {
+        Args: {
+          p_assignee?: string
+          p_category?: string
+          p_cursor?: Json
+          p_due_from?: string
+          p_due_to?: string
+          p_label?: string
+          p_limit?: number
+          p_only_mine?: boolean
+          p_overdue?: boolean
+          p_priority?: string
+          p_status?: string
+          p_unassigned_only?: boolean
+        }
+        Returns: {
+          cursor: Json
+          task: Json
+        }[]
+      }
+      admin_task_open_count: { Args: never; Returns: number }
+      admin_task_set_status: {
+        Args: { p_new_status: string; p_task_id: string }
+        Returns: undefined
+      }
+      admin_task_update: {
+        Args: {
+          p_category?: string
+          p_clear_due?: boolean
+          p_description?: string
+          p_due_at?: string
+          p_labels?: string[]
+          p_priority?: string
+          p_task_id: string
+          p_title?: string
+        }
+        Returns: undefined
+      }
       admin_user_feedback_list: {
         Args: { p_cursor?: Json; p_limit?: number }
         Returns: {
@@ -4074,6 +4361,23 @@ export type Database = {
           next_cursor: Json
           rating: number
           user_id: string
+        }[]
+      }
+      admin_world_flow_funnel: {
+        Args: { p_days?: number }
+        Returns: {
+          booked: number
+          cancelled: number
+          closed: number
+          completed: number
+          confirmed: number
+          direction: string
+          median_hours_to_booking: number
+          median_hours_to_completion: number
+          published: number
+          world_label_en: string
+          world_label_he: string
+          world_slug: string
         }[]
       }
       api_donation_intent_set_checkout: {
@@ -4695,6 +4999,57 @@ export type Database = {
         }
         Returns: Json
       }
+      crm_contact_count: {
+        Args: {
+          p_org_id: string
+          p_query?: string
+          p_status?: string
+          p_tag?: string
+        }
+        Returns: number
+      }
+      crm_contact_delete: { Args: { p_contact_id: string }; Returns: undefined }
+      crm_contact_list: {
+        Args: {
+          p_cursor?: Json
+          p_limit?: number
+          p_org_id: string
+          p_query?: string
+          p_status?: string
+          p_tag?: string
+        }
+        Returns: {
+          contact: Json
+          cursor: Json
+        }[]
+      }
+      crm_contact_mark_contacted: {
+        Args: { p_contact_id: string }
+        Returns: undefined
+      }
+      crm_contact_upsert: {
+        Args: {
+          p_contact_id?: string
+          p_email?: string
+          p_name?: string
+          p_notes?: string
+          p_org_id: string
+          p_organization?: string
+          p_phone?: string
+          p_role_title?: string
+          p_status?: string
+          p_tags?: string[]
+        }
+        Returns: string
+      }
+      crm_my_orgs: {
+        Args: never
+        Returns: {
+          is_platform: boolean
+          name: string
+          org_id: string
+        }[]
+      }
       decide_event_registration: {
         Args: { p_approve: boolean; p_handoff_id: string }
         Returns: {
@@ -5002,6 +5357,28 @@ export type Database = {
           next_cursor: Json
         }[]
       }
+      list_kc_support_channels: {
+        Args: never
+        Returns: {
+          channel: string
+          payee_phone: string
+          provider_label: string
+          url: string
+        }[]
+      }
+      list_my_blocked_users: {
+        Args: {
+          p_before_blocked_at?: string
+          p_before_user_id?: string
+          p_limit?: number
+        }
+        Returns: {
+          avatar_url: string
+          blocked_at: string
+          display_name: string
+          user_id: string
+        }[]
+      }
       list_my_donation_history: {
         Args: {
           p_after_id?: string
@@ -5165,6 +5542,17 @@ export type Database = {
           other_response: string
           score: number
           status: string
+          world_slug: string
+        }[]
+      }
+      my_world_givings: {
+        Args: never
+        Returns: {
+          closed: number
+          given: number
+          received: number
+          world_label_en: string
+          world_label_he: string
           world_slug: string
         }[]
       }
@@ -5710,6 +6098,71 @@ export type Database = {
           p_source: string
           p_user_agent_hash: string
           p_version: number
+        }
+        Returns: string
+      }
+      submit_support_issue: {
+        Args: { p_category: string; p_description: string; p_issue_id?: string }
+        Returns: {
+          anchor_post_id: string | null
+          created_at: string
+          direct_user_a: string | null
+          direct_user_b: string | null
+          id: string
+          kind: string
+          last_message_at: string | null
+          moderation_hidden_at: string | null
+          support_user_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "chats"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      timesheet_approve: {
+        Args: { p_entry_id: string; p_note?: string }
+        Returns: undefined
+      }
+      timesheet_count: {
+        Args: {
+          p_from?: string
+          p_scope?: string
+          p_status?: string
+          p_to?: string
+          p_user_id?: string
+        }
+        Returns: number
+      }
+      timesheet_delete: { Args: { p_entry_id: string }; Returns: undefined }
+      timesheet_list: {
+        Args: {
+          p_cursor?: Json
+          p_from?: string
+          p_limit?: number
+          p_scope?: string
+          p_status?: string
+          p_to?: string
+          p_user_id?: string
+        }
+        Returns: {
+          cursor: Json
+          entry: Json
+        }[]
+      }
+      timesheet_reject: {
+        Args: { p_entry_id: string; p_note?: string }
+        Returns: undefined
+      }
+      timesheet_submit: { Args: { p_entry_id: string }; Returns: undefined }
+      timesheet_upsert: {
+        Args: {
+          p_description?: string
+          p_entry_id?: string
+          p_hours_x100?: number
+          p_project?: string
+          p_work_date?: string
         }
         Returns: string
       }

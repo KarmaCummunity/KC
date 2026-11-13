@@ -2,12 +2,12 @@
 export { TransitionError } from './TransitionError';
 export type { TransitionErrorCode, TransitionErrorDetails } from './TransitionError';
 export {
-  assertTransition, canTransition, defineMachine, hasEdge, isTerminal,
+  allowsMove, assertTransition, canTransition, defineMachine, hasEdge, isTerminal,
 } from './machine';
 export type {
   FsmEdge, FsmMachine, TransitionAnswer, TransitionFail, TransitionOk,
 } from './machine';
-export { FSM_MACHINES, LEGACY_FSM_MACHINES } from './catalog';
+export { FSM_MACHINES } from './catalog';
 export { adminTaskMachine } from './machines/adminTask';
 export { postMachine } from './machines/post';
 export { givingHandoffMachine } from './machines/givingHandoff';
@@ -27,7 +27,9 @@ export { moderationQueueMachine } from './machines/moderationQueue';
 export { rideSeriesMachine } from './machines/rideSeries';
 export { postSeriesMachine } from './machines/postSeries';
 export { challengeMachine } from './machines/challenge';
+export { knowledgeTopicMachine } from './machines/knowledgeTopic';
 export { matchMachine } from './machines/match';
+export { embeddingJobMachine } from './machines/embeddingJob';
 export { organizationMachine } from './machines/organization';
 export { orgSec46Machine } from './machines/orgSec46';
 export { orgApplicationMachine } from './machines/orgApplication';

@@ -4,7 +4,7 @@
 // change the SQL rows or the locale strings and run the script again.
 
 /** Arguments a notification text may interpolate. */
-export const NOTIFICATION_TEXT_ARGS = ['actorName', 'count', 'othersCount', 'messagePreview', 'postTitle', 'details'] as const;
+export const NOTIFICATION_TEXT_ARGS = ['actorName', 'count', 'othersCount', 'messagePreview', 'taskTitle', 'postTitle', 'details'] as const;
 
 /** Every notification kind with its rules, as registered in the database. */
 export const NOTIFICATION_KINDS = {
@@ -84,6 +84,8 @@ export const NOTIFICATION_KINDS = {
   donation_succeeded: { category: 'critical', defaultEnabled: true, bypassPreferences: false, bypassQuietHours: false, sendsPush: true, groupWindowSeconds: null, titleKey: 'notifications.donationSucceededTitle', bodyKey: 'notifications.donationSucceededBody', groupedBodyKey: null, textArgs: [] },
   donation_refunded: { category: 'critical', defaultEnabled: true, bypassPreferences: false, bypassQuietHours: false, sendsPush: true, groupWindowSeconds: null, titleKey: 'notifications.donationRefundedTitle', bodyKey: 'notifications.donationRefundedBody', groupedBodyKey: null, textArgs: [] },
   standing_order_charge_failed: { category: 'critical', defaultEnabled: true, bypassPreferences: false, bypassQuietHours: false, sendsPush: true, groupWindowSeconds: null, titleKey: 'notifications.standingOrderChargeFailedTitle', bodyKey: 'notifications.standingOrderChargeFailedBody', groupedBodyKey: null, textArgs: [] },
+  support_issue_received: { category: 'critical', defaultEnabled: true, bypassPreferences: false, bypassQuietHours: false, sendsPush: true, groupWindowSeconds: null, titleKey: 'notifications.supportIssueReceivedTitle', bodyKey: 'notifications.supportIssueReceivedBody', groupedBodyKey: null, textArgs: [] },
+  report_sla_warning: { category: 'critical', defaultEnabled: true, bypassPreferences: false, bypassQuietHours: false, sendsPush: true, groupWindowSeconds: null, titleKey: 'notifications.reportSlaWarningTitle', bodyKey: 'notifications.reportSlaWarningBody', groupedBodyKey: null, textArgs: [] },
   food_expiring: { category: 'critical', defaultEnabled: true, bypassPreferences: false, bypassQuietHours: false, sendsPush: true, groupWindowSeconds: null, titleKey: 'notifications.foodExpiringTitle', bodyKey: 'notifications.foodExpiringBody', groupedBodyKey: null, textArgs: ['postTitle'] },
   food_expired: { category: 'critical', defaultEnabled: true, bypassPreferences: false, bypassQuietHours: false, sendsPush: true, groupWindowSeconds: null, titleKey: 'notifications.foodExpiredTitle', bodyKey: 'notifications.foodExpiredBody', groupedBodyKey: null, textArgs: ['postTitle'] },
   chat_auto_removed: { category: 'critical', defaultEnabled: true, bypassPreferences: true, bypassQuietHours: false, sendsPush: true, groupWindowSeconds: null, titleKey: 'notifications.chatAutoRemovedTitle', bodyKey: 'notifications.chatAutoRemovedBody', groupedBodyKey: null, textArgs: [] },
@@ -97,4 +99,5 @@ export const NOTIFICATION_KINDS = {
   knowledge_booking_no_show: { category: 'critical', defaultEnabled: true, bypassPreferences: false, bypassQuietHours: false, sendsPush: true, groupWindowSeconds: null, titleKey: 'notifications.knowledgeBookingNoShowTitle', bodyKey: 'notifications.knowledgeBookingNoShowBody', groupedBodyKey: null, textArgs: ['postTitle'] },
   knowledge_booking_waitlist_promoted: { category: 'critical', defaultEnabled: true, bypassPreferences: false, bypassQuietHours: false, sendsPush: true, groupWindowSeconds: null, titleKey: 'notifications.knowledgeBookingWaitlistPromotedTitle', bodyKey: 'notifications.knowledgeBookingWaitlistPromotedBody', groupedBodyKey: null, textArgs: ['postTitle', 'details'] },
   knowledge_booking_reinstated: { category: 'critical', defaultEnabled: true, bypassPreferences: false, bypassQuietHours: false, sendsPush: true, groupWindowSeconds: null, titleKey: 'notifications.knowledgeBookingReinstatedTitle', bodyKey: 'notifications.knowledgeBookingReinstatedBody', groupedBodyKey: null, textArgs: ['postTitle', 'details'] },
+  task_assigned: { category: 'social', defaultEnabled: true, bypassPreferences: false, bypassQuietHours: false, sendsPush: true, groupWindowSeconds: null, titleKey: 'notifications.taskAssignedTitle', bodyKey: 'notifications.taskAssignedBody', groupedBodyKey: null, textArgs: ['taskTitle'] },
 } as const;
