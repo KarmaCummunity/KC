@@ -101,7 +101,7 @@ Conversations may be anchored to a specific post for purposes of recipient-picke
 - Constraints: `R-MVP-Chat-3`.
 
 **Acceptance Criteria.**
-- AC1. A `Chat` between two users may have an `anchor_post_id`. By default the same conversation is reused regardless of which post was the entry trigger; the first anchor wins on that `chat_id`, but newer anchors are tracked as `Chat.anchor_history` for analytics. **Exception (`FR-CHAT-016`, {{D:chat-hide-clears-history}}):** after a member removes the chat from their own inbox, contacting the same counterpart again opens a **new, clean thread for that member**: the pair keeps one `Chat` row, but the member's history starts at the moment of the hide (`chat_members.history_from`, migration `0028`), so none of the old messages, previews or unread counts reach them again. The counterpart keeps the whole conversation.
+- AC1. A `Chat` between two users may have an `anchor_post_id`. By default the same conversation is reused regardless of which post was the entry trigger; the first anchor wins on that `chat_id`, but newer anchors are tracked as `Chat.anchor_history` for analytics. **Exception (`FR-CHAT-016`, D153):** after a member removes the chat from their own inbox, contacting the same counterpart again opens a **new, clean thread for that member**: the pair keeps one `Chat` row, but the member's history starts at the moment of the hide (`chat_members.history_from`, migration `0028`), so none of the old messages, previews or unread counts reach them again. The counterpart keeps the whole conversation.
 - AC2. The conversation can also be opened directly from the counterpart's profile (`FR-CHAT-006`); in that case `anchor_post_id` is null.
 - AC3. The Super Admin support thread (`FR-CHAT-007`) sets `is_support_thread = true` to mark it for special UI treatment in the future, even if it does not differ functionally in MVP.
 
@@ -340,7 +340,7 @@ The user can remove a conversation from **their own** inbox without deleting it 
 **Acceptance Criteria.**
 - AC1. Entry points: inbox row overflow and conversation `⋮` menu (support thread excluded).
 - AC2. Confirmation modal before hide; copy explains counterpart retention and that a new message in the same thread can restore the row to the inbox.
-- AC3. After hide, opening a DM with the same user from a profile or post CTA opens a thread that is **empty for the opener**: the hide also starts the opener's history at that moment ({{D:chat-hide-clears-history}}, migration `0028`). The pair keeps one chat row; the counterpart still sees every message. The support thread cannot be hidden.
+- AC3. After hide, opening a DM with the same user from a profile or post CTA opens a thread that is **empty for the opener**: the hide also starts the opener's history at that moment (D153, migration `0028`). The pair keeps one chat row; the counterpart still sees every message. The support thread cannot be hidden.
 - AC4. Inbox shows **at most one row per human counterpart** (one chat per pair).
 - AC5. Any new `messages` row on a chat clears the inbox-hide flag for that chat (the thread reappears), with only the messages after the hide for the member who hid it.
 - AC6. Unread badge (`FR-CHAT-012`) excludes messages in chats inbox-hidden for the viewer, and messages from before the viewer's hide once the chat returns.
