@@ -13,5 +13,6 @@ export const CRM_AVAILABLE: boolean = true;
 /** FR-ADMIN-033 staff timesheets — migration 0036 (timesheet_* RPCs). */
 export const TIMESHEETS_AVAILABLE: boolean = true;
 
-/** M22: WhatsApp bot linking and its admin console — waits for the `integrations` module. */
-export const WHATSAPP_BOT_AVAILABLE: boolean = false;
+/** M22: WhatsApp bot linking and its admin console — the `integrations` module (whatsapp_* migrations).
+ *  The launch flag `launch_whatsapp_bot_enabled` still decides per environment whether it shows. */
+export const WHATSAPP_BOT_AVAILABLE: boolean = true;

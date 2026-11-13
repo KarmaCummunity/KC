@@ -174,6 +174,12 @@ export const settingsEn = {
     codeExpires: 'Valid until {{time}}',
     unlink: 'Unlink number',
     unlinkConfirm: 'Unlink your WhatsApp number from this account?',
+    alertsLabel: 'Match alerts on WhatsApp',
+    alertsHint: 'We message you on WhatsApp when a match for your post is found.',
+    alertsPhoneStopped: 'You sent STOP from WhatsApp. To get alerts again, send START to the bot.',
+    alertsNeedLink: 'Link a WhatsApp number first to get alerts.',
+    proRequired: 'Link codes are available to Pro members only.',
+    rateLimited: 'Too many codes requested. Try again in an hour.',
     failed: 'Something went wrong. Please try again.',
   },
 } as const;

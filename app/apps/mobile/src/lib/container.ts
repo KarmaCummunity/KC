@@ -1,7 +1,7 @@
 // Composition root — singleton instances of all chat use cases bound to Supabase adapters.
 // Screens import the use cases from here, not from @kc/application directly.
 // Mapped to SRS: FR-CHAT-001..013, FR-POST-010, FR-POST-014 AC4, FR-POST-015 AC1, FR-MOD-001, FR-MOD-007, FR-ADMIN-009.
-import { createWhatsAppAdminUseCases } from './whatsappAdminContainer';
+import { createWhatsAppAdminUseCases, createWhatsAppLinkUseCases } from './whatsappAdminContainer';
 import { pickAuthStorage } from '../services/authSecureStorage';
 import {
   getSupabaseClient,
@@ -200,7 +200,8 @@ export const container = {
   // FR-ADMIN-032 / FR-ADMIN-033
   ...createBackOfficeUseCases(supabase),
   ...createModerationStaffUseCases(supabase),
-  ...createWhatsAppAdminUseCases(),
+  ...createWhatsAppAdminUseCases(supabase),
+  ...createWhatsAppLinkUseCases(supabase),
   // V2-ADMIN-ORG-7
   listOrgApplications: new ListOrgApplicationsUseCase(orgApplicationsRepo),
   decideOrgApplication: new DecideOrgApplicationUseCase(orgApplicationsRepo),

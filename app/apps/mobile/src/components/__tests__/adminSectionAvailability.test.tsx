@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 // Admin sections and their availability switches (src/lib/parkedFeatures.ts): the back-office
-// tools (migrations 0034–0036) render their screens; the WhatsApp console, still parked, renders
-// the "not available yet" notice so a direct link never fires a refused call.
+// tools (migrations 0034–0036) and the WhatsApp console (the whatsapp_* migrations, M22) render
+// their screens instead of the "not available yet" notice.
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import React from 'react';
 import { cleanup, render } from '@testing-library/react';
@@ -43,10 +43,10 @@ describe('back-office sections (FR-ADMIN-018, FR-ADMIN-032, FR-ADMIN-033)', () =
   });
 });
 
-describe('parked WhatsApp console (M22)', () => {
-  it('shows the not-available notice, not the console', () => {
+describe('WhatsApp console (M22)', () => {
+  it('renders the console, not the not-available notice', () => {
     const { getByTestId, queryByTestId } = renderLayout(AdminWhatsAppLayout);
-    expect(getByTestId('admin-whatsapp-parked')).toBeTruthy();
-    expect(queryByTestId('slot')).toBeNull();
+    expect(getByTestId('slot')).toBeTruthy();
+    expect(queryByTestId('admin-whatsapp-parked')).toBeNull();
   });
 });
