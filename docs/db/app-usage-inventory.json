@@ -24,8 +24,8 @@
    "distinct": 246
   },
   "table": {
-   "callSites": 186,
-   "distinct": 63
+   "callSites": 184,
+   "distinct": 62
   }
  },
  "entries": [
@@ -2654,31 +2654,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/posts/postCardExtras.ts",
-   "line": 27,
-   "area": "posts",
-   "symbol": "loadPostColumns",
-   "via": "literal",
-   "ops": [
-    "select"
-   ],
-   "name": "posts"
-  },
-  {
-   "kind": "table",
-   "file": "app/packages/infrastructure-supabase/src/posts/postCardExtras.ts",
-   "line": 36,
-   "area": "posts",
-   "symbol": "loadChallengeIds",
-   "via": "literal",
-   "ops": [
-    "select"
-   ],
-   "name": "challenges"
-  },
-  {
-   "kind": "table",
-   "file": "app/packages/infrastructure-supabase/src/posts/postCardExtras.ts",
-   "line": 44,
+   "line": 29,
    "area": "posts",
    "symbol": "loadPurgeDeadlines",
    "via": "literal",
@@ -2690,7 +2666,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/posts/postCardExtras.ts",
-   "line": 56,
+   "line": 41,
    "area": "posts",
    "symbol": "loadRecipients",
    "via": "literal",
@@ -2702,7 +2678,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/posts/postCardExtras.ts",
-   "line": 65,
+   "line": 50,
    "area": "posts",
    "symbol": "loadRecipients",
    "via": "literal",
