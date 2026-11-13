@@ -8,7 +8,7 @@ import { Alert, Platform, RefreshControl, ScrollView, StyleSheet, View } from 'r
 import { adminChipScroll } from '../../../src/components/admin/adminChipScroll';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  hasPermission, isOrgApplicationError, suggestOrgSlug,
+  hasPermission, isOrgApplicationError, isOrgApplicationOpen, suggestOrgSlug,
   type AdminPermission, type AdminRole,
   type OrgApplication, type OrgApplicationStatus,
 } from '@kc/domain';
@@ -168,7 +168,8 @@ function ApplicationCardInner({ application, busy, onDecide }: ApplicationCardPr
   const [note, setNote] = useState('');
   const [slug, setSlug] = useState(() => suggestOrgSlug(application.orgName, application.websiteUrl));
 
-  const showActions = application.status === 'pending';
+  // Only an application that still waits for a decision is approved or rejected.
+  const showActions = isOrgApplicationOpen(application.status);
 
   return (
     <View style={styles.card}>
@@ -194,7 +195,7 @@ function ApplicationCardInner({ application, busy, onDecide }: ApplicationCardPr
         {application.websiteUrl && <Text style={styles.contact}>🔗 {application.websiteUrl}</Text>}
       </View>
 
-      {application.status !== 'pending' && application.reviewerName && (
+      {!showActions && application.reviewerName && (
         <Text style={styles.meta}>{t.row.decidedBy(application.reviewerName)}</Text>
       )}
       {application.reviewedAt && (

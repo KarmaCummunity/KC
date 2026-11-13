@@ -6,7 +6,7 @@ import { ActivityIndicator, View } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import type { MyOrganization, MyOrgApplication } from '@kc/domain';
+import { isOrgApplicationOpen, type MyOrganization, type MyOrgApplication } from '@kc/domain';
 import { makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
 import { Card, PrimaryButton, Screen } from '../../../src/components/ui';
 import { SettingsScreenRow } from '../../../src/components/SettingsScreenRow';
@@ -35,7 +35,7 @@ export default function MyOrganizationsScreen() {
   });
 
   // One open application at a time (0730): the register button waits while one is pending.
-  const canRegister = application.data?.status !== 'pending';
+  const canRegister = !(application.data && isOrgApplicationOpen(application.data.status));
   const loading = application.isLoading || organizations.isLoading;
 
   return (
