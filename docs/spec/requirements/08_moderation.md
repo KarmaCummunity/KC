@@ -1,6 +1,6 @@
 # 2.8 Reports & Moderation
 
-> **Status:** ✅ Done (P1.3 slice) — FR-MOD-001/002/005/007/010/011/012 shipped end-to-end. FR-MOD-008 (suspect-queue producers) deferred (tech-debt issue). Block/unblock back in the launch scope (D105): bilateral data-layer filter (`0544`), Blocked Users screen (`0545`) and the profile / chat / listing entry points ✅. ⚠️ Audit 2026-05-16: 🔴 FR-MOD-005 AC5 user-target auto-removal enqueues no `auto_removed` notification (TD-76, BACKLOG P2.13); 🔴 FR-MOD-005 AC2 auto-removed chats vanish silently with no per-party banner/system message (TD-77, BACKLOG P2.13); FR-MOD-002 support-issue writes no `reports` row despite spec Related="Report (target_type=none)"; `is_post_visible_to` has no admin bypass. TD-94. See `docs/SSOT/archive/audit/2026-05-16/05_following_moderation_admin.md`.
+> **Status:** ✅ Done (P1.3 slice) — FR-MOD-001/002/005/007/010/011/012 shipped end-to-end. FR-MOD-008 (suspect-queue producers) deferred (tech-debt issue); its staff side, the portal "Review queue" (take and resolve, `moderation_queue`), is back since the baseline restore (2026-11). Block/unblock back in the launch scope (D105): bilateral data-layer filter (`0544`), Blocked Users screen (`list_my_blocked_users`, migration `0015` after the baseline cut-over) and the profile / chat / listing entry points ✅. ⚠️ Audit 2026-05-16: 🔴 FR-MOD-005 AC5 user-target auto-removal enqueues no `auto_removed` notification (TD-76, BACKLOG P2.13); 🔴 FR-MOD-005 AC2 auto-removed chats vanish silently with no per-party banner/system message (TD-77, BACKLOG P2.13); FR-MOD-002 support-issue writes no `reports` row despite spec Related="Report (target_type=none)"; `is_post_visible_to` has no admin bypass. TD-94. See `docs/SSOT/archive/audit/2026-05-16/05_following_moderation_admin.md`.
 
 
 
@@ -18,7 +18,7 @@ The user-facing safety mechanisms:
 - False-report sanctions (graduated suspensions).
 - Suspect-flag pipeline that surfaces problematic content for admin review.
 
-> **In the launch scope again (D105, PM 2026-11-03), superseding `EXEC-9`.** Per-user blocking / unblocking and bilateral block-based filtering (`FR-MOD-003`, `FR-MOD-004`, `FR-MOD-009`) ship with the first store release: Apple App Review requires a way to block abusive users. The data layer filters a blocked pair in both directions since migration `0544`; the Blocked Users screen (`0545`) and the profile / chat / listing entry points ship with it.
+> **In the launch scope again (D105, PM 2026-11-03), superseding `EXEC-9`.** Per-user blocking / unblocking and bilateral block-based filtering (`FR-MOD-003`, `FR-MOD-004`, `FR-MOD-009`) ship with the first store release: Apple App Review requires a way to block abusive users. The data layer filters a blocked pair in both directions since migration `0544`; the Blocked Users screen (`list_my_blocked_users`, migration `0015` after the baseline cut-over) and the profile / chat / listing entry points ship with it.
 
 The Super Admin's actions on reports (restore, manual ban, manual delete) are documented in [`12_super_admin.md`](./12_super_admin.md).
 
@@ -37,7 +37,7 @@ A user reports a post, another user, a comment (none in MVP UI but reserved), or
 - AC1. The Report modal is reachable from `⋮` menus on a post (Post Detail, feed card not in MVP), a profile, and a chat (`FR-CHAT-010`).
 - AC2. Reason picker (single select, required): `Spam`, `Offensive content`, `Misleading`, `Illegal`, `Other`. An optional free-text field of up to 500 characters complements the reason.
 - AC3. On submission, a `Report { reporter, target_type, target_id, reason, note, created_at }` is created.
-- AC4. A system message is appended to the Super Admin's inbox (`FR-ADMIN-001`) with a link to the target and the reason.
+- AC4. A system message is appended to the Super Admin's inbox (`FR-ADMIN-001`) with a link to the target and the reason. *(Superseded by `FR-ADMIN-014`: reports reach staff through the admin portal inbox (`FR-ADMIN-012`) and, at the threshold, the `moderation_review_needed` notification and a review queue entry (`FR-MOD-008`); no chat message is written.)*
 - AC5. The target post / profile is **immediately hidden** from the reporter (client-side) regardless of whether the auto-removal threshold is reached.
 - AC6. The reporter receives a confirmation toast: *"✅ Report received. Our team will review."*
 - AC7. Duplicate reports from the same reporter on the same target within 24 hours are rejected with `DUPLICATE_REPORT` (idempotency).
@@ -64,7 +64,7 @@ A user files a support / bug / feedback report from Settings, which becomes a ch
 - AC3. The system message contains a stable internal ID that lets the Super Admin reference the thread when replying or escalating.
 - AC4. The user is dropped onto the conversation screen after submission.
 - AC5. **No** auto-removal counter increments for this kind of report (it has no content target — `R-MVP-Privacy-4a`).
-- AC6. *(#2096)* The description is at most 500 characters after trim. The form stops typing at 500 and shows the count, and the app refuses a longer one (`description_too_long`). The server half (`rpc_submit_support_issue` refuses it too, so no client can bypass it) is held by the DB schema freeze until the production baseline cut-over (#2138).
+- AC6. *(#2096)* The description is at most 500 characters after trim. The form stops typing at 500 and shows the count, and the app refuses a longer one (`description_too_long`). The server refuses it too (`submit_support_issue`, migration `0015`, `description_too_long`), so no client can bypass it.
 - AC7. *(#2096)* One tap burst files one report: Send is disabled below 10 characters and while a report is being sent, and a second tap before the screen updates is ignored. A failed send (network, server) explains itself in a dialog and keeps the category and the text for another try.
 - AC8. *(#2096)* The description hint sits on the reading-start edge of the app language (right in Hebrew, left in English) on iOS, Android and web; typed text follows its own language (`FR-RESP-006` AC21). The four categories show as an even two-by-two grid.
 
@@ -102,7 +102,7 @@ A user blocks another user.
 
 ## FR-MOD-004 — Unblock a user
 
-**Status.** ✅ Launch scope (D105); `D-11` (unblock restores visibility) applies again. AC1: Settings → "Blocked users" (`app/settings/blocked-users.tsx`) lists the caller's blocks through `list_my_blocked_users` (`0545`; the blocked member's profile row is hidden from the blocker), each with an "Unblock" button behind a confirm.
+**Status.** ✅ Launch scope (D105); `D-11` (unblock restores visibility) applies again. AC1: Settings → "Blocked users" (`app/settings/blocked-users.tsx`) lists the caller's blocks through `list_my_blocked_users` (migration `0015`, keyset paged; the blocked member's profile row is hidden from the blocker), each with an "Unblock" button behind a confirm.
 
 **Description.**
 A user removes a block via the Blocked Users screen.
@@ -141,7 +141,7 @@ When a content target accumulates 3 distinct reports from 3 distinct reporters, 
    - For `target_type = post`: status moves to `removed_admin`.
    - For `target_type = user`: account moves to `suspended_admin` and is signed out on next refresh.
    - For `target_type = chat`: the chat is hidden from both users with a moderation banner.
-- AC3. A system message is appended to the Super Admin's thread (`FR-ADMIN-002`) with the message: *"Auto-removed after 3 reports. [target link]. Want to restore?"* with a quick action "↩ Restore".
+- AC3. A system message is appended to the Super Admin's thread (`FR-ADMIN-002`) with the message: *"Auto-removed after 3 reports. [target link]. Want to restore?"* with a quick action "↩ Restore". *(Superseded by `FR-ADMIN-014`: the `moderation_review_needed` notification, the review queue and the case's Restore action in the portal.)*
 - AC4. The reporters receive **no** notification confirming removal (anti-feedback for spam-reporters).
 - AC5. The owner of the removed target receives a notification (`FR-NOTIF-011`) — Critical category — explaining the removal in neutral language.
 
@@ -189,8 +189,8 @@ A virtual queue surfaces posts that need attention before reaching the auto-remo
 
 **Acceptance Criteria.**
 - AC1. A post enters the queue with reason `excessive_reopens` (when `Post.reopen_count >= 5`), `forbidden_keyword`, or `manual_flag`.
-- AC2. The queue is exposed to the Super Admin only as system messages in their thread (no dedicated screen in MVP).
-- AC3. Each queue entry includes a "↩ Restore / 🗑 Remove" inline action.
+- AC2. The queue is exposed to the Super Admin only as system messages in their thread (no dedicated screen in MVP). *(Superseded by `FR-ADMIN-014`: the admin portal "Review queue" screen lists the open `moderation_queue` entries, oldest first; staff take (`admin_assign_queue_entry`) and resolve (`admin_resolve_queue_entry`) them.)*
+- AC3. Each queue entry includes a "↩ Restore / 🗑 Remove" inline action. *(In the portal: "Open" leads to the post or the report case, where Restore and Remove live.)*
 
 **Related.** Domain: `ModerationQueueEntry`.
 

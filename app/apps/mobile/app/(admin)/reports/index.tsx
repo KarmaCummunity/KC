@@ -1,6 +1,7 @@
 // app/apps/mobile/app/(admin)/reports/index.tsx
 // FR-ADMIN-012 — admin reports inbox screen. Cursor-paginated KcFlashList of
-// open reports with chip filters and reporter-id search.
+// open report cases (grouped on the server) with chip filters and a search by target id or
+// reporter name (AC3).
 import { useCallback, useMemo, useState } from 'react';
 import { RefreshControl, StyleSheet, View } from 'react-native';
 import { spacing, Text, typography } from '@kc/ui';
@@ -23,7 +24,7 @@ const reportKeyExtractor = (r: ReportInboxRow) => `${r.targetType}:${r.targetId}
 export default function ReportsInbox() {
   const L = useLocaleBundle();
   const [filters, setFilters] = useState<ListOpenReportsFilters>({});
-  const [reporterDraft, setReporterDraft] = useState('');
+  const [searchDraft, setSearchDraft] = useState('');
   const [sheetOpen, setSheetOpen] = useState(false);
   const q = useReportsInbox(filters);
   const rows = useMemo(() => q.data?.pages.flatMap((p) => p.rows) ?? [], [q.data?.pages]);
@@ -37,23 +38,23 @@ export default function ReportsInbox() {
     if (q.hasNextPage) void q.fetchNextPage();
   }, [q]);
 
-  const commitReporter = () => {
-    const id = reporterDraft.trim();
-    setFilters((prev) => ({ ...prev, reporterId: id || null }));
+  const commitSearch = () => {
+    const text = searchDraft.trim();
+    setFilters((prev) => ({ ...prev, search: text || null }));
   };
 
   const clearFilters = () => {
     setFilters({});
-    setReporterDraft('');
+    setSearchDraft('');
   };
 
   return (
     <View style={styles.root}>
       <AdminSearchFilterToolbar
         search={{
-          value: reporterDraft,
-          onChangeText: setReporterDraft,
-          onSubmitEditing: commitReporter,
+          value: searchDraft,
+          onChangeText: setSearchDraft,
+          onSubmitEditing: commitSearch,
           placeholder: L.admin.reports.filters.search,
           autoCapitalize: 'none',
           testID: 'admin-reports-reporter-search',

@@ -55,6 +55,7 @@ import { surveyEn } from './modules/survey';
 import { researchEn } from './modules/research';
 import { adminEn } from './modules/admin';
 import { adminOrgApprovalsBaselineEn } from './modules/adminOrgApprovalsBaseline';
+import { adminStaffToolsEn } from './modules/adminStaffTools';
 import { adminCrmBaselineEn, adminTimeBaselineEn } from './modules/adminBackOfficeBaseline';
 import { karmaEn } from './modules/karma';
 import { karmaEventsEn } from './modules/karmaEvents';
@@ -116,8 +117,12 @@ const en = {
   // Admin portal (FR-ADMIN-010/011) — see modules/admin.ts
   // The baseline approval copy joins admin.orgApprovals — see modules/adminOrgApprovalsBaseline.ts;
   // the back-office copy joins admin.crm and admin.time — see modules/adminBackOfficeBaseline.ts.
+  // The support inbox and review queue copy — see modules/adminStaffTools.ts.
   admin: {
     ...adminEn,
+    nav: { ...adminEn.nav, ...adminStaffToolsEn.nav },
+    supportInbox: adminStaffToolsEn.supportInbox,
+    reviewQueue: adminStaffToolsEn.reviewQueue,
     orgApprovals: {
       ...adminEn.orgApprovals,
       row: { ...adminEn.orgApprovals.row, ...adminOrgApprovalsBaselineEn.row },

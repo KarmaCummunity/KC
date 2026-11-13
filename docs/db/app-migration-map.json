@@ -2,16 +2,16 @@
  "generatedBy": "scripts/app-migration-map.mjs",
  "totals": {
   "rpc": {
-   "objects": 209,
-   "same": 137,
+   "objects": 225,
+   "same": 148,
    "renamed": 20,
-   "changed": 33,
+   "changed": 38,
    "removed": 0,
    "missing": 19
   },
   "table": {
-   "objects": 63,
-   "same": 45,
+   "objects": 64,
+   "same": 46,
    "renamed": 0,
    "changed": 17,
    "removed": 0,
@@ -44,16 +44,16 @@
  },
  "launchTotals": {
   "core": {
-   "objects": 114,
-   "same": 95,
+   "objects": 127,
+   "same": 103,
    "renamed": 1,
-   "changed": 18,
+   "changed": 23,
    "removed": 0,
    "missing": 0
   },
   "later": {
-   "objects": 121,
-   "same": 70,
+   "objects": 125,
+   "same": 74,
    "renamed": 4,
    "changed": 27,
    "removed": 0,
@@ -91,8 +91,8 @@
    "missing": 0
   },
   "blocks": {
-   "callSites": 3,
-   "oneToOne": 3,
+   "callSites": 4,
+   "oneToOne": 4,
    "changed": 0,
    "removed": 0,
    "missing": 0
@@ -106,8 +106,8 @@
   },
   "chat": {
    "callSites": 20,
-   "oneToOne": 19,
-   "changed": 1,
+   "oneToOne": 18,
+   "changed": 2,
    "removed": 0,
    "missing": 0
   },
@@ -280,9 +280,9 @@
    "missing": 0
   },
   "moderation": {
-   "callSites": 7,
-   "oneToOne": 6,
-   "changed": 1,
+   "callSites": 17,
+   "oneToOne": 14,
+   "changed": 3,
    "removed": 0,
    "missing": 0
   },
@@ -301,8 +301,8 @@
    "missing": 0
   },
   "payments": {
-   "callSites": 10,
-   "oneToOne": 2,
+   "callSites": 11,
+   "oneToOne": 3,
    "changed": 8,
    "removed": 0,
    "missing": 0
@@ -322,9 +322,9 @@
    "missing": 0
   },
   "reports": {
-   "callSites": 8,
+   "callSites": 10,
    "oneToOne": 4,
-   "changed": 4,
+   "changed": 6,
    "removed": 0,
    "missing": 0
   },
@@ -364,8 +364,8 @@
    "missing": 0
   },
   "stats": {
-   "callSites": 2,
-   "oneToOne": 2,
+   "callSites": 4,
+   "oneToOne": 4,
    "changed": 0,
    "removed": 0,
    "missing": 0
@@ -414,7 +414,7 @@
   }
  },
  "notes": [
-  "Capabilities the baseline does not provide and the identity adapters therefore do not call (they report `BackendUnavailableError` and the screens degrade): the blocked-users list (M01, the screen shows its empty state; unblock from a profile is not reachable because `users_hide_blocked` hides it). Follow suggestions (M03), the completeness nudge (M04) and the About roster (M08) are built (migration 0031).",
+  "Every identity capability the baseline lacked is now built: the blocked-users list (M01, `0015`), follow suggestions (M03), the completeness nudge (M04) and the About roster (M08, all `0031`).",
   "The internal back-office tools (formerly M19) were rebuilt after the baseline as forward migrations: the admin task tracker (FR-ADMIN-018, `0034`), CRM contacts per organization (FR-ADMIN-032, `0035`) and staff timesheets (FR-ADMIN-033, `0036`).",
   "Errors: every baseline RPC raises `P0001` with a stable snake_case message (`unauthenticated` uses `42501`). Map on `error.message`, never on a SQLSTATE or on Hebrew text. Codes marked † in the tables are not referenced anywhere in the app today and need a user-visible mapping.",
   "Paging: no OFFSET anywhere. Lists take the `next_cursor` JSON of the last row (cards) or explicit `p_before_*` / `p_after_*` values; application ports that expose `offset` change to an opaque cursor.",
@@ -497,13 +497,13 @@
     "survey/SupabaseUserActivityRepository.ts",
     "apps/mobile: auth gate, onboarding, settings, edit profile, avatar upload, notification badge hook, devIdentityVerification (deleted)"
    ],
-   "work": "Done in P1: the account gate, private profile, onboarding state and pending legal documents read `bootstrap_session`; `users/mapUserRow.ts` maps the public `users` row plus `user_stats` and, for the caller's own row, the `bootstrap_session` private blocks (`user_private`, `user_account`, staff roles); follows go through `follow_user`, `follow_request_decide` and `follow_request_cancel`; account deletion through `request_account_deletion` and `restore_account`; the account gate listens on `user:<id>:account`. M01 is hidden; follow suggestions, the completeness nudge (M03, M04) and the About roster (M08) are built (migration 0031); the dev-only identity and onboarding helpers are gone.",
+   "work": "Done in P1: the account gate, private profile, onboarding state and pending legal documents read `bootstrap_session`; `users/mapUserRow.ts` maps the public `users` row plus `user_stats` and, for the caller's own row, the `bootstrap_session` private blocks (`user_private`, `user_account`, staff roles); follows go through `follow_user`, `follow_request_decide` and `follow_request_cancel`; account deletion through `request_account_deletion` and `restore_account`; the account gate listens on `user:<id>:account`. the blocked-users list reads `list_my_blocked_users` (`0015`); follow suggestions, the completeness nudge (M03, M04) and the About roster (M08) are built (`0031`); the dev-only identity and onboarding helpers are gone.",
    "tests": [
     "vitest: auth, users, legal, blocks, social, notifications suites",
     "contract tests against a baseline database (sqlProbes, contract.integration)",
     "pgTAP 010, 011, 020, 021, 050, 051"
    ],
-   "degrade": "Nothing works before this package (no session): it is the first one after P0. The blocked-users row is hidden (M01).",
+   "degrade": "Nothing works before this package (no session): it is the first one after P0.",
    "risks": "Owns `users/mapUserRow.ts`, which chat, posts and search read: it lands before P2 and P3 start. Account gate: topic `user:<id>:account` (M24).",
    "rows": [
     "rpc:bootstrap_session",
@@ -541,11 +541,12 @@
     "bucket:avatars",
     "channel:topic = `user:${userId}:notifications`",
     "channel:topic = `user:${userId}:account`",
-    "channel:`user:${userId}:stats`"
+    "channel:`user:${userId}:stats`",
+    "rpc:list_my_blocked_users"
    ],
    "counts": {
-    "objects": 36,
-    "oneToOne": 32,
+    "objects": 37,
+    "oneToOne": 33,
     "changed": 4,
     "removed": 0,
     "missing": 0
@@ -572,7 +573,7 @@
     "vitest: posts, feed, search, translations suites",
     "pgTAP 030, 035, 040, 041, 042, 078"
    ],
-   "degrade": "Until it lands the feed and profile tabs show their empty state and the create-post button is disabled; nothing else in the app depends on a post list. The statistics screen shows the community counters and the timeline only: its per-world block and the admin funnel are hidden (M14, M15).",
+   "degrade": "Until it lands the feed and profile tabs show their empty state and the create-post button is disabled; nothing else in the app depends on a post list.",
    "risks": "Largest behavioural change: cursor and card shape reach the application ports. Owns `posts/mapPostRow.ts`, read by P5. The card carries `owner_identity_masked` (M02).",
    "rows": [
     "rpc:search_organizations",
@@ -621,11 +622,13 @@
     "table:content_translations",
     "bucket:post-images",
     "channel:FEED_PUBLIC_TOPIC = 'feed:public'",
-    "edge_function:translate"
+    "edge_function:translate",
+    "rpc:admin_world_flow_funnel",
+    "rpc:my_world_givings"
    ],
    "counts": {
-    "objects": 47,
-    "oneToOne": 36,
+    "objects": 49,
+    "oneToOne": 38,
     "changed": 11,
     "removed": 0,
     "missing": 0
@@ -670,12 +673,13 @@
     "bucket:chat-media",
     "channel:`chat:${chatId}:messages`",
     "channel:`user:${userId}:chats`",
-    "channel:`chat:${chatId}:typing`"
+    "channel:`chat:${chatId}:typing`",
+    "rpc:submit_support_issue"
    ],
    "counts": {
-    "objects": 18,
+    "objects": 19,
     "oneToOne": 17,
-    "changed": 1,
+    "changed": 2,
     "removed": 0,
     "missing": 0
    }
@@ -708,6 +712,7 @@
     "table:users",
     "table:posts",
     "table:post_comments",
+    "table:chats",
     "rpc:get_my_admin_roles",
     "rpc:admin_confirm_report",
     "rpc:admin_dismiss_report",
@@ -724,12 +729,24 @@
     "rpc:admin_set_org_slug",
     "table:user_account",
     "table:admin_role_grants",
+    "rpc:admin_list_support_threads",
+    "rpc:admin_join_support_thread",
+    "rpc:admin_open_member_support_thread",
+    "rpc:admin_restore_chat",
+    "rpc:admin_restore_comment",
+    "rpc:admin_delete_comment",
+    "rpc:admin_reports_inbox",
+    "rpc:admin_report_case_timeline",
+    "rpc:admin_audit_lookup",
+    "table:moderation_queue",
+    "rpc:admin_assign_queue_entry",
+    "rpc:admin_resolve_queue_entry",
     "table:organizations"
    ],
    "counts": {
-    "objects": 20,
-    "oneToOne": 14,
-    "changed": 6,
+    "objects": 33,
+    "oneToOne": 23,
+    "changed": 10,
     "removed": 0,
     "missing": 0
    }
@@ -1077,11 +1094,12 @@
     "rpc:provider_webhook_apply",
     "rpc:api_revenuecat_set_pro",
     "rpc:api_revenuecat_set_org_entitlement",
-    "rpc:api_standing_orders_charge_due"
+    "rpc:api_standing_orders_charge_due",
+    "rpc:list_kc_support_channels"
    ],
    "counts": {
-    "objects": 29,
-    "oneToOne": 13,
+    "objects": 30,
+    "oneToOne": 14,
     "changed": 16,
     "removed": 0,
     "missing": 0
@@ -2042,6 +2060,90 @@
    ]
   },
   {
+   "old": "admin_assign_queue_entry",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "A moderator takes an open review entry or hands it to another staff member.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "admin_assign_queue_entry",
+     "source": "60_moderation/050_moderation_queue.sql:129",
+     "signature": [
+      "admin_assign_queue_entry(p_assignee_id?: string, p_entry_id: string) → undefined"
+     ],
+     "errors": [
+      {
+       "code": "assignee_not_staff",
+       "knownToApp": true
+      },
+      {
+       "code": "forbidden",
+       "knownToApp": true
+      },
+      {
+       "code": "queue_entry_not_open",
+       "knownToApp": true
+      },
+      {
+       "code": "unauthenticated",
+       "knownToApp": true
+      }
+     ]
+    }
+   ],
+   "areas": [
+    "moderation"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/moderation/SupabaseModerationQueueRepository.ts",
+     "line": 67,
+     "symbol": "SupabaseModerationQueueRepository.assign",
+     "area": "moderation"
+    }
+   ]
+  },
+  {
+   "old": "admin_audit_lookup",
+   "kind": "rpc",
+   "status": "changed",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "Was `admin_audit_lookup_guarded`. Super admin: events by or about a member (`p_user_id`), keyset, ≤ 200; `0016`.",
+   "oldObject": {
+    "signature": [
+     "admin_audit_lookup(p_limit?: number, p_user_id: string) → audit_events row[]"
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "admin_audit_lookup",
+     "signature": [
+      "admin_audit_lookup(p_before_id?: number, p_before_occurred_at?: string, p_limit?: number, p_user_id: string) → { action: string actor_id: string id: number metadata: Json occurred_at: string target_id: string target_type: string }[]"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "moderation"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/moderation/SupabaseModerationAdminRepository.ts",
+     "line": 138,
+     "symbol": "SupabaseModerationAdminRepository.auditLookup",
+     "area": "moderation"
+    }
+   ]
+  },
+  {
    "old": "admin_audit_search",
    "kind": "rpc",
    "status": "changed",
@@ -2145,7 +2247,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/moderation/SupabaseModerationAdminRepository.ts",
-     "line": 110,
+     "line": 123,
      "symbol": "SupabaseModerationAdminRepository.banUser",
      "area": "moderation"
     }
@@ -2275,8 +2377,53 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/moderation/SupabaseModerationAdminRepository.ts",
-     "line": 103,
+     "line": 116,
      "symbol": "SupabaseModerationAdminRepository.confirmReport",
+     "area": "moderation"
+    }
+   ]
+  },
+  {
+   "old": "admin_delete_comment",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "Staff remove a comment with its replies; `0016` stamps `moderation_removed_at` so `admin_restore_comment` can bring them back.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "admin_delete_comment",
+     "source": "60_moderation/080_content_moderation.sql:103",
+     "signature": [
+      "admin_delete_comment(p_comment_id: string) → undefined"
+     ],
+     "errors": [
+      {
+       "code": "forbidden",
+       "knownToApp": true
+      },
+      {
+       "code": "target_not_found",
+       "knownToApp": true
+      },
+      {
+       "code": "unauthenticated",
+       "knownToApp": true
+      }
+     ]
+    }
+   ],
+   "areas": [
+    "moderation"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/moderation/SupabaseModerationAdminRepository.ts",
+     "line": 106,
+     "symbol": "SupabaseModerationAdminRepository.removeComment",
      "area": "moderation"
     }
    ]
@@ -2324,7 +2471,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/moderation/SupabaseModerationAdminRepository.ts",
-     "line": 119,
+     "line": 132,
      "symbol": "SupabaseModerationAdminRepository.deleteMessage",
      "area": "moderation"
     }
@@ -2377,7 +2524,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/moderation/SupabaseModerationAdminRepository.ts",
-     "line": 98,
+     "line": 111,
      "symbol": "SupabaseModerationAdminRepository.dismissReport",
      "area": "moderation"
     }
@@ -2488,6 +2635,37 @@
    ]
   },
   {
+   "old": "admin_join_support_thread",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "Staff join a support thread as its `support_agent`; idempotent, audited; `0015`.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "admin_join_support_thread",
+     "signature": [
+      "admin_join_support_thread(p_chat_id: string) → chats row"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "moderation"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/moderation/SupabaseSupportInboxRepository.ts",
+     "line": 64,
+     "symbol": "SupabaseSupportInboxRepository.joinThread",
+     "area": "moderation"
+    }
+   ]
+  },
+  {
    "old": "admin_list_admins",
    "kind": "rpc",
    "status": "same",
@@ -2523,6 +2701,37 @@
    ]
   },
   {
+   "old": "admin_list_support_threads",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "Staff: support threads with messages, newest first, keyset; `0015`.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "admin_list_support_threads",
+     "signature": [
+      "admin_list_support_threads(p_before_id?: string, p_before_last_message_at?: string, p_limit?: number) → { chat_id: string created_at: string joined: boolean last_message_at: string member_avatar_url: string member_display_name: string member_id: string }[]"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "moderation"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/moderation/SupabaseSupportInboxRepository.ts",
+     "line": 40,
+     "symbol": "SupabaseSupportInboxRepository.listThreads",
+     "area": "moderation"
+    }
+   ]
+  },
+  {
    "old": "admin_match_quality",
    "kind": "rpc",
    "status": "same",
@@ -2554,6 +2763,37 @@
      "line": 145,
      "symbol": "SupabaseMatchRepository.qualityByWorld",
      "area": "matching"
+    }
+   ]
+  },
+  {
+   "old": "admin_open_member_support_thread",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "Staff open a member's support thread (created if needed) from a report case; `0015`.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "admin_open_member_support_thread",
+     "signature": [
+      "admin_open_member_support_thread(p_user_id: string) → chats row"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "moderation"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/moderation/SupabaseSupportInboxRepository.ts",
+     "line": 72,
+     "symbol": "SupabaseSupportInboxRepository.openMemberThread",
+     "area": "moderation"
     }
    ]
   },
@@ -2787,6 +3027,175 @@
    ]
   },
   {
+   "old": "admin_report_case_timeline",
+   "kind": "rpc",
+   "status": "changed",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "Was the timeline of `reports_case_detail` (reporters come from `reports`): the whole audit history of the target and its reports from `admin_report_case_timeline` (every staff role); `0016`.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "admin_report_case_timeline",
+     "signature": [
+      "admin_report_case_timeline(p_limit?: number, p_target_id: string, p_target_type: string) → { action: string actor_id: string id: number metadata: Json occurred_at: string target_id: string target_type: string }[]"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "reports"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/reports/SupabaseReportsRepository.ts",
+     "line": 112,
+     "symbol": "SupabaseReportsRepository.loadTimeline",
+     "area": "reports"
+    }
+   ]
+  },
+  {
+   "old": "admin_reports_inbox",
+   "kind": "rpc",
+   "status": "changed",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "Was `reports_open_inbox`. Server-grouped open cases, oldest first, keyset (`p_after_oldest_at`, `p_after_target_type`, `p_after_target_id`), filters and `p_search` (target id or reporter name); `0016`.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "admin_reports_inbox",
+     "signature": [
+      "admin_reports_inbox(p_after_oldest_at?: string, p_after_target_id?: string, p_after_target_type?: string, p_limit?: number, p_max_age_days?: number, p_reporter_id?: string, p_search?: string, p_target_type?: string) → { latest_at: string latest_reporter_id: string oldest_at: string report_count: number reporter_count: number target_hidden_at: string target_id: string target_type: string }[]"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "reports"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/reports/SupabaseReportsRepository.ts",
+     "line": 40,
+     "symbol": "SupabaseReportsRepository.listOpenInbox",
+     "area": "reports"
+    }
+   ]
+  },
+  {
+   "old": "admin_resolve_queue_entry",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "A moderator closes an open review entry.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "admin_resolve_queue_entry",
+     "source": "60_moderation/050_moderation_queue.sql:158",
+     "signature": [
+      "admin_resolve_queue_entry(p_entry_id: string) → undefined"
+     ],
+     "errors": [
+      {
+       "code": "forbidden",
+       "knownToApp": true
+      },
+      {
+       "code": "queue_entry_not_open",
+       "knownToApp": true
+      },
+      {
+       "code": "unauthenticated",
+       "knownToApp": true
+      }
+     ]
+    }
+   ],
+   "areas": [
+    "moderation"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/moderation/SupabaseModerationQueueRepository.ts",
+     "line": 74,
+     "symbol": "SupabaseModerationQueueRepository.resolve",
+     "area": "moderation"
+    }
+   ]
+  },
+  {
+   "old": "admin_restore_chat",
+   "kind": "rpc",
+   "status": "changed",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "Was the chat branch of `admin_restore_target`: unhides a chat hidden for review and dismisses its open reports (FR-ADMIN-002 AC2/AC4); `0016`.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "admin_restore_chat",
+     "signature": [
+      "admin_restore_chat(p_chat_id: string) → undefined"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "moderation"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/moderation/SupabaseModerationAdminRepository.ts",
+     "line": 96,
+     "symbol": "SupabaseModerationAdminRepository.restoreTarget",
+     "area": "moderation"
+    }
+   ]
+  },
+  {
+   "old": "admin_restore_comment",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "Brings back a comment staff removed, with the replies removed alongside; dismisses its open reports; `0016`.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "admin_restore_comment",
+     "signature": [
+      "admin_restore_comment(p_comment_id: string) → undefined"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "moderation"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/moderation/SupabaseModerationAdminRepository.ts",
+     "line": 100,
+     "symbol": "SupabaseModerationAdminRepository.restoreTarget",
+     "area": "moderation"
+    }
+   ]
+  },
+  {
    "old": "admin_restore_post",
    "kind": "rpc",
    "status": "same",
@@ -2825,7 +3234,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/moderation/SupabaseModerationAdminRepository.ts",
-     "line": 87,
+     "line": 90,
      "symbol": "SupabaseModerationAdminRepository.restoreTarget",
      "area": "moderation"
     }
@@ -2874,7 +3283,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/moderation/SupabaseModerationAdminRepository.ts",
-     "line": 89,
+     "line": 93,
      "symbol": "SupabaseModerationAdminRepository.restoreTarget",
      "area": "moderation"
     }
@@ -3491,6 +3900,41 @@
      "line": 208,
      "symbol": "SupabaseSurveyAdminRepository.listFeedback",
      "area": "survey"
+    }
+   ]
+  },
+  {
+   "old": "admin_world_flow_funnel",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "`p_days` (1..365); per world and direction (`give` / `request`) the posts published in the window through their handoffs; money has no handoff stages. Moderators and above; `0018` (M14, built).",
+   "oldObject": {
+    "signature": [
+     "admin_world_flow_funnel(p_days?: number) → { booked: number cancelled: number closed: number completed: number confirmed: number direction: string median_hours_to_booking: number median_hours_to_completion: number published: number world_label_en: string world..."
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "admin_world_flow_funnel",
+     "signature": [
+      "admin_world_flow_funnel(p_days?: number) → { booked: number cancelled: number closed: number completed: number confirmed: number direction: string median_hours_to_booking: number median_hours_to_completion: number published: number world_label_en: string world..."
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "stats"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/stats/SupabaseStatsRepository.ts",
+     "line": 68,
+     "symbol": "SupabaseStatsRepository.getWorldFlowFunnel",
+     "area": "stats"
     }
    ]
   },
@@ -7544,6 +7988,76 @@
    ]
   },
   {
+   "old": "list_kc_support_channels",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Active KC support channels; the payee phone only for signed-in callers; the table is edited by the super admin; `0019` (M20, built).",
+   "oldObject": {
+    "signature": [
+     "list_kc_support_channels(channel: string, payee_phone: string, provider_label: string, url: string) → { channel: string payee_phone: string provider_label: string url: string }[]"
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "list_kc_support_channels",
+     "signature": [
+      "list_kc_support_channels(channel: string, payee_phone: string, provider_label: string, url: string) → { channel: string payee_phone: string provider_label: string url: string }[]"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "payments"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/payments/SupabaseKcSupportChannelsRepository.ts",
+     "line": 34,
+     "symbol": "SupabaseKcSupportChannelsRepository.listActiveChannels",
+     "area": "payments"
+    }
+   ]
+  },
+  {
+   "old": "list_my_blocked_users",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "The caller's blocks with the blocked member's name and avatar, newest first, keyset (`p_before_blocked_at`, `p_before_user_id`, `p_limit` ≤ 100); `0015` (M01, built).",
+   "oldObject": {
+    "signature": [
+     "list_my_blocked_users(avatar_url: string, blocked_at: string, display_name: string, user_id: string) → { avatar_url: string blocked_at: string display_name: string user_id: string }[]"
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "list_my_blocked_users",
+     "signature": [
+      "list_my_blocked_users(p_before_blocked_at?: string, p_before_user_id?: string, p_limit?: number) → { avatar_url: string blocked_at: string display_name: string user_id: string }[]"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "blocks"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/blocks/SupabaseBlockRepository.ts",
+     "line": 54,
+     "symbol": "SupabaseBlockRepository.listMyBlockedUsers",
+     "area": "blocks"
+    }
+   ]
+  },
+  {
    "old": "list_my_donation_history",
    "kind": "rpc",
    "status": "changed",
@@ -8049,6 +8563,41 @@
      "line": 130,
      "symbol": "SupabaseMatchRepository.listMine",
      "area": "matching"
+    }
+   ]
+  },
+  {
+   "old": "my_world_givings",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "The caller's handed-over givings (given / received) and closed posts per world; `0018` (M15, built).",
+   "oldObject": {
+    "signature": [
+     "my_world_givings(closed: number, given: number, received: number, world_label_en: string, world_label_he: string, world_slug: string) → { closed: number given: number received: number world_label_en: string world_label_he: string world_slug: string }[]"
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "my_world_givings",
+     "signature": [
+      "my_world_givings(closed: number, given: number, received: number, world_label_en: string, world_label_he: string, world_slug: string) → { closed: number given: number received: number world_label_en: string world_label_he: string world_slug: string }[]"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "stats"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/stats/SupabaseStatsRepository.ts",
+     "line": 88,
+     "symbol": "SupabaseStatsRepository.listMyWorldGivings",
+     "area": "stats"
     }
    ]
   },
@@ -10138,12 +10687,6 @@
    ],
    "callSites": [
     {
-     "file": "app/packages/infrastructure-supabase/src/chat/submitSupportIssue.ts",
-     "line": 27,
-     "symbol": "submitSupportIssue",
-     "area": "chat"
-    },
-    {
      "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRepository.ts",
      "line": 80,
      "symbol": "SupabaseChatRepository.sendMessage",
@@ -10696,6 +11239,37 @@
    ]
   },
   {
+   "old": "submit_support_issue",
+   "kind": "rpc",
+   "status": "changed",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "Was `rpc_submit_support_issue`. `(p_category, p_description, p_issue_id)` writes a `support_issue` system message (`issue_id`, `category`, `description`) and returns the thread; refusals `description_too_short`, `description_too_long` (500), `invalid_support_category`; `0015`.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "submit_support_issue",
+     "signature": [
+      "submit_support_issue(p_category: string, p_description: string, p_issue_id?: string) → chats row"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "chat"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/chat/submitSupportIssue.ts",
+     "line": 22,
+     "symbol": "submitSupportIssue",
+     "area": "chat"
+    }
+   ]
+  },
+  {
    "old": "timesheet_approve",
    "kind": "rpc",
    "status": "same",
@@ -11191,7 +11765,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/moderation/SupabaseModerationAdminRepository.ts",
-     "line": 71,
+     "line": 72,
      "symbol": "SupabaseModerationAdminRepository.isPlatformStaff",
      "area": "moderation",
      "ops": [
@@ -11291,7 +11865,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/blocks/SupabaseBlockRepository.ts",
-     "line": 18,
+     "line": 21,
      "symbol": "SupabaseBlockRepository.isBlocking",
      "area": "blocks",
      "ops": [
@@ -11300,7 +11874,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/blocks/SupabaseBlockRepository.ts",
-     "line": 28,
+     "line": 31,
      "symbol": "SupabaseBlockRepository.block",
      "area": "blocks",
      "ops": [
@@ -11309,7 +11883,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/blocks/SupabaseBlockRepository.ts",
-     "line": 36,
+     "line": 39,
      "symbol": "SupabaseBlockRepository.unwrapCall",
      "area": "blocks",
      "ops": [
@@ -11540,7 +12114,8 @@
    ],
    "areas": [
     "chat",
-    "posts"
+    "posts",
+    "reports"
    ],
    "callSites": [
     {
@@ -11557,6 +12132,15 @@
      "line": 110,
      "symbol": "chatPartners",
      "area": "posts",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/reports/reportTargetPreviews.ts",
+     "line": 89,
+     "symbol": "chatPreviews",
+     "area": "reports",
      "ops": [
       "select"
      ]
@@ -12798,6 +13382,51 @@
      "line": 113,
      "symbol": "SupabaseChatRepository.hasSentAnyMessage",
      "area": "chat",
+     "ops": [
+      "select"
+     ]
+    }
+   ]
+  },
+  {
+   "old": "moderation_queue",
+   "kind": "table",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "Staff read the open review entries directly (oldest first, keyset); writes through `admin_assign_queue_entry` / `admin_resolve_queue_entry` (FR-MOD-008).",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "table",
+     "name": "moderation_queue",
+     "columns": [
+      "assignee_id",
+      "created_at",
+      "id",
+      "metadata",
+      "reason",
+      "resolved_at",
+      "resolved_by",
+      "status",
+      "target_id",
+      "target_type"
+     ],
+     "clientGrants": {
+      "select": true
+     }
+    }
+   ],
+   "areas": [
+    "moderation"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/moderation/SupabaseModerationQueueRepository.ts",
+     "line": 35,
+     "symbol": "SupabaseModerationQueueRepository.listOpen",
+     "area": "moderation",
      "ops": [
       "select"
      ]
@@ -14718,16 +15347,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/reports/SupabaseReportsRepository.ts",
-     "line": 45,
-     "symbol": "SupabaseReportsRepository.listOpenInbox",
-     "area": "reports",
-     "ops": [
-      "select"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/reports/SupabaseReportsRepository.ts",
-     "line": 76,
+     "line": 77,
      "symbol": "SupabaseReportsRepository.getCaseDetail",
      "area": "reports",
      "ops": [
@@ -15969,7 +16589,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/reports/reportTargetPreviews.ts",
-     "line": 106,
+     "line": 121,
      "symbol": "loadDisplayNames",
      "area": "reports",
      "ops": [

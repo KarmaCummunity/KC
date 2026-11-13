@@ -26,6 +26,8 @@ export interface AdminDestination {
 export const ADMIN_DESTINATIONS: readonly AdminDestination[] = [
   { key: 'dashboard', href: '/(admin)',         icon: 'grid-outline',             perm: null },
   { key: 'reports',   href: '/(admin)/reports', icon: 'flag-outline',             perm: null },
+  { key: 'reviewQueue', href: '/(admin)/review-queue', icon: 'list-outline',         perm: 'reports.confirm_or_dismiss' },
+  { key: 'support',   href: '/(admin)/support', icon: 'headset-outline',          perm: 'reports.view' },
   { key: 'tasks',     href: '/(admin)/tasks',   icon: 'checkbox-outline',         perm: 'tasks.view', available: ADMIN_TASKS_AVAILABLE },
   { key: 'time',      href: '/(admin)/time',    icon: 'hourglass-outline',        perm: 'time.report', available: TIMESHEETS_AVAILABLE },
   { key: 'crm',       href: '/(admin)/crm',     icon: 'people-circle-outline',    perm: 'crm.manage', available: CRM_AVAILABLE },

@@ -29,8 +29,24 @@ export interface ReportCaseAuditEntry {
 export interface ReportCaseDetail {
   readonly targetType: AdminReportTargetType;
   readonly targetId: string;
-  /** Preview of the target (post, member or comment); empty for a chat, which staff cannot read. */
+  /** Preview of the target: a post, member or comment, or a chat's hidden-for-review time (never its messages). */
   readonly target: Readonly<Record<string, unknown>>;
   readonly reporters: readonly ReportCaseReporter[];
   readonly timeline: readonly ReportCaseAuditEntry[];
+}
+
+/**
+ * The member whose support thread "Open support thread" opens on a case (FR-ADMIN-013 AC2): the
+ * reported member, the author of a reported post or comment, or else (a chat) the reporter who
+ * reported last. Null when nobody is left to talk to.
+ */
+export function supportCounterpartOf(detail: ReportCaseDetail): string | null {
+  if (detail.targetType === 'user') return detail.targetId;
+  const author = detail.target['author_id'];
+  if (typeof author === 'string' && author !== '') return author;
+  for (let i = detail.reporters.length - 1; i >= 0; i -= 1) {
+    const reporterId = detail.reporters[i]?.reporterId;
+    if (reporterId) return reporterId;
+  }
+  return null;
 }

@@ -49,8 +49,8 @@ export function useBlockedUsers() {
   // The member whose unblock is running, so their row can disable its button.
   const [busyId, setBusyId] = useState<string | null>(null);
 
-  // M01: the backend cannot list blocked members yet. That is the degrade rule's empty state, kept
-  // apart from "you blocked nobody" so the screen can say so (`unavailable`).
+  // A backend without `list_my_blocked_users` is the degrade rule's empty state, kept apart from
+  // "you blocked nobody" so the screen can say so (`unavailable`).
   const query = useQuery({
     queryKey: [BLOCKED_USERS_QUERY_KEY, me],
     queryFn: async (): Promise<{ users: BlockedUser[]; unavailable: boolean }> => {

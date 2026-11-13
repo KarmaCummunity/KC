@@ -20,12 +20,12 @@
    "distinct": 3
   },
   "rpc": {
-   "callSites": 237,
-   "distinct": 209
+   "callSites": 252,
+   "distinct": 225
   },
   "table": {
-   "callSites": 186,
-   "distinct": 63
+   "callSites": 187,
+   "distinct": 64
   }
  },
  "entries": [
@@ -698,7 +698,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/blocks/SupabaseBlockRepository.ts",
-   "line": 18,
+   "line": 21,
    "area": "blocks",
    "symbol": "SupabaseBlockRepository.isBlocking",
    "via": "literal",
@@ -710,7 +710,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/blocks/SupabaseBlockRepository.ts",
-   "line": 28,
+   "line": 31,
    "area": "blocks",
    "symbol": "SupabaseBlockRepository.block",
    "via": "literal",
@@ -722,7 +722,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/blocks/SupabaseBlockRepository.ts",
-   "line": 36,
+   "line": 39,
    "area": "blocks",
    "symbol": "SupabaseBlockRepository.unwrapCall",
    "via": "literal",
@@ -730,6 +730,15 @@
     "delete"
    ],
    "name": "blocks"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/blocks/SupabaseBlockRepository.ts",
+   "line": 54,
+   "area": "blocks",
+   "symbol": "SupabaseBlockRepository.listMyBlockedUsers",
+   "via": "literal",
+   "name": "list_my_blocked_users"
   },
   {
    "kind": "rpc",
@@ -827,11 +836,11 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/chat/submitSupportIssue.ts",
-   "line": 27,
+   "line": 22,
    "area": "chat",
    "symbol": "submitSupportIssue",
    "via": "literal",
-   "name": "send_message"
+   "name": "submit_support_issue"
   },
   {
    "kind": "channel",
@@ -2014,7 +2023,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/moderation/SupabaseModerationAdminRepository.ts",
-   "line": 71,
+   "line": 72,
    "area": "moderation",
    "symbol": "SupabaseModerationAdminRepository.isPlatformStaff",
    "via": "literal",
@@ -2026,7 +2035,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/moderation/SupabaseModerationAdminRepository.ts",
-   "line": 87,
+   "line": 90,
    "area": "moderation",
    "symbol": "SupabaseModerationAdminRepository.restoreTarget",
    "via": "literal",
@@ -2035,7 +2044,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/moderation/SupabaseModerationAdminRepository.ts",
-   "line": 89,
+   "line": 93,
    "area": "moderation",
    "symbol": "SupabaseModerationAdminRepository.restoreTarget",
    "via": "literal",
@@ -2044,7 +2053,34 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/moderation/SupabaseModerationAdminRepository.ts",
-   "line": 98,
+   "line": 96,
+   "area": "moderation",
+   "symbol": "SupabaseModerationAdminRepository.restoreTarget",
+   "via": "literal",
+   "name": "admin_restore_chat"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/moderation/SupabaseModerationAdminRepository.ts",
+   "line": 100,
+   "area": "moderation",
+   "symbol": "SupabaseModerationAdminRepository.restoreTarget",
+   "via": "literal",
+   "name": "admin_restore_comment"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/moderation/SupabaseModerationAdminRepository.ts",
+   "line": 106,
+   "area": "moderation",
+   "symbol": "SupabaseModerationAdminRepository.removeComment",
+   "via": "literal",
+   "name": "admin_delete_comment"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/moderation/SupabaseModerationAdminRepository.ts",
+   "line": 111,
    "area": "moderation",
    "symbol": "SupabaseModerationAdminRepository.dismissReport",
    "via": "literal",
@@ -2053,7 +2089,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/moderation/SupabaseModerationAdminRepository.ts",
-   "line": 103,
+   "line": 116,
    "area": "moderation",
    "symbol": "SupabaseModerationAdminRepository.confirmReport",
    "via": "literal",
@@ -2062,7 +2098,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/moderation/SupabaseModerationAdminRepository.ts",
-   "line": 110,
+   "line": 123,
    "area": "moderation",
    "symbol": "SupabaseModerationAdminRepository.banUser",
    "via": "literal",
@@ -2071,11 +2107,77 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/moderation/SupabaseModerationAdminRepository.ts",
-   "line": 119,
+   "line": 132,
    "area": "moderation",
    "symbol": "SupabaseModerationAdminRepository.deleteMessage",
    "via": "literal",
    "name": "admin_delete_message"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/moderation/SupabaseModerationAdminRepository.ts",
+   "line": 138,
+   "area": "moderation",
+   "symbol": "SupabaseModerationAdminRepository.auditLookup",
+   "via": "literal",
+   "name": "admin_audit_lookup"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/moderation/SupabaseModerationQueueRepository.ts",
+   "line": 35,
+   "area": "moderation",
+   "symbol": "SupabaseModerationQueueRepository.listOpen",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "moderation_queue"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/moderation/SupabaseModerationQueueRepository.ts",
+   "line": 67,
+   "area": "moderation",
+   "symbol": "SupabaseModerationQueueRepository.assign",
+   "via": "literal",
+   "name": "admin_assign_queue_entry"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/moderation/SupabaseModerationQueueRepository.ts",
+   "line": 74,
+   "area": "moderation",
+   "symbol": "SupabaseModerationQueueRepository.resolve",
+   "via": "literal",
+   "name": "admin_resolve_queue_entry"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/moderation/SupabaseSupportInboxRepository.ts",
+   "line": 40,
+   "area": "moderation",
+   "symbol": "SupabaseSupportInboxRepository.listThreads",
+   "via": "literal",
+   "name": "admin_list_support_threads"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/moderation/SupabaseSupportInboxRepository.ts",
+   "line": 64,
+   "area": "moderation",
+   "symbol": "SupabaseSupportInboxRepository.joinThread",
+   "via": "literal",
+   "name": "admin_join_support_thread"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/moderation/SupabaseSupportInboxRepository.ts",
+   "line": 72,
+   "area": "moderation",
+   "symbol": "SupabaseSupportInboxRepository.openMemberThread",
+   "via": "literal",
+   "name": "admin_open_member_support_thread"
   },
   {
    "kind": "table",
@@ -2209,6 +2311,15 @@
    "symbol": "SupabaseOrganizationsRepository.removeMember",
    "via": "literal",
    "name": "org_remove_member"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/payments/SupabaseKcSupportChannelsRepository.ts",
+   "line": 34,
+   "area": "payments",
+   "symbol": "SupabaseKcSupportChannelsRepository.listActiveChannels",
+   "via": "literal",
+   "name": "list_kc_support_channels"
   },
   {
    "kind": "rpc",
@@ -2933,7 +3044,19 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/reports/reportTargetPreviews.ts",
-   "line": 106,
+   "line": 89,
+   "area": "reports",
+   "symbol": "chatPreviews",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "chats"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/reports/reportTargetPreviews.ts",
+   "line": 121,
    "area": "reports",
    "symbol": "loadDisplayNames",
    "via": "literal",
@@ -2955,21 +3078,18 @@
    "name": "reports"
   },
   {
-   "kind": "table",
+   "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/reports/SupabaseReportsRepository.ts",
-   "line": 45,
+   "line": 40,
    "area": "reports",
    "symbol": "SupabaseReportsRepository.listOpenInbox",
    "via": "literal",
-   "ops": [
-    "select"
-   ],
-   "name": "reports"
+   "name": "admin_reports_inbox"
   },
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/reports/SupabaseReportsRepository.ts",
-   "line": 76,
+   "line": 77,
    "area": "reports",
    "symbol": "SupabaseReportsRepository.getCaseDetail",
    "via": "literal",
@@ -2977,6 +3097,15 @@
     "select"
    ],
    "name": "reports"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/reports/SupabaseReportsRepository.ts",
+   "line": 112,
+   "area": "reports",
+   "symbol": "SupabaseReportsRepository.loadTimeline",
+   "via": "literal",
+   "name": "admin_report_case_timeline"
   },
   {
    "kind": "rpc",
@@ -3481,6 +3610,24 @@
    "symbol": "SupabaseStatsRepository.listMyActivityTimeline",
    "via": "literal",
    "name": "my_activity_timeline"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/stats/SupabaseStatsRepository.ts",
+   "line": 68,
+   "area": "stats",
+   "symbol": "SupabaseStatsRepository.getWorldFlowFunnel",
+   "via": "literal",
+   "name": "admin_world_flow_funnel"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/stats/SupabaseStatsRepository.ts",
+   "line": 88,
+   "area": "stats",
+   "symbol": "SupabaseStatsRepository.listMyWorldGivings",
+   "via": "literal",
+   "name": "my_world_givings"
   },
   {
    "kind": "table",
