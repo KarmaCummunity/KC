@@ -56,7 +56,7 @@ export function useOptimisticFollowAction({
       : action === 'send' ? 'request_pending'
       : 'not_following_private_no_request';
     // Counter delta: only follow/unfollow change the edge graph. send/cancel
-    // touch follow_requests, not follow_edges — counters unaffected.
+    // touch follow_requests, not follows — counters unaffected.
     const countDelta = action === 'follow' ? 1 : action === 'unfollow' ? -1 : 0;
 
     qc.setQueryData<FollowStateInfo>(followStateKey, { state: nextState });
@@ -101,6 +101,10 @@ export function useOptimisticFollowAction({
           (new Date(err.cooldownUntil).getTime() - Date.now()) / (1000 * 60 * 60 * 24),
         )) : 0;
         onError({ title: t('profile.followCooldownTitle'), message: t('profile.followCooldownDays', { count: days }) });
+      } else if (isFollowError(err) && err.code === 'rate_limited') {
+        onError({ title: t('profile.followErrorTitle'), message: t('profile.followRateLimited') });
+      } else if (isFollowError(err) && err.code === 'account_not_active') {
+        onError({ title: t('profile.followErrorTitle'), message: t('profile.followAccountNotActive') });
       } else {
         onError({ title: t('profile.followErrorTitle'), message: t('profile.followErrorMessage') });
       }

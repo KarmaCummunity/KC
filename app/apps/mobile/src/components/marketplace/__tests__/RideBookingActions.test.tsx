@@ -159,7 +159,7 @@ describe('RideBookingActions — driver', () => {
   });
 
   it.each([
-    ['the ride is closed', { ...DETAIL, listingStatus: 'closed' }],
+    ['the ride is closed', { ...DETAIL, listingStatus: 'closed_delivered' }],
     ['the ride has departed', { ...DETAIL, details: { seats_available: 3, departs_at: new Date(Date.now() - 60_000).toISOString() } }],
     ['no seat is free', { ...DETAIL, details: { seats_available: 1 } }],
   ] as const)('offers no reinstate when %s (reinstate_ride_booking would refuse)', async (_case, detail) => {
@@ -207,7 +207,7 @@ describe('RideBookingActions — driver', () => {
   });
 
   it.each([
-    ['closed listing', { ...DETAIL, listingStatus: 'closed', details: { departs_at: new Date().toISOString() } }],
+    ['closed listing', { ...DETAIL, listingStatus: 'closed_delivered', details: { departs_at: new Date().toISOString() } }],
     ['departure over one hour away', { ...DETAIL, details: { departs_at: new Date(Date.now() + 2 * 60 * 60_000).toISOString() } }],
     ['missing departure', { ...DETAIL, details: {} }],
   ])('hides finish action for %s', async (_label, detail) => {

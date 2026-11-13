@@ -82,6 +82,12 @@ export interface PostWithOwner extends Post {
   recipientProfileNavigableFromPost?: boolean;
 }
 
+/** One page of the profile closed-posts tab; `nextCursor` is null on the last page. */
+export interface ProfileClosedPostsPage {
+  items: ProfileClosedPostsItem[];
+  nextCursor: string | null;
+}
+
 /** FR-CLOSURE-003 AC1/AC2 — chat-partner candidate for the recipient picker. */
 export interface ClosureCandidate {
   userId: string;
@@ -165,11 +171,8 @@ export interface IPostRepository {
   adminRemove(postId: string): Promise<void>;
 
   // Closure (FR-CLOSURE-001..005)
-  // close: branches inside the impl —
-  //   recipientUserId !== null  → RPC `close_post_with_recipient` (atomic insert + status)
-  //   recipientUserId === null  → UPDATE status='deleted_no_recipient', delete_after=now()+7d
-  // Both paths bump items_given_count via the existing posts trigger; the
-  // recipient path also bumps items_received_count via the recipients trigger.
+  // close: a recipient closes the post as delivered to that member; null closes it as delivered
+  // to nobody in particular (`deleted_no_recipient`, reopenable for seven days).
   close(postId: string, recipientUserId: string | null): Promise<Post>;
   /** FR-CLOSURE-011 — name who received an open offer, or close items/animals with nobody named. */
   ownerCompleteOffer(
@@ -177,13 +180,11 @@ export interface IPostRepository {
     recipientUserId: string | null,
     mode: 'assign' | 'close_without',
   ): Promise<{ closed: boolean }>;
-  // reopen: branches inside the impl —
-  //   current status closed_delivered      → RPC `reopen_post_marked` (delete recipient row + status)
-  //   current status deleted_no_recipient  → UPDATE status='open', delete_after=null
+  // reopen: a delivered post, or a deleted one inside its seven-day window, becomes open again.
   reopen(postId: string): Promise<Post>;
   /**
-   * FR-POST-013 AC3 — clones an expired post (and its media_assets rows) into
-   * a new `status='open'` post. Returns the new post id. Errors:
+   * FR-POST-013 AC3, D127 — publishes a new open post with the fields of an expired one (its
+   * photos are not copied). Returns the new post id. Errors:
    *   republish_not_owner, republish_wrong_status, republish_not_found,
    *   active_post_limit_exceeded, followers_only_requires_private.
    */
@@ -201,21 +202,13 @@ export interface IPostRepository {
     cursor?: string,
     visibility?: PostVisibility,
     excludeVisibility?: PostVisibility,
-    profileOpenLinks?: {
-      readonly viewerUserId: string | null;
-      readonly listMode: 'standard' | 'owner_only_me';
-    },
   ): Promise<{ posts: Post[]; nextCursor: string | null }>;
 
   /**
-   * Closed-posts tab on a profile screen.
-   * Returns the UNION of (posts profileUserId published) and (posts where
-   * profileUserId is the respondent), all in status `closed_delivered`,
-   * ordered by `closed_at` desc.
-   *
-   * Visibility for the viewer is enforced server-side via the RPC, which
-   * reuses `is_post_visible_to`. The viewer may be null for anon flows;
-   * the RPC will simply return Public closed posts only.
+   * Closed-posts tab on a profile screen: the posts `profileUserId` published that were
+   * delivered (or, for the owner, deleted without a recipient), newest first, paged by an
+   * opaque keyset cursor. Row-level security narrows the list to what `viewerUserId` may
+   * read. Every item is a `publisher` item: the baseline lists a member's own posts only.
    *
    * Mapped to FR-PROFILE-001 AC4 (revised), FR-PROFILE-002 AC2 (revised),
    * FR-POST-017 AC1 (revised).
@@ -226,7 +219,7 @@ export interface IPostRepository {
     limit: number,
     cursor?: string,
     listMode?: ProfileClosedPostsListMode,
-  ): Promise<ProfileClosedPostsItem[]>;
+  ): Promise<ProfileClosedPostsPage>;
 
   /** FR-POST-021 — per-actor identity exposure rows for a post. */
   listPostActorIdentities(postId: string): Promise<PostActorIdentityRow[]>;

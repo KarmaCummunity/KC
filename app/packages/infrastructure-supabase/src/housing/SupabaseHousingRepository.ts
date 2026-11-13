@@ -1,126 +1,171 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { HousingGuestStay, HousingHostBooking, HousingPrivateDetails, HousingStayRequestInput } from '@kc/domain';
+import {
+  BackendRuleError,
+  type HousingGuestStay,
+  type HousingHostBooking,
+  type HousingPrivateDetails,
+  type HousingStayRequestInput,
+} from '@kc/domain';
 import type { HousingPrivateDetailsInput, IHousingRepository } from '@kc/application';
-import type { Database } from '../database.types';
-import { mapGuestStayRow, mapHostBookingRow, mapPrivateDetailsRow } from './housingMappers';
+import type { Database, Json } from '../database.types';
+import { unwrapCall } from '../rpc/mapRpcError';
+import { requireRpcRow } from '../marketplace/rpcRow';
+import { mapPrivateDetails, pointEwkt, trimmedOrNull } from './housingMappers';
+import { listGuestStays, listHostBookings } from './housingReads';
 
 type Client = SupabaseClient<Database>;
 
-/** The server's answer when the exact place is not open to the caller (0601). */
-const PRIVATE_DETAILS_HIDDEN = 'housing_private_details_hidden';
+const CONDUCT = 'housing_conduct';
+/** The refusal of `get_post_private_location` for a caller the place is not open to. */
+const PLACE_NOT_OPEN = 'post_not_found';
 
 /** Optional RPC text argument: the generated types take `undefined`, never `null`. */
 const opt = (value: string | null | undefined): string | undefined => value ?? undefined;
-const optNum = (value: number | null | undefined): number | undefined => value ?? undefined;
+
+interface ConductState {
+  readonly version: number;
+  readonly accepted: boolean;
+}
+
+/** The code-of-conduct entry of the `consents` block of the `bootstrap_session()` document. */
+export function parseConductState(payload: Json): ConductState | null {
+  const consents = typeof payload === 'object' && payload !== null && !Array.isArray(payload) ? payload['consents'] : null;
+  const entry = typeof consents === 'object' && consents !== null && !Array.isArray(consents) ? consents[CONDUCT] : null;
+  if (typeof entry !== 'object' || entry === null || Array.isArray(entry)) return null;
+  const version = entry['version'];
+  return typeof version === 'number' ? { version, accepted: entry['accepted'] === true } : null;
+}
 
 /**
- * Housing stays over the 0600–0603 RPCs (docs/spec/requirements/21_housing.md FR-HOUSING-003, 012,
- * 015–022). Server errors keep their message (an error code such as `housing_pending_cap`) so
- * the UI can map it to copy; the server pushes every booking change to the other side.
+ * Housing stays on the baseline (docs/spec/requirements/21_housing.md FR-HOUSING-003, 012, 015–022;
+ * supabase/schemas/70_worlds/100–110). A refusal is a `BackendRuleError` whose message is the
+ * server's stable reason (e.g. `housing_pending_cap`), which the screens map to copy; a missing
+ * backend object is a `BackendUnavailableError`. The server queues the push to the other side on
+ * every booking change.
  */
 export class SupabaseHousingRepository implements IHousingRepository {
   constructor(private readonly client: Client) {}
 
-  async currentConductVersion(): Promise<number> {
-    const { data, error } = await this.client.rpc('housing_conduct_version');
-    if (error) throw new Error(error.message);
-    return data;
+  private async conduct(): Promise<ConductState> {
+    const state = parseConductState(unwrapCall('rpc:bootstrap_session', await this.client.rpc('bootstrap_session')));
+    if (!state) throw new Error('bootstrap_session carries no housing conduct consent');
+    return state;
   }
 
-  /** RLS returns only the caller's own acceptance rows. */
+  async currentConductVersion(): Promise<number> {
+    return (await this.conduct()).version;
+  }
+
   async hasAcceptedConduct(): Promise<boolean> {
-    const version = await this.currentConductVersion();
-    const { count, error } = await this.client
-      .from('housing_conduct_acceptances')
-      .select('version', { count: 'exact', head: true })
-      .eq('version', version);
-    if (error) throw new Error(error.message);
-    return (count ?? 0) > 0;
+    return (await this.conduct()).accepted;
   }
 
   async acceptConduct(version: number): Promise<void> {
-    const { error } = await this.client.rpc('accept_housing_conduct', { p_version: version });
-    if (error) throw new Error(error.message);
+    unwrapCall(
+      'rpc:accept_world_consent',
+      await this.client.rpc('accept_world_consent', { p_kind: CONDUCT, p_version: version }),
+    );
   }
 
   async requestStay(input: HousingStayRequestInput): Promise<string> {
-    const { data, error } = await this.client.rpc('request_housing_booking', {
-      p_listing_id: input.listingId,
-      p_check_in: input.checkInDate,
-      p_check_out: input.checkOutDate,
-      p_adults: input.adults,
-      p_minors: input.minors,
-      p_message: input.message,
-      p_minors_guardian_ack: input.minorsGuardianAck,
-    });
-    if (error) throw new Error(error.message);
-    if (!data?.handoff_id) throw new Error('Failed to request stay');
-    return data.handoff_id;
+    const row = unwrapCall(
+      'rpc:request_housing_booking',
+      await this.client.rpc('request_housing_booking', {
+        p_post_id: input.listingId,
+        p_check_in: input.checkInDate,
+        p_check_out: input.checkOutDate,
+        p_adults: input.adults,
+        p_minors: input.minors,
+        p_message: input.message,
+        p_minors_guardian_ack: input.minorsGuardianAck,
+      }),
+    );
+    return requireRpcRow(row, 'request_housing_booking').id;
   }
 
   async decide(handoffId: string, approve: boolean, note: string | null): Promise<void> {
-    const { error } = await this.client.rpc('decide_housing_booking', {
-      p_handoff_id: handoffId, p_approve: approve, p_note: opt(note),
-    });
-    if (error) throw new Error(error.message);
+    unwrapCall(
+      'rpc:decide_housing_booking',
+      await this.client.rpc('decide_housing_booking', { p_handoff_id: handoffId, p_approve: approve, p_note: opt(note) }),
+    );
   }
 
   async cancel(handoffId: string, note: string | null): Promise<void> {
-    const { error } = await this.client.rpc('cancel_housing_booking', { p_handoff_id: handoffId, p_note: opt(note) });
-    if (error) throw new Error(error.message);
+    unwrapCall(
+      'rpc:cancel_housing_booking',
+      await this.client.rpc('cancel_housing_booking', { p_handoff_id: handoffId, p_note: opt(note) }),
+    );
   }
 
-  async complete(handoffId: string): Promise<void> {
-    const { error } = await this.client.rpc('complete_housing_booking', { p_handoff_id: handoffId });
-    if (error) throw new Error(error.message);
+  complete(handoffId: string): Promise<void> {
+    return this.close(handoffId, 'completed');
   }
 
-  async markNoShow(handoffId: string): Promise<void> {
-    const { error } = await this.client.rpc('mark_housing_no_show', { p_handoff_id: handoffId });
-    if (error) throw new Error(error.message);
+  markNoShow(handoffId: string): Promise<void> {
+    return this.close(handoffId, 'no_show');
   }
 
-  async listForOffer(listingId: string): Promise<HousingHostBooking[]> {
-    const { data, error } = await this.client.rpc('list_housing_bookings', { p_listing_id: listingId });
-    if (error) throw new Error(error.message);
-    return (data ?? []).flatMap((row) => {
-      const booking = mapHostBookingRow(row);
-      return booking ? [booking] : [];
-    });
+  private async close(handoffId: string, outcome: 'completed' | 'no_show'): Promise<void> {
+    unwrapCall(
+      'rpc:close_housing_booking',
+      await this.client.rpc('close_housing_booking', { p_handoff_id: handoffId, p_outcome: outcome }),
+    );
   }
 
-  async listMyStays(limit?: number): Promise<HousingGuestStay[]> {
-    const { data, error } = await this.client.rpc('list_my_housing_stays', { p_limit: limit });
-    if (error) throw new Error(error.message);
-    return (data ?? []).flatMap((row) => {
-      const stay = mapGuestStayRow(row);
-      return stay ? [stay] : [];
-    });
+  listForOffer(listingId: string): Promise<HousingHostBooking[]> {
+    return listHostBookings(this.client, listingId);
   }
 
-  /** Null instead of an error when the place is simply not open to the caller. */
+  listMyStays(limit?: number): Promise<HousingGuestStay[]> {
+    return listGuestStays(this.client, limit);
+  }
+
+  /** Null when the place is not open to the caller, or the host has not written it yet. */
   async getPrivateDetails(listingId: string): Promise<HousingPrivateDetails | null> {
-    const { data, error } = await this.client.rpc('get_housing_private_details', { p_listing_id: listingId });
-    if (error) {
-      if (error.message === PRIVATE_DETAILS_HIDDEN) return null;
-      throw new Error(error.message);
+    let row: Database['public']['Tables']['post_private_locations']['Row'] | null;
+    try {
+      row = unwrapCall(
+        'rpc:get_post_private_location',
+        await this.client.rpc('get_post_private_location', { p_post_id: listingId }),
+      );
+    } catch (error) {
+      if (error instanceof BackendRuleError && error.reason === PLACE_NOT_OPEN) return null;
+      throw error;
     }
-    const row = data?.[0];
-    return row ? mapPrivateDetailsRow(row) : null;
+    if (!row?.post_id || !row.street) return null;
+    return mapPrivateDetails(row, await this.cityOf(listingId));
   }
 
+  /** The host writes the exact place; the street name comes from the official street list (D71). */
   async setPrivateDetails(input: HousingPrivateDetailsInput): Promise<void> {
-    const { error } = await this.client.rpc('set_housing_private_details', {
-      p_listing_id: input.listingId,
-      p_street_id: input.streetId,
-      p_house_number: input.houseNumber,
-      p_apartment: opt(input.apartment),
-      p_floor: opt(input.floor),
-      p_entrance_notes: opt(input.entranceNotes),
-      p_access_instructions: opt(input.accessInstructions),
-      p_lat: optNum(input.lat),
-      p_lng: optNum(input.lng),
-    });
-    if (error) throw new Error(error.message);
+    const cityId = await this.cityOf(input.listingId);
+    const street = unwrapCall(
+      'table:streets',
+      await this.client.from('streets').select('name_he').eq('city_id', cityId).eq('street_id', input.streetId).maybeSingle(),
+    );
+    unwrapCall(
+      'table:post_private_locations',
+      await this.client.from('post_private_locations').upsert(
+        {
+          post_id: input.listingId,
+          street: street?.name_he ?? null,
+          street_number: input.houseNumber.trim() || null,
+          apartment: trimmedOrNull(input.apartment),
+          floor: trimmedOrNull(input.floor),
+          entrance_notes: trimmedOrNull(input.entranceNotes),
+          access_notes: trimmedOrNull(input.accessInstructions),
+          exact_point: pointEwkt(input.lat, input.lng),
+        },
+        { onConflict: 'post_id' },
+      ),
+    );
+  }
+
+  private async cityOf(postId: string): Promise<string> {
+    const post = unwrapCall(
+      'table:posts',
+      await this.client.from('posts').select('city_id').eq('id', postId).maybeSingle(),
+    );
+    return post?.city_id ?? '';
   }
 }

@@ -10,8 +10,9 @@
 | `reminder_v1` | Pending match / handoff not answered | `listing_title` |
 | `opt_in_confirm_v1` | Confirms an in-app opt-in (outside a 24h session) | — |
 
-Every template ships in **he** and **en**. The DB mirror is `public.whatsapp_message_templates`
-(one row per name + language, seeded by migration 0307). The sender resolves params by name from
+Every template ships in **he** and **en**. The DB mirror is `integrations.whatsapp_message_templates`
+(one row per name + language, seeded by the `…_whatsapp_channel_schema.sql` migration; a super admin
+records each template's Meta status from the admin WhatsApp console). The sender resolves params by name from
 the queued row's payload: `payload["<param>_<lang>"]`, then `payload["<param>"]`. A missing param
 fails the row; a broken template is never sent. Code refers to names through `TEMPLATE` in
 `_shared/whatsapp/templates.ts`, not string literals.
@@ -24,9 +25,10 @@ fails the row; a broken template is never sent. Code refers to names through `TE
    name format, `_vN` suffix, he/en parity, placeholder count equals params, examples, 1024 chars,
    no leading/trailing or adjacent params, opt-out wording.
 3. `node scripts/whatsapp-templates.mjs sql`, then paste the rows into a **new** forward
-   migration (reserve the number in `MIGRATION_RANGES.md`). The upsert resets `is_approved` /
-   `meta_status` when the wording changed. The sync test points at the migration that holds the
-   current seed. Update it in the same PR.
+   migration (a `next-NN_slug.sql` file; the number is assigned on merge, see `MIGRATION_RANGES.md`). The upsert resets `is_approved` /
+   `meta_status` when the wording changed. The sync test in `templates.test.ts` finds the seed
+   migration by its `_whatsapp_channel_schema.sql` suffix; when a later migration takes over the
+   seed, point the test at that slug in the same PR.
 
 ## Submission checklist (when real Meta credentials exist)
 

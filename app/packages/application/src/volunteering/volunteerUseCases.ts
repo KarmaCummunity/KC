@@ -3,15 +3,14 @@ import type {
   MyVolunteerOpportunityOrganizerRow,
   MyVolunteerSignupRow,
   ShiftVolunteerRow,
-  VolunteerCheckInResult,
   VolunteerOpportunityBrowseRow,
   VolunteerOpportunityDetail,
 } from '@kc/domain';
 
 export class ListVolunteerOpportunitiesUseCase {
   constructor(private readonly repo: IVolunteerRepository) {}
-  execute(limit?: number, offset?: number): Promise<VolunteerOpportunityBrowseRow[]> {
-    return this.repo.listOpportunities(limit, offset);
+  execute(limit?: number): Promise<VolunteerOpportunityBrowseRow[]> {
+    return this.repo.listOpportunities(limit);
   }
 }
 
@@ -40,20 +39,6 @@ export class ListMyVolunteerSignupsUseCase {
   constructor(private readonly repo: IVolunteerRepository) {}
   execute(limit?: number): Promise<MyVolunteerSignupRow[]> {
     return this.repo.listMySignups(limit);
-  }
-}
-
-export class CheckInVolunteerShiftUseCase {
-  constructor(private readonly repo: IVolunteerRepository) {}
-  execute(signupId: string): Promise<VolunteerCheckInResult> {
-    return this.repo.checkIn(signupId);
-  }
-}
-
-export class GetVolunteerShiftIcsUseCase {
-  constructor(private readonly repo: IVolunteerRepository) {}
-  execute(shiftId: string): Promise<string | null> {
-    return this.repo.getShiftIcs(shiftId);
   }
 }
 

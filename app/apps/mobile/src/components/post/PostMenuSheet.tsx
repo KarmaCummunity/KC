@@ -8,6 +8,7 @@ import { container } from '../../lib/container';
 import { View, StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import type { PostWithOwner } from '@kc/application';
+import { isPostEditableByOwner } from '@kc/domain';
 import { makeUseStyles, spacing } from '@kc/ui';
 import { BottomSheet } from '../ui/BottomSheet';
 import { SheetActionRow } from '../ui/SheetActionRow';
@@ -68,7 +69,8 @@ export function PostMenuSheet({
 
   const isOwner = viewerId !== null && post.ownerId === viewerId;
   const block = useUserBlock(isOwner ? '' : post.ownerId);
-  const canEditPost = (isOwner || isSuperAdmin) && post.status === 'open';
+  // The same statuses the edit screen and the server accept (open and paused; spec 07 §7.1).
+  const canEditPost = (isOwner || isSuperAdmin) && isPostEditableByOwner(post.status);
   const showExposureBlock = viewerId !== null && shouldShowPostExposureControls(viewerId, post);
 
   function openModal(name: Exclude<ActiveModal, null>) {
@@ -134,9 +136,13 @@ export function PostMenuSheet({
               testID="post-menu-block-owner"
               onPress={() => {
                 onClose();
-                void block.toggle().then((changed) => {
-                  if (changed && router.canGoBack()) router.back();
-                });
+                // iOS drops a native Alert raised while this sheet is still animating closed
+                // (#2062), so the confirmation must wait for the dismissal to finish.
+                runAfterBottomSheetDismiss(() =>
+                  block.toggle().then((changed) => {
+                    if (changed && router.canGoBack()) router.back();
+                  }),
+                );
               }}
             />
           ) : null}

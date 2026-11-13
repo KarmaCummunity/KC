@@ -9,6 +9,7 @@ import { useShellStackScreenOptions } from '../src/navigation/shellStackScreenOp
 import { useShellTabBarScrollInset } from '../src/navigation/useShellTabBarVisibility';
 import { useIsSuperAdmin } from '../src/hooks/useIsSuperAdmin';
 import { useAdminRoles } from '../src/hooks/useAdminRoles';
+import { useLaunchSurface } from '../src/hooks/useLaunchSurface';
 import { useSettingsAccountActions } from '../src/hooks/useSettingsAccountActions';
 import { useSimulateHardRefresh } from '../src/hooks/useSimulateHardRefresh';
 import { useAuthStore } from '../src/store/authStore';
@@ -23,6 +24,7 @@ import { useActiveStatusSetting } from '../src/hooks/useActiveStatusSetting';
 import { useSettingsScreenStyles } from '../src/screens/settings.styles';
 import { effectiveVerificationLevel } from '@kc/domain';
 import { getUserRepo } from '../src/services/userComposition';
+import { WHATSAPP_BOT_AVAILABLE } from '../src/lib/parkedFeatures';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../src/components/RouteErrorBoundary';
 /** Metro `__DEV__` is false in release; set `EXPO_PUBLIC_DEV_SETTINGS_TOOLS=1` for internal builds only. */
@@ -32,6 +34,7 @@ const SHOW_SETTINGS_DEBUG_TOOLS =
 export default function SettingsScreen() {
   const router = useRouter();
   const { t } = useTranslation();
+  const whatsappBotVisible = useLaunchSurface('whatsappBot');
   const styles = useSettingsScreenStyles();
   const shellStackOptions = useShellStackScreenOptions();
   const tabBarPad = useShellTabBarScrollInset();
@@ -51,12 +54,10 @@ export default function SettingsScreen() {
   const { hardRefreshing, simulateHardRefresh: handleSimulateHardRefresh } = useSimulateHardRefresh(userId);
   const {
     signingOut,
-    resettingOnboarding,
     deleteModalVisible,
     setDeleteModalVisible,
     deleteSuccessVisible,
     handleDeleteConfirm,
-    handleResetOnboarding,
     handleSignOut,
   } = useSettingsAccountActions();
 
@@ -93,6 +94,12 @@ export default function SettingsScreen() {
               onPress={() => router.push('/identity-verification')}
             />
           ) : null}
+          <SettingsScreenRow
+            testID="settings-row-organizations"
+            label={t('organizations.settingsRow')}
+            icon="people-outline"
+            onPress={() => router.push('/settings/organizations')}
+          />
         </View>
 
         <Text style={styles.sectionTitle}>{t('settings.appearance')}</Text>
@@ -111,11 +118,13 @@ export default function SettingsScreen() {
             icon="globe-outline"
             onPress={() => router.push('/settings/language')}
           />
-          <SettingsScreenRow
-            label={t('settings.whatsappRow')}
-            icon="logo-whatsapp"
-            onPress={() => router.push('/settings/whatsapp')}
-          />
+          {WHATSAPP_BOT_AVAILABLE && whatsappBotVisible ? (
+            <SettingsScreenRow
+              label={t('settings.whatsappRow')}
+              icon="logo-whatsapp"
+              onPress={() => router.push('/settings/whatsapp')}
+            />
+          ) : null}
         </View>
 
         <Text style={styles.sectionTitle}>{t('settings.notifications')}</Text>
@@ -228,12 +237,6 @@ export default function SettingsScreen() {
           <>
             <Text style={styles.sectionTitle}>{t('settings.devTools')}</Text>
             <View style={styles.section}>
-              <SettingsScreenRow
-                label={resettingOnboarding ? t('settings.resetting') : t('settings.resetOnboarding')}
-                icon="refresh-outline"
-                onPress={handleResetOnboarding}
-                disabled={resettingOnboarding}
-              />
               <SettingsScreenRow
                 label={hardRefreshing ? t('settings.simulatingHardRefresh') : t('settings.simulateHardRefresh')}
                 icon="reload-outline"

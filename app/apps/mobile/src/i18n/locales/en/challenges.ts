@@ -61,11 +61,6 @@ export const challenges = {
     completed: 'You completed this challenge',
     noStreak: 'A flexible challenge has no streak, only a count of cycles.',
     join: 'Join the challenge',
-    joinProfileTitle: 'Show this challenge on your profile?',
-    joinProfileBody:
-      'The challenge post will be linked to you. You can show it on your profile’s open posts tab, or keep it only for you under Hidden.',
-    joinProfileShow: 'Yes, show on profile',
-    joinProfileHidden: 'No, only hidden for me',
     leave: 'Leave the challenge',
     leaveTitle: 'Leave the challenge?',
     leaveBody: 'Your reports in this challenge will be deleted.',
@@ -93,7 +88,7 @@ export const challenges = {
   errors: {
     generic: 'Something went wrong. Please try again.',
     title_too_short: 'The challenge name is too short (at least 3 characters).',
-    title_too_long: 'The challenge name is too long (up to 120 characters).',
+    title_too_long: 'The challenge name is too long (up to 80 characters).',
     description_too_long: 'The description is too long (up to 2,000 characters).',
     topic_too_long: 'The topic is too long (up to 50 characters).',
     invalid_scope: 'Choose who can see the challenge.',

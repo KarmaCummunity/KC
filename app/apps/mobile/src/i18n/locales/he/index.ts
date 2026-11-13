@@ -14,10 +14,13 @@ import { rideBooking } from './rideBooking';
 import { knowledgeBooking } from './knowledgeBooking';
 import { housingStay } from './housingStay';
 import { eventPost } from './eventPost';
+import { organizations } from './organizations';
+import { postSeries } from './postSeries';
 import { ridePlaces } from './ridePlaces';
 import { dateTimeField, rideFeed, rideRoutes, rideSafety, rideSchedule, rideSeries } from './rideSchedule';
 import { authHe } from './modules/auth';
 import { authVerificationHintHe } from './modules/authVerificationHint';
+import { offlineSyncHe } from './modules/offlineSync';
 import { onboardingHe } from './modules/onboarding';
 import { dateOfBirthHe } from './modules/dateOfBirth';
 import { verificationHe } from './modules/verification';
@@ -25,11 +28,16 @@ import { errorsHe } from './modules/errors';
 import { createPostValidationHe } from './createPostValidation';
 import { chatHe } from './modules/chat';
 import { chatNewHe } from './modules/chatNew';
+import { chatMessagingHe } from './modules/chatMessaging';
+import { marketplaceBaselineErrorsHe } from './modules/marketplaceBaselineErrors';
+import { challengeBaselineErrorsHe } from './modules/challengeBaselineErrors';
 import { notificationsHe } from './modules/notifications';
+import { notificationsRichHe } from './modules/notificationsRich';
 import { emptyStatesHe, feedSettingsHe } from './modules/feedSettings';
 import { moderationHe, auditHe, accountBlockedHe } from './modules/moderation';
 import { restoreAccountHe } from './modules/restoreAccount';
 import { postHe } from './modules/post';
+import { shareHe } from './modules/share';
 import { settingsHe } from './modules/settings';
 import { stats } from './stats';
 import { transparencyHe } from './modules/transparency';
@@ -46,12 +54,17 @@ import { surveyDemoHe } from './modules/surveyDemo';
 import { surveyHe } from './modules/survey';
 import { researchHe } from './modules/research';
 import { adminHe } from './modules/admin';
+import { adminOrgApprovalsBaselineHe } from './modules/adminOrgApprovalsBaseline';
+import { adminStaffToolsHe } from './modules/adminStaffTools';
+import { adminCrmBaselineHe, adminTimeBaselineHe } from './modules/adminBackOfficeBaseline';
 import { karmaHe } from './modules/karma';
+import { karmaEventsHe } from './modules/karmaEvents';
 import { cardsHe } from './modules/cards';
 import { asideHe } from './modules/aside';
 import { configHe } from './modules/config';
 import { followHe } from './modules/follow';
 import { matchesHe } from './modules/matches';
+import { backendAvailabilityHe } from './modules/backendAvailability';
 
 const he = {
   // App
@@ -61,6 +74,7 @@ const he = {
 
   // Auth (FR-AUTH-001..014) — see modules/auth.ts
   auth: { ...authHe, ...authVerificationHintHe },
+  offlineSync: offlineSyncHe,
 
   // Onboarding (FR-AUTH-010..012, FR-AUTH-018) — see modules/onboarding.ts
   onboarding: onboardingHe,
@@ -70,12 +84,15 @@ const he = {
   // Feed — see modules/feed.ts
   feed: feedHe,
 
-  // Karma points (FR-KARMA-004/007) — see modules/karma.ts
-  karma: karmaHe,
+  // Karma points (FR-KARMA-004/007) — see modules/karma.ts and modules/karmaEvents.ts
+  karma: { ...karmaHe, reason: { ...karmaHe.reason, ...karmaEventsHe } },
   cards: cardsHe,
 
   // Post — see modules/post.ts
   post: postHe,
+
+  // Share texts — see modules/share.ts
+  share: shareHe,
 
   // Profile — see modules/profile.ts
   profile: profileHe,
@@ -87,10 +104,10 @@ const he = {
   filters: filtersHe,
 
   // Chat — see modules/chat.ts (FR-CHAT-016)
-  chat: { ...chatHe, new: chatNewHe },
+  chat: { ...chatHe, new: chatNewHe, messaging: chatMessagingHe },
 
   // Notifications (FR-NOTIF-001..015) — see modules/notifications.ts
-  notifications: notificationsHe,
+  notifications: { ...notificationsHe, ...notificationsRichHe },
   feedSettings: feedSettingsHe,
   emptyStates: emptyStatesHe,
 
@@ -101,7 +118,26 @@ const he = {
   restoreAccount: restoreAccountHe,
 
   // Admin portal (FR-ADMIN-010/011) — see modules/admin.ts
-  admin: adminHe,
+  // The baseline approval copy joins admin.orgApprovals — see modules/adminOrgApprovalsBaseline.ts;
+  // the back-office copy joins admin.crm and admin.time — see modules/adminBackOfficeBaseline.ts.
+  // The support inbox and review queue copy — see modules/adminStaffTools.ts.
+  admin: {
+    ...adminHe,
+    nav: { ...adminHe.nav, ...adminStaffToolsHe.nav },
+    supportInbox: adminStaffToolsHe.supportInbox,
+    reviewQueue: adminStaffToolsHe.reviewQueue,
+    orgApprovals: {
+      ...adminHe.orgApprovals,
+      row: { ...adminHe.orgApprovals.row, ...adminOrgApprovalsBaselineHe.row },
+      errors: { ...adminHe.orgApprovals.errors, ...adminOrgApprovalsBaselineHe.errors },
+    },
+    crm: {
+      ...adminHe.crm,
+      noOrgsTitle: adminCrmBaselineHe.noOrgsTitle,
+      errors: { ...adminHe.crm.errors, ...adminCrmBaselineHe.errors },
+    },
+    time: { ...adminHe.time, errors: { ...adminHe.time.errors, ...adminTimeBaselineHe.errors } },
+  },
 
   // Settings — see modules/settings.ts
   settings: settingsHe,
@@ -133,13 +169,15 @@ const he = {
   // Donations (D-16, FR-DONATE-001..005) — see donations.ts
   donations,
 
-  marketplace,
+  // Baseline server reasons join the marketplace error copy — see modules/marketplaceBaselineErrors.ts.
+  marketplace: { ...marketplace, errors: { ...marketplace.errors, ...marketplaceBaselineErrorsHe } },
   moneyPayments,
   // Direct support for KC (FR-DONATE-011) — see donations.supportKc.ts
   supportKc,
   timeVolunteer,
-  // Challenges world (docs/spec/10_challenges.md) — see challenges.ts
-  challenges,
+  // Challenges world (docs/spec/10_challenges.md) — see challenges.ts; baseline refusals in
+  // modules/challengeBaselineErrors.ts.
+  challenges: { ...challenges, errors: { ...challenges.errors, ...challengeBaselineErrorsHe } },
   medicalBodies,
   givingHandoff,
   // Ride seat bookings (D73) — see rideBooking.ts
@@ -149,6 +187,10 @@ const he = {
   housingStay,
   // Organization events (G1 step 5) — see eventPost.ts
   eventPost,
+  // Organizations (FR-ORG-002, G18) — see organizations.ts
+  organizations,
+  // Recurring time posts (FR-POST-024) — see postSeries.ts
+  postSeries,
   // Ride places (D71) — see ridePlaces.ts
   ridePlaces,
   // Ride quick publish (D75) and the shared date-time field — see rideSchedule.ts
@@ -166,6 +208,9 @@ const he = {
   follow: followHe,
   // Matching v2 — see modules/matches.ts
   matches: matchesHe,
+
+  // Degrade rule copy — see modules/backendAvailability.ts
+  backend: backendAvailabilityHe,
 
   // Tab labels — see modules/tabs.ts
   tabs: tabsHe,

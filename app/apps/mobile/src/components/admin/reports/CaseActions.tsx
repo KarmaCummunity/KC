@@ -5,16 +5,19 @@
 import { useState } from 'react';
 import { Alert, View, Platform } from 'react-native';
 import { useQueryClient } from '@tanstack/react-query';
+import { router } from 'expo-router';
 import {
   type AdminPermission,
   type AdminRole,
   type ReportCaseDetail,
-  type AdminReportTargetType,
   hasPermission,
+  supportCounterpartOf,
 } from '@kc/domain';
 import { makeUseStyles, spacing } from '@kc/ui';
 import { DangerButton, SecondaryButton } from '../../ui/Buttons';
 import { container } from '../../../lib/container';
+import { notAvailableMessage, runAction } from '../../../lib/backendAvailability';
+import { showAdminToast } from '../../chat/system/adminActions';
 import { useAdminRoles } from '../../../hooks/useAdminRoles';
 import { useAuthStore } from '../../../store/authStore';
 import { useLocaleBundle, type LocaleBundle } from '../../../i18n/useLocaleBundle';
@@ -48,56 +51,63 @@ export function CaseActions({ detail, onActed }: CaseActionsProps) {
   const styles = useStyles();
   const L = useLocaleBundle();
 
+  /** Performs one action; resolves false when there was nothing to do for this case. */
+  async function perform(action: ActionId): Promise<boolean> {
+    const openReports = detail.reporters.filter((r) => r.status === 'open');
+    switch (action) {
+      case 'confirm':
+        for (const r of openReports) await container.confirmReport.execute({ reportId: r.reportId });
+        return openReports.length > 0;
+      case 'dismiss':
+        for (const r of openReports) await container.dismissReport.execute({ reportId: r.reportId });
+        return openReports.length > 0;
+      case 'restore':
+        // The server also dismisses the case's open reports (FR-ADMIN-002 AC4).
+        await container.restoreTarget.execute({ targetType: detail.targetType, targetId: detail.targetId });
+        return true;
+      case 'permanentBan':
+        if (detail.targetType !== 'user' || !adminId) return false;
+        await container.banUser.execute({
+          adminId,
+          targetUserId: detail.targetId,
+          reason: 'policy_violation',
+          note: '',
+        });
+        return true;
+      case 'manualRemove':
+        if (detail.targetType === 'comment') {
+          await container.removeComment.execute({ commentId: detail.targetId });
+          return true;
+        }
+        if (detail.targetType !== 'post') return false;
+        await container.adminRemovePost.execute({ postId: detail.targetId });
+        return true;
+      case 'openSupport':
+        return openSupport();
+    }
+  }
+
+  /** The case member's support thread, created and joined if needed, then opened (FR-ADMIN-013 AC2). */
+  async function openSupport(): Promise<boolean> {
+    const memberId = supportCounterpartOf(detail);
+    if (!memberId) return false;
+    const chatId = await container.openMemberSupportThread.execute(memberId);
+    router.push({ pathname: '/chat/[id]', params: { id: chatId } });
+    return false; // nothing on the case changed
+  }
+
   async function run(action: ActionId): Promise<void> {
-    const ok = await confirmDialog(L, L.admin.caseDetail.confirmDialog.message);
-    if (!ok) return;
+    // Opening a conversation changes nothing on the case, so it needs no confirmation.
+    if (action !== 'openSupport' && !(await confirmDialog(L, L.admin.caseDetail.confirmDialog.message))) return;
     setBusy(true);
     try {
-      const openReports = detail.reporters.filter((r) => r.status === 'open');
-      switch (action) {
-        case 'confirm':
-          if (openReports.length === 0) return;
-          for (const r of openReports) {
-            await container.confirmReport.execute({ reportId: r.reportId });
-          }
-          break;
-        case 'dismiss':
-          if (openReports.length === 0) return;
-          for (const r of openReports) {
-            await container.dismissReport.execute({ reportId: r.reportId });
-          }
-          break;
-        case 'restore':
-          await container.restoreTarget.execute({
-            targetType: detail.targetType as AdminReportTargetType,
-            targetId: detail.targetId,
-          });
-          break;
-        case 'permanentBan':
-          if (detail.targetType !== 'user') return;
-          if (!adminId) return;
-          await container.banUser.execute({
-            adminId,
-            targetUserId: detail.targetId,
-            reason: 'policy_violation',
-            note: '',
-          });
-          break;
-        case 'manualRemove':
-          if (detail.targetType === 'post') {
-            await container.adminRemovePost.execute({ postId: detail.targetId });
-          } else if (detail.targetType === 'listing') {
-            await container.adminRemoveListing.execute({ listingId: detail.targetId });
-          } else {
-            return;
-          }
-          break;
-        case 'openSupport':
-          // FR-ADMIN-013 — A4 will wire this to the actual support-thread flow
-          // (find-or-create 1:1 with the latest reporter or target user). A1 ships
-          // it as a no-op stub so the action shape stays stable.
-          break;
+      const outcome = await runAction(() => perform(action));
+      if (outcome.status === 'unavailable') {
+        // Degrade rule: the backend has no such action yet.
+        showAdminToast(notAvailableMessage());
+        return;
       }
+      if (!outcome.value) return;
       await queryClient.invalidateQueries({ queryKey: ['admin.reports.inbox'] });
       onActed();
     } finally {
@@ -135,12 +145,20 @@ export function CaseActions({ detail, onActed }: CaseActionsProps) {
           onPress={() => { void run('restore'); }}
         />
       )}
-      {show('reports.manual_remove_post') && (detail.targetType === 'post' || detail.targetType === 'listing') && (
+      {show('reports.manual_remove_post') && (detail.targetType === 'post' || detail.targetType === 'comment') && (
         <SecondaryButton
           label={L.admin.caseDetail.actionLabels.manualRemove}
           size="sm"
           disabled={busy}
           onPress={() => { void run('manualRemove'); }}
+        />
+      )}
+      {show('reports.view') && supportCounterpartOf(detail) !== null && (
+        <SecondaryButton
+          label={L.admin.caseDetail.actionLabels.openSupport}
+          size="sm"
+          disabled={busy}
+          onPress={() => { void run('openSupport'); }}
         />
       )}
       {show('reports.permanent_ban') && detail.targetType === 'user' && (

@@ -3,7 +3,7 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { MOBILE_ROOT } from './guardKit/ratchet';
 
-// FR-RESP-006 AC24 — every form gets keyboard Next / Previous / Done and the jump to the first
+// FR-RESP-006 AC25 — every form gets keyboard Next / Previous / Done and the jump to the first
 // problem field from the shared form kit. A screen that holds text fields must scroll through
 // `FormScrollView` / `FormScreen` / `Screen scroll` / `BottomSheet` (which mount the form scope),
 // never a bare `ScrollView`, or its fields silently miss the behaviour.

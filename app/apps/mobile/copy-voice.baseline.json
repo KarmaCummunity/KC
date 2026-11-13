@@ -22,9 +22,6 @@
     "src/i18n/locales/he/modules/adminTime.ts": {
       "genderedImperative": 6
     },
-    "src/i18n/locales/he/modules/adminWhatsApp.ts": {
-      "genderedImperative": 2
-    },
     "src/i18n/locales/he/modules/auth.ts": {
       "genderedImperative": 15,
       "genderedAddress": 3,
@@ -46,9 +43,6 @@
     },
     "src/i18n/locales/he/modules/postMenu.ts": {
       "genderedImperative": 8
-    },
-    "src/i18n/locales/he/modules/postReport.ts": {
-      "genderedImperative": 2
     },
     "src/i18n/locales/he/modules/research.ts": {
       "genderedImperative": 2

@@ -1,15 +1,19 @@
-// V2-ADMIN-CRM-8 — port for admin CRM contacts.
-import type { CrmContactPage, CrmContactStatus } from '@kc/domain';
+// FR-ADMIN-032 — port for CRM contacts. Every contact belongs to one organization; the
+// server lets only that organization's managers reach it.
+import type { CrmContactPage, CrmContactStatus, CrmOrg } from '@kc/domain';
 
 export interface CrmContactListFilters {
+  readonly orgId: string;
   readonly status?: CrmContactStatus;
   readonly query?: string;
   readonly tag?: string;
   readonly limit?: number;
-  readonly offset?: number;
+  /** `nextCursor` of the previous page; omitted for the first page. */
+  readonly cursor?: string;
 }
 
 export interface CrmContactUpsertInput {
+  readonly orgId: string;
   readonly contactId?: string | null;
   readonly name?: string;
   readonly organization?: string | null;
@@ -22,6 +26,8 @@ export interface CrmContactUpsertInput {
 }
 
 export interface ICrmContactsRepository {
+  /** The organizations whose book the viewer manages, the platform organization first. */
+  listOrgs(): Promise<readonly CrmOrg[]>;
   list(filters: CrmContactListFilters): Promise<CrmContactPage>;
   upsert(input: CrmContactUpsertInput): Promise<string>;
   delete(contactId: string): Promise<void>;

@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import { hapticSuccess } from '../../../lib/haptics';
 import { handoffErrorKey } from '../../../lib/marketplaceCreateErrors';
+import { isBackendUnavailable, notAvailableMessage } from '../../../lib/backendAvailability';
 import { housingQueryKeys } from '../../../services/housingComposition';
 
 export function useHousingAction(listingId: string) {
@@ -26,7 +27,7 @@ export function useHousingAction(listingId: string) {
       ]);
       return true;
     } catch (err) {
-      alert(t(handoffErrorKey(err) ?? 'givingHandoff.errorGeneric'));
+      alert(isBackendUnavailable(err) ? notAvailableMessage() : t(handoffErrorKey(err) ?? 'givingHandoff.errorGeneric'));
       return false;
     } finally {
       setBusy(false);

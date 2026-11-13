@@ -12,10 +12,11 @@ import { usePasswordResetStyles } from '../../src/components/auth/passwordResetS
 import { AuthStatusScreen } from '../../src/components/auth/AuthStatusScreen';
 import { FormScreen, GhostButton, PrimaryButton } from '../../src/components/ui';
 import { formEmailInputProps } from '../../src/lib/platform/formTextInputHints';
+import { LaunchSurfaceGate } from '../../src/components/LaunchSurfaceGate';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
 
-export default function ForgotPasswordScreen() {
+function ForgotPasswordScreenContent() {
   const styles = usePasswordResetStyles();
   const router = useRouter();
   const { t } = useTranslation();
@@ -94,5 +95,14 @@ export default function ForgotPasswordScreen() {
       />
       {error ? <Text style={styles.error}>{error}</Text> : null}
     </FormScreen>
+  );
+}
+
+/** Hidden while `emailAuth` is off (first launch): sends the visitor away instead of rendering. */
+export default function ForgotPasswordScreen() {
+  return (
+    <LaunchSurfaceGate surface="emailAuth" redirectTo="/(auth)">
+      <ForgotPasswordScreenContent />
+    </LaunchSurfaceGate>
   );
 }

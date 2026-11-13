@@ -1,4 +1,4 @@
-// Mapped to spec: FR-RESP-006 AC24 — the form scope as a component. `Screen`, `BottomSheet`, `Modal`,
+// Mapped to spec: FR-RESP-006 AC25 — the form scope as a component. `Screen`, `BottomSheet`, `Modal`,
 // `FormScreen` and `FormScrollView` each mount one, so any form built on them behaves the same.
 import React, { useContext } from 'react';
 import { ScrollView, type ScrollViewProps } from 'react-native';

@@ -1,8 +1,12 @@
-// KC#871 — follow suggestions + profile completeness.
+// KC#871 — follow suggestions and the profile-completeness nudge (map rows M03, M04).
+// Both are definer reads of migration 0031_member_discovery.sql: suggestions never name a member
+// the caller follows, has a block with, or who keeps a private profile; completeness is the
+// caller's own only.
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { toVerificationLevel, type VerificationLevel } from '@kc/domain';
 import type { Database } from '../database.types';
+import { unwrapCall } from '../rpc/mapRpcError';
 
 export interface FollowSuggestionRow {
   userId: string;
@@ -26,18 +30,11 @@ export class SupabaseFollowSuggestionsRepository {
   constructor(private readonly client: SupabaseClient<Database>) {}
 
   async listSuggestions(limit = 15): Promise<FollowSuggestionRow[]> {
-    const { data, error } = await this.client.rpc('rpc_follow_suggestions' as never, { p_limit: limit } as never);
-    if (error) throw new Error(`listSuggestions: ${error.message}`);
-    return ((data ?? []) as Array<{
-      user_id: string;
-      display_name: string | null;
-      share_handle: string;
-      avatar_url: string | null;
-      city_name: string | null;
-      followers_count: number;
-      reason: string;
-      verification_level?: number | null;
-    }>).map((r) => ({
+    const rows = unwrapCall(
+      'rpc:rpc_follow_suggestions',
+      await this.client.rpc('rpc_follow_suggestions', { p_limit: limit }),
+    );
+    return (rows ?? []).map((r) => ({
       userId: r.user_id,
       displayName: r.display_name,
       shareHandle: r.share_handle,
@@ -49,23 +46,15 @@ export class SupabaseFollowSuggestionsRepository {
     }));
   }
 
-  async getProfileCompleteness(userId?: string): Promise<ProfileCompleteness> {
-    const { data, error } = await this.client.rpc(
-      'rpc_profile_completeness' as never,
-      userId ? ({ p_user_id: userId } as never) : ({} as never),
-    );
-    if (error) throw new Error(`getProfileCompleteness: ${error.message}`);
-    const row = data as unknown as {
-      score: number;
-      missing: string[];
-      verified: boolean;
-      showVerifiedBadge: boolean;
-    };
+  /** The caller's own profile; another member's is refused by the server. */
+  async getProfileCompleteness(): Promise<ProfileCompleteness> {
+    const raw = unwrapCall('rpc:rpc_profile_completeness', await this.client.rpc('rpc_profile_completeness', {}));
+    const row = (raw ?? {}) as Record<string, unknown>;
     return {
-      score: row.score,
-      missing: row.missing ?? [],
-      verified: row.verified,
-      showVerifiedBadge: row.showVerifiedBadge,
+      score: typeof row['score'] === 'number' ? row['score'] : 0,
+      missing: Array.isArray(row['missing']) ? row['missing'].filter((m): m is string => typeof m === 'string') : [],
+      verified: row['verified'] === true,
+      showVerifiedBadge: row['showVerifiedBadge'] === true,
     };
   }
 }

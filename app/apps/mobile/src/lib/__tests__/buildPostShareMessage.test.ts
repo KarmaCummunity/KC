@@ -1,12 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { buildPostShareMessage, type PostShareMessageInput, type ShareTranslate } from '../buildPostShareMessage';
+import type { PostShareKind } from '../postShareKind';
 
 const t: ShareTranslate = (key) => `t:${key}`;
 
+const ITEM_OPEN: PostShareKind = { world: 'items', direction: 'offer', lifecycle: 'open' };
+
 function base(overrides: Partial<PostShareMessageInput> = {}): PostShareMessageInput {
   return {
-    type: 'Give',
-    status: 'open',
+    kind: ITEM_OPEN,
     title: 'שולחן עץ',
     description: 'שולחן יד-שנייה במצב מצוין',
     category: 'Furniture',
@@ -18,127 +20,114 @@ function base(overrides: Partial<PostShareMessageInput> = {}): PostShareMessageI
   };
 }
 
-describe('buildPostShareMessage', () => {
-  it('renders the Give open headline + CTA when type is Give and status is open', () => {
-    const msg = buildPostShareMessage(base(), t);
-    expect(msg.startsWith('t:post.detail.shareHeadlineGiveOpen')).toBe(true);
-    expect(msg).toContain('t:post.detail.shareCtaGiveOpen');
-    expect(msg).not.toContain('t:post.detail.shareHeadlineGiveClosed');
+const withKind = (patch: Partial<PostShareKind>, rest: Partial<PostShareMessageInput> = {}) =>
+  base({ kind: { ...ITEM_OPEN, ...patch }, ...rest });
+
+describe('buildPostShareMessage — wording follows the kind', () => {
+  it('opens with the headline of the post world, direction and lifecycle, and ends with its CTA', () => {
+    const msg = buildPostShareMessage(withKind({ world: 'rides', direction: 'request' }), t);
+    expect(msg.startsWith('t:share.post.headline.rides.request.open')).toBe(true);
+    expect(msg.endsWith('t:share.post.cta.rides.request')).toBe(true);
   });
 
-  it('renders the Give closed headline + CTA when status is closed_delivered', () => {
-    const msg = buildPostShareMessage({ ...base(), status: 'closed_delivered' }, t);
-    expect(msg).toContain('t:post.detail.shareHeadlineGiveClosed');
-    expect(msg).toContain('t:post.detail.shareCtaGiveClosed');
+  it('never leaks the item wording into another world', () => {
+    const msg = buildPostShareMessage(withKind({ world: 'rides' }), t);
+    expect(msg).not.toContain('items');
   });
 
-  it('renders the Request open headline + CTA when type is Request', () => {
-    const msg = buildPostShareMessage({ ...base(), type: 'Request' }, t);
-    expect(msg).toContain('t:post.detail.shareHeadlineRequestOpen');
-    expect(msg).toContain('t:post.detail.shareCtaRequestOpen');
+  it('uses the closed headline and the shared closed CTA once the post is closed', () => {
+    const msg = buildPostShareMessage(withKind({ world: 'food', lifecycle: 'closed' }), t);
+    expect(msg.startsWith('t:share.post.headline.food.offer.closed')).toBe(true);
+    expect(msg.endsWith('t:share.post.ctaClosed')).toBe(true);
   });
 
-  it('renders the Request closed headline + CTA when type is Request and closed', () => {
-    const msg = buildPostShareMessage({ ...base(), type: 'Request', status: 'closed_delivered' }, t);
-    expect(msg).toContain('t:post.detail.shareHeadlineRequestClosed');
-    expect(msg).toContain('t:post.detail.shareCtaRequestClosed');
+  it('shows the lifecycle in the status line', () => {
+    expect(buildPostShareMessage(base(), t)).toContain('*t:share.post.label.status* t:post.detail.statusOpen');
+    expect(buildPostShareMessage(withKind({ lifecycle: 'closed' }), t)).toContain(
+      '*t:share.post.label.status* t:post.detail.statusClosed',
+    );
+  });
+});
+
+describe('buildPostShareMessage — fields per world', () => {
+  it('shows the item category only for items, even for Other', () => {
+    expect(buildPostShareMessage(base({ category: 'Other' }), t)).toContain(
+      '*t:share.post.label.category* t:post.category.Other',
+    );
+    for (const world of ['food', 'rides', 'time', 'housing', 'animals', 'knowledge', 'challenges', 'generic'] as const) {
+      expect(buildPostShareMessage(withKind({ world }), t)).not.toContain('label.category');
+    }
   });
 
-  it('includes a localized status line', () => {
-    const openMsg = buildPostShareMessage(base(), t);
-    expect(openMsg).toContain('*t:post.detail.shareLabelStatus* t:post.detail.statusOpen');
+  it('labels a ride title as its route and leaves out the departure-city location', () => {
+    const msg = buildPostShareMessage(withKind({ world: 'rides' }, { title: 'נוסע/ת מירושלים להוד השרון' }), t);
+    expect(msg).toContain('*t:share.post.label.route* נוסע/ת מירושלים להוד השרון');
+    expect(msg).not.toContain('label.location');
+    expect(msg).not.toContain('label.title');
+  });
 
-    const closedMsg = buildPostShareMessage({ ...base(), status: 'closed_delivered' }, t);
-    expect(closedMsg).toContain('*t:post.detail.shareLabelStatus* t:post.detail.statusClosed');
+  it('labels every other title as a title and keeps the location', () => {
+    const msg = buildPostShareMessage(withKind({ world: 'housing' }), t);
+    expect(msg).toContain('*t:share.post.label.title* שולחן עץ');
+    expect(msg).toContain('*t:share.post.label.location* תל אביב');
   });
 
   it('wraps every label in bold asterisks', () => {
     const msg = buildPostShareMessage(base(), t);
-    expect(msg).toContain('*t:post.detail.shareLabelTitle* שולחן עץ');
-    expect(msg).toContain('*t:post.detail.shareLabelDescription* שולחן יד-שנייה במצב מצוין');
-    expect(msg).toContain('*t:post.detail.shareLabelLocation* תל אביב');
-    expect(msg).toContain('*t:post.detail.shareLabelCategory*');
-    expect(msg).toContain('*t:post.detail.shareLabelPostedAt* לפני יומיים');
+    expect(msg).toContain('*t:share.post.label.description* שולחן יד-שנייה במצב מצוין');
+    expect(msg).toContain('*t:share.post.label.postedAt* לפני יומיים');
+  });
+});
+
+describe('buildPostShareMessage — description', () => {
+  it('omits the line when the description is null, empty or blank', () => {
+    for (const description of [null, '', '   ']) {
+      expect(buildPostShareMessage(base({ description }), t)).not.toContain('label.description');
+    }
   });
 
-  it('omits the description line when description is null', () => {
-    const msg = buildPostShareMessage({ ...base(), description: null }, t);
-    expect(msg).not.toContain('shareLabelDescription');
+  it('truncates a description longer than 200 characters with an ellipsis', () => {
+    const msg = buildPostShareMessage(base({ description: 'א'.repeat(250) }), t);
+    const line = msg.split('\n').find((l) => l.includes('label.description')) ?? '';
+    expect(line.endsWith('…')).toBe(true);
+    expect(line.length).toBeLessThanOrEqual('*t:share.post.label.description* '.length + 200);
   });
+});
 
-  it('omits the description line when description is empty/whitespace', () => {
-    const msg = buildPostShareMessage({ ...base(), description: '   ' }, t);
-    expect(msg).not.toContain('shareLabelDescription');
-  });
-
-  it('truncates description longer than 200 chars with an ellipsis', () => {
-    const long = 'א'.repeat(250);
-    const msg = buildPostShareMessage({ ...base(), description: long }, t);
-    const descLine = msg.split('\n').find((l) => l.includes('shareLabelDescription')) ?? '';
-    expect(descLine.endsWith('…')).toBe(true);
-    expect(descLine.length).toBeLessThanOrEqual('*t:post.detail.shareLabelDescription* '.length + 200);
-  });
-
-  it('always includes the category line, even for Other', () => {
-    const msg = buildPostShareMessage({ ...base(), category: 'Other' }, t);
-    expect(msg).toContain('*t:post.detail.shareLabelCategory* t:post.category.Other');
-  });
-
-  it('renders city only when locationDisplayLevel is CityOnly', () => {
-    const msg = buildPostShareMessage({ ...base(), locationDisplayLevel: 'CityOnly' }, t);
-    expect(msg).toContain('*t:post.detail.shareLabelLocation* תל אביב');
+describe('buildPostShareMessage — location privacy', () => {
+  it('renders the city only for CityOnly', () => {
+    const msg = buildPostShareMessage(base({ locationDisplayLevel: 'CityOnly' }), t);
+    expect(msg).toContain('*t:share.post.label.location* תל אביב');
     expect(msg).not.toContain('דיזנגוף');
     expect(msg).not.toContain('99');
   });
 
-  it('renders city + street when locationDisplayLevel is CityAndStreet', () => {
-    const msg = buildPostShareMessage({ ...base(), locationDisplayLevel: 'CityAndStreet' }, t);
+  it('renders city and street for CityAndStreet, without the number', () => {
+    const msg = buildPostShareMessage(base({ locationDisplayLevel: 'CityAndStreet' }), t);
     expect(msg).toContain('תל אביב, t:post.detail.streetPrefix דיזנגוף');
     expect(msg).not.toContain('99');
   });
 
-  it('renders full address when locationDisplayLevel is FullAddress', () => {
-    const msg = buildPostShareMessage({ ...base(), locationDisplayLevel: 'FullAddress' }, t);
-    expect(msg).toContain('תל אביב, דיזנגוף 99');
+  it('renders the full address for FullAddress', () => {
+    expect(buildPostShareMessage(base({ locationDisplayLevel: 'FullAddress' }), t)).toContain('תל אביב, דיזנגוף 99');
   });
+});
 
-  it('ends with the lifecycle-specific CTA so the caller can append the URL', () => {
-    const msg = buildPostShareMessage(base(), t);
-    expect(msg.endsWith('t:post.detail.shareCtaGiveOpen')).toBe(true);
-  });
-
-  it('includes the publisher line for every post', () => {
-    const msg = buildPostShareMessage(base({ publisherLabel: 'דנה' }), t);
-    expect(msg).toContain('*t:post.detail.shareLabelPublisher* דנה');
-  });
-
-  it('shows anonymous publisher label when passed', () => {
-    const msg = buildPostShareMessage(
-      base({ publisherLabel: 't:post.detail.anonymousUser' }),
-      t,
+describe('buildPostShareMessage — people', () => {
+  it('always shows the publisher, including the anonymous label', () => {
+    expect(buildPostShareMessage(base({ publisherLabel: 'דנה' }), t)).toContain('*t:share.post.label.publisher* דנה');
+    expect(buildPostShareMessage(base({ publisherLabel: 't:post.detail.anonymousUser' }), t)).toContain(
+      '*t:share.post.label.publisher* t:post.detail.anonymousUser',
     );
-    expect(msg).toContain('*t:post.detail.shareLabelPublisher* t:post.detail.anonymousUser');
   });
 
-  it('includes counterparty only on closed posts with a label', () => {
-    const openMsg = buildPostShareMessage(
-      base({ counterpartyLabel: 'יוסי' }),
-      t,
+  it('shows the counterparty only on a closed post with a label', () => {
+    expect(buildPostShareMessage(base({ counterpartyLabel: 'יוסי' }), t)).not.toContain('label.counterparty');
+    expect(buildPostShareMessage(withKind({ lifecycle: 'closed' }, { counterpartyLabel: 'יוסי' }), t)).toContain(
+      '*t:share.post.label.counterparty* יוסי',
     );
-    expect(openMsg).not.toContain('shareLabelCounterparty');
-
-    const closedMsg = buildPostShareMessage(
-      base({ status: 'closed_delivered', counterpartyLabel: 'יוסי' }),
-      t,
+    expect(buildPostShareMessage(withKind({ lifecycle: 'closed' }, { counterpartyLabel: '  ' }), t)).not.toContain(
+      'label.counterparty',
     );
-    expect(closedMsg).toContain('*t:post.detail.shareLabelCounterparty* יוסי');
-  });
-
-  it('omits counterparty when closed but label is empty', () => {
-    const msg = buildPostShareMessage(
-      base({ status: 'closed_delivered', counterpartyLabel: '   ' }),
-      t,
-    );
-    expect(msg).not.toContain('shareLabelCounterparty');
   });
 });

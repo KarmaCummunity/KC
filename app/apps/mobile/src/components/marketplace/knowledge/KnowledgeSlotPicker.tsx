@@ -6,7 +6,13 @@ import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { Text } from '@kc/ui';
-import { canBookKnowledgeSlot, canCompleteKnowledgeSession, type KnowledgeSlot } from '@kc/domain';
+import {
+  canBookKnowledgeSlot,
+  canCompleteKnowledgeSession,
+  givingHandoffActions,
+  isGivingHandoffLive,
+  type KnowledgeSlot,
+} from '@kc/domain';
 import { givingHandoffUseCases } from '../../../services/givingHandoffComposition';
 import { knowledgeBookingUseCases, knowledgeSlotsQueryKey } from '../../../services/knowledgeBookingComposition';
 import { formatRideTime } from '../../cards/ListingCard';
@@ -14,6 +20,7 @@ import { HandoffActionButton } from '../HandoffActionButton';
 import { HandoffRatingForm } from '../HandoffRatingForm';
 import { useRideBookingStyles } from '../rides/rideBookingStyles';
 import { useKnowledgeBookingAction } from './useKnowledgeBookingAction';
+import { listOrEmpty } from '../../../lib/backendAvailability';
 
 interface Props {
   readonly listingId: string;
@@ -29,7 +36,7 @@ export function KnowledgeSlotPicker({ listingId, cityId }: Props) {
   const { busy, run } = useKnowledgeBookingAction(listingId, cityId);
   const slots = useQuery({
     queryKey: knowledgeSlotsQueryKey(listingId),
-    queryFn: () => knowledgeBookingUseCases.listSlots().execute(listingId),
+    queryFn: () => listOrEmpty(() => knowledgeBookingUseCases.listSlots().execute(listingId)),
   });
   const firstBookable = (slots.data ?? []).find((slot) => canBookKnowledgeSlot(slot));
 
@@ -86,9 +93,10 @@ function MyBooking({ slot, handoffId, busy, run }: { slot: KnowledgeSlot; handof
   const { t } = useTranslation();
   const styles = useRideBookingStyles();
   const booking = { handoffId, status: slot.myStatus!, startsAt: slot.startsAt };
-  const active = booking.status === 'reserved' || booking.status === 'confirmed';
+  // The learner is the recipient of the booking; the handoff graph says what they may do with it.
+  const actions = givingHandoffActions(booking.status, 'recipient');
 
-  if (booking.status === 'handed_over') {
+  if (actions.rate) {
     return (
       <HandoffRatingForm
         busy={busy}
@@ -101,7 +109,7 @@ function MyBooking({ slot, handoffId, busy, run }: { slot: KnowledgeSlot; handof
       />
     );
   }
-  if (!active) return null;
+  if (!isGivingHandoffLive(booking.status)) return null;
   return (
     <>
       <Text style={styles.caption} testID={`knowledge-my-booking-${slot.slotId}`}>
@@ -110,23 +118,25 @@ function MyBooking({ slot, handoffId, busy, run }: { slot: KnowledgeSlot; handof
           : t('knowledgeBooking.confirmed')}
       </Text>
       <View style={styles.actions}>
-        {canCompleteKnowledgeSession(booking) ? (
+        {canCompleteKnowledgeSession(booking, 'recipient') ? (
           <HandoffActionButton
             inRow
             testID={`knowledge-my-booking-complete-${slot.slotId}`}
             label={t('knowledgeBooking.complete')}
             busy={busy}
-            onPress={() => void run(() => knowledgeBookingUseCases.complete().execute(booking), 'handover_completed')}
+            onPress={() => void run(() => knowledgeBookingUseCases.complete().execute(booking, 'recipient'), 'handover_completed')}
           />
         ) : null}
-        <HandoffActionButton
-          inRow
-          secondary
-          testID={`knowledge-my-booking-cancel-${slot.slotId}`}
-          label={t('knowledgeBooking.cancelBooking')}
-          busy={busy}
-          onPress={() => void run(() => givingHandoffUseCases.cancel().execute(handoffId))}
-        />
+        {actions.cancel ? (
+          <HandoffActionButton
+            inRow
+            secondary
+            testID={`knowledge-my-booking-cancel-${slot.slotId}`}
+            label={t('knowledgeBooking.cancelBooking')}
+            busy={busy}
+            onPress={() => void run(() => givingHandoffUseCases.cancel().execute(handoffId))}
+          />
+        ) : null}
       </View>
     </>
   );

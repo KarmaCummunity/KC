@@ -11,7 +11,7 @@ KC (Karma Community) is built largely by AI agents. **Part A** is the quick entr
 | [`.claude/skills/kc-issue-to-merge/SKILL.md`](.claude/skills/kc-issue-to-merge/SKILL.md) | **Working an issue end to end**: pick, de-duplicate, claim, define, test-first, findings, PR, merge. Follow it for every task |
 | [`docs/agents/OPERATING_MODEL.md`](docs/agents/OPERATING_MODEL.md) | Roles, the issue → PR → dev → kc-dev flow, labels, auto-merge |
 | [`docs/agents/ISSUE_CLAIMS.md`](docs/agents/ISSUE_CLAIMS.md) | **Claim an issue before starting it**: skip `in-progress` issues |
-| [`docs/agents/MIGRATION_RANGES.md`](docs/agents/MIGRATION_RANGES.md) | **Claim a migration number range before writing SQL** |
+| [`docs/agents/MIGRATION_RANGES.md`](docs/agents/MIGRATION_RANGES.md) | **Migration numbering**: add `next-NN_slug.sql`; the number is assigned on merge |
 | [`docs/agents/STACK_MAP.md`](docs/agents/STACK_MAP.md) | Open stacked PRs and merge order |
 | [`docs/agents/ARCHITECTURE.md`](docs/agents/ARCHITECTURE.md) | Apps / packages / supabase / workflows map |
 | [`docs/architecture/current.md`](docs/architecture/current.md) | **Current architecture**: C4 diagrams, package boundaries, services, crons |
@@ -41,18 +41,18 @@ KC (Karma Community) is built largely by AI agents. **Part A** is the quick entr
 
 - [ ] Gates green locally (from `app/`): `pnpm typecheck && pnpm test && pnpm lint`
 - [ ] New or changed behavior has tests
-- [ ] Migrations, if any: numbered inside your claimed range, apply cleanly on a fresh stack (`./scripts/dev-up.sh`), RLS plus policy tests, no destructive ops (migration safety scan in the `static` lane of `CI gate`)
+- [ ] Migrations, if any: named `next-NN_slug.sql` (numbered on merge), apply cleanly on a fresh stack (`./scripts/dev-up.sh`), RLS plus policy tests, no destructive ops (migration safety scan in the `static` lane of `CI gate`)
 - [ ] DB types regenerated and committed if the API surface changed
 - [ ] PR labeled with exactly one opened-by label (`agent:claude|cursor|kc-bot|antigravity|codex|other` or `human`), matching the `Opened by:` line ([ISSUE_CLAIMS.md](docs/agents/ISSUE_CLAIMS.md))
 - [ ] PR body: `Closes #N` and `Mapped to spec: …`, following the AGENTS.md §6 template
-- [ ] `CI gate` green, then label `agent-ready` to auto-merge
+- [ ] PR opened ready (not draft), so auto-merge is armed; `CI gate` green
 - [ ] After merge: verified on kc-dev / dev.karma-community.pages.dev
 
 Store builds (TestFlight / Play internal): see [`app/apps/mobile/README.md`](app/apps/mobile/README.md).
 
 ## Migrations rule
 
-Every schema change must be a committed file in `supabase/migrations/NNNN_snake.sql`, applied only via `supabase db push` / the **Deploy** workflow. **Never** use the Supabase MCP `apply_migration` tool on any KC project (dev or prod). The `CI — migration drift` workflow scans the dev ledger against the **dev** branch's files (pinned with `ref: dev`, since scheduled runs execute from `main`). See `AGENTS.md` §9 and `docs/SSOT/OPERATOR_RUNBOOK.md` → "Migration application rules".
+Every schema change must be a committed file in `supabase/migrations/`. **A PR names it `next-NN_snake_slug.sql` and never picks a number**: the post-merge workflow renames it to the next free `NNNN_snake_slug.sql` (`docs/agents/MIGRATION_RANGES.md`). Numbered files are `NNNN_snake.sql` (after the D-228 cut-over `0001_baseline.sql` is frozen history; the next file is `0002_…`; the retired chain is in `supabase/migrations/archive/`), applied only via `supabase db push` / the **Deploy** workflow. **Never** use the Supabase MCP `apply_migration` tool on any KC project (dev or prod). The `CI — migration drift` workflow scans the dev ledger against the **dev** branch's files (pinned with `ref: dev`, since scheduled runs execute from `main`). See `AGENTS.md` §9 and `docs/SSOT/OPERATOR_RUNBOOK.md` → "Migration application rules".
 
 ---
 
@@ -138,7 +138,8 @@ docs/spec/requirements/
 ├── 20_organizations.md           FR-ORG-*
 ├── 21_housing.md                FR-HOUSING-*
 ├── 22_identity_verification.md  FR-VERIFY-*
-└── 23_knowledge.md              FR-KNOW-*
+├── 23_knowledge.md              FR-KNOW-*
+└── 24_ride_event_groups.md      FR-EVRIDE-*
 ```
 
 Note: `17_responsive_desktop.md` was formerly `14_responsive_desktop.md` (renamed 2026-10-30 to remove the duplicate `14_` and fill the missing `17_`). FR-RESP-* IDs are unchanged.
@@ -272,7 +273,7 @@ When you spot tech debt outside the immediate scope:
 
 ### Issue claims (multi-agent)
 
-Before starting an issue: skip it if it has `in-progress` or an open PR references it. Otherwise claim it (`in-progress` + your `agent:claude|cursor|codex|antigravity|kc-bot` label, comment `claimed by <agent>`). Release on abandon; merge releases automatically. Claims older than 6 hours with no open PR are stale. Full rule: [`docs/agents/ISSUE_CLAIMS.md`](docs/agents/ISSUE_CLAIMS.md).
+Before starting an issue: skip it if it has `in-progress` or an open PR references it. Otherwise claim it with `node scripts/agent-task.mjs claim <N> --agent <you>` (`in-progress` + your `agent:claude|cursor|codex|antigravity|kc-bot` label and a `claimed by agent:<you> (session <id>)` comment). Release on abandon with `node scripts/agent-task.mjs release <N> --agent <you>`; merge releases automatically. Claims older than 6 hours with no open PR are stale. Full rule: [`docs/agents/ISSUE_CLAIMS.md`](docs/agents/ISSUE_CLAIMS.md).
 
 Every PR you open gets exactly one opened-by label (`agent:claude|cursor|kc-bot|antigravity|codex|other` or `human`) and the matching `Opened by:` line in the PR body; `pr-opened-by.yml` checks it.
 
@@ -489,23 +490,21 @@ When this section is active, the agent operates as a continuous self-driven task
 
 ### Iteration cycle
 
-1. **Pick next work** in this priority order:
-   1. Top **Ready**, Agent-ready item on the GitHub board that nobody owns (`priority:launch` > P0 > P1 > P2 > P3). `priority:launch` is everything required for the upcoming launch, above P0: **Rides** and **Items** end-to-end flows first, then other launch blockers (auth, crashes, store readiness).
-   2. If none remain: highest-priority open `tech-debt` issue nobody has claimed.
-   3. If both empty: SSOT documentation polish, adjacent dead-code removal, or test-coverage gaps surfaced by `pnpm test` in `app/`.
-2. **Claim the issue (`docs/agents/ISSUE_CLAIMS.md`) and set it to In progress** before any code edit.
-3. **Branch from latest `origin/dev`**: `<type>/<FR-id-or-scope>-<slug>` per §6.
-4. **Implement** under all constraints in §1–§5 (spec validation, clean architecture, file/indent caps, error handling).
-5. **Verify locally** before push: from `app/` run `pnpm typecheck && pnpm test && pnpm lint`. All three green or do not push.
-6. **PR to `dev`** with `gh pr create --base dev` then `gh pr merge --auto --squash` (no `--delete-branch`: rejected while the `dev` merge queue is on). Body follows the §6 template, including the `Mapped to spec` line.
-7. **CI watch.** If CI fails: up to 3 fix attempts on the same PR. If still red after 3, investigate CI itself (workflow drift, flake, env mismatch) — fix it in-scope. Only after CI repair also fails twice do you close the PR with a blocker note and skip to the next task; the blocked item is opened as a `tech-debt` issue with a clear reproducer.
-8. **Update SSOT in the same PR**: `Closes #N` in the PR, `spec/<domain>.md` status header if all ACs done.
-9. **Append to `.claude/AUTONOMOUS_LOOP_LOG.md`**: `<ISO-timestamp> | <branch> | <PR url> | <merged|closed|blocked> | <one-line outcome>`.
-10. **Schedule next iteration**: call `ScheduleWakeup(delaySeconds=60, prompt="Continue autonomous loop per AGENTS.md §13.")` before ending the turn. The Stop hook is a backstop only — do not rely on it alone.
+Each iteration is one run of the [`kc-issue-to-merge`](.claude/skills/kc-issue-to-merge/SKILL.md) skill, with the loop rules of [`references/loop.md`](.claude/skills/kc-issue-to-merge/references/loop.md):
+- finish your own red or dequeued PRs before taking a new issue;
+- start each issue from a fresh `origin/dev`;
+- log one line per iteration to `.claude/AUTONOMOUS_LOOP_LOG.md`;
+- stop on an empty queue, on 3 blocked or failed iterations in a row, or on the PM's budget.
+
+The queue comes from `node scripts/agent-task.mjs next`, in priority order `priority:launch` > P0 > P1 > P2 > P3. **Rides** and **Items** end-to-end flows come first among launch work. When it prints `queue empty`, fall back in this order:
+1. the oldest unclaimed `tech-debt` issue (`node scripts/agent-task.mjs next --tech-debt`);
+2. SSOT documentation polish, adjacent dead-code removal, or test-coverage gaps surfaced by `pnpm test`.
+
+Schedule the next iteration before ending the turn (`ScheduleWakeup(delaySeconds=60, prompt="Continue autonomous loop per AGENTS.md §13.")`); the Stop hook is a backstop only.
 
 ### Authorities granted under this mode (`dev` scope only)
 
-- **Product decisions**: when a task forks on UX/product, decide based on user-visible coherence + simplicity. Record the call in `docs/SSOT/DECISIONS.md` as a new `D-*` entry with a one-paragraph rationale. Do not block on PM input.
+- **Product decisions**: never taken by the agent. When a task forks on UX/product behavior the spec does not settle, release the issue as blocked with the question, options and a recommendation, then take the next issue (`{{ENG:agent-skill-v3}}`). Technical choices inside the spec stay the agent's.
 - **CI / tooling repairs**: if `.github/workflows/*`, root configs, or monorepo tooling appear broken, fix as part of the loop — CI is in-scope.
 - **Dev Supabase database**: full read/write/migration authority on project `enbqriuxvvuontiwslun` (kc-dev; verified 2026-10-30 against the deployed dev web bundle, matches `docs/SSOT/ENVIRONMENTS.md`) via Supabase MCP tools and the local CLI. `roeefqpdbftlndzsvhfj` ("MVP-2") and `slxijdfvinbjmrsfgbzx` ("MVP-PROD") are older, paused projects — never target them. Migrations live in `supabase/migrations/` and ship in the same PR as their consumers. Secrets needed by the CLI are in `~/.kc-dev-secrets.env` (outside the repo).
 
@@ -524,4 +523,4 @@ A task is *blocked* (vs. failed) only when it strictly requires an action the ag
 - Requires a `main` push or production DB write.
 - Hits two consecutive product-decision forks where both paths conflict with existing SSOT and only the PM can adjudicate.
 
-For a blocker: close any open PR with a labeled comment, set the issue to **Blocked** with a comment giving the exact need and release your claim, open a `tech-debt` issue if non-trivial, log to `AUTONOMOUS_LOOP_LOG.md`, then start the next iteration. Do not idle the loop.
+For a blocker: close any open PR with a labeled comment, then run `node scripts/agent-task.mjs release <N> --agent <you> --blocked "<exact need>"`, which releases your claim, labels the issue `blocked` and comments the need. Open a `tech-debt` issue if non-trivial, log to `AUTONOMOUS_LOOP_LOG.md`, then start the next iteration. Do not idle the loop.

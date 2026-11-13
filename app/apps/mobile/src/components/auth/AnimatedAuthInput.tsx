@@ -8,6 +8,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { makeUseStyles, spacing, radius, typography, shadow, useTheme, TextInput, Text, type TextInput as UiTextInput } from '@kc/ui';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { inputTextAlignStart } from '../../lib/rtlLayout';
 import { useFormScopeField } from '../ui/useFormScopeField';
 
 interface AnimatedAuthInputProps extends TextInputProps {
@@ -103,7 +104,7 @@ export const AnimatedAuthInput = forwardRef<UiTextInput, AnimatedAuthInputProps>
           ref={inputRef}
           style={styles.input}
           placeholderTextColor={colors.textDisabled}
-          textAlign={rtlTextAlignStart}
+          textAlign={inputTextAlignStart()}
           onFocus={handleFocus}
           onBlur={handleBlur}
           {...scope.inputProps}

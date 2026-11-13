@@ -6,7 +6,7 @@ import type { IOrgHierarchyRepository } from '../IOrgHierarchyRepository';
 const CENSUS: HierarchyCensus = {
   communityTotal: 42,
   roleHolderTotal: 1,
-  orgs: [{ orgId: 'p', name: 'Karma Community', isPlatform: true, isVerified: true, affiliatedCount: 0 }],
+  orgs: [{ orgId: 'p', slug: 'kc', name: 'Karma Community', isPlatform: true, isVerified: true, affiliatedCount: 0 }],
 };
 
 const MEMBER: OrgTreeMember = {
@@ -40,6 +40,7 @@ function repo(overrides: Partial<IOrgHierarchyRepository> = {}): IOrgHierarchyRe
     getOrgTree: vi.fn(async () => [MEMBER, OTHER_ORG_MEMBER]),
     setManager: vi.fn(),
     getHierarchyCensus: vi.fn(async () => CENSUS),
+    setOrgSlug: vi.fn(),
     ...overrides,
   };
 }

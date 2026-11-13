@@ -199,9 +199,9 @@ export default tseslint.config(
       globals: globals.node,
     },
   },
-  // Hono web-server (Node.js ESM, not a React-Native browser env).
+  // Cloudflare Pages edge handlers (ESM running on the Workers runtime, not a React-Native env).
   {
-    files: ['apps/mobile/web-server/**/*.mjs'],
+    files: ['apps/mobile/web-edge/**/*.mjs', 'apps/mobile/functions/**/*.js'],
     languageOptions: {
       sourceType: 'module',
       globals: { ...globals.node, ...globals.browser },

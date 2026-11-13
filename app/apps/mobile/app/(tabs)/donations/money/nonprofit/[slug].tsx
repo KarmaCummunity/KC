@@ -6,8 +6,10 @@ import { useQuery } from '@tanstack/react-query';
 import { makeUseStyles, radius, spacing, typography, Text } from '@kc/ui';
 import { Screen } from '../../../../../src/components/ui/Screen';
 import { PrimaryButton, SecondaryButton } from '../../../../../src/components/ui/Buttons';
-import { CampaignProgressBar } from '../../../../../src/components/money/CampaignProgressBar';
 import { paymentsUseCases } from '../../../../../src/services/paymentsComposition';
+import { shekelsText } from '../../../../../src/components/money/moneyAmount';
+import { CampaignProgressBar } from '../../../../../src/components/money/CampaignProgressBar';
+import { valueOrNull } from '../../../../../src/lib/backendAvailability';
 import { useShellTabBarScrollInset } from '../../../../../src/navigation/useShellTabBarVisibility';
 import { useExternalDonations } from '../../../../../src/hooks/useExternalDonations';
 
@@ -35,7 +37,7 @@ export default function NonprofitPublicScreen() {
   const { external, openExternal } = useExternalDonations();
   const page = useQuery({
     queryKey: ['money', 'nonprofit', slug],
-    queryFn: () => paymentsUseCases.getNonprofitPage().execute(slug!),
+    queryFn: () => valueOrNull(() => paymentsUseCases.getNonprofitPage().execute(slug!)),
     enabled: Boolean(slug),
   });
 
@@ -65,7 +67,7 @@ export default function NonprofitPublicScreen() {
         {tagline ? <Text style={styles.about}>{tagline}</Text> : null}
         {about ? <Text style={styles.about}>{about}</Text> : null}
         <Text style={styles.stat}>
-          {t('moneyPayments.totalRaised', { amount: p.totalRaisedIls.toFixed(0) })}
+          {t('moneyPayments.totalRaised', { amount: shekelsText(p.totalRaisedAgorot) })}
         </Text>
 
         <View style={styles.actions}>
@@ -103,17 +105,11 @@ export default function NonprofitPublicScreen() {
           <Text style={styles.about}>{t('moneyPayments.noCampaigns')}</Text>
         ) : (
           p.campaigns.map((c) => (
-            <View key={c.listingId} style={styles.campaign}>
+            <View key={c.postId} style={styles.campaign}>
               <Text style={styles.campaignTitle}>{c.title}</Text>
               {c.summary ? <Text style={styles.about}>{c.summary}</Text> : null}
-              <CampaignProgressBar
-                raisedIls={c.raisedIls}
-                goalIls={c.goalIls}
-                label={t('moneyPayments.campaignProgress', {
-                  raised: c.raisedIls.toFixed(0),
-                  goal: c.goalIls.toFixed(0),
-                })}
-              />
+              <Text style={styles.about}>{t('moneyPayments.totalRaised', { amount: shekelsText(c.raisedAgorot) })}</Text>
+              <CampaignProgressBar raisedAgorot={c.raisedAgorot} goalAgorot={c.goalAgorot} />
             </View>
           ))
         )}

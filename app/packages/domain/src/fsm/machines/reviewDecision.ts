@@ -1,17 +1,12 @@
 import { defineMachine } from '../machine';
 
 /**
- * Review decision: one shape shared by the operator review queues (spec
- * `docs/spec/requirements/12_super_admin.md` organization applications, `20_organizations.md`;
- * the WhatsApp bot's admin review, `0302` / `0304`; listing claims, `0246`).
+ * Review decision of a WhatsApp bot post under review (`integrations.bot_review_items.status`,
+ * M22 / L7). A low-confidence bot post waits as `pending`; a moderator approves (publishes it)
+ * or rejects it in `api_whatsapp_admin_review_resolve`. Both decisions are final. Who may
+ * decide is checked by that RPC, so no edge is role-restricted.
  *
- * - An item waits as `pending` until an operator approves or rejects it, once:
- *   `org_applications.status` (`admin_review_org_application`),
- *   `bot_admin_review_items.status` (`api_bot_admin_review_resolve`) and
- *   `claim_requests.status` (no reviewer RPC yet).
- * - Both decisions are final; a new request is a new row.
- *
- * SQL copy: `supabase/migrations/0717_fsm_review_queues.sql`.
+ * SQL copy: the migration `whatsapp_channel_schema` (`kc_private.fsm_state` / `fsm_edge` seeds).
  */
 export const reviewDecisionMachine = defineMachine({
   id: 'review_decision',

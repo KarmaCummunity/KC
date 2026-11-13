@@ -7,6 +7,7 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from './database.types';
 import { createTimeoutFetch, DEFAULT_SUPABASE_TIMEOUT_MS } from './timeoutFetch';
 
+// One singleton, typed against the production baseline schema.
 let _client: SupabaseClient<Database> | null = null;
 
 // Singleton callback invoked when a PostgREST call returns 403 (RLS forbidden).
@@ -57,6 +58,11 @@ export interface SupabaseClientOptions {
  * In Node (Edge Functions): no storage adapter needed.
  */
 export function getSupabaseClient(options?: SupabaseClientOptions): SupabaseClient<Database> {
+  return getTypedClient(options);
+}
+
+
+function getTypedClient(options?: SupabaseClientOptions): SupabaseClient<Database> {
   if (_client) return _client;
 
   // Audit 2026-05-10 §4.2: only EXPO_PUBLIC_* is inlined by Metro into the

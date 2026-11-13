@@ -6,18 +6,35 @@ import { detectLang, isKeywordAction, keywordReply, replyKind, upsellReply } fro
 import { isLinkStatus, linkReply, parseLinkCode } from '../_shared/whatsapp/link.ts';
 import type { RpcFn } from '../_shared/whatsapp/sender.ts';
 
-export type BotAccess = { access: 'pro' | 'unlinked' | 'not_pro'; user_id: string | null; upsell: boolean };
+export type BotAccess = { access: 'pro' | 'unlinked' | 'not_pro' | 'inactive'; user_id: string | null; upsell: boolean };
 
 export type WebhookDeps = {
   rpc: RpcFn;
   /** #1091: run the Pro agent for a linked Pro user. Absent → gate only. */
   onProMessage?: (args: { waId: string; userId: string; text: string; recordId: string | null }) => Promise<void>;
+  /** D158: a photo from a linked Pro user, for their waiting bot draft. Absent → ignored. */
+  onProPhoto?: (args: ProPhoto) => Promise<void>;
   verifyToken: string;
   appSecret: string;
   skipSignatureVerify: boolean;
 };
 
-type InboundMessage = { id?: string; from?: string; type?: string; text?: { body?: string } };
+export type ProPhoto = {
+  waId: string;
+  userId: string;
+  mediaId: string;
+  mimeType: string | null;
+  caption: string;
+  recordId: string | null;
+};
+
+type InboundMessage = {
+  id?: string;
+  from?: string;
+  type?: string;
+  text?: { body?: string };
+  image?: { id?: string; mime_type?: string; caption?: string };
+};
 
 export async function hmacSha256Hex(secret: string, payload: string): Promise<string> {
   const key = await crypto.subtle.importKey(
@@ -109,6 +126,10 @@ async function processClaimed(
     outcome = { message_id: messageId, record_id: (recordId as string) ?? null };
   }
 
+  if (msg.type === 'image') {
+    if (from && !outcome.throttled) await gateBot(deps, from, msg.image?.caption ?? '', outcome, onPhoto(deps, from, msg));
+    return outcome;
+  }
   const text = msg.type === 'text' ? msg.text?.body ?? '' : '';
   if (!from || !text) return outcome;
 
@@ -122,7 +143,8 @@ async function processClaimed(
   if (!isKeywordAction(res.action)) {
     if (outcome.throttled) return outcome;
     if (await maybeRedeemLinkCode(deps, from, text, outcome)) return outcome;
-    await gateBot(deps, from, text, outcome);
+    await gateBot(deps, from, text, outcome, (userId, recordId) =>
+      deps.onProMessage?.({ waId: from, userId, text, recordId }) ?? Promise.resolve());
     return outcome;
   }
 
@@ -159,16 +181,34 @@ async function maybeRedeemLinkCode(deps: WebhookDeps, from: string, text: string
   return true;
 }
 
+type ProHandler = (userId: string, recordId: string | null) => Promise<void>;
+
+// D158: an image goes to the photo flow (its waiting draft), never to the language model.
+function onPhoto(deps: WebhookDeps, from: string, msg: InboundMessage): ProHandler {
+  return (userId, recordId) => {
+    const mediaId = msg.image?.id ? String(msg.image.id) : '';
+    if (!mediaId || !deps.onProPhoto) return Promise.resolve();
+    return deps.onProPhoto({
+      waId: from,
+      userId,
+      mediaId,
+      mimeType: msg.image?.mime_type ?? null,
+      caption: msg.image?.caption ?? '',
+      recordId,
+    });
+  };
+}
+
 // #1086: server-enforced Pro gate. Non-Pro gets a rate-limited upsell (DB decides).
-async function gateBot(deps: WebhookDeps, from: string, text: string, outcome: MessageOutcome) {
+async function gateBot(deps: WebhookDeps, from: string, text: string, outcome: MessageOutcome, onPro: ProHandler) {
   const { data, error } = await deps.rpc('api_whatsapp_bot_access', { p_wa_id: from });
   if (error) throw new Error(error.message);
   const access = (data ?? {}) as Partial<BotAccess>;
   outcome.access = access.access;
+  // A number linked to a deactivated account gets no agent and no upsell: silence.
+  if (access.access === 'inactive') return;
   if (access.access === 'pro' && access.user_id) {
-    if (deps.onProMessage) {
-      await deps.onProMessage({ waId: from, userId: access.user_id, text, recordId: outcome.record_id });
-    }
+    await onPro(access.user_id, outcome.record_id);
     return;
   }
   if ((access.access === 'unlinked' || access.access === 'not_pro') && access.upsell) {

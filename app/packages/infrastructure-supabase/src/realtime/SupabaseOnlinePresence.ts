@@ -1,7 +1,10 @@
-// Online presence (green dot) on the global private `presence:online` topic.
-// One channel per signed-in app session; UI consumers subscribe to the shared
-// online-id set instead of opening their own channels (no per-row channels,
-// no leaks). Policies: 0415 (active members track, authenticated receive).
+// Online presence (the green dot) on the global private `presence:online` topic.
+//
+// One channel per signed-in app session; screens read the shared set of online member ids and
+// never open their own channels. The database admits a member to the topic, to track or to
+// receive, only while their account is active and their "show my active status" is on
+// (migration 0026_member_realtime.sql), so a member who hides their status neither shows up nor
+// sees anyone. The app also leaves the channel when the setting is off (useOnlinePresence).
 
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { openExactTopicChannel, type ManagedChannel, type RealtimeHost } from './exactTopicChannel';
@@ -18,7 +21,7 @@ export class SupabaseOnlinePresence {
 
   constructor(private readonly client: RealtimeHost) {}
 
-  /** Start (or keep) tracking `userId` as online. Idempotent per user. */
+  /** Starts (or keeps) tracking `userId` as online. Idempotent per member. */
   start(userId: string): void {
     if (this.managed && this.userId === userId) return;
     this.stop();
@@ -36,7 +39,7 @@ export class SupabaseOnlinePresence {
     );
   }
 
-  /** Leave presence and drop the channel (background / sign-out). */
+  /** Leaves presence and drops the channel (background or sign-out). */
   stop(): void {
     this.managed?.close();
     this.managed = null;
@@ -65,6 +68,7 @@ export class SupabaseOnlinePresence {
   }
 }
 
+/** The member ids present on the channel. */
 export function onlineIdsFrom(ch: Pick<RealtimeChannel, 'presenceState'>): ReadonlySet<string> {
   return new Set(Object.keys(ch.presenceState() ?? {}));
 }

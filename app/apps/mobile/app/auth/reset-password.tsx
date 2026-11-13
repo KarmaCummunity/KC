@@ -10,6 +10,7 @@ import { AnimatedAuthInput } from '../../src/components/auth/AnimatedAuthInput';
 import { usePasswordResetStyles } from '../../src/components/auth/passwordResetScreen.styles';
 import { AuthStatusScreen } from '../../src/components/auth/AuthStatusScreen';
 import { FormScreen, PrimaryButton } from '../../src/components/ui';
+import { LaunchSurfaceGate } from '../../src/components/LaunchSurfaceGate';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
 
@@ -17,7 +18,7 @@ type Phase = 'form' | 'done' | 'invalid';
 
 const INVALID_LINK_CODES = new Set(['session_expired', 'authentication_failed', 'invalid_credentials']);
 
-export default function ResetPasswordScreen() {
+function ResetPasswordScreenContent() {
   const styles = usePasswordResetStyles();
   const router = useRouter();
   const { t } = useTranslation();
@@ -101,5 +102,14 @@ export default function ResetPasswordScreen() {
       />
       {error ? <Text style={styles.error}>{error}</Text> : null}
     </FormScreen>
+  );
+}
+
+/** Hidden while `emailAuth` is off (first launch): sends the visitor away instead of rendering. */
+export default function ResetPasswordScreen() {
+  return (
+    <LaunchSurfaceGate surface="emailAuth" redirectTo="/(auth)">
+      <ResetPasswordScreenContent />
+    </LaunchSurfaceGate>
   );
 }

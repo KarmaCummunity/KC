@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   ORG_APPLICATION_STATUSES,
   isOrgApplicationError,
+  isOrgApplicationOpen,
   OrgApplicationError,
   parseOrgApplicationStatus,
 } from '../OrgApplication';
@@ -43,5 +44,15 @@ describe('isOrgApplicationError', () => {
     expect(isOrgApplicationError(new Error('plain'))).toBe(false);
     expect(isOrgApplicationError(null)).toBe(false);
     expect(isOrgApplicationError({ code: 'forbidden' })).toBe(false);
+  });
+});
+
+describe('isOrgApplicationOpen', () => {
+  it('is true only while the application waits for a decision', () => {
+    expect(ORG_APPLICATION_STATUSES.filter((status) => isOrgApplicationOpen(status))).toEqual(['pending']);
+  });
+
+  it('is false for a status the app does not know', () => {
+    expect(isOrgApplicationOpen('a_newer_status')).toBe(false);
   });
 });

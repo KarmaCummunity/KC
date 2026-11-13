@@ -10,7 +10,7 @@ Full pyramid and CI lanes: [`docs/SSOT/TESTING.md`](../../../../docs/SSOT/TESTIN
 | Domain entity, value object, invariant | Unit: happy path + boundary + error | `app/packages/domain/**/__tests__/` | `pnpm --filter @kc/domain test -- <path>` |
 | Use case or application port | Unit with an in-memory fake; a port contract case if the port has a contract suite | `app/packages/application/**/__tests__/`, `src/contracts/` | `pnpm --filter @kc/application test -- <path>` |
 | Supabase adapter (`infrastructure-supabase`) | Unit on mapping/errors + the port's `*.contract.integration.test.ts` leg | `app/packages/infrastructure-supabase/**/__tests__/` | see "Port contract tests" in TESTING.md (local stack) |
-| Migration, RLS policy, RPC, trigger, cron | DB test: allowed **and** denied actor, plus a lifecycle step in `flows/` when a world's status changes | `supabase/tests/*.sql`, `supabase/tests/flows/*.sql` | `supabase start && scripts/run-db-tests.sh supabase/tests/<file>.sql` |
+| Migration, RLS policy, RPC, trigger, cron | DB test: allowed **and** denied actor | `supabase/tests/*.sql` | `./scripts/dev-up.sh`, then `scripts/run-baseline-tests.sh supabase/tests/<file>.sql` |
 | Edge Function | Deno `handler.test.ts` with mocked I/O | `supabase/functions/<fn>/` | `cd supabase/functions && deno test --allow-read <fn>/` |
 | Mobile hook, store, util, component logic | Unit (vitest) | `app/apps/mobile/src/**/__tests__/` | `pnpm --filter @kc/mobile test -- <path>` |
 | Screen or user journey (web) | Playwright spec, or a new case in the matching `journeys/qa/*.spec.ts` | `tests/e2e/journeys/` | `cd tests/e2e && npx playwright test <spec>` |
@@ -38,7 +38,9 @@ Without Docker there is no local Supabase. In that case:
 - **Say so in the PR's Tests section** ("DB: written, run by CI only"), and never mark them as run locally.
 - **If a change needs dozens of existing DB suites updated,** split the server half into a child issue rather than push it blind.
 
+Without an Android emulator, Maestro flows run only in CI. Say so in the PR ("Maestro: CI-only"); the `maestro` lane still has to pass.
+
 ## Levels CI runs for you
 
-- **PR runs.** The `CI gate` runs unit, DB, contract and static lanes on the PR.
-- **Nightly runs.** Playwright journeys and Maestro run nightly against kc-dev, not on PRs. Write and run the spec locally when a journey changes; CI will keep running it after the merge.
+- **PR runs.** `CI gate` runs the unit, DB, contract and static lanes, plus the `maestro` lane (Android journeys against kc-dev) when the diff touches the app, its packages or the flows. A failing journey fails the gate.
+- **Nightly runs.** Playwright journeys run against kc-dev, not on PRs. Write and run the spec locally when a journey changes; CI keeps running it after the merge.

@@ -37,6 +37,7 @@ import { inputTextAlignStart } from '../../src/lib/rtlLayout';
 import { rtlTextAlignStart } from '../../src/lib/rtlTextAlignStart';
 import { webTextRtl, webViewRtl } from '../../src/lib/webRtlStyle';
 import { useKeyboardVerticalOffset } from '../../src/lib/platform/useKeyboardVerticalOffset';
+import { resolveKeyboardAvoidingBehavior } from '../../src/lib/platform/keyboardVerticalOffset';
 import { FormScrollView } from '../../src/components/ui/FormScrollView';
 
 type DemoAnswer = { rating: number | null; text: string };
@@ -106,7 +107,7 @@ export default function SurveyDemoScreen() {
       />
       <KeyboardAvoidingView
         style={[styles.flex, styles.stage]}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={resolveKeyboardAvoidingBehavior(Platform.OS)}
         keyboardVerticalOffset={keyboardOffset}
       >
         <View style={styles.progressBar}>

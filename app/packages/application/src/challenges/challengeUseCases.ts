@@ -4,7 +4,9 @@ import {
   type ChallengeDraft,
   type ChallengeEntry,
   type ChallengeLeaderboardRow,
+  type ChallengeListCursor,
   type ChallengeListView,
+  type ChallengePage,
   type ChallengeProgressInput,
   type ChallengeProgressResult,
   type ChallengeSummary,
@@ -22,8 +24,8 @@ export class CreateChallengeUseCase {
 
 export class ListChallengesUseCase {
   constructor(private readonly repo: IChallengeRepository) {}
-  execute(view: ChallengeListView, limit?: number, offset?: number): Promise<ChallengeSummary[]> {
-    return this.repo.listChallenges(view, limit, offset);
+  execute(view: ChallengeListView, cursor?: ChallengeListCursor | null, limit?: number): Promise<ChallengePage> {
+    return this.repo.listChallenges(view, cursor, limit);
   }
 }
 
@@ -36,8 +38,8 @@ export class GetChallengeUseCase {
 
 export class JoinChallengeUseCase {
   constructor(private readonly repo: IChallengeRepository) {}
-  execute(challengeId: string, showOnProfile = true): Promise<void> {
-    return this.repo.joinChallenge(challengeId, showOnProfile);
+  execute(challengeId: string): Promise<void> {
+    return this.repo.joinChallenge(challengeId);
   }
 }
 

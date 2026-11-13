@@ -7,8 +7,12 @@ export const eventPost = {
     kindLabel: 'What are you offering?',
     kindShift: 'Volunteer shift',
     kindEvent: 'Organization event',
+    // FR-POST-024 — a member's own event: a date, places and registration, and it may recur.
+    kindPersonalEvent: 'Volunteering with sign-up',
     orgLabel: 'Organization',
     orgRequired: 'Pick the organization the event is for',
+    membershipHint: 'Want to publish an organization\'s event? Members of a registered organization publish events. Register your organization, or ask its admin to add you.',
+    membershipHintCta: 'My organizations',
   },
   section: {
     title: 'Event',
@@ -27,6 +31,15 @@ export const eventPost = {
     statusWaitlisted: 'You’re on the waitlist. You’ll move up automatically when a place frees.',
     leaveWaitlist: 'Leave the waitlist',
     started: 'Registration is closed: the event has started.',
+  },
+  ownerClose: {
+    cta: 'End the event',
+    confirmTitle: 'End the event?',
+    beforeStart: 'The event has not started yet. Ending it now cancels every registration, and each attendee is notified.',
+    afterStart: 'Registrations stay, and you can still mark who came after the event ends. Only marked attendance earns karma.',
+    neutral: 'Before the event starts, ending it cancels the registrations and each attendee is notified. Once it has started, registrations stay and you can mark who came.',
+    confirm: 'End the event',
+    done: 'The event has ended.',
   },
   roster: {
     title: 'Registrations',

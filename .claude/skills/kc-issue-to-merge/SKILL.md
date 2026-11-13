@@ -1,182 +1,131 @@
 ---
 name: kc-issue-to-merge
-description: Take one GitHub issue of KarmaCummunity/KC from claim to a squash-merge into dev - pick or receive the issue, check it is not taken or duplicated, claim it, sharpen and label it, implement it test-first with tests at every level the change touches, open findings outside the scope as triage issues, open the PR, and drive it through CI and the merge queue. Use when asked to "take an issue", "work the next task", "solve #N end to end", or run the agent task loop. Agent-agnostic - Claude Code, Cursor, Codex, Antigravity and the KC bot follow the same steps with git and gh.
+description: Take one GitHub issue of KarmaCummunity/KC from claim to a squash-merge into dev, or run that in a loop, one issue after another. Picks or receives the issue, checks it is free and not a duplicate, claims it, sharpens it (splitting work only a person can verify into a verification issue), implements it test-first, opens findings as triage issues, opens the PR and drives it through CI and the merge queue. Use for "take an issue", "work the next task", "solve #N end to end" or the agent task loop. Agent-agnostic - Claude Code, Cursor, Codex, Antigravity and the KC bot follow the same steps with git, gh and node.
 ---
 
 # KC issue to merge
 
-One run = one issue = one PR to `dev`, driven until it merges. Then report and stop.
+**One run = one issue = one PR to `dev`, driven until it merges. Then report and stop.** A loop repeats runs: [`references/loop.md`](references/loop.md).
 
-`AGENTS.md` holds the repo rules (spec gate, architecture, prohibitions) and wins on any conflict.
-This skill is the order of work. It cites those rules, not repeats them.
-
-**Conventions used below:**
+- **Precedence.** `AGENTS.md` holds the repo rules (spec gate, architecture, prohibitions) and wins on any conflict. This skill is the order of work; it cites those rules, not repeats them.
 - **`<you>`** is your agent label suffix: `claude`, `cursor`, `codex`, `antigravity` or `kc-bot`.
-- **`R=repos/KarmaCummunity/KC`** is the REST prefix.
-- **REST only.** Every GitHub call is `gh api` (REST), so it also works where GraphQL is blocked. If your runtime gives you GitHub tools instead of `gh`, do the same operation with them.
+- **`R=repos/KarmaCummunity/KC`.** GitHub calls are REST (`gh api`), so they also work where GraphQL is blocked. If your runtime gives GitHub tools instead of `gh`, do the same REST operation with them.
 
-## Token rules (apply in every phase)
+## Phase 0: Once per session
 
-1. **Find, then read.** `rg`/glob for the symbol, then read the matching line range. Never read a whole large file, a lockfile, generated types or a migration you do not change.
-2. **Spec by section, from `dev`.** Read through `node scripts/spec.mjs <domain|FR-ID>` (it reads `dev`, not your stale tree). Open `docs/spec/README.md` only for the index, then the one cited section. Never the whole book. For an FR-ID, check that the printed file has its `## FR-…` heading. If not, the reader picked a file that only mentions it (KC#2033), so read the domain file by name instead.
-3. **Narrow output.** Every `gh api` call ends in a `--jq` that keeps only the fields you need. Never dump an issue's full timeline.
-4. **Tail long output.** Pipe test and build output through `tail -n 80` or `grep -E "FAIL|Error|✗"`. For CI use `gh run view <id> --log-failed | tail -n 150`.
-5. **Targeted before full.** Run the tests for the package or file you touched while iterating; run the full gates once, before the push.
-6. **Read once.** Do not re-read a file you just edited, or a doc already summarized in this run.
-7. **Delegate sweeps.** If your runtime has subagents, send broad searches (many files or naming variants) to one and keep only its conclusion.
-8. **Lazy references.** Open a file under `references/` only when its phase starts.
-9. **Stop early.** A blocked task stops exploring at once (Phase 3, "Product questions").
+Read [`references/setup.md`](references/setup.md):
+1. Run its capability probe. It tells you which fallbacks apply: no Docker, no emulator, one branch per session, no `gh`.
+2. Read its permission tiers: what you may do alone, what needs the PM, and what you never do.
 
-## Phase 1: Pick and de-duplicate
+## Token rules (every phase)
 
-- **Given an issue number:** take it.
-- **Otherwise:** take the oldest issue at the highest priority (`priority:launch` > `P0` > … > `P3`, AGENTS.md §13). Two kinds of issue are not in the queue:
-  - **Untriaged:** an issue without a `priority:*` label.
-  - **Reserved for a person:** `human`, `maintainer-only` or an `owner:*` label (store consoles, credentials, releases).
-  - **Flagged as done or duplicate:** `possible-duplicate`, until the PM decides.
+1. **Helper first.** `node scripts/agent-task.mjs` does the queue and claim steps in one call each, with short output.
+2. **Find, then read.** `rg`/glob for the symbol, then read the matching line range. Never read a whole large file, a lockfile, generated types or a migration you do not change.
+3. **Spec by section, from `dev`.** Use `node scripts/spec.mjs <domain|FR-ID>`, never the whole book. For an FR-ID, check that the printed file has its `## FR-…` heading; if not, read the domain file by name.
+4. **Narrow and tail.** Every `gh api` call ends in a `--jq` that keeps only the needed fields. Pipe test and build output through `tail -n 80` or `grep -E "FAIL|Error|✗"`; for CI, read only the failed job's log.
+5. **Targeted before full.** Run the touched package's or file's tests while iterating; run the full gates once, before the push.
+6. **Read once, delegate sweeps.** Do not re-read what you just edited or already summarized. Send broad searches to a subagent if you have one, and keep only its conclusion.
+7. **Lazy references.** Open a `references/` file only when its phase starts.
+8. **Stop early.** A blocked task stops exploring at once.
 
-  The project board's Agent queue mirrors these labels; reading the board needs a token with project scope, labels do not.
+## Phase 1: Pick
 
-  ```bash
-  for p in launch P0 P1 P2 P3; do
-    out=$(gh api -X GET search/issues -f sort=created -f order=asc -f per_page=5 --jq '.items[] | "#\(.number) \(.title)"' \
-      -f q="repo:KarmaCummunity/KC is:issue is:open label:priority:$p -label:in-progress -label:blocked -label:needs-triage -label:ops-alert -label:epic -label:human -label:maintainer-only -label:owner:nave -label:possible-duplicate")
-    if [ -n "$out" ]; then echo "priority:$p"; echo "$out"; break; fi
-  done
-  ```
+- **Given an issue:** run `node scripts/agent-task.mjs check <N>`.
+- **Otherwise:** run `node scripts/agent-task.mjs next` and take the first row; it applies the queue rules (priority order, nothing claimed, blocked, untriaged, epic or reserved for a person). Then run `check` on it.
 
-Before claiming, the issue must pass four checks. Any failure: skip it and take the next row.
+`check` prints `claimable`, similar open issues and merged PRs. Skip the issue when any of these holds:
 
-0. **You can finish it here.** Acceptance criteria that only a person can verify (a physical device, TestFlight or Play internal, a store console, a credential, a contract) are not agent work. Add `human` and a one-line comment naming what needs a person (`gh api -X POST $R/issues/<N>/labels -f 'labels[]=human'`). The queue then skips the issue for every agent.
-
-1. **Not claimed.** It has no `in-progress` label, or the claim is stale ([ISSUE_CLAIMS](../../../docs/agents/ISSUE_CLAIMS.md)).
-2. **No open PR.**
-
-   ```bash
-   gh api -X GET search/issues -f q="repo:KarmaCummunity/KC is:pr is:open <N> in:body" --jq '.items[] | "#\(.number) \(.title)"'
-   ```
-
-3. **Not a duplicate.** Search 2-3 distinctive keywords from the title, in issues and in merged PRs:
-
-   ```bash
-   gh api -X GET search/issues -f per_page=8 -f q="repo:KarmaCummunity/KC is:issue <keywords> in:title,body" --jq '.items[] | "#\(.number) [\(.state)] \(.title)"'
-   gh api -X GET search/issues -f per_page=5 -f q="repo:KarmaCummunity/KC is:pr is:merged <keywords>" --jq '.items[] | "#\(.number) \(.title)"'
-   ```
-
-   - **Already done by a merged PR:** comment with the link, add `possible-duplicate`, and skip. Only the PM closes it.
-   - **Overlaps an open issue:** comment on both, add `possible-duplicate`, and skip.
+| Finding | Action |
+|---|---|
+| `claimable` is not `yes` | Take the next row. |
+| A merged PR already did it | Comment the link, add `possible-duplicate`, take the next row. Only the PM closes it. |
+| An open issue covers the same work | Comment on both, add `possible-duplicate`, take the next row. |
+| A similar issue or PR, but its acceptance criteria differ | Not a duplicate: go on, and cite it in the PR's Summary. |
+| Every acceptance criterion needs a person (device, store, credential, contract) | Comment why, add `needs-triage`, take the next row. Partly person-only is not a skip: Phase 3 splits it. |
 
 ## Phase 2: Claim
 
 ```bash
-gh api -X POST $R/issues/<N>/labels -f 'labels[]=in-progress' -f 'labels[]=agent:<you>' --jq 'map(.name)'
-gh api -X POST $R/issues/<N>/comments -f body="claimed by agent:<you>" --jq .html_url
-gh api $R/issues/<N>/comments --jq '[.[] | select(.body | startswith("claimed by")) | {a:.user.login, b:.body, t:.created_at}] | .[-3:]'
+node scripts/agent-task.mjs claim <N> --agent <you>
 ```
 
-- **Race.** If another claim landed at the same time, the earlier comment wins. The loser removes its labels (`gh api -X DELETE $R/issues/<N>/labels/<label>`), comments `released: lost claim race`, and returns to Phase 1.
-- **Board.** If your token can write the project, set Status = In progress. Otherwise the labels carry the state.
-- **Stale sweep.** A claim with no open PR for 6 hours is swept. On long work, open the PR as soon as the first green commit exists (Phase 8), then keep pushing to it.
+| Output | Meaning |
+|---|---|
+| `WON` | Go on. |
+| `LOST` or `SKIP` (exit code 3) | Another session holds it (the helper already backed off); go back to Phase 1. |
 
-## Phase 3: Define the task
+A claim with no open PR for 6 hours is swept. On long work, open the PR as soon as a first green commit exists.
 
-Read [`references/define-and-label.md`](references/define-and-label.md).
+## Phase 3: Define
 
-1. **Read** the issue (`gh api $R/issues/<N> --jq '{title, body, labels: [.labels[].name]}'`), its spec ref and the cited spec section (`node scripts/spec.mjs <domain|FR-ID>`). Run `node scripts/spec.mjs --changed` once: if a file you rely on moved on `dev`, merge `origin/dev` first.
-2. **Run the spec validation gate** (AGENTS.md §2) and sort every gap into one of two classes:
-   - **Technical gap: fill it.** Missing acceptance criteria derivable from the spec, a test plan, likely files, missing labels. Add a `### Filled in by agent:<you>` section to the issue body, so the PM sees what was added.
-   - **Product question: stop.** The task contradicts the spec, the spec is silent on behavior a user will see, or two reasonable readings give users different behavior.
-     - **The PM is in your conversation:** ask now, in Hebrew, in the AGENTS.md §2 format, with options and a recommendation. Continue on the answer, and write it into the spec (AGENTS.md working rule 7).
-     - **Nobody to ask (autonomous run):** follow "Blocked" in the reference, then return to Phase 1 for another issue.
-3. **Label** the issue to the taxonomy in the reference: one type, at least one `area:*`, one `priority:*` and one `size:*`.
+Read [`references/define-and-label.md`](references/define-and-label.md). Read [`references/task-types.md`](references/task-types.md) too, unless the issue is a plain feature or bug whose every acceptance criterion CI can prove.
 
-## Phase 4: Plan and test matrix
+1. **Read** the issue (`gh api $R/issues/<N> --jq '{title, body}'`), its spec ref and that spec section. Run `node scripts/spec.mjs --changed` once; if a file you rely on moved on `dev`, merge `origin/dev` first.
+2. **Spec gate** (AGENTS.md §2). Sort every gap into one of two classes:
+   - **Technical gap: fill it** in a `### Filled in by agent:<you>` section of the issue.
+   - **Product question: never decide it.** A feature with no spec section at all is one (AGENTS.md §2.4).
+     - **PM in your conversation:** ask in Hebrew, with options and a recommendation, and write the answer into the spec.
+     - **Otherwise:** release as blocked, then go to Phase 1.
+3. **Split by who can verify.** Acceptance criteria only a person can verify move to a new `verification` issue (template in `task-types.md`). This issue keeps what CI proves and closes on merge.
+4. **Size and labels.** `XL` becomes an epic with children: release the parent's claim, then `claim` the first child. Label the issue to the taxonomy (type, area, priority, size).
+
+## Phase 4: Plan and branch
 
 Read [`references/testing-matrix.md`](references/testing-matrix.md).
 
-1. **Plan.** List the files you will change and the test levels the change requires. A bug always starts with a regression test that fails before the fix.
-2. **Branch** from fresh `dev`:
-
-   ```bash
-   git fetch origin dev && git switch -c <type>/<N>-<area>-<slug> origin/dev
-   ```
-
-   If your runtime assigns a branch name, use that name, still based on `origin/dev`. If that branch already carried a PR that merged, recreate it from `origin/dev` (`git checkout -B <branch> origin/dev`); never stack new work on merged history.
-3. **Migrations.** Writing SQL? Claim a migration range first ([MIGRATION_RANGES](../../../docs/agents/MIGRATION_RANGES.md)).
+1. **Plan.** List the files you will change and the test levels the change needs. A bug starts with a regression test that fails before the fix.
+2. **Branch.** `git fetch origin dev && git switch -c <type>/<N>-<area>-<slug> origin/dev`.
+   - **Runtime-assigned branch:** use its name, still based on `origin/dev`.
+   - **Its PR already merged:** if the branch exists on `origin`, `git switch <branch> && git merge origin/dev` (no force push needed); otherwise `git checkout -B <branch> origin/dev`.
+3. **SQL.** A new migration is `supabase/migrations/next-NN_slug.sql`; the number is assigned on merge. Never write a number anywhere.
 
 ## Phase 5: Implement test-first
 
-- **Order.** Write the failing test, watch it fail for the right reason, implement, watch it pass. If the code came first, prove the test anyway: `git stash push <implementation files>`, run the test and see it fail, then `git stash pop`.
-- **Layers.** Keep the Clean Architecture invariants and the hard caps (AGENTS.md §5): files ≤ 300 lines, nesting ≤ 3 levels, typed domain errors, no speculative abstractions.
-- **Names.** Use product language from `docs/spec/94_glossary_and_naming.md`. Never a bare `categories`.
-- **Copy.** User-visible strings go in the locale files, never inline.
-- **Comments.** Add English comments on every new feature, exported function and complex line. Say why, not what.
-- **Commits.** Small atomic Conventional Commits (AGENTS.md §6), each referencing `#<N>`.
-- **Docs.** Update the spec in the same change (AGENTS.md §4): `docs/spec/**` and the status header of `docs/spec/requirements/<domain>.md`. Decisions go to `docs/SSOT/DECISIONS.md`. New registry entries use `{{KEY:slug}}` placeholders, never a number. Tech debt is a `tech-debt` issue, never a doc row.
+- **Order.** Failing test first, then the code, then the test passes. If the code came first, `git stash push -u -- <implementation files>`, watch the test fail, then `git stash pop`.
+- **Rules.** AGENTS.md §5 (layers, caps, errors) and §1 working rules (glossary names, locale-only copy). Comments in English on every new feature, exported function and complex line; say why, not what.
+- **Commits.** Small Conventional Commits (AGENTS.md §6), each referencing `#<N>`.
+- **Docs in the same change.** `docs/spec/**` and the status header of `docs/spec/requirements/<domain>.md`. New registry entries take a `{{KEY:slug}}` placeholder, never a number; KEY is `ENG` in `docs/SSOT/DECISIONS.md` and `D` in `docs/spec/90_decisions_log.md` (AGENTS.md §4 lists all four). Tech debt becomes a `tech-debt` issue.
 
 ## Phase 6: Findings outside the scope
 
-Something outside the issue that deserves work: a bug, a suspicious behavior, a flaky test, dead code, a doc that contradicts the code, tech debt. **Do not fix it inline.** Read [`references/findings.md`](references/findings.md), de-duplicate, and open or extend one well-defined issue. It waits for the PM's triage (`needs-triage`).
-
-**Security findings are never described in public text.** See the reference.
+A bug, suspicious behavior, flaky test, dead code, or a doc that contradicts the code: **do not fix it inline.** Follow [`references/findings.md`](references/findings.md) to de-duplicate and open or extend one issue, which waits for the PM (`needs-triage`). **Never describe a security finding in public text.**
 
 ## Phase 7: Verify locally
 
-From `app/`:
-
 ```bash
-pnpm typecheck 2>&1 | tail -n 40
-pnpm test 2>&1 | tail -n 80
-pnpm lint 2>&1 | tail -n 40
+set -o pipefail; cd app && pnpm typecheck 2>&1 | tail -n 40 && pnpm test 2>&1 | tail -n 80 && pnpm lint 2>&1 | tail -n 40
 ```
 
-Run every other level from the matrix that the change touches. Never push red. Never skip, weaken or `.skip` a test to get green; the test-integrity judge in CI rejects it anyway.
+Run every other level the testing matrix requires, or name it as CI-only when Phase 0 found no local stack or emulator. Never push red. Never skip, weaken or `.skip` a test.
 
 ## Phase 8: Open the PR
 
 ```bash
 git push -u origin HEAD
-gh api -X POST $R/pulls -f base=dev -f head="$(git branch --show-current)" \
-  -f title="<type>(<scope>): <subject>" -F body=@<body-file> --jq '.number'
+gh api -X POST $R/pulls -f base=dev -f head="$(git branch --show-current)" -f title="<type>(<scope>): <subject>" -F body=@<file> --jq .number
 gh api -X POST $R/issues/<PR>/labels -f 'labels[]=agent:<you>' --jq 'map(.name)'
 ```
 
 - **Body.** Fill every section of `.github/PULL_REQUEST_TEMPLATE.md`:
-  - `Opened by: agent:<you>`.
-  - `Closes #<N>`, or `Refs #<N>` if the PR does not finish the issue.
-  - `Mapped to spec` with the section, D# or G#.
-  - The test levels run and their results.
-  - `Findings opened: #a, #b` (or `none`).
-- **Ready, not draft.** Open the PR ready, unless the PM asked for a draft. `auto-merge-agent-ready.yml` arms squash auto-merge on every ready PR into `dev`. Confirm with `gh api $R/pulls/<PR> --jq .auto_merge` a few minutes later. If it is still `null`, arm it with `gh pr merge <PR> --auto --squash` or your runtime's tool.
-- **Board.** If writable, set Status = In review.
+  - **Opened by:** `Opened by: agent:<you>`; leave the CLA box unticked (it is a person's statement).
+  - **Summary:** `Closes #<N>`, or `Refs #<N>` when work stays open.
+  - **Mapped to spec**, as the template asks.
+  - **Tests:** the levels run, and those left to CI.
+  - **Risk / rollout notes:** `Verification: #V` (or none) and `Findings opened: #a` (or none).
+- **Ready, not draft.** Auto-merge is armed for you (`auto-merge-agent-ready.yml`).
+- **Write the body once.** Editing a PR body re-runs CI and cancels the run in flight.
 
 ## Phase 9: Drive to merge, then close out
 
-- **Watching.** Claude Code: subscribe to the PR's activity and follow `.claude/skills/babysit/SKILL.md`. Other agents: wait on `CI gate`, with a pause of minutes between checks, never a tight loop:
+Follow [`references/ci-and-merge.md`](references/ci-and-merge.md): watching, red CI, conflicts and dequeues, and the close-out after the merge.
 
-  ```bash
-  gh api "$R/commits/$(git rev-parse HEAD)/check-runs?per_page=100" --jq '.check_runs[] | select(.name=="CI gate") | "\(.status) \(.conclusion)"'
-  ```
-
-- **Red `CI gate`.** Read only the failed lane's log, reproduce it locally, fix the cause and push. Up to 3 attempts per cause. After that, repair CI itself if CI is what's broken (AGENTS.md §13, step 7). After 2 more failures, take the blocker path.
-- **Conflict or dequeue.** Merge `origin/dev` into the branch (a merge commit; never rebase a pushed branch, since that needs a force push). Resolve each conflict so both sides' behavior survives, and add a test where the two meet. Re-run the gates, push, and re-arm auto-merge: a dequeue disarms it.
-- **Advisory checks that are the point of the PR.** Merging does not wait for advisory jobs such as `maestro · android emulator`. When the PR exists to fix or add what such a job runs (a Maestro flow), the work is done only when that job shows it passing on the PR's head; until then the issue stays claimed, even after the merge.
-- **Human review.** Answer or fix every review comment.
-- **Merged** (`gh api $R/pulls/<PR> --jq .merged`):
-  1. **The PR said `Closes #<N>`:** confirm the issue closed and the claim labels are gone. `close-issues-on-dev-merge.yml` and `issue-claims.yml` do this; if they did not, do it yourself.
-  2. **The PR said `Refs #<N>`:** the workflows leave the issue open and claimed. Remove `in-progress` and `agent:<you>` yourself, and comment what shipped plus a checklist of what still blocks closing.
-     - **Every remaining item waits on another issue or on a person:** also add `blocked`, and name the blocker in the comment ("blocked on #2020"). The queue then skips the issue until whoever clears the blocker removes the label.
-     - **Agent work is left in the issue itself:** leave it unblocked for the next agent.
-  3. Delete the local branch, or reset it to `origin/dev`, and report.
-
-## Final report (one block, then stop)
+## Final report (one block, then stop or continue the loop)
 
 ```
 #<N> <title> → PR <url> merged into dev (<sha>)
-Spec: <section / D# / G#>  ·  Tests: <levels added>  ·  Gates: green
-Filled in on the issue: <what, or none>
-Findings: #a <title>, #b <title> (or none)
-Follow-ups / risks: <one line or none>
+Spec: <section / D# / G#>  ·  Tests: <levels added; CI-only levels>  ·  Gates: green
+Filled in: <what, or none>  ·  Verification issue: <#V or none>
+Findings: #a, #b (or none)  ·  Follow-ups / risks: <one line or none>
 ```
 
-A blocked run reports instead: the issue, the exact question, your recommended answer, and the issue taken next (if any).
+A blocked run reports instead: the issue, the exact question, your recommended answer, and the next issue taken (if any).

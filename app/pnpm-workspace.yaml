@@ -1,4 +1,4 @@
 packages:
   - 'apps/*'
-  - 'apps/mobile/web-server'
+  - 'apps/mobile/web-edge'
   - 'packages/*'

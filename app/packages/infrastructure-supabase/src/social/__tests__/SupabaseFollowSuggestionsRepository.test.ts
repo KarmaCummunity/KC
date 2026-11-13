@@ -1,50 +1,38 @@
 import { describe, expect, it } from 'vitest';
-import type { SupabaseClient } from '@supabase/supabase-js';
+import { callsTo, createFakeClient } from '../../__tests__/fakeBaselineClient';
 import { SupabaseFollowSuggestionsRepository } from '../SupabaseFollowSuggestionsRepository';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+const ok = (data: unknown) => ({ data, error: null });
 
-function makeClient(
-  rpcImpl: (fn: string, args?: unknown) => Promise<{ data: unknown; error: { message: string } | null }>,
-): SupabaseClient<any> {
-  return { rpc: rpcImpl } as unknown as SupabaseClient<any>;
-}
-
+// M03 / M04 — migration 0031: suggestions and the completeness nudge are server reads again.
 describe('SupabaseFollowSuggestionsRepository', () => {
-  it('listSuggestions maps RPC rows', async () => {
-    const repo = new SupabaseFollowSuggestionsRepository(
-      makeClient(async () => ({
-        data: [
-          {
-            user_id: 'u1',
-            display_name: 'A',
-            share_handle: 'a',
-            avatar_url: null,
-            city_name: 'TLV',
-            followers_count: 4,
-            reason: 'mutual',
-          },
-        ],
-        error: null,
-      })),
-    );
-    const rows = await repo.listSuggestions(5);
-    expect(rows[0]?.userId).toBe('u1');
-    expect(rows[0]?.reason).toBe('mutual');
+  it('maps the suggestions and passes the limit', async () => {
+    const { client, calls } = createFakeClient({
+      rpc: {
+        rpc_follow_suggestions: ok([{
+          user_id: 'u2', display_name: 'Dana', share_handle: 'dana', avatar_url: null, city_name: 'Haifa',
+          followers_count: 4, reason: 'same_city', score: 4.6, verification_level: 2,
+        }]),
+      },
+    });
+    const rows = await new SupabaseFollowSuggestionsRepository(client as never).listSuggestions(20);
+    expect(rows).toEqual([{
+      userId: 'u2', displayName: 'Dana', shareHandle: 'dana', avatarUrl: null, cityName: 'Haifa',
+      followersCount: 4, reason: 'same_city', verificationLevel: 2,
+    }]);
+    expect(callsTo(calls, 'rpc_follow_suggestions')[0]?.args).toEqual({ p_limit: 20 });
   });
 
-  it('getProfileCompleteness maps fields', async () => {
-    const repo = new SupabaseFollowSuggestionsRepository(
-      makeClient(async () => ({
-        data: { score: 80, missing: ['avatar'], verified: true, showVerifiedBadge: false },
-        error: null,
-      })),
-    );
-    await expect(repo.getProfileCompleteness('u1')).resolves.toEqual({
-      score: 80,
-      missing: ['avatar'],
-      verified: true,
-      showVerifiedBadge: false,
+  it('reads the caller\'s completeness and tolerates a malformed answer', async () => {
+    const good = createFakeClient({
+      rpc: { rpc_profile_completeness: ok({ score: 60, missing: ['avatar', 7], verified: true, showVerifiedBadge: true }) },
+    });
+    expect(await new SupabaseFollowSuggestionsRepository(good.client as never).getProfileCompleteness()).toEqual({
+      score: 60, missing: ['avatar'], verified: true, showVerifiedBadge: true,
+    });
+    const bad = createFakeClient({ rpc: { rpc_profile_completeness: ok(null) } });
+    expect(await new SupabaseFollowSuggestionsRepository(bad.client as never).getProfileCompleteness()).toEqual({
+      score: 0, missing: [], verified: false, showVerifiedBadge: false,
     });
   });
 });

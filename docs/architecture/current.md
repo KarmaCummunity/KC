@@ -107,12 +107,12 @@ flowchart TB
     
     subgraph EdgeFunctions ["Supabase Edge Functions (Deno Runtime)"]
       FnNotify["dispatch-notification\nOutbox worker & push dispatcher"]
-      FnWhatsApp["whatsapp-webhook / sender / worker\nWhatsApp Cloud API bridge & intake bot"]
+      FnWhatsApp["whatsapp-webhook / sender\nWhatsApp Cloud API bridge & Pro agent"]
       FnTranslate["translate\nAI content translation worker"]
       FnMatching["match-rerank & embed-worker\nSemantic matching & vector embeddings"]
       FnRevenueCat["revenuecat-webhook\nPro entitlement sync handler"]
-      FnPayments["payments-webhook / receipts / subscriptions\nPayments intake, receipt generation, dunning"]
-      FnMaintenance["delete-account / strip-exif / thumbs / reconcile\nAccount anonymization & media storage maintenance"]
+      FnPayments["payments-webhook / subscriptions-charger\nPayments intake, standing-order charging"]
+      FnMaintenance["purge-deleted-accounts / strip-exif / thumbs / reconcile\nAccount purge after the grace period & media storage maintenance"]
       FnShared["_shared/\nObservability, CORS, serviceRoleGuard"]
     end
   end
@@ -211,7 +211,7 @@ Every external service listed below has been verified in code; unverified or hyp
 | **Expo Push Service** | Expo Application Services | `app/apps/mobile/src/lib/notifications/register.ts` (`expo-notifications`), `supabase/functions/dispatch-notification/expoPushClient.ts` | Remote push notification token registration on devices and backend notification delivery via `https://exp.host/--/api/v2/push/send`. |
 | **App Stores** | Apple App Store & Google Play Store | `.github/workflows/testflight-ios.yml`, `.github/workflows/play-internal.yml`, `.github/workflows/mobile-nightly.yml`, `app/apps/mobile/eas.json` | Binary distribution for internal testing and staging releases (TestFlight iOS, Google Play Console internal track) via Expo EAS. |
 | **Apple & Google Auth** | Apple ID & Google Identity | `app/apps/mobile/src/services/authComposition.ts` (`expo-apple-authentication`), Supabase Auth OAuth provider | Social sign-in and authentication identity verification for mobile and web users. |
-| **Meta WhatsApp Cloud API** | Meta Graph API | `supabase/functions/whatsapp-sender/`, `supabase/functions/whatsapp-webhook/`, `supabase/functions/whatsapp-intake-worker/`, `supabase/functions/_shared/whatsapp/meta.ts` (`https://graph.facebook.com`) | Inbound WhatsApp webhook processing, bot conversation intake, community message bridging, and outbound notifications. |
+| **Meta WhatsApp Cloud API** | Meta Graph API | `supabase/functions/whatsapp-sender/`, `supabase/functions/whatsapp-webhook/`, `supabase/functions/_shared/whatsapp/meta.ts` (`https://graph.facebook.com`) | Inbound WhatsApp webhook processing, bot conversation intake, community message bridging, and outbound notifications. |
 | **Google Gemini API** | Google Generative Language | `supabase/functions/match-rerank/handler.ts`, `supabase/functions/_shared/translation/gemini.ts`, `supabase/functions/_shared/whatsapp/agent/gemini.ts` | LLM inference for multilingual content translation, semantic match candidate re-ranking, and conversational WhatsApp intake parsing. |
 | **RevenueCat** | RevenueCat SDK & Webhook | `app/apps/mobile/src/services/purchases/revenuecat.ts` (`@revenuecat/purchases-js` / hybrid mappings), `supabase/functions/revenuecat-webhook/` | In-app subscription lifecycle management and synchronization of Pro tier status to the `public.user_entitlements` database table. |
 | **Cloudflare Pages** | Cloudflare Edge Hosting | `.github/workflows/deploy.yml` (`cloudflare/pages-action`), `docs/SSOT/ENVIRONMENTS.md` | Static web export hosting, preview deployments for pull requests, and edge delivery for web users (`dev.karma-community.pages.dev`). |
@@ -258,12 +258,12 @@ KC relies on two scheduling planes: database-level `pg_cron` jobs running direct
 ### Edge Functions (by purpose)
 | Area | Functions |
 |---|---|
-| Account & auth | `delete-account`, `mock-login` (dev) |
+| Account | `purge-deleted-accounts` (daily job `account_purge`; deletion itself is the `request_account_deletion` RPC) |
 | Notifications | `dispatch-notification` |
 | Matching | `embed-worker`, `match-rerank` |
 | Media | `strip-exif`, `backfill-image-thumbs`, `reconcile-storage-orphans` |
-| Money | `payments-webhook`, `receipts-issuer`, `subscriptions-charger`, `revenuecat-webhook`, `validate-donation-link` |
-| WhatsApp | `whatsapp-intake-worker`, `whatsapp-sender`, `whatsapp-webhook` |
+| Money | `payments-webhook`, `subscriptions-charger`, `revenuecat-webhook`, `validate-donation-link` |
+| WhatsApp | `whatsapp-sender`, `whatsapp-webhook` |
 | Research & i18n | `public-research-submit`, `rotate-research-salt`, `translate` |
 | Shared | `_shared/` |
 

@@ -122,6 +122,19 @@ describe('filterKit — ChipSelectRow', () => {
     );
     expect(screen.queryByTestId('chip-select-expand')).toBeNull();
   });
+
+  // Regression: the compact row's scroll area resolved to `flex: 0 0 0%` (zero width), hiding every chip.
+  it('lets the compact scroll area grow so the chips are not collapsed to zero width', () => {
+    render(
+      <ChipSelectRow testID="chip-select">
+        <span data-testid="chip-a">A</span>
+      </ChipSelectRow>,
+    );
+    const scrollArea = screen.getByTestId('chip-a').parentElement?.parentElement as HTMLElement;
+    const style = window.getComputedStyle(scrollArea);
+    expect(style.flexGrow).toBe('1');
+    expect(style.flexShrink).toBe('1');
+  });
 });
 
 describe('filterKit — FilterChipRow', () => {

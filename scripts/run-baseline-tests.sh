@@ -3,8 +3,8 @@
 #
 #   1. create an empty database on a LOCAL PostgreSQL server
 #   2. apply the Supabase shim (roles, `auth`, `extensions` — what the platform provides)
-#   3. apply supabase/baseline/0001_baseline.sql
-#   4. run every supabase/baseline/tests/*.sql and fail on any `not ok`
+#   3. apply supabase/migrations/NNNN_*.sql in order (0001_baseline.sql first)
+#   4. run every supabase/tests/*.sql and fail on any `not ok`
 #
 # The scratch database is dropped and recreated on every run, so the baseline is always
 # proven against an empty database — the state production starts from.
@@ -12,14 +12,21 @@
 # Usage: scripts/run-baseline-tests.sh [test.sql ...]   (no args = every test)
 # Env:   DB_URL — admin connection URI to a local server; when unset it is read from
 #        `supabase status`, so no credential ever lives in this repository.
+#        BASELINE_SCRATCH_DB — name of the scratch database (default kc_baseline_check);
+#        set it to run several checkouts against one server at the same time.
 set -euo pipefail
 shopt -s nullglob
 
 readonly ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-readonly BASELINE="$ROOT/supabase/baseline/0001_baseline.sql"
+readonly MIGRATIONS_DIR="$ROOT/supabase/migrations"
 readonly SHIM="$ROOT/supabase/baseline/local/supabase_shim.sql"
-readonly TESTS_DIR="$ROOT/supabase/baseline/tests"
-readonly SCRATCH_DB="kc_baseline_check"
+readonly TESTS_DIR="$ROOT/supabase/tests"
+readonly SCRATCH_DB="${BASELINE_SCRATCH_DB:-kc_baseline_check}"
+# The name is interpolated into DROP/CREATE DATABASE, so only a plain identifier is accepted.
+if [[ ! "$SCRATCH_DB" =~ ^[a-z_][a-z0-9_]{0,62}$ ]]; then
+  echo "run-baseline-tests: invalid BASELINE_SCRATCH_DB '$SCRATCH_DB'" >&2
+  exit 2
+fi
 
 if [[ -z "${DB_URL:-}" ]]; then
   DB_URL="$(supabase status -o env | sed -n 's/^DB_URL="\(.*\)"$/\1/p')"
@@ -62,9 +69,12 @@ run_sql() {
 echo "── Applying Supabase shim ──"
 run_sql "$SHIM"
 
-echo "── Applying baseline ──"
-# One transaction, as a migration runner applies it: a failing statement leaves nothing behind.
-psql "$SCRATCH_URL" -v ON_ERROR_STOP=1 -q --single-transaction -f "$BASELINE"
+echo "── Applying migrations (0001_baseline.sql, then any later ones; archive/ is history) ──"
+# One transaction per file, as a migration runner applies it: a failing statement leaves nothing behind.
+for migration in "$MIGRATIONS_DIR"/[0-9][0-9][0-9][0-9]_*.sql; do
+  echo "   $(basename "$migration")"
+  psql "$SCRATCH_URL" -v ON_ERROR_STOP=1 -q --single-transaction -f "$migration"
+done
 
 if (($# > 0)); then
   files=("$@")
@@ -87,5 +97,28 @@ done
 if ((failed)); then
   echo "run-baseline-tests: FAILED" >&2
   exit 1
+fi
+
+# The seed loaders (reference data, then content) apply on the baseline, change nothing the
+# second time, and leave what check.sql expects. Only in a full run: the tests above roll back,
+# so the scratch database is still empty here.
+if ((${#@} == 0)); then
+  echo "── Seed loaders (reference, content) ──"
+  seed_load() { # dir
+    (cd "$ROOT/supabase/seed/$1" && psql "$SCRATCH_URL" -v ON_ERROR_STOP=1 --single-transaction -qAt -f load.sql)
+  }
+  for dir in reference content; do
+    first="$(seed_load "$dir")"
+    second="$(seed_load "$dir")"
+    echo "$dir: first run" && echo "$first"
+    # Each result row is `table|rows_in_file|rows_changed`; a second run must change nothing.
+    if grep -E '^[a-z_]+\|' <<<"$second" | grep -Ev '\|0$' | grep -q .; then
+      echo "run-baseline-tests: the $dir seed is not idempotent; second run:" >&2
+      echo "$second" >&2
+      exit 1
+    fi
+  done
+  psql "$SCRATCH_URL" -v ON_ERROR_STOP=1 -q -f "$ROOT/supabase/seed/content/check.sql"
+  echo "seed loaders: ok"
 fi
 echo "run-baseline-tests: all baseline tests passed"

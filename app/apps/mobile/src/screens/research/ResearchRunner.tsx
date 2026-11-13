@@ -21,6 +21,7 @@ import { ResearchEndShareCard } from '../../components/research/ResearchEndShare
 import { ResearchQuestionPanel } from './ResearchQuestionPanel';
 import { SurveyIntroBlock } from './SurveyIntroBlock';
 import { useKeyboardVerticalOffset } from '../../lib/platform/useKeyboardVerticalOffset';
+import { resolveKeyboardAvoidingBehavior } from '../../lib/platform/keyboardVerticalOffset';
 import { FormScrollView } from '../../components/ui/FormScrollView';
 
 export type AnswerEntry = { rating: number | null; answerText: string | null };
@@ -107,7 +108,7 @@ export function ResearchRunner({
   return (
     <KeyboardAvoidingView
       style={styles.flex}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={resolveKeyboardAvoidingBehavior(Platform.OS)}
       keyboardVerticalOffset={keyboardOffset}
     >
       <FormScrollView

@@ -12,7 +12,6 @@ function repo(overrides: Partial<IDonationLinksRepository> = {}): IDonationLinks
     listByCategory: vi.fn(),
     addViaEdgeFunction: vi.fn(),
     updateViaEdgeFunction: vi.fn(),
-    softHide: vi.fn(),
     deleteById: vi.fn(),
     report: vi.fn(),
     listForReview: vi.fn(async () => []),

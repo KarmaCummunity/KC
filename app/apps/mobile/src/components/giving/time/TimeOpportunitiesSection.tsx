@@ -38,7 +38,7 @@ export function TimeOpportunitiesSection() {
   const [expanded, setExpanded] = useState(false);
   const opportunities = useQuery({
     queryKey: ['volunteer', 'browse'],
-    queryFn: () => volunteerUseCases.listOpportunities().execute(TIME_OPPORTUNITIES_LIMIT, 0),
+    queryFn: () => volunteerUseCases.listOpportunities().execute(TIME_OPPORTUNITIES_LIMIT),
     staleTime: 30_000,
   });
   const all = opportunities.data ?? [];

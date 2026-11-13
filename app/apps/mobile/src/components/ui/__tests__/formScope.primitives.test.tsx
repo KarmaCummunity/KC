@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// FR-RESP-006 AC24 — the shared primitives hand their forms the form scope, so a form needs no wiring.
+// FR-RESP-006 AC25 — the shared primitives hand their forms the form scope, so a form needs no wiring.
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import React from 'react';
 import { cleanup, render } from '@testing-library/react';

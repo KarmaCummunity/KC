@@ -6,7 +6,8 @@
 // The client already strips via JPEG re-encode (P0.4-FE); this is a
 // "defense-in-depth" pass for hostile or misconfigured clients.
 //
-// Triggered by pg_cron (migration 0080) daily at 02:30 UTC via net.http_post.
+// Started daily at 02:30 UTC by the database job `exif_strip`
+// (supabase/schemas/95_platform/900_job_registry.sql). Service role only.
 // Also accepts a manual POST with optional `{ "lookbackHours": N }` body.
 //
 // POST (body: optional JSON { lookbackHours?: number })

@@ -1,135 +1,122 @@
-// V2-ADMIN-TIME-10 — Supabase adapter for admin timesheets.
+// FR-ADMIN-033 — staff timesheets over the timesheet_* RPCs (supabase/migrations/0036).
+//
+// A member reports their own hours; the reporter's direct manager (or a super admin) decides
+// a submitted entry, and the server marks each row it may decide (`can_decide`). The list is
+// keyset-paged and its total comes from `timesheet_count` with the same filters.
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type {
-  ITimesheetsRepository, TimesheetListFilters, TimesheetUpsertInput,
-} from '@kc/application';
+import type { ITimesheetsRepository, TimesheetListFilters, TimesheetUpsertInput } from '@kc/application';
 import {
-  TimesheetError, type TimesheetEntry, type TimesheetPage,
+  TimesheetError,
   parseTimesheetStatus,
+  type TimesheetEntry,
+  type TimesheetErrorCode,
+  type TimesheetPage,
 } from '@kc/domain';
+import type { Database, Json } from '../database.types';
+import { toBackendUnavailable, type BackendErrorLike } from '../rpc/backendUnavailable';
+import type { CallResult } from '../rpc/mapRpcError';
+import { asRecord, date, decodeCursor, readPage, str } from './backOfficePaging';
 
-interface EntryRow {
-  entry_id: string;
-  user_id: string;
-  user_name: string | null;
-  work_date: string;
-  hours_x100: number | string;
-  project: string | null;
-  description: string | null;
-  status: string;
-  submitted_at: string | null;
-  approved_at: string | null;
-  approved_by: string | null;
-  approver_name: string | null;
-  approval_note: string | null;
-  created_at: string;
-  updated_at: string;
-  total_count: number | string;
+type Client = SupabaseClient<Database>;
+
+const DEFAULT_PAGE = 100;
+
+const KNOWN_ERRORS: ReadonlySet<string> = new Set<TimesheetErrorCode>([
+  'forbidden', 'invalid_status', 'invalid_hours', 'missing_required_fields', 'invalid_input', 'entry_not_found',
+]);
+
+function toError(err: BackendErrorLike): TimesheetError {
+  const message = err.message ?? '';
+  if (KNOWN_ERRORS.has(message)) return new TimesheetError(message as TimesheetErrorCode);
+  if (err.code === '42501') return new TimesheetError('forbidden');
+  return new TimesheetError('unknown', message || 'timesheet call failed');
 }
 
-function toError(err: { message?: string; code?: string } | null): TimesheetError {
-  const m = err?.message ?? '';
-  const map: Partial<Record<string, TimesheetError['code']>> = {
-    invalid_status: 'invalid_status',
-    invalid_hours: 'invalid_hours',
-    missing_required_fields: 'missing_required_fields',
-    entry_not_found: 'entry_not_found',
-  };
-  if (map[m]) return new TimesheetError(map[m]!);
-  if (err?.code === 'P0002') return new TimesheetError('entry_not_found');
-  if (err?.code === '42501') return new TimesheetError('forbidden');
-  return new TimesheetError('unknown', m);
+function unwrap<T>(rpc: string, result: CallResult<T>): T {
+  if (!result.error) return result.data;
+  throw toBackendUnavailable(`rpc:${rpc}`, result.error) ?? toError(result.error);
 }
 
-function toInt(v: number | string): number {
-  return typeof v === 'number' ? v : Number.parseInt(v, 10);
-}
-
-function mapRow(row: EntryRow): TimesheetEntry | null {
-  const status = parseTimesheetStatus(row.status);
-  if (status === null) return null;
+/** An entry record; null when it is not an object or its status is unknown. */
+export function mapTimesheetEntry(value: Json): TimesheetEntry | null {
+  const row = asRecord(value);
+  if (row === null) return null;
+  const entryId = str(row, 'entry_id');
+  const userId = str(row, 'user_id');
+  const workDate = str(row, 'work_date');
+  const status = parseTimesheetStatus(str(row, 'status'));
+  const createdAt = date(row, 'created_at');
+  const hours = row.hours_x100;
+  if (entryId === null || userId === null || workDate === null || status === null || createdAt === null
+      || typeof hours !== 'number') return null;
   return {
-    entryId:      row.entry_id,
-    userId:       row.user_id,
-    userName:     row.user_name,
-    workDate:     row.work_date.slice(0, 10),
-    hoursX100:    toInt(row.hours_x100),
-    project:      row.project,
-    description:  row.description,
+    entryId,
+    userId,
+    userName: str(row, 'user_name'),
+    workDate,
+    hoursX100: hours,
+    project: str(row, 'project'),
+    description: str(row, 'description'),
     status,
-    submittedAt:  row.submitted_at === null ? null : new Date(row.submitted_at),
-    approvedAt:   row.approved_at  === null ? null : new Date(row.approved_at),
-    approvedBy:   row.approved_by,
-    approverName: row.approver_name,
-    approvalNote: row.approval_note,
-    createdAt:    new Date(row.created_at),
-    updatedAt:    new Date(row.updated_at),
+    submittedAt: date(row, 'submitted_at'),
+    approvedAt: date(row, 'approved_at'),
+    approvedBy: str(row, 'approved_by'),
+    approverName: str(row, 'approver_name'),
+    approvalNote: str(row, 'approval_note'),
+    canDecide: row.can_decide === true,
+    createdAt,
+    updatedAt: date(row, 'updated_at') ?? createdAt,
   };
 }
 
-function totalOf(rows: readonly EntryRow[]): number {
-  if (rows.length === 0) return 0;
-  return toInt(rows[0]!.total_count);
-}
+/** `undefined` keeps a field (null for the RPC); `null` clears it (an empty string). */
+const patch = (value: string | null | undefined): string | undefined => (value === null ? '' : value);
 
 export class SupabaseTimesheetsRepository implements ITimesheetsRepository {
-  constructor(private readonly client: SupabaseClient) {}
+  constructor(private readonly client: Client) {}
 
   async list(filters: TimesheetListFilters): Promise<TimesheetPage> {
-    const { data, error } = await this.client.rpc('timesheet_list', {
-      p_user_id: filters.userId ?? null,
-      p_status:  filters.status ?? null,
-      p_from:    filters.fromDate ?? null,
-      p_to:      filters.toDate   ?? null,
-      p_limit:   filters.limit  ?? 100,
-      p_offset:  filters.offset ?? 0,
-    });
-    if (error) throw toError(error);
-    const raw = Array.isArray(data) ? (data as EntryRow[]) : [];
-    const rows: TimesheetEntry[] = [];
-    for (const r of raw) {
-      const m = mapRow(r);
-      if (m !== null) rows.push(m);
-    }
-    return { rows, totalCount: totalOf(raw) };
+    const limit = filters.limit ?? DEFAULT_PAGE;
+    const shared = {
+      p_scope: filters.scope ?? 'mine',
+      p_user_id: filters.userId,
+      p_status: filters.status,
+      p_from: filters.fromDate,
+      p_to: filters.toDate,
+    };
+    const [rows, total] = await Promise.all([
+      this.client.rpc('timesheet_list', { ...shared, p_limit: limit, p_cursor: decodeCursor(filters.cursor) ?? undefined }),
+      this.client.rpc('timesheet_count', shared),
+    ]);
+    const page = readPage(unwrap('timesheet_list', rows), limit, (row) => mapTimesheetEntry(row.entry));
+    return { ...page, totalCount: unwrap('timesheet_count', total) ?? 0 };
   }
 
   async upsert(input: TimesheetUpsertInput): Promise<string> {
-    const { data, error } = await this.client.rpc('timesheet_upsert', {
-      p_entry_id:   input.entryId ?? null,
-      p_work_date:  input.workDate ?? null,
-      p_hours_x100: input.hoursX100 ?? null,
-      p_project:    input.project ?? null,
-      p_description: input.description ?? null,
-    });
-    if (error) throw toError(error);
-    if (typeof data !== 'string') {
-      throw new TimesheetError('unknown', 'timesheet_upsert did not return an id');
-    }
-    return data;
+    const id = unwrap('timesheet_upsert', await this.client.rpc('timesheet_upsert', {
+      p_entry_id: input.entryId ?? undefined,
+      p_work_date: input.workDate,
+      p_hours_x100: input.hoursX100,
+      p_project: patch(input.project),
+      p_description: patch(input.description),
+    }));
+    if (typeof id !== 'string') throw new TimesheetError('unknown', 'timesheet_upsert returned no id');
+    return id;
   }
 
   async submit(entryId: string): Promise<void> {
-    const { error } = await this.client.rpc('timesheet_submit', { p_entry_id: entryId });
-    if (error) throw toError(error);
+    unwrap('timesheet_submit', await this.client.rpc('timesheet_submit', { p_entry_id: entryId }));
   }
 
   async approve(entryId: string, note?: string | null): Promise<void> {
-    const { error } = await this.client.rpc('timesheet_approve', {
-      p_entry_id: entryId, p_note: note ?? null,
-    });
-    if (error) throw toError(error);
+    unwrap('timesheet_approve', await this.client.rpc('timesheet_approve', { p_entry_id: entryId, p_note: note ?? undefined }));
   }
 
   async reject(entryId: string, note?: string | null): Promise<void> {
-    const { error } = await this.client.rpc('timesheet_reject', {
-      p_entry_id: entryId, p_note: note ?? null,
-    });
-    if (error) throw toError(error);
+    unwrap('timesheet_reject', await this.client.rpc('timesheet_reject', { p_entry_id: entryId, p_note: note ?? undefined }));
   }
 
   async delete(entryId: string): Promise<void> {
-    const { error } = await this.client.rpc('timesheet_delete', { p_entry_id: entryId });
-    if (error) throw toError(error);
+    unwrap('timesheet_delete', await this.client.rpc('timesheet_delete', { p_entry_id: entryId }));
   }
 }

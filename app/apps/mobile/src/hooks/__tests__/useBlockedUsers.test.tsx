@@ -6,6 +6,7 @@ import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { BackendUnavailableError } from '@kc/domain';
 
 const m = vi.hoisted(() => ({
   list: vi.fn(),
@@ -45,6 +46,21 @@ describe('useBlockedUsers', () => {
     m.list.mockResolvedValue([ROW]);
     const { result } = renderHook(() => useBlockedUsers(), { wrapper });
     await waitFor(() => expect(result.current.users).toEqual([ROW]));
+  });
+
+  it('degrades to an empty, flagged list when the backend lacks list_my_blocked_users', async () => {
+    m.list.mockRejectedValue(new BackendUnavailableError('rpc:list_my_blocked_users', 'function'));
+    const { result } = renderHook(() => useBlockedUsers(), { wrapper });
+    await waitFor(() => expect(result.current.unavailable).toBe(true));
+    expect(result.current.users).toEqual([]);
+    expect(result.current.isError).toBe(false);
+  });
+
+  it('still reports an unexpected failure as an error, not as an empty list', async () => {
+    m.list.mockRejectedValue(new Error('timeout'));
+    const { result } = renderHook(() => useBlockedUsers(), { wrapper });
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(result.current.unavailable).toBe(false);
   });
 
   it('unblocks after the confirm and tells the member', async () => {
