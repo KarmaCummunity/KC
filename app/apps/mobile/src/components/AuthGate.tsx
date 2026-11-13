@@ -10,10 +10,8 @@ import { useTranslation } from 'react-i18next';
 import { useRouter, useSegments, usePathname, type Href } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useQueryClient } from '@tanstack/react-query';
-import {
-  getRestoreSessionUseCase,
-  subscribeToSession,
-} from '../services/authComposition';
+import { subscribeToSession } from '../services/authComposition';
+import { restoreSessionReporting } from '../services/restoreSessionReporting';
 import { tryDevAutoSignIn } from '../services/devAutoSignIn';
 import { startColdStartSession } from '../services/coldStartSession';
 import { getDevGhostSession, isDevGhostSessionEnabled } from '../services/devGhostSession';
@@ -66,7 +64,7 @@ export function AuthGate({ children }: Readonly<{ children: React.ReactNode }>) 
 
     // Restore + subscription race handling lives in coldStartSession (TD-127).
     return startColdStartSession({
-      restore: async () => (await getRestoreSessionUseCase().execute()).session,
+      restore: restoreSessionReporting,
       subscribe: subscribeToSession,
       devFallback: tryDevAutoSignIn,
       setSession,
