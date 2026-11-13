@@ -29,6 +29,11 @@ KC (Karma Community) is built largely by AI agents. **Part A** is the quick entr
 
 `<type>/<issue#>-<area>-<slug>`: `type` ∈ `feat|fix|refactor|chore|docs|test|ci`, `area` ∈ `db|mobile|marketplace|bot|social|infra|docs`. Example: `feat/905-marketplace-map`. Always branch from `origin/dev`.
 
+## Token-saving tools (optional, local)
+
+- **Graphify** (`.claude/skills/graphify`): a code + SQL knowledge graph. Install once with `uv tool install "graphifyy[sql]"`, build with `graphify update .` (AST-only, no API cost), then answer "where does X live" with `graphify query|path|explain` before grepping. Output goes to `graphify-out/` (gitignored). The `.claude/settings.json` hooks are no-ops when the CLI is not installed.
+- **Ponytail** (`.claude/skills/ponytail`): "smallest complete change" discipline. It never overrides this file: tests, spec mapping, comment requirements and every rule below still apply.
+
 ## Scope rules
 
 - One issue per PR. Stay inside the issue's "files likely touched" and "out of scope" lists.
