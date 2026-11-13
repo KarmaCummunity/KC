@@ -107,3 +107,9 @@ describe('AdminPermission matrix', () => {
     expect(hasPermission(['super_admin'], 'whatsapp.manage')).toBe(true);
     expect(hasPermission(['support'], 'whatsapp.manage')).toBe(false);
   });
+
+  it('whatsapp.configure (send limits, template approval) is super admin only', () => {
+    expect(hasPermission(['super_admin'], 'whatsapp.configure')).toBe(true);
+    expect(hasPermission(['admin'], 'whatsapp.configure')).toBe(false);
+    expect(hasPermission(['moderator'], 'whatsapp.configure')).toBe(false);
+  });
