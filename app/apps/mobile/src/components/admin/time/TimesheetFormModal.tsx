@@ -1,6 +1,6 @@
 // V2-ADMIN-TIME-10 — modal for create/edit own timesheet draft.
 import { useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { View } from 'react-native';
 import { useMutation } from '@tanstack/react-query';
 import { isTimesheetError, type TimesheetEntry } from '@kc/domain';
 import { makeUseStyles, radius, spacing, Text, typography } from '@kc/ui';
@@ -9,6 +9,7 @@ import { AdminFormActions } from '../AdminFormActions';
 import { container } from '../../../lib/container';
 import { useLocaleBundle } from '../../../i18n/useLocaleBundle';
 import { formDecimalInputProps, formIsoDateInputProps } from '../../../lib/platform/formTextInputHints';
+import { FormScrollView } from '../../ui/FormScrollView';
 
 export interface TimesheetFormModalProps {
   readonly initial: TimesheetEntry | null;
@@ -52,7 +53,7 @@ export function TimesheetFormModal({ initial, onClose, onSaved }: TimesheetFormM
 
   return (
     <View style={styles.backdrop} pointerEvents="box-none">
-      <ScrollView style={styles.sheet} contentContainerStyle={styles.content}>
+      <FormScrollView style={styles.sheet} contentContainerStyle={styles.content}>
         <Text style={styles.title}>{isEdit ? t.form.editTitle : t.form.createTitle}</Text>
 
         <TextField label={t.form.workDateLabel} value={workDate} onChangeText={setWorkDate} {...formIsoDateInputProps} />
@@ -69,7 +70,7 @@ export function TimesheetFormModal({ initial, onClose, onSaved }: TimesheetFormM
           onSubmit={() => { void save.mutateAsync(); }}
           errorMsg={errorMsg}
         />
-      </ScrollView>
+      </FormScrollView>
     </View>
   );
 }

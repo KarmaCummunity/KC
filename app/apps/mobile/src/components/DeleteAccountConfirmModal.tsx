@@ -3,7 +3,7 @@
 // submitting and error_critical are non-dismissible (no tap-outside, no back, no ✕, no Escape).
 
 import React, { useCallback, useMemo, useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { DeleteAccountError } from '@kc/application';
 import { Text } from '@kc/ui';
@@ -11,6 +11,7 @@ import { useDeleteAccountConfirmModalStyles } from './DeleteAccountConfirmModal.
 import { DangerButton, SecondaryButton } from './ui/Buttons';
 import { Modal } from './ui/Modal';
 import { TextField } from './ui/TextField';
+import { FormScrollView } from './ui/FormScrollView';
 
 export type AccountStatusForDelete =
   | 'pending_verification'
@@ -126,7 +127,7 @@ export function DeleteAccountConfirmModal(props: DeleteAccountConfirmModalProps)
         <Text style={styles.body}>{t('settings.deleteAccountModal.blocked.body')}</Text>
       ) : (
         // Long copy: scroll it on short screens so the actions below stay in reach.
-        <ScrollView
+        <FormScrollView
           style={styles.scroll}
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
@@ -163,7 +164,7 @@ export function DeleteAccountConfirmModal(props: DeleteAccountConfirmModalProps)
             autoCapitalize="none"
             autoCorrect={false}
           />
-        </ScrollView>
+        </FormScrollView>
       )}
     </Modal>
   );

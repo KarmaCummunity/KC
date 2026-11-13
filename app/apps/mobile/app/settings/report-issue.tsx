@@ -14,7 +14,6 @@ import { NotifyModal } from '../../src/components/NotifyModal';
 import { rtlTextAlignStart } from '../../src/lib/rtlTextAlignStart';
 import { webTextRtl, webViewRtl } from '../../src/lib/webRtlStyle';
 import { useTranslation } from 'react-i18next';
-import { useFormFieldFocus } from '../../src/hooks/useFormFieldFocus';
 
 const CATEGORIES = ['Bug', 'Account', 'Suggestion', 'Other'] as const;
 const MAX_DESC = 500;
@@ -25,8 +24,6 @@ export default function ReportIssueScreen() {
   const { t } = useTranslation();
   const styles = useReportIssueScreenStyles();
   const { colors } = useTheme();
-  const fieldFocus = useFormFieldFocus(1);
-  const descField = fieldFocus.bindField(0);
   const [category, setCategory] = useState<string | null>(null);
   const [description, setDescription] = useState('');
   const [busy, setBusy] = useState(false);
@@ -66,13 +63,6 @@ export default function ReportIssueScreen() {
       <FormScreen
         edges={['bottom', 'left', 'right']}
         contentContainerStyle={{ ...styles.body, ...webViewRtl }}
-        keyboardAccessory={{
-          canGoPrev: fieldFocus.canGoPrev,
-          canGoNext: fieldFocus.canGoNext,
-          onPrev: fieldFocus.focusPrev,
-          onNext: fieldFocus.focusNext,
-          onDone: fieldFocus.dismiss,
-        }}
         footer={
           <PrimaryButton
             label={busy ? t('settings.reportIssueScreen.submitting') : t('settings.reportIssueScreen.submitBtn')}
@@ -109,7 +99,6 @@ export default function ReportIssueScreen() {
           </View>
 
           <TextField
-            ref={descField.ref}
             label={t('settings.reportIssueScreen.descriptionLabel')}
             style={styles.input}
             multiline
@@ -120,11 +109,6 @@ export default function ReportIssueScreen() {
             onChangeText={setDescription}
             textAlign={rtlTextAlignStart as 'left' | 'right'}
             maxLength={MAX_DESC}
-            onFocus={descField.onFocus}
-            inputAccessoryViewID={descField.inputAccessoryViewID}
-            returnKeyType={descField.returnKeyType}
-            blurOnSubmit={descField.blurOnSubmit}
-            onSubmitEditing={descField.onSubmitEditing}
           />
           <View style={styles.inputFooter}>
             {descTrimmed.length > 0 && descTrimmed.length < 10 ? (

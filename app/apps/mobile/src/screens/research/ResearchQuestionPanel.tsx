@@ -6,7 +6,6 @@ import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { makeUseStyles, spacing, radius, typography, useTheme, Text } from '@kc/ui';
 import { TextField } from '../../components/ui/TextField';
-import type { FormFieldFocusBindings } from '../../hooks/useFormFieldFocus';
 import type { SurveyQuestion } from '@kc/domain';
 import { SurveyRatingRow } from '../../components/survey/SurveyRatingRow';
 import { webTextRtl } from '../../lib/webRtlStyle';
@@ -29,9 +28,6 @@ type Props = {
   readonly contactWindowHe: string;
   readonly onContactEmail: (v: string) => void;
   readonly onContactWindow: (v: string) => void;
-  readonly textFieldFocus?: FormFieldFocusBindings;
-  readonly contactEmailFocus?: FormFieldFocusBindings;
-  readonly contactWindowFocus?: FormFieldFocusBindings;
 };
 
 export function ResearchQuestionPanel({
@@ -45,9 +41,6 @@ export function ResearchQuestionPanel({
   contactWindowHe,
   onContactEmail,
   onContactWindow,
-  textFieldFocus,
-  contactEmailFocus,
-  contactWindowFocus,
 }: Props) {
   const styles = usePanelStyles();
   const { colors } = useTheme();
@@ -73,7 +66,6 @@ export function ResearchQuestionPanel({
       />
 
       <TextField
-        ref={textFieldFocus?.ref}
         label={t('research.textFieldLabel')}
         style={styles.textInput}
         value={answer.answerText ?? ''}
@@ -84,18 +76,12 @@ export function ResearchQuestionPanel({
         multiline
         maxLength={500}
         accessibilityLabel={question.textPlaceholderHe}
-        onFocus={textFieldFocus?.onFocus}
-        inputAccessoryViewID={textFieldFocus?.inputAccessoryViewID}
-        returnKeyType={textFieldFocus?.returnKeyType}
-        blurOnSubmit={textFieldFocus?.blurOnSubmit}
-        onSubmitEditing={textFieldFocus?.onSubmitEditing}
       />
 
       {isQ11 ? (
         <View style={styles.contactSection}>
           <Text style={styles.contactTitle}>{t('research.contactSectionTitle')}</Text>
           <TextField
-            ref={contactEmailFocus?.ref}
             label={t('research.contactEmailLabel')}
             style={typography.body}
             value={contactEmail}
@@ -106,14 +92,8 @@ export function ResearchQuestionPanel({
             maxLength={320}
             {...formEmailInputProps}
             accessibilityLabel={t('research.contactEmailLabel')}
-            onFocus={contactEmailFocus?.onFocus}
-            inputAccessoryViewID={contactEmailFocus?.inputAccessoryViewID}
-            returnKeyType={contactEmailFocus?.returnKeyType}
-            blurOnSubmit={contactEmailFocus?.blurOnSubmit}
-            onSubmitEditing={contactEmailFocus?.onSubmitEditing}
           />
           <TextField
-            ref={contactWindowFocus?.ref}
             label={t('research.contactWindowLabel')}
             style={typography.body}
             value={contactWindowHe}
@@ -123,11 +103,6 @@ export function ResearchQuestionPanel({
             textAlign={rtlTextAlignStart}
             maxLength={200}
             accessibilityLabel={t('research.contactWindowLabel')}
-            onFocus={contactWindowFocus?.onFocus}
-            inputAccessoryViewID={contactWindowFocus?.inputAccessoryViewID}
-            returnKeyType={contactWindowFocus?.returnKeyType}
-            blurOnSubmit={contactWindowFocus?.blurOnSubmit}
-            onSubmitEditing={contactWindowFocus?.onSubmitEditing}
           />
         </View>
       ) : null}

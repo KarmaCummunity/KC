@@ -28,8 +28,7 @@ export interface FormScopeFieldProps {
 }
 
 /**
- * Registers the field with the form scope (no-op outside one, or when the form wires its own
- * toolbar), reports its error state, and supplies the return-key / toolbar props.
+ * Registers the field with the form scope (no-op outside one), reports its error state, and supplies the return-key / toolbar props.
  * Call the returned `onFocus` / `onBlur` / `onSubmitEditing` from the input's handlers.
  */
 export function useFormScopeField({
@@ -40,12 +39,12 @@ export function useFormScopeField({
   multiline = false,
 }: ScopeFieldArgs): FormScopeFieldProps {
   const id = useId();
-  const found = useFormScopeContext();
-  const scope = found?.autoNavigation ? found : null;
+  const scope = useFormScopeContext();
   // The registry reads this lazily, so it always sees the latest render without re-registering.
   const editableRef = useRef(editable);
   editableRef.current = editable;
   const firstRender = useRef(true);
+  const hasNext = Boolean(scope?.multiField && scope.canGoNext);
   const register = scope?.register;
   const setInvalid = scope?.setInvalid;
 
@@ -69,9 +68,10 @@ export function useFormScopeField({
     onSubmitEditing: () => scope?.submitEditing(id),
     inputProps: scope
       ? {
-          inputAccessoryViewID: scope.accessoryId,
+          // Single-field forms (a lone search or note box) get no toolbar.
+          ...(scope.multiField ? { inputAccessoryViewID: scope.accessoryId } : {}),
           // A multiline field keeps its newline key; the keyboard toolbar still moves between fields.
-          ...(multiline ? {} : { returnKeyType: scope.canGoNext ? 'next' : 'done', blurOnSubmit: !scope.canGoNext }),
+          ...(multiline ? {} : { returnKeyType: hasNext ? 'next' : 'done', blurOnSubmit: !hasNext }),
         }
       : {},
   };

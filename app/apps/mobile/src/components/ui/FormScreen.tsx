@@ -4,7 +4,6 @@ import {
   Keyboard,
   KeyboardAvoidingView,
   Platform,
-  ScrollView,
   StyleSheet,
   View,
   type StyleProp,
@@ -17,8 +16,7 @@ import {
   shellTabBarHeightPx,
   useShellTabBarVisibility,
 } from '../../navigation/useShellTabBarVisibility';
-import { KeyboardFormAccessory, type KeyboardFormAccessoryProps } from './KeyboardFormAccessory';
-import { FormScopeContext, useFormScopeController } from './formScope';
+import { FormScope, FormScopeScrollView } from './FormScope';
 
 export interface FormScreenProps {
   readonly children: React.ReactNode;
@@ -28,11 +26,6 @@ export interface FormScreenProps {
   readonly headerless?: boolean;
   readonly headerHeight?: number;
   readonly contentContainerStyle?: StyleProp<ViewStyle>;
-  /**
-   * Hand-wired keyboard toolbar (`useFormFieldFocus`). Leave unset: fields then join the form scope
-   * and the toolbar, Next / Done keys and jump-to-problem-field work with no wiring.
-   */
-  readonly keyboardAccessory?: Omit<KeyboardFormAccessoryProps, 'nativeId'> & { nativeId?: string };
   readonly testID?: string;
   /** Inside an existing `Screen` — skip the outer SafeAreaView. */
   readonly embedded?: boolean;
@@ -50,13 +43,11 @@ export function FormScreen({
   headerless,
   headerHeight,
   contentContainerStyle,
-  keyboardAccessory,
   testID,
   embedded,
   tabBarFooterInset = true,
 }: FormScreenProps) {
   const styles = useFormScreenStyles();
-  const formScope = useFormScopeController(!keyboardAccessory);
   const keyboardOffset = useKeyboardVerticalOffset({ headerless, headerHeight });
   const tabBarVisible = useShellTabBarVisibility();
   const [keyboardOpen, setKeyboardOpen] = useState(false);
@@ -87,23 +78,21 @@ export function FormScreen({
 
   return (
     <Root {...rootProps}>
-      <FormScopeContext.Provider value={formScope.scope}>
+      <FormScope>
         <KeyboardAvoidingView
           style={styles.fill}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           keyboardVerticalOffset={keyboardOffset}
         >
           <View style={styles.fill}>
-            <ScrollView
-              {...formScope.scrollProps}
+            <FormScopeScrollView
               style={styles.fill}
               contentContainerStyle={scrollStyles}
               keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={false}
             >
               {children}
-            </ScrollView>
-            <KeyboardFormAccessory {...(keyboardAccessory ?? formScope.accessoryProps)} />
+            </FormScopeScrollView>
             {footer ? (
               <View
                 testID="form-screen-footer"
@@ -114,7 +103,7 @@ export function FormScreen({
             ) : null}
           </View>
         </KeyboardAvoidingView>
-      </FormScopeContext.Provider>
+      </FormScope>
     </Root>
   );
 }

@@ -1,7 +1,7 @@
 // Settings → feed: mute keywords, categories and people (0281/0283 feed_mute_filters),
 // plus quiet hours for social notifications (0256).
 import React, { useMemo, useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { Stack } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -26,6 +26,7 @@ import {
   isKeywordMuted,
   normalizeMuteKeyword,
 } from '../../src/lib/feedMuteFilters';
+import { FormScrollView } from '../../src/components/ui/FormScrollView';
 
 export default function FeedSettingsScreen() {
   const options = useShellStackScreenOptions();
@@ -74,7 +75,7 @@ export default function FeedSettingsScreen() {
           headerTitle: t('feedSettings.title'),
         }}
       />
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+      <FormScrollView style={styles.scroll} contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
         <Text style={styles.intro}>{t('feedSettings.intro')}</Text>
 
         <FeedSettingsWorldsSection
@@ -164,7 +165,7 @@ export default function FeedSettingsScreen() {
             onChange={(quietHours) => update({ quietHours })}
           />
         </FeedSettingsSection>
-      </ScrollView>
+      </FormScrollView>
     </>
   );
 }

@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { router } from 'expo-router';
 import {
-  ScrollView,
   View,
 } from 'react-native';
 import {
@@ -21,6 +20,7 @@ import { useCreateAdminTask } from '../../../src/hooks/useAdminTaskMutations';
 import { AssigneePicker } from '../../../src/components/admin/tasks/AssigneePicker';
 import { TaskCategoryPicker } from '../../../src/components/admin/tasks/TaskCategoryPicker';
 import { useLocaleBundle, type LocaleBundle } from '../../../src/i18n/useLocaleBundle';
+import { FormScrollView } from '../../../src/components/ui/FormScrollView';
 
 export default function NewTaskScreen() {
   const styles = useStyles();
@@ -79,7 +79,7 @@ export default function NewTaskScreen() {
   }
 
   return (
-    <ScrollView style={styles.root} contentContainerStyle={styles.content}>
+    <FormScrollView style={styles.root} contentContainerStyle={styles.content}>
       <Text style={styles.title}>{L.admin.tasks.form.newTitle}</Text>
 
       <TextField
@@ -143,7 +143,7 @@ export default function NewTaskScreen() {
             : null
         }
       />
-    </ScrollView>
+    </FormScrollView>
   );
 }
 

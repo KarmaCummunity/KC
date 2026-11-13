@@ -25,8 +25,7 @@ import { ListingFormPhotoPicker } from './ListingFormPhotoPicker';
 import { ListingKindChooser } from './ListingKindChooser';
 import { KindGate } from './ListingKindGate';
 import { TimeOfferKindChooser } from './TimeOfferKindChooser';
-import { formKeyboardAccessoryProps, useFormFieldFocus } from '../../hooks/useFormFieldFocus';
-import { KeyboardFormAccessory } from '../ui/KeyboardFormAccessory';
+import { FormScope } from '../ui/FormScope';
 
 const TITLE_MAX = 80;
 const SUMMARY_MAX = 500;
@@ -89,13 +88,6 @@ export function ListingCreateForm({
   const message = form.error?.message ?? null;
   const problemContext = useMemo(() => ({ invalidField, message, register }), [invalidField, message, register]);
   const titleProblem = invalidField === 'title' ? message : null;
-  const textFieldCount = form.isRides ? 1 : 2;
-  const fieldFocus = useFormFieldFocus(textFieldCount);
-  const titleField = useMemo(
-    () => (form.isRides ? null : fieldFocus.bindField(0)),
-    [fieldFocus, form.isRides],
-  );
-  const summaryField = fieldFocus.bindField(form.isRides ? 0 : 1);
 
   useEffect(() => {
     onPublishActionChange(() => void publishRef.current(), form.busy);
@@ -124,8 +116,7 @@ export function ListingCreateForm({
   }
 
   return (
-    <>
-      <KeyboardFormAccessory {...formKeyboardAccessoryProps(fieldFocus)} />
+    <FormScope>
     <ScrollView
       ref={scrollRef}
       style={styles.scroll}
@@ -162,7 +153,6 @@ export function ListingCreateForm({
           {form.isRides ? null : (
             <ListingFieldFrame field="title" outlined={false} style={styles.section}>
               <TextField
-                ref={titleField?.ref}
                 testID="listing-title"
                 label={`${t('post.title')} *`}
                 value={title}
@@ -171,11 +161,6 @@ export function ListingCreateForm({
                 maxLength={TITLE_MAX}
                 editable={!form.busy}
                 errorText={titleProblem ?? undefined}
-                onFocus={titleField?.onFocus}
-                inputAccessoryViewID={titleField?.inputAccessoryViewID}
-                returnKeyType={titleField?.returnKeyType}
-                blurOnSubmit={titleField?.blurOnSubmit}
-                onSubmitEditing={titleField?.onSubmitEditing}
               />
               <Text style={styles.charCount}>{title.length}/{TITLE_MAX}</Text>
             </ListingFieldFrame>
@@ -225,7 +210,6 @@ export function ListingCreateForm({
 
           <View style={styles.section}>
             <TextField
-              ref={summaryField.ref}
               testID="listing-summary"
               label={t('post.description')}
               value={summary}
@@ -236,11 +220,6 @@ export function ListingCreateForm({
               multiline
               maxLength={SUMMARY_MAX}
               editable={!form.busy}
-              onFocus={summaryField.onFocus}
-              inputAccessoryViewID={summaryField.inputAccessoryViewID}
-              returnKeyType={summaryField.returnKeyType}
-              blurOnSubmit={summaryField.blurOnSubmit}
-              onSubmitEditing={summaryField.onSubmitEditing}
             />
             <Text style={styles.charCount}>{summary.length}/{SUMMARY_MAX}</Text>
           </View>
@@ -287,6 +266,6 @@ export function ListingCreateForm({
       </ListingFieldProblemContext.Provider>
       </View>
     </ScrollView>
-    </>
+    </FormScope>
   );
 }

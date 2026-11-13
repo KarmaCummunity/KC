@@ -1,10 +1,10 @@
 // Mapped to spec: FR-RESP-006 — a drop-in `ScrollView` for forms that live inside a screen or modal
 // that is not a `FormScreen`. Its text fields get keyboard Next / Previous / Done, the right return
 // key, and a jump to the first field with a problem — with no per-field wiring.
-import React, { useEffect, useRef } from 'react';
-import { ScrollView, type ScrollViewProps } from 'react-native';
-import { KeyboardFormAccessory } from './KeyboardFormAccessory';
-import { FormScopeContext, useFormScopeController } from './formScope';
+import React, { useContext, useEffect, useRef } from 'react';
+import type { ScrollViewProps } from 'react-native';
+import { FormScope, FormScopeScrollView } from './FormScope';
+import { FormScopeContext } from './formScope';
 
 export interface FormScrollViewProps extends Omit<ScrollViewProps, 'onScroll' | 'scrollEventThrottle'> {
   readonly children: React.ReactNode;
@@ -16,20 +16,22 @@ export interface FormScrollViewProps extends Omit<ScrollViewProps, 'onScroll' | 
 }
 
 export function FormScrollView({ children, jumpToProblemSignal = 0, ...scrollProps }: FormScrollViewProps) {
-  const form = useFormScopeController();
-  const { scrollToFirstInvalid } = form;
-  const lastSignal = useRef(jumpToProblemSignal);
-  useEffect(() => {
-    if (lastSignal.current === jumpToProblemSignal) return;
-    lastSignal.current = jumpToProblemSignal;
-    scrollToFirstInvalid();
-  }, [jumpToProblemSignal, scrollToFirstInvalid]);
   return (
-    <FormScopeContext.Provider value={form.scope}>
-      <KeyboardFormAccessory {...form.accessoryProps} />
-      <ScrollView keyboardShouldPersistTaps="handled" {...scrollProps} {...form.scrollProps}>
-        {children}
-      </ScrollView>
-    </FormScopeContext.Provider>
+    <FormScope>
+      <JumpOnSignal signal={jumpToProblemSignal} />
+      <FormScopeScrollView {...scrollProps}>{children}</FormScopeScrollView>
+    </FormScope>
   );
+}
+
+/** Scrolls to the first problem field whenever `signal` changes (not on mount). */
+function JumpOnSignal({ signal }: { readonly signal: number }) {
+  const scrollToFirstInvalid = useContext(FormScopeContext)?.scrollToFirstInvalid;
+  const last = useRef(signal);
+  useEffect(() => {
+    if (last.current === signal) return;
+    last.current = signal;
+    scrollToFirstInvalid?.();
+  }, [signal, scrollToFirstInvalid]);
+  return null;
 }

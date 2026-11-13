@@ -79,8 +79,6 @@ export const errorsEn = {
     fieldPhoto: 'at least one photo',
     missingOne: 'Please fill in {{field}} before publishing',
     missingMany: 'Please fill in the following fields before publishing: {{fields}}',
-    missingTitleBeforePublish: 'Please fill in a title before publishing.',
-    missingPhotoBeforePublish: 'Please add at least one photo before publishing.',
     missingCityBeforePublish: 'Please choose a city before publishing.',
     missingStreetBeforePublish:
       'Please fill in a street before publishing. The feed usually shows only city and street — the display level is set under "Exposure settings".',

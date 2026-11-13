@@ -79,8 +79,6 @@ export const errorsHe = {
     fieldPhoto: 'לפחות תמונה אחת',
     missingOne: 'נא למלא את {{field}} לפני פרסום',
     missingMany: 'נא למלא את השדות הבאים לפני פרסום: {{fields}}',
-    missingTitleBeforePublish: 'נא למלא כותרת לפני פרסום.',
-    missingPhotoBeforePublish: 'נא להוסיף לפחות תמונה אחת לפני פרסום.',
     missingCityBeforePublish: 'נא לבחור עיר לפני פרסום.',
     missingStreetBeforePublish:
       'נא למלא רחוב לפני פרסום. בפיד מוצגים בדרך כלל עיר ורחוב בלבד — רמת התצוגה נקבעת ב«הגדרות חשיפה».',

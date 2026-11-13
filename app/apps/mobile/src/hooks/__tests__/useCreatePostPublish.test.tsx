@@ -86,8 +86,8 @@ describe('useCreatePostPublish', () => {
     expect(result.current.failedSubmitCount).toBe(0);
 
     act(() => result.current.tryPublish());
-    expect(result.current.titleInlineMessage).toBe('errors.createPost.missingTitleBeforePublish');
-    expect(result.current.photoInlineMessage).toBe('errors.createPost.missingPhotoBeforePublish');
+    expect(result.current.titleInlineMessage).toBe('createPostValidation.missingTitle');
+    expect(result.current.photoInlineMessage).toBe('createPostValidation.missingPhoto');
     expect(result.current.failedSubmitCount).toBe(1);
 
     // Same errors, second press: the counter still moves so the form scrolls to the problem again.

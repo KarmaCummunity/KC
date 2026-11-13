@@ -11,7 +11,6 @@ import { AnimatedAuthInput } from '../../src/components/auth/AnimatedAuthInput';
 import { usePasswordResetStyles } from '../../src/components/auth/passwordResetScreen.styles';
 import { AuthStatusScreen } from '../../src/components/auth/AuthStatusScreen';
 import { FormScreen, GhostButton, PrimaryButton } from '../../src/components/ui';
-import { useFormFieldFocus } from '../../src/hooks/useFormFieldFocus';
 import { formEmailInputProps } from '../../src/lib/platform/formTextInputHints';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
@@ -25,8 +24,6 @@ export default function ForgotPasswordScreen() {
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const fieldFocus = useFormFieldFocus(1);
-  const emailField = fieldFocus.bindField(0);
 
   const onSubmit = async () => {
     if (!email.trim()) {
@@ -64,13 +61,6 @@ export default function ForgotPasswordScreen() {
       headerless
       edges={['top', 'bottom']}
       contentContainerStyle={styles.content}
-      keyboardAccessory={{
-        canGoPrev: fieldFocus.canGoPrev,
-        canGoNext: fieldFocus.canGoNext,
-        onPrev: fieldFocus.focusPrev,
-        onNext: fieldFocus.focusNext,
-        onDone: fieldFocus.dismiss,
-      }}
       footer={
         <View style={{ gap: spacing.sm }}>
           <PrimaryButton
@@ -94,7 +84,6 @@ export default function ForgotPasswordScreen() {
       <Text style={styles.title}>{t('auth.forgotPasswordTitle')}</Text>
       <Text style={styles.body}>{t('auth.forgotPasswordBody')}</Text>
       <AnimatedAuthInput
-        ref={emailField.ref}
         testID="forgot-password-email"
         label={t('auth.email')}
         value={email}
@@ -102,11 +91,6 @@ export default function ForgotPasswordScreen() {
         placeholder={t('auth.emailPlaceholder')}
         editable={!loading}
         {...formEmailInputProps}
-        onFocus={emailField.onFocus}
-        inputAccessoryViewID={emailField.inputAccessoryViewID}
-        returnKeyType={emailField.returnKeyType}
-        blurOnSubmit={emailField.blurOnSubmit}
-        onSubmitEditing={emailField.onSubmitEditing}
       />
       {error ? <Text style={styles.error}>{error}</Text> : null}
     </FormScreen>

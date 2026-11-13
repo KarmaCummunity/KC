@@ -94,17 +94,4 @@ describe('FormScreen', () => {
     expect(getByText('common.formKeyboard.next')).toBeTruthy();
     expect(getByLabelText('Second').tagName).toBe('TEXTAREA');
   });
-
-  it('keeps hand-wired forms hands-off when keyboardAccessory is passed', () => {
-    const { getByLabelText } = render(
-      <ThemeProvider mode="light" systemScheme="light" setMode={() => {}}>
-        <FormScreen
-          keyboardAccessory={{ canGoPrev: false, canGoNext: false, onPrev: () => {}, onNext: () => {}, onDone: () => {} }}
-        >
-          <TextField label="Manual" returnKeyType="send" />
-        </FormScreen>
-      </ThemeProvider>,
-    );
-    expect(getByLabelText('Manual').getAttribute('enterkeyhint')).toBe('send');
-  });
 });

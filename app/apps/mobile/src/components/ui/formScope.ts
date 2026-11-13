@@ -36,11 +36,13 @@ export interface FormFieldHandle {
 }
 
 export interface FormScopeValue {
-  /** When false the form wires its own keyboard toolbar (legacy `useFormFieldFocus`), and fields stay hands-off. */
-  readonly autoNavigation: boolean;
   /** Whether a focusable field follows the focused one — drives the "next" vs "done" return key. */
   readonly canGoNext: boolean;
+  /** True once the form holds 2+ text fields: only then is there anything to navigate between. */
+  readonly multiField: boolean;
   readonly accessoryId: string;
+  /** Props for the form's `ScrollView`, so a nested scroller can adopt this scope. */
+  readonly scrollProps: FormScopeController['scrollProps'];
   register: (id: string, handle: FormFieldHandle) => () => void;
   notifyFocus: (id: string) => void;
   notifyBlur: (id: string) => void;
@@ -78,6 +80,8 @@ export interface FormScopeController {
   readonly accessoryProps: {
     readonly canGoPrev: boolean;
     readonly canGoNext: boolean;
+    /** Show the toolbar: a field of a multi-field form is focused. */
+    readonly visible: boolean;
     readonly onPrev: () => void;
     readonly onNext: () => void;
     readonly onDone: () => void;
@@ -118,7 +122,7 @@ function afterLayout(run: () => void): void {
   });
 }
 
-export function useFormScopeController(autoNavigation = true): FormScopeController {
+export function useFormScopeController(): FormScopeController {
   const scrollRef = useRef<ScrollView>(null);
   const scrollY = useRef(0);
   const fields = useRef(new Map<string, FormFieldHandle>());
@@ -126,6 +130,8 @@ export function useFormScopeController(autoNavigation = true): FormScopeControll
   const activeId = useRef<string | null>(null);
   const scrollPending = useRef(false);
   const [nav, setNav] = useState({ canGoPrev: false, canGoNext: true });
+  const [multiField, setMultiField] = useState(false);
+  const [hasActiveField, setHasActiveField] = useState(false);
 
   const refreshNav = useCallback(async () => {
     const id = activeId.current;
@@ -169,22 +175,27 @@ export function useFormScopeController(autoNavigation = true): FormScopeControll
 
   const register = useCallback((id: string, handle: FormFieldHandle) => {
     fields.current.set(id, handle);
+    setMultiField(fields.current.size > 1);
     return () => {
       fields.current.delete(id);
       invalidIds.current.delete(id);
+      setMultiField(fields.current.size > 1);
     };
   }, []);
 
   const notifyFocus = useCallback(
     (id: string) => {
       activeId.current = id;
+      setHasActiveField(true);
       void refreshNav();
     },
     [refreshNav],
   );
 
   const notifyBlur = useCallback((id: string) => {
-    if (activeId.current === id) activeId.current = null;
+    if (activeId.current !== id) return;
+    activeId.current = null;
+    setHasActiveField(false);
   }, []);
 
   const setInvalid = useCallback(
@@ -207,10 +218,16 @@ export function useFormScopeController(autoNavigation = true): FormScopeControll
     scrollY.current = event.nativeEvent.contentOffset.y;
   }, []);
 
+  const scrollProps = useMemo(
+    () => ({ ref: scrollRef, onScroll, scrollEventThrottle: SCROLL_EVENT_THROTTLE_MS }),
+    [onScroll],
+  );
+
   const scope = useMemo<FormScopeValue>(
     () => ({
-      autoNavigation,
       canGoNext: nav.canGoNext,
+      multiField,
+      scrollProps,
       accessoryId: KC_FORM_KEYBOARD_ACCESSORY_ID,
       register,
       notifyFocus,
@@ -219,15 +236,16 @@ export function useFormScopeController(autoNavigation = true): FormScopeControll
       scrollToFirstInvalid,
       submitEditing,
     }),
-    [autoNavigation, nav.canGoNext, register, notifyFocus, notifyBlur, setInvalid, scrollToFirstInvalid, submitEditing],
+    [nav.canGoNext, multiField, scrollProps, register, notifyFocus, notifyBlur, setInvalid, scrollToFirstInvalid, submitEditing],
   );
 
   return {
     scope,
-    scrollProps: { ref: scrollRef, onScroll, scrollEventThrottle: SCROLL_EVENT_THROTTLE_MS },
+    scrollProps,
     accessoryProps: {
       canGoPrev: nav.canGoPrev,
       canGoNext: nav.canGoNext,
+      visible: multiField && hasActiveField,
       onPrev: () => void move(-1),
       onNext: () => void move(1),
       onDone: Keyboard.dismiss,

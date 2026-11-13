@@ -1,6 +1,6 @@
 // V2-ADMIN-CRM-8 — bottom-sheet modal for create / edit CRM contact.
 import { useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { View } from 'react-native';
 import { useMutation } from '@tanstack/react-query';
 import {
   CRM_CONTACT_STATUSES, isCrmContactError,
@@ -13,6 +13,7 @@ import { AdminFormActions } from '../AdminFormActions';
 import { container } from '../../../lib/container';
 import { useLocaleBundle } from '../../../i18n/useLocaleBundle';
 import { formEmailInputProps, formPhoneInputProps } from '../../../lib/platform/formTextInputHints';
+import { FormScrollView } from '../../ui/FormScrollView';
 
 export interface ContactFormModalProps {
   readonly initial: CrmContact | null;
@@ -57,7 +58,7 @@ export function ContactFormModal({ initial, onClose, onSaved }: ContactFormModal
 
   return (
     <View style={styles.backdrop} pointerEvents="box-none">
-      <ScrollView style={styles.sheet} contentContainerStyle={styles.content}>
+      <FormScrollView style={styles.sheet} contentContainerStyle={styles.content}>
         <Text style={styles.title}>{isEdit ? t.form.editTitle : t.form.createTitle}</Text>
 
         <TextField label={t.form.nameLabel}         value={name}         onChangeText={setName} />
@@ -91,7 +92,7 @@ export function ContactFormModal({ initial, onClose, onSaved }: ContactFormModal
           onSubmit={() => { void save.mutateAsync(); }}
           errorMsg={errorMsg}
         />
-      </ScrollView>
+      </FormScrollView>
     </View>
   );
 }

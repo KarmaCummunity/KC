@@ -94,10 +94,10 @@ export function useCreatePostPublish(args: {
   const addressInlineMessage =
     validationTouched && addressIssue !== 'none' ? buildAddressInlineErrorMessage(addressIssue) : null;
   const titleInlineMessage =
-    validationTouched && fieldSnapshot.title.trim().length === 0 ? t('errors.createPost.missingTitleBeforePublish') : null;
+    validationTouched && fieldSnapshot.title.trim().length === 0 ? t('createPostValidation.missingTitle') : null;
   const photoInlineMessage =
     validationTouched && fieldSnapshot.isGive && fieldSnapshot.uploadsLength === 0
-      ? t('errors.createPost.missingPhotoBeforePublish')
+      ? t('createPostValidation.missingPhoto')
       : null;
 
   const publish = useMutation({
