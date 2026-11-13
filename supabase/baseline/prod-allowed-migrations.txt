@@ -53,3 +53,5 @@
 0056_whatsapp_admin_console.sql
 0057_whatsapp_match_alerts_and_jobs.sql
 0058_post_share_card.sql
+0059_whatsapp_bot_post_photos.sql
+0060_whatsapp_alert_quiet_hours_and_session_retention.sql
