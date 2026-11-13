@@ -2,8 +2,8 @@
 // housing, time). Rides drop the title (built from the route) and put the optional car photo
 // last (#1411). Same layout and controls as the items post form: header → photos → title
 // → category-specific fields → description → location → publish.
-import React, { useEffect, useMemo, useRef, type ReactNode } from 'react';
-import { ActivityIndicator, ScrollView, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { ActivityIndicator, TouchableOpacity, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { offerRequiresPhoto } from '@kc/domain';
 import { spacing, Text, useTheme } from '@kc/ui';
@@ -12,7 +12,6 @@ import { useCreatePostStyles } from '../../screens/tabs/create.styles';
 import { useShellTabBarScrollInset } from '../../navigation/useShellTabBarVisibility';
 import type { CreateDirection } from '../../lib/unifiedCreate/createCategories';
 import { useListingCreateForm } from '../../hooks/useListingCreateForm';
-import { useScrollToListingProblem } from '../../hooks/useScrollToListingProblem';
 import { visibleDetailSpecs } from '../../lib/unifiedCreate/listingFieldSpecs';
 import { inlineProblemField, renderedListingFields } from '../../lib/unifiedCreate/listingFormProblem';
 import { CityPicker } from '../CityPicker';
@@ -27,7 +26,8 @@ import { KindGate } from './ListingKindGate';
 import { TimeOfferKindChooser } from './TimeOfferKindChooser';
 import { OrgEventMembershipHint } from './OrgEventMembershipHint';
 import { EventRecurrenceSection } from './EventRecurrenceSection';
-import { FormScope } from '../ui/FormScope';
+import { FormScrollView } from '../ui/FormScrollView';
+import { FormSection } from '../ui/FormSection';
 
 const TITLE_MAX = 80;
 const SUMMARY_MAX = 500;
@@ -86,9 +86,13 @@ export function ListingCreateForm({
     showSubcategory: form.showSubcategory,
   });
   const invalidField = inlineProblemField(form.error, rendered);
-  const { scrollRef, contentRef, register, onScroll } = useScrollToListingProblem(form.error, invalidField);
   const message = form.error?.message ?? null;
-  const problemContext = useMemo(() => ({ invalidField, message, register }), [invalidField, message, register]);
+  const problemContext = useMemo(() => ({ invalidField, message }), [invalidField, message]);
+  // Every rejected publish scrolls to the first problem again, even when the same message is showing.
+  const [problemSignal, setProblemSignal] = useState(0);
+  useEffect(() => {
+    if (form.error) setProblemSignal((n) => n + 1);
+  }, [form.error]);
   const titleProblem = invalidField === 'title' ? message : null;
 
   useEffect(() => {
@@ -118,17 +122,12 @@ export function ListingCreateForm({
   }
 
   return (
-    <FormScope>
-    <ScrollView
-      ref={scrollRef}
+    <FormScrollView
       style={styles.scroll}
       contentContainerStyle={[styles.scrollContent, { paddingBottom: tabBarPad }]}
-      keyboardShouldPersistTaps="handled"
-      onScroll={onScroll}
-      scrollEventThrottle={16}
+      jumpToProblemSignal={problemSignal}
       testID="listing-create-form"
     >
-      <View ref={contentRef} collapsable={false}>
       {header}
       <ListingFieldProblemContext.Provider value={problemContext}>
         <KindGate
@@ -233,11 +232,8 @@ export function ListingCreateForm({
             <ListingFieldFrame
               field="city"
               style={styles.section}
-              label={
-                <Text style={styles.sectionLabel}>
-                  {t('post.unifiedCreate.cityLabel')} <Text style={styles.required}>*</Text>
-                </Text>
-              }
+              label={t('post.unifiedCreate.cityLabel')}
+              required
             >
               <CityPicker value={form.city} onChange={form.setCity} disabled={form.busy} />
             </ListingFieldFrame>
@@ -245,9 +241,9 @@ export function ListingCreateForm({
 
           {/* Only problems no section owns (server errors) sit above Publish. */}
           {form.error && !invalidField ? (
-            <Text style={styles.sectionHint} accessibilityRole="alert" testID="listing-error">
-              {form.error.message}
-            </Text>
+            <FormSection error={form.error.message} outlined={false} errorTestID="listing-error">
+              {null}
+            </FormSection>
           ) : null}
 
           <TouchableOpacity
@@ -266,8 +262,6 @@ export function ListingCreateForm({
           </TouchableOpacity>
         </KindGate>
       </ListingFieldProblemContext.Provider>
-      </View>
-    </ScrollView>
-    </FormScope>
+    </FormScrollView>
   );
 }

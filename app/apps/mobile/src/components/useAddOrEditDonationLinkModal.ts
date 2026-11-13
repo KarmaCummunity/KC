@@ -31,6 +31,10 @@ export function useAddOrEditDonationLinkModal({
   const [desc, setDesc] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [errorKey, setErrorKey] = useState<string | null>(null);
+  // True once a submit was rejected for an invalid field; from then on the gaps show next to their fields.
+  const [attempted, setAttempted] = useState(false);
+  // Counts rejected submits so the form jumps to the first problem again each time.
+  const [failedSubmitCount, setFailedSubmitCount] = useState(0);
 
   const valid = useMemo(() => {
     if (!DONATION_LINK_URL_PATTERN.test(url.trim())) return false;
@@ -39,6 +43,17 @@ export function useAddOrEditDonationLinkModal({
     if (desc.trim().length > DONATION_LINK_DESCRIPTION_MAX) return false;
     return true;
   }, [url, name, desc]);
+
+  /** Which fields are wrong, by i18n key; empty until a submit was rejected. */
+  const fieldErrors = useMemo(() => {
+    if (!attempted) return {};
+    const n = name.trim();
+    return {
+      url: DONATION_LINK_URL_PATTERN.test(url.trim()) ? undefined : 'linkUrlInvalid',
+      name: n.length >= 2 && n.length <= DONATION_LINK_DISPLAY_NAME_MAX ? undefined : 'linkNameShort',
+      desc: desc.trim().length <= DONATION_LINK_DESCRIPTION_MAX ? undefined : 'linkDescriptionTooLong',
+    } as const;
+  }, [attempted, url, name, desc]);
 
   const isEdit = editingLink !== null;
 
@@ -54,6 +69,7 @@ export function useAddOrEditDonationLinkModal({
       setDesc('');
     }
     setErrorKey(null);
+    setAttempted(false);
   }, [visible, editingLink]);
 
   const reset = useCallback(() => {
@@ -61,6 +77,7 @@ export function useAddOrEditDonationLinkModal({
     setName('');
     setDesc('');
     setErrorKey(null);
+    setAttempted(false);
     setSubmitting(false);
   }, []);
 
@@ -71,7 +88,12 @@ export function useAddOrEditDonationLinkModal({
   }, [submitting, reset, onClose]);
 
   const submit = useCallback(async () => {
-    if (!valid || submitting) return;
+    if (submitting) return;
+    if (!valid) {
+      setAttempted(true);
+      setFailedSubmitCount((count) => count + 1);
+      return;
+    }
     setSubmitting(true);
     setErrorKey(null);
     try {
@@ -122,6 +144,8 @@ export function useAddOrEditDonationLinkModal({
     desc,
     setDesc,
     valid,
+    fieldErrors,
+    failedSubmitCount,
     isEdit,
     submitting,
     errorKey,

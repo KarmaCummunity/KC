@@ -211,16 +211,18 @@ describe('AddDonationLinkModal', () => {
     return handlers;
   }
 
-  it('keeps submit disabled until the form is valid, then adds the link', async () => {
+  it('explains an invalid form on submit, then adds the link once it is valid', async () => {
     const { onAdded, onClose } = renderForm();
     expect(screen.getByRole('dialog', { name: 'donations.addLinkModal.title' })).toBeTruthy();
     const submit = screen.getByRole('button', { name: 'donations.addLinkModal.submit' });
-    expect(submit.getAttribute('aria-disabled')).toBe('true');
-    fireEvent.change(screen.getByLabelText('donations.addLinkModal.urlLabel'), {
+    fireEvent.click(submit);
+    await flush();
+    expect(screen.getByText('createPostValidation.linkUrlInvalid')).toBeTruthy();
+    expect(container.addDonationLink.execute).not.toHaveBeenCalled();
+    fireEvent.change(screen.getByLabelText(/^donations.addLinkModal.urlLabel/), {
       target: { value: 'https://example.org' },
     });
-    fireEvent.change(screen.getByLabelText('donations.addLinkModal.nameLabel'), { target: { value: 'Food bank' } });
-    expect(submit.getAttribute('aria-disabled')).not.toBe('true');
+    fireEvent.change(screen.getByLabelText(/^donations.addLinkModal.nameLabel/), { target: { value: 'Food bank' } });
     fireEvent.click(submit);
     await flush();
     expect(container.addDonationLink.execute).toHaveBeenCalledWith(

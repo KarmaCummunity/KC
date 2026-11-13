@@ -19,7 +19,7 @@ interface Props {
 
 export function AddDonationLinkModal(props: Readonly<Props>) {
   const { t } = useTranslation();
-  const { url, setUrl, name, setName, desc, setDesc, valid, isEdit, submitting, errorKey, handleClose, submit } =
+  const { url, setUrl, name, setName, desc, setDesc, fieldErrors, isEdit, submitting, errorKey, handleClose, submit } =
     useAddOrEditDonationLinkModal(props);
 
   const submitLabel = isEdit ? t('donations.addLinkModal.save') : t('donations.addLinkModal.submit');
@@ -36,7 +36,7 @@ export function AddDonationLinkModal(props: Readonly<Props>) {
             size="md"
             fullWidth
             onPress={() => void submit()}
-            disabled={!valid || submitting}
+            disabled={submitting}
           />
           <GhostButton
             label={t('donations.addLinkModal.cancel')}
@@ -58,6 +58,7 @@ export function AddDonationLinkModal(props: Readonly<Props>) {
         isEdit={isEdit}
         submitting={submitting}
         errorKey={errorKey}
+        fieldErrors={fieldErrors}
       />
     </BottomSheet>
   );

@@ -109,7 +109,6 @@ export default function CreatePostScreen() {
   }, [profilePrivacy, form]);
 
   const [publishFollowersOpen, setPublishFollowersOpen] = useState(false);
-  const [exposureSettingsOpen, setExposureSettingsOpen] = useState(false);
   const [uploadingCount, setUploadingCount] = useState(0);
   const [batchId] = useState(() => newUploadBatchId());
   const [notify, setNotify] = useState<{ title: string; message: string } | null>(null);
@@ -256,8 +255,6 @@ export default function CreatePostScreen() {
         onConditionChange={form.setCondition}
         description={form.description}
         onDescriptionChange={form.setDescription}
-        exposureSettingsOpen={exposureSettingsOpen}
-        onToggleExposureSettings={() => setExposureSettingsOpen((o) => !o)}
         locationDisplayLevel={form.locationDisplayLevel}
         onLocationDisplayLevelChange={form.setLocationDisplayLevel}
         isPublishing={isPublishing}

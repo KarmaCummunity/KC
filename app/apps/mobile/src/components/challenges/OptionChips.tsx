@@ -1,8 +1,6 @@
 import React from 'react';
-import { View } from 'react-native';
-import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
 import { FilterChipRow } from '../filterKit/FilterChipRow';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { FormSection } from '../ui/FormSection';
 
 export interface ChipOption<T extends string> {
   readonly value: T;
@@ -14,37 +12,16 @@ interface OptionChipsProps<T extends string> {
   readonly options: ReadonlyArray<ChipOption<T>>;
   readonly selected: T | null;
   readonly onSelect: (value: T) => void;
-  /** Explains the selected option (shown under the chips). */
+  /** Explains the selected option (shown under the label). */
   readonly hint?: string;
   readonly testID?: string;
 }
 
-const useStyles = makeUseStyles(({ colors }) => ({
-  group: { gap: spacing.xs },
-  label: { ...typography.bodySmall, color: colors.textSecondary, textAlign: rtlTextAlignStart },
-  hint: { ...typography.caption, color: colors.textSecondary, textAlign: rtlTextAlignStart },
-}));
-
-/** A labelled single-choice row of filter chips, used by the "open a challenge" form. */
-export function OptionChips<T extends string>({
-  label,
-  options,
-  selected,
-  onSelect,
-  hint,
-  testID,
-}: OptionChipsProps<T>) {
-  const styles = useStyles();
+/** A labelled single-choice row of chips (one sideways-scrolling line), used by the "open a challenge" form. */
+export function OptionChips<T extends string>({ label, options, selected, onSelect, hint, testID }: OptionChipsProps<T>) {
   return (
-    <View style={styles.group} testID={testID}>
-      <Text style={styles.label}>{label}</Text>
-      <FilterChipRow<T>
-        chipSize="md"
-        options={options}
-        value={selected}
-        onChange={(next) => next && onSelect(next)}
-      />
-      {hint ? <Text style={styles.hint}>{hint}</Text> : null}
-    </View>
+    <FormSection label={label} hint={hint} testID={testID}>
+      <FilterChipRow<T> chipSize="md" options={options} value={selected} onChange={(next) => next && onSelect(next)} />
+    </FormSection>
   );
 }

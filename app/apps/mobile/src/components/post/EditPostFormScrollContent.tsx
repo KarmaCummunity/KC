@@ -8,12 +8,12 @@ import { ALL_CATEGORIES, ITEM_CONDITIONS } from '@kc/domain';
 import type { Category, ItemCondition, LocationDisplayLevel, PostVisibility } from '@kc/domain';
 import { CityPicker } from '../CityPicker';
 import { StreetPicker } from '../StreetPicker';
-import { LocationDisplayLevelChooser } from '../CreatePostForm/LocationDisplayLevelChooser';
 import { PhotoPicker } from '../CreatePostForm/PhotoPicker';
-import { EditPostExposureSection } from './EditPostExposureSection';
+import { ExposureSettingsSection } from './ExposureSettingsSection';
 import type { UploadedAsset } from '../../services/imageUpload';
 import { useEditPostScreenStyles } from '../../screens/edit-post/editPostScreen.styles';
 import { FormScrollView } from '../ui/FormScrollView';
+import { FormSection } from '../ui/FormSection';
 import { FilterChipRow } from '../filterKit/FilterChipRow';
 
 export interface EditPostFormScrollContentProps {
@@ -90,16 +90,18 @@ export function EditPostFormScrollContent({
         <Text style={styles.typeBadgeSub}>{t('post.editPost.typeBadgeSub')}</Text>
       </View>
 
-      <PhotoPicker
-        uploads={uploads}
-        isUploading={uploadingCount > 0}
-        uploadingCount={uploadingCount}
-        required={isGive}
-        onAdd={onAddPhotos}
-        onRemove={onRemovePhoto}
-      />
+      <FormSection testID="edit-post-photos">
+        <PhotoPicker
+          uploads={uploads}
+          isUploading={uploadingCount > 0}
+          uploadingCount={uploadingCount}
+          required={isGive}
+          onAdd={onAddPhotos}
+          onRemove={onRemovePhoto}
+        />
+      </FormSection>
 
-      <View style={styles.section}>
+      <FormSection outlined={false}>
         <TextField
           label={`${t('post.editPost.sectionTitle')} *`}
           value={title}
@@ -108,12 +110,9 @@ export function EditPostFormScrollContent({
           maxLength={80}
         />
         <Text style={styles.charCount}>{title.length}/80</Text>
-      </View>
+      </FormSection>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionLabel}>
-          {t('post.editPost.sectionAddress')} <Text style={styles.required}>*</Text>
-        </Text>
+      <FormSection label={t('post.editPost.sectionAddress')} required outlined={false}>
         <CityPicker value={city} onChange={onCityChange} disabled={isSaving} />
         <View style={styles.streetRow}>
           <View style={styles.streetInputStreet}>
@@ -132,9 +131,31 @@ export function EditPostFormScrollContent({
             editable={!isSaving && !!city}
           />
         </View>
-      </View>
+      </FormSection>
 
-      <View style={styles.section}>
+      <FormSection label={t('post.editPost.sectionCategory')}>
+        <FilterChipRow<Category>
+          testID="edit-post-category"
+          chipSize="md"
+          options={ALL_CATEGORIES.map((cat) => ({ value: cat, label: t(`post.category.${cat}`) }))}
+          value={category}
+          onChange={(next) => next && onCategoryChange(next)}
+        />
+      </FormSection>
+
+      {isGive && (
+        <FormSection label={t('post.editPost.sectionCondition')}>
+          <FilterChipRow<ItemCondition>
+            testID="edit-post-condition"
+            chipSize="md"
+            options={ITEM_CONDITIONS.map((c) => ({ value: c, label: t(`post.condition.${c}`) }))}
+            value={condition}
+            onChange={(next) => next && onConditionChange(next)}
+          />
+        </FormSection>
+      )}
+
+      <FormSection outlined={false}>
         <TextField
           label={t('post.editPost.sectionDescription')}
           value={description}
@@ -144,40 +165,10 @@ export function EditPostFormScrollContent({
           maxLength={500}
         />
         <Text style={styles.charCount}>{description.length}/500</Text>
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionLabel}>{t('post.editPost.sectionCategory')}</Text>
-        <FilterChipRow<Category>
-          testID="edit-post-category"
-          chipSize="md"
-          options={ALL_CATEGORIES.map((cat) => ({ value: cat, label: t(`post.category.${cat}`) }))}
-          value={category}
-          onChange={(next) => next && onCategoryChange(next)}
-        />
-      </View>
-
-      {isGive && (
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>{t('post.editPost.sectionCondition')}</Text>
-          <FilterChipRow<ItemCondition>
-            testID="edit-post-condition"
-            chipSize="md"
-            options={ITEM_CONDITIONS.map((c) => ({ value: c, label: t(`post.condition.${c}`) }))}
-            value={condition}
-            onChange={(next) => next && onConditionChange(next)}
-          />
-        </View>
-      )}
-
-      <LocationDisplayLevelChooser
-        value={locationDisplayLevel}
-        onChange={onLocationDisplayLevelChange}
-        disabled={isSaving}
-      />
+      </FormSection>
 
       {!isGive && (
-        <View style={styles.section}>
+        <FormSection outlined={false}>
           <TextField
             label={t('post.editPost.sectionUrgency')}
             value={urgency}
@@ -185,10 +176,12 @@ export function EditPostFormScrollContent({
             placeholder={t('post.editPost.urgencyPlaceholder')}
             maxLength={100}
           />
-        </View>
+        </FormSection>
       )}
 
-      <EditPostExposureSection
+      <ExposureSettingsSection
+        locationDisplayLevel={locationDisplayLevel}
+        onLocationDisplayLevelChange={onLocationDisplayLevelChange}
         visibility={visibility}
         onVisibilityChange={onVisibilityChange}
         profilePrivacy={profilePrivacy}

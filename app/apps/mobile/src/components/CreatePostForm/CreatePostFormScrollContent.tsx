@@ -7,7 +7,7 @@ import { ALL_CATEGORIES, ITEM_CONDITIONS } from '@kc/domain';
 import type { Category, ItemCondition, LocationDisplayLevel, PostVisibility } from '@kc/domain';
 import { CityPicker } from '../CityPicker';
 import { StreetPicker } from '../StreetPicker';
-import { CreatePostExposureSection } from './CreatePostExposureSection';
+import { ExposureSettingsSection } from '../post/ExposureSettingsSection';
 import { EstimatedValueSlider } from './EstimatedValueSlider';
 import { PhotoPicker } from './PhotoPicker';
 import { TextField } from '../ui/TextField';
@@ -17,7 +17,8 @@ import { useCreatePostStyles } from '../../screens/tabs/create.styles';
 import { useShellTabBarScrollInset } from '../../navigation/useShellTabBarVisibility';
 import type { CreatePostCitySelection } from '../../hooks/useCreatePostPublish';
 import { FormScrollView } from '../ui/FormScrollView';
-import { useFormScopeAnchor, useFormScopeField } from '../ui/useFormScopeField';
+import { useFormScopeField } from '../ui/useFormScopeField';
+import { FormSection } from '../ui/FormSection';
 import { FilterChipRow } from '../filterKit/FilterChipRow';
 
 export interface CreatePostFormScrollContentProps {
@@ -46,8 +47,6 @@ export interface CreatePostFormScrollContentProps {
   readonly onConditionChange: (next: ItemCondition) => void;
   readonly description: string;
   readonly onDescriptionChange: (next: string) => void;
-  readonly exposureSettingsOpen: boolean;
-  readonly onToggleExposureSettings: () => void;
   readonly locationDisplayLevel: LocationDisplayLevel;
   readonly onLocationDisplayLevelChange: (next: LocationDisplayLevel) => void;
   readonly isPublishing: boolean;
@@ -87,8 +86,6 @@ export function CreatePostFormScrollContent({
   onConditionChange,
   description,
   onDescriptionChange,
-  exposureSettingsOpen,
-  onToggleExposureSettings,
   locationDisplayLevel,
   onLocationDisplayLevelChange,
   isPublishing,
@@ -118,11 +115,6 @@ export function CreatePostFormScrollContent({
     editable: !isPublishing && !!city,
     hasError: Boolean(addressInlineError),
   });
-  // Pickers and the photo grid are not text inputs; they are still scrolled to when they hold the problem.
-  const photoSectionRef = useRef<View>(null);
-  useFormScopeAnchor(photoSectionRef, Boolean(photoInlineError));
-  const addressSectionRef = useRef<View>(null);
-  useFormScopeAnchor(addressSectionRef, Boolean(addressInlineError));
 
   return (
     <FormScrollView
@@ -132,7 +124,7 @@ export function CreatePostFormScrollContent({
     >
       {header}
 
-      <View ref={photoSectionRef} collapsable={false}>
+      <FormSection error={photoInlineError} testID="create-post-photos">
         <PhotoPicker
           uploads={uploads}
           isUploading={uploadingCount > 0}
@@ -141,14 +133,9 @@ export function CreatePostFormScrollContent({
           onAdd={onAddPhotos}
           onRemove={onRemovePhoto}
         />
-        {photoInlineError ? (
-          <Text style={styles.sectionHint} accessibilityRole="alert">
-            {photoInlineError}
-          </Text>
-        ) : null}
-      </View>
+      </FormSection>
 
-      <View style={styles.section}>
+      <FormSection outlined={false}>
         <TextField
           testID="create-post-title"
           label={`${t('post.title')} *`}
@@ -159,12 +146,9 @@ export function CreatePostFormScrollContent({
           maxLength={80}
         />
         <Text style={styles.charCount}>{title.length}/80</Text>
-      </View>
+      </FormSection>
 
-      <View ref={addressSectionRef} collapsable={false} style={styles.section}>
-        <Text style={styles.sectionLabel}>
-          {t('post.address')} <Text style={styles.required}>*</Text>
-        </Text>
+      <FormSection label={t('post.address')} required error={addressInlineError} outlined={false}>
         <CityPicker value={city} onChange={onCityChange} disabled={isPublishing} />
         <View style={styles.streetRow}>
           <View style={styles.streetInputStreet}>
@@ -191,15 +175,9 @@ export function CreatePostFormScrollContent({
             onSubmitEditing={streetNumberScope.onSubmitEditing}
           />
         </View>
-        {addressInlineError ? (
-          <Text style={styles.sectionHint} accessibilityRole="alert">
-            {addressInlineError}
-          </Text>
-        ) : null}
-      </View>
+      </FormSection>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionLabel}>{t('post.categoryLabel')}</Text>
+      <FormSection label={t('post.categoryLabel')}>
         <FilterChipRow<Category>
           testID="create-post-category"
           chipSize="md"
@@ -207,11 +185,10 @@ export function CreatePostFormScrollContent({
           value={category}
           onChange={(next) => next && onCategoryChange(next)}
         />
-      </View>
+      </FormSection>
 
       {isGive && (
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>{t('post.conditionLabel')}</Text>
+        <FormSection label={t('post.conditionLabel')}>
           <FilterChipRow<ItemCondition>
             testID="create-post-condition"
             chipSize="md"
@@ -220,10 +197,10 @@ export function CreatePostFormScrollContent({
             onChange={(next) => next && onConditionChange(next)}
           />
           <EstimatedValueSlider value={estimatedValue} onChange={onEstimatedValueChange} />
-        </View>
+        </FormSection>
       )}
 
-      <View style={styles.section}>
+      <FormSection outlined={false}>
         <TextField
           label={t('post.description')}
           value={description}
@@ -233,10 +210,10 @@ export function CreatePostFormScrollContent({
           maxLength={500}
         />
         <Text style={styles.charCount}>{description.length}/500</Text>
-      </View>
+      </FormSection>
 
       {!isGive && (
-        <View style={styles.section}>
+        <FormSection outlined={false}>
           <TextField
             label={t('post.urgency')}
             value={urgency}
@@ -244,15 +221,13 @@ export function CreatePostFormScrollContent({
             placeholder={t('post.urgencyPlaceholder')}
             maxLength={100}
           />
-        </View>
+        </FormSection>
       )}
 
-      <CreatePostExposureSection
-        open={exposureSettingsOpen}
-        onToggleOpen={onToggleExposureSettings}
+      <ExposureSettingsSection
         locationDisplayLevel={locationDisplayLevel}
         onLocationDisplayLevelChange={onLocationDisplayLevelChange}
-        isPublishing={isPublishing}
+        disabled={isPublishing}
         visibility={visibility}
         onVisibilityChange={onVisibilityChange}
         profilePrivacy={profilePrivacy}

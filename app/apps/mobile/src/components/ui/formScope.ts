@@ -20,11 +20,7 @@ import {
   type FieldPosition,
   type FieldView,
 } from '../../lib/platform/formFieldOrder';
-import {
-  LISTING_SCROLL_TOP_PADDING,
-  scrollFieldWithWindow,
-  scrollWebFieldIntoView,
-} from '../../hooks/listingScrollToField';
+import { SCROLL_TOP_PADDING, scrollFieldWithWindow, scrollWebFieldIntoView } from '../../lib/platform/scrollIntoView';
 
 /** What a field lets the scope do with it. Read lazily: values must reflect the latest render. */
 export interface FormFieldHandle {
@@ -159,7 +155,7 @@ export function useFormScopeController(): FormScopeController {
       const scroll = scrollRef.current;
       if (!first || !view || !scroll) return;
       if (Platform.OS === 'web' && scrollWebFieldIntoView(view)) return;
-      scrollFieldWithWindow(scroll, view, scrollY.current, LISTING_SCROLL_TOP_PADDING);
+      scrollFieldWithWindow(scroll, view, scrollY.current, SCROLL_TOP_PADDING);
     });
   }, []);
 
