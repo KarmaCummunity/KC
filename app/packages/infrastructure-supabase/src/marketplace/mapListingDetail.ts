@@ -13,6 +13,7 @@ import { parseWkbPoint } from '../posts/postMapPoint';
 import type { PostCardRow } from '../posts/mapPostRow';
 import { meetingPointRefs, placeRefKey, resolvePlaces, type PlaceRef } from '../rides/ridePlaces';
 import { listingDirectionOf, loadKindCatalog } from './kindCatalog';
+import { loadWorldLabels } from './worldCatalog';
 import { availabilityOf } from './listingMapping';
 import { rideDetailsFromRow } from './worldDetails';
 
@@ -105,26 +106,29 @@ async function loadFoodDetails(client: Client, postId: string): Promise<Record<s
 
 /** The detail of a listing, or null when the caller cannot read the post. */
 export async function fetchListingDetail(client: Client, listingId: string): Promise<MarketplaceListingDetail | null> {
-  const payload = unwrapCall('rpc:post_detail', await client.rpc('post_detail', { p_post_id: listingId }));
+  // Everything that needs only the listing id (or nothing) starts with `post_detail`; the world's own
+  // detail row needs the card's type and follows it. The kind and world catalogs are cached per client.
+  const [payloadResult, kinds, worlds, geo] = await Promise.all([
+    client.rpc('post_detail', { p_post_id: listingId }),
+    loadKindCatalog(client),
+    loadWorldLabels(client),
+    client.from('posts').select('geo_approx').eq('id', listingId).maybeSingle(),
+  ]);
+  const payload = unwrapCall('rpc:post_detail', payloadResult);
   if (!isObject(payload) || !isObject(payload['post'])) return null;
   const card = payload['post'] as unknown as PostCardRow;
   if (!card.id) return null;
   const mediaRows = Array.isArray(payload['media']) ? payload['media'] : [];
-  const [kinds, world, geo, details] = await Promise.all([
-    loadKindCatalog(client),
-    client.from('worlds').select('label_he, label_en').eq('slug', card.world_slug ?? '').maybeSingle(),
-    client.from('posts').select('geo_approx').eq('id', card.id).maybeSingle(),
-    loadWorldDetails(client, card),
-  ]);
+  const details = await loadWorldDetails(client, card);
   const kind = card.kind_id ? kinds.byId.get(card.kind_id) : undefined;
-  const worldRow = unwrapCall('table:worlds', world);
+  const worldRow = worlds.get(card.world_slug ?? '');
   const point = parseWkbPoint(unwrapCall('table:posts', geo)?.geo_approx);
   return {
     listingId: card.id,
     ownerId: card.owner_id ?? '',
     worldSlug: card.world_slug ?? '',
-    worldLabelEn: worldRow?.label_en ?? '',
-    worldLabelHe: worldRow?.label_he ?? '',
+    worldLabelEn: worldRow?.labelEn ?? '',
+    worldLabelHe: worldRow?.labelHe ?? '',
     kindSlug: kind?.slug ?? '',
     kindLabelEn: kind?.label_en ?? '',
     kindLabelHe: kind?.label_he ?? '',
