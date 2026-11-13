@@ -3,6 +3,7 @@ import { BackendUnavailableError, type SearchFilters } from '@kc/domain';
 import { callsTo, createFakeClient, type FakeCall, type FakeClientConfig } from '../../__tests__/fakeBaselineClient';
 import { fail, makeCard, ok, pageTables } from '../../posts/__tests__/cardFixtures';
 import { SupabaseSearchRepository } from '../SupabaseSearchRepository';
+import { searchSocialParts } from '../searchSocialReads';
 
 const LIMITS = { posts: 2, users: 2, links: 2 };
 
@@ -66,12 +67,40 @@ describe('SupabaseSearchRepository — text query', () => {
     expect(callsTo(calls, 'search_posts_page')[0]?.args).toMatchObject({ p_query: 'sofa', p_limit: 3 });
   });
 
-  it('has no organizations, hashtags or suggested queries (M05)', async () => {
-    const { client } = setup({ rpc: { search_posts_page: ok([]), search_users_page: ok([]) } });
+  it('finds organizations and #tags for a query (M05, migration 0031)', async () => {
+    const { client, calls } = setup({
+      rpc: {
+        search_posts_page: ok([]),
+        search_users_page: ok([]),
+        search_organizations: ok([{ org_id: 'o1', name: 'Sofa Aid', slug: 'sofa-aid' }]),
+        search_hashtags: ok([{ tag: 'sofas', use_count: '3' }]),
+      },
+    });
 
     const result = await new SupabaseSearchRepository(client).search('sofa', {}, null, LIMITS);
 
-    expect(result).toMatchObject({ orgs: [], hashtags: [], suggestedQueries: [], orgsTotal: 0, hashtagsTotal: 0 });
+    expect(result).toMatchObject({
+      orgs: [{ orgId: 'o1', name: 'Sofa Aid', slug: 'sofa-aid' }],
+      hashtags: [{ tag: 'sofas', useCount: 3 }],
+      suggestedQueries: [],
+      orgsTotal: 1,
+      hashtagsTotal: 1,
+    });
+    expect(callsTo(calls, 'search_organizations')[0]?.args).toEqual({ p_query: 'sofa', p_limit: 10 });
+  });
+
+  it('suggests searches for an empty query and keeps the search alive when the social reads fail', async () => {
+    const empty = setup({ rpc: { search_suggested_queries: ok(['#free', '#furniture']) } });
+    expect(await searchSocialParts(empty.client, '  ', true)).toEqual({
+      orgs: [], hashtags: [], suggestedQueries: ['#free', '#furniture'],
+    });
+    expect(await searchSocialParts(empty.client, 'sofa', false)).toEqual({ orgs: [], hashtags: [], suggestedQueries: [] });
+
+    const broken = setup({
+      rpc: { search_posts_page: ok([]), search_users_page: ok([]), search_organizations: fail('42883', 'missing') },
+    });
+    const result = await new SupabaseSearchRepository(broken.client).search('sofa', {}, null, LIMITS);
+    expect(result).toMatchObject({ orgs: [], hashtags: [], orgsTotal: 0 });
   });
 
   it('turns the filters into the keys of the feed', async () => {

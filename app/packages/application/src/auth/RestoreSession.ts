@@ -4,6 +4,12 @@ import type { IAccountGateRepository } from '../ports/IAccountGateRepository';
 
 export interface RestoreSessionOutput {
   session: AuthSession | null;
+  /** Why a persisted session was discarded (absent when there was none, or it was kept). */
+  endedBy?: 'session_expired' | 'account_gate_denied';
+  /** Gate denial reason (account status) when `endedBy` is `account_gate_denied`. */
+  gateReason?: string | null;
+  /** True when the session was kept only because the gate check itself failed. */
+  gateCheckFailed?: boolean;
 }
 
 export class RestoreSessionUseCase {
@@ -19,7 +25,7 @@ export class RestoreSessionUseCase {
     const nowSec = Math.floor(Date.now() / 1000);
     if (session.expiresAt <= nowSec) {
       await this.auth.signOut();
-      return { session: null };
+      return { session: null, endedBy: 'session_expired' };
     }
 
     // TD-68 / audit 2026-05-10 §17.1: a suspended/banned/deleted user must not
@@ -34,10 +40,11 @@ export class RestoreSessionUseCase {
       const gateResult = await this.gate.checkAccountGate(session.userId);
       if (!gateResult.allowed) {
         await this.auth.signOut();
-        return { session: null };
+        return { session: null, endedBy: 'account_gate_denied', gateReason: gateResult.reason ?? null };
       }
     } catch {
-      // Best-effort: fall through with the session intact.
+      // Best-effort: fall through with the session intact, but tell the caller so it can report.
+      return { session, gateCheckFailed: true };
     }
 
     return { session };

@@ -14,15 +14,10 @@ import { unwrapCall, type CallResult } from '../rpc/mapRpcError';
 import { fetchMyAdminRoles } from './fetchMyAdminRoles';
 import { refusalReason } from './refusalReason';
 
-type GrantRow = Database['public']['Tables']['admin_role_grants']['Row'];
+/** One row of `admin_list_admins` (migration 0012): a grant with names and last seen. */
+type RosterRow = Database['public']['Functions']['admin_list_admins']['Returns'][number];
 
-/** Display fields of a member, read from `users` to label a grant. */
-interface PersonLabel {
-  readonly displayName: string | null;
-  readonly avatarUrl: string | null;
-}
-
-/** Stable refusals of the role RPCs (`60_moderation/020_admin_role_rpcs.sql`) the portal handles. */
+/** Stable refusals of the role RPCs (`60_moderation/020_admin_role_rpcs.sql`, migration 0011) the portal handles. */
 const KNOWN_ERROR_REASONS: ReadonlySet<AdminRoleErrorCode> = new Set([
   'forbidden',
   'forbidden_grant',
@@ -34,6 +29,7 @@ const KNOWN_ERROR_REASONS: ReadonlySet<AdminRoleErrorCode> = new Set([
   'role_already_active',
   'grant_not_found',
   'grant_already_revoked',
+  'org_last_admin',
 ]);
 
 /**
@@ -52,27 +48,23 @@ function toAdminRoleError(error: unknown): unknown {
   return new AdminRoleError('unknown', reason ?? (message || 'unknown_admin_rpc_error'));
 }
 
-function mapRowToGrant(
-  row: GrantRow,
-  people: ReadonlyMap<string, PersonLabel>,
-): AdminGrant | null {
+/** A roster row as a grant; null for a role this app does not know. */
+export function mapRosterRow(row: RosterRow): AdminGrant | null {
   const role = parseAdminRole(row.role);
   if (role === null) return null;
-  const member = people.get(row.user_id);
   return {
-    grantId: row.id,
+    grantId: row.grant_id,
     userId: row.user_id,
-    displayName: member?.displayName ?? null,
-    avatarUrl: member?.avatarUrl ?? null,
+    displayName: row.display_name ?? null,
+    avatarUrl: row.avatar_url ?? null,
     role,
     scopeOrgId: row.scope_org_id ?? null,
     grantedAt: new Date(row.granted_at),
-    grantedBy: row.granted_by,
-    grantedByDisplayName: row.granted_by ? people.get(row.granted_by)?.displayName ?? null : null,
-    revokedAt: row.revoked_at === null ? null : new Date(row.revoked_at),
-    revokedBy: row.revoked_by,
-    // `users.last_seen_at` does not exist in the baseline: presence is not shown.
-    lastSeenAt: null,
+    grantedBy: row.granted_by ?? null,
+    grantedByDisplayName: row.granted_by_display_name ?? null,
+    revokedAt: row.revoked_at ? new Date(row.revoked_at) : null,
+    revokedBy: row.revoked_by ?? null,
+    lastSeenAt: row.last_seen_at ? new Date(row.last_seen_at) : null,
   };
 }
 
@@ -92,33 +84,18 @@ export class SupabaseAdminRoleRepository implements IAdminRoleRepository {
     return fetchMyAdminRoles(this.client);
   }
 
+  /**
+   * The roster the caller may read (`admin_list_admins`): every grant for platform admins,
+   * the grants of the organizations the caller's grants reach for anyone else (FR-ADMIN-030
+   * AC1), with the holder's and the granter's names and the holder's last-seen time.
+   */
   async listAdmins(includeRevoked: boolean): Promise<readonly AdminGrant[]> {
-    // `admin_role_grants_select_staff`: platform staff read the whole roster; any other member
-    // reads only their own grants (the baseline has no org-scoped roster read).
-    const grants = await this.call('table:admin_role_grants', () => {
-      const query = this.client
-        .from('admin_role_grants')
-        .select('id, user_id, role, scope_org_id, is_platform, manager_grant_id, granted_by, granted_at, revoked_at, revoked_by')
-        .order('granted_at', { ascending: false });
-      return includeRevoked ? query : query.is('revoked_at', null);
+    const rows = await this.call('rpc:admin_list_admins', () =>
+      this.client.rpc('admin_list_admins', { p_include_revoked: includeRevoked }));
+    return (rows ?? []).flatMap((row) => {
+      const grant = mapRosterRow(row);
+      return grant ? [grant] : [];
     });
-    const rows = grants ?? [];
-    const people = await this.loadPeople(rows);
-    const out: AdminGrant[] = [];
-    for (const row of rows) {
-      const mapped = mapRowToGrant(row, people);
-      if (mapped !== null) out.push(mapped);
-    }
-    return out;
-  }
-
-  /** Display name and avatar of every member a grant names (holder and granter). */
-  private async loadPeople(rows: readonly GrantRow[]): Promise<Map<string, PersonLabel>> {
-    const ids = [...new Set(rows.flatMap((r) => (r.granted_by ? [r.user_id, r.granted_by] : [r.user_id])))];
-    if (ids.length === 0) return new Map();
-    const users = await this.call('table:users', () =>
-      this.client.from('users').select('id, display_name, avatar_url').in('id', ids));
-    return new Map((users ?? []).map((u) => [u.id, { displayName: u.display_name, avatarUrl: u.avatar_url }]));
   }
 
   async grantRole(

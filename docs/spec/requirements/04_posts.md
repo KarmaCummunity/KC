@@ -91,6 +91,7 @@ Shared optional fields and their defaults.
    - `CityOnly` 🏙️
    - `CityAndStreet` 🗺️ *(default)*
    - `FullAddress` 📍
+   Other members see the address as the poster chose (D154): the street with `CityAndStreet` (the default of a new post), the street and number with `FullAddress`, the city alone with `CityOnly`. The server derives what is shown onto the post (`posts.shown_street`, `shown_street_number`, migration `0029`), so the post's own visibility decides who reads it; the exact point and arrival notes stay owner-only.
 - AC4. `visibility` is one of:
    - `Public` 🌍 *(default)*
    - `FollowersOnly` 👥 *(disabled when `User.privacy_mode = Public`)*
@@ -179,7 +180,7 @@ The form persists its state to local storage to survive accidental closure.
 ## FR-POST-008 — Edit an existing post
 
 **Description.**
-The post owner **or** the Super Admin (`users.is_super_admin = true`) can re-open the form to edit fields of an `open` post. The Super Admin uses the same screen and update path; `posts.owner_id` stays immutable on the server.
+The post owner **or** the Super Admin (`users.is_super_admin = true`) can re-open the form to edit fields of an `open` or a `paused` post (`docs/spec/07_cross_cutting_systems.md` §7.1; one list for every entry point, `isPostEditableByOwner` in `@kc/domain`, the same statuses as the server's row policy). The Super Admin uses the same screen and update path; `posts.owner_id` stays immutable on the server.
 
 **Source.**
 - PRD: `03_Core_Features.md` §3.3.5, `04_User_Flows.md` Flow 10.
@@ -422,6 +423,7 @@ Address fields are validated for shape only, not against a geocoder.
    - `CityOnly` → "Tel Aviv"
    - `CityAndStreet` → "Tel Aviv · Hayarkon"
    - `FullAddress` → "Tel Aviv · Hayarkon 12A"
+   The same string is shown to every member who can see the post, not only to its owner (D154); a post without a stored street shows the city alone. ✅ (migration `0029`, `postLocationText`).
 
 **Related.** Domain: `Address`, `LocationDisplayLevel`.
 
@@ -522,7 +524,7 @@ A signed-in viewer of a `Public` post that is `open` or `closed_delivered` may s
    10. Blank line, then `share.post.cta.<world>.<offer|request>` (open) or `share.post.ctaClosed` (closed).
    The share URL appears in the message body **exactly once** on every platform. iOS attaches the first image binary via the `url` field (`expo-file-system` cache download); Android never passes `url` (RN concatenates it onto EXTRA_TEXT, which is what caused the duplicated link in WhatsApp in the reverted version). Web uses `navigator.share({ files })` when Web Share Level 2 supports files; else `navigator.share({ title, text, url })`; else `navigator.clipboard.writeText(url)` with a Hebrew toast.
 - AC3. The share URL is `https://karma-community-kc.com/post/<id>` — the same URL as the in-app deep link, the universal-link claim path, and the SPA route. There is **no** Supabase URL anywhere — neither as the user-visible URL, nor in a redirect chain, nor in WhatsApp's preview "via" line. Built from `EXPO_PUBLIC_WEB_BASE_URL` (defaults to `https://karma-community-kc.com` when unset).
-- AC4. On `GET /post/:id` with a link-preview crawler UA, the Pages Function returns 200 `text/html` with `og:title`, `og:description`, `og:image`, `og:url`, `og:locale=he_IL`, `twitter:card=summary_large_image`. The card is built per kind (AC10). The function reads the post through the database function `post_share_card` (migration `0025`), the only signed-out door to a post: it returns a row only for a `Public`, `open` or `closed_delivered` post of an active member, with no owner, street or counterparty. Posts it returns no row for, not-found, invalid UUIDs, and REST timeouts return a generic OG card pointing at the marketing landing — never the post's image or title.
+- AC4. On `GET /post/:id` with a link-preview crawler UA, the Pages Function returns 200 `text/html` with `og:title`, `og:description`, `og:image`, `og:url`, `og:locale=he_IL`, `twitter:card=summary_large_image`. The card is built per kind (AC10). The function reads the post through the database function `post_share_card` (migration `post_share_card`), the only signed-out door to a post: it returns a row only for a `Public`, `open` or `closed_delivered` post of an active member, with no owner, street or counterparty. Posts it returns no row for, not-found, invalid UUIDs, and REST timeouts return a generic OG card pointing at the marketing landing — never the post's image or title.
 - AC5. The same `GET /post/:id` from a human (UA not matching the crawler list) is passed to the static assets, so the SPA `index.html` is served and Expo Router renders the post-detail screen (unless AC9 redirects a phone to its store).
 - AC6. **Unauthenticated landing:** when an unauthenticated user follows `/post/<id>`, `AuthGate` captures the path before redirecting to `(auth)`, persists it in an in-memory store with a 10-minute TTL, and after sign-in / onboarding completion navigates to the captured path (`router.replace(pendingPath)`), then clears the intent. Refresh / app restart loses the intent, falling back to `(tabs)`.
 - AC7. The OG image and the image attached to the share sheet are the public Supabase Storage URL (bucket `post-images`) of the post's first processed image by gallery position. When the post has no media (e.g. Request posts without images), the OG image is `${APP_BASE_URL}/pwa-icon-512.png` (the 512×512 community logo bundled with the web app).
@@ -569,7 +571,8 @@ A member who volunteers on a fixed schedule (for example every Tuesday at 17:00,
 
 | Version | Date | Summary |
 | ------- | ---- | ------- |
-| 0.22 | 2026-11-11 | `FR-POST-023` AC2, AC4, AC5, AC7, AC9–AC11 (KC#2049, KC#1803) — share text and preview card by kind of post, the listing-mirror photo read from its own bucket, the crawler card and a store redirect for phones without the app served by a Cloudflare Pages Function (replaces the Hono server), profile share. |
+| 0.22 | 2026-11-12 | `FR-POST-008` — a paused post is editable from every entry point; the owner's and the staff's post actions in the app are read from the post machine (#2204). |
+| 0.23 | 2026-11-11 | `FR-POST-023` AC2, AC4, AC5, AC7, AC9–AC11 (KC#2049, KC#1803) — share text and preview card by kind of post, the listing-mirror photo read from its own bucket, the crawler card and a store redirect for phones without the app served by a Cloudflare Pages Function (replaces the Hono server), profile share. |
 | 0.21 | 2026-11-11 | `FR-POST-024` AC1, AC11, AC12 — a member publishes their own recurring volunteering; a series is one card in the feeds; "my recurring events" moves to the time world's menu (#2086). |
 | 0.20 | 2026-11-11 | `FR-POST-024` — recurring time posts: a series publishes occurrences that each take registrations; edit all, cancel one, pause / resume, end (#2086). |
 | 0.19 | 2026-11-07 | `FR-POST-001` AC6 — a blocked publish scrolls to the field with the problem and outlines it in red, with the message under it, instead of one message above the bottom Publish button. |

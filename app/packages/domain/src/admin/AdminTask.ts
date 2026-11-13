@@ -40,7 +40,8 @@ export interface AdminTask {
   readonly category: AdminTaskCategory;
   readonly assigneeId: string | null;
   readonly assigneeDisplayName: string | null;
-  readonly createdBy: string;
+  /** Null once the creator's account was purged; the task stays. */
+  readonly createdBy: string | null;
   readonly createdByDisplayName: string | null;
   readonly dueAt: Date | null;
   readonly labels: readonly string[];
@@ -85,6 +86,12 @@ export function parseAdminTaskCategory(value: string | null | undefined): AdminT
 /** Same as parseAdminTaskCategory but falls back to 'other' for unknown / nullish. */
 export function coerceAdminTaskCategory(value: string | null | undefined): AdminTaskCategory {
   return parseAdminTaskCategory(value) ?? ADMIN_TASK_CATEGORY_DEFAULT;
+}
+
+/** One page of the task list; `nextCursor` continues after its last row, null at the end. */
+export interface AdminTaskPage {
+  readonly rows: readonly AdminTask[];
+  readonly nextCursor: string | null;
 }
 
 export function isOverdue(task: AdminTask, now: Date = new Date()): boolean {

@@ -32,6 +32,9 @@ export interface IFinanceLedgerRepository {
   list(filters: FinanceLedgerListFilters): Promise<FinanceLedgerPage>;
   summary(fromDate?: Date, toDate?: Date): Promise<readonly FinanceSummaryRow[]>;
   upsert(input: FinanceLedgerUpsertInput): Promise<string>;
-  /** Takes the entry out of the books: it is voided (FR-FIN-005 AC2), never erased, and counts nowhere. */
-  delete(entryId: string): Promise<void>;
+  /**
+   * Takes the entry out of the books: it is voided with the admin's reason (FR-FIN-005 AC2),
+   * never erased, and counts nowhere.
+   */
+  delete(entryId: string, reason: string): Promise<void>;
 }

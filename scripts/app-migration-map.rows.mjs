@@ -37,6 +37,12 @@ rpc('follow_user', 'same', 'rpc:follow_user', '`p_target`; answers `following` o
 rpc('follow_request_decide', 'same', 'rpc:follow_request_decide', '`p_requester`, `p_accept`; a request that is no longer pending (`follow_request_not_pending`) is treated as already decided.');
 rpc('follow_request_cancel', 'same', 'rpc:follow_request_cancel', '`p_target`; a request that is no longer pending is treated as already cancelled.');
 rpc('chat_counterpart_contact', 'same', 'rpc:chat_counterpart_contact', '`p_chat_id`; the counterpart\'s phone as text, null when the caller cannot use the chat, it is a support thread, the counterpart is inactive or has no phone (M06, built).');
+rpc('rpc_follow_suggestions', 'same', 'rpc:rpc_follow_suggestions', '`p_limit` (1-30); members with a public profile the caller does not follow and has no block with, ranked by mutual follows, city and followers, with a `reason` (migration 0031, M03 built).');
+rpc('rpc_profile_completeness', 'same', 'rpc:rpc_profile_completeness', 'The caller\'s own score (0-100), `missing` parts and verification flags; another member\'s id is refused `forbidden` (migration 0031, M04 built).');
+rpc('about_team_profiles', 'same', 'rpc:about_team_profiles', 'The About roster: role key and the linked active member\'s public fields, from the service-role table `about_team_members` (migration 0031, M08 built).');
+rpc('search_organizations', 'same', 'rpc:search_organizations', '`p_query` (2+ characters), `p_limit`; active organizations by name or slug (migration 0031, M05 built).');
+rpc('search_hashtags', 'same', 'rpc:search_hashtags', '`p_query` (with or without `#`), `p_limit`; tags of the open posts the caller can read, most used first (migration 0031, M05 built).');
+rpc('search_suggested_queries', 'same', 'rpc:search_suggested_queries', '`p_limit`; the most used tags of the last 30 days, shown for an empty query (migration 0031, M05 built).');
 rpc('record_active_day', 'same', 'rpc:record_active_day', 'Marks the caller active for today; idempotent within a day.');
 table('user_private', 'same', 'table:user_private', 'The caller\'s own row: select, and update of the granted columns (contact phone, address lines, notification preferences, dismiss flags, `basic_info_skipped`, `show_active_status`).');
 table('user_stats', 'same', 'table:user_stats', 'Counters, select only; `open_posts_only_me` is not client-readable.');
@@ -83,7 +89,7 @@ table('feed_hides', 'same', 'table:feed_hides', 'Insert (user_id, post_id) ignor
 table('feed_impressions', 'same', 'table:feed_impressions', 'Bulk insert of `post_id` rows; the member and the time are filled by the table.');
 table('feed_mute_filters', 'same', 'table:feed_mute_filters', 'Kinds user, world and keyword (a keyword is 2-60 characters, trimmed, lower-case); there is no per-category mute, so that settings section is gone.');
 table('post_media', 'same', 'table:post_media', 'One row per photo, inserted `pending` by the owner after the upload to `post-images`; delete by the owner. An edit keeps the rows whose file and position are unchanged (no update grant). Every row records the real `mime_type` and `size_bytes` of the uploaded file (JPEG or PNG, at most 8 MB); `post_detail` returns both, so a republish attaches the same files again.');
-table('post_private_locations', 'same', 'table:post_private_locations', 'The exact street and number, readable and writable by the post\'s owner only; other members see the city.');
+table('post_private_locations', 'same', 'table:post_private_locations', 'The exact street and number, readable and writable by the post\'s owner only (also the apartment, floor and entrance of a stay, migration 0033); other members read the part the display level shows from `posts.shown_street` / `shown_street_number` (migration 0029).');
 table('post_stats', 'same', 'table:post_stats', 'Counters of a post (reactions, comments, shares); no row until the first one.');
 table('post_closures', 'same', 'table:post_closures', 'The owner reads `purge_after`: the end of the seven-day reopen window of a post deleted without a recipient.');
 table('challenges', 'same', 'table:challenges', 'Read to find the challenge of a challenge post (`post_id` → `id`).');
@@ -183,11 +189,33 @@ rpc('admin_restore_user', 'same', 'rpc:admin_restore_user', 'Staff: lifts a susp
 rpc('admin_delete_message', 'same', 'rpc:admin_delete_message', 'Same name and argument (`p_message_id`); it lives in `40_messaging/070_chat_moderation.sql` and is audited by the moderation module (M18, verified).');
 rpc('admin_audit_search', 'changed', 'rpc:admin_audit_search', 'Offset → keyset (`p_before_occurred_at`, `p_before_id`); `p_target_user_id` → `p_target_id`; no display names and no `total_count` (join `users` on the device).');
 table('reports', 'same', 'table:reports', 'Direct insert of (reporter_id, target_type, target_id, reason, note); `report_id` → `id`.');
-rpc('admin_set_manager', 'changed', 'rpc:admin_set_manager', '`p_manager_grant_id` is required: a grant can be moved under another grant but not detached.');
+rpc('admin_set_manager', 'same', 'rpc:admin_set_manager', 'Signature unchanged: `p_manager_grant_id` optional again; only the super admin detaches (no manager) or skips the seniority rule; errors `forbidden_manage`, `manager_not_found`, `manager_revoked`, `manager_other_org`, `manager_cycle`, `manager_rank` (migration 0011).');
+rpc('admin_list_admins', 'same', 'rpc:admin_list_admins', 'Restored by migration 0012: the roster the caller may read (platform admins all, others the organizations their grants reach) with names, manager edge and `last_seen_at`.');
+rpc('admin_org_tree', 'same', 'rpc:admin_org_tree', 'Restored by migration 0012: active grants with `effective_org_id`, organization name, manager edge and `last_seen_at`; same visibility as `admin_list_admins`.');
+rpc('admin_hierarchy_census', 'same', 'rpc:admin_hierarchy_census', 'Restored by migration 0013: community and role-holder totals and, per visible organization, its slug, verification and affiliates (`user_profile_fields.affiliated_org_id`) without a role.');
+rpc('admin_set_org_slug', 'changed', 'rpc:admin_set_org_slug', 'New in migration 0014 (no old object): the super admin changes an organization page slug (`invalid_slug`, `slug_taken`, `org_not_found`).');
 rpc('admin_org_application_approve', 'changed', 'rpc:admin_org_application_approve', 'New required `p_slug`; returns the organization id.');
 rpc('admin_org_application_reject', 'same', 'rpc:admin_org_application_reject', 'Signature unchanged.');
-// Admin tasks, CRM and timesheets (old M19): the baseline has none of them and the adapters make
-// no call (package L6, `notes`).
+// Admin tasks, CRM and timesheets (old M19): rebuilt after the baseline as forward migrations
+// 0034-0036 (package L6). Lists page by the `cursor` of the last row.
+rpc('admin_task_list', 'changed', 'rpc:admin_task_list', 'Rows are `(task jsonb, cursor jsonb)`; `p_offset` → `p_cursor` (keyset). `task_id` keeps its name inside the record; `created_by` may be null after a purge.');
+rpc('admin_task_detail', 'changed', 'rpc:admin_task_detail', 'Returns one JSON record with `activities` (write order), or null for an unknown task.');
+rpc('admin_task_open_count', 'same', 'rpc:admin_task_open_count', 'New: open and in-progress tasks for the dashboard card.');
+for (const name of ['admin_task_create', 'admin_task_update', 'admin_task_set_status', 'admin_task_assign', 'admin_task_add_comment', 'admin_task_delete']) {
+  rpc(name, 'same', `rpc:${name}`, 'Same arguments; refusals are P0001 with the old codes (`invalid_transition`, `assignee_not_admin`, …), `forbidden` is 42501.');
+}
+rpc('crm_my_orgs', 'same', 'rpc:crm_my_orgs', 'New: the organizations whose contact book the caller manages (FR-ADMIN-032).');
+rpc('crm_contact_list', 'changed', 'rpc:crm_contact_list', 'New `p_org_id`; rows are `(contact jsonb, cursor jsonb)`; the total moves to `crm_contact_count`.');
+rpc('crm_contact_count', 'same', 'rpc:crm_contact_count', 'New: the total of the list filters.');
+rpc('crm_contact_upsert', 'changed', 'rpc:crm_contact_upsert', 'New `p_org_id`; new refusals `invalid_email`, `invalid_phone`, `invalid_input`.');
+for (const name of ['crm_contact_delete', 'crm_contact_mark_contacted']) {
+  rpc(name, 'same', `rpc:${name}`, 'Same arguments; the caller must manage the contact\'s organization.');
+}
+rpc('timesheet_list', 'changed', 'rpc:timesheet_list', 'New `p_scope` (mine, to_decide, all); rows are `(entry jsonb, cursor jsonb)` with `can_decide`; the total moves to `timesheet_count`.');
+rpc('timesheet_count', 'same', 'rpc:timesheet_count', 'New: the total of the list filters.');
+for (const name of ['timesheet_upsert', 'timesheet_submit', 'timesheet_approve', 'timesheet_reject', 'timesheet_delete']) {
+  rpc(name, 'same', `rpc:${name}`, 'Same arguments; a decision is the reporter\'s direct manager\'s or a super admin\'s, never the reporter\'s own.');
+}
 table('user_account', 'same', 'table:user_account', 'Staff read the account row of every member (`user_account_select_staff`): status, sanction state.');
 table('admin_role_grants', 'changed', 'table:admin_role_grants', '`grant_id` → `id`; read-only for clients. mock-login\'s insert goes away with the function.');
 
@@ -212,7 +240,7 @@ rpc('finance_account_upsert', 'changed', 'rpc:finance_account_upsert', 'New requ
 rpc('finance_ledger_list', 'changed', 'rpc:finance_ledger_list', 'New required `p_org_id`; offset → keyset (`p_after_occurred_at`, `p_after_id`); `amount_cents` → `amount_agorot`; `p_kind` filter and `reference_url` are gone.');
 rpc('finance_ledger_upsert', 'changed', 'rpc:finance_ledger_upsert', 'New required `p_org_id`; `p_amount_cents` → `_agorot`; `p_currency` and `p_reference_url` are gone.');
 rpc('finance_ledger_summary', 'changed', 'rpc:finance_ledger_summary', 'New required `p_org_id`; `*_cents` → `*_agorot`; cleared entries only, transfers aside (M21, built in `85_billing/140`).');
-rpc('finance_ledger_mark', 'same', 'rpc:finance_ledger_mark', 'Voids an entry with a reason (the admin delete action) or sets its reconciliation; the entry stays in the books.');
+rpc('finance_ledger_mark', 'same', 'rpc:finance_ledger_mark', 'Voids an entry with the admin\'s reason (3 to 500 characters, `void_reason_required` otherwise; migration 0014) or sets its reconciliation; the entry stays in the books.');
 rpc('finance_donors_summary', 'changed', 'rpc:finance_donors_summary', 'New required `p_org_id`; `total_cents` → `total_agorot`; in-app donations grouped by member, typed ones by party name; organization admins only (M21, built in `85_billing/140`).');
 
 // ───────────────────────────── translation, notifications
@@ -224,17 +252,47 @@ for (const name of ['notifications_page', 'notifications_unread_count', 'notific
 table('user_devices', 'same', 'table:user_devices', 'Already moved to the baseline contract.');
 
 // ───────────────────────────── WhatsApp bot and dev helpers
+// The `integrations` module (M22 / L7): migrations `whatsapp_channel_schema`,
+// `whatsapp_webhook_and_queue`, `whatsapp_linking_and_bot_tools`, `whatsapp_admin_console`,
+// `whatsapp_match_alerts_and_jobs`. Called by the two bot Edge Functions, the admin console
+// adapter (SupabaseWhatsAppAdminRepository) and the member link adapter (SupabaseWhatsAppLinkRepository).
 for (const name of [
-  // The link screen and the admin console make no call while M22 is open (package L7); these are
-  // the parked Edge Functions' own calls.
-  'api_whatsapp_llm_budget_take', 'api_whatsapp_queue_reply',
-  'api_whatsapp_outbound_claim', 'api_whatsapp_outbound_result', 'api_whatsapp_claim_inbound',
-  'api_whatsapp_release_inbound', 'api_whatsapp_inbound_allowed', 'api_whatsapp_ingest_inbound',
-  'api_whatsapp_handle_keyword', 'api_whatsapp_redeem_link_code', 'api_whatsapp_bot_access',
-  'api_bot_search_listings', 'api_bot_listing_cards', 'api_bot_open_session', 'api_bot_apply_extraction',
-  'api_bot_publish_listing', 'api_bot_my_listings', 'api_bot_my_matches', 'api_bot_find_matches',
-]) rpc(name, 'missing', null, 'The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).', { m: 'M22' });
-table('whatsapp_channel_config', 'missing', null, 'Same: no `integrations` tables yet.', { m: 'M22' });
+  'api_whatsapp_llm_budget_take', 'api_whatsapp_queue_reply', 'api_whatsapp_outbound_claim',
+  'api_whatsapp_outbound_result', 'api_whatsapp_claim_inbound', 'api_whatsapp_release_inbound',
+  'api_whatsapp_inbound_allowed', 'api_whatsapp_ingest_inbound', 'api_whatsapp_handle_keyword',
+  'api_whatsapp_redeem_link_code',
+]) rpc(name, 'same', `rpc:${name}`, 'Same name, arguments and return shape; tables live in `integrations` (service role only).');
+rpc('api_whatsapp_bot_access', 'same', 'rpc:api_whatsapp_bot_access', 'Same shape; `access` may also be `inactive` (a linked member whose account is not active): no upsell, no agent.');
+rpc('api_whatsapp_channel_config', 'changed', 'rpc:api_whatsapp_channel_config', 'New (the old sender read `whatsapp_channel_config` directly): `{is_enabled, phone_number_id, graph_api_version}`; the table moved to `integrations`.');
+rpc('api_bot_search_posts', 'changed', 'rpc:api_bot_search_posts', 'Was `api_bot_search_listings(p_owner_id, …)` + `api_bot_listing_cards`: `(p_user_id, p_query, p_world_slug, p_limit ≤ 8)` returns the post cards themselves (`post_id`, `world_slug`, `direction`, `title`, `description`, `city_id`, `published_at`) visible to that member.');
+rpc('api_bot_open_session', 'renamed', 'rpc:api_bot_open_session', '`p_record_id` → `p_inbound_message_id` (the inbound row id returned by `api_whatsapp_ingest_inbound`; may be null).');
+rpc('api_bot_apply_extraction', 'same', 'rpc:api_bot_apply_extraction', 'Same arguments; kind slugs are the posts catalog\'s (`item_offer`, `item_request`, `food_offer`, `food_request`); returns the session id; titles are cut to 80 characters.');
+rpc('api_bot_publish_post', 'changed', 'rpc:api_bot_publish_post', 'Was `api_bot_publish_listing` (returned the listing id): returns `{post_id, status, review, photo_required}`, a draft when confidence is below 0.85 (review item) or when an offer in a photo world needs its photo (D132); a food offer needs `details.expires_at`.');
+rpc('api_bot_my_posts', 'renamed', 'rpc:api_bot_my_posts', 'Was `api_bot_my_listings`; same arguments; rows carry `post_id` (was `listing_id`).');
+rpc('api_bot_my_matches', 'same', 'rpc:api_bot_my_matches', 'Same shape; reads matching v2 pairs and leaves out a pair whose other post the member may not read.');
+// Member link screen (Settings → WhatsApp), through IWhatsAppLinkRepository.
+rpc('api_whatsapp_my_link_status', 'changed', 'rpc:api_whatsapp_my_link_status', 'Adds `consent_opted_in` and `phone_opted_out` to `{linked, wa_id_masked, is_pro}`.');
+rpc('api_whatsapp_create_link_code', 'same', 'rpc:api_whatsapp_create_link_code', '`{code, expires_at}`; `pro_required` for a member without Pro, `rate_limited` after 10 codes an hour (new).');
+rpc('api_whatsapp_unlink_me', 'same', 'rpc:api_whatsapp_unlink_me', 'Unlinks the caller\'s number; the phone row and its consent history stay.');
+rpc('api_whatsapp_set_match_consent', 'changed', 'rpc:api_whatsapp_set_match_consent', 'New app path (the old `api_bot_set_match_consent` had no caller): the caller\'s own match-alert switch; returns the link status.');
+// Admin console (moderator+; the two configuration writers are super admin).
+for (const name of ['api_whatsapp_admin_get_channel', 'api_whatsapp_admin_set_channel_enabled']) {
+  rpc(name, 'same', `rpc:${name}`, 'Same shape plus `updated_by`; the switch is audited (`whatsapp_channel_toggle`).');
+}
+rpc('api_whatsapp_admin_overview', 'changed', 'rpc:api_whatsapp_admin_overview', 'Adds `review_pending`; rate hits read `kc_private.rate_limit_counters`.');
+rpc('api_whatsapp_admin_list_consent', 'changed', 'rpc:api_whatsapp_admin_list_consent', '`p_offset` → `p_cursor` (keyset); no `total_count`; rows add `identity_id` and `cursor`.');
+rpc('api_whatsapp_admin_list_outbound', 'changed', 'rpc:api_whatsapp_admin_list_outbound', '`p_offset` → `p_cursor` (keyset) with `p_status`; no `total_count`; rows add `cursor`; `invalid_status` for an unknown status.');
+rpc('api_whatsapp_admin_list_rate_hits', 'same', 'rpc:api_whatsapp_admin_list_rate_hits', 'Same arguments; rows add `expires_at`; the number inside a bucket key is masked.');
+rpc('api_whatsapp_admin_list_recent_matches', 'same', 'rpc:api_whatsapp_admin_list_recent_matches', 'Same shape; `match_found_v1` and `confirm_handoff_v1` of the last 7 days.');
+rpc('api_whatsapp_admin_list_conversations', 'changed', 'rpc:api_whatsapp_admin_list_conversations', '`listing_id` → `post_id`; rows add `confidence`.');
+rpc('api_whatsapp_admin_resend', 'same', 'rpc:api_whatsapp_admin_resend', 'Same shape (`outbound_not_found`, `not_resendable`); audited.');
+rpc('api_whatsapp_admin_block_user', 'same', 'rpc:api_whatsapp_admin_block_user', 'Same shape; audited.');
+rpc('api_whatsapp_admin_review_list', 'changed', 'rpc:api_whatsapp_admin_review_list', 'New: the review queue of bot posts, keyset-paged (`p_status`, `p_cursor`, `p_limit`).');
+rpc('api_whatsapp_admin_review_resolve', 'changed', 'rpc:api_whatsapp_admin_review_resolve', 'New: `approved` publishes the draft for its owner (`offer_photo_required` without a photo), `rejected` leaves it (`invalid_decision`, `invalid_transition`); audited.');
+rpc('api_whatsapp_admin_list_templates', 'changed', 'rpc:api_whatsapp_admin_list_templates', 'New: the templates and their Meta state.');
+rpc('api_whatsapp_admin_get_send_limits', 'changed', 'rpc:api_whatsapp_admin_get_send_limits', 'New, moderator and above: the current send limits for the console panel.');
+rpc('api_whatsapp_admin_set_send_limits', 'changed', 'rpc:api_whatsapp_admin_set_send_limits', 'New, super admin: patches the send limits (`invalid_limits`); audited.');
+rpc('api_whatsapp_admin_set_template_status', 'changed', 'rpc:api_whatsapp_admin_set_template_status', 'New, super admin: a template\'s Meta status (`invalid_status`, `template_not_found`); audited.');
 
 // ───────────────────────────── Edge Function workers (service role)
 rpc('embedding_jobs_claim', 'renamed', 'rpc:embedding_jobs_claim', 'Returned `listing_id` → `post_id`.');
@@ -263,6 +321,9 @@ channel('`user:${userId}:chats`', 'same', 'topic:user:<user id>:chats', 'Private
 channel('`chat:${chatId}:typing`', 'same', 'topic:chat:<chat id>:typing', 'Members may send on `chat:%:typing` and `chat:%:presence`.');
 channel('topic = `user:${userId}:notifications`', 'same', 'topic:user:<user id>:notifications', 'Already on the baseline contract (event `badge`).');
 channel('topic = `user:${userId}:account`', 'same', 'topic:user:<user_id>:account', 'Already on the baseline contract (event `account_changed` with `status`, `status_until`, `onboarding_state`; M24, built for the account gate): the account gate subscribes here instead of to a `users` row.');
+channel('`user:${userId}:stats`', 'same', 'topic:user:<user id>:stats', 'Private topic of the member (migration 0026); event `stats_changed` carries the own counters (karma, followers, following, given, received, open posts) when one changes. `useMeRealtime` patches the own-profile cache (FR-KARMA-009, M24 built).');
+channel("FEED_PUBLIC_TOPIC = 'feed:public'", 'same', 'topic:feed:public', 'Private topic (migration 0026); event `new_post` with `post_id` and `owner_id` when a post becomes open and Public. The feed counts the pill and re-reads through RLS on tap (FR-FEED-009 AC2, M24 built).');
+channel("ONLINE_PRESENCE_TOPIC = 'presence:online'", 'same', 'topic:presence:online', 'Presence, key = member id (migration 0026); tracking and receiving both need an active account with "show my active status" on, and in-chat presence follows the same rule (M24 built).');
 channel('topic', 'same', 'client:openExactTopicChannel', 'The shared helper itself: unchanged, it opens whatever private topic it is given.');
 
 // ───────────────────────────── Edge Function invokes from the app
@@ -294,6 +355,24 @@ rpc('cancel_post_series_date', 'same', 'rpc:cancel_post_series_date', 'Cancels o
 rpc('accept_world_consent', 'same', 'rpc:accept_world_consent', 'Accepts the driver declaration in force (`p_kind`, `p_version`); `consent_version_stale` for an old version.');
 rpc('my_matches', 'same', 'rpc:my_matches', 'The caller\'s pairs, each with the other member\'s post as a card (`other_post`).');
 rpc('admin_match_quality', 'same', 'rpc:admin_match_quality', '`p_days` (clamped 1..365); per giving world the alerted pairs, answers, acceptances, chats after the alert and completed handoffs, rates as numerics. Moderators and above (`forbidden` otherwise); lives in `76_matching/070_match_quality.sql`.');
+// Moderation, support and statistics restored after the baseline (migrations `0015`–`0019`).
+rpc('list_my_blocked_users', 'same', 'rpc:list_my_blocked_users', 'The caller\'s blocks with the blocked member\'s name and avatar, newest first, keyset (`p_before_blocked_at`, `p_before_user_id`, `p_limit` ≤ 100); `0015` (M01, built).');
+rpc('submit_support_issue', 'changed', 'rpc:submit_support_issue', 'Was `rpc_submit_support_issue`. `(p_category, p_description, p_issue_id)` writes a `support_issue` system message (`issue_id`, `category`, `description`) and returns the thread; refusals `description_too_short`, `description_too_long` (500), `invalid_support_category`; `0015`.');
+rpc('admin_list_support_threads', 'same', 'rpc:admin_list_support_threads', 'Staff: support threads with messages, newest first, keyset; `0015`.');
+rpc('admin_join_support_thread', 'same', 'rpc:admin_join_support_thread', 'Staff join a support thread as its `support_agent`; idempotent, audited; `0015`.');
+rpc('admin_open_member_support_thread', 'same', 'rpc:admin_open_member_support_thread', 'Staff open a member\'s support thread (created if needed) from a report case; `0015`.');
+rpc('admin_restore_chat', 'changed', 'rpc:admin_restore_chat', 'Was the chat branch of `admin_restore_target`: unhides a chat hidden for review and dismisses its open reports (FR-ADMIN-002 AC2/AC4); `0016`.');
+rpc('admin_restore_comment', 'same', 'rpc:admin_restore_comment', 'Brings back a comment staff removed, with the replies removed alongside; dismisses its open reports; `0016`.');
+rpc('admin_delete_comment', 'same', 'rpc:admin_delete_comment', 'Staff remove a comment with its replies; `0016` stamps `moderation_removed_at` so `admin_restore_comment` can bring them back.');
+rpc('admin_reports_inbox', 'changed', 'rpc:admin_reports_inbox', 'Was `reports_open_inbox`. Server-grouped open cases, oldest first, keyset (`p_after_oldest_at`, `p_after_target_type`, `p_after_target_id`), filters and `p_search` (target id or reporter name); `0016`.');
+rpc('admin_report_case_timeline', 'changed', 'rpc:admin_report_case_timeline', 'Was the timeline of `reports_case_detail` (reporters come from `reports`): the whole audit history of the target and its reports from `admin_report_case_timeline` (every staff role); `0016`.');
+rpc('admin_audit_lookup', 'changed', 'rpc:admin_audit_lookup', 'Was `admin_audit_lookup_guarded`. Super admin: events by or about a member (`p_user_id`), keyset, ≤ 200; `0016`.');
+table('moderation_queue', 'same', 'table:moderation_queue', 'Staff read the open review entries directly (oldest first, keyset); writes through `admin_assign_queue_entry` / `admin_resolve_queue_entry` (FR-MOD-008).');
+rpc('admin_assign_queue_entry', 'same', 'rpc:admin_assign_queue_entry', 'A moderator takes an open review entry or hands it to another staff member.');
+rpc('admin_resolve_queue_entry', 'same', 'rpc:admin_resolve_queue_entry', 'A moderator closes an open review entry.');
+rpc('admin_world_flow_funnel', 'same', 'rpc:admin_world_flow_funnel', '`p_days` (1..365); per world and direction (`give` / `request`) the posts published in the window through their handoffs; money has no handoff stages. Moderators and above; `0018` (M14, built).');
+rpc('my_world_givings', 'same', 'rpc:my_world_givings', 'The caller\'s handed-over givings (given / received) and closed posts per world; `0018` (M15, built).');
+rpc('list_kc_support_channels', 'same', 'rpc:list_kc_support_channels', 'Active KC support channels; the payee phone only for signed-in callers; the table is edited by the super admin; `0019` (M20, built).');
 rpc('match_respond', 'same', 'rpc:match_respond', '`p_match_id`, `p_accept`; answers the pair\'s status (`accepted` when both accepted).');
 table('post_ride_details', 'same', 'table:post_ride_details', 'Read for the route, time and seats of a ride and for the occurrences of a series; the owner edits it through the adapter.');
 table('post_event_details', 'same', 'table:post_event_details', 'Read for an event\'s window, capacity and policy; the organizer edits it through the adapter.');
@@ -311,7 +390,6 @@ table('post_ratings', 'same', 'table:post_ratings', 'The rater reads back the ra
 // ═════════════════════════════ MISSING: what the baseline does not provide
 // action: build (add to the baseline) · rls-read (already possible, no new object) · drop · defer (behind a flag)
 export const missing = [
-  { id: 'M22', title: 'WhatsApp bot, linking and admin console', usedBy: 'Three Edge Functions (webhook, intake worker, sender) — 19 RPCs and one table; the mobile link screen and the admin WhatsApp console are parked and make no call', spec: 'design Q4 (PM): not in the launch baseline', launch: 'no', action: 'defer', recommendation: 'Do not deploy the three functions; hide the link screen and the admin console behind a flag until the `integrations` module lands.' },
 ];
 
 // ═════════════════════════════ Launch tier of a row (spec D102, docs/spec/96, docs/spec/14)
@@ -359,31 +437,31 @@ export const packages = [
   { id: 'P0', title: 'Contract switch and the degrade rule (first, alone)', launch: 'core', parallelWith: [],
     select: either(inArea('(root)', 'realtime'), named(/^app_flags$/)),
     files: ['infrastructure-supabase/src/database.types.ts (replaced by the baseline types)', 'infrastructure-supabase/src/index.ts', 'infrastructure-supabase/src/client.ts', 'infrastructure-supabase/src/rpc/**', 'infrastructure-supabase/src/lib/**', 'infrastructure-supabase/src/fsm/**', 'infrastructure-supabase/src/realtime/**', 'packages/domain/src (status lists, FSM machines, money value objects)', 'apps/mobile/src/services/featureFlagsComposition.ts', 'scripts/check-rpc-contract.mjs + allowlist'],
-    work: 'Done in P0 (see docs/db/app-migration-playbook.md): `database.types.ts` is the generated baseline types and `database.legacy.types.ts` a frozen copy of the old ones, imported only by the files listed in `infrastructure-supabase/src/migrationStatus/<package>.ts` (the client factory is generic: `getSupabaseClient()` is baseline-typed, `getLegacySupabaseClient()` / `legacySupabase` are the same connection typed against the old schema). `FSM_MACHINES` equals the baseline seeds (`catalogMatchesSql.test.ts` reads `supabase/schemas`); the four machines without a baseline seed sit in `LEGACY_FSM_MACHINES` until L2, L6 and L7 move. `rpc/backendUnavailable.ts` holds `isBackendObjectMissing` and `rpc/mapRpcError.ts` the P0001 mapper and `unwrapCall`; `BackendUnavailableError` and `BackendRuleError` are domain errors. UI helpers: `apps/mobile/src/lib/backendAvailability.ts` and the `backend.*` locale keys. `src/__tests__/baselineCompatibility.test.ts` fails when an unlisted file still needs the old schema or a listed file no longer does.',
+    work: 'Done in P0 (see docs/db/app-migration-playbook.md): `database.types.ts` is the generated baseline types and `database.legacy.types.ts` a frozen copy of the old ones, imported only by the files listed in `infrastructure-supabase/src/migrationStatus/<package>.ts` (the client factory is generic: `getSupabaseClient()` is baseline-typed, `getLegacySupabaseClient()` / `legacySupabase` are the same connection typed against the old schema). `FSM_MACHINES` equals the baseline seeds (`catalogMatchesSql.test.ts` reads `supabase/schemas`); the machines without a baseline seed sat in `LEGACY_FSM_MACHINES` until their modules moved (the list is gone since L6 seeded the last two in `0034` and `0036`). `rpc/backendUnavailable.ts` holds `isBackendObjectMissing` and `rpc/mapRpcError.ts` the P0001 mapper and `unwrapCall`; `BackendUnavailableError` and `BackendRuleError` are domain errors. UI helpers: `apps/mobile/src/lib/backendAvailability.ts` and the `backend.*` locale keys. `src/__tests__/baselineCompatibility.test.ts` fails when an unlisted file still needs the old schema or a listed file no longer does.',
     tests: ['pnpm typecheck, pnpm test, pnpm lint from app/', 'src/fsm/__tests__/catalogMatchesSql.test.ts against supabase/schemas', 'src/__tests__/baselineCompatibility.test.ts', 'src/rpc/__tests__/degradeRule.test.ts', 'node --test scripts/*.test.mjs', 'node scripts/gen-baseline-types.mjs --check'],
     degrade: 'This package defines the rule for all others: an adapter call that hits a missing function or table throws `BackendUnavailableError`; a list screen shows its empty state, an action shows the generic "not available yet" message, a world whose `world_<slug>_enabled` flag is off never renders its entry points. No screen reads `error.message` of an unknown error.',
     risks: 'Everything depends on it and it must not change behaviour: no adapter logic changed, only its type import. CI still diffs `database.types.ts` against the old migrations until the workflow change listed in the P0 report lands.' },
   { id: 'P1', title: 'Identity: session start, profile, privacy, follow, block, legal, account deletion, devices', launch: 'core', parallelWith: [],
     select: either(inArea('auth', 'users', 'legal', 'blocks', 'social', 'cities', 'streets', 'about', 'notifications'), named(/^(record_active_day|api_my_pro_status|avatars|topic = `user:.*notifications`)$/)),
     files: ['auth/**', 'users/**', 'legal/**', 'blocks/**', 'social/**', 'cities/**', 'streets/**', 'about/**', 'notifications/**', 'survey/SupabaseUserActivityRepository.ts', 'apps/mobile: auth gate, onboarding, settings, edit profile, avatar upload, notification badge hook, devIdentityVerification (deleted)'],
-    work: 'Done in P1: the account gate, private profile, onboarding state and pending legal documents read `bootstrap_session`; `users/mapUserRow.ts` maps the public `users` row plus `user_stats` and, for the caller\'s own row, the `bootstrap_session` private blocks (`user_private`, `user_account`, staff roles); follows go through `follow_user`, `follow_request_decide` and `follow_request_cancel`; account deletion through `request_account_deletion` and `restore_account`; the account gate listens on `user:<id>:account`. M01, M03, M04 and M08 are hidden or empty (no call is made); the dev-only identity and onboarding helpers are gone.',
+    work: 'Done in P1: the account gate, private profile, onboarding state and pending legal documents read `bootstrap_session`; `users/mapUserRow.ts` maps the public `users` row plus `user_stats` and, for the caller\'s own row, the `bootstrap_session` private blocks (`user_private`, `user_account`, staff roles); follows go through `follow_user`, `follow_request_decide` and `follow_request_cancel`; account deletion through `request_account_deletion` and `restore_account`; the account gate listens on `user:<id>:account`. the blocked-users list reads `list_my_blocked_users` (`0015`); follow suggestions, the completeness nudge (M03, M04) and the About roster (M08) are built (`0031`); the dev-only identity and onboarding helpers are gone.',
     tests: ['vitest: auth, users, legal, blocks, social, notifications suites', 'contract tests against a baseline database (sqlProbes, contract.integration)', 'pgTAP 010, 011, 020, 021, 050, 051'],
-    degrade: 'Nothing works before this package (no session): it is the first one after P0. The blocked-users row, follow suggestions, the completeness hint and the About team list are hidden (M01, M03, M04, M08).',
+    degrade: 'Nothing works before this package (no session): it is the first one after P0.',
     risks: 'Owns `users/mapUserRow.ts`, which chat, posts and search read: it lands before P2 and P3 start. Account gate: topic `user:<id>:account` (M24).' },
   { id: 'P2', title: 'Posts, feed, search, closure, translations', launch: 'core', parallelWith: ['P3', 'P4'],
     select: either(inArea('posts', 'feed', 'search', 'translations', 'stats'), named(/community[-_]stats/)),
     files: ['posts/**', 'feed/** (except feed/SupabaseFeedRealtime.ts)', 'search/**', 'translations/**', 'stats/**', 'apps/mobile: feed, post detail, create / edit post, profile tabs, saved posts, image upload, community counter, statistics screen'],
     work: 'Card-based reads (`feed_page`, `profile_posts_page`, `post_detail`, `post_cards`), keyset cursors, column renames, owner actions and closure through RPCs, `post_media`.',
     tests: ['vitest: posts, feed, search, translations suites', 'pgTAP 030, 035, 040, 041, 042, 078'],
-    degrade: 'Until it lands the feed and profile tabs show their empty state and the create-post button is disabled; nothing else in the app depends on a post list. The statistics screen shows the community counters and the timeline only: its per-world block and the admin funnel are hidden (M14, M15).',
+    degrade: 'Until it lands the feed and profile tabs show their empty state and the create-post button is disabled; nothing else in the app depends on a post list.',
     risks: 'Largest behavioural change: cursor and card shape reach the application ports. Owns `posts/mapPostRow.ts`, read by P5. The card carries `owner_identity_masked` (M02).' },
   { id: 'P3', title: 'Chat and realtime', launch: 'core', parallelWith: ['P2', 'P4'],
     select: either(inArea('chat'), named(/^chat-media$/)),
     files: ['chat/**', 'feed/SupabaseFeedRealtime.ts', 'rides/SupabaseRidesRealtime.ts', 'apps/mobile: chat screens, chat media, inbox and notification badge hooks'],
-    work: 'Done in P3: the inbox is `chat_inbox_page`, messages are `chat_messages_page` and `send_message` (the optimistic id is `p_message_id`), a chat opens through `open_direct_chat` / `open_support_thread`, read receipts come from `chat_members.last_read_at` (the `read` broadcast), and the chat and inbox subscriptions are the private topics `chat:<id>:messages` and `user:<id>:chats`. The new-posts banner, global online presence and the rides feed updates have no baseline topic and are degraded (M24): they open nothing and report `BackendUnavailableError`.',
+    work: 'Done in P3: the inbox is `chat_inbox_page`, messages are `chat_messages_page` and `send_message` (the optimistic id is `p_message_id`), a chat opens through `open_direct_chat` / `open_support_thread`, read receipts come from `chat_members.last_read_at` (the `read` broadcast), and the chat and inbox subscriptions are the private topics `chat:<id>:messages` and `user:<id>:chats`. The new-posts banner (`feed:public`) and global online presence (`presence:online`) are built (migration 0026); the rides feed updates have no baseline topic and are degraded (M24): they open nothing and report `BackendUnavailableError`.',
     tests: ['vitest: chat suites, realtime/exactTopicChannel tests', 'pgTAP 045, 050'],
     degrade: 'Before this package the chat tab shows an empty inbox and "contact" buttons on posts are disabled; a failed subscription is ignored (the screen refreshes on focus). After it: no green online dots, no live "new posts" pill, ride lists refresh on focus; the inbox preview of a system or media-only message carries no text and the counterpart verification badge is not shown in the inbox (the page RPC does not return them).',
-    risks: 'Contact phone: `chat_counterpart_contact` (M06). Optimistic send passes `p_message_id`. The baseline keeps one chat per pair, so the second chat after a personal hide (`preferNewThread`) no longer exists; a ride or listing anchor is a post anchor.' },
+    risks: 'Contact phone: `chat_counterpart_contact` (M06). Optimistic send passes `p_message_id`. The baseline keeps one chat per pair; after a personal hide the member\'s history starts at the hide (migration 0028), so contacting again opens a clean thread for them (`preferNewThread` needs no second chat); a ride or listing anchor is a post anchor.' },
   { id: 'P4', title: 'Reports, moderation and admin basics', launch: 'core', parallelWith: ['P2', 'P3'],
     select: either(both(inArea('moderation', 'reports', 'admin'), tierIs('core')), named(/^admin_(demo|seed|wipe)_/)),
     files: ['moderation/**', 'reports/**', 'admin/fetchMyAdminRoles.ts', 'admin/SupabaseAdminRoleRepository.ts', 'admin/SupabaseAdminContentRepository.ts', 'admin/SupabaseDemoDataRepository.ts (deleted)', 'apps/mobile: report sheet, admin portal home, reports inbox, case detail, users / posts search, roles, audit'],
@@ -443,16 +521,16 @@ export const packages = [
   { id: 'L6', title: 'Back-office tools: tasks, CRM, timesheets', launch: 'later', parallelWith: ['L1', 'L2', 'L3', 'L4', 'L5', 'L7'],
     select: (row) => /^(admin_task_|crm_|timesheet_)/.test(row.old),
     files: ['admin/SupabaseAdminTaskRepository.ts', 'admin/SupabaseCrmContactsRepository.ts', 'admin/SupabaseTimesheetsRepository.ts', 'apps/mobile: admin tasks, CRM, timesheets screens'],
-    work: 'Done: nothing to migrate to (the baseline has no task tracker, CRM or timesheets, old M19). The three adapters make no call and reject with `BackendUnavailableError`; whether these internal tools belong in this database is still an open product decision.',
-    tests: ['vitest: parkedBackOffice, parkedAdminSections'],
-    degrade: 'Parked behind `BACK_OFFICE_TOOLS_AVAILABLE` (apps/mobile/src/lib/parkedFeatures.ts): the tasks nav entry and dashboard card are hidden, and the tasks, CRM and timesheets routes render the not-available notice.',
-    risks: 'Product decision, not engineering.' },
+    work: 'Done: rebuilt as forward migrations `0034` (tasks), `0035` (CRM per organization) and `0036` (timesheets decided by the direct manager); the three adapters call them again, with keyset paging.',
+    tests: ['pgTAP: 099_back_office_tasks, 100_back_office_crm, 101_back_office_timesheets', 'vitest: SupabaseAdminTaskRepository, SupabaseCrmTimesheetsRepository, adminSectionAvailability, backOfficeDestinations'],
+    degrade: 'One switch per tool in apps/mobile/src/lib/parkedFeatures.ts (`ADMIN_TASKS_AVAILABLE`, `CRM_AVAILABLE`, `TIMESHEETS_AVAILABLE`, all on); a tool switched off hides its nav entry and renders the not-available notice.',
+    risks: 'None known.' },
   { id: 'L7', title: 'WhatsApp bot, linking, admin console', launch: 'later', parallelWith: ['L1', 'L2', 'L3', 'L4', 'L5', 'L6'],
     select: (row) => /^(api_whatsapp|api_bot|whatsapp_)/.test(row.old),
-    files: ['admin/SupabaseWhatsAppAdminRepository.ts', 'supabase/functions/{whatsapp-webhook,whatsapp-intake-worker,whatsapp-sender}', 'supabase/functions/_shared/whatsapp/**', 'apps/mobile: WhatsApp link screen'],
-    work: 'App side done: the admin console adapter makes no call and rejects with `BackendUnavailableError`, and the link screen is a not-available notice. The bot itself waits for the `integrations` module (M22, design Q4).',
-    tests: ['deno test supabase/functions/_shared/whatsapp'],
-    degrade: 'The three functions are not deployed; the settings row and the admin nav entry are hidden behind `WHATSAPP_BOT_AVAILABLE` (apps/mobile/src/lib/parkedFeatures.ts), and both routes render the not-available notice.',
+    files: ['admin/SupabaseWhatsAppAdminRepository.ts', 'whatsapp/SupabaseWhatsAppLinkRepository.ts', 'supabase/functions/{whatsapp-webhook,whatsapp-sender}', 'supabase/functions/_shared/whatsapp/**', 'apps/mobile: admin WhatsApp console, Settings → WhatsApp'],
+    work: 'Done: the `integrations` module (five `whatsapp_*` migrations); the webhook and sender deploy (the intake worker is retired); the admin console adapter pages by cursor and adds the review queue, templates and send limits; the member link port backs Settings → WhatsApp with the match-alert switch.',
+    tests: ['pgTAP: 102_whatsapp_channel, 103_whatsapp_linking_bot, 104_whatsapp_admin, 105_whatsapp_match_alerts_jobs', 'deno test supabase/functions', 'vitest: SupabaseWhatsAppAdminRepository, SupabaseWhatsAppLinkRepository, WhatsAppAdminScreen, whatsappLinkScreen'],
+    degrade: '`WHATSAPP_BOT_AVAILABLE` is on; the launch flag `launch_whatsapp_bot_enabled` still hides the settings row and the admin nav entry per environment. The functions do nothing until the channel is switched on and the Meta secrets exist.',
     risks: 'None for launch.' },
 ];
 
@@ -476,15 +554,15 @@ export const edgeFunctions = [
   { name: 'strip-exif', verdict: 'done', uses: 'bucket post-images', change: 'Verified; storage only. Only its header comment changed.' },
   { name: 'backfill-image-thumbs', verdict: 'done', uses: 'buckets passed at run time', change: 'Service-role key only (a JWT claiming the role is refused); buckets `post-images` and `avatars`; one-off tool, may be dropped after the cut-over.' },
   { name: 'mock-login', verdict: 'obsolete', uses: 'none', change: 'Deleted: demo users are dev seed data (design §9).' },
-  { name: 'whatsapp-webhook', verdict: 'park', uses: '8 api_whatsapp_* RPCs', change: 'No `integrations` objects yet (M22): not deployed at launch.' },
-  { name: 'whatsapp-intake-worker', verdict: 'park', uses: 'api_bot_* and api_whatsapp_llm_budget_take', change: 'Same (M22).' },
-  { name: 'whatsapp-sender', verdict: 'park', uses: 'whatsapp_channel_config, api_whatsapp_outbound_*', change: 'Same (M22).' },
+  { name: 'whatsapp-webhook', verdict: 'done', uses: 'api_whatsapp_* webhook RPCs and the agent\'s api_bot_* tools', change: 'Retargeted: the agent searches with `api_bot_search_posts`, posts with `api_bot_publish_post` (draft outcomes told to the user), lists with `api_bot_my_posts`; an `inactive` member gets no agent and no upsell. Deployed.' },
+  { name: 'whatsapp-intake-worker', verdict: 'obsolete', uses: 'none', change: 'Deleted: the agent\'s posting tool replaces it, and `api_bot_find_matches` is gone.' },
+  { name: 'whatsapp-sender', verdict: 'done', uses: 'api_whatsapp_channel_config, api_whatsapp_outbound_*', change: 'Retargeted: reads the channel through `api_whatsapp_channel_config()`; started by the `whatsapp_send` job. Deployed.' },
 ];
 
 // ═════════════════════════════ Rules that hold across the whole map
 export const notes = [
-  'Capabilities the baseline does not provide and the identity adapters therefore do not call (they report `BackendUnavailableError` and the screens degrade): the blocked-users list (M01, the screen shows its empty state; unblock from a profile is not reachable because `users_hide_blocked` hides it), follow suggestions (M03) and the profile completeness nudge (M04), both hidden on the suggestions screen, and the About team roster (M08, no team section).',
-  'Internal back-office tools the baseline does not provide and whose adapters therefore make no call (they report `BackendUnavailableError`; the sections are parked behind `BACK_OFFICE_TOOLS_AVAILABLE`): the admin task tracker (FR-ADMIN-018), the CRM contacts (roadmap phase 3) and the timesheets (not in the spec), formerly M19. Whether they belong in this database is a product decision.',
+  'Every identity capability the baseline lacked is now built: the blocked-users list (M01, `0015`), follow suggestions (M03), the completeness nudge (M04) and the About roster (M08, all `0031`).',
+  'The internal back-office tools (formerly M19) were rebuilt after the baseline as forward migrations: the admin task tracker (FR-ADMIN-018, `0034`), CRM contacts per organization (FR-ADMIN-032, `0035`) and staff timesheets (FR-ADMIN-033, `0036`).',
   'Errors: every baseline RPC raises `P0001` with a stable snake_case message (`unauthenticated` uses `42501`). Map on `error.message`, never on a SQLSTATE or on Hebrew text. Codes marked † in the tables are not referenced anywhere in the app today and need a user-visible mapping.',
   'Paging: no OFFSET anywhere. Lists take the `next_cursor` JSON of the last row (cards) or explicit `p_before_*` / `p_after_*` values; application ports that expose `offset` change to an opaque cursor.',
   'Money: integer agorot (`*_agorot`), never ILS floats or `*_cents` names.',

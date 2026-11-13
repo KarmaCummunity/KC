@@ -1,11 +1,13 @@
 // Self-test of the notification kind generator: node --test scripts/generate-notification-kinds.test.mjs
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import {
-  AUXILIARY_KEYS, build, parseLocaleModule, parseRegistrySql, readRegistry, stripSqlComments, TEXT_ARGS,
+  AUXILIARY_KEYS, build, forwardMigrationFiles, mergeRegistryRows, parseLocaleModule, parseRegistrySql, readRegistry, stripSqlComments, TEXT_ARGS,
 } from './generate-notification-kinds.mjs';
 
 const SCRIPT = join(dirname(fileURLToPath(import.meta.url)), 'generate-notification-kinds.mjs');
@@ -79,7 +81,7 @@ test('every missing piece of a kind is named', () => {
   };
   assert.match(failure([row()], { ...AUXILIARY, demoTitle: 't' }), /kind demo_kind: text notifications\.demoBody is missing/);
   assert.match(failure([row({ group_window: 60 })], locale()), /demoGroupedBody is missing.*group window/);
-  assert.match(failure([row()], locale({ demoBody: '{{postTitle}}' })), /uses \{\{postTitle\}\}; only actorName/);
+  assert.match(failure([row()], locale({ demoBody: '{{listingTitle}}' })), /uses \{\{listingTitle\}\}; only actorName/);
   assert.match(failure([row(), row()], locale()), /registered twice/);
   assert.match(failure([row({ category: 'urgent' })], locale()), /unknown category urgent/);
   assert.match(failure([row({ title_key: 'other.demoTitle' })], locale()), /other\.demoTitle is missing/);
@@ -88,8 +90,8 @@ test('every missing piece of a kind is named', () => {
   assert.match(both, /kind k1:[\s\S]*kind k2:/, 'all problems are listed at once');
 });
 
-test('the text arguments are the four both renderers provide', () => {
-  assert.deepEqual(TEXT_ARGS, ['actorName', 'count', 'othersCount', 'messagePreview']);
+test('the text arguments are the seven both renderers provide', () => {
+  assert.deepEqual(TEXT_ARGS, ['actorName', 'count', 'othersCount', 'messagePreview', 'taskTitle', 'postTitle', 'details']);
 });
 
 test('the repository registry parses and the generated files are up to date', () => {
@@ -98,4 +100,53 @@ test('the repository registry parses and the generated files are up to date', ()
   assert.equal(new Set(kinds.map((k) => k.kind)).size, kinds.length);
   const output = execFileSync(process.execPath, [SCRIPT, '--check'], { encoding: 'utf8' });
   assert.match(output, /up to date/);
+});
+
+const insert = (kind, push, conflict = '') =>
+  `insert into kc_private.notification_kinds (kind, category, sends_push, title_key, body_key) values
+   ('${kind}', 'critical', ${push}, 'notifications.t', 'notifications.b') ${conflict};`;
+
+test('a conflict clause decides how a later row meets an earlier one', () => {
+  const rows = [
+    ...parseRegistrySql(insert('a', true) + insert('b', true)),
+    ...parseRegistrySql(insert('a', false, 'on conflict (kind) do update set sends_push = excluded.sends_push')),
+    ...parseRegistrySql(insert('b', false, 'on conflict (kind) do nothing')),
+    ...parseRegistrySql(insert('c', false, 'on conflict (kind) do nothing')),
+  ];
+  const merged = mergeRegistryRows(rows);
+  assert.deepEqual(merged.map((r) => [r.kind, r.sends_push]), [['a', false], ['b', true], ['c', false]]);
+  assert.equal(Object.keys(merged[0]).includes('conflict'), false);
+});
+
+test('a plain second insert of a kind is still caught as registered twice', () => {
+  const merged = mergeRegistryRows([...parseRegistrySql(insert('demo_kind', true)), ...parseRegistrySql(insert('demo_kind', false))]);
+  assert.equal(merged.length, 2);
+  assert.throws(() => build(merged.map((r) => row({ kind: r.kind })), locale()), /registered twice/);
+});
+
+test('an unsupported conflict clause stops the generator', () => {
+  assert.throws(() => parseRegistrySql(insert('a', true, 'on conflict do nothing')), /unsupported conflict clause/);
+  assert.throws(() => parseRegistrySql(insert('a', true, 'on conflict (kind) do update set sends_push = true')),
+    /excluded/);
+  assert.throws(() => parseRegistrySql(insert('a', true, 'on conflict (kind) do update set group_window = excluded.group_window')),
+    /does not name/);
+});
+
+test('the forward migrations are read after the schemas, by number, without the baseline', () => {
+  const root = mkdtempSync(join(tmpdir(), 'kinds-'));
+  try {
+    mkdirSync(join(root, 'supabase/schemas/50_notifications'), { recursive: true });
+    mkdirSync(join(root, 'supabase/migrations/archive'), { recursive: true });
+    writeFileSync(join(root, 'supabase/schemas/50_notifications/010_kinds.sql'), insert('a', true));
+    writeFileSync(join(root, 'supabase/migrations/0001_baseline.sql'), insert('a', true));
+    writeFileSync(join(root, 'supabase/migrations/0012_late.sql'),
+      insert('a', false, 'on conflict (kind) do update set sends_push = excluded.sends_push'));
+    writeFileSync(join(root, 'supabase/migrations/0003_new.sql'), insert('b', true));
+    writeFileSync(join(root, 'supabase/migrations/archive/0500_old.sql'), insert('z', true));
+    assert.deepEqual(forwardMigrationFiles(root).map((f) => f.slice(root.length + 1)),
+      ['supabase/migrations/0003_new.sql', 'supabase/migrations/0012_late.sql']);
+    assert.deepEqual(readRegistry(root).map((r) => [r.kind, r.sends_push]), [['a', false], ['b', true]]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
 });

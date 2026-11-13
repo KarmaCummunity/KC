@@ -55,6 +55,7 @@
 # backend lane. scripts/check-codeowners-coverage.mjs fails CI when a script a
 # workflow runs is missing here.
 /scripts/spec-ids.mjs                       @navesarussi
+/scripts/migration-ids.mjs                  @navesarussi
 /scripts/bump-app-version.mjs               @navesarussi
 /scripts/close-linked-issues.mjs            @navesarussi
 /scripts/run-baseline-tests.sh              @navesarussi

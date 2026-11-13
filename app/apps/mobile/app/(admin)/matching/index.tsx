@@ -37,7 +37,7 @@ export default function MatchQualityScreen() {
 
   const quality = useQuery({
     queryKey: ['admin.matching.quality', days],
-    // The baseline has no match quality report (M14): an unavailable backend shows the empty state.
+    // admin_match_quality (migration 0005); an unavailable backend shows the empty state.
     queryFn: () => listOrEmpty(() => getMatchRepository().qualityByWorld(days)),
     enabled,
     staleTime: 60_000,

@@ -10,10 +10,8 @@ import { useTranslation } from 'react-i18next';
 import { useRouter, useSegments, usePathname, type Href } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useQueryClient } from '@tanstack/react-query';
-import {
-  getRestoreSessionUseCase,
-  subscribeToSession,
-} from '../services/authComposition';
+import { subscribeToSession } from '../services/authComposition';
+import { restoreSessionReporting } from '../services/restoreSessionReporting';
 import { tryDevAutoSignIn } from '../services/devAutoSignIn';
 import { startColdStartSession } from '../services/coldStartSession';
 import { getDevGhostSession, isDevGhostSessionEnabled } from '../services/devGhostSession';
@@ -26,6 +24,7 @@ import { container } from '../lib/container';
 import { useEnforceAccountGate } from '../hooks/useEnforceAccountGate';
 import { isPublicResearchPath } from '../navigation/publicResearchPaths';
 import { isPublicLegalSegment } from '../navigation/publicLegalPaths';
+import { isPublicOrgPagePath } from '../navigation/publicOrgPaths';
 import { PrimaryButton } from './ui/Buttons';
 
 export function AuthGate({ children }: Readonly<{ children: React.ReactNode }>) {
@@ -66,7 +65,7 @@ export function AuthGate({ children }: Readonly<{ children: React.ReactNode }>) 
 
     // Restore + subscription race handling lives in coldStartSession (TD-127).
     return startColdStartSession({
-      restore: async () => (await getRestoreSessionUseCase().execute()).session,
+      restore: restoreSessionReporting,
       subscribe: subscribeToSession,
       devFallback: tryDevAutoSignIn,
       setSession,
@@ -185,6 +184,8 @@ export function AuthGate({ children }: Readonly<{ children: React.ReactNode }>) 
       (typeof pathname === 'string' && isPublicResearchPath(pathname));
     // Terms / privacy must be readable before sign-up (store review, D-47).
     const isLegalSurface = isPublicLegalSegment(segments as readonly string[]);
+    // FR-ORG-001 AC4 — a nonprofit's public page opens from a shared link without sign-in.
+    const isPublicOrgSurface = typeof pathname === 'string' && isPublicOrgPagePath(pathname);
 
     if (!isAuthenticated) {
       if (
@@ -196,7 +197,8 @@ export function AuthGate({ children }: Readonly<{ children: React.ReactNode }>) 
         !isAccountBlocked &&
         !isAboutSurface &&
         !isResearchSurface &&
-        !isLegalSurface
+        !isLegalSurface &&
+        !isPublicOrgSurface
       ) {
         // FR-POST-023 AC6 — remember the deep-link target so we can restore
         // it after the user completes sign-in / onboarding.

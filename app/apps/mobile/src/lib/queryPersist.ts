@@ -3,7 +3,7 @@
 
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { QueryClient, type Query } from '@tanstack/react-query';
+import { MutationCache, QueryCache, QueryClient, type Query } from '@tanstack/react-query';
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
 import type { PersistQueryClientOptions } from '@tanstack/react-query-persist-client';
 import { del, get, set } from 'idb-keyval';
@@ -12,7 +12,16 @@ export const RQ_CACHE_KEY = 'kc-rq-cache';
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
+/**
+ * Minimum gap between two writes of the cache to storage. Every write serializes the whole
+ * persisted cache (all loaded feed pages and opened posts) on the JS thread, and any cache event
+ * schedules one, so a short gap means a serialization per second while the user scrolls and taps.
+ * The persisted copy only matters at the next cold start, so being a few seconds behind is free.
+ */
+export const QUERY_PERSIST_THROTTLE_MS = 5000;
+
 import { isPersistableQueryKey } from './queryPersistKeys';
+import { reportHandledError } from './observability/reportHandledError';
 import { shouldRetryQuery, queryRetryDelay } from './queryRetryPolicy';
 
 export { isPersistableQueryKey } from './queryPersistKeys';
@@ -24,6 +33,16 @@ export {
 } from './queryLifecycleSync';
 
 export const queryClient = new QueryClient({
+  // Single choke point for handled failures: `onError` fires once per query
+  // (after retries are exhausted) and once per failed mutation, so every data
+  // call in the app is reported without touching each hook.
+  queryCache: new QueryCache({
+    onError: (error, query) => reportHandledError(error, 'query', query.queryKey),
+  }),
+  mutationCache: new MutationCache({
+    onError: (error, _variables, _context, mutation) =>
+      reportHandledError(error, 'mutation', mutation.options.mutationKey),
+  }),
   defaultOptions: {
     queries: {
       staleTime: 10 * 60_000,
@@ -55,13 +74,13 @@ function createQueryPersister() {
         },
       },
       key: RQ_CACHE_KEY,
-      throttleTime: 1000,
+      throttleTime: QUERY_PERSIST_THROTTLE_MS,
     });
   }
   return createAsyncStoragePersister({
     storage: AsyncStorage,
     key: RQ_CACHE_KEY,
-    throttleTime: 1000,
+    throttleTime: QUERY_PERSIST_THROTTLE_MS,
   });
 }
 

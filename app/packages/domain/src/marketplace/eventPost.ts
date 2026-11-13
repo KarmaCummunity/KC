@@ -3,6 +3,9 @@
 // post handoffs, one seat each; a full event waitlists, and attendance is marked by the organizer
 // (supabase/migrations/0563_event_posts.sql, 0564_event_attendance_waitlist.sql).
 
+import { allowsMove } from '../fsm/machine';
+import { eventRegistrationMachine } from '../fsm/machines/eventRegistration';
+
 /** The time world's listing kind slug of an organization's event (`listing_kinds.slug`). */
 export const ORG_EVENT_KIND_SLUG = 'event';
 
@@ -84,6 +87,15 @@ export function isEventRegistrationStatus(status: unknown): status is EventRegis
 /** Type guard: is the member still registered (reserved, confirmed or waitlisted)? */
 export function isActiveEventRegistrationStatus(status: unknown): status is ActiveEventRegistrationStatus {
   return typeof status === 'string' && (ACTIVE_EVENT_REGISTRATION_STATUSES as readonly string[]).includes(status);
+}
+
+/**
+ * Whether the registrant may leave: the registration graph gives them a move to `cancelled`
+ * while they wait for a place, wait for the organizer or are registered. An attended, missed
+ * or cancelled registration, and a status the app does not know, cannot be left.
+ */
+export function canLeaveEventRegistration(status: string): boolean {
+  return allowsMove(eventRegistrationMachine, status, 'cancelled', 'recipient');
 }
 
 function optionalText(value: unknown): string | null {

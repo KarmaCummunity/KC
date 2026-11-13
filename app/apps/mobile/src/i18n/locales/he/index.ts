@@ -31,6 +31,7 @@ import { chatMessagingHe } from './modules/chatMessaging';
 import { marketplaceBaselineErrorsHe } from './modules/marketplaceBaselineErrors';
 import { challengeBaselineErrorsHe } from './modules/challengeBaselineErrors';
 import { notificationsHe } from './modules/notifications';
+import { notificationsRichHe } from './modules/notificationsRich';
 import { emptyStatesHe, feedSettingsHe } from './modules/feedSettings';
 import { moderationHe, auditHe, accountBlockedHe } from './modules/moderation';
 import { restoreAccountHe } from './modules/restoreAccount';
@@ -53,6 +54,8 @@ import { surveyHe } from './modules/survey';
 import { researchHe } from './modules/research';
 import { adminHe } from './modules/admin';
 import { adminOrgApprovalsBaselineHe } from './modules/adminOrgApprovalsBaseline';
+import { adminStaffToolsHe } from './modules/adminStaffTools';
+import { adminCrmBaselineHe, adminTimeBaselineHe } from './modules/adminBackOfficeBaseline';
 import { karmaHe } from './modules/karma';
 import { karmaEventsHe } from './modules/karmaEvents';
 import { cardsHe } from './modules/cards';
@@ -103,7 +106,7 @@ const he = {
   chat: { ...chatHe, new: chatNewHe, messaging: chatMessagingHe },
 
   // Notifications (FR-NOTIF-001..015) — see modules/notifications.ts
-  notifications: notificationsHe,
+  notifications: { ...notificationsHe, ...notificationsRichHe },
   feedSettings: feedSettingsHe,
   emptyStates: emptyStatesHe,
 
@@ -114,14 +117,25 @@ const he = {
   restoreAccount: restoreAccountHe,
 
   // Admin portal (FR-ADMIN-010/011) — see modules/admin.ts
-  // The baseline approval copy joins admin.orgApprovals — see modules/adminOrgApprovalsBaseline.ts.
+  // The baseline approval copy joins admin.orgApprovals — see modules/adminOrgApprovalsBaseline.ts;
+  // the back-office copy joins admin.crm and admin.time — see modules/adminBackOfficeBaseline.ts.
+  // The support inbox and review queue copy — see modules/adminStaffTools.ts.
   admin: {
     ...adminHe,
+    nav: { ...adminHe.nav, ...adminStaffToolsHe.nav },
+    supportInbox: adminStaffToolsHe.supportInbox,
+    reviewQueue: adminStaffToolsHe.reviewQueue,
     orgApprovals: {
       ...adminHe.orgApprovals,
       row: { ...adminHe.orgApprovals.row, ...adminOrgApprovalsBaselineHe.row },
       errors: { ...adminHe.orgApprovals.errors, ...adminOrgApprovalsBaselineHe.errors },
     },
+    crm: {
+      ...adminHe.crm,
+      noOrgsTitle: adminCrmBaselineHe.noOrgsTitle,
+      errors: { ...adminHe.crm.errors, ...adminCrmBaselineHe.errors },
+    },
+    time: { ...adminHe.time, errors: { ...adminHe.time.errors, ...adminTimeBaselineHe.errors } },
   },
 
   // Settings — see modules/settings.ts

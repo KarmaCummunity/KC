@@ -85,7 +85,7 @@ select is(pg_temp.get('b', $$select registered_users || '/' || open_public_posts
 select lives_ok('select kc_private.community_stats_refresh()', 'the job recounts');
 select is(pg_temp.get('b', $$select registered_users || '/' || open_public_posts || '/' || delivered_posts from public.community_stats()$$),
   '4/1/0', 'members read active members, open public posts and delivered posts');
-select is(pg_temp.act(null, 'select * from public.community_stats()'), '42501', 'a signed-out caller reads no numbers');
+select is(pg_temp.act(null, 'select * from public.community_stats()'), 'ok', 'a signed-out guest reads the numbers (counts only, FR-STATS-004)');
 select is(pg_temp.act('b', 'select kc_private.community_stats_refresh()'), '42501', 'a member cannot run the recount');
 
 -- ── Timeline ─────────────────────────────────────────────────────────────────

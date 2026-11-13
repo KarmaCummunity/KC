@@ -8,6 +8,7 @@ import { getDeleteAccountUseCase } from '../services/userComposition';
 import { performFullSignOut } from '../services/performFullSignOut';
 import { useAuthStore } from '../store/authStore';
 import { container } from '../lib/container';
+import { reportAuthEvent } from '../lib/observability/reportAuthEvent';
 
 export function useSettingsAccountActions() {
   const { t } = useTranslation();
@@ -46,7 +47,8 @@ export function useSettingsAccountActions() {
         signOutLocal,
       });
       router.replace('/(auth)');
-    } catch {
+    } catch (err) {
+      reportAuthEvent('sign_out_failed', {}, err);
       Alert.alert(t('general.error'), t('settings.signOutFailed'));
     } finally {
       setSigningOut(false);

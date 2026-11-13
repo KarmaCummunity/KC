@@ -11,6 +11,7 @@ import { hydrateUsers } from '../users/userReads';
 import { USER_COLUMNS } from '../users/mapUserRow';
 import { toPostError } from './postErrors';
 import { createPost } from './postWriteMethods';
+import { copyPostPhotos } from './postMediaCopy';
 import { fetchPostDetail } from './postRepoQueries';
 
 type Client = SupabaseClient<Database>;
@@ -76,12 +77,14 @@ export async function unmarkRecipientSelf(client: Client, postId: string): Promi
 
 /**
  * FR-POST-013 AC3, D127: an expired post is never reopened; republishing publishes a new post with the
- * old one's fields. The photos are not copied (a stored file belongs to one row), so the owner adds them
- * in the edit screen.
+ * old one's fields and copies of its photos (a stored file belongs to one row, so each photo is
+ * copied into a fresh batch of the owner's folder; see postMediaCopy.ts).
  */
 export async function republishPost(client: Client, postId: string): Promise<string> {
   const old = await fetchPostDetail(client, postId);
   if (!old) throw new PostError('republish_not_found', 'republish_not_found');
+  const batch = `republish-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
+  const mediaAssets = await copyPostPhotos(client, old.ownerId, old.mediaAssets, batch);
   const copy: CreatePostInput = {
     ownerId: old.ownerId,
     type: old.type,
@@ -94,7 +97,7 @@ export async function republishPost(client: Client, postId: string): Promise<str
     itemCondition: old.itemCondition,
     urgency: old.urgency,
     estimatedValue: old.estimatedValue,
-    mediaAssets: [],
+    mediaAssets,
   };
   return createPost(client, copy);
 }

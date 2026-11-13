@@ -19,6 +19,7 @@ export function countReportFilters(value: ListOpenReportsFilters): number {
   if (value.targetType) n += 1;
   if (value.maxAgeDays) n += 1;
   if (value.reporterId?.trim()) n += 1;
+  if (value.search?.trim()) n += 1;
   return n;
 }
 

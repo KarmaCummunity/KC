@@ -5,11 +5,11 @@ import React from 'react';
 import { ScrollView, StyleSheet, Switch, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  TRANSPARENCY_TOGGLES, hasAnyTransparencyToggle, hasPermission, isFinanceLedgerError,
-  type AdminRole, type TransparencySettings, type TransparencyToggle,
+  TRANSPARENCY_TOGGLES, hasAnyTransparencyToggle, isFinanceLedgerError,
+  type TransparencySettings, type TransparencyToggle,
 } from '@kc/domain';
 import { makeUseStyles, radius, spacing, Text, typography } from '@kc/ui';
-import { useAdminRoles } from '../../../src/hooks/useAdminRoles';
+import { useMoneyPermissions } from '../../../src/hooks/useMoneyPermissions';
 import { container } from '../../../src/lib/container';
 import { AdminScreenGuard } from '../../../src/components/admin/AdminScreenGuard';
 import { MoneySubNav } from '../../../src/components/admin/money/MoneySubNav';
@@ -25,11 +25,9 @@ export default function MoneyVisibilityScreen() {
   const styles = useStyles();
   const t = useLocaleBundle().admin.money;
   const v = t.visibility;
-  const { roles, isLoading: rolesLoading } = useAdminRoles();
-  const typedRoles = roles as readonly AdminRole[];
-  const allowed = hasPermission(typedRoles, 'money.manage');
-  // The server enforces this too (finance_transparency_settings_set); the UI just avoids a dead switch.
-  const canChange = typedRoles.includes('super_admin');
+  const { isLoading: rolesLoading, canView: allowed, canTransparency: canChange } = useMoneyPermissions();
+  // canChange mirrors finance_transparency_settings_set (platform admins and org admins), so no
+  // switch is shown live that the server would refuse.
   const queryClient = useQueryClient();
 
   const settings = useQuery({
@@ -55,7 +53,7 @@ export default function MoneyVisibilityScreen() {
         <MoneySubNav active="visibility" />
         <ScrollView contentContainerStyle={styles.content}>
           <Text style={styles.hint}>{v.intro}</Text>
-          {!canChange && <Text style={styles.warn}>{v.superOnly}</Text>}
+          {!canChange && <Text style={styles.warn}>{v.readOnly}</Text>}
 
           <View style={styles.card}>
             {TRANSPARENCY_TOGGLES.map((key) => (

@@ -184,7 +184,7 @@ Agents are not woken by merge-queue failures, so a lane that only fails in the q
 
 | EAS environment `preview` (used by the `nightly` profile) | Needs |
 | --- | --- |
-| Sentry / FCM | `EXPO_PUBLIC_SENTRY_DSN`, `SENTRY_ORG`, `SENTRY_URL`, `SENTRY_AUTH_TOKEN` (optional) and the `GOOGLE_SERVICES_JSON` file variable — Android cloud builds take these only from EAS |
+| Sentry / FCM | Sentry org `kc-z0` (US region), project `kc`; the app falls back to the committed public DSN in `app.config.ts` when `EXPO_PUBLIC_SENTRY_DSN` is empty. `EXPO_PUBLIC_SENTRY_DSN`, `SENTRY_ORG`, `SENTRY_URL`, `SENTRY_AUTH_TOKEN` (optional) and the `GOOGLE_SERVICES_JSON` file variable — Android cloud builds take these only from EAS |
 | Supabase | Either no `EXPO_PUBLIC_SUPABASE_*`, or the kc-dev values; a prod value can reach the cloud build and is then caught by `verify` |
 | Google Maps (Android) | `EXPO_PUBLIC_GOOGLE_MAPS_API_KEY` (also in `production`) — Maps SDK for Android key restricted to the app package + Play signing SHA-1; without it the Android map is disabled (#1951) |
 | Google sign-in (native) | `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` + `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` (also in `production`) — OAuth client IDs (public, not secrets) for the native Google account sheet; without them sign-in uses the browser flow (#1955) |

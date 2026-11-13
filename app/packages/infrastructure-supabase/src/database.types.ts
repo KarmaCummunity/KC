@@ -9,6 +9,37 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      about_team_members: {
+        Row: {
+          created_at: string
+          is_active: boolean
+          role_key: string
+          sort_order: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          is_active?: boolean
+          role_key: string
+          sort_order?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          is_active?: boolean
+          role_key?: string
+          sort_order?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "about_team_members_user_id_fkey"
+            columns: ["user_id"]
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       admin_role_grants: {
         Row: {
           granted_at: string
@@ -298,6 +329,7 @@ export type Database = {
         Row: {
           chat_id: string
           hidden_at: string | null
+          history_from: string | null
           joined_at: string
           last_read_at: string
           role: string
@@ -306,6 +338,7 @@ export type Database = {
         Insert: {
           chat_id: string
           hidden_at?: string | null
+          history_from?: string | null
           joined_at?: string
           last_read_at?: string
           role?: string
@@ -314,6 +347,7 @@ export type Database = {
         Update: {
           chat_id?: string
           hidden_at?: string | null
+          history_from?: string | null
           joined_at?: string
           last_read_at?: string
           role?: string
@@ -989,6 +1023,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      kc_support_channels: {
+        Row: {
+          channel: string
+          is_active: boolean
+          payee_phone: string | null
+          provider_label: string
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          channel: string
+          is_active?: boolean
+          payee_phone?: string | null
+          provider_label: string
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          channel?: string
+          is_active?: boolean
+          payee_phone?: string | null
+          provider_label?: string
+          updated_at?: string
+          url?: string
+        }
+        Relationships: []
       }
       knowledge_topic_aliases: {
         Row: {
@@ -1713,6 +1774,7 @@ export type Database = {
           edited_at: string | null
           id: string
           mention_user_ids: string[]
+          moderation_removed_at: string | null
           parent_comment_id: string | null
           post_id: string
           status: string
@@ -1725,6 +1787,7 @@ export type Database = {
           edited_at?: string | null
           id?: string
           mention_user_ids?: string[]
+          moderation_removed_at?: string | null
           parent_comment_id?: string | null
           post_id: string
           status?: string
@@ -1737,6 +1800,7 @@ export type Database = {
           edited_at?: string | null
           id?: string
           mention_user_ids?: string[]
+          moderation_removed_at?: string | null
           parent_comment_id?: string | null
           post_id?: string
           status?: string
@@ -2240,8 +2304,11 @@ export type Database = {
       post_private_locations: {
         Row: {
           access_notes: string | null
+          apartment: string | null
           destination_street_number: string | null
+          entrance_notes: string | null
           exact_point: unknown
+          floor: string | null
           post_id: string
           street: string | null
           street_number: string | null
@@ -2249,8 +2316,11 @@ export type Database = {
         }
         Insert: {
           access_notes?: string | null
+          apartment?: string | null
           destination_street_number?: string | null
+          entrance_notes?: string | null
           exact_point?: unknown
+          floor?: string | null
           post_id: string
           street?: string | null
           street_number?: string | null
@@ -2258,8 +2328,11 @@ export type Database = {
         }
         Update: {
           access_notes?: string | null
+          apartment?: string | null
           destination_street_number?: string | null
+          entrance_notes?: string | null
           exact_point?: unknown
+          floor?: string | null
           post_id?: string
           street?: string | null
           street_number?: string | null
@@ -2619,6 +2692,52 @@ export type Database = {
           },
         ]
       }
+      post_status_events: {
+        Row: {
+          actor_id: string | null
+          from_status: string
+          id: number
+          occurred_at: string
+          post_id: string
+          reason: string | null
+          role: string | null
+          to_status: string
+        }
+        Insert: {
+          actor_id?: string | null
+          from_status: string
+          id?: never
+          occurred_at?: string
+          post_id: string
+          reason?: string | null
+          role?: string | null
+          to_status: string
+        }
+        Update: {
+          actor_id?: string | null
+          from_status?: string
+          id?: never
+          occurred_at?: string
+          post_id?: string
+          reason?: string | null
+          role?: string | null
+          to_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_status_events_actor_id_fkey"
+            columns: ["actor_id"]
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_status_events_post_id_fkey"
+            columns: ["post_id"]
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       posts: {
         Row: {
           beneficiary_org_id: string | null
@@ -2638,6 +2757,8 @@ export type Database = {
           post_type: string
           published_at: string | null
           search_vector: unknown
+          shown_street: string | null
+          shown_street_number: string | null
           source: string
           source_language: string | null
           status: string
@@ -2667,6 +2788,8 @@ export type Database = {
           post_type?: string
           published_at?: string | null
           search_vector?: unknown
+          shown_street?: string | null
+          shown_street_number?: string | null
           source?: string
           source_language?: string | null
           status?: string
@@ -2696,6 +2819,8 @@ export type Database = {
           post_type?: string
           published_at?: string | null
           search_vector?: unknown
+          shown_street?: string | null
+          shown_street_number?: string | null
           source?: string
           source_language?: string | null
           status?: string
@@ -3821,6 +3946,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      about_team_profiles: {
+        Args: never
+        Returns: {
+          avatar_url: string
+          display_name: string
+          role_key: string
+          share_handle: string
+          sort_order: number
+        }[]
+      }
       accept_legal_document: {
         Args: {
           p_doc_type: string
@@ -3857,6 +3992,23 @@ export type Database = {
       admin_assign_queue_entry: {
         Args: { p_assignee_id?: string; p_entry_id: string }
         Returns: undefined
+      }
+      admin_audit_lookup: {
+        Args: {
+          p_before_id?: number
+          p_before_occurred_at?: string
+          p_limit?: number
+          p_user_id: string
+        }
+        Returns: {
+          action: string
+          actor_id: string
+          id: number
+          metadata: Json
+          occurred_at: string
+          target_id: string
+          target_type: string
+        }[]
       }
       admin_audit_search: {
         Args: {
@@ -3911,6 +4063,61 @@ export type Database = {
         }
         Returns: string
       }
+      admin_hierarchy_census: { Args: never; Returns: Json }
+      admin_join_support_thread: {
+        Args: { p_chat_id: string }
+        Returns: {
+          anchor_post_id: string | null
+          created_at: string
+          direct_user_a: string | null
+          direct_user_b: string | null
+          id: string
+          kind: string
+          last_message_at: string | null
+          moderation_hidden_at: string | null
+          support_user_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "chats"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      admin_list_admins: {
+        Args: { p_include_revoked?: boolean }
+        Returns: {
+          avatar_url: string
+          display_name: string
+          grant_id: string
+          granted_at: string
+          granted_by: string
+          granted_by_display_name: string
+          last_seen_at: string
+          manager_grant_id: string
+          revoked_at: string
+          revoked_by: string
+          role: string
+          scope_org_id: string
+          user_id: string
+        }[]
+      }
+      admin_list_support_threads: {
+        Args: {
+          p_before_id?: string
+          p_before_last_message_at?: string
+          p_limit?: number
+        }
+        Returns: {
+          chat_id: string
+          created_at: string
+          joined: boolean
+          last_message_at: string
+          member_avatar_url: string
+          member_display_name: string
+          member_id: string
+        }[]
+      }
       admin_match_quality: {
         Args: { p_days?: number }
         Returns: {
@@ -3927,6 +4134,26 @@ export type Database = {
           world_slug: string
         }[]
       }
+      admin_open_member_support_thread: {
+        Args: { p_user_id: string }
+        Returns: {
+          anchor_post_id: string | null
+          created_at: string
+          direct_user_a: string | null
+          direct_user_b: string | null
+          id: string
+          kind: string
+          last_message_at: string | null
+          moderation_hidden_at: string | null
+          support_user_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "chats"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       admin_org_application_approve: {
         Args: { p_application_id: string; p_note?: string; p_slug?: string }
         Returns: string
@@ -3934,6 +4161,22 @@ export type Database = {
       admin_org_application_reject: {
         Args: { p_application_id: string; p_note?: string }
         Returns: undefined
+      }
+      admin_org_tree: {
+        Args: { p_org_id?: string }
+        Returns: {
+          avatar_url: string
+          display_name: string
+          effective_org_id: string
+          grant_id: string
+          is_platform: boolean
+          last_seen_at: string
+          manager_grant_id: string
+          org_name: string
+          role: string
+          scope_org_id: string
+          user_id: string
+        }[]
       }
       admin_pmf_survey_report: { Args: { p_slug?: string }; Returns: Json }
       admin_refund_payment: {
@@ -3946,8 +4189,47 @@ export type Database = {
         Returns: string
       }
       admin_remove_post: { Args: { p_post_id: string }; Returns: undefined }
+      admin_report_case_timeline: {
+        Args: { p_limit?: number; p_target_id: string; p_target_type: string }
+        Returns: {
+          action: string
+          actor_id: string
+          id: number
+          metadata: Json
+          occurred_at: string
+          target_id: string
+          target_type: string
+        }[]
+      }
+      admin_reports_inbox: {
+        Args: {
+          p_after_oldest_at?: string
+          p_after_target_id?: string
+          p_after_target_type?: string
+          p_limit?: number
+          p_max_age_days?: number
+          p_reporter_id?: string
+          p_search?: string
+          p_target_type?: string
+        }
+        Returns: {
+          latest_at: string
+          latest_reporter_id: string
+          oldest_at: string
+          report_count: number
+          reporter_count: number
+          target_hidden_at: string
+          target_id: string
+          target_type: string
+        }[]
+      }
       admin_resolve_queue_entry: {
         Args: { p_entry_id: string }
+        Returns: undefined
+      }
+      admin_restore_chat: { Args: { p_chat_id: string }; Returns: undefined }
+      admin_restore_comment: {
+        Args: { p_comment_id: string }
         Returns: undefined
       }
       admin_restore_post: { Args: { p_post_id: string }; Returns: undefined }
@@ -3974,8 +4256,12 @@ export type Database = {
         }
       }
       admin_set_manager: {
-        Args: { p_grant_id: string; p_manager_grant_id: string }
+        Args: { p_grant_id: string; p_manager_grant_id?: string }
         Returns: undefined
+      }
+      admin_set_org_slug: {
+        Args: { p_org_id: string; p_slug: string }
+        Returns: string
       }
       admin_set_org_status: {
         Args: { p_org_id: string; p_status: string }
@@ -3990,6 +4276,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      admin_set_verification_level: {
+        Args: { p_level: number; p_reason: string; p_user_id: string }
+        Returns: number
+      }
       admin_survey_overview: { Args: never; Returns: Json }
       admin_survey_results: { Args: { p_slug: string }; Returns: Json }
       admin_suspend_user: {
@@ -3998,6 +4288,66 @@ export type Database = {
           p_reason: string
           p_until?: string
           p_user_id: string
+        }
+        Returns: undefined
+      }
+      admin_task_add_comment: {
+        Args: { p_body: string; p_task_id: string }
+        Returns: string
+      }
+      admin_task_assign: {
+        Args: { p_new_assignee: string; p_task_id: string }
+        Returns: undefined
+      }
+      admin_task_create: {
+        Args: {
+          p_assignee_id?: string
+          p_category?: string
+          p_description?: string
+          p_due_at?: string
+          p_labels?: string[]
+          p_priority?: string
+          p_title: string
+        }
+        Returns: string
+      }
+      admin_task_delete: { Args: { p_task_id: string }; Returns: undefined }
+      admin_task_detail: { Args: { p_task_id: string }; Returns: Json }
+      admin_task_list: {
+        Args: {
+          p_assignee?: string
+          p_category?: string
+          p_cursor?: Json
+          p_due_from?: string
+          p_due_to?: string
+          p_label?: string
+          p_limit?: number
+          p_only_mine?: boolean
+          p_overdue?: boolean
+          p_priority?: string
+          p_status?: string
+          p_unassigned_only?: boolean
+        }
+        Returns: {
+          cursor: Json
+          task: Json
+        }[]
+      }
+      admin_task_open_count: { Args: never; Returns: number }
+      admin_task_set_status: {
+        Args: { p_new_status: string; p_task_id: string }
+        Returns: undefined
+      }
+      admin_task_update: {
+        Args: {
+          p_category?: string
+          p_clear_due?: boolean
+          p_description?: string
+          p_due_at?: string
+          p_labels?: string[]
+          p_priority?: string
+          p_task_id: string
+          p_title?: string
         }
         Returns: undefined
       }
@@ -4011,6 +4361,96 @@ export type Database = {
           next_cursor: Json
           rating: number
           user_id: string
+        }[]
+      }
+      admin_world_flow_funnel: {
+        Args: { p_days?: number }
+        Returns: {
+          booked: number
+          cancelled: number
+          closed: number
+          completed: number
+          confirmed: number
+          direction: string
+          median_hours_to_booking: number
+          median_hours_to_completion: number
+          published: number
+          world_label_en: string
+          world_label_he: string
+          world_slug: string
+        }[]
+      }
+      api_bot_apply_extraction: {
+        Args: {
+          p_confidence?: number
+          p_details?: Json
+          p_direction: string
+          p_kind_slug: string
+          p_session_id: string
+          p_summary?: string
+          p_title: string
+          p_world_slug: string
+        }
+        Returns: string
+      }
+      api_bot_my_matches: {
+        Args: { p_limit?: number; p_user_id: string }
+        Returns: {
+          candidate_id: string
+          distance_km: number
+          my_post_title: string
+          other_post_id: string
+          other_title: string
+          score: number
+          status: string
+          world_slug: string
+        }[]
+      }
+      api_bot_my_posts: {
+        Args: { p_limit?: number; p_user_id: string }
+        Returns: {
+          created_at: string
+          direction: string
+          post_id: string
+          title: string
+          world_slug: string
+        }[]
+      }
+      api_bot_open_session: {
+        Args: { p_inbound_message_id?: string; p_wa_id: string }
+        Returns: string
+      }
+      api_bot_post_cards: {
+        Args: { p_ids: string[]; p_viewer_id: string }
+        Returns: {
+          city_id: string
+          description: string
+          direction: string
+          post_id: string
+          published_at: string
+          title: string
+          world_slug: string
+        }[]
+      }
+      api_bot_publish_post: {
+        Args: { p_owner_id: string; p_session_id: string }
+        Returns: Json
+      }
+      api_bot_search_posts: {
+        Args: {
+          p_limit?: number
+          p_query: string
+          p_user_id: string
+          p_world_slug?: string
+        }
+        Returns: {
+          city_id: string
+          description: string
+          direction: string
+          post_id: string
+          published_at: string
+          title: string
+          world_slug: string
         }[]
       }
       api_donation_intent_set_checkout: {
@@ -4092,6 +4532,206 @@ export type Database = {
           standing_order_id: string
         }[]
       }
+      api_whatsapp_admin_block_user: {
+        Args: { p_user_id: string }
+        Returns: undefined
+      }
+      api_whatsapp_admin_get_channel: { Args: never; Returns: Json }
+      api_whatsapp_admin_get_send_limits: { Args: never; Returns: Json }
+      api_whatsapp_admin_list_consent: {
+        Args: { p_cursor?: Json; p_limit?: number }
+        Returns: {
+          consent_status: string
+          cursor: Json
+          identity_id: string
+          last_inbound_at: string
+          opted_in: boolean
+          opted_in_at: string
+          opted_out_at: string
+          preferred_language: string
+          updated_at: string
+          user_id: string
+          wa_id_masked: string
+        }[]
+      }
+      api_whatsapp_admin_list_conversations: {
+        Args: { p_limit?: number }
+        Returns: {
+          confidence: number
+          created_at: string
+          post_id: string
+          session_id: string
+          state: string
+          updated_at: string
+          user_id: string
+          wa_id_masked: string
+        }[]
+      }
+      api_whatsapp_admin_list_outbound: {
+        Args: { p_cursor?: Json; p_limit?: number; p_status?: string }
+        Returns: {
+          attempts: number
+          created_at: string
+          cursor: Json
+          kind: string
+          language: string
+          last_error: string
+          next_attempt_at: string
+          outbound_id: string
+          sent_at: string
+          status: string
+          template_name: string
+          user_id: string
+          wa_id_masked: string
+        }[]
+      }
+      api_whatsapp_admin_list_rate_hits: {
+        Args: { p_limit?: number }
+        Returns: {
+          bucket: string
+          expires_at: string
+          hits: number
+          window_start: string
+        }[]
+      }
+      api_whatsapp_admin_list_recent_matches: {
+        Args: { p_limit?: number }
+        Returns: {
+          created_at: string
+          language: string
+          outbound_id: string
+          payload: Json
+          sent_at: string
+          status: string
+          template_name: string
+          user_id: string
+          wa_id_masked: string
+        }[]
+      }
+      api_whatsapp_admin_list_templates: {
+        Args: never
+        Returns: {
+          body_preview: string
+          category: string
+          is_approved: boolean
+          language_code: string
+          meta_status: string
+          meta_template_id: string
+          params: Json
+          registry_version: number
+          template_name: string
+          updated_at: string
+        }[]
+      }
+      api_whatsapp_admin_overview: { Args: never; Returns: Json }
+      api_whatsapp_admin_resend: {
+        Args: { p_outbound_id: string }
+        Returns: string
+      }
+      api_whatsapp_admin_review_list: {
+        Args: { p_cursor?: Json; p_limit?: number; p_status?: string }
+        Returns: {
+          confidence: number
+          created_at: string
+          cursor: Json
+          owner_id: string
+          post_id: string
+          post_status: string
+          post_title: string
+          reason: string
+          resolved_at: string
+          review_id: string
+          reviewer_id: string
+          session_id: string
+          status: string
+        }[]
+      }
+      api_whatsapp_admin_review_resolve: {
+        Args: { p_decision: string; p_review_id: string }
+        Returns: string
+      }
+      api_whatsapp_admin_set_channel_enabled: {
+        Args: { p_enabled: boolean }
+        Returns: Json
+      }
+      api_whatsapp_admin_set_send_limits: {
+        Args: { p_limits: Json }
+        Returns: Json
+      }
+      api_whatsapp_admin_set_template_status: {
+        Args: {
+          p_language_code: string
+          p_meta_status: string
+          p_meta_template_id?: string
+          p_template_name: string
+        }
+        Returns: undefined
+      }
+      api_whatsapp_bot_access: { Args: { p_wa_id: string }; Returns: Json }
+      api_whatsapp_channel_config: { Args: never; Returns: Json }
+      api_whatsapp_claim_inbound: {
+        Args: { p_message_id: string }
+        Returns: boolean
+      }
+      api_whatsapp_create_link_code: { Args: never; Returns: Json }
+      api_whatsapp_handle_keyword: {
+        Args: { p_record_id?: string; p_text: string; p_wa_id: string }
+        Returns: Json
+      }
+      api_whatsapp_inbound_allowed: {
+        Args: { p_wa_id: string }
+        Returns: boolean
+      }
+      api_whatsapp_ingest_inbound: {
+        Args: { p_message_id: string; p_payload: Json; p_run_id?: string }
+        Returns: string
+      }
+      api_whatsapp_llm_budget_take: {
+        Args: { p_wa_id: string }
+        Returns: boolean
+      }
+      api_whatsapp_my_link_status: { Args: never; Returns: Json }
+      api_whatsapp_outbound_claim: {
+        Args: { p_batch?: number; p_visibility_seconds?: number }
+        Returns: {
+          attempts: number
+          body: string
+          kind: string
+          language: string
+          outbound_id: string
+          payload: Json
+          template_name: string
+          to_wa_id: string
+          user_id: string
+        }[]
+      }
+      api_whatsapp_outbound_result: {
+        Args: {
+          p_error?: string
+          p_ok: boolean
+          p_outbound_id: string
+          p_retryable?: boolean
+          p_wa_message_id?: string
+        }
+        Returns: string
+      }
+      api_whatsapp_queue_reply: {
+        Args: { p_body: string; p_reply_kind?: string; p_wa_id: string }
+        Returns: string
+      }
+      api_whatsapp_redeem_link_code: {
+        Args: { p_code: string; p_wa_id: string }
+        Returns: Json
+      }
+      api_whatsapp_release_inbound: {
+        Args: { p_message_id: string }
+        Returns: undefined
+      }
+      api_whatsapp_set_match_consent: {
+        Args: { p_opted_in: boolean }
+        Returns: Json
+      }
+      api_whatsapp_unlink_me: { Args: never; Returns: undefined }
       book_knowledge_seat: {
         Args: { p_slot_id: string }
         Returns: {
@@ -4632,6 +5272,57 @@ export type Database = {
         }
         Returns: Json
       }
+      crm_contact_count: {
+        Args: {
+          p_org_id: string
+          p_query?: string
+          p_status?: string
+          p_tag?: string
+        }
+        Returns: number
+      }
+      crm_contact_delete: { Args: { p_contact_id: string }; Returns: undefined }
+      crm_contact_list: {
+        Args: {
+          p_cursor?: Json
+          p_limit?: number
+          p_org_id: string
+          p_query?: string
+          p_status?: string
+          p_tag?: string
+        }
+        Returns: {
+          contact: Json
+          cursor: Json
+        }[]
+      }
+      crm_contact_mark_contacted: {
+        Args: { p_contact_id: string }
+        Returns: undefined
+      }
+      crm_contact_upsert: {
+        Args: {
+          p_contact_id?: string
+          p_email?: string
+          p_name?: string
+          p_notes?: string
+          p_org_id: string
+          p_organization?: string
+          p_phone?: string
+          p_role_title?: string
+          p_status?: string
+          p_tags?: string[]
+        }
+        Returns: string
+      }
+      crm_my_orgs: {
+        Args: never
+        Returns: {
+          is_platform: boolean
+          name: string
+          org_id: string
+        }[]
+      }
       decide_event_registration: {
         Args: { p_approve: boolean; p_handoff_id: string }
         Returns: {
@@ -4869,8 +5560,11 @@ export type Database = {
         Args: { p_post_id: string }
         Returns: {
           access_notes: string | null
+          apartment: string | null
           destination_street_number: string | null
+          entrance_notes: string | null
           exact_point: unknown
+          floor: string | null
           post_id: string
           street: string | null
           street_number: string | null
@@ -4934,6 +5628,28 @@ export type Database = {
         Returns: {
           challenge: Database["public"]["CompositeTypes"]["challenge_summary"]
           next_cursor: Json
+        }[]
+      }
+      list_kc_support_channels: {
+        Args: never
+        Returns: {
+          channel: string
+          payee_phone: string
+          provider_label: string
+          url: string
+        }[]
+      }
+      list_my_blocked_users: {
+        Args: {
+          p_before_blocked_at?: string
+          p_before_user_id?: string
+          p_limit?: number
+        }
+        Returns: {
+          avatar_url: string
+          blocked_at: string
+          display_name: string
+          user_id: string
         }[]
       }
       list_my_donation_history: {
@@ -5099,6 +5815,17 @@ export type Database = {
           other_response: string
           score: number
           status: string
+          world_slug: string
+        }[]
+      }
+      my_world_givings: {
+        Args: never
+        Returns: {
+          closed: number
+          given: number
+          received: number
+          world_label_en: string
+          world_label_he: string
           world_slug: string
         }[]
       }
@@ -5495,8 +6222,38 @@ export type Database = {
         }[]
       }
       rotate_research_salt: { Args: never; Returns: string }
+      rpc_follow_suggestions: {
+        Args: { p_limit?: number }
+        Returns: {
+          avatar_url: string
+          city_name: string
+          display_name: string
+          followers_count: number
+          reason: string
+          score: number
+          share_handle: string
+          user_id: string
+          verification_level: number
+        }[]
+      }
       rpc_org_transparency: { Args: { p_slug?: string }; Returns: Json }
+      rpc_profile_completeness: { Args: { p_user_id?: string }; Returns: Json }
       search_all: { Args: { p_limit?: number; p_query: string }; Returns: Json }
+      search_hashtags: {
+        Args: { p_limit?: number; p_query: string }
+        Returns: {
+          tag: string
+          use_count: number
+        }[]
+      }
+      search_organizations: {
+        Args: { p_limit?: number; p_query: string }
+        Returns: {
+          name: string
+          org_id: string
+          slug: string
+        }[]
+      }
       search_places: {
         Args: { p_kinds?: string[]; p_limit?: number; p_query: string }
         Returns: {
@@ -5523,6 +6280,10 @@ export type Database = {
           distance_m: number
           next_cursor: Json
         }[]
+      }
+      search_suggested_queries: {
+        Args: { p_limit?: number }
+        Returns: string[]
       }
       search_users_page: {
         Args: {
@@ -5624,6 +6385,71 @@ export type Database = {
           p_source: string
           p_user_agent_hash: string
           p_version: number
+        }
+        Returns: string
+      }
+      submit_support_issue: {
+        Args: { p_category: string; p_description: string; p_issue_id?: string }
+        Returns: {
+          anchor_post_id: string | null
+          created_at: string
+          direct_user_a: string | null
+          direct_user_b: string | null
+          id: string
+          kind: string
+          last_message_at: string | null
+          moderation_hidden_at: string | null
+          support_user_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "chats"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      timesheet_approve: {
+        Args: { p_entry_id: string; p_note?: string }
+        Returns: undefined
+      }
+      timesheet_count: {
+        Args: {
+          p_from?: string
+          p_scope?: string
+          p_status?: string
+          p_to?: string
+          p_user_id?: string
+        }
+        Returns: number
+      }
+      timesheet_delete: { Args: { p_entry_id: string }; Returns: undefined }
+      timesheet_list: {
+        Args: {
+          p_cursor?: Json
+          p_from?: string
+          p_limit?: number
+          p_scope?: string
+          p_status?: string
+          p_to?: string
+          p_user_id?: string
+        }
+        Returns: {
+          cursor: Json
+          entry: Json
+        }[]
+      }
+      timesheet_reject: {
+        Args: { p_entry_id: string; p_note?: string }
+        Returns: undefined
+      }
+      timesheet_submit: { Args: { p_entry_id: string }; Returns: undefined }
+      timesheet_upsert: {
+        Args: {
+          p_description?: string
+          p_entry_id?: string
+          p_hours_x100?: number
+          p_project?: string
+          p_work_date?: string
         }
         Returns: string
       }

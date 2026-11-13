@@ -1,23 +1,39 @@
 // SupabaseFeedRealtime — adapter for IFeedRealtime.
-// Mapped to spec: FR-FEED-009 ("↑ N new posts" banner).
+// Mapped to spec: FR-FEED-009 AC2 ("↑ N new posts" pill).
 //
-// DEGRADED (map row M24): the baseline has no broadcast of new public posts — no `feed:public`
-// topic, no policy and no trigger (supabase/schemas/40_messaging/060_realtime.sql registers only
-// `chat:*` and `user:*`). Opening the old topic would only be refused by the realtime service
-// and retried forever, so the adapter opens nothing: it reports `BackendUnavailableError` once
-// through `onError` and hands back a no-op unsubscribe. The feed still refreshes on pull and on
-// focus; only the live "new posts" pill is gone. When the baseline gains the topic, this is the
-// one file to restore (the previous implementation is in git history).
+// Listens on the private `feed:public` Broadcast topic (migration 0026_member_realtime.sql): a
+// post that becomes open and Public sends a ping with its id and its owner's id, nothing else.
+// The app re-reads the feed through row security when the member taps the pill.
+//
+// Lifecycle: subscribe on feed mount, unsubscribe on unmount or after 60 s in the background
+// (FR-FEED-009 AC3). On resume the hook fills the gap through a normal read.
 
-import { BackendUnavailableError } from '@kc/domain';
 import type { FeedRealtimeCallbacks, IFeedRealtime } from '@kc/application';
+import { isChannelFailure, openExactTopicChannel, type RealtimeHost } from '../realtime/exactTopicChannel';
 
-/** The topic the app used to listen to; named only so the degrade report says what is missing. */
 export const FEED_PUBLIC_TOPIC = 'feed:public';
 
 export class SupabaseFeedRealtime implements IFeedRealtime {
+  constructor(private readonly client: RealtimeHost) {}
+
   subscribeToPublicInserts(cb: FeedRealtimeCallbacks): () => void {
-    cb.onError?.(new BackendUnavailableError(`channel:${FEED_PUBLIC_TOPIC}`, 'relation'));
-    return () => undefined;
+    const managed = openExactTopicChannel(
+      this.client,
+      FEED_PUBLIC_TOPIC,
+      { private: true },
+      (ch) => {
+        ch.on('broadcast', { event: 'new_post' }, (msg) => {
+          const p = (msg.payload ?? {}) as { post_id?: unknown; owner_id?: unknown };
+          cb.onNewPublicPost({
+            postId: typeof p.post_id === 'string' ? p.post_id : null,
+            ownerId: typeof p.owner_id === 'string' ? p.owner_id : null,
+          });
+        });
+      },
+      (status) => {
+        if (isChannelFailure(status)) cb.onError?.(new Error(`feed channel ${status.toLowerCase()}`));
+      },
+    );
+    return () => managed.close();
   }
 }

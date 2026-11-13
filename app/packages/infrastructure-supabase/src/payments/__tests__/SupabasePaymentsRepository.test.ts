@@ -30,12 +30,15 @@ describe('SupabasePaymentsRepository — organizations', () => {
     const page = {
       org_id: 'org', slug: 'aid', name: 'Aid', tagline_he: null, tagline_en: null, about_he: 'a', about_en: null,
       is_verified_nonprofit: true, verification_level: 3, sec46_active: true, total_raised_agorot: 125000,
-      campaigns: [{ post_id: 'p1', title: 'Coats', status: 'open', published_at: '2030-01-01T00:00:00Z', raised_agorot: '5000' }],
+      campaigns: [{
+        post_id: 'p1', title: 'Coats', status: 'open', published_at: '2030-01-01T00:00:00Z', raised_agorot: '5000',
+        goal_agorot: 250000, summary: 'For 40 families',
+      }],
     };
     const { repo } = repoOf({ rpc: { get_nonprofit_public_page: ok(page) } });
     expect(await repo.getNonprofitPublicPage('aid')).toMatchObject({
       totalRaisedAgorot: 125000, sec46Active: true, verificationLevel: 3,
-      campaigns: [{ postId: 'p1', title: 'Coats', raisedAgorot: 5000 }],
+      campaigns: [{ postId: 'p1', title: 'Coats', raisedAgorot: 5000, goalAgorot: 250000, summary: 'For 40 families' }],
     });
     const unknown = repoOf({ rpc: { get_nonprofit_public_page: ok(null) } });
     expect(await unknown.repo.getNonprofitPublicPage('x')).toBeNull();

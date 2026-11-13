@@ -1,19 +1,34 @@
-// whatsapp-sender — Issue #938. Drains bot_outbound_messages through Meta Cloud API.
-// Invoke on a schedule (pg_cron / Supabase scheduled function) with the service role.
+// whatsapp-sender — Issue #938. Drains integrations.whatsapp_outbound_messages through Meta Cloud API.
+// The `whatsapp_send` scheduled job invokes it every minute with the service role.
 // No-ops while the channel is disabled or no Graph token is configured.
 
 import { type FetchFn, type MetaConfig, sendMessage } from '../_shared/whatsapp/meta.ts';
 import { type RpcFn, runSenderBatch } from '../_shared/whatsapp/sender.ts';
 import { isServiceRoleRequest, serviceRoleRequiredResponse } from '../_shared/serviceRoleGuard.ts';
 
+export type ChannelConfig = { is_enabled: boolean; phone_number_id: string | null; graph_api_version: string | null };
+
+/**
+ * Reads the channel settings through `api_whatsapp_channel_config` (the table lives in the
+ * `integrations` schema, which the API does not expose). A failed read counts as disabled.
+ */
+export async function loadChannelConfigViaRpc(rpc: RpcFn): Promise<ChannelConfig | null> {
+  const { data, error } = await rpc('api_whatsapp_channel_config', {});
+  if (error || !data || typeof data !== 'object') return null;
+  const row = data as Partial<ChannelConfig>;
+  return {
+    is_enabled: row.is_enabled === true,
+    phone_number_id: row.phone_number_id ?? null,
+    graph_api_version: row.graph_api_version ?? null,
+  };
+}
+
 export type SenderDeps = {
   /** The only accepted bearer token (`SUPABASE_SERVICE_ROLE_KEY`). */
   serviceKey: string;
   rpc: RpcFn;
-  /** Returns the single whatsapp_channel_config row (or null). */
-  loadChannelConfig: () => Promise<
-    { is_enabled: boolean; phone_number_id: string | null; graph_api_version: string | null } | null
-  >;
+  /** Returns the channel settings (or null); see loadChannelConfigViaRpc. */
+  loadChannelConfig: () => Promise<ChannelConfig | null>;
   token: string;
   phoneNumberId: string;
   graphVersion: string;

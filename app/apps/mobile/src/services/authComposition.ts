@@ -38,6 +38,7 @@ import Constants from 'expo-constants';
 import { webBaseUrl } from '../config/featureFlags';
 import { resolveGoogleNativeSignInConfig } from '../lib/auth/googleNativeSignInConfig';
 import { createGoogleIdTokenRequester } from './googleNativeSignIn';
+import { reportUnexpectedSignOut } from '../lib/observability/reportAuthEvent';
 
 let _authService: IAuthService | null = null;
 let _signUp: SignUpWithEmailUseCase | null = null;
@@ -229,5 +230,8 @@ export function exchangeOAuthCode(code: string): Promise<KcAuthSession> {
 export function subscribeToSession(
   listener: (session: ReturnType<IAuthService['getCurrentSession']> extends Promise<infer S> ? S : never) => void,
 ): () => void {
-  return getAuthService().onSessionChange(listener);
+  return getAuthService().onSessionChange((session, event) => {
+    reportUnexpectedSignOut(event);
+    listener(session);
+  });
 }

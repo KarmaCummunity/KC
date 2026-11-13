@@ -4,7 +4,7 @@ import { BackendRuleError, BackendUnavailableError } from '@kc/domain';
 import { callsTo, createFakeClient } from '../../__tests__/fakeBaselineClient';
 import { fail, ok } from '../../posts/__tests__/cardFixtures';
 import { SupabaseHousingRepository, parseConductState } from '../SupabaseHousingRepository';
-import { foldAccessNotes, guestMayViewAddress, pointEwkt } from '../housingMappers';
+import { guestMayViewAddress, pointEwkt, trimmedOrNull } from '../housingMappers';
 
 const HANDOFF = {
   id: 'h1', post_id: 'p1', owner_id: 'host', recipient_id: 'g1', machine_id: 'housing_booking', status: 'reserved',
@@ -123,16 +123,20 @@ describe('SupabaseHousingRepository — lists', () => {
 
 describe('SupabaseHousingRepository — the exact place', () => {
   it('maps the released location and returns null when it is not open', async () => {
-    const location = { post_id: 'p1', street: 'Herzl', street_number: '5', access_notes: 'floor 2', exact_point: null };
+    const location = {
+      post_id: 'p1', street: 'Herzl', street_number: '5', apartment: '12', floor: '2', entrance_notes: 'Gate B',
+      access_notes: 'key under mat', exact_point: null,
+    };
     const open = repoOf({ rpc: { get_post_private_location: ok(location) }, tables: { posts: ok({ city_id: 'c1' }) } });
     expect(await open.repo.getPrivateDetails('p1')).toMatchObject({
-      cityId: 'c1', streetName: 'Herzl', houseNumber: '5', accessInstructions: 'floor 2', lat: null,
+      cityId: 'c1', streetName: 'Herzl', houseNumber: '5', apartment: '12', floor: '2', entranceNotes: 'Gate B',
+      accessInstructions: 'key under mat', lat: null,
     });
     const hidden = repoOf({ rpc: { get_post_private_location: fail('P0001', 'post_not_found') } });
     expect(await hidden.repo.getPrivateDetails('p1')).toBeNull();
   });
 
-  it('writes the street name, the folded notes and the point', async () => {
+  it('writes the street name, each arrival field on its own (0033) and the point', async () => {
     const { repo, calls } = repoOf({ tables: { posts: ok({ city_id: 'c1' }), streets: ok({ name_he: 'Herzl' }) } });
     await repo.setPrivateDetails({
       listingId: 'p1', streetId: 7, houseNumber: ' 5 ', apartment: '3', floor: null, entranceNotes: ' ',
@@ -140,10 +144,10 @@ describe('SupabaseHousingRepository — the exact place', () => {
     });
     expect(callsTo(calls, 'streets')[0]?.filters).toEqual([['eq', 'city_id', 'c1'], ['eq', 'street_id', 7]]);
     expect(callsTo(calls, 'post_private_locations')[0]?.payload).toEqual({
-      post_id: 'p1', street: 'Herzl', street_number: '5', access_notes: '3\nkey under mat',
-      exact_point: 'SRID=4326;POINT(34.8 32.1)',
+      post_id: 'p1', street: 'Herzl', street_number: '5', apartment: '3', floor: null, entrance_notes: null,
+      access_notes: 'key under mat', exact_point: 'SRID=4326;POINT(34.8 32.1)',
     });
-    expect(foldAccessNotes([null, ' '])).toBeNull();
+    expect(trimmedOrNull(' ')).toBeNull();
     expect(pointEwkt(null, 1)).toBeNull();
   });
 });

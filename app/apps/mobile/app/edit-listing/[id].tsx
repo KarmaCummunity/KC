@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { iconSize, spacing, Text, useTheme } from '@kc/ui';
-import { isFeedWorldSlug } from '@kc/domain';
+import { isFeedWorldSlug, isPostEditableByOwner } from '@kc/domain';
 import { Screen } from '../../src/components/ui/Screen';
 import { useAuthStore } from '../../src/store/authStore';
 import { getPostByIdUseCase } from '../../src/services/postsComposition';
@@ -96,7 +96,7 @@ export default function EditListingScreen() {
     );
   }
 
-  if (post.status !== 'open') {
+  if (!isPostEditableByOwner(post.status)) {
     return (
       <Screen>
         <EmptyState icon="archive-outline" title={t('post.editPost.notEditableTitle')} subtitle={t('post.editPost.notEditableRemoved')} />

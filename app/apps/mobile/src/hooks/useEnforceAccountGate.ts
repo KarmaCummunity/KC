@@ -10,6 +10,7 @@ import { useAuthStore } from '../store/authStore';
 import { setOnForbiddenCallback } from '@kc/infrastructure-supabase';
 import { performFullSignOut } from '../services/performFullSignOut';
 import { accountGateDecision } from '../lib/moderation/accountGateDecision';
+import { reportAuthEvent } from '../lib/observability/reportAuthEvent';
 import { useSuspensionStore } from '../store/suspensionStore';
 import { getUserRealtime } from '../services/userRealtimeComposition';
 
@@ -58,6 +59,10 @@ export function useEnforceAccountGate(userId: string | null) {
         }
         enforcingRef.current = true;
         useSuspensionStore.getState().setSuspension(null);
+        // The member is about to be signed out by the account gate: record why.
+        reportAuthEvent(decision.action === 'reverify' ? 'gate_reverify' : 'gate_blocked', {
+          account_status: decision.action === 'blocked' ? decision.reason : 'pending_verification',
+        });
         if (decision.action === 'reverify') {
           await performFullSignOut({
             deviceRepo: container.deviceRepo,
@@ -79,8 +84,10 @@ export function useEnforceAccountGate(userId: string | null) {
             until: decision.until ?? '',
           },
         } as unknown as Href);
-      } catch {
-        // Network failure is best-effort — the next interval tick retries.
+      } catch (err) {
+        // Best-effort — the next interval tick retries. Non-network failures are reported:
+        // a gate that keeps failing for a real reason is invisible otherwise.
+        reportAuthEvent('gate_check_failed', {}, err);
       }
     };
 

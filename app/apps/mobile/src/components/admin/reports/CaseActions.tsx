@@ -5,11 +5,13 @@
 import { useState } from 'react';
 import { Alert, View, Platform } from 'react-native';
 import { useQueryClient } from '@tanstack/react-query';
+import { router } from 'expo-router';
 import {
   type AdminPermission,
   type AdminRole,
   type ReportCaseDetail,
   hasPermission,
+  supportCounterpartOf,
 } from '@kc/domain';
 import { makeUseStyles, spacing } from '@kc/ui';
 import { DangerButton, SecondaryButton } from '../../ui/Buttons';
@@ -60,8 +62,7 @@ export function CaseActions({ detail, onActed }: CaseActionsProps) {
         for (const r of openReports) await container.dismissReport.execute({ reportId: r.reportId });
         return openReports.length > 0;
       case 'restore':
-        // A comment has no staff restore (the baseline only deletes it).
-        if (detail.targetType === 'comment') return false;
+        // The server also dismisses the case's open reports (FR-ADMIN-002 AC4).
         await container.restoreTarget.execute({ targetType: detail.targetType, targetId: detail.targetId });
         return true;
       case 'permanentBan':
@@ -74,20 +75,30 @@ export function CaseActions({ detail, onActed }: CaseActionsProps) {
         });
         return true;
       case 'manualRemove':
+        if (detail.targetType === 'comment') {
+          await container.removeComment.execute({ commentId: detail.targetId });
+          return true;
+        }
         if (detail.targetType !== 'post') return false;
         await container.adminRemovePost.execute({ postId: detail.targetId });
         return true;
       case 'openSupport':
-        // FR-ADMIN-013 — A4 will wire this to the actual support-thread flow
-        // (find-or-create 1:1 with the latest reporter or target user). A1 ships
-        // it as a no-op stub so the action shape stays stable.
-        return true;
+        return openSupport();
     }
   }
 
+  /** The case member's support thread, created and joined if needed, then opened (FR-ADMIN-013 AC2). */
+  async function openSupport(): Promise<boolean> {
+    const memberId = supportCounterpartOf(detail);
+    if (!memberId) return false;
+    const chatId = await container.openMemberSupportThread.execute(memberId);
+    router.push({ pathname: '/chat/[id]', params: { id: chatId } });
+    return false; // nothing on the case changed
+  }
+
   async function run(action: ActionId): Promise<void> {
-    const ok = await confirmDialog(L, L.admin.caseDetail.confirmDialog.message);
-    if (!ok) return;
+    // Opening a conversation changes nothing on the case, so it needs no confirmation.
+    if (action !== 'openSupport' && !(await confirmDialog(L, L.admin.caseDetail.confirmDialog.message))) return;
     setBusy(true);
     try {
       const outcome = await runAction(() => perform(action));
@@ -126,7 +137,7 @@ export function CaseActions({ detail, onActed }: CaseActionsProps) {
           onPress={() => { void run('dismiss'); }}
         />
       )}
-      {show('reports.restore_target') && detail.targetType !== 'comment' && (
+      {show('reports.restore_target') && (
         <SecondaryButton
           label={L.admin.caseDetail.actionLabels.restore}
           size="sm"
@@ -134,12 +145,20 @@ export function CaseActions({ detail, onActed }: CaseActionsProps) {
           onPress={() => { void run('restore'); }}
         />
       )}
-      {show('reports.manual_remove_post') && detail.targetType === 'post' && (
+      {show('reports.manual_remove_post') && (detail.targetType === 'post' || detail.targetType === 'comment') && (
         <SecondaryButton
           label={L.admin.caseDetail.actionLabels.manualRemove}
           size="sm"
           disabled={busy}
           onPress={() => { void run('manualRemove'); }}
+        />
+      )}
+      {show('reports.view') && supportCounterpartOf(detail) !== null && (
+        <SecondaryButton
+          label={L.admin.caseDetail.actionLabels.openSupport}
+          size="sm"
+          disabled={busy}
+          onPress={() => { void run('openSupport'); }}
         />
       )}
       {show('reports.permanent_ban') && detail.targetType === 'user' && (

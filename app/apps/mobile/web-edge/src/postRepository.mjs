@@ -1,5 +1,5 @@
 // Reads the public facts of a post that a link-preview card needs, through the database function
-// `post_share_card` (migration 0025) with the anon key. Signed-out callers cannot read `posts`,
+// `post_share_card` with the anon key. Signed-out callers cannot read `posts`,
 // so the function is the one door: it returns a row only for a public, open or delivered post of
 // an active member, and only the columns below. No direct table read happens here.
 

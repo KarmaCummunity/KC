@@ -39,7 +39,7 @@ export function resolveImageUrl({ cover_bucket: bucket, cover_key: key }, { supa
   return `${trimTrailingSlashes(supabaseUrl)}/storage/v1/object/public/${IMAGE_BUCKET}/${encoded}`;
 }
 
-/** @param row one row of `post_share_card` (migration 0025) */
+/** @param row one row of `post_share_card` */
 export function buildPostCard(row, config) {
   const world = resolveWorld(row.world_slug);
   const direction = resolveDirection(row.direction);

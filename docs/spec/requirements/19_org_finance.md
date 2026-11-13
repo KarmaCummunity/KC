@@ -382,7 +382,7 @@ Shared behaviour:
 - AC1. Component `OrgTransparencySection` renders, in this order: 46(a) badge (when enabled: *"תרומות לארגון מזכות בזיכוי ממס לפי סעיף 46א"* with validity year), yearly totals cards (income, expense, program share %), a small year selector when more than one snapshot is published, public documents list with download, and *"עודכן לאחרונה"* with `last_published_at`.
 - AC2. Hosted today on `/(tabs)/donations/money/nonprofit/[slug]` below the campaigns block; when `FR-ORG-003` ships the organization profile at `/org/[slug]`, the same component mounts in its "שקיפות" tab (`FR-ORG-020`) unchanged (component is presentational; data via `rpc_org_transparency`).
 - AC3. Empty state when nothing is published: *"הארגון עדיין לא פרסם נתוני שקיפות"*; the whole section is hidden when the org disabled every toggle and has no 46(a) badge.
-- AC4. Guest-accessible (anon RPC), responsive per `spec/14_responsive_desktop.md`, strings under `org.transparency.*`.
+- AC4. Guest-accessible (anon RPC), responsive per `spec/14_responsive_desktop.md`, strings under `org.transparency.*`. ✅ `rpc_org_transparency` is granted to `anon` again (D155, migration `0030`); a shared nonprofit link opens signed out (`isPublicOrgPagePath`).
 - AC5. The KC platform org uses the same path: the About screen (`FR-DONATE-010` placements) links to KC's transparency section once at least one snapshot is published.
 
 ---
@@ -417,7 +417,7 @@ PM request (2026-11-03): start recording real donations and expenses simply, kee
 
 **Acceptance Criteria.**
 - AC1. `organizations.transparency_settings` holds five booleans, all **off** by default: `show_totals`, `show_donations_count`, `show_program_ratio`, `show_category_breakdown`, `show_monthly_trend`. Only a super admin may change them (`finance_transparency_settings_set`); unknown keys or non-boolean values are rejected with `invalid_settings`. Admin UI: `/admin/money/visibility`, with a preview that renders the exact public component.
-- AC2. `rpc_org_transparency(p_slug)` is callable by `anon` and `authenticated` (`p_slug` omitted = the platform org). It returns `{"enabled": false}` for an unknown org or when every toggle is off; otherwise it returns **only** the blocks whose toggle is on, computed over entries that are cleared, not deleted, `ILS`, `is_public`, and not transfers. Expense categories outside the known keys are folded into `other_out`.
+- AC2. `rpc_org_transparency(p_slug)` is callable by `anon` and `authenticated` (`p_slug` omitted = the platform org). It returns `{"enabled": false}` for an unknown org or when every toggle is off; otherwise it returns **only** the blocks whose toggle is on, computed over entries that are cleared, not deleted, `ILS`, `is_public`, and not transfers. Expense categories outside the known keys are folded into `other_out`. ✅ (`anon` grant restored in migration `0030`, D155).
 - AC3. The payload has no field for counterparties, entry ids, account names or user ids. A domain unit test pins the field allow-list and a SQL test asserts no counterparty text appears.
 - AC4. Per-entry privacy: `finance_ledger_entries.is_public` (default `true`) is set in the entry form; entries with `false` never count in the public numbers and show a "not public" chip in the admin list.
 - AC5. `OrgTransparencySection` renders nothing while loading, on error, when disabled, or when every enabled block is empty. It is mounted in the About "numbers" card and on the Statistics screen (`FR-STATS-010`).
