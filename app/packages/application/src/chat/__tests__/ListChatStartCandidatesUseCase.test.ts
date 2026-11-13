@@ -1,3 +1,4 @@
+import { BackendUnavailableError } from '@kc/domain';
 import { describe, it, expect, vi } from 'vitest';
 import type { User } from '@kc/domain';
 import { ListChatStartCandidatesUseCase } from '../ListChatStartCandidatesUseCase';
@@ -93,6 +94,13 @@ describe('ListChatStartCandidatesUseCase (FR-CHAT-017)', () => {
   it('AC4: people with no display name are matched by handle', async () => {
     const { uc } = setup({ following: [mkUser('a', '', { displayName: null, shareHandle: 'zed_99' })] });
     const res = await uc.execute({ viewerId: 'me', query: 'zed' });
+    expect(res.following.map((u) => u.userId)).toEqual(['a']);
+  });
+
+  it('still lists candidates when the backend cannot list blocks (the server hides blocked people anyway)', async () => {
+    const { uc, blocks } = setup({ following: [mkUser('a', 'Avi')] });
+    blocks.listMyBlockedUsers.mockRejectedValueOnce(new BackendUnavailableError('rpc:list_my_blocked_users', 'function'));
+    const res = await uc.execute({ viewerId: 'me', query: '' });
     expect(res.following.map((u) => u.userId)).toEqual(['a']);
   });
 

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 // FR-STATS-008 — the member's own givings per world: one row per world with given / received /
 // closed, an empty hint when nothing was handed over yet, no query without a session, and no block at
-// all while the backend has no source for it (M15).
+// all while a backend lacks my_world_givings.
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, screen, waitFor } from '@testing-library/react';

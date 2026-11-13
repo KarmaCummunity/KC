@@ -65,13 +65,46 @@ describe('listMyActivityTimeline', () => {
   });
 });
 
-describe('capabilities the baseline lacks (M14, M15)', () => {
-  it('throws BackendUnavailableError for the funnel and the per-world givings, without calling the server', async () => {
-    const { client, calls } = createFakeClient();
-    const repo = new SupabaseStatsRepository(client);
+describe('getWorldFlowFunnel (FR-STATS-007)', () => {
+  it('calls admin_world_flow_funnel with the window and maps the rows, keeping untracked stages null', async () => {
+    const { client, calls } = createFakeClient({
+      rpc: {
+        admin_world_flow_funnel: ok([
+          { world_slug: 'items', world_label_he: 'i', world_label_en: 'Items', direction: 'give', published: 4, booked: 3,
+            confirmed: 2, completed: 1, cancelled: 1, closed: 2, median_hours_to_booking: 4, median_hours_to_completion: 10 },
+          { world_slug: 'money', world_label_he: 'm', world_label_en: 'Money', direction: 'give', published: 1, booked: null,
+            confirmed: null, completed: null, cancelled: null, closed: 0, median_hours_to_booking: null, median_hours_to_completion: null },
+        ]),
+      },
+    });
 
-    await expect(repo.getWorldFlowFunnel(30)).rejects.toBeInstanceOf(BackendUnavailableError);
-    await expect(repo.listMyWorldGivings()).rejects.toBeInstanceOf(BackendUnavailableError);
-    expect(calls).toHaveLength(0);
+    const rows = await new SupabaseStatsRepository(client).getWorldFlowFunnel(30);
+
+    expect(calls[0]).toMatchObject({ fn: 'admin_world_flow_funnel', args: { p_days: 30 } });
+    expect(rows[0]).toEqual({
+      worldSlug: 'items', worldLabelHe: 'i', worldLabelEn: 'Items', direction: 'give', published: 4, booked: 3,
+      confirmed: 2, completed: 1, cancelled: 1, closed: 2, medianHoursToBooking: 4, medianHoursToCompletion: 10,
+    });
+    expect(rows[1]).toMatchObject({ booked: null, completed: null, medianHoursToBooking: null, closed: 0 });
+  });
+
+  it('reports a missing function as BackendUnavailableError', async () => {
+    const { client } = createFakeClient({
+      rpc: { admin_world_flow_funnel: { data: null, error: { code: 'PGRST202', message: 'not in the schema cache' } } },
+    });
+    await expect(new SupabaseStatsRepository(client).getWorldFlowFunnel(30)).rejects.toBeInstanceOf(BackendUnavailableError);
+  });
+});
+
+describe('listMyWorldGivings (FR-STATS-008)', () => {
+  it('calls my_world_givings without a member id and maps the rows', async () => {
+    const { client, calls } = createFakeClient({
+      rpc: { my_world_givings: ok([{ world_slug: 'items', world_label_he: 'i', world_label_en: 'Items', given: 2, received: 0, closed: 3 }]) },
+    });
+
+    const rows = await new SupabaseStatsRepository(client).listMyWorldGivings();
+
+    expect(calls[0]).toMatchObject({ fn: 'my_world_givings', args: undefined });
+    expect(rows).toEqual([{ worldSlug: 'items', worldLabelHe: 'i', worldLabelEn: 'Items', given: 2, received: 0, closed: 3 }]);
   });
 });
