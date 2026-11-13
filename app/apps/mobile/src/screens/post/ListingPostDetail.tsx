@@ -7,6 +7,7 @@ import { KeyboardAvoidingView, Platform, View } from 'react-native';
 import { Stack } from 'expo-router';
 import type { PostWithOwner } from '@kc/application';
 import { MarketplaceListingDetailScreen } from '../marketplace/MarketplaceListingDetailScreen';
+import { ListingDetailLoadingPreview } from '../../components/marketplace/ListingDetailLoadingPreview';
 import { PostEngagementThread } from '../../components/post-detail/PostEngagementThread';
 import { PostEngagementComposer } from '../../components/post-detail/PostEngagementComposer';
 import { PostEngagementProvider } from '../../components/post-detail/PostEngagementContext';
@@ -79,6 +80,7 @@ export function ListingPostDetail({ post, listingId, viewerId, bottomInset }: Pr
             bottomInset={scrollInset}
             footer={footer}
             moderationInHeader
+            loadingPreview={<ListingDetailLoadingPreview post={post} bottomInset={scrollInset} />}
           />
           {showBottomChrome ? (
             <PostDetailBottomChrome

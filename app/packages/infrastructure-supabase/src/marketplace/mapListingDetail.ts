@@ -41,7 +41,12 @@ async function loadRideDetails(client: Client, postId: string, card: PostCardRow
   const origin: PlaceRef = { cityId: row.origin_city_id, streetId: row.origin_street_id, junctionId: row.origin_junction_id };
   const dest: PlaceRef = { cityId: row.dest_city_id, streetId: row.dest_street_id, junctionId: row.dest_junction_id };
   const stops = meetingPointRefs(row.meeting_points);
-  const places = await resolvePlaces(client, [origin, dest, ...stops]);
+  // The place names and the series marker depend only on the ride row, so they share one round
+  // trip instead of two in sequence.
+  const [places, marker] = await Promise.all([
+    resolvePlaces(client, [origin, dest, ...stops]),
+    row.series_id ? seriesMarker(client, postId) : null,
+  ]);
   const details = rideDetailsFromRow(
     row,
     card.direction === 'request' ? 'request' : 'offer',
@@ -52,10 +57,7 @@ async function loadRideDetails(client: Client, postId: string, card: PostCardRow
       return place ? [place] : [];
     }),
   );
-  if (row.series_id) {
-    const marker = await seriesMarker(client, postId);
-    if (marker) details['ride_series'] = marker;
-  }
+  if (marker) details['ride_series'] = marker;
   return details;
 }
 

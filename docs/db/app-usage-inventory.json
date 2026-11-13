@@ -1846,7 +1846,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-   "line": 68,
+   "line": 70,
    "area": "marketplace",
    "symbol": "seriesMarker",
    "via": "literal",
@@ -1855,7 +1855,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-   "line": 76,
+   "line": 78,
    "area": "marketplace",
    "symbol": "loadEventDetails",
    "via": "literal",
@@ -1867,7 +1867,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-   "line": 77,
+   "line": 79,
    "area": "marketplace",
    "symbol": "loadEventDetails",
    "via": "literal",
@@ -1879,7 +1879,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-   "line": 97,
+   "line": 99,
    "area": "marketplace",
    "symbol": "loadFoodDetails",
    "via": "literal",
@@ -1891,7 +1891,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-   "line": 106,
+   "line": 108,
    "area": "marketplace",
    "symbol": "fetchListingDetail",
    "via": "literal",
@@ -1900,7 +1900,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-   "line": 113,
+   "line": 115,
    "area": "marketplace",
    "symbol": "fetchListingDetail",
    "via": "literal",
@@ -1912,7 +1912,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-   "line": 114,
+   "line": 116,
    "area": "marketplace",
    "symbol": "fetchListingDetail",
    "via": "literal",
