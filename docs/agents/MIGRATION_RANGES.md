@@ -27,7 +27,7 @@ The numbered files of the cut-over (`0001`-`0036`) and the hand-claimed numbers 
 | 0021–0023 | #2086 recurring events: `0021` post series, `0022` series RPCs and the end of a recurring ride, `0023` one date of a series in the feeds | in progress |
 | 0024 | #2163 links and knowledge of the giving worlds: `world_links`, `external_bodies`, `knowledge_topics`, `knowledge_topic_aliases` (`0024_world_content.sql`) | in progress |
 | 0025 | — | free |
-| 0026–0033 | `claude/parity-member-features` member features (handed out by the parity coordinator) | claimed |
+| 0026–0033 | `claude/parity-member-features` member features: `0026` member realtime (own counters, feed new-posts ping, online presence), `0027` rich notifications and the lost kinds, `0028` a hidden chat comes back clean, `0029` the street others see follows the display level, `0030` public nonprofit and transparency pages for `anon`, `0031` follow suggestions, profile nudge, org and tag search, About roster, `0032` staff set the verification level, `0033` housing apartment, floor and entrance | in progress |
 | 0034–0038 | `claude/parity-back-office` (inside the parity claim): `0034` admin tasks (FR-ADMIN-018), `0035` CRM contacts per organization (FR-ADMIN-032), `0036` staff timesheets (FR-ADMIN-033); `0037`–`0038` held | in progress |
 | 0039–0049 | feature-parity restore (WhatsApp and the rest), held by the parity coordinator | claimed |
 

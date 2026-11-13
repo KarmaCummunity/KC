@@ -81,7 +81,7 @@ test('every missing piece of a kind is named', () => {
   };
   assert.match(failure([row()], { ...AUXILIARY, demoTitle: 't' }), /kind demo_kind: text notifications\.demoBody is missing/);
   assert.match(failure([row({ group_window: 60 })], locale()), /demoGroupedBody is missing.*group window/);
-  assert.match(failure([row()], locale({ demoBody: '{{postTitle}}' })), /uses \{\{postTitle\}\}; only actorName/);
+  assert.match(failure([row()], locale({ demoBody: '{{listingTitle}}' })), /uses \{\{listingTitle\}\}; only actorName/);
   assert.match(failure([row(), row()], locale()), /registered twice/);
   assert.match(failure([row({ category: 'urgent' })], locale()), /unknown category urgent/);
   assert.match(failure([row({ title_key: 'other.demoTitle' })], locale()), /other\.demoTitle is missing/);
@@ -90,8 +90,8 @@ test('every missing piece of a kind is named', () => {
   assert.match(both, /kind k1:[\s\S]*kind k2:/, 'all problems are listed at once');
 });
 
-test('the text arguments are the five both renderers provide', () => {
-  assert.deepEqual(TEXT_ARGS, ['actorName', 'count', 'othersCount', 'messagePreview', 'taskTitle']);
+test('the text arguments are the seven both renderers provide', () => {
+  assert.deepEqual(TEXT_ARGS, ['actorName', 'count', 'othersCount', 'messagePreview', 'taskTitle', 'postTitle', 'details']);
 });
 
 test('the repository registry parses and the generated files are up to date', () => {

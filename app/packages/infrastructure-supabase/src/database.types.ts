@@ -9,6 +9,37 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      about_team_members: {
+        Row: {
+          created_at: string
+          is_active: boolean
+          role_key: string
+          sort_order: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          is_active?: boolean
+          role_key: string
+          sort_order?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          is_active?: boolean
+          role_key?: string
+          sort_order?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "about_team_members_user_id_fkey"
+            columns: ["user_id"]
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       admin_role_grants: {
         Row: {
           granted_at: string
@@ -298,6 +329,7 @@ export type Database = {
         Row: {
           chat_id: string
           hidden_at: string | null
+          history_from: string | null
           joined_at: string
           last_read_at: string
           role: string
@@ -306,6 +338,7 @@ export type Database = {
         Insert: {
           chat_id: string
           hidden_at?: string | null
+          history_from?: string | null
           joined_at?: string
           last_read_at?: string
           role?: string
@@ -314,6 +347,7 @@ export type Database = {
         Update: {
           chat_id?: string
           hidden_at?: string | null
+          history_from?: string | null
           joined_at?: string
           last_read_at?: string
           role?: string
@@ -2270,8 +2304,11 @@ export type Database = {
       post_private_locations: {
         Row: {
           access_notes: string | null
+          apartment: string | null
           destination_street_number: string | null
+          entrance_notes: string | null
           exact_point: unknown
+          floor: string | null
           post_id: string
           street: string | null
           street_number: string | null
@@ -2279,8 +2316,11 @@ export type Database = {
         }
         Insert: {
           access_notes?: string | null
+          apartment?: string | null
           destination_street_number?: string | null
+          entrance_notes?: string | null
           exact_point?: unknown
+          floor?: string | null
           post_id: string
           street?: string | null
           street_number?: string | null
@@ -2288,8 +2328,11 @@ export type Database = {
         }
         Update: {
           access_notes?: string | null
+          apartment?: string | null
           destination_street_number?: string | null
+          entrance_notes?: string | null
           exact_point?: unknown
+          floor?: string | null
           post_id?: string
           street?: string | null
           street_number?: string | null
@@ -2714,6 +2757,8 @@ export type Database = {
           post_type: string
           published_at: string | null
           search_vector: unknown
+          shown_street: string | null
+          shown_street_number: string | null
           source: string
           source_language: string | null
           status: string
@@ -2743,6 +2788,8 @@ export type Database = {
           post_type?: string
           published_at?: string | null
           search_vector?: unknown
+          shown_street?: string | null
+          shown_street_number?: string | null
           source?: string
           source_language?: string | null
           status?: string
@@ -2772,6 +2819,8 @@ export type Database = {
           post_type?: string
           published_at?: string | null
           search_vector?: unknown
+          shown_street?: string | null
+          shown_street_number?: string | null
           source?: string
           source_language?: string | null
           status?: string
@@ -3897,6 +3946,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      about_team_profiles: {
+        Args: never
+        Returns: {
+          avatar_url: string
+          display_name: string
+          role_key: string
+          share_handle: string
+          sort_order: number
+        }[]
+      }
       accept_legal_document: {
         Args: {
           p_doc_type: string
@@ -4216,6 +4275,10 @@ export type Database = {
           p_org_id: string
         }
         Returns: undefined
+      }
+      admin_set_verification_level: {
+        Args: { p_level: number; p_reason: string; p_user_id: string }
+        Returns: number
       }
       admin_survey_overview: { Args: never; Returns: Json }
       admin_survey_results: { Args: { p_slug: string }; Returns: Json }
@@ -5224,8 +5287,11 @@ export type Database = {
         Args: { p_post_id: string }
         Returns: {
           access_notes: string | null
+          apartment: string | null
           destination_street_number: string | null
+          entrance_notes: string | null
           exact_point: unknown
+          floor: string | null
           post_id: string
           street: string | null
           street_number: string | null
@@ -5869,8 +5935,38 @@ export type Database = {
         }[]
       }
       rotate_research_salt: { Args: never; Returns: string }
+      rpc_follow_suggestions: {
+        Args: { p_limit?: number }
+        Returns: {
+          avatar_url: string
+          city_name: string
+          display_name: string
+          followers_count: number
+          reason: string
+          score: number
+          share_handle: string
+          user_id: string
+          verification_level: number
+        }[]
+      }
       rpc_org_transparency: { Args: { p_slug?: string }; Returns: Json }
+      rpc_profile_completeness: { Args: { p_user_id?: string }; Returns: Json }
       search_all: { Args: { p_limit?: number; p_query: string }; Returns: Json }
+      search_hashtags: {
+        Args: { p_limit?: number; p_query: string }
+        Returns: {
+          tag: string
+          use_count: number
+        }[]
+      }
+      search_organizations: {
+        Args: { p_limit?: number; p_query: string }
+        Returns: {
+          name: string
+          org_id: string
+          slug: string
+        }[]
+      }
       search_places: {
         Args: { p_kinds?: string[]; p_limit?: number; p_query: string }
         Returns: {
@@ -5897,6 +5993,10 @@ export type Database = {
           distance_m: number
           next_cursor: Json
         }[]
+      }
+      search_suggested_queries: {
+        Args: { p_limit?: number }
+        Returns: string[]
       }
       search_users_page: {
         Args: {

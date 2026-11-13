@@ -83,13 +83,13 @@ insert into public.blocks (blocker_id, blocked_id) values (pg_temp.id('d'), pg_t
 
 -- ── Registry ────────────────────────────────────────────────────────────────
 -- 76 kinds from the baseline, plus those of later migrations: support_issue_received (0015),
--- report_sla_warning (0017), task_assigned (0034).
-select is((select count(*) from kc_private.notification_kinds), 79::bigint, 'the registry holds every kind');
+-- report_sla_warning (0017), 13 rich and restored kinds (0027), task_assigned (0034).
+select is((select count(*) from kc_private.notification_kinds), 92::bigint, 'the registry holds every kind');
 select is((select title_key || '|' || bypass_quiet_hours || '|' || category from kc_private.notification_kinds
             where kind = 'ride_booking_waitlist_promoted'),
   'notifications.rideBookingWaitlistPromotedTitle|true|critical', 'a handoff kind has its camelCase keys and rules');
-select is((select count(*) from kc_private.notification_kinds where bypass_preferences), 5::bigint,
-  'only the account, removal and emergency notices bypass preferences');
+select is((select count(*) from kc_private.notification_kinds where bypass_preferences), 6::bigint,
+  'only the account, removal, chat removal and emergency notices bypass preferences');
 select is(pg_temp.run('a', 'select count(*) from kc_private.notification_kinds'), '42501', 'the registry is not readable from a device');
 
 -- ── Delivery: one notification, the push for the worker, the event confirmed ─
@@ -125,7 +125,7 @@ select is(pg_temp.outcome(pg_temp.emit('mark_recipient', '9', 'a')), 'skipped:re
 select pg_temp.prefs('b', '{"critical": false}') \gset
 select is(pg_temp.outcome(pg_temp.emit('mark_recipient', 'b', 'a')), 'skipped:preferences', 'a switched-off category is not delivered');
 select is(pg_temp.outcome(pg_temp.emit('auto_removed', 'b')), 'delivered:push', 'a bypass kind is delivered and pushed all the same');
-select is(pg_temp.outcome(pg_temp.emit('follow_approved', 'b', 'a')), 'delivered', 'the other category is unaffected');
+select is(pg_temp.outcome(pg_temp.emit('follow_approved', 'b', 'a')), 'delivered:push', 'the other category is unaffected; follow approvals are pushed (FR-NOTIF-008)');
 select pg_temp.prefs('b', '{"social": false, "kinds": {"match_suggested": false, "mark_recipient": "no"}}') \gset
 select is(pg_temp.outcome(pg_temp.emit('follow_approved', 'b', 'a')), 'skipped:preferences', 'the social switch stops social kinds');
 select is(pg_temp.outcome(pg_temp.emit('match_suggested', 'b')), 'skipped:preferences', 'a single kind can be switched off');
@@ -133,7 +133,7 @@ select is(pg_temp.outcome(pg_temp.emit('mark_recipient', 'b', 'a')), 'delivered:
 
 -- ── Channels and quiet hours ────────────────────────────────────────────────
 select pg_temp.prefs('b', '{}') \gset
-select is(pg_temp.outcome(pg_temp.emit('follow_approved', 'b', 'c')), 'delivered', 'a social kind is shown in the centre and not pushed');
+select is(pg_temp.outcome(pg_temp.emit('post_reaction', 'b', 'c')), 'delivered', 'a centre-only social kind is shown in the centre and not pushed');
 select pg_temp.prefs('b', '{"quietHours": {"enabled": true, "start": "00:00", "end": "23:59:59.999"}}') \gset
 select is(pg_temp.outcome(pg_temp.emit('giving_handoff_confirmed', 'b', 'a')), 'delivered', 'in quiet hours the notification is written but not pushed');
 select is(pg_temp.outcome(pg_temp.emit('ride_booking_confirmed', 'b', 'a')), 'delivered:push', 'a time-critical kind is pushed in quiet hours');
@@ -205,8 +205,8 @@ select is(pg_temp.run('b', $$select public.follow_user('00000000-0000-4000-8000-
 select is(pg_temp.run('a', $$select public.follow_request_decide('00000000-0000-4000-8000-00000000000b', true)$$) || '/'
     || pg_temp.events('follow_approved', 'b') || '/' || pg_temp.events('follow_started', 'a'),
   'ok/1/1', 'accepting notifies the requester, and does not announce the new follower to the member who accepted');
-select is((select string_agg(pg_temp.outcome(r), ',') from kc_private.notifications_deliver_batch() r), 'delivered,delivered,delivered',
-  'the batch worker delivers the pending events');
+select is((select string_agg(pg_temp.outcome(r), ',') from kc_private.notifications_deliver_batch() r), 'delivered,delivered,delivered:push',
+  'the batch worker delivers the pending events; the follow approval to a member with a device is pushed');
 delete from public.follows where follower_id = pg_temp.id('c');
 update public.users set privacy_mode = 'Public' where id = pg_temp.id('a');
 select is(pg_temp.run('c', $$select public.follow_user('00000000-0000-4000-8000-00000000000a')$$) is not null

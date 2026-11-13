@@ -28,7 +28,8 @@ export interface ChatContractContext {
   /**
    * What opening the chat again after a personal hide does. `new-thread` (default): a new, empty
    * thread (FR-CHAT-016 AC3). `same-thread`: the production baseline keeps ONE chat per pair
-   * (unique pair index, D13), so the hidden chat comes back to the inbox with its history.
+   * (unique pair index, D13), so the hidden chat comes back to the inbox, clean for the member who
+   * hid it (their history starts at the hide, migration 0028).
    */
   reopenAfterHide?: 'new-thread' | 'same-thread';
 }
@@ -178,7 +179,14 @@ const hideIsPersonal: ContractCase<Ctx> = {
     assertSameList(await inboxIds(a), [chatId], "counterpart's inbox keeps the chat");
     await a.chats.sendMessage(chatId, a.userId, 'two');
     assertSameList(await inboxIds(b), [chatId], "hider's inbox after a new message");
-    assertEqual(await b.chats.getUnreadTotal(b.userId), 2, "hider's unread total after the chat reappears");
+    // PM decision 2026-11-11: what the hider removed never comes back; only the new message counts.
+    assertEqual(await b.chats.getUnreadTotal(b.userId), 1, "hider's unread total after the chat reappears");
+    assertSameList(
+      (await b.chats.getMessages(chatId, 10)).map((m) => m.body),
+      ['two'],
+      'the hider reads only what came after the hide',
+    );
+    assertEqual((await a.chats.getMessages(chatId, 10)).length, 2, 'the counterpart keeps the whole conversation');
   },
 };
 
@@ -194,7 +202,8 @@ const newThreadAfterHide: ContractCase<Ctx> = {
     if (ctx.reopenAfterHide === 'same-thread') {
       assertEqual(reopened, hidden, 'the one chat of the pair comes back');
       assertSameList(await inboxIds(a), [hidden], 'the reopened chat is in the inbox again');
-      assertEqual((await a.chats.getMessages(hidden, 10)).length, 1, 'with its history');
+      assertSameList(await a.chats.getMessages(hidden, 10), [], 'as a clean thread: the old history is gone for the hider');
+      assertEqual((await b.chats.getMessages(hidden, 10)).length, 1, 'the counterpart keeps it');
       return;
     }
     const fresh = reopened;
