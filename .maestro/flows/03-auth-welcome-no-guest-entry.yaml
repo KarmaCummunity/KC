@@ -14,7 +14,5 @@ tags: [auth, smoke]
     visible:
       id: auth-email-entry
     timeout: 30000
-- assertNotVisible:
-    id: auth-guest-preview
-- assertNotVisible:
-    id: guest-feed-screen
+# The removed button is matched by its former label: a flow may only use ids that exist in the app.
+- assertNotVisible: "הצץ בפיד.*"
