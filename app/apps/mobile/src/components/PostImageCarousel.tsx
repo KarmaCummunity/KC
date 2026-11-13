@@ -7,10 +7,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
 import type { MediaAsset } from '@kc/domain';
-import { getSupabaseClient } from '@kc/infrastructure-supabase';
 import { PostImageViewerModal } from './PostImageViewerModal';
 import { KCImage } from './ui/KCImage';
 import { KcFlashList } from './lists/KcFlashList';
+import { getSupabaseHeroImageUrl, getSupabasePublicImageUrl } from '../lib/imageUrl';
 
 const STORAGE_BUCKET = 'post-images';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -68,9 +68,10 @@ export function PostImageCarousel({ mediaAssets, fallbackIcon }: Props) {
     );
   }
 
-  const urls = mediaAssets.map((m) =>
-    getSupabaseClient().storage.from(STORAGE_BUCKET).getPublicUrl(m.path).data.publicUrl,
-  );
+  // The viewer zooms, so it keeps the originals; the hero shows a screen-sized version of each photo
+  // and falls back to the original when that transform is unavailable (NFR-PERF-005).
+  const urls = mediaAssets.map((m) => getSupabasePublicImageUrl({ bucket: m.bucket ?? STORAGE_BUCKET, path: m.path }));
+  const heroUrls = mediaAssets.map((m) => getSupabaseHeroImageUrl(m.bucket ?? STORAGE_BUCKET, m.path, SCREEN_WIDTH));
 
   if (urls.length === 1) {
     return (
@@ -81,7 +82,7 @@ export function PostImageCarousel({ mediaAssets, fallbackIcon }: Props) {
           accessibilityRole="image"
           accessibilityLabel={t('post.imageZoom')}
         >
-          <KCImage uri={urls[0]} style={styles.image} contentFit="cover" priority="high" />
+          <KCImage uri={heroUrls[0]} fallbackUri={urls[0]} style={styles.image} contentFit="cover" priority="high" />
         </Pressable>
         <PostImageViewerModal
           visible={viewerOpen}
@@ -105,7 +106,7 @@ export function PostImageCarousel({ mediaAssets, fallbackIcon }: Props) {
           horizontal
           pagingEnabled
           showsHorizontalScrollIndicator={false}
-          data={urls}
+          data={heroUrls}
           keyExtractor={(url, i) => `${i}-${url}`}
           renderItem={({ item, index }) => (
             <Pressable
@@ -113,7 +114,7 @@ export function PostImageCarousel({ mediaAssets, fallbackIcon }: Props) {
               accessibilityRole="image"
               accessibilityLabel={t('post.imageZoomNth', { index: index + 1, total: urls.length })}
             >
-              <KCImage uri={item} style={styles.pageImage} contentFit="cover" recyclingKey={item} />
+              <KCImage uri={item} fallbackUri={urls[index]} style={styles.pageImage} contentFit="cover" recyclingKey={item} />
             </Pressable>
           )}
           onScroll={onScroll}

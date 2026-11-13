@@ -110,6 +110,24 @@ export function getSupabaseFeedImageUrl(
   return getSupabaseImageThumbUrl({ bucket, path });
 }
 
+/**
+ * Detail-page hero photo: a transform sized to the screen (2x for density, capped) instead of the
+ * 2048 px upload (~300-500 KB each). When transforms are off there is no smaller sibling that is
+ * sharp at this size (the `-thumb` is 400 px), so the original is the answer.
+ */
+export function getSupabaseHeroImageUrl(
+  bucket: string,
+  path: string,
+  displayWidthPx: number,
+): string {
+  if (!path) return '';
+  const scaled = Math.min(1600, Math.max(320, Math.ceil(displayWidthPx * 2)));
+  if (wantsTransform({ width: scaled, format: 'webp' })) {
+    return buildSupabaseImageTransformUrl({ bucket, path, width: scaled, quality: 80, format: 'webp' });
+  }
+  return getSupabasePublicImageUrl({ bucket, path });
+}
+
 export function deriveThumbUrl(fullUrl: string): string {
   if (!fullUrl) return fullUrl;
   if (!fullUrl.includes('/storage/v1/object/public/')) return fullUrl;
