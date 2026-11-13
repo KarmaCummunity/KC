@@ -1959,7 +1959,7 @@ Owner rules that go with it:
 
 **Affected.** Docs only in this entry. Follow-up (not done here): a migration so new knowledge listings start as published instead of `pending_review`, plus updating the R-Knowledge-1 catalog row (`0265`) and `docs/spec/requirements/23_knowledge.md`.
 
-## {{ENG:agent-skill-v3}} — Agents close only what CI proves; person checks become verification issues; loops never decide product questions (2026-11-13)
+## D-236 — Agents close only what CI proves; person checks become verification issues; loops never decide product questions (2026-11-13)
 
 **Decision.** The `kc-issue-to-merge` skill is reorganized around four rules, approved by the PM on 2026-11-11 and 2026-11-13.
 1. **Split by who can verify.** An issue's development part, everything an automated test proves, closes when its PR merges. Acceptance criteria only a person can check (a device, a TestFlight or Play build, a store console, a credential, a visual judgment) move to a separate `verification` + `human` issue. Agents never take it, and open ones block the `dev` → `main` release unless the release PR waives them (`docs/SSOT/RELEASE_CHECKLIST.md`).
