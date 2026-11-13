@@ -19,6 +19,7 @@ export { postCommentMachine } from './machines/postComment';
 export { reportMachine } from './machines/report';
 export { followRequestMachine } from './machines/followRequest';
 export { donationLinkReviewMachine } from './machines/donationLinkReview';
+export { reviewDecisionMachine } from './machines/reviewDecision';
 export { timesheetMachine } from './machines/timesheet';
 export { handoffMachineFor } from './machines/handoffMachineFor';
 export { accountStatusMachine } from './machines/accountStatus';

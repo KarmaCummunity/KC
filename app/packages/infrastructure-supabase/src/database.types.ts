@@ -4380,6 +4380,79 @@ export type Database = {
           world_slug: string
         }[]
       }
+      api_bot_apply_extraction: {
+        Args: {
+          p_confidence?: number
+          p_details?: Json
+          p_direction: string
+          p_kind_slug: string
+          p_session_id: string
+          p_summary?: string
+          p_title: string
+          p_world_slug: string
+        }
+        Returns: string
+      }
+      api_bot_my_matches: {
+        Args: { p_limit?: number; p_user_id: string }
+        Returns: {
+          candidate_id: string
+          distance_km: number
+          my_post_title: string
+          other_post_id: string
+          other_title: string
+          score: number
+          status: string
+          world_slug: string
+        }[]
+      }
+      api_bot_my_posts: {
+        Args: { p_limit?: number; p_user_id: string }
+        Returns: {
+          created_at: string
+          direction: string
+          post_id: string
+          title: string
+          world_slug: string
+        }[]
+      }
+      api_bot_open_session: {
+        Args: { p_inbound_message_id?: string; p_wa_id: string }
+        Returns: string
+      }
+      api_bot_post_cards: {
+        Args: { p_ids: string[]; p_viewer_id: string }
+        Returns: {
+          city_id: string
+          description: string
+          direction: string
+          post_id: string
+          published_at: string
+          title: string
+          world_slug: string
+        }[]
+      }
+      api_bot_publish_post: {
+        Args: { p_owner_id: string; p_session_id: string }
+        Returns: Json
+      }
+      api_bot_search_posts: {
+        Args: {
+          p_limit?: number
+          p_query: string
+          p_user_id: string
+          p_world_slug?: string
+        }
+        Returns: {
+          city_id: string
+          description: string
+          direction: string
+          post_id: string
+          published_at: string
+          title: string
+          world_slug: string
+        }[]
+      }
       api_donation_intent_set_checkout: {
         Args: {
           p_checkout_url: string
@@ -4459,6 +4532,206 @@ export type Database = {
           standing_order_id: string
         }[]
       }
+      api_whatsapp_admin_block_user: {
+        Args: { p_user_id: string }
+        Returns: undefined
+      }
+      api_whatsapp_admin_get_channel: { Args: never; Returns: Json }
+      api_whatsapp_admin_get_send_limits: { Args: never; Returns: Json }
+      api_whatsapp_admin_list_consent: {
+        Args: { p_cursor?: Json; p_limit?: number }
+        Returns: {
+          consent_status: string
+          cursor: Json
+          identity_id: string
+          last_inbound_at: string
+          opted_in: boolean
+          opted_in_at: string
+          opted_out_at: string
+          preferred_language: string
+          updated_at: string
+          user_id: string
+          wa_id_masked: string
+        }[]
+      }
+      api_whatsapp_admin_list_conversations: {
+        Args: { p_limit?: number }
+        Returns: {
+          confidence: number
+          created_at: string
+          post_id: string
+          session_id: string
+          state: string
+          updated_at: string
+          user_id: string
+          wa_id_masked: string
+        }[]
+      }
+      api_whatsapp_admin_list_outbound: {
+        Args: { p_cursor?: Json; p_limit?: number; p_status?: string }
+        Returns: {
+          attempts: number
+          created_at: string
+          cursor: Json
+          kind: string
+          language: string
+          last_error: string
+          next_attempt_at: string
+          outbound_id: string
+          sent_at: string
+          status: string
+          template_name: string
+          user_id: string
+          wa_id_masked: string
+        }[]
+      }
+      api_whatsapp_admin_list_rate_hits: {
+        Args: { p_limit?: number }
+        Returns: {
+          bucket: string
+          expires_at: string
+          hits: number
+          window_start: string
+        }[]
+      }
+      api_whatsapp_admin_list_recent_matches: {
+        Args: { p_limit?: number }
+        Returns: {
+          created_at: string
+          language: string
+          outbound_id: string
+          payload: Json
+          sent_at: string
+          status: string
+          template_name: string
+          user_id: string
+          wa_id_masked: string
+        }[]
+      }
+      api_whatsapp_admin_list_templates: {
+        Args: never
+        Returns: {
+          body_preview: string
+          category: string
+          is_approved: boolean
+          language_code: string
+          meta_status: string
+          meta_template_id: string
+          params: Json
+          registry_version: number
+          template_name: string
+          updated_at: string
+        }[]
+      }
+      api_whatsapp_admin_overview: { Args: never; Returns: Json }
+      api_whatsapp_admin_resend: {
+        Args: { p_outbound_id: string }
+        Returns: string
+      }
+      api_whatsapp_admin_review_list: {
+        Args: { p_cursor?: Json; p_limit?: number; p_status?: string }
+        Returns: {
+          confidence: number
+          created_at: string
+          cursor: Json
+          owner_id: string
+          post_id: string
+          post_status: string
+          post_title: string
+          reason: string
+          resolved_at: string
+          review_id: string
+          reviewer_id: string
+          session_id: string
+          status: string
+        }[]
+      }
+      api_whatsapp_admin_review_resolve: {
+        Args: { p_decision: string; p_review_id: string }
+        Returns: string
+      }
+      api_whatsapp_admin_set_channel_enabled: {
+        Args: { p_enabled: boolean }
+        Returns: Json
+      }
+      api_whatsapp_admin_set_send_limits: {
+        Args: { p_limits: Json }
+        Returns: Json
+      }
+      api_whatsapp_admin_set_template_status: {
+        Args: {
+          p_language_code: string
+          p_meta_status: string
+          p_meta_template_id?: string
+          p_template_name: string
+        }
+        Returns: undefined
+      }
+      api_whatsapp_bot_access: { Args: { p_wa_id: string }; Returns: Json }
+      api_whatsapp_channel_config: { Args: never; Returns: Json }
+      api_whatsapp_claim_inbound: {
+        Args: { p_message_id: string }
+        Returns: boolean
+      }
+      api_whatsapp_create_link_code: { Args: never; Returns: Json }
+      api_whatsapp_handle_keyword: {
+        Args: { p_record_id?: string; p_text: string; p_wa_id: string }
+        Returns: Json
+      }
+      api_whatsapp_inbound_allowed: {
+        Args: { p_wa_id: string }
+        Returns: boolean
+      }
+      api_whatsapp_ingest_inbound: {
+        Args: { p_message_id: string; p_payload: Json; p_run_id?: string }
+        Returns: string
+      }
+      api_whatsapp_llm_budget_take: {
+        Args: { p_wa_id: string }
+        Returns: boolean
+      }
+      api_whatsapp_my_link_status: { Args: never; Returns: Json }
+      api_whatsapp_outbound_claim: {
+        Args: { p_batch?: number; p_visibility_seconds?: number }
+        Returns: {
+          attempts: number
+          body: string
+          kind: string
+          language: string
+          outbound_id: string
+          payload: Json
+          template_name: string
+          to_wa_id: string
+          user_id: string
+        }[]
+      }
+      api_whatsapp_outbound_result: {
+        Args: {
+          p_error?: string
+          p_ok: boolean
+          p_outbound_id: string
+          p_retryable?: boolean
+          p_wa_message_id?: string
+        }
+        Returns: string
+      }
+      api_whatsapp_queue_reply: {
+        Args: { p_body: string; p_reply_kind?: string; p_wa_id: string }
+        Returns: string
+      }
+      api_whatsapp_redeem_link_code: {
+        Args: { p_code: string; p_wa_id: string }
+        Returns: Json
+      }
+      api_whatsapp_release_inbound: {
+        Args: { p_message_id: string }
+        Returns: undefined
+      }
+      api_whatsapp_set_match_consent: {
+        Args: { p_opted_in: boolean }
+        Returns: Json
+      }
+      api_whatsapp_unlink_me: { Args: never; Returns: undefined }
       book_knowledge_seat: {
         Args: { p_slot_id: string }
         Returns: {

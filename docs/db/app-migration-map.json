@@ -3,19 +3,19 @@
  "totals": {
   "rpc": {
    "objects": 225,
-   "same": 148,
-   "renamed": 20,
-   "changed": 38,
-   "removed": 0,
-   "missing": 19
+   "same": 161,
+   "renamed": 23,
+   "changed": 40,
+   "removed": 1,
+   "missing": 0
   },
   "table": {
    "objects": 64,
    "same": 46,
    "renamed": 0,
-   "changed": 17,
+   "changed": 18,
    "removed": 0,
-   "missing": 1
+   "missing": 0
   },
   "bucket": {
    "objects": 4,
@@ -53,11 +53,11 @@
   },
   "later": {
    "objects": 125,
-   "same": 74,
-   "renamed": 4,
-   "changed": 27,
-   "removed": 0,
-   "missing": 20
+   "same": 87,
+   "renamed": 7,
+   "changed": 30,
+   "removed": 1,
+   "missing": 0
   },
   "wedge": {
    "objects": 53,
@@ -134,10 +134,10 @@
   },
   "fn:_shared": {
    "callSites": 11,
-   "oneToOne": 0,
-   "changed": 0,
+   "oneToOne": 9,
+   "changed": 2,
    "removed": 0,
-   "missing": 11
+   "missing": 0
   },
   "fn:backfill-image-thumbs": {
    "callSites": 2,
@@ -218,24 +218,24 @@
   },
   "fn:whatsapp-intake-worker": {
    "callSites": 5,
-   "oneToOne": 0,
-   "changed": 0,
-   "removed": 0,
-   "missing": 5
+   "oneToOne": 3,
+   "changed": 1,
+   "removed": 1,
+   "missing": 0
   },
   "fn:whatsapp-sender": {
    "callSites": 1,
    "oneToOne": 0,
-   "changed": 0,
+   "changed": 1,
    "removed": 0,
-   "missing": 1
+   "missing": 0
   },
   "fn:whatsapp-webhook": {
    "callSites": 10,
-   "oneToOne": 0,
+   "oneToOne": 10,
    "changed": 0,
    "removed": 0,
-   "missing": 10
+   "missing": 0
   },
   "housing": {
    "callSites": 18,
@@ -424,19 +424,7 @@
   "Signed-out access: only `legal_documents` and `legal_document_versions`. Every other call needs a session.",
   "Workers that need `kc_private` connect over Postgres (as `dispatch-notification` does); only `public` is reachable through the HTTP API."
  ],
- "missing": [
-  {
-   "id": "M22",
-   "title": "WhatsApp bot, linking and admin console",
-   "usedBy": "Three Edge Functions (webhook, intake worker, sender) — 19 RPCs and one table; the mobile link screen and the admin WhatsApp console are parked and make no call",
-   "spec": "design Q4 (PM): not in the launch baseline",
-   "launch": "no",
-   "action": "defer",
-   "recommendation": "Do not deploy the three functions; hide the link screen and the admin console behind a flag until the `integrations` module lands.",
-   "tier": "later",
-   "blocker": false
-  }
- ],
+ "missing": [],
  "packages": [
   {
    "id": "P0",
@@ -1231,8 +1219,9 @@
     "supabase/functions/_shared/whatsapp/**",
     "apps/mobile: WhatsApp link screen"
    ],
-   "work": "App side done: the admin console adapter makes no call and rejects with `BackendUnavailableError`, and the link screen is a not-available notice. The bot itself waits for the `integrations` module (M22, design Q4).",
+   "work": "Database done: the `integrations` module (five `whatsapp_*` migrations) with the webhook, sender, agent, member and console RPCs. Still to do: retarget the three Edge Functions (sender config RPC, agent tool names), restore the admin adapter with cursor paging and add the link port and screen.",
    "tests": [
+    "pgTAP: 102_whatsapp_channel, 103_whatsapp_linking_bot, 104_whatsapp_admin, 105_whatsapp_match_alerts_jobs",
     "deno test supabase/functions/_shared/whatsapp"
    ],
    "degrade": "The three functions are not deployed; the settings row and the admin nav entry are hidden behind `WHATSAPP_BOT_AVAILABLE` (apps/mobile/src/lib/parkedFeatures.ts), and both routes render the not-available notice.",
@@ -1261,10 +1250,10 @@
    ],
    "counts": {
     "objects": 20,
-    "oneToOne": 0,
-    "changed": 0,
-    "removed": 0,
-    "missing": 20
+    "oneToOne": 16,
+    "changed": 3,
+    "removed": 1,
+    "missing": 0
    }
   }
  ],
@@ -1375,19 +1364,19 @@
    "name": "whatsapp-webhook",
    "verdict": "park",
    "uses": "8 api_whatsapp_* RPCs",
-   "change": "No `integrations` objects yet (M22): not deployed at launch."
+   "change": "The database contract is back with the same names and shapes (M22); not deployed until the bot launches."
   },
   {
    "name": "whatsapp-intake-worker",
-   "verdict": "park",
+   "verdict": "obsolete",
    "uses": "api_bot_* and api_whatsapp_llm_budget_take",
-   "change": "Same (M22)."
+   "change": "Retired: the agent's posting tool replaces it, and `api_bot_find_matches` is gone."
   },
   {
    "name": "whatsapp-sender",
    "verdict": "park",
    "uses": "whatsapp_channel_config, api_whatsapp_outbound_*",
-   "change": "Same (M22)."
+   "change": "Read the channel through `api_whatsapp_channel_config()` instead of the table; started by the `whatsapp_send` job."
   }
  ],
  "rows": [
@@ -3941,17 +3930,26 @@
   {
    "old": "api_bot_apply_extraction",
    "kind": "rpc",
-   "status": "missing",
+   "status": "same",
    "launch": "later",
    "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
+   "missing": null,
+   "note": "Same arguments; kind slugs are the posts catalog's (`item_offer`, `item_request`, `food_offer`, `food_request`); returns the session id; titles are cut to 80 characters.",
    "oldObject": {
     "signature": [
      "api_bot_apply_extraction(p_confidence?: number, p_details?: Json, p_direction: string, p_kind_slug: string, p_session_id: string, p_summary?: string, p_title: string, p_world_slug: string) → string"
     ]
    },
-   "targets": [],
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_bot_apply_extraction",
+     "signature": [
+      "api_bot_apply_extraction(p_confidence?: number, p_details?: Json, p_direction: string, p_kind_slug: string, p_session_id: string, p_summary?: string, p_title: string, p_world_slug: string) → string"
+     ],
+     "errors": []
+    }
+   ],
    "areas": [
     "fn:_shared",
     "fn:whatsapp-intake-worker"
@@ -3974,11 +3972,11 @@
   {
    "old": "api_bot_find_matches",
    "kind": "rpc",
-   "status": "missing",
+   "status": "removed",
    "launch": "later",
    "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
+   "missing": null,
+   "note": "Only the retired intake worker called it; matches reach the member as notifications (and WhatsApp alerts) and through `api_bot_my_matches`.",
    "oldObject": {
     "signature": [
      "api_bot_find_matches(p_limit?: number, p_listing_id: string, p_owner_id: string) → { candidate_listing_id: string fts_score: number geo_score: number match_status: string score: number trust_score: number vector_score: number }[]"
@@ -4000,17 +3998,26 @@
   {
    "old": "api_bot_listing_cards",
    "kind": "rpc",
-   "status": "missing",
+   "status": "renamed",
    "launch": "later",
    "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
+   "missing": null,
+   "note": "Same arguments; rows carry `post_id` (was `listing_id`) and `description` (was `summary`).",
    "oldObject": {
     "signature": [
      "api_bot_listing_cards(p_ids: string[], p_viewer_id: string) → { city_id: string created_at: string direction: string listing_id: string summary: string title: string world_slug: string }[]"
     ]
    },
-   "targets": [],
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_bot_post_cards",
+     "signature": [
+      "api_bot_post_cards(p_ids: string[], p_viewer_id: string) → { city_id: string description: string direction: string post_id: string published_at: string title: string world_slug: string }[]"
+     ],
+     "errors": []
+    }
+   ],
    "areas": [
     "fn:_shared"
    ],
@@ -4026,17 +4033,26 @@
   {
    "old": "api_bot_my_listings",
    "kind": "rpc",
-   "status": "missing",
+   "status": "renamed",
    "launch": "later",
    "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
+   "missing": null,
+   "note": "Same arguments; rows carry `post_id` (was `listing_id`).",
    "oldObject": {
     "signature": [
      "api_bot_my_listings(p_limit?: number, p_user_id: string) → { created_at: string direction: string listing_id: string title: string world_slug: string }[]"
     ]
    },
-   "targets": [],
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_bot_my_posts",
+     "signature": [
+      "api_bot_my_posts(p_limit?: number, p_user_id: string) → { created_at: string direction: string post_id: string title: string world_slug: string }[]"
+     ],
+     "errors": []
+    }
+   ],
    "areas": [
     "fn:_shared"
    ],
@@ -4052,17 +4068,26 @@
   {
    "old": "api_bot_my_matches",
    "kind": "rpc",
-   "status": "missing",
+   "status": "same",
    "launch": "later",
    "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
+   "missing": null,
+   "note": "Same shape; reads matching v2 pairs and leaves out a pair whose other post the member may not read.",
    "oldObject": {
     "signature": [
      "api_bot_my_matches(p_limit?: number, p_user_id: string) → { candidate_id: string distance_km: number my_listing_title: string other_listing_id: string other_title: string score: number status: string world_slug: string }[]"
     ]
    },
-   "targets": [],
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_bot_my_matches",
+     "signature": [
+      "api_bot_my_matches(p_limit?: number, p_user_id: string) → { candidate_id: string distance_km: number my_post_title: string other_post_id: string other_title: string score: number status: string world_slug: string }[]"
+     ],
+     "errors": []
+    }
+   ],
    "areas": [
     "fn:_shared"
    ],
@@ -4078,17 +4103,26 @@
   {
    "old": "api_bot_open_session",
    "kind": "rpc",
-   "status": "missing",
+   "status": "renamed",
    "launch": "later",
    "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
+   "missing": null,
+   "note": "`p_record_id` → `p_inbound_message_id` (the inbound row id returned by `api_whatsapp_ingest_inbound`).",
    "oldObject": {
     "signature": [
      "api_bot_open_session(p_record_id?: string, p_wa_id: string) → string"
     ]
    },
-   "targets": [],
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_bot_open_session",
+     "signature": [
+      "api_bot_open_session(p_inbound_message_id?: string, p_wa_id: string) → string"
+     ],
+     "errors": []
+    }
+   ],
    "areas": [
     "fn:_shared",
     "fn:whatsapp-intake-worker"
@@ -4111,17 +4145,26 @@
   {
    "old": "api_bot_publish_listing",
    "kind": "rpc",
-   "status": "missing",
+   "status": "changed",
    "launch": "later",
    "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
+   "missing": null,
+   "note": "Returns `{post_id, status, review, photo_required}`: a draft when confidence is below 0.85 (review item) or when an offer in a photo world needs its photo (D132); a food offer needs `details.expires_at`.",
    "oldObject": {
     "signature": [
      "api_bot_publish_listing(p_owner_id: string, p_session_id: string) → string"
     ]
    },
-   "targets": [],
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_bot_publish_post",
+     "signature": [
+      "api_bot_publish_post(p_owner_id: string, p_session_id: string) → Json"
+     ],
+     "errors": []
+    }
+   ],
    "areas": [
     "fn:_shared",
     "fn:whatsapp-intake-worker"
@@ -4144,17 +4187,26 @@
   {
    "old": "api_bot_search_listings",
    "kind": "rpc",
-   "status": "missing",
+   "status": "changed",
    "launch": "later",
    "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
+   "missing": null,
+   "note": "`(p_user_id, p_query, p_world_slug, p_limit ≤ 8)`; returns the post cards themselves (`post_id`, `world_slug`, `direction`, `title`, `description`, `city_id`, `published_at`) visible to that member, so no second cards call is needed.",
    "oldObject": {
     "signature": [
      "api_bot_search_listings(p_limit?: number, p_owner_id: string, p_query: string, p_world_slug?: string) → { fts_rank: number geo_rank: number listing_id: string rrf_score: number trgm_rank: number vector_rank: number }[]"
     ]
    },
-   "targets": [],
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_bot_search_posts",
+     "signature": [
+      "api_bot_search_posts(p_limit?: number, p_query: string, p_user_id: string, p_world_slug?: string) → { city_id: string description: string direction: string post_id: string published_at: string title: string world_slug: string }[]"
+     ],
+     "errors": []
+    }
+   ],
    "areas": [
     "fn:_shared"
    ],
@@ -4386,17 +4438,26 @@
   {
    "old": "api_whatsapp_bot_access",
    "kind": "rpc",
-   "status": "missing",
+   "status": "same",
    "launch": "later",
    "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
+   "missing": null,
+   "note": "Same shape; `access` may also be `inactive` (a linked member whose account is not active): no upsell, no agent.",
    "oldObject": {
     "signature": [
      "api_whatsapp_bot_access(p_wa_id: string) → Json"
     ]
    },
-   "targets": [],
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_whatsapp_bot_access",
+     "signature": [
+      "api_whatsapp_bot_access(p_wa_id: string) → Json"
+     ],
+     "errors": []
+    }
+   ],
    "areas": [
     "fn:whatsapp-webhook"
    ],
@@ -4412,17 +4473,26 @@
   {
    "old": "api_whatsapp_claim_inbound",
    "kind": "rpc",
-   "status": "missing",
+   "status": "same",
    "launch": "later",
    "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
+   "missing": null,
+   "note": "Same name, arguments and return shape; tables live in `integrations` (service role only).",
    "oldObject": {
     "signature": [
      "api_whatsapp_claim_inbound(p_message_id: string) → boolean"
     ]
    },
-   "targets": [],
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_whatsapp_claim_inbound",
+     "signature": [
+      "api_whatsapp_claim_inbound(p_message_id: string) → boolean"
+     ],
+     "errors": []
+    }
+   ],
    "areas": [
     "fn:whatsapp-webhook"
    ],
@@ -4438,17 +4508,26 @@
   {
    "old": "api_whatsapp_handle_keyword",
    "kind": "rpc",
-   "status": "missing",
+   "status": "same",
    "launch": "later",
    "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
+   "missing": null,
+   "note": "Same name, arguments and return shape; tables live in `integrations` (service role only).",
    "oldObject": {
     "signature": [
      "api_whatsapp_handle_keyword(p_record_id?: string, p_text: string, p_wa_id: string) → Json"
     ]
    },
-   "targets": [],
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_whatsapp_handle_keyword",
+     "signature": [
+      "api_whatsapp_handle_keyword(p_record_id?: string, p_text: string, p_wa_id: string) → Json"
+     ],
+     "errors": []
+    }
+   ],
    "areas": [
     "fn:whatsapp-webhook"
    ],
@@ -4464,17 +4543,26 @@
   {
    "old": "api_whatsapp_inbound_allowed",
    "kind": "rpc",
-   "status": "missing",
+   "status": "same",
    "launch": "later",
    "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
+   "missing": null,
+   "note": "Same name, arguments and return shape; tables live in `integrations` (service role only).",
    "oldObject": {
     "signature": [
      "api_whatsapp_inbound_allowed(p_wa_id: string) → boolean"
     ]
    },
-   "targets": [],
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_whatsapp_inbound_allowed",
+     "signature": [
+      "api_whatsapp_inbound_allowed(p_wa_id: string) → boolean"
+     ],
+     "errors": []
+    }
+   ],
    "areas": [
     "fn:whatsapp-webhook"
    ],
@@ -4490,17 +4578,26 @@
   {
    "old": "api_whatsapp_ingest_inbound",
    "kind": "rpc",
-   "status": "missing",
+   "status": "same",
    "launch": "later",
    "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
+   "missing": null,
+   "note": "Same name, arguments and return shape; tables live in `integrations` (service role only).",
    "oldObject": {
     "signature": [
      "api_whatsapp_ingest_inbound(p_message_id: string, p_payload: Json, p_run_id?: string) → string"
     ]
    },
-   "targets": [],
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_whatsapp_ingest_inbound",
+     "signature": [
+      "api_whatsapp_ingest_inbound(p_message_id: string, p_payload: Json, p_run_id?: string) → string"
+     ],
+     "errors": []
+    }
+   ],
    "areas": [
     "fn:whatsapp-webhook"
    ],
@@ -4516,17 +4613,26 @@
   {
    "old": "api_whatsapp_llm_budget_take",
    "kind": "rpc",
-   "status": "missing",
+   "status": "same",
    "launch": "later",
    "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
+   "missing": null,
+   "note": "Same name, arguments and return shape; tables live in `integrations` (service role only).",
    "oldObject": {
     "signature": [
      "api_whatsapp_llm_budget_take(p_wa_id: string) → boolean"
     ]
    },
-   "targets": [],
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_whatsapp_llm_budget_take",
+     "signature": [
+      "api_whatsapp_llm_budget_take(p_wa_id: string) → boolean"
+     ],
+     "errors": []
+    }
+   ],
    "areas": [
     "fn:_shared",
     "fn:whatsapp-intake-worker"
@@ -4549,17 +4655,26 @@
   {
    "old": "api_whatsapp_outbound_claim",
    "kind": "rpc",
-   "status": "missing",
+   "status": "same",
    "launch": "later",
    "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
+   "missing": null,
+   "note": "Same name, arguments and return shape; tables live in `integrations` (service role only).",
    "oldObject": {
     "signature": [
      "api_whatsapp_outbound_claim(p_batch?: number, p_visibility_seconds?: number) → bot_outbound_messages row[]"
     ]
    },
-   "targets": [],
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_whatsapp_outbound_claim",
+     "signature": [
+      "api_whatsapp_outbound_claim(p_batch?: number, p_visibility_seconds?: number) → { attempts: number body: string kind: string language: string outbound_id: string payload: Json template_name: string to_wa_id: string user_id: string }[]"
+     ],
+     "errors": []
+    }
+   ],
    "areas": [
     "fn:_shared"
    ],
@@ -4575,17 +4690,26 @@
   {
    "old": "api_whatsapp_outbound_result",
    "kind": "rpc",
-   "status": "missing",
+   "status": "same",
    "launch": "later",
    "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
+   "missing": null,
+   "note": "Same name, arguments and return shape; tables live in `integrations` (service role only).",
    "oldObject": {
     "signature": [
      "api_whatsapp_outbound_result(p_error?: string, p_ok: boolean, p_outbound_id: string, p_retryable?: boolean, p_wa_message_id?: string) → string"
     ]
    },
-   "targets": [],
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_whatsapp_outbound_result",
+     "signature": [
+      "api_whatsapp_outbound_result(p_error?: string, p_ok: boolean, p_outbound_id: string, p_retryable?: boolean, p_wa_message_id?: string) → string"
+     ],
+     "errors": []
+    }
+   ],
    "areas": [
     "fn:_shared"
    ],
@@ -4601,17 +4725,26 @@
   {
    "old": "api_whatsapp_queue_reply",
    "kind": "rpc",
-   "status": "missing",
+   "status": "same",
    "launch": "later",
    "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
+   "missing": null,
+   "note": "Same name, arguments and return shape; tables live in `integrations` (service role only).",
    "oldObject": {
     "signature": [
      "api_whatsapp_queue_reply(p_body: string, p_reply_kind?: string, p_wa_id: string) → string"
     ]
    },
-   "targets": [],
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_whatsapp_queue_reply",
+     "signature": [
+      "api_whatsapp_queue_reply(p_body: string, p_reply_kind?: string, p_wa_id: string) → string"
+     ],
+     "errors": []
+    }
+   ],
    "areas": [
     "fn:_shared",
     "fn:whatsapp-webhook"
@@ -4646,17 +4779,26 @@
   {
    "old": "api_whatsapp_redeem_link_code",
    "kind": "rpc",
-   "status": "missing",
+   "status": "same",
    "launch": "later",
    "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
+   "missing": null,
+   "note": "Same name, arguments and return shape; tables live in `integrations` (service role only).",
    "oldObject": {
     "signature": [
      "api_whatsapp_redeem_link_code(p_code: string, p_wa_id: string) → Json"
     ]
    },
-   "targets": [],
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_whatsapp_redeem_link_code",
+     "signature": [
+      "api_whatsapp_redeem_link_code(p_code: string, p_wa_id: string) → Json"
+     ],
+     "errors": []
+    }
+   ],
    "areas": [
     "fn:whatsapp-webhook"
    ],
@@ -4672,17 +4814,26 @@
   {
    "old": "api_whatsapp_release_inbound",
    "kind": "rpc",
-   "status": "missing",
+   "status": "same",
    "launch": "later",
    "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
+   "missing": null,
+   "note": "Same name, arguments and return shape; tables live in `integrations` (service role only).",
    "oldObject": {
     "signature": [
      "api_whatsapp_release_inbound(p_message_id: string) → undefined"
     ]
    },
-   "targets": [],
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_whatsapp_release_inbound",
+     "signature": [
+      "api_whatsapp_release_inbound(p_message_id: string) → undefined"
+     ],
+     "errors": []
+    }
+   ],
    "areas": [
     "fn:whatsapp-webhook"
    ],
@@ -16700,11 +16851,11 @@
   {
    "old": "whatsapp_channel_config",
    "kind": "table",
-   "status": "missing",
+   "status": "changed",
    "launch": "later",
    "confidence": "high",
-   "missing": "M22",
-   "note": "Same: no `integrations` tables yet.",
+   "missing": null,
+   "note": "The table moved to `integrations`; the sender reads `api_whatsapp_channel_config()` → `{is_enabled, phone_number_id, graph_api_version}`.",
    "oldObject": {
     "columns": [
      "config_id",
@@ -16716,7 +16867,16 @@
     ],
     "isView": false
    },
-   "targets": [],
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_whatsapp_channel_config",
+     "signature": [
+      "api_whatsapp_channel_config() → Json"
+     ],
+     "errors": []
+    }
+   ],
    "areas": [
     "fn:whatsapp-sender"
    ],
