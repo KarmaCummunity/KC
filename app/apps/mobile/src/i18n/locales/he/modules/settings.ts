@@ -174,6 +174,12 @@ export const settingsHe = {
     codeExpires: 'הקוד בתוקף עד {{time}}',
     unlink: 'ניתוק המספר',
     unlinkConfirm: 'לנתק את מספר הוואטסאפ מהחשבון?',
+    alertsLabel: 'התראות התאמה בוואטסאפ',
+    alertsHint: 'נשלח לכם הודעה בוואטסאפ כשנמצאת התאמה לפוסט שלכם.',
+    alertsPhoneStopped: 'שלחתם STOP מהוואטסאפ. כדי לקבל התראות שוב, שלחו START לבוט.',
+    alertsNeedLink: 'כדי לקבל התראות, קשרו קודם מספר וואטסאפ.',
+    proRequired: 'קוד חיבור זמין רק למנויי Pro.',
+    rateLimited: 'ביקשתם יותר מדי קודים. נסו שוב בעוד שעה.',
     failed: 'הפעולה נכשלה. נסו שוב.',
   },
 } as const;

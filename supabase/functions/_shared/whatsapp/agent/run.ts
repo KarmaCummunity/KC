@@ -9,16 +9,41 @@ import { runTool, type ToolCtx, TOOLS } from './tools.ts';
 export const MAX_STEPS = 5;
 const MAX_REPLY = 1500;
 
+/** What the agent tells the user after a publish (post_listing's `outcome`), in Hebrew and English. */
+export const PUBLISH_OUTCOME_TEXT = {
+  published: {
+    he: 'הפוסט פורסם ומופיע עכשיו באפליקציה.',
+    en: 'Your post is live in the app.',
+  },
+  draft_photo_required: {
+    he: 'הפוסט נשמר כטיוטה. הוא יתפרסם אחרי שתוסיפו תמונה באפליקציה.',
+    en: 'Your post was saved as a draft. It goes live once you add a photo in the app.',
+  },
+  draft_staff_review: {
+    he: 'הפוסט נשמר כטיוטה וממתין לבדיקה של צוות קארמה, שיפרסם אותו אם הוא מתאים.',
+    en: 'Your post was saved as a draft. The KC team will review it and publish it if it fits.',
+  },
+} as const;
+
 export const SYSTEM_PROMPT = [
   'You are the personal WhatsApp assistant of Karma Community (KC), a free giving community in Israel.',
   'Help the user find and post items and food to give or request, and check their matches, using the tools.',
   'Answer in the language the user wrote in (Hebrew or English). Be short: WhatsApp-sized, no markdown tables.',
   'Never invent listings; only report what tools return. Never share phone numbers or private details.',
   'Before post_listing, show the exact title and ask the user to confirm; call it with confirmed=true only after a clear yes.',
+  'For a food offer, ask until when the food is good to eat and pass it as expires_at; never guess a time.',
+  'After post_listing, tell the user what happened from its outcome, in their language, like this:',
+  ...Object.entries(PUBLISH_OUTCOME_TEXT).map(([k, t]) => `${k}: "${t.he}" / "${t.en}"`),
+  'If post_listing returns an error, say plainly that the post was not created and, when it helps, to try in the app.',
   'Money, rides and other worlds are not supported here yet; point the user to the app for those.',
 ].join(' ');
 
-export type AgentDeps = { rpc: RpcFn; gemini: GeminiConfig | null };
+export type AgentDeps = { rpc: RpcFn; gemini: GeminiConfig | null; now?: () => Date };
+
+/** The prompt with the current time, so the model can turn "tomorrow at 8" into expires_at. */
+export function systemPrompt(now: Date): string {
+  return `${SYSTEM_PROMPT} The time now is ${now.toISOString()}; the user speaks in Israel time (Asia/Jerusalem).`;
+}
 export type AgentInput = { waId: string; userId: string; text: string; recordId: string | null };
 export type AgentResult =
   | { status: 'disabled' | 'budget_exceeded' | 'empty' }
@@ -35,9 +60,10 @@ export async function runAgent(deps: AgentDeps, input: AgentInput): Promise<Agen
   const contents: Content[] = [{ role: 'user', parts: [{ text: input.text.slice(0, 2000) }] }];
   const functionDeclarations = TOOLS.map(({ name, description, parameters }) => ({ name, description, parameters }));
   const used: string[] = [];
+  const system = systemPrompt(deps.now?.() ?? new Date());
 
   for (let step = 1; step <= MAX_STEPS; step++) {
-    const out = await generate(deps.gemini, { system: SYSTEM_PROMPT, contents, functionDeclarations });
+    const out = await generate(deps.gemini, { system, contents, functionDeclarations });
     contents.push(out); // keep the model turn verbatim (thought signatures)
     const calls = out.parts.filter((p) => p.functionCall);
     if (calls.length === 0) {

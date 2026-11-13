@@ -30,6 +30,7 @@ export const ADMIN_PERMISSIONS = [
   'crm.manage',
   'org.review_applications',
   'whatsapp.manage',
+  'whatsapp.configure',
   'matching.view_quality',
   'donation_links.review',
   'stats.view_platform',
@@ -97,6 +98,9 @@ export const PERMISSION_MATRIX: Readonly<Record<AdminPermission, readonly AdminR
   // 20_organizations `org.review_applications`: the server opens the queue to admins and up.
   'org.review_applications':    ADMIN_UP,
   'whatsapp.manage':            MODERATOR_UP,
+  // The WhatsApp send limits and template approval (api_whatsapp_admin_set_send_limits /
+  // _set_template_status) are super admin only on the server.
+  'whatsapp.configure':         ['super_admin'],
   // KC#1122 / FR-ADMIN-029 — the server opens admin_match_quality to moderators and above.
   'matching.view_quality':      MODERATOR_UP,
   // D9 — approve or reject suggested donation links (server: moderators and above).

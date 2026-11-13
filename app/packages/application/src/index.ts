@@ -234,5 +234,7 @@ export * from './series';
 export * from './giving';
 export * from './housing';
 export * from './admin/whatsapp';
+export * from './whatsapp/IWhatsAppLinkRepository';
+export * from './whatsapp/WhatsAppLinkUseCases';
 export * from './challenges';
 export * from './knowledge';

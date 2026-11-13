@@ -24,16 +24,13 @@ export const LOCAL_ONLY = new Set();
 /**
  * Functions that stay in the repo but are NOT deployed to any hosted project by
  * the pipeline, with the reason (an explicit, reviewable list; adding a name
- * here is the whole opt-out, removing it is the whole opt-in, and the tests
- * force every whatsapp-* function to be listed until someone decides otherwise).
+ * here is the whole opt-out, removing it is the whole opt-in). Empty today: the
+ * WhatsApp bot functions deploy and stay inert until the channel is switched on
+ * and their secrets exist (the retired whatsapp-intake-worker was deleted).
  * The pipeline never deletes a function: one that is already deployed stays at
  * its last version until removed by hand (`supabase functions delete`).
  */
-export const NOT_DEPLOYED = new Map([
-  ['whatsapp-intake-worker', 'WhatsApp is not part of the launch scope'],
-  ['whatsapp-sender', 'WhatsApp is not part of the launch scope'],
-  ['whatsapp-webhook', 'WhatsApp is not part of the launch scope'],
-]);
+export const NOT_DEPLOYED = new Map();
 
 /**
  * How the deploy smoke probes each function: one OPTIONS request carrying the
@@ -61,6 +58,8 @@ export const SMOKE_PROBES = {
   'subscriptions-charger': { expect: [405], why: 'method guard (POST only) runs first' },
   translate: { expect: [200], why: 'answers the preflight for the deployed web origin' },
   'validate-donation-link': { expect: [200], why: 'answers the CORS preflight' },
+  'whatsapp-sender': { expect: [405], why: 'method guard (POST only) runs first' },
+  'whatsapp-webhook': { expect: [405], why: 'answers only GET (Meta verify) and POST; no JWT at the gateway' },
 };
 
 /** Sorted deployable function names under `dir`. */

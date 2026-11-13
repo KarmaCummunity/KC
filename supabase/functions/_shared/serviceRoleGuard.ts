@@ -14,7 +14,6 @@ export const SERVICE_ROLE_ONLY_FUNCTIONS = [
   'rotate-research-salt',
   'strip-exif',
   'subscriptions-charger',
-  'whatsapp-intake-worker',
   'whatsapp-sender',
 ] as const;
 

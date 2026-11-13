@@ -72,3 +72,4 @@ export * from './volunteering';
 export * from './challenges';
 export * from './knowledge/knowledgeTopics';
 export * from './knowledge/knowledgeSlots';
+export * from './whatsapp/WhatsAppLink';
