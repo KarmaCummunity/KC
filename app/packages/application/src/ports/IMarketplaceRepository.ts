@@ -3,6 +3,8 @@ import type {
   ExternalBodyOption,
   GivingHandoffSnapshot,
   ListingKindOption,
+  LocationDisplayLevel,
+  PostVisibility,
   WorldSubcategory,
   MarketplaceListingDetail,
   MarketplaceSimilarListing,
@@ -50,6 +52,10 @@ export interface IMarketplaceRepository {
     availabilityStatus?: string;
     /** Additional worlds this listing should appear in (#1475). */
     additionalWorldSlugs?: string[] | null;
+    /** Who may see the listing; the database default (public) applies when omitted. */
+    visibility?: PostVisibility;
+    /** How much of the address the listing shows; the database default applies when omitted. */
+    locationDisplayLevel?: LocationDisplayLevel;
   }): Promise<string>;
   startChat(listingId: string, openingMessage?: string | null): Promise<string>;
   listMyListingsPage(
@@ -67,6 +73,7 @@ export interface IMarketplaceRepository {
       maxRadiusKm?: number | null;
       urgencyLevel?: number;
       availabilityStatus?: string;
+      locationDisplayLevel?: LocationDisplayLevel;
     },
   ): Promise<void>;
   pauseMyListing(listingId: string): Promise<void>;

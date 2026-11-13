@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import { ScrollView, TouchableOpacity, View } from 'react-native';
+import React from 'react';
+import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Text } from '@kc/ui';
 import { TextField } from '../ui/TextField';
@@ -8,13 +8,13 @@ import { ALL_CATEGORIES, ITEM_CONDITIONS } from '@kc/domain';
 import type { Category, ItemCondition, LocationDisplayLevel, PostVisibility } from '@kc/domain';
 import { CityPicker } from '../CityPicker';
 import { StreetPicker } from '../StreetPicker';
-import { LocationDisplayLevelChooser } from '../CreatePostForm/LocationDisplayLevelChooser';
 import { PhotoPicker } from '../CreatePostForm/PhotoPicker';
-import { EditPostExposureSection } from './EditPostExposureSection';
+import { ExposureSettingsSection } from './ExposureSettingsSection';
 import type { UploadedAsset } from '../../services/imageUpload';
 import { useEditPostScreenStyles } from '../../screens/edit-post/editPostScreen.styles';
-import { useFormFieldFocus } from '../../hooks/useFormFieldFocus';
-import { KeyboardFormAccessory } from '../ui/KeyboardFormAccessory';
+import { FormScrollView } from '../ui/FormScrollView';
+import { FormSection } from '../ui/FormSection';
+import { FilterChipRow } from '../filterKit/FilterChipRow';
 
 export interface EditPostFormScrollContentProps {
   readonly isGive: boolean;
@@ -81,30 +81,8 @@ export function EditPostFormScrollContent({
 }: EditPostFormScrollContentProps) {
   const { t } = useTranslation();
   const styles = useEditPostScreenStyles();
-  const textFieldCount = isGive ? 3 : 4;
-  const fieldFocus = useFormFieldFocus(textFieldCount);
-  const titleField = fieldFocus.bindField(0);
-  const streetNumberField = fieldFocus.bindField(1);
-  const descriptionField = fieldFocus.bindField(2);
-  const urgencyField = useMemo(
-    () => (isGive ? null : fieldFocus.bindField(3)),
-    [fieldFocus, isGive],
-  );
-
   return (
-    <>
-      <KeyboardFormAccessory
-        canGoPrev={fieldFocus.canGoPrev}
-        canGoNext={fieldFocus.canGoNext}
-        onPrev={fieldFocus.focusPrev}
-        onNext={fieldFocus.focusNext}
-        onDone={fieldFocus.dismiss}
-      />
-    <ScrollView
-      style={styles.scroll}
-      contentContainerStyle={styles.scrollContent}
-      keyboardShouldPersistTaps="handled"
-    >
+    <FormScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
       <View style={[styles.typeBadge, isGive ? styles.typeBadgeGive : styles.typeBadgeRequest]}>
         <Text style={styles.typeBadgeText}>
           {isGive ? t('post.editPost.typeBadgeGive') : t('post.editPost.typeBadgeRequest')}
@@ -112,36 +90,29 @@ export function EditPostFormScrollContent({
         <Text style={styles.typeBadgeSub}>{t('post.editPost.typeBadgeSub')}</Text>
       </View>
 
-      <PhotoPicker
-        uploads={uploads}
-        isUploading={uploadingCount > 0}
-        uploadingCount={uploadingCount}
-        required={isGive}
-        onAdd={onAddPhotos}
-        onRemove={onRemovePhoto}
-      />
+      <FormSection testID="edit-post-photos">
+        <PhotoPicker
+          uploads={uploads}
+          isUploading={uploadingCount > 0}
+          uploadingCount={uploadingCount}
+          required={isGive}
+          onAdd={onAddPhotos}
+          onRemove={onRemovePhoto}
+        />
+      </FormSection>
 
-      <View style={styles.section}>
+      <FormSection outlined={false}>
         <TextField
-          ref={titleField.ref}
           label={`${t('post.editPost.sectionTitle')} *`}
           value={title}
           onChangeText={onTitleChange}
           placeholder={t('post.editPost.titlePlaceholder')}
           maxLength={80}
-          onFocus={titleField.onFocus}
-          inputAccessoryViewID={titleField.inputAccessoryViewID}
-          returnKeyType={titleField.returnKeyType}
-          blurOnSubmit={titleField.blurOnSubmit}
-          onSubmitEditing={titleField.onSubmitEditing}
         />
         <Text style={styles.charCount}>{title.length}/80</Text>
-      </View>
+      </FormSection>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionLabel}>
-          {t('post.editPost.sectionAddress')} <Text style={styles.required}>*</Text>
-        </Text>
+      <FormSection label={t('post.editPost.sectionAddress')} required outlined={false}>
         <CityPicker value={city} onChange={onCityChange} disabled={isSaving} />
         <View style={styles.streetRow}>
           <View style={styles.streetInputStreet}>
@@ -153,100 +124,64 @@ export function EditPostFormScrollContent({
             />
           </View>
           <CompactStreetNumberField
-            ref={streetNumberField.ref}
             containerStyle={styles.streetInputHouse}
             value={streetNumber}
             onChangeText={onStreetNumberChange}
             placeholder={t('post.editPost.streetNumberPlaceholder')}
             editable={!isSaving && !!city}
-            onFocus={streetNumberField.onFocus}
-            inputAccessoryViewID={streetNumberField.inputAccessoryViewID}
-            returnKeyType={streetNumberField.returnKeyType}
-            blurOnSubmit={streetNumberField.blurOnSubmit}
-            onSubmitEditing={streetNumberField.onSubmitEditing}
           />
         </View>
-      </View>
+      </FormSection>
 
-      <View style={styles.section}>
+      <FormSection label={t('post.editPost.sectionCategory')}>
+        <FilterChipRow<Category>
+          testID="edit-post-category"
+          chipSize="md"
+          options={ALL_CATEGORIES.map((cat) => ({ value: cat, label: t(`post.category.${cat}`) }))}
+          value={category}
+          onChange={(next) => next && onCategoryChange(next)}
+        />
+      </FormSection>
+
+      {isGive && (
+        <FormSection label={t('post.editPost.sectionCondition')}>
+          <FilterChipRow<ItemCondition>
+            testID="edit-post-condition"
+            chipSize="md"
+            options={ITEM_CONDITIONS.map((c) => ({ value: c, label: t(`post.condition.${c}`) }))}
+            value={condition}
+            onChange={(next) => next && onConditionChange(next)}
+          />
+        </FormSection>
+      )}
+
+      <FormSection outlined={false}>
         <TextField
-          ref={descriptionField.ref}
           label={t('post.editPost.sectionDescription')}
           value={description}
           onChangeText={onDescriptionChange}
           placeholder={t('post.editPost.descriptionPlaceholder')}
           multiline
           maxLength={500}
-          onFocus={descriptionField.onFocus}
-          inputAccessoryViewID={descriptionField.inputAccessoryViewID}
-          returnKeyType={descriptionField.returnKeyType}
-          blurOnSubmit={descriptionField.blurOnSubmit}
-          onSubmitEditing={descriptionField.onSubmitEditing}
         />
         <Text style={styles.charCount}>{description.length}/500</Text>
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionLabel}>{t('post.editPost.sectionCategory')}</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chips}>
-          {ALL_CATEGORIES.map((cat) => (
-            <TouchableOpacity
-              key={cat}
-              style={[styles.chip, category === cat && styles.chipActive]}
-              onPress={() => onCategoryChange(cat)}
-            >
-              <Text style={[styles.chipText, category === cat && styles.chipTextActive]}>
-                {t(`post.category.${cat}`)}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
-
-      {isGive && (
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>{t('post.editPost.sectionCondition')}</Text>
-          <View style={styles.conditionRow}>
-            {ITEM_CONDITIONS.map((c) => (
-              <TouchableOpacity
-                key={c}
-                style={[styles.conditionBtn, condition === c && styles.conditionBtnActive]}
-                onPress={() => onConditionChange(c)}
-              >
-                <Text style={[styles.conditionText, condition === c && styles.conditionTextActive]}>
-                  {t(`post.condition.${c}`)}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-      )}
-
-      <LocationDisplayLevelChooser
-        value={locationDisplayLevel}
-        onChange={onLocationDisplayLevelChange}
-        disabled={isSaving}
-      />
+      </FormSection>
 
       {!isGive && (
-        <View style={styles.section}>
+        <FormSection outlined={false}>
           <TextField
-            ref={urgencyField?.ref}
             label={t('post.editPost.sectionUrgency')}
             value={urgency}
             onChangeText={onUrgencyChange}
             placeholder={t('post.editPost.urgencyPlaceholder')}
             maxLength={100}
-            onFocus={urgencyField?.onFocus}
-            inputAccessoryViewID={urgencyField?.inputAccessoryViewID}
-            returnKeyType={urgencyField?.returnKeyType}
-            blurOnSubmit={urgencyField?.blurOnSubmit}
-            onSubmitEditing={urgencyField?.onSubmitEditing}
           />
-        </View>
+        </FormSection>
       )}
 
-      <EditPostExposureSection
+      <ExposureSettingsSection
+        locationDisplayLevel={locationDisplayLevel}
+        onLocationDisplayLevelChange={onLocationDisplayLevelChange}
         visibility={visibility}
         onVisibilityChange={onVisibilityChange}
         profilePrivacy={profilePrivacy}
@@ -254,7 +189,6 @@ export function EditPostFormScrollContent({
         onHideFromCounterpartyChange={onHideFromCounterpartyChange}
         disabled={isSaving}
       />
-    </ScrollView>
-    </>
+    </FormScrollView>
   );
 }

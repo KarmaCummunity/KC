@@ -109,7 +109,6 @@ export default function CreatePostScreen() {
   }, [profilePrivacy, form]);
 
   const [publishFollowersOpen, setPublishFollowersOpen] = useState(false);
-  const [exposureSettingsOpen, setExposureSettingsOpen] = useState(false);
   const [uploadingCount, setUploadingCount] = useState(0);
   const [batchId] = useState(() => newUploadBatchId());
   const [notify, setNotify] = useState<{ title: string; message: string } | null>(null);
@@ -152,7 +151,15 @@ export default function CreatePostScreen() {
   const handleRemove = (path: string) =>
     form.setUploads((prev) => prev.filter((u) => u.path !== path));
 
-  const { tryPublish, runPublishAfterGate, isPublishing, addressInlineMessage } =
+  const {
+    tryPublish,
+    runPublishAfterGate,
+    isPublishing,
+    addressInlineMessage,
+    titleInlineMessage,
+    photoInlineMessage,
+    failedSubmitCount,
+  } =
     useCreatePostPublish({
     ownerId,
     type: form.type,
@@ -237,6 +244,9 @@ export default function CreatePostScreen() {
         onStreetChange={setStreet}
         streetNumber={streetNumber}
         onStreetNumberChange={setStreetNumber}
+        titleInlineError={titleInlineMessage}
+        photoInlineError={photoInlineMessage}
+        failedSubmitCount={failedSubmitCount}
         addressInlineError={addressInlineMessage}
         category={form.category}
         onCategoryChange={form.setCategory}
@@ -245,8 +255,6 @@ export default function CreatePostScreen() {
         onConditionChange={form.setCondition}
         description={form.description}
         onDescriptionChange={form.setDescription}
-        exposureSettingsOpen={exposureSettingsOpen}
-        onToggleExposureSettings={() => setExposureSettingsOpen((o) => !o)}
         locationDisplayLevel={form.locationDisplayLevel}
         onLocationDisplayLevelChange={form.setLocationDisplayLevel}
         isPublishing={isPublishing}

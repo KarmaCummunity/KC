@@ -4,7 +4,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
-  ScrollView,
   View,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -22,9 +21,8 @@ import { ResearchEndShareCard } from '../../components/research/ResearchEndShare
 import { ResearchQuestionPanel } from './ResearchQuestionPanel';
 import { SurveyIntroBlock } from './SurveyIntroBlock';
 import { useKeyboardVerticalOffset } from '../../lib/platform/useKeyboardVerticalOffset';
-import { useFormFieldFocus } from '../../hooks/useFormFieldFocus';
-import { KeyboardFormAccessory } from '../../components/ui/KeyboardFormAccessory';
 import { resolveKeyboardAvoidingBehavior } from '../../lib/platform/keyboardVerticalOffset';
+import { FormScrollView } from '../../components/ui/FormScrollView';
 
 export type AnswerEntry = { rating: number | null; answerText: string | null };
 
@@ -88,7 +86,6 @@ export function ResearchRunner({
   const isLast = activeIndex === total - 1;
   const currentRated = answer.rating !== null;
   const keyboardOffset = useKeyboardVerticalOffset({ headerless: true });
-  const fieldFocus = useFormFieldFocus(isLast ? 3 : 1);
 
   let nextLabel: string | undefined;
   if (submitting) {
@@ -114,14 +111,7 @@ export function ResearchRunner({
       behavior={resolveKeyboardAvoidingBehavior(Platform.OS)}
       keyboardVerticalOffset={keyboardOffset}
     >
-      <KeyboardFormAccessory
-        canGoPrev={fieldFocus.canGoPrev}
-        canGoNext={fieldFocus.canGoNext}
-        onPrev={fieldFocus.focusPrev}
-        onNext={fieldFocus.focusNext}
-        onDone={fieldFocus.dismiss}
-      />
-      <ScrollView
+      <FormScrollView
         style={styles.flex}
         contentContainerStyle={[
           styles.scrollContent,
@@ -164,9 +154,6 @@ export function ResearchRunner({
           contactWindowHe={contactWindowHe}
           onContactEmail={setContactEmail}
           onContactWindow={setContactWindowHe}
-          textFieldFocus={fieldFocus.bindField(0)}
-          contactEmailFocus={isLast ? fieldFocus.bindField(1) : undefined}
-          contactWindowFocus={isLast ? fieldFocus.bindField(2) : undefined}
         />
 
         {isLast ? <ResearchEndShareCard /> : null}
@@ -183,7 +170,7 @@ export function ResearchRunner({
         {submitting ? (
           <Text style={styles.submittingHint}>{t('research.submitting')}</Text>
         ) : null}
-      </ScrollView>
+      </FormScrollView>
 
       <SurveyFloatingNav
         onPrev={goPrev}

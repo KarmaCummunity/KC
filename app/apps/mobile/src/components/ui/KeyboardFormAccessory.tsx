@@ -59,11 +59,13 @@ function AccessoryToolbar({ canGoPrev, canGoNext, onPrev, onNext, onDone }: Tool
 
 export interface KeyboardFormAccessoryProps extends ToolbarProps {
   readonly nativeId?: string;
+  /** Android only (iOS attaches by `nativeID`): hide the row, e.g. when no form field is focused. Default true. */
+  readonly visible?: boolean;
 }
 
 /** iOS: toolbar mounted in `InputAccessoryView`. Android: row shown while keyboard is open. */
 export function KeyboardFormAccessory(props: KeyboardFormAccessoryProps) {
-  const { nativeId = KC_FORM_KEYBOARD_ACCESSORY_ID, ...toolbar } = props;
+  const { nativeId = KC_FORM_KEYBOARD_ACCESSORY_ID, visible = true, ...toolbar } = props;
   const styles = useToolbarStyles();
   const [keyboardOpen, setKeyboardOpen] = useState(false);
 
@@ -91,7 +93,7 @@ export function KeyboardFormAccessory(props: KeyboardFormAccessoryProps) {
     );
   }
 
-  if (!keyboardOpen) return null;
+  if (!keyboardOpen || !visible) return null;
   return (
     <View style={styles.androidWrap}>
       <AccessoryToolbar {...toolbar} />

@@ -13,22 +13,14 @@ import { staggerDelay } from '../../src/lib/animations/motion';
 import { rtlTextAlignStart } from '../../src/lib/rtlTextAlignStart';
 import { TextField, FormScreen, PrimaryButton } from '../../src/components/ui';
 import { CompactStreetNumberField } from '../../src/components/address/CompactStreetNumberField';
-import { useFormFieldFocus } from '../../src/hooks/useFormFieldFocus';
-import { formPhoneInputProps } from '../../src/lib/platform/formTextInputHints';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
 
 const HERO_HALO_SIZE = 68;
-const TEXT_FIELD_COUNT = 3;
-
 export default function OnboardingBasicInfoScreen() {
   const styles = useStyles();
   const { colors } = useTheme();
   const { t } = useTranslation();
-  const fieldFocus = useFormFieldFocus(TEXT_FIELD_COUNT);
-  const nameField = fieldFocus.bindField(0);
-  const streetNumberField = fieldFocus.bindField(1);
-  const phoneField = fieldFocus.bindField(2);
   const {
     displayName, setDisplayName, city, setCity, street, setStreet, streetNumber, setStreetNumber,
     contactPhone, setContactPhone,
@@ -40,13 +32,6 @@ export default function OnboardingBasicInfoScreen() {
       headerless
       edges={['top', 'bottom']}
       contentContainerStyle={styles.scrollContent}
-      keyboardAccessory={{
-        canGoPrev: fieldFocus.canGoPrev,
-        canGoNext: fieldFocus.canGoNext,
-        onPrev: fieldFocus.focusPrev,
-        onNext: fieldFocus.focusNext,
-        onDone: fieldFocus.dismiss,
-      }}
       footer={
         <AnimatedEntry delay={staggerDelay(6)}>
           <PrimaryButton
@@ -89,7 +74,6 @@ export default function OnboardingBasicInfoScreen() {
 
       <AnimatedEntry delay={staggerDelay(3)}>
         <TextField
-          ref={nameField.ref}
           containerStyle={styles.field}
           label={t('onboarding.displayName')}
           value={displayName}
@@ -97,11 +81,6 @@ export default function OnboardingBasicInfoScreen() {
           placeholder={t('onboarding.fullNamePlaceholder')}
           maxLength={50}
           editable={!loading}
-          onFocus={nameField.onFocus}
-          inputAccessoryViewID={nameField.inputAccessoryViewID}
-          returnKeyType={nameField.returnKeyType}
-          blurOnSubmit={nameField.blurOnSubmit}
-          onSubmitEditing={nameField.onSubmitEditing}
         />
       </AnimatedEntry>
 
@@ -125,17 +104,11 @@ export default function OnboardingBasicInfoScreen() {
                 />
               </View>
               <CompactStreetNumberField
-                ref={streetNumberField.ref}
                 containerStyle={styles.streetNumberCol}
                 style={styles.streetNumberInput}
                 value={streetNumber}
                 onChangeText={setStreetNumber}
                 editable={!loading}
-                onFocus={streetNumberField.onFocus}
-                inputAccessoryViewID={streetNumberField.inputAccessoryViewID}
-                returnKeyType={streetNumberField.returnKeyType}
-                blurOnSubmit={streetNumberField.blurOnSubmit}
-                onSubmitEditing={streetNumberField.onSubmitEditing}
               />
             </View>
           </View>
@@ -144,7 +117,6 @@ export default function OnboardingBasicInfoScreen() {
 
       <AnimatedEntry delay={staggerDelay(5)}>
         <TextField
-          ref={phoneField.ref}
           containerStyle={styles.field}
           label={t('onboarding.contactPhoneLabel')}
           value={contactPhone}
@@ -152,12 +124,7 @@ export default function OnboardingBasicInfoScreen() {
           placeholder={t('onboarding.contactPhonePlaceholder')}
           maxLength={20}
           editable={!loading}
-          {...formPhoneInputProps}
-          onFocus={phoneField.onFocus}
-          inputAccessoryViewID={phoneField.inputAccessoryViewID}
-          returnKeyType={phoneField.returnKeyType}
-          blurOnSubmit={phoneField.blurOnSubmit}
-          onSubmitEditing={phoneField.onSubmitEditing}
+          inputKind="phone"
         />
       </AnimatedEntry>
     </FormScreen>

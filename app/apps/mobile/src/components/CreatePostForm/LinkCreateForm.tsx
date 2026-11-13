@@ -3,14 +3,14 @@
 // to the world's community links list (FR-DONATE-008). Same fields and approval rule (D9) as
 // the add-link sheet; the world's portal screen lists the link once a reviewer approves it.
 import React, { useEffect, useRef, type ReactNode } from 'react';
-import { ScrollView, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import type { DonationCategorySlug, DonationLink } from '@kc/domain';
-import { Text } from '@kc/ui';
 import { useCreatePostStyles } from '../../screens/tabs/create.styles';
 import { useShellTabBarScrollInset } from '../../navigation/useShellTabBarVisibility';
 import { DonationLinkFields } from '../DonationLinkFields';
 import { PrimaryButton } from '../ui/Buttons';
+import { FormScrollView } from '../ui/FormScrollView';
+import { FormSection } from '../ui/FormSection';
 import { useAddOrEditDonationLinkModal } from '../useAddOrEditDonationLinkModal';
 
 interface Props {
@@ -46,16 +46,14 @@ export function LinkCreateForm({ categorySlug, header, onAdded, onPublishActionC
   }, [form.submitting, onPublishActionChange]);
 
   return (
-    <ScrollView
+    <FormScrollView
       style={styles.scroll}
       contentContainerStyle={[styles.scrollContent, { paddingBottom: tabBarPad }]}
-      keyboardShouldPersistTaps="handled"
+      jumpToProblemSignal={form.failedSubmitCount}
       testID="link-create-form"
     >
       {header}
-      <View style={styles.section}>
-        <Text style={styles.sectionHint}>{t('post.unifiedCreate.linkWorldIntro')}</Text>
-      </View>
+      <FormSection hint={t('post.unifiedCreate.linkWorldIntro')}>{null}</FormSection>
       <DonationLinkFields {...form} />
       <PrimaryButton
         testID="link-publish"
@@ -63,8 +61,8 @@ export function LinkCreateForm({ categorySlug, header, onAdded, onPublishActionC
         size="md"
         fullWidth
         onPress={() => void form.submit()}
-        disabled={!form.valid || form.submitting}
+        disabled={form.submitting}
       />
-    </ScrollView>
+    </FormScrollView>
   );
 }

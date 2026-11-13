@@ -6,7 +6,6 @@ import {
   Alert,
   Platform,
   RefreshControl,
-  ScrollView,
   View,
 } from 'react-native';
 import {
@@ -30,6 +29,7 @@ import { TaskCategoryPicker } from '../../../../src/components/admin/tasks/TaskC
 import { TaskActivityTimeline } from '../../../../src/components/admin/tasks/TaskActivityTimeline';
 import { useLocaleBundle, type LocaleBundle } from '../../../../src/i18n/useLocaleBundle';
 import { useAdminScreenTitle } from '../../../../src/components/admin/useAdminScreenTitle';
+import { FormScrollView } from '../../../../src/components/ui/FormScrollView';
 
 async function confirmAction(message: string, L: LocaleBundle): Promise<boolean> {
   if (Platform.OS === 'web') {
@@ -124,7 +124,7 @@ export default function TaskDetailScreen() {
   }
 
   return (
-    <ScrollView
+    <FormScrollView
       style={styles.root}
       contentContainerStyle={styles.content}
       refreshControl={<RefreshControl refreshing={q.isRefetching} onRefresh={q.refetch} />}
@@ -225,7 +225,7 @@ export default function TaskDetailScreen() {
           />
         </View>
       )}
-    </ScrollView>
+    </FormScrollView>
   );
 }
 

@@ -107,31 +107,20 @@ describe('filterKit — FilterSearchBar', () => {
 });
 
 describe('filterKit — ChipSelectRow', () => {
-  it('expands into a wrapped layout when the expand control is pressed', () => {
+  // Every multi-option section is one sideways-scrolling line: no expand control, no wrapping.
+  it('renders its chips on one scrolling line with no expand or collapse control', () => {
     render(
       <ChipSelectRow testID="chip-select">
-        <span data-testid="chip-a">A</span>
-        <span data-testid="chip-b">B</span>
+        {Array.from({ length: 12 }, (_, i) => (
+          <span key={i} data-testid={`chip-${i}`}>
+            {i}
+          </span>
+        ))}
       </ChipSelectRow>,
     );
-    expect(screen.getByTestId('chip-select-expand')).toBeTruthy();
-    fireEvent.click(screen.getByTestId('chip-select-expand'));
-    expect(screen.getByTestId('chip-select-collapse')).toBeTruthy();
-    fireEvent.click(screen.getByTestId('chip-select-collapse'));
-    expect(screen.getByTestId('chip-select-expand')).toBeTruthy();
-  });
-
-  // Regression: the compact row's scroll area resolved to `flex: 0 0 0%` (zero width), hiding every chip.
-  it('lets the compact scroll area grow so the chips are not collapsed to zero width', () => {
-    render(
-      <ChipSelectRow testID="chip-select">
-        <span data-testid="chip-a">A</span>
-      </ChipSelectRow>,
-    );
-    const scrollArea = screen.getByTestId('chip-a').parentElement?.parentElement as HTMLElement;
-    const style = window.getComputedStyle(scrollArea);
-    expect(style.flexGrow).toBe('1');
-    expect(style.flexShrink).toBe('1');
+    expect(screen.getByTestId('chip-11')).toBeTruthy();
+    expect(screen.queryByTestId('chip-select-expand')).toBeNull();
+    expect(screen.queryByTestId('chip-select-collapse')).toBeNull();
   });
 });
 
@@ -164,11 +153,10 @@ describe('filterKit — FilterChipRow', () => {
     expect(onChange).toHaveBeenCalledWith(null);
   });
 
-  it('supports scrollable mode and multiSelect', () => {
+  it('supports multiSelect', () => {
     const onChange = vi.fn();
     render(
       <FilterChipRow
-        scrollable
         multiSelect
         options={options}
         value={['opt1']}

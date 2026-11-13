@@ -1,6 +1,5 @@
 // Legacy FR-DONATE-004 composer — support thread for direct KC volunteering interest.
 import React, { useState } from 'react';
-import { ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
@@ -12,6 +11,7 @@ import { TextField } from '../../../../src/components/ui/TextField';
 import { PrimaryButton } from '../../../../src/components/ui/Buttons';
 import { rtlTextAlignStart } from '../../../../src/lib/rtlTextAlignStart';
 import { TimeWorldSubScreenChrome } from '../../../../src/components/giving/TimeWorldSubScreenChrome';
+import { FormScrollView } from '../../../../src/components/ui/FormScrollView';
 
 const COMPOSER_MAX_CHARS = 2000;
 
@@ -60,7 +60,7 @@ export default function TimeSupportComposerScreen() {
     <>
       <TimeWorldSubScreenChrome activeScreenTestId="time-contact-kc" />
       <Screen blobs="off" hasNativeHeader>
-      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+      <FormScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
         <Text style={styles.body}>{t('donations.timeScreen.body')}</Text>
         <Card padding="base" style={styles.composer}>
           <TextField
@@ -80,7 +80,7 @@ export default function TimeSupportComposerScreen() {
           />
           {sendError ? <Text style={styles.errorText}>{t('donations.timeScreen.sendError')}</Text> : null}
         </Card>
-      </ScrollView>
+      </FormScrollView>
       </Screen>
     </>
   );

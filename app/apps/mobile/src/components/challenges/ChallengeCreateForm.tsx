@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import {
   CHALLENGE_CADENCES,
@@ -9,8 +8,6 @@ import {
   CHALLENGE_SCOPES,
   type ChallengeDraft,
 } from '@kc/domain';
-import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
-import { formDecimalInputProps, formIntegerInputProps } from '../../lib/platform/formTextInputHints';
 import { TextField } from '../ui/TextField';
 import { PrimaryButton } from '../ui/Buttons';
 import { OptionChips } from './OptionChips';
@@ -19,7 +16,7 @@ import {
   challengeDraftFromForm,
   type ChallengeFormState,
 } from '../../lib/challenges/challengeDraftFromForm';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { FormSection } from '../ui/FormSection';
 
 interface ChallengeCreateFormProps {
   readonly busy: boolean;
@@ -30,15 +27,9 @@ interface ChallengeCreateFormProps {
   readonly onPublishActionChange: (action: (() => void) | null, loading: boolean) => void;
 }
 
-const useStyles = makeUseStyles(({ colors }) => ({
-  form: { gap: spacing.md },
-  error: { ...typography.bodySmall, color: colors.error, textAlign: rtlTextAlignStart },
-}));
-
 /** The "open a challenge" form: collects raw input and hands a domain draft to `onSubmit`. */
 export function ChallengeCreateForm({ busy, errorMessage, onSubmit, onPublishActionChange }: ChallengeCreateFormProps) {
   const { t } = useTranslation();
-  const styles = useStyles();
   const [form, setForm] = useState<ChallengeFormState>(INITIAL_CHALLENGE_FORM);
   const set = <K extends keyof ChallengeFormState>(key: K, value: ChallengeFormState[K]) =>
     setForm((current) => ({ ...current, [key]: value }));
@@ -53,7 +44,7 @@ export function ChallengeCreateForm({ busy, errorMessage, onSubmit, onPublishAct
   }, [busy, onPublishActionChange]);
 
   return (
-    <View style={styles.form}>
+    <>
       <TextField
         label={t('challenges.form.title')}
         placeholder={t('challenges.form.titlePlaceholder')}
@@ -61,7 +52,6 @@ export function ChallengeCreateForm({ busy, errorMessage, onSubmit, onPublishAct
         onChangeText={(text) => set('title', text)}
         testID="challenge-form-title"
       />
-      {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
       <TextField
         label={t('challenges.form.description')}
         value={form.description}
@@ -95,7 +85,7 @@ export function ChallengeCreateForm({ busy, errorMessage, onSubmit, onPublishAct
             label={t('challenges.form.goalValue')}
             value={form.goalValue}
             onChangeText={(text) => set('goalValue', text)}
-            {...formDecimalInputProps}
+            inputKind="decimal"
           />
           <OptionChips
             label={t('challenges.form.goalDirection')}
@@ -122,9 +112,13 @@ export function ChallengeCreateForm({ busy, errorMessage, onSubmit, onPublishAct
         helperText={t('challenges.form.targetCyclesHint')}
         value={form.targetCycles}
         onChangeText={(text) => set('targetCycles', text)}
-        {...formIntegerInputProps}
+        inputKind="integer"
       />
-      {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
+      {errorMessage ? (
+        <FormSection error={errorMessage} outlined={false} testID="challenge-form-error">
+          {null}
+        </FormSection>
+      ) : null}
       <PrimaryButton
         label={t('challenges.form.submit')}
         fullWidth
@@ -132,6 +126,6 @@ export function ChallengeCreateForm({ busy, errorMessage, onSubmit, onPublishAct
         onPress={() => submitRef.current()}
         testID="challenge-form-submit"
       />
-    </View>
+    </>
   );
 }

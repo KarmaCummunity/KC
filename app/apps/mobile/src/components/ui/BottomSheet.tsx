@@ -29,7 +29,6 @@ import {
   Modal as RNModal,
   type DimensionValue,
   Platform,
-  ScrollView,
   View,
   useWindowDimensions,
 } from 'react-native';
@@ -37,6 +36,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { makeUseStyles, radius, shadow, shellDimensions, spacing } from '@kc/ui';
 import { ErrorBoundary } from '../ErrorBoundary';
 import { OverlayBackdrop, OverlayHeader, useFocusTitleOnOpen, useOverlayLifecycle } from './overlayParts';
+import { FormScope, FormScopeScrollView } from './FormScope';
 
 /** Slide-up duration, in milliseconds. */
 const SLIDE_IN_MS = 260;
@@ -159,16 +159,18 @@ export function BottomSheet({
             titleRef={titleRef}
             closeTestID={testID ? `${testID}-close` : undefined}
           />
-          <ErrorBoundary boundary="bottom-sheet-body">
-            {scrollable ? (
-              <ScrollView style={styles.body} contentContainerStyle={styles.bodyContent} keyboardShouldPersistTaps="handled">
-                {children}
-              </ScrollView>
-            ) : (
-              <View style={styles.body}>{children}</View>
-            )}
-          </ErrorBoundary>
-          {footer ? <View style={styles.footer}>{footer}</View> : null}
+          <FormScope isolated>
+            <ErrorBoundary boundary="bottom-sheet-body">
+              {scrollable ? (
+                <FormScopeScrollView style={styles.body} contentContainerStyle={styles.bodyContent}>
+                  {children}
+                </FormScopeScrollView>
+              ) : (
+                <View style={styles.body}>{children}</View>
+              )}
+            </ErrorBoundary>
+            {footer ? <View style={styles.footer}>{footer}</View> : null}
+          </FormScope>
         </Animated.View>
       </KeyboardAvoidingView>
     </RNModal>

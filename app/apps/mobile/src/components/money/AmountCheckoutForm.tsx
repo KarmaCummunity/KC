@@ -8,10 +8,8 @@ import { View } from 'react-native';
 import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
 import type { ExternalDonationKind } from '../../config/featureFlags';
 import { useExternalDonations } from '../../hooks/useExternalDonations';
-import { useFormFieldFocus } from '../../hooks/useFormFieldFocus';
 import { Screen } from '../ui/Screen';
 import { FormScreen } from '../ui/FormScreen';
-import { formDecimalInputProps } from '../../lib/platform/formTextInputHints';
 import { TextField } from '../ui/TextField';
 import { PrimaryButton } from '../ui/Buttons';
 import { Chip } from '../ui/Chip';
@@ -49,8 +47,6 @@ export function AmountCheckoutForm(props: AmountCheckoutFormProps) {
   const [busy, setBusy] = useState(false);
   const parsed = parseAmountIls(amount);
   const valid = Number.isFinite(parsed) && parsed >= MIN_AMOUNT_ILS;
-  const fieldFocus = useFormFieldFocus(1);
-  const amountField = fieldFocus.bindField(0);
 
   const submit = async () => {
     setBusy(true);
@@ -65,13 +61,6 @@ export function AmountCheckoutForm(props: AmountCheckoutFormProps) {
     <FormScreen
       embedded
       contentContainerStyle={styles.body}
-      keyboardAccessory={{
-        canGoPrev: fieldFocus.canGoPrev,
-        canGoNext: fieldFocus.canGoNext,
-        onPrev: fieldFocus.focusPrev,
-        onNext: fieldFocus.focusNext,
-        onDone: fieldFocus.dismiss,
-      }}
       footer={
         <PrimaryButton
           label={submitLabel}
@@ -84,17 +73,11 @@ export function AmountCheckoutForm(props: AmountCheckoutFormProps) {
     >
       {intro ? <Text style={styles.intro}>{intro}</Text> : null}
       <TextField
-        ref={amountField.ref}
         label={amountLabel}
-        {...formDecimalInputProps}
+        inputKind="decimal"
         value={amount}
         onChangeText={setAmount}
         style={styles.amount}
-        onFocus={amountField.onFocus}
-        inputAccessoryViewID={amountField.inputAccessoryViewID}
-        returnKeyType={amountField.returnKeyType}
-        blurOnSubmit={amountField.blurOnSubmit}
-        onSubmitEditing={amountField.onSubmitEditing}
       />
       {presets.length > 0 ? (
         <View style={styles.presets}>

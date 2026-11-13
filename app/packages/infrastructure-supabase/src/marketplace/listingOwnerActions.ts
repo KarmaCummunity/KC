@@ -64,6 +64,7 @@ export async function updateMyListing(client: Client, listingId: string, patch: 
   if (patch.title !== undefined) post.title = patch.title;
   if (patch.summary !== undefined) post.description = patch.summary;
   if (patch.urgencyLevel !== undefined) post.urgency_level = patch.urgencyLevel;
+  if (patch.locationDisplayLevel !== undefined) post.location_display_level = patch.locationDisplayLevel;
   const cityId = world === 'rides' ? rideCityId(form) : patch.cityId;
   if (cityId) post.city_id = cityId;
   if (patch.details !== undefined) post.details = freeDetails(form, world) as Json;

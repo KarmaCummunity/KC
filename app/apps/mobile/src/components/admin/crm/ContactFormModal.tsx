@@ -1,6 +1,6 @@
 // V2-ADMIN-CRM-8 — bottom-sheet modal for create / edit CRM contact.
 import { useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { View } from 'react-native';
 import { useMutation } from '@tanstack/react-query';
 import {
   CRM_CONTACT_STATUSES, isCrmContactError,
@@ -12,7 +12,7 @@ import { Chip } from '../../ui/Chip';
 import { AdminFormActions } from '../AdminFormActions';
 import { container } from '../../../lib/container';
 import { useLocaleBundle } from '../../../i18n/useLocaleBundle';
-import { formEmailInputProps, formPhoneInputProps } from '../../../lib/platform/formTextInputHints';
+import { FormScrollView } from '../../ui/FormScrollView';
 
 export interface ContactFormModalProps {
   readonly initial: CrmContact | null;
@@ -60,13 +60,13 @@ export function ContactFormModal({ initial, orgId, onClose, onSaved }: ContactFo
 
   return (
     <View style={styles.backdrop} pointerEvents="box-none">
-      <ScrollView style={styles.sheet} contentContainerStyle={styles.content}>
+      <FormScrollView style={styles.sheet} contentContainerStyle={styles.content}>
         <Text style={styles.title}>{isEdit ? t.form.editTitle : t.form.createTitle}</Text>
 
         <TextField label={t.form.nameLabel}         value={name}         onChangeText={setName} />
         <TextField label={t.form.organizationLabel} value={organization} onChangeText={setOrg} />
-        <TextField label={t.form.emailLabel} value={email} onChangeText={setEmail} {...formEmailInputProps} />
-        <TextField label={t.form.phoneLabel} value={phone} onChangeText={setPhone} {...formPhoneInputProps} />
+        <TextField label={t.form.emailLabel} value={email} onChangeText={setEmail} inputKind="email" />
+        <TextField label={t.form.phoneLabel} value={phone} onChangeText={setPhone} inputKind="phone" />
         <TextField label={t.form.roleLabel}         value={roleTitle}    onChangeText={setRoleTitle} />
 
         <Text style={styles.label}>{t.form.statusLabel}</Text>
@@ -94,7 +94,7 @@ export function ContactFormModal({ initial, orgId, onClose, onSaved }: ContactFo
           onSubmit={() => { void save.mutateAsync(); }}
           errorMsg={errorMsg}
         />
-      </ScrollView>
+      </FormScrollView>
     </View>
   );
 }

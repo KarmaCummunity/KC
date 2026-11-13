@@ -205,7 +205,6 @@ export default function CrmScreen() {
       />
       {orgOptions.length > 1 && (
         <FilterChipRow<string>
-          scrollable
           options={orgOptions}
           value={orgId}
           onChange={(id) => { if (id) setPickedOrgId(id); }}

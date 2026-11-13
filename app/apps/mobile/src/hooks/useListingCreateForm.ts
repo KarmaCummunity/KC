@@ -41,6 +41,7 @@ import type { RideRecurrenceDraft } from '../components/giving/RideRecurrenceFie
 import { useOrgEventChoice } from './useOrgEventChoice';
 import { useListingFormSource } from './useListingFormSource';
 import { rideAutoTitle, withEventOrg } from '../lib/unifiedCreate/listingCreateDetails';
+import { useListingExposure } from './useListingExposure';
 
 export { rideAutoTitle };
 
@@ -126,6 +127,9 @@ export function useListingCreateForm({
     setError,
     eventChoice,
   });
+  const exposure = useListingExposure({ sourceListingId: source.sourceId, sourceDetail: source.detail, editListingId, userId });
+  // A ride has no address of its own to display (its places are public stops), so no address level.
+  const exposedLevel = worldSlug === 'rides' ? null : exposure.locationDisplayLevel;
   const photoCount = photos.length + source.carriedMedia.length;
 
   const setDetail = (key: string, value: unknown) => setDetails((prev) => ({ ...prev, [key]: value }));
@@ -186,7 +190,9 @@ export function useListingCreateForm({
           summary: summary.trim() || null,
           details: submitted,
           cityId: isRides ? null : city?.id ?? null,
+          ...(exposedLevel ? { locationDisplayLevel: exposedLevel } : {}),
         });
+        await exposure.saveIdentity(editListingId);
         onSaved?.();
         return;
       }
@@ -219,8 +225,11 @@ export function useListingCreateForm({
           media,
           worldSubcategoryId: showSubcategory ? subcategoryId : null,
           additionalWorldSlugs: additionalWorlds.filter((w) => w !== worldSlug),
+          visibility: exposure.visibility,
+          locationDisplayLevel: exposedLevel,
         }),
       );
+      await exposure.saveIdentity(id);
       trackCoreLoop('listing_created', { world: worldSlug, cityId: city?.id ?? null });
       void trackActivationIfFirst({
         world: worldSlug,
@@ -241,6 +250,7 @@ export function useListingCreateForm({
   };
 
   return {
+    exposure: { ...exposure, locationDisplayLevel: exposedLevel },
     kindsQuery,
     kind,
     kindChoices: choices,

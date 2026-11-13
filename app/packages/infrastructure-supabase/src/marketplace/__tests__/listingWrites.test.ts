@@ -71,6 +71,26 @@ describe('createListing', () => {
     expect(callsTo(calls, 'post_media')[0]?.payload).toMatchObject([{ storage_key: 'u1/b/0.jpg', mime_type: 'image/jpeg', size_bytes: 98304 }]);
   });
 
+  // FR-POST-003 / FR-POST-009 — the member's exposure choices reach the post; unspoken ones are left to the database defaults.
+  it('writes the chosen audience and address level on a plain post and on a ride, and nothing when none was chosen', async () => {
+    const chosen = setup();
+    await createListing(chosen.client, { kindId: 'k-item', title: 'Chair', cityId: 'IL-001', visibility: 'FollowersOnly', locationDisplayLevel: 'CityOnly' });
+    const insert = callsTo(chosen.calls, 'posts').find((c) => c.kind === 'insert');
+    expect(insert?.payload).toMatchObject({ visibility: 'FollowersOnly', location_display_level: 'CityOnly' });
+
+    const ride = setup();
+    await createListing(ride.client, { kindId: 'k-ride', title: 'Lod to Haifa', details: RIDE_FORM, visibility: 'OnlyMe' });
+    const post = (callsTo(ride.calls, 'create_post_with_details')[0]?.args as { p_post: Record<string, unknown> }).p_post;
+    expect(post).toMatchObject({ visibility: 'OnlyMe' });
+    expect(post).not.toHaveProperty('location_display_level');
+
+    const unspoken = setup();
+    await createListing(unspoken.client, { kindId: 'k-item', title: 'Chair', cityId: 'IL-001' });
+    const plain = callsTo(unspoken.calls, 'posts').find((c) => c.kind === 'insert')?.payload as Record<string, unknown>;
+    expect(plain).not.toHaveProperty('visibility');
+    expect(plain).not.toHaveProperty('location_display_level');
+  });
+
   it('removes the draft when completing it fails', async () => {
     const { client, calls } = setup({ publish_post: fail('P0001', 'post_limit_exceeded') });
     await expect(createListing(client, { kindId: 'k-item', title: 'Chair', cityId: 'IL-001' })).rejects.toBeInstanceOf(BackendRuleError);
@@ -116,6 +136,14 @@ describe('listing owner actions', () => {
     const post = callsTo(calls, 'posts').find((c) => c.kind === 'update');
     expect(post?.payload).toMatchObject({ title: 'New', description: 'S', urgency_level: 3, city_id: 'IL-001', details: { pickup_note: 'x' } });
     expect(callsTo(calls, 'post_ride_details')[0]?.payload).toMatchObject({ seats: 2, origin_city_id: 'IL-001' });
+  });
+
+  it('edits the address level of the listing', async () => {
+    const { client, calls } = createFakeClient({
+      tables: { posts: (c: FakeCall) => (c.kind === 'update' ? ok([{ id: 'p1' }]) : ok({ post_type: 'standard', world_slug: 'items', direction: 'offer', details: {} })) },
+    });
+    await owner.updateMyListing(client, 'p1', { locationDisplayLevel: 'FullAddress' });
+    expect(callsTo(calls, 'posts').find((c) => c.kind === 'update')?.payload).toEqual({ location_display_level: 'FullAddress' });
   });
 
   it('refuses an edit the row policy let no row through', async () => {

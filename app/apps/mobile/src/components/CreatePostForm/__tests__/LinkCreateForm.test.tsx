@@ -40,17 +40,25 @@ function renderForm(onAdded = vi.fn(), onPublishActionChange = vi.fn()) {
   return { onAdded, onPublishActionChange };
 }
 
-const input = (label: string) => screen.getByLabelText(label) as HTMLInputElement;
+// A field in error is named "label, message" for screen readers, so match by prefix.
+const input = (label: string) => screen.getByLabelText(new RegExp(`^${label}`)) as HTMLInputElement;
 const type = (label: string, value: string) => fireEvent.change(input(label), { target: { value } });
 
 describe('LinkCreateForm', () => {
-  it('keeps the submit disabled until the URL and name are valid', () => {
-    renderForm();
-    const publish = screen.getByTestId('link-publish');
-    expect(publish.getAttribute('aria-disabled')).toBe('true');
+  it('marks the invalid fields next to them on a rejected submit, sends nothing, and clears them once fixed', async () => {
+    const { onAdded } = renderForm();
+    expect(screen.queryByRole('alert')).toBeNull();
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('link-publish'));
+    });
+    expect(screen.getByText('createPostValidation.linkUrlInvalid')).toBeTruthy();
+    expect(screen.getByText('createPostValidation.linkNameShort')).toBeTruthy();
+    expect(mocks.addLink).not.toHaveBeenCalled();
+    expect(onAdded).not.toHaveBeenCalled();
     type('donations.addLinkModal.urlLabel', 'https://example.org');
     type('donations.addLinkModal.nameLabel', 'Example org');
-    expect(screen.getByTestId('link-publish').getAttribute('aria-disabled')).not.toBe('true');
+    expect(screen.queryByText('createPostValidation.linkUrlInvalid')).toBeNull();
+    expect(screen.queryByText('createPostValidation.linkNameShort')).toBeNull();
   });
 
   it('adds the link to the world\'s links category and reports it', async () => {

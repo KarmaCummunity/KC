@@ -1,5 +1,5 @@
 // Animated input with orange border glow on focus — RTL-ready.
-import React, { forwardRef, useState } from 'react';
+import React, { forwardRef, useImperativeHandle, useRef, useState } from 'react';
 import { View, type TextInputProps } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -9,10 +9,14 @@ import Animated, {
 import { makeUseStyles, spacing, radius, typography, shadow, useTheme, TextInput, Text, type TextInput as UiTextInput } from '@kc/ui';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 import { inputTextAlignStart } from '../../lib/rtlLayout';
+import { useFormScopeField } from '../ui/useFormScopeField';
+import { formInputKindProps, type FormInputKind } from '../../lib/platform/formTextInputHints';
 
 interface AnimatedAuthInputProps extends TextInputProps {
   label: string;
   testID?: string;
+  /** What the field holds; picks the matching keyboard and autofill hints (explicit props still win). */
+  inputKind?: FormInputKind;
 }
 
 const AuthFieldInput = TextInput;
@@ -53,10 +57,17 @@ export const AnimatedAuthInput = forwardRef<UiTextInput, AnimatedAuthInputProps>
     label,
     onFocus,
     onBlur,
+    onSubmitEditing,
+    inputKind = 'text',
     ...rest
   },
   ref,
 ) {
+  const inputRef = useRef<UiTextInput>(null);
+  const fieldRef = useRef<View>(null);
+  // Callers keep getting the native input; the form scope reads it through the same ref.
+  useImperativeHandle(ref, () => inputRef.current as UiTextInput);
+  const scope = useFormScopeField({ inputRef, viewRef: fieldRef, editable: rest.editable !== false });
   const { colors } = useTheme();
   const styles = useAnimatedAuthInputStyles();
   const [focused, setFocused] = useState(false);
@@ -65,6 +76,7 @@ export const AnimatedAuthInput = forwardRef<UiTextInput, AnimatedAuthInputProps>
 
   const handleFocus = (e: Parameters<NonNullable<TextInputProps['onFocus']>>[0]) => {
     setFocused(true);
+    scope.onFocus();
     scale.value = withTiming(1.015, { duration: 150 });
     borderProgress.value = withTiming(1, { duration: 200 });
     onFocus?.(e);
@@ -72,6 +84,7 @@ export const AnimatedAuthInput = forwardRef<UiTextInput, AnimatedAuthInputProps>
 
   const handleBlur = (e: Parameters<NonNullable<TextInputProps['onBlur']>>[0]) => {
     setFocused(false);
+    scope.onBlur();
     scale.value = withTiming(1, { duration: 150 });
     borderProgress.value = withTiming(0, { duration: 200 });
     onBlur?.(e);
@@ -82,7 +95,7 @@ export const AnimatedAuthInput = forwardRef<UiTextInput, AnimatedAuthInputProps>
   }));
 
   return (
-    <View style={styles.field}>
+    <View ref={fieldRef} collapsable={false} style={styles.field}>
       <Text style={[styles.label, focused && styles.labelFocused]}>{label}</Text>
       <Animated.View
         style={[
@@ -92,13 +105,19 @@ export const AnimatedAuthInput = forwardRef<UiTextInput, AnimatedAuthInputProps>
         ]}
       >
         <AuthFieldInput
-          ref={ref}
+          ref={inputRef}
           style={styles.input}
           placeholderTextColor={colors.textDisabled}
           textAlign={inputTextAlignStart()}
           onFocus={handleFocus}
           onBlur={handleBlur}
+          {...formInputKindProps[inputKind]}
+          {...scope.inputProps}
           {...rest}
+          onSubmitEditing={(e) => {
+            onSubmitEditing?.(e);
+            scope.onSubmitEditing();
+          }}
         />
       </Animated.View>
     </View>
