@@ -4393,6 +4393,19 @@ export type Database = {
         }
         Returns: string
       }
+      api_bot_attach_post_photo: {
+        Args: {
+          p_height?: number
+          p_mime_type: string
+          p_owner_id: string
+          p_session_id: string
+          p_size_bytes: number
+          p_storage_path: string
+          p_wa_id: string
+          p_width?: number
+        }
+        Returns: Json
+      }
       api_bot_my_matches: {
         Args: { p_limit?: number; p_user_id: string }
         Returns: {
@@ -4419,6 +4432,10 @@ export type Database = {
       api_bot_open_session: {
         Args: { p_inbound_message_id?: string; p_wa_id: string }
         Returns: string
+      }
+      api_bot_pending_photo_draft: {
+        Args: { p_owner_id: string; p_wa_id: string }
+        Returns: Json
       }
       api_bot_post_cards: {
         Args: { p_ids: string[]; p_viewer_id: string }

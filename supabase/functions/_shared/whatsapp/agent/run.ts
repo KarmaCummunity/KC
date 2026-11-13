@@ -16,8 +16,8 @@ export const PUBLISH_OUTCOME_TEXT = {
     en: 'Your post is live in the app.',
   },
   draft_photo_required: {
-    he: 'הפוסט נשמר כטיוטה. הוא יתפרסם אחרי שתוסיפו תמונה באפליקציה.',
-    en: 'Your post was saved as a draft. It goes live once you add a photo in the app.',
+    he: 'הפוסט נשמר כטיוטה וצריך תמונה. שלחו כאן תמונה ואפרסם אותו, או השלימו באפליקציה: {app_link}',
+    en: 'Your post was saved as a draft and needs a photo. Send a photo here and I will publish it, or finish in the app: {app_link}',
   },
   draft_staff_review: {
     he: 'הפוסט נשמר כטיוטה וממתין לבדיקה של צוות קארמה, שיפרסם אותו אם הוא מתאים.',
@@ -34,11 +34,13 @@ export const SYSTEM_PROMPT = [
   'For a food offer, ask until when the food is good to eat and pass it as expires_at; never guess a time.',
   'After post_listing, tell the user what happened from its outcome, in their language, like this:',
   ...Object.entries(PUBLISH_OUTCOME_TEXT).map(([k, t]) => `${k}: "${t.he}" / "${t.en}"`),
+  'Replace {app_link} with the app_link that post_listing returned.',
+  'A photo the user sends in this chat is added to their post waiting for one and publishes it when it can; you do not handle photos yourself.',
   'If post_listing returns an error, say plainly that the post was not created and, when it helps, to try in the app.',
   'Money, rides and other worlds are not supported here yet; point the user to the app for those.',
 ].join(' ');
 
-export type AgentDeps = { rpc: RpcFn; gemini: GeminiConfig | null; now?: () => Date };
+export type AgentDeps = { rpc: RpcFn; gemini: GeminiConfig | null; now?: () => Date; appBaseUrl?: string };
 
 /** The prompt with the current time, so the model can turn "tomorrow at 8" into expires_at. */
 export function systemPrompt(now: Date): string {
@@ -56,7 +58,13 @@ export async function runAgent(deps: AgentDeps, input: AgentInput): Promise<Agen
   if (budgetErr) throw new Error(budgetErr.message);
   if (allowed === false) return { status: 'budget_exceeded' };
 
-  const ctx: ToolCtx = { rpc: deps.rpc, userId: input.userId, waId: input.waId, recordId: input.recordId };
+  const ctx: ToolCtx = {
+    rpc: deps.rpc,
+    userId: input.userId,
+    waId: input.waId,
+    recordId: input.recordId,
+    appBaseUrl: deps.appBaseUrl,
+  };
   const contents: Content[] = [{ role: 'user', parts: [{ text: input.text.slice(0, 2000) }] }];
   const functionDeclarations = TOOLS.map(({ name, description, parameters }) => ({ name, description, parameters }));
   const used: string[] = [];
