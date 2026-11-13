@@ -3,6 +3,8 @@
 // these pure rules mirror it so the create form and the booking screens can explain a problem
 // before the round trip, with the same error codes the server raises.
 
+import { givingHandoffActions, isGivingHandoffLive, type GivingHandoffParty } from '../marketplace/givingHandoffActions';
+
 /** The six exchange kinds of the knowledge world (`listing_kinds.slug`), in display order. */
 export const KNOWLEDGE_POST_KIND_SLUGS = [
   'lesson_offer',
@@ -134,16 +136,19 @@ export interface KnowledgeBooking {
 
 /** Whether a slot still takes a booking from the viewer: open seats, not started, not booked. */
 export function canBookKnowledgeSlot(slot: KnowledgeSlot, now: Date = new Date()): boolean {
-  const booked = slot.myStatus === 'reserved' || slot.myStatus === 'confirmed';
-  return !booked && slot.seatsLeft > 0 && Date.parse(slot.startsAt) > now.getTime();
+  return !isGivingHandoffLive(slot.myStatus) && slot.seatsLeft > 0 && Date.parse(slot.startsAt) > now.getTime();
 }
 
-/** Whether either side may mark the session done: still active and starting within 15 minutes. */
+/**
+ * Whether this member may mark the session held: the giver approved the booking (the server
+ * refuses a request that still waits, `handoff_not_confirmed`) and it starts within 15 minutes.
+ */
 export function canCompleteKnowledgeSession(
   booking: Pick<KnowledgeBooking, 'status' | 'startsAt'>,
+  party: GivingHandoffParty,
   now: Date = new Date(),
 ): boolean {
-  if (booking.status !== 'reserved' && booking.status !== 'confirmed') return false;
+  if (!givingHandoffActions(booking.status, party).complete) return false;
   if (!booking.startsAt) return true;
   return Date.parse(booking.startsAt) <= now.getTime() + KNOWLEDGE_SESSION_COMPLETE_LEAD_MINUTES * MINUTE_MS;
 }
