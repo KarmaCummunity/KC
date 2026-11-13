@@ -1,6 +1,9 @@
 export type {
   IWhatsAppAdminRepository,
+  SetWhatsAppTemplateStatusInput,
   WhatsAppOutboundListFilters,
+  WhatsAppPageQuery,
+  WhatsAppReviewListFilters,
 } from './IWhatsAppAdminRepository';
 export {
   GetWhatsAppAdminOverviewUseCase,
@@ -13,4 +16,9 @@ export {
   ListWhatsAppConversationsUseCase,
   ResendWhatsAppOutboundUseCase,
   BlockWhatsAppUserUseCase,
+  ListWhatsAppReviewsUseCase,
+  ResolveWhatsAppReviewUseCase,
+  ListWhatsAppTemplatesUseCase,
+  SetWhatsAppSendLimitsUseCase,
+  SetWhatsAppTemplateStatusUseCase,
 } from './WhatsAppAdminUseCases';

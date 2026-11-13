@@ -24,3 +24,4 @@ export * from './CrmContact';
 export * from './OrgApplication';
 export * from './orgSlug';
 export * from './WhatsAppAdmin';
+export * from './WhatsAppAdminRules';
