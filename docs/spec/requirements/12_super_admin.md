@@ -646,6 +646,20 @@ Platform staff report the hours they worked; the reporter's direct manager appro
 
 **Related.** Migration `0036_back_office_timesheets.sql`. RPCs: `timesheet_upsert / timesheet_submit / timesheet_approve / timesheet_reject / timesheet_delete / timesheet_list / timesheet_count`. Domain: `TimesheetEntry`, `TimesheetScope`, `timesheetMachine` (FSM catalog), `timesheetActions`. Tests: `supabase/tests/101_back_office_timesheets.sql`.
 
+
+## FR-ADMIN-034 — Giving worlds: portal or active
+
+**Description.**
+The super admin decides, per giving world and per environment, whether the world is a **portal** (links and knowledge only, D60) or an **active world** (feed, posts, create form and the world's own screens). PM, 2026-11-13 (#2277); decision {{D:admin-world-switch}}.
+
+**Acceptance Criteria.**
+- AC1. `(admin)/worlds` lists the twelve giving worlds (items, food, rides, time, money, knowledge, housing, medical, animals, employment, democracy, challenges), each with its current mode in this environment.
+- AC2. Only the super admin (permission `worlds.launch`) sees the switch. Other staff see the modes read-only, and the server refuses their write (`admin_set_app_flag`, 42501; `supabase/tests/095_platform.sql`).
+- AC3. A switch writes the world's launch flag (`app_flags.world_<slug>_enabled`) of this environment's database. The dev app therefore switches kc-dev, and the production app switches production. Every build follows the flags as they are; the tester-build override of #1630 is removed.
+- AC4. After a switch, the app re-reads the flags. World screens, the donations hub and the create form follow without a new build.
+
+**Related.** Domain `ADMIN_SWITCHABLE_WORLDS` / `isAdminSwitchableWorldFlag` (`launch/launchWorlds.ts`); `SetWorldLaunchModeUseCase`; `SupabaseAppFlagsAdminRepository`; `WorldLaunchSwitchList`.
+
 ---
 
 | Version | Date | Summary |

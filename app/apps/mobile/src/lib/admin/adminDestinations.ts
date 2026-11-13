@@ -41,4 +41,6 @@ export const ADMIN_DESTINATIONS: readonly AdminDestination[] = [
   { key: 'money',     href: '/(admin)/money',    icon: 'wallet-outline',           perm: 'money.view' },
   { key: 'donationLinks', href: '/(admin)/donation-links', icon: 'link-outline',     perm: 'donation_links.review' },
   { key: 'stats',     href: '/(admin)/stats',    icon: 'stats-chart-outline',      perm: 'stats.view_platform' },
+  // #2277: every admin sees the worlds' modes; only the super admin switches them (worlds.launch).
+  { key: 'worlds',    href: '/(admin)/worlds',   icon: 'globe-outline',            perm: null },
 ];
