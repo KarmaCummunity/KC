@@ -4537,6 +4537,7 @@ export type Database = {
         Returns: undefined
       }
       api_whatsapp_admin_get_channel: { Args: never; Returns: Json }
+      api_whatsapp_admin_get_send_limits: { Args: never; Returns: Json }
       api_whatsapp_admin_list_consent: {
         Args: { p_cursor?: Json; p_limit?: number }
         Returns: {
