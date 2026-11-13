@@ -1936,7 +1936,7 @@ Owner rules that go with it:
 
 **Affected.** `app/apps/mobile/src/config/launchSurfaces.ts`, `src/hooks/useLaunchSurface.ts`, `src/components/LaunchSurfaceGate.tsx`, `app/(auth)/{index,sign-in,sign-up,forgot-password}.tsx`, `app/auth/{verify,reset-password}.tsx`, `app/settings.tsx`, `app/settings/whatsapp.tsx`, `app/(admin)/whatsapp/index.tsx` (screen moved to `src/screens/admin/WhatsAppAdminScreen.tsx`), `src/components/admin/AdminNav.tsx`, `src/services/purchases/RevenueCatSync.tsx`; FR-AUTH-001 AC2 (the welcome email link is now environment-dependent).
 
-## {{ENG:cold-start-gate-wait-bound}} — Cold start waits at most 10 seconds for the account gate (2026-11-13)
+## D-237 — Cold start waits at most 10 seconds for the account gate (2026-11-13)
 
 **Decision.** `RestoreSessionUseCase` waits at most `COLD_START_GATE_WAIT_MS` (10 s) for `bootstrap_session`. If the gate answers in time, nothing changes: a refusal still signs the member out before any screen renders (TD-68). If it does not, the persisted session is restored and `useEnforceAccountGate`, which checks the gate as soon as the session is set, enforces the answer when it arrives. The bound is the PM's starting value, to be tuned from field data.
 
