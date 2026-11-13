@@ -21,11 +21,11 @@ import {
 } from '../src/services/postsComposition';
 import { PersonalStatsStrip } from '../src/components/stats/PersonalStatsStrip';
 import { KarmaBadge } from '../src/components/profile/KarmaBadge';
-import { useMeRealtime } from '../src/hooks/useMeRealtime';
 import { CommunityStatsPanel } from '../src/components/stats/CommunityStatsPanel';
 import { ActivityTimelineList } from '../src/components/stats/ActivityTimelineList';
 import { MyWorldGivingsPanel } from '../src/components/stats/MyWorldGivingsPanel';
 import { OrgTransparencySection } from '../src/components/finance/OrgTransparencySection';
+import { activityLabelKey } from '../src/lib/activityLabelKey';
 import { rowDirectionStart } from '../src/lib/rtlLayout';
 import { rtlTextAlignStart } from '../src/lib/rtlTextAlignStart';
 
@@ -39,7 +39,6 @@ export default function StatsScreen() {
   const router = useRouter();
   const { t } = useTranslation();
   const userId = useAuthStore((s) => s.session?.userId);
-  useMeRealtime();
 
   const userQuery = useQuery({
     queryKey: ['user-profile', userId],
@@ -63,7 +62,7 @@ export default function StatsScreen() {
 
   const resolveActivityLabel = useCallback(
     (item: PersonalActivityItem) =>
-      t(`stats.activityKind.${item.kind}`, {
+      t(activityLabelKey(item), {
         title: item.postTitle,
         owner: item.actorDisplayName ?? t('stats.activitySomeone'),
       }),

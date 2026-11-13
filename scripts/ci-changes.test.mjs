@@ -5,7 +5,7 @@ import { execFileSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { HEAVY_LANES, LANE_JOBS, OPTIONAL_LANES, REVIEW_LANES, changedFiles, classify, plan } from './ci-changes.mjs';
+import { HEAVY_LANES, LANE_JOBS, OPTIONAL_LANES, REVIEW_LANES, changedFiles, classify, plan, readPrAction } from './ci-changes.mjs';
 
 const PR = { event: 'pull_request', draft: false, actor: 'agent', ref: 'refs/pull/1/merge', baseRef: 'dev' };
 const ALL = { hygiene: true, static: true, frontend: true, backend: true, edge: true, bundles: true };
@@ -23,13 +23,13 @@ test('the plan names every lane job explicitly', () => {
 
 test('app change into dev runs frontend only: bundles wait for the merge queue, Sonar for main', () => {
   const r = plan({ ...PR, files: ['app/apps/mobile/src/lib/x.ts'] });
-  assert.deepEqual(r.plan, { hygiene: true, static: true, frontend: true, backend: false, edge: false, bundles: false });
+  assert.deepEqual(r.plan, { hygiene: true, static: true, frontend: true, backend: false, edge: false, bundles: false, maestro: true });
   assert.equal(r.sonar, false);
 });
 
 test('app change into main runs frontend, bundles and Sonar', () => {
   const r = plan({ ...PR, baseRef: 'main', files: ['app/apps/mobile/src/lib/x.ts'] });
-  assert.deepEqual(r.plan, { hygiene: true, static: true, frontend: true, backend: false, edge: false, bundles: true, release: true });
+  assert.deepEqual(r.plan, { hygiene: true, static: true, frontend: true, backend: false, edge: false, bundles: true, release: true, maestro: true });
   assert.equal(r.sonar, true);
 });
 
@@ -72,7 +72,7 @@ test('draft PR plans every lane as not needed and flags draft', () => {
 });
 
 test('unknown diff runs every lane, except the heavy ones on a PR into dev', () => {
-  assert.deepEqual(plan({ ...PR, files: null }).plan, { ...ALL, bundles: false });
+  assert.deepEqual(plan({ ...PR, files: null }).plan, { ...ALL, bundles: false, maestro: true });
 });
 
 test('dependabot PR skips sonar (no secrets)', () => {
@@ -124,7 +124,7 @@ test('the release lane is left out of the plan, never planned false, unless the 
   for (const event of ['push', 'workflow_dispatch']) {
     assert.equal('release' in plan({ event, draft: false, actor: 'x', ref: 'refs/heads/main', baseRef: '', files: [] }).plan, false);
   }
-  assert.deepEqual(OPTIONAL_LANES, ['release']);
+  assert.deepEqual(OPTIONAL_LANES, ['release', 'maestro']);
 });
 
 test('a merge group for main plans the release lane; one for dev does not', () => {
@@ -138,7 +138,7 @@ test('a review event plans like its PR but runs only the review lanes', () => {
   const review = plan({ ...PR, event: 'pull_request_review', files });
   assert.deepEqual(review.plan, plan({ ...PR, files }).plan);
   assert.deepEqual(REVIEW_LANES, ['static']);
-  assert.deepEqual(review.run, { hygiene: false, static: true, release: false, bundles: false, frontend: false, backend: false, edge: false });
+  assert.deepEqual(review.run, { hygiene: false, static: true, release: false, maestro: false, bundles: false, frontend: false, backend: false, edge: false });
   assert.equal(review.sonar, false);
 });
 
@@ -152,6 +152,47 @@ test('a review on a draft PR plans and runs nothing', () => {
   const review = plan({ ...PR, event: 'pull_request_review', draft: true, files: ['app/a.ts'] });
   assert.equal(review.draft, true);
   assert.ok(Object.values(review.run).every((runs) => runs === false));
+});
+
+test('an edited event without a base change keeps the full plan but runs only hygiene and review lanes', () => {
+  const files = ['app/apps/mobile/src/lib/x.ts'];
+  const edited = plan({ ...PR, action: 'edited', baseChanged: false, files });
+  assert.deepEqual(edited.plan, plan({ ...PR, files }).plan);
+  assert.deepEqual(edited.run, { hygiene: true, static: true, release: false, maestro: false, bundles: false, frontend: false, backend: false, edge: false });
+  assert.equal(edited.sonar, false);
+});
+
+test('an edited event that changes the base still runs every planned lane', () => {
+  const files = ['app/apps/mobile/src/lib/x.ts'];
+  const edited = plan({ ...PR, action: 'edited', baseChanged: true, files });
+  assert.deepEqual(edited.run, edited.plan);
+  assert.deepEqual(edited.plan, plan({ ...PR, files }).plan);
+});
+
+test('an edited event into main plans the release lane but does not re-run it unless the base changed', () => {
+  const noBase = plan({ ...PR, baseRef: 'main', action: 'edited', baseChanged: false, files: [] });
+  assert.equal(noBase.plan.release, true);
+  assert.equal(noBase.run.release, false);
+  assert.equal(noBase.run.hygiene, true);
+  assert.equal(noBase.run.static, true);
+  const withBase = plan({ ...PR, baseRef: 'main', action: 'edited', baseChanged: true, files: [] });
+  assert.equal(withBase.run.release, true);
+});
+
+test('readPrAction reads the action and a base change from the event payload', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'ci-event-'));
+  try {
+    const path = join(dir, 'event.json');
+    writeFileSync(path, JSON.stringify({ action: 'edited', changes: { body: { from: 'old' } } }));
+    assert.deepEqual(readPrAction(path), { action: 'edited', baseChanged: false });
+    writeFileSync(path, JSON.stringify({ action: 'edited', changes: { base: { ref: { from: 'dev' } } } }));
+    assert.deepEqual(readPrAction(path), { action: 'edited', baseChanged: true });
+    writeFileSync(path, 'not-json');
+    assert.deepEqual(readPrAction(path), { action: undefined, baseChanged: false });
+    assert.deepEqual(readPrAction(''), { action: undefined, baseChanged: false });
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 test('every non-review event runs exactly what it plans', () => {
@@ -180,7 +221,7 @@ test('the heavy lanes are regular lane jobs, named in every plan', () => {
 
 test('a PR into dev plans the heavy lanes as not needed, even for an app change', () => {
   const r = plan({ ...PR, baseRef: 'dev', files: APP });
-  assert.deepEqual(r.plan, { hygiene: true, static: true, frontend: true, backend: false, edge: false, bundles: false });
+  assert.deepEqual(r.plan, { hygiene: true, static: true, frontend: true, backend: false, edge: false, bundles: false, maestro: true });
   assert.equal(r.run.bundles, false);
 });
 
@@ -264,4 +305,45 @@ test('moving a migration out of supabase/migrations still runs backend', () => {
 test('an unresolvable base yields null (every lane runs)', () => {
   assert.equal(changedFiles('0000000000000000000000000000000000000000', 'HEAD'), null);
   assert.equal(changedFiles('', 'HEAD'), null);
+});
+
+// The Maestro Android lane: needed on a PR that touches what the journeys see, never planned otherwise.
+test('the maestro lane is needed on a PR that touches the app, its packages, the flows or their runner', () => {
+  for (const f of [
+    'app/apps/mobile/src/lib/x.ts',
+    'app/packages/domain/src/a.ts',
+    'app/pnpm-lock.yaml',
+    '.maestro/flows/01-auth-email-sign-in.yaml',
+    'scripts/maestro-run-android.sh',
+    '.github/workflows/ci-maestro-android.yml',
+  ]) {
+    assert.equal(plan({ ...PR, files: [f] }).plan.maestro, true, f);
+  }
+});
+
+test('the maestro lane is left out of the plan, never planned false, when the diff touches nothing the journeys see', () => {
+  for (const files of [['docs/spec/README.md'], ['supabase/migrations/0010_x.sql'], ['.github/workflows/ci.yml'], ['scripts/ci-gate.mjs'], []]) {
+    assert.equal('maestro' in plan({ ...PR, files }).plan, false, files.join());
+  }
+});
+
+test('the maestro lane fails closed: an undiffable PR plans it, a Dependabot PR (no secrets) does not', () => {
+  assert.equal(plan({ ...PR, files: null }).plan.maestro, true);
+  assert.equal('maestro' in plan({ ...PR, actor: 'dependabot[bot]', files: ['app/pnpm-lock.yaml'] }).plan, false);
+});
+
+test('a merge group, a push and a dispatch do not plan the maestro lane (a dev push has its own non-blocking run)', () => {
+  for (const event of ['merge_group', 'push', 'workflow_dispatch']) {
+    const r = plan({ event, draft: false, actor: 'x', ref: 'refs/heads/dev', baseRef: 'dev', files: null });
+    assert.equal('maestro' in r.plan, false, event);
+    assert.equal(r.run.maestro === true, false, event);
+  }
+});
+
+test('a review or an edit plans the maestro lane but does not re-run it (the gate reuses the PR run)', () => {
+  const files = ['app/apps/mobile/src/lib/x.ts'];
+  for (const r of [plan({ ...PR, event: 'pull_request_review', files }), plan({ ...PR, action: 'edited', baseChanged: false, files })]) {
+    assert.equal(r.plan.maestro, true);
+    assert.equal(r.run.maestro, false);
+  }
 });

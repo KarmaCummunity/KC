@@ -20,6 +20,8 @@ import { buildOrgForest, type OrgTreeMember, type OrgTreeNode } from './OrgTree'
 /** Per-org aggregate row from `admin_hierarchy_census`. */
 export interface HierarchyOrgCensus {
   readonly orgId: string;
+  /** Stable part of the organization's page link; the super admin may change it. */
+  readonly slug: string;
   readonly name: string;
   readonly isPlatform: boolean;
   readonly isVerified: boolean;
@@ -102,15 +104,21 @@ export interface HierarchyPyramid {
  */
 const ROLE_BASE_LEVEL: Readonly<Record<AdminRole, number>> = {
   super_admin:       0,
+  // The platform admin reports to the super admin, like the other platform staff.
+  admin:             1,
   moderator:         1,
   support:           1,
   org_admin:         1,
   org_manager:       2,
   operators_manager: 3,
   volunteer_manager: 3,
+  // Finance roles sit with the organization's other leads and staff (FR-FIN-002).
+  org_treasurer:     3,
   org_employee:      3,
   operator:          4,
+  org_accountant:    4,
   org_volunteer:     4,
+  volunteer:         4,
 };
 
 /** Operations roles sit higher when they serve the platform rather than an org. */

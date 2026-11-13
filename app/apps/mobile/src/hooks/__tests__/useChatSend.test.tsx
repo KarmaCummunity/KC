@@ -15,7 +15,7 @@ describe('useChatSend', () => {
     const { result } = renderHook(() => useChatSend({ chatId: 'c1', userId: 'u1', input: ' hello ', setInput, presentPrePrompt: prompt, setNotify: vi.fn() }));
     await act(async () => result.current());
     expect(m.append).toHaveBeenCalledWith('c1', expect.objectContaining({ messageId: 'client-1', body: 'hello', status: 'pending' }));
-    expect(m.send).toHaveBeenCalledWith({ chatId: 'c1', senderId: 'u1', body: 'hello' });
+    expect(m.send).toHaveBeenCalledWith({ chatId: 'c1', senderId: 'u1', body: 'hello', messageId: 'client-1' });
     expect(m.reconcile).toHaveBeenCalledWith('c1', 'client-1', { messageId: 'server-1' });
     expect(setInput).toHaveBeenCalledWith(''); expect(prompt).toHaveBeenCalledWith('first-message-sent');
   });
@@ -43,7 +43,7 @@ describe('useChatSend', () => {
     m.hasSent.mockResolvedValue(true); m.send.mockResolvedValue({ messageId: 'server-2' });
     const setInput = vi.fn(); const { result } = renderHook(() => useChatSend({ chatId: 'c2', userId: 'u2', input: 'ignored', setInput, presentPrePrompt: vi.fn(), setNotify: vi.fn() }));
     await act(async () => result.current('chosen-id', '  custom body  '));
-    expect(m.send).toHaveBeenCalledWith({ chatId: 'c2', senderId: 'u2', body: 'custom body' });
+    expect(m.send).toHaveBeenCalledWith({ chatId: 'c2', senderId: 'u2', body: 'custom body', messageId: 'chosen-id' });
     expect(m.reconcile).toHaveBeenCalledWith('c2', 'chosen-id', { messageId: 'server-2' });
     expect(m.append).not.toHaveBeenCalled(); expect(setInput).not.toHaveBeenCalled(); expect(m.uuid).not.toHaveBeenCalled();
   });
@@ -51,12 +51,24 @@ describe('useChatSend', () => {
     m.hasSent.mockRejectedValue(new Error('offline')); m.send.mockResolvedValue({ messageId: 'server-3' });
     const prompt = vi.fn(); const { result } = renderHook(() => useChatSend({ chatId: 'c1', userId: 'u1', input: 'ok', setInput: vi.fn(), presentPrePrompt: prompt, setNotify: vi.fn() }));
     await act(async () => result.current());
-    expect(m.send).toHaveBeenCalledWith({ chatId: 'c1', senderId: 'u1', body: 'ok' }); expect(prompt).not.toHaveBeenCalled();
+    expect(m.send).toHaveBeenCalledWith({ chatId: 'c1', senderId: 'u1', body: 'ok', messageId: 'client-1' }); expect(prompt).not.toHaveBeenCalled();
   });
   it('marks ordinary send rejection failed without exposing a deleted-user notice', async () => {
     m.hasSent.mockResolvedValue(true); m.send.mockRejectedValue(new Error('offline'));
     const notify = vi.fn(); const { result } = renderHook(() => useChatSend({ chatId: 'c1', userId: 'u1', input: 'ok', setInput: vi.fn(), presentPrePrompt: vi.fn(), setNotify: notify }));
     await act(async () => result.current());
     expect(m.failed).toHaveBeenCalledWith('c1', 'client-1'); expect(notify).not.toHaveBeenCalled(); expect(m.reconcile).not.toHaveBeenCalled();
+  });
+  it.each([
+    ['rate_limited', 'rateLimited'],
+    ['blocked_relationship', 'blocked'],
+  ] as const)('explains a %s refusal with its own notice', async (code, key) => {
+    m.hasSent.mockResolvedValue(true);
+    const { ChatError } = await import('@kc/application');
+    m.send.mockRejectedValue(new ChatError(code, code));
+    const notify = vi.fn(); const { result } = renderHook(() => useChatSend({ chatId: 'c1', userId: 'u1', input: 'ok', setInput: vi.fn(), presentPrePrompt: vi.fn(), setNotify: notify }));
+    await act(async () => result.current());
+    expect(m.failed).toHaveBeenCalledWith('c1', 'client-1');
+    expect(notify).toHaveBeenCalledWith({ title: `chat.messaging.${key}.title`, message: `chat.messaging.${key}.message` });
   });
 });

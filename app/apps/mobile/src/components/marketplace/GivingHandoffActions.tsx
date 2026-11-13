@@ -3,7 +3,7 @@ import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { makeUseStyles, radius, spacing, typography, Text } from '@kc/ui';
-import type { MarketplaceListingDetail } from '@kc/domain';
+import { givingHandoffActions, type MarketplaceListingDetail } from '@kc/domain';
 import { useAuthStore } from '../../store/authStore';
 import { givingHandoffUseCases } from '../../services/givingHandoffComposition';
 import { track } from '../../lib/analytics';
@@ -85,6 +85,10 @@ export function GivingHandoffActions({ detail }: Props) {
   const h = handoff.data;
   const isOwner = userId === detail.ownerId;
   const isRecipient = h != null && userId === h.recipientId;
+  // What this member may do with the handoff, read from the handoff graph; a viewer who is
+  // neither the owner nor the member who reserved is offered nothing.
+  const party = isOwner ? 'owner' : isRecipient ? 'recipient' : null;
+  const actions = h != null && party != null ? givingHandoffActions(h.status, party) : null;
   // 'ongoing' is also the default availability of every new listing (create_marketplace_listing),
   // so it means "handed over" only once the listing has left the open state (0555 closes it).
   const isHandedOver = detail.availabilityStatus === 'ongoing' && detail.listingStatus !== 'open';
@@ -145,25 +149,25 @@ export function GivingHandoffActions({ detail }: Props) {
         />
       ) : null}
 
-      {h?.status === 'reserved' && isOwner ? (
-        <>
-          <HandoffActionButton
-            testID="giving-handoff-confirm"
-            label={t('givingHandoff.confirmReservation')}
-            busy={busy}
-            onPress={() => run(async () => { await givingHandoffUseCases.confirmItem().execute(h.handoffId); })}
-          />
-          <HandoffActionButton
-            testID="giving-handoff-cancel"
-            label={t('givingHandoff.cancel')}
-            busy={busy}
-            secondary
-            onPress={() => run(async () => { await givingHandoffUseCases.cancel().execute(h.handoffId); })}
-          />
-        </>
+      {h && actions?.confirm ? (
+        <HandoffActionButton
+          testID="giving-handoff-confirm"
+          label={t('givingHandoff.confirmReservation')}
+          busy={busy}
+          onPress={() => run(async () => { await givingHandoffUseCases.confirmItem().execute(h.handoffId); })}
+        />
       ) : null}
 
-      {h?.status === 'reserved' && isRecipient ? (
+      {h && actions?.complete ? (
+        <HandoffActionButton
+          testID="giving-handoff-complete"
+          label={t('givingHandoff.markHandedOver')}
+          busy={busy}
+          onPress={() => run(async () => { await givingHandoffUseCases.markHandedOver().execute(h.handoffId); }, 'handover_completed')}
+        />
+      ) : null}
+
+      {h && actions?.cancel ? (
         <HandoffActionButton
           testID="giving-handoff-cancel"
           label={t('givingHandoff.cancel')}
@@ -173,25 +177,7 @@ export function GivingHandoffActions({ detail }: Props) {
         />
       ) : null}
 
-      {h?.status === 'confirmed' && (isOwner || isRecipient) ? (
-        <>
-          <HandoffActionButton
-            testID="giving-handoff-complete"
-            label={t('givingHandoff.markHandedOver')}
-            busy={busy}
-            onPress={() => run(async () => { await givingHandoffUseCases.markHandedOver().execute(h.handoffId); }, 'handover_completed')}
-          />
-          <HandoffActionButton
-            testID="giving-handoff-cancel"
-            label={t('givingHandoff.cancel')}
-            busy={busy}
-            secondary
-            onPress={() => run(async () => { await givingHandoffUseCases.cancel().execute(h.handoffId); })}
-          />
-        </>
-      ) : null}
-
-      {h?.status === 'handed_over' && (isOwner || isRecipient) ? (
+      {h && actions?.rate ? (
         <HandoffRatingForm
           busy={busy}
           onSubmit={(rating, note) =>

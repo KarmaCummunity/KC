@@ -2,7 +2,7 @@
 // FR-ADMIN-028 — layered hierarchy view: data/error states, depth, org focus, a11y.
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { ReactNode } from 'react';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { ThemeProvider } from '@kc/ui';
 import {
   buildHierarchyPyramid,
@@ -32,6 +32,11 @@ vi.mock('../../../../ui/MotionEntry', () => ({
   MotionEntry: ({ children }: { children: ReactNode }) => <>{children}</>,
 }));
 vi.mock('../../../../AvatarInitials', () => ({ AvatarInitials: () => null }));
+// The slug change goes through the app container; the card's own flow is not under test here.
+const setSlug = vi.fn(async () => 'beta-new');
+vi.mock('../../../../../hooks/useSetOrgSlug', () => ({
+  useSetOrgSlug: () => ({ mutateAsync: setSlug, isPending: false }),
+}));
 // Pin the Hebrew bundle; both accessors of the real module serve it.
 vi.mock('../../../../../i18n/useLocaleBundle', async () => {
   const he = (await import('../../../../../i18n/locales/he')).default;
@@ -73,17 +78,17 @@ const SNAPSHOT: HierarchySnapshot = {
     communityTotal: 50,
     roleHolderTotal: 5,
     orgs: [
-      { orgId: PLATFORM, name: 'Karma', isPlatform: true, isVerified: true, affiliatedCount: 0 },
-      { orgId: 'org-a', name: 'Alpha', isPlatform: false, isVerified: true, affiliatedCount: 3 },
-      { orgId: 'org-b', name: 'Beta', isPlatform: false, isVerified: false, affiliatedCount: 0 },
+      { orgId: PLATFORM, slug: 'kc', name: 'Karma', isPlatform: true, isVerified: true, affiliatedCount: 0 },
+      { orgId: 'org-a', slug: 'alpha', name: 'Alpha', isPlatform: false, isVerified: true, affiliatedCount: 3 },
+      { orgId: 'org-b', slug: 'beta', name: 'Beta', isPlatform: false, isVerified: false, affiliatedCount: 0 },
     ],
   },
 };
 
-const renderView = () =>
+const renderView = (canChangeSlug = false) =>
   render(
     <ThemeProvider mode="light" systemScheme="light" setMode={() => {}}>
-      <AdminsLayersView isWide={false} onSelect={() => {}} />
+      <AdminsLayersView isWide={false} onSelect={() => {}} canChangeSlug={canChangeSlug} />
     </ThemeProvider>,
   );
 
@@ -116,6 +121,22 @@ describe('AdminsLayersView', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Beta' }));
     expect(screen.getByText('bob')).toBeTruthy();
     expect(screen.queryByText('alice')).toBeNull();
+  });
+
+  it('shows the focused organization\'s page address to the super admin only, and saves a new one', async () => {
+    state.snapshot = SNAPSHOT;
+    renderView();
+    fireEvent.click(screen.getByRole('button', { name: 'Beta' }));
+    expect(screen.queryByTestId('org-slug-card')).toBeNull();
+    cleanup();
+    renderView(true);
+    expect(screen.queryByTestId('org-slug-card')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Beta' }));
+    expect(screen.getByText(L.admin.admins.orgSlug.current('beta'))).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: L.admin.admins.orgSlug.change }));
+    fireEvent.change(screen.getByTestId('org-slug-input'), { target: { value: 'beta-new' } });
+    fireEvent.click(screen.getByRole('button', { name: L.admin.admins.orgSlug.save }));
+    await waitFor(() => expect(setSlug).toHaveBeenCalledWith({ orgId: 'org-b', slug: 'beta-new' }));
   });
 
   it('renders one band per reporting level, deeper than any fixed tier set', () => {

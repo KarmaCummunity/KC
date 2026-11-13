@@ -1,82 +1,153 @@
-// FR-HOUSING-003, 012, 015–022 — the housing adapter calls the 0600–0603 RPCs and maps their rows.
-import { describe, expect, it, vi } from 'vitest';
-import { SupabaseHousingRepository } from '../SupabaseHousingRepository';
+// FR-HOUSING-003, 012, 015–022, 036, 037 — the housing adapter against the baseline objects.
+import { describe, expect, it } from 'vitest';
+import { BackendRuleError, BackendUnavailableError } from '@kc/domain';
+import { callsTo, createFakeClient } from '../../__tests__/fakeBaselineClient';
+import { fail, ok } from '../../posts/__tests__/cardFixtures';
+import { SupabaseHousingRepository, parseConductState } from '../SupabaseHousingRepository';
+import { guestMayViewAddress, pointEwkt, trimmedOrNull } from '../housingMappers';
 
-type AnyClient = ConstructorParameters<typeof SupabaseHousingRepository>[0];
-type Result = { data: unknown; error: { message: string } | null };
+const HANDOFF = {
+  id: 'h1', post_id: 'p1', owner_id: 'host', recipient_id: 'g1', machine_id: 'housing_booking', status: 'reserved',
+  cancel_reason: null, slot_starts_at: '2030-03-12T14:00:00Z', slot_ends_at: '2030-03-14T08:00:00Z',
+  confirm_by: '2030-03-11T10:00:00Z', created_at: '2030-03-10T10:00:00Z', seats: 3,
+};
+const DETAILS = {
+  handoff_id: 'h1', check_in_date: '2030-03-12', check_out_date: '2030-03-14', adults: 2, minors: 1, message: 'hi',
+};
+const GUEST = { id: 'g1', display_name: 'Guest', avatar_url: null, verification_level: 2, created_at: '2029-01-01T00:00:00Z' };
+const SESSION = { consents: { housing_conduct: { version: 1, accepted: false } } };
 
-const HOST_ROW = {
-  handoff_id: 'h1', recipient_id: 'g1', guest_name: 'Guest', avatar_url: null, guest_verified: true,
-  guest_completed_stays: 3, guest_member_since: '2029-01-01T00:00:00Z',
-  check_in_date: '2030-03-12', check_out_date: '2030-03-14',
-  slot_starts_at: '2030-03-12T14:00:00Z', slot_ends_at: '2030-03-14T08:00:00Z',
-  adults: 2, minors: 1, message: 'hi', status: 'reserved', reserved_at: '2030-03-10T10:00:00Z',
-  confirm_by: '2030-03-11T10:00:00Z', rated_by_me: false,
+const repoOf = (config: Parameters<typeof createFakeClient>[0]) => {
+  const fake = createFakeClient(config);
+  return { ...fake, repo: new SupabaseHousingRepository(fake.client) };
 };
 
-function repoWith(result: Result, countResult?: { count: number | null; error: { message: string } | null }) {
-  const rpc = vi.fn().mockResolvedValue(result);
-  const eq = vi.fn().mockResolvedValue(countResult ?? { count: 0, error: null });
-  const select = vi.fn(() => ({ eq }));
-  const from = vi.fn(() => ({ select }));
-  const client = { rpc, from } as unknown as AnyClient;
-  return { rpc, from, eq, repo: new SupabaseHousingRepository(client) };
-}
+describe('SupabaseHousingRepository — consent and moves', () => {
+  it('reads the code of conduct from the session and accepts the version shown', async () => {
+    const { repo, calls } = repoOf({ rpc: { bootstrap_session: ok(SESSION), accept_world_consent: ok({ id: 'c1' }) } });
+    expect(await repo.currentConductVersion()).toBe(1);
+    expect(await repo.hasAcceptedConduct()).toBe(false);
+    await repo.acceptConduct(1);
+    expect(callsTo(calls, 'accept_world_consent')[0]?.args).toEqual({ p_kind: 'housing_conduct', p_version: 1 });
+    expect(parseConductState({})).toBeNull();
+  });
 
-describe('SupabaseHousingRepository', () => {
-  it('requests a stay with the RPC argument names and returns the booking id', async () => {
-    const { rpc, repo } = repoWith({ data: { handoff_id: 'h9' }, error: null });
+  it('requests a stay on the post and returns the booking id', async () => {
+    const { repo, calls } = repoOf({ rpc: { request_housing_booking: ok({ ...HANDOFF, id: 'h9' }) } });
     await expect(repo.requestStay({
-      listingId: 'l1', checkInDate: '2030-03-12', checkOutDate: '2030-03-14', adults: 2, minors: 0,
+      listingId: 'p1', checkInDate: '2030-03-12', checkOutDate: '2030-03-14', adults: 2, minors: 0,
       message: 'hi', minorsGuardianAck: false,
     })).resolves.toBe('h9');
-    expect(rpc).toHaveBeenCalledWith('request_housing_booking', {
-      p_listing_id: 'l1', p_check_in: '2030-03-12', p_check_out: '2030-03-14', p_adults: 2, p_minors: 0,
+    expect(callsTo(calls, 'request_housing_booking')[0]?.args).toEqual({
+      p_post_id: 'p1', p_check_in: '2030-03-12', p_check_out: '2030-03-14', p_adults: 2, p_minors: 0,
       p_message: 'hi', p_minors_guardian_ack: false,
     });
   });
 
-  it('keeps the server error code as the message', async () => {
-    const { repo } = repoWith({ data: null, error: { message: 'housing_pending_cap' } });
-    await expect(repo.cancel('h1', null)).rejects.toThrow('housing_pending_cap');
-  });
-
-  it('sends an absent note as undefined, never null', async () => {
-    const { rpc, repo } = repoWith({ data: {}, error: null });
+  it('closes a stay as completed or as a no-show and sends an absent note as undefined', async () => {
+    const { repo, calls } = repoOf({});
+    await repo.complete('h1');
+    await repo.markNoShow('h1');
     await repo.decide('h1', true, null);
-    expect(rpc).toHaveBeenCalledWith('decide_housing_booking', { p_handoff_id: 'h1', p_approve: true, p_note: undefined });
+    expect(callsTo(calls, 'close_housing_booking').map((c) => c.args)).toEqual([
+      { p_handoff_id: 'h1', p_outcome: 'completed' }, { p_handoff_id: 'h1', p_outcome: 'no_show' },
+    ]);
+    expect(callsTo(calls, 'decide_housing_booking')[0]?.args).toEqual({ p_handoff_id: 'h1', p_approve: true, p_note: undefined });
   });
 
-  it('maps the host list to camelCase and drops unknown statuses', async () => {
-    const { repo } = repoWith({ data: [HOST_ROW, { ...HOST_ROW, handoff_id: 'h2', status: 'weird' }], error: null });
-    const list = await repo.listForOffer('l1');
-    expect(list).toHaveLength(1);
-    expect(list[0]).toMatchObject({
-      handoffId: 'h1', guestId: 'g1', guestCompletedStays: 3, startsAt: '2030-03-12T14:00:00Z',
-      endsAt: '2030-03-14T08:00:00Z', adults: 2, minors: 1, status: 'reserved',
+  it('keeps the server reason and reports a missing function', async () => {
+    const refused = repoOf({ rpc: { cancel_housing_booking: fail('P0001', 'housing_booking_started') } });
+    await expect(refused.repo.cancel('h1', null)).rejects.toThrow(BackendRuleError);
+    await expect(refused.repo.cancel('h1', null)).rejects.toThrow('housing_booking_started');
+    const missing = repoOf({ rpc: { close_housing_booking: fail('PGRST202', 'nope') } });
+    await expect(missing.repo.complete('h1')).rejects.toBeInstanceOf(BackendUnavailableError);
+  });
+});
+
+describe('SupabaseHousingRepository — lists', () => {
+  it('lists the bookings of an offer with the guest trust block, waiting requests first', async () => {
+    const confirmed = { ...HANDOFF, id: 'h2', status: 'confirmed', created_at: '2030-03-01T00:00:00Z' };
+    const { repo, calls } = repoOf({
+      tables: {
+        post_handoffs: ok([confirmed, HANDOFF]),
+        handoff_booking_details: ok([DETAILS, { ...DETAILS, handoff_id: 'h2' }]),
+        users: ok([GUEST]),
+        post_ratings: ok([{ handoff_id: 'h2' }]),
+      },
+      rpc: { housing_completed_stays: ok([{ user_id: 'g1', completed_stays: 3 }]) },
     });
-  });
-
-  it('returns null for the private details when the place is not open to the caller', async () => {
-    const { repo } = repoWith({ data: null, error: { message: 'housing_private_details_hidden' } });
-    await expect(repo.getPrivateDetails('l1')).resolves.toBeNull();
-  });
-
-  it('maps the private details when they are open', async () => {
-    const { repo } = repoWith({ data: [{
-      listing_id: 'l1', city_id: '4000', street_name: 'Herzl', house_number: '12', apartment: null, floor: '2',
-      entrance_notes: null, access_instructions: 'Key box', lat: 32.79, lng: 34.99,
-    }], error: null });
-    await expect(repo.getPrivateDetails('l1')).resolves.toMatchObject({
-      streetName: 'Herzl', houseNumber: '12', floor: '2', accessInstructions: 'Key box', lat: 32.79,
+    const rows = await repo.listForOffer('p1');
+    expect(rows.map((r) => [r.handoffId, r.status, r.ratedByMe])).toEqual([['h1', 'reserved', false], ['h2', 'confirmed', true]]);
+    expect(rows[0]).toMatchObject({
+      guestName: 'Guest', guestVerified: true, guestCompletedStays: 3, guestMemberSince: '2029-01-01T00:00:00Z',
+      checkInDate: '2030-03-12', startsAt: '2030-03-12T14:00:00Z', adults: 2, minors: 1, message: 'hi',
     });
+    expect(callsTo(calls, 'post_handoffs')[0]?.filters).toEqual([
+      ['eq', 'post_id', 'p1'], ['eq', 'machine_id', 'housing_booking'], ['in', 'status', ['reserved', 'confirmed', 'handed_over']],
+    ]);
+    expect(callsTo(calls, 'housing_completed_stays')[0]?.args).toEqual({ p_user_ids: ['g1'] });
   });
 
-  it('reads the conduct acceptance of the current version through RLS', async () => {
-    const { rpc, from, eq, repo } = repoWith({ data: 3, error: null }, { count: 1, error: null });
-    await expect(repo.hasAcceptedConduct()).resolves.toBe(true);
-    expect(rpc).toHaveBeenCalledWith('housing_conduct_version');
-    expect(from).toHaveBeenCalledWith('housing_conduct_acceptances');
-    expect(eq).toHaveBeenCalledWith('version', 3);
+  it("lists the guest's own stays with the post and the host", async () => {
+    const { repo, calls } = repoOf({
+      userId: 'g1',
+      tables: {
+        post_handoffs: ok([{ ...HANDOFF, status: 'cancelled', cancel_reason: 'host_cancelled' }]),
+        handoff_booking_details: ok([DETAILS]),
+        posts: ok([{ id: 'p1', title: 'Room', city_id: 'c1' }]),
+        users: ok([{ id: 'host', display_name: 'Host' }]),
+        post_ratings: ok([]),
+      },
+    });
+    const [stay] = await repo.listMyStays(10);
+    expect(stay).toMatchObject({
+      listingId: 'p1', listingTitle: 'Room', cityId: 'c1', hostName: 'Host', cancelReason: 'host_cancelled', canViewAddress: false,
+    });
+    expect(callsTo(calls, 'post_handoffs')[0]?.filters).toContainEqual(['eq', 'recipient_id', 'g1']);
+    expect(callsTo(calls, 'post_handoffs')[0]?.filters).toContainEqual(['limit', 10]);
+  });
+
+  it('returns no stays when signed out', async () => {
+    const { repo, calls } = repoOf({});
+    expect(await repo.listMyStays()).toEqual([]);
+    expect(calls).toHaveLength(0);
+  });
+
+  it('opens the address to a confirmed guest until a day after the stay', () => {
+    const now = new Date('2030-03-15T00:00:00Z');
+    expect(guestMayViewAddress('confirmed', '2030-03-14T08:00:00Z', now)).toBe(true);
+    expect(guestMayViewAddress('confirmed', '2030-03-13T08:00:00Z', now)).toBe(false);
+    expect(guestMayViewAddress('reserved', null, now)).toBe(false);
+  });
+});
+
+describe('SupabaseHousingRepository — the exact place', () => {
+  it('maps the released location and returns null when it is not open', async () => {
+    const location = {
+      post_id: 'p1', street: 'Herzl', street_number: '5', apartment: '12', floor: '2', entrance_notes: 'Gate B',
+      access_notes: 'key under mat', exact_point: null,
+    };
+    const open = repoOf({ rpc: { get_post_private_location: ok(location) }, tables: { posts: ok({ city_id: 'c1' }) } });
+    expect(await open.repo.getPrivateDetails('p1')).toMatchObject({
+      cityId: 'c1', streetName: 'Herzl', houseNumber: '5', apartment: '12', floor: '2', entranceNotes: 'Gate B',
+      accessInstructions: 'key under mat', lat: null,
+    });
+    const hidden = repoOf({ rpc: { get_post_private_location: fail('P0001', 'post_not_found') } });
+    expect(await hidden.repo.getPrivateDetails('p1')).toBeNull();
+  });
+
+  it('writes the street name, each arrival field on its own (0033) and the point', async () => {
+    const { repo, calls } = repoOf({ tables: { posts: ok({ city_id: 'c1' }), streets: ok({ name_he: 'Herzl' }) } });
+    await repo.setPrivateDetails({
+      listingId: 'p1', streetId: 7, houseNumber: ' 5 ', apartment: '3', floor: null, entranceNotes: ' ',
+      accessInstructions: 'key under mat', lat: 32.1, lng: 34.8,
+    });
+    expect(callsTo(calls, 'streets')[0]?.filters).toEqual([['eq', 'city_id', 'c1'], ['eq', 'street_id', 7]]);
+    expect(callsTo(calls, 'post_private_locations')[0]?.payload).toEqual({
+      post_id: 'p1', street: 'Herzl', street_number: '5', apartment: '3', floor: null, entrance_notes: null,
+      access_notes: 'key under mat', exact_point: 'SRID=4326;POINT(34.8 32.1)',
+    });
+    expect(trimmedOrNull(' ')).toBeNull();
+    expect(pointEwkt(null, 1)).toBeNull();
   });
 });

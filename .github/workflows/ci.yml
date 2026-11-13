@@ -17,8 +17,11 @@ name: CI
 on:
   pull_request:
     branches: [dev, main]
-    # `edited` re-runs the gate when the title, body or base branch change, so
-    # PR hygiene and the lane plan always match the current PR.
+    # `edited` re-runs hygiene and the gate when the title, body or base
+    # branch change, so PR hygiene and the lane plan always match the current
+    # PR. A title/body edit does not re-run the heavy lanes or cancel a full
+    # run in flight (see concurrency / run-name below); a base change does
+    # re-run every planned lane.
     types: [opened, synchronize, reopened, ready_for_review, edited]
   # An owner approval (or its dismissal) re-judges the gate: the test-integrity
   # guard and the ci.yml check accept a gate-weakening change only with an
@@ -40,15 +43,17 @@ on:
     branches: [dev, main]
   workflow_dispatch:
 
-# A PR's `pull_request` runs share one group, so a new push or edit cancels
-# the superseded run. Review runs get their own per-PR group, so a queued
-# review run can never replace (and drop) a pending `pull_request` run; a newer
-# review (e.g. the dismissal of an approval) cancels the one in flight, and a
-# review run waits for a running `pull_request` run before reusing it. Every
-# other event is grouped by commit, so each dev/main push keeps its own result
-# (a shared branch group would drop queued runs).
+# A PR's `synchronize` / open runs share one group, so a new push cancels the
+# superseded full run. `edited` runs get their own per-PR group (`ci-edit-<PR>`),
+# so a body/title edit never cancels a full run in flight; they are marked
+# `CI (edit)` (`run-name` / `display_title`) so reuse can skip them. Review
+# runs keep their own `review-` group. A newer edit or review cancels the one
+# of its kind in flight, and a reuse waits for a running full `pull_request`
+# run. Every other event is grouped by commit, so each dev/main push keeps its
+# own result (a shared branch group would drop queued runs).
+run-name: ${{ github.event_name == 'pull_request' && github.event.action == 'edited' && 'CI (edit)' || github.event.pull_request.title || github.event.head_commit.message || github.workflow }}
 concurrency:
-  group: ci-${{ github.event_name == 'pull_request_review' && 'review-' || '' }}${{ github.event.pull_request.number || github.sha }}
+  group: ci-${{ github.event_name == 'pull_request_review' && 'review-' || (github.event_name == 'pull_request' && github.event.action == 'edited' && 'edit-') || '' }}${{ github.event.pull_request.number || github.sha }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' || github.event_name == 'pull_request_review' }}
 
 permissions: {}
@@ -79,6 +84,7 @@ jobs:
       hygiene: ${{ steps.plan.outputs.hygiene }}
       static: ${{ steps.plan.outputs.static }}
       release: ${{ steps.plan.outputs.release }}
+      maestro: ${{ steps.plan.outputs.maestro }}
       frontend: ${{ steps.plan.outputs.frontend }}
       backend: ${{ steps.plan.outputs.backend }}
       edge: ${{ steps.plan.outputs.edge }}
@@ -193,6 +199,21 @@ jobs:
       contents: read
     uses: ./.github/workflows/ci-edge-functions.yml
 
+  # The Android journeys on an emulator against kc-dev (about 45 minutes). Planned only on a PR whose
+  # diff touches the app, its packages, the flows or their runner (scripts/ci-changes.mjs MAESTRO_RULES),
+  # so a failing journey now fails the gate. A merge group, a push and a dispatch do not run it: the PR
+  # already did, and `dev` has its own non-blocking run (maestro-dev-health.yml) so a shared, mutable
+  # kc-dev can never hold a deploy. The seed password reaches only runs that get secrets.
+  maestro:
+    name: maestro
+    needs: changes
+    if: needs.changes.outputs.maestro == 'true'
+    permissions:
+      contents: read
+    uses: ./.github/workflows/ci-maestro-android.yml
+    secrets:
+      E2E_SEED_PASSWORD: ${{ secrets.E2E_SEED_PASSWORD }}
+
   # The only required status check. `always()` makes it report even when a
   # lane fails or is cancelled; scripts/ci-gate.mjs turns that into a verdict.
   # Every other job in this file must be a known lane listed in `needs:`
@@ -202,7 +223,7 @@ jobs:
   # up to 12 minutes for that run to finish, hence the timeout.
   gate:
     name: CI gate
-    needs: [changes, hygiene, static, release, frontend, bundles, backend, edge]
+    needs: [changes, hygiene, static, release, frontend, bundles, backend, edge, maestro]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 15

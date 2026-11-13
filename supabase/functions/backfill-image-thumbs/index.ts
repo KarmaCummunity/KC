@@ -9,7 +9,9 @@
 // `cache-control: public, max-age=31536000, immutable`. Idempotent: existing
 // thumbs are skipped.
 //
-// Triggered manually (or via cron) with optional body:
+// Service role only. A one-off tool run by an operator after the thumbnail pipeline reached
+// production (new uploads carry their own -thumb sibling); it has no database schedule.
+// Optional body:
 //   { "bucket"?: "post-images" | "avatars" | "both",
 //     "pageLimit"?: number,        // max objects to process per invocation; default 100
 //     "lookbackHours"?: number,    // only objects newer than N hours; default null (all)
@@ -25,30 +27,12 @@ import { serve } from 'https://deno.land/std@0.224.0/http/server.ts';
 import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 import { Jimp } from 'https://esm.sh/jimp@1.6.0';
 import { reportError, withObservability } from '../_shared/observability/mod.ts';
+import { isServiceRoleRequest, serviceRoleRequiredResponse } from '../_shared/serviceRoleGuard.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const LIST_PAGE = 100;
 
-/**
- * The Supabase gateway already verifies the JWT signature before forwarding
- * to this function (verify_jwt: true is the default). We additionally check
- * the role claim equals "service_role" so anon / authenticated users with
- * valid JWTs can't trigger the backfill. Robust to env-var format drift
- * between legacy JWT and new `sb_secret_` key formats.
- */
-function isServiceRoleJwt(bearer: string): boolean {
-  if (!bearer.startsWith('Bearer ')) return false;
-  const token = bearer.slice(7);
-  const parts = token.split('.');
-  if (parts.length !== 3) return false;
-  try {
-    const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
-    return payload?.role === 'service_role';
-  } catch {
-    return false;
-  }
-}
 const IMMUTABLE_CACHE_CONTROL = 'public, max-age=31536000, immutable';
 
 // Bucket-specific thumb sizing.
@@ -228,10 +212,8 @@ async function backfillBucket(
 serve(withObservability('backfill-image-thumbs', async (req: Request) => {
   if (req.method !== 'POST') return json({ ok: false, error: 'method_not_allowed' }, 405);
 
-  const auth = req.headers.get('Authorization') ?? '';
-  if (!isServiceRoleJwt(auth)) {
-    return json({ ok: false, error: 'unauthenticated' }, 401);
-  }
+  // Only the service-role key itself; a JWT that merely claims the role is not accepted.
+  if (!isServiceRoleRequest(req, SERVICE_KEY)) return serviceRoleRequiredResponse();
 
   let body: {
     bucket?: 'post-images' | 'avatars' | 'both';

@@ -7,12 +7,12 @@ import { adminOrgApprovalsHe } from './adminOrgApprovals';
 import { adminDonationLinksHe } from './adminDonationLinks';
 import { adminWhatsAppHe } from './adminWhatsApp';
 import { adminMatchingHe } from './adminMatching';
-import { adminDemoDataHe } from './adminDemoData';
 import { adminOrgTreeHe } from './adminOrgTree';
 import { adminStatsHe } from './adminStats';
 import { adminSurveysHe } from './adminSurveys';
 import { adminTasksHe } from './adminTasks';
-import { adminAdminsHe } from './adminAdmins';
+import { adminAdminsParityHe } from './adminAdminsParity';
+import { adminRolesParityHe } from './adminHierarchyParity';
 
 export const adminHe = {
   portalTitle: 'פורטל ניהול',
@@ -32,7 +32,6 @@ export const adminHe = {
     audit:         'יומן פעולות',
     whatsapp:      'וואטסאפ',
     matching:      'איכות התאמות',
-    demoData:      'נתוני דמה',
     donationLinks: 'קישורי תרומה',
     stats:         'סטטיסטיקות',
   },
@@ -47,6 +46,23 @@ export const adminHe = {
     org_employee: 'עובד עמותה',
     volunteer_manager: 'מנהל מתנדבים',
     org_volunteer: 'מתנדב בארגון',
+    ...adminRolesParityHe,
+  },
+  // Extra words the portal search (#2081) matches besides the screen title, space-separated.
+  searchKeywords: {
+    dashboard: 'בית ראשי סקירה',
+    reports: 'דיווח תלונה הפרה הסרה',
+    tasks: 'משימה צוות',
+    admins: 'מנהל הרשאות תפקיד',
+    users: 'משתמש חבר חשבון חסימה',
+    posts: 'פוסט מודעה תוכן',
+    surveys: 'סקר שאלון מחקר',
+    audit: 'יומן לוג היסטוריה',
+    whatsapp: 'וואטסאפ ווטסאפ בוט',
+    matching: 'התאמה התאמות',
+    money: 'כסף תשלום תרומה',
+    donationLinks: 'תרומה קישור',
+    stats: 'סטטיסטיקה נתונים מדדים',
   },
   dashboard: {
     welcome: 'ברוך הבא לפורטל הניהול',
@@ -62,6 +78,8 @@ export const adminHe = {
     auditKpi: 'יומן פעולות',
     auditOpenLabel: 'פתיחה',
     noCount: '—',
+    searchPlaceholder: 'חיפוש מסך או הגדרה בפורטל',
+    searchEmpty: 'לא נמצא מסך תואם',
   },
   comingSoon: {
     title: 'מסך זה יזמין בקרוב',
@@ -81,7 +99,7 @@ export const adminHe = {
       posts:      'פוסטים',
       users:      'משתמשים',
       chats:      'צ׳אטים',
-      listings:   'מודעות',
+      comments:   'תגובות',
       last7Days:  'שבעה ימים אחרונים',
       last30Days: 'שלושים ימים אחרונים',
       search:     'חיפוש לפי מזהה יעד או שם המדווח',
@@ -124,9 +142,7 @@ export const adminHe = {
       postKind:    'פוסט',
       userKind:    'משתמש',
       chatKind:    'צ׳אט',
-      listingKind: 'מודעה',
-      openListing: 'פתיחת המודעה',
-      openOwner:   'פתיחת פרופיל המפרסם',
+      commentKind: 'תגובה',
       noPreview:   '(אין תצוגה מקדימה)',
       unnamedUser: '(משתמש ללא שם)',
       openPost:    'פתיחת הפוסט',
@@ -144,14 +160,13 @@ export const adminHe = {
     bubbleReadOnly: 'הפעולות זמינות בפורטל הניהול',
     bubbleOpenInPortal: 'פתיחה בפורטל',
   },
-  admins: adminAdminsHe,
+  admins: adminAdminsParityHe,
   tasks: adminTasksHe,
   content: adminContentHe,
   time: adminTimeHe,
   money: adminMoneyHe,
   whatsapp: adminWhatsAppHe,
   matching: adminMatchingHe,
-  demoData: adminDemoDataHe,
   orgTree: adminOrgTreeHe,
   stats: adminStatsHe,
   crm: adminCrmHe,

@@ -7,6 +7,7 @@
 import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import type { ListingKindOption } from '@kc/domain';
+import type { MediaAssetInput } from '@kc/application';
 import { marketplaceRepository } from '../services/marketplaceComposition';
 import { initialDetailsFor, type ListingFieldSpec } from '../lib/unifiedCreate/listingFieldSpecs';
 import { pickRideDetails } from '../lib/unifiedCreate/listingCreateDetails';
@@ -51,8 +52,8 @@ export function useListingFormSource({
   const pendingSeed = useRef<ListingRepublishSeed | null>(null);
   const [seedVersion, setSeedVersion] = useState(0);
   // The source's photos a republish reuses; the member may remove them like picked ones.
-  const [carriedMediaPaths, setCarriedMediaPaths] = useState<string[]>([]);
-  const { setWantsOrgEvent, setOrgId } = eventChoice;
+  const [carriedMedia, setCarriedMedia] = useState<MediaAssetInput[]>([]);
+  const { setWantsOrgEvent, setWantsPersonalEvent, setOrgId } = eventChoice;
   const kindSlug = kind?.slug ?? null;
 
   // A new kind (direction switch) starts from its own defaults. The ride route and schedule are
@@ -86,17 +87,19 @@ export function useListingFormSource({
       return;
     }
     const seed = listingRepublishSeed(detail);
-    if (seed.isOrgEvent) setWantsOrgEvent(true);
+    // An event republishes as what it was: an organization's, or the member's own.
+    if (seed.isOrgEvent && seed.orgId) setWantsOrgEvent(true);
+    else if (seed.isOrgEvent) setWantsPersonalEvent(true);
     if (seed.orgId) setOrgId(seed.orgId);
-    setCarriedMediaPaths(seed.mediaPaths);
+    setCarriedMedia(seed.media);
     pendingSeed.current = seed;
     setSeedVersion((v) => v + 1);
-  }, [sourceId, editListingId, sourceQuery.data, setCity, setChosenKindSlug, setDetails, setError, setWantsOrgEvent, setOrgId]);
+  }, [sourceId, editListingId, sourceQuery.data, setCity, setChosenKindSlug, setDetails, setError, setWantsOrgEvent, setWantsPersonalEvent, setOrgId]);
 
   return {
     /** The source is still loading; the form shows a spinner and cannot publish yet. */
     loading: Boolean(sourceId) && sourceQuery.isLoading,
-    carriedMediaPaths,
-    removeCarriedMedia: (path: string) => setCarriedMediaPaths((prev) => prev.filter((p) => p !== path)),
+    carriedMedia,
+    removeCarriedMedia: (path: string) => setCarriedMedia((prev) => prev.filter((m) => m.path !== path)),
   };
 }

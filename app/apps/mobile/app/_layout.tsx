@@ -1,14 +1,16 @@
 import '../src/lib/polyfills';
-import { startMark, finishMark } from '../src/lib/observability/perfMarks';
+import { startMark, flushPendingMarks } from '../src/lib/observability/perfMarks';
 startMark('app.cold_start');
 import { initSentry } from '../src/lib/observability/sentry';
 import { initPosthog } from '../src/lib/observability/posthog';
 import { installGlobalErrorHandlers } from '../src/lib/observability/globalErrorHandlers';
 import { useUncaughtErrorStore } from '../src/store/uncaughtErrorStore';
 // KC#1410: the global handlers wrap Sentry's, so they install once init settled.
-void initSentry().then(() =>
-  installGlobalErrorHandlers((error) => useUncaughtErrorStore.getState().show(error)),
-);
+void initSentry().then(() => {
+  installGlobalErrorHandlers((error) => useUncaughtErrorStore.getState().show(error));
+  // Marks that finished while the SDK was still loading (cold start, first feed render).
+  flushPendingMarks();
+});
 void initPosthog();
 import i18n from '../src/i18n';
 import React, { useEffect } from 'react';
@@ -40,22 +42,23 @@ import { SoftGateProvider } from '../src/components/OnboardingSoftGate';
 import { AuthGate } from '../src/components/AuthGate';
 import { useDetailStackScreenOptions } from '../src/navigation/detailStackScreenOptions';
 import { rootStackGestureEnabled, rootStackScreenAnimation } from '../src/navigation/rootStackAnimation';
-import { ConfigErrorScreen } from '../src/components/ConfigErrorScreen';
+import { ConfigGate } from '../src/components/ConfigGate';
 import { isSupabaseConfigured } from '../src/lib/supabasePublicConfig';
 import { DevBanner } from '../src/components/DevBanner';
 import { SuspensionBanner } from '../src/components/SuspensionBanner';
+import { GlobalOfflineBanner } from '../src/components/common/GlobalOfflineBanner';
 import { LegalConsentGate } from '../src/components/legal/LegalConsentGate';
 import { ModalStackProvider } from '../src/components/legal/useActiveModalStack';
-import { useMeRealtime } from '../src/hooks/useMeRealtime';
 import { useBrandFonts } from '../src/lib/useBrandFonts';
 import { useOnlinePresenceLifecycle } from '../src/hooks/useOnlinePresence';
+import { useMeRealtime } from '../src/hooks/useMeRealtime';
 import { useCoreLoopReturnVisit } from '../src/hooks/useCoreLoopReturnVisit';
 import { useRecordActiveDay } from '../src/hooks/useRecordActiveDay';
 import * as NavigationBar from 'expo-navigation-bar';
 
-function MeRealtimeMount() {
-  useMeRealtime();
+function SignedInLifecycleMount() {
   useOnlinePresenceLifecycle();
+  useMeRealtime();
   useCoreLoopReturnVisit();
   useRecordActiveDay();
   return null;
@@ -68,7 +71,6 @@ void SplashScreen.preventAutoHideAsync();
 // the active palette (web html bg, surface backgrounds in screen headers,
 // StatusBar style) read fresh values when the user toggles dark mode.
 function ThemedRootShell() {
-  React.useEffect(() => { finishMark('app.cold_start'); }, []);
   const { colors, isDark } = useTheme();
   const detailStackScreenOptions = useDetailStackScreenOptions();
 
@@ -98,6 +100,7 @@ function ThemedRootShell() {
       <StatusBar style={isDark ? 'light' : 'dark'} />
       <DevBanner />
       <SuspensionBanner />
+      <GlobalOfflineBanner />
       <NotificationsBridge />
       <AuthGate>
         <ModalStackProvider>
@@ -206,7 +209,7 @@ function RootLayoutContent() {
       <SafeAreaProvider>
         <ErrorBoundary>
           <PersistQueryClientProvider client={queryClient} persistOptions={persistOptions}>
-            <MeRealtimeMount />
+            <SignedInLifecycleMount />
             <RevenueCatSync />
             <AppThemeProvider>
               {/* KC#1410: a fatal uncaught JS error shows the themed fallback;
@@ -228,15 +231,9 @@ export default function RootLayout() {
   if (brandFontStatus === 'loading') return null;
   return (
     <BrandFontProvider available={brandFontStatus === 'loaded'}>
-      {isSupabaseConfigured() ? (
+      <ConfigGate configured={isSupabaseConfigured()}>
         <RootLayoutContent />
-      ) : (
-        <GestureHandlerRootView style={{ flex: 1 }}>
-          <SafeAreaProvider>
-            <ConfigErrorScreen />
-          </SafeAreaProvider>
-        </GestureHandlerRootView>
-      )}
+      </ConfigGate>
     </BrandFontProvider>
   );
 }

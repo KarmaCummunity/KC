@@ -60,6 +60,12 @@ const TEXT_PREFIX: Readonly<Partial<Record<GivingWorldSlug, readonly [string, st
   money: ['donations.money.title', 'donations.money.subtitle'],
 };
 
+/** The screen of a giving world: its own route, or the generic category screen. */
+export function givingWorldHref(worldSlug: string): Extract<Href, string> {
+  const own = (OWN_ROUTE as Readonly<Record<string, string | undefined>>)[worldSlug];
+  return (own ?? `/(tabs)/donations/category/${worldSlug}`) as Extract<Href, string>;
+}
+
 function tileFor(world: GivingWorldSlug): DonationHubTile {
   // The rides world keeps its legacy `transport` hub key (launch flag + test ids).
   const key = world === 'rides' ? 'transport' : world;
@@ -72,7 +78,7 @@ function tileFor(world: GivingWorldSlug): DonationHubTile {
     icon: TILE_META[world].icon,
     titleKey,
     subtitleKey,
-    href: (OWN_ROUTE[world] ?? `/(tabs)/donations/category/${world}`) as DonationHubTile['href'],
+    href: givingWorldHref(world),
     testID: TILE_META[world].testID,
   };
 }

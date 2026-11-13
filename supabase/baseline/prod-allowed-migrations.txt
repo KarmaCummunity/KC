@@ -1,0 +1,60 @@
+# Approved production migration filenames for KC_PROD_SCHEMA_MODE=baseline (D-228).
+# One basename from supabase/migrations/ per line.
+# Blank lines and # comments are ignored.
+#
+# kc-prod is built from the single baseline (supabase/migrations/0001_baseline.sql,
+# generated from supabase/schemas/). Later forward-only migrations are added here by the
+# release owner as part of the release that ships them. Legacy migrations live in
+# supabase/migrations/archive/ and must never be listed.
+#
+# Listing a file does NOT open production: a PROD push stays blocked until the
+# supabase-prod variable KC_PROD_SCHEMA_MODE is set to "baseline" (D-228).
+0001_baseline.sql
+0002_org_entitlements.sql
+0003_post_seat_counts.sql
+0004_ride_series_schedule.sql
+0005_match_quality.sql
+0006_profile_posts_mine_tab.sql
+0007_chat_inbox_previews.sql
+0008_post_media_sizes.sql
+0009_research_feedback_survey_reports.sql
+0010_housing_knowledge_finance_reads.sql
+0011_admin_role_authority.sql
+0012_admin_team_roster.sql
+0013_admin_census_and_bootstrap.sql
+0014_org_slug_and_void_reason.sql
+0015_blocked_users_and_support_inbox.sql
+0016_report_case_tools.sql
+0017_report_sla_alert.sql
+0018_world_flow_stats.sql
+0019_kc_support_channels.sql
+0020_org_sec46_machine.sql
+0021_post_series.sql
+0022_post_series_rpcs.sql
+0023_series_feed_folding.sql
+0024_world_content.sql
+0026_member_realtime.sql
+0027_rich_notifications.sql
+0028_chat_fresh_thread.sql
+0029_post_public_street.sql
+0030_public_org_pages_anon.sql
+0031_member_discovery.sql
+0032_member_verification_level.sql
+0033_housing_private_details.sql
+0034_back_office_admin_tasks.sql
+0035_back_office_crm.sql
+0036_back_office_timesheets.sql
+0050_community_stats_for_guests.sql
+0051_knowledge_topic_embedding_job_machines.sql
+0052_post_status_events.sql
+0053_whatsapp_channel_schema.sql
+0054_whatsapp_webhook_and_queue.sql
+0055_whatsapp_linking_and_bot_tools.sql
+0056_whatsapp_admin_console.sql
+0057_whatsapp_match_alerts_and_jobs.sql
+0058_post_share_card.sql
+0059_whatsapp_bot_post_photos.sql
+0060_whatsapp_alert_quiet_hours_and_session_retention.sql
+0061_post_card_extras.sql
+0062_animals_handoff_karma.sql
+0063_worlds_main_feed_and_launch.sql

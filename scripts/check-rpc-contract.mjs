@@ -34,17 +34,51 @@ export function collectSymbols(rootDir, regex) {
   return symbols;
 }
 
+/**
+ * The `.sql` files under `dir`; with `recursive`, those of its subdirectories too (the
+ * baseline sources are nested by module).
+ */
+function listSqlFiles(dir, { recursive = false } = {}, out = []) {
+  if (!existsSync(dir)) return out;
+  for (const entry of readdirSync(dir)) {
+    const full = join(dir, entry);
+    if (statSync(full).isDirectory()) {
+      if (recursive) listSqlFiles(full, { recursive }, out);
+    } else if (entry.endsWith('.sql')) out.push(full);
+  }
+  return out;
+}
+
+// What the database declares: the migrations applied in order (`0001_baseline.sql` and the
+// forward-only files after it; `archive/` is the retired chain and never counts), the
+// baseline schema sources (`supabase/schemas`) and the generated types.
 function loadCorpus(repoRoot) {
-  const migrationsDir = join(repoRoot, 'supabase/migrations');
-  const migrationSql = existsSync(migrationsDir)
-    ? readdirSync(migrationsDir)
-        .filter((f) => f.endsWith('.sql'))
-        .map((f) => readFileSync(join(migrationsDir, f), 'utf8'))
-        .join('\n')
-    : '';
+  const sqlFiles = [
+    ...listSqlFiles(join(repoRoot, 'supabase/migrations')),
+    ...listSqlFiles(join(repoRoot, 'supabase/schemas'), { recursive: true }),
+  ];
+  const sql = sqlFiles.map((file) => readFileSync(file, 'utf8')).join('\n');
   const typesFile = join(repoRoot, 'app/packages/infrastructure-supabase/src/database.types.ts');
   const types = existsSync(typesFile) ? readFileSync(typesFile, 'utf8') : '';
-  return (migrationSql + '\n' + types).toLowerCase();
+  return (sql + '\n' + types).toLowerCase();
+}
+
+/**
+ * Objects the adapters still address although the baseline has no (or a differently shaped)
+ * equivalent, and which the migration map files under launch tier `later`: they sit behind
+ * flags that stay off at launch. Anything of a launch tier (core, wedge) must exist.
+ * @returns {{ rpcs: Set<string>, tables: Set<string> }}
+ */
+export function deferredObjects(repoRoot) {
+  const file = join(repoRoot, 'docs/db/app-migration-map.json');
+  const out = { rpcs: new Set(), tables: new Set() };
+  if (!existsSync(file)) return out;
+  for (const row of JSON.parse(readFileSync(file, 'utf8')).rows ?? []) {
+    if (row.launch !== 'later' || ['same', 'renamed'].includes(row.status)) continue;
+    if (row.kind === 'rpc') out.rpcs.add(row.old);
+    if (row.kind === 'table') out.tables.add(row.old);
+  }
+  return out;
 }
 
 export function checkRpcContract({ repoRoot = DEFAULT_REPO_ROOT } = {}) {
@@ -54,7 +88,9 @@ export function checkRpcContract({ repoRoot = DEFAULT_REPO_ROOT } = {}) {
     : { rpcs: [], tables: [] };
   const infraDir = join(repoRoot, 'app/packages/infrastructure-supabase/src');
   const corpus = loadCorpus(repoRoot);
+  const deferred = deferredObjects(repoRoot);
   const errors = [];
+  const tolerated = [];
 
   for (const rpc of collectSymbols(infraDir, RPC_RE)) {
     if (allowlist.rpcs.includes(rpc)) continue;
@@ -66,7 +102,11 @@ export function checkRpcContract({ repoRoot = DEFAULT_REPO_ROOT } = {}) {
       `"${needle}":`,
     ];
     if (!patterns.some((p) => corpus.includes(p))) {
-      errors.push(`RPC '${rpc}' used in infrastructure-supabase but not found in migrations or database.types.ts`);
+      if (deferred.rpcs.has(rpc)) {
+        tolerated.push(`rpc ${rpc}`);
+        continue;
+      }
+      errors.push(`RPC '${rpc}' used in infrastructure-supabase but not found in migrations, supabase/schemas or database.types.ts`);
     }
   }
 
@@ -83,11 +123,15 @@ export function checkRpcContract({ repoRoot = DEFAULT_REPO_ROOT } = {}) {
       `create view ${needle}`,
     ];
     if (!patterns.some((p) => corpus.includes(p))) {
-      errors.push(`Table '${table}' used in infrastructure-supabase but not found in migrations or database.types.ts`);
+      if (deferred.tables.has(table)) {
+        tolerated.push(`table ${table}`);
+        continue;
+      }
+      errors.push(`Table '${table}' used in infrastructure-supabase but not found in migrations, supabase/schemas or database.types.ts`);
     }
   }
 
-  return { ok: errors.length === 0, errors };
+  return { ok: errors.length === 0, errors, tolerated };
 }
 
 function main() {
@@ -97,7 +141,10 @@ function main() {
     for (const err of result.errors) console.error(`  • ${err}`);
     process.exit(1);
   }
-  console.log('✓ RPC contract check passed.');
+  const note = result.tolerated.length
+    ? ` (${result.tolerated.length} object(s) of launch tier "later" are not in the baseline yet: docs/db/app-migration-map.md)`
+    : '';
+  console.log(`✓ RPC contract check passed${note}.`);
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

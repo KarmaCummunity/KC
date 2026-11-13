@@ -78,3 +78,16 @@ List open issues (public read API):
 Priority: **Security** → **Reliability (BUG)** → **BLOCKER/CRITICAL** on new code → maintainability (large backlog).
 
 Paste Sonar issue list or: “continue fixing Sonar RELIABILITY on PR branch”.
+
+
+## 5. New-code period on `main` (`previous_version`)
+
+SonarCloud's default new-code definition for this project is `previous_version`. CI must pass `-Dsonar.projectVersion=<app/VERSION>` (see `ci-sonar.yml`); otherwise every analysis is recorded as version "not provided" and the leak period never advances.
+
+On 10 Nov 2026 the `branch=main` quality gate failed after the #1600 squash ([push CI 42826047301](https://github.com/KarmaCummunity/KC/actions/runs/42826047301)) with:
+
+- `new_reliability_rating` **4** vs threshold **1** (two `typescript:S2871` bugs in `app/packages/application/src/contracts/chatRepository.contract.ts:49`, open since 3 Nov)
+- `new_coverage` 92.4% (threshold 80%) — **OK**
+- `new_duplicated_lines_density` 0.5% (threshold 3%) — **OK**
+
+The leak period date was **2026-05-25**, not the previous squash. That is the config bug. Quality-gate thresholds were not changed. The S2871 findings are real and are fixed in code; they are not waived.

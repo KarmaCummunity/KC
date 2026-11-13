@@ -22,9 +22,9 @@ describe('createTranslationRequest', () => {
     expect(req.sourceLanguage).toBeNull();
   });
 
-  it('rejects an unknown content type', () => {
+  it('rejects an unknown content type (ride_listing is retired: rides are posts)', () => {
     expect(() => createTranslationRequest({
-      contentType: 'comment' as never, contentId: '11111111-1111-1111-1111-111111111111',
+      contentType: 'ride_listing' as never, contentId: '11111111-1111-1111-1111-111111111111',
       field: 'body', sourceLanguage: null, targetLanguage: 'en',
     })).toThrow(ValidationError);
   });
@@ -57,13 +57,13 @@ describe('createTranslationRequest', () => {
     })).toThrow(ValidationError);
   });
 
-  it('accepts valid ride_listing and user content types with appropriate fields', () => {
-    const rideReq = createTranslationRequest({
-      contentType: 'ride_listing', contentId: '11111111-1111-1111-1111-111111111111',
-      field: 'description', sourceLanguage: null, targetLanguage: 'en',
+  it('accepts comment and user content types with their fields', () => {
+    const commentReq = createTranslationRequest({
+      contentType: 'comment', contentId: '11111111-1111-1111-1111-111111111111',
+      field: 'body', sourceLanguage: null, targetLanguage: 'en',
     });
-    expect(rideReq.contentType).toBe('ride_listing');
-    expect(rideReq.field).toBe('description');
+    expect(commentReq.contentType).toBe('comment');
+    expect(commentReq.field).toBe('body');
 
     const userReq = createTranslationRequest({
       contentType: 'user', contentId: '11111111-1111-1111-1111-111111111111',
@@ -71,5 +71,12 @@ describe('createTranslationRequest', () => {
     });
     expect(userReq.contentType).toBe('user');
     expect(userReq.field).toBe('biography');
+  });
+
+  it('rejects a comment field other than body', () => {
+    expect(() => createTranslationRequest({
+      contentType: 'comment', contentId: '11111111-1111-1111-1111-111111111111',
+      field: 'title', sourceLanguage: null, targetLanguage: 'en',
+    })).toThrow(ValidationError);
   });
 });

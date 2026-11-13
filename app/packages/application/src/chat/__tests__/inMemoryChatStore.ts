@@ -16,6 +16,8 @@ export interface InMemoryChatRow {
   chat: Chat;
   /** `inbox_hidden_at_a` / `_b`, keyed by participant id; absent = visible. */
   readonly hiddenAt: Map<string, string>;
+  /** `chat_members.history_from`: a participant sees only messages after it (set by a hide, 0028). */
+  readonly historyFrom: Map<string, string>;
 }
 
 export class InMemoryChatStore {
@@ -43,19 +45,17 @@ export class InMemoryChatStore {
   }
 
   /** Inserts a `chats` row for the ordered pair; `last_message_at` defaults to the creation time. */
-  insertChat(participantA: string, participantB: string, anchor?: { postId?: string; rideId?: string }): Chat {
+  insertChat(participantA: string, participantB: string, anchor?: { postId?: string }): Chat {
     const createdAt = this.now();
     const chat: Chat = {
       chatId: crypto.randomUUID(),
       participantIds: [participantA, participantB],
       anchorPostId: anchor?.postId ?? null,
-      anchorRideId: anchor?.rideId ?? null,
-      anchorListingId: null,
       isSupportThread: false,
       lastMessageAt: createdAt,
       createdAt,
     };
-    this.chats.set(chat.chatId, { chat, hiddenAt: new Map() });
+    this.chats.set(chat.chatId, { chat, hiddenAt: new Map(), historyFrom: new Map() });
     return chat;
   }
 
@@ -68,15 +68,16 @@ export class InMemoryChatStore {
     return this.isParticipant(row, userId) && !row.hiddenAt.has(userId);
   }
 
-  /** Messages of one chat, newest first. */
-  messagesOf(chatId: string): Message[] {
+  /** Messages of one chat the viewer may read (after their history start), newest first. */
+  messagesOf(chatId: string, viewerId: string): Message[] {
+    const from = this.chats.get(chatId)?.historyFrom.get(viewerId) ?? '';
     return this.messages
-      .filter((m) => m.chatId === chatId)
+      .filter((m) => m.chatId === chatId && m.createdAt > from)
       .sort((x, y) => y.createdAt.localeCompare(x.createdAt));
   }
 
   /** A participant's unread messages in one chat: the counterpart's, not yet read (FR-CHAT-012). */
   unreadIn(chatId: string, viewerId: string): number {
-    return this.messages.filter((m) => m.chatId === chatId && m.senderId !== viewerId && m.status !== 'read').length;
+    return this.messagesOf(chatId, viewerId).filter((m) => m.senderId !== viewerId && m.status !== 'read').length;
   }
 }

@@ -1,5 +1,5 @@
 // KC#1122 / FR-ADMIN-029 — match quality per world: alerted pairs, precision proxy,
-// notification→chat and completion rates over a selectable window (admin_match_quality, 0454).
+// notification→chat and completion rates over a selectable window (admin_match_quality).
 import { useState } from 'react';
 import { RefreshControl, ScrollView, View } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
@@ -9,6 +9,7 @@ import type { MatchQualityByWorld } from '@kc/infrastructure-supabase';
 import { makeUseStyles, radius, spacing, typography, Text } from '@kc/ui';
 import { useAdminRoles } from '../../../src/hooks/useAdminRoles';
 import { getMatchRepository } from '../../../src/services/matchingComposition';
+import { listOrEmpty } from '../../../src/lib/backendAvailability';
 import { AdminFilterTopBarButton } from '../../../src/components/admin/AdminSearchFilterToolbar';
 import { FilterSection } from '../../../src/components/filterKit/FilterSection';
 import { AdminListEmpty } from '../../../src/components/admin/AdminListEmpty';
@@ -36,7 +37,8 @@ export default function MatchQualityScreen() {
 
   const quality = useQuery({
     queryKey: ['admin.matching.quality', days],
-    queryFn: () => getMatchRepository().qualityByWorld(days),
+    // admin_match_quality (migration 0005); an unavailable backend shows the empty state.
+    queryFn: () => listOrEmpty(() => getMatchRepository().qualityByWorld(days)),
     enabled,
     staleTime: 60_000,
   });

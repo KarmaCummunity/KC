@@ -69,3 +69,11 @@ test('reports an RPC that does not exist in the database', () => {
   assert.equal(errors.length, 1);
   assert.match(errors[0], /no function public\.dropped_rpc exists/);
 });
+
+test('a missing function of a deferred (launch tier later) group is tolerated, a granted-but-missing one is not', () => {
+  const deferred = new Set(['timesheet_list']);
+  assert.deepEqual(findUngrantedRpcs(['timesheet_list'], new Map(), deferred), []);
+  assert.equal(findUngrantedRpcs(['other_missing'], new Map(), deferred).length, 1);
+  // an existing function that no client role may execute is an error even when its group is deferred
+  assert.equal(findUngrantedRpcs(['timesheet_list'], new Map([['timesheet_list', false]]), deferred).length, 1);
+});

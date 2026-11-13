@@ -10,9 +10,10 @@
 | Notification badge | `user:<user_id>:notifications` | `badge` (via `realtime.send`) | `notification_inbox` read/unread |
 | Chat messages | `chat:<chat_id>:messages` | `INSERT` / `UPDATE` / `reaction` | `messages`, `message_reactions` |
 | Chat typing | `chat:<chat_id>:typing` | `typing` (client broadcast; send auth `0415`) | — |
-| Chat presence | `chat:<chat_id>:presence` | Presence track (client; track auth `0415`; requires show-active-status `0419`) | — |
-| Online presence | `presence:online` | Presence track, key = user id (active members with show-active-status ON; `0415`, `0419`) | — |
-| Feed new posts | `feed:public` | `new_post` `{post_id, owner_id}` (via `realtime.send`, `0416`) | `posts` INSERT (Public + open) |
+| Chat presence | `chat:<chat_id>:presence` | Presence track (client; track requires show-active-status, baseline migration `0026_member_realtime`) | — |
+| Online presence | `presence:online` | Presence track, key = user id (active members with show-active-status ON, both directions; `0026_member_realtime`) | — |
+| Feed new posts | `feed:public` | `new_post` `{post_id, owner_id}` (via `kc_private.broadcast`, `0026_member_realtime`) | `posts` becomes open + Public (insert, publish, audience widened) |
+| Own counters | `user:<user_id>:stats` | `stats_changed` `{karma_points, followers_count, following_count, items_given_count, items_received_count, posts_created_total, open_posts_count}` (`0026_member_realtime`; owner-only topic) | `user_stats` counter change (FR-KARMA-009) |
 
 **Client lifecycle:** private topics are exact (policies match on them), so the client
 uses `openExactTopicChannel` (infrastructure-supabase `realtime/`): it removes any stale
@@ -21,8 +22,8 @@ before the channel opens. Online presence is one shared app-level channel
 (`SupabaseOnlinePresence`, started while signed in + foregrounded); UI rows read the
 shared set and never open their own channels.
 
-**Show my active status (0419):** `users.show_active_status` (default ON, owner-only via
-`rpc_get_show_active_status` / `rpc_set_show_active_status`). Reciprocal: when OFF the user
+**Show my active status:** `user_private.show_active_status` (default ON, owner-only row;
+policy helper `kc_access.shows_active_status`, migration `0026_member_realtime`). Reciprocal: when OFF the user
 can neither track nor receive presence on `presence:online` / `chat:<id>:presence` (Realtime
 Authorization); the client also leaves the channel. Authorization is checked at join, so
 toggling requires leave + rejoin (handled by `useOnlinePresenceLifecycle`).

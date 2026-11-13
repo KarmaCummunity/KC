@@ -70,6 +70,7 @@ The set of required fields depends on `Post.type`.
 - AC2. For `type = Request`: only `title` (≤80 chars) is required.
 - AC3. For both types: `address` (city + street + number) is required (`R-MVP-Items-13`).
 - AC4. The "Publish" control stays tappable while required fields are incomplete. Tapping it reveals validation: **address** gaps (city / street / house number) show a persistent red inline message under the address block (including feed-projection copy when street or number is missing); **other** gaps (title, Give photo) show a short Hebrew toast. Inline address errors appear only after the first Publish attempt and stay until the address validates. When all required fields validate, publish proceeds as usual. A second "Publish" control appears at the bottom of the create form for users who scroll past the header action.
+- AC5. *(D132, KC#2020)* The server enforces the photo rule for offers in items, food, housing and animals, whichever app sends them: publishing such an offer with no photo is refused (`offer_photo_required`, shown with the same copy as the form's check), and its last photo can't be removed; deleting the whole post still removes its photos. Requests, rides and other worlds stay photo-optional. Offers published before the rule stay readable and editable.
 
 **Related.** Screens: 2.4 · Domain: `Post`, `Address`.
 
@@ -90,6 +91,7 @@ Shared optional fields and their defaults.
    - `CityOnly` 🏙️
    - `CityAndStreet` 🗺️ *(default)*
    - `FullAddress` 📍
+   Other members see the address as the poster chose (D154): the street with `CityAndStreet` (the default of a new post), the street and number with `FullAddress`, the city alone with `CityOnly`. The server derives what is shown onto the post (`posts.shown_street`, `shown_street_number`, migration `0029`), so the post's own visibility decides who reads it; the exact point and arrival notes stay owner-only.
 - AC4. `visibility` is one of:
    - `Public` 🌍 *(default)*
    - `FollowersOnly` 👥 *(disabled when `User.privacy_mode = Public`)*
@@ -178,7 +180,7 @@ The form persists its state to local storage to survive accidental closure.
 ## FR-POST-008 — Edit an existing post
 
 **Description.**
-The post owner **or** the Super Admin (`users.is_super_admin = true`) can re-open the form to edit fields of an `open` post. The Super Admin uses the same screen and update path; `posts.owner_id` stays immutable on the server.
+The post owner **or** the Super Admin (`users.is_super_admin = true`) can re-open the form to edit fields of an `open` or a `paused` post (`docs/spec/07_cross_cutting_systems.md` §7.1; one list for every entry point, `isPostEditableByOwner` in `@kc/domain`, the same statuses as the server's row policy). The Super Admin uses the same screen and update path; `posts.owner_id` stays immutable on the server.
 
 **Source.**
 - PRD: `03_Core_Features.md` §3.3.5, `04_User_Flows.md` Flow 10.
@@ -421,6 +423,7 @@ Address fields are validated for shape only, not against a geocoder.
    - `CityOnly` → "Tel Aviv"
    - `CityAndStreet` → "Tel Aviv · Hayarkon"
    - `FullAddress` → "Tel Aviv · Hayarkon 12A"
+   The same string is shown to every member who can see the post, not only to its owner (D154); a post without a stored street shows the city alone. ✅ (migration `0029`, `postLocationText`).
 
 **Related.** Domain: `Address`, `LocationDisplayLevel`.
 
@@ -466,6 +469,7 @@ The column `identity_visibility` remains in `public.post_actor_identity` for pro
 - AC5. When projection marks an identity as anonymous, post-detail must not offer a one-tap profile deep-link from that row (`ownerProfileNavigableFromPost` / `recipientProfileNavigableFromPost = false`).
 - AC6. Chat headers and profile shells remain real-user surfaces; masking applies to **post chrome** only (`D-26`).
 - AC7. **Create-time preference.** The new-post screen lets the publisher set `hide_from_counterparty` before publish. When enabled, the client upserts the owner's `post_actor_identity` row at publish time with `surface_visibility = posts.visibility` (at publish), `identity_visibility = Public`, and `hide_from_counterparty = true` (semantics per **`D-31`** — third parties on the counterparty's closed-post profile surface, not hiding from the counterparty in chat). When disabled, no row is written at create unless the user later changes closed-post surface settings from the post-detail **⋮** menu.
+- AC8. **Delivered listing (D-229, migration `0740`).** The recipient is the user on the `handed_over` `post_handoffs` row (not the `recipients` row, which food and animals did not write before `0740`). The recipient always sees the delivered post and its listing screen and can rate it, even if the owner chose `OnlyMe`, and still sees it after rating; an admin or moderator sees every delivered listing. A participant with a `Private` profile counts as `FollowersOnly` for the third-party union in AC3; the recipient's default surface is `Public`, so a guest can open a share link to a delivered `Public` listing. The listing screens delegate delivered posts to `is_post_visible_to` so the post and listing screens never diverge. Items, food and animals hand-overs record the `recipients` row (single recipient per post); knowledge, rides, housing and events keep the handoffs as the record. Deleted accounts: visibility follows the remaining party; retention of the delivered post after account purge is #2088.
 
 **Migrations.** `0083_post_actor_identity.sql`, `0085_post_actor_identity_audience_split.sql`, `0092_post_actor_identity_public_chrome.sql`, `0106_recipients_select_visible_viewers.sql`, `0107_profile_closed_posts_surface_visibility.sql`.
 
@@ -495,9 +499,9 @@ A signed-in user may bookmark any post they can currently read (their own or ano
 
 ## FR-POST-023 — Share post via link with image preview
 
-> **Status:** 🟡 In progress — ships under BACKLOG P2.33. Replaces the v0.9–v0.12 architecture (Supabase Edge Function) with a Hono web server on the same Railway service that serves the SPA — one canonical URL on `karma-community-kc.com`.
+> **Status:** 🟡 In progress — one canonical URL on `karma-community-kc.com`. The text and the preview card follow the kind of post (AC2, AC4, AC10), a phone without the app is sent to its store (AC9), and a profile can be shared too (AC11).
 >
-> **Hosting note (2026-10-31, historical context for AC4–AC5):** Railway is retired; the web app now ships as a static export on Cloudflare Pages (`deploy-web.yml`), which does not run the Hono server in `app/apps/mobile/web-server/`. AC4's crawler OG card is therefore not served until the route is ported (`TD-234`); AC5 holds through the Pages SPA fallback.
+> **Hosting note (2026-11-11):** Railway is retired. AC4, AC5 and AC9 are served by Cloudflare Pages Functions (`app/apps/mobile/functions/`, logic in `app/apps/mobile/web-edge/`), deployed with the static export by `deploy-web.yml`; the Hono server that used to serve them is removed (`TD-234`, decision `D-235`).
 
 **Description.**
 A signed-in viewer of a `Public` post that is `open` or `closed_delivered` may share a link to that post from the post-detail screen. The link is browsable to anyone (signed-in or not); social-media crawlers see an Open Graph card with the first post image, the post title, and the description; non-authenticated humans landing in the app are routed to the sign-in screen and, after sign-in, deep-linked back to the original post.
@@ -507,24 +511,27 @@ A signed-in viewer of a `Public` post that is `open` or `closed_delivered` may s
 
 **Acceptance Criteria.**
 - AC1. When `post.status` is `open` or `closed_delivered` and either (a) `post.visibility === 'Public'` for any viewer, or (b) the viewer is a **participant** on a `closed_delivered` post (post owner **or** marked recipient — including after Hide / `surface_visibility` / counterparty privacy), a share affordance is available. Image presence is not required. **Surfaces:** (i) post-detail header — **in the trailing corner** (rightmost in RTL), with the existing ⋮ menu placed to its left; (ii) the post ⋮ menu on feed cards and profile post grids (same visibility gate, first row in the sheet).
-- AC2. Tapping the affordance opens the platform share sheet. The accompanying message body is composed per-post by `buildPostShareMessage` as a structured, scannable block of labeled lines (WhatsApp-style bold via `*…*`). All literal strings resolve through the active i18next locale (MVP: Hebrew only; keys live under `post.detail.share*` and reuse `post.detail.statusOpen` / `statusClosed`). Headline and CTA vary by **post type** (`Give` / `Request`) and **lifecycle** (`open` vs `closed_delivered`):
-   1. `shareHeadlineGiveOpen` / `shareHeadlineGiveClosed` / `shareHeadlineRequestOpen` / `shareHeadlineRequestClosed` + blank line.
+- AC2. Tapping the affordance opens the platform share sheet. The accompanying message body is composed per-post by `buildPostShareMessage` as a structured, scannable block of labeled lines (WhatsApp-style bold via `*…*`). All literal strings resolve through the active i18next locale (MVP: Hebrew only; keys live under `post.detail.share*` and reuse `post.detail.statusOpen` / `statusClosed`). The wording follows the **kind** of the post: its **world** (`items`, `food`, `rides`, `time`, `housing`, `animals`, `knowledge`, a challenge, and a generic wording for every other world), its **direction** (`Give` is an offer, `Request` a request) and its **lifecycle** (`open` vs `closed_delivered`). A ride is never announced with the item wording. The keys live under `share.post.*` (headline per world × direction × lifecycle, CTA per world × direction, one CTA for every closed post, labels) in Hebrew and English. The fields differ per world: the item category is shown for the items world only, a ride shows its title as `*מסלול:*` (route) and no location, every other world shows the location.
+   1. `share.post.headline.<world>.<offer|request>.<open|closed>` + blank line.
    2. `*מפרסם:* <ownerDisplay>` — resolved via the same rules as post-detail owner chrome (`postOwnerDisplayLabel`): full name when identity is visible, `אנונימי` when masked.
    3. `*שותף/ה:* <counterpartyDisplay>` — only when `status = closed_delivered` and a marked recipient exists; resolved via `postRecipientDisplayLabel` (mirrors `RecipientCallout`). Omitted for open posts.
-   4. `*כותרת:* <title>`.
+   4. `*כותרת:* <title>` (`*מסלול:*` for a ride).
    5. `*תיאור:* <description>` — truncated to 200 chars with `…`; whole line omitted when null/empty.
-   6. `*קטגוריה:* <category>` — always included, even for `Other`.
-   7. `*מיקום:* <address>` — `city`, `city + street`, or `city + street + number` per `locationDisplayLevel`.
+   6. `*קטגוריה:* <category>` — items world only, always included there, even for `Other`.
+   7. `*מיקום:* <address>` — `city`, `city + street`, or `city + street + number` per `locationDisplayLevel`; omitted for rides.
    8. `*פורסם:* <relativeTime>` — `formatDistanceToNow` with the date-fns locale mapped from `i18n.language`.
    9. `*סטטוס:* <statusOpen|statusClosed>`.
-   10. Blank line, then `shareCtaGiveOpen` / `shareCtaGiveClosed` / `shareCtaRequestOpen` / `shareCtaRequestClosed`.
+   10. Blank line, then `share.post.cta.<world>.<offer|request>` (open) or `share.post.ctaClosed` (closed).
    The share URL appears in the message body **exactly once** on every platform. iOS attaches the first image binary via the `url` field (`expo-file-system` cache download); Android never passes `url` (RN concatenates it onto EXTRA_TEXT, which is what caused the duplicated link in WhatsApp in the reverted version). Web uses `navigator.share({ files })` when Web Share Level 2 supports files; else `navigator.share({ title, text, url })`; else `navigator.clipboard.writeText(url)` with a Hebrew toast.
 - AC3. The share URL is `https://karma-community-kc.com/post/<id>` — the same URL as the in-app deep link, the universal-link claim path, and the SPA route. There is **no** Supabase URL anywhere — neither as the user-visible URL, nor in a redirect chain, nor in WhatsApp's preview "via" line. Built from `EXPO_PUBLIC_WEB_BASE_URL` (defaults to `https://karma-community-kc.com` when unset).
-- AC4. The Railway web service runs a Hono server (replaces `serve dist --single`) that, on `GET /post/:id` with a crawler UA, returns 200 `text/html` with `og:title`, `og:description`, `og:image`, `og:url`, `og:locale=he_IL`, `twitter:card=summary_large_image`. Posts the anon REST read cannot see (RLS), not-found, invalid UUIDs, and REST timeouts return a generic OG card pointing at the marketing landing — never the post's image or title.
-- AC5. The same `GET /post/:id` from a human (UA not matching the BOT regex) returns the SPA `index.html`; Expo Router renders the post-detail screen.
+- AC4. On `GET /post/:id` with a link-preview crawler UA, the Pages Function returns 200 `text/html` with `og:title`, `og:description`, `og:image`, `og:url`, `og:locale=he_IL`, `twitter:card=summary_large_image`. The card is built per kind (AC10). The function reads the post through the database function `post_share_card` (migration `post_share_card`), the only signed-out door to a post: it returns a row only for a `Public`, `open` or `closed_delivered` post of an active member, with no owner, street or counterparty. Posts it returns no row for, not-found, invalid UUIDs, and REST timeouts return a generic OG card pointing at the marketing landing — never the post's image or title.
+- AC5. The same `GET /post/:id` from a human (UA not matching the crawler list) is passed to the static assets, so the SPA `index.html` is served and Expo Router renders the post-detail screen (unless AC9 redirects a phone to its store).
 - AC6. **Unauthenticated landing:** when an unauthenticated user follows `/post/<id>`, `AuthGate` captures the path before redirecting to `(auth)`, persists it in an in-memory store with a 10-minute TTL, and after sign-in / onboarding completion navigates to the captured path (`router.replace(pendingPath)`), then clears the intent. Refresh / app restart loses the intent, falling back to `(tabs)`.
-- AC7. The OG image is the public Supabase Storage URL for `mediaAssets[0].path`. When the post has no media (e.g. Request posts without images), the OG image is `${APP_BASE_URL}/pwa-icon-512.png` (the 512×512 community logo bundled with the web app).
+- AC7. The OG image and the image attached to the share sheet are the public Supabase Storage URL (bucket `post-images`) of the post's first processed image by gallery position. When the post has no media (e.g. Request posts without images), the OG image is `${APP_BASE_URL}/pwa-icon-512.png` (the 512×512 community logo bundled with the web app).
 - AC8. The share action does not mutate post state, does not require a network round-trip on the client (the Hono server is hit only when the recipient opens the link), and emits no `audit_event` (read-only intent).
+- AC9. **Smart link.** When the app is installed the OS opens it from the link (universal links on iOS, app links on Android: `apple-app-site-association` and `assetlinks.json`, `TD-66`) and the request never reaches the server. A request that does reach `/post/:id` or `/user/:handle` from an iOS or Android browser (not an in-app browser such as Instagram or Facebook) is redirected with 302 to the store page configured for that platform (`KC_IOS_STORE_URL`, `KC_ANDROID_STORE_URL`, https only); a platform without a configured URL, a desktop browser and every other client get the website. `?web=1` always gets the website. The answer depends on the User-Agent, so it carries `Vary: User-Agent` and the redirect is `no-store`.
+- AC10. **Preview by kind.** The card title leads with the kind of post and the post title (`🚗 טרמפ מוצע · …`, `🙋 מחפשים טרמפ · …`, one pair per world; `✅ · …` once closed), the description is the post description plus the city, or a per-world fallback when there is none. It uses only public columns, so the card says the same thing as the share text of AC2.
+- AC11. **Profile share.** The ⋮ menu of a profile (own and other) has "Share profile". The share text names the profile (the same masked-or-visible name the profile shows; an anonymous headline when it is masked) and the link is `https://karma-community-kc.com/user/<handle>`. The profile preview card is generic (brand title, description and logo) and carries no personal data, whatever the privacy mode.
 
 **Edge Cases.**
 - Post deleted between share and link-open: crawler gets generic card (Hono REST filter excludes the row); human gets SPA → "not found" UX.
@@ -535,12 +542,39 @@ A signed-in viewer of a `Public` post that is `open` or `closed_delivered` may s
 - User offline at share time: OS share sheet still opens. Recipient's connectivity governs link resolution.
 - Image download failure on iOS: fall back to URL-only share. OG preview on the recipient still renders the image.
 
-**Related.** Screens: 2.3 (post detail). Domain: `Post.visibility`, `Post.status`. Cross-refs: `FR-POST-014` (viewer detail), `FR-AUTH-014` (guest entry), `TD-66` (deep-link manifests). Server: `app/apps/mobile/web-server/server.mjs`. Decision: `D-38`.
+**Related.** Screens: 2.3 (post detail). Domain: `Post.visibility`, `Post.status`. Cross-refs: `FR-POST-014` (viewer detail), `FR-AUTH-014` (guest entry), `TD-66` (deep-link manifests). Edge: `app/apps/mobile/web-edge/`, `app/apps/mobile/functions/`. Decisions: `D-38` (superseded for hosting), `D-235`.
+
+## FR-POST-024 — Recurring time posts (a series of occurrences) 🟡
+> Issue #2086; PM decisions `D145`, `D146`, `D147` (2026-11-11). Rides keep their own series (FR-RIDE-046) and move onto this model later.
+
+**Description.**
+A member who volunteers on a fixed schedule (for example every Tuesday at 17:00, three places), or an organization that runs the same event every week, publishes it once as a **series** from the regular time form. The series publishes each upcoming date as an ordinary time post (an **occurrence**), and each occurrence takes its own registrations, waitlist and attendance, exactly like a single event (G18). The owner manages the whole series in one place.
+
+**Acceptance Criteria.**
+- AC1. The time form (an event, which a volunteering shift is too) has a "recurring" switch under the schedule: weekdays, a start time and duration, an optional end date. The series' time zone is the member's (Israel by default); the first date opens after publishing. Any member publishes their own event from the time form by picking "volunteering with sign-up" (`time-offer-kind-personal-event`); a member of an organization may instead pick the organization's event. ✅
+- AC2. A series publishes its dates for the coming 30 days and keeps that window filled; one date per series and day, never two, also when two runs overlap. ✅
+- AC3. Each date is an event post with its own registrations: capacity, waiting list and registration policy come from the series, and the organizer marks attendance per date; only marked attendance earns karma (D124). A person's series (regular volunteering) and an organization's follow the same rules; an organization's dates are published only while the owner may act for it. ✅
+- AC4. A local start time that does not exist on a clock-change day moves forward by the jump (02:30 → 03:30, as calendars do); a time that occurs twice takes the first. ✅
+- AC5. **Edit all**: the owner edits the series (schedule, and the title, description and capacity of its template); upcoming dates nobody registered for are replaced; a date that has registrations keeps its time and details. ✅ server; the app edits the schedule, ⏳ the template text
+- AC6. **Cancel one**: the owner cancels a single date, from the series or by deleting the date's post; its registrations are cancelled, each registrant gets a notification, and the day is not published again. ✅
+- AC7. **Pause / resume**: pausing stops publishing new dates and removes the upcoming dates nobody registered for; dates with registrations go ahead. Resuming publishes again. ✅
+- AC8. **End**: ending a series is final. Every upcoming date is cancelled, including those with registrations, and each registrant gets a notification. Past dates stay as they were. The scheduler also ends a series whose last day has passed. ✅
+- AC9. The series moves on the kernel: `active ⇄ paused → ended`; any other move is refused (`illegal_transition`). ✅
+- AC10. Not in the first version: editing a single date, and "this and the following".
+- AC11. **One card per series** (`D148`). In the main feed, a world feed and post search a series is one card: its soonest open date. The later dates are reachable from that card ("other dates"), the map and the publisher's profile. When the date in the feed ends, is paused or is cancelled, the next one steps in; a date moved to be the soonest takes the place; a date that leaves its series is an ordinary post again. The series keeps one place in the feed and takes a new one at most once in 7 days: the date that steps in inherits the place of the one before it, or is published anew when that place is a week old. The same rule holds for recurring rides (FR-RIDE-046 AC4). The rule is kept on write (triggers, with a nightly repair job), so reading a feed page costs nothing more. ✅
+- AC12. "My recurring events" is in the time world's menu (`world-hub-post-series`), next to "my shifts", and is linked from every date's post and from "my organizations". ✅
+- Server (`0021_post_series.sql`, `0022_post_series_rpcs.sql`): `post_series` (schedule + post and event templates, optional organization), `post_event_details.series_id / series_on` (one date per series and day), `kc_private.post_series_skipped_days` (cancelled days), machine `post_series`, `kc_private.series_local_instant`, `kc_private.post_series_materialize` (daily job, and on every series RPC), RPCs `create_post_series`, `update_post_series`, `set_post_series_status`, `cancel_post_series_date`. `0023_series_feed_folding.sql`: `posts.feed_folded`, `kc_private.series_refold` (one series), its triggers on `posts.status` and on the event and ride detail rows, the nightly `series_feed_refold` job, `feed_page` and the main feed index without folded dates. Tests: `supabase/tests/075_post_series.sql`, `supabase/tests/077_series_feed_folding.sql`.
+
+---
 
 ---
 
 | Version | Date | Summary |
 | ------- | ---- | ------- |
+| 0.22 | 2026-11-12 | `FR-POST-008` — a paused post is editable from every entry point; the owner's and the staff's post actions in the app are read from the post machine (#2204). |
+| 0.23 | 2026-11-11 | `FR-POST-023` AC2, AC4, AC5, AC7, AC9–AC11 (KC#2049, KC#1803) — share text and preview card by kind of post, the listing-mirror photo read from its own bucket, the crawler card and a store redirect for phones without the app served by a Cloudflare Pages Function (replaces the Hono server), profile share. |
+| 0.21 | 2026-11-11 | `FR-POST-024` AC1, AC11, AC12 — a member publishes their own recurring volunteering; a series is one card in the feeds; "my recurring events" moves to the time world's menu (#2086). |
+| 0.20 | 2026-11-11 | `FR-POST-024` — recurring time posts: a series publishes occurrences that each take registrations; edit all, cancel one, pause / resume, end (#2086). |
 | 0.19 | 2026-11-07 | `FR-POST-001` AC6 — a blocked publish scrolls to the field with the problem and outlines it in red, with the message under it, instead of one message above the bottom Publish button. |
 | 0.18 | 2026-11-04 | `FR-POST-001` AC6 (#1411) — the rides form gets "from my current location" (origin) and "leave now" (departure) switches; see `FR-RIDE-003` AC6–AC7. |
 | 0.17 | 2026-11-04 | `FR-POST-001` AC6 + AC8 (KC#1741) — the create category picker is one horizontally scrolling row of chips instead of a 4x3 grid; labels, helper text and inline links in every create sub-form align to the reading-start edge in Hebrew and English. |

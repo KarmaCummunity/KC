@@ -1,0 +1,11 @@
+template_name,language_code,category,body_preview,is_approved,params,registry_version,meta_status
+confirm_handoff_v1,en,utility,"Your match {{1}} confirmed the handoff for ""{{2}}"". Coordinate pickup or delivery in the app chat. Reply STOP to unsubscribe.",false,"[""partner_name"", ""listing_title""]",1,draft
+confirm_handoff_v1,he,utility,"ההתאמה שלך, {{1}}, אישרה את ההעברה של ""{{2}}"". אפשר לתאם איסוף או מסירה בצ'אט באפליקציה. להסרה מהודעות: השב/י ""הסר"".",false,"[""partner_name"", ""listing_title""]",1,draft
+intake_confirm_v1,he,utility,לאשר פרסום: {{title}}?,false,[],,deprecated
+match_found_v1,en,utility,We found a new match for you in {{1}} on Karma Community. Open the app to view and confirm it. Reply STOP to unsubscribe.,false,"[""world_label""]",1,draft
+match_found_v1,he,utility,"נמצאה התאמה חדשה עבורך בעולם {{1}} בקהילת קארמה. פתח/י את האפליקציה כדי לראות ולאשר. להסרה מהודעות: השב/י ""הסר"".",false,"[""world_label""]",1,draft
+opt_in_confirm_v1,en,utility,You're subscribed to Karma Community match alerts on WhatsApp. Reply STOP at any time to unsubscribe.,false,[],1,draft
+opt_in_confirm_v1,he,utility,"נרשמת להתראות התאמה מקהילת קארמה ב-WhatsApp. אפשר להסיר את עצמך בכל עת: השב/י ""הסר"".",false,[],1,draft
+opt_in_v1,he,utility,לאשר קבלת התראות התאמה ב-WhatsApp?,false,[],,deprecated
+reminder_v1,en,utility,"Reminder: ""{{1}}"" is still waiting for your reply on Karma Community. Reply STOP to stop reminders.",false,"[""listing_title""]",1,draft
+reminder_v1,he,utility,"תזכורת: ""{{1}}"" עדיין ממתין לתשובתך בקהילת קארמה. להסרה מתזכורות: השב/י ""הסר"".",false,"[""listing_title""]",1,draft

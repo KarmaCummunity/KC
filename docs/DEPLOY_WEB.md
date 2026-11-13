@@ -43,6 +43,17 @@ Manual smoke in a browser: feed loads → donations grid → sign-in → post de
 
 OAuth flows need the deployed origin in Supabase → Authentication → URL Configuration → **Redirect URLs** (`https://dev.karma-community.pages.dev/**` on kc-dev `enbqriuxvvuontiwslun`, `https://karma-community-kc.com/**` on prod).
 
+## Shared links (`/post/:id`, `/user/:handle`)
+
+The upload carries Cloudflare Pages Functions (`app/apps/mobile/functions/`, logic and tests in `app/apps/mobile/web-edge/`, `FR-POST-023`). `deploy-web.yml` writes the function's config (`app/scripts/write-web-edge-config.mjs`: the public Supabase URL and anon key, and the optional store URLs) and runs `wrangler pages deploy` from `app/apps/mobile`, where Wrangler looks for `functions/`. Per request, by User-Agent: a link-preview crawler gets an Open Graph card for the post's kind (read through the `post_share_card` database function); an iOS or Android browser is redirected to the store when its URL is set; everyone else gets the SPA.
+
+| Setting (GitHub environment `cloudflare-<target>`) | Kind | Effect |
+| --- | --- | --- |
+| `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY` | secrets (already set for the build) | where the card reads the post |
+| `KC_IOS_STORE_URL`, `KC_ANDROID_STORE_URL` | variables, https URL | store a phone without the app is sent to; unset = stays on the website |
+
+Verify after a deploy: the smoke's `sharedlinks` check, or by hand `curl -sSA 'WhatsApp/2.0' https://dev.karma-community.pages.dev/post/<id> | grep og:title`. `?web=1` on any shared link forces the website. Rollback: revert the commit; the function and the SPA deploy together.
+
 ## Historical: Railway (retired)
 
-Before Cloudflare Pages, the web build ran on Railway from the repo-root `Dockerfile` (`railway.json`) at `dev3.karma-community-kc.com`, serving `dist/` through the Hono server in `app/apps/mobile/web-server/` (OG cards for `/post/:id`, `FR-POST-023`). Cloudflare Pages replaced it; the `Dockerfile`, `railway.json` and the Hono server remain in the repo but are not deployed. The crawler OG route is therefore not served today (`TD-234`).
+Before Cloudflare Pages, the web build ran on Railway from a repo-root `Dockerfile` at `dev3.karma-community-kc.com`, serving `dist/` through a Hono server (OG cards for `/post/:id`). Cloudflare Pages replaced it, and the Pages Functions above replaced the Hono server, which is removed from the repo (`TD-234`).

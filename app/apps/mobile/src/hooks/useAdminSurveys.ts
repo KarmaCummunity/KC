@@ -64,7 +64,7 @@ export function useAdminPmfReport(slug: string | null | undefined) {
 export function useAdminUserFeedback(enabled = true) {
   const q = useQuery({
     queryKey: ['admin.surveys.feedback'],
-    queryFn: () => container.listUserFeedback.execute({ limit: 100, offset: 0 }),
+    queryFn: () => container.listUserFeedback.execute({ limit: 100 }),
     enabled,
     staleTime: 30_000,
   });

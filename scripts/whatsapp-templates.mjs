@@ -39,7 +39,7 @@ export function toSqlValues(reg) {
     for (const lang of LANGS) {
       rows.push(
         `  (${sqlQuote(t.name)}, ${sqlQuote(lang)}, ${sqlQuote(t.category.toLowerCase())}, ` +
-          `${sqlQuote(t.languages[lang].body)}, ${sqlQuote(JSON.stringify(t.params))}::jsonb, ${reg.version})`,
+          `${sqlQuote(t.languages[lang].body)}, ${sqlQuote(JSON.stringify(t.params))}, ${reg.version})`,
       );
     }
   }

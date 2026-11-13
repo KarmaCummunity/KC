@@ -1,7 +1,7 @@
 // Composition root — singleton instances of all chat use cases bound to Supabase adapters.
 // Screens import the use cases from here, not from @kc/application directly.
 // Mapped to SRS: FR-CHAT-001..013, FR-POST-010, FR-POST-014 AC4, FR-POST-015 AC1, FR-MOD-001, FR-MOD-007, FR-ADMIN-009.
-import { createWhatsAppAdminUseCases } from './whatsappAdminContainer';
+import { createWhatsAppAdminUseCases, createWhatsAppLinkUseCases } from './whatsappAdminContainer';
 import { pickAuthStorage } from '../services/authSecureStorage';
 import {
   getSupabaseClient,
@@ -28,8 +28,6 @@ import {
   SupabaseOrgHierarchyRepository,
   SupabaseOrgApplicationsRepository,
   SupabaseAdminContentRepository,
-  SupabaseTimesheetsRepository,
-  SupabaseCrmContactsRepository,
   SupabaseReportsRepository,
   SupabaseSurveyRepository,
   SupabaseSurveyAdminRepository,
@@ -55,7 +53,6 @@ import {
   ReportListingUseCase,
   DeletePostUseCase,
   AdminRemovePostUseCase,
-  AdminRemoveListingUseCase,
   ListDonationLinksUseCase,
   AddDonationLinkUseCase,
   RemoveDonationLinkUseCase,
@@ -79,7 +76,9 @@ import {
   GetOrgTreeUseCase,
   GetHierarchySnapshotUseCase,
   SetManagerUseCase,
+  SetOrgSlugUseCase,
   ListAdminTasksUseCase,
+  CountOpenAdminTasksUseCase,
   GetAdminTaskDetailUseCase,
   CreateAdminTaskUseCase,
   UpdateAdminTaskUseCase,
@@ -90,18 +89,9 @@ import {
   ListOrgApplicationsUseCase,
   DecideOrgApplicationUseCase,
   AdminSearchUsersUseCase,
+  AdminFindMembersUseCase,
   AdminSearchPostsUseCase,
   AdminSearchAuditUseCase,
-  ListTimesheetsUseCase,
-  UpsertTimesheetUseCase,
-  SubmitTimesheetUseCase,
-  ApproveTimesheetUseCase,
-  RejectTimesheetUseCase,
-  DeleteTimesheetUseCase,
-  ListCrmContactsUseCase,
-  UpsertCrmContactUseCase,
-  DeleteCrmContactUseCase,
-  MarkCrmContactContactedUseCase,
   ListOpenReportsUseCase,
   GetReportCaseDetailUseCase,
   ListActiveSurveysUseCase,
@@ -117,10 +107,13 @@ import {
   LoadPublicResearchBundleUseCase,
   SubmitPublicResearchResponseUseCase,
 } from '@kc/application';
+import { createBackOfficeUseCases } from './backOfficeContainer';
 import { createFinanceUseCases } from './financeContainer';
+import { createModerationStaffUseCases } from './moderationContainer';
 import { isSupabaseConfigured } from './supabasePublicConfig';
 import { bindSupabaseClient } from './bindSupabaseClient';
 
+// The one Supabase connection of the app, typed against the production baseline schema.
 export const supabase = bindSupabaseClient(isSupabaseConfigured(), () =>
   getSupabaseClient({ storage: pickAuthStorage() }),
 );
@@ -147,8 +140,6 @@ const adminRoleRepo = new SupabaseAdminRoleRepository(supabase);
 const adminTaskRepo = new SupabaseAdminTaskRepository(supabase);
 const orgHierarchyRepo = new SupabaseOrgHierarchyRepository(supabase);
 const adminContentRepo = new SupabaseAdminContentRepository(supabase);
-const timesheetsRepo = new SupabaseTimesheetsRepository(supabase);
-const crmContactsRepo = new SupabaseCrmContactsRepository(supabase);
 const orgApplicationsRepo = new SupabaseOrgApplicationsRepository(supabase);
 const reportsRepo = new SupabaseReportsRepository(supabase);
 const surveyRepo = new SupabaseSurveyRepository(supabase);
@@ -174,7 +165,7 @@ export const container = {
   followSuggestions: followSuggestionsRepo,
   postEngagement: postEngagementRepo,
   notificationInbox: notificationInboxRepo,
-  moderationAdminRepo, // exposed for hooks that need adminRepo.isUserAdmin pre-checks
+  moderationAdminRepo,
   deviceRepo,
   adminRoleRepo,
   reportsRepo,
@@ -190,7 +181,9 @@ export const container = {
   getOrgTree: new GetOrgTreeUseCase(orgHierarchyRepo),
   getHierarchySnapshot: new GetHierarchySnapshotUseCase(orgHierarchyRepo),
   setManager: new SetManagerUseCase(orgHierarchyRepo, adminRoleRepo),
+  setOrgSlug: new SetOrgSlugUseCase(orgHierarchyRepo),
   listAdminTasks: new ListAdminTasksUseCase(adminTaskRepo),
+  countOpenAdminTasks: new CountOpenAdminTasksUseCase(adminTaskRepo),
   getAdminTaskDetail: new GetAdminTaskDetailUseCase(adminTaskRepo),
   createAdminTask: new CreateAdminTaskUseCase(adminTaskRepo),
   updateAdminTask: new UpdateAdminTaskUseCase(adminTaskRepo),
@@ -199,23 +192,16 @@ export const container = {
   addAdminTaskComment: new AddAdminTaskCommentUseCase(adminTaskRepo),
   deleteAdminTask: new DeleteAdminTaskUseCase(adminTaskRepo),
   adminSearchUsers: new AdminSearchUsersUseCase(adminContentRepo),
+  adminFindMembers: new AdminFindMembersUseCase(adminContentRepo),
   adminSearchPosts: new AdminSearchPostsUseCase(adminContentRepo),
   adminSearchAudit: new AdminSearchAuditUseCase(adminContentRepo),
-  // V2-ADMIN-TIME-10
-  listTimesheets:   new ListTimesheetsUseCase(timesheetsRepo),
-  upsertTimesheet:  new UpsertTimesheetUseCase(timesheetsRepo),
-  submitTimesheet:  new SubmitTimesheetUseCase(timesheetsRepo),
-  approveTimesheet: new ApproveTimesheetUseCase(timesheetsRepo),
-  rejectTimesheet:  new RejectTimesheetUseCase(timesheetsRepo),
-  deleteTimesheet:  new DeleteTimesheetUseCase(timesheetsRepo),
   // V2-ADMIN-MONEY-9 (+ accounts, donors, public display: FR-FIN-003/022/023)
   ...createFinanceUseCases(supabase),
+  // FR-ADMIN-032 / FR-ADMIN-033
+  ...createBackOfficeUseCases(supabase),
+  ...createModerationStaffUseCases(supabase),
   ...createWhatsAppAdminUseCases(supabase),
-  // V2-ADMIN-CRM-8
-  listCrmContacts: new ListCrmContactsUseCase(crmContactsRepo),
-  upsertCrmContact: new UpsertCrmContactUseCase(crmContactsRepo),
-  deleteCrmContact: new DeleteCrmContactUseCase(crmContactsRepo),
-  markCrmContactContacted: new MarkCrmContactContactedUseCase(crmContactsRepo),
+  ...createWhatsAppLinkUseCases(supabase),
   // V2-ADMIN-ORG-7
   listOrgApplications: new ListOrgApplicationsUseCase(orgApplicationsRepo),
   decideOrgApplication: new DecideOrgApplicationUseCase(orgApplicationsRepo),
@@ -245,7 +231,6 @@ export const container = {
   // Post moderation
   deletePost: new DeletePostUseCase(postRepo),
   adminRemovePost: new AdminRemovePostUseCase(postRepo),
-  adminRemoveListing: new AdminRemoveListingUseCase(moderationAdminRepo),
 
   // Moderation admin actions (FR-MOD-007 + FR-ADMIN-002..007)
   restoreTarget: new RestoreTargetUseCase(moderationAdminRepo),

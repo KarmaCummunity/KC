@@ -30,12 +30,14 @@
 /scripts/ci-*                               @navesarussi
 /scripts/check-*                            @navesarussi
 /scripts/deploy-*                           @navesarussi
+/scripts/db-backup-*                          @navesarussi
 /scripts/smoke-*                            @navesarussi
 /scripts/*-guard*                           @navesarussi
 /scripts/mobile-*                           @navesarussi
 /scripts/testflight-*                        @navesarussi
 /scripts/release-version.mjs                @navesarussi
 /scripts/resolve-green-dev-sha.mjs           @navesarussi
+/scripts/prod-store-build-gate.mjs           @navesarussi
 /scripts/edge-functions.mjs                 @navesarussi
 /scripts/cloudflare-pages.mjs               @navesarussi
 /scripts/extract-hebrew-text.mjs            @navesarussi
@@ -53,15 +55,15 @@
 # backend lane. scripts/check-codeowners-coverage.mjs fails CI when a script a
 # workflow runs is missing here.
 /scripts/spec-ids.mjs                       @navesarussi
+/scripts/migration-ids.mjs                  @navesarussi
 /scripts/bump-app-version.mjs               @navesarussi
 /scripts/close-linked-issues.mjs            @navesarussi
-/scripts/run-db-tests.sh                    @navesarussi
 /scripts/run-baseline-tests.sh              @navesarussi
+/scripts/gen-baseline-types.mjs               @navesarussi
 /scripts/db-explain-dev.sh                  @navesarussi
 /scripts/strip-partition-types.mjs          @navesarussi
 /scripts/maestro-*                          @navesarussi
 /scripts/ops/                               @navesarussi
-/supabase/tests/_harness/                   @navesarussi
 
 # Quality thresholds: coverage and test selection (vitest / vite configs and
 # workspaces, Deno task and test config for Edge Functions, Playwright
@@ -79,7 +81,7 @@ playwright.config.*                         @navesarussi
 /app/turbo.json                             @navesarussi
 /app/package.json                           @navesarussi
 /app/apps/mobile/package.json               @navesarussi
-/app/apps/mobile/web-server/package.json    @navesarussi
+/app/apps/mobile/web-edge/package.json    @navesarussi
 /app/packages/*/package.json                @navesarussi
 /tests/e2e/package.json                     @navesarussi
 /sonar-project.properties                   @navesarussi

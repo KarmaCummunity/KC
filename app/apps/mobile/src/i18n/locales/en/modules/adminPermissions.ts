@@ -3,6 +3,7 @@
 // on the person screen. Keyed by `AdminPermission`, so a new permission fails
 // typecheck until it has a label.
 import type { AdminPermission } from '@kc/domain';
+import { moneyPermissionsParityEn } from './adminHierarchyParity';
 
 export const adminPermissionsEn: Readonly<Record<AdminPermission, string>> = {
   'portal.access':              'Enter the admin portal',
@@ -32,8 +33,9 @@ export const adminPermissionsEn: Readonly<Record<AdminPermission, string>> = {
   'crm.manage':                 'Manage contacts',
   'org.review_applications':    'Review organization applications',
   'whatsapp.manage':            'Manage WhatsApp',
+  'whatsapp.configure':         'Configure WhatsApp limits and templates',
   'matching.view_quality':      'View match quality',
   'donation_links.review':      'Review donation links',
   'stats.view_platform':        'View platform statistics',
-  'demo_data.manage':           'Manage demo data',
+  ...moneyPermissionsParityEn,
 };

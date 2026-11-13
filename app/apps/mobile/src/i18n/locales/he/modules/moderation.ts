@@ -1,6 +1,8 @@
 // FR-MOD-007/010 + FR-ADMIN-002..007 — moderation strings (TD-35 file-size budget).
 export const moderationHe = {
   report: {
+    // Placeholder inside the optional note box of every report sheet (post, chat, listing, user).
+    noteHint: 'ספרו לנו מה קרה כדי שנוכל לבדוק',
     user: {
       title: 'דווחו על משתמש',
       reasonLabel: 'סיבת הדיווח',
@@ -119,6 +121,14 @@ export const moderationHe = {
     errors: {
       forbidden: 'אין לך הרשאה לפעולה זו.',
       invalidRestoreState: 'לא ניתן לשחזר את המטרה במצבה הנוכחי.',
+      invalidTargetState: 'הפעולה אינה אפשרית במצבו הנוכחי של היעד.',
+      reportNotOpen: 'הדיווח כבר טופל.',
+      invalidSanctionReason: 'סיבת הסנקציה אינה תקפה.',
+      cannotSanctionSelf: 'אי אפשר להחיל סנקציה על עצמכם.',
+      cannotSanctionAdmin: 'אי אפשר להחיל סנקציה על איש צוות. בטלו קודם את התפקיד שלו.',
+      accountPendingDeletion: 'החשבון בתהליך מחיקה, ולכן אי אפשר להחיל עליו סנקציה.',
+      targetNotFound: 'היעד לא נמצא.',
+      messageNotFound: 'ההודעה לא נמצאה.',
       networkError: 'תקלה ברשת. נסו שוב.',
     },
   },

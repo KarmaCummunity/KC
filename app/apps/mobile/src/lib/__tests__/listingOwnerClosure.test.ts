@@ -9,6 +9,11 @@ describe('listingOwnerClosure', () => {
     expect(listingOwnerMarkCtaKey('food')).toBe('closure.markGiveCta');
   });
 
+  it('words the volunteering close as taking place, and keeps "delivered" for items (#2078)', () => {
+    expect(listingOwnerMarkCtaKey('time')).toBe('closure.markTimeCta');
+    expect(listingOwnerMarkCtaKey('items')).toBe('closure.markGiveCta');
+  });
+
   it('allows close-without only for items and animals', () => {
     expect(listingOfferAllowsCloseWithout('items')).toBe(true);
     expect(listingOfferAllowsCloseWithout('animals')).toBe(true);

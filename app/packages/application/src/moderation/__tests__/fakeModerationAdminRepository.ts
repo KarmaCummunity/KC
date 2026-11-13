@@ -14,10 +14,10 @@ export class FakeModerationAdminRepository implements IModerationAdminRepository
   public confirmCalls: string[] = [];
   public banCalls: Array<{ userId: string; reason: BanReason; note: string }> = [];
   public deleteMessageCalls: string[] = [];
+  public removeCommentCalls: string[] = [];
   public auditLookupCalls: Array<{ userId: string; limit?: number }> = [];
   public auditLookupResult: readonly AuditEvent[] = [];
   public adminIds: Set<string> = new Set();
-  public removeListingCalls: string[] = [];
   public errorOnNext: Error | null = null;
 
   private maybeThrow() {
@@ -31,10 +31,6 @@ export class FakeModerationAdminRepository implements IModerationAdminRepository
   async restoreTarget(targetType: ModerationTargetType, targetId: string) {
     this.maybeThrow();
     this.restoreCalls.push({ targetType, targetId });
-  }
-  async removeListing(listingId: string) {
-    this.maybeThrow();
-    this.removeListingCalls.push(listingId);
   }
   async dismissReport(reportId: string) {
     this.maybeThrow();
@@ -52,12 +48,16 @@ export class FakeModerationAdminRepository implements IModerationAdminRepository
     this.maybeThrow();
     this.deleteMessageCalls.push(messageId);
   }
+  async removeComment(commentId: string) {
+    this.maybeThrow();
+    this.removeCommentCalls.push(commentId);
+  }
   async auditLookup(userId: string, limit?: number) {
     this.maybeThrow();
     this.auditLookupCalls.push({ userId, limit });
     return this.auditLookupResult;
   }
-  async isUserAdmin(userId: string) {
+  async isPlatformStaff(userId: string) {
     this.maybeThrow();
     return this.adminIds.has(userId);
   }

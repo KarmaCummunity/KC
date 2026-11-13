@@ -67,8 +67,8 @@ export function useChatInit(chatId: string, userId: string) {
       // forever with no diagnostic.
       void useChatStore
         .getState()
-        .startThreadSub(chatId, container.chatRepo, container.chatRealtime, (next) => {
-          if (!cancelled) setChat(next);
+        .startThreadSub(chatId, container.chatRepo, container.chatRealtime, (change) => {
+          if (!cancelled) setChat((prev) => (prev ? { ...prev, anchorPostId: change.anchorPostId } : prev));
         });
 
       try {

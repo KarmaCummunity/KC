@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
 import { housingQueryKeys, housingUseCases } from '../../../services/housingComposition';
 import { rtlTextAlignStart } from '../../../lib/rtlTextAlignStart';
+import { valueOrNull } from '../../../lib/backendAvailability';
 
 interface Props {
   readonly listingId: string;
@@ -18,7 +19,7 @@ export function HousingAddressCard({ listingId }: Props) {
   const styles = useStyles();
   const place = useQuery({
     queryKey: housingQueryKeys.privateDetails(listingId),
-    queryFn: () => housingUseCases.privateDetails().execute(listingId),
+    queryFn: () => valueOrNull(() => housingUseCases.privateDetails().execute(listingId)),
   });
 
   if (place.isPending) return null;
