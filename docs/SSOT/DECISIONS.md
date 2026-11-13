@@ -1958,3 +1958,31 @@ Owner rules that go with it:
 **Rejected.** Keeping the moderator approval (safer, but slower for a small team of moderators). Removing the verified-user requirement (opens the world to unverified accounts).
 
 **Affected.** Docs only in this entry. Follow-up (not done here): a migration so new knowledge listings start as published instead of `pending_review`, plus updating the R-Knowledge-1 catalog row (`0265`) and `docs/spec/requirements/23_knowledge.md`.
+
+## {{ENG:agent-skill-v3}} — Agents close only what CI proves; person checks become verification issues; loops never decide product questions (2026-11-13)
+
+**Decision.** The `kc-issue-to-merge` skill is reorganized around four rules, approved by the PM on 2026-11-11 and 2026-11-13.
+1. **Split by who can verify.** An issue's development part, everything an automated test proves, closes when its PR merges. Acceptance criteria only a person can check (a device, a TestFlight or Play build, a store console, a credential, a visual judgment) move to a separate `verification` + `human` issue. Agents never take it, and open ones block the `dev` → `main` release unless the release PR waives them (`docs/SSOT/RELEASE_CHECKLIST.md`).
+2. **Product questions are never the agent's.** In a conversation the agent asks the PM. In a loop it releases the issue as blocked with options and a recommendation. This replaces AGENTS.md §13's former "decide and record a `D-*`" authority.
+3. **One shared helper for queue and claims.** `scripts/agent-task.mjs` (`next`, `check`, `claim`, `release`, REST-only, tested) runs the same queue and claim steps for every agent at a fraction of the tokens. Its claim names a random session id, because all agents post as one GitHub user and two sessions of the same agent could not tell who won a race.
+4. **Explicit capabilities, permissions and loop discipline** (`references/setup.md`, `references/loop.md`):
+   - a probe decides the fallbacks (no Docker, no emulator, one branch per session);
+   - three permission tiers;
+   - a loop that finishes its own red PRs first, starts every issue from fresh `dev`, caps scope at size M, and stops on an empty queue, three blocked runs in a row or the PM's budget.
+
+**Why.** Three skill runs (#1937, #1619, #1398) showed the failure modes:
+- issues an agent could never close kept returning to the queue;
+- a loop rule told agents to take product decisions the PM wanted to keep;
+- every agent re-typed long `gh api` calls by hand;
+- a PR that only fixed Maestro flows merged before its advisory run showed it still failing.
+
+**Rejected.**
+- **A device cloud as the agent's verifier.** It adds credentials and cost; the person keeps the final word on device behavior anyway.
+- **Letting agents label PM issues `human` on their own.** It changes the PM's queue without asking; `needs-triage` and a comment hand the call back.
+- **A larger default loop budget.** Review load grows with every merged PR.
+
+**Affected.**
+- The skill: `.claude/skills/kc-issue-to-merge/**`.
+- Tooling: `scripts/agent-task.mjs`, its test, and `.github/workflows/sync-agent-labels.yml`.
+- Rules: `AGENTS.md` §6 and §13.
+- Docs: `docs/agents/ISSUE_CLAIMS.md`, `docs/agents/OPERATING_MODEL.md` and `docs/SSOT/RELEASE_CHECKLIST.md`.
