@@ -1,5 +1,5 @@
 // Guards the giving-world settings of the reference seed (supabase/seed/reference/data/) against
-// the PM's launch decision ({{D:worlds-main-feed-and-launch}}, docs/spec/90_decisions_log.md).
+// the PM's launch decision (D165, docs/spec/90_decisions_log.md).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';

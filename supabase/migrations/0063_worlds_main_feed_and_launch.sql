@@ -1,6 +1,6 @@
 -- Worlds · every world's posts reach the main feed; knowledge and challenges are active
 --
--- PM decision ({{D:worlds-main-feed-and-launch}}, docs/spec/90_decisions_log.md):
+-- PM decision (D165, docs/spec/90_decisions_log.md):
 --   * The main feed shows the posts of every giving world, narrowed by the member's search,
 --     filters, sort and the recommendation mechanism. `worlds.shows_in_main_feed` is on for all.
 --   * Knowledge and challenges are active giving worlds in every environment.
