@@ -41,16 +41,15 @@ gh api -X PATCH $R/issues/<N> -F body=@"$f" --jq .html_url
 
 **The PM is in your conversation:** ask there and continue on the answer (SKILL.md, Phase 3). **Otherwise:** mark the issue blocked (below) and take another one.
 
+Only a person can verify it (device, store, credential, visual judgment)? That is not a product question: split it (`task-types.md`).
+
 ### Blocked
 
 ```bash
-gh api -X POST $R/issues/<N>/labels -f 'labels[]=blocked' --jq 'map(.name)'
-gh api -X DELETE $R/issues/<N>/labels/in-progress --silent
-gh api -X DELETE $R/issues/<N>/labels/agent:<you> --silent
-gh api -X POST $R/issues/<N>/comments -F body=@<comment-file> --jq .html_url
+node scripts/agent-task.mjs release <N> --agent <you> --blocked "<one-line question>" --note <comment-file>
 ```
 
-The comment (English) has exactly three parts:
+The note (English) has exactly three parts:
 - **Question:** one sentence.
 - **Options:** two or three, each with its user-visible effect.
 - **Recommendation:** one, with the reason.
@@ -71,6 +70,7 @@ Every task issue carries exactly one label from each required group.
 | Launch flag | `priority:launch` | Required for the upcoming launch; ranks above P0 in the queue. Only the PM sets it. |
 | Size (required) | `size:XS`, `size:S`, `size:M`, `size:L`, `size:XL` | Your estimate: XS < 1h, S < ½ day, M ≈ 1 day, L 2-3 days, XL needs splitting. |
 | Flags | `epic`, `blocked`, `possible-duplicate`, `needs-triage`, `found-by-agent` | Only when true. |
+| Person work | `verification` + `human` | A verification issue split off at Phase 3 (`task-types.md`). Agents never take it. |
 | Claim | `in-progress` + `agent:<you>` | Set in Phase 2, removed on merge or release. |
 
 Do not invent labels. Before using a new one, add it to `.github/workflows/sync-agent-labels.yml` in a PR.
