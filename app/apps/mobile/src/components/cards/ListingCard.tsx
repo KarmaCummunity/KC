@@ -5,7 +5,7 @@ import React from 'react';
 import type { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { format, type Locale } from 'date-fns';
-import { he as dateFnsHe } from 'date-fns/locale';
+import { he as dateFnsHe } from 'date-fns/locale/he';
 import type { MarketplaceBrowseRow } from '@kc/domain';
 import { cleanDisplayTitle } from '../../lib/displayTitle';
 import { worldChipKey } from '../../lib/feedCardCategory';

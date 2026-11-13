@@ -3,7 +3,7 @@ import { Pressable, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { formatDistanceToNow } from 'date-fns';
-import { he as dateFnsHe } from 'date-fns/locale';
+import { he as dateFnsHe } from 'date-fns/locale/he';
 import type { PostCommentWithAuthor } from '@kc/infrastructure-supabase';
 import { makeUseStyles, spacing, typography, iconSize, useTheme, Text } from '@kc/ui';
 import { AvatarInitials } from '../AvatarInitials';
