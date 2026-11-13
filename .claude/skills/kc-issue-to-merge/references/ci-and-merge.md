@@ -52,6 +52,30 @@ Check that it merged: `gh api $R/pulls/<PR> --jq .merged`.
 |---|---|
 | `Closes #<N>` | Confirm the issue closed and the claim labels are gone (`close-issues-on-dev-merge.yml` and `issue-claims.yml` do it). If they did not, run `node scripts/agent-task.mjs release <N> --agent <you>`. |
 | `Refs #<N>`, agent work left | `release <N> --agent <you> --note <file>`. The note says what shipped, plus a checklist of what is left. |
+| `Refs #<N>`, the proof runs only after the merge | Keep the claim and follow "Proof after the merge" below. |
 | `Refs #<N>`, everything left waits elsewhere | `release <N> --agent <you> --blocked "<what it waits on>" --note <file>`. The queue skips it until the blocker clears. |
+
+## Proof after the merge
+
+Some proof runs only against kc-dev, after the merge:
+- **Playwright journeys:** `e2e-nightly-dev.yml`, nightly and on demand.
+- **Seeds:** `seed-kc-dev.yml`, which is manual. A changed `supabase/seed/**` file reaches kc-dev only through it.
+
+Such a PR says `Refs #<N>` and names the post-merge run in its Tests section. After the merge:
+1. **Seed, if the PR changed a seed.** Run the matching action, then wait for the run to finish:
+
+   ```bash
+   gh api -X POST $R/actions/workflows/seed-kc-dev.yml/dispatches -f ref=dev -f 'inputs[action]=<reference|content|e2e-users>'
+   ```
+
+2. **Run the proof on `dev`:**
+
+   ```bash
+   gh api -X POST $R/actions/workflows/e2e-nightly-dev.yml/dispatches -f ref=dev
+   ```
+
+   Read only the failed spec's lines of the report.
+3. **Green:** comment the run link on the issue, close it (`state=closed`, `state_reason=completed`) and `release` the claim.
+   **Red, from this work:** the issue stays yours; fix it in a new PR. **Red, from another spec:** treat it as a red check that is not yours (above).
 
 Then bring the branch up to `origin/dev` for the next issue (SKILL.md Phase 4) and write the final report. In a loop, append the log line (`loop.md`) and go back to Phase 1.

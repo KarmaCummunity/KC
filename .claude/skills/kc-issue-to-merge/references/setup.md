@@ -55,6 +55,7 @@ All agents post to GitHub as the same user. The `agent:*` label, the `Opened by:
 - Open findings and verification issues: always with `needs-triage` and `found-by-agent` for findings, and with `verification` and `human` for verification issues.
 - Comment `possible-duplicate` evidence on another issue and add that label.
 - Push your branch, open and update your PR to `dev`, re-run your PR's failed job once, and release your own claim.
+- Run `seed-kc-dev.yml` (the action your merged PR changed) and `e2e-nightly-dev.yml` on `dev`, to prove merged work on kc-dev (`ci-and-merge.md`). Both are idempotent and touch kc-dev only. Never run its `vault` action.
 
 **Only with the PM's approval** (ask when the PM is in the conversation; otherwise skip and say so in the report):
 - **Product decisions.** Behavior a user will see that the spec does not settle. In a loop: release as blocked.
