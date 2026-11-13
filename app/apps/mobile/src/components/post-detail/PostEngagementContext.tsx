@@ -12,18 +12,20 @@ type PostEngagementContextValue = {
   readonly activeReaction: PostReactionType | null;
   readonly threads: readonly PostCommentThreadItem[];
   readonly busy: boolean;
-  readonly draft: string;
   readonly replyTo: ReplyTarget | null;
   readonly commentsLoaded: boolean;
   readonly commentsFailed: boolean;
   /** Count that matches the list on screen (not the denormalized counter once loaded). */
   readonly visibleCommentCount: number;
-  setDraft: (text: string) => void;
   clearReply: () => void;
   onReaction: (type: PostReactionType) => void;
   onReply: (target: ReplyTarget) => void;
   onToggleCommentLike: (commentId: string, liked: boolean) => void;
-  onSubmitComment: () => void;
+  /**
+   * Posts `body` (the composer owns the draft text, so a keystroke never changes this context).
+   * `onSent` runs once the comment is stored, before the thread refresh, so the composer can clear.
+   */
+  onSubmitComment: (body: string, onSent: () => void) => void;
 };
 
 const PostEngagementContext = createContext<PostEngagementContextValue | null>(null);
@@ -40,7 +42,6 @@ type ProviderProps = Readonly<{
 
 export function PostEngagementProvider({ postId, viewerId, children }: ProviderProps) {
   const [busy, setBusy] = useState(false);
-  const [draft, setDraft] = useState('');
   const [replyTo, setReplyTo] = useState<ReplyTarget | null>(null);
   // Cached per post and viewer: a reopened post shows its thread at once and refreshes behind it.
   const { snapshot, loaded, refresh, patch, restore } = usePostEngagementSnapshot(postId, viewerId);
@@ -90,22 +91,25 @@ export function PostEngagementProvider({ postId, viewerId, children }: ProviderP
 
   // A new comment needs its server row (id, author, time), so the composer stays busy until the
   // thread has been re-read and the comment is on screen.
-  const onSubmitComment = useCallback(() => {
-    const body = draft.trim();
-    if (!viewerId || !body || busy) return;
-    void (async () => {
-      setBusy(true);
-      try {
-        await container.postEngagement.createComment(postId, body, replyTo?.commentId ?? null);
-        hapticSuccess();
-        setDraft('');
-        setReplyTo(null);
-        await refresh();
-      } finally {
-        setBusy(false);
-      }
-    })();
-  }, [draft, viewerId, busy, postId, replyTo, refresh]);
+  const onSubmitComment = useCallback(
+    (rawBody: string, onSent: () => void) => {
+      const body = rawBody.trim();
+      if (!viewerId || !body || busy) return;
+      void (async () => {
+        setBusy(true);
+        try {
+          await container.postEngagement.createComment(postId, body, replyTo?.commentId ?? null);
+          hapticSuccess();
+          onSent();
+          setReplyTo(null);
+          await refresh();
+        } finally {
+          setBusy(false);
+        }
+      })();
+    },
+    [viewerId, busy, postId, replyTo, refresh],
+  );
 
   const value = useMemo(
     (): PostEngagementContextValue => ({
@@ -113,19 +117,17 @@ export function PostEngagementProvider({ postId, viewerId, children }: ProviderP
       activeReaction,
       threads,
       busy,
-      draft,
       replyTo,
       commentsLoaded,
       commentsFailed,
       visibleCommentCount,
-      setDraft,
       clearReply: () => setReplyTo(null),
       onReaction,
       onReply: (target) => setReplyTo(target),
       onToggleCommentLike,
       onSubmitComment,
     }),
-    [stats, activeReaction, threads, busy, draft, replyTo, commentsLoaded, commentsFailed, visibleCommentCount, onReaction, onToggleCommentLike, onSubmitComment],
+    [stats, activeReaction, threads, busy, replyTo, commentsLoaded, commentsFailed, visibleCommentCount, onReaction, onToggleCommentLike, onSubmitComment],
   );
 
   if (!viewerId) {
