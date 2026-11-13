@@ -1,14 +1,16 @@
 import '../src/lib/polyfills';
-import { startMark, finishMark } from '../src/lib/observability/perfMarks';
+import { startMark, flushPendingMarks } from '../src/lib/observability/perfMarks';
 startMark('app.cold_start');
 import { initSentry } from '../src/lib/observability/sentry';
 import { initPosthog } from '../src/lib/observability/posthog';
 import { installGlobalErrorHandlers } from '../src/lib/observability/globalErrorHandlers';
 import { useUncaughtErrorStore } from '../src/store/uncaughtErrorStore';
 // KC#1410: the global handlers wrap Sentry's, so they install once init settled.
-void initSentry().then(() =>
-  installGlobalErrorHandlers((error) => useUncaughtErrorStore.getState().show(error)),
-);
+void initSentry().then(() => {
+  installGlobalErrorHandlers((error) => useUncaughtErrorStore.getState().show(error));
+  // Marks that finished while the SDK was still loading (cold start, first feed render).
+  flushPendingMarks();
+});
 void initPosthog();
 import i18n from '../src/i18n';
 import React, { useEffect } from 'react';
@@ -69,7 +71,6 @@ void SplashScreen.preventAutoHideAsync();
 // the active palette (web html bg, surface backgrounds in screen headers,
 // StatusBar style) read fresh values when the user toggles dark mode.
 function ThemedRootShell() {
-  React.useEffect(() => { finishMark('app.cold_start'); }, []);
   const { colors, isDark } = useTheme();
   const detailStackScreenOptions = useDetailStackScreenOptions();
 
