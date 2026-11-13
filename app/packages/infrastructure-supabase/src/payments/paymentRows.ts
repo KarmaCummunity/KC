@@ -21,7 +21,9 @@ const textOrNull = (o: JsonObject, key: string): string | null => (typeof o[key]
 /** bigint values may arrive as numeric strings. */
 const num = (o: JsonObject, key: string): number => {
   const value = o[key];
-  const n = typeof value === 'number' ? value : typeof value === 'string' ? Number(value) : Number.NaN;
+  let n = Number.NaN;
+  if (typeof value === 'number') n = value;
+  else if (typeof value === 'string') n = Number(value);
   return Number.isFinite(n) ? n : 0;
 };
 

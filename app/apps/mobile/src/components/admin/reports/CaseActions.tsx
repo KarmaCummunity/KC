@@ -83,17 +83,17 @@ export function CaseActions({ detail, onActed }: CaseActionsProps) {
         await container.adminRemovePost.execute({ postId: detail.targetId });
         return true;
       case 'openSupport':
-        return openSupport();
+        await openSupport();
+        return false; // opening a conversation changes nothing on the case
     }
   }
 
   /** The case member's support thread, created and joined if needed, then opened (FR-ADMIN-013 AC2). */
-  async function openSupport(): Promise<boolean> {
+  async function openSupport(): Promise<void> {
     const memberId = supportCounterpartOf(detail);
-    if (!memberId) return false;
+    if (!memberId) return;
     const chatId = await container.openMemberSupportThread.execute(memberId);
     router.push({ pathname: '/chat/[id]', params: { id: chatId } });
-    return false; // nothing on the case changed
   }
 
   async function run(action: ActionId): Promise<void> {

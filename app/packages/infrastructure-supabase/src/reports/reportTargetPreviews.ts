@@ -17,8 +17,10 @@ export const previewKey = (ref: ReportTargetRef): string => `${ref.targetType}:$
 /** How many characters of a post or comment text a preview carries. */
 const PREVIEW_CHARS = 140;
 
-const clip = (text: string | null): string | null =>
-  text === null ? null : text.length > PREVIEW_CHARS ? `${text.slice(0, PREVIEW_CHARS)}…` : text;
+const clip = (text: string | null): string | null => {
+  if (text === null) return null;
+  return text.length > PREVIEW_CHARS ? `${text.slice(0, PREVIEW_CHARS)}…` : text;
+};
 
 const idsOf = (refs: readonly ReportTargetRef[], type: AdminReportTargetType): string[] =>
   refs.filter((r) => r.targetType === type).map((r) => r.targetId);

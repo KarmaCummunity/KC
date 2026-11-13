@@ -1892,7 +1892,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/marketplace/listingOwnerActions.ts",
-   "line": 71,
+   "line": 78,
    "area": "marketplace",
    "symbol": "updateMyListing",
    "via": "literal",
@@ -1905,7 +1905,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/marketplace/listingOwnerActions.ts",
-   "line": 89,
+   "line": 96,
    "area": "marketplace",
    "symbol": "addMyListingMedia",
    "via": "literal",
@@ -3116,7 +3116,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/reports/reportTargetPreviews.ts",
-   "line": 33,
+   "line": 35,
    "area": "reports",
    "symbol": "postPreviews",
    "via": "literal",
@@ -3128,7 +3128,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/reports/reportTargetPreviews.ts",
-   "line": 50,
+   "line": 52,
    "area": "reports",
    "symbol": "userPreviews",
    "via": "literal",
@@ -3140,7 +3140,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/reports/reportTargetPreviews.ts",
-   "line": 54,
+   "line": 56,
    "area": "reports",
    "symbol": "userPreviews",
    "via": "literal",
@@ -3152,7 +3152,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/reports/reportTargetPreviews.ts",
-   "line": 71,
+   "line": 73,
    "area": "reports",
    "symbol": "commentPreviews",
    "via": "literal",
@@ -3164,7 +3164,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/reports/reportTargetPreviews.ts",
-   "line": 89,
+   "line": 91,
    "area": "reports",
    "symbol": "chatPreviews",
    "via": "literal",
@@ -3176,7 +3176,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/reports/reportTargetPreviews.ts",
-   "line": 121,
+   "line": 123,
    "area": "reports",
    "symbol": "loadDisplayNames",
    "via": "literal",

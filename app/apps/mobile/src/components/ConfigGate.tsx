@@ -15,7 +15,7 @@ interface ConfigGateProps {
  * touches the Supabase placeholder client, which throws and closed the Android
  * process before anything was visible (#1944).
  */
-export function ConfigGate({ configured, children }: ConfigGateProps) {
+export function ConfigGate({ configured, children }: Readonly<ConfigGateProps>) {
   if (configured) return <>{children}</>;
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

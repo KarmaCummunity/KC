@@ -28,7 +28,7 @@ interface Props {
 
 type OpenModal = 'report' | 'ban' | null;
 
-export function ProfileOverflowMenu({ targetUserId, profileShare }: Props) {
+export function ProfileOverflowMenu({ targetUserId, profileShare }: Readonly<Props>) {
   const { t } = useTranslation();
   const { roles } = useAdminRoles();
   const canBan = hasPermission(roles as readonly AdminRole[], 'reports.permanent_ban');

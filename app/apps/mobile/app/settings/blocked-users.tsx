@@ -80,6 +80,12 @@ export default function BlockedUsersScreen() {
     [busyId, handleUnblock, styles, t],
   );
 
+  const emptyMessage = (): string => {
+    if (isError) return t('moderation.block.listError');
+    if (unavailable) return listUnavailableMessage();
+    return t('moderation.block.listEmpty');
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <Stack.Screen options={{ ...shellStackScreenOptions, headerTitle: t('moderation.block.listTitle') }} />
@@ -95,11 +101,7 @@ export default function BlockedUsersScreen() {
           renderItem={renderItem}
           ListEmptyComponent={
             <Text style={styles.empty}>
-              {isError
-                ? t('moderation.block.listError')
-                : unavailable
-                  ? listUnavailableMessage()
-                  : t('moderation.block.listEmpty')}
+              {emptyMessage()}
             </Text>
           }
         />

@@ -9,10 +9,10 @@ import { toModerationError } from './SupabaseModerationAdminRepository';
 
 type Client = SupabaseClient<Database>;
 
-const TARGET_TYPES: readonly string[] = ['post', 'user', 'comment', 'chat'];
-const REASONS: readonly string[] = [
+const TARGET_TYPES: ReadonlySet<string> = new Set(['post', 'user', 'comment', 'chat']);
+const REASONS: ReadonlySet<string> = new Set([
   'report_threshold', 'excessive_reopens', 'forbidden_keyword', 'manual_flag', 'operator_case',
-];
+]);
 
 async function call<T>(object: string, pending: PromiseLike<CallResult<T>>): Promise<T> {
   try {
@@ -45,7 +45,7 @@ export class SupabaseModerationQueueRepository implements IModerationQueueReposi
     }
     const rows = await call('table:moderation_queue', query) ?? [];
     const entries: ModerationQueueEntry[] = rows
-      .filter((row) => TARGET_TYPES.includes(row.target_type) && REASONS.includes(row.reason))
+      .filter((row) => TARGET_TYPES.has(row.target_type) && REASONS.has(row.reason))
       .map((row) => ({
         entryId: row.id,
         targetType: row.target_type as ModerationQueueTargetType,

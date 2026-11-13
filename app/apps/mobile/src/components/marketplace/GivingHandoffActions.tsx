@@ -87,7 +87,9 @@ export function GivingHandoffActions({ detail }: Props) {
   const isRecipient = h != null && userId === h.recipientId;
   // What this member may do with the handoff, read from the handoff graph; a viewer who is
   // neither the owner nor the member who reserved is offered nothing.
-  const party = isOwner ? 'owner' : isRecipient ? 'recipient' : null;
+  let party: 'owner' | 'recipient' | null = null;
+  if (isOwner) party = 'owner';
+  else if (isRecipient) party = 'recipient';
   const actions = h != null && party != null ? givingHandoffActions(h.status, party) : null;
   // 'ongoing' is also the default availability of every new listing (create_marketplace_listing),
   // so it means "handed over" only once the listing has left the open state (0555 closes it).
