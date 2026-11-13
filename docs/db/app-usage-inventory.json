@@ -20,8 +20,8 @@
    "distinct": 3
   },
   "rpc": {
-   "callSites": 266,
-   "distinct": 243
+   "callSites": 267,
+   "distinct": 244
   },
   "table": {
    "callSites": 186,
@@ -799,6 +799,15 @@
    "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
    "line": 168,
    "area": "admin",
+   "symbol": "SupabaseWhatsAppAdminRepository.getSendLimits",
+   "via": "literal",
+   "name": "api_whatsapp_admin_get_send_limits"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
+   "line": 173,
+   "area": "admin",
    "symbol": "SupabaseWhatsAppAdminRepository.setSendLimits",
    "via": "literal",
    "name": "api_whatsapp_admin_set_send_limits"
@@ -806,7 +815,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
-   "line": 173,
+   "line": 178,
    "area": "admin",
    "symbol": "SupabaseWhatsAppAdminRepository.setTemplateStatus",
    "via": "literal",

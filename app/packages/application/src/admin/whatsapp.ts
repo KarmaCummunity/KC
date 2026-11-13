@@ -19,6 +19,7 @@ export {
   ListWhatsAppReviewsUseCase,
   ResolveWhatsAppReviewUseCase,
   ListWhatsAppTemplatesUseCase,
+  GetWhatsAppSendLimitsUseCase,
   SetWhatsAppSendLimitsUseCase,
   SetWhatsAppTemplateStatusUseCase,
 } from './WhatsAppAdminUseCases';

@@ -23,6 +23,7 @@ import {
   ResolveWhatsAppReviewUseCase,
   SetWhatsAppChannelEnabledUseCase,
   SetWhatsAppMatchConsentUseCase,
+  GetWhatsAppSendLimitsUseCase,
   SetWhatsAppSendLimitsUseCase,
   SetWhatsAppTemplateStatusUseCase,
   UnlinkWhatsAppUseCase,
@@ -45,6 +46,7 @@ export function createWhatsAppAdminUseCases(supabase: SupabaseClient<Database>) 
     listWhatsAppReviews: new ListWhatsAppReviewsUseCase(repo),
     resolveWhatsAppReview: new ResolveWhatsAppReviewUseCase(repo),
     listWhatsAppTemplates: new ListWhatsAppTemplatesUseCase(repo),
+    getWhatsAppSendLimits: new GetWhatsAppSendLimitsUseCase(repo),
     setWhatsAppSendLimits: new SetWhatsAppSendLimitsUseCase(repo),
     setWhatsAppTemplateStatus: new SetWhatsAppTemplateStatusUseCase(repo),
   };

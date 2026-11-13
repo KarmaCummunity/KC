@@ -14,6 +14,7 @@ import {
   ResendWhatsAppOutboundUseCase,
   ResolveWhatsAppReviewUseCase,
   SetWhatsAppChannelEnabledUseCase,
+  GetWhatsAppSendLimitsUseCase,
   SetWhatsAppSendLimitsUseCase,
   SetWhatsAppTemplateStatusUseCase,
 } from '../WhatsAppAdminUseCases';
@@ -42,6 +43,11 @@ function makeRepo() {
     listReviews: vi.fn(async () => emptyPage),
     resolveReview: vi.fn(async (_id: string, decision: 'approved' | 'rejected') => decision),
     listTemplates: vi.fn(async () => []),
+    getSendLimits: vi.fn(async () => ({
+      perUserHour: 5, perUserDay: 20, replyPerPhoneHour: 30, globalPerMinute: 60, globalTemplateRecipientsDay: 1000,
+      inboundPerPhoneMinute: 20, llmPerPhoneDay: 30, llmGlobalDay: 2000, maxAttempts: 5, backoffBaseSeconds: 30,
+      updatedAt: null, updatedBy: null,
+    })),
     setSendLimits: vi.fn(async () => ({
       perUserHour: 5, perUserDay: 20, replyPerPhoneHour: 30, globalPerMinute: 60, globalTemplateRecipientsDay: 1000,
       inboundPerPhoneMinute: 20, llmPerPhoneDay: 30, llmGlobalDay: 2000, maxAttempts: 5, backoffBaseSeconds: 30,
@@ -97,6 +103,12 @@ describe('WhatsApp admin use cases', () => {
     await expect(new ResolveWhatsAppReviewUseCase(repo).execute('r1', 'pending' as never))
       .rejects.toMatchObject({ code: 'invalid_decision' });
     expect(repo.resolveReview).not.toHaveBeenCalled();
+  });
+
+  it('send limits: reads the current values', async () => {
+    const repo = makeRepo();
+    await expect(new GetWhatsAppSendLimitsUseCase(repo).execute()).resolves.toMatchObject({ perUserHour: 5 });
+    expect(repo.getSendLimits).toHaveBeenCalledTimes(1);
   });
 
   it('send limits: forwards a valid patch, refuses an empty or out-of-range one', async () => {

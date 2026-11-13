@@ -290,6 +290,7 @@ rpc('api_whatsapp_admin_block_user', 'same', 'rpc:api_whatsapp_admin_block_user'
 rpc('api_whatsapp_admin_review_list', 'changed', 'rpc:api_whatsapp_admin_review_list', 'New: the review queue of bot posts, keyset-paged (`p_status`, `p_cursor`, `p_limit`).');
 rpc('api_whatsapp_admin_review_resolve', 'changed', 'rpc:api_whatsapp_admin_review_resolve', 'New: `approved` publishes the draft for its owner (`offer_photo_required` without a photo), `rejected` leaves it (`invalid_decision`, `invalid_transition`); audited.');
 rpc('api_whatsapp_admin_list_templates', 'changed', 'rpc:api_whatsapp_admin_list_templates', 'New: the templates and their Meta state.');
+rpc('api_whatsapp_admin_get_send_limits', 'changed', 'rpc:api_whatsapp_admin_get_send_limits', 'New, moderator and above: the current send limits for the console panel.');
 rpc('api_whatsapp_admin_set_send_limits', 'changed', 'rpc:api_whatsapp_admin_set_send_limits', 'New, super admin: patches the send limits (`invalid_limits`); audited.');
 rpc('api_whatsapp_admin_set_template_status', 'changed', 'rpc:api_whatsapp_admin_set_template_status', 'New, super admin: a template\'s Meta status (`invalid_status`, `template_not_found`); audited.');
 

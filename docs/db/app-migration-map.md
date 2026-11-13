@@ -8,12 +8,12 @@ The application (`app/packages/infrastructure-supabase`, `app/apps/mobile`) and 
 
 | Kind | Objects used | 1:1 | 1:1 (renamed) | CHANGED | REMOVED | MISSING |
 | --- | --- | --- | --- | --- | --- | --- |
-| RPCs | 243 | 169 | 22 | 52 | 0 | 0 |
+| RPCs | 244 | 169 | 22 | 53 | 0 | 0 |
 | Tables and views | 63 | 46 | 0 | 17 | 0 | 0 |
 | Storage buckets | 4 | 3 | 0 | 1 | 0 | 0 |
 | Realtime channels | 9 | 9 | 0 | 0 | 0 | 0 |
 | Edge Function invokes | 3 | 3 | 0 | 0 | 0 | 0 |
-| **Total** | 322 | 230 | 22 | 70 | 0 | 0 |
+| **Total** | 323 | 230 | 22 | 71 | 0 | 0 |
 
 ### Launch scope
 
@@ -23,7 +23,7 @@ Every row carries `launch` (spec D102, `docs/spec/96_launch_and_first_group_plan
 | --- | --- | --- | --- | --- | --- | --- |
 | core | 127 | 103 | 1 | 23 | 0 | 0 |
 | wedge | 53 | 32 | 15 | 6 | 0 | 0 |
-| later | 142 | 95 | 6 | 41 | 0 | 0 |
+| later | 143 | 95 | 6 | 42 | 0 | 0 |
 | **Launch-critical (core + wedge)** | 180 | 135 | 16 | 29 | 0 | 0 |
 
 Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename of the function or its arguments · **CHANGED** the caller's logic changes · **REMOVED** no replacement by design · **MISSING** the baseline has no equivalent although the code needs one (§4). Confidence: **high** read in the baseline source, **medium** inferred from names and generated types.
@@ -45,7 +45,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | Module | Call sites | 1:1 | Logic changes | Removed | MISSING |
 | --- | --- | --- | --- | --- | --- |
 | `infrastructure-supabase/src/about/` | 1 | 1 | 0 | 0 | 0 |
-| `infrastructure-supabase/src/admin/` | 65 | 37 | 28 | 0 | 0 |
+| `infrastructure-supabase/src/admin/` | 66 | 37 | 29 | 0 | 0 |
 | `infrastructure-supabase/src/auth/` | 2 | 2 | 0 | 0 | 0 |
 | `infrastructure-supabase/src/blocks/` | 4 | 4 | 0 | 0 | 0 |
 | `infrastructure-supabase/src/challenges/` | 9 | 6 | 3 | 0 | 0 |
@@ -104,7 +104,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 
 ### `infrastructure-supabase/src/admin/`
 
-65 call sites: 37 map 1:1, 28 need logic changes, 0 removed, 0 MISSING.
+66 call sites: 37 map 1:1, 29 need logic changes, 0 removed, 0 MISSING.
 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -130,6 +130,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `admin_task_update` | later | 1:1 | `admin_task_update(p_category?: string, p_clear_due?: boolean, p_description?: string, p_due_at?: string, p_labels?: string[], p_priority?: string, p_task_id: string, p_title?: string) → undefined` | Same arguments; refusals are P0001 with the old codes (`invalid_transition`, `assignee_not_admin`, …), `forbidden` is 42501. |  | high | SupabaseAdminTaskRepository.ts:84 |
 | `api_whatsapp_admin_block_user` | later | 1:1 | `api_whatsapp_admin_block_user(p_user_id: string) → undefined` | Same shape; audited. |  | high | SupabaseWhatsAppAdminRepository.ts:140 |
 | `api_whatsapp_admin_get_channel` | later | 1:1 | `api_whatsapp_admin_get_channel() → Json` | Same shape plus `updated_by`; the switch is audited (`whatsapp_channel_toggle`). |  | high | SupabaseWhatsAppAdminRepository.ts:59 |
+| `api_whatsapp_admin_get_send_limits` | later | CHANGED | `api_whatsapp_admin_get_send_limits() → Json` | New, moderator and above: the current send limits for the console panel. |  | high | SupabaseWhatsAppAdminRepository.ts:168 |
 | `api_whatsapp_admin_list_consent` | later | CHANGED | `api_whatsapp_admin_list_consent(p_cursor?: Json, p_limit?: number) → { consent_status: string cursor: Json identity_id: string last_inbound_at: string opted_in: boolean opted_in_at: string opted_out_at: string preferred_language: string updated_at: string user_id: string wa_id_masked: ...` | `p_offset` → `p_cursor` (keyset); no `total_count`; rows add `identity_id` and `cursor`. |  | high | SupabaseWhatsAppAdminRepository.ts:74 |
 | `api_whatsapp_admin_list_conversations` | later | CHANGED | `api_whatsapp_admin_list_conversations(p_limit?: number) → { confidence: number created_at: string post_id: string session_id: string state: string updated_at: string user_id: string wa_id_masked: string }[]` | `listing_id` → `post_id`; rows add `confidence`. |  | high | SupabaseWhatsAppAdminRepository.ts:120 |
 | `api_whatsapp_admin_list_outbound` | later | CHANGED | `api_whatsapp_admin_list_outbound(p_cursor?: Json, p_limit?: number, p_status?: string) → { attempts: number created_at: string cursor: Json kind: string language: string last_error: string next_attempt_at: string outbound_id: string sent_at: string status: string template_name: string user_id: string wa_i...` | `p_offset` → `p_cursor` (keyset) with `p_status`; no `total_count`; rows add `cursor`; `invalid_status` for an unknown status. |  | high | SupabaseWhatsAppAdminRepository.ts:83 |
@@ -141,8 +142,8 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `api_whatsapp_admin_review_list` | later | CHANGED | `api_whatsapp_admin_review_list(p_cursor?: Json, p_limit?: number, p_status?: string) → { confidence: number created_at: string cursor: Json owner_id: string post_id: string post_status: string post_title: string reason: string resolved_at: string review_id: string reviewer_id: string session_id: string ...` | New: the review queue of bot posts, keyset-paged (`p_status`, `p_cursor`, `p_limit`). |  | high | SupabaseWhatsAppAdminRepository.ts:145 |
 | `api_whatsapp_admin_review_resolve` | later | CHANGED | `api_whatsapp_admin_review_resolve(p_decision: string, p_review_id: string) → string` | New: `approved` publishes the draft for its owner (`offer_photo_required` without a photo), `rejected` leaves it (`invalid_decision`, `invalid_transition`); audited. |  | high | SupabaseWhatsAppAdminRepository.ts:154 |
 | `api_whatsapp_admin_set_channel_enabled` | later | 1:1 | `api_whatsapp_admin_set_channel_enabled(p_enabled: boolean) → Json` | Same shape plus `updated_by`; the switch is audited (`whatsapp_channel_toggle`). |  | high | SupabaseWhatsAppAdminRepository.ts:64 |
-| `api_whatsapp_admin_set_send_limits` | later | CHANGED | `api_whatsapp_admin_set_send_limits(p_limits: Json) → Json` | New, super admin: patches the send limits (`invalid_limits`); audited. |  | high | SupabaseWhatsAppAdminRepository.ts:168 |
-| `api_whatsapp_admin_set_template_status` | later | CHANGED | `api_whatsapp_admin_set_template_status(p_language_code: string, p_meta_status: string, p_meta_template_id?: string, p_template_name: string) → undefined` | New, super admin: a template's Meta status (`invalid_status`, `template_not_found`); audited. |  | high | SupabaseWhatsAppAdminRepository.ts:173 |
+| `api_whatsapp_admin_set_send_limits` | later | CHANGED | `api_whatsapp_admin_set_send_limits(p_limits: Json) → Json` | New, super admin: patches the send limits (`invalid_limits`); audited. |  | high | SupabaseWhatsAppAdminRepository.ts:173 |
+| `api_whatsapp_admin_set_template_status` | later | CHANGED | `api_whatsapp_admin_set_template_status(p_language_code: string, p_meta_status: string, p_meta_template_id?: string, p_template_name: string) → undefined` | New, super admin: a template's Meta status (`invalid_status`, `template_not_found`); audited. |  | high | SupabaseWhatsAppAdminRepository.ts:178 |
 | `crm_contact_count` | later | 1:1 | `crm_contact_count(p_org_id: string, p_query?: string, p_status?: string, p_tag?: string) → number` | New: the total of the list filters. |  | high | SupabaseCrmContactsRepository.ts:91 |
 | `crm_contact_delete` | later | 1:1 | `crm_contact_delete(p_contact_id: string) → undefined` | Same arguments; the caller must manage the contact's organization. |  | high | SupabaseCrmContactsRepository.ts:115 |
 | `crm_contact_list` | later | CHANGED | `crm_contact_list(p_cursor?: Json, p_limit?: number, p_org_id: string, p_query?: string, p_status?: string, p_tag?: string) → { contact: Json cursor: Json }[]` | New `p_org_id`; rows are `(contact jsonb, cursor jsonb)`; the total moves to `crm_contact_count`. |  | high | SupabaseCrmContactsRepository.ts:90 |
@@ -848,7 +849,7 @@ In launch order: after package *n* the app is shippable with everything up to *n
 | L4 — Money: donations to organizations, standing orders, org finance, org onboarding | later | 30 | 14 | 16 | 0 | 0 | L1, L2, L3, L5, L6, L7 |
 | L5 — Surveys, feedback, public research | later | 15 | 14 | 1 | 0 | 0 | L1, L2, L3, L4, L6, L7 |
 | L6 — Back-office tools: tasks, CRM, timesheets | later | 22 | 17 | 5 | 0 | 0 | L1, L2, L3, L4, L5, L7 |
-| L7 — WhatsApp bot, linking, admin console | later | 37 | 23 | 14 | 0 | 0 | L1, L2, L3, L4, L5, L6 |
+| L7 — WhatsApp bot, linking, admin console | later | 38 | 23 | 15 | 0 | 0 | L1, L2, L3, L4, L5, L6 |
 
 ### P0 — Contract switch and the degrade rule (first, alone)
 

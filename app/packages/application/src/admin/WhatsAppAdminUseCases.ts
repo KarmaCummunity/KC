@@ -103,6 +103,12 @@ export class ListWhatsAppTemplatesUseCase {
   execute(): Promise<WhatsAppTemplateRow[]> { return this.repo.listTemplates(); }
 }
 
+/** Staff: the current send limits, shown in the console before any change. */
+export class GetWhatsAppSendLimitsUseCase {
+  constructor(private readonly repo: IWhatsAppAdminRepository) {}
+  execute(): Promise<WhatsAppSendLimits> { return this.repo.getSendLimits(); }
+}
+
 /** Super admin: changes some send limits; refuses an empty patch or a value out of range. */
 export class SetWhatsAppSendLimitsUseCase {
   constructor(private readonly repo: IWhatsAppAdminRepository) {}

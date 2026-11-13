@@ -87,3 +87,12 @@ export function useWhatsAppTemplates(enabled: boolean) {
     staleTime: STALE,
   });
 }
+
+export function useWhatsAppSendLimits(enabled: boolean) {
+  return useQuery({
+    queryKey: [WHATSAPP_ADMIN_KEY, 'sendLimits'],
+    queryFn: () => container.getWhatsAppSendLimits.execute(),
+    enabled,
+    staleTime: STALE,
+  });
+}

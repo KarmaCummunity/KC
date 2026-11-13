@@ -163,6 +163,11 @@ export class SupabaseWhatsAppAdminRepository implements IWhatsAppAdminRepository
     return (rows ?? []).map(mapTemplate);
   }
 
+  async getSendLimits(): Promise<WhatsAppSendLimits> {
+    return mapSendLimits(unwrap('api_whatsapp_admin_get_send_limits',
+      await this.client.rpc('api_whatsapp_admin_get_send_limits')));
+  }
+
   async setSendLimits(patch: WhatsAppSendLimitsPatch): Promise<WhatsAppSendLimits> {
     const data = unwrap('api_whatsapp_admin_set_send_limits',
       await this.client.rpc('api_whatsapp_admin_set_send_limits', { p_limits: sendLimitsToDb(patch) }));

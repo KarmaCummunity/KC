@@ -1,6 +1,6 @@
-// The WhatsApp send limits (super admin, `whatsapp.configure`). Only the fields filled in are
-// changed; the saved row comes back and is shown next to each field. There is no reader RPC
-// for the limits, so the current values appear after the first save.
+// The WhatsApp send limits (super admin, `whatsapp.configure`). The current value of each field
+// is read from the server and shown next to it; only the fields filled in are changed, and a
+// save refreshes the console so the new values appear.
 import { useState } from 'react';
 import { View } from 'react-native';
 import { useMutation } from '@tanstack/react-query';
@@ -16,6 +16,7 @@ import { PrimaryButton } from '../../ui/Buttons';
 import { AdminFormField } from '../AdminFormField';
 import { container } from '../../../lib/container';
 import { useLocaleBundle } from '../../../i18n/useLocaleBundle';
+import { useInvalidateWhatsAppAdmin, useWhatsAppSendLimits } from '../../../hooks/useWhatsAppAdmin';
 import { useWhatsAppAdminStyles, whatsappAdminErrorText } from './whatsappAdminStyles';
 
 type Draft = Partial<Record<WhatsAppSendLimitField, string>>;
@@ -34,11 +35,13 @@ export function WhatsAppSendLimitsPanel() {
   const styles = useWhatsAppAdminStyles();
   const t = useLocaleBundle().admin.whatsapp;
   const [draft, setDraft] = useState<Draft>({});
+  const current = useWhatsAppSendLimits(true);
+  const invalidate = useInvalidateWhatsAppAdmin();
   const [saved, setSaved] = useState<WhatsAppSendLimits | null>(null);
   const [invalid, setInvalid] = useState<string | null>(null);
   const save = useMutation({
     mutationFn: (patch: WhatsAppSendLimitsPatch) => container.setWhatsAppSendLimits.execute(patch),
-    onSuccess: (limits) => { setSaved(limits); setDraft({}); },
+    onSuccess: (limits) => { setSaved(limits); setDraft({}); invalidate(); },
   });
   const onSave = () => {
     const patch = draftToPatch(draft);
@@ -50,7 +53,8 @@ export function WhatsAppSendLimitsPanel() {
     setInvalid(null);
     save.mutate(patch);
   };
-  const error = invalid ?? whatsappAdminErrorText(t, save.error);
+  const error = invalid ?? whatsappAdminErrorText(t, save.error ?? current.error);
+  const shown = saved ?? current.data ?? null;
 
   return (
     <>
@@ -65,7 +69,7 @@ export function WhatsAppSendLimitsPanel() {
               onChange={(v) => setDraft((d) => ({ ...d, [field]: v }))}
               keyboardNumeric
             />
-            {saved ? <Text style={styles.muted}>{t.limits.current(saved[field])}</Text> : null}
+            {shown ? <Text style={styles.muted}>{t.limits.current(shown[field])}</Text> : null}
           </View>
         ))}
         <View style={styles.btn}>

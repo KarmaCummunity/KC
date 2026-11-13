@@ -2,10 +2,10 @@
  "generatedBy": "scripts/app-migration-map.mjs",
  "totals": {
   "rpc": {
-   "objects": 243,
+   "objects": 244,
    "same": 169,
    "renamed": 22,
-   "changed": 52,
+   "changed": 53,
    "removed": 0,
    "missing": 0
   },
@@ -52,10 +52,10 @@
    "missing": 0
   },
   "later": {
-   "objects": 142,
+   "objects": 143,
    "same": 95,
    "renamed": 6,
-   "changed": 41,
+   "changed": 42,
    "removed": 0,
    "missing": 0
   },
@@ -77,9 +77,9 @@
    "missing": 0
   },
   "admin": {
-   "callSites": 65,
+   "callSites": 66,
    "oneToOne": 37,
-   "changed": 28,
+   "changed": 29,
    "removed": 0,
    "missing": 0
   },
@@ -1264,13 +1264,14 @@
     "rpc:api_whatsapp_admin_review_list",
     "rpc:api_whatsapp_admin_review_resolve",
     "rpc:api_whatsapp_admin_list_templates",
+    "rpc:api_whatsapp_admin_get_send_limits",
     "rpc:api_whatsapp_admin_set_send_limits",
     "rpc:api_whatsapp_admin_set_template_status"
    ],
    "counts": {
-    "objects": 37,
+    "objects": 38,
     "oneToOne": 23,
-    "changed": 14,
+    "changed": 15,
     "removed": 0,
     "missing": 0
    }
@@ -4431,6 +4432,37 @@
    ]
   },
   {
+   "old": "api_whatsapp_admin_get_send_limits",
+   "kind": "rpc",
+   "status": "changed",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "New, moderator and above: the current send limits for the console panel.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_whatsapp_admin_get_send_limits",
+     "signature": [
+      "api_whatsapp_admin_get_send_limits() → Json"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
+     "line": 168,
+     "symbol": "SupabaseWhatsAppAdminRepository.getSendLimits",
+     "area": "admin"
+    }
+   ]
+  },
+  {
    "old": "api_whatsapp_admin_list_consent",
    "kind": "rpc",
    "status": "changed",
@@ -4828,7 +4860,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
-     "line": 168,
+     "line": 173,
      "symbol": "SupabaseWhatsAppAdminRepository.setSendLimits",
      "area": "admin"
     }
@@ -4859,7 +4891,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
-     "line": 173,
+     "line": 178,
      "symbol": "SupabaseWhatsAppAdminRepository.setTemplateStatus",
      "area": "admin"
     }

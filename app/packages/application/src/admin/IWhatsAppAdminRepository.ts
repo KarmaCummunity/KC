@@ -55,6 +55,7 @@ export interface IWhatsAppAdminRepository {
   listReviews(filters: WhatsAppReviewListFilters): Promise<WhatsAppPage<WhatsAppReviewItem>>;
   resolveReview(reviewId: string, decision: WhatsAppReviewDecision): Promise<WhatsAppReviewDecision>;
   listTemplates(): Promise<WhatsAppTemplateRow[]>;
+  getSendLimits(): Promise<WhatsAppSendLimits>;
   setSendLimits(patch: WhatsAppSendLimitsPatch): Promise<WhatsAppSendLimits>;
   setTemplateStatus(input: SetWhatsAppTemplateStatusInput): Promise<void>;
 }

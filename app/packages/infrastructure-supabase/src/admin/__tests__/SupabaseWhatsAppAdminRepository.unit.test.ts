@@ -99,6 +99,15 @@ describe('SupabaseWhatsAppAdminRepository channel, overview and writes', () => {
     ]);
   });
 
+  it('reads the current send limits', async () => {
+    const row = { per_user_hour: 5, per_user_day: 20, reply_per_phone_hour: 30, global_per_minute: 60,
+      global_template_recipients_day: 1000, inbound_per_phone_minute: 20, llm_per_phone_day: 30, llm_global_day: 2000,
+      max_attempts: 5, backoff_base_seconds: 30, updated_by: null, updated_at: '2026-11-12T00:00:00Z' };
+    const { repo, rpc } = repoWith(ok(row));
+    await expect(repo.getSendLimits()).resolves.toMatchObject({ perUserHour: 5, llmGlobalDay: 2000, updatedBy: null });
+    expect(rpc).toHaveBeenCalledWith('api_whatsapp_admin_get_send_limits');
+  });
+
   it('sends only the given send limits, in column names, and maps the row back', async () => {
     const row = { per_user_hour: 6, per_user_day: 20, reply_per_phone_hour: 30, global_per_minute: 60,
       global_template_recipients_day: 1000, inbound_per_phone_minute: 20, llm_per_phone_day: 30, llm_global_day: 2000,
