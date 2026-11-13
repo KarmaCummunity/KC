@@ -20,8 +20,8 @@
    "distinct": 3
   },
   "rpc": {
-   "callSites": 270,
-   "distinct": 246
+   "callSites": 271,
+   "distinct": 247
   },
   "table": {
    "callSites": 184,
@@ -388,6 +388,15 @@
    "symbol": "SupabaseAdminTaskRepository.delete",
    "via": "literal",
    "name": "admin_task_delete"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAppFlagsAdminRepository.ts",
+   "line": 13,
+   "area": "admin",
+   "symbol": "SupabaseAppFlagsAdminRepository.setFlag",
+   "via": "literal",
+   "name": "admin_set_app_flag"
   },
   {
    "kind": "rpc",

@@ -34,6 +34,7 @@ export const ADMIN_PERMISSIONS = [
   'matching.view_quality',
   'donation_links.review',
   'stats.view_platform',
+  'worlds.launch',
 ] as const;
 
 export type AdminPermission = (typeof ADMIN_PERMISSIONS)[number];
@@ -107,6 +108,8 @@ export const PERMISSION_MATRIX: Readonly<Record<AdminPermission, readonly AdminR
   'donation_links.review':      MODERATOR_UP,
   // FR-STATS-007 — platform statistics (flow funnel); moderators and above.
   'stats.view_platform':        MODERATOR_UP,
+  // #2277: only the super admin switches a giving world between portal and active.
+  'worlds.launch':              ['super_admin'],
 };
 
 export function hasPermission(

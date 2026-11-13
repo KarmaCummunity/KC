@@ -1,19 +1,18 @@
-import { useMemo } from 'react';
 import {
   type LaunchWorldFlagKey,
   type RemoteAppFlags,
   isHubTileLaunchEnabled,
   isMarketplaceWorldLaunchEnabled,
   resolveLaunchWorldEnabled,
-  withTesterActiveWorlds,
 } from '@kc/domain';
-import { isDevEnvironment } from '../config/environment';
 import { useAppFlags } from './useAppFlags';
 
+/**
+ * This environment's launch flags. Every build follows them as they are: the super admin switches a
+ * world per environment from the admin portal (#2277), which replaced the tester-build override.
+ */
 export function useRemoteAppFlags(): RemoteAppFlags | undefined {
-  const data = useAppFlags();
-  // Tester builds show the housing and knowledge feeds before their remote flag is on (#1630).
-  return useMemo(() => (isDevEnvironment() ? withTesterActiveWorlds(data) : data), [data]);
+  return useAppFlags();
 }
 
 export function useLaunchWorldEnabled(flagKey: LaunchWorldFlagKey): boolean {

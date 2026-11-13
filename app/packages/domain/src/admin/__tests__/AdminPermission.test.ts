@@ -113,3 +113,9 @@ describe('AdminPermission matrix', () => {
     expect(hasPermission(['admin'], 'whatsapp.configure')).toBe(false);
     expect(hasPermission(['moderator'], 'whatsapp.configure')).toBe(false);
   });
+
+  it('worlds.launch (switching a world between portal and active) is super admin only (#2277)', () => {
+    expect(hasPermission(['super_admin'], 'worlds.launch')).toBe(true);
+    expect(hasPermission(['admin'], 'worlds.launch')).toBe(false);
+    expect(hasPermission(['moderator'], 'worlds.launch')).toBe(false);
+  });
