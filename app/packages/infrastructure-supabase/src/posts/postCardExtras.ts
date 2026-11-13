@@ -1,9 +1,11 @@
-// What a `post_card` leaves out and the screens still show, loaded for a whole page at once:
-// the approximate map point, the street the poster chose to show (migration 0029), the detected
-// language, the status an admin removal will restore, the
-// challenge a post belongs to, the restore window of a deleted post, and the recipient of a
-// delivered post. One query per source for the page (never one per post); a source is skipped
-// when no card of the page can use it.
+// What the screens show beyond the facts of a `post_card`, for a whole page at once.
+//
+// The card itself carries the approximate map point, the street the poster chose to show, the
+// detected language, the status an admin removal will restore and the challenge a post belongs to,
+// so a page of open posts needs no second read. Two things still come from other tables and only
+// for the cards that can use them: the restore window of a deleted post and the recipient of a
+// delivered post. One query per source for the page (never one per post); a source is skipped when
+// no card of the page can use it.
 //
 // All reads run with the caller's rights: the recipient is visible only to the two members of the
 // handoff, the restore window only to the owner, and nobody else gets a value (the card then
@@ -19,23 +21,6 @@ type Client = SupabaseClient<Database>;
 
 const idsWhere = (cards: readonly PostCardRow[], keep: (card: PostCardRow) => boolean): string[] =>
   cards.flatMap((card) => (card.id !== null && keep(card) ? [card.id] : []));
-
-async function loadPostColumns(client: Client, ids: string[]) {
-  const rows = unwrapCall(
-    'table:posts',
-    await client
-      .from('posts')
-      .select('id, geo_approx, source_language, status_before_removal, shown_street, shown_street_number')
-      .in('id', ids),
-  );
-  return new Map((rows ?? []).map((row) => [row.id, row]));
-}
-
-async function loadChallengeIds(client: Client, ids: string[]): Promise<Map<string, string>> {
-  if (ids.length === 0) return new Map();
-  const rows = unwrapCall('table:challenges', await client.from('challenges').select('id, post_id').in('post_id', ids));
-  return new Map((rows ?? []).map((row) => [row.post_id, row.id]));
-}
 
 async function loadPurgeDeadlines(client: Client, ids: string[]): Promise<Map<string, string>> {
   if (ids.length === 0) return new Map();
@@ -96,25 +81,29 @@ export async function loadCardExtras(
 ): Promise<Map<string, CardExtras>> {
   const ids = idsWhere(cards, () => true);
   if (ids.length === 0) return new Map();
-  const [columns, challenges, deadlines, recipients] = await Promise.all([
-    loadPostColumns(client, ids),
-    loadChallengeIds(client, idsWhere(cards, (card) => card.post_type === 'challenge')),
+  const [deadlines, recipients] = await Promise.all([
     loadPurgeDeadlines(client, idsWhere(cards, (card) => card.status === 'deleted_no_recipient')),
     loadRecipients(client, idsWhere(cards, (card) => card.status === 'closed_delivered')),
   ]);
   return new Map(
-    ids.map((id) => [
-      id,
-      {
-        geo: columns.get(id)?.geo_approx ?? null,
-        shownStreet: columns.get(id)?.shown_street ?? null,
-        shownStreetNumber: columns.get(id)?.shown_street_number ?? null,
-        sourceLanguage: columns.get(id)?.source_language ?? null,
-        statusBeforeRemoval: columns.get(id)?.status_before_removal ?? null,
-        challengeId: challenges.get(id) ?? null,
-        purgeAfter: deadlines.get(id) ?? null,
-        recipient: recipients.get(id) ?? null,
-      },
-    ]),
+    cards.flatMap((card): [string, CardExtras][] =>
+      card.id === null
+        ? []
+        : [
+            [
+              card.id,
+              {
+                geo: card.geo_approx,
+                shownStreet: card.shown_street,
+                shownStreetNumber: card.shown_street_number,
+                sourceLanguage: card.source_language,
+                statusBeforeRemoval: card.status_before_removal,
+                challengeId: card.challenge_id,
+                purgeAfter: deadlines.get(card.id) ?? null,
+                recipient: recipients.get(card.id) ?? null,
+              },
+            ],
+          ],
+    ),
   );
 }

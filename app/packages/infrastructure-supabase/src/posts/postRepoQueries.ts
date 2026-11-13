@@ -13,7 +13,8 @@ import { unwrapCall } from '../rpc/mapRpcError';
 import { sessionUserId } from '../users/userReads';
 import { mapCardToPostWithOwner, mapMediaRow, type PostCardRow } from './mapPostRow';
 import { loadCardExtras } from './postCardExtras';
-import { loadPostCatalog } from './postCatalog';
+import { ITEMS_WORLD, loadPostCatalog } from './postCatalog';
+import { warmListingDetail } from '../marketplace/listingDetailWarmup';
 
 type Client = SupabaseClient<Database>;
 
@@ -37,10 +38,18 @@ async function loadOwnStreet(client: Client, card: PostCardRow) {
 }
 
 /** One post with its owner, gallery and (for the owner) street; null when the caller cannot read it. */
-export async function fetchPostDetail(client: Client, postId: string): Promise<PostWithOwner | null> {
+export async function fetchPostDetail(
+  client: Client,
+  postId: string,
+  options: { readonly warmListingDetail?: boolean } = {},
+): Promise<PostWithOwner | null> {
   const cards = unwrapCall('rpc:post_cards', await client.rpc('post_cards', { p_post_ids: [postId] }));
   const card = cards?.[0];
   if (!card) return null;
+  // A listing post's screen reads the listing detail next; start that read now, beside the rest of this one.
+  if (options.warmListingDetail && card.world_slug !== null && card.world_slug !== ITEMS_WORLD) {
+    warmListingDetail(client, postId);
+  }
   const [catalog, extras, media, street] = await Promise.all([
     loadPostCatalog(client),
     loadCardExtras(client, [card]),

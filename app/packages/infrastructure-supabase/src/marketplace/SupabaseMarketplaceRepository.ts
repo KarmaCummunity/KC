@@ -7,7 +7,7 @@ import { openDirectChat } from '../chat/supabaseDmChat';
 import { sessionUserId } from '../users/userReads';
 import { decodePageCursor, encodePageCursor } from '../posts/pageCursor';
 import { clampPageLimit } from '../posts/postCardPages';
-import { fetchListingDetail } from './mapListingDetail';
+import { readListingDetail } from './listingDetailWarmup';
 import { searchExternalBodies } from './mapExternalBody';
 import { listWorldSubcategories } from './listWorldSubcategories';
 import { listKindOptions, loadKindCatalog } from './kindCatalog';
@@ -26,7 +26,7 @@ const MY_LISTING_STATUSES = POST_STATUSES.filter((status) => status !== 'draft')
 export class SupabaseMarketplaceRepository implements IMarketplaceRepository {
   constructor(private readonly client: Client) {}
 
-  getListingDetail = (listingId: string) => fetchListingDetail(this.client, listingId);
+  getListingDetail = (listingId: string) => readListingDetail(this.client, listingId);
 
   /** "More like this": posts of the same world nearest in meaning, as `similar_posts` cards. */
   async similarListings(listingId: string, limit = 6): Promise<MarketplaceSimilarListing[]> {

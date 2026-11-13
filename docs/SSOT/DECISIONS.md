@@ -1936,6 +1936,19 @@ Owner rules that go with it:
 
 **Affected.** `app/apps/mobile/src/config/launchSurfaces.ts`, `src/hooks/useLaunchSurface.ts`, `src/components/LaunchSurfaceGate.tsx`, `app/(auth)/{index,sign-in,sign-up,forgot-password}.tsx`, `app/auth/{verify,reset-password}.tsx`, `app/settings.tsx`, `app/settings/whatsapp.tsx`, `app/(admin)/whatsapp/index.tsx` (screen moved to `src/screens/admin/WhatsAppAdminScreen.tsx`), `src/components/admin/AdminNav.tsx`, `src/services/purchases/RevenueCatSync.tsx`; FR-AUTH-001 AC2 (the welcome email link is now environment-dependent).
 
+## D-237 — Cold start waits at most 10 seconds for the account gate (2026-11-13)
+
+**Decision.** `RestoreSessionUseCase` waits at most `COLD_START_GATE_WAIT_MS` (10 s) for `bootstrap_session`. If the gate answers in time, nothing changes: a refusal still signs the member out before any screen renders (TD-68). If it does not, the persisted session is restored and `useEnforceAccountGate`, which checks the gate as soon as the session is set, enforces the answer when it arrives. The bound is the PM's starting value, to be tuned from field data.
+
+**Why.** The splash used to hold for up to the 25 s request timeout on a slow network, although a failed check already kept the session (NFR-PERF-005).
+
+**Rejected.** 3 s (the first proposal): the PM chose 10 s as a more cautious start. No bound: the splash can hold for the full request timeout.
+
+**Accepted risk.** A banned or suspended member on a slow network sees the app until the follow-up check returns and signs them out.
+
+**Affected.** `app/packages/application/src/auth/RestoreSession.ts`, `app/apps/mobile/src/services/restoreSessionReporting.ts` (reports `gate_check_failed` with `phase: cold_start_timeout`).
+
+
 ## D-235 — Shared links are answered at the edge: preview card by content kind, store redirect, share text by kind (2026-11-11)
 
 **Decision.** `https://karma-community-kc.com/post/<id>` and `/user/<handle>` are served by Cloudflare Pages Functions (`app/apps/mobile/functions/`, logic in `app/apps/mobile/web-edge/`), which replace the retired Railway Hono server (D-38) and its `Dockerfile` / `railway.json`. The function decides per request from the User-Agent: a link-preview crawler gets an Open Graph card; a phone browser (iOS or Android, not an in-app browser) is redirected to the store page configured for that platform; everyone else gets the SPA through `next()`. The OS opens the app before any of this runs when the app is installed (universal links and app links, TD-66), so a request that reaches the function from a phone means the app did not open. A store URL is optional per platform (`KC_IOS_STORE_URL`, `KC_ANDROID_STORE_URL`, https only); unset keeps that platform on the website, which is today's state until the listings are public. `?web=1` always forces the website. The card is built per content kind (world × direction × lifecycle, same mapping as the share text), reads the post through one definer function, `post_share_card` (callable signed out): a row only for a `Public`, `open` or `closed_delivered` post of an active member, with the title, description, direction, world, status, city name and first processed image, and nothing about the owner or the address. `posts` itself stays closed to signed-out callers. The photo is the `post-images` object, or the logo. A profile card is generic and carries no personal data, whatever the privacy mode. The share text in the app is composed per kind too (`lib/postShareKind.ts`, `lib/buildPostShareMessage.ts`, locale `share.*`), and a profile can be shared from its ⋮ menu.

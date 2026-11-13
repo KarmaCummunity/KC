@@ -24,8 +24,8 @@
    "distinct": 246
   },
   "table": {
-   "callSites": 186,
-   "distinct": 63
+   "callSites": 184,
+   "distinct": 62
   }
  },
  "entries": [
@@ -2005,7 +2005,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-   "line": 38,
+   "line": 39,
    "area": "marketplace",
    "symbol": "loadRideDetails",
    "via": "literal",
@@ -2017,23 +2017,11 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-   "line": 70,
+   "line": 71,
    "area": "marketplace",
    "symbol": "seriesMarker",
    "via": "literal",
    "name": "ride_occurrence_schedules"
-  },
-  {
-   "kind": "table",
-   "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-   "line": 78,
-   "area": "marketplace",
-   "symbol": "loadEventDetails",
-   "via": "literal",
-   "ops": [
-    "select"
-   ],
-   "name": "post_event_details"
   },
   {
    "kind": "table",
@@ -2045,12 +2033,24 @@
    "ops": [
     "select"
    ],
+   "name": "post_event_details"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
+   "line": 80,
+   "area": "marketplace",
+   "symbol": "loadEventDetails",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
    "name": "posts"
   },
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-   "line": 99,
+   "line": 100,
    "area": "marketplace",
    "symbol": "loadFoodDetails",
    "via": "literal",
@@ -2062,7 +2062,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-   "line": 108,
+   "line": 112,
    "area": "marketplace",
    "symbol": "fetchListingDetail",
    "via": "literal",
@@ -2072,18 +2072,6 @@
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
    "line": 115,
-   "area": "marketplace",
-   "symbol": "fetchListingDetail",
-   "via": "literal",
-   "ops": [
-    "select"
-   ],
-   "name": "worlds"
-  },
-  {
-   "kind": "table",
-   "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-   "line": 116,
    "area": "marketplace",
    "symbol": "fetchListingDetail",
    "via": "literal",
@@ -2136,6 +2124,18 @@
    "symbol": "SupabaseMarketplaceRepository.listProfileListings",
    "via": "literal",
    "name": "profile_posts_page"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/marketplace/worldCatalog.ts",
+   "line": 21,
+   "area": "marketplace",
+   "symbol": "readWorlds",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "worlds"
   },
   {
    "kind": "rpc",
@@ -2663,31 +2663,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/posts/postCardExtras.ts",
-   "line": 27,
-   "area": "posts",
-   "symbol": "loadPostColumns",
-   "via": "literal",
-   "ops": [
-    "select"
-   ],
-   "name": "posts"
-  },
-  {
-   "kind": "table",
-   "file": "app/packages/infrastructure-supabase/src/posts/postCardExtras.ts",
-   "line": 36,
-   "area": "posts",
-   "symbol": "loadChallengeIds",
-   "via": "literal",
-   "ops": [
-    "select"
-   ],
-   "name": "challenges"
-  },
-  {
-   "kind": "table",
-   "file": "app/packages/infrastructure-supabase/src/posts/postCardExtras.ts",
-   "line": 44,
+   "line": 29,
    "area": "posts",
    "symbol": "loadPurgeDeadlines",
    "via": "literal",
@@ -2699,7 +2675,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/posts/postCardExtras.ts",
-   "line": 56,
+   "line": 41,
    "area": "posts",
    "symbol": "loadRecipients",
    "via": "literal",
@@ -2711,7 +2687,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/posts/postCardExtras.ts",
-   "line": 65,
+   "line": 50,
    "area": "posts",
    "symbol": "loadRecipients",
    "via": "literal",
@@ -2840,7 +2816,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/posts/postRepoQueries.ts",
-   "line": 23,
+   "line": 24,
    "area": "posts",
    "symbol": "loadGallery",
    "via": "literal",
@@ -2852,7 +2828,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/posts/postRepoQueries.ts",
-   "line": 34,
+   "line": 35,
    "area": "posts",
    "symbol": "loadOwnStreet",
    "via": "literal",
@@ -2864,7 +2840,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/posts/postRepoQueries.ts",
-   "line": 41,
+   "line": 46,
    "area": "posts",
    "symbol": "fetchPostDetail",
    "via": "literal",
@@ -2873,7 +2849,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/posts/postRepoQueries.ts",
-   "line": 64,
+   "line": 73,
    "area": "posts",
    "symbol": "baseCount",
    "via": "literal",
@@ -2885,7 +2861,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/posts/postRepoQueries.ts",
-   "line": 106,
+   "line": 115,
    "area": "posts",
    "symbol": "countProfileClosedPosts",
    "via": "literal",
