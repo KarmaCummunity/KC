@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { SUPPORT_ISSUE_DESCRIPTION_MAX, SUPPORT_ISSUE_DESCRIPTION_MIN } from '@kc/application';
 import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
 import { Chip } from '../ui/Chip';
+import { ChipSelectRow } from '../filterKit/ChipSelectRow';
 import { TextField } from '../ui/TextField';
 import { Card } from '../ui/Card';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
@@ -40,8 +41,7 @@ export function ReportIssueForm({
 
       <Card padding="base" style={styles.card}>
         <Text style={styles.sectionLabel}>{t('settings.reportIssueScreen.categoryLabel')}</Text>
-        {/* Two equal chips per row, so no category is left alone on a line. */}
-        <View style={styles.chipGrid}>
+        <ChipSelectRow>
           {REPORT_ISSUE_CATEGORIES.map((cat) => {
             const selected = category === cat;
             return (
@@ -49,14 +49,13 @@ export function ReportIssueForm({
                 key={cat}
                 testID={`report-issue-category-${cat}`}
                 size="md"
-                style={styles.chipCell}
                 selected={selected}
                 onPress={() => onCategoryChange(selected ? null : cat)}
                 label={t(`settings.reportIssueScreen.categories.${cat}`)}
               />
             );
           })}
-        </View>
+        </ChipSelectRow>
 
         {/* No `textAlign` here: TextField aligns the placeholder to the reading-start edge and
             lets typed text follow its own language (FR-RESP-006 AC21). A physical `left` would
@@ -95,9 +94,6 @@ const useReportIssueFormStyles = makeUseStyles(({ colors }) => ({
     textAlign: rtlTextAlignStart,
     ...webTextRtl,
   },
-  chipGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, ...webViewRtl },
-  // Just under half the row, growing to fill it: two chips per row whatever the label length.
-  chipCell: { flexBasis: '40%', flexGrow: 1, justifyContent: 'center' },
   // About five lines of text before the field scrolls.
   input: { minHeight: spacing['4xl'] * 2 },
   inputFooter: {

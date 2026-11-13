@@ -1,8 +1,7 @@
 import React from 'react';
 import { View } from 'react-native';
 import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
-import { Chip } from '../ui/Chip';
-import { rowDirectionStart } from '../../lib/rtlLayout';
+import { FilterChipRow } from '../filterKit/FilterChipRow';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 
 export interface ChipOption<T extends string> {
@@ -23,7 +22,6 @@ interface OptionChipsProps<T extends string> {
 const useStyles = makeUseStyles(({ colors }) => ({
   group: { gap: spacing.xs },
   label: { ...typography.bodySmall, color: colors.textSecondary, textAlign: rtlTextAlignStart },
-  row: { flexDirection: rowDirectionStart, flexWrap: 'wrap', gap: spacing.sm },
   hint: { ...typography.caption, color: colors.textSecondary, textAlign: rtlTextAlignStart },
 }));
 
@@ -40,16 +38,12 @@ export function OptionChips<T extends string>({
   return (
     <View style={styles.group} testID={testID}>
       <Text style={styles.label}>{label}</Text>
-      <View style={styles.row}>
-        {options.map((option) => (
-          <Chip
-            key={option.value}
-            label={option.label}
-            selected={option.value === selected}
-            onPress={() => onSelect(option.value)}
-          />
-        ))}
-      </View>
+      <FilterChipRow<T>
+        chipSize="md"
+        options={options}
+        value={selected}
+        onChange={(next) => next && onSelect(next)}
+      />
       {hint ? <Text style={styles.hint}>{hint}</Text> : null}
     </View>
   );

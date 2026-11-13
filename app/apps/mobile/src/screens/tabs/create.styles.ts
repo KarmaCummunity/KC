@@ -80,23 +80,6 @@ export const useCreatePostStyles = makeUseStyles(({ colors, isDark }) => ({
   streetRow: { flexDirection: 'row' as const, gap: spacing.sm, alignItems: 'stretch' as const },
   streetInputStreet: { flex: 2, minWidth: 0 },
   streetInputHouse: { flex: 1, minWidth: 0, maxWidth: 120 },
-  chips: { flexDirection: 'row' as const },
-  /** Wrapping chip row of the listing form. */
-  /** Space between the items form's horizontally scrolling subcategory chips. */
-  chipGap: { marginEnd: spacing.sm },
-  conditionRow: { flexDirection: 'row' as const, gap: spacing.sm },
-  conditionBtn: {
-    flex: 1,
-    paddingVertical: spacing.md,
-    borderRadius: radius.lg,
-    borderWidth: isDark ? 1 : 1.5,
-    borderColor: colors.border,
-    alignItems: 'center' as const,
-    backgroundColor: colors.surface,
-  },
-  conditionBtnActive: { backgroundColor: colors.primarySurface, borderColor: colors.primary },
-  conditionText: { ...typography.label, color: colors.textSecondary },
-  conditionTextActive: { color: colors.primary },
   exposureAccordion: {
     borderRadius: radius.lg,
     borderWidth: 1,

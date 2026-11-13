@@ -1,5 +1,5 @@
 import React from 'react';
-import { ScrollView, TouchableOpacity, View } from 'react-native';
+import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Text } from '@kc/ui';
 import { TextField } from '../ui/TextField';
@@ -14,6 +14,7 @@ import { EditPostExposureSection } from './EditPostExposureSection';
 import type { UploadedAsset } from '../../services/imageUpload';
 import { useEditPostScreenStyles } from '../../screens/edit-post/editPostScreen.styles';
 import { FormScrollView } from '../ui/FormScrollView';
+import { FilterChipRow } from '../filterKit/FilterChipRow';
 
 export interface EditPostFormScrollContentProps {
   readonly isGive: boolean;
@@ -147,37 +148,25 @@ export function EditPostFormScrollContent({
 
       <View style={styles.section}>
         <Text style={styles.sectionLabel}>{t('post.editPost.sectionCategory')}</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chips}>
-          {ALL_CATEGORIES.map((cat) => (
-            <TouchableOpacity
-              key={cat}
-              style={[styles.chip, category === cat && styles.chipActive]}
-              onPress={() => onCategoryChange(cat)}
-            >
-              <Text style={[styles.chipText, category === cat && styles.chipTextActive]}>
-                {t(`post.category.${cat}`)}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+        <FilterChipRow<Category>
+          testID="edit-post-category"
+          chipSize="md"
+          options={ALL_CATEGORIES.map((cat) => ({ value: cat, label: t(`post.category.${cat}`) }))}
+          value={category}
+          onChange={(next) => next && onCategoryChange(next)}
+        />
       </View>
 
       {isGive && (
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>{t('post.editPost.sectionCondition')}</Text>
-          <View style={styles.conditionRow}>
-            {ITEM_CONDITIONS.map((c) => (
-              <TouchableOpacity
-                key={c}
-                style={[styles.conditionBtn, condition === c && styles.conditionBtnActive]}
-                onPress={() => onConditionChange(c)}
-              >
-                <Text style={[styles.conditionText, condition === c && styles.conditionTextActive]}>
-                  {t(`post.condition.${c}`)}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+          <FilterChipRow<ItemCondition>
+            testID="edit-post-condition"
+            chipSize="md"
+            options={ITEM_CONDITIONS.map((c) => ({ value: c, label: t(`post.condition.${c}`) }))}
+            value={condition}
+            onChange={(next) => next && onConditionChange(next)}
+          />
         </View>
       )}
 

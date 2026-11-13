@@ -104,12 +104,6 @@
       "adHocChip": 1,
       "iconSizeLiteral": 1
     },
-    "src/screens/edit-post/editPostScreen.styles.ts": {
-      "radiusLiteral": 2,
-      "spacingLiteral": 1,
-      "physicalSide": 2,
-      "adHocChip": 1
-    },
     "src/screens/guest/feed.styles.ts": {
       "spacingLiteral": 1
     },

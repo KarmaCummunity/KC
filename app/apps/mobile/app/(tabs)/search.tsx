@@ -158,7 +158,6 @@ export default function SearchScreen() {
 
       {/* ── Category type chips ─────────────── */}
       <FilterChipRow<SearchResultType>
-        scrollable
         showAllChip
         allLabel={t('search.all')}
         options={[

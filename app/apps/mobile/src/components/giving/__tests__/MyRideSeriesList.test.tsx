@@ -34,9 +34,6 @@ vi.mock('../../../services/rideSeriesComposition', () => ({
     updateSchedule: () => ({ execute: updateSchedule }),
   },
 }));
-vi.mock('../../search/SearchChip', () => ({
-  SearchChip: (p: { label: string; onPress: () => void }) => <button data-testid={`chip:${p.label}`} onClick={p.onPress} />,
-}));
 vi.mock('../../ui/DateTimeField', () => ({
   DateTimeField: (p: { testID: string; onChange: (d: Date) => void }) => (
     <button data-testid={`${p.testID}-pick`} onClick={() => p.onChange(new Date(2026, 10, 2, 8, 15))} />
@@ -112,7 +109,7 @@ describe('MyRideSeriesList', () => {
   it('reschedules through the editor: a day toggled, a new time, the end date kept', async () => {
     const view = renderList([SERIES]);
     fireEvent.click(await view.findByTestId('ride-series-edit-s1'));
-    fireEvent.click(view.getByTestId('chip:rideRoutes.weekday.4'));
+    fireEvent.click(view.getByTestId('ride-weekday-4'));
     fireEvent.click(view.getByTestId('ride-series-time-pick'));
     fireEvent.click(view.getByTestId('ride-series-save-s1'));
     await waitFor(() =>

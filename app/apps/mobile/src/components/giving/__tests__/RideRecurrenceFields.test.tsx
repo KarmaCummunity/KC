@@ -18,11 +18,6 @@ vi.mock('react-native', async () => {
   );
   return { ...actual, Switch };
 });
-vi.mock('../../search/SearchChip', () => ({
-  SearchChip: (p: { label: string; active: boolean; onPress: () => void }) => (
-    <button data-testid={`chip:${p.label}`} data-active={p.active} onClick={p.onPress} />
-  ),
-}));
 // The real field opens native pickers; here one button picks a fixed day.
 vi.mock('../../ui/DateTimeField', () => ({
   DateTimeField: (p: { testID: string; mode: string; value: Date | null; onChange: (d: Date) => void }) => (
@@ -61,10 +56,10 @@ describe('RideRecurrenceFields', () => {
 
   it('toggles weekdays, keeping them in week order', () => {
     const view = render(<Harness initial={{ weekdays: [1], endsOn: null }} />);
-    fireEvent.click(view.getByTestId('chip:rideRoutes.weekday.0'));
-    fireEvent.click(view.getByTestId('chip:rideRoutes.weekday.4'));
+    fireEvent.click(view.getByTestId('ride-weekday-0'));
+    fireEvent.click(view.getByTestId('ride-weekday-4'));
     expect(read(view).weekdays).toEqual([0, 1, 4]);
-    fireEvent.click(view.getByTestId('chip:rideRoutes.weekday.1'));
+    fireEvent.click(view.getByTestId('ride-weekday-1'));
     expect(read(view).weekdays).toEqual([0, 4]);
   });
 

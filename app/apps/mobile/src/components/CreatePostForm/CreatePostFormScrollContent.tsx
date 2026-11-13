@@ -1,5 +1,5 @@
 import React, { useRef, type ReactNode } from 'react';
-import { ScrollView, TouchableOpacity, View } from 'react-native';
+import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useTheme, Text, TextInput, type TextInput as KitTextInput } from '@kc/ui';
 import { formStreetNumberInputProps } from '../../lib/platform/formTextInputHints';
@@ -10,7 +10,6 @@ import { StreetPicker } from '../StreetPicker';
 import { CreatePostExposureSection } from './CreatePostExposureSection';
 import { EstimatedValueSlider } from './EstimatedValueSlider';
 import { PhotoPicker } from './PhotoPicker';
-import { Chip } from '../ui/Chip';
 import { TextField } from '../ui/TextField';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 import type { UploadedAsset } from '../../services/imageUpload';
@@ -19,6 +18,7 @@ import { useShellTabBarScrollInset } from '../../navigation/useShellTabBarVisibi
 import type { CreatePostCitySelection } from '../../hooks/useCreatePostPublish';
 import { FormScrollView } from '../ui/FormScrollView';
 import { useFormScopeAnchor, useFormScopeField } from '../ui/useFormScopeField';
+import { FilterChipRow } from '../filterKit/FilterChipRow';
 
 export interface CreatePostFormScrollContentProps {
   /** Unified create header (category picker + give/request toggle). */
@@ -200,35 +200,25 @@ export function CreatePostFormScrollContent({
 
       <View style={styles.section}>
         <Text style={styles.sectionLabel}>{t('post.categoryLabel')}</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chips}>
-          {ALL_CATEGORIES.map((cat) => (
-            <Chip
-              key={cat}
-              label={t(`post.category.${cat}`)}
-              selected={category === cat}
-              onPress={() => onCategoryChange(cat)}
-              style={styles.chipGap}
-            />
-          ))}
-        </ScrollView>
+        <FilterChipRow<Category>
+          testID="create-post-category"
+          chipSize="md"
+          options={ALL_CATEGORIES.map((cat) => ({ value: cat, label: t(`post.category.${cat}`) }))}
+          value={category}
+          onChange={(next) => next && onCategoryChange(next)}
+        />
       </View>
 
       {isGive && (
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>{t('post.conditionLabel')}</Text>
-          <View style={styles.conditionRow}>
-            {ITEM_CONDITIONS.map((c) => (
-              <TouchableOpacity
-                key={c}
-                style={[styles.conditionBtn, condition === c && styles.conditionBtnActive]}
-                onPress={() => onConditionChange(c)}
-              >
-                <Text style={[styles.conditionText, condition === c && styles.conditionTextActive]}>
-                  {t(`post.condition.${c}`)}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+          <FilterChipRow<ItemCondition>
+            testID="create-post-condition"
+            chipSize="md"
+            options={ITEM_CONDITIONS.map((c) => ({ value: c, label: t(`post.condition.${c}`) }))}
+            value={condition}
+            onChange={(next) => next && onConditionChange(next)}
+          />
           <EstimatedValueSlider value={estimatedValue} onChange={onEstimatedValueChange} />
         </View>
       )}

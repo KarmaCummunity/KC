@@ -1,5 +1,5 @@
-// Mapped to spec: FR-FEED-004 / FR-FEED-020 (shared horizontal/wrapping filter chip row)
-import React, { Children } from 'react';
+// Mapped to spec: FR-FEED-004 / FR-FEED-020 (shared sideways-scrolling filter chip row)
+import React from 'react';
 import { type StyleProp, type ViewStyle } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Chip } from '../ui/Chip';
@@ -16,8 +16,6 @@ interface BaseFilterChipRowProps<T> {
   readonly options: readonly FilterOption<T>[];
   readonly allLabel?: string;
   readonly showAllChip?: boolean;
-  /** When true, a single horizontal row only (no expand). Default: compact row + expand. */
-  readonly scrollable?: boolean;
   readonly chipSize?: 'sm' | 'md';
   readonly testID?: string;
   readonly testIDPrefix?: string;
@@ -51,7 +49,6 @@ export function FilterChipRow<T extends string | number>(props: FilterChipRowPro
     options,
     allLabel,
     showAllChip = false,
-    scrollable = false,
     chipSize = 'sm',
     testID,
     testIDPrefix,
@@ -114,17 +111,12 @@ export function FilterChipRow<T extends string | number>(props: FilterChipRowPro
     </>
   );
 
-  const chipCount = options.length + (showAllChip ? 1 : 0) + Children.count(props.children);
-  // Short rows (e.g. world feed direction) stay scroll-only — no expand control stealing width (Maestro / narrow phones).
-  const expandable = !scrollable && chipCount > 4;
-
   return (
     <ChipSelectRow
       style={style}
       contentContainerStyle={contentContainerStyle}
       testID={testID}
       accessibilityLabel={accessibilityLabel}
-      expandable={expandable}
     >
       {chips}
     </ChipSelectRow>

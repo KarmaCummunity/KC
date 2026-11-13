@@ -4,7 +4,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { FilterButton } from '../FilterButton';
 import { FilterSearchBar } from '../FilterSearchBar';
-import { ChipSelectRow, chipRowOverflows } from '../ChipSelectRow';
+import { ChipSelectRow } from '../ChipSelectRow';
 import { FilterChipRow } from '../FilterChipRow';
 import { FilterSection } from '../FilterSection';
 import { SortSection } from '../SortSection';
@@ -107,33 +107,20 @@ describe('filterKit — FilterSearchBar', () => {
 });
 
 describe('filterKit — ChipSelectRow', () => {
-  it('chipRowOverflows only when chips are wider than the row', () => {
-    expect(chipRowOverflows(400, 300)).toBe(true);
-    expect(chipRowOverflows(300, 300)).toBe(false);
-    expect(chipRowOverflows(300.5, 300)).toBe(false); // rounding noise
-    expect(chipRowOverflows(900, 0)).toBe(false); // not measured yet
-  });
-
-  it('shows no expand control while the chips fit the row', () => {
+  // Every multi-option section is one sideways-scrolling line: no expand control, no wrapping.
+  it('renders its chips on one scrolling line with no expand or collapse control', () => {
     render(
       <ChipSelectRow testID="chip-select">
-        <span>A</span>
+        {Array.from({ length: 12 }, (_, i) => (
+          <span key={i} data-testid={`chip-${i}`}>
+            {i}
+          </span>
+        ))}
       </ChipSelectRow>,
     );
+    expect(screen.getByTestId('chip-11')).toBeTruthy();
     expect(screen.queryByTestId('chip-select-expand')).toBeNull();
-  });
-
-  // Regression: the compact row's scroll area resolved to `flex: 0 0 0%` (zero width), hiding every chip.
-  it('lets the compact scroll area grow so the chips are not collapsed to zero width', () => {
-    render(
-      <ChipSelectRow testID="chip-select">
-        <span data-testid="chip-a">A</span>
-      </ChipSelectRow>,
-    );
-    const scrollArea = screen.getByTestId('chip-a').parentElement?.parentElement as HTMLElement;
-    const style = window.getComputedStyle(scrollArea);
-    expect(style.flexGrow).toBe('1');
-    expect(style.flexShrink).toBe('1');
+    expect(screen.queryByTestId('chip-select-collapse')).toBeNull();
   });
 });
 
@@ -166,11 +153,10 @@ describe('filterKit — FilterChipRow', () => {
     expect(onChange).toHaveBeenCalledWith(null);
   });
 
-  it('supports scrollable mode and multiSelect', () => {
+  it('supports multiSelect', () => {
     const onChange = vi.fn();
     render(
       <FilterChipRow
-        scrollable
         multiSelect
         options={options}
         value={['opt1']}
