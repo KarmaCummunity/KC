@@ -9,6 +9,7 @@ import {
   deriveThumbPath,
   deriveThumbUrl,
   getSupabaseFeedImageUrl,
+  getSupabaseHeroImageUrl,
   getSupabaseImageThumbUrl,
   getSupabasePublicImageUrl,
 } from '../imageUrl';
@@ -136,5 +137,33 @@ describe('deriveThumbUrl', () => {
   it('returns input unchanged on parse failure', () => {
     expect(deriveThumbUrl('')).toBe('');
     expect(deriveThumbUrl('not a url')).toBe('not a url');
+  });
+});
+
+describe('getSupabaseHeroImageUrl (post detail hero)', () => {
+  afterEach(() => {
+    delete process.env.EXPO_PUBLIC_USE_STORAGE_TRANSFORM;
+  });
+
+  it('asks for a webp sized to twice the display width, not the 2048 px original', () => {
+    const url = getSupabaseHeroImageUrl('post-images', 'a/b.jpg', 390);
+    expect(url).toContain('/storage/v1/render/image/public/post-images/a/b.jpg');
+    expect(url).toContain('width=780');
+    expect(url).toContain('format=webp');
+  });
+
+  it('caps very wide displays so a desktop window does not ask for the original', () => {
+    expect(getSupabaseHeroImageUrl('post-images', 'a/b.jpg', 2000)).toContain('width=1600');
+  });
+
+  it('serves the original when transforms are off, never the blurry 400 px thumb', () => {
+    process.env.EXPO_PUBLIC_USE_STORAGE_TRANSFORM = '0';
+    const url = getSupabaseHeroImageUrl('post-images', 'a/b.jpg', 390);
+    expect(url).toContain('/storage/v1/object/public/post-images/a/b.jpg');
+    expect(url).not.toContain('-thumb');
+  });
+
+  it('has no URL for a missing path', () => {
+    expect(getSupabaseHeroImageUrl('post-images', '', 390)).toBe('');
   });
 });
