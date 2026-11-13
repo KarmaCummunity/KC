@@ -15,6 +15,7 @@ import { getSupabaseHeroImageUrl, getSupabasePublicImageUrl } from '../lib/image
 const STORAGE_BUCKET = 'post-images';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const HEIGHT = 240;
+const PLACEHOLDER_ICON_SIZE = 72;
 
 interface Props {
   readonly mediaAssets: readonly MediaAsset[];
@@ -34,23 +35,23 @@ const useStyles = makeUseStyles(({ colors }) => ({
     bottom: spacing.sm,
     left: spacing.sm,
     paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-    backgroundColor: 'rgba(0,0,0,0.55)',
+    paddingVertical: spacing.xs,
+    backgroundColor: colors.overlay,
     borderRadius: radius.full,
   },
-  counterText: { ...typography.caption, color: colors.textInverse, fontWeight: '600' },
+  counterText: { ...typography.label, color: colors.textInverse },
   dots: {
     // Slightly above the counter row so both stay readable on multi-image posts.
     position: 'absolute',
-    bottom: spacing.sm + 26,
+    bottom: spacing.sm + spacing.xl,
     alignSelf: 'center',
     flexDirection: 'row',
-    gap: 6,
+    gap: spacing.xs,
   },
   dot: {
-    width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.55)',
+    width: 6, height: 6, borderRadius: radius.full, backgroundColor: colors.textInverse, opacity: 0.55,
   },
-  dotActive: { backgroundColor: colors.textInverse, width: 8, height: 8, borderRadius: 4 },
+  dotActive: { opacity: 1, width: 8, height: 8 },
 }));
 
 export function PostImageCarousel({ mediaAssets, fallbackIcon }: Props) {
@@ -63,7 +64,7 @@ export function PostImageCarousel({ mediaAssets, fallbackIcon }: Props) {
   if (mediaAssets.length === 0) {
     return (
       <View style={[styles.frame, styles.empty]}>
-        <Ionicons name={fallbackIcon} size={72} color={colors.textSecondary} />
+        <Ionicons name={fallbackIcon} size={PLACEHOLDER_ICON_SIZE} color={colors.textSecondary} />
       </View>
     );
   }
