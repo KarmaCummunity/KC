@@ -3,6 +3,8 @@
 // 19_org_finance.md FR-FIN-021). Every amount is integer agorot (1 ILS = 100 agorot), as the
 // server keeps it; screens format it for display.
 
+import { standingOrderMachine } from '../fsm/machines/standingOrder';
+
 export interface VerifiedNonprofitRow {
   readonly orgId: string;
   readonly slug: string;
@@ -48,8 +50,12 @@ export interface DonationCheckoutResult {
   readonly orgId: string;
 }
 
-/** `standing_orders.status` (0269); the moves between them are `standingOrderMachine`. */
-export const STANDING_ORDER_STATUSES = ['active', 'paused', 'cancelled'] as const;
+/**
+ * `standing_orders.status`: the states of `standingOrderMachine`, read from the machine so the
+ * list cannot drift from it (`pending` is an order whose first charge the provider has not
+ * confirmed yet).
+ */
+export const STANDING_ORDER_STATUSES = standingOrderMachine.states;
 export type StandingOrderStatus = (typeof STANDING_ORDER_STATUSES)[number];
 
 export interface StandingOrderRow {

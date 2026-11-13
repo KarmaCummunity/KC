@@ -119,6 +119,21 @@ export function hasEdge<S extends string, R extends string>(
   return machine.edges.some((edge) => edge.from === from && edge.to === to);
 }
 
+/**
+ * True when `role` may really move `from → to`: the edge exists, the role holds it, and the
+ * status changes. Action helpers ask this to decide which buttons a person is offered; a status
+ * the app does not know (a newer server) offers nothing.
+ */
+export function allowsMove<S extends string, R extends string>(
+  machine: FsmMachine<S, R>,
+  from: string,
+  to: S,
+  role?: R,
+): boolean {
+  const answer = canTransition(machine, from, to, role);
+  return answer.ok && answer.changed;
+}
+
 /** Same answer as `canTransition`, but throws `TransitionError` when the move is not legal. */
 export function assertTransition<S extends string, R extends string>(
   machine: FsmMachine<S, R>,
