@@ -39,6 +39,7 @@ Agents run this flow through the [`kc-issue-to-merge`](../../.claude/skills/kc-i
 - `area:*`, `database`: set automatically from paths by [`labeler.yml`](../../.github/labeler.yml).
 - `agent-ready`: the author's or coordinator's signal that the PR is done and may auto-merge.
 - `epic`, `size:*`: set by the coordinator.
+- `verification` + `human`: a person checks merged work an agent cannot verify (device, store, visual). Agents split these off at definition time; open ones block the `dev` → `main` release (`docs/SSOT/RELEASE_CHECKLIST.md`).
 - `found-by-agent` + `needs-triage`: an issue an agent opened from a finding outside its task. Agents never pick a `needs-triage` issue; the PM removes the label to release it to the queue. Process labels are declared in [`sync-agent-labels.yml`](../../.github/workflows/sync-agent-labels.yml).
 
 ## Weekly hygiene
