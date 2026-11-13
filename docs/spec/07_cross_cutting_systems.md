@@ -79,6 +79,7 @@ All engagement earns; closed giving earns most (D12). Visible only to the owner;
 | Active time in app | 1 per 10 min | 6/day |
 | Item closed (existing) | giver 20 + up to 20 bonus; receiver 15 | – |
 | Food closed | giver 20; receiver 10 | – |
+| Animal handed over (adoption or foster, D164) | giver 20; receiver 15 | – |
 | Ride completed | driver 25; passenger 10 | – |
 | Volunteering incl. elderly & consulting (D32) | 10 / hour | 80/day |
 | Hosting | host 30 / night; guest 10 | 7 nights |
