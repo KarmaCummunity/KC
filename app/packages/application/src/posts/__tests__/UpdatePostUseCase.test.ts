@@ -107,6 +107,17 @@ describe('UpdatePostUseCase', () => {
     ).rejects.toMatchObject({ name: 'PostError', code: 'not_found' });
   });
 
+  it('edits a paused post as it edits an open one (spec 07 §7.1)', async () => {
+    const repo = new FakePostRepository();
+    repo.findByIdResult = makePostWithOwner({ status: 'paused' });
+    repo.updateResult = makePostWithOwner({ status: 'paused', title: 'שינוי' });
+    const uc = new UpdatePostUseCase(repo);
+    await expect(
+      uc.execute({ postId: 'p_1', viewerId: 'u_1', patch: { title: 'שינוי' } }),
+    ).resolves.toBeDefined();
+    expect(repo.lastUpdateArgs).not.toBeNull();
+  });
+
   it('rejects editing a non-open post (expired)', async () => {
     const repo = new FakePostRepository();
     repo.findByIdResult = makePostWithOwner({ status: 'expired' });

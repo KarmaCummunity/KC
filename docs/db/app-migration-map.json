@@ -4295,8 +4295,8 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/auth/bootstrapSession.ts",
-     "line": 138,
-     "symbol": "fetchBootstrapSession",
+     "line": 155,
+     "symbol": "readBootstrapSession",
      "area": "auth"
     },
     {

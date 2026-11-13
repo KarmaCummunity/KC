@@ -212,7 +212,7 @@ describe('rideReinstateBlocker — mirrors reinstate_ride_booking (0667)', () =>
   });
 
   it('refuses with the RPC code, in the RPC order', () => {
-    expect(rideReinstateBlocker(cancelled, ride({ listingStatus: 'closed' }), NOW)).toBe('listing_not_available');
+    expect(rideReinstateBlocker(cancelled, ride({ listingStatus: 'closed_delivered' }), NOW)).toBe('listing_not_available');
     expect(rideReinstateBlocker({ ...cancelled, cancelReason: 'expired' }, ride(), NOW)).toBe('invalid_status');
     const twice = ride({ bookings: [cancelled, { ...booking('reserved', 1), handoffId: 'r1', recipientId: 'p1' }] });
     expect(rideReinstateBlocker(cancelled, twice, NOW)).toBe('already_booked');
