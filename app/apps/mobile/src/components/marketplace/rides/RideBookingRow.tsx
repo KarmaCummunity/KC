@@ -74,7 +74,9 @@ export function RideBookingRow({
   const may = (action: RideBookingAction): boolean =>
     canPerformBookingAction(booking.status, action, booking.ratedByMe, 'owner');
   // A booking that can still be answered shows the answer pair; the driver settles it afterwards.
-  const pair = may('approve') ? ACTION_PAIRS.answer : may('complete') ? ACTION_PAIRS.settle : null;
+  let pair: (typeof ACTION_PAIRS)[keyof typeof ACTION_PAIRS] | null = null;
+  if (may('approve')) pair = ACTION_PAIRS.answer;
+  else if (may('complete')) pair = ACTION_PAIRS.settle;
   const deadline = pair === ACTION_PAIRS.answer ? formatRideTime(booking.confirmBy) : null;
   const isApproveBlocked = pair === ACTION_PAIRS.answer && !canApprove;
   const isCompleteBlocked = pair === ACTION_PAIRS.settle && !canComplete;

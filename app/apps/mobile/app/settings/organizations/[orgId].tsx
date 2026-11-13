@@ -90,6 +90,7 @@ function MemberRow(props: {
   const { t } = useTranslation();
   const styles = useStyles();
   const { member } = props;
+  const roleLabel = t(`organizations.roles.${member.role}`);
   return (
     <View style={styles.row} testID={`org-member-${member.userId}`}>
       <AvatarInitials name={member.displayName} avatarUrl={member.avatarUrl} size={40} />
@@ -97,7 +98,7 @@ function MemberRow(props: {
         <Text style={[styles.name, webTextRtl]} numberOfLines={1}>
           {props.isSelf ? `${member.displayName} ${t('organizations.members.you')}` : member.displayName}
         </Text>
-        <Text style={[styles.meta, webTextRtl]}>{`@${member.shareHandle} · ${t(`organizations.roles.${member.role}`)}`}</Text>
+        <Text style={[styles.meta, webTextRtl]}>{`@${member.shareHandle} · ${roleLabel}`}</Text>
       </View>
       {props.canRemove ? (
         <GhostButton

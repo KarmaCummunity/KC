@@ -106,15 +106,18 @@ function OrganizationList(props: {
   }
   return (
     <View style={styles.list}>
-      {props.organizations.map((org) => (
-        <SettingsScreenRow
-          key={org.orgId}
-          testID={`my-organization-${org.orgId}`}
-          label={`${org.name} · ${t(`organizations.roles.${org.role}`)}`}
-          icon="people-outline"
-          onPress={() => props.onOpen(org)}
-        />
-      ))}
+      {props.organizations.map((org) => {
+        const roleLabel = t(`organizations.roles.${org.role}`);
+        return (
+          <SettingsScreenRow
+            key={org.orgId}
+            testID={`my-organization-${org.orgId}`}
+            label={`${org.name} · ${roleLabel}`}
+            icon="people-outline"
+            onPress={() => props.onOpen(org)}
+          />
+        );
+      })}
     </View>
   );
 }

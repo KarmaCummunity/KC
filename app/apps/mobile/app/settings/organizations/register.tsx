@@ -141,9 +141,9 @@ export default function RegisterOrganizationScreen() {
               onValueChange={setNonprofit}
             />
           </View>
-          {error && error.field === 'nonprofit' ? <Text style={styles.error}>{t(error.key)}</Text> : null}
+          {error?.field === 'nonprofit' ? <Text style={styles.error}>{t(error.key)}</Text> : null}
         </Card>
-        {error && error.field === null ? (
+        {error?.field === null ? (
           <Text style={[styles.error, webTextRtl]} testID="org-register-error">{t(error.key)}</Text>
         ) : null}
       </FormScreen>

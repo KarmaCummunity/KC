@@ -89,7 +89,7 @@ export class SupabaseDonationLinksRepository implements IDonationLinksRepository
   private async invoke(body: Record<string, unknown>): Promise<DonationLink> {
     const { data, error } = await this.client.functions.invoke<EdgeAnswer>('validate-donation-link', { body });
     if (error) throw await donationLinkErrorFromInvokeFailure(error);
-    if (!data || !data.ok || !data.link) throw donationLinkErrorFromInvokeData(data);
+    if (!data?.ok || !data.link) throw donationLinkErrorFromInvokeData(data);
     return mapRow(data.link);
   }
 
@@ -161,7 +161,9 @@ export class SupabaseDonationLinksRepository implements IDonationLinksRepository
       const cause = (error as { cause?: { code?: string; message?: string } }).cause;
       const refused = cause?.code === '42501' && !isBackendObjectMissing(cause);
       const reason = error instanceof BackendRuleError ? error.reason : null;
-      const code = refused || reason === 'unauthenticated' ? 'forbidden' : reason ? 'unknown' : 'network';
+      let code: 'forbidden' | 'unknown' | 'network' = 'network';
+      if (refused || reason === 'unauthenticated') code = 'forbidden';
+      else if (reason) code = 'unknown';
       throw new DonationLinkError(code, error instanceof Error ? error.message : object, error);
     }
   }

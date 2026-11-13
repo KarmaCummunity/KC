@@ -49,6 +49,13 @@ async function loadShape(client: Client, listingId: string) {
   return row;
 }
 
+/** Which world's detail shape a listing's free details follow. */
+function detailsWorldOf(shape: Awaited<ReturnType<typeof loadShape>>): 'rides' | 'event' | 'food' | 'plain' {
+  if (shape.post_type === 'ride') return 'rides';
+  if (shape.post_type === 'event') return 'event';
+  return shape.world_slug === 'food' && shape.direction === 'offer' ? 'food' : 'plain';
+}
+
 /** Updates one detail table; an empty answer means the row is not editable by the caller. */
 async function updateDetailRow(client: Client, table: 'post_ride_details' | 'post_event_details' | 'post_food_details', listingId: string, columns: object): Promise<void> {
   const rows = unwrapCall(`table:${table}`, await client.from(table).update(columns as never).eq('post_id', listingId).select('post_id'));
@@ -59,7 +66,7 @@ async function updateDetailRow(client: Client, table: 'post_ride_details' | 'pos
 export async function updateMyListing(client: Client, listingId: string, patch: UpdatePatch): Promise<void> {
   const shape = await loadShape(client, listingId);
   const form = patch.details ?? {};
-  const world = shape.post_type === 'ride' ? 'rides' : shape.post_type === 'event' ? 'event' : shape.world_slug === 'food' && shape.direction === 'offer' ? 'food' : 'plain';
+  const world = detailsWorldOf(shape);
   const post: Database['public']['Tables']['posts']['Update'] = {};
   if (patch.title !== undefined) post.title = patch.title;
   if (patch.summary !== undefined) post.description = patch.summary;
