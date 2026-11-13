@@ -501,7 +501,7 @@ A signed-in user may bookmark any post they can currently read (their own or ano
 
 > **Status:** 🟡 In progress — one canonical URL on `karma-community-kc.com`. The text and the preview card follow the kind of post (AC2, AC4, AC10), a phone without the app is sent to its store (AC9), and a profile can be shared too (AC11).
 >
-> **Hosting note (2026-11-11):** Railway is retired. AC4, AC5 and AC9 are served by Cloudflare Pages Functions (`app/apps/mobile/functions/`, logic in `app/apps/mobile/web-edge/`), deployed with the static export by `deploy-web.yml`; the Hono server that used to serve them is removed (`TD-234`, decision `{{ENG:shared-links-edge}}`).
+> **Hosting note (2026-11-11):** Railway is retired. AC4, AC5 and AC9 are served by Cloudflare Pages Functions (`app/apps/mobile/functions/`, logic in `app/apps/mobile/web-edge/`), deployed with the static export by `deploy-web.yml`; the Hono server that used to serve them is removed (`TD-234`, decision `D-235`).
 
 **Description.**
 A signed-in viewer of a `Public` post that is `open` or `closed_delivered` may share a link to that post from the post-detail screen. The link is browsable to anyone (signed-in or not); social-media crawlers see an Open Graph card with the first post image, the post title, and the description; non-authenticated humans landing in the app are routed to the sign-in screen and, after sign-in, deep-linked back to the original post.
@@ -542,7 +542,7 @@ A signed-in viewer of a `Public` post that is `open` or `closed_delivered` may s
 - User offline at share time: OS share sheet still opens. Recipient's connectivity governs link resolution.
 - Image download failure on iOS: fall back to URL-only share. OG preview on the recipient still renders the image.
 
-**Related.** Screens: 2.3 (post detail). Domain: `Post.visibility`, `Post.status`. Cross-refs: `FR-POST-014` (viewer detail), `FR-AUTH-014` (guest entry), `TD-66` (deep-link manifests). Edge: `app/apps/mobile/web-edge/`, `app/apps/mobile/functions/`. Decisions: `D-38` (superseded for hosting), `{{ENG:shared-links-edge}}`.
+**Related.** Screens: 2.3 (post detail). Domain: `Post.visibility`, `Post.status`. Cross-refs: `FR-POST-014` (viewer detail), `FR-AUTH-014` (guest entry), `TD-66` (deep-link manifests). Edge: `app/apps/mobile/web-edge/`, `app/apps/mobile/functions/`. Decisions: `D-38` (superseded for hosting), `D-235`.
 
 ## FR-POST-024 — Recurring time posts (a series of occurrences) 🟡
 > Issue #2086; PM decisions `D145`, `D146`, `D147` (2026-11-11). Rides keep their own series (FR-RIDE-046) and move onto this model later.

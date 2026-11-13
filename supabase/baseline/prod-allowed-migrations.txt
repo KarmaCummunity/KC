@@ -52,3 +52,4 @@
 0055_whatsapp_linking_and_bot_tools.sql
 0056_whatsapp_admin_console.sql
 0057_whatsapp_match_alerts_and_jobs.sql
+0058_post_share_card.sql
