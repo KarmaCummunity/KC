@@ -176,6 +176,21 @@ describe('KnowledgeSlotPicker — the learner', () => {
     await waitFor(() => expect(cancel).toHaveBeenCalledWith('h7'));
   });
 
+  // Regression: "session held" was offered on a request the giver had not answered yet, and the
+  // server refused it; only an approved booking that is about to start offers it.
+  it('offers "session held" on an approved booking about to start, not on one still waiting', async () => {
+    sessionUserId = 'u_learner';
+    listSlots.mockResolvedValue([
+      slot({ startsAt: inHours(0.1), endsAt: inHours(1), myHandoffId: 'h7', myStatus: 'reserved' }),
+      slot({ slotId: 's2', startsAt: inHours(0.1), endsAt: inHours(1), myHandoffId: 'h8', myStatus: 'confirmed' }),
+    ]);
+    const { findByTestId, queryByTestId } = renderActions();
+    fireEvent.click(await findByTestId('knowledge-my-booking-complete-s2'));
+    await waitFor(() => expect(complete).toHaveBeenCalledWith(expect.objectContaining({ handoffId: 'h8' }), 'recipient'));
+    expect(queryByTestId('knowledge-my-booking-complete-s1')).toBeNull();
+    expect(queryByTestId('knowledge-my-booking-cancel-s1')).not.toBeNull();
+  });
+
   it('says so when there are no upcoming times', async () => {
     sessionUserId = 'u_learner';
     listSlots.mockResolvedValue([]);
@@ -200,7 +215,7 @@ describe('KnowledgeBookingsPanel — the giver', () => {
     openKnowledgeLearnerChat.mockResolvedValue('c9');
     const { findByTestId } = renderActions();
     fireEvent.click(await findByTestId('knowledge-booking-complete-h1'));
-    await waitFor(() => expect(complete).toHaveBeenCalledWith(expect.objectContaining({ handoffId: 'h1' })));
+    await waitFor(() => expect(complete).toHaveBeenCalledWith(expect.objectContaining({ handoffId: 'h1' }), 'owner'));
     fireEvent.click(await findByTestId('knowledge-booking-chat-h1'));
     await waitFor(() => expect(routerPush).toHaveBeenCalledWith('/chat/c9'));
     expect(openKnowledgeLearnerChat).toHaveBeenCalledWith('u_giver', 'u_learner');

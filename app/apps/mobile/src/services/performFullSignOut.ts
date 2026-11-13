@@ -3,6 +3,7 @@ import type { IDeviceRepository } from '@kc/application';
 import { getSignOutUseCase } from './authComposition';
 import { clearAllPersistedStores } from '../store/persistedStoresReset';
 import { deactivateCurrentDevice } from '../lib/notifications/register';
+import { markIntentionalSignOut } from '../lib/observability/reportAuthEvent';
 
 export interface PerformFullSignOutDeps {
   readonly deviceRepo: IDeviceRepository;
@@ -28,6 +29,16 @@ async function settleWithin(work: Promise<unknown>, ms: number): Promise<void> {
 
 /** FR-AUTH-017 — unified teardown: push deactivate, server sign-out, persisted stores, RQ cache. */
 export async function performFullSignOut(deps: PerformFullSignOutDeps): Promise<void> {
+  // The auth client's SIGNED_OUT event is expected here; it must not be reported as a surprise.
+  markIntentionalSignOut(true);
+  try {
+    await runFullSignOut(deps);
+  } finally {
+    markIntentionalSignOut(false);
+  }
+}
+
+async function runFullSignOut(deps: PerformFullSignOutDeps): Promise<void> {
   // Best-effort and time-boxed — never block local sign-out.
   await settleWithin(
     deactivateCurrentDevice({ deviceRepo: deps.deviceRepo }),

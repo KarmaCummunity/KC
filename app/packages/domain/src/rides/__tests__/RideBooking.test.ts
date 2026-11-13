@@ -140,6 +140,24 @@ describe('canPerformBookingAction', () => {
     expect(canPerformBookingAction('handed_over', 'complete')).toBe(false);
   });
 
+  it('with the caller\'s side, permits only the moves that side holds', () => {
+    // The driver answers a waiting booking and may complete it; the passenger can only leave it.
+    expect(canPerformBookingAction('reserved', 'approve', false, 'owner')).toBe(true);
+    expect(canPerformBookingAction('reserved', 'decline', false, 'owner')).toBe(true);
+    expect(canPerformBookingAction('reserved', 'complete', false, 'owner')).toBe(true);
+    expect(canPerformBookingAction('reserved', 'approve', false, 'recipient')).toBe(false);
+    expect(canPerformBookingAction('reserved', 'decline', false, 'recipient')).toBe(false);
+    expect(canPerformBookingAction('reserved', 'complete', false, 'recipient')).toBe(false);
+    expect(canPerformBookingAction('reserved', 'cancel', false, 'recipient')).toBe(true);
+    // Once approved, either side completes or cancels.
+    for (const party of ['owner', 'recipient'] as const) {
+      expect(canPerformBookingAction('confirmed', 'complete', false, party)).toBe(true);
+      expect(canPerformBookingAction('confirmed', 'cancel', false, party)).toBe(true);
+      expect(canPerformBookingAction('cancelled', 'cancel', false, party)).toBe(false);
+      expect(canPerformBookingAction('handed_over', 'rate', false, party)).toBe(true);
+    }
+  });
+
   it('permits rate only on handed_over when unrated', () => {
     expect(canPerformBookingAction('handed_over', 'rate', false)).toBe(true);
     expect(canPerformBookingAction('handed_over', 'rate', true)).toBe(false);

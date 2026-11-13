@@ -60,7 +60,10 @@ export class InMemoryChatRepository implements IChatRepository {
     if (!row) throw new ChatError('chat_not_found', 'chat_not_found');
     if (row.chat.isSupportThread) throw new ChatError('support_thread_not_hideable', 'support_thread_not_hideable');
     if (!this.store.isParticipant(row, this.actorId)) throw new ChatError('chat_forbidden', 'forbidden');
-    row.hiddenAt.set(this.actorId, this.store.now());
+    const at = this.store.now();
+    row.hiddenAt.set(this.actorId, at);
+    // PM decision 2026-11-11 (FR-CHAT-016): what the member removed never comes back to them.
+    row.historyFrom.set(this.actorId, at);
   }
 
   async findById(chatId: string): Promise<Chat | null> {
@@ -72,7 +75,7 @@ export class InMemoryChatRepository implements IChatRepository {
     const row = this.store.chats.get(chatId);
     if (!row || !this.store.isParticipant(row, this.actorId)) return [];
     return this.store
-      .messagesOf(chatId)
+      .messagesOf(chatId, this.actorId)
       .filter((m) => beforeCreatedAt === undefined || m.createdAt < beforeCreatedAt)
       .slice(0, limit);
   }
@@ -181,7 +184,7 @@ export class InMemoryChatRepository implements IChatRepository {
     return {
       ...chat,
       otherParticipant: this.counterpartOf(chat, this.actorId),
-      lastMessage: this.store.messagesOf(chat.chatId)[0] ?? null,
+      lastMessage: this.store.messagesOf(chat.chatId, this.actorId)[0] ?? null,
       unreadCount: this.store.unreadIn(chat.chatId, this.actorId),
     };
   }

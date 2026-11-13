@@ -1,8 +1,8 @@
 // app/apps/mobile/app/settings/blocked-users.tsx
 // FR-MOD-004 AC1 — every member the signed-in user has blocked, with avatar, name and an
-// "Unblock" button. Blocked members' profiles are hidden from the blocker (FR-MOD-009). The
-// baseline has no way to read a blocked member's name or avatar yet (M01), so the list degrades
-// to an empty state with a "not available yet" caption (docs/db/app-migration-playbook.md § 3).
+// "Unblock" button. Blocked members' profiles are hidden from the blocker (FR-MOD-009), so the
+// list comes from `list_my_blocked_users` (migration 0015). If the backend lacks it, the list
+// degrades to an empty state with a "not available yet" caption (docs/db/app-migration-playbook.md § 3).
 
 import React, { useCallback } from 'react';
 import { ActivityIndicator, TouchableOpacity, View } from 'react-native';

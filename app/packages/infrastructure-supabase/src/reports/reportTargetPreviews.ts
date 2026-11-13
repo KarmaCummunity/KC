@@ -81,10 +81,24 @@ async function commentPreviews(client: Client, ids: string[], out: Map<string, T
   }
 }
 
+async function chatPreviews(client: Client, ids: string[], out: Map<string, TargetPreview>): Promise<void> {
+  if (ids.length === 0) return;
+  // `chats_select_staff_reported` (0016): staff read the row of a reported chat, never its messages.
+  const rows = unwrapCall(
+    'table:chats',
+    await client.from('chats').select('id, moderation_hidden_at, created_at').in('id', ids),
+  );
+  for (const c of rows ?? []) {
+    out.set(previewKey({ targetType: 'chat', targetId: c.id }), {
+      removed_at: c.moderation_hidden_at,
+      created_at: c.created_at,
+    });
+  }
+}
+
 /**
  * Previews of the given targets under the staff read policies. A target with no readable row
- * (a purged post, or a chat, which staff cannot read: chats are private) has no entry, and the
- * caller falls back to an empty preview.
+ * (a purged post or chat) has no entry, and the caller falls back to an empty preview.
  */
 export async function loadTargetPreviews(
   client: Client,
@@ -95,6 +109,7 @@ export async function loadTargetPreviews(
     postPreviews(client, idsOf(refs, 'post'), out),
     userPreviews(client, idsOf(refs, 'user'), out),
     commentPreviews(client, idsOf(refs, 'comment'), out),
+    chatPreviews(client, idsOf(refs, 'chat'), out),
   ]);
   return out;
 }

@@ -122,7 +122,8 @@ Two layers on one world (`docs/spec/18_knowledge_world.md` §18.2): **exchange p
     released before #2034 and books the soonest slot with a free place (removal: #2050). The learner sees upcoming times and
     the times they booked in the last 7 days (`list_knowledge_slots`); the giver sees every booking (`list_knowledge_bookings`).
   - AC3: done, through `karma_award_handoff` (5 per started half hour, the 80-a-day cap counted on the Israel calendar day;
-    learner 5). Either side may mark the session held from 15 minutes before it starts. Volunteering hours wait for G51.
+    learner 5). Either side may mark an approved session held from 15 minutes before it starts; a booking the giver has
+    not answered yet cannot be marked held (the app does not offer it, #2207). Volunteering hours wait for G51.
   - AC4 and the 24 h reminder of AC5: #2039. AC5 otherwise: pushes for a requested, approved, declined, expired or cancelled
     booking and a held session, one per booking.
   - A `mentoring_offer` has no join flow yet; it is arranged in chat (#2051).

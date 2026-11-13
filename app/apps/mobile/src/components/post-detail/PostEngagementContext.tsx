@@ -1,8 +1,9 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import type { PostCommentWithAuthor, PostReactionType } from '@kc/infrastructure-supabase';
+import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import type { PostReactionType } from '@kc/infrastructure-supabase';
 import { container } from '../../lib/container';
 import { hapticSuccess } from '../../lib/haptics';
 import { buildCommentThreads, type PostCommentThreadItem } from './postCommentThread';
+import { usePostEngagementSnapshot, withCommentLike, withReaction } from '../../hooks/usePostEngagementSnapshot';
 
 type ReplyTarget = { commentId: string; authorLabel: string };
 
@@ -39,84 +40,56 @@ type ProviderProps = Readonly<{
 
 export function PostEngagementProvider({ postId, viewerId, children }: ProviderProps) {
   const [busy, setBusy] = useState(false);
-  const [stats, setStats] = useState({ reactionCount: 0, commentCount: 0 });
-  const [activeReaction, setActiveReaction] = useState<PostReactionType | null>(null);
-  const [comments, setComments] = useState<PostCommentWithAuthor[]>([]);
   const [draft, setDraft] = useState('');
   const [replyTo, setReplyTo] = useState<ReplyTarget | null>(null);
-  const [commentsLoaded, setCommentsLoaded] = useState(false);
-  const [commentsFailed, setCommentsFailed] = useState(false);
-
-  const refresh = useCallback(async () => {
-    // Stats do not depend on the comment list. A failure in either read still
-    // rejects; whichever read succeeds still updates its own state.
-    const statsPromise = container.postEngagement.getStats(postId).then((s) => {
-      if (s) setStats({ reactionCount: s.reactionCount, commentCount: s.commentCount });
-    });
-    const viewerPromise = viewerId
-      ? Promise.all([
-          container.postEngagement.listCommentsWithAuthors(postId, 120),
-          container.postEngagement.getViewerReaction(postId, viewerId),
-        ])
-          .then(([rows, mine]) => {
-            setComments(rows);
-            setActiveReaction(mine);
-            setCommentsFailed(false);
-          })
-          .catch(() => {
-            setCommentsFailed(true);
-          })
-          .finally(() => setCommentsLoaded(true))
-      : Promise.resolve();
-    await Promise.all([statsPromise, viewerPromise]);
-  }, [postId, viewerId]);
-
-  useEffect(() => {
-    void refresh();
-  }, [refresh]);
+  // Cached per post and viewer: a reopened post shows its thread at once and refreshes behind it.
+  const { snapshot, loaded, refresh, patch, restore } = usePostEngagementSnapshot(postId, viewerId);
+  const { stats, activeReaction, comments, commentsFailed } = snapshot;
+  // Comments are only read for a signed-in viewer; a guest keeps the denormalized counter.
+  const commentsLoaded = loaded && viewerId !== null;
 
   const threads = useMemo(() => buildCommentThreads(comments), [comments]);
   const visibleCommentCount = commentsLoaded ? comments.length : stats.commentCount;
 
+  // Reactions and comment likes are optimistic: the snapshot changes on the tap, the write runs,
+  // and the server state is re-read in the background. A failed write restores the snapshot.
   const onReaction = useCallback(
     (type: PostReactionType) => {
       if (!viewerId || busy) return;
-      void (async () => {
-        setBusy(true);
-        const previous = activeReaction;
-        const next = activeReaction === type ? null : type;
-        setActiveReaction(next);
-        try {
-          await container.postEngagement.setReaction(postId, next);
+      const next = activeReaction === type ? null : type;
+      const previous = patch((current) => withReaction(current, next));
+      setBusy(true);
+      void container.postEngagement
+        .setReaction(postId, next)
+        .then(() => {
           if (next !== null) hapticSuccess();
-          await refresh();
-        } catch {
-          setActiveReaction(previous);
-        } finally {
-          setBusy(false);
-        }
-      })();
+          void refresh();
+        })
+        .catch(() => restore(previous))
+        .finally(() => setBusy(false));
     },
-    [viewerId, busy, activeReaction, postId, refresh],
+    [viewerId, busy, activeReaction, postId, patch, restore, refresh],
   );
 
   const onToggleCommentLike = useCallback(
     (commentId: string, liked: boolean) => {
       if (!viewerId || busy) return;
-      void (async () => {
-        setBusy(true);
-        try {
-          await container.postEngagement.setCommentLike(commentId, liked);
+      const previous = patch((current) => withCommentLike(current, commentId, liked));
+      setBusy(true);
+      void container.postEngagement
+        .setCommentLike(commentId, liked)
+        .then(() => {
           if (liked) hapticSuccess();
-          await refresh();
-        } finally {
-          setBusy(false);
-        }
-      })();
+          void refresh();
+        })
+        .catch(() => restore(previous))
+        .finally(() => setBusy(false));
     },
-    [viewerId, busy, refresh],
+    [viewerId, busy, patch, restore, refresh],
   );
 
+  // A new comment needs its server row (id, author, time), so the composer stays busy until the
+  // thread has been re-read and the comment is on screen.
   const onSubmitComment = useCallback(() => {
     const body = draft.trim();
     if (!viewerId || !body || busy) return;

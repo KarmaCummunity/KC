@@ -16,6 +16,8 @@ export type ModerationErrorCode =
   | 'target_not_found'
   | 'message_not_found'
   | 'cannot_report_self'
+  | 'queue_entry_not_open'
+  | 'assignee_not_staff'
   | 'unknown';
 
 export class ModerationError extends Error {

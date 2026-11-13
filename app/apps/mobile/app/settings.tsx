@@ -174,8 +174,12 @@ export default function SettingsScreen() {
               onPress={() => router.push('/settings/follow-requests')}
             />
           ) : null}
-          {/* FR-MOD-004 AC1 — the blocked-users row is hidden: the baseline cannot show a blocked member's
-              name or avatar (M01), so the list has nothing to show. The screen stays for a deep link. */}
+          {/* FR-MOD-004 AC1 — the only way back to a blocked member (their profile is hidden). */}
+          <SettingsScreenRow
+            label={t('moderation.block.listTitle')}
+            icon="ban-outline"
+            onPress={() => router.push('/settings/blocked-users')}
+          />
         </View>
 
         <Text style={styles.sectionTitle}>{t('settings.statsSection')}</Text>

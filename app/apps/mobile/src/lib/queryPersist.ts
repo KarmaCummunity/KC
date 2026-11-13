@@ -12,6 +12,14 @@ export const RQ_CACHE_KEY = 'kc-rq-cache';
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
+/**
+ * Minimum gap between two writes of the cache to storage. Every write serializes the whole
+ * persisted cache (all loaded feed pages and opened posts) on the JS thread, and any cache event
+ * schedules one, so a short gap means a serialization per second while the user scrolls and taps.
+ * The persisted copy only matters at the next cold start, so being a few seconds behind is free.
+ */
+export const QUERY_PERSIST_THROTTLE_MS = 5000;
+
 import { isPersistableQueryKey } from './queryPersistKeys';
 import { reportHandledError } from './observability/reportHandledError';
 import { shouldRetryQuery, queryRetryDelay } from './queryRetryPolicy';
@@ -66,13 +74,13 @@ function createQueryPersister() {
         },
       },
       key: RQ_CACHE_KEY,
-      throttleTime: 1000,
+      throttleTime: QUERY_PERSIST_THROTTLE_MS,
     });
   }
   return createAsyncStoragePersister({
     storage: AsyncStorage,
     key: RQ_CACHE_KEY,
-    throttleTime: 1000,
+    throttleTime: QUERY_PERSIST_THROTTLE_MS,
   });
 }
 

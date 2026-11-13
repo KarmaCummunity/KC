@@ -1,5 +1,7 @@
 // FR-DONATE-006..009 — donation categories + community-curated NGO links.
 // Persisted in `donation_categories` + `donation_links` (migration 0014).
+import { allowsMove } from './fsm/machine';
+import { donationLinkReviewMachine } from './fsm/machines/donationLinkReview';
 import type { DonationCategorySlug } from './value-objects';
 
 export interface DonationCategory {
@@ -15,6 +17,14 @@ export interface DonationCategory {
  * The submitter sees their own pending or rejected link; everyone else sees approved links only.
  */
 export type DonationLinkReviewStatus = 'pending' | 'approved' | 'rejected';
+
+/**
+ * Whether the link waits for a reviewer: the review graph gives a reviewer a move to
+ * `approved`. An approved or rejected link, and a status the app does not know, does not.
+ */
+export function isDonationLinkAwaitingReview(status: string): boolean {
+  return allowsMove(donationLinkReviewMachine, status, 'approved', 'reviewer');
+}
 
 export interface DonationLink {
   readonly id: string;

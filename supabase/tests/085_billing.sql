@@ -427,12 +427,12 @@ select is(pg_temp.act('a', $$select public.finance_transparency_settings_set(&ai
 select is(pg_temp.val('1', $$select (t ->> 'income_agorot') || '|' || (t ->> 'expense_agorot') || '|' || (t ->> 'donations_count') || '|'
       || (t ? 'by_category') || '|' || (t::text ~* 'printer|grow|donor|user') from public.rpc_org_transparency('aid') t$$)
   || '|' || pg_temp.act('anon', $$select public.rpc_org_transparency('aid')$$),
-  '6800|5000|3|false|false|42501', 'only the switched-on totals are returned, to signed-in members, with no party in them');
+  '6800|5000|3|false|false|ok', 'only the switched-on totals are returned, also to signed-out visitors (FR-FIN-022 AC2), with no party in them');
 select is(pg_temp.val('1', $$select (p ->> 'total_raised_agorot') || '|' || (p ->> 'sec46_active') || '|' || (p::text ~* 'user|donor')
       from public.get_nonprofit_public_page('aid') p$$)
   || '|' || coalesce(pg_temp.val('1', $$select public.get_nonprofit_public_page('plain')$$), 'null')
   || '|' || pg_temp.act('anon', $$select public.get_nonprofit_public_page('aid')$$),
-  '1800|false|false|null|42501', 'the nonprofit page shows what was raised, for verified nonprofits, to signed-in members');
+  '1800|false|false|null|ok', 'the nonprofit page shows what was raised, for verified nonprofits, also to signed-out visitors (FR-ORG-001 AC4)');
 select is(pg_temp.act('c', $$select public.finance_sec46_set(&aid, 'active', '580012345', current_date - 10, current_date + 300)$$)
   || '|' || pg_temp.act('f', $$select public.finance_sec46_set(&aid, 'active', '580012345')$$)
   || '|' || pg_temp.act('f', $$select public.finance_sec46_set(&aid, 'active', '580012345', current_date - 10, current_date + 300)$$)

@@ -33,6 +33,7 @@ import { chatMessagingEn } from './modules/chatMessaging';
 import { marketplaceBaselineErrorsEn } from './modules/marketplaceBaselineErrors';
 import { challengeBaselineErrorsEn } from './modules/challengeBaselineErrors';
 import { notificationsEn } from './modules/notifications';
+import { notificationsRichEn } from './modules/notificationsRich';
 import { emptyStatesEn, feedSettingsEn } from './modules/feedSettings';
 import { moderationEn, auditEn, accountBlockedEn } from './modules/moderation';
 import { restoreAccountEn } from './modules/restoreAccount';
@@ -54,6 +55,7 @@ import { surveyEn } from './modules/survey';
 import { researchEn } from './modules/research';
 import { adminEn } from './modules/admin';
 import { adminOrgApprovalsBaselineEn } from './modules/adminOrgApprovalsBaseline';
+import { adminStaffToolsEn } from './modules/adminStaffTools';
 import { adminCrmBaselineEn, adminTimeBaselineEn } from './modules/adminBackOfficeBaseline';
 import { karmaEn } from './modules/karma';
 import { karmaEventsEn } from './modules/karmaEvents';
@@ -102,7 +104,7 @@ const en = {
   chat: { ...chatEn, new: chatNewEn, messaging: chatMessagingEn },
 
   // Notifications (FR-NOTIF-001..015) — see modules/notifications.ts
-  notifications: notificationsEn,
+  notifications: { ...notificationsEn, ...notificationsRichEn },
   feedSettings: feedSettingsEn,
   emptyStates: emptyStatesEn,
 
@@ -115,8 +117,12 @@ const en = {
   // Admin portal (FR-ADMIN-010/011) — see modules/admin.ts
   // The baseline approval copy joins admin.orgApprovals — see modules/adminOrgApprovalsBaseline.ts;
   // the back-office copy joins admin.crm and admin.time — see modules/adminBackOfficeBaseline.ts.
+  // The support inbox and review queue copy — see modules/adminStaffTools.ts.
   admin: {
     ...adminEn,
+    nav: { ...adminEn.nav, ...adminStaffToolsEn.nav },
+    supportInbox: adminStaffToolsEn.supportInbox,
+    reviewQueue: adminStaffToolsEn.reviewQueue,
     orgApprovals: {
       ...adminEn.orgApprovals,
       row: { ...adminEn.orgApprovals.row, ...adminOrgApprovalsBaselineEn.row },
