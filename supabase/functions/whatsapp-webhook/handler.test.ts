@@ -158,6 +158,20 @@ Deno.test('#1086: Pro user is handed to the agent, never upsold', async () => {
   assertEquals(calls.some((c) => c.fn === 'api_whatsapp_queue_reply'), false);
 });
 
+Deno.test('a number linked to an inactive account gets no agent and no upsell', async () => {
+  const calls: Call[] = [];
+  const seen: string[] = [];
+  const h = createWebhookHandler({
+    // upsell: true here proves the handler ignores it for an inactive member.
+    ...deps({ access: { access: 'inactive', user_id: 'u-gone', upsell: true } }, calls),
+    onProMessage: ({ userId }) => { seen.push(userId); return Promise.resolve(); },
+  });
+  const out = await (await post(h, metaBody('find me a bike'))).json();
+  assertEquals(out.results[0].access, 'inactive');
+  assertEquals(seen, []);
+  assertEquals(calls.some((c) => c.fn === 'api_whatsapp_queue_reply'), false);
+});
+
 Deno.test('#1086: link codes and STOP bypass the Pro gate', async () => {
   const calls: Call[] = [];
   await post(createWebhookHandler(deps({}, calls)), metaBody('123456'));
