@@ -30,6 +30,17 @@ const LEGACY_REFERENCE = /database\.legacy\.types|getLegacySupabaseClient|\blega
 const LEGACY_VIEW_DEFINITIONS: readonly string[] = [
   'packages/infrastructure-supabase/src/migrationStatus/scan.ts',
 ];
+/**
+ * RPCs of the dev-only demo-data tools (FR-ADMIN-031, `supabase/seed/demo`). They are installed on
+ * kc-dev by the Seed KC dev workflow and never by a migration, so the baseline types do not list
+ * them by design and no package will ever migrate them. The adapter reports `not_installed` where
+ * they are absent. `baselineCompatibility.test.ts` checks that each one is declared in the seed.
+ */
+export const DEV_SEED_RPCS: ReadonlySet<string> = new Set([
+  'admin_demo_data_status',
+  'admin_wipe_demo_data_step',
+  'admin_seed_demo_data_step',
+]);
 /** Test files of the migration machinery itself. */
 const MACHINERY_TESTS = /(baselineCompatibility|degradeRule)\.test\.ts$/;
 
@@ -72,7 +83,7 @@ export function listAppSources(appRoot: string): string[] {
 
 function entryProblem(entry: InventoryEntry, provided: BaselineObjects, rows: readonly MapRow[]): string | null {
   const name = entry.name ?? '';
-  if (entry.kind === 'rpc') return provided.rpc.has(name) ? null : `rpc:${name}`;
+  if (entry.kind === 'rpc') return provided.rpc.has(name) || DEV_SEED_RPCS.has(name) ? null : `rpc:${name}`;
   if (entry.kind === 'table') return provided.table.has(name) ? null : `table:${name}`;
   const row = rows.find((candidate) => candidate.kind === entry.kind && candidate.old === name);
   return row?.status === 'same' ? null : `${entry.kind}:${name}`;

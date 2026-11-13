@@ -55,6 +55,7 @@ import { researchHe } from './modules/research';
 import { adminHe } from './modules/admin';
 import { adminOrgApprovalsBaselineHe } from './modules/adminOrgApprovalsBaseline';
 import { adminStaffToolsHe } from './modules/adminStaffTools';
+import { adminDemoDataHe } from './modules/adminDemoData';
 import { adminCrmBaselineHe, adminTimeBaselineHe } from './modules/adminBackOfficeBaseline';
 import { karmaHe } from './modules/karma';
 import { karmaEventsHe } from './modules/karmaEvents';
@@ -120,9 +121,12 @@ const he = {
   // The baseline approval copy joins admin.orgApprovals — see modules/adminOrgApprovalsBaseline.ts;
   // the back-office copy joins admin.crm and admin.time — see modules/adminBackOfficeBaseline.ts.
   // The support inbox and review queue copy — see modules/adminStaffTools.ts.
+  // The Demo data screen (FR-ADMIN-031) — see modules/adminDemoData.ts.
   admin: {
     ...adminHe,
-    nav: { ...adminHe.nav, ...adminStaffToolsHe.nav },
+    nav: { ...adminHe.nav, ...adminStaffToolsHe.nav, ...adminDemoDataHe.nav },
+    searchKeywords: { ...adminHe.searchKeywords, ...adminDemoDataHe.searchKeywords },
+    demoData: adminDemoDataHe.demoData,
     supportInbox: adminStaffToolsHe.supportInbox,
     reviewQueue: adminStaffToolsHe.reviewQueue,
     orgApprovals: {

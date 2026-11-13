@@ -101,6 +101,15 @@ jobs:
       - name: Migrations apply on an empty database + pgTAP tests + seed loaders
         run: scripts/run-baseline-tests.sh
 
+      # The Demo data screen (FR-ADMIN-031) calls RPCs of a dev-only seed (supabase/seed/demo),
+      # which kc-dev gets from the Seed KC dev workflow and kc-prod never does. Installed on the
+      # throwaway stack (without the dev marker) so the grant check below covers them too.
+      - name: Install the dev-only demo-data tools on the local stack
+        run: |
+          set -euo pipefail
+          DB_URL="$(supabase status -o env | sed -n 's/^DB_URL="\(.*\)"$/\1/p')"
+          psql "$DB_URL" -v ON_ERROR_STOP=1 --single-transaction -q -f supabase/seed/demo/install.sql
+
       - name: Check every client RPC is granted to a client role
         # Functions are owner/service_role-only by default, so a client RPC whose
         # migration forgot its `grant execute … to authenticated` fails here, not in the app.
