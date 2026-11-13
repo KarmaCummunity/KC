@@ -28,7 +28,7 @@ What stays outside the kernel: side effects (karma, notifications, audit) run in
 One PR, with code, the spec section and tests:
 
 1. Settle the graph against `docs/spec/`. List every writer of the column. An open product question goes to the PM before code.
-2. Declare the machine in `app/packages/domain/src/fsm/machines/`, with roles where callers differ, and register it in `FSM_MACHINES` (`catalog.ts`) and `fsm/index.ts`.
+2. Declare the machine in `app/packages/domain/src/fsm/machines/`, with roles where callers differ, and register it in `FSM_MACHINES` (`fsm/catalog.ts`) and export it from `fsm/index.ts`.
 3. Add a forward migration `supabase/migrations/next-NN_snake_slug.sql` (its number is assigned on merge, `D-234`): the `fsm_state` / `fsm_edge` rows and the status trigger. Every writer sets `kc.fsm_role` when the edge is role-restricted.
 4. Delete every other copy of the move list, in SQL and in TS.
 5. Tests: the machine's graph test in `@kc/domain`, the contract test (automatic), and a `supabase/tests/NNN_*.sql` file that drives every writer through a legal and an illegal move.
