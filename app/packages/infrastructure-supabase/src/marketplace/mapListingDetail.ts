@@ -13,7 +13,7 @@ import { parseWkbPoint } from '../posts/postMapPoint';
 import type { PostCardRow } from '../posts/mapPostRow';
 import { meetingPointRefs, placeRefKey, resolvePlaces, type PlaceRef } from '../rides/ridePlaces';
 import { listingDirectionOf, loadKindCatalog } from './kindCatalog';
-import { availabilityOf, listingStatusOf } from './listingMapping';
+import { availabilityOf } from './listingMapping';
 import { rideDetailsFromRow } from './worldDetails';
 
 type Client = SupabaseClient<Database>;
@@ -133,7 +133,7 @@ export async function fetchListingDetail(client: Client, listingId: string): Pro
     cityId: card.city_id,
     urgencyLevel: card.urgency_level ?? 2,
     availabilityStatus: availabilityOf(card.status),
-    listingStatus: listingStatusOf(card.status),
+    listingStatus: card.status ?? 'open',
     publishedAt: card.published_at,
     lat: point?.lat ?? null,
     lng: point?.lng ?? null,

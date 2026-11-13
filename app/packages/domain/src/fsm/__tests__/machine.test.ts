@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ValidationError } from '../../errors';
 import { TransitionError } from '../TransitionError';
-import { assertTransition, canTransition, defineMachine, isTerminal } from '../machine';
+import { allowsMove, assertTransition, canTransition, defineMachine, isTerminal } from '../machine';
 
 const gate = defineMachine({
   id: 'gate',
@@ -37,6 +37,19 @@ describe('defineMachine', () => {
     expect(() => defineMachine({
       id: 'ok', states: ['a', 'b'], edges: [{ from: 'a', to: 'b', roles: ['' as string] }],
     })).toThrow(ValidationError);
+  });
+});
+
+describe('allowsMove', () => {
+  it('is true only for a real move the role may make', () => {
+    expect(allowsMove(gate, 'a', 'b')).toBe(true);
+    expect(allowsMove(gate, 'a', 'c', 'owner')).toBe(true);
+    // A restricted edge fails closed without its role, a same-status write is no move, and
+    // an edge that does not exist or a status of a newer server offers nothing.
+    expect(allowsMove(gate, 'a', 'c')).toBe(false);
+    expect(allowsMove(gate, 'a', 'a')).toBe(false);
+    expect(allowsMove(gate, 'b', 'c', 'owner')).toBe(false);
+    expect(allowsMove(gate, 'unknown', 'b')).toBe(false);
   });
 });
 

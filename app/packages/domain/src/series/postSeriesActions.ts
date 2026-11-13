@@ -1,6 +1,5 @@
-import { canTransition } from '../fsm/machine';
+import { allowsMove } from '../fsm/machine';
 import { postSeriesMachine } from '../fsm/machines/postSeries';
-import type { PostSeriesStatus } from './PostSeries';
 
 /** The actions the owner's series list offers on one series (FR-POST-024 AC7–AC8). */
 export interface PostSeriesActions {
@@ -16,14 +15,8 @@ export interface PostSeriesActions {
  */
 export function postSeriesActions(status: string): PostSeriesActions {
   return {
-    pause: isMove(status, 'paused'),
-    resume: isMove(status, 'active'),
-    end: isMove(status, 'ended'),
+    pause: allowsMove(postSeriesMachine, status, 'paused'),
+    resume: allowsMove(postSeriesMachine, status, 'active'),
+    end: allowsMove(postSeriesMachine, status, 'ended'),
   };
-}
-
-/** True only for a real edge out of `status` (a same-status write is not an action). */
-function isMove(status: string, to: PostSeriesStatus): boolean {
-  const answer = canTransition(postSeriesMachine, status, to);
-  return answer.ok && answer.changed;
 }

@@ -22,6 +22,14 @@ describe('mapMatchRow', () => {
     });
   });
 
+  it('keeps every status of the match machine and reads an unknown one as expired', () => {
+    for (const status of ['suggested', 'accepted', 'declined', 'expired']) {
+      expect(mapMatchRow({ ...ROW, status }).status).toBe(status);
+    }
+    expect(mapMatchRow({ ...ROW, status: 'archived' }).status).toBe('expired');
+    expect(mapMatchRow({ ...ROW, status: null as unknown as string }).status).toBe('expired');
+  });
+
   it('leaves the owner empty while the poster is masked', () => {
     const masked = mapMatchRow({ ...ROW, other_post: makeCard({ owner_id: null, owner_display_name: null, owner_share_handle: null, owner_avatar_url: null }) });
     expect(masked.otherOwner).toEqual({ userId: '', displayName: null, avatarUrl: null, shareHandle: null });
