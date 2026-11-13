@@ -8,12 +8,12 @@ The application (`app/packages/infrastructure-supabase`, `app/apps/mobile`) and 
 
 | Kind | Objects used | 1:1 | 1:1 (renamed) | CHANGED | REMOVED | MISSING |
 | --- | --- | --- | --- | --- | --- | --- |
-| RPCs | 244 | 169 | 22 | 53 | 0 | 0 |
+| RPCs | 246 | 169 | 22 | 55 | 0 | 0 |
 | Tables and views | 63 | 46 | 0 | 17 | 0 | 0 |
 | Storage buckets | 4 | 3 | 0 | 1 | 0 | 0 |
 | Realtime channels | 9 | 9 | 0 | 0 | 0 | 0 |
 | Edge Function invokes | 3 | 3 | 0 | 0 | 0 | 0 |
-| **Total** | 323 | 230 | 22 | 71 | 0 | 0 |
+| **Total** | 325 | 230 | 22 | 73 | 0 | 0 |
 
 ### Launch scope
 
@@ -23,7 +23,7 @@ Every row carries `launch` (spec D102, `docs/spec/96_launch_and_first_group_plan
 | --- | --- | --- | --- | --- | --- | --- |
 | core | 127 | 103 | 1 | 23 | 0 | 0 |
 | wedge | 53 | 32 | 15 | 6 | 0 | 0 |
-| later | 143 | 95 | 6 | 42 | 0 | 0 |
+| later | 145 | 95 | 6 | 44 | 0 | 0 |
 | **Launch-critical (core + wedge)** | 180 | 135 | 16 | 29 | 0 | 0 |
 
 Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename of the function or its arguments · **CHANGED** the caller's logic changes · **REMOVED** no replacement by design · **MISSING** the baseline has no equivalent although the code needs one (§4). Confidence: **high** read in the baseline source, **medium** inferred from names and generated types.
@@ -79,7 +79,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `infrastructure-supabase/src/whatsapp/` | 4 | 2 | 2 | 0 | 0 |
 | `infrastructure-supabase/src/worlds/` | 3 | 1 | 2 | 0 | 0 |
 | `apps/mobile` (direct calls outside the adapters) | 18 | 17 | 1 | 0 | 0 |
-| Edge Function `_shared` | 10 | 8 | 2 | 0 | 0 |
+| Edge Function `_shared` | 13 | 9 | 4 | 0 | 0 |
 | Edge Function `backfill-image-thumbs` | 2 | 0 | 2 | 0 | 0 |
 | Edge Function `embed-worker` | 3 | 3 | 0 | 0 | 0 |
 | Edge Function `match-rerank` | 2 | 1 | 1 | 0 | 0 |
@@ -92,7 +92,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | Edge Function `translate` | 3 | 0 | 3 | 0 | 0 |
 | Edge Function `validate-donation-link` | 5 | 1 | 4 | 0 | 0 |
 | Edge Function `whatsapp-sender` | 1 | 0 | 1 | 0 | 0 |
-| Edge Function `whatsapp-webhook` | 10 | 10 | 0 | 0 | 0 |
+| Edge Function `whatsapp-webhook` | 12 | 12 | 0 | 0 | 0 |
 
 ### `infrastructure-supabase/src/about/`
 
@@ -691,20 +691,22 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 
 ### Edge Function `_shared`
 
-10 call sites: 8 map 1:1, 2 need logic changes, 0 removed, 0 MISSING.
+13 call sites: 9 map 1:1, 4 need logic changes, 0 removed, 0 MISSING.
 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `api_bot_apply_extraction` | later | 1:1 | `api_bot_apply_extraction(p_confidence?: number, p_details?: Json, p_direction: string, p_kind_slug: string, p_session_id: string, p_summary?: string, p_title: string, p_world_slug: string) → string` | Same arguments; kind slugs are the posts catalog's (`item_offer`, `item_request`, `food_offer`, `food_request`); returns the session id; titles are cut to 80 characters. |  | high | tools.ts:83 |
-| `api_bot_my_matches` | later | 1:1 | `api_bot_my_matches(p_limit?: number, p_user_id: string) → { candidate_id: string distance_km: number my_post_title: string other_post_id: string other_title: string score: number status: string world_slug: string }[]` | Same shape; reads matching v2 pairs and leaves out a pair whose other post the member may not read. |  | high | tools.ts:159 |
-| `api_bot_my_posts` | later | 1:1 (renamed) | `api_bot_my_posts(p_limit?: number, p_user_id: string) → { created_at: string direction: string post_id: string title: string world_slug: string }[]` | Was `api_bot_my_listings`; same arguments; rows carry `post_id` (was `listing_id`). |  | high | tools.ts:151 |
-| `api_bot_open_session` | later | 1:1 (renamed) | `api_bot_open_session(p_inbound_message_id?: string, p_wa_id: string) → string` | `p_record_id` → `p_inbound_message_id` (the inbound row id returned by `api_whatsapp_ingest_inbound`; may be null). |  | high | tools.ts:79 |
-| `api_bot_publish_post` | later | CHANGED | `api_bot_publish_post(p_owner_id: string, p_session_id: string) → Json` | Was `api_bot_publish_listing` (returned the listing id): returns `{post_id, status, review, photo_required}`, a draft when confidence is below 0.85 (review item) or when an offer in a photo world needs its photo (D132); a food offer needs `details.expires_at`. |  | high | tools.ts:93 |
-| `api_bot_search_posts` | later | CHANGED | `api_bot_search_posts(p_limit?: number, p_query: string, p_user_id: string, p_world_slug?: string) → { city_id: string description: string direction: string post_id: string published_at: string title: string world_slug: string }[]` | Was `api_bot_search_listings(p_owner_id, …)` + `api_bot_listing_cards`: `(p_user_id, p_query, p_world_slug, p_limit ≤ 8)` returns the post cards themselves (`post_id`, `world_slug`, `direction`, `title`, `description`, `city_id`, `published_at`) visible to that member. |  | high | tools.ts:115 |
-| `api_whatsapp_llm_budget_take` | later | 1:1 | `api_whatsapp_llm_budget_take(p_wa_id: string) → boolean` | Same name, arguments and return shape; tables live in `integrations` (service role only). |  | high | run.ts:55 |
+| `api_bot_apply_extraction` | later | 1:1 | `api_bot_apply_extraction(p_confidence?: number, p_details?: Json, p_direction: string, p_kind_slug: string, p_session_id: string, p_summary?: string, p_title: string, p_world_slug: string) → string` | Same arguments; kind slugs are the posts catalog's (`item_offer`, `item_request`, `food_offer`, `food_request`); returns the session id; titles are cut to 80 characters. |  | high | tools.ts:84 |
+| `api_bot_attach_post_photo` | later | CHANGED | `api_bot_attach_post_photo(p_height?: number, p_mime_type: string, p_owner_id: string, p_session_id: string, p_size_bytes: number, p_storage_path: string, p_wa_id: string, p_width?: number) → Json` | New (migration `whatsapp_bot_post_photos`, D158): `(p_wa_id, p_owner_id, p_session_id, p_storage_path, p_mime_type, p_size_bytes, p_width, p_height)` registers a photo uploaded to `post-images` on the bot draft as the app does and publishes it through the bot gates; returns `{post_id, media_id, world_slug, status, review, photo_required}`. Refusals: `owner_mismatch` (42501), `not_bot_draft`, `invalid_media_type`, `invalid_media_size`, `invalid_storage_path`, `too_many_photos`, `rate_limited`. |  | high | photo.ts:87 |
+| `api_bot_my_matches` | later | 1:1 | `api_bot_my_matches(p_limit?: number, p_user_id: string) → { candidate_id: string distance_km: number my_post_title: string other_post_id: string other_title: string score: number status: string world_slug: string }[]` | Same shape; reads matching v2 pairs and leaves out a pair whose other post the member may not read. |  | high | tools.ts:163 |
+| `api_bot_my_posts` | later | 1:1 (renamed) | `api_bot_my_posts(p_limit?: number, p_user_id: string) → { created_at: string direction: string post_id: string title: string world_slug: string }[]` | Was `api_bot_my_listings`; same arguments; rows carry `post_id` (was `listing_id`). |  | high | tools.ts:155 |
+| `api_bot_open_session` | later | 1:1 (renamed) | `api_bot_open_session(p_inbound_message_id?: string, p_wa_id: string) → string` | `p_record_id` → `p_inbound_message_id` (the inbound row id returned by `api_whatsapp_ingest_inbound`; may be null). |  | high | tools.ts:80 |
+| `api_bot_pending_photo_draft` | later | CHANGED | `api_bot_pending_photo_draft(p_owner_id: string, p_wa_id: string) → Json` | New (migration `whatsapp_bot_post_photos`, D158): `(p_wa_id, p_owner_id)` → `{session_id, post_id, world_slug, direction, photos}` of the member's bot draft of the last 24 hours, or null; `owner_mismatch` (42501) unless the number is linked to that member. |  | high | photo.ts:104 |
+| `api_bot_publish_post` | later | CHANGED | `api_bot_publish_post(p_owner_id: string, p_session_id: string) → Json` | Was `api_bot_publish_listing` (returned the listing id): returns `{post_id, status, review, photo_required}`, a draft when confidence is below 0.85 (review item) or when an offer in a photo world needs its photo (D132); a food offer needs `details.expires_at`. |  | high | tools.ts:94 |
+| `api_bot_search_posts` | later | CHANGED | `api_bot_search_posts(p_limit?: number, p_query: string, p_user_id: string, p_world_slug?: string) → { city_id: string description: string direction: string post_id: string published_at: string title: string world_slug: string }[]` | Was `api_bot_search_listings(p_owner_id, …)` + `api_bot_listing_cards`: `(p_user_id, p_query, p_world_slug, p_limit ≤ 8)` returns the post cards themselves (`post_id`, `world_slug`, `direction`, `title`, `description`, `city_id`, `published_at`) visible to that member. |  | high | tools.ts:118 |
+| `api_whatsapp_llm_budget_take` | later | 1:1 | `api_whatsapp_llm_budget_take(p_wa_id: string) → boolean` | Same name, arguments and return shape; tables live in `integrations` (service role only). |  | high | run.ts:57 |
 | `api_whatsapp_outbound_claim` | later | 1:1 | `api_whatsapp_outbound_claim(p_batch?: number, p_visibility_seconds?: number) → { attempts: number body: string kind: string language: string outbound_id: string payload: Json template_name: string to_wa_id: string user_id: string }[]` | Same name, arguments and return shape; tables live in `integrations` (service role only). |  | high | sender.ts:47 |
 | `api_whatsapp_outbound_result` | later | 1:1 | `api_whatsapp_outbound_result(p_error?: string, p_ok: boolean, p_outbound_id: string, p_retryable?: boolean, p_wa_message_id?: string) → string` | Same name, arguments and return shape; tables live in `integrations` (service role only). |  | high | sender.ts:60 |
-| `api_whatsapp_queue_reply` | later | 1:1 | `api_whatsapp_queue_reply(p_body: string, p_reply_kind?: string, p_wa_id: string) → string` | Same name, arguments and return shape; tables live in `integrations` (service role only). |  | high | run.ts:72 |
+| `api_whatsapp_queue_reply` | later | 1:1 | `api_whatsapp_queue_reply(p_body: string, p_reply_kind?: string, p_wa_id: string) → string` | Same name, arguments and return shape; tables live in `integrations` (service role only). |  | high | run.ts:80, photo.ts:72 |
 
 ### Edge Function `backfill-image-thumbs`
 
@@ -810,18 +812,19 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 
 ### Edge Function `whatsapp-webhook`
 
-10 call sites: 10 map 1:1, 0 need logic changes, 0 removed, 0 MISSING.
+12 call sites: 12 map 1:1, 0 need logic changes, 0 removed, 0 MISSING.
 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `api_whatsapp_bot_access` | later | 1:1 | `api_whatsapp_bot_access(p_wa_id: string) → Json` | Same shape; `access` may also be `inactive` (a linked member whose account is not active): no upsell, no agent. |  | high | handler.ts:164 |
-| `api_whatsapp_claim_inbound` | later | 1:1 | `api_whatsapp_claim_inbound(p_message_id: string) → boolean` | Same name, arguments and return shape; tables live in `integrations` (service role only). |  | high | handler.ts:71 |
-| `api_whatsapp_handle_keyword` | later | 1:1 | `api_whatsapp_handle_keyword(p_record_id?: string, p_text: string, p_wa_id: string) → Json` | Same name, arguments and return shape; tables live in `integrations` (service role only). |  | high | handler.ts:115 |
-| `api_whatsapp_inbound_allowed` | later | 1:1 | `api_whatsapp_inbound_allowed(p_wa_id: string) → boolean` | Same name, arguments and return shape; tables live in `integrations` (service role only). |  | high | handler.ts:95 |
-| `api_whatsapp_ingest_inbound` | later | 1:1 | `api_whatsapp_ingest_inbound(p_message_id: string, p_payload: Json, p_run_id?: string) → string` | Same name, arguments and return shape; tables live in `integrations` (service role only). |  | high | handler.ts:104 |
-| `api_whatsapp_queue_reply` | later | 1:1 | see Edge Function `_shared` |  |  |  | handler.ts:130, handler.ts:152, handler.ts:177 |
-| `api_whatsapp_redeem_link_code` | later | 1:1 | `api_whatsapp_redeem_link_code(p_code: string, p_wa_id: string) → Json` | Same name, arguments and return shape; tables live in `integrations` (service role only). |  | high | handler.ts:144 |
-| `api_whatsapp_release_inbound` | later | 1:1 | `api_whatsapp_release_inbound(p_message_id: string) → undefined` | Same name, arguments and return shape; tables live in `integrations` (service role only). |  | high | handler.ts:81 |
+| `post-images` (bucket) | core | 1:1 | see `infrastructure-supabase/src/posts/` |  |  |  | index.ts:37, index.ts:45 |
+| `api_whatsapp_bot_access` | later | 1:1 | `api_whatsapp_bot_access(p_wa_id: string) → Json` | Same shape; `access` may also be `inactive` (a linked member whose account is not active): no upsell, no agent. |  | high | handler.ts:204 |
+| `api_whatsapp_claim_inbound` | later | 1:1 | `api_whatsapp_claim_inbound(p_message_id: string) → boolean` | Same name, arguments and return shape; tables live in `integrations` (service role only). |  | high | handler.ts:88 |
+| `api_whatsapp_handle_keyword` | later | 1:1 | `api_whatsapp_handle_keyword(p_record_id?: string, p_text: string, p_wa_id: string) → Json` | Same name, arguments and return shape; tables live in `integrations` (service role only). |  | high | handler.ts:136 |
+| `api_whatsapp_inbound_allowed` | later | 1:1 | `api_whatsapp_inbound_allowed(p_wa_id: string) → boolean` | Same name, arguments and return shape; tables live in `integrations` (service role only). |  | high | handler.ts:112 |
+| `api_whatsapp_ingest_inbound` | later | 1:1 | `api_whatsapp_ingest_inbound(p_message_id: string, p_payload: Json, p_run_id?: string) → string` | Same name, arguments and return shape; tables live in `integrations` (service role only). |  | high | handler.ts:121 |
+| `api_whatsapp_queue_reply` | later | 1:1 | see Edge Function `_shared` |  |  |  | handler.ts:152, handler.ts:174, handler.ts:215 |
+| `api_whatsapp_redeem_link_code` | later | 1:1 | `api_whatsapp_redeem_link_code(p_code: string, p_wa_id: string) → Json` | Same name, arguments and return shape; tables live in `integrations` (service role only). |  | high | handler.ts:166 |
+| `api_whatsapp_release_inbound` | later | 1:1 | `api_whatsapp_release_inbound(p_message_id: string) → undefined` | Same name, arguments and return shape; tables live in `integrations` (service role only). |  | high | handler.ts:98 |
 
 ## 4. MISSING — what the baseline does not provide
 
@@ -849,7 +852,7 @@ In launch order: after package *n* the app is shippable with everything up to *n
 | L4 — Money: donations to organizations, standing orders, org finance, org onboarding | later | 30 | 14 | 16 | 0 | 0 | L1, L2, L3, L5, L6, L7 |
 | L5 — Surveys, feedback, public research | later | 15 | 14 | 1 | 0 | 0 | L1, L2, L3, L4, L6, L7 |
 | L6 — Back-office tools: tasks, CRM, timesheets | later | 22 | 17 | 5 | 0 | 0 | L1, L2, L3, L4, L5, L7 |
-| L7 — WhatsApp bot, linking, admin console | later | 38 | 23 | 15 | 0 | 0 | L1, L2, L3, L4, L5, L6 |
+| L7 — WhatsApp bot, linking, admin console | later | 40 | 23 | 17 | 0 | 0 | L1, L2, L3, L4, L5, L6 |
 
 ### P0 — Contract switch and the degrade rule (first, alone)
 

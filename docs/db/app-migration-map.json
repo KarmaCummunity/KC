@@ -2,10 +2,10 @@
  "generatedBy": "scripts/app-migration-map.mjs",
  "totals": {
   "rpc": {
-   "objects": 244,
+   "objects": 246,
    "same": 169,
    "renamed": 22,
-   "changed": 53,
+   "changed": 55,
    "removed": 0,
    "missing": 0
   },
@@ -52,10 +52,10 @@
    "missing": 0
   },
   "later": {
-   "objects": 143,
+   "objects": 145,
    "same": 95,
    "renamed": 6,
-   "changed": 42,
+   "changed": 44,
    "removed": 0,
    "missing": 0
   },
@@ -133,9 +133,9 @@
    "missing": 0
   },
   "fn:_shared": {
-   "callSites": 10,
-   "oneToOne": 8,
-   "changed": 2,
+   "callSites": 13,
+   "oneToOne": 9,
+   "changed": 4,
    "removed": 0,
    "missing": 0
   },
@@ -224,8 +224,8 @@
    "missing": 0
   },
   "fn:whatsapp-webhook": {
-   "callSites": 10,
-   "oneToOne": 10,
+   "callSites": 12,
+   "oneToOne": 12,
    "changed": 0,
    "removed": 0,
    "missing": 0
@@ -1245,6 +1245,8 @@
     "rpc:api_bot_open_session",
     "rpc:api_bot_apply_extraction",
     "rpc:api_bot_publish_post",
+    "rpc:api_bot_pending_photo_draft",
+    "rpc:api_bot_attach_post_photo",
     "rpc:api_bot_my_posts",
     "rpc:api_bot_my_matches",
     "rpc:api_whatsapp_my_link_status",
@@ -1269,9 +1271,9 @@
     "rpc:api_whatsapp_admin_set_template_status"
    ],
    "counts": {
-    "objects": 38,
+    "objects": 40,
     "oneToOne": 23,
-    "changed": 15,
+    "changed": 17,
     "removed": 0,
     "missing": 0
    }
@@ -1528,6 +1530,7 @@
    ],
    "areas": [
     "fn:strip-exif",
+    "fn:whatsapp-webhook",
     "mobile",
     "posts"
    ],
@@ -1603,6 +1606,18 @@
      "line": 180,
      "symbol": "serve",
      "area": "fn:strip-exif"
+    },
+    {
+     "file": "supabase/functions/whatsapp-webhook/index.ts",
+     "line": 37,
+     "symbol": "rpc",
+     "area": "fn:whatsapp-webhook"
+    },
+    {
+     "file": "supabase/functions/whatsapp-webhook/index.ts",
+     "line": 45,
+     "symbol": "rpc",
+     "area": "fn:whatsapp-webhook"
     }
    ]
   },
@@ -3976,8 +3991,39 @@
    "callSites": [
     {
      "file": "supabase/functions/_shared/whatsapp/agent/tools.ts",
-     "line": 83,
+     "line": 84,
      "symbol": "postListing",
+     "area": "fn:_shared"
+    }
+   ]
+  },
+  {
+   "old": "api_bot_attach_post_photo",
+   "kind": "rpc",
+   "status": "changed",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "New (migration `whatsapp_bot_post_photos`, D158): `(p_wa_id, p_owner_id, p_session_id, p_storage_path, p_mime_type, p_size_bytes, p_width, p_height)` registers a photo uploaded to `post-images` on the bot draft as the app does and publishes it through the bot gates; returns `{post_id, media_id, world_slug, status, review, photo_required}`. Refusals: `owner_mismatch` (42501), `not_bot_draft`, `invalid_media_type`, `invalid_media_size`, `invalid_storage_path`, `too_many_photos`, `rate_limited`.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_bot_attach_post_photo",
+     "signature": [
+      "api_bot_attach_post_photo(p_height?: number, p_mime_type: string, p_owner_id: string, p_session_id: string, p_size_bytes: number, p_storage_path: string, p_wa_id: string, p_width?: number) → Json"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "fn:_shared"
+   ],
+   "callSites": [
+    {
+     "file": "supabase/functions/_shared/whatsapp/photo.ts",
+     "line": 87,
+     "symbol": "attach",
      "area": "fn:_shared"
     }
    ]
@@ -4011,7 +4057,7 @@
    "callSites": [
     {
      "file": "supabase/functions/_shared/whatsapp/agent/tools.ts",
-     "line": 159,
+     "line": 163,
      "symbol": "published",
      "area": "fn:_shared"
     }
@@ -4042,7 +4088,7 @@
    "callSites": [
     {
      "file": "supabase/functions/_shared/whatsapp/agent/tools.ts",
-     "line": 151,
+     "line": 155,
      "symbol": "published",
      "area": "fn:_shared"
     }
@@ -4077,8 +4123,39 @@
    "callSites": [
     {
      "file": "supabase/functions/_shared/whatsapp/agent/tools.ts",
-     "line": 79,
+     "line": 80,
      "symbol": "postListing",
+     "area": "fn:_shared"
+    }
+   ]
+  },
+  {
+   "old": "api_bot_pending_photo_draft",
+   "kind": "rpc",
+   "status": "changed",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "New (migration `whatsapp_bot_post_photos`, D158): `(p_wa_id, p_owner_id)` → `{session_id, post_id, world_slug, direction, photos}` of the member's bot draft of the last 24 hours, or null; `owner_mismatch` (42501) unless the number is linked to that member.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_bot_pending_photo_draft",
+     "signature": [
+      "api_bot_pending_photo_draft(p_owner_id: string, p_wa_id: string) → Json"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "fn:_shared"
+   ],
+   "callSites": [
+    {
+     "file": "supabase/functions/_shared/whatsapp/photo.ts",
+     "line": 104,
+     "symbol": "handleProPhoto",
      "area": "fn:_shared"
     }
    ]
@@ -4108,7 +4185,7 @@
    "callSites": [
     {
      "file": "supabase/functions/_shared/whatsapp/agent/tools.ts",
-     "line": 93,
+     "line": 94,
      "symbol": "postListing",
      "area": "fn:_shared"
     }
@@ -4139,7 +4216,7 @@
    "callSites": [
     {
      "file": "supabase/functions/_shared/whatsapp/agent/tools.ts",
-     "line": 115,
+     "line": 118,
      "symbol": "published",
      "area": "fn:_shared"
     }
@@ -4926,7 +5003,7 @@
    "callSites": [
     {
      "file": "supabase/functions/whatsapp-webhook/handler.ts",
-     "line": 164,
+     "line": 204,
      "symbol": "gateBot",
      "area": "fn:whatsapp-webhook"
     }
@@ -4992,7 +5069,7 @@
    "callSites": [
     {
      "file": "supabase/functions/whatsapp-webhook/handler.ts",
-     "line": 71,
+     "line": 88,
      "symbol": "handleMessage",
      "area": "fn:whatsapp-webhook"
     }
@@ -5062,7 +5139,7 @@
    "callSites": [
     {
      "file": "supabase/functions/whatsapp-webhook/handler.ts",
-     "line": 115,
+     "line": 136,
      "symbol": "processClaimed",
      "area": "fn:whatsapp-webhook"
     }
@@ -5097,7 +5174,7 @@
    "callSites": [
     {
      "file": "supabase/functions/whatsapp-webhook/handler.ts",
-     "line": 95,
+     "line": 112,
      "symbol": "processClaimed",
      "area": "fn:whatsapp-webhook"
     }
@@ -5132,7 +5209,7 @@
    "callSites": [
     {
      "file": "supabase/functions/whatsapp-webhook/handler.ts",
-     "line": 104,
+     "line": 121,
      "symbol": "processClaimed",
      "area": "fn:whatsapp-webhook"
     }
@@ -5167,7 +5244,7 @@
    "callSites": [
     {
      "file": "supabase/functions/_shared/whatsapp/agent/run.ts",
-     "line": 55,
+     "line": 57,
      "symbol": "runAgent",
      "area": "fn:_shared"
     }
@@ -5308,25 +5385,31 @@
    "callSites": [
     {
      "file": "supabase/functions/_shared/whatsapp/agent/run.ts",
-     "line": 72,
+     "line": 80,
      "symbol": "runAgent",
      "area": "fn:_shared"
     },
     {
+     "file": "supabase/functions/_shared/whatsapp/photo.ts",
+     "line": 72,
+     "symbol": "reply",
+     "area": "fn:_shared"
+    },
+    {
      "file": "supabase/functions/whatsapp-webhook/handler.ts",
-     "line": 130,
+     "line": 152,
      "symbol": "processClaimed",
      "area": "fn:whatsapp-webhook"
     },
     {
      "file": "supabase/functions/whatsapp-webhook/handler.ts",
-     "line": 152,
+     "line": 174,
      "symbol": "maybeRedeemLinkCode",
      "area": "fn:whatsapp-webhook"
     },
     {
      "file": "supabase/functions/whatsapp-webhook/handler.ts",
-     "line": 177,
+     "line": 215,
      "symbol": "access",
      "area": "fn:whatsapp-webhook"
     }
@@ -5361,7 +5444,7 @@
    "callSites": [
     {
      "file": "supabase/functions/whatsapp-webhook/handler.ts",
-     "line": 144,
+     "line": 166,
      "symbol": "maybeRedeemLinkCode",
      "area": "fn:whatsapp-webhook"
     }
@@ -5396,7 +5479,7 @@
    "callSites": [
     {
      "file": "supabase/functions/whatsapp-webhook/handler.ts",
-     "line": 81,
+     "line": 98,
      "symbol": "handleMessage",
      "area": "fn:whatsapp-webhook"
     }

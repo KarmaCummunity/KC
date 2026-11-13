@@ -106,8 +106,9 @@ select is(pg_temp.deliver('match_suggested', 'a', null, '{"world_slug": "items"}
 
 -- ── Sender job ──────────────────────────────────────────────────────────────
 select is((select string_agg(name || ':' || enabled, ',' order by name) from kc_private.scheduled_jobs where name like '%whatsapp%'),
-  'retention_whatsapp_claims:true,retention_whatsapp_inbound:true,retention_whatsapp_link_failures:true,'
-  || 'retention_whatsapp_outbound:true,whatsapp_send:true', 'the sender and the four retention jobs are registered');
+  'retention_whatsapp_bot_sessions:true,retention_whatsapp_claims:true,retention_whatsapp_inbound:true,'
+  || 'retention_whatsapp_link_failures:true,retention_whatsapp_outbound:true,whatsapp_send:true',
+  'the sender and the five retention jobs are registered');
 delete from ops.warnings;
 update integrations.whatsapp_channel_config set is_enabled = false;
 select is(kc_private.whatsapp_send_tick() || ':' || (select count(*) from ops.warnings), 'false:0',
@@ -128,8 +129,8 @@ select is(pg_temp.health(), 'ok: 0', 'a switched-off channel is not a backlog');
 -- ── Retention ───────────────────────────────────────────────────────────────
 select is((select string_agg(name || ':' || keep || ':' || runnable, ',' order by name) from kc_private.retention_rules
             where name like 'whatsapp%'),
-  'whatsapp_inbound_claims:7 days:true,whatsapp_inbound_messages:90 days:false,whatsapp_link_failures:1 day:true,'
-  || 'whatsapp_outbound:180 days:true', 'the four WhatsApp retention rules');
+  'whatsapp_bot_sessions:180 days:true,whatsapp_inbound_claims:7 days:true,whatsapp_inbound_messages:90 days:false,'
+  || 'whatsapp_link_failures:1 day:true,whatsapp_outbound:180 days:true', 'the five WhatsApp retention rules');
 insert into integrations.whatsapp_inbound_claims (message_id, claimed_at) values
   ('old', now() - interval '8 days'), ('young', now() - interval '6 days');
 select is(kc_private.retention_run('whatsapp_inbound_claims'), 1::bigint, 'claims past seven days are removed');

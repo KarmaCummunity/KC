@@ -68,7 +68,7 @@ begin
 end;
 $$;
 
-select plan(47);
+select plan(48);
 
 insert into auth.users (id, email, raw_app_meta_data)
 select ('00000000-0000-4000-8000-00000000000' || m)::uuid, m || '@example.test', '{"provider":"google"}'
@@ -144,6 +144,16 @@ select is(pg_temp.act('e', $$select public.create_donation_intent('60000000-0000
 insert into billing.user_entitlements (user_id, source) values ('00000000-0000-4000-8000-00000000000e', 'admin');
 select is(pg_temp.thrice('e', 'select public.api_whatsapp_create_link_code()'),
   'ok|ok|rate_limited', 'issuing WhatsApp link codes is limited');
+-- A photo sent through the WhatsApp bot to a draft (whatsapp_bot_post_photos); the draft stays
+-- one, below the publish confidence, so each photo is a new attach.
+update public.users set city_id = 'c1' where id = '00000000-0000-4000-8000-00000000000e';
+insert into integrations.whatsapp_identities (wa_id, user_id) values ('972500000005', '00000000-0000-4000-8000-00000000000e');
+create temporary table t_bot as select public.api_bot_open_session('972500000005') as session_id;
+select public.api_bot_apply_extraction((select session_id from t_bot), 'items', 'item', 'give', 'a chair', '{}', 0.8);
+select public.api_bot_publish_post((select session_id from t_bot), '00000000-0000-4000-8000-00000000000e');
+select is(pg_temp.thrice(null, format($$select public.api_bot_attach_post_photo('972500000005', @e, %L,
+    '00000000-0000-4000-8000-00000000000e/w/%%s.jpg', 'image/jpeg', 1000)$$, (select session_id from t_bot))),
+  'ok|ok|rate_limited', 'attaching WhatsApp photos to a bot draft is limited');
 select is((select count(*) from kc_private.rate_limits l
             where not exists (select 1 from kc_private.rate_limit_counters c where c.key like l.action || ':%')),
   0::bigint, 'every configured limit was exercised by this file');

@@ -8,7 +8,7 @@
  ],
  "summary": {
   "bucket": {
-   "callSites": 20,
+   "callSites": 22,
    "distinct": 4
   },
   "channel": {
@@ -20,8 +20,8 @@
    "distinct": 3
   },
   "rpc": {
-   "callSites": 267,
-   "distinct": 244
+   "callSites": 270,
+   "distinct": 246
   },
   "table": {
    "callSites": 186,
@@ -4535,7 +4535,7 @@
   {
    "kind": "rpc",
    "file": "supabase/functions/_shared/whatsapp/agent/run.ts",
-   "line": 55,
+   "line": 57,
    "area": "fn:_shared",
    "symbol": "runAgent",
    "via": "literal",
@@ -4544,7 +4544,7 @@
   {
    "kind": "rpc",
    "file": "supabase/functions/_shared/whatsapp/agent/run.ts",
-   "line": 72,
+   "line": 80,
    "area": "fn:_shared",
    "symbol": "runAgent",
    "via": "literal",
@@ -4554,7 +4554,7 @@
    "kind": "rpc",
    "name": "api_bot_open_session",
    "file": "supabase/functions/_shared/whatsapp/agent/tools.ts",
-   "line": 79,
+   "line": 80,
    "area": "fn:_shared",
    "symbol": "postListing",
    "via": "wrapper:call"
@@ -4563,7 +4563,7 @@
    "kind": "rpc",
    "name": "api_bot_apply_extraction",
    "file": "supabase/functions/_shared/whatsapp/agent/tools.ts",
-   "line": 83,
+   "line": 84,
    "area": "fn:_shared",
    "symbol": "postListing",
    "via": "wrapper:call"
@@ -4572,7 +4572,7 @@
    "kind": "rpc",
    "name": "api_bot_publish_post",
    "file": "supabase/functions/_shared/whatsapp/agent/tools.ts",
-   "line": 93,
+   "line": 94,
    "area": "fn:_shared",
    "symbol": "postListing",
    "via": "wrapper:call"
@@ -4581,7 +4581,7 @@
    "kind": "rpc",
    "name": "api_bot_search_posts",
    "file": "supabase/functions/_shared/whatsapp/agent/tools.ts",
-   "line": 115,
+   "line": 118,
    "area": "fn:_shared",
    "symbol": "published",
    "via": "wrapper:call"
@@ -4590,7 +4590,7 @@
    "kind": "rpc",
    "name": "api_bot_my_posts",
    "file": "supabase/functions/_shared/whatsapp/agent/tools.ts",
-   "line": 151,
+   "line": 155,
    "area": "fn:_shared",
    "symbol": "published",
    "via": "wrapper:call"
@@ -4599,9 +4599,36 @@
    "kind": "rpc",
    "name": "api_bot_my_matches",
    "file": "supabase/functions/_shared/whatsapp/agent/tools.ts",
-   "line": 159,
+   "line": 163,
    "area": "fn:_shared",
    "symbol": "published",
+   "via": "wrapper:call"
+  },
+  {
+   "kind": "rpc",
+   "name": "api_whatsapp_queue_reply",
+   "file": "supabase/functions/_shared/whatsapp/photo.ts",
+   "line": 72,
+   "area": "fn:_shared",
+   "symbol": "reply",
+   "via": "wrapper:call"
+  },
+  {
+   "kind": "rpc",
+   "file": "supabase/functions/_shared/whatsapp/photo.ts",
+   "line": 87,
+   "area": "fn:_shared",
+   "symbol": "attach",
+   "via": "literal",
+   "name": "api_bot_attach_post_photo"
+  },
+  {
+   "kind": "rpc",
+   "name": "api_bot_pending_photo_draft",
+   "file": "supabase/functions/_shared/whatsapp/photo.ts",
+   "line": 104,
+   "area": "fn:_shared",
+   "symbol": "handleProPhoto",
    "via": "wrapper:call"
   },
   {
@@ -4882,7 +4909,7 @@
   {
    "kind": "rpc",
    "file": "supabase/functions/whatsapp-webhook/handler.ts",
-   "line": 71,
+   "line": 88,
    "area": "fn:whatsapp-webhook",
    "symbol": "handleMessage",
    "via": "literal",
@@ -4891,7 +4918,7 @@
   {
    "kind": "rpc",
    "file": "supabase/functions/whatsapp-webhook/handler.ts",
-   "line": 81,
+   "line": 98,
    "area": "fn:whatsapp-webhook",
    "symbol": "handleMessage",
    "via": "literal",
@@ -4900,7 +4927,7 @@
   {
    "kind": "rpc",
    "file": "supabase/functions/whatsapp-webhook/handler.ts",
-   "line": 95,
+   "line": 112,
    "area": "fn:whatsapp-webhook",
    "symbol": "processClaimed",
    "via": "literal",
@@ -4909,7 +4936,7 @@
   {
    "kind": "rpc",
    "file": "supabase/functions/whatsapp-webhook/handler.ts",
-   "line": 104,
+   "line": 121,
    "area": "fn:whatsapp-webhook",
    "symbol": "processClaimed",
    "via": "literal",
@@ -4918,7 +4945,7 @@
   {
    "kind": "rpc",
    "file": "supabase/functions/whatsapp-webhook/handler.ts",
-   "line": 115,
+   "line": 136,
    "area": "fn:whatsapp-webhook",
    "symbol": "processClaimed",
    "via": "literal",
@@ -4927,7 +4954,7 @@
   {
    "kind": "rpc",
    "file": "supabase/functions/whatsapp-webhook/handler.ts",
-   "line": 130,
+   "line": 152,
    "area": "fn:whatsapp-webhook",
    "symbol": "processClaimed",
    "via": "literal",
@@ -4936,7 +4963,7 @@
   {
    "kind": "rpc",
    "file": "supabase/functions/whatsapp-webhook/handler.ts",
-   "line": 144,
+   "line": 166,
    "area": "fn:whatsapp-webhook",
    "symbol": "maybeRedeemLinkCode",
    "via": "literal",
@@ -4945,7 +4972,7 @@
   {
    "kind": "rpc",
    "file": "supabase/functions/whatsapp-webhook/handler.ts",
-   "line": 152,
+   "line": 174,
    "area": "fn:whatsapp-webhook",
    "symbol": "maybeRedeemLinkCode",
    "via": "literal",
@@ -4954,7 +4981,7 @@
   {
    "kind": "rpc",
    "file": "supabase/functions/whatsapp-webhook/handler.ts",
-   "line": 164,
+   "line": 204,
    "area": "fn:whatsapp-webhook",
    "symbol": "gateBot",
    "via": "literal",
@@ -4963,11 +4990,29 @@
   {
    "kind": "rpc",
    "file": "supabase/functions/whatsapp-webhook/handler.ts",
-   "line": 177,
+   "line": 215,
    "area": "fn:whatsapp-webhook",
    "symbol": "access",
    "via": "literal",
    "name": "api_whatsapp_queue_reply"
+  },
+  {
+   "kind": "bucket",
+   "file": "supabase/functions/whatsapp-webhook/index.ts",
+   "line": 37,
+   "area": "fn:whatsapp-webhook",
+   "symbol": "rpc",
+   "via": "const",
+   "name": "post-images"
+  },
+  {
+   "kind": "bucket",
+   "file": "supabase/functions/whatsapp-webhook/index.ts",
+   "line": 45,
+   "area": "fn:whatsapp-webhook",
+   "symbol": "rpc",
+   "via": "const",
+   "name": "post-images"
   }
  ]
 }
