@@ -1,11 +1,23 @@
 // Mapped to spec: FR-POST-001 AC6 / FR-FEED-004 — single-line chip rows in forms and filter sheets
-// with sideways scroll and an optional expand control (replaces multi-row wrap by default).
+// with sideways scroll and an expand control that appears only when the chips overflow the row
+// (a row whose chips all fit shows no control at all).
 import React, { useState, type ReactNode } from 'react';
-import { Pressable, ScrollView, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Pressable, ScrollView, View, type LayoutChangeEvent, type StyleProp, type ViewStyle } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { iconSize, makeUseStyles, radius, spacing, useTheme } from '@kc/ui';
 import { rowDirectionStart } from '../../lib/rtlLayout';
+
+/** Sub-pixel rounding must not make an exactly-fitting row look like it overflows. */
+const OVERFLOW_TOLERANCE_PX = 1;
+
+/** Whether chips of `contentWidth` do not fit a row of `viewportWidth` (unknown sizes: they fit). */
+export function chipRowOverflows(contentWidth: number, viewportWidth: number): boolean {
+  return viewportWidth > 0 && contentWidth > viewportWidth + OVERFLOW_TOLERANCE_PX;
+}
+
+/** The 24pt control keeps a 44pt touch target. */
+const EXPAND_HIT_SLOP = 10;
 
 export interface ChipSelectRowProps {
   readonly children: ReactNode;
@@ -29,6 +41,10 @@ export function ChipSelectRow({
   const { colors } = useTheme();
   const styles = useChipSelectRowStyles();
   const [expanded, setExpanded] = useState(false);
+  const [contentWidth, setContentWidth] = useState(0);
+  const [viewportWidth, setViewportWidth] = useState(0);
+  const overflows = chipRowOverflows(contentWidth, viewportWidth);
+  const onViewportLayout = (event: LayoutChangeEvent) => setViewportWidth(event.nativeEvent.layout.width);
 
   const chipGapRow = [styles.gapRow, contentContainerStyle];
 
@@ -55,12 +71,13 @@ export function ChipSelectRow({
         <View style={[styles.wrapRow, contentContainerStyle]}>{children}</View>
         <Pressable
           style={styles.expandBtn}
+          hitSlop={EXPAND_HIT_SLOP}
           onPress={toggleExpanded}
           accessibilityRole="button"
           accessibilityLabel={t('common.chipRowCollapseA11y')}
           testID={testID ? `${testID}-collapse` : undefined}
         >
-          <Ionicons name="chevron-up" size={iconSize.sm} color={colors.textSecondary} />
+          <Ionicons name="chevron-up" size={iconSize.xs} color={colors.textSecondary} />
         </Pressable>
       </View>
     );
@@ -74,18 +91,23 @@ export function ChipSelectRow({
         style={[styles.scroll, styles.scrollFlex]}
         contentContainerStyle={chipGapRow}
         accessibilityLabel={accessibilityLabel}
+        onLayout={onViewportLayout}
+        onContentSizeChange={setContentWidth}
       >
         {children}
       </ScrollView>
-      <Pressable
-        style={styles.expandBtn}
-        onPress={toggleExpanded}
-        accessibilityRole="button"
-        accessibilityLabel={t('common.chipRowExpandA11y')}
-        testID={testID ? `${testID}-expand` : undefined}
-      >
-        <Ionicons name="chevron-down" size={iconSize.sm} color={colors.textSecondary} />
-      </Pressable>
+      {overflows ? (
+        <Pressable
+          style={styles.expandBtn}
+          hitSlop={EXPAND_HIT_SLOP}
+          onPress={toggleExpanded}
+          accessibilityRole="button"
+          accessibilityLabel={t('common.chipRowExpandA11y')}
+          testID={testID ? `${testID}-expand` : undefined}
+        >
+          <Ionicons name="chevron-down" size={iconSize.xs} color={colors.textSecondary} />
+        </Pressable>
+      ) : null}
     </View>
   );
 }
@@ -107,8 +129,8 @@ const useChipSelectRowStyles = makeUseStyles(({ colors }) => ({
     alignItems: 'center' as const,
   },
   expandBtn: {
-    width: 32,
-    height: 32,
+    width: 24,
+    height: 24,
     borderRadius: radius.full,
     borderWidth: 1,
     borderColor: colors.border,

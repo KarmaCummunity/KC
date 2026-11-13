@@ -4,7 +4,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { FilterButton } from '../FilterButton';
 import { FilterSearchBar } from '../FilterSearchBar';
-import { ChipSelectRow } from '../ChipSelectRow';
+import { ChipSelectRow, chipRowOverflows } from '../ChipSelectRow';
 import { FilterChipRow } from '../FilterChipRow';
 import { FilterSection } from '../FilterSection';
 import { SortSection } from '../SortSection';
@@ -107,18 +107,20 @@ describe('filterKit — FilterSearchBar', () => {
 });
 
 describe('filterKit — ChipSelectRow', () => {
-  it('expands into a wrapped layout when the expand control is pressed', () => {
+  it('chipRowOverflows only when chips are wider than the row', () => {
+    expect(chipRowOverflows(400, 300)).toBe(true);
+    expect(chipRowOverflows(300, 300)).toBe(false);
+    expect(chipRowOverflows(300.5, 300)).toBe(false); // rounding noise
+    expect(chipRowOverflows(900, 0)).toBe(false); // not measured yet
+  });
+
+  it('shows no expand control while the chips fit the row', () => {
     render(
       <ChipSelectRow testID="chip-select">
-        <span data-testid="chip-a">A</span>
-        <span data-testid="chip-b">B</span>
+        <span>A</span>
       </ChipSelectRow>,
     );
-    expect(screen.getByTestId('chip-select-expand')).toBeTruthy();
-    fireEvent.click(screen.getByTestId('chip-select-expand'));
-    expect(screen.getByTestId('chip-select-collapse')).toBeTruthy();
-    fireEvent.click(screen.getByTestId('chip-select-collapse'));
-    expect(screen.getByTestId('chip-select-expand')).toBeTruthy();
+    expect(screen.queryByTestId('chip-select-expand')).toBeNull();
   });
 });
 
