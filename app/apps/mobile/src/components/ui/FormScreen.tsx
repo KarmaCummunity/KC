@@ -18,6 +18,7 @@ import {
   useShellTabBarVisibility,
 } from '../../navigation/useShellTabBarVisibility';
 import { KeyboardFormAccessory, type KeyboardFormAccessoryProps } from './KeyboardFormAccessory';
+import { FormScopeContext, useFormScopeController } from './formScope';
 
 export interface FormScreenProps {
   readonly children: React.ReactNode;
@@ -27,6 +28,10 @@ export interface FormScreenProps {
   readonly headerless?: boolean;
   readonly headerHeight?: number;
   readonly contentContainerStyle?: StyleProp<ViewStyle>;
+  /**
+   * Hand-wired keyboard toolbar (`useFormFieldFocus`). Leave unset: fields then join the form scope
+   * and the toolbar, Next / Done keys and jump-to-problem-field work with no wiring.
+   */
   readonly keyboardAccessory?: Omit<KeyboardFormAccessoryProps, 'nativeId'> & { nativeId?: string };
   readonly testID?: string;
   /** Inside an existing `Screen` — skip the outer SafeAreaView. */
@@ -51,6 +56,7 @@ export function FormScreen({
   tabBarFooterInset = true,
 }: FormScreenProps) {
   const styles = useFormScreenStyles();
+  const formScope = useFormScopeController(!keyboardAccessory);
   const keyboardOffset = useKeyboardVerticalOffset({ headerless, headerHeight });
   const tabBarVisible = useShellTabBarVisibility();
   const [keyboardOpen, setKeyboardOpen] = useState(false);
@@ -81,31 +87,34 @@ export function FormScreen({
 
   return (
     <Root {...rootProps}>
-      <KeyboardAvoidingView
-        style={styles.fill}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={keyboardOffset}
-      >
-        <View style={styles.fill}>
-          <ScrollView
-            style={styles.fill}
-            contentContainerStyle={scrollStyles}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-          >
-            {children}
-          </ScrollView>
-          {keyboardAccessory ? <KeyboardFormAccessory {...keyboardAccessory} /> : null}
-          {footer ? (
-            <View
-              testID="form-screen-footer"
-              style={[styles.footer, footerTabBarLift > 0 && { paddingBottom: spacing.base + footerTabBarLift }]}
+      <FormScopeContext.Provider value={formScope.scope}>
+        <KeyboardAvoidingView
+          style={styles.fill}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          keyboardVerticalOffset={keyboardOffset}
+        >
+          <View style={styles.fill}>
+            <ScrollView
+              {...formScope.scrollProps}
+              style={styles.fill}
+              contentContainerStyle={scrollStyles}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
             >
-              {footer}
-            </View>
-          ) : null}
-        </View>
-      </KeyboardAvoidingView>
+              {children}
+            </ScrollView>
+            <KeyboardFormAccessory {...(keyboardAccessory ?? formScope.accessoryProps)} />
+            {footer ? (
+              <View
+                testID="form-screen-footer"
+                style={[styles.footer, footerTabBarLift > 0 && { paddingBottom: spacing.base + footerTabBarLift }]}
+              >
+                {footer}
+              </View>
+            ) : null}
+          </View>
+        </KeyboardAvoidingView>
+      </FormScopeContext.Provider>
     </Root>
   );
 }

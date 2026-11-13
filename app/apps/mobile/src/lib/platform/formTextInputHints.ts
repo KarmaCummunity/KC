@@ -47,3 +47,57 @@ export const formIsoDateInputProps = {
   autoCapitalize: 'none',
   autoCorrect: false,
 } as const satisfies Partial<TextInputProps>;
+
+/** Clock time such as `18:30` — digits plus the colon, no letters. */
+export const formTimeInputProps = {
+  keyboardType: 'numbers-and-punctuation',
+  autoCapitalize: 'none',
+  autoCorrect: false,
+} as const satisfies Partial<TextInputProps>;
+
+/** Person name — capitalise each word, let the OS offer contact-name autofill. */
+export const formNameInputProps = {
+  autoCapitalize: 'words',
+  autoComplete: 'name',
+  textContentType: 'name',
+} as const satisfies Partial<TextInputProps>;
+
+/** Password — masked, never capitalised or autocorrected. */
+export const formPasswordInputProps = {
+  secureTextEntry: true,
+  autoCapitalize: 'none',
+  autoCorrect: false,
+  autoComplete: 'password',
+  textContentType: 'password',
+} as const satisfies Partial<TextInputProps>;
+
+/**
+ * Semantic kind of a form field. `TextField` maps it to the right on-screen keyboard
+ * and autofill hints, so every form picks its keyboard the same way.
+ */
+export type FormInputKind =
+  | 'text'
+  | 'name'
+  | 'email'
+  | 'phone'
+  | 'integer'
+  | 'decimal'
+  | 'url'
+  | 'date'
+  | 'time'
+  | 'streetNumber'
+  | 'password';
+
+export const formInputKindProps: Readonly<Record<FormInputKind, Partial<TextInputProps>>> = {
+  text: {},
+  name: formNameInputProps,
+  email: formEmailInputProps,
+  phone: formPhoneInputProps,
+  integer: formIntegerInputProps,
+  decimal: formDecimalInputProps,
+  url: formUrlInputProps,
+  date: formIsoDateInputProps,
+  time: formTimeInputProps,
+  streetNumber: formStreetNumberInputProps,
+  password: formPasswordInputProps,
+};

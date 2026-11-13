@@ -5,10 +5,8 @@
 
 import React, { useCallback } from 'react';
 import { View } from 'react-native';
-import type { TextInput as KitTextInput } from '@kc/ui';
 import { useTranslation } from 'react-i18next';
 import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
-import type { TextFieldProps } from './ui/TextField';
 import { CompactStreetNumberField } from './address/CompactStreetNumberField';
 import { CityPicker } from './CityPicker';
 import { StreetPicker } from './StreetPicker';
@@ -23,12 +21,6 @@ export interface EditProfileAddressBlockProps {
   readonly onStreetChange: (v: string) => void;
   readonly onStreetNumberChange: (v: string) => void;
   readonly disabled: boolean;
-  /** Optional keyboard-toolbar bindings for the house-number field. */
-  readonly streetNumberInputProps?: Pick<
-    TextFieldProps,
-    'onFocus' | 'inputAccessoryViewID' | 'returnKeyType' | 'blurOnSubmit' | 'onSubmitEditing'
-  >;
-  readonly streetNumberRef?: React.RefObject<KitTextInput | null>;
 }
 
 export function EditProfileAddressBlock({
@@ -39,8 +31,6 @@ export function EditProfileAddressBlock({
   onStreetChange,
   onStreetNumberChange,
   disabled,
-  streetNumberInputProps,
-  streetNumberRef,
 }: EditProfileAddressBlockProps) {
   const styles = useStyles();
   const { t } = useTranslation();
@@ -83,13 +73,11 @@ export function EditProfileAddressBlock({
             />
           </View>
           <CompactStreetNumberField
-            ref={streetNumberRef}
             containerStyle={styles.streetInputHouse}
             style={styles.streetNumberInput}
             value={streetNumber}
             onChangeText={onStreetNumberChange}
             editable={!disabled && !!city}
-            {...streetNumberInputProps}
           />
         </View>
       </View>

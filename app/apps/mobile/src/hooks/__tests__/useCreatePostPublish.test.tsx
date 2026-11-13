@@ -73,4 +73,36 @@ describe('useCreatePostPublish', () => {
     await waitFor(() => expect(execute).toHaveBeenCalled());
     expect(back).not.toHaveBeenCalled();
   });
+
+  // FR-RESP-006 AC26 — a rejected Publish marks every missing field inline and bumps the jump signal.
+  it('marks a missing title and photo inline only after a rejected Publish, and counts each rejection', () => {
+    const args = baseArgs();
+    args.title = '   ';
+    args.isGive = true;
+    args.uploads = [];
+    const { result } = renderHook(() => useCreatePostPublish(args), { wrapper });
+    expect(result.current.titleInlineMessage).toBeNull();
+    expect(result.current.photoInlineMessage).toBeNull();
+    expect(result.current.failedSubmitCount).toBe(0);
+
+    act(() => result.current.tryPublish());
+    expect(result.current.titleInlineMessage).toBe('errors.createPost.missingTitleBeforePublish');
+    expect(result.current.photoInlineMessage).toBe('errors.createPost.missingPhotoBeforePublish');
+    expect(result.current.failedSubmitCount).toBe(1);
+
+    // Same errors, second press: the counter still moves so the form scrolls to the problem again.
+    act(() => result.current.tryPublish());
+    expect(result.current.failedSubmitCount).toBe(2);
+    expect(execute).not.toHaveBeenCalled();
+  });
+
+  it('does not require a photo on a request post', () => {
+    const args = baseArgs();
+    args.isGive = false;
+    args.uploads = [];
+    const { result } = renderHook(() => useCreatePostPublish(args), { wrapper });
+    act(() => result.current.tryPublish());
+    expect(result.current.photoInlineMessage).toBeNull();
+    expect(result.current.failedSubmitCount).toBe(0);
+  });
 });

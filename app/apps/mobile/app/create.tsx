@@ -151,7 +151,15 @@ export default function CreatePostScreen() {
   const handleRemove = (path: string) =>
     form.setUploads((prev) => prev.filter((u) => u.path !== path));
 
-  const { tryPublish, runPublishAfterGate, isPublishing, addressInlineMessage } =
+  const {
+    tryPublish,
+    runPublishAfterGate,
+    isPublishing,
+    addressInlineMessage,
+    titleInlineMessage,
+    photoInlineMessage,
+    failedSubmitCount,
+  } =
     useCreatePostPublish({
     ownerId,
     type: form.type,
@@ -236,6 +244,9 @@ export default function CreatePostScreen() {
         onStreetChange={setStreet}
         streetNumber={streetNumber}
         onStreetNumberChange={setStreetNumber}
+        titleInlineError={titleInlineMessage}
+        photoInlineError={photoInlineMessage}
+        failedSubmitCount={failedSubmitCount}
         addressInlineError={addressInlineMessage}
         category={form.category}
         onCategoryChange={form.setCategory}

@@ -49,14 +49,19 @@ export function scrollListingFieldIntoView({ scroll, content, node, scrollY }: S
 }
 
 /** RN Web often exposes the host element on the view ref; use the browser's scroll-into-view when possible. */
-export function scrollWebFieldIntoView(node: View): boolean {
+export function scrollWebFieldIntoView(node: Pick<View, 'measureInWindow'>): boolean {
   const host = node as unknown as { scrollIntoView?: (opts?: ScrollIntoViewOptions) => void };
   if (typeof host.scrollIntoView !== 'function') return false;
   host.scrollIntoView({ block: 'center', behavior: 'smooth' });
   return true;
 }
 
-function scrollFieldWithWindow(scroll: ScrollView, node: View, scrollY: number, pad: number) {
+export function scrollFieldWithWindow(
+  scroll: ScrollView,
+  node: Pick<View, 'measureInWindow'>,
+  scrollY: number,
+  pad: number,
+) {
   const host = scroll as unknown as Pick<View, 'measureInWindow'>;
   host.measureInWindow((_sx, sy) => {
     node.measureInWindow((_fx, fy) => {

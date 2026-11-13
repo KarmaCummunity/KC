@@ -3,7 +3,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import React from 'react';
 import { cleanup, render } from '@testing-library/react';
 import { Text, ThemeProvider } from '@kc/ui';
+import { TextField } from '../TextField';
 
+vi.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
 vi.mock('react-native-safe-area-context', () => ({
   SafeAreaView: ({ children, testID }: { children: React.ReactNode; testID?: string }) => (
@@ -20,6 +22,7 @@ vi.mock('react-native', async () => {
   const RN = await vi.importActual<typeof import('react-native')>('react-native');
   return {
     ...RN,
+    InputAccessoryView: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
     KeyboardAvoidingView: ({ children, keyboardVerticalOffset }: { children: React.ReactNode; keyboardVerticalOffset?: number }) => (
       <div data-testid="kav" data-offset={keyboardVerticalOffset ?? 0}>
         {children}
@@ -75,5 +78,33 @@ describe('FormScreen', () => {
     const withoutInset = renderForm({ tabBarFooterInset: false });
     const plainFooter = withoutInset.getByTestId('form-screen-footer') as HTMLElement;
     expect(plainFooter.style.paddingBottom).toBe('');
+  });
+
+  it('joins TextFields to the form scope: Next return key and the keyboard toolbar, no per-form wiring', () => {
+    const { getByLabelText, getByText } = render(
+      <ThemeProvider mode="light" systemScheme="light" setMode={() => {}}>
+        <FormScreen>
+          <TextField label="First" />
+          <TextField label="Second" multiline />
+        </FormScreen>
+      </ThemeProvider>,
+    );
+    expect(getByLabelText('First').getAttribute('enterkeyhint')).toBe('next');
+    // The toolbar is mounted by FormScreen itself.
+    expect(getByText('common.formKeyboard.next')).toBeTruthy();
+    expect(getByLabelText('Second').tagName).toBe('TEXTAREA');
+  });
+
+  it('keeps hand-wired forms hands-off when keyboardAccessory is passed', () => {
+    const { getByLabelText } = render(
+      <ThemeProvider mode="light" systemScheme="light" setMode={() => {}}>
+        <FormScreen
+          keyboardAccessory={{ canGoPrev: false, canGoNext: false, onPrev: () => {}, onNext: () => {}, onDone: () => {} }}
+        >
+          <TextField label="Manual" returnKeyType="send" />
+        </FormScreen>
+      </ThemeProvider>,
+    );
+    expect(getByLabelText('Manual').getAttribute('enterkeyhint')).toBe('send');
   });
 });

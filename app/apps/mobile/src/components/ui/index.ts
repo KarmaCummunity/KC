@@ -23,4 +23,8 @@ export { TextField } from './TextField';
 export type { TextFieldProps } from './TextField';
 export { FormScreen } from './FormScreen';
 export type { FormScreenProps } from './FormScreen';
+export { FormScrollView } from './FormScrollView';
+export type { FormScrollViewProps } from './FormScrollView';
+export { useScrollToFirstInvalid } from './formScope';
+export { useFormScopeAnchor, useFormScopeField } from './useFormScopeField';
 export { KeyboardFormAccessory } from './KeyboardFormAccessory';
