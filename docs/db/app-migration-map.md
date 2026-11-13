@@ -8,12 +8,12 @@ The application (`app/packages/infrastructure-supabase`, `app/apps/mobile`) and 
 
 | Kind | Objects used | 1:1 | 1:1 (renamed) | CHANGED | REMOVED | MISSING |
 | --- | --- | --- | --- | --- | --- | --- |
-| RPCs | 225 | 148 | 20 | 38 | 0 | 19 |
-| Tables and views | 64 | 46 | 0 | 17 | 0 | 1 |
+| RPCs | 225 | 161 | 23 | 40 | 1 | 0 |
+| Tables and views | 64 | 46 | 0 | 18 | 0 | 0 |
 | Storage buckets | 4 | 3 | 0 | 1 | 0 | 0 |
 | Realtime channels | 9 | 9 | 0 | 0 | 0 | 0 |
 | Edge Function invokes | 3 | 3 | 0 | 0 | 0 | 0 |
-| **Total** | 305 | 209 | 20 | 56 | 0 | 20 |
+| **Total** | 305 | 222 | 23 | 59 | 1 | 0 |
 
 ### Launch scope
 
@@ -23,7 +23,7 @@ Every row carries `launch` (spec D102, `docs/spec/96_launch_and_first_group_plan
 | --- | --- | --- | --- | --- | --- | --- |
 | core | 127 | 103 | 1 | 23 | 0 | 0 |
 | wedge | 53 | 32 | 15 | 6 | 0 | 0 |
-| later | 125 | 74 | 4 | 27 | 0 | 20 |
+| later | 125 | 87 | 7 | 30 | 1 | 0 |
 | **Launch-critical (core + wedge)** | 180 | 135 | 16 | 29 | 0 | 0 |
 
 Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename of the function or its arguments · **CHANGED** the caller's logic changes · **REMOVED** no replacement by design · **MISSING** the baseline has no equivalent although the code needs one (§4). Confidence: **high** read in the baseline source, **medium** inferred from names and generated types.
@@ -78,7 +78,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `infrastructure-supabase/src/volunteering/` | 9 | 3 | 6 | 0 | 0 |
 | `infrastructure-supabase/src/worlds/` | 3 | 1 | 2 | 0 | 0 |
 | `apps/mobile` (direct calls outside the adapters) | 18 | 17 | 1 | 0 | 0 |
-| Edge Function `_shared` | 11 | 0 | 0 | 0 | 11 |
+| Edge Function `_shared` | 11 | 9 | 2 | 0 | 0 |
 | Edge Function `backfill-image-thumbs` | 2 | 0 | 2 | 0 | 0 |
 | Edge Function `embed-worker` | 3 | 3 | 0 | 0 | 0 |
 | Edge Function `match-rerank` | 2 | 1 | 1 | 0 | 0 |
@@ -90,9 +90,9 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | Edge Function `subscriptions-charger` | 1 | 1 | 0 | 0 | 0 |
 | Edge Function `translate` | 3 | 0 | 3 | 0 | 0 |
 | Edge Function `validate-donation-link` | 5 | 1 | 4 | 0 | 0 |
-| Edge Function `whatsapp-intake-worker` | 5 | 0 | 0 | 0 | 5 |
-| Edge Function `whatsapp-sender` | 1 | 0 | 0 | 0 | 1 |
-| Edge Function `whatsapp-webhook` | 10 | 0 | 0 | 0 | 10 |
+| Edge Function `whatsapp-intake-worker` | 5 | 3 | 1 | 1 | 0 |
+| Edge Function `whatsapp-sender` | 1 | 0 | 1 | 0 | 0 |
+| Edge Function `whatsapp-webhook` | 10 | 10 | 0 | 0 | 0 |
 
 ### `infrastructure-supabase/src/about/`
 
@@ -664,21 +664,21 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 
 ### Edge Function `_shared`
 
-11 call sites: 0 map 1:1, 0 need logic changes, 0 removed, 11 MISSING.
+11 call sites: 9 map 1:1, 2 need logic changes, 0 removed, 0 MISSING.
 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `api_bot_apply_extraction` | later | MISSING M22 | — | The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4). |  | high | tools.ts:86 |
-| `api_bot_listing_cards` | later | MISSING M22 | — | The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4). |  | high | tools.ts:58 |
-| `api_bot_my_listings` | later | MISSING M22 | — | The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4). |  | high | tools.ts:104 |
-| `api_bot_my_matches` | later | MISSING M22 | — | The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4). |  | high | tools.ts:110 |
-| `api_bot_open_session` | later | MISSING M22 | — | The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4). |  | high | tools.ts:85 |
-| `api_bot_publish_listing` | later | MISSING M22 | — | The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4). |  | high | tools.ts:96 |
-| `api_bot_search_listings` | later | MISSING M22 | — | The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4). |  | high | tools.ts:50 |
-| `api_whatsapp_llm_budget_take` | later | MISSING M22 | — | The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4). |  | high | run.ts:30 |
-| `api_whatsapp_outbound_claim` | later | MISSING M22 | — | The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4). |  | high | sender.ts:47 |
-| `api_whatsapp_outbound_result` | later | MISSING M22 | — | The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4). |  | high | sender.ts:60 |
-| `api_whatsapp_queue_reply` | later | MISSING M22 | — | The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4). |  | high | run.ts:46 |
+| `api_bot_apply_extraction` | later | 1:1 | `api_bot_apply_extraction(p_confidence?: number, p_details?: Json, p_direction: string, p_kind_slug: string, p_session_id: string, p_summary?: string, p_title: string, p_world_slug: string) → string` | Same arguments; kind slugs are the posts catalog's (`item_offer`, `item_request`, `food_offer`, `food_request`); returns the session id; titles are cut to 80 characters. |  | high | tools.ts:86 |
+| `api_bot_listing_cards` | later | 1:1 (renamed) | `api_bot_post_cards(p_ids: string[], p_viewer_id: string) → { city_id: string description: string direction: string post_id: string published_at: string title: string world_slug: string }[]` | Same arguments; rows carry `post_id` (was `listing_id`) and `description` (was `summary`). |  | high | tools.ts:58 |
+| `api_bot_my_listings` | later | 1:1 (renamed) | `api_bot_my_posts(p_limit?: number, p_user_id: string) → { created_at: string direction: string post_id: string title: string world_slug: string }[]` | Same arguments; rows carry `post_id` (was `listing_id`). |  | high | tools.ts:104 |
+| `api_bot_my_matches` | later | 1:1 | `api_bot_my_matches(p_limit?: number, p_user_id: string) → { candidate_id: string distance_km: number my_post_title: string other_post_id: string other_title: string score: number status: string world_slug: string }[]` | Same shape; reads matching v2 pairs and leaves out a pair whose other post the member may not read. |  | high | tools.ts:110 |
+| `api_bot_open_session` | later | 1:1 (renamed) | `api_bot_open_session(p_inbound_message_id?: string, p_wa_id: string) → string` | `p_record_id` → `p_inbound_message_id` (the inbound row id returned by `api_whatsapp_ingest_inbound`). |  | high | tools.ts:85 |
+| `api_bot_publish_listing` | later | CHANGED | `api_bot_publish_post(p_owner_id: string, p_session_id: string) → Json` | Returns `{post_id, status, review, photo_required}`: a draft when confidence is below 0.85 (review item) or when an offer in a photo world needs its photo (D132); a food offer needs `details.expires_at`. |  | high | tools.ts:96 |
+| `api_bot_search_listings` | later | CHANGED | `api_bot_search_posts(p_limit?: number, p_query: string, p_user_id: string, p_world_slug?: string) → { city_id: string description: string direction: string post_id: string published_at: string title: string world_slug: string }[]` | `(p_user_id, p_query, p_world_slug, p_limit ≤ 8)`; returns the post cards themselves (`post_id`, `world_slug`, `direction`, `title`, `description`, `city_id`, `published_at`) visible to that member, so no second cards call is needed. |  | high | tools.ts:50 |
+| `api_whatsapp_llm_budget_take` | later | 1:1 | `api_whatsapp_llm_budget_take(p_wa_id: string) → boolean` | Same name, arguments and return shape; tables live in `integrations` (service role only). |  | high | run.ts:30 |
+| `api_whatsapp_outbound_claim` | later | 1:1 | `api_whatsapp_outbound_claim(p_batch?: number, p_visibility_seconds?: number) → { attempts: number body: string kind: string language: string outbound_id: string payload: Json template_name: string to_wa_id: string user_id: string }[]` | Same name, arguments and return shape; tables live in `integrations` (service role only). |  | high | sender.ts:47 |
+| `api_whatsapp_outbound_result` | later | 1:1 | `api_whatsapp_outbound_result(p_error?: string, p_ok: boolean, p_outbound_id: string, p_retryable?: boolean, p_wa_message_id?: string) → string` | Same name, arguments and return shape; tables live in `integrations` (service role only). |  | high | sender.ts:60 |
+| `api_whatsapp_queue_reply` | later | 1:1 | `api_whatsapp_queue_reply(p_body: string, p_reply_kind?: string, p_wa_id: string) → string` | Same name, arguments and return shape; tables live in `integrations` (service role only). |  | high | run.ts:46 |
 
 ### Edge Function `backfill-image-thumbs`
 
@@ -776,38 +776,38 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 
 ### Edge Function `whatsapp-intake-worker`
 
-5 call sites: 0 map 1:1, 0 need logic changes, 0 removed, 5 MISSING.
+5 call sites: 3 map 1:1, 1 need logic changes, 1 removed, 0 MISSING.
 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `api_bot_apply_extraction` | later | MISSING M22 | see Edge Function `_shared` |  |  |  | index.ts:78 |
-| `api_bot_find_matches` | later | MISSING M22 | — | The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4). |  | high | index.ts:103 |
-| `api_bot_open_session` | later | MISSING M22 | see Edge Function `_shared` |  |  |  | index.ts:44 |
-| `api_bot_publish_listing` | later | MISSING M22 | see Edge Function `_shared` |  |  |  | index.ts:94 |
-| `api_whatsapp_llm_budget_take` | later | MISSING M22 | see Edge Function `_shared` |  |  |  | index.ts:55 |
+| `api_bot_apply_extraction` | later | 1:1 | see Edge Function `_shared` |  |  |  | index.ts:78 |
+| `api_bot_find_matches` | later | REMOVED | — | Only the retired intake worker called it; matches reach the member as notifications (and WhatsApp alerts) and through `api_bot_my_matches`. |  | high | index.ts:103 |
+| `api_bot_open_session` | later | 1:1 (renamed) | see Edge Function `_shared` |  |  |  | index.ts:44 |
+| `api_bot_publish_listing` | later | CHANGED | see Edge Function `_shared` |  |  |  | index.ts:94 |
+| `api_whatsapp_llm_budget_take` | later | 1:1 | see Edge Function `_shared` |  |  |  | index.ts:55 |
 
 ### Edge Function `whatsapp-sender`
 
-1 call sites: 0 map 1:1, 0 need logic changes, 0 removed, 1 MISSING.
+1 call sites: 0 map 1:1, 1 need logic changes, 0 removed, 0 MISSING.
 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `whatsapp_channel_config` (table) | later | MISSING M22 | — | Same: no `integrations` tables yet. |  | high | index.ts:19 |
+| `whatsapp_channel_config` (table) | later | CHANGED | `api_whatsapp_channel_config() → Json` | The table moved to `integrations`; the sender reads `api_whatsapp_channel_config()` → `{is_enabled, phone_number_id, graph_api_version}`. |  | high | index.ts:19 |
 
 ### Edge Function `whatsapp-webhook`
 
-10 call sites: 0 map 1:1, 0 need logic changes, 0 removed, 10 MISSING.
+10 call sites: 10 map 1:1, 0 need logic changes, 0 removed, 0 MISSING.
 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `api_whatsapp_bot_access` | later | MISSING M22 | — | The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4). |  | high | handler.ts:164 |
-| `api_whatsapp_claim_inbound` | later | MISSING M22 | — | The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4). |  | high | handler.ts:71 |
-| `api_whatsapp_handle_keyword` | later | MISSING M22 | — | The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4). |  | high | handler.ts:115 |
-| `api_whatsapp_inbound_allowed` | later | MISSING M22 | — | The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4). |  | high | handler.ts:95 |
-| `api_whatsapp_ingest_inbound` | later | MISSING M22 | — | The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4). |  | high | handler.ts:104 |
-| `api_whatsapp_queue_reply` | later | MISSING M22 | see Edge Function `_shared` |  |  |  | handler.ts:130, handler.ts:152, handler.ts:175 |
-| `api_whatsapp_redeem_link_code` | later | MISSING M22 | — | The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4). |  | high | handler.ts:144 |
-| `api_whatsapp_release_inbound` | later | MISSING M22 | — | The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4). |  | high | handler.ts:81 |
+| `api_whatsapp_bot_access` | later | 1:1 | `api_whatsapp_bot_access(p_wa_id: string) → Json` | Same shape; `access` may also be `inactive` (a linked member whose account is not active): no upsell, no agent. |  | high | handler.ts:164 |
+| `api_whatsapp_claim_inbound` | later | 1:1 | `api_whatsapp_claim_inbound(p_message_id: string) → boolean` | Same name, arguments and return shape; tables live in `integrations` (service role only). |  | high | handler.ts:71 |
+| `api_whatsapp_handle_keyword` | later | 1:1 | `api_whatsapp_handle_keyword(p_record_id?: string, p_text: string, p_wa_id: string) → Json` | Same name, arguments and return shape; tables live in `integrations` (service role only). |  | high | handler.ts:115 |
+| `api_whatsapp_inbound_allowed` | later | 1:1 | `api_whatsapp_inbound_allowed(p_wa_id: string) → boolean` | Same name, arguments and return shape; tables live in `integrations` (service role only). |  | high | handler.ts:95 |
+| `api_whatsapp_ingest_inbound` | later | 1:1 | `api_whatsapp_ingest_inbound(p_message_id: string, p_payload: Json, p_run_id?: string) → string` | Same name, arguments and return shape; tables live in `integrations` (service role only). |  | high | handler.ts:104 |
+| `api_whatsapp_queue_reply` | later | 1:1 | see Edge Function `_shared` |  |  |  | handler.ts:130, handler.ts:152, handler.ts:175 |
+| `api_whatsapp_redeem_link_code` | later | 1:1 | `api_whatsapp_redeem_link_code(p_code: string, p_wa_id: string) → Json` | Same name, arguments and return shape; tables live in `integrations` (service role only). |  | high | handler.ts:144 |
+| `api_whatsapp_release_inbound` | later | 1:1 | `api_whatsapp_release_inbound(p_message_id: string) → undefined` | Same name, arguments and return shape; tables live in `integrations` (service role only). |  | high | handler.ts:81 |
 
 ## 4. MISSING — what the baseline does not provide
 
@@ -815,7 +815,6 @@ Every capability the application or an Edge Function uses today that has no equi
 
 | Id | Blocker | Tier | Capability | Old objects | Used by | Spec | Needed at launch | Action | Recommendation |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| M22 | no | later | WhatsApp bot, linking and admin console | `api_bot_apply_extraction`, `api_bot_find_matches`, `api_bot_listing_cards`, `api_bot_my_listings`, `api_bot_my_matches`, `api_bot_open_session`, `api_bot_publish_listing`, `api_bot_search_listings` … (20) | Three Edge Functions (webhook, intake worker, sender) — 19 RPCs and one table; the mobile link screen and the admin WhatsApp console are parked and make no call | design Q4 (PM): not in the launch baseline | no | defer | Do not deploy the three functions; hide the link screen and the admin console behind a flag until the `integrations` module lands. |
 
 ## 5. Work packages for the adapter phase
 
@@ -836,7 +835,7 @@ In launch order: after package *n* the app is shippable with everything up to *n
 | L4 — Money: donations to organizations, standing orders, org finance, org onboarding | later | 30 | 14 | 16 | 0 | 0 | L1, L2, L3, L5, L6, L7 |
 | L5 — Surveys, feedback, public research | later | 15 | 14 | 1 | 0 | 0 | L1, L2, L3, L4, L6, L7 |
 | L6 — Back-office tools: tasks, CRM, timesheets | later | 22 | 17 | 5 | 0 | 0 | L1, L2, L3, L4, L5, L7 |
-| L7 — WhatsApp bot, linking, admin console | later | 20 | 0 | 0 | 0 | 20 | L1, L2, L3, L4, L5, L6 |
+| L7 — WhatsApp bot, linking, admin console | later | 20 | 16 | 3 | 1 | 0 | L1, L2, L3, L4, L5, L6 |
 
 ### P0 — Contract switch and the degrade rule (first, alone)
 
@@ -945,8 +944,8 @@ In launch order: after package *n* the app is shippable with everything up to *n
 ### L7 — WhatsApp bot, linking, admin console
 
 - **Owns:** `admin/SupabaseWhatsAppAdminRepository.ts`, `supabase/functions/{whatsapp-webhook,whatsapp-intake-worker,whatsapp-sender}`, `supabase/functions/_shared/whatsapp/**`, `apps/mobile: WhatsApp link screen`
-- **Work:** App side done: the admin console adapter makes no call and rejects with `BackendUnavailableError`, and the link screen is a not-available notice. The bot itself waits for the `integrations` module (M22, design Q4).
-- **Must pass:** deno test supabase/functions/_shared/whatsapp
+- **Work:** Database done: the `integrations` module (five `whatsapp_*` migrations) with the webhook, sender, agent, member and console RPCs. Still to do: retarget the three Edge Functions (sender config RPC, agent tool names), restore the admin adapter with cursor paging and add the link port and screen.
+- **Must pass:** pgTAP: 102_whatsapp_channel, 103_whatsapp_linking_bot, 104_whatsapp_admin, 105_whatsapp_match_alerts_jobs; deno test supabase/functions/_shared/whatsapp
 - **If reached before it is migrated:** The three functions are not deployed; the settings row and the admin nav entry are hidden behind `WHATSAPP_BOT_AVAILABLE` (apps/mobile/src/lib/parkedFeatures.ts), and both routes render the not-available notice.
 - **Risks:** None for launch.
 
@@ -973,6 +972,6 @@ In launch order: after package *n* the app is shippable with everything up to *n
 | `strip-exif` | done | bucket post-images | Verified; storage only. Only its header comment changed. |
 | `backfill-image-thumbs` | done | buckets passed at run time | Service-role key only (a JWT claiming the role is refused); buckets `post-images` and `avatars`; one-off tool, may be dropped after the cut-over. |
 | `mock-login` | obsolete | none | Deleted: demo users are dev seed data (design §9). |
-| `whatsapp-webhook` | park | 8 api_whatsapp_* RPCs | No `integrations` objects yet (M22): not deployed at launch. |
-| `whatsapp-intake-worker` | park | api_bot_* and api_whatsapp_llm_budget_take | Same (M22). |
-| `whatsapp-sender` | park | whatsapp_channel_config, api_whatsapp_outbound_* | Same (M22). |
+| `whatsapp-webhook` | park | 8 api_whatsapp_* RPCs | The database contract is back with the same names and shapes (M22); not deployed until the bot launches. |
+| `whatsapp-intake-worker` | obsolete | api_bot_* and api_whatsapp_llm_budget_take | Retired: the agent's posting tool replaces it, and `api_bot_find_matches` is gone. |
+| `whatsapp-sender` | park | whatsapp_channel_config, api_whatsapp_outbound_* | Read the channel through `api_whatsapp_channel_config()` instead of the table; started by the `whatsapp_send` job. |

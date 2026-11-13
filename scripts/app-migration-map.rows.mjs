@@ -252,17 +252,26 @@ for (const name of ['notifications_page', 'notifications_unread_count', 'notific
 table('user_devices', 'same', 'table:user_devices', 'Already moved to the baseline contract.');
 
 // ───────────────────────────── WhatsApp bot and dev helpers
+// The `integrations` module (M22 / L7): migrations `whatsapp_channel_schema`,
+// `whatsapp_webhook_and_queue`, `whatsapp_linking_and_bot_tools`, `whatsapp_admin_console`,
+// `whatsapp_match_alerts_and_jobs`. These are the parked Edge Functions' own calls; the link
+// screen and the admin console make no call yet.
 for (const name of [
-  // The link screen and the admin console make no call while M22 is open (package L7); these are
-  // the parked Edge Functions' own calls.
-  'api_whatsapp_llm_budget_take', 'api_whatsapp_queue_reply',
-  'api_whatsapp_outbound_claim', 'api_whatsapp_outbound_result', 'api_whatsapp_claim_inbound',
-  'api_whatsapp_release_inbound', 'api_whatsapp_inbound_allowed', 'api_whatsapp_ingest_inbound',
-  'api_whatsapp_handle_keyword', 'api_whatsapp_redeem_link_code', 'api_whatsapp_bot_access',
-  'api_bot_search_listings', 'api_bot_listing_cards', 'api_bot_open_session', 'api_bot_apply_extraction',
-  'api_bot_publish_listing', 'api_bot_my_listings', 'api_bot_my_matches', 'api_bot_find_matches',
-]) rpc(name, 'missing', null, 'The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).', { m: 'M22' });
-table('whatsapp_channel_config', 'missing', null, 'Same: no `integrations` tables yet.', { m: 'M22' });
+  'api_whatsapp_llm_budget_take', 'api_whatsapp_queue_reply', 'api_whatsapp_outbound_claim',
+  'api_whatsapp_outbound_result', 'api_whatsapp_claim_inbound', 'api_whatsapp_release_inbound',
+  'api_whatsapp_inbound_allowed', 'api_whatsapp_ingest_inbound', 'api_whatsapp_handle_keyword',
+  'api_whatsapp_redeem_link_code',
+]) rpc(name, 'same', `rpc:${name}`, 'Same name, arguments and return shape; tables live in `integrations` (service role only).');
+rpc('api_whatsapp_bot_access', 'same', 'rpc:api_whatsapp_bot_access', 'Same shape; `access` may also be `inactive` (a linked member whose account is not active): no upsell, no agent.');
+rpc('api_bot_search_listings', 'changed', 'rpc:api_bot_search_posts', '`(p_user_id, p_query, p_world_slug, p_limit ≤ 8)`; returns the post cards themselves (`post_id`, `world_slug`, `direction`, `title`, `description`, `city_id`, `published_at`) visible to that member, so no second cards call is needed.');
+rpc('api_bot_listing_cards', 'renamed', 'rpc:api_bot_post_cards', 'Same arguments; rows carry `post_id` (was `listing_id`) and `description` (was `summary`).');
+rpc('api_bot_open_session', 'renamed', 'rpc:api_bot_open_session', '`p_record_id` → `p_inbound_message_id` (the inbound row id returned by `api_whatsapp_ingest_inbound`).');
+rpc('api_bot_apply_extraction', 'same', 'rpc:api_bot_apply_extraction', 'Same arguments; kind slugs are the posts catalog\'s (`item_offer`, `item_request`, `food_offer`, `food_request`); returns the session id; titles are cut to 80 characters.');
+rpc('api_bot_publish_listing', 'changed', 'rpc:api_bot_publish_post', 'Returns `{post_id, status, review, photo_required}`: a draft when confidence is below 0.85 (review item) or when an offer in a photo world needs its photo (D132); a food offer needs `details.expires_at`.');
+rpc('api_bot_my_listings', 'renamed', 'rpc:api_bot_my_posts', 'Same arguments; rows carry `post_id` (was `listing_id`).');
+rpc('api_bot_my_matches', 'same', 'rpc:api_bot_my_matches', 'Same shape; reads matching v2 pairs and leaves out a pair whose other post the member may not read.');
+rpc('api_bot_find_matches', 'removed', null, 'Only the retired intake worker called it; matches reach the member as notifications (and WhatsApp alerts) and through `api_bot_my_matches`.');
+table('whatsapp_channel_config', 'changed', 'rpc:api_whatsapp_channel_config', 'The table moved to `integrations`; the sender reads `api_whatsapp_channel_config()` → `{is_enabled, phone_number_id, graph_api_version}`.');
 
 // ───────────────────────────── Edge Function workers (service role)
 rpc('embedding_jobs_claim', 'renamed', 'rpc:embedding_jobs_claim', 'Returned `listing_id` → `post_id`.');
@@ -360,7 +369,6 @@ table('post_ratings', 'same', 'table:post_ratings', 'The rater reads back the ra
 // ═════════════════════════════ MISSING: what the baseline does not provide
 // action: build (add to the baseline) · rls-read (already possible, no new object) · drop · defer (behind a flag)
 export const missing = [
-  { id: 'M22', title: 'WhatsApp bot, linking and admin console', usedBy: 'Three Edge Functions (webhook, intake worker, sender) — 19 RPCs and one table; the mobile link screen and the admin WhatsApp console are parked and make no call', spec: 'design Q4 (PM): not in the launch baseline', launch: 'no', action: 'defer', recommendation: 'Do not deploy the three functions; hide the link screen and the admin console behind a flag until the `integrations` module lands.' },
 ];
 
 // ═════════════════════════════ Launch tier of a row (spec D102, docs/spec/96, docs/spec/14)
@@ -499,8 +507,8 @@ export const packages = [
   { id: 'L7', title: 'WhatsApp bot, linking, admin console', launch: 'later', parallelWith: ['L1', 'L2', 'L3', 'L4', 'L5', 'L6'],
     select: (row) => /^(api_whatsapp|api_bot|whatsapp_)/.test(row.old),
     files: ['admin/SupabaseWhatsAppAdminRepository.ts', 'supabase/functions/{whatsapp-webhook,whatsapp-intake-worker,whatsapp-sender}', 'supabase/functions/_shared/whatsapp/**', 'apps/mobile: WhatsApp link screen'],
-    work: 'App side done: the admin console adapter makes no call and rejects with `BackendUnavailableError`, and the link screen is a not-available notice. The bot itself waits for the `integrations` module (M22, design Q4).',
-    tests: ['deno test supabase/functions/_shared/whatsapp'],
+    work: 'Database done: the `integrations` module (five `whatsapp_*` migrations) with the webhook, sender, agent, member and console RPCs. Still to do: retarget the three Edge Functions (sender config RPC, agent tool names), restore the admin adapter with cursor paging and add the link port and screen.',
+    tests: ['pgTAP: 102_whatsapp_channel, 103_whatsapp_linking_bot, 104_whatsapp_admin, 105_whatsapp_match_alerts_jobs', 'deno test supabase/functions/_shared/whatsapp'],
     degrade: 'The three functions are not deployed; the settings row and the admin nav entry are hidden behind `WHATSAPP_BOT_AVAILABLE` (apps/mobile/src/lib/parkedFeatures.ts), and both routes render the not-available notice.',
     risks: 'None for launch.' },
 ];
@@ -525,9 +533,9 @@ export const edgeFunctions = [
   { name: 'strip-exif', verdict: 'done', uses: 'bucket post-images', change: 'Verified; storage only. Only its header comment changed.' },
   { name: 'backfill-image-thumbs', verdict: 'done', uses: 'buckets passed at run time', change: 'Service-role key only (a JWT claiming the role is refused); buckets `post-images` and `avatars`; one-off tool, may be dropped after the cut-over.' },
   { name: 'mock-login', verdict: 'obsolete', uses: 'none', change: 'Deleted: demo users are dev seed data (design §9).' },
-  { name: 'whatsapp-webhook', verdict: 'park', uses: '8 api_whatsapp_* RPCs', change: 'No `integrations` objects yet (M22): not deployed at launch.' },
-  { name: 'whatsapp-intake-worker', verdict: 'park', uses: 'api_bot_* and api_whatsapp_llm_budget_take', change: 'Same (M22).' },
-  { name: 'whatsapp-sender', verdict: 'park', uses: 'whatsapp_channel_config, api_whatsapp_outbound_*', change: 'Same (M22).' },
+  { name: 'whatsapp-webhook', verdict: 'park', uses: '8 api_whatsapp_* RPCs', change: 'The database contract is back with the same names and shapes (M22); not deployed until the bot launches.' },
+  { name: 'whatsapp-intake-worker', verdict: 'obsolete', uses: 'api_bot_* and api_whatsapp_llm_budget_take', change: 'Retired: the agent\'s posting tool replaces it, and `api_bot_find_matches` is gone.' },
+  { name: 'whatsapp-sender', verdict: 'park', uses: 'whatsapp_channel_config, api_whatsapp_outbound_*', change: 'Read the channel through `api_whatsapp_channel_config()` instead of the table; started by the `whatsapp_send` job.' },
 ];
 
 // ═════════════════════════════ Rules that hold across the whole map
