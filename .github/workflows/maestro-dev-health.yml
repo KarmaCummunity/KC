@@ -35,6 +35,9 @@ permissions:
 jobs:
   maestro:
     name: maestro · android emulator (dev)
+    permissions:
+      contents: read
+      actions: read # kc-dev test slot (scripts/kc-dev-slot.mjs)
     uses: ./.github/workflows/ci-maestro-android.yml
     secrets:
       E2E_SEED_PASSWORD: ${{ secrets.E2E_SEED_PASSWORD }}
