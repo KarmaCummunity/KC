@@ -15,7 +15,10 @@ function icsTime(iso: string): string {
 
 /** Escapes the characters RFC 5545 reserves in a TEXT value. */
 function icsText(text: string): string {
-  return text.replaceAll('\\', '\\\\').replaceAll(';', '\\;').replaceAll(',', '\\,').replace(/\r?\n/g, '\\n');
+  // split/join, not a global regex (Sonar S7781) and not replaceAll (some packages that compile
+  // this file target a lib before ES2021).
+  const escaped = text.split('\\').join('\\\\').split(';').join('\\;').split(',').join('\\,');
+  return escaped.replace(/\r?\n/g, '\\n');
 }
 
 /** The `.ics` document of a shift. */
