@@ -202,11 +202,13 @@ jobs:
       - name: Link to remote project
         run: supabase link --project-ref "$SUPABASE_PROJECT_REF" --yes
 
+      # db-connect-retry: retries only a failed connect to the pooler (no SQL ran);
+      # Deploy 43502416446 / 43505342327 went red on a pooler timeout while kc-dev was healthy.
       - name: Count pending migrations
         id: pending
         run: |
           set -euo pipefail
-          supabase migration list --linked --yes | tee "$RUNNER_TEMP/migrations.txt"
+          node scripts/db-connect-retry.mjs -- supabase migration list --linked --yes | tee "$RUNNER_TEMP/migrations.txt"
           node scripts/check-migration-drift.mjs --count-pending "$RUNNER_TEMP/migrations.txt"
 
       # D-228: refuse a prod push unless KC_PROD_SCHEMA_MODE allows this tree.
@@ -222,11 +224,11 @@ jobs:
           set -euo pipefail
           flags=(--linked --yes)
           if [ "$TARGET" = dev ]; then flags+=(--include-all); fi
-          supabase db push --dry-run "${flags[@]}"
+          node scripts/db-connect-retry.mjs -- supabase db push --dry-run "${flags[@]}"
 
       - name: Apply migrations
         run: |
           set -euo pipefail
           flags=(--linked --yes)
           if [ "$TARGET" = dev ]; then flags+=(--include-all); fi
-          supabase db push "${flags[@]}"
+          node scripts/db-connect-retry.mjs -- supabase db push "${flags[@]}"
