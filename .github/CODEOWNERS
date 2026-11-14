@@ -56,6 +56,7 @@
 # workflow runs is missing here.
 /scripts/spec-ids.mjs                       @navesarussi
 /scripts/migration-ids.mjs                  @navesarussi
+/scripts/db-connect-retry.mjs               @navesarussi
 /scripts/bump-app-version.mjs               @navesarussi
 /scripts/close-linked-issues.mjs            @navesarussi
 /scripts/run-baseline-tests.sh              @navesarussi
