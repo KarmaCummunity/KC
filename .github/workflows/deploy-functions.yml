@@ -66,6 +66,7 @@ jobs:
             .github/actions/deploy-guard
             scripts/deploy-guard.mjs
             scripts/release-version.mjs
+            scripts/check-webhook-auth.mjs
           sparse-checkout-cone-mode: false
           persist-credentials: false
       - uses: ./.deploy-guard/.github/actions/deploy-guard
@@ -82,6 +83,13 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version-file: .nvmrc
+
+      # The guard's copy comes from deploy.yml's own commit and judges the commit
+      # being deployed: every function without a Supabase JWT (verify_jwt = false)
+      # must authenticate its caller and fail closed. A tree without those checks
+      # (for example a `main` that has not yet received `dev`) is refused here.
+      - name: Webhook functions authenticate their caller
+        run: node .deploy-guard/scripts/check-webhook-auth.mjs --root .
 
       # Pins the project ref per target, so functions never land on the wrong project.
       - name: Preflight (secrets present, project ref matches the target)
