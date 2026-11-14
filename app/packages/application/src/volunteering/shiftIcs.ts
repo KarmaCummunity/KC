@@ -15,7 +15,7 @@ function icsTime(iso: string): string {
 
 /** Escapes the characters RFC 5545 reserves in a TEXT value. */
 function icsText(text: string): string {
-  return text.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
+  return text.replaceAll('\\', '\\\\').replaceAll(';', '\\;').replaceAll(',', '\\,').replace(/\r?\n/g, '\\n');
 }
 
 /** The `.ics` document of a shift. */
