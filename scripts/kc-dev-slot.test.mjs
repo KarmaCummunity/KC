@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { SLOT_STEP, decide } from './kc-dev-slot.mjs';
+import { SLOT_STEP, decide, findMe } from './kc-dev-slot.mjs';
 
 const me = { id: 100, stepStartedAt: '2026-11-15T00:10:00Z' };
 const job = (id, stepStatus, startedAt, status = 'in_progress') => ({
@@ -36,4 +36,15 @@ test('ignores itself, finished jobs and jobs without the slot step', () => {
     { id: 6, status: 'in_progress', steps: [{ name: 'Lint', status: 'in_progress', started_at: '2026-11-15T00:00:00Z' }] },
   ];
   assert.deepEqual(decide(me, jobs, 1), { go: true, holders: 0, ahead: 0 });
+});
+
+test('findMe matches the in-progress job on this runner and tolerates an unrecorded step start', () => {
+  const jobs = [
+    { id: 1, status: 'completed', runner_name: 'r1', steps: [] },
+    { id: 2, status: 'in_progress', runner_name: 'r1', steps: [{ name: SLOT_STEP, status: 'queued' }] },
+    { id: 3, status: 'in_progress', runner_name: 'r2', steps: [{ name: SLOT_STEP, started_at: '2026-11-15T00:00:00Z' }] },
+  ];
+  assert.deepEqual(findMe(jobs, 'r1'), { id: 2, stepStartedAt: null });
+  assert.deepEqual(findMe(jobs, 'r2'), { id: 3, stepStartedAt: '2026-11-15T00:00:00Z' });
+  assert.equal(findMe(jobs, 'r9'), null);
 });

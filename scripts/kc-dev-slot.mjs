@@ -58,6 +58,14 @@ async function inProgressJobs(repo, token) {
   return jobs;
 }
 
+/** This job in its own run's job list (matched by runner), with its slot step's start if recorded. */
+export function findMe(jobs, runnerName) {
+  const me = jobs.find((j) => j.status === 'in_progress' && j.runner_name === runnerName);
+  if (!me) return null;
+  const step = (me.steps ?? []).find((s) => s.name === SLOT_STEP);
+  return { id: me.id, stepStartedAt: step?.started_at ?? null };
+}
+
 async function main(env = process.env) {
   const token = env.GITHUB_TOKEN;
   const repo = env.GITHUB_REPOSITORY;
@@ -69,16 +77,25 @@ async function main(env = process.env) {
     console.log('::warning::kc-dev slot: no token/repository; not waiting');
     return;
   }
+  let myStartedAt = null;
+  let lookups = 0;
   for (;;) {
     try {
       const mine = await gh(`/repos/${repo}/actions/runs/${env.GITHUB_RUN_ID}/attempts/${env.GITHUB_RUN_ATTEMPT || 1}/jobs?per_page=100`, token);
-      const me = (mine.jobs ?? []).find((j) => j.status === 'in_progress' && j.runner_name === env.RUNNER_NAME);
-      const myStep = me?.steps?.find((s) => s.name === SLOT_STEP);
-      if (!me || !myStep?.started_at) {
-        console.log('::warning::kc-dev slot: could not find this job or its slot step; not waiting');
+      const me = findMe(mine.jobs ?? [], env.RUNNER_NAME);
+      lookups += 1;
+      if (!me) {
+        // The jobs API lags a few seconds behind the runner; retry before giving up.
+        if (lookups < 6) {
+          await new Promise((r) => setTimeout(r, Math.min(pollMs, 10_000)));
+          continue;
+        }
+        console.log('::warning::kc-dev slot: could not find this job; not waiting');
         return;
       }
-      const { go, holders, ahead } = decide({ id: me.id, stepStartedAt: myStep.started_at }, await inProgressJobs(repo, token), slots);
+      // Until the API records this step's start, queue as of now (the back of the line).
+      myStartedAt = me.stepStartedAt ?? myStartedAt ?? new Date().toISOString();
+      const { go, holders, ahead } = decide({ id: me.id, stepStartedAt: myStartedAt }, await inProgressJobs(repo, token), slots);
       if (go) {
         console.log(`kc-dev slot acquired (${holders} held, ${ahead} ahead, ${slots} slot(s), waited ${Math.round((Date.now() - started) / 1000)}s)`);
         return;
