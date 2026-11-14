@@ -17,7 +17,7 @@ Release mechanics: [docs/agents/RELEASE.md](../agents/RELEASE.md).
 |---|---|
 | App icon 1024 (no alpha), Play icon 512, adaptive icon + monochrome | ✅ |
 | Splash (was corrupt, regenerated) | ✅ |
-| Permission strings he + en, honest purposes (camera, photos, notifications; no location, no microphone) | ✅ |
+| Permission strings he + en, honest purposes (camera, photos, notifications, approximate location while the app is in use for the map's "near me" and a ride's starting city; no background location, no microphone) | ✅ |
 | iOS privacy manifest (`privacyManifests` in app.json) | ✅ |
 | `ITSAppUsesNonExemptEncryption = false` (HTTPS / OS crypto only) | ✅ |
 | Android target/compile SDK 36 | ✅ |
@@ -40,7 +40,7 @@ Release mechanics: [docs/agents/RELEASE.md](../agents/RELEASE.md).
 
 ## Decisions Nave must make (business / legal)
 
-1. **Legal text sign-off.** Privacy policy + terms are drafts based on the in-app v2 documents, updated for current processors (Supabase, Cloudflare, Expo, Google/Apple sign-in, Google Gemini translation, Meta WhatsApp, Sentry, PostHog, payment provider). A lawyer should review. The in-app v2 privacy text says "deleted account: 30 days then hard delete", but the app deletes immediately — the draft says immediate; the in-app document should be republished to match.
+1. **Legal text sign-off.** The public privacy policy (`/privacy`) and the in-app privacy version 2 (`supabase/seed/content/data/legal_document_versions.csv`) are drafts that follow what the code does: 18+, approximate device location, the full data list, processors (Supabase, Cloudflare, Expo, Google/Apple sign-in and purchases, RevenueCat, Meta WhatsApp, Sentry and PostHog on US hosts, OpenStreetMap tiles, payment provider), deletion = hidden at once and purged after the 30-day grace period, and the retention periods the code enforces. Automatic translation of member content is off (`ugc_auto_translation` defaults to off), so no translation provider is listed. Items marked [TO CONFIRM] / [להשלמה] need a decision, and a lawyer should review before the in-app version 2 is published to an existing environment.
 2. **Money donations on iOS (guideline 3.2.1(vi) / 3.2.2(iv)).** In-app donations are only allowed for Apple-approved nonprofits (with Apple Pay) or by linking out to the browser. Options: (a) hide the money world on iOS for v1, (b) open donations in Safari, (c) apply as an approved nonprofit. Recommendation: (a) or (b) for the first TestFlight/App Store build.
 3. **Retention of financial records on account deletion.** Implemented as: payments, receipts and donation intents are kept but de-identified (user link removed). Confirm this matches accounting obligations.
 4. **24-hour report handling.** Terms commit to reviewing reports within 24 hours (Apple expects timely action on UGC reports). Confirm someone owns the moderation queue.
@@ -51,28 +51,33 @@ Release mechanics: [docs/agents/RELEASE.md](../agents/RELEASE.md).
 
 ## Age rating answers (draft)
 
-Apple (questionnaire) — expected result **13+**, matching the 13+ minimum age in the terms:
+Apple (questionnaire) — expected content rating **13+**. Independently of the rating, the app's own minimum age is **18** (terms, privacy policy and the date-of-birth check at sign-up):
 - Violence, sexual content/nudity, profanity, horror, mature/suggestive themes, alcohol/tobacco/drugs, simulated gambling, contests, medical/treatment info: **None**
 - User-generated content: **Yes** (posts, listings, comments, photos) — moderated, report + block available
 - Messaging / chat between users: **Yes**
 - Unrestricted web access: **No**
 - Made for kids: **No**
 
-Google Play (IARC): category *Social / Communication*; users can interact and exchange content: **Yes**; shares user's current location with others: **No** (city only, typed by the user); digital purchases: **No** (donations go to nonprofits via a payment provider, not in-app purchases); expected rating **Teen / PEGI 12**.
+Google Play (IARC): category *Social / Communication*; users can interact and exchange content: **Yes**; shares user's current location with others: **No** (the device's approximate location is used on the device for the map and a ride's starting city and is not stored; a post shows only an approximate location); digital purchases: **Yes** (the KC Pro subscription through App Store / Google Play billing, managed by RevenueCat — behind the `pro_paywall` flag; money donations to nonprofits go through a payment provider and are not in-app purchases); expected rating **Teen / PEGI 12**.
 
 ## App Privacy (Apple) / Data safety (Play) — draft answers
 
-Tracking: **No**. Data sold: **No**. Data encrypted in transit: **Yes**. Users can request deletion: **Yes** (in-app).
+Tracking: **No**. Data sold: **No**. Data encrypted in transit: **Yes**. Users can request deletion: **Yes** (in-app; the account is hidden at once and permanently deleted after a 30-day grace period).
 
 | Data | Collected | Linked to user | Purpose |
 |---|---|---|---|
 | Name, email, user ID | Yes | Yes | App functionality (account) |
-| Phone number | Only via WhatsApp bot | Yes | App functionality |
-| Coarse location (city the user picks) | Yes | Yes | App functionality (matching) |
+| Phone number | Optional contact phone (shown only in a direct chat); WhatsApp bot users | Yes | App functionality |
+| Physical address | Optional (profile street, event address, meeting points) | Yes | App functionality |
+| Date of birth | Yes | Yes | App functionality (age check, 18+) |
+| Approximate location (device, about 100 m, while in use) | Yes, processed on the device, not stored | No | App functionality (map "near me", ride starting city) |
+| Coarse location (city, saved ride routes, emergency report location the user chooses) | Yes | Yes | App functionality (matching) |
+| IP address and user agent (records of accepting the terms / privacy policy) | Yes | Yes | App functionality (legal record) |
+| Survey answers, feedback | Yes | Yes | Product improvement |
 | Photos | Yes | Yes | App functionality (posts, listings, avatar) |
 | Messages (chat) | Yes | Yes | App functionality |
 | Other user content (posts, comments, reports) | Yes | Yes | App functionality, moderation |
-| Purchase / donation history | Yes (money world) | Yes, de-identified on deletion | App functionality |
+| Purchase / donation history (donations; in-app subscription status via RevenueCat) | Yes | Yes, de-identified on deletion | App functionality |
 | Product interaction (PostHog) | Yes | No | Analytics |
 | Crash + performance data (Sentry) | Yes | No | App functionality / analytics |
 | Precise location, contacts, health, browsing history, advertising ID | No | — | — |
