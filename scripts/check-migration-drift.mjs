@@ -148,9 +148,14 @@ function main() {
   const localVersions = readLocalVersions(DEFAULT_MIGRATIONS_DIR);
   // --count-pending: report how many migrations `db push` will apply (deploy-db.yml).
   if (process.argv.includes('--count-pending')) {
-    const line = `pending=${pendingMigrations(cliOutput, localVersions).length}`;
-    console.log(line);
-    if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, `${line}\n`);
+    // fresh=true: the remote ledger is empty (a new or rebuilt database), so deploy-db.yml
+    // loads the reference + content seed once after applying the schema.
+    const lines = [
+      `pending=${pendingMigrations(cliOutput, localVersions).length}`,
+      `fresh=${remoteVersions.length === 0}`,
+    ];
+    for (const line of lines) console.log(line);
+    if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, `${lines.join('\n')}\n`);
     return;
   }
   const drift = findDrift({ localVersions, remoteVersions });
