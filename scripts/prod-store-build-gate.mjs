@@ -26,6 +26,16 @@ const SHA_RE = /^[0-9a-f]{40}$/i;
 export const ENABLED_VAR = 'KC_PROD_STORE_BUILD_ENABLED';
 export const TAG_JOB_NAME = 'tag release';
 
+/**
+ * Deploy calls the tag job as a reusable workflow, so the Jobs API names it
+ * "tag release / tag release" (caller job / called job). Accept the bare name
+ * and that caller-prefixed form only; anything else is not the tag job.
+ */
+export function isTagJobName(name) {
+  const n = String(name ?? '').trim();
+  return n === TAG_JOB_NAME || n.startsWith(`${TAG_JOB_NAME} / `);
+}
+
 export function isStoreBuildEnabled(raw) {
   return String(raw ?? '').trim() === 'true';
 }
@@ -52,7 +62,7 @@ export function classifyDeployRun({ conclusion, headBranch, headSha, jobs }) {
   if (!SHA_RE.test(sha)) {
     return { kind: 'not-prod-release', reason: 'Deploy head SHA is missing or not a 40-char hex' };
   }
-  const tagJob = (jobs ?? []).find((j) => j && j.name === TAG_JOB_NAME);
+  const tagJob = (jobs ?? []).find((j) => j && isTagJobName(j.name));
   if (!tagJob) {
     return { kind: 'not-prod-release', reason: 'Deploy did not include a "tag release" job' };
   }

@@ -144,6 +144,17 @@ export function sentryVars(env) {
   return out;
 }
 
+/**
+ * Public Google OAuth web client pinned into PROD store builds. app.config.ts
+ * reads EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID into `extra.googleWebClientId`; without
+ * the pin the value comes from the EAS server environment, which is not
+ * readable from CI and has carried the kc-dev client before. Client IDs are
+ * public (they ship in every binary). Dev builds keep the EAS value.
+ */
+export function googleClientVars(backend) {
+  return backend === 'prod' ? { EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID: PROD_GOOGLE_WEB_CLIENT_ID } : {};
+}
+
 /** Return a copy of eas.json with `vars` merged into build.<profile>.env. */
 export function injectProfileEnv(easJson, profile, vars) {
   const build = easJson.build?.[profile];
@@ -174,6 +185,7 @@ function pin(env) {
     EXPO_PUBLIC_SUPABASE_ANON_KEY: anonKey,
     // Store binaries never show the DEV strip (DevBanner), whatever the profile says.
     EXPO_PUBLIC_STORE_BUILD: 'true',
+    ...googleClientVars(backend),
     ...sentryVars(env),
   });
   writeFileSync(easPath, `${JSON.stringify(next, null, 2)}\n`);
@@ -183,18 +195,21 @@ function pin(env) {
   if (env.GITHUB_STEP_SUMMARY) appendFileSync(env.GITHUB_STEP_SUMMARY, `${line}\n`);
 }
 
-function verify(bundlePath, env = process.env) {
-  if (!bundlePath) fail(['usage: mobile-store-config.mjs verify <bundle>']);
+function verify(bundlePath, env = process.env, extraPaths = []) {
+  if (!bundlePath) fail(['usage: mobile-store-config.mjs verify <bundle> [embedded app.config ...]']);
   const backend = resolveStoreBackend(env.STORE_BACKEND);
-  const errors = checkBundle(readFileSync(bundlePath), backend);
+  // The Google web client lives in the embedded Expo config (extra.googleWebClientId),
+  // not in the JS bundle, so the artifact check reads both.
+  const parts = [bundlePath, ...extraPaths].map((p) => readFileSync(p));
+  const errors = checkBundle(Buffer.concat(parts.flatMap((b) => [b, Buffer.from('\n')])), backend);
   if (errors.length) fail(errors);
   const label = backend === 'prod' ? 'kc-prod' : 'kc-dev';
   console.log(`${bundlePath}: points at ${label} only.`);
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const [mode, arg] = process.argv.slice(2);
+  const [mode, arg, ...rest] = process.argv.slice(2);
   if (mode === 'pin') pin(process.env);
-  else if (mode === 'verify') verify(arg, process.env);
+  else if (mode === 'verify') verify(arg, process.env, rest);
   else fail([`unknown mode "${mode ?? ''}"; use pin or verify <bundle>`]);
 }
