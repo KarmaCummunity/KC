@@ -14,8 +14,6 @@ export const feedEn = {
   noResults: 'No posts found',
   noResultsDesc: 'Try changing the filters or search across all cities.',
   loadMore: 'Load more',
-  guestBanner: 'Join the community to see all the active posts in your area',
-  guestBannerWithCount: 'Join the community to see {{count}} more active posts in your area',
   joinNow: 'Join now',
   firstPostNudge: 'Publish your first post! 🎁',
   closedTag: '🔒 Delivered',
