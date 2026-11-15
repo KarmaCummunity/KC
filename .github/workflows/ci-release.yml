@@ -135,8 +135,10 @@ jobs:
         env:
           E2E_SEED_PASSWORD: ${{ secrets.E2E_SEED_PASSWORD }}
         run: npm test
+      # Always, as in e2e-nightly-dev.yml: a test that passes on retry (flaky) leaves its failed
+      # attempt's trace and screenshot here, so the flake can be diagnosed.
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        if: failure()
+        if: always()
         with:
           name: playwright-report-release
           path: |
