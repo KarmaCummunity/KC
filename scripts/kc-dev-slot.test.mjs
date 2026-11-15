@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { SLOT_STEP, decide, findMe } from './kc-dev-slot.mjs';
+import { readdirSync, readFileSync } from 'node:fs';
+import { ApiError, SLOT_STEP, backoffMs, decide, findMe, retryAfterMs, slotWorkflows } from './kc-dev-slot.mjs';
 
 const me = { id: 100, stepStartedAt: '2026-11-15T00:10:00Z' };
 const job = (id, stepStatus, startedAt, status = 'in_progress') => ({
@@ -47,4 +48,41 @@ test('findMe matches the in-progress job on this runner and tolerates an unrecor
   assert.deepEqual(findMe(jobs, 'r1'), { id: 2, stepStartedAt: null });
   assert.deepEqual(findMe(jobs, 'r2'), { id: 3, stepStartedAt: '2026-11-15T00:00:00Z' });
   assert.equal(findMe(jobs, 'r9'), null);
+});
+
+const headers = (h) => new Headers(h);
+
+test('retryAfterMs reads Retry-After, then an exhausted X-RateLimit-Reset, else null', () => {
+  assert.equal(retryAfterMs(headers({ 'retry-after': '30' })), 30_000);
+  assert.equal(retryAfterMs(headers({ 'x-ratelimit-remaining': '0', 'x-ratelimit-reset': '1000' }), 900_000), 100_000);
+  assert.equal(retryAfterMs(headers({ 'x-ratelimit-remaining': '5', 'x-ratelimit-reset': '1000' }), 900_000), null);
+  assert.equal(retryAfterMs(headers({})), null);
+});
+
+test('an API error waits (what the API asked, at least the poll interval, at most the cap), never a free pass', () => {
+  assert.equal(backoffMs(new ApiError(403, '/x', null), 60_000, 600_000), 60_000);
+  assert.equal(backoffMs(new ApiError(403, '/x', 120_000), 60_000, 600_000), 121_000);
+  assert.equal(backoffMs(new ApiError(429, '/x', 3_600_000), 60_000, 600_000), 600_000);
+  assert.equal(backoffMs(new Error('fetch failed'), 60_000, 600_000), 60_000);
+});
+
+test('slotWorkflows finds the workflows that run the script and, transitively, their callers', () => {
+  const files = {
+    'lane.yml': 'run: node scripts/kc-dev-slot.mjs',
+    'ci.yml': 'jobs:\n  a:\n    uses: ./.github/workflows/lane.yml',
+    'nightly.yml': 'uses: ./.github/workflows/ci.yml',
+    'deploy.yml': 'uses: ./.github/workflows/deploy-web.yml',
+    'deploy-web.yml': 'run: echo',
+  };
+  assert.deepEqual([...slotWorkflows(files)].sort(), ['.github/workflows/ci.yml', '.github/workflows/lane.yml', '.github/workflows/nightly.yml']);
+});
+
+test('in this repository the slot workflows include CI and every nightly/health run that tests against kc-dev', () => {
+  const dir = new URL('../.github/workflows/', import.meta.url);
+  const files = Object.fromEntries(readdirSync(dir).filter((f) => /\.ya?ml$/.test(f)).map((f) => [f, readFileSync(new URL(f, dir), 'utf8')]));
+  const got = slotWorkflows(files);
+  for (const f of ['ci.yml', 'ci-maestro-android.yml', 'ci-release.yml', 'e2e-nightly-dev.yml', 'maestro-dev-health.yml', 'mobile-nightly.yml']) {
+    assert.ok(got.has(`.github/workflows/${f}`), f);
+  }
+  assert.equal(got.has('.github/workflows/deploy.yml'), false);
 });
