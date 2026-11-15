@@ -1,7 +1,7 @@
 // Unit tests for scripts/mobile-store-config.mjs. Run: node --test scripts/mobile-store-config.test.mjs
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { DEV_REF, DEV_URL, DEV_GOOGLE_WEB_CLIENT_ID, PROD_REF, PROD_URL, PROD_GOOGLE_WEB_CLIENT_ID, checkAnonKey, checkBundle, checkPin, injectProfileEnv, resolveStoreBackend, sentryVars } from './mobile-store-config.mjs';
+import { DEV_REF, DEV_URL, DEV_GOOGLE_WEB_CLIENT_ID, PROD_REF, PROD_URL, PROD_GOOGLE_WEB_CLIENT_ID, checkAnonKey, checkBundle, checkPin, googleClientVars, injectProfileEnv, resolveStoreBackend, sentryVars } from './mobile-store-config.mjs';
 
 /** Build an unsigned JWT with the given payload (only the payload is inspected). */
 const jwt = (payload) =>
@@ -125,4 +125,18 @@ test('prod mode fails when the prod Google web client ID is missing', () => {
 
 test('dev mode does not require or reject the prod Google web client ID', () => {
   assert.deepEqual(checkBundle(Buffer.from(`${DEV_URL} ${PROD_GOOGLE_WEB_CLIENT_ID}`)), []);
+});
+
+test('googleClientVars pins the PROD web client for prod store builds only', () => {
+  assert.deepEqual(googleClientVars('prod'), { EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID: PROD_GOOGLE_WEB_CLIENT_ID });
+  assert.deepEqual(googleClientVars('dev'), {});
+});
+
+test('prod check passes when the web client is only in the embedded app.config', () => {
+  const bundle = `\u0000hbc\u0000${PROD_URL}\u0000`;
+  const appConfig = JSON.stringify({ extra: { googleWebClientId: PROD_GOOGLE_WEB_CLIENT_ID } });
+  assert.ok(checkBundle(Buffer.from(bundle), 'prod').some((e) => e.includes('PROD Google web client')));
+  assert.deepEqual(checkBundle(Buffer.from(`${bundle}\n${appConfig}`), 'prod'), []);
+  const devConfig = JSON.stringify({ extra: { googleWebClientId: DEV_GOOGLE_WEB_CLIENT_ID } });
+  assert.ok(checkBundle(Buffer.from(`${bundle}\n${devConfig}`), 'prod').some((e) => e.includes('kc-dev Google web client')));
 });
