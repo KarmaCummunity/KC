@@ -6,6 +6,19 @@ KC (Karma Community) is built largely by AI agents. **Part A** is the quick entr
 
 # Part A — Entry point
 
+## Start a task from any chat
+
+One command, the same on every agent. It runs the [`kc-issue-to-merge`](.claude/skills/kc-issue-to-merge/SKILL.md) skill:
+
+| Type | Does |
+|---|---|
+| `/kc` | Takes the next issue from the queue |
+| `/kc 1234` | Works issue #1234 |
+| `/kc loop` · `/kc loop 5` | Works issues one after another (`references/loop.md`); with a number, stops after that many merge |
+
+- **Where `/kc` is a slash command:** Claude Code (`.claude/commands/kc.md`), Cursor (`.cursor/commands/kc.md`), Antigravity (`.agent/workflows/kc.md`).
+- **Anywhere else** (Codex, the KC bot, a chat without commands): a message that starts with `kc`, or says "קח משימה", "משימה הבאה", "עבוד על #1234" or "תעבוד בלופ", means the same and follows the same skill.
+
 | Read | For |
 |---|---|
 | [`.claude/skills/kc-issue-to-merge/SKILL.md`](.claude/skills/kc-issue-to-merge/SKILL.md) | **Working an issue end to end**: pick, de-duplicate, claim, define, test-first, findings, PR, merge. Follow it for every task |
@@ -28,6 +41,11 @@ KC (Karma Community) is built largely by AI agents. **Part A** is the quick entr
 ## Branch naming
 
 `<type>/<issue#>-<area>-<slug>`: `type` ∈ `feat|fix|refactor|chore|docs|test|ci`, `area` ∈ `db|mobile|marketplace|bot|social|infra|docs`. Example: `feat/905-marketplace-map`. Always branch from `origin/dev`.
+
+## Token-saving tools (optional, local)
+
+- **Graphify** (`.claude/skills/graphify`): a code + SQL knowledge graph. Install once with `uv tool install "graphifyy[sql]"`, build with `graphify update .` (AST-only, no API cost), then answer "where does X live" with `graphify query|path|explain` before grepping. Output goes to `graphify-out/` (gitignored). The `.claude/settings.json` hooks are no-ops when the CLI is not installed.
+- **Ponytail** (`.claude/skills/ponytail`): "smallest complete change" discipline. It never overrides this file: tests, spec mapping, comment requirements and every rule below still apply.
 
 ## Scope rules
 

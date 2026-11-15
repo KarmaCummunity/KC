@@ -21,6 +21,7 @@ import { PostMenuButton } from '../../components/post/PostMenuButton';
 import { PostShareButton } from '../../components/post/PostShareButton';
 import { PostDetailScrollContent } from './PostDetailScrollContent';
 import { usePostDetailStyles } from './postDetailScreen.styles';
+import { finishMark, startMark } from '../../lib/observability/perfMarks';
 import {
   useShellTabBarVisibility,
   shellTabBarHeightPx,
@@ -83,6 +84,14 @@ export function PostDetailScreen() {
     // the extra posts + identity reads; a stale copy still paints immediately.
     ...(seed ? { initialData: { post: seed.post }, initialDataUpdatedAt: seed.updatedAt } : {}),
   });
+  // NFR-PERF-005: how long a member waits from opening a post to seeing its content (cached or fetched).
+  const hasPost = Boolean(query.data?.post);
+  useEffect(() => {
+    startMark('post_detail.content_painted');
+  }, [postIdParam]);
+  useEffect(() => {
+    if (hasPost) finishMark('post_detail.content_painted');
+  }, [hasPost, postIdParam]);
   const challengeId = query.data?.post?.challengeId ?? null;
   useEffect(() => {
     if (!challengeId) return;

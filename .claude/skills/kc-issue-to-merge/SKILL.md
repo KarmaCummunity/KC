@@ -8,6 +8,7 @@ description: Take one GitHub issue of KarmaCummunity/KC from claim to a squash-m
 **One run = one issue = one PR to `dev`, driven until it merges. Then report and stop.** A loop repeats runs: [`references/loop.md`](references/loop.md).
 
 - **Precedence.** `AGENTS.md` holds the repo rules (spec gate, architecture, prohibitions) and wins on any conflict. This skill is the order of work; it cites those rules, not repeats them.
+- **Start.** `/kc` (next issue), `/kc <N>`, or `/kc loop [<budget>]`, from any agent (AGENTS.md, "Start a task from any chat").
 - **`<you>`** is your agent label suffix: `claude`, `cursor`, `codex`, `antigravity` or `kc-bot`.
 - **`R=repos/KarmaCummunity/KC`.** GitHub calls are REST (`gh api`), so they also work where GraphQL is blocked. If your runtime gives GitHub tools instead of `gh`, do the same REST operation with them.
 

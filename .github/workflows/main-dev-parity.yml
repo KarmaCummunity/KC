@@ -1,0 +1,38 @@
+name: main ↔ dev parity
+
+# Read-only guard (docs/release/PROD-DIFFERENCES.md): the main tree must equal
+# the dev commit it was released from, except for the paths listed in
+# docs/release/prod-differences.allowlist.json. Catches direct pushes to main
+# and hotfixes that never reached dev. Holds no secrets and no environment.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: main-dev-parity
+  cancel-in-progress: false
+
+jobs:
+  parity:
+    name: main tree vs released dev head
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: refs/heads/main
+          fetch-depth: 50
+          fetch-tags: false
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version-file: .nvmrc
+      - name: Compare main with the dev head of its latest release
+        run: node scripts/check-main-dev-parity.mjs --main HEAD
