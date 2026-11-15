@@ -1,13 +1,23 @@
 # Automatic PROD store build: TestFlight + Play internal, wired to kc-prod.
 #
+# iOS and Android are two independent lanes end to end:
+#   gate (per-platform decision) -> ledger (read-only, shared) -> ios ∥ android -> summary
+# `ios` and `android` never need each other, so one platform failing (or being
+# disabled) never cancels, skips or blocks the other. Each lane has its own
+# concurrency group inside its reusable workflow, its own build number (EAS
+# remote autoIncrement per platform) and its own verdict in the summary.
+#
 # Runs after a successful tagged PROD Deploy on main (workflow_run of Deploy
 # whose "tag release" job succeeded), or on workflow_dispatch of a tagged
 # main SHA. Builds with the EAS `production` profile and submits only to
 # TestFlight and the Play internal track (never production/store rollout).
 #
-# Fail-closed gates, all of which must pass before a build starts:
-#   - repo variable KC_PROD_STORE_BUILD_ENABLED must be exactly "true"
-#     (unset / any other value = block; this workflow never sets it)
+# Fail-closed gates, all of which must pass before a platform builds:
+#   - the platform is enabled: repo variable KC_PROD_STORE_BUILD_IOS_ENABLED /
+#     KC_PROD_STORE_BUILD_ANDROID_ENABLED exactly "true" (any other non-empty
+#     value, e.g. "false", disables that platform only); unset falls back to
+#     KC_PROD_STORE_BUILD_ENABLED (exactly "true" = both). This workflow never
+#     sets any of them. See scripts/prod-store-build-gate.mjs.
 #   - read-only check that the kc-prod ledger is non-empty and exactly
 #     matches supabase/baseline/prod-allowed-migrations.txt, and that
 #     KC_PROD_SCHEMA_MODE is "baseline" (this workflow never sets that
@@ -35,6 +45,11 @@ on:
         description: 40-character SHA of a tagged PROD release on main
         type: string
         required: true
+      platform:
+        description: Which store lane to run (each is gated by its own enable flag)
+        type: choice
+        options: [both, ios, android]
+        default: both
 
 permissions:
   contents: read
@@ -52,6 +67,8 @@ jobs:
       proceed: ${{ steps.gate.outputs.proceed }}
       sha: ${{ steps.gate.outputs.sha }}
       tag: ${{ steps.gate.outputs.tag }}
+      ios: ${{ steps.gate.outputs.ios }}
+      android: ${{ steps.gate.outputs.android }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -68,7 +85,10 @@ jobs:
           WORKFLOW_RUN_HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
           WORKFLOW_RUN_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
           INPUT_SHA: ${{ inputs.sha }}
+          INPUT_PLATFORM: ${{ inputs.platform }}
           KC_PROD_STORE_BUILD_ENABLED: ${{ vars.KC_PROD_STORE_BUILD_ENABLED }}
+          KC_PROD_STORE_BUILD_IOS_ENABLED: ${{ vars.KC_PROD_STORE_BUILD_IOS_ENABLED }}
+          KC_PROD_STORE_BUILD_ANDROID_ENABLED: ${{ vars.KC_PROD_STORE_BUILD_ANDROID_ENABLED }}
           GITHUB_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
         run: node scripts/prod-store-build-gate.mjs
@@ -99,18 +119,36 @@ jobs:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_PROJECT_REF: kdqtbdbzwvlugkhonexg
           KC_PROD_STORE_BUILD_ENABLED: ${{ vars.KC_PROD_STORE_BUILD_ENABLED }}
+          KC_PROD_STORE_BUILD_IOS_ENABLED: ${{ vars.KC_PROD_STORE_BUILD_IOS_ENABLED }}
+          KC_PROD_STORE_BUILD_ANDROID_ENABLED: ${{ vars.KC_PROD_STORE_BUILD_ANDROID_ENABLED }}
           KC_PROD_SCHEMA_MODE: ${{ vars.KC_PROD_SCHEMA_MODE }}
         run: node scripts/check-prod-store-ready.mjs
 
+  # The two store lanes below share only the gate and the read-only ledger
+  # check (both platform-agnostic preconditions); they never need each other.
+  # No `secrets: inherit`: each lane is passed only its own platform's secrets
+  # by name (values resolve from the `mobile-store` environment the called job
+  # selects), so repo-level secrets (merge tokens, Sonar, Snyk, ...) and the
+  # other platform's signing keys never reach a store build.
   ios:
     name: TestFlight (PROD)
     needs: [gate, ledger]
-    if: needs.gate.outputs.proceed == 'true'
+    if: needs.gate.outputs.ios == 'true'
     uses: ./.github/workflows/testflight-ios.yml
+    secrets:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      ASC_API_KEY_ID: ${{ secrets.ASC_API_KEY_ID }}
+      ASC_API_KEY_ISSUER_ID: ${{ secrets.ASC_API_KEY_ISSUER_ID }}
+      ASC_API_KEY_P8: ${{ secrets.ASC_API_KEY_P8 }}
+      KC_IOS_TEAM_ID: ${{ secrets.KC_IOS_TEAM_ID }}
+      KC_IOS_DIST_P12_B64: ${{ secrets.KC_IOS_DIST_P12_B64 }}
+      KC_IOS_DIST_P12_PASSWORD: ${{ secrets.KC_IOS_DIST_P12_PASSWORD }}
+      MOBILE_SUPABASE_ANON_KEY: ${{ secrets.MOBILE_SUPABASE_ANON_KEY }}
+      MOBILE_SUPABASE_ANON_KEY_PROD: ${{ secrets.MOBILE_SUPABASE_ANON_KEY_PROD }}
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
     with:
       ref: ${{ needs.gate.outputs.sha }}
       backend: prod
-    secrets: inherit
     permissions:
       contents: read
       actions: read
@@ -118,12 +156,59 @@ jobs:
   android:
     name: Play Internal (PROD)
     needs: [gate, ledger]
-    if: needs.gate.outputs.proceed == 'true'
+    if: needs.gate.outputs.android == 'true'
     uses: ./.github/workflows/play-internal.yml
+    secrets:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+      MOBILE_SUPABASE_ANON_KEY: ${{ secrets.MOBILE_SUPABASE_ANON_KEY }}
+      MOBILE_SUPABASE_ANON_KEY_PROD: ${{ secrets.MOBILE_SUPABASE_ANON_KEY_PROD }}
     with:
       ref: ${{ needs.gate.outputs.sha }}
       backend: prod
-    secrets: inherit
     permissions:
       contents: read
       actions: read
+
+  summary:
+    name: Per-platform verdict
+    needs: [gate, ledger, ios, android]
+    # Report even when a lane failed or was skipped; this job never changes
+    # the run's conclusion (a failed lane already makes the run red).
+    if: always() && needs.gate.outputs.proceed == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: Write the per-platform verdict
+        env:
+          SHA: ${{ needs.gate.outputs.sha }}
+          TAG: ${{ needs.gate.outputs.tag }}
+          LEDGER: ${{ needs.ledger.result }}
+          IOS_WANTED: ${{ needs.gate.outputs.ios }}
+          IOS_RESULT: ${{ needs.ios.result }}
+          IOS_BUILD: ${{ needs.ios.outputs.build_number }}
+          ANDROID_WANTED: ${{ needs.gate.outputs.android }}
+          ANDROID_RESULT: ${{ needs.android.result }}
+          ANDROID_CODE: ${{ needs.android.outputs.version_code }}
+        run: |
+          set -euo pipefail
+          verdict() { # wanted result
+            if [ "$1" != "true" ]; then echo "not run (disabled or not requested)"
+            elif [ "$2" = "success" ]; then echo "uploaded"
+            else echo "FAILED ($2)"; fi
+          }
+          ios="$(verdict "$IOS_WANTED" "$IOS_RESULT")"
+          android="$(verdict "$ANDROID_WANTED" "$ANDROID_RESULT")"
+          {
+            echo "### PROD store build — per platform"
+            echo
+            echo "Commit \`$SHA\` ${TAG:+(tag \`$TAG\`)}, kc-prod ledger check: $LEDGER"
+            echo
+            echo "| Platform | Verdict | Build |"
+            echo "| --- | --- | --- |"
+            echo "| iOS → TestFlight | $ios | ${IOS_BUILD:-—} |"
+            echo "| Android → Play internal | $android | ${ANDROID_CODE:-—} |"
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "iOS: $ios ${IOS_BUILD:+build $IOS_BUILD}"
+          echo "Android: $android ${ANDROID_CODE:+versionCode $ANDROID_CODE}"
