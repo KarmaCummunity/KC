@@ -1,0 +1,4 @@
+{
+  "_comment": "Paths that may differ between the main tree and the dev commit it was released from. Every entry needs a reason and a row in docs/release/PROD-DIFFERENCES.md. Empty on purpose: all PROD differences live outside git (GitHub environments, EAS environments, Supabase project settings, app_flags rows).",
+  "allow": []
+}

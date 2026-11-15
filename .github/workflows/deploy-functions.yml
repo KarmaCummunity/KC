@@ -55,6 +55,9 @@ jobs:
       SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
       SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
       BACKUP_AGE_RECIPIENT: ${{ vars.BACKUP_AGE_RECIPIENT }}
+      # The supabase preflight also runs the D-228 prod schema-mode check
+      # (scripts/deploy-preflight.mjs), so it needs the same variable as deploy-db.yml.
+      KC_PROD_SCHEMA_MODE: ${{ vars.KC_PROD_SCHEMA_MODE }}
       EDGE_SENTRY_DSN: ${{ secrets.EDGE_SENTRY_DSN }}
     steps:
       # The guard comes from deploy.yml's own commit, not the deployed one.
