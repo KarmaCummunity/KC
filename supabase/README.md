@@ -78,6 +78,7 @@ Configure in Supabase Dashboard → Edge Functions → Secrets (names only; neve
 | `GEMINI_MODEL_ID` | Optional, `whatsapp-webhook` agent model (default `gemini-flash-latest`) |
 | `KC_APP_BASE_URL` | Optional, `whatsapp-webhook`: web origin of the "finish in the app" links (default `https://karma-community-kc.com`) |
 | `WHATSAPP_WABA_ID` | `scripts/whatsapp-templates.mjs submit` only (template submission to Meta) |
+| `WHATSAPP_SKIP_SIGNATURE_VERIFY` | Local/dev only when app secret unset |
 
 The `whatsapp_send` job calls `whatsapp-sender` through `kc_private.invoke_edge_function`, which
 reads the Vault secrets `kc_project_url` and `kc_service_role_key` (shared with the other

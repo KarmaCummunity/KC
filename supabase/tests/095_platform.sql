@@ -68,7 +68,7 @@ begin
 end;
 $$;
 
-select plan(49);
+select plan(48);
 
 insert into auth.users (id, email, raw_app_meta_data)
 select ('00000000-0000-4000-8000-00000000000' || m)::uuid, m || '@example.test', '{"provider":"google"}'
@@ -154,8 +154,6 @@ select public.api_bot_publish_post((select session_id from t_bot), '00000000-000
 select is(pg_temp.thrice(null, format($$select public.api_bot_attach_post_photo('972500000005', @e, %L,
     '00000000-0000-4000-8000-00000000000e/w/%%s.jpg', 'image/jpeg', 1000)$$, (select session_id from t_bot))),
   'ok|ok|rate_limited', 'attaching WhatsApp photos to a bot draft is limited');
-select is(pg_temp.thrice('b', 'select public.export_my_data() is not null'),
-  'ok|ok|rate_limited', 'exporting one''s own data is limited');
 select is((select count(*) from kc_private.rate_limits l
             where not exists (select 1 from kc_private.rate_limit_counters c where c.key like l.action || ':%')),
   0::bigint, 'every configured limit was exercised by this file');

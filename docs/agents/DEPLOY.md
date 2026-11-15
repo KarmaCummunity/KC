@@ -8,10 +8,6 @@
 
 Verify: `https://dev.karma-community.pages.dev/version.json` shows the merged SHA; the Deploy run's smoke stage is green. To redeploy dev, dispatch **Deploy** on `dev`.
 
-## Edge Functions on prod: only from a `main` that has received `dev`
-
-Webhook functions with `verify_jwt = false` (`payments-webhook`, `whatsapp-webhook`, `revenuecat-webhook`) must authenticate their caller themselves. `scripts/check-webhook-auth.mjs` pins that in CI and runs again as a step of `deploy-functions.yml` against the tree being deployed (the script itself comes from the workflow commit), so a deploy from a `main` that has not yet received `dev` is refused. Ship function changes to prod by releasing `dev` → `main`; never deploy a function from a branch or by hand.
-
 ## Local DB
 
 ```bash
