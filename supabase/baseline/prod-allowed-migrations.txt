@@ -58,6 +58,3 @@
 0061_post_card_extras.sql
 0062_animals_handoff_karma.sql
 0063_worlds_main_feed_and_launch.sql
-0064_member_data_export.sql
-0065_function_execute_default_deny.sql
-0066_listing_images_bucket_limits.sql
