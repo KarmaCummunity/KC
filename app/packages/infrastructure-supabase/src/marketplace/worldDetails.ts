@@ -89,6 +89,13 @@ export function eventDetailColumns(details: Readonly<Record<string, unknown>>): 
   };
 }
 
+/** The form's yes / no kosher answer as a boolean; null when unanswered. */
+function kosherFlag(kosher: unknown): boolean | null {
+  if (kosher === 'yes') return true;
+  if (kosher === 'no') return false;
+  return null;
+}
+
 /** `post_food_details` columns for a food offer's details (`kosher` is yes / no in the form). */
 export function foodDetailColumns(details: Readonly<Record<string, unknown>>): JsonObject {
   const allergens = Array.isArray(details['allergens']) ? details['allergens'].filter((a) => typeof a === 'string') : [];
@@ -96,7 +103,7 @@ export function foodDetailColumns(details: Readonly<Record<string, unknown>>): J
   return {
     expires_at: text(details['expires_at']),
     allergens,
-    kosher: kosher === 'yes' ? true : kosher === 'no' ? false : null,
+    kosher: kosherFlag(kosher),
   };
 }
 

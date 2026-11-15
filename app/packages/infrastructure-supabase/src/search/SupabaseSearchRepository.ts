@@ -15,6 +15,11 @@ import { searchSocialParts, type SocialSearchParts } from './searchSocialReads';
 
 const NO_SOCIAL: SocialSearchParts = { orgs: [], hashtags: [], suggestedQueries: [] };
 
+/** Runs the explore page when there is no query text, otherwise the query page. */
+function pickBucket<T>(isExplore: boolean, explore: () => Promise<T>, query: () => Promise<T>): Promise<T> {
+  return isExplore ? explore() : query();
+}
+
 export class SupabaseSearchRepository implements ISearchRepository {
   constructor(private readonly client: SupabaseClient<Database>) {}
 
@@ -34,19 +39,13 @@ export class SupabaseSearchRepository implements ISearchRepository {
     const [postBucket, userBucket, linkBucket, social] = await Promise.all([
       !wantPosts
         ? EMPTY_SEARCH_BUCKET
-        : isExplore
-          ? explorePosts(this.client, filters, limits.posts)
-          : searchPosts(this.client, text, filters, limits.posts),
+        : pickBucket(isExplore, () => explorePosts(this.client, filters, limits.posts), () => searchPosts(this.client, text, filters, limits.posts)),
       !wantUsers
         ? EMPTY_SEARCH_BUCKET
-        : isExplore
-          ? exploreUsers(this.client, filters, limits.users)
-          : searchUsers(this.client, text, filters, limits.users),
+        : pickBucket(isExplore, () => exploreUsers(this.client, filters, limits.users), () => searchUsers(this.client, text, filters, limits.users)),
       !wantLinks
         ? EMPTY_SEARCH_BUCKET
-        : isExplore
-          ? exploreLinks(this.client, filters, limits.links)
-          : searchLinks(this.client, text, filters, limits.links),
+        : pickBucket(isExplore, () => exploreLinks(this.client, filters, limits.links), () => searchLinks(this.client, text, filters, limits.links)),
       searchSocialParts(this.client, text, !filters.resultType).catch(() => NO_SOCIAL),
     ]);
 

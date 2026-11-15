@@ -51,7 +51,7 @@ export function validate({ aasa, assetlinks, appJson }) {
   const [team, ...rest] = appID.split('.');
   if (!TEAM_ID.test(team) || rest.join('.') !== bundle) problems.push(`AASA appID "${appID}" must be <10-char Team ID>.${bundle}`);
   const paths = detail?.paths ?? [];
-  for (const prefix of [...new Set([...REQUIRED_PATHS, ...androidPathPrefixes(appJson, host)])]) {
+  for (const prefix of new Set([...REQUIRED_PATHS, ...androidPathPrefixes(appJson, host)])) {
     if (!covers(paths, prefix)) problems.push(`AASA paths do not cover ${prefix} (claimed by the app)`);
   }
   if (domains.some((d) => d.startsWith('webcredentials:')) && !aasa?.webcredentials?.apps?.includes(appID)) {
@@ -77,7 +77,8 @@ export function validateDist(distDir, readSource = (name) => readFileSync(join(M
   }
   const headers = existsSync(join(distDir, '_headers')) ? readFileSync(join(distDir, '_headers'), 'utf8') : '';
   for (const name of [AASA, ASSETLINKS]) {
-    if (!new RegExp(`/\\.well-known/${name.replace('.', '\\.')}\\n {2}Content-Type: application/json`).test(headers)) {
+    const escapedName = name.replace('.', String.raw`\.`);
+    if (!new RegExp(String.raw`/\.well-known/${escapedName}\n {2}Content-Type: application/json`).test(headers)) {
       problems.push(`dist/_headers has no application/json rule for /.well-known/${name}`);
     }
   }
