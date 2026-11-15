@@ -16,6 +16,9 @@ import { EmptyState } from './EmptyState';
 import { PrimaryButton } from './ui/Buttons';
 import { PostGridSkeleton } from './skeletons/PostGridSkeleton';
 import { finishMark } from '../lib/observability/perfMarks';
+
+/** How many photos of a freshly loaded page are fetched ahead of scrolling. */
+const FEED_PREFETCH_COUNT = 8;
 import { KcFlashList, type KcFlashListRef } from './lists/KcFlashList';
 import { buildFeedListEntries, type FeedListEntry } from '../lib/feed/feedListLayout';
 import { MatchesFeedSection } from './matching/MatchesFeedSection';
@@ -163,11 +166,11 @@ export function PostFeedList({
     if ((data ?? []).length > 0) finishMark('feed.first_render');
   }, [data]);
 
-  // Warm the image cache for the most recently loaded page (usually still
-  // below the fold) so cards render with their photo instead of a placeholder.
+  // Warm the image cache for the first cards of the most recently loaded page, the ones about to
+  // scroll into view. Warming the whole page spent bandwidth on photos far below the fold.
   const cardWidth = usePostGridCardWidth(HOME_FEED_GRID_COLUMNS);
   React.useEffect(() => {
-    const tail = (data ?? []).slice(-20);
+    const tail = (data ?? []).slice(-20).slice(0, FEED_PREFETCH_COUNT);
     prefetchImages(
       tail.map((p) => {
         const first = p.mediaAssets[0];

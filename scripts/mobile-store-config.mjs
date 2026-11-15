@@ -172,6 +172,8 @@ function pin(env) {
   const next = injectProfileEnv(easJson, profile, {
     EXPO_PUBLIC_SUPABASE_URL: supabaseUrl,
     EXPO_PUBLIC_SUPABASE_ANON_KEY: anonKey,
+    // Store binaries never show the DEV strip (DevBanner), whatever the profile says.
+    EXPO_PUBLIC_STORE_BUILD: 'true',
     ...sentryVars(env),
   });
   writeFileSync(easPath, `${JSON.stringify(next, null, 2)}\n`);

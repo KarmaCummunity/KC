@@ -7,6 +7,10 @@ import { makeUseStyles, useTheme } from '@kc/ui';
 import type { MarketplaceListingMedia } from '@kc/domain';
 import { KCImage } from '../ui/KCImage';
 import { listingImagePublicUrl } from '../../services/listingImageUpload';
+import { getSupabaseHeroImageUrl } from '../../lib/imageUrl';
+
+/** Bucket of listing photos (a listing is a post, so its photos live with the post photos). */
+const LISTING_BUCKET = 'post-images';
 
 /** Same height as the post carousel frame. */
 const HEIGHT = 240;
@@ -45,7 +49,8 @@ export function ListingMediaGallery({ media, fallbackIcon }: Props) {
           {media.map((item) => (
             <KCImage
               key={item.storagePath}
-              uri={listingImagePublicUrl(item.storagePath)}
+              uri={getSupabaseHeroImageUrl(LISTING_BUCKET, item.storagePath, width)}
+              fallbackUri={listingImagePublicUrl(item.storagePath)}
               style={{ width, height: HEIGHT }}
               contentFit="cover"
             />
