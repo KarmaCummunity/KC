@@ -56,5 +56,6 @@ export function toPostError(error: unknown): unknown {
   if (error instanceof DomainError) return error;
   const cause = (error as { cause?: PostgrestCause } | null)?.cause;
   const code = cause ? codeOfPostgrestError(cause) : null;
-  return code ? new PostError(code, error instanceof Error ? error.message : code, error) : error;
+  if (!code) return error;
+  return new PostError(code, error instanceof Error ? error.message : code, error);
 }

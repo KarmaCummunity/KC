@@ -38,8 +38,9 @@ jobs:
   android-e2e:
     name: maestro · android emulator
     runs-on: ubuntu-latest
-    # 90 minutes of build + flows, plus up to 125 queued for a kc-dev test slot.
-    timeout-minutes: 215
+    # Build (~15 min, ~30 with the retry) + flows (55) + up to 125 queued for a kc-dev test slot, with
+    # slack. A hang now ends as a timeout of the step that hung, not as a 4-hour run.
+    timeout-minutes: 190
     permissions:
       contents: read
       actions: read # the kc-dev test slot reads which jobs are running
@@ -126,9 +127,10 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
-      # kc-dev (Free/Nano) stalls when several suites hit it at once (13/14 Nov 2026), so at
+      # kc-dev (Free/Nano) stalls when several suites hit it at once (13/14/15 Nov 2026), so at
       # most KC_DEV_TEST_SLOTS suites (default 2) run their tests against it together; the rest
-      # queue here FIFO. Best effort: proceeds after 120 min or on any API error.
+      # queue here FIFO. An API error (rate limit) waits and asks again; only after 120 min does
+      # it proceed without a slot.
       - name: Wait for a kc-dev test slot
         timeout-minutes: 125
         env:
@@ -137,8 +139,10 @@ jobs:
         # An older checked-out tree (e.g. mobile-nightly's pinned SHA) has no throttle yet.
         run: if [ -f scripts/kc-dev-slot.mjs ]; then node scripts/kc-dev-slot.mjs; else echo 'no kc-dev slot script in this tree'; fi
 
+      # A green run takes 24–28 min (19 flows). 55 min is twice that; the runner itself stops early,
+      # failed, when kc-dev is down or 3 flows in a row fail twice (scripts/maestro-run-android.sh).
       - name: Run Maestro flows on the emulator
-        timeout-minutes: 80
+        timeout-minutes: 55
         uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
         with:
           api-level: 34
@@ -147,6 +151,13 @@ jobs:
           profile: pixel_6
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          # Boot takes ~40 s on a KVM runner; a boot that has not finished in 5 min will not.
+          emulator-boot-timeout: 300
+          # Start adb before the emulator, so the emulator registers with a running server. Without
+          # it the emulator logs "ERROR | Unable to connect to adb daemon on port: 5037" (harmless:
+          # the action's first `adb` call starts the server 8 s later and boot completes), which was
+          # mistaken for the cause of the 15 Nov cancellations.
+          pre-emulator-launch-script: $ANDROID_HOME/platform-tools/adb start-server
           # One command: the action runs each script line in its own shell.
           script: bash scripts/maestro-run-android.sh "$E2E_APK" "$RUNNER_TEMP/maestro"
 

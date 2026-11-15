@@ -8,13 +8,17 @@
 //   3. __DEV__ ghost session / auto-sign-in — extra copy when those
 //      shortcuts are enabled.
 // All strips use the same styling so the warning is recognizable.
+//
+// Never in a store build (EXPO_PUBLIC_STORE_BUILD=true: the eas.json `nightly`
+// and `production` profiles), even when that build uses the kc-dev backend:
+// TestFlight / Play binaries can reach App Review and real users.
 import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { colors, Text, spacing, typography, zIndex } from '@kc/ui';
 import { useTranslation } from 'react-i18next';
 import { isDevGhostSessionEnabled } from '../services/devGhostSession';
 import { isDevAutoSignInEnabled } from '../services/devAutoSignIn';
-import { isDevEnvironment } from '../config/environment';
+import { isDevEnvironment, isStoreBuild, shouldShowDevBanner } from '../config/environment';
 
 export function DevBanner() {
   const { t } = useTranslation();
@@ -23,7 +27,7 @@ export function DevBanner() {
   const ghost = metroDev && isDevGhostSessionEnabled();
   const auto = metroDev && isDevAutoSignInEnabled();
 
-  if (!envDev && !metroDev) return null;
+  if (!shouldShowDevBanner({ envDev, metroDev, storeBuild: isStoreBuild() })) return null;
 
   // Priority: explicit dev shortcuts > env signal (devs already know they're
   // local; the shortcut warning is more actionable).

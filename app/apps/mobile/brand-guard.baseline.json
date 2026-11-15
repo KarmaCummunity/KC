@@ -21,13 +21,6 @@
       "spacingLiteral": 13,
       "shadowLiteral": 4
     },
-    "src/components/PostImageCarousel.tsx": {
-      "colorLiteral": 2,
-      "fontWeightLiteral": 1,
-      "radiusLiteral": 2,
-      "spacingLiteral": 2,
-      "iconSizeLiteral": 1
-    },
     "src/components/PostImageViewerModal.tsx": {
       "colorLiteral": 3,
       "fontWeightLiteral": 1,

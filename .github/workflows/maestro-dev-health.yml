@@ -21,6 +21,15 @@ on:
       - 'scripts/maestro-*'
       - '.github/workflows/ci-maestro-android.yml'
       - '.github/workflows/maestro-dev-health.yml'
+      # Never in the APK (keep in sync with MAESTRO_IGNORE in scripts/ci-changes.mjs).
+      - '!app/apps/mobile/public/**'
+      - '!app/apps/mobile/functions/**'
+      - '!app/apps/mobile/web-edge/**'
+      - '!app/**/__tests__/**'
+      - '!app/**/__mocks__/**'
+      - '!app/**/*.test.*'
+      - '!app/**/*.spec.*'
+      - '!app/**/*.md'
   # A manual run on any branch, for example to check kc-dev after a rebuild or a reseed.
   workflow_dispatch:
 

@@ -14,11 +14,11 @@ type Client = SupabaseClient<Database>;
 /** Audit events shown on a case timeline (the newest ones, oldest first). */
 const TIMELINE_LIMIT = 100;
 
-const REPORT_TARGET_TYPES: readonly string[] = ['post', 'user', 'chat', 'comment'];
+const REPORT_TARGET_TYPES: ReadonlySet<string> = new Set(['post', 'user', 'chat', 'comment']);
 const REPORT_STATES: readonly string[] = reportMachine.states;
 
 const asTargetType = (value: string): AdminReportTargetType | null =>
-  REPORT_TARGET_TYPES.includes(value) ? (value as AdminReportTargetType) : null;
+  REPORT_TARGET_TYPES.has(value) ? (value as AdminReportTargetType) : null;
 
 const asStatus = (value: string): AdminReportStatus =>
   REPORT_STATES.includes(value) ? (value as AdminReportStatus) : 'open';
