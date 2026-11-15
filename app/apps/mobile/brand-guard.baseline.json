@@ -110,9 +110,6 @@
       "physicalSide": 2,
       "adHocChip": 1
     },
-    "src/screens/guest/feed.styles.ts": {
-      "spacingLiteral": 1
-    },
     "src/screens/research/SurveyIntroBlock.tsx": {
       "fontWeightLiteral": 1,
       "radiusLiteral": 2,

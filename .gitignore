@@ -52,3 +52,6 @@ scripts/hebrew-text-report.md
 
 # Repo-root guard script dependencies (npm ci --prefix scripts).
 scripts/node_modules/
+
+# Graphify knowledge graph output (generated locally by `graphify update .`; never tracked)
+graphify-out/
