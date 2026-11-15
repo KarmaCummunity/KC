@@ -5429,6 +5429,7 @@ export type Database = {
         }[]
       }
       end_challenge: { Args: { p_challenge_id: string }; Returns: undefined }
+      export_my_data: { Args: never; Returns: Json }
       feed_page: {
         Args: { p_cursor?: Json; p_filters?: Json; p_limit?: number }
         Returns: {

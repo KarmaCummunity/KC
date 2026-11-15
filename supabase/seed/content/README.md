@@ -20,7 +20,7 @@ loads reference and content on the baseline twice and runs `check.sql`; CI runs 
 | --- | --- | --- |
 | `data/donation_link_categories.csv` | 11 | `donation_link_categories` (icon, order; labels live in the app's locale files) |
 | `data/donation_links.csv` | 108 | `donation_links`, curated (no submitter), approved after loading |
-| `data/legal_document_versions.csv` | 2 | `legal_documents` pointer + `legal_document_versions` (terms, privacy, version 1, Hebrew) |
+| `data/legal_document_versions.csv` | 4 | `legal_documents` pointer + `legal_document_versions` (terms and privacy, versions 1 and 2, Hebrew; a new database starts on version 2, a database that already has the pointer keeps it until the version is published there) |
 | `data/surveys.csv`, `survey_versions.csv`, `survey_questions.csv` | 3 / 3 / 8 | `surveys`, `survey_versions`, `survey_questions` |
 | `data/world_links.csv` | 8 | `world_links`: paths from one giving world to a related one (migration `0024`), matched by world + link slug |
 | `data/external_bodies.csv` | 7 | `external_bodies`: organizations a world works through, matched by slug; the site address is filled only where the app already curated it |
