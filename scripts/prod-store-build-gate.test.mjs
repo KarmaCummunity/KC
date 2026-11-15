@@ -12,6 +12,7 @@ import {
   tagsPointingAt,
   main,
   TAG_JOB_NAME,
+  isTagJobName,
 } from './prod-store-build-gate.mjs';
 
 const SHA = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
@@ -183,4 +184,26 @@ test('main exits 1 for dispatch when the flag is unset', async () => {
   );
   assert.equal(code, 1);
   assert.match(readFileSync(out, 'utf8'), /proceed=false/);
+});
+
+test('reusable-workflow tag job name ("tag release / tag release") counts as the tag job', () => {
+  assert.equal(isTagJobName('tag release'), true);
+  assert.equal(isTagJobName('tag release / tag release'), true);
+  assert.equal(isTagJobName('rollback (prod)'), false);
+  assert.equal(isTagJobName('tag release-ish'), false);
+  const sha = 'a'.repeat(40);
+  const ok = classifyDeployRun({
+    conclusion: 'success',
+    headBranch: 'main',
+    headSha: sha,
+    jobs: [{ name: 'tag release / tag release', conclusion: 'success', status: 'completed' }],
+  });
+  assert.equal(ok.kind, 'prod-tagged');
+  const skipped = classifyDeployRun({
+    conclusion: 'success',
+    headBranch: 'main',
+    headSha: sha,
+    jobs: [{ name: 'tag release / tag release', conclusion: 'skipped' }],
+  });
+  assert.equal(skipped.kind, 'not-prod-release');
 });
