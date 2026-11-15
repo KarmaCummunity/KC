@@ -29,6 +29,14 @@ Decision D-228 (approved by the owner 2026-11-11). Design: [target-design.md](./
 - `backend` lane: `supabase start` applies `supabase/migrations` on the real image; `scripts/run-baseline-tests.sh` builds an empty database, applies every migration, runs `supabase/tests`, and loads the reference and content seeds twice (idempotency + `check.sql`); RPC grants; `gen-baseline-types.mjs --check`; FSM catalog contract; sqlProbes and port contracts.
 - Ledger guards (`ci-migration-drift`, `check-prod-ledger`) compare remote versions with the files in `supabase/migrations/` and now expect exactly the baseline (+ later files).
 
+## Opening the release PR (`dev` → `main`)
+
+- **Who opens it.** test-integrity and the CI gate need an approving review from an owner in `.github/owners.json` (read from `main`), and GitHub never lets an author approve their own PR. So the release PR is opened from a non-owner account (`karma-community-kc`), and the owner approves it.
+- **Its CI runs on the newest real commit.** After each merge, `bump-version-on-merge.yml` pushes a CI-skipped `chore(release): bump app version …` commit to `dev`. A PR whose head commit is CI-skipped starts no `pull_request` run, on `opened` or on `synchronize`. Opening the PR while `dev` ends in a bump commit therefore starts no CI. The next real merge into `dev` starts it, on that merge commit.
+- **The owner's approval binds to the PR's head SHA**, and the review-triggered gate reuses the `pull_request` CI run *of that SHA* (`scripts/ci-run-reuse.mjs`, read from `main`). A bump head has no such run, so an approval on it can never turn the gate green. Before asking for the approval, make the release PR's head a real commit: merge a PR into `dev` that edits `app/VERSION` itself (that PR gets no automatic bump; set the number the bump would have given, or the MINOR/MAJOR being released), and merge nothing else into `dev` until `main` is merged.
+- **The release E2E lane accepts the bump build.** Deploy puts the bump commit on dev web. `release / dev E2E on the release head` accepts a dev build whose commit is only the version bump of the CI head (`SMOKE_ACCEPT_VERSION_BUMP`, `scripts/smoke-deploy.mjs`).
+- **kc-dev load.** Maestro, E2E nightly and the release E2E queue for a kc-dev test slot (`scripts/kc-dev-slot.mjs`, `KC_DEV_TEST_SLOTS`, default 2), so the release lane may wait for a running suite.
+
 ## kc-dev rebuild (one time, after a fresh backup)
 
 1. `db-backup-dev.yml` (encrypted) and a local decrypted copy; kc-dev Auth settings saved outside the repository.
@@ -55,7 +63,7 @@ A database built from the baseline has no staff at all, and no RPC hands out `su
 
 ## Vault (what it is)
 
-Supabase Vault is the encrypted secret store inside the database. The database needs two values to start Edge Functions from scheduled jobs and the outbox (through `pg_net`, an HTTP client in Postgres): the project URL and a service-role key. They cannot live in a migration or in the repository, so they are stored once per project with `vault.create_secret(<value>, 'kc_project_url')` and `vault.create_secret(<value>, 'kc_service_role_key')` and read at call time by `kc_private.invoke_edge_function` (from `vault.decrypted_secrets`). Without them the database still works; the four workers it starts (push dispatcher, account purge, storage orphan reconciliation, EXIF strip) are recorded as a warning in `ops.warnings` instead of running. Each project (kc-dev, kc-prod) has its own two secrets, set by the operator, never by a migration.
+Supabase Vault is the encrypted secret store inside the database. The database needs two values to start Edge Functions from scheduled jobs and the outbox (through `pg_net`, an HTTP client in Postgres): the project URL and a service-role key. They cannot live in a migration or in the repository, so they are stored once per project with `vault.create_secret(<value>, 'kc_project_url')` and `vault.create_secret(<value>, 'kc_service_role_key')` and read at call time by `kc_private.invoke_edge_function` (from `vault.decrypted_secrets`). Without them the database still works; the four workers it starts (push dispatcher, account purge, storage orphan reconciliation, EXIF strip) are recorded as a warning in `ops.warnings` instead of running. Each project (kc-dev, kc-prod) has its own two secrets, never set by a migration. The Deploy pipeline (`deploy-db.yml`, step "Vault secrets for the database jobs") creates or updates them on every deploy from the environment's secrets.
 
 ## Still not in the baseline (all launch tier `later`)
 

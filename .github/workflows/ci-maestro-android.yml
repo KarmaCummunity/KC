@@ -38,7 +38,11 @@ jobs:
   android-e2e:
     name: maestro · android emulator
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    # 90 minutes of build + flows, plus up to 125 queued for a kc-dev test slot.
+    timeout-minutes: 215
+    permissions:
+      contents: read
+      actions: read # the kc-dev test slot reads which jobs are running
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -122,7 +126,19 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
+      # kc-dev (Free/Nano) stalls when several suites hit it at once (13/14 Nov 2026), so at
+      # most KC_DEV_TEST_SLOTS suites (default 2) run their tests against it together; the rest
+      # queue here FIFO. Best effort: proceeds after 120 min or on any API error.
+      - name: Wait for a kc-dev test slot
+        timeout-minutes: 125
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          KC_DEV_TEST_SLOTS: ${{ vars.KC_DEV_TEST_SLOTS }}
+        # An older checked-out tree (e.g. mobile-nightly's pinned SHA) has no throttle yet.
+        run: if [ -f scripts/kc-dev-slot.mjs ]; then node scripts/kc-dev-slot.mjs; else echo 'no kc-dev slot script in this tree'; fi
+
       - name: Run Maestro flows on the emulator
+        timeout-minutes: 80
         uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
         with:
           api-level: 34
