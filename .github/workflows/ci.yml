@@ -262,7 +262,7 @@ jobs:
         env:
           NEEDS: ${{ toJSON(needs) }}
         run: |
-          node --input-type=module -e '
+          node --input-type=module <<'JS'
             import { appendFileSync } from "node:fs";
             import { pathToFileURL } from "node:url";
             const { LANE_JOBS, OPTIONAL_LANES } = await import(pathToFileURL(".judge/scripts/ci-changes.mjs").href);
@@ -274,7 +274,7 @@ jobs:
               else console.log(`::notice::job "${job}" was skipped and is not a lane of the base commit; not judged`);
             }
             appendFileSync(process.env.GITHUB_OUTPUT, `json=${JSON.stringify(kept)}\n`);
-          '
+          JS
       - name: Evaluate lane results
         env:
           NEEDS: ${{ steps.needs.outputs.json }}
