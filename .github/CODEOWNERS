@@ -58,6 +58,7 @@
 /scripts/migration-ids.mjs                  @navesarussi
 /scripts/db-connect-retry.mjs               @navesarussi
 /scripts/kc-dev-slot.mjs                    @navesarussi
+/scripts/release-merge.mjs @navesarussi
 /scripts/bump-app-version.mjs               @navesarussi
 /scripts/close-linked-issues.mjs            @navesarussi
 /scripts/run-baseline-tests.sh              @navesarussi
