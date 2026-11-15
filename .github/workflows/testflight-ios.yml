@@ -246,7 +246,9 @@ jobs:
           eas build --platform ios --profile "$EAS_PROFILE" --local --non-interactive --output ./build-kc.ipa
           # Refuse to upload unless the shipped JS bundle points at the selected backend only.
           unzip -p ./build-kc.ipa 'Payload/*.app/main.jsbundle' > "$RUNNER_TEMP/main.jsbundle"
-          node "$GITHUB_WORKSPACE/scripts/mobile-store-config.mjs" verify "$RUNNER_TEMP/main.jsbundle"
+          # The Google web client ID is in the embedded Expo config (extra), not the JS bundle.
+          unzip -p ./build-kc.ipa 'Payload/*.app/EXConstants.bundle/app.config' > "$RUNNER_TEMP/app.config"
+          node "$GITHUB_WORKSPACE/scripts/mobile-store-config.mjs" verify "$RUNNER_TEMP/main.jsbundle" "$RUNNER_TEMP/app.config"
           # The build number actually inside the IPA (EAS remote autoIncrement assigned it).
           unzip -p ./build-kc.ipa 'Payload/*.app/Info.plist' > "$RUNNER_TEMP/Info.plist"
           build_number="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$RUNNER_TEMP/Info.plist")"
