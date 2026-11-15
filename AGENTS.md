@@ -6,6 +6,19 @@ KC (Karma Community) is built largely by AI agents. **Part A** is the quick entr
 
 # Part A — Entry point
 
+## Start a task from any chat
+
+One command, the same on every agent. It runs the [`kc-issue-to-merge`](.claude/skills/kc-issue-to-merge/SKILL.md) skill:
+
+| Type | Does |
+|---|---|
+| `/kc` | Takes the next issue from the queue |
+| `/kc 1234` | Works issue #1234 |
+| `/kc loop` · `/kc loop 5` | Works issues one after another (`references/loop.md`); with a number, stops after that many merge |
+
+- **Where `/kc` is a slash command:** Claude Code (`.claude/commands/kc.md`), Cursor (`.cursor/commands/kc.md`), Antigravity (`.agent/workflows/kc.md`).
+- **Anywhere else** (Codex, the KC bot, a chat without commands): a message that starts with `kc`, or says "קח משימה", "משימה הבאה", "עבוד על #1234" or "תעבוד בלופ", means the same and follows the same skill.
+
 | Read | For |
 |---|---|
 | [`.claude/skills/kc-issue-to-merge/SKILL.md`](.claude/skills/kc-issue-to-merge/SKILL.md) | **Working an issue end to end**: pick, de-duplicate, claim, define, test-first, findings, PR, merge. Follow it for every task |

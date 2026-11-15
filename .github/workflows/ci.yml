@@ -153,6 +153,7 @@ jobs:
     if: needs.changes.outputs.release == 'true'
     permissions:
       contents: read
+      actions: read # kc-dev test slot (scripts/kc-dev-slot.mjs)
     uses: ./.github/workflows/ci-release.yml
     # The P0 journeys sign in as the kc-dev seed users; a called workflow gets no secret unless passed.
     secrets:
@@ -210,6 +211,7 @@ jobs:
     if: needs.changes.outputs.maestro == 'true'
     permissions:
       contents: read
+      actions: read # kc-dev test slot (scripts/kc-dev-slot.mjs)
     uses: ./.github/workflows/ci-maestro-android.yml
     secrets:
       E2E_SEED_PASSWORD: ${{ secrets.E2E_SEED_PASSWORD }}
@@ -249,9 +251,33 @@ jobs:
           path: .judge
           persist-credentials: false
           sparse-checkout: scripts
-      - name: Evaluate lane results
+      # A lane added on the head that the base's change detector does not know yet (e.g. `maestro`
+      # on the first release PR after #2184: main's ci-changes.mjs predates it) can never be in
+      # the judge's plan, so the judge would reject it even after the owner approves the ci.yml
+      # change. Hand the judge only the jobs it knows, plus any unknown job that did not end
+      # `skipped`: a failed or cancelled new lane is still reported. On PRs into dev the judge is
+      # dev and knows every lane, so nothing is dropped there.
+      - name: Lanes the judge knows
+        id: needs
         env:
           NEEDS: ${{ toJSON(needs) }}
+        run: |
+          node --input-type=module <<'JS'
+            import { appendFileSync } from "node:fs";
+            import { pathToFileURL } from "node:url";
+            const { LANE_JOBS, OPTIONAL_LANES } = await import(pathToFileURL(".judge/scripts/ci-changes.mjs").href);
+            const known = new Set(["changes", ...LANE_JOBS, ...OPTIONAL_LANES]);
+            const needs = JSON.parse(process.env.NEEDS);
+            const kept = {};
+            for (const [job, value] of Object.entries(needs)) {
+              if (known.has(job) || value?.result !== "skipped") kept[job] = value;
+              else console.log(`::notice::job "${job}" was skipped and is not a lane of the base commit; not judged`);
+            }
+            appendFileSync(process.env.GITHUB_OUTPUT, `json=${JSON.stringify(kept)}\n`);
+          JS
+      - name: Evaluate lane results
+        env:
+          NEEDS: ${{ steps.needs.outputs.json }}
           PLAN: ${{ needs.changes.outputs.plan }}
           DRAFT: ${{ needs.changes.outputs.draft }}
           EVENT_NAME: ${{ github.event_name }}

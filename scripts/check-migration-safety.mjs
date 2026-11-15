@@ -225,6 +225,16 @@ export function checkReleaseMigrations(files, prBody, { permanentTables = new Se
   return errors;
 }
 
+/**
+ * True for a migration file the release scan must read: a `.sql` file directly
+ * under supabase/migrations. `archive/` holds the retired chain (D-228): it is
+ * never applied, so scanning it only buries the real findings.
+ * @param {string} path repo-relative path, forward slashes
+ */
+export function isScannedMigrationPath(path) {
+  return /^supabase\/migrations\/[^/]+\.sql$/.test(path);
+}
+
 /** Migrations added or modified between `base` and `head` (merge-base diff). */
 function changedMigrations(base, head) {
   const out = execFileSync(
@@ -232,7 +242,8 @@ function changedMigrations(base, head) {
     ['diff', '--name-only', '--no-renames', '--diff-filter=AM', `${base}...${head}`, '--', 'supabase/migrations/*.sql'],
     { cwd: REPO_ROOT, encoding: 'utf8' },
   );
-  return out.split('\n').filter(Boolean).map((path) => ({
+  // The pathspec's `*` also crosses `/`, so the archive must be filtered here.
+  return out.split('\n').filter(isScannedMigrationPath).map((path) => ({
     name: basename(path),
     content: readFileSync(join(REPO_ROOT, path), 'utf8'),
   }));
