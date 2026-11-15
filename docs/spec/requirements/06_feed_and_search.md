@@ -300,21 +300,12 @@ The Followers / Following lists (`FR-PROFILE-009`) and the Inbox (`FR-CHAT-001`)
 
 ---
 
-## FR-FEED-012 — Guest feed preview
+## FR-FEED-012 — Guest feed preview — **REMOVED**
 
-**Description.**
-The guest feed (1.7) is a constrained sub-set of the public feed.
+**Status.** ⛔ Removed with `FR-AUTH-014` (`{{D:no-guest-feed}}`): the feed is read by signed-in
+members only, and no feed query runs for a signed-out visitor.
 
-**Source.**
-- PRD: `03_Core_Features.md` §3.3.1.4.
-- Constraints: `R-MVP-Core-2`.
-
-**Acceptance Criteria.**
-- AC1. Returns the 3 most recent **`Public`-visibility** posts across all of Israel.
-- AC2. Quick-message, profile navigation, post detail, and filters are all blocked; tap targets surface the sign-up overlay (`FR-AUTH-014`).
-- AC3. Realtime updates are disabled for guests; a guest sees a static snapshot until they sign up.
-
-**Related.** Screens: 1.7.
+**Related.** Screens: 1.7 (retired).
 
 ---
 
@@ -339,10 +330,10 @@ The original AC contract is preserved in the TopBar badge:
 ## FR-FEED-014 — Active-community counter — **EXTENDED (P1.2)**
 
 **Description.**
-A live "{N} פוסטים פעילים בקהילה" counter that surfaces in three places:
-the guest banner (replacing the prior hardcoded "50+" string), the warm
-empty state of the signed-in feed, and any future onboarding/marketing
-surface that wants to highlight community activity.
+A live "{N} פוסטים פעילים בקהילה" counter that surfaces in the warm empty
+state of the signed-in feed and in any future onboarding/marketing surface
+that wants to highlight community activity. (The guest banner that also
+showed it was removed with `FR-AUTH-014`, `{{D:no-guest-feed}}`.)
 
 **Source.**
 - PRD: `03_Core_Features.md` §3.3.1.4.

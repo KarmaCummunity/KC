@@ -9,7 +9,7 @@ Tracking issue: KC#1235. Workflow: [`ci-maestro-android.yml`](../../.github/work
 |---|---|---|
 | `01-auth-email-sign-in` | fresh install → welcome → email sign-in → feed | FR-AUTH-001 AC2, FR-AUTH-002 |
 | `02-auth-wrong-password` | wrong password stays signed out | FR-AUTH-002 |
-| `03-auth-guest-preview` | guest preview opens the guest feed | FR-AUTH-014 |
+| `03-auth-welcome-no-guest-entry` | the welcome screen offers sign-in only, no guest preview | FR-AUTH-001 AC4 |
 | `04-auth-forgot-password` | forgot password opens the reset form | FR-AUTH-008 |
 | `05-tabs-navigation` | all five tabs open, tab bar stays docked | FR-RESP-001, book §04 |
 | `06-feed-open-post` | feed lists posts, a post opens its detail | FR-FEED-001, `04_posts` |

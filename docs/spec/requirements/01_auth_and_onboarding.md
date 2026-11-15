@@ -1,6 +1,6 @@
 # 2.1 Authentication & Onboarding
 
-> **Status:** 🟡 Partial — Google + guest preview shipped; email/password via secondary link on welcome. Full `FR-AUTH-002` picker (Phone OTP, tabbed email) deferred — `TD-151`; Apple SSO (`FR-AUTH-004`) implemented natively (`D-58`, 2026-06-04), live flow pends Supabase Apple provider config. Onboarding + sessions + delete: ✅. **Audit 2026-05-29:** `performFullSignOut` + restore expiry sign-out shipped (TD-164). ⚠️ Audit 2026-05-16: ~~🔴 **FR-AUTH-017 AC3** sign-out leaves Expo push token active~~ addressed by TD-164; ~~welcome screen has no email entry per FR-AUTH-001 AC2 (TD-104)~~ ✅ 2026-10-30 — "continue with email" text link restored on every platform (KC#1269, `testID=auth-email-entry`); ~~Forgot Password button dead (FR-AUTH-008 unimplemented)~~ ✅ FR-AUTH-008 implemented 2026-10-30; FR-AUTH-015 soft-gate wired only to post-create (not follow + chat); FR-AUTH-016 30-day re-registration cooldown unimplemented; FR-AUTH-011 AC2 avatar resize 512 vs spec'd 1024; SignInWithEmail short-circuits `invalid_email` distinct from `authentication_failed` (D-22 spirit). See `docs/SSOT/archive/audit/2026-05-16/02_auth_profile.md`.
+> **Status:** 🟡 Partial — Google shipped; guest preview removed (`{{D:no-guest-feed}}`); email/password via secondary link on welcome. Full `FR-AUTH-002` picker (Phone OTP, tabbed email) deferred — `TD-151`; Apple SSO (`FR-AUTH-004`) implemented natively (`D-58`, 2026-06-04), live flow pends Supabase Apple provider config. Onboarding + sessions + delete: ✅. **Audit 2026-05-29:** `performFullSignOut` + restore expiry sign-out shipped (TD-164). ⚠️ Audit 2026-05-16: ~~🔴 **FR-AUTH-017 AC3** sign-out leaves Expo push token active~~ addressed by TD-164; ~~welcome screen has no email entry per FR-AUTH-001 AC2 (TD-104)~~ ✅ 2026-10-30 — "continue with email" text link restored on every platform (KC#1269, `testID=auth-email-entry`); ~~Forgot Password button dead (FR-AUTH-008 unimplemented)~~ ✅ FR-AUTH-008 implemented 2026-10-30; FR-AUTH-015 soft-gate wired only to post-create (not follow + chat); FR-AUTH-016 30-day re-registration cooldown unimplemented; FR-AUTH-011 AC2 avatar resize 512 vs spec'd 1024; SignInWithEmail short-circuits `invalid_email` distinct from `authentication_failed` (D-22 spirit). See `docs/SSOT/archive/audit/2026-05-16/02_auth_profile.md`.
 
 
 
@@ -39,7 +39,7 @@ Every unauthenticated launch starts on the Splash / Welcome screen showing the v
 **Acceptance Criteria.**
 - AC1. The screen renders within `NFR-PERF-001` (cold-start budget) and exposes both CTAs above the fold on every supported breakpoint.
 - AC2. Tapping "Sign up" or "Log in" navigates to the auth screen (`FR-AUTH-002`).
-- AC3. A "View as Guest" affordance is visible and routes to `FR-AUTH-014`.
+- AC3. *Removed (`{{D:no-guest-feed}}`).* The screen offers no guest entry: the feed is for members only.
 - AC4. The screen is the only screen reachable in the unauthenticated state; any deep link that targets an authenticated screen redirects here first.
 
 **Edge Cases.**
@@ -72,7 +72,7 @@ A single screen exposes all available authentication methods. The set of methods
 
 **Related.** Screens: 1.2 · Domain: `AuthMethod` enum.
 
-**MVP implementation note (2026-05-12).** The mobile welcome surface (`app/(auth)/index.tsx`) does **not** render the full-width Phone or Email method rows: they were display-only stubs (Phone routed users into the email/password screen without an OTP flow). Current ship: Google SSO, guest preview (`FR-AUTH-014`), an iOS-only Apple **button shell** (still incomplete per `TD-24`), and a tertiary text link to email/password sign-in. Restoring `FR-AUTH-002` AC1–AC2 fidelity is tracked as **`TD-151`** (a `tech-debt` issue).
+**MVP implementation note (2026-05-12).** The mobile welcome surface (`app/(auth)/index.tsx`) does **not** render the full-width Phone or Email method rows: they were display-only stubs (Phone routed users into the email/password screen without an OTP flow). Current ship: Google SSO, an iOS-only Apple **button shell** (still incomplete per `TD-24`), and a tertiary text link to email/password sign-in. Restoring `FR-AUTH-002` AC1–AC2 fidelity is tracked as **`TD-151`** (a `tech-debt` issue).
 
 **Implementation note — web Google sign-in via same-tab redirect (2026-05-17).** On Web, "Continue with Google" performs a **top-level same-tab navigation** to `accounts.google.com` (the standard pattern used by Notion / Linear / GitHub) — no `window.open` popup, no Safari popup-block. The user picks an account on Google's own page, the browser returns to `/auth/callback?code=…`, and the existing callback handler exchanges the code for a Supabase session. Native (iOS ASWebAuthSession, Android Chrome Custom Tabs) is unchanged. Decision recorded in [`DECISIONS.md`](../../SSOT/DECISIONS.md) as `D-33`. An earlier attempt to embed Google Identity Services (`D-32` first-claim, reverted) failed because Google's `accounts.google.com` page sends `X-Frame-Options: DENY` and GIS falls back to `window.open` (blocked by mobile Safari). The in-app "bottom-sheet account picker" UX requested in product remains a goal — it will be delivered on native via the official Google Sign-In SDK (`@react-native-google-signin/google-signin`) in a follow-up PR; on Web the same-tab redirect is the only path that avoids the popup-block constraint.
 
@@ -328,26 +328,22 @@ A user with a valid session token who launches the app skips Splash and Auth and
 
 ---
 
-## FR-AUTH-014 — Guest Preview
+## FR-AUTH-014 — Guest Preview — **REMOVED**
 
-**Description.**
-A non-authenticated user may view a sample of the feed (3 posts) before being asked to sign up.
+**Status.** ⛔ Removed (`{{D:no-guest-feed}}`).
 
-**Source.**
-- PRD: `03_Core_Features.md` §3.3.1.4, `05_Screen_UI_Mapping.md` §1.7.
-- Constraints: `R-MVP-Core-2`.
+**Rationale.** Signed-out access is minimal by decision: only the sign-in flow, the published legal
+text, the About pages, the public research form and public nonprofit pages open without an account.
+No post is readable signed out, so there is no guest feed and no signed-out post preview; a shared
+link to a post opens the welcome screen and returns to the post after sign-in (`FR-POST-023 AC6`).
 
-**Acceptance Criteria.**
-- AC1. The guest feed shows the 3 most recent **public** posts in chronological order across all of Israel.
-- AC2. Guest interactions are blocked: tapping a post / a profile / the "+" button / the message icon all surface the sign-up overlay (`FR-AUTH-014.a`).
-- AC3. The overlay copy emphasizes the size of the active community (parameterized count, see `FR-FEED-014`).
-- AC4. Closing the overlay returns the user to the guest feed; sign-up routes to `FR-AUTH-002`.
-- AC5. The client-side auth redirect gate must treat the dedicated guest-preview route (`Screen 1.7`) as reachable while unauthenticated: navigating there must not be cancelled by the same rule that sends anonymous users from the main shell to Splash/Auth.
+**What replaced it.**
+- The welcome screen (`FR-AUTH-001`) offers sign-in and sign-up only.
+- A stale link to the former guest route (screen 1.7) is handled like any member route: the
+  visitor lands on the welcome screen.
+- The database grants nothing of the feed or of the post catalog to signed-out callers.
 
-**Edge Cases.**
-- Fewer than 3 public posts exist system-wide: show all available; do not pad with closed posts.
-
-**Related.** Screens: 1.7.
+**Related.** Screens: 1.7 (retired).
 
 ---
 
