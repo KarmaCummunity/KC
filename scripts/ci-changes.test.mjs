@@ -327,6 +327,35 @@ test('the maestro lane is left out of the plan, never planned false, when the di
   }
 });
 
+test('the maestro lane is not planned by files that never reach the APK (web-only, tests, docs)', () => {
+  for (const files of [
+    // #2301: legal pages + a unit test
+    ['app/apps/mobile/public/delete-account.html', 'app/apps/mobile/public/privacy.html', 'app/apps/mobile/src/i18n/__tests__/publicDeletionWording.test.ts'],
+    ['app/apps/mobile/functions/post/[id].js'],
+    ['app/apps/mobile/web-edge/src/ogCard.mjs'],
+    ['app/apps/mobile/src/lib/__mocks__/x.ts'],
+    ['app/packages/domain/src/a.test.ts'],
+    ['app/apps/mobile/src/components/Foo.spec.tsx'],
+    ['app/apps/mobile/vitest.setup.ts'],
+    ['app/apps/mobile/copy-voice.baseline.json'],
+    ['app/apps/mobile/README.md'],
+  ]) {
+    assert.equal('maestro' in plan({ ...PR, files }).plan, false, files.join());
+  }
+});
+
+test('one APK-relevant file next to ignored ones still plans the maestro lane', () => {
+  for (const files of [
+    ['app/apps/mobile/public/privacy.html', 'app/apps/mobile/src/i18n/locales/he.json'],
+    ['app/apps/mobile/src/lib/__tests__/x.test.ts', 'app/apps/mobile/src/lib/x.ts'],
+    ['app/apps/mobile/app.config.ts'],
+    ['app/apps/mobile/assets/icon.png'],
+    ['app/packages/ui/src/testing.ts'],
+  ]) {
+    assert.equal(plan({ ...PR, files }).plan.maestro, true, files.join());
+  }
+});
+
 test('the maestro lane fails closed: an undiffable PR plans it, a Dependabot PR (no secrets) does not', () => {
   assert.equal(plan({ ...PR, files: null }).plan.maestro, true);
   assert.equal('maestro' in plan({ ...PR, actor: 'dependabot[bot]', files: ['app/pnpm-lock.yaml'] }).plan, false);
