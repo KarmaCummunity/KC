@@ -153,6 +153,7 @@ jobs:
     if: needs.changes.outputs.release == 'true'
     permissions:
       contents: read
+      actions: read # kc-dev test slot (scripts/kc-dev-slot.mjs)
     uses: ./.github/workflows/ci-release.yml
     # The P0 journeys sign in as the kc-dev seed users; a called workflow gets no secret unless passed.
     secrets:
@@ -210,6 +211,7 @@ jobs:
     if: needs.changes.outputs.maestro == 'true'
     permissions:
       contents: read
+      actions: read # kc-dev test slot (scripts/kc-dev-slot.mjs)
     uses: ./.github/workflows/ci-maestro-android.yml
     secrets:
       E2E_SEED_PASSWORD: ${{ secrets.E2E_SEED_PASSWORD }}

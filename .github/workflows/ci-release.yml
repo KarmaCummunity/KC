@@ -88,7 +88,11 @@ jobs:
   e2e:
     name: dev E2E on the release head
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    # 60 minutes of wait-for-deploy + journeys, plus up to 125 queued for a kc-dev test slot.
+    timeout-minutes: 185
+    permissions:
+      contents: read
+      actions: read # the kc-dev test slot reads which jobs are running
     env:
       DEV_WEB_URL: ${{ vars.DEV_WEB_URL }}
     steps:
@@ -111,6 +115,17 @@ jobs:
         run: |
           npm ci
           npx playwright install --with-deps chromium
+      # kc-dev (Free/Nano) stalls when several suites hit it at once (13/14 Nov 2026), so at
+      # most KC_DEV_TEST_SLOTS suites (default 2) run their tests against it together; the rest
+      # queue here FIFO. Best effort: proceeds after 120 min or on any API error.
+      - name: Wait for a kc-dev test slot
+        timeout-minutes: 125
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          KC_DEV_TEST_SLOTS: ${{ vars.KC_DEV_TEST_SLOTS }}
+        # An older checked-out tree (e.g. mobile-nightly's pinned SHA) has no throttle yet.
+        run: if [ -f scripts/kc-dev-slot.mjs ]; then node scripts/kc-dev-slot.mjs; else echo 'no kc-dev slot script in this tree'; fi
+
       - name: Run P0 journeys
         working-directory: tests/e2e
         env:
