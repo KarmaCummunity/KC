@@ -8,12 +8,22 @@ import { useTranslation } from 'react-i18next';
 import { ActionMenuSheet } from '../ui/ActionMenuSheet';
 import { SheetActionRow } from '../ui/SheetActionRow';
 import { OverflowMenuTrigger } from './OverflowMenuTrigger';
+import { runAfterBottomSheetDismiss } from '../../lib/runAfterBottomSheetDismiss';
+import { useProfileShare, type ProfileShareSubject } from '../../hooks/useProfileShare';
 
-export function MyProfileOverflowMenu({ showFollowRequests }: Readonly<{ showFollowRequests: boolean }>) {
+export function MyProfileOverflowMenu({
+  showFollowRequests,
+  profileShare,
+}: Readonly<{
+  showFollowRequests: boolean;
+  /** The own profile's handle and name; omitted until the profile has loaded. */
+  profileShare?: ProfileShareSubject;
+}>) {
   const router = useRouter();
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const close = () => setOpen(false);
+  const profileShareAction = useProfileShare(profileShare);
 
   const go = (path: string) => {
     close();
@@ -25,6 +35,18 @@ export function MyProfileOverflowMenu({ showFollowRequests }: Readonly<{ showFol
       <OverflowMenuTrigger onPress={() => setOpen(true)} accessibilityLabel={t('profile.myProfileMenuA11y')} />
 
       <ActionMenuSheet visible={open} onDismiss={close} cancelLabel={t('general.cancel')}>
+        {profileShareAction.canShare ? (
+          <SheetActionRow
+            label={t('share.profile.menuItem')}
+            disabled={profileShareAction.busy}
+            testID="my-profile-share"
+            onPress={() => {
+              close();
+              // The OS share sheet cannot present while this sheet is still closing (iOS).
+              runAfterBottomSheetDismiss(() => void profileShareAction.share());
+            }}
+          />
+        ) : null}
         <SheetActionRow label={t('settings.accountDetails')} onPress={() => go('/edit-profile')} />
         <SheetActionRow label={t('settings.notifications')} onPress={() => go('/settings/notifications')} />
         {showFollowRequests ? (

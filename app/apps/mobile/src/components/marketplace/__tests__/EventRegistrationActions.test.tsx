@@ -59,7 +59,7 @@ function event(policy: string, overrides: Partial<MarketplaceListingDetail> = {}
     listingId: 'l_event',
     ownerId: 'u_org',
     worldSlug: 'time',
-    kindSlug: 'org_event',
+    kindSlug: 'event',
     direction: 'give',
     details: { ...FUTURE, registration_policy: policy },
     feedPostId: 'p_event',
@@ -146,7 +146,7 @@ describe('EventRegistrationActions — organizer and guests', () => {
     sessionUserId = 'u_member';
     expect(renderActions(event('automatic', { feedPostId: null })).container.innerHTML).toBe('');
     cleanup();
-    expect(renderActions(event('automatic', { kindSlug: 'volunteer_shift' })).container.innerHTML).toBe('');
+    expect(renderActions(event('automatic', { kindSlug: 'volunteer_offer' })).container.innerHTML).toBe('');
     expect(uc.getMine).not.toHaveBeenCalled();
   });
 });

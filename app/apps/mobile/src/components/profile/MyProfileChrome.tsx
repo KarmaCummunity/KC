@@ -99,7 +99,10 @@ export function MyProfileChrome({ activeTab, onTabChange }: Readonly<MyProfileCh
             style={[styles.profileMenuCorner, profileMenuCornerHorizontalInset()]}
             pointerEvents="box-none"
           >
-            <MyProfileOverflowMenu showFollowRequests={user?.privacyMode === 'Private'} />
+            <MyProfileOverflowMenu
+              showFollowRequests={user?.privacyMode === 'Private'}
+              profileShare={user ? { shareHandle: user.shareHandle, displayName: user.displayName } : undefined}
+            />
           </View>
           <Card padding="base" style={styles.profileCard}>
             {profileLoading ? (

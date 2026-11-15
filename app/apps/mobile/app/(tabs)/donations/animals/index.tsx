@@ -15,7 +15,6 @@ export default function AnimalsWorldScreen() {
         worldSlug="animals"
         icon="paw-outline"
         introKey="donations.worldFeed.animalsIntro"
-        linksCategory="animals"
         subScreens={WORLD_CHROME_BY_SLUG.animals.subScreens}
       />
     </WorldLaunchGateBySlug>

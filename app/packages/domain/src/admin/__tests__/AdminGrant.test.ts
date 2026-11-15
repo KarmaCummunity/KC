@@ -35,19 +35,23 @@ describe('AdminGrant', () => {
     expect(isAdminGrantActive(grant({ revokedAt: new Date('2026-02-01T00:00:00Z') }))).toBe(false);
   });
 
-  it('GRANTABLE_ADMIN_ROLES lists every role except super_admin', () => {
-    expect(GRANTABLE_ADMIN_ROLES).toHaveLength(9);
+  it('GRANTABLE_ADMIN_ROLES lists every role except super_admin and the legacy volunteer', () => {
+    expect(GRANTABLE_ADMIN_ROLES).toHaveLength(12);
     expect(GRANTABLE_ADMIN_ROLES).not.toContain('super_admin');
+    expect(GRANTABLE_ADMIN_ROLES).toEqual(expect.arrayContaining(['admin', 'org_treasurer', 'org_accountant']));
   });
 
-  it('isGrantableAdminRole rejects only super_admin', () => {
+  it('isGrantableAdminRole rejects super_admin and volunteer', () => {
     expect(isGrantableAdminRole('moderator')).toBe(true);
     expect(isGrantableAdminRole('org_volunteer')).toBe(true);
     expect(isGrantableAdminRole('super_admin' as AdminRole)).toBe(false);
+    expect(isGrantableAdminRole('volunteer')).toBe(false);
   });
 
   it('fitsGrantScope: platform roles need no org, org roles need one', () => {
     expect(fitsGrantScope('moderator', null)).toBe(true);
+    expect(fitsGrantScope('admin', null)).toBe(true);
+    expect(fitsGrantScope('org_treasurer', null)).toBe(false);
     expect(fitsGrantScope('moderator', 'org-a')).toBe(false);
     expect(fitsGrantScope('org_manager', 'org-a')).toBe(true);
     expect(fitsGrantScope('operator', null)).toBe(false);

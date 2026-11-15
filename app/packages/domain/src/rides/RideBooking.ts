@@ -2,7 +2,7 @@
 // Spec: docs/spec/05_giving_worlds.md §5.3 step 3 — the driver sees every booking and
 // approves or declines each (D73); unapproved bookings expire (D96). Gap G47.
 // Status moves follow the `ride_booking` kernel machine (fsm/machines/rideBooking.ts, 0694).
-import { canTransition } from '../fsm/machine';
+import { allowsMove, hasEdge } from '../fsm/machine';
 import { rideBookingMachine } from '../fsm/machines/rideBooking';
 
 /** Active booking states on a ride offer. */
@@ -168,17 +168,22 @@ export function canBookRideSeats(
 
 export type RideBookingAction = 'approve' | 'decline' | 'cancel' | 'complete' | 'rate';
 
+/** The two members of a ride booking: the driver (the post owner) and the passenger. */
+export type RideBookingParty = 'owner' | 'recipient';
+
 /**
- * The status each driver action moves a booking to. Two actions share a target, so they also
- * name their only source: approving is the waiting booking's move to confirmed (a cancelled one
- * comes back through reinstate), and declining is the waiting booking's cancel.
+ * The status each action moves a booking to. Two actions share a target, so they also name
+ * their only source: approving is the waiting booking's move to confirmed (a cancelled one
+ * comes back through reinstate), and declining is the waiting booking's cancel. Declining is
+ * the driver's answer (`onlyBy`); a passenger leaving a waiting booking cancels it.
  */
 const ACTION_MOVES: Readonly<Record<Exclude<RideBookingAction, 'rate'>, {
   readonly to: RideBookingListStatus;
   readonly onlyFrom?: RideBookingListStatus;
+  readonly onlyBy?: RideBookingParty;
 }>> = {
   approve: { to: 'confirmed', onlyFrom: 'reserved' },
-  decline: { to: 'cancelled', onlyFrom: 'reserved' },
+  decline: { to: 'cancelled', onlyFrom: 'reserved', onlyBy: 'owner' },
   cancel: { to: 'cancelled' },
   complete: { to: 'handed_over' },
 };
@@ -187,19 +192,26 @@ const ACTION_MOVES: Readonly<Record<Exclude<RideBookingAction, 'rate'>, {
  * Whether the action is permitted on a booking in this status: its move must be an edge of the
  * `ride_booking` machine (a same-status write is not an action). Rating is not a move: a
  * completed booking is rated once.
+ *
+ * `party` is the caller's side when it is known, and the edge must then be theirs: a passenger
+ * cannot complete a booking the driver has not approved (`complete_ride_trip`). Without it the
+ * answer is whether some member may act, for a caller that only holds the status. A status
+ * the app does not know (a newer server) permits nothing.
  */
 export function canPerformBookingAction(
-  status: RideBookingListStatus,
+  status: string,
   action: RideBookingAction,
   ratedByMe = false,
+  party?: RideBookingParty,
 ): boolean {
   if (action === 'rate') return status === 'handed_over' && !ratedByMe;
   const move = ACTION_MOVES[action];
   // An action outside the union (an untyped caller) is never permitted.
   if (move === undefined) return false;
   if (move.onlyFrom !== undefined && status !== move.onlyFrom) return false;
-  const answer = canTransition(rideBookingMachine, status, move.to);
-  return answer.ok && answer.changed;
+  if (party === undefined) return hasEdge(rideBookingMachine, status, move.to);
+  if (move.onlyBy !== undefined && party !== move.onlyBy) return false;
+  return allowsMove(rideBookingMachine, status, move.to, party);
 }
 
 /**

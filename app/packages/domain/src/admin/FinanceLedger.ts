@@ -9,7 +9,7 @@ export const FINANCE_ENTRY_KINDS = [
 ] as const;
 export type FinanceEntryKind = (typeof FINANCE_ENTRY_KINDS)[number];
 
-export const FINANCE_ENTRY_STATUSES = ['pending', 'cleared', 'canceled'] as const;
+export const FINANCE_ENTRY_STATUSES = ['pending', 'cleared', 'cancelled'] as const;
 export type FinanceEntryStatus = (typeof FINANCE_ENTRY_STATUSES)[number];
 
 export type FinanceDirection = 'in' | 'out';
@@ -43,7 +43,6 @@ export interface FinanceEntry {
   readonly counterparty: string | null;
   readonly category: string | null;
   readonly description: string | null;
-  readonly referenceUrl: string | null;
   readonly status: FinanceEntryStatus;
   /** FR-FIN-003: the financial account the money moved through; null for legacy entries. */
   readonly accountId: string | null;
@@ -53,9 +52,16 @@ export interface FinanceEntry {
   readonly updatedAt: Date;
 }
 
+/** Keyset position after an entry: the list is ordered by occurrence time, then id, newest first. */
+export interface FinanceLedgerCursor {
+  readonly occurredAt: Date;
+  readonly entryId: string;
+}
+
 export interface FinanceLedgerPage {
   readonly rows: readonly FinanceEntry[];
-  readonly totalCount: number;
+  /** Where the next page starts; null on the last page. */
+  readonly nextCursor: FinanceLedgerCursor | null;
 }
 
 export interface FinanceSummaryRow {
@@ -80,7 +86,19 @@ export type FinanceLedgerErrorCode =
   | 'invalid_last4'
   | 'invalid_settings'
   | 'org_not_found'
+  /** A void needs the admin's reason, 3 to 500 characters (FR-FIN-005 AC2). */
+  | 'void_reason_required'
   | 'unknown';
+
+/** Shortest and longest reason of a voided entry, after trimming (FR-FIN-005 AC2). */
+export const VOID_REASON_MIN = 3;
+export const VOID_REASON_MAX = 500;
+
+/** Whether `reason` may void an entry: 3 to 500 characters once trimmed. */
+export function isValidVoidReason(reason: string): boolean {
+  const length = reason.trim().length;
+  return length >= VOID_REASON_MIN && length <= VOID_REASON_MAX;
+}
 
 export class FinanceLedgerError extends Error {
   constructor(public readonly code: FinanceLedgerErrorCode, message?: string) {

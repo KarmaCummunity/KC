@@ -137,12 +137,6 @@ describe('isLongRunningRequest', () => {
     expect(isLongRunningRequest('https://x.supabase.co/storage/v1/object/a.jpg')).toBe(true);
     expect(isLongRunningRequest('https://x.supabase.co/functions/v1/fn')).toBe(true);
     expect(isLongRunningRequest('https://x.supabase.co/rest/v1/posts')).toBe(false);
-    expect(isLongRunningRequest('https://x.supabase.co/rest/v1/rpc/admin_seed_demo_data')).toBe(
-      true,
-    );
-    expect(isLongRunningRequest('https://x.supabase.co/rest/v1/rpc/admin_wipe_demo_data')).toBe(
-      true,
-    );
     let seenSignal: AbortSignal | undefined | null;
     const base = (async (_i: RequestInfo | URL, init?: RequestInit) => {
       seenSignal = init?.signal;

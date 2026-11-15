@@ -10,7 +10,7 @@ import { View, ActivityIndicator } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import { makeUseStyles, spacing, useTheme } from '@kc/ui';
-import type { Post } from '@kc/domain';
+import { postOwnerActions, type Post } from '@kc/domain';
 import { isPostError, type PostErrorCode } from '@kc/application';
 import { useClosureStore } from '../../store/closureStore';
 import { getReopenPostUseCase } from '../../services/postsComposition';
@@ -23,6 +23,18 @@ import { ReopenConfirmModal } from './ReopenConfirmModal';
 import { hapticSuccess } from '../../lib/haptics';
 import { trackSocialHandoverCompleted } from '../../lib/trackSocialHandoverCompleted';
 import { PrimaryButton, SecondaryButton } from '../ui/Buttons';
+
+/**
+ * Query-key roots of the sections that read their own cache (not the post) and must be
+ * refreshed after a closure: passengers, guests and handoffs.
+ */
+const CLOSURE_DEPENDENT_QUERY_KEYS = [
+  'ride-bookings',
+  'housing-offer-bookings',
+  'giving-handoff',
+  'giving-handoffs',
+  'marketplace-detail',
+] as const;
 
 interface Props {
   post: Post;
@@ -82,27 +94,27 @@ export function OwnerActionsBar(props: Readonly<Props>) {
     const closedPostId = postRef.current.postId;
     const outcome = useClosureStore.getState().lastOutcome ?? 'closed';
     resetClosure();
-    void (async () => {
-      await queryClient.invalidateQueries({ queryKey: ['feed'] });
-      invalidateMyProfilePostQueries(queryClient, ownerId);
-      await queryClient.invalidateQueries({ queryKey: ['post', closedPostId] });
-      invalidatePersonalStatsCaches(queryClient, ownerId);
-      // The passengers / guests / handoff sections read their own caches, not the post.
-      await queryClient.invalidateQueries({ queryKey: ['ride-bookings'] });
-      await queryClient.invalidateQueries({ queryKey: ['housing-offer-bookings'] });
-      await queryClient.invalidateQueries({ queryKey: ['giving-handoff'] });
-      await queryClient.invalidateQueries({ queryKey: ['giving-handoffs'] });
-      await queryClient.invalidateQueries({ queryKey: ['marketplace-detail'] });
-      await Promise.resolve(onClosed(outcome));
-    })();
+    // Cache refreshes run in the background and in parallel: the owner leaves the screen
+    // right away instead of waiting for seven sequential refetches.
+    void queryClient.invalidateQueries({ queryKey: ['feed'] });
+    invalidateMyProfilePostQueries(queryClient, ownerId);
+    void queryClient.invalidateQueries({ queryKey: ['post', closedPostId] });
+    invalidatePersonalStatsCaches(queryClient, ownerId);
+    // The passengers / guests / handoff sections read their own caches, not the post.
+    for (const queryKey of CLOSURE_DEPENDENT_QUERY_KEYS) {
+      void queryClient.invalidateQueries({ queryKey: [queryKey] });
+    }
+    void onClosed(outcome);
   }, [closureStep, closureInitiator, resetClosure, onClosed, queryClient, ownerId]);
 
-  const isOpen = post.status === 'open';
-  const isReopenable =
-    post.status === 'closed_delivered' ||
-    (post.status === 'deleted_no_recipient' &&
-      post.deleteAfter !== null &&
-      new Date(post.deleteAfter).getTime() > Date.now());
+  // Close and reopen are moves of the post machine; the bar offers what the server accepts.
+  const actions = postOwnerActions(post.status);
+  const isOpen = actions.close;
+  // A deleted post comes back only before its purge time; a delivered one has no deadline.
+  const purgeTimePassed =
+    post.status === 'deleted_no_recipient' &&
+    (post.deleteAfter === null || new Date(post.deleteAfter).getTime() <= Date.now());
+  const isReopenable = actions.reopen && !purgeTimePassed;
 
   if (!isOpen && !isReopenable) {
     // No CTA — post is in a terminal state.
@@ -118,9 +130,10 @@ export function OwnerActionsBar(props: Readonly<Props>) {
     try {
       await getReopenPostUseCase().execute({ postId: post.postId, ownerId });
       setReopenOpen(false);
-      await queryClient.invalidateQueries({ queryKey: ['feed'] });
+      // Background refresh (see the closure effect above): do not block the exit on refetches.
+      void queryClient.invalidateQueries({ queryKey: ['feed'] });
       invalidateMyProfilePostQueries(queryClient, ownerId);
-      await queryClient.invalidateQueries({ queryKey: ['post', post.postId] });
+      void queryClient.invalidateQueries({ queryKey: ['post', post.postId] });
       invalidatePersonalStatsCaches(queryClient, ownerId);
       await Promise.resolve(onReopened());
     } catch (e) {

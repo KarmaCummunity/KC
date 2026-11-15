@@ -20,8 +20,11 @@ export const CHALLENGE_ERROR_CODES = [
   'yes_no_value_invalid',
   'note_too_long',
   'report_date_invalid',
-  // Server-side outcomes surfaced by the RPCs (see migration 0594).
+  // Server-side outcomes surfaced by the RPCs (supabase/schemas/74_challenges).
   'auth_required',
+  'invalid_input',
+  'city_required',
+  'challenge_world_not_configured',
   'challenge_not_found',
   'challenge_not_active',
   'challenge_ended',

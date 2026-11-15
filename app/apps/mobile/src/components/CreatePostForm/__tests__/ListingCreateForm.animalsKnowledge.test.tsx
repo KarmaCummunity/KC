@@ -17,7 +17,7 @@ const mocks = vi.hoisted(() => ({
   createListing: vi.fn(),
   nativeDatePicker: vi.fn(() => null),
   pickListingImages: vi.fn(async () => [] as { uri: string }[]),
-  uploadListingImages: vi.fn(async () => [] as string[]),
+  uploadListingImages: vi.fn(async () => [] as { path: string; mimeType: string; sizeBytes: number }[]),
 }));
 
 vi.mock('react-i18next', () => ({
@@ -27,6 +27,8 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 vi.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
+// The organization membership hint (FR-ORG-002) opens My organizations.
+vi.mock('expo-router', () => ({ useRouter: () => ({ push: vi.fn() }) }));
 vi.mock('@react-native-community/datetimepicker', () => ({
   default: mocks.nativeDatePicker,
   DateTimePickerAndroid: { open: vi.fn() },
@@ -141,7 +143,7 @@ describe('ListingCreateForm — knowledge & animals (#1630, #1625)', () => {
     expect(await screen.findByText('marketplace.errors.offer_photo_required')).toBeTruthy();
     expect(mocks.createListing).not.toHaveBeenCalled();
     mocks.pickListingImages.mockResolvedValueOnce([{ uri: 'file://puppy.jpg' }]);
-    mocks.uploadListingImages.mockResolvedValueOnce(['u1/puppy.jpg']);
+    mocks.uploadListingImages.mockResolvedValueOnce([{ path: 'u1/puppy.jpg', mimeType: 'image/jpeg', sizeBytes: 4096 }]);
     await act(async () => {
       fireEvent.click(screen.getByLabelText('post.addPhoto'));
     });
@@ -155,7 +157,7 @@ describe('ListingCreateForm — knowledge & animals (#1630, #1625)', () => {
         title: 'כלבלב מתוק',
         details: expect.objectContaining({ species: 'dog' }),
         cityId: '7000',
-        mediaPaths: ['u1/puppy.jpg'],
+        media: [{ path: 'u1/puppy.jpg', mimeType: 'image/jpeg', sizeBytes: 4096 }],
       }),
     );
   });

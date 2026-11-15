@@ -114,7 +114,7 @@ export function useCreatePostPublish(args: {
         }),
       );
     },
-    onSuccess: async () => {
+    onSuccess: () => {
       const { ownerId, city, street, streetNumber } = args;
       if (city) {
         useLastAddressStore.getState().setLastAddress({
@@ -130,9 +130,11 @@ export function useCreatePostPublish(args: {
       const funnel = { world: 'items', cityId: city?.id ?? null };
       trackCoreLoop('listing_created', funnel);
       void trackActivationIfFirst({ ...funnel, accountCreatedAt: useAuthStore.getState().session?.accountCreatedAt });
-      await queryClient.invalidateQueries({ queryKey: ['feed'] });
+      // Refresh caches in the background. Awaiting them would keep the form open until every
+      // loaded feed page has been refetched, which is seconds of dead time after a tap.
+      void queryClient.invalidateQueries({ queryKey: ['feed'] });
       invalidateMyProfilePostQueries(queryClient, ownerId);
-      await queryClient.invalidateQueries({ queryKey: ['openPostsCount'] });
+      void queryClient.invalidateQueries({ queryKey: ['openPostsCount'] });
       invalidatePersonalStatsCaches(queryClient, ownerId);
       hapticSuccess();
       useFeedSessionStore.getState().showEphemeralToast(t('post.publishSuccess'), 'success');

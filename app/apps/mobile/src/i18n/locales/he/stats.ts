@@ -31,4 +31,10 @@ export const stats = {
     post_expired: 'הפוסט ״{{title}}״ פג תוקף',
     post_removed_admin: 'הפוסט ״{{title}}״ הוסר על ידי הצוות',
   },
+  // #2078 — volunteering takes place; it is not delivered to a recipient.
+  activityKindTime: {
+    post_closed_delivered: 'סימנת שההתנדבות ״{{title}}״ התקיימה',
+    marked_as_recipient: '{{owner}} סימנו אותך בהתנדבות ״{{title}}״',
+    unmarked_as_recipient: 'הסרת את הסימון שלך מההתנדבות ״{{title}}״',
+  },
 };

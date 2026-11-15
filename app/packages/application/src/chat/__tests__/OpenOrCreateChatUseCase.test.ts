@@ -35,12 +35,6 @@ describe('OpenOrCreateChatUseCase', () => {
     expect(chat.anchorPostId).toBeNull();
   });
 
-  it('rejects both anchorPostId and anchorRideId', async () => {
-    await expect(
-      uc.execute({ viewerId: 'a', otherUserId: 'b', anchorPostId: 'p1', anchorRideId: 'r1' }),
-    ).rejects.toMatchObject({ code: 'both_anchors_forbidden' });
-  });
-
   it('creates a second chat when preferNewThread is true', async () => {
     const first = await uc.execute({ viewerId: 'a', otherUserId: 'b', anchorPostId: 'p1' });
     const second = await uc.execute({

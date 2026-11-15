@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { AdminGrant } from '../AdminGrant';
 import type { AdminRole } from '../AdminRole';
-import { adminRoleRank, groupGrantsByUser } from '../AdminPerson';
+import { ADMIN_ROLE_ORDER, adminRoleRank, groupGrantsByUser } from '../AdminPerson';
 
 function grant(over: Partial<AdminGrant> & Pick<AdminGrant, 'userId' | 'role'>): AdminGrant {
   return {
@@ -28,7 +28,7 @@ describe('adminRoleRank', () => {
 
   it('assigns the lowest rank to an unknown role', () => {
     // @ts-expect-error testing unknown role rank
-    expect(adminRoleRank('unknown_role')).toBe(10);
+    expect(adminRoleRank('unknown_role')).toBe(ADMIN_ROLE_ORDER.length);
   });
 });
 

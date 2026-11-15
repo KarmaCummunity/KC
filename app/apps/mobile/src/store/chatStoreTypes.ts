@@ -1,6 +1,6 @@
 // Shared chat store types — keeps `chatStore.ts` under architecture LOC cap (TD-118).
-import type { Chat, Message, MessageStatus } from '@kc/domain';
-import type { IChatRepository, IChatRealtime, Unsubscribe } from '@kc/application';
+import type { Chat, Message } from '@kc/domain';
+import type { ChatChange, IChatRepository, IChatRealtime, Unsubscribe } from '@kc/application';
 
 export interface OptimisticMessage extends Message {
   clientId: string;
@@ -25,22 +25,15 @@ export interface ChatState {
   reconcileSent(chatId: string, clientId: string, server: Message): void;
   markFailed(chatId: string, clientId: string): void;
   applyIncomingMessage(chatId: string, msg: Message): void;
-  applyStatusChange(
-    chatId: string,
-    patch: {
-      messageId: string;
-      status: MessageStatus;
-      deliveredAt: string | null;
-      readAt: string | null;
-    },
-  ): void;
+  /** A member's read marker advanced: every message sent by someone else up to it is read. */
+  applyReadMarker(chatId: string, marker: { userId: string; lastReadAt: string }): void;
 
   startInboxSub(userId: string, repo: IChatRepository, realtime: IChatRealtime): Promise<void>;
   startThreadSub(
     chatId: string,
     repo: IChatRepository,
     realtime: IChatRealtime,
-    onChatChanged?: (chat: Chat) => void,
+    onChatChanged?: (change: ChatChange) => void,
   ): Promise<void>;
   stopThreadSub(chatId: string): void;
   refreshInbox: (userId: string, repo: IChatRepository) => Promise<void>;

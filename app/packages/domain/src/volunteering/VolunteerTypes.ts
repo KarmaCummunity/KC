@@ -60,8 +60,3 @@ export interface ShiftVolunteerRow {
   readonly waitlistPosition: number | null;
   readonly hoursLogged: number | null;
 }
-
-export interface VolunteerCheckInResult {
-  readonly hoursLogged: number;
-  readonly karmaPoints: number;
-}

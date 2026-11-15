@@ -13,7 +13,15 @@ export const aboutContentCopyA = {
   footerVersion: 'Version 0.1.0',
   footerRights: '© 2026 Karma Community',
   // D71 / S47 — the junctions catalog is CC BY: its source is credited here.
-  footerDataCredit: 'Junction and interchange names: Israel Ministry of Transport, data.gov.il (CC BY)',
+  footerDataCredit:
+    'Junction and interchange names: Ministry of Transport and Road Safety, data.gov.il, licensed under CC BY (https://creativecommons.org/licenses/by/4.0/).',
+  // #2079 — attribution required by the data.gov.il licence, ODbL (OSM) and MIT.
+  footerDataCreditPlaces:
+    'Place and street lists: Population and Immigration Authority, via the Israeli Government Databases portal (data.gov.il), used under the data.gov.il open data licence.',
+  footerDataCreditOsm: '© OpenStreetMap contributors (ODbL 1.0) — openstreetmap.org/copyright',
+  footerDataCreditCoords: 'israel-geolocation, Copyright (c) 2025 akivaschiff, MIT License.',
+  footerDataDisclaimer:
+    'This app is not an official government service and is not endorsed by the State of Israel. The data is provided as is; the official publications prevail over the data shown.',
 
   // Numbers — "the community in numbers" (live + permanent principles)
   numbersTitle: 'The Community in Numbers',

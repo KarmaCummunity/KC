@@ -76,13 +76,14 @@ const followPublic: ContractCase<Ctx> = {
   },
 };
 
-const followTwiceRefused: ContractCase<Ctx> = {
-  name: 'follow: an existing edge is not created twice (already_following; the use case makes retries idempotent)',
+const followTwiceIsIdempotent: ContractCase<Ctx> = {
+  name: 'follow: repeating a follow changes nothing and succeeds (follow_user is idempotent)',
   async run(ctx) {
     const fan = await ctx.newActor();
     const star = await ctx.newActor();
     await fan.users.follow(fan.userId, star.userId);
-    await assertRejectsWithCode(fan.users.follow(fan.userId, star.userId), 'already_following', 'second follow');
+    const again = await fan.users.follow(fan.userId, star.userId);
+    assertEqual(again.followedId, star.userId, 'the second follow answers with the same edge');
     assertSameList(await followerIds(star), [fan.userId], 'still one follower');
   },
 };
@@ -141,23 +142,19 @@ const requestThenApprove: ContractCase<Ctx> = {
 };
 
 const onePendingPerPair: ContractCase<Ctx> = {
-  name: 'follow request: one pending request per pair (pending_request_exists); none once already following (already_following)',
+  name: 'follow request: repeating a request keeps one pending request; asking a followed profile files none',
   async run(ctx) {
     const fan = await ctx.newActor();
     const shy = await ctx.newActor('Private');
     const star = await ctx.newActor();
     await fan.users.sendFollowRequest(fan.userId, shy.userId);
-    await assertRejectsWithCode(
-      fan.users.sendFollowRequest(fan.userId, shy.userId),
-      'pending_request_exists',
-      'second pending request',
-    );
+    const repeated = await fan.users.sendFollowRequest(fan.userId, shy.userId);
+    assertEqual(repeated.status, 'pending', 'the repeated request is still pending');
+    assertSameList(await pendingRequesters(shy), [fan.userId], 'one pending request after asking twice');
     await fan.users.follow(fan.userId, star.userId);
-    await assertRejectsWithCode(
-      fan.users.sendFollowRequest(fan.userId, star.userId),
-      'already_following',
-      'request to a profile already followed',
-    );
+    const followed = await fan.users.sendFollowRequest(fan.userId, star.userId);
+    assertEqual(followed.status, 'accepted', 'a request to a profile already followed is an accepted follow');
+    assertSameList(await pendingRequesters(star), [], 'no pending request for a followed profile');
   },
 };
 
@@ -220,7 +217,7 @@ const followStateRaw: ContractCase<Ctx> = {
 export function followGraphContract(): ContractCase<FollowGraphContractContext>[] {
   return [
     followPublic,
-    followTwiceRefused,
+    followTwiceIsIdempotent,
     noSelfFollow,
     unfollowRemovesEdge,
     privateNeedsApproval,

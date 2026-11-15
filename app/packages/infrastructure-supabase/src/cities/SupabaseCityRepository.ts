@@ -1,11 +1,13 @@
 // ─────────────────────────────────────────────
 // SupabaseCityRepository — adapter for ICityRepository.
-// Reads from `public.cities` (publicly readable per migration 0001 §6.1).
+// Reads from `public.cities` of the baseline (select for every signed-in member; `city_id`,
+// `name_he`, `name_en` — the coordinates are one `location` column the app does not read).
 // ─────────────────────────────────────────────
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { ICityRepository } from '@kc/application';
 import type { City } from '@kc/domain';
+import { unwrapCall } from '../rpc/mapRpcError';
 
 interface Row {
   city_id: string;
@@ -34,12 +36,14 @@ export class SupabaseCityRepository implements ICityRepository {
     for (let page = 0; page < MAX_PAGES; page += 1) {
       const from = page * PAGE_SIZE;
       const to = from + PAGE_SIZE - 1;
-      const { data, error } = await this.client
-        .from('cities')
-        .select('city_id, name_he, name_en')
-        .order('name_he', { ascending: true })
-        .range(from, to);
-      if (error) throw new Error(`listAll cities: ${error.message}`);
+      const data = unwrapCall(
+        'table:cities',
+        await this.client
+          .from('cities')
+          .select('city_id, name_he, name_en')
+          .order('name_he', { ascending: true })
+          .range(from, to),
+      );
       const rows = (data ?? []) as Row[];
       out.push(...rows);
       if (rows.length < PAGE_SIZE) {

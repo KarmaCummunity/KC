@@ -11,6 +11,7 @@ function hierarchyRepo(setManagerError?: Error): IOrgHierarchyRepository {
       if (setManagerError) throw setManagerError;
     }),
     getHierarchyCensus: vi.fn(),
+    setOrgSlug: vi.fn(),
   };
 }
 

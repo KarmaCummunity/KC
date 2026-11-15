@@ -1,0 +1,16 @@
+world_slug,slug,label_he,label_en,sort_order
+items,furniture,רהיטים,Furniture,10
+items,clothing,ביגוד והנעלה,Clothing and shoes,20
+items,books,ספרים,Books,30
+items,toys,צעצועים,Toys,40
+items,baby_gear,ציוד לתינוקות,Baby gear,50
+items,kitchen,כלי מטבח,Kitchen,60
+items,sports,ספורט ופנאי,Sports and leisure,70
+items,electronics,חשמל ואלקטרוניקה,Electronics,80
+items,tools,כלי עבודה,Tools,90
+items,other,אחר,Other,100
+food,cooked_meals,אוכל מבושל,Cooked meals,10
+food,groceries,מצרכים,Groceries,20
+food,produce,פירות וירקות,Fruit and vegetables,30
+food,baked_goods,מאפים,Baked goods,40
+food,other,אחר,Other,50

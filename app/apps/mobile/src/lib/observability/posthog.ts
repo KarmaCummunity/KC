@@ -3,6 +3,7 @@
  * Never identify with email/phone; only opaque user ids when already authenticated.
  */
 import Constants from 'expo-constants';
+import { getAppEnvironment } from '../../config/environment';
 
 const KEY: string | undefined =
   (process.env.EXPO_PUBLIC_POSTHOG_KEY as string | undefined)?.trim() ||
@@ -16,6 +17,7 @@ type PostHogClient = {
   capture: (event: string, properties?: Record<string, unknown>) => void;
   screen: (name: string, properties?: Record<string, unknown>) => Promise<void>;
   identify: (distinctId: string, properties?: Record<string, unknown>) => void;
+  register: (properties: Record<string, unknown>) => void;
   reset: () => void;
 };
 
@@ -39,6 +41,11 @@ export async function initPosthog(): Promise<void> {
       // Capture app lifecycle; screen tracking is opt-in via captureScreen().
       captureAppLifecycleEvents: true,
     }) as unknown as PostHogClient;
+    // Super property so preview/nightly and production events can be
+    // filtered in the single KC PostHog project (free plan = 1 project).
+    // register() overwrites the key on every init, so a device that later
+    // installs a production build does not keep a persisted 'development'.
+    client.register({ environment: getAppEnvironment() });
     initialised = true;
   } catch (err) {
     if (__DEV__) console.warn('[observability] PostHog init failed', err);

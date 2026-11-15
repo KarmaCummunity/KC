@@ -39,6 +39,7 @@ jobs:
           agent:claude|5319E7|Claimed or opened by a Claude Code agent
           found-by-agent|D4C5F9|Opened by an agent from a finding outside its task scope
           needs-triage|FBCA04|Waits for PM triage; agents never pick it from the queue
+          verification|0E8A16|A person verifies merged work (device, store, visual); blocks the release until closed
           size:XS|C2E0C6|Extra small — under an hour
           size:L|C2E0C6|Large — two to three days
           size:XL|C2E0C6|Too large for one PR — split into an epic

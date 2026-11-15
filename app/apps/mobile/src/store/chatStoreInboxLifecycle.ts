@@ -2,13 +2,7 @@
 import type { QueryClient } from '@tanstack/react-query';
 import type { IChatRepository, IChatRealtime } from '@kc/application';
 import type { ChatState } from './chatStoreTypes';
-import {
-  chatInboxQueryKey,
-  readChatInboxSnapshot,
-  upsertChatPreviewInSnapshot,
-  isChatInSnapshot,
-  writeChatInboxSnapshot,
-} from '../lib/chatInboxQuery';
+import { chatInboxQueryKey, readChatInboxSnapshot, writeChatInboxSnapshot } from '../lib/chatInboxQuery';
 import { reduceBumpInboxForIncomingInsert } from './chatStoreInboxBump';
 import { runRefreshInbox } from './chatStoreInboxRefresh';
 import { useActiveScreenStore } from '../lib/notifications/useActiveScreenStore';
@@ -35,16 +29,9 @@ export async function runStartInboxSub(
   const unsub = realtime.subscribeToInbox(
     userId,
     {
-      onChatChanged: (chat) => {
-        const snap = readChatInboxSnapshot(qc, userId);
-        if (!snap) {
-          void qc.invalidateQueries({ queryKey: chatInboxQueryKey(userId) });
-          return;
-        }
-        const isNew = !isChatInSnapshot(snap, chat.chatId);
-        const next = upsertChatPreviewInSnapshot(snap, chat);
-        writeChatInboxSnapshot(qc, userId, next);
-        if (isNew) void qc.invalidateQueries({ queryKey: chatInboxQueryKey(userId) });
+      // The topic carries ids only: refresh the inbox from the server (`chat_inbox_page`).
+      onInboxChanged: () => {
+        void qc.invalidateQueries({ queryKey: chatInboxQueryKey(userId) });
       },
       onUnreadTotalChanged: (total) => {
         api.setState({ unreadTotal: total });

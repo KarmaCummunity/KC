@@ -9,10 +9,11 @@ import { AuthFormScreen } from '../../src/components/auth/AuthFormScreen';
 import { useAuthEmailForm } from '../../src/components/auth/useAuthEmailForm';
 import { GhostButton } from '../../src/components/ui/Buttons';
 import { trackCoreLoop } from '../../src/lib/analyticsCoreLoop';
+import { LaunchSurfaceGate } from '../../src/components/LaunchSurfaceGate';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
 
-export default function SignUpScreen() {
+function SignUpScreenContent() {
   const styles = useStyles();
   const router = useRouter();
   const { t } = useTranslation();
@@ -59,3 +60,12 @@ export default function SignUpScreen() {
 const useStyles = makeUseStyles(({ colors }) => ({
   legal: { ...typography.caption, color: colors.textDisabled, textAlign: 'center' },
 }));
+
+/** Hidden while `emailAuth` is off (first launch): sends the visitor away instead of rendering. */
+export default function SignUpScreen() {
+  return (
+    <LaunchSurfaceGate surface="emailAuth" redirectTo="/(auth)">
+      <SignUpScreenContent />
+    </LaunchSurfaceGate>
+  );
+}

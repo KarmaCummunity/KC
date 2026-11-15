@@ -8,9 +8,9 @@ if [[ -z "${SENTRY_AUTH_TOKEN:-}" ]]; then
   exit 0
 fi
 
-ORG="${SENTRY_ORG:-karma-community}"
-export SENTRY_URL="${SENTRY_URL:-https://de.sentry.io/}"
-PROJECT="${SENTRY_PROJECT:-kc-mobile}"
+ORG="${SENTRY_ORG:-kc-z0}"
+export SENTRY_URL="${SENTRY_URL:-https://us.sentry.io/}"
+PROJECT="${SENTRY_PROJECT:-kc}"
 
 npx --yes @sentry/cli releases --org "$ORG" --project "$PROJECT" \
   files "$EXPO_VERSION" upload-sourcemaps dist || { echo "[sentry] upload failed — non-fatal"; exit 0; }

@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView, type Edge } from 'react-native-safe-area-context';
 import { makeUseStyles, spacing } from '@kc/ui';
+import { resolveKeyboardAvoidingBehavior } from '../../lib/platform/keyboardVerticalOffset';
 import { useKeyboardVerticalOffset } from '../../lib/platform/useKeyboardVerticalOffset';
 import {
   shellTabBarHeightPx,
@@ -83,7 +84,7 @@ export function FormScreen({
     <Root {...rootProps}>
       <KeyboardAvoidingView
         style={styles.fill}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={resolveKeyboardAvoidingBehavior(Platform.OS)}
         keyboardVerticalOffset={keyboardOffset}
       >
         <View style={styles.fill}>

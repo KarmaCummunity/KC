@@ -1,4 +1,4 @@
-import { canBookKnowledgeSlot, type KnowledgeSlot } from '@kc/domain';
+import { canBookKnowledgeSlot, isGivingHandoffLive, type KnowledgeSlot } from '@kc/domain';
 import type { IKnowledgeBookingRepository } from '../ports/IKnowledgeBookingRepository';
 import { KnowledgeBookingError } from './bookingErrors';
 
@@ -22,6 +22,6 @@ export class BookKnowledgeSeatUseCase {
 /** Why `canBookKnowledgeSlot` said no, in the server's order of checks. */
 function refusalOf(slot: KnowledgeSlot, now: Date) {
   if (Date.parse(slot.startsAt) <= now.getTime()) return 'slot_started' as const;
-  if (slot.myStatus === 'reserved' || slot.myStatus === 'confirmed') return 'already_booked' as const;
+  if (isGivingHandoffLive(slot.myStatus)) return 'already_booked' as const;
   return 'slots_exhausted' as const;
 }

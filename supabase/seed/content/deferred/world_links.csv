@@ -1,0 +1,5 @@
+from_world_slug,to_world_slug,link_slug,label_he,label_en,description,is_active
+creative,food,recipe_to_food,מתכון → חלוקת מזון,Recipe to food sharing,,true
+creative,items,instrument_as_item,כלי נגינה כחפץ,Instrument as item,,true
+creative,knowledge,lesson_as_knowledge,שיעור כידע,Lesson as knowledge,,true
+environment,items,garden_tools,כלי גינון,Garden tools (items),,true

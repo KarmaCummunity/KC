@@ -5,16 +5,23 @@ import { useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { container, supabase } from '../lib/container';
 
-export function useNotificationInboxBadge(userId: string | null | undefined): number {
-  const qc = useQueryClient();
-  const key = ['notification-inbox-unread', userId];
-
+/**
+ * The member's unread notifications from the shared query cache, without a realtime
+ * subscription of its own: for a second reader (the app icon badge) next to the bell.
+ */
+export function useUnreadNotificationCount(userId: string | null | undefined): number {
   const query = useQuery({
-    queryKey: key,
+    queryKey: ['notification-inbox-unread', userId],
     queryFn: () => container.notificationInbox.unreadCount(),
     enabled: Boolean(userId),
     retry: false,
   });
+  return userId ? (query.data ?? 0) : 0;
+}
+
+export function useNotificationInboxBadge(userId: string | null | undefined): number {
+  const qc = useQueryClient();
+  const count = useUnreadNotificationCount(userId);
 
   useEffect(() => {
     if (!userId) return;
@@ -34,5 +41,5 @@ export function useNotificationInboxBadge(userId: string | null | undefined): nu
     };
   }, [userId, qc]);
 
-  return userId ? (query.data ?? 0) : 0;
+  return count;
 }

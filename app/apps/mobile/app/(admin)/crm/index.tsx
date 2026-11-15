@@ -1,9 +1,12 @@
 // app/apps/mobile/app/(admin)/crm/index.tsx
-// V2-ADMIN-CRM-8 — V2 §13.9 Admin CRM (minimal contacts tracker).
-// List + search + status filter + per-row edit / delete / "mark contacted".
+// FR-ADMIN-032 — CRM contacts of an organization: the viewer picks one of the organizations
+// whose book they manage (the platform organization first), then searches, filters, pages
+// and edits its contacts.
 import React, { useCallback, useMemo, useState } from 'react';
 import { Alert, Platform, RefreshControl, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useKeysetPages } from '../../../src/hooks/useKeysetPages';
+import { FilterChipRow } from '../../../src/components/filterKit/FilterChipRow';
 import {
   CRM_CONTACT_STATUSES, hasPermission, isCrmContactError,
   type AdminPermission, type AdminRole,
@@ -81,18 +84,25 @@ export default function CrmScreen() {
   const [editing, setEditing] = useState<CrmContact | null>(null);
   const [creating, setCreating] = useState(false);
 
+  const [pickedOrgId, setPickedOrgId] = useState<string | null>(null);
+  const orgs = useQuery({
+    queryKey: ['admin.crm.orgs'],
+    queryFn:  () => container.listCrmOrgs.execute(),
+    enabled:  can('crm.manage'),
+    staleTime: 60_000,
+  });
+  const orgId = pickedOrgId ?? orgs.data?.[0]?.orgId ?? null;
+
   const filters = useMemo(() => ({
+    orgId:  orgId ?? '',
     status: statusFilter === 'all' ? undefined : statusFilter,
     query:  query.trim() || undefined,
-    limit:  100,
-  }), [statusFilter, query]);
+    limit:  50,
+  }), [orgId, statusFilter, query]);
 
-  const list = useQuery({
-    queryKey: ['admin.crm.list', filters],
-    queryFn:  () => container.listCrmContacts.execute(filters),
-    enabled:  can('crm.manage'),
-    staleTime: 15_000,
-  });
+  const list = useKeysetPages<CrmContact, typeof filters>(
+    ['admin.crm.list'], filters, (f) => container.listCrmContacts.execute(f), can('crm.manage') && orgId !== null,
+  );
 
   const remove = useMutation({
     mutationFn: (id: string) => container.deleteCrmContact.execute(id),
@@ -161,7 +171,10 @@ export default function CrmScreen() {
     return <View style={styles.center}><Text style={styles.deniedTitle}>{t.forbiddenTitle}</Text></View>;
   }
 
-  const rows = list.data?.rows ?? [];
+  if (!orgs.isLoading && orgId === null) {
+    return <View style={styles.center}><Text style={styles.deniedTitle}>{t.noOrgsTitle}</Text></View>;
+  }
+  const orgOptions = (orgs.data ?? []).map((org) => ({ value: org.orgId, label: org.name }));
 
   return (
     <View style={styles.root}>
@@ -190,15 +203,26 @@ export default function CrmScreen() {
           />
         )}
       />
-      <Text style={styles.totalLabel}>{t.totalCount(list.data?.totalCount ?? 0)}</Text>
+      {orgOptions.length > 1 && (
+        <FilterChipRow<string>
+          scrollable
+          options={orgOptions}
+          value={orgId}
+          onChange={(id) => { if (id) setPickedOrgId(id); }}
+          contentContainerStyle={styles.orgChips}
+        />
+      )}
+      <Text style={styles.totalLabel}>{t.totalCount(list.totalCount)}</Text>
 
       <KcFlashList
-        data={rows}
+        data={list.rows}
         keyExtractor={crmContactKeyExtractor}
         estimatedItemSize={140}
         renderItem={renderItem}
+        onEndReached={list.fetchMore}
+        onEndReachedThreshold={0.5}
         refreshControl={
-          <RefreshControl refreshing={list.isRefetching} onRefresh={() => { void list.refetch(); }} />
+          <RefreshControl refreshing={list.isRefetching} onRefresh={list.refetch} />
         }
         ListEmptyComponent={
           !list.isLoading ? (
@@ -210,9 +234,10 @@ export default function CrmScreen() {
         }
       />
 
-      {(creating || editing) && (
+      {(creating || editing) && orgId !== null && (
         <ContactFormModal
           initial={editing}
+          orgId={orgId}
           onClose={() => { setCreating(false); setEditing(null); }}
           onSaved={() => {
             setCreating(false);
@@ -229,6 +254,7 @@ const useStyles = makeUseStyles(({ colors }) => ({
   root:        { flex: 1, backgroundColor: colors.background },
   center:      { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl },
   deniedTitle: { ...typography.h3, ...typography.bold },
+  orgChips:    { paddingHorizontal: spacing.base, gap: spacing.sm, paddingBottom: spacing.sm },
   totalLabel:  { paddingHorizontal: spacing.base, paddingBottom: spacing.sm, ...typography.caption, opacity: 0.6 },
   empty:       { padding: spacing['2xl'], alignItems: 'center', gap: spacing.sm },
   emptyTitle:  { ...typography.h3, ...typography.semiBold },

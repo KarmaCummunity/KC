@@ -1,6 +1,7 @@
 // ─────────────────────────────────────────────
 // SupabaseStreetRepository — adapter for IStreetRepository.
-// Reads from `public.streets` (publicly readable per migration 0100).
+// Reads from `public.streets` of the baseline (select for every signed-in member; the
+// coordinates are one `location` column the app does not read).
 //
 // PostgREST `db-max-rows` is 1000 on this project, so a single SELECT cannot
 // return more than 1000 rows. Jerusalem alone has 4,384 streets — without
@@ -11,6 +12,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { IStreetRepository } from '@kc/application';
 import type { Street } from '@kc/domain';
+import { unwrapCall } from '../rpc/mapRpcError';
 
 interface Row {
   city_id: string;
@@ -33,14 +35,16 @@ export class SupabaseStreetRepository implements IStreetRepository {
     for (let page = 0; page < MAX_PAGES; page += 1) {
       const from = page * PAGE_SIZE;
       const to = from + PAGE_SIZE - 1;
-      const { data, error } = await this.client
-        .from('streets')
-        .select('city_id, street_id, name_he')
-        .eq('city_id', cityId)
-        .order('name_he', { ascending: true })
-        .order('street_id', { ascending: true })
-        .range(from, to);
-      if (error) throw new Error(`listByCity streets: ${error.message}`);
+      const data = unwrapCall(
+        'table:streets',
+        await this.client
+          .from('streets')
+          .select('city_id, street_id, name_he')
+          .eq('city_id', cityId)
+          .order('name_he', { ascending: true })
+          .order('street_id', { ascending: true })
+          .range(from, to),
+      );
       const rows = (data ?? []) as Row[];
       out.push(...rows);
       if (rows.length < PAGE_SIZE) {

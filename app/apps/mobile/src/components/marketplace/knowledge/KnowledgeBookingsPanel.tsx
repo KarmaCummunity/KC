@@ -8,7 +8,7 @@ import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { Text } from '@kc/ui';
-import { canCompleteKnowledgeSession, type KnowledgeBooking } from '@kc/domain';
+import { canCompleteKnowledgeSession, givingHandoffActions, isGivingHandoffLive, type KnowledgeBooking } from '@kc/domain';
 import { useAuthStore } from '../../../store/authStore';
 import { givingHandoffUseCases } from '../../../services/givingHandoffComposition';
 import {
@@ -21,6 +21,7 @@ import { HandoffActionButton } from '../HandoffActionButton';
 import { HandoffRatingForm } from '../HandoffRatingForm';
 import { useRideBookingStyles } from '../rides/rideBookingStyles';
 import { useKnowledgeBookingAction } from './useKnowledgeBookingAction';
+import { listOrEmpty } from '../../../lib/backendAvailability';
 
 interface Props {
   readonly listingId: string;
@@ -35,7 +36,7 @@ export function KnowledgeBookingsPanel({ listingId, cityId }: Props) {
   const { busy, run } = useKnowledgeBookingAction(listingId, cityId);
   const bookings = useQuery({
     queryKey: knowledgeBookingsQueryKey(listingId),
-    queryFn: () => knowledgeBookingUseCases.listBookings().execute(listingId),
+    queryFn: () => listOrEmpty(() => knowledgeBookingUseCases.listBookings().execute(listingId)),
   });
 
   return (
@@ -85,7 +86,12 @@ function BookingActions({ booking, busy, run }: { booking: KnowledgeBooking; bus
   const viewerId = useAuthStore((s) => s.session?.userId ?? null);
   const id = booking.handoffId;
 
-  if (booking.status === 'handed_over') {
+  // The giver is the owner of the booking; the handoff graph says what they may do with it.
+  const actions = givingHandoffActions(booking.status, 'owner');
+  // Cancelling a request that still waits for an answer is declining it.
+  const isDecline = actions.confirm;
+
+  if (actions.rate) {
     return (
       <HandoffRatingForm
         busy={busy}
@@ -98,7 +104,7 @@ function BookingActions({ booking, busy, run }: { booking: KnowledgeBooking; bus
       />
     );
   }
-  if (booking.status !== 'reserved' && booking.status !== 'confirmed') return null;
+  if (!isGivingHandoffLive(booking.status)) return null;
 
   // Opens (or creates) the one chat with this learner (D13) to settle the meeting details.
   const openChat = async () => {
@@ -109,45 +115,36 @@ function BookingActions({ booking, busy, run }: { booking: KnowledgeBooking; bus
 
   return (
     <View style={styles.actions}>
-      {booking.status === 'reserved' ? (
-        <>
-          <HandoffActionButton
-            inRow
-            testID={`knowledge-booking-confirm-${id}`}
-            label={t('knowledgeBooking.confirm')}
-            busy={busy}
-            onPress={() => void run(() => knowledgeBookingUseCases.confirm().execute(id), 'match_made')}
-          />
-          <HandoffActionButton
-            inRow
-            secondary
-            testID={`knowledge-booking-decline-${id}`}
-            label={t('knowledgeBooking.decline')}
-            busy={busy}
-            onPress={() => void run(() => knowledgeBookingUseCases.decline().execute(id))}
-          />
-        </>
-      ) : (
-        <>
-          {canCompleteKnowledgeSession(booking) ? (
-            <HandoffActionButton
-              inRow
-              testID={`knowledge-booking-complete-${id}`}
-              label={t('knowledgeBooking.complete')}
-              busy={busy}
-              onPress={() => void run(() => knowledgeBookingUseCases.complete().execute(booking), 'handover_completed')}
-            />
-          ) : null}
-          <HandoffActionButton
-            inRow
-            secondary
-            testID={`knowledge-booking-cancel-${id}`}
-            label={t('knowledgeBooking.cancel')}
-            busy={busy}
-            onPress={() => void run(() => givingHandoffUseCases.cancel().execute(id))}
-          />
-        </>
-      )}
+      {actions.confirm ? (
+        <HandoffActionButton
+          inRow
+          testID={`knowledge-booking-confirm-${id}`}
+          label={t('knowledgeBooking.confirm')}
+          busy={busy}
+          onPress={() => void run(() => knowledgeBookingUseCases.confirm().execute(id), 'match_made')}
+        />
+      ) : null}
+      {canCompleteKnowledgeSession(booking, 'owner') ? (
+        <HandoffActionButton
+          inRow
+          testID={`knowledge-booking-complete-${id}`}
+          label={t('knowledgeBooking.complete')}
+          busy={busy}
+          onPress={() => void run(() => knowledgeBookingUseCases.complete().execute(booking, 'owner'), 'handover_completed')}
+        />
+      ) : null}
+      {actions.cancel ? (
+        <HandoffActionButton
+          inRow
+          secondary
+          testID={`knowledge-booking-${isDecline ? 'decline' : 'cancel'}-${id}`}
+          label={t(isDecline ? 'knowledgeBooking.decline' : 'knowledgeBooking.cancel')}
+          busy={busy}
+          onPress={() =>
+            void run(() => (isDecline ? knowledgeBookingUseCases.decline().execute(id) : givingHandoffUseCases.cancel().execute(id)))
+          }
+        />
+      ) : null}
       <HandoffActionButton
         inRow
         secondary

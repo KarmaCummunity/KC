@@ -1,8 +1,6 @@
 import { assertEquals } from 'https://deno.land/std@0.224.0/assert/mod.ts';
-import { createRerankHandler, isServiceCaller } from './handler.ts';
+import { createRerankHandler } from './handler.ts';
 
-const b64 = (o: unknown) => btoa(JSON.stringify(o)).replace(/=+$/, '');
-const jwt = (role: string) => `${b64({ alg: 'HS256' })}.${b64({ role })}.sig`;
 const req = (token?: string, method = 'POST') =>
   new Request('http://x/match-rerank', { method, headers: token ? { Authorization: `Bearer ${token}` } : {} });
 
@@ -16,7 +14,7 @@ function deps(over: Partial<Parameters<typeof createRerankHandler>[0]> = {}) {
     rpc: (fn: string, args: Record<string, unknown>) => {
       calls.push({ fn, args });
       return Promise.resolve(
-        fn === 'api_match_llm_pending' ? { data: [PAIR], error: null } : { data: true, error: null },
+        fn === 'api_match_llm_pending' ? { data: [PAIR], error: null } : { data: null, error: null }, // the store returns void
       );
     },
     fetchFn: (() => {
@@ -33,10 +31,13 @@ Deno.test('rejects non-service callers and non-POST', async () => {
   const { d } = deps();
   const h = createRerankHandler(d);
   assertEquals((await h(req())).status, 403);
-  assertEquals((await h(req(jwt('authenticated')))).status, 403);
+  assertEquals((await h(req('garbage'))).status, 403);
+  // A well-formed JWT claiming the service role is not the key itself.
+  const forged = `${btoa('{"alg":"HS256"}')}.${btoa('{"role":"service_role"}')}.sig`;
+  assertEquals((await h(req(forged))).status, 403);
   assertEquals((await h(req('svc', 'GET'))).status, 405);
-  assertEquals(isServiceCaller(req(jwt('service_role')), ''), true);
-  assertEquals(isServiceCaller(req('garbage'), 'svc'), false);
+  // A function without a configured key rejects everyone.
+  assertEquals((await createRerankHandler(deps({ serviceKey: '' }).d)(req(''))).status, 403);
 });
 
 Deno.test('no-ops without a Gemini key (no RPC, no fetch)', async () => {
@@ -56,7 +57,7 @@ Deno.test('no-ops when the flag is off (pending is empty)', async () => {
 
 Deno.test('scores pending pairs and stores verdicts', async () => {
   const { d, calls } = deps();
-  const body = await (await createRerankHandler(d)(req(jwt('service_role')))).json();
+  const body = await (await createRerankHandler(d)(req('svc'))).json();
   assertEquals(body, { ok: true, scored: 1, failed: 0, pending: 1 });
   assertEquals(calls[1], { fn: 'api_match_llm_store', args: { p_candidate_id: 'c1', p_score: 0.9, p_reason: 'fits' } });
 });
@@ -66,4 +67,14 @@ Deno.test('reports upstream failure without storing', async () => {
   const res = await createRerankHandler(d)(req('svc'));
   assertEquals(res.status, 502);
   assertEquals(calls.length, 1);
+});
+
+Deno.test('counts a pair the database no longer knows (match_not_found) as failed', async () => {
+  const { d } = deps();
+  d.rpc = (fn: string) =>
+    Promise.resolve(fn === 'api_match_llm_pending'
+      ? { data: [PAIR], error: null }
+      : { data: null, error: { message: 'match_not_found' } });
+  const body = await (await createRerankHandler(d)(req('svc'))).json();
+  assertEquals(body, { ok: false, scored: 0, failed: 1, pending: 1 });
 });

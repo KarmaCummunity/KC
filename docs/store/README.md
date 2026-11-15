@@ -23,7 +23,7 @@ Release mechanics: [docs/agents/RELEASE.md](../agents/RELEASE.md).
 | Android target/compile SDK 36 | ✅ |
 | Versioning: `app/VERSION` + EAS remote build numbers, `autoIncrement` | ✅ |
 | Sign in with Apple (required because Google sign-in is offered, 4.8) | ✅ entitlement on |
-| In-app account deletion (5.1.1(v)) | ✅ Settings → מחק חשבון (needs `delete-account` deployed per env) |
+| In-app account deletion (5.1.1(v)) | ✅ Settings → מחק חשבון: the `request_account_deletion` RPC deactivates the account at once and the `purge-deleted-accounts` worker purges it after the 30-day grace period |
 | Report post / listing / chat / user (1.2) | ✅ |
 | Block user (1.2) | ✅ profile ⋮ menu |
 | Public privacy + terms + support URLs | ✅ on dev; reaches `karma-community-kc.com` only with a dev → main release |
@@ -37,7 +37,6 @@ Release mechanics: [docs/agents/RELEASE.md](../agents/RELEASE.md).
 - **Apple:** App Store Connect app record + `ascAppId` in `eas.json` (`submit.production.ios.ascAppId` is a placeholder), ASC API key (Issuer ID, Key ID, .p8) as EAS / GitHub secrets, Apple Team ID.
 - **Expo:** `EXPO_TOKEN` (EAS build + submit).
 - **Google Play:** Play Console app record, service-account JSON for `eas submit` (`google-play-service-account.json`, never committed — EAS secret), first AAB uploaded manually once (Play requirement).
-- **Prod Edge Functions:** `delete-account` must be deployed to prod too (prod functions workflow is disabled by policy).
 
 ## Decisions Nave must make (business / legal)
 

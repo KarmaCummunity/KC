@@ -1,10 +1,13 @@
 // Hook for fetching community stats on the About screen.
-// Fetches once on mount, then stays fresh via Supabase Realtime — no polling.
+// Fetches on mount, then refreshes on a timer (FR-STATS-004 AC2: about every 60 seconds): the
+// baseline serves the counters from `community_stats()` and has no change feed for them.
 // Mapped to FR-STATS-004.
 
 import { useState, useEffect, useCallback } from 'react';
-import { getSupabaseClient } from '@kc/infrastructure-supabase';
 import { getCommunityStatsSnapshotUseCase } from '../services/postsComposition';
+
+/** How often the counters are read again while the screen is open. */
+export const COMMUNITY_STATS_REFRESH_MS = 60_000;
 
 interface StatsState {
   readonly users: number;
@@ -44,28 +47,10 @@ export function useCommunityStatsAbout(): StatsState & { refetch: () => void } {
   useEffect(() => {
     const guard = { cancelled: false };
     void fetchOnce(guard);
-
-    const supabase = getSupabaseClient();
-    // Unique topic per mount: the client caches channels by topic. After
-    // unsubscribe/removeChannel the cache entry can linger, so a remount
-    // (navigation, StrictMode) would reuse a joined channel and `.on()` throws.
-    // Using crypto.randomUUID() (no cryptographic significance here — uniqueness
-    // is the only requirement — but avoids tripping Math.random security gates).
-    const suffix =
-      globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${performance.now()}`;
-    const topic = `community-stats-watch:${suffix}`;
-    const channel = supabase
-      .channel(topic)
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'community_stats' },
-        () => void fetchOnce(guard),
-      )
-      .subscribe();
-
+    const timer = setInterval(() => void fetchOnce(guard), COMMUNITY_STATS_REFRESH_MS);
     return () => {
       guard.cancelled = true;
-      void supabase.removeChannel(channel);
+      clearInterval(timer);
     };
   }, [fetchOnce]);
 

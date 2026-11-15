@@ -8,6 +8,8 @@ export interface SendMessageInput {
   chatId: string;
   senderId: string;
   body: string;
+  /** Client-generated id of the optimistic message; makes a retry idempotent. */
+  messageId?: string;
 }
 
 export class SendMessageUseCase {
@@ -24,6 +26,6 @@ export class SendMessageUseCase {
         `message_too_long (>${MESSAGE_MAX_CHARS})`,
       );
     }
-    return this.repo.sendMessage(input.chatId, input.senderId, trimmed);
+    return this.repo.sendMessage(input.chatId, input.senderId, trimmed, input.messageId);
   }
 }

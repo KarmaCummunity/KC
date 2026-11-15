@@ -43,6 +43,10 @@ const IGNORE_PATTERNS = [
   /Supabase configuration missing/i,
   /EXPO_PUBLIC_SUPABASE_URL/i,
   /EXPO_PUBLIC_SUPABASE_ANON_KEY/i,
+  // CI builds with a placeholder anon key against a real project URL, so the welcome screen's
+  // public `app_flags` read (launch-surface overrides) answers 401. Only that exact browser
+  // message is ignored; other statuses (404/500) and every JS error still fail the smoke.
+  /Failed to load resource: the server responded with a status of 401\b/i,
 ];
 
 function isNoise(text) {

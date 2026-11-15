@@ -1,7 +1,7 @@
 // Items / food hub: the shared world hub (FR-FEED-020 AC2).
 import React from 'react';
 import { WorldMarketplaceHub } from './WorldMarketplaceHub';
-import { worldSubScreens } from './worldSubScreens';
+import { worldLinksSubScreenLink, worldSubScreens } from './worldSubScreens';
 
 type Props = {
   worldSlug: 'items' | 'food';
@@ -16,7 +16,7 @@ export function WorldGivingHub({ worldSlug, icon, introKey, handoffsPath }: Prop
       worldSlug={worldSlug}
       icon={icon}
       introKey={introKey}
-      subScreens={worldSubScreens(handoffsPath)}
+      subScreens={worldSubScreens(handoffsPath, [worldLinksSubScreenLink(worldSlug)])}
     />
   );
 }

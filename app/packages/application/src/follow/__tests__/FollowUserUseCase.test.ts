@@ -25,13 +25,14 @@ describe('FollowUserUseCase', () => {
     expect(repo.lastFollow).toBeNull();
   });
 
-  it('treats already_following as success (idempotent)', async () => {
+  it('propagates request_required (the profile turned private)', async () => {
     const repo = new FollowFakeUserRepository();
-    repo.followError = new FollowError('already_following', 'already_following');
+    repo.followError = new FollowError('request_required', 'request_required');
     const uc = new FollowUserUseCase(repo);
 
-    const out = await uc.execute({ viewerId: 'u_a', targetUserId: 'u_b' });
-    expect(out.edge.followerId).toBe('u_a');
+    await expect(
+      uc.execute({ viewerId: 'u_a', targetUserId: 'u_b' }),
+    ).rejects.toMatchObject({ code: 'request_required' });
   });
 
   it('propagates blocked_relationship', async () => {

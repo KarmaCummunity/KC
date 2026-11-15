@@ -19,8 +19,9 @@ export function ReportListingModal({ listingId, visible, onClose }: Props) {
       copy={{
         title: t('marketplace.reportTitle'),
         noteLabel: t('post.reportNotePlaceholder'),
+        noteHint: t('moderation.report.noteHint'),
         submitLabel: t('post.reportSubmit'),
-        cancelLabel: t('common.cancel'),
+        cancelLabel: t('general.cancel'),
       }}
       fileReport={(reporterId, reason, note) => container.reportListing.execute({ reporterId, listingId, reason, note })}
     />

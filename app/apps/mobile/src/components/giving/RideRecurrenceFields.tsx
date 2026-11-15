@@ -28,20 +28,24 @@ interface Props {
   /** The departure picked above; its time of day is the series time. */
   readonly departsAt: Date | null;
   readonly disabled?: boolean;
+  /** Another recurring post (an event, FR-POST-024) names its own switch and hint. */
+  readonly toggleLabel?: string;
+  readonly hint?: string;
+  readonly testID?: string;
 }
 
-export function RideRecurrenceFields({ value, onChange, departsAt, disabled }: Props) {
+export function RideRecurrenceFields({ value, onChange, departsAt, disabled, toggleLabel, hint, testID = 'ride-recurrence' }: Props) {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const styles = useStyles();
 
   return (
-    <View style={styles.block} testID="ride-recurrence">
+    <View style={styles.block} testID={testID}>
       <View style={styles.switchRow}>
-        <Text style={styles.label}>{t('rideSeries.toggle')}</Text>
+        <Text style={styles.label}>{toggleLabel ?? t('rideSeries.toggle')}</Text>
         <Switch
-          testID="ride-recurrence-switch"
-          accessibilityLabel={t('rideSeries.toggle')}
+          testID={`${testID}-switch`}
+          accessibilityLabel={toggleLabel ?? t('rideSeries.toggle')}
           value={value !== null}
           disabled={disabled}
           onValueChange={(on) => onChange(on ? initialRecurrenceDraft(departsAt) : null)}
@@ -53,7 +57,7 @@ export function RideRecurrenceFields({ value, onChange, departsAt, disabled }: P
           <RideWeekdayPicker value={value.weekdays} onChange={(weekdays) => onChange({ ...value, weekdays })} disabled={disabled} />
           <RideEndDateField value={value.endsOn} onChange={(endsOn) => onChange({ ...value, endsOn })} disabled={disabled} />
           <Text style={styles.hint}>
-            {departsAt ? t('rideSeries.publishHint', { time: localTimeHHmm(departsAt) }) : t('rideSeries.departureHint')}
+            {hint ?? (departsAt ? t('rideSeries.publishHint', { time: localTimeHHmm(departsAt) }) : t('rideSeries.departureHint'))}
           </Text>
         </>
       ) : null}

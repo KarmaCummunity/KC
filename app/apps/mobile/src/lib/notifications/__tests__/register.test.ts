@@ -13,7 +13,14 @@ vi.mock('expo-device', () => ({
   get isDevice() { return deviceIsDevice.current; },
 }));
 
+const tokenListener = { current: null as (() => void) | null, removed: 0 };
+vi.mock('../channels', () => ({ ensureNotificationChannels: () => Promise.resolve() }));
+
 vi.mock('expo-notifications', () => ({
+  addPushTokenListener: (cb: () => void) => {
+    tokenListener.current = cb;
+    return { remove: () => { tokenListener.removed += 1; } };
+  },
   getPermissionsAsync: () => Promise.resolve({ status: permStatus.current }),
   getExpoPushTokenAsync: () => Promise.resolve({ data: pushToken.current }),
 }));
@@ -26,7 +33,7 @@ vi.mock('expo-constants', () => ({
 
 // react-native is already aliased to react-native-web in mobile vitest config.
 
-import { registerCurrentDeviceIfPermitted, deactivateCurrentDevice } from '../register';
+import { registerCurrentDeviceIfPermitted, deactivateCurrentDevice, watchPushTokenRefresh } from '../register';
 
 function makeDeviceRepo(): {
   registered: DeviceRegistration[];
@@ -123,5 +130,33 @@ describe('deactivateCurrentDevice', () => {
     vi.spyOn(mod, 'getExpoPushTokenAsync').mockRejectedValueOnce(new Error('no token'));
     await expect(deactivateCurrentDevice({ deviceRepo: repo })).resolves.toBeUndefined();
     expect(deactivated).toEqual([]);
+  });
+});
+
+describe('watchPushTokenRefresh', () => {
+  beforeEach(() => {
+    deviceIsDevice.current = true;
+    permStatus.current = 'granted';
+    expoProjectId.current = 'project-123';
+  });
+
+  it('registers the device again when the platform rotates the token, until unsubscribed', async () => {
+    const { repo, registered } = makeDeviceRepo();
+    const stop = watchPushTokenRefresh('u_1', { deviceRepo: repo });
+    pushToken.current = 'ExponentPushToken[rotated]';
+    tokenListener.current?.();
+    await vi.waitFor(() => expect(registered).toHaveLength(1));
+    expect(registered[0]).toEqual({ userId: 'u_1', pushToken: 'ExponentPushToken[rotated]', platform: expect.any(String) });
+    const before = tokenListener.removed;
+    stop();
+    expect(tokenListener.removed).toBe(before + 1);
+  });
+
+  it('does not listen on a simulator', () => {
+    deviceIsDevice.current = false;
+    tokenListener.current = null;
+    const { repo } = makeDeviceRepo();
+    watchPushTokenRefresh('u_1', { deviceRepo: repo })();
+    expect(tokenListener.current).toBeNull();
   });
 });

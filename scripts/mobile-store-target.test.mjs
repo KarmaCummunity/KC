@@ -191,3 +191,33 @@ test('resolveStoreTarget builds an explicit bump SHA on inherited parent certifi
   assert.equal(target.branch, 'dev');
   assert.equal(target.inheritedFrom, PARENT);
 });
+
+test('resolveStoreTarget prefers a certified skip-ci tip over walking back on dispatch without INPUT_REF', async () => {
+  const jobs = { 99: [{ name: 'CI gate', conclusion: 'success' }] };
+  const api = async (path) => {
+    if (path.includes(`head_sha=${BUMP}`)) return { workflow_runs: [] };
+    if (path.includes(`head_sha=${PARENT}`)) {
+      return { workflow_runs: [{ id: 99, event: 'push', conclusion: 'success', head_branch: 'dev' }] };
+    }
+    if (path.includes('/actions/runs/99/jobs')) return { jobs: jobs[99] };
+    if (path.includes(`/commits/${BUMP}`)) return bumpPayload();
+    if (path.includes('/commits?') || path.includes('branch=dev')) {
+      throw new Error(`should not walk back when the tip is a certified bump: ${path}`);
+    }
+    throw new Error(`unexpected ${path}`);
+  };
+  const target = await resolveStoreTarget(
+    {
+      GITHUB_REPOSITORY: 'o/r',
+      GITHUB_TOKEN: 't',
+      EVENT_NAME: 'workflow_dispatch',
+      GITHUB_REF: 'refs/heads/dev',
+      GITHUB_SHA: BUMP,
+      INPUT_REF: '',
+    },
+    api,
+  );
+  assert.equal(target.sha, BUMP);
+  assert.equal(target.inheritedFrom, PARENT);
+  assert.equal(target.resolvedFromGreenWalk, false);
+});

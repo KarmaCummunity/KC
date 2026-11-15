@@ -33,6 +33,8 @@ export interface ReasonNoteSheetProps<T extends string> {
   readonly onReasonChange: (reason: T) => void;
   /** Label of the note field. */
   readonly noteLabel: string;
+  /** Hint rendered inside the empty note box (the label alone left the box blank). */
+  readonly notePlaceholder?: string;
   readonly note: string;
   readonly onNoteChange: (note: string) => void;
   readonly noteMaxLength?: number;
@@ -101,6 +103,7 @@ export function ReasonNoteSheet<T extends string>(props: ReasonNoteSheetProps<T>
       <TextField
         ref={noteField.ref}
         label={props.noteLabel}
+        placeholder={props.notePlaceholder}
         value={props.note}
         onChangeText={props.onNoteChange}
         multiline

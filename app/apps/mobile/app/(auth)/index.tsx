@@ -1,6 +1,5 @@
 // Splash + Welcome / Auth-method picker.
-// Mapped to SRS: FR-AUTH-001 (splash), FR-AUTH-002 (auth entry, all methods),
-// FR-AUTH-014 (guest preview entry point).
+// Mapped to SRS: FR-AUTH-001 (splash), FR-AUTH-002 (auth entry, all methods).
 // docs/spec/requirements/01_auth_and_onboarding.md
 import React, { useEffect, useState } from 'react';
 import { View, TouchableOpacity, Platform, ScrollView, Image, ActivityIndicator } from 'react-native';
@@ -31,6 +30,7 @@ import { NotifyModal } from '../../src/components/NotifyModal';
 import { AmbientBlobs } from '../../src/components/ui/AmbientBlobs';
 import { AuthMiniAboutTeaser } from '../../src/components/auth/AuthMiniAboutTeaser';
 import { AuthLanguageToggle } from '../../src/components/auth/AuthLanguageToggle';
+import { useLaunchSurface } from '../../src/hooks/useLaunchSurface';
 import { useWelcomeScreenStyles } from '../../src/components/auth/welcomeScreen.styles';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
@@ -46,13 +46,13 @@ export default function WelcomeScreen() {
   const { t } = useTranslation();
   const styles = useWelcomeScreenStyles();
   const { colors } = useTheme();
-  const setGuest = useAuthStore((s) => s.setGuest);
   const setSession = useAuthStore((s) => s.setSession);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [googleError, setGoogleError] = useState<string | null>(null);
   const [appleLoading, setAppleLoading] = useState(false);
   const [appleError, setAppleError] = useState<string | null>(null);
   const isExecutingRef = React.useRef(false);
+  const emailAuthVisible = useLaunchSurface('emailAuth');
 
   // ── Animation values ──────────────────────────────────────────────────
   const heroOpacity = useSharedValue(0);
@@ -214,22 +214,17 @@ export default function WelcomeScreen() {
             loading={googleLoading}
             icon={<Text style={styles.googleGLetter}>G</Text>}
           />
-          <TouchableOpacity
-            testID="auth-guest-preview"
-            style={styles.guestBtn}
-            onPress={() => { setGuest(true); router.replace('/(guest)/feed'); }}
-          >
-            <Text style={styles.guestBtnText}>{t('auth.guestPreviewCta')}</Text>
-          </TouchableOpacity>
-          {/* FR-AUTH-001 AC2: the only route to email/password sign-in (and sign-up from there). */}
-          <TouchableOpacity
-            testID="auth-email-entry"
-            style={styles.guestBtn}
-            onPress={() => router.push('/(auth)/sign-in')}
-            accessibilityRole="link"
-          >
-            <Text style={styles.emailEntryText}>{t('auth.continueWithEmail')}</Text>
-          </TouchableOpacity>
+          {/* FR-AUTH-001 AC2: route to email sign-in; hidden in a production first launch (config/launchSurfaces.ts). */}
+          {emailAuthVisible ? (
+            <TouchableOpacity
+              testID="auth-email-entry"
+              style={styles.textLinkBtn}
+              onPress={() => router.push('/(auth)/sign-in')}
+              accessibilityRole="link"
+            >
+              <Text style={styles.emailEntryText}>{t('auth.continueWithEmail')}</Text>
+            </TouchableOpacity>
+          ) : null}
         </Animated.View>
 
         <Animated.View style={[propsStyle, styles.miniAboutWrap]}>

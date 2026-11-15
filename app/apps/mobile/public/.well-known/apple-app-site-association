@@ -2,7 +2,7 @@
   "applinks": {
     "details": [
       {
-        "appID": "REPLACE_WITH_APPLE_TEAM_ID.org.karmacommunity.app",
+        "appID": "HVW3H3DLRB.org.karmacommunity.app",
         "paths": [
           "/auth/verify",
           "/auth/verify*",
@@ -10,9 +10,13 @@
           "/auth/callback*",
           "/post/*",
           "/user/*",
-          "/chat/*"
+          "/chat/*",
+          "/sign-in"
         ]
       }
     ]
+  },
+  "webcredentials": {
+    "apps": ["HVW3H3DLRB.org.karmacommunity.app"]
   }
 }

@@ -54,7 +54,7 @@ Two layers on one world (`docs/spec/18_knowledge_world.md` §18.2): **exchange p
 - AC2. Seed migration: the PRD subject list (`PRD_V2_NOT_FOR_MVP/donation_worlds/07_Knowledge.md` §3) and the existing `categories` subject rows (`tech`, `languages`, `stem`, `professional`, `arts`, `cooking`, `personal_development`, `parenting`) become **topics**, not shelves; the `categories` rows are deactivated (`is_active = false`), never deleted; existing listings keep their `category_id` and gain the matching topic (data migration).
 - AC3. Shelves: `categories` under `knowledge` are exactly the six D100 values (`science_technology`, `history_heritage`, `culture_art`, `spirituality_philosophy`, `rights_legal_aid`, `lessons_mentoring`); the two missing rows are seeded (idempotent, `0535` pattern).
 - AC4. `resolve_knowledge_topics(p_text text) returns setof topic_id`: matches query terms against slugs, labels and aliases (case-insensitive, unaccent, final-letter normalized for Hebrew) and returns the matched topics plus their descendants. Used by search (FR-KNOW-009) and the form's auto-suggest.
-- AC5. Any member may **propose** a topic from the contribute / create form (status `proposed`, used at once); admins (`is_listing_operator`) approve, rename or **merge**. A merge sets `status = merged`, `merged_into_id`, re-points every `knowledge_post_topics` / `knowledge_resource_topics` row, and inserts the old slug as an alias of the target. Links by old slug keep resolving.
+- AC5. Any member may **propose** a topic from the contribute / create form (status `proposed`, used at once); admins (`is_listing_operator`) approve, rename or **merge**. A merge sets `status = merged`, `merged_into_id`, re-points every `knowledge_post_topics` / `knowledge_resource_topics` row, and inserts the old slug as an alias of the target. Links by old slug keep resolving. The status moves on the kernel (machine `knowledge_topic`, migration `knowledge_topic_embedding_job_machines`): `proposed → active`, `proposed → merged`, `active → merged`; `merged` is final and any other move is refused (`illegal_transition`). Tests: `supabase/tests/087_world_content.sql`.
 - AC6. RLS: everyone reads active and proposed topics; only operators write status / merges; a proposer may edit their own proposed topic's labels until approved.
 - AC7. Tests: `supabase/tests/0570_knowledge_topics.sql` — depth cap, cycle rejection, alias resolution with Hebrew final letters, merge re-pointing and alias creation.
 
@@ -122,7 +122,8 @@ Two layers on one world (`docs/spec/18_knowledge_world.md` §18.2): **exchange p
     released before #2034 and books the soonest slot with a free place (removal: #2050). The learner sees upcoming times and
     the times they booked in the last 7 days (`list_knowledge_slots`); the giver sees every booking (`list_knowledge_bookings`).
   - AC3: done, through `karma_award_handoff` (5 per started half hour, the 80-a-day cap counted on the Israel calendar day;
-    learner 5). Either side may mark the session held from 15 minutes before it starts. Volunteering hours wait for G51.
+    learner 5). Either side may mark an approved session held from 15 minutes before it starts; a booking the giver has
+    not answered yet cannot be marked held (the app does not offer it, #2207). Volunteering hours wait for G51.
   - AC4 and the 24 h reminder of AC5: #2039. AC5 otherwise: pushes for a requested, approved, declined, expired or cancelled
     booking and a held session, one per booking.
   - A `mentoring_offer` has no join flow yet; it is arranged in chat (#2051).

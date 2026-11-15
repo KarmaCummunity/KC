@@ -1,7 +1,8 @@
 // Mapped to spec: D127 (docs/spec/90_decisions_log.md) — an expired post is never reopened; its
 // owner republishes it as a NEW post that carries all of its fields except its dates. Pure
 // helpers shared by the post detail's "Republish" action and the create form's republish mode.
-import { ORG_EVENT_KIND_SLUG, type MarketplaceListingDetail, type PostStatus } from '@kc/domain';
+import { ORG_EVENT_KIND_SLUG, postOwnerActions, type MarketplaceListingDetail, type PostStatus } from '@kc/domain';
+import type { MediaAssetInput } from '@kc/application';
 import {
   isCreateCategoryId,
   type CreateCategoryId,
@@ -52,7 +53,7 @@ export interface RepublishablePost {
 
 /** Whether the viewer sees "Republish": only the owner of an expired listing-world post. */
 export function canRepublishListingPost(post: RepublishablePost, viewerId: string | null): boolean {
-  return viewerId !== null && post.ownerId === viewerId && post.status === 'expired' && Boolean(post.listingId);
+  return viewerId !== null && post.ownerId === viewerId && postOwnerActions(post.status).republish && Boolean(post.listingId);
 }
 
 /** The create form route that republishes `listingId` (equal to its post id since 0667). */
@@ -88,8 +89,8 @@ export interface ListingRepublishSeed {
   readonly details: Record<string, unknown>;
   readonly isOrgEvent: boolean;
   readonly orgId: string | null;
-  /** The source's photos, in order; reused as-is (already in the owner's storage folder). */
-  readonly mediaPaths: string[];
+  /** The source's photos, in order, with their recorded type and size; reused as-is (already in the owner's storage folder). */
+  readonly media: MediaAssetInput[];
 }
 
 /** The republish seed of `source` (see ListingRepublishSeed). */
@@ -102,6 +103,10 @@ export function listingRepublishSeed(
     details: rest,
     isOrgEvent: source.kindSlug === ORG_EVENT_KIND_SLUG,
     orgId: typeof orgId === 'string' ? orgId : null,
-    mediaPaths: [...source.media].sort((a, b) => a.sortOrder - b.sortOrder).map((m) => m.storagePath),
+    media: [...source.media]
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      // A file without a recorded size cannot be attached again (`post_media` requires one).
+      .filter((m) => m.sizeBytes > 0)
+      .map((m) => ({ path: m.storagePath, mimeType: m.mimeType, sizeBytes: m.sizeBytes })),
   };
 }

@@ -1,14 +1,17 @@
 // app/packages/domain/src/admin/GrantAuthority.ts
 // FR-ADMIN-030 — who may grant, change, revoke or re-parent which grant.
 //
-// Mirrors the database's authority rules so the portal only offers actions the
-// server will accept:
-//   • can_grant_role  (migrations 0173 + 0442): the role matrix of FR-ADMIN-016
-//     AND a role strictly junior to the viewer's most senior grant in scope;
-//   • can_manage_grant (0442, FR-ADMIN-027): the viewer holds a grant that is an
-//     ancestor of the target in the reporting tree and strictly more senior;
-//   • admin_set_manager (0442): the new manager is the viewer or inside the
-//     viewer's subtree, strictly senior to the target; only super_admin detaches.
+// Mirrors the database's authority rules (60_moderation/020_admin_role_rpcs.sql and
+// migration 0011) so the portal only offers actions the server will accept:
+//   • admin_granting_grant: one of the viewer's grants lists the role as grantable, the
+//     role is strictly junior to that grant, and the grant is a platform grant or sits in
+//     the target organization;
+//   • admin_can_manage_grant (FR-ADMIN-027): the super admin manages every grant but the
+//     super admin grant, their own included; anyone else a grant of someone else below a
+//     more senior grant of theirs;
+//   • revoke and change also need the right to grant the grant's role in its scope;
+//   • admin_set_manager: the new manager is the viewer or inside the viewer's subtree and
+//     strictly senior to the target; only the super admin detaches or skips those rules.
 // The server stays the authority and re-checks every call.
 //
 // Pure domain logic — no I/O, fully unit-tested.
@@ -41,41 +44,49 @@ export interface ViewerAuthority {
   readonly managerOf: ReadonlyMap<string, string | null>;
 }
 
-/** Seniority of each role, as `role_rank` (migration 0442). Higher = more senior. */
+/** Seniority of each role, as `kc_private.admin_roles.rank`. Higher = more senior. */
 const ROLE_RANK: Readonly<Record<AdminRole, number>> = {
   super_admin:       100,
+  admin:             90,
   org_admin:         80,
   org_manager:       70,
   moderator:         60,
   operators_manager: 60,
   volunteer_manager: 60,
+  org_treasurer:     60,
   support:           50,
   org_employee:      40,
   operator:          40,
+  org_accountant:    35,
   org_volunteer:     30,
+  volunteer:         20,
 };
 
-/** The org team below an org admin or org manager (FR-ADMIN-016 matrix). */
+/** The organization team below an org admin (FR-ADMIN-016 matrix, FR-FIN-002). */
 const ORG_TEAM_ROLES: readonly GrantableAdminRole[] = [
-  'org_manager', 'operators_manager', 'volunteer_manager',
-  'org_employee', 'org_volunteer', 'operator',
+  'org_manager', 'operators_manager', 'volunteer_manager', 'org_employee',
+  'operator', 'org_volunteer', 'org_treasurer', 'org_accountant',
 ];
 
 /**
- * Roles an org-scoped grant may hand out inside its own org. Exhaustive by
- * type, so a new role fails compilation until its authority is decided.
+ * Roles a grant of each role may hand out (`kc_private.admin_roles.grantable_roles`).
+ * Exhaustive by type, so a new role fails compilation until its authority is decided.
  */
-const GRANTS_WITHIN_ORG: Readonly<Record<AdminRole, readonly GrantableAdminRole[]>> = {
-  super_admin:       [],
-  moderator:         [],
-  support:           [],
+const GRANTABLE_BY: Readonly<Record<AdminRole, readonly GrantableAdminRole[]>> = {
+  super_admin:       ['admin', 'moderator', 'support', 'org_admin', ...ORG_TEAM_ROLES],
+  admin:             ['moderator', 'support', 'org_admin', ...ORG_TEAM_ROLES],
   org_admin:         ORG_TEAM_ROLES,
-  org_manager:       ORG_TEAM_ROLES,
-  volunteer_manager: ['volunteer_manager', 'org_volunteer'],
+  org_manager:       ['operators_manager', 'volunteer_manager', 'org_employee', 'operator', 'org_volunteer'],
+  moderator:         [],
   operators_manager: ['operator'],
+  volunteer_manager: ['org_volunteer'],
+  org_treasurer:     ['org_accountant'],
+  support:           [],
   org_employee:      [],
   operator:          [],
+  org_accountant:    [],
   org_volunteer:     [],
+  volunteer:         [],
 };
 
 export function roleRank(role: AdminRole): number {
@@ -86,18 +97,16 @@ function isPlatformSuperAdmin(grant: AuthorityGrant): boolean {
   return grant.role === 'super_admin' && grant.scopeOrgId === null;
 }
 
-/** The viewer's most senior rank that applies in `scopeOrgId` (`actor_scope_rank`). */
-function scopeRank(viewer: readonly AuthorityGrant[], scopeOrgId: string | null): number {
-  return viewer
-    .filter((g) => g.scopeOrgId === scopeOrgId || isPlatformSuperAdmin(g))
-    .reduce((top, g) => Math.max(top, ROLE_RANK[g.role]), 0);
+/** Whether one grant entitles its holder to hand out `role` in `scopeOrgId`. */
+function grantAllows(grant: AuthorityGrant, role: GrantableAdminRole, scopeOrgId: string | null): boolean {
+  return GRANTABLE_BY[grant.role].includes(role)
+    && ROLE_RANK[role] < ROLE_RANK[grant.role]
+    && (grant.scopeOrgId === null || grant.scopeOrgId === scopeOrgId);
 }
 
 /**
- * Whether the viewer may grant `role` in `scopeOrgId` (null = platform). The
- * scope must fit the role and super_admin is never grantable; the platform
- * super_admin may grant anything else anywhere; an org grant may grant only
- * its own team roles, inside its own org, strictly junior to the viewer.
+ * Whether the viewer may grant `role` in `scopeOrgId` (null = platform): the scope fits
+ * the role and one of the viewer's grants allows it (`admin_granting_grant`).
  */
 export function canGrantRole(
   viewer: readonly AuthorityGrant[],
@@ -105,9 +114,7 @@ export function canGrantRole(
   scopeOrgId: string | null,
 ): boolean {
   if (!isGrantableAdminRole(role) || !fitsGrantScope(role, scopeOrgId)) return false;
-  if (viewer.some(isPlatformSuperAdmin)) return true;
-  if (scopeOrgId === null || ROLE_RANK[role] >= scopeRank(viewer, scopeOrgId)) return false;
-  return viewer.some((g) => g.scopeOrgId === scopeOrgId && GRANTS_WITHIN_ORG[g.role].includes(role));
+  return viewer.some((g) => grantAllows(g, role, scopeOrgId));
 }
 
 /** Roles the viewer may grant in `scopeOrgId`, highest authority first. */
@@ -118,7 +125,7 @@ export function grantableRolesIn(
   return GRANTABLE_ADMIN_ROLES.filter((role) => canGrantRole(viewer, role, scopeOrgId));
 }
 
-/** Whether `ancestorId` sits above `nodeId` in the reporting tree (`is_ancestor`). */
+/** Whether `ancestorId` sits above `nodeId` in the reporting tree (`admin_grant_is_above`). */
 export function isAncestorGrant(
   ancestorId: string,
   nodeId: string,
@@ -134,17 +141,16 @@ export function isAncestorGrant(
 }
 
 /**
- * Whether the viewer manages `target` by position (`can_manage_grant`): the
- * platform super_admin always; anyone else through one of their own grants
- * that is an ancestor of the target and strictly more senior. Nobody manages
- * their own grants.
+ * Whether the viewer manages `target` by position (`admin_can_manage_grant`): through a
+ * grant of theirs that is strictly more senior and is either the platform super admin
+ * grant (which reaches the viewer's own grants too) or an ancestor of a grant of someone
+ * else. The super admin grant itself is never managed: nothing outranks it.
  */
 export function canManageGrant(viewer: ViewerAuthority, target: PositionedGrant): boolean {
-  if (viewer.grants.some(isPlatformSuperAdmin)) return true;
-  if (target.userId === viewer.userId) return false;
   return viewer.grants.some((g) =>
     ROLE_RANK[g.role] > ROLE_RANK[target.role]
-    && isAncestorGrant(g.grantId, target.grantId, viewer.managerOf));
+    && (isPlatformSuperAdmin(g)
+      || (target.userId !== viewer.userId && isAncestorGrant(g.grantId, target.grantId, viewer.managerOf))));
 }
 
 /** Revoke authority (`admin_revoke_role`): manage the grant and grant its role there. */

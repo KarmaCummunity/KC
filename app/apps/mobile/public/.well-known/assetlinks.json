@@ -1,10 +1,15 @@
 [
   {
-    "relation": ["delegate_permission/common.handle_all_urls"],
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
     "target": {
       "namespace": "android_app",
       "package_name": "org.karmacommunity.app",
-      "sha256_cert_fingerprints": ["REPLACE_WITH_ANDROID_RELEASE_SHA256"]
+      "sha256_cert_fingerprints": [
+        "FA:D0:06:B5:81:13:EF:36:A0:03:38:F7:7B:81:75:1F:45:32:E6:F9:EB:27:E7:6D:DF:A1:35:78:F1:C8:D4:16",
+        "F5:37:49:60:65:A3:3B:5D:11:8A:D2:50:18:9B:71:D4:D9:86:55:56:FB:54:D9:F9:38:23:1D:64:19:1B:B9:80"
+      ]
     }
   }
 ]

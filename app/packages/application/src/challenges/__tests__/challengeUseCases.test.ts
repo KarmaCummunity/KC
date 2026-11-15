@@ -20,7 +20,7 @@ const progressResult = {
 function makeRepo(): IChallengeRepository {
   return {
     createChallenge: vi.fn(async () => 'challenge-1'),
-    listChallenges: vi.fn(async () => []),
+    listChallenges: vi.fn(async () => ({ challenges: [], nextCursor: null })),
     getChallenge: vi.fn(async () => null),
     joinChallenge: vi.fn(async () => undefined),
     leaveChallenge: vi.fn(async () => undefined),
@@ -87,7 +87,7 @@ describe('ReportChallengeProgressUseCase', () => {
 describe('ListChallengesUseCase', () => {
   it('forwards the view and paging to the repository', async () => {
     const repo = makeRepo();
-    await new ListChallengesUseCase(repo).execute('joined', 20, 40);
-    expect(repo.listChallenges).toHaveBeenCalledWith('joined', 20, 40);
+    await new ListChallengesUseCase(repo).execute('joined', 'cursor-1', 20);
+    expect(repo.listChallenges).toHaveBeenCalledWith('joined', 'cursor-1', 20);
   });
 });

@@ -10,6 +10,7 @@ import { makeUseStyles, spacing, radius, typography, Text } from '@kc/ui';
 import type { VerifiedNonprofitRow } from '@kc/domain';
 import { paymentsUseCases } from '../../services/paymentsComposition';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { listOrEmpty } from '../../lib/backendAvailability';
 
 const useStyles = makeUseStyles(({ colors }) => ({
   section: { gap: spacing.sm },
@@ -47,7 +48,7 @@ export function VerifiedNonprofitsSection() {
   const styles = useStyles();
   const nonprofits = useQuery({
     queryKey: ['money', 'nonprofits'],
-    queryFn: () => paymentsUseCases.listNonprofits().execute(50),
+    queryFn: () => listOrEmpty(() => paymentsUseCases.listNonprofits().execute(50)),
     staleTime: 60_000,
   });
   const rows = nonprofits.data ?? [];

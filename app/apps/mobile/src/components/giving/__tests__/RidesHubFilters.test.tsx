@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 // #1626 — the rides hub filters around the feed: the route search is a collapsed filter on top
-// (naming the chosen route, with "clear"), and the community links sit collapsed at the bottom.
+// (naming the chosen route, with "clear").
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import React from 'react';
 import { cleanup, fireEvent, render } from '@testing-library/react';
@@ -30,14 +30,8 @@ vi.mock('../../../store/authStore', () => ({
 vi.mock('../RidePlaceField', () => ({ RidePlaceField: (p: { label: string }) => <div data-testid={`place-${p.label}`} /> }));
 vi.mock('../RideRouteFollow', () => ({ RideRouteFollow: () => <div data-testid="route-follow" /> }));
 vi.mock('../SavedRideRoutesList', () => ({ SavedRideRoutesList: () => null }));
-vi.mock('../../DonationLinksList', () => ({
-  DonationLinksList: (p: { showTitle?: boolean }) => (
-    <div data-testid="links-list" data-title={String(p.showTitle ?? true)} />
-  ),
-}));
 
 import { RideRouteFilter } from '../RideRouteFilter';
-import { WorldLinksSection } from '../WorldLinksSection';
 
 afterEach(() => {
   cleanup();
@@ -79,20 +73,5 @@ describe('RideRouteFilter', () => {
     expect(view.getByTestId('rides-route-filter-toggle').textContent).toBe('rideFeed.routeFilterActive:Lod>Haifa');
     fireEvent.click(view.getByTestId('rides-route-filter-clear'));
     expect(filter.clearRoute).toHaveBeenCalledTimes(1);
-  });
-});
-
-describe('WorldLinksSection', () => {
-  it('shows the titled list as before when not collapsible', () => {
-    const view = withTheme(<WorldLinksSection categorySlug="transport" />);
-    expect(view.getByTestId('links-list').getAttribute('data-title')).toBe('true');
-    expect(view.queryByTestId('world-links-toggle')).toBeNull();
-  });
-
-  it('starts collapsed when collapsible and opens the list under its own title', () => {
-    const view = withTheme(<WorldLinksSection categorySlug="transport" collapsible />);
-    expect(view.queryByTestId('links-list')).toBeNull();
-    fireEvent.click(view.getByTestId('world-links-toggle'));
-    expect(view.getByTestId('links-list').getAttribute('data-title')).toBe('false');
   });
 });

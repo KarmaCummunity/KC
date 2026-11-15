@@ -15,6 +15,12 @@
 //              /<name>.html, and not as the SPA fallback (index.html), which
 //              renders the Expo Router "Unmatched Route" screen. Catches a
 //              deploy that is missing a page the store listings depend on.
+//   applinks   /.well-known/apple-app-site-association and assetlinks.json answer
+//              200 directly (no redirect: Apple and Google do not follow one),
+//              as application/json, with the same JSON as the checkout.
+//   sharedlinks  a link-preview crawler asking for /post/<id> and /user/<handle> is answered with
+//              an Open Graph card (the Pages function is deployed and boots), while a desktop
+//              browser still gets the SPA (FR-POST-023).
 //   supabase   Auth health (/auth/v1/health) answers 200 with the anon key.
 //   functions  every Edge Function with a probe in scripts/edge-functions.mjs
 //              (SMOKE_PROBES) answers one OPTIONS request with exactly the
@@ -27,13 +33,19 @@
 // Env: SMOKE_WEB_URL, SMOKE_SHA (empty = skip the SHA match, used after a
 // rollback with no earlier release tag), SMOKE_CHECKS (comma list, default
 // all), SMOKE_TIMEOUT_SECONDS (default 600), SUPABASE_URL, SUPABASE_ANON_KEY.
+// SMOKE_ACCEPT_VERSION_BUMP=1 (+ GITHUB_TOKEN, GITHUB_REPOSITORY): the version
+// check also accepts a build of SMOKE_SHA's `[skip ci]` version-bump child. The
+// release lane needs it: dev deploys the bump tip (bump-version-on-merge.yml),
+// and a `[skip ci]` head never re-runs the release PR's CI, so the PR's CI head
+// is the bump's parent.
 
+import assert from 'node:assert/strict';
 import { appendFileSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { SMOKE_PROBES, listDeployableFunctions } from './edge-functions.mjs';
 
-export const ALL_CHECKS = ['version', 'web', 'pages', 'supabase', 'functions'];
+export const ALL_CHECKS = ['version', 'web', 'pages', 'applinks', 'sharedlinks', 'supabase', 'functions'];
 const PUBLIC_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'app', 'apps', 'mobile', 'public');
 const FIRST_DELAY_MS = 5_000;
 const MAX_DELAY_MS = 30_000;
@@ -60,11 +72,29 @@ export function parseVersion(body) {
 }
 
 /**
+ * True when `commit` (a GitHub REST commit object) is only the post-merge
+ * version bump on top of `sha`: one parent `sha`, the bump message, and
+ * app/VERSION as its only changed file.
+ */
+export function isVersionBumpOf(commit, sha) {
+  const parents = commit?.parents ?? [];
+  const files = commit?.files ?? [];
+  return (
+    parents.length === 1 &&
+    parents[0].sha === sha &&
+    /^chore\(release\): bump app version to \S+ \[skip ci\]/.test(commit?.commit?.message ?? '') &&
+    files.length === 1 &&
+    files[0].filename === 'app/VERSION'
+  );
+}
+
+/**
  * Poll `${webUrl}/version.json` until it reports `sha` (any well-formed file
  * when `sha` is empty). Delays double from 5 s up to 30 s; gives up after
  * `timeoutMs`. The query string defeats any cache between us and the origin.
+ * With `isBumpOf`, a build of `sha`'s version-bump child also passes.
  */
-export async function waitForVersion({ webUrl, sha, timeoutMs, fetch, sleep, now }) {
+export async function waitForVersion({ webUrl, sha, timeoutMs, fetch, sleep, now, isBumpOf }) {
   const deadline = now() + timeoutMs;
   let delay = FIRST_DELAY_MS;
   let last = 'no response';
@@ -73,6 +103,9 @@ export async function waitForVersion({ webUrl, sha, timeoutMs, fetch, sleep, now
       const res = await request(fetch, `${webUrl}/version.json?smoke=${now()}`, { cache: 'no-store' });
       const found = res.ok ? parseVersion(await res.text()) : null;
       if (found && (!sha || found.sha === sha)) return { ok: true, detail: `v${found.version} @ ${found.sha} (attempt ${attempt})` };
+      if (found && sha && isBumpOf && (await isBumpOf(found.sha, sha))) {
+        return { ok: true, detail: `v${found.version} @ ${found.sha}, the version bump of ${sha} (attempt ${attempt})` };
+      }
       last = found ? `serving ${found.sha}` : `HTTP ${res.status}, no version.json yet`;
     } catch (err) {
       last = err.message;
@@ -147,6 +180,58 @@ export async function checkPages({ webUrl, fetch, pages = listPublicPages() }) {
   return bad.length ? { ok: false, detail: bad.join('; ') } : { ok: true, detail: `${pages.length} pages × 2 URLs serve their own page` };
 }
 
+const WELL_KNOWN = ['apple-app-site-association', 'assetlinks.json'];
+
+/**
+ * Universal/app-link manifests as served: Apple and Google fetch them without
+ * following redirects and require JSON, and the body must be the deployed
+ * commit's file (a stale or placeholder manifest silently breaks app links).
+ */
+export async function checkAppLinks({ webUrl, fetch, readSource = (name) => readFileSync(join(PUBLIC_DIR, '.well-known', name), 'utf8') }) {
+  const bad = [];
+  for (const name of WELL_KNOWN) {
+    const url = `${webUrl}/.well-known/${name}`;
+    const res = await request(fetch, url, { redirect: 'manual', cache: 'no-store' });
+    if (res.status !== 200) {
+      bad.push(`${name} → HTTP ${res.status}${res.status >= 300 && res.status < 400 ? ' (redirect; must be served directly)' : ''}`);
+      continue;
+    }
+    const type = res.headers?.get?.('content-type') ?? '';
+    if (!/^application\/json\b/i.test(type)) bad.push(`${name} content-type is "${type || 'missing'}", expected application/json`);
+    try {
+      assert.deepEqual(JSON.parse(await res.text()), JSON.parse(readSource(name)));
+    } catch {
+      bad.push(`${name} body differs from the checkout (or is not JSON)`);
+    }
+  }
+  return bad.length ? { ok: false, detail: bad.join('; ') } : { ok: true, detail: `${WELL_KNOWN.length} manifests: 200, application/json, no redirect, match the checkout` };
+}
+
+const CRAWLER_UA = 'WhatsApp/2.23.20.0';
+const BROWSER_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0 Safari/537.36';
+/** A well-formed id nobody owns: the function must still answer a crawler with the generic card. */
+const SHARED_LINK_PATHS = ['/post/00000000-0000-4000-8000-000000000000', '/user/kc-smoke'];
+
+/**
+ * Shared links (FR-POST-023): the Pages function answers a preview crawler with an Open Graph
+ * card and leaves every other visitor on the SPA. A deploy that dropped the function would hand
+ * crawlers the plain SPA shell, i.e. a WhatsApp preview with no title or image.
+ */
+export async function checkSharedLinks({ webUrl, fetch }) {
+  const bad = [];
+  for (const path of SHARED_LINK_PATHS) {
+    const asCrawler = await request(fetch, `${webUrl}${path}`, { redirect: 'manual', headers: { 'user-agent': CRAWLER_UA } });
+    const card = asCrawler.status === 200 ? await asCrawler.text() : '';
+    if (asCrawler.status !== 200) bad.push(`${path} as a crawler → HTTP ${asCrawler.status}`);
+    else if (!/property="og:title"/.test(card) || !/property="og:image"/.test(card)) bad.push(`${path} as a crawler has no Open Graph card`);
+    const asBrowser = await request(fetch, `${webUrl}${path}`, { redirect: 'manual', headers: { 'user-agent': BROWSER_UA } });
+    const page = asBrowser.status === 200 ? await asBrowser.text() : '';
+    if (asBrowser.status !== 200) bad.push(`${path} as a browser → HTTP ${asBrowser.status}`);
+    else if (/property="og:title"/.test(page)) bad.push(`${path} as a browser is served the crawler card instead of the app`);
+  }
+  return bad.length ? { ok: false, detail: bad.join('; ') } : { ok: true, detail: `${SHARED_LINK_PATHS.length} links: crawler gets the card, browser gets the app` };
+}
+
 /** Supabase Auth health with the public anon key: proves URL, key and project are live. */
 export async function checkSupabase({ supabaseUrl, anonKey, fetch }) {
   const res = await request(fetch, `${supabaseUrl}/auth/v1/health`, { headers: { apikey: anonKey } });
@@ -189,6 +274,8 @@ export async function runSmoke(opts) {
     version: () => waitForVersion(opts),
     web: () => checkWeb(opts),
     pages: () => checkPages(opts),
+    applinks: () => checkAppLinks(opts),
+    sharedlinks: () => checkSharedLinks(opts),
     supabase: () => checkSupabase(opts),
     functions: () => checkFunctions(opts),
   };
@@ -224,6 +311,7 @@ export function optionsFromEnv(env) {
     webUrl: need('SMOKE_WEB_URL'),
     sha: env.SMOKE_SHA ?? '',
     timeoutMs: Number(env.SMOKE_TIMEOUT_SECONDS || 600) * 1000,
+    acceptVersionBump: env.SMOKE_ACCEPT_VERSION_BUMP === '1' ? { token: need('GITHUB_TOKEN'), repo: need('GITHUB_REPOSITORY') } : null,
     supabaseUrl: needsSupabase ? need('SUPABASE_URL') : '',
     anonKey: needsSupabase ? need('SUPABASE_ANON_KEY') : '',
     probes: Object.fromEntries(listDeployableFunctions().map((n) => [n, SMOKE_PROBES[n]])),
@@ -232,8 +320,18 @@ export function optionsFromEnv(env) {
 
 async function main() {
   const opts = optionsFromEnv(process.env);
+  const bump = opts.acceptVersionBump;
+  const isBumpOf = bump
+    ? async (foundSha, sha) => {
+        const res = await request(globalThis.fetch, `https://api.github.com/repos/${bump.repo}/commits/${foundSha}`, {
+          headers: { Authorization: `Bearer ${bump.token}`, Accept: 'application/vnd.github+json' },
+        });
+        return res.ok && isVersionBumpOf(await res.json(), sha);
+      }
+    : undefined;
   const results = await runSmoke({
     ...opts,
+    isBumpOf,
     fetch: globalThis.fetch,
     sleep: (ms) => new Promise((r) => setTimeout(r, ms)),
     now: Date.now,

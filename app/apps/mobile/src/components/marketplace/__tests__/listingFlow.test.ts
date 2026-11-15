@@ -27,12 +27,12 @@ describe('listingFlowHasViewerAction', () => {
 
   // G1 step 5: an organization's event (a time-world kind) registers its viewers.
   it('offers registration on an organization event to a signed-in non-owner only', () => {
-    expect(listingFlowHasViewerAction(give('time', 'org_event'), 'u_viewer')).toBe(true);
-    expect(listingFlowHasViewerAction(give('time', 'org_event'), 'u_owner')).toBe(false);
-    expect(listingFlowHasViewerAction(give('time', 'org_event'), null)).toBe(false);
+    expect(listingFlowHasViewerAction(give('time', 'event'), 'u_viewer')).toBe(true);
+    expect(listingFlowHasViewerAction(give('time', 'event'), 'u_owner')).toBe(false);
+    expect(listingFlowHasViewerAction(give('time', 'event'), null)).toBe(false);
   });
 
   it('offers no registration on an event that has no post yet (awaiting moderation)', () => {
-    expect(listingFlowHasViewerAction(give('time', 'org_event', null), 'u_viewer')).toBe(false);
+    expect(listingFlowHasViewerAction(give('time', 'event', null), 'u_viewer')).toBe(false);
   });
 });

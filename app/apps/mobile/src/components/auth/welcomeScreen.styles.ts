@@ -130,6 +130,7 @@ export const useWelcomeScreenStyles = makeUseStyles(({ colors, isDark }) => ({
     textAlign: 'center' as const,
   },
   authBtnDisabled: { opacity: 0.6 },
+  socialButtons: { gap: spacing.sm },
 
   // Google: surface card with hairline (matches surface in both modes)
   googleBtn: {
@@ -150,15 +151,11 @@ export const useWelcomeScreenStyles = makeUseStyles(({ colors, isDark }) => ({
   appleBtn: { backgroundColor: isDark ? '#FFFFFF' : '#000000' }, // brand-guard-allow: Apple brand button colors
   appleBtnText: { color: isDark ? '#000000' : '#FFFFFF' }, // brand-guard-allow: Apple brand button colors
 
-  // Guest: ghost
-  guestBtn: {
+  // Tertiary text link under the sign-in buttons (email entry).
+  textLinkBtn: {
     marginTop: spacing.xs,
     alignItems: 'center' as const,
     paddingVertical: spacing.sm,
-  },
-  guestBtnText: {
-    ...typography.body,
-    color: colors.textSecondary,
   },
   emailEntryText: {
     ...typography.body,

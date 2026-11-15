@@ -7,6 +7,7 @@ import {
   findDrift,
   pendingMigrations,
   repairCommands,
+  hasLedgerTable,
 } from './check-migration-drift.mjs';
 
 // A realistic `supabase migration list --linked` capture with one MCP timestamp
@@ -92,4 +93,49 @@ test('pendingMigrations lists the local versions db push is about to apply', () 
   const list = ['  LOCAL | REMOTE | TIME', '  ------|--------|-----', '  0001  | 0001   | 0001', '  0002  |        | 0002'].join('\n');
   assert.deepEqual(pendingMigrations(list, ['0001', '0002', '0003']), ['0002', '0003']);
   assert.deepEqual(pendingMigrations(list, ['0001']), []);
+});
+
+// A rebuilt (or brand new) project has an empty ledger: the CLI prints the table with only
+// local rows. That is a valid state, unlike text that is not the table at all.
+const EMPTY_LEDGER_OUTPUT = `
+   Local | Remote | Time (UTC)
+  -------|--------|------------
+   0001  |        | 0001
+`;
+
+test('an empty remote ledger is recognised as the CLI table', () => {
+  assert.deepEqual(parseRemoteVersions(EMPTY_LEDGER_OUTPUT), []);
+  assert.equal(hasLedgerTable(EMPTY_LEDGER_OUTPUT), true);
+  assert.equal(hasLedgerTable(CLI_OUTPUT), true);
+});
+
+test('text that is not the CLI table is not a ledger', () => {
+  assert.equal(hasLedgerTable(''), false);
+  assert.equal(hasLedgerTable('Connecting to remote database...\nerror: timeout'), false);
+});
+
+test('an empty ledger counts every local migration as pending', () => {
+  assert.deepEqual(pendingMigrations(EMPTY_LEDGER_OUTPUT, ['0001']), ['0001']);
+});
+
+// deploy-db.yml reads `pending=` and `fresh=` from --count-pending; fresh=true (empty remote
+// ledger) is what makes it load the reference + content seed once on a new database.
+async function countPending(cliOutput) {
+  const { spawnSync } = await import('node:child_process');
+  const { fileURLToPath } = await import('node:url');
+  const script = fileURLToPath(new URL('./check-migration-drift.mjs', import.meta.url));
+  const res = spawnSync(process.execPath, [script, '--count-pending'], { input: cliOutput, encoding: 'utf8', env: { ...process.env, GITHUB_OUTPUT: '' } });
+  return res;
+}
+
+test('--count-pending reports fresh=true for an empty remote ledger', async () => {
+  const res = await countPending('\n   LOCAL | REMOTE | TIME (UTC)\n  -------|--------|-----------\n   0001  |        | 0001\n');
+  assert.equal(res.status, 0);
+  assert.match(res.stdout, /^fresh=true$/m);
+});
+
+test('--count-pending reports fresh=false once the ledger has a version', async () => {
+  const res = await countPending('\n   LOCAL | REMOTE | TIME (UTC)\n  -------|--------|-----------\n   0001  | 0001   | 0001\n');
+  assert.equal(res.status, 0);
+  assert.match(res.stdout, /^fresh=false$/m);
 });

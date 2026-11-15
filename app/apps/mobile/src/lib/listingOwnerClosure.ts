@@ -7,6 +7,8 @@ export function listingOwnerMarkCtaKey(worldSlug: string | null): string {
   if (worldSlug === 'animals') return 'closure.markAnimalsCta';
   if (worldSlug === 'housing') return 'closure.markHousingCta';
   if (worldSlug === 'rides') return 'closure.markRidesCta';
+  // #2078: volunteering takes place; it is not delivered.
+  if (worldSlug === 'time') return 'closure.markTimeCta';
   return 'closure.markGiveCta';
 }
 

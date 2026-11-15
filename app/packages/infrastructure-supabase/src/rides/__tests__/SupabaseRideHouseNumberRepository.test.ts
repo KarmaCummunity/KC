@@ -1,31 +1,36 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
+import { BackendRuleError, BackendUnavailableError } from '@kc/domain';
+import { callsTo, createFakeClient } from '../../__tests__/fakeBaselineClient';
+import { fail, ok } from '../../posts/__tests__/cardFixtures';
 import { SupabaseRideHouseNumberRepository } from '../SupabaseRideHouseNumberRepository';
 
-type AnyClient = ConstructorParameters<typeof SupabaseRideHouseNumberRepository>[0];
-
-function repoWith(result: { data?: unknown; error: { message: string } | null }) {
-  const rpc = vi.fn().mockResolvedValue(result);
-  return { rpc, repo: new SupabaseRideHouseNumberRepository({ rpc } as unknown as AnyClient) };
-}
-
 describe('SupabaseRideHouseNumberRepository', () => {
-  it('saves trimmed numbers and sends a blank end as cleared', async () => {
-    const { rpc, repo } = repoWith({ error: null });
-    await repo.save('L1', { origin: ' 12 ', dest: '  ' });
-    expect(rpc).toHaveBeenCalledWith('set_ride_house_numbers', { p_listing_id: 'L1', p_origin: '12', p_dest: undefined });
+  it('saves both ends into the private location, clearing an end left out', async () => {
+    const { client, calls } = createFakeClient({ tables: { post_private_locations: ok(null) } });
+    await new SupabaseRideHouseNumberRepository(client).save('p1', { origin: ' 12 ' });
+    const upsert = callsTo(calls, 'post_private_locations')[0];
+    expect(upsert?.kind).toBe('upsert');
+    expect(upsert?.payload).toEqual({ post_id: 'p1', street_number: '12', destination_street_number: null });
   });
 
-  it('maps the rows the caller may see and skips unknown ends', async () => {
-    const { rpc, repo } = repoWith({
-      data: [{ place_end: 'dest', house_number: '7א' }, { place_end: 'mp1', house_number: '3' }],
-      error: null,
+  it('reads the numbers the server releases', async () => {
+    const { client } = createFakeClient({
+      rpc: { get_post_private_location: ok({ street_number: '12', destination_street_number: null }) },
     });
-    await expect(repo.get('L1')).resolves.toEqual({ dest: '7א' });
-    expect(rpc).toHaveBeenCalledWith('get_ride_house_numbers', { p_listing_id: 'L1' });
+    expect(await new SupabaseRideHouseNumberRepository(client).get('p1')).toEqual({ origin: '12' });
   });
 
-  it('surfaces a server error', async () => {
-    const { repo } = repoWith({ error: { message: 'owner_only' } });
-    await expect(repo.save('L1', { origin: '1' })).rejects.toThrow('owner_only');
+  it('returns nothing when the server releases no row', async () => {
+    const { client } = createFakeClient({ rpc: { get_post_private_location: ok(null) } });
+    expect(await new SupabaseRideHouseNumberRepository(client).get('p1')).toEqual({});
+  });
+
+  it('keeps a refusal reason and a missing table distinct', async () => {
+    const refused = createFakeClient({ rpc: { get_post_private_location: fail('P0001', 'not_participant') } });
+    await expect(new SupabaseRideHouseNumberRepository(refused.client).get('p1')).rejects.toBeInstanceOf(BackendRuleError);
+    const missing = createFakeClient({ tables: { post_private_locations: fail('PGRST205', 'no table') } });
+    await expect(new SupabaseRideHouseNumberRepository(missing.client).save('p1', {})).rejects.toBeInstanceOf(
+      BackendUnavailableError,
+    );
   });
 });

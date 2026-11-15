@@ -12,6 +12,7 @@ import { EmptyState } from '../../EmptyState';
 import { housingQueryKeys, housingUseCases } from '../../../services/housingComposition';
 import { rtlTextAlignStart } from '../../../lib/rtlTextAlignStart';
 import { WorldSubScreenChrome } from '../../giving/useWorldHeader';
+import { listOrEmpty } from '../../../lib/backendAvailability';
 
 export function HousingMyStaysScreen() {
   const { t } = useTranslation();
@@ -19,7 +20,7 @@ export function HousingMyStaysScreen() {
   const styles = useStyles();
   const stays = useQuery({
     queryKey: housingQueryKeys.myStays,
-    queryFn: () => housingUseCases.listMyStays().execute(),
+    queryFn: () => listOrEmpty(() => housingUseCases.listMyStays().execute()),
   });
 
   return (

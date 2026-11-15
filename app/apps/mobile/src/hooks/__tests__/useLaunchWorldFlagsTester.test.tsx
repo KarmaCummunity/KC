@@ -9,12 +9,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const { fetchRemoteFeatureFlags } = vi.hoisted(() => ({ fetchRemoteFeatureFlags: vi.fn() }));
 vi.mock('../../services/featureFlagsComposition', () => ({ fetchRemoteFeatureFlags }));
 import { useHubTileLaunchEnabled, useMarketplaceWorldLaunchEnabled } from '../useLaunchWorldFlags';
+import { useAuthStore } from '../../store/authStore';
 
 const ORIGINAL = process.env['EXPO_PUBLIC_ENVIRONMENT'];
 let client: QueryClient;
 const wrapper = ({ children }: { children: ReactNode }) => <QueryClientProvider client={client}>{children}</QueryClientProvider>;
 
 beforeEach(() => {
+  useAuthStore.setState({ session: { userId: 'u_member' } as never, isAuthenticated: true });
   client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   vi.clearAllMocks();
   fetchRemoteFeatureFlags.mockResolvedValue({ world_housing_enabled: false, world_knowledge_enabled: false });

@@ -2,6 +2,7 @@
 // container.ts for the 300-line cap; the container spreads the result, like the WhatsApp admin one.
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
+  type Database,
   SupabaseFinanceAccountsRepository,
   SupabaseFinanceDonorsRepository,
   SupabaseFinanceLedgerRepository,
@@ -19,7 +20,7 @@ import {
   UpsertFinanceEntryUseCase,
 } from '@kc/application';
 
-export function createFinanceUseCases(supabase: SupabaseClient) {
+export function createFinanceUseCases(supabase: SupabaseClient<Database>) {
   const ledger = new SupabaseFinanceLedgerRepository(supabase);
   const accounts = new SupabaseFinanceAccountsRepository(supabase);
   const donors = new SupabaseFinanceDonorsRepository(supabase);

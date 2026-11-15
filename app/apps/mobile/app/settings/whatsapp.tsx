@@ -1,74 +1,102 @@
-// Settings → WhatsApp bot link (#1090). Pro users get a short-lived 6-digit code to send to the bot.
+// Settings → WhatsApp bot link (#1090, D143: Pro only). A Pro member gets a short-lived 6-digit
+// code to send to the bot, can unlink the number, and switches WhatsApp match alerts on or off
+// (FR-NOTIF-017 AC4). Everything goes through the WhatsApp link use cases (useWhatsAppLink).
+// Hidden while the `whatsappBot` launch surface or the WHATSAPP_BOT_AVAILABLE switch is off.
 import React from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
 import { Stack } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { canRequestWhatsAppLinkCode, canToggleWhatsAppMatchAlerts } from '@kc/domain';
 import { makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
 import { useShellStackScreenOptions } from '../../src/navigation/shellStackScreenOptions';
+import { LaunchSurfaceGate } from '../../src/components/LaunchSurfaceGate';
+import { ParkedFeatureNotice } from '../../src/components/ParkedFeatureNotice';
+import { NotificationToggleRow } from '../../src/components/NotificationToggleRow';
+import { WHATSAPP_BOT_AVAILABLE } from '../../src/lib/parkedFeatures';
 import { rtlTextAlignStart } from '../../src/lib/rtlTextAlignStart';
 import { webTextRtl, webViewRtl } from '../../src/lib/webRtlStyle';
-import { getMarketplaceSupabaseClient } from '../../src/services/marketplaceComposition';
+import { confirmAction } from '../../src/services/platformConfirm';
+import { useWhatsAppLink, whatsappLinkErrorKey } from '../../src/hooks/useWhatsAppLink';
 
-interface LinkStatus { linked: boolean; wa_id_masked: string | null; is_pro: boolean }
-interface LinkCode { code: string; expires_at: string }
+export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
 
-const STATUS_KEY = ['whatsapp-link-status'];
-
-async function fetchStatus(): Promise<LinkStatus> {
-  const { data, error } = await getMarketplaceSupabaseClient().rpc('api_whatsapp_my_link_status');
-  if (error) throw error;
-  return data as unknown as LinkStatus;
-}
-
-export default function WhatsAppLinkScreen() {
-  const shellStackScreenOptions = useShellStackScreenOptions();
+function WhatsAppLinkBody() {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const styles = useScreenStyles();
-  const queryClient = useQueryClient();
-  const status = useQuery({ queryKey: STATUS_KEY, queryFn: fetchStatus });
-  const [code, setCode] = React.useState<LinkCode | null>(null);
-  const [busy, setBusy] = React.useState(false);
+  const link = useWhatsAppLink();
+  const s = link.status.data;
+  const code = link.code;
+  const expires = code ? code.expiresAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
 
-  const fail = React.useCallback(() => Alert.alert(t('general.error'), t('settings.whatsapp.failed')), [t]);
+  const onUnlink = async () => {
+    const ok = await confirmAction(t('settings.whatsapp.unlink'), t('settings.whatsapp.unlinkConfirm'), {
+      confirmLabel: t('settings.whatsapp.unlink'), destructive: true,
+    });
+    if (ok) link.unlink();
+  };
 
-  const onGetCode = React.useCallback(async () => {
-    setBusy(true);
-    try {
-      const { data, error } = await getMarketplaceSupabaseClient().rpc('api_whatsapp_create_link_code');
-      if (error) throw error;
-      setCode(data as unknown as LinkCode);
-    } catch {
-      fail();
-    } finally {
-      setBusy(false);
-    }
-  }, [fail]);
+  return (
+    <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
+      <Text style={styles.text}>{t('settings.whatsapp.intro')}</Text>
+      {link.status.isLoading ? <ActivityIndicator color={colors.primary} /> : null}
+      {link.status.isError ? <Text style={styles.text}>{t('settings.whatsapp.failed')}</Text> : null}
+      {s && !s.isPro ? <Text style={styles.text}>{t('settings.whatsapp.notPro')}</Text> : null}
+      {s && canRequestWhatsAppLinkCode(s) ? (
+        <View style={styles.card}>
+          <Text style={styles.text} testID="settings-whatsapp-status">
+            {s.linked ? t('settings.whatsapp.linked', { number: s.waIdMasked ?? '' }) : t('settings.whatsapp.notLinked')}
+          </Text>
+          {code ? (
+            <>
+              <Text style={styles.text}>{t('settings.whatsapp.codeLabel')}</Text>
+              <Text style={styles.code} selectable testID="settings-whatsapp-code">{code.code}</Text>
+              <Text style={styles.note}>{t('settings.whatsapp.codeExpires', { time: expires })}</Text>
+            </>
+          ) : null}
+          <Pressable
+            testID="settings-whatsapp-get-code"
+            accessibilityRole="button"
+            disabled={link.busy}
+            onPress={link.requestCode}
+            style={styles.button}
+          >
+            <Text style={styles.buttonText}>{t('settings.whatsapp.getCode')}</Text>
+          </Pressable>
+          {s.linked ? (
+            <Pressable
+              testID="settings-whatsapp-unlink"
+              accessibilityRole="button"
+              disabled={link.busy}
+              onPress={() => { void onUnlink(); }}
+              style={styles.linkButton}
+            >
+              <Text style={styles.danger}>{t('settings.whatsapp.unlink')}</Text>
+            </Pressable>
+          ) : null}
+        </View>
+      ) : null}
+      {s ? (
+        <View style={styles.card}>
+          <NotificationToggleRow
+            label={t('settings.whatsapp.alertsLabel')}
+            caption={canToggleWhatsAppMatchAlerts(s) ? t('settings.whatsapp.alertsHint') : t('settings.whatsapp.alertsNeedLink')}
+            value={s.consentOptedIn}
+            disabled={link.busy || !canToggleWhatsAppMatchAlerts(s)}
+            onValueChange={link.setConsent}
+          />
+          {s.phoneOptedOut ? <Text style={styles.note}>{t('settings.whatsapp.alertsPhoneStopped')}</Text> : null}
+        </View>
+      ) : null}
+      {link.error ? <Text style={styles.danger} testID="settings-whatsapp-error">{t(whatsappLinkErrorKey(link.error))}</Text> : null}
+    </ScrollView>
+  );
+}
 
-  const doUnlink = React.useCallback(async () => {
-    setBusy(true);
-    try {
-      const { error } = await getMarketplaceSupabaseClient().rpc('api_whatsapp_unlink_me');
-      if (error) throw error;
-      setCode(null);
-      await queryClient.invalidateQueries({ queryKey: STATUS_KEY });
-    } catch {
-      fail();
-    } finally {
-      setBusy(false);
-    }
-  }, [fail, queryClient]);
-
-  const onUnlink = React.useCallback(() => {
-    Alert.alert(t('settings.whatsapp.unlink'), t('settings.whatsapp.unlinkConfirm'), [
-      { text: t('general.cancel'), style: 'cancel' },
-      { text: t('settings.whatsapp.unlink'), style: 'destructive', onPress: () => void doUnlink() },
-    ]);
-  }, [doUnlink, t]);
-
-  const s = status.data;
-  const expires = code ? new Date(code.expires_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+function WhatsAppLinkScreenContent() {
+  const shellStackScreenOptions = useShellStackScreenOptions();
+  const { t } = useTranslation();
+  const { colors } = useTheme();
 
   return (
     <>
@@ -80,35 +108,17 @@ export default function WhatsAppLinkScreen() {
           headerTitle: t('settings.whatsapp.title'),
         }}
       />
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
-        <Text style={styles.text}>{t('settings.whatsapp.intro')}</Text>
-        {status.isLoading && <ActivityIndicator color={colors.primary} />}
-        {status.isError && <Text style={styles.text}>{t('settings.whatsapp.failed')}</Text>}
-        {s && !s.is_pro && <Text style={styles.text}>{t('settings.whatsapp.notPro')}</Text>}
-        {s?.is_pro && (
-          <View style={styles.card}>
-            <Text style={styles.text}>
-              {s.linked ? t('settings.whatsapp.linked', { number: s.wa_id_masked ?? '' }) : t('settings.whatsapp.notLinked')}
-            </Text>
-            {code && (
-              <>
-                <Text style={styles.text}>{t('settings.whatsapp.codeLabel')}</Text>
-                <Text style={styles.code} selectable>{code.code}</Text>
-                <Text style={styles.note}>{t('settings.whatsapp.codeExpires', { time: expires })}</Text>
-              </>
-            )}
-            <Pressable accessibilityRole="button" disabled={busy} onPress={onGetCode} style={styles.button}>
-              <Text style={styles.buttonText}>{t('settings.whatsapp.getCode')}</Text>
-            </Pressable>
-            {s.linked && (
-              <Pressable accessibilityRole="button" disabled={busy} onPress={onUnlink} style={styles.linkButton}>
-                <Text style={styles.danger}>{t('settings.whatsapp.unlink')}</Text>
-              </Pressable>
-            )}
-          </View>
-        )}
-      </ScrollView>
+      {WHATSAPP_BOT_AVAILABLE ? <WhatsAppLinkBody /> : <ParkedFeatureNotice testID="settings-whatsapp-parked" />}
     </>
+  );
+}
+
+/** Hidden while `whatsappBot` is off (first launch): sends the visitor away instead of rendering. */
+export default function WhatsAppLinkScreen() {
+  return (
+    <LaunchSurfaceGate surface="whatsappBot" redirectTo="/settings">
+      <WhatsAppLinkScreenContent />
+    </LaunchSurfaceGate>
   );
 }
 
@@ -125,5 +135,5 @@ const useScreenStyles = makeUseStyles(({ colors }) => ({
   button: { backgroundColor: colors.primary, borderRadius: radius.sm, paddingVertical: spacing.md, alignItems: 'center' as const },
   buttonText: { ...typography.button, color: colors.textInverse },
   linkButton: { paddingVertical: spacing.sm, alignItems: 'center' as const },
-  danger: { ...typography.body, color: colors.error },
+  danger: { ...typography.body, color: colors.error, textAlign: rtlTextAlignStart, ...webTextRtl },
 }));

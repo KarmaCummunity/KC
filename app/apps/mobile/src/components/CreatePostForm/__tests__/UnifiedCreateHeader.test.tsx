@@ -62,4 +62,23 @@ describe('UnifiedCreateHeader', () => {
     const hidden = renderHeader({ showDirection: false, categoryId: 'money' });
     expect(hidden.view.queryByTestId('create-direction-give')).toBeNull();
   });
+
+  // #2058: both halves of the request / offer toggle must show the same solid "selected" fill,
+  // so the chosen side is obvious whichever one it is. react-native-web turns styles into atomic
+  // classes, so the fill is compared through its `r-backgroundColor-*` class.
+  it('paints the selected side of the toggle with one shared fill, give or request', () => {
+    const fill = (side: 'give' | 'request', selected: 'give' | 'request') => {
+      const { view } = renderHeader({ direction: selected });
+      const cls = (view.getByTestId(`create-direction-${side}`) as HTMLElement).className;
+      cleanup();
+      return /r-backgroundColor-\w+/.exec(cls)?.[0];
+    };
+    const giveSelected = fill('give', 'give');
+    const requestSelected = fill('request', 'request');
+    expect(giveSelected).toBeDefined();
+    expect(requestSelected).toBe(giveSelected);
+    // The unselected side carries no fill at all, so it reads clearly different.
+    expect(fill('request', 'give')).toBeUndefined();
+    expect(fill('give', 'request')).toBeUndefined();
+  });
 });

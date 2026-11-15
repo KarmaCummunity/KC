@@ -25,6 +25,7 @@ import { HousingAddressCard } from './HousingAddressCard';
 import { HousingConductModal } from './HousingConductModal';
 import { HousingStayRequestForm } from './HousingStayRequestForm';
 import { useHousingAction } from './useHousingAction';
+import { listOrEmpty } from '../../../lib/backendAvailability';
 
 interface Props {
   readonly listingId: string;
@@ -42,7 +43,7 @@ export function HousingGuestPanel({ listingId, terms }: Props) {
   const [pending, setPending] = useState<HousingStayRequestInput | null>(null);
   const stays = useQuery({
     queryKey: housingQueryKeys.myStays,
-    queryFn: () => housingUseCases.listMyStays().execute(),
+    queryFn: () => listOrEmpty(() => housingUseCases.listMyStays().execute()),
   });
   const conduct = useQuery({ queryKey: housingQueryKeys.conduct, queryFn: () => housingUseCases.conductStatus().execute() });
   const stay = (stays.data ?? []).find((s) => s.listingId === listingId && LIVE.includes(s.status)) ?? null;

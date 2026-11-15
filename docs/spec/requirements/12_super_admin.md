@@ -1,6 +1,6 @@
 # 2.12 Super Admin (in-chat moderation)
 
-> **Status:** ✅ Done — FR-ADMIN-001..025, FR-ADMIN-028, FR-ADMIN-030 and FR-ADMIN-031 shipped (FR-ADMIN-026 public About tree still open). **FR-ADMIN-028 (layered hierarchy view, §17) added 2026-10-30.** **FR-ADMIN-030 (end-to-end team management, §18) added 2026-10-30.** FR-ADMIN-001..021 shipped. **FR-ADMIN-021 (Survey results & feedback dashboard, A5) added 2026-06-14** — `/admin/surveys` exposes aggregate per-question statistics + per-user answers + the free-text feedback list, gated by the new `surveys.view` permission (super_admin / moderator). See §15 + migration `0194_admin_survey_results.sql`. **P3.A0 + P3.A1 + Pre-A2 Hardening + P3.A2 + P3.A3 + P3.A4 all merged to `dev` as of 2026-05-28** (PRs #384, #385, #387, #394, #426/#428, #439 + this PR). Admin Portal roadmap is complete. TD-93 closed at the UX layer via `admin_search_users` (banned/suspended users now searchable from the portal). The portal infrastructure is production-ready for moderator/support roles: `admin_role_grants` table with PRD V2-wide role enum + partial-unique single-super_admin index (closes TD-95); `has_admin_role` / `admin_assert_role` SQL predicates wired into every moderation RPC (`admin_remove_post`, `admin_dismiss_report`, `admin_confirm_report`, `admin_restore_target`, `admin_delete_message`); `(admin)` route group with `AdminGate` redirect + responsive `AdminNav` + 7 nav entries (Reports live; Tasks/Admins/Users/Posts/Audit as A2..A4 stubs); reports inbox + per-case detail with permission-gated actions consuming the `@kc/domain` `PERMISSION_MATRIX` SSOT; chat-flow coexistence behind `EXPO_PUBLIC_ADMIN_PORTAL_REPORTS` flag; auto-removal protected by 14-day freshness window; 7 legacy `useIsSuperAdmin` callsites migrated to `hasPermission()`. **Closed TDs:** TD-95 (single-super-admin DB invariant), TD-94 #2 / #4 / #5 / #6 (already-moderated error / cascade-dismiss / audit metadata parity / freshness window). **Open TDs in this domain:** TD-93 (admin search visibility — closes in P3.A4); TD-94 #1 now by design per D-41 (tickets ≠ reports); TD-94 #3 (`is_post_visible_to` admin bypass — closes in P3.A4). **Suspect-queue producers (FR-MOD-008)** and **90-day re-registration block (FR-ADMIN-003 AC3)** deferred (tech-debt issue). **Next:** P3.A2 RBAC management (FR-ADMIN-015..017) — gives super_admin a UI to grant moderator/support roles without raw SQL. See `docs/SSOT/archive/superpowers/specs/2026-05-25-admin-portal-design.md` for A2..A4 design and `docs/SSOT/archive/audit/2026-05-16/05_following_moderation_admin.md` for the original audit.
+> **Status:** ✅ Done — FR-ADMIN-001..025, FR-ADMIN-028, FR-ADMIN-030, FR-ADMIN-032 (CRM per organization) and FR-ADMIN-033 (staff timesheets) shipped, FR-ADMIN-031 removed at the baseline cut-over (FR-ADMIN-026 public About tree still open). **FR-ADMIN-028 (layered hierarchy view, §17) added 2026-10-30.** **FR-ADMIN-030 (end-to-end team management, §18) added 2026-10-30.** FR-ADMIN-001..021 shipped. **FR-ADMIN-021 (Survey results & feedback dashboard, A5) added 2026-06-14** — `/admin/surveys` exposes aggregate per-question statistics + per-user answers + the free-text feedback list, gated by the new `surveys.view` permission (super_admin / moderator). See §15 + migration `0194_admin_survey_results.sql`. **P3.A0 + P3.A1 + Pre-A2 Hardening + P3.A2 + P3.A3 + P3.A4 all merged to `dev` as of 2026-05-28** (PRs #384, #385, #387, #394, #426/#428, #439 + this PR). Admin Portal roadmap is complete. TD-93 closed at the UX layer via `admin_search_users` (banned/suspended users now searchable from the portal). The portal infrastructure is production-ready for moderator/support roles: `admin_role_grants` table with PRD V2-wide role enum + partial-unique single-super_admin index (closes TD-95); `has_admin_role` / `admin_assert_role` SQL predicates wired into every moderation RPC (`admin_remove_post`, `admin_dismiss_report`, `admin_confirm_report`, `admin_restore_target`, `admin_delete_message`); `(admin)` route group with `AdminGate` redirect + responsive `AdminNav` + 7 nav entries (Reports live; Tasks/Admins/Users/Posts/Audit as A2..A4 stubs); reports inbox + per-case detail with permission-gated actions consuming the `@kc/domain` `PERMISSION_MATRIX` SSOT; chat-flow coexistence behind `EXPO_PUBLIC_ADMIN_PORTAL_REPORTS` flag; auto-removal protected by 14-day freshness window; 7 legacy `useIsSuperAdmin` callsites migrated to `hasPermission()`. **Closed TDs:** TD-95 (single-super-admin DB invariant), TD-94 #2 / #4 / #5 / #6 (already-moderated error / cascade-dismiss / audit metadata parity / freshness window). **Open TDs in this domain:** TD-93 (admin search visibility — closes in P3.A4); TD-94 #1 now by design per D-41 (tickets ≠ reports); TD-94 #3 (`is_post_visible_to` admin bypass — closes in P3.A4). **Suspect-queue producers (FR-MOD-008)** and **90-day re-registration block (FR-ADMIN-003 AC3)** deferred (tech-debt issue). **Next:** P3.A2 RBAC management (FR-ADMIN-015..017) — gives super_admin a UI to grant moderator/support roles without raw SQL. See `docs/SSOT/archive/superpowers/specs/2026-05-25-admin-portal-design.md` for A2..A4 design and `docs/SSOT/archive/audit/2026-05-16/05_following_moderation_admin.md` for the original audit.
 
 
 
@@ -54,7 +54,7 @@ When a target reaches the 3-report threshold and is auto-removed, a system messa
    - For `target_type = user`: `account_status = active`; the user can sign in again.
    - For `target_type = chat`: the chat is unhidden for both parties.
 - AC3. Restore actions are idempotent and audit-logged.
-- AC4. After restore, the corresponding `Report` rows are stamped `dismissed_no_violation`, which feeds into `FR-MOD-010`.
+- AC4. After restore, the corresponding `Report` rows are stamped `dismissed_no_violation`, which feeds into `FR-MOD-010`. *(Every staff restore does this server-side since migration `0016` (`kc_private.report_dismiss_open`).)*
 
 **Related.** Domain: `Post`, `User`, `Chat`, `Report`.
 
@@ -137,7 +137,7 @@ The Super Admin can read the audit log for any user via a Settings sub-page acce
 
 **Acceptance Criteria.**
 - AC1. The sub-page is hidden for non-admins.
-- AC2. It shows the last 200 audit events of any user (lookup by ID or display name).
+- AC2. It shows the last 200 audit events of any user (lookup by ID or display name): the events the user performed and the events about them (`admin_audit_lookup`, migration `0016`).
 - AC3. Audit lines are read-only and the screen has no edit controls.
 
 **Related.** Domain: `AuditEvent`.
@@ -239,9 +239,9 @@ A new Expo Router group `(admin)` accessible only to users with an active admin 
 - AC3. Search bar accepts target ID or reporter display name; powered by `audit_search` + `reports` query.
 - AC4. Default sort: oldest unresolved first.
 - AC5. *(#1039, PM 2026-11-04.)* A row whose oldest open report is **12 h old** shows a *warning* badge and **24 h old** an *overdue* badge; younger rows show none. Thresholds: `REPORT_SLA_WARNING_HOURS` / `REPORT_SLA_DEADLINE_HOURS` in `@kc/domain` (`reportSlaState`).
-- AC6. *(#1039.)* `report_sla_alert_sweep()` (migration `0611`, hourly via pg_cron) sends every active `super_admin` / `moderator` one `report_sla_warning` push per open case that has waited 12 h, deep-linking to the case; the dedupe key carries the case's oldest report, so a case is alerted once and a case reopened later alerts again. Resolved cases never alert.
+- AC6. *(#1039.)* `kc_private.report_sla_alert_sweep()` (migration `0017` after the baseline cut-over; the hourly job `report_sla_alert`) sends every active `super_admin` / `moderator` one `report_sla_warning` push per open case that has waited 12 h, deep-linking to the case; the dedupe key carries the case's oldest report, so a case is alerted once and a case reopened later alerts again. Resolved cases never alert.
 
-**Related.** Database: `reports_open_inbox(...)` RPC (migration 0120). Database: `report_sla_alert_sweep()` (migration 0611). Domain: `ReportInboxPage`, `ReportInboxCursor`, `ReportInboxRow`, `reportSlaState`. Application: `IReportsRepository.listOpenReports`, `ListOpenReportsUseCase`. Infrastructure: `SupabaseReportsRepository`. Mobile: `useReportsInbox` (infinite query), `ReportRow`, `ReportFilters`, `(admin)/reports/index.tsx`.
+**Related.** Database: `admin_reports_inbox(...)` RPC (migration 0016: grouped and keyset paged on the server, `p_search` by target id or reporter name; was `reports_open_inbox`, 0120). Database: `kc_private.report_sla_alert_sweep()` (migration 0017; was 0611). Domain: `ReportInboxPage`, `ReportInboxCursor`, `ReportInboxRow`, `reportSlaState`. Application: `IReportsRepository.listOpenReports`, `ListOpenReportsUseCase`. Infrastructure: `SupabaseReportsRepository`. Mobile: `useReportsInbox` (infinite query), `ReportRow`, `ReportFilters`, `(admin)/reports/index.tsx`.
 
 ---
 
@@ -252,7 +252,7 @@ A new Expo Router group `(admin)` accessible only to users with an active admin 
 - AC3. Restore action no longer cascades-dismisses reports across unrelated cases (closes `TD-94`); each case is dismissed independently.
 - AC4. All actions emit `audit_events` rows; the timeline updates optimistically + reconciles on success.
 
-**Related.** Database: `reports_case_detail(...)` RPC (migration 0121); `admin_restore_target` rewritten in migration 0119 (per-case dismiss). Migration 0118 widens `admin_dismiss_report` / `admin_remove_post` / `admin_confirm_report` from `is_admin()` to `admin_assert_role(['super_admin','moderator'])`. Domain: `ReportCaseDetail`, `ReportCaseReporter`, `ReportCaseTimelineEntry`. Application: `IReportsRepository.getCaseDetail`, `GetReportCaseDetailUseCase`. Mobile: `useReportCaseDetail`, `CaseActions`, `CaseReporterList`, `CaseAuditTimeline`, `(admin)/reports/[caseId].tsx`.
+**Related.** Database: `reports` + `admin_report_case_timeline(...)` (migration 0016: the whole history of the target and its reports for every staff role; was `reports_case_detail`, 0121); `admin_restore_chat` / `admin_restore_comment` (0016); Open support thread = `admin_open_member_support_thread` (0015); `admin_restore_target` rewritten in migration 0119 (per-case dismiss). Migration 0118 widens `admin_dismiss_report` / `admin_remove_post` / `admin_confirm_report` from `is_admin()` to `admin_assert_role(['super_admin','moderator'])`. Domain: `ReportCaseDetail`, `ReportCaseReporter`, `ReportCaseTimelineEntry`. Application: `IReportsRepository.getCaseDetail`, `GetReportCaseDetailUseCase`. Mobile: `useReportCaseDetail`, `CaseActions`, `CaseReporterList`, `CaseAuditTimeline`, `(admin)/reports/[caseId].tsx`.
 
 ---
 
@@ -343,26 +343,30 @@ Originally `FR-ADMIN-006 AC2` read "only one row may carry `is_super_admin`". Wi
 
 ## §13 Admin Portal — Internal Tasks tracker (A3)
 
-A3 ships an internal-only task tracker for the admin team. Tasks live in `admin_tasks` + `admin_task_activities`; both tables are SELECT-only from the client and every write goes through a SECURITY DEFINER RPC. Visibility is strictly internal — `admin_tasks` are never joined to end-user surfaces.
+A3 ships an internal-only task tracker for the admin team. On the production baseline the tasks live in `kc_private.admin_tasks` + `kc_private.admin_task_activities` (forced RLS, no policies): every read and write goes through a SECURITY DEFINER RPC. Visibility is strictly internal — tasks are never joined to end-user surfaces.
 
-Migrations: `0144_admin_tasks.sql` (tables + RLS + audit-action widen) and `0145_admin_task_rpcs.sql` (RPCs). Mobile route: `(admin)/tasks` + `(admin)/tasks/new` + `(admin)/tasks/[taskId]`. Notifications: `task_assigned` kind enqueued via the existing `notifications_outbox` (`enqueue_notification` helper from migration 0056).
+Migration: `supabase/migrations/0034_back_office_admin_tasks.sql` (rebuilt after the baseline cut-over; the pre-cut-over `0144` / `0145` / `0165` / `0680` are history). Mobile route: `(admin)/tasks` + `(admin)/tasks/new` + `(admin)/tasks/[taskId]`. Notifications: an outbox event on topic `notification` naming the kind `task_assigned`.
+
+**Role mapping.** Platform roles are ranked (`kc_private.admin_roles`): "staff" below means `support` and above (`support`, `moderator`, `admin`, `super_admin`); "moderator and above" admits `admin` and `super_admin` too.
 
 ---
 
 ## FR-ADMIN-018 — Tasks tracker
 
 **Description.**
-Internal admin tasks with title / description / priority / assignee / due date / labels + status FSM + append-only activity log + push notifications on assignment.
+Internal admin tasks with title / description / priority / category / assignee / due date / labels + status FSM + append-only activity log + notification on assignment + audit.
 
 **Acceptance Criteria.**
-- AC1. `(admin)/tasks` lists all tasks with chip filters: status, "only mine" (created or assigned), overdue. Default sort: status (open → in_progress → blocked → done → archived), then due-soon, then most recently created. Server-side pagination at 50 rows.
-- AC2. `(admin)/tasks/new` creates a task with required `title` (≤ 200 chars), optional `description` (≤ 4000 chars), `priority` ∈ `{low, medium, high, urgent}` (default `medium`), optional assignee (must be an active admin grant — RPC-validated), optional `due_at`, and comma-separated labels.
-- AC3. `(admin)/tasks/[taskId]` shows status + priority chips, title + description + creator/assignee/due metadata, valid-transition status buttons, comment input, and an append-only activity timeline rendering each `kind` of `admin_task_activities` row.
-- AC4. Status FSM: `open ⇄ in_progress ⇄ blocked → done → archived`. `super_admin` can move any task; `moderator` and `support` can move tasks they created or are assigned to. `done → in_progress` is permitted (re-open); `archived` is terminal.
-- AC5. Deletion is restricted to the task creator and `super_admin`; it is a hard delete and cascades the activity log.
-- AC6. On task creation with an assignee, and on assignment changes, a `task_assigned` notification is enqueued into `notifications_outbox` (category `social`, dedupe `task_assigned:<task_id>:<assignee_id>`, route `/(admin)/tasks/[taskId]`). Self-assignment does not emit a notification.
+- AC1. `(admin)/tasks` lists all tasks to staff, with filters: status, category, assignee (a staff member, or *unassigned*), due-date range, "only mine" (created or assigned), overdue (due before now and not done or archived). Default sort: status (open → in_progress → blocked → done → archived), then due soonest with no due date last, then most recently created. Keyset pagination (cursor), 50 rows a page; the dashboard card counts open and in-progress tasks (`admin_task_open_count`).
+- AC2. `(admin)/tasks/new` creates a task with required `title` (≤ 200 chars, trimmed), optional `description` (≤ 4000 chars, enforced by the table), `priority` ∈ `{low, medium, high, urgent}` (default `medium`), `category` ∈ `{moderation, support, engineering, product, operations, marketing, finance, other}` (default `other`), optional assignee (must be an active member holding an active platform staff grant — `assignee_not_admin` otherwise), optional `due_at`, and comma-separated labels (≤ 20).
+- AC3. `(admin)/tasks/[taskId]` shows status + priority + category chips, title + description + creator/assignee/due metadata, valid-transition status buttons, comment input (1–4000 chars), and an append-only activity timeline rendering each `kind` of activity row in write order. Every changed field of an edit writes its own activity row; an edit that changes nothing writes nothing.
+- AC4. Status FSM (`admin_task` on the kernel): `open → in_progress | blocked`, `in_progress → open | blocked | done`, `blocked → open | in_progress | done`, `done → in_progress | archived`; `archived` is terminal and the same status again is a no-op. `super_admin` can edit and move any task; other staff only tasks they created or are assigned to. An illegal move is `invalid_transition`, an unknown status `invalid_status`.
+- AC5. Deletion is restricted to the task creator and `super_admin`; it is a hard delete and cascades the activity log. Assigning and unassigning is for moderator and above.
+- AC6. On task creation with an assignee, and on an assignment change, a `task_assigned` notification is emitted (outbox topic `notification`, category `social`, dedupe `task_assigned:<task_id>:<assignee_id>`; the body is the task title, text argument `taskTitle`); it opens `/(admin)/tasks/[taskId]`. Assigning oneself emits nothing.
+- AC7. Create, edit (with the names of the changed fields), status move, assignment and delete each write an audit event (outbox topic `audit`, target `admin_task`, ids and codes only — never the title). Comments are not audited.
+- AC8. Purging the creator's account keeps the task (`created_by` becomes null) and its history (the actor becomes null).
 
-**Related.** Tables: `admin_tasks`, `admin_task_activities`. RPCs: `admin_task_create / admin_task_update / admin_task_set_status / admin_task_assign / admin_task_add_comment / admin_task_delete / admin_task_list / admin_task_detail`. Domain: `AdminTask`, `AdminTaskActivity`, `AdminTaskStatus`, `AdminTaskPriority`, `AdminTaskError`, `isStatusTransitionAllowed`. Application: `IAdminTaskRepository` + eight `*AdminTask*UseCase` use cases. Mobile: `useAdminTasksList / useAdminTaskDetail`, `useAdminTaskMutations`, `TaskRow / TaskStatusChip / TaskPriorityChip / TaskActivityTimeline / AssigneePicker`. Notifications: `task_assigned` NotificationKind + `pushRouteAllowlist` handler + `notifications.taskAssignedTitle/Body` i18n keys in `dispatch-notification/i18n.json`.
+**Related.** Tables: `kc_private.admin_tasks`, `kc_private.admin_task_activities`. RPCs: `admin_task_create / admin_task_update / admin_task_set_status / admin_task_assign / admin_task_add_comment / admin_task_delete / admin_task_list / admin_task_detail / admin_task_open_count`. Domain: `AdminTask`, `AdminTaskPage`, `AdminTaskActivity`, `AdminTaskError`, `adminTaskMachine` (FSM catalog), `isStatusTransitionAllowed`. Application: `IAdminTaskRepository` + the `*AdminTask*UseCase` use cases. Tests: `supabase/tests/099_back_office_tasks.sql`, `SupabaseAdminTaskRepository.unit.test.ts`.
 
 ---
 
@@ -585,7 +589,9 @@ The team sees how well matching v2 works per world, to tune `matching_settings` 
 
 ## FR-ADMIN-031 — Demo data removal
 
-> **Status (2026-11-03):** ✅ Implemented — migrations `0591` + `0592`, screen `(admin)/demo-data`, permission `demo_data.manage`.
+> **Status (2026-11-11):** ⛔ Removed at the production-baseline cut-over (`docs/db/target-design.md` §8): the baseline has no demo-data RPCs, so the `(admin)/demo-data` screen, `SupabaseDemoDataRepository` and the `demo_data.manage` permission are deleted from the app. Kc-dev is seeded from scripts, not from the portal. The acceptance criteria below are kept as history only.
+>
+> *(Previous status, 2026-11-03: ✅ implemented — migrations `0591` + `0592`, screen `(admin)/demo-data`, permission `demo_data.manage`.)*
 
 **Description.**
 The kc-dev environment carries fake demo data (the `seed/kc-dev` seed). A super admin or the platform org admin can delete it, and bring it back, from the portal, to test on real data only or on demo data when needed.
@@ -600,8 +606,45 @@ The kc-dev environment carries fake demo data (the `seed/kc-dev` seed). A super 
 - AC7. When no demo data exists, the screen offers "Restore demo data" (`admin_seed_demo_data`): it wipes any leftovers and recreates the demo users, content and nonprofits immediately, with no external workflow. The seed logic lives in the database (`kc_dev_seed_demo_data`, `0592`); `seed/kc-dev/seed.sql` is a thin wrapper over the same function.
 - AC8. Restoring works only on a database carrying the dev marker row in `kc_dev_demo_config` (kc-dev). Anywhere else it fails with `not_dev_environment` and the screen explains that restoring is unavailable.
 - AC9. The demo users' login password is typed once (min 8 characters), stored only as a bcrypt hash, and reused on later restores. Each restore is audit-logged (`admin_seed_demo_data`).
+- AC10. **(2026-11-10, `0732`)** The restore's organizations step also makes the admin who runs it an `org_admin` of each demo nonprofit, and publishes two upcoming events per demo nonprofit through the real create path (an open event with automatic registration, and a small one that needs the organizer's approval), with seed members registered, so the event flow (G18) can be tried at once. The wipe removes them with the nonprofits.
 
 **Related.** `supabase/tests/0591_admin_demo_data_reset.sql` · `supabase/tests/0592_admin_seed_demo_data.sql` · `SupabaseDemoDataRepository` · `supabase/seed/kc-dev/`.
+
+---
+
+## §19 Admin Portal — Back office: CRM contacts and timesheets
+
+Two staff tools rebuilt on the production baseline after the cut-over, each behind its own availability switch in `apps/mobile/src/lib/parkedFeatures.ts` (`CRM_AVAILABLE`, `TIMESHEETS_AVAILABLE`, on) and its own entry in the admin navigation (`crm`, `time`). Both keep their tables in `kc_private` behind SECURITY DEFINER RPCs.
+
+## FR-ADMIN-032 — CRM contacts per organization
+
+**Description.**
+Every organization keeps its own contact book (partners, donors, suppliers, volunteers to follow up). Karma Community is the platform organization and keeps its book the same way. Product decision `D150`.
+
+**Acceptance Criteria.**
+- AC1. A contact belongs to exactly one organization. Only that organization's `org_admin` and `org_manager` see or change it; the platform organization's book is managed by platform staff of rank moderator and above. Anyone else, including platform staff for a non-platform organization, is refused (`forbidden`).
+- AC2. `(admin)/crm` lists the organizations whose book the viewer manages (`crm_my_orgs`, platform organization first) and shows a picker when there is more than one; a viewer with none sees an explanation.
+- AC3. A contact has a required name (1–200 chars, trimmed), optional organization / company (≤ 200), email (shape-checked, `invalid_email`), phone (`+`, digits, spaces, brackets and dashes, 3–32, `invalid_phone`), role title (≤ 200), notes (≤ 4000), tags (≤ 30) and a status ∈ `{cold, warm, active, inactive}` (default `cold`, any change allowed).
+- AC4. Editing patches: an omitted field keeps its value, an empty one clears it. "Mark contacted" stamps the last contact time.
+- AC5. Deleting hides the contact (soft delete); a deleted contact is not listed, counted or found.
+- AC6. The list searches name, company and email (case-insensitive substring), filters by status and tag, sorts by last update (newest first), pages by cursor and shows the matching total (`crm_contact_count`).
+- AC7. Create, edit (with the names of the changed fields), delete and "mark contacted" each write an audit event (outbox topic `audit`, target `crm_contact`, with the organization id) that never carries the contact's name, email or phone.
+
+**Related.** Migration `0035_back_office_crm.sql`. RPCs: `crm_my_orgs / crm_contact_upsert / crm_contact_delete / crm_contact_mark_contacted / crm_contact_list / crm_contact_count`. Permission `crm.manage` = super_admin, moderator, org_admin, org_manager (the server checks the organization). Tests: `supabase/tests/100_back_office_crm.sql`, `SupabaseCrmTimesheetsRepository.unit.test.ts`.
+
+## FR-ADMIN-033 — Staff timesheets
+
+**Description.**
+Platform staff report the hours they worked; the reporter's direct manager approves or rejects each entry. Product decision `D151`.
+
+**Acceptance Criteria.**
+- AC1. Platform staff (support and above) report entries of their own: work date and hours (0–24, two decimals) are required, project (≤ 200) and description (≤ 2000) are optional.
+- AC2. Lifecycle (`timesheet` machine on the kernel): `draft → submitted → approved | rejected`; editing a rejected entry returns it to draft for resubmission; approved is final. Only the author edits, submits or deletes, and only from draft (submit) or draft / rejected (edit, delete). Deleting is a soft delete.
+- AC3. A submitted entry is decided by the reporter's **direct manager** — the member holding the grant that one of the reporter's active grants reports to (`admin_role_grants.manager_grant_id`, FR-ADMIN-025) — or by a super admin. Nobody decides their own entry, a super admin included. A decision may carry a note (≤ 2000).
+- AC4. A member sees their own entries, their direct reports' entries and — as super admin — every entry. `(admin)/time` offers the tabs "mine", "waiting for my decision" and "all" (the last two for approvers), pages by cursor, shows the matching total, and offers approve / reject only on rows the server marks decidable.
+- AC5. Each decision writes an audit event (outbox topic `audit`, target `timesheet_entry`, the decision and the entry owner's id; the note stays on the row), and each delete one more.
+
+**Related.** Migration `0036_back_office_timesheets.sql`. RPCs: `timesheet_upsert / timesheet_submit / timesheet_approve / timesheet_reject / timesheet_delete / timesheet_list / timesheet_count`. Domain: `TimesheetEntry`, `TimesheetScope`, `timesheetMachine` (FSM catalog), `timesheetActions`. Tests: `supabase/tests/101_back_office_timesheets.sql`.
 
 ---
 
@@ -626,3 +669,6 @@ The kc-dev environment carries fake demo data (the `seed/kc-dev` seed). A super 
 | 0.17 | 2026-11-03 | Added FR-ADMIN-031 — demo data removal and restore: `admin_demo_data_status` / `admin_wipe_demo_data` (`0591`), `admin_seed_demo_data` (`0592`), `(admin)/demo-data`, `demo_data.manage` (super admin only). |
 | 0.18 | 2026-11-04 | `FR-ADMIN-025 AC4` — the tree shows one card per person per org (all roles on the card, report count instead of the level badge), grouped by org, with nested connector lines. |
 | 0.19 | 2026-11-04 | `FR-ADMIN-031 AC6` — the platform org admin may manage demo data too (`can_manage_demo_data`, `0611`; `demo_data.manage` = super admin + org admin, scope checked by the server). See `D-225`. |
+| 0.20 | 2026-11-11 | `FR-ADMIN-031` removed: the baseline has no `admin_demo_data_status` / `admin_wipe_demo_data` / `admin_seed_demo_data` RPCs; screen, repository and `demo_data.manage` deleted from the app (application migration package P4). |
+| 0.21 | 2026-11-12 | FR-ADMIN-018 rebuilt on the baseline (`0034`): `kc_private` tables, keyset list, category / assignee / due-range filters, audit (AC7), purge keeps the task (AC8), the `taskTitle` text argument. Added §19: FR-ADMIN-032 CRM contacts per organization (`0035`, `D150`) and FR-ADMIN-033 staff timesheets decided by the direct manager (`0036`, `D151`). |
+| 0.22 | 2026-11-13 | Admin WhatsApp console (`(admin)/whatsapp`, #939) restored on the `integrations` module: kill switch, seven-day overview (with pending reviews), review queue of bot posts (approve publishes on the owner's behalf, reject keeps the draft; D156), outbound queue with Resend, consent with Block, activity, templates. Permission `whatsapp.manage` (moderator+); the new `whatsapp.configure` (super admin only) gates the send limits and template status (D161). Every console write is audited. |

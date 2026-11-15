@@ -1,7 +1,8 @@
-// Content/field taxonomy for UGC translation. Posts carry title/description;
-// messages carry body. See design §4. FR-TRANSLATE-002.
+// Content/field taxonomy for UGC translation (FR-TRANSLATE-002). Equal to the
+// content_type check of public.content_translations and the source registry of
+// the `translate` Edge Function. Rides are posts, so there is no ride type.
 
-export const CONTENT_TYPES = ['post', 'message', 'ride_listing', 'user'] as const;
+export const CONTENT_TYPES = ['post', 'comment', 'message', 'user'] as const;
 export type ContentType = (typeof CONTENT_TYPES)[number];
 
 export const TRANSLATION_FIELDS = ['title', 'description', 'body', 'biography'] as const;

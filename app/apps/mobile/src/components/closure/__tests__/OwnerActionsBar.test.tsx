@@ -2,7 +2,7 @@
 // Owner call to action on post detail, on the kit buttons (FR-CLOSURE-001 / 005, spec 17 §4.1.1, TD-243):
 // an open post starts the closure, a closed one asks to reopen, a terminal one shows nothing.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent } from '@testing-library/react';
+import { act, cleanup, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { Post } from '@kc/domain';
 
@@ -80,6 +80,22 @@ describe('OwnerActionsBar', () => {
     fireEvent.click(reopen);
     expect(getByTestId('reopen-dialog')).toBeTruthy();
     expect(reopen.getAttribute('aria-disabled')).toBe('true');
+  });
+
+  it('leaves the screen after a closure without waiting for the cache refetches', () => {
+    const client = new QueryClient();
+    // Refetches that never settle: the exit must not depend on them.
+    const invalidate = vi.spyOn(client, 'invalidateQueries').mockReturnValue(new Promise<void>(() => {}));
+    const onClosed = vi.fn();
+    renderInTheme(
+      <QueryClientProvider client={client}>
+        <OwnerActionsBar post={OPEN_GIVE} ownerId="u_owner" onClosed={onClosed} onReopened={() => {}} />
+      </QueryClientProvider>,
+    );
+    act(() => useClosureStore.setState({ step: 'done', initiator: 'post-detail', lastOutcome: 'closed' }));
+    expect(onClosed).toHaveBeenCalledWith('closed');
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['feed'] });
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['marketplace-detail'] });
   });
 
   it('shows no action for a post in a terminal state', () => {

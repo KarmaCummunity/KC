@@ -1,7 +1,7 @@
 # An organization's event (G1 step 5b, D31): a time offer in the one create form. A member of an
-# organization chooses between a volunteer shift and the organization's event; the event form
-# adds the organization, the date window, the registration policy, capacity and address. Everyone
-# else sees exactly the volunteer-shift form.
+# organization chooses between a volunteer shift, their own volunteering and the organization's
+# event; the event form adds the organization, the date window, the registration policy, capacity
+# and address. Everyone else chooses between the shift and their own volunteering (FR-POST-024).
 # Spec: docs/spec/08_organizations.md "Events"; docs/spec/requirements/04_posts.md FR-POST-001 AC6.
 #
 # Categories, directions and field labels are tapped by their Hebrew text (as in flow 13): their
@@ -10,8 +10,8 @@
 # Limitation: kc-dev has no seeded organization membership for the seed user and no seeded event
 # post, so this flow cannot publish an event or reach a post page's event section (`event-section`,
 # `event-register`, `event-cancel`, `event-roster`). It checks the create form for whichever case
-# the seed user is in: the event choice and fields when they belong to an organization, the
-# unchanged volunteer-shift form otherwise. Registration and the roster are covered by the
+# the seed user is in: the organization's event choice and fields when they belong to an organization,
+# the shift and the personal volunteering choice otherwise. Registration and the roster are covered by the
 # component tests (EventRegistrationActions.test.tsx) until an event can be seeded.
 appId: org.karmacommunity.app
 name: Organization event — time offer form for members and non-members
@@ -35,11 +35,30 @@ tags: [posts, organizations, time]
     visible:
       text: "משך.*"
     timeout: 10000
-# A member of an organization: the event choice opens the event fields and the organization picker.
+# Everyone sees the volunteer shift and their own volunteering with sign-up (FR-POST-024); the second
+# choice opens the event fields (a date window, no duration).
+- assertVisible:
+    id: time-offer-kind-shift
+- assertVisible:
+    id: time-offer-kind-personal-event
+- tapOn:
+    id: time-offer-kind-personal-event
+- extendedWaitUntil:
+    visible: "מתחיל.*"
+    timeout: 10000
+- assertNotVisible:
+    text: "משך.*"
+- tapOn:
+    id: time-offer-kind-shift
+- extendedWaitUntil:
+    visible: "משך.*"
+    timeout: 10000
+# A member of an organization has a third choice, the organization's event: it opens the event fields
+# and the organization picker. Everyone else has no such chip, so this block is a member's alone.
 - runFlow:
     when:
       visible:
-        id: time-offer-kind
+        id: time-offer-kind-event
     commands:
       - tapOn:
           id: time-offer-kind-event
@@ -62,11 +81,13 @@ tags: [posts, organizations, time]
           direction: DOWN
           timeout: 10000
       # Publishing without a window is refused in the form, before any server call.
+      # The publish button ends the form, where the floating tab bar can cover it.
       - scrollUntilVisible:
           element:
             id: listing-publish
           direction: DOWN
           timeout: 10000
+          centerElement: true
       - tapOn:
           id: listing-publish
       - assertVisible:

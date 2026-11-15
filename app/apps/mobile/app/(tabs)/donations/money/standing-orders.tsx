@@ -3,9 +3,12 @@ import { Pressable, View } from 'react-native';
 import { KcFlashList } from '../../../../src/components/lists/KcFlashList';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { standingOrderActions } from '@kc/domain';
 import { makeUseStyles, radius, spacing, typography, Text } from '@kc/ui';
 import { Screen } from '../../../../src/components/ui/Screen';
 import { paymentsUseCases } from '../../../../src/services/paymentsComposition';
+import { shekelsText } from '../../../../src/components/money/moneyAmount';
+import { listOrEmpty } from '../../../../src/lib/backendAvailability';
 
 const useStyles = makeUseStyles(({ colors }) => ({
   row: { padding: spacing.lg, gap: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border },
@@ -23,7 +26,7 @@ export default function MyStandingOrdersScreen() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const orders = useQuery({
     queryKey: ['money', 'standing-orders'],
-    queryFn: () => paymentsUseCases.listStandingOrders().execute(50),
+    queryFn: () => listOrEmpty(() => paymentsUseCases.listStandingOrders().execute()),
   });
 
   async function act(orderId: string, fn: () => Promise<void>) {
@@ -48,10 +51,12 @@ export default function MyStandingOrdersScreen() {
         }
         renderItem={({ item }) => {
           const busy = busyId === item.orderId;
+          // The buttons follow `standingOrderMachine`, the graph the standing-order RPCs enforce.
+          const can = standingOrderActions(item.status);
           return (
             <View style={styles.row}>
               <Text style={styles.title}>
-                ₪{item.amountIls.toFixed(0)} / {t('moneyPayments.monthlyCadence')}
+                ₪{shekelsText(item.amountAgorot)} / {t('moneyPayments.monthlyCadence')}
               </Text>
               <Text style={styles.meta}>
                 {t('moneyPayments.standingStatus', { status: item.status })}
@@ -60,7 +65,7 @@ export default function MyStandingOrdersScreen() {
                   : ''}
               </Text>
               <View style={styles.actions}>
-                {item.status === 'active' ? (
+                {can.pause ? (
                   <Pressable
                     style={styles.btn}
                     disabled={busy}
@@ -69,7 +74,7 @@ export default function MyStandingOrdersScreen() {
                     <Text style={styles.btnText}>{t('moneyPayments.pauseStanding')}</Text>
                   </Pressable>
                 ) : null}
-                {item.status === 'paused' ? (
+                {can.resume ? (
                   <Pressable
                     style={styles.btn}
                     disabled={busy}
@@ -78,7 +83,7 @@ export default function MyStandingOrdersScreen() {
                     <Text style={styles.btnText}>{t('moneyPayments.resumeStanding')}</Text>
                   </Pressable>
                 ) : null}
-                {item.status !== 'cancelled' ? (
+                {can.cancel ? (
                   <Pressable
                     style={styles.btn}
                     disabled={busy}

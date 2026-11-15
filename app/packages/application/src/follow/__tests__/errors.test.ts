@@ -28,15 +28,15 @@ describe('FollowError', () => {
   });
 
   it('opts is optional — constructor works with just (code, message)', () => {
-    const err = new FollowError('already_following', 'x');
+    const err = new FollowError('request_required', 'x');
     expect(err.cooldownUntil).toBeUndefined();
     expect(err.cause).toBeUndefined();
   });
 
   it('preserves every code in the FollowErrorCode union', () => {
     for (const code of [
-      'self_follow', 'blocked_relationship', 'already_following', 'cooldown_active',
-      'pending_request_exists', 'user_not_found', 'privacy_mode_no_change', 'unknown',
+      'self_follow', 'blocked_relationship', 'cooldown_active', 'request_required',
+      'account_not_active', 'rate_limited', 'user_not_found', 'privacy_mode_no_change', 'unknown',
     ] as const) {
       expect(new FollowError(code, code).code).toBe(code);
     }

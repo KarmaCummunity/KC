@@ -20,6 +20,15 @@ function resolveGitCommitSha(): string {
   return sha.trim().slice(0, 7);
 }
 
+/**
+ * Public Sentry client key (DSN) of the `kc` project in org `kc-z0`. A DSN is
+ * write-only and ships inside every client bundle by design, so it is safe to
+ * commit; it is the fallback when `EXPO_PUBLIC_SENTRY_DSN` is not provided, so
+ * a missing CI variable can never silently turn error reporting off again.
+ */
+const DEFAULT_SENTRY_DSN =
+  'https://989d87acbeba128cd2d098a573efcc1a@o4511327826804736.ingest.us.sentry.io/4512234267213825';
+
 function applySentryBuildDefaults(): void {
   const token = process.env.SENTRY_AUTH_TOKEN?.trim();
   if (!token) {
@@ -28,10 +37,13 @@ function applySentryBuildDefaults(): void {
   }
   delete process.env.SENTRY_DISABLE_AUTO_UPLOAD;
   if (!process.env.SENTRY_ORG?.trim()) {
-    process.env.SENTRY_ORG = 'karma-community';
+    process.env.SENTRY_ORG = 'kc-z0';
   }
   if (!process.env.SENTRY_URL?.trim()) {
-    process.env.SENTRY_URL = 'https://de.sentry.io/';
+    process.env.SENTRY_URL = 'https://us.sentry.io/';
+  }
+  if (!process.env.SENTRY_PROJECT?.trim()) {
+    process.env.SENTRY_PROJECT = 'kc';
   }
 }
 
@@ -124,7 +136,7 @@ export default function expoAppConfig({ config }: ConfigContext): ExpoConfig {
       googleMapsConfigured: Boolean(googleMapsApiKey),
       googleWebClientId,
       googleIosClientId,
-      sentryDsn: process.env.EXPO_PUBLIC_SENTRY_DSN?.trim() || undefined,
+      sentryDsn: process.env.EXPO_PUBLIC_SENTRY_DSN?.trim() || DEFAULT_SENTRY_DSN,
       posthogKey: process.env.EXPO_PUBLIC_POSTHOG_KEY?.trim() || undefined,
       // EAS project id is injected from the KC_EAS_PROJECT_ID repo variable (CI) or local env.
       eas: { ...config.extra?.eas, projectId: easProjectId },

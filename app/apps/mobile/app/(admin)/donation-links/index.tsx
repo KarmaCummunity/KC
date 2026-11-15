@@ -5,7 +5,7 @@
 // Gated by the 'donation_links.review' permission; the server re-checks the role (0546).
 import React, { useCallback, useState } from 'react';
 import { Platform, RefreshControl, ScrollView, View } from 'react-native';
-import { hasPermission, type AdminRole, type DonationLinkReviewStatus } from '@kc/domain';
+import { hasPermission, isDonationLinkAwaitingReview, type AdminRole, type DonationLinkReviewStatus } from '@kc/domain';
 import type { DonationLinkReviewItem } from '@kc/application';
 import { makeUseStyles, radius, spacing, Text, typography } from '@kc/ui';
 import { Chip } from '../../../src/components/ui/Chip';
@@ -53,7 +53,7 @@ function ReviewRow({
         {`${t.submittedBy} ${item.submitterName ?? t.unknownSubmitter} · ${new Date(item.createdAt).toLocaleDateString()}`}
       </Text>
       {item.reviewStatus === 'rejected' && item.reviewNote ? <Text style={styles.meta}>{item.reviewNote}</Text> : null}
-      {item.reviewStatus === 'pending' ? (
+      {isDonationLinkAwaitingReview(item.reviewStatus) ? (
         <>
           <TextField label={t.notePlaceholder} value={note} onChangeText={setNote} maxLength={280} />
           <View style={styles.actions}>

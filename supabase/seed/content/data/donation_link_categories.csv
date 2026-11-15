@@ -1,0 +1,12 @@
+slug,icon_name,sort_order,is_active
+time,time-outline,1,true
+money,cash-outline,2,true
+food,restaurant-outline,3,true
+housing,home-outline,4,true
+transport,car-outline,5,true
+knowledge,school-outline,6,true
+animals,paw-outline,7,true
+medical,medical-outline,8,true
+democracy,megaphone-outline,9,true
+employment,briefcase-outline,10,true
+challenges,trophy-outline,11,true

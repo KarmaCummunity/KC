@@ -18,7 +18,7 @@ export class RemoveFollowerUseCase {
       throw new FollowError('self_follow', 'self_follow');
     }
     // Edge orientation: followerId follows ownerId. Either party can DELETE
-    // (RLS in 0003: `follow_edges_delete_participants`).
+    // (RLS policy `follows_delete_party`).
     await this.users.unfollow(input.followerId, input.ownerId);
   }
 }

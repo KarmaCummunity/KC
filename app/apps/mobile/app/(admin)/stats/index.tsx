@@ -15,6 +15,7 @@ import { FilterSection } from '../../../src/components/filterKit/FilterSection';
 import { AdminListEmpty } from '../../../src/components/admin/AdminListEmpty';
 import { useLocaleBundle } from '../../../src/i18n/useLocaleBundle';
 import { textAlignStart } from '../../../src/lib/rtlLayout';
+import { listOrEmpty } from '../../../src/lib/backendAvailability';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../../src/components/RouteErrorBoundary';
 
@@ -47,7 +48,7 @@ export default function PlatformStatsScreen() {
 
   const funnel = useQuery({
     queryKey: ['admin.stats.funnel', days],
-    queryFn: () => getWorldFlowFunnelUseCase().execute(days),
+    queryFn: () => listOrEmpty(() => getWorldFlowFunnelUseCase().execute(days)),
     enabled,
     staleTime: 60_000,
   });

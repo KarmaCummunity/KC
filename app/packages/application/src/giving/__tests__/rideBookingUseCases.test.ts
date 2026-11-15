@@ -229,7 +229,7 @@ describe('ride booking use cases', () => {
       }),
     ).rejects.toMatchObject({ code: 'invalid_status' });
     await expect(
-      new ReinstateRideBookingUseCase(repo).execute('h1', { ride: { ...ride, listingStatus: 'closed' } }),
+      new ReinstateRideBookingUseCase(repo).execute('h1', { ride: { ...ride, listingStatus: 'closed_delivered' } }),
     ).rejects.toMatchObject({ code: 'listing_not_available' });
     expect(repo.reinstate).toHaveBeenCalledTimes(1);
   });

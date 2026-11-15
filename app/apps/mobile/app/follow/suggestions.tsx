@@ -13,6 +13,7 @@ import { rtlTextAlignStart } from '../../src/lib/rtlTextAlignStart';
 import { rowDirectionStart } from '../../src/lib/rtlLayout';
 import { KcFlashList } from '../../src/components/lists/KcFlashList';
 import { SimpleRowListSkeleton } from '../../src/components/skeletons/SimpleRowListSkeleton';
+import { listOrEmpty, valueOrNull } from '../../src/lib/backendAvailability';
 
 type SuggestionItem = {
   userId: string;
@@ -74,14 +75,16 @@ export default function FollowSuggestionsScreen() {
     [router],
   );
 
+  // M03 / M04: the baseline has neither suggestions nor a completeness score yet, so the list is
+  // empty and the nudge absent (degrade rule); the entry point in the aside is hidden.
   const query = useQuery({
     queryKey: ['followSuggestions'],
-    queryFn: () => container.followSuggestions.listSuggestions(20),
+    queryFn: () => listOrEmpty(() => container.followSuggestions.listSuggestions(20)),
   });
 
   const completeness = useQuery({
     queryKey: ['profileCompleteness'],
-    queryFn: () => container.followSuggestions.getProfileCompleteness(),
+    queryFn: () => valueOrNull(() => container.followSuggestions.getProfileCompleteness()),
   });
 
   const renderItem = useCallback(

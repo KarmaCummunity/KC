@@ -1,4 +1,6 @@
 // V2-ADMIN-MONEY-9 — Hebrew strings for /admin/money.
+import { moneyVisibilityParityEn, moneyVoidEn, moneyVoidErrorEn } from './adminHierarchyParity';
+
 export const adminMoneyEn = {
   title:           'Finances',
   forbiddenTitle:  'You do not have permission to access this screen.',
@@ -28,7 +30,7 @@ export const adminMoneyEn = {
   status: {
     pending:  'Pending',
     cleared:  'Cleared',
-    canceled: 'Canceled',
+    cancelled: 'Canceled',
   },
   row: {
     counterpartyPrefix: 'Party:',
@@ -94,6 +96,7 @@ export const adminMoneyEn = {
     title:        'Public display',
     intro:        'Choose what the public sees on the organization page and statistics. Everything is off by default and donor names are never shown. A single entry can be excluded from the public figures when editing it.',
     superOnly:    'Only a super admin can change these settings.',
+    ...moneyVisibilityParityEn,
     saveFailed:   'Saving failed. Please try again.',
     toggles: {
       show_totals:             { title: 'Income and expense totals', hint: 'Total income, expenses and balance.' },
@@ -127,6 +130,7 @@ export const adminMoneyEn = {
     publicLabel:        'Include in public figures',
     publicHint:         'Subject to the "Public display" settings. The party name is never shown.',
   },
+  void: moneyVoidEn,
   confirm: {
     delete:        'Delete this entry? (soft delete)',
     deleteTitle:   'Confirm deletion',
@@ -147,6 +151,7 @@ export const adminMoneyEn = {
     invalid_last4:           'Enter exactly 4 digits.',
     invalid_settings:        'Invalid settings.',
     org_not_found:           'Organization not found.',
+    ...moneyVoidErrorEn,
     unknown:                 'Something went wrong. Please try again.',
   },
 };

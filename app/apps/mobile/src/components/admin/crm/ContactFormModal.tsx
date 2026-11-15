@@ -16,11 +16,13 @@ import { formEmailInputProps, formPhoneInputProps } from '../../../lib/platform/
 
 export interface ContactFormModalProps {
   readonly initial: CrmContact | null;
+  /** The organization whose book the contact belongs to (FR-ADMIN-032). */
+  readonly orgId: string;
   readonly onClose: () => void;
   readonly onSaved: () => void;
 }
 
-export function ContactFormModal({ initial, onClose, onSaved }: ContactFormModalProps) {
+export function ContactFormModal({ initial, orgId, onClose, onSaved }: ContactFormModalProps) {
   const styles = useStyles();
   const L = useLocaleBundle();
   const t = L.admin.crm;
@@ -38,6 +40,7 @@ export function ContactFormModal({ initial, onClose, onSaved }: ContactFormModal
   const save = useMutation({
     mutationFn: () =>
       container.upsertCrmContact.execute({
+        orgId,
         contactId:    initial?.contactId ?? null,
         name:         name.trim(),
         organization: organization.trim() || null,

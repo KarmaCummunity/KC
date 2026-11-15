@@ -7,142 +7,213 @@ import type {
 } from '@kc/application';
 import {
   AdminContentError,
+  BackendUnavailableError,
   type AdminAuditRow,
+  type AdminMemberRef,
   type AdminPostSearchResult,
   type AdminSearchPage,
   type AdminUserSearchResult,
 } from '@kc/domain';
+import type { Database } from '../database.types';
+import { unwrapCall } from '../rpc/mapRpcError';
+import { loadDisplayNames } from '../reports/reportTargetPreviews';
+import { callAuditSearch } from './auditSearchCall';
+import { refusalReason } from './refusalReason';
 
+type Client = SupabaseClient<Database>;
+
+/** Rows per page when the caller names none. */
+const DEFAULT_LIMIT = 50;
+/** `admin_audit_search` serves at most 200 rows; one extra row is read to know if more remain. */
+const AUDIT_MAX_LIMIT = 199;
+
+/** A member row with its account status, as the embedded staff read returns it. */
 interface UserRow {
-  user_id: string;
+  id: string;
   display_name: string | null;
-  share_handle: string | null;
-  account_status: string;
-  city_name: string | null;
+  share_handle: string;
+  city_id: string | null;
   created_at: string;
-  last_seen_at: string | null;
-  total_count: number | string;
+  user_account: { status: string } | { status: string }[] | null;
 }
 
-interface PostRow {
-  post_id: string;
-  title: string | null;
-  type: string;
-  status: string;
-  visibility: string;
-  owner_id: string;
-  owner_display_name: string | null;
-  created_at: string;
-  updated_at: string;
-  total_count: number | string;
+/** Maps a failed staff read to `AdminContentError`; a missing backend object stays unavailable. */
+function toContentError(error: unknown): unknown {
+  if (error instanceof BackendUnavailableError || error instanceof AdminContentError) return error;
+  const reason = refusalReason(error);
+  if (reason === 'forbidden' || reason === 'unauthenticated') return new AdminContentError('forbidden');
+  if (reason === 'invalid_input') return new AdminContentError('invalid_input');
+  return new AdminContentError('unknown', error instanceof Error ? error.message : undefined);
 }
 
-interface AuditRow {
-  event_id: string;
-  actor_id: string | null;
-  actor_display_name: string | null;
-  action: string;
-  target_type: string | null;
-  target_id: string | null;
-  target_display_name: string | null;
-  metadata: Record<string, unknown> | null;
-  created_at: string;
-  total_count: number | string;
+/** Runs a staff read and maps its failure, so each search method reads as one expression. */
+async function guarded<T>(run: () => Promise<T>): Promise<T> {
+  try {
+    return await run();
+  } catch (error) {
+    throw toContentError(error);
+  }
 }
 
-function toError(err: { message?: string; code?: string } | null): AdminContentError {
-  const msg = err?.message ?? '';
-  if (msg === 'invalid_status') return new AdminContentError('invalid_status');
-  if (msg === 'forbidden' || err?.code === '42501') return new AdminContentError('forbidden');
-  if (msg === 'invalid_input') return new AdminContentError('invalid_input');
-  return new AdminContentError('unknown', msg);
+/**
+ * The text as a PostgREST `ilike` pattern. The characters that carry meaning inside an
+ * `or(...)` filter list (`,` `(` `)`) and inside a pattern (`%` `*` `\`) are dropped.
+ */
+function likePattern(text: string): string {
+  return `%${text.replace(/[,()%*\\]/g, ' ').trim()}%`;
 }
 
-function totalOf(rows: readonly { total_count: number | string }[]): number {
-  if (rows.length === 0) return 0;
-  const first = rows[0]!.total_count;
-  return typeof first === 'number' ? first : Number.parseInt(first, 10);
+/** Splits `rows` fetched with one extra row into the page and the cursor of its last row. */
+function pageOf<T>(
+  rows: readonly T[],
+  limit: number,
+  cursorOf: (last: T) => Record<string, unknown>,
+): { rows: T[]; nextCursor: Record<string, unknown> | null } {
+  const page = rows.slice(0, limit);
+  const last = page[page.length - 1];
+  return { rows: page, nextCursor: rows.length > limit && last !== undefined ? cursorOf(last) : null };
 }
 
-function mapUser(row: UserRow): AdminUserSearchResult {
-  return {
-    userId: row.user_id,
-    displayName: row.display_name,
-    shareHandle: row.share_handle,
-    accountStatus: row.account_status,
-    cityName: row.city_name,
-    createdAt: new Date(row.created_at),
-    lastSeenAt: row.last_seen_at === null ? null : new Date(row.last_seen_at),
-  };
+/** Keyset condition for rows ordered `created_at desc, id desc` after the cursor row. */
+function afterCreatedAt(cursor: Record<string, unknown> | null | undefined): string | null {
+  const createdAt = cursor?.['createdAt'];
+  const id = cursor?.['id'];
+  if (typeof createdAt !== 'string' || typeof id !== 'string') return null;
+  return `created_at.lt.${createdAt},and(created_at.eq.${createdAt},id.lt.${id})`;
 }
 
-function mapPost(row: PostRow): AdminPostSearchResult {
-  return {
-    postId: row.post_id,
-    title: row.title,
-    type: row.type,
-    status: row.status,
-    visibility: row.visibility,
-    ownerId: row.owner_id,
-    ownerDisplayName: row.owner_display_name,
-    createdAt: new Date(row.created_at),
-    updatedAt: new Date(row.updated_at),
-  };
-}
+const statusOfAccount = (account: UserRow['user_account']): string =>
+  (Array.isArray(account) ? account[0]?.status : account?.status) ?? 'active';
 
-function mapAudit(row: AuditRow): AdminAuditRow {
-  return {
-    eventId: row.event_id,
-    actorId: row.actor_id,
-    actorDisplayName: row.actor_display_name,
-    action: row.action,
-    targetType: row.target_type,
-    targetId: row.target_id,
-    targetDisplayName: row.target_display_name,
-    metadata: row.metadata ?? {},
-    createdAt: new Date(row.created_at),
-  };
-}
-
+/** FR-ADMIN-019 / FR-ADMIN-020 — staff search of members, posts and the audit trail. */
 export class SupabaseAdminContentRepository implements IAdminContentRepository {
-  constructor(private readonly client: SupabaseClient) {}
+  constructor(private readonly client: Client) {}
+
+  async findActiveMembers(text: string, limit: number): Promise<readonly AdminMemberRef[]> {
+    return guarded(async () => {
+      // Plain `users` read (active members are readable to any signed-in viewer); no staff join.
+      const rows = unwrapCall(
+        'table:users',
+        await this.client
+          .from('users')
+          .select('id, display_name')
+          .eq('is_active', true)
+          .ilike('display_name', likePattern(text))
+          .limit(limit),
+      );
+      return (rows ?? []).map((r) => ({ userId: r.id, displayName: r.display_name }));
+    });
+  }
 
   async searchUsers(filters: AdminUserSearchFilters): Promise<AdminSearchPage<AdminUserSearchResult>> {
-    const { data, error } = await this.client.rpc('admin_search_users', {
-      p_query:  filters.query  ?? null,
-      p_status: filters.status ?? null,
-      p_limit:  filters.limit  ?? 50,
-      p_offset: filters.offset ?? 0,
+    return guarded(async () => {
+      const limit = filters.limit ?? DEFAULT_LIMIT;
+      // `users_select_staff` + `user_account_select_staff`: members in every account state.
+      // `search_users_page` is not used: it returns active members only and needs two letters.
+      let query = this.client
+        .from('users')
+        .select('id, display_name, share_handle, city_id, created_at, user_account!inner(status)')
+        .order('created_at', { ascending: false })
+        .order('id', { ascending: false })
+        .limit(limit + 1);
+      if (filters.status) query = query.eq('user_account.status', filters.status);
+      if (filters.query) {
+        const pattern = likePattern(filters.query);
+        query = query.or(`display_name.ilike.${pattern},share_handle.ilike.${pattern}`);
+      }
+      const after = afterCreatedAt(filters.cursor);
+      if (after) query = query.or(after);
+      const rows = (unwrapCall('table:users', await query) ?? []) as unknown as UserRow[];
+      const page = pageOf(rows, limit, (r) => ({ createdAt: r.created_at, id: r.id }));
+      return {
+        rows: page.rows.map((r) => ({
+          userId: r.id,
+          displayName: r.display_name,
+          shareHandle: r.share_handle,
+          accountStatus: statusOfAccount(r.user_account),
+          cityId: r.city_id,
+          createdAt: new Date(r.created_at),
+        })),
+        nextCursor: page.nextCursor,
+      };
     });
-    if (error) throw toError(error);
-    const rows = Array.isArray(data) ? (data as UserRow[]) : [];
-    return { rows: rows.map(mapUser), totalCount: totalOf(rows) };
   }
 
   async searchPosts(filters: AdminPostSearchFilters): Promise<AdminSearchPage<AdminPostSearchResult>> {
-    const { data, error } = await this.client.rpc('admin_search_posts', {
-      p_query:  filters.query  ?? null,
-      p_status: filters.status ?? null,
-      p_limit:  filters.limit  ?? 50,
-      p_offset: filters.offset ?? 0,
+    return guarded(async () => {
+      const limit = filters.limit ?? DEFAULT_LIMIT;
+      // `posts_select_staff`: posts in every status and audience, removed ones included.
+      let query = this.client
+        .from('posts')
+        .select('id, title, post_type, status, visibility, owner_id, created_at, updated_at')
+        .order('created_at', { ascending: false })
+        .order('id', { ascending: false })
+        .limit(limit + 1);
+      if (filters.status) query = query.eq('status', filters.status);
+      if (filters.query) {
+        const pattern = likePattern(filters.query);
+        query = query.or(`title.ilike.${pattern},description.ilike.${pattern}`);
+      }
+      const after = afterCreatedAt(filters.cursor);
+      if (after) query = query.or(after);
+      const rows = unwrapCall('table:posts', await query) ?? [];
+      const page = pageOf(rows, limit, (r) => ({ createdAt: r.created_at, id: r.id }));
+      const owners = await loadDisplayNames(this.client, page.rows.map((r) => r.owner_id));
+      return {
+        rows: page.rows.map((r) => ({
+          postId: r.id,
+          title: r.title,
+          type: r.post_type,
+          status: r.status,
+          visibility: r.visibility,
+          ownerId: r.owner_id,
+          ownerDisplayName: owners.get(r.owner_id) ?? null,
+          createdAt: new Date(r.created_at),
+          updatedAt: new Date(r.updated_at),
+        })),
+        nextCursor: page.nextCursor,
+      };
     });
-    if (error) throw toError(error);
-    const rows = Array.isArray(data) ? (data as PostRow[]) : [];
-    return { rows: rows.map(mapPost), totalCount: totalOf(rows) };
   }
 
   async searchAudit(filters: AdminAuditSearchFilters): Promise<AdminSearchPage<AdminAuditRow>> {
-    const { data, error } = await this.client.rpc('admin_audit_search', {
-      p_target_user_id: filters.targetUserId ?? null,
-      p_actor_id:       filters.actorId      ?? null,
-      p_action:         filters.action       ?? null,
-      p_limit:          filters.limit        ?? 100,
-      p_offset:         filters.offset       ?? 0,
-      p_from:           filters.fromDate ? filters.fromDate.toISOString() : null,
-      p_to:             filters.toDate   ? filters.toDate.toISOString()   : null,
+    return guarded(async () => {
+      const limit = Math.min(filters.limit ?? 100, AUDIT_MAX_LIMIT);
+      const before = filters.cursor;
+      const rows = await callAuditSearch(this.client, {
+        p_limit: limit + 1,
+        ...(filters.targetUserId ? { p_target_id: filters.targetUserId } : {}),
+        ...(filters.actorId ? { p_actor_id: filters.actorId } : {}),
+        ...(filters.action ? { p_action: filters.action } : {}),
+        ...(filters.fromDate ? { p_from: filters.fromDate.toISOString() } : {}),
+        ...(filters.toDate ? { p_to: filters.toDate.toISOString() } : {}),
+        ...(typeof before?.['occurredAt'] === 'string' && typeof before['id'] === 'number'
+          ? { p_before_occurred_at: before['occurredAt'], p_before_id: before['id'] }
+          : {}),
+      });
+      const page = pageOf(rows, limit, (r) => ({ occurredAt: r.occurred_at, id: r.id }));
+      // The audit trail carries ids only (FR-ADMIN-007): the names come from `users`.
+      const named = page.rows.flatMap((r) => [
+        ...(r.actor_id ? [r.actor_id] : []),
+        ...(r.target_type === 'user' && r.target_id ? [r.target_id] : []),
+      ]);
+      const names = await loadDisplayNames(this.client, named);
+      return {
+        rows: page.rows.map((r) => ({
+          eventId: String(r.id),
+          actorId: r.actor_id ?? null,
+          actorDisplayName: r.actor_id ? names.get(r.actor_id) ?? null : null,
+          action: r.action,
+          targetType: r.target_type ?? null,
+          targetId: r.target_id ?? null,
+          targetDisplayName: r.target_type === 'user' && r.target_id ? names.get(r.target_id) ?? null : null,
+          metadata: (r.metadata && typeof r.metadata === 'object' && !Array.isArray(r.metadata)
+            ? r.metadata
+            : {}) as Record<string, unknown>,
+          createdAt: new Date(r.occurred_at),
+        })),
+        nextCursor: page.nextCursor,
+      };
     });
-    if (error) throw toError(error);
-    const rows = Array.isArray(data) ? (data as AuditRow[]) : [];
-    return { rows: rows.map(mapAudit), totalCount: totalOf(rows) };
   }
 }

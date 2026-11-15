@@ -10,7 +10,7 @@ test('block and unblock a user from the profile menu', async ({ page }) => {
   const { session: target } = await sessionFor({ email: TARGET_EMAIL, password: USER_A.password });
   const [row] = await rest<{ share_handle: string }[]>(
     target.access_token,
-    `users?select=share_handle&user_id=eq.${target.user.id}`,
+    `users?select=share_handle&id=eq.${target.user.id}`,
   );
   expect(row?.share_handle).toBeTruthy();
 

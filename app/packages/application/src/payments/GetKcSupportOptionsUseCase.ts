@@ -7,8 +7,9 @@ import type { IKcSupportChannelsRepository } from '../ports/IKcSupportChannelsRe
  * The server-configured channels are the single source of truth (D20: the
  * provider is swappable without a release; D64: interim links are withdrawn
  * once clearing exists), so there is deliberately no compiled fallback — a
- * load failure propagates as `KcSupportChannelsError` and the UI shows the
- * "unavailable" state instead of possibly stale payment links.
+ * load failure propagates (`KcSupportChannelsError`, or `BackendUnavailableError`
+ * while the server has no channel list) and the UI shows the "unavailable" state
+ * instead of possibly stale payment links.
  */
 export class GetKcSupportOptionsUseCase {
   constructor(private readonly repo: IKcSupportChannelsRepository) {}

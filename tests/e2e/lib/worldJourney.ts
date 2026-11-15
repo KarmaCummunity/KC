@@ -1,9 +1,9 @@
 /**
  * Two-user giving journey per active world (G40, docs/architecture/target.md §5.1).
  *
- * One journey shape, one fixture per world: user A publishes a listing the same
- * way the create form does (the `create_marketplace_listing` RPC, so the test is
- * not coupled to form widgets), user B claims it from the listing page, A
+ * One journey shape, one fixture per world: user A publishes a post the same way the app
+ * does (a draft + photo + `publish_post` for items, `create_post_with_details` for food, on
+ * the production baseline D-228), user B claims it from the post page, A
  * confirms, A hands it over (listing closes, karma is written), B rates. UI steps
  * run in the browser as each user; every state change is re-read through the
  * REST API as the acting user, so RLS is exercised as in the app.
@@ -15,27 +15,33 @@
 import { test, expect, type Browser, type BrowserContext, type Page } from '@playwright/test';
 import { gotoApp } from './app';
 import { cleanupE2eContent, rest, runTag, sessionFor } from './api';
+import { publishPostAs } from './publish';
 import { STORAGE_B, USER_A, USER_B } from './env';
 
 export interface WorldJourney {
   /** Marketplace world slug — the fixture that plugs a world into this journey. */
-  readonly world: 'items' | 'food';
-  /** `listing_kinds.slug` of the "give" kind the listing is published under. */
+  readonly world: 'items' | 'food' | 'animals';
+  /** `post_kinds.slug` of the "offer" kind the post is published under. */
   readonly kindSlug: string;
+  /**
+   * How the app publishes this kind: `plain` is a draft, its photo and `publish_post` (an offer
+   * needs a photo); `food` is `create_post_with_details` with the food detail row.
+   */
+  readonly publish: 'plain' | 'food';
   /** Hebrew title stem; the run tag is prepended so cleanup can find the row. */
   readonly titleHe: string;
   /**
    * The recipient's first action on the listing page: testID + Hebrew label fallback, and
-   * the handoff status it produces — items reserve and wait for the owner (`reserved`),
+   * the handoff status it produces — items and animal adoption reserve and wait for the owner (`reserved`),
    * the food quick claim is confirmed at once (`confirmed`, 0383; no owner approval step).
    */
   readonly claim: { readonly testId: string; readonly label: string; readonly resultsIn: 'reserved' | 'confirmed' };
-  /** Kind-specific details the create form would collect (e.g. food expiry). */
+  /** The detail row the create form would collect (food: `expires_at`, `allergens`, `kosher`). */
   readonly details: () => Record<string, unknown>;
 }
 
 interface HandoffRow {
-  handoff_id: string;
+  id: string;
   status: 'reserved' | 'confirmed' | 'handed_over' | 'cancelled' | 'no_show';
   owner_id: string;
   recipient_id: string;
@@ -51,37 +57,10 @@ async function tokenFor(user: Credentials): Promise<{ token: string; userId: str
   return { token: session.access_token as string, userId: (session.user as { id: string }).id };
 }
 
-/** Publishes as `user` through the same RPC the create form calls. Returns the listing id. */
-async function publishAs(user: Credentials, journey: WorldJourney): Promise<{ listingId: string; title: string }> {
-  const { token } = await tokenFor(user);
-  const [kind] = await rest<{ kind_id: string }[]>(
-    token,
-    `listing_kinds?select=kind_id&world_slug=eq.${journey.world}&slug=eq.${journey.kindSlug}&limit=1`,
-  );
-  if (!kind) throw new Error(`listing kind ${journey.world}/${journey.kindSlug} is missing on kc-dev`);
-  const [city] = await rest<{ city_id: string }[]>(token, 'cities?select=city_id&limit=1');
-  const title = `${runTag()} ${journey.titleHe}`;
-  const listingId = await rest<string>(token, 'rpc/create_marketplace_listing', {
-    method: 'POST',
-    body: {
-      p_kind_id: kind.kind_id,
-      p_title: title,
-      p_summary: null,
-      p_details: journey.details(),
-      p_direction: 'give',
-      p_city_id: city?.city_id ?? null,
-    },
-  });
-  if (typeof listingId !== 'string') throw new Error(`create_marketplace_listing returned ${JSON.stringify(listingId)}`);
-  return { listingId, title };
-}
-
 /** The handoff row as `user` sees it (participant-only RLS); `null` when none exists. */
-async function handoffAs(user: Credentials, listingId: string): Promise<HandoffRow | null> {
+async function handoffAs(user: Credentials, postId: string): Promise<HandoffRow | null> {
   const { token } = await tokenFor(user);
-  // The handoff record lives on the post since G1 (post_handoffs, 0620; giving_handoffs is no
-  // longer written after 0666), so read it through the RPC the app itself uses.
-  const row = await rest<HandoffRow | null>(token, 'rpc/get_listing_handoff', { method: 'POST', body: { p_listing_id: listingId } });
+  const [row] = await rest<HandoffRow[]>(token, `post_handoffs?select=id,status,owner_id,recipient_id&post_id=eq.${postId}&order=created_at.desc&limit=1`);
   return row ?? null;
 }
 
@@ -102,37 +81,66 @@ function handoffStatus(page: Page) {
   return page.getByTestId('giving-handoff-status').or(page.getByText(/^סטטוס: /)).first();
 }
 
+/**
+ * After a handoff action: the server row (read as `user`, through RLS) reaches `status`
+ * first, then the listing page shows it. On a slow dev backend the action's own refetch can
+ * lag behind the write, so the page gets one reload instead of a longer blind wait; an action
+ * that never reaches the server still fails, with a message that says so.
+ */
+async function expectHandoffStatus(
+  page: Page,
+  path: string,
+  user: Credentials,
+  postId: string,
+  status: keyof typeof STATUS_LABEL_HE,
+): Promise<HandoffRow> {
+  await expect
+    .poll(async () => (await handoffAs(user, postId))?.status ?? 'no handoff row', {
+      timeout: 60_000,
+      message: `handoff on ${postId} reaches '${status}' on the server`,
+    })
+    .toBe(status);
+  const label = STATUS_LABEL_HE[status];
+  try {
+    await expect(handoffStatus(page)).toContainText(label, { timeout: 10_000 });
+  } catch {
+    await gotoApp(page, path);
+    await expect(handoffStatus(page)).toContainText(label, { timeout: 30_000 });
+  }
+  return (await handoffAs(user, postId))!;
+}
+
 /** Registers the serial two-user journey for one world. */
 export function defineWorldJourney(journey: WorldJourney): void {
   test.describe.serial(`${journey.world}: two-user giving journey`, () => {
     let listingId = '';
     let title = '';
     let handoffId = '';
-    const listingPath = () => `/donations/marketplace/${listingId}`;
+    const listingPath = () => `/post/${listingId}`;
 
     test('user A publishes a listing (the RPC the create form calls) and sees it', async ({ page }) => {
-      ({ listingId, title } = await publishAs(USER_A, journey));
+      ({ id: listingId, title } = await publishPostAs(USER_A, { ...journey, title: `${runTag()} ${journey.titleHe}` }));
       await gotoApp(page, listingPath());
       await expect(page.getByText(title).first()).toBeVisible();
       await expect(handoffStatus(page)).toHaveCount(0);
     });
 
     const claimed = journey.claim.resultsIn;
-    const claimedLabel = STATUS_LABEL_HE[claimed];
 
     test(`user B claims it from the listing page; the handoff is ${claimed} for B`, async ({ browser }) => {
       expect(listingId, 'listing from the publish step').not.toBe('');
+      test.setTimeout(150_000);
       const b = await openAs(browser, STORAGE_B);
       await gotoApp(b.page, listingPath());
+      await expect(b.page.getByText(title).first()).toBeVisible();
       await action(b.page, journey.claim.testId, journey.claim.label).click();
-      await expect(handoffStatus(b.page)).toContainText(claimedLabel, { timeout: 20_000 });
+      const row = await expectHandoffStatus(b.page, listingPath(), USER_B, listingId, claimed);
       await b.ctx.close();
 
-      const row = await handoffAs(USER_B, listingId);
       const { userId: bId } = await tokenFor(USER_B);
       expect(row?.status).toBe(claimed);
       expect(row?.recipient_id).toBe(bId);
-      handoffId = row!.handoff_id;
+      handoffId = row!.id;
     });
 
     if (claimed === 'reserved') {
@@ -140,27 +148,36 @@ export function defineWorldJourney(journey: WorldJourney): void {
         expect(handoffId, 'handoff from the claim step').not.toBe('');
         page.on('dialog', (dialog) => void dialog.accept());
         await gotoApp(page, listingPath());
+        test.setTimeout(150_000);
         await action(page, 'giving-handoff-confirm', 'אישור שריון').click();
-        await expect(handoffStatus(page)).toContainText(STATUS_LABEL_HE.confirmed, { timeout: 20_000 });
-        expect((await handoffAs(USER_A, listingId))?.status).toBe('confirmed');
+        await expectHandoffStatus(page, listingPath(), USER_A, listingId, 'confirmed');
       });
     }
 
     test('user A marks it handed over: the listing closes and karma is written', async ({ page }) => {
+      // The karma consumer is a once-a-minute job: allow it a full cycle plus the run itself,
+      // after up to 100 s for the handover to show (server poll + one reload).
+      test.setTimeout(240_000);
       page.on('dialog', (dialog) => void dialog.accept());
       await gotoApp(page, listingPath());
       await action(page, 'giving-handoff-complete', 'סומן כנמסר').click();
-      await expect(handoffStatus(page)).toContainText(STATUS_LABEL_HE.handed_over, { timeout: 20_000 });
+      await expectHandoffStatus(page, listingPath(), USER_A, listingId, 'handed_over');
 
       const { token, userId: aId } = await tokenFor(USER_A);
-      expect((await handoffAs(USER_A, listingId))?.status).toBe('handed_over');
-      const [card] = await rest<{ status: string }[]>(token, `marketplace_listing_card?select=status&listing_id=eq.${listingId}`);
-      expect(card?.status).toBe('closed');
-      const karma = await rest<{ points_delta: number }[]>(
-        token,
-        `karma_ledger?select=points_delta&user_id=eq.${aId}&ref_id=eq.${handoffId}&event_type=eq.giving_handoff_giver`,
-      );
-      expect(karma.length, 'giver karma ledger row for this handoff').toBe(1);
+      const [post] = await rest<{ status: string }[]>(token, `posts?select=status&id=eq.${listingId}`);
+      // A delivered handoff closes the post as `closed_delivered` (the post status machine).
+      expect(post?.status).toBe('closed_delivered');
+      // The giver's karma is written by the event consumer; allow it a moment.
+      await expect
+        .poll(
+          async () =>
+            (await rest<{ points: number }[]>(
+              token,
+              `karma_ledger?select=points&user_id=eq.${aId}&event_type=eq.handoff_giver&subject=eq.${encodeURIComponent(`handoff:${handoffId}:giver`)}`,
+            )).length,
+          { timeout: 100_000, message: 'giver karma ledger row for this handoff' },
+        )
+        .toBe(1);
       // Both sides may now rate (spec 07 §7.7); the form sits on the listing page.
       await expect(page.getByTestId('handoff-rating-form')).toBeVisible();
     });
@@ -170,13 +187,17 @@ export function defineWorldJourney(journey: WorldJourney): void {
       await gotoApp(b.page, listingPath());
       await b.page.getByTestId('handoff-rating-star-5').click();
       await b.page.getByTestId('handoff-rating-submit').click();
-      // Once B has rated, the handoff no longer surfaces for B (get_listing_handoff), so the form goes away.
-      await expect(b.page.getByTestId('handoff-rating-form')).toHaveCount(0, { timeout: 20_000 });
-      await b.ctx.close();
-
+      // The page keeps showing the form after a rating (the handoff stays 'handed_over'), so the
+      // assertion is the stored row, not the form going away.
       const { token } = await tokenFor(USER_B);
-      const ratings = await rest<{ rating: number }[]>(token, `giving_handoff_ratings?select=rating&handoff_id=eq.${handoffId}`);
-      expect(ratings.map((r) => r.rating)).toEqual([5]);
+      await expect
+        .poll(
+          async () =>
+            (await rest<{ stars: number }[]>(token, `post_ratings?select=stars&handoff_id=eq.${handoffId}`)).map((r) => r.stars),
+          { timeout: 20_000 },
+        )
+        .toEqual([5]);
+      await b.ctx.close();
     });
 
     test.afterAll(async () => {

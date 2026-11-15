@@ -10,6 +10,7 @@ import { FilterSearchBar } from '../../src/components/filterKit/FilterSearchBar'
 import { useAuthStore } from '../../src/store/authStore';
 import { container } from '../../src/lib/container';
 import { markNeedFreshThreadWith } from '../../src/lib/chatNavigationPrefs';
+import { forgetHiddenChat } from '../../src/lib/forgetHiddenChat';
 import { EmptyState, EmptyStateActions } from '../../src/components/EmptyState';
 import { PrimaryButton } from '../../src/components/ui/Buttons';
 import { KcRefreshControl } from '../../src/components/lists/KcRefreshControl';
@@ -159,6 +160,7 @@ export default function ChatListScreen() {
           try {
             await container.hideChatFromInbox.execute({ chatId: target.chatId });
             if (target.otherUserId) markNeedFreshThreadWith(target.otherUserId);
+            forgetHiddenChat(target.chatId);
             await useChatStore.getState().refreshInbox(userId, container.chatRepo);
             void queryClient.invalidateQueries({ queryKey: chatInboxQueryKey(userId) });
             setHideTarget(null);

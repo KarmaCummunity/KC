@@ -33,15 +33,6 @@ describe('AdminPermission matrix', () => {
     expect(hasPermission([], perm)).toBe(false);
   });
 
-  it('demo data management is super_admin and org_admin only (FR-ADMIN-031 AC6)', () => {
-    expect(hasPermission(['super_admin'], 'demo_data.manage')).toBe(true);
-    expect(hasPermission(['org_admin'], 'demo_data.manage')).toBe(true);
-    expect(hasPermission(['org_manager'], 'demo_data.manage')).toBe(false);
-    expect(hasPermission(['org_volunteer'], 'demo_data.manage')).toBe(false);
-    expect(hasPermission(['moderator'], 'demo_data.manage')).toBe(false);
-    expect(hasPermission(['support'], 'demo_data.manage')).toBe(false);
-  });
-
   it('match quality is visible to super_admin and moderator only (FR-ADMIN-029)', () => {
     expect(hasPermission(['super_admin'], 'matching.view_quality')).toBe(true);
     expect(hasPermission(['moderator'], 'matching.view_quality')).toBe(true);
@@ -63,12 +54,44 @@ describe('AdminPermission matrix', () => {
     expect(hasPermission(['org_employee'], 'admins.grant_role')).toBe(false);
   });
 
+  it('gives the platform admin the portal and every moderator power, not the super admin ones', () => {
+    expect(hasPermission(['admin'], 'portal.access')).toBe(true);
+    expect(hasPermission(['admin'], 'reports.confirm_or_dismiss')).toBe(true);
+    expect(hasPermission(['admin'], 'admins.grant_role')).toBe(true);
+    expect(hasPermission(['admin'], 'reports.permanent_ban')).toBe(false);
+    expect(hasPermission(['admin'], 'audit.view_any')).toBe(false);
+  });
+
+  it('mirrors the finance gates: moderators read, admins and treasurers keep, accountants read (FR-FIN-002)', () => {
+    expect(hasPermission(['moderator'], 'money.view')).toBe(true);
+    expect(hasPermission(['moderator'], 'money.manage')).toBe(false);
+    expect(hasPermission(['org_treasurer'], 'money.manage')).toBe(true);
+    expect(hasPermission(['org_accountant'], 'money.view')).toBe(true);
+    expect(hasPermission(['org_accountant'], 'money.manage')).toBe(false);
+    expect(hasPermission(['org_treasurer'], 'money.transparency')).toBe(false);
+    expect(hasPermission(['admin'], 'money.transparency')).toBe(true);
+    expect(hasPermission(['support'], 'money.view')).toBe(false);
+  });
+
+  it('opens organization applications to admins and up only (20_organizations)', () => {
+    expect(hasPermission(['moderator'], 'org.review_applications')).toBe(false);
+    expect(hasPermission(['admin'], 'org.review_applications')).toBe(true);
+    expect(hasPermission(['super_admin'], 'org.review_applications')).toBe(true);
+  });
+
   it('permissionsOfRole lists exactly the matrix rows that include the role', () => {
     expect(permissionsOfRole('org_volunteer')).toEqual([]);
     expect(permissionsOfRole('org_manager')).toEqual([
-      'admins.view', 'admins.grant_role', 'admins.revoke_role', 'admins.set_manager',
+      'admins.view', 'admins.grant_role', 'admins.revoke_role', 'admins.set_manager', 'crm.manage',
     ]);
     expect(permissionsOfRole('super_admin')).toEqual([...ADMIN_PERMISSIONS]);
+  });
+
+  it('crm.manage reaches the organization managers but not their employees (FR-ADMIN-032)', () => {
+    expect(hasPermission(['org_admin'], 'crm.manage')).toBe(true);
+    expect(hasPermission(['org_manager'], 'crm.manage')).toBe(true);
+    expect(hasPermission(['org_employee'], 'crm.manage')).toBe(false);
+    expect(hasPermission(['support'], 'crm.manage')).toBe(false);
   });
 
   it('chat.delete_message is granted to super_admin and moderator only', () => {
@@ -83,4 +106,10 @@ describe('AdminPermission matrix', () => {
     expect(hasPermission(['moderator'], 'whatsapp.manage')).toBe(true);
     expect(hasPermission(['super_admin'], 'whatsapp.manage')).toBe(true);
     expect(hasPermission(['support'], 'whatsapp.manage')).toBe(false);
+  });
+
+  it('whatsapp.configure (send limits, template approval) is super admin only', () => {
+    expect(hasPermission(['super_admin'], 'whatsapp.configure')).toBe(true);
+    expect(hasPermission(['admin'], 'whatsapp.configure')).toBe(false);
+    expect(hasPermission(['moderator'], 'whatsapp.configure')).toBe(false);
   });

@@ -1,109 +1,96 @@
-import { describe, it, expect, vi } from 'vitest';
-import type { SupabaseClient } from '@supabase/supabase-js';
-import { SupabaseMatchRepository, mapMatchQualityRow, mapMatchRow } from '../SupabaseMatchRepository';
+import { describe, expect, it } from 'vitest';
+import { BackendRuleError, BackendUnavailableError } from '@kc/domain';
+import { callsTo, createFakeClient } from '../../__tests__/fakeBaselineClient';
+import { fail, makeCard, ok } from '../../posts/__tests__/cardFixtures';
+import { SupabaseMatchRepository, mapMatchRow } from '../SupabaseMatchRepository';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
+// Generated RETURNS TABLE columns are non-null; the real answers carry nulls (no answer yet).
 const ROW = {
-  candidate_id: 'c1', status: 'suggested', score: '0.7312', components: {}, distance_km: '4.30',
-  world_slug: 'items', my_role: 'request', my_listing_id: 'l_me', my_listing_title: 'Looking for a sofa',
-  other_listing_id: 'l_o', other_listing_title: 'Grey sofa', other_listing_summary: null,
-  other_owner_id: 'u_o', other_owner_name: 'Alice', other_owner_avatar: null, other_owner_handle: 'alice',
-  my_response: null, other_response: 'accepted', llm_reason: null, created_at: '2026-10-17T20:00:00Z',
-};
-
-function repo(result: { data: unknown; error: { message: string } | null }) {
-  const rpc = vi.fn(async () => result);
-  return { rpc, r: new SupabaseMatchRepository({ rpc } as unknown as SupabaseClient<any>) };
-}
+  match_id: 'm1', status: 'suggested', score: 0.8123, distance_km: 4.5, world_slug: 'items', my_role: 'offer',
+  my_post_id: 'mine', my_post_title: 'My sofa', my_response: null, other_response: 'accepted', llm_reason: 'close by',
+  created_at: '2026-01-01T00:00:00Z', other_post: makeCard({ id: 'theirs', title: 'Need a sofa', description: 'Please' }),
+} as unknown as Parameters<typeof mapMatchRow>[0];
 
 describe('mapMatchRow', () => {
-  it('maps numerics, roles and responses', () => {
-    const m = mapMatchRow(ROW as any);
-    expect(m.score).toBeCloseTo(0.7312);
-    expect(m.distanceKm).toBeCloseTo(4.3);
-    expect(m.myRole).toBe('request');
-    expect(m.otherResponse).toBe('accepted');
-    expect(m.myResponse).toBeNull();
-    expect(m.otherOwner).toEqual({ userId: 'u_o', displayName: 'Alice', avatarUrl: null, shareHandle: 'alice' });
+  it('reads the other side from the card and converts the numerics', () => {
+    expect(mapMatchRow(ROW)).toEqual({
+      candidateId: 'm1', status: 'suggested', score: 0.8123, distanceKm: 4.5, worldSlug: 'items', myRole: 'offer',
+      myListingId: 'mine', myListingTitle: 'My sofa', otherListingId: 'theirs', otherListingTitle: 'Need a sofa',
+      otherListingSummary: 'Please',
+      otherOwner: { userId: 'owner-1', displayName: 'Dana', avatarUrl: 'https://img/dana.png', shareHandle: 'dana' },
+      myResponse: null, otherResponse: 'accepted', reason: 'close by', createdAt: '2026-01-01T00:00:00Z',
+    });
   });
 
-  it('normalises unknown status/response values and null distance', () => {
-    const m = mapMatchRow({ ...ROW, status: 'weird', my_role: 'offer', distance_km: null, my_response: 'x' } as any);
-    expect(m.status).toBe('suggested');
-    expect(m.myRole).toBe('offer');
-    expect(m.distanceKm).toBeNull();
-    expect(m.myResponse).toBeNull();
+  it('keeps every status of the match machine and reads an unknown one as expired', () => {
+    for (const status of ['suggested', 'accepted', 'declined', 'expired']) {
+      expect(mapMatchRow({ ...ROW, status }).status).toBe(status);
+    }
+    expect(mapMatchRow({ ...ROW, status: 'archived' }).status).toBe('expired');
+    expect(mapMatchRow({ ...ROW, status: null as unknown as string }).status).toBe('expired');
+  });
+
+  it('leaves the owner empty while the poster is masked', () => {
+    const masked = mapMatchRow({ ...ROW, other_post: makeCard({ owner_id: null, owner_display_name: null, owner_share_handle: null, owner_avatar_url: null }) });
+    expect(masked.otherOwner).toEqual({ userId: '', displayName: null, avatarUrl: null, shareHandle: null });
   });
 });
 
 describe('SupabaseMatchRepository', () => {
-  it('listMine calls rpc_my_matches with the limit', async () => {
-    const { rpc, r } = repo({ data: [ROW], error: null });
-    const out = await r.listMine(5);
-    expect(rpc).toHaveBeenCalledWith('rpc_my_matches', { p_limit: 5 });
-    expect(out).toHaveLength(1);
-    expect(out[0]?.candidateId).toBe('c1');
+  it('lists the caller\'s pairs', async () => {
+    const { client, calls } = createFakeClient({ rpc: { my_matches: ok([ROW]) } });
+    expect(await new SupabaseMatchRepository(client).listMine(5)).toHaveLength(1);
+    expect(callsTo(calls, 'my_matches')[0]?.args).toEqual({ p_limit: 5 });
   });
 
-  it('listMine returns [] for null data and wraps errors', async () => {
-    expect(await repo({ data: null, error: null }).r.listMine()).toEqual([]);
-    await expect(repo({ data: null, error: { message: 'boom' } }).r.listMine()).rejects.toThrow('listMyMatches: boom');
+  it('answers a pair with a boolean and reports whether both accepted', async () => {
+    const { client, calls } = createFakeClient({ rpc: { match_respond: ok('accepted') } });
+    const repo = new SupabaseMatchRepository(client);
+    expect(await repo.respond('m1', 'accept')).toEqual({ status: 'accepted', mutual: true });
+    expect(callsTo(calls, 'match_respond')[0]?.args).toEqual({ p_match_id: 'm1', p_accept: true });
+    const waiting = createFakeClient({ rpc: { match_respond: ok('suggested') } });
+    expect(await new SupabaseMatchRepository(waiting.client).respond('m1', 'decline')).toEqual({ status: 'suggested', mutual: false });
   });
 
-  it('respond sends the answer and parses the result', async () => {
-    const { rpc, r } = repo({ data: { status: 'accepted', mutual: true }, error: null });
-    expect(await r.respond('c1', 'accept')).toEqual({ status: 'accepted', mutual: true });
-    expect(rpc).toHaveBeenCalledWith('rpc_match_respond', { p_candidate_id: 'c1', p_response: 'accept' });
-    expect(await repo({ data: null, error: null }).r.respond('c1', 'decline')).toEqual({ status: '', mutual: false });
-    await expect(repo({ data: null, error: { message: 'match_closed' } }).r.respond('c1', 'decline'))
-      .rejects.toThrow('respondToMatch: match_closed');
+  it('keeps a refusal reason and reports a missing function', async () => {
+    const refused = createFakeClient({ rpc: { match_respond: fail('P0001', 'match_not_open') } });
+    await expect(new SupabaseMatchRepository(refused.client).respond('m1', 'accept')).rejects.toMatchObject({ constructor: BackendRuleError, reason: 'match_not_open' });
+    const missing = createFakeClient({ rpc: { my_matches: fail('PGRST202', 'nope') } });
+    await expect(new SupabaseMatchRepository(missing.client).listMine()).rejects.toBeInstanceOf(BackendUnavailableError);
   });
 
-  it('refreshMine returns the recomputed count', async () => {
-    const { rpc, r } = repo({ data: 3, error: null });
-    expect(await r.refreshMine()).toBe(3);
-    expect(rpc).toHaveBeenCalledWith('rpc_match_refresh_mine');
-    await expect(repo({ data: null, error: { message: 'x' } }).r.refreshMine()).rejects.toThrow('refreshMyMatches: x');
-  });
-});
-
-describe('mapMatchQualityRow', () => {
-  const Q = {
-    world_slug: 'items', world_label_he: 'חפצים', world_label_en: 'Items', notified_pairs: 12, responses: 8, accepted: '6', precision_proxy: '0.7500',
-    chat_pairs: 5, chat_rate: '0.4167', completed_pairs: 2, completion_rate: '0.1667',
-  };
-
-  it('maps numeric strings to numbers', () => {
-    expect(mapMatchQualityRow(Q as any)).toEqual({
-      worldSlug: 'items', worldLabelHe: 'חפצים', worldLabelEn: 'Items', notifiedPairs: 12, responses: 8, accepted: 6, precisionProxy: 0.75,
-      chatPairs: 5, chatRate: 0.4167, completedPairs: 2, completionRate: 0.1667,
+  it('reads the admin quality report per world, rates as numbers', async () => {
+    const { client, calls } = createFakeClient({
+      rpc: {
+        admin_match_quality: ok([
+          {
+            world_slug: 'items', world_label_he: 'i', world_label_en: 'Items', notified_pairs: 2, responses: 3, accepted: 2,
+            precision_proxy: '0.6667', chat_pairs: 1, chat_rate: '0.5000', completed_pairs: 1, completion_rate: '0.5000',
+          },
+          {
+            world_slug: 'food', world_label_he: 'f', world_label_en: 'Food', notified_pairs: 1, responses: 0, accepted: 0,
+            precision_proxy: null, chat_pairs: 0, chat_rate: 0, completed_pairs: 0, completion_rate: 0,
+          },
+        ]),
+      },
     });
+    expect(await new SupabaseMatchRepository(client).qualityByWorld(60)).toEqual([
+      {
+        worldSlug: 'items', worldLabelHe: 'i', worldLabelEn: 'Items', notifiedPairs: 2, responses: 3, accepted: 2,
+        precisionProxy: 0.6667, chatPairs: 1, chatRate: 0.5, completedPairs: 1, completionRate: 0.5,
+      },
+      {
+        worldSlug: 'food', worldLabelHe: 'f', worldLabelEn: 'Food', notifiedPairs: 1, responses: 0, accepted: 0,
+        precisionProxy: null, chatPairs: 0, chatRate: 0, completedPairs: 0, completionRate: 0,
+      },
+    ]);
+    expect(callsTo(calls, 'admin_match_quality')[0]?.args).toEqual({ p_days: 60 });
   });
 
-  it('keeps SQL nulls as null (no answers yet, world without handoffs)', () => {
-    const m = mapMatchQualityRow({ ...Q, world_slug: 'time', world_label_he: null, responses: 0, accepted: 0,
-      precision_proxy: null, completed_pairs: null, completion_rate: null } as any);
-    expect(m.precisionProxy).toBeNull();
-    expect(m.completedPairs).toBeNull();
-    expect(m.completionRate).toBeNull();
-    expect(m.responses).toBe(0);
-    expect(m.worldLabelHe).toBe('time');
-  });
-});
-
-describe('SupabaseMatchRepository.qualityByWorld', () => {
-  it('calls admin_match_quality with the window and maps rows', async () => {
-    const { rpc, r } = repo({ data: [{ world_slug: 'food', notified_pairs: 1, responses: 0, accepted: 0,
-      precision_proxy: null, chat_pairs: 0, chat_rate: '0', completed_pairs: 0, completion_rate: '0' }], error: null });
-    const out = await r.qualityByWorld(7);
-    expect(rpc).toHaveBeenCalledWith('admin_match_quality', { p_days: 7 });
-    expect(out[0]).toMatchObject({ worldSlug: 'food', notifiedPairs: 1, chatRate: 0, precisionProxy: null });
-  });
-
-  it('returns [] for null data and wraps a forbidden error', async () => {
-    expect(await repo({ data: null, error: null }).r.qualityByWorld()).toEqual([]);
-    await expect(repo({ data: null, error: { message: 'forbidden' } }).r.qualityByWorld())
-      .rejects.toThrow('matchQualityByWorld: forbidden');
+  it('keeps the staff refusal and reports a missing report function', async () => {
+    const refused = createFakeClient({ rpc: { admin_match_quality: fail('42501', 'forbidden') } });
+    await expect(new SupabaseMatchRepository(refused.client).qualityByWorld()).rejects.not.toBeInstanceOf(BackendUnavailableError);
+    const missing = createFakeClient({ rpc: { admin_match_quality: fail('PGRST202', 'missing') } });
+    await expect(new SupabaseMatchRepository(missing.client).qualityByWorld()).rejects.toBeInstanceOf(BackendUnavailableError);
   });
 });

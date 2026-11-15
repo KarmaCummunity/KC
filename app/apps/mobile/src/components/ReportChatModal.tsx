@@ -20,6 +20,7 @@ export function ReportChatModal({ chatId, visible, onClose }: Props) {
       copy={{
         title: t('chat.reportChatTitle'),
         noteLabel: t('chat.reportChatNotePlaceholder'),
+        noteHint: t('moderation.report.noteHint'),
         submitLabel: t('post.reportSubmit'),
         submittingLabel: t('chat.reportChatSubmitting'),
         cancelLabel: t('general.cancel'),

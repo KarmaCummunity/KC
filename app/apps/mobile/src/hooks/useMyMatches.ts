@@ -24,12 +24,3 @@ export function useRespondToMatch() {
     onSuccess: () => qc.invalidateQueries({ queryKey: myMatchesQueryKey(userId) }),
   });
 }
-
-export function useRefreshMyMatches() {
-  const userId = useAuthStore((s) => s.session?.userId ?? null);
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: () => getMatchRepository().refreshMine(),
-    onSettled: () => qc.invalidateQueries({ queryKey: myMatchesQueryKey(userId) }),
-  });
-}

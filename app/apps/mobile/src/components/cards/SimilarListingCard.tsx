@@ -2,6 +2,7 @@
 // post card (KcCard) in its compact size, with give/request tone and closed status.
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { isPostEnded } from '@kc/domain';
 import { cleanDisplayTitle } from '../../lib/displayTitle';
 import { KcCard } from './KcCard';
 import { listingWorldIcon } from './ListingCard';
@@ -44,7 +45,7 @@ function SimilarListingCardInner({ item, onPress, width = SIMILAR_TILE_WIDTH }: 
       badgeLabel={t(isRequest ? 'feed.requestTypeShort' : 'feed.giveTypeShort')}
       title={title}
       chip={t(`marketplace.world.${item.worldSlug}`, { defaultValue: item.worldSlug })}
-      closed={item.status === 'closed'}
+      closed={isPostEnded(item.status ?? '')}
       closedLabel={t('cards.closed')}
     />
   );

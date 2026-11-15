@@ -24,7 +24,6 @@ const BASE: DonationLink = {
   description: null,
   submittedBy: 'u_owner',
   validatedAt: '2026-11-03T00:00:00.000Z',
-  hiddenAt: null,
   createdAt: '2026-11-03T00:00:00.000Z',
   reviewStatus: 'approved',
   reviewNote: null,

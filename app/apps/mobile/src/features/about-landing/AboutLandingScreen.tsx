@@ -101,6 +101,10 @@ export function AboutLandingScreen() {
           <Text style={styles.footerV}>{t('aboutContent.footerVersion')}</Text>
           <Text style={styles.footerR}>{t('aboutContent.footerRights')}</Text>
           <Text style={styles.footerR}>{t('aboutContent.footerDataCredit')}</Text>
+          <Text style={styles.footerR}>{t('aboutContent.footerDataCreditPlaces')}</Text>
+          <Text style={styles.footerR}>{t('aboutContent.footerDataCreditOsm')}</Text>
+          <Text style={styles.footerR}>{t('aboutContent.footerDataCreditCoords')}</Text>
+          <Text style={styles.footerR}>{t('aboutContent.footerDataDisclaimer')}</Text>
         </View>
       </ScrollView>
 

@@ -46,9 +46,6 @@ vi.mock('../../../hooks/useChallengeLinkedPost', () => ({
 }));
 vi.mock('../../../services/challengeComposition', () => ({ CHALLENGES_QUERY_KEY: 'challenges', challengeUseCases: {} }));
 vi.mock('../../../services/platformConfirm', () => ({ confirmAction: vi.fn() }));
-vi.mock('../../../lib/challenges/promptChallengeJoinProfileSurface', () => ({
-  promptChallengeJoinProfileSurface: vi.fn(),
-}));
 vi.mock('../../../lib/platform/useKeyboardVerticalOffset', () => ({ useKeyboardVerticalOffset: () => 0 }));
 vi.mock('../../../navigation/useShellTabBarVisibility', () => ({
   useShellTabBarVisibility: () => true,

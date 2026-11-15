@@ -11,6 +11,7 @@
 //   3. Domain typed-error rule: `packages/domain/src/**` may not `throw new Error(...)` —
 //      must throw a domain-specific error class. Pre-existing exemptions are listed.
 
+import { spawnSync } from 'node:child_process';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -82,7 +83,8 @@ const SKIP_DIRS = new Set([
   'ios',
   'android',
 ]);
-const SKIP_FILES = new Set(['database.types.ts']);
+// Generated types: the old schema's, and the production baseline's (scripts/gen-baseline-types.mjs).
+const SKIP_FILES = new Set(['database.types.ts', 'database.legacy.types.ts']);
 
 function walk(dir, files = []) {
   for (const entry of readdirSync(dir)) {
@@ -154,23 +156,13 @@ function checkFile(absPath, violations) {
   }
 }
 
-function checkNotificationsCoalesceMirror(violations) {
-  let app, edge;
-  try {
-    app = readFileSync(join(ROOT, 'packages/application/src/notifications/coalesce.ts'), 'utf8');
-    edge = readFileSync(join(ROOT, '../supabase/functions/dispatch-notification/coalesce.ts'), 'utf8');
-  } catch (err) {
-    violations.push(`COALESCE-MIRROR: could not read both files: ${err.message}`);
-    return;
-  }
-  const stripHeader = (s) => s.split('\n').slice(7).join('\n').trimEnd();
-  if (stripHeader(app) !== stripHeader(edge)) {
-    violations.push(
-      'COALESCE-MIRROR: coalesce.ts diverges between @kc/application and dispatch-notification Edge Function.\n' +
-        '  application: app/packages/application/src/notifications/coalesce.ts\n' +
-        '  edge:        supabase/functions/dispatch-notification/coalesce.ts\n' +
-        '  Re-sync (the application package is source-of-truth).'
-    );
+// The notification kind list (domain type, push worker, worker strings) is generated from
+// the SQL registry and the Hebrew locale; a stale copy or a kind without its texts fails here.
+function checkNotificationKindsGenerated(violations) {
+  const script = join(ROOT, '../scripts/generate-notification-kinds.mjs');
+  const run = spawnSync(process.execPath, [script, '--check'], { encoding: 'utf8' });
+  if (run.status !== 0) {
+    violations.push(`NOTIFICATION-KINDS: ${(run.stderr || run.stdout).trim()}`);
   }
 }
 
@@ -200,7 +192,7 @@ function checkRouteFile(absPath, violations) {
 const targets = [join(ROOT, 'packages'), join(ROOT, 'apps', 'mobile')];
 const files = targets.flatMap((t) => walk(t));
 const violations = [];
-checkNotificationsCoalesceMirror(violations);
+checkNotificationKindsGenerated(violations);
 for (const f of files) checkFile(f, violations);
 for (const f of files) checkRouteFile(f, violations);
 

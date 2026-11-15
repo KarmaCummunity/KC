@@ -174,12 +174,15 @@ export async function resizeAndUploadImage(
   const path = buildPostImagePath(userId, batchUuid, ordinal);
   const thumbPath = buildPostImageThumbPath(userId, batchUuid, ordinal);
 
+  // upsert stays false: the post-images bucket has an INSERT policy only (a member writes under their
+  // own folder, 30_social/900_storage.sql); storage's upsert needs SELECT + UPDATE policies too and is
+  // refused with "new row violates row-level security policy". The path is unique per batch anyway.
   const client = getSupabaseClient();
   const fullUpload = await client.storage
     .from(POST_BUCKET)
     .upload(path, full.bytes, {
       contentType: 'image/jpeg',
-      upsert: true,
+      upsert: false,
       cacheControl: IMMUTABLE_CACHE_CONTROL,
     });
   if (fullUpload.error) throw new Error(`upload[${ordinal}]: ${fullUpload.error.message}`);
@@ -191,7 +194,7 @@ export async function resizeAndUploadImage(
     .from(POST_BUCKET)
     .upload(thumbPath, thumb.bytes, {
       contentType: 'image/jpeg',
-      upsert: true,
+      upsert: false,
       cacheControl: IMMUTABLE_CACHE_CONTROL,
     });
   if (thumbUpload.error) {

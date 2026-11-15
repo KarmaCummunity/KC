@@ -123,7 +123,8 @@ jobs:
         if: ${{ !cancelled() }}
         run: node scripts/check-conflict-markers.mjs
 
-      # The Maestro job is advisory, so a flow that no longer parses would go unnoticed (KC#1619).
+      # The Maestro lane runs only on a PR that touches the app, so a flow that no longer parses would go
+      # unnoticed by a docs or database PR and only fail the next mobile one (KC#1619).
       - name: Maestro flows parse and assert something
         if: ${{ !cancelled() }}
         run: node scripts/check-maestro-flows.mjs
@@ -151,6 +152,11 @@ jobs:
       - name: Web manifest parity
         if: ${{ !cancelled() }}
         run: node scripts/check-web-manifest.mjs
+
+      # Universal/app links: no placeholders, app ids match app.json, every claimed path covered (the web export itself is checked in the bundles lane).
+      - name: Deep-link manifests (AASA + assetlinks)
+        if: ${{ !cancelled() }}
+        run: node app/scripts/check-well-known-links.mjs
 
       - name: expo-router platform-extension fallbacks
         if: ${{ !cancelled() }}

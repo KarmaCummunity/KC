@@ -5,6 +5,7 @@ import {
   FinanceLedgerError,
   directionOfKind,
   isFinanceLedgerError,
+  isValidVoidReason,
   parseFinanceEntryKind,
   parseFinanceEntryStatus,
 } from '../FinanceLedger';
@@ -57,6 +58,16 @@ describe('FinanceLedgerError', () => {
 
   it('falls back to the code as the message', () => {
     expect(new FinanceLedgerError('entry_not_found').message).toBe('entry_not_found');
+  });
+});
+
+describe('isValidVoidReason (FR-FIN-005 AC2)', () => {
+  it('needs 3 to 500 characters once trimmed', () => {
+    expect(isValidVoidReason('')).toBe(false);
+    expect(isValidVoidReason('  ab  ')).toBe(false);
+    expect(isValidVoidReason(' abc ')).toBe(true);
+    expect(isValidVoidReason('x'.repeat(500))).toBe(true);
+    expect(isValidVoidReason('x'.repeat(501))).toBe(false);
   });
 });
 

@@ -5,10 +5,9 @@ export {
   SignUpVolunteerShiftUseCase,
   CancelVolunteerSignupUseCase,
   ListMyVolunteerSignupsUseCase,
-  CheckInVolunteerShiftUseCase,
-  GetVolunteerShiftIcsUseCase,
   CloseVolunteerOpportunityUseCase,
   ListMyOrganizerVolunteerOpportunitiesUseCase,
   ListShiftVolunteersUseCase,
   OrganizerMessageShiftVolunteersUseCase,
 } from './volunteerUseCases';
+export { buildShiftIcs, type ShiftIcsInput } from './shiftIcs';

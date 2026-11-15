@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 // FR-STATS-008 — the member's own givings per world: one row per world with given / received /
-// closed, an empty hint when nothing was handed over yet, and no query without a session.
+// closed, an empty hint when nothing was handed over yet, no query without a session, and no block at
+// all while a backend lacks my_world_givings.
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, screen, waitFor } from '@testing-library/react';
@@ -11,8 +12,23 @@ vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string) => k
 vi.mock('../../../services/statsComposition', () => ({
   getListMyWorldGivingsUseCase: () => ({ execute: m.list }),
 }));
+// The real helper pulls in the i18n bootstrap; only its behaviour matters here.
+vi.mock('../../../lib/backendAvailability', async () => {
+  const { BackendUnavailableError } = await import('@kc/domain');
+  return {
+    valueOrNull: async <T,>(load: () => Promise<T | null>) => {
+      try {
+        return await load();
+      } catch (error) {
+        if (error instanceof BackendUnavailableError) return null;
+        throw error;
+      }
+    },
+  };
+});
 
 import { renderInTheme } from '../../ui/__tests__/kitDialogTestKit';
+import { BackendUnavailableError } from '@kc/domain';
 import { MyWorldGivingsPanel } from '../MyWorldGivingsPanel';
 
 afterEach(() => {
@@ -46,6 +62,13 @@ describe('MyWorldGivingsPanel', () => {
     m.list.mockResolvedValue([]);
     renderPanel('me');
     await waitFor(() => expect(screen.getByText('stats.byWorldEmpty')).toBeTruthy());
+  });
+
+  it('renders nothing while the backend has no per-world totals', async () => {
+    m.list.mockRejectedValue(new BackendUnavailableError('rpc:my_world_givings', 'function'));
+    renderPanel('me');
+    await waitFor(() => expect(m.list).toHaveBeenCalled());
+    await waitFor(() => expect(screen.queryByTestId('my-world-givings')).toBeNull());
   });
 
   it('does not query without a signed-in member', () => {

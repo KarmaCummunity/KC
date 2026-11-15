@@ -25,6 +25,8 @@ import { ListingFormPhotoPicker } from './ListingFormPhotoPicker';
 import { ListingKindChooser } from './ListingKindChooser';
 import { KindGate } from './ListingKindGate';
 import { TimeOfferKindChooser } from './TimeOfferKindChooser';
+import { OrgEventMembershipHint } from './OrgEventMembershipHint';
+import { EventRecurrenceSection } from './EventRecurrenceSection';
 import { formKeyboardAccessoryProps, useFormFieldFocus } from '../../hooks/useFormFieldFocus';
 import { KeyboardFormAccessory } from '../ui/KeyboardFormAccessory';
 
@@ -108,7 +110,7 @@ export function ListingCreateForm({
       <ListingFormPhotoPicker
         photos={form.photos}
         setPhotos={form.setPhotos}
-        carriedMediaPaths={form.carriedMediaPaths}
+        carriedMediaPaths={form.carriedMedia.map((m) => m.path)}
         onRemoveCarried={form.removeCarriedMedia}
         required={!editListingId && offerRequiresPhoto(worldSlug, direction)}
       />
@@ -144,7 +146,7 @@ export function ListingCreateForm({
           onRetry={() => void form.kindsQuery.refetch()}
         >
           {/* Several kinds in this direction (animals, knowledge): the member says which one. */}
-          {form.eventChoice.isOrgEvent ? null : (
+          {form.eventChoice.isEvent ? null : (
             <ListingKindChooser
               choices={form.kindChoices}
               selectedKindId={form.kind?.kindId ?? null}
@@ -153,8 +155,10 @@ export function ListingCreateForm({
             />
           )}
 
-          {/* A member of an organization picks a volunteer shift or the organization's event (G1 step 5). */}
-          {form.eventChoice.available ? <TimeOfferKindChooser choice={form.eventChoice} disabled={form.busy} /> : null}
+          {/* A member of an organization picks a volunteer shift or the organization's event (G1 step 5);
+              anyone else is told how to become one (FR-ORG-002). */}
+          {form.eventChoice.personalAvailable ? <TimeOfferKindChooser choice={form.eventChoice} disabled={form.busy} /> : null}
+          {form.eventChoice.suggestMembership ? <OrgEventMembershipHint /> : null}
 
           {form.isRides ? null : photoPicker}
 
@@ -216,12 +220,10 @@ export function ListingCreateForm({
             disabled={form.busy}
           />
 
-          <ListingDetailFields
-            specs={form.specs}
-            details={form.details}
-            onChange={form.setDetail}
-            disabled={form.busy}
-          />
+          <ListingDetailFields specs={form.specs} details={form.details} onChange={form.setDetail} disabled={form.busy} />
+          {form.isEvent ? (
+            <EventRecurrenceSection value={form.recurrence} onChange={form.setRecurrence} details={form.details} disabled={form.busy} />
+          ) : null}
 
           <View style={styles.section}>
             <TextField

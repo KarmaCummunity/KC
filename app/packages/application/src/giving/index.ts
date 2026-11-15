@@ -31,7 +31,7 @@ export type { IRideBookingRepository } from '../ports/IRideBookingRepository';
 export { ListRidePlacesUseCase } from './ListRidePlacesUseCase';
 export type { IRidePlaceRepository } from '../ports/IRidePlaceRepository';
 export { ListRidesFeedUseCase } from './ListRidesFeedUseCase';
-export type { IRidesFeedRepository } from '../ports/IRidesFeedRepository';
+export type { IRidesFeedRepository, RideFeedRoute } from '../ports/IRidesFeedRepository';
 export { ListMyRideRoutesUseCase, SaveRideRouteUseCase, RemoveRideRouteUseCase } from './rideSavedRouteUseCases';
 export type { IRideSavedRoutesRepository } from '../ports/IRideSavedRoutesRepository';
 export {
@@ -46,5 +46,3 @@ export { SaveRideHouseNumbersUseCase, GetRideHouseNumbersUseCase } from './rideH
 export type { IRideHouseNumberRepository } from '../ports/IRideHouseNumberRepository';
 export { RaiseRideEmergencyUseCase } from './RaiseRideEmergencyUseCase';
 export type { IRideSafetyRepository } from '../ports/IRideSafetyRepository';
-export { FindListingForLegacyRideUseCase } from './FindListingForLegacyRideUseCase';
-export type { IRideLegacyLinkRepository } from '../ports/IRideLegacyLinkRepository';

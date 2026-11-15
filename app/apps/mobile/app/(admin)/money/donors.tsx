@@ -3,9 +3,9 @@
 import React from 'react';
 import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
-import { hasPermission, type AdminRole, type FinanceDonorSummary } from '@kc/domain';
+import type { FinanceDonorSummary } from '@kc/domain';
 import { makeUseStyles, radius, spacing, Text, typography } from '@kc/ui';
-import { useAdminRoles } from '../../../src/hooks/useAdminRoles';
+import { useMoneyPermissions } from '../../../src/hooks/useMoneyPermissions';
 import { container } from '../../../src/lib/container';
 import { formatMoney } from '../../../src/lib/formatMoney';
 import { AdminListEmpty } from '../../../src/components/admin/AdminListEmpty';
@@ -20,8 +20,8 @@ const fmtDate = (d: Date) => d.toLocaleDateString('he-IL', { year: 'numeric', mo
 export default function MoneyDonorsScreen() {
   const styles = useStyles();
   const t = useLocaleBundle().admin.money;
-  const { roles, isLoading: rolesLoading } = useAdminRoles();
-  const allowed = hasPermission(roles as readonly AdminRole[], 'money.manage');
+  // The donors overview is open to platform admins and org admins (finance_assert 'transparency').
+  const { isLoading: rolesLoading, canTransparency: allowed } = useMoneyPermissions();
 
   const list = useQuery({
     queryKey: ['admin.money.donors'],

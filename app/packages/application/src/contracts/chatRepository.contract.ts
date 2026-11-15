@@ -25,6 +25,13 @@ export interface ChatActor {
 export interface ChatContractContext {
   /** A new active member with no chats. */
   newActor(): Promise<ChatActor>;
+  /**
+   * What opening the chat again after a personal hide does. `new-thread` (default): a new, empty
+   * thread (FR-CHAT-016 AC3). `same-thread`: the production baseline keeps ONE chat per pair
+   * (unique pair index, D13), so the hidden chat comes back to the inbox, clean for the member who
+   * hid it (their history starts at the hide, migration 0028).
+   */
+  reopenAfterHide?: 'new-thread' | 'same-thread';
 }
 
 type Ctx = ChatContractContext;
@@ -46,7 +53,8 @@ const onePairOneThread: ContractCase<Ctx> = {
     const chat = await a.chats.findOrCreateChat(a.userId, b.userId);
     assertEqual((await b.chats.findOrCreateChat(b.userId, a.userId)).chatId, chat.chatId, 'chat opened by the other side');
     assertEqual((await a.chats.findOrCreateChat(a.userId, b.userId)).chatId, chat.chatId, 'chat reopened by the opener');
-    assertSameList([...chat.participantIds].sort(), [a.userId, b.userId].sort(), 'participants');
+    const byId = (left: string | null, right: string | null) => (left ?? '').localeCompare(right ?? '');
+    assertSameList([...chat.participantIds].sort(byId), [a.userId, b.userId].sort(byId), 'participants');
     assertEqual(chat.isSupportThread, false, 'a member-to-member chat is not the support thread');
     assertEqual(chat.anchorPostId, null, 'a chat opened without an anchor has no post anchor');
   },
@@ -171,19 +179,34 @@ const hideIsPersonal: ContractCase<Ctx> = {
     assertSameList(await inboxIds(a), [chatId], "counterpart's inbox keeps the chat");
     await a.chats.sendMessage(chatId, a.userId, 'two');
     assertSameList(await inboxIds(b), [chatId], "hider's inbox after a new message");
-    assertEqual(await b.chats.getUnreadTotal(b.userId), 2, "hider's unread total after the chat reappears");
+    // PM decision 2026-11-11: what the hider removed never comes back; only the new message counts.
+    assertEqual(await b.chats.getUnreadTotal(b.userId), 1, "hider's unread total after the chat reappears");
+    assertSameList(
+      (await b.chats.getMessages(chatId, 10)).map((m) => m.body),
+      ['two'],
+      'the hider reads only what came after the hide',
+    );
+    assertEqual((await a.chats.getMessages(chatId, 10)).length, 2, 'the counterpart keeps the whole conversation');
   },
 };
 
 const newThreadAfterHide: ContractCase<Ctx> = {
-  name: 'findOrCreateChat after a hide opens a new, empty thread with the same counterpart (FR-CHAT-016 AC3)',
+  name: 'findOrCreateChat after a hide reopens the pair as the implementation defines (FR-CHAT-016 AC3, D13)',
   async run(ctx) {
     const a = await ctx.newActor();
     const b = await ctx.newActor();
     const hidden = await openChat(a, b);
     await a.chats.sendMessage(hidden, a.userId, 'before the hide');
     await a.chats.hideChatFromInbox(hidden);
-    const fresh = await openChat(a, b);
+    const reopened = await openChat(a, b);
+    if (ctx.reopenAfterHide === 'same-thread') {
+      assertEqual(reopened, hidden, 'the one chat of the pair comes back');
+      assertSameList(await inboxIds(a), [hidden], 'the reopened chat is in the inbox again');
+      assertSameList(await a.chats.getMessages(hidden, 10), [], 'as a clean thread: the old history is gone for the hider');
+      assertEqual((await b.chats.getMessages(hidden, 10)).length, 1, 'the counterpart keeps it');
+      return;
+    }
+    const fresh = reopened;
     assertTrue(fresh !== hidden, 'a new chat id after the hide');
     assertSameList(await a.chats.getMessages(fresh, 10), [], 'the new thread starts empty');
     // AC4: the thread with the latest activity wins, so both sides now meet in the new one.

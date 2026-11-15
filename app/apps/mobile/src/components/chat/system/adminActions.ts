@@ -4,6 +4,7 @@
 import { Alert, ToastAndroid, Platform } from 'react-native';
 import { ModerationError } from '@kc/application';
 import i18n from '../../../i18n';
+import { isBackendUnavailable, notAvailableMessage } from '../../../lib/backendAvailability';
 
 export type AdminActionKey =
   | 'restore'
@@ -72,10 +73,23 @@ export function showAdminToast(msg: string): void {
   }
 }
 
+/** Locale key (under `moderation.actions.errors`) of each refusal a staff action can end in. */
+const MODERATION_ERROR_KEYS: Readonly<Record<string, string>> = {
+  forbidden: 'forbidden',
+  invalid_restore_state: 'invalidRestoreState',
+  invalid_target_state: 'invalidTargetState',
+  report_not_open: 'reportNotOpen',
+  invalid_sanction_reason: 'invalidSanctionReason',
+  cannot_sanction_self: 'cannotSanctionSelf',
+  cannot_sanction_admin: 'cannotSanctionAdmin',
+  account_pending_deletion: 'accountPendingDeletion',
+  target_not_found: 'targetNotFound',
+  message_not_found: 'messageNotFound',
+};
+
 function errorMessage(e: unknown): string {
-  if (e instanceof ModerationError) {
-    if (e.code === 'forbidden') return i18n.t('moderation.actions.errors.forbidden');
-    if (e.code === 'invalid_restore_state') return i18n.t('moderation.actions.errors.invalidRestoreState');
-  }
-  return i18n.t('moderation.actions.errors.networkError');
+  // Degrade rule: an action whose backend object is missing says "not available yet".
+  if (isBackendUnavailable(e)) return notAvailableMessage();
+  const key = e instanceof ModerationError ? MODERATION_ERROR_KEYS[e.code] : undefined;
+  return i18n.t(key ? `moderation.actions.errors.${key}` : 'moderation.actions.errors.networkError');
 }

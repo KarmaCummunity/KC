@@ -1,19 +1,19 @@
 // ─────────────────────────────────────────────
-// SupabaseUserRepository — adapter for IUserRepository.
-// Slice A (P0.3): only onboarding read/write methods are wired. The remaining
-// methods throw `not_implemented` and will be filled in by P0.4 / P1.1 / P2.4.
+// SupabaseUserRepository — adapter for IUserRepository over the baseline identity tables
+// (users, user_private, user_account, user_stats) and RPCs (docs/db/target-design.md §9).
 // docs/spec/requirements/01_auth_and_onboarding.md
 // ─────────────────────────────────────────────
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { IUserRepository, NotificationPreferencesPatch, OnboardingBootstrap } from '@kc/application';
 import { DeleteAccountError } from '@kc/application';
-import type { NotificationPreferences, OnboardingState, User } from '@kc/domain';
+import type { NotificationPreferences, OnboardingState, PrivacyMode, User } from '@kc/domain';
+import type { Database } from '../database.types';
+import { unwrapCall } from '../rpc/mapRpcError';
 import {
   supabaseClearBasicInfoSkipped,
   supabaseGetOnboardingBootstrap,
   supabaseMarkBasicInfoSkipped,
-  supabaseResetOnboardingForDev,
   supabaseSetBasicInfo,
   supabaseSetDateOfBirth,
   supabaseSetOnboardingState,
@@ -25,15 +25,14 @@ import {
   supabaseUpdateEditableProfile,
   type EditableProfilePatch,
 } from './editableProfileSupabase';
-import { mapUserRow, type UserRow } from './mapUserRow';
-import { fetchUserBy } from './fetchUserBy';
+import { toNotificationPreferences } from './mapUserRow';
+import { fetchUserBy } from './userReads';
 import { getChatCounterpartyContact } from './getChatCounterpartyContact';
 import { searchUsers } from './searchUsers';
-import { USER_PUBLIC_SELECT_COLUMNS } from './userPublicColumns';
-import {
-  fetchUsersSelfPrivateFields,
-  mergeSelfPrivateFields,
-} from './usersSelfPrivateFields';
+import { mergeNotificationPreferences } from './notificationPreferencesMerge';
+import { updateUserPrivate } from './ownPrivateUpdate';
+import { updateOwnUser } from './ownUserUpdate';
+import { mapRuleErrors } from '../auth/ruleErrors';
 import {
   followEdge,
   unfollowEdge,
@@ -50,17 +49,19 @@ import {
   listPendingWithUsers,
 } from './follow/followRequestMethods';
 import { fetchFollowStateRaw } from './follow/getFollowState';
+import { mapFollowError } from './follow/mapFollowError';
 
 const NOT_IMPL = (name: string, slice: string) =>
   new Error(`SupabaseUserRepository.${name}: not_implemented (${slice})`);
 
 export class SupabaseUserRepository implements IUserRepository {
-  constructor(private readonly client: SupabaseClient) {}
+  constructor(private readonly client: SupabaseClient<Database>) {}
 
   // ── Onboarding (P0.3 slice A) ────────────────────────────────────────────
 
-  getOnboardingBootstrap(userId: string): Promise<OnboardingBootstrap> {
-    return supabaseGetOnboardingBootstrap(this.client, userId);
+  /** The server reads the identity from the session, so `_userId` is not sent. */
+  getOnboardingBootstrap(_userId: string): Promise<OnboardingBootstrap> {
+    return supabaseGetOnboardingBootstrap(this.client);
   }
 
   markBasicInfoSkipped(userId: string): Promise<void> {
@@ -71,10 +72,7 @@ export class SupabaseUserRepository implements IUserRepository {
     return supabaseClearBasicInfoSkipped(this.client, userId);
   }
 
-  setBasicInfo(
-    userId: string,
-    params: { displayName: string; city: string; cityName: string },
-  ): Promise<void> {
+  setBasicInfo(userId: string, params: { displayName: string; city: string }): Promise<void> {
     return supabaseSetBasicInfo(this.client, userId, params);
   }
 
@@ -82,56 +80,33 @@ export class SupabaseUserRepository implements IUserRepository {
     return supabaseSetOnboardingState(this.client, state);
   }
 
-  resetOnboardingForDev(): Promise<void> {
-    return supabaseResetOnboardingForDev(this.client);
+  setAvatar(userId: string, avatarUrl: string | null): Promise<void> {
+    return updateOwnUser(this.client, userId, { avatar_url: avatarUrl });
   }
 
-  async setAvatar(userId: string, avatarUrl: string | null): Promise<void> {
-    const { error } = await this.client
-      .from('users')
-      .update({ avatar_url: avatarUrl })
-      .eq('user_id', userId);
-    if (error) throw new Error(`setAvatar: ${error.message}`);
+  setBiography(userId: string, biography: string | null): Promise<void> {
+    return updateOwnUser(this.client, userId, { biography });
   }
 
-  async setBiography(userId: string, biography: string | null): Promise<void> {
-    const { error } = await this.client
-      .from('users')
-      .update({ biography })
-      .eq('user_id', userId);
-    if (error) throw new Error(`setBiography: ${error.message}`);
-  }
-
-  async setPrivacyMode(userId: string, mode: import('@kc/domain').PrivacyMode): Promise<User> {
-    const { data, error } = await this.client
-      .from('users')
-      .update({ privacy_mode: mode, privacy_changed_at: new Date().toISOString() })
-      .eq('user_id', userId)
-      .select(USER_PUBLIC_SELECT_COLUMNS)
-      .single();
-    if (error) throw new Error(`setPrivacyMode: ${error.message}`);
-    let user = mapUserRow(data as unknown as UserRow);
-    const slice = await fetchUsersSelfPrivateFields(this.client);
-    if (slice) user = mergeSelfPrivateFields(user, slice);
+  /** FR-PROFILE-005 / 006 — `set_privacy_mode`; going public accepts every pending request. */
+  async setPrivacyMode(userId: string, mode: PrivacyMode): Promise<User> {
+    await mapRuleErrors(
+      async () => unwrapCall('rpc:set_privacy_mode', await this.client.rpc('set_privacy_mode', { p_mode: mode })),
+      (_reason, error) => mapFollowError(error),
+    );
+    const user = await fetchUserBy(this.client, 'id', userId);
+    if (!user) throw new Error('setPrivacyMode: profile not found');
     return user;
   }
 
-  /** FR-CLOSURE-004 AC3 — flips users.closure_explainer_dismissed = true. */
-  async dismissClosureExplainer(userId: string): Promise<void> {
-    const { error } = await this.client
-      .from('users')
-      .update({ closure_explainer_dismissed: true })
-      .eq('user_id', userId);
-    if (error) throw new Error(`dismissClosureExplainer: ${error.message}`);
+  /** FR-CLOSURE-004 AC3 — flips user_private.closure_explainer_dismissed = true. */
+  dismissClosureExplainer(userId: string): Promise<void> {
+    return updateUserPrivate(this.client, userId, { closure_explainer_dismissed: true });
   }
 
-  /** FR-FEED-015 AC3 — flips users.first_post_nudge_dismissed = true. */
-  async dismissFirstPostNudge(userId: string): Promise<void> {
-    const { error } = await this.client
-      .from('users')
-      .update({ first_post_nudge_dismissed: true })
-      .eq('user_id', userId);
-    if (error) throw new Error(`dismissFirstPostNudge: ${error.message}`);
+  /** FR-FEED-015 AC3 — flips user_private.first_post_nudge_dismissed = true. */
+  dismissFirstPostNudge(userId: string): Promise<void> {
+    return updateUserPrivate(this.client, userId, { first_post_nudge_dismissed: true });
   }
 
   setProfileAddressLines(
@@ -158,12 +133,13 @@ export class SupabaseUserRepository implements IUserRepository {
     return supabaseGetEditableProfile(this.client, userId);
   }
 
-  // ── Methods deferred to later slices ─────────────────────────────────────
+  // ── Profile reads ────────────────────────────────────────────────────────
 
-  async findById(userId: string): Promise<User | null> {
-    return fetchUserBy(this.client, 'user_id', userId);
+  findById(userId: string): Promise<User | null> {
+    return fetchUserBy(this.client, 'id', userId);
   }
-  async findByHandle(handle: string): Promise<User | null> {
+
+  findByHandle(handle: string): Promise<User | null> {
     return fetchUserBy(this.client, 'share_handle', handle);
   }
 
@@ -171,117 +147,105 @@ export class SupabaseUserRepository implements IUserRepository {
   getChatCounterpartyContact(chatId: string): Promise<string | null> {
     return getChatCounterpartyContact(this.client, chatId);
   }
+
   create(): Promise<never> {
-    return Promise.reject(NOT_IMPL('create', 'auto-created by handle_new_user trigger'));
+    return Promise.reject(NOT_IMPL('create', 'auto-created by handle_new_auth_user trigger'));
   }
   update(): Promise<never> {
     return Promise.reject(NOT_IMPL('update', 'P2.4'));
   }
   delete(_userId: string): Promise<void> {
-    // Deprecated in V1 — see deleteAccountViaEdgeFunction.
+    // Deprecated in V1 — see requestAccountDeletion.
     return Promise.reject(NOT_IMPL('delete', 'reserved for future admin-driven delete'));
   }
 
-  async deleteAccountViaEdgeFunction(): Promise<void> {
-    const { data, error } = await this.client.functions.invoke<{
-      ok: boolean;
-      error?: 'unauthenticated' | 'suspended' | 'auth_delete_failed' | 'db_failed';
-      counts?: { posts: number; chats_anonymized: number; chats_dropped: number };
-    }>('delete-account', { method: 'POST' });
-
-    if (error) {
-      // FunctionsHttpError: error.context is the raw Response (data is null on
-      // non-2xx, so we must parse the body ourselves to recover the typed
-      // error code). FunctionsFetchError: error.context is undefined → network.
-      const ctx = (error as { context?: Response }).context;
-      const status = ctx?.status;
-      if (status == null) throw new DeleteAccountError('network', error.message, error);
-      if (status === 401) throw new DeleteAccountError('unauthenticated', 'no valid session', error);
-      if (status === 403) throw new DeleteAccountError('suspended', 'account is suspended', error);
-      // Read the body for the auth_delete_failed signal (critical zombie state).
-      let body: { error?: string } | null;
-      try {
-        body = await ctx!.clone().json();
-      } catch {
-        body = null;
-      }
-      if (status === 500 && body?.error === 'auth_delete_failed') {
-        throw new DeleteAccountError('auth_delete_failed', 'DB cleaned but auth survived', error);
-      }
-      throw new DeleteAccountError('server_error', error.message, error);
-    }
-    if (data?.ok === true) return;
-    if (data?.error === 'auth_delete_failed') {
-      throw new DeleteAccountError('auth_delete_failed', 'DB cleaned but auth survived');
-    }
-    throw new DeleteAccountError('server_error', `unexpected response: ${JSON.stringify(data)}`);
+  /**
+   * FR-SETTINGS-012 / FR-AUTH-016 — `request_account_deletion` deactivates the account for 30
+   * days (the profile disappears for everyone else at once, push stops); `restore_account`
+   * brings it back. The identity is read from the session.
+   */
+  async requestAccountDeletion(): Promise<void> {
+    await mapRuleErrors(
+      async () => unwrapCall('rpc:request_account_deletion', await this.client.rpc('request_account_deletion')),
+      (reason, cause) => {
+        if (reason === 'unauthenticated' || reason === 'suspended') {
+          return new DeleteAccountError(reason, reason, cause);
+        }
+        return new DeleteAccountError('server_error', reason, cause);
+      },
+    );
   }
-  async follow(followerId: string, followedId: string) {
+
+  // ── Follows ──────────────────────────────────────────────────────────────
+
+  follow(followerId: string, followedId: string) {
     return followEdge(this.client, followerId, followedId);
   }
-  async unfollow(followerId: string, followedId: string): Promise<void> {
+  unfollow(followerId: string, followedId: string): Promise<void> {
     return unfollowEdge(this.client, followerId, followedId);
   }
-  async isFollowing(followerId: string, followedId: string): Promise<boolean> {
+  isFollowing(followerId: string, followedId: string): Promise<boolean> {
     return isFollowingEdge(this.client, followerId, followedId);
   }
-  async getFollowers(userId: string, limit: number, cursor?: string) {
+  getFollowers(userId: string, limit: number, cursor?: string) {
     return listFollowers(this.client, userId, limit, cursor);
   }
-  async getFollowing(userId: string, limit: number, cursor?: string) {
+  getFollowing(userId: string, limit: number, cursor?: string) {
     return listFollowing(this.client, userId, limit, cursor);
   }
-  async sendFollowRequest(requesterId: string, targetId: string) {
+  sendFollowRequest(requesterId: string, targetId: string) {
     return sendRequest(this.client, requesterId, targetId);
   }
-  async cancelFollowRequest(requesterId: string, targetId: string): Promise<void> {
+  cancelFollowRequest(requesterId: string, targetId: string): Promise<void> {
     return cancelRequest(this.client, requesterId, targetId);
   }
-  async acceptFollowRequest(requesterId: string, targetId: string): Promise<void> {
+  acceptFollowRequest(requesterId: string, targetId: string): Promise<void> {
     return acceptRequest(this.client, requesterId, targetId);
   }
-  async rejectFollowRequest(requesterId: string, targetId: string): Promise<void> {
+  rejectFollowRequest(requesterId: string, targetId: string): Promise<void> {
     return rejectRequest(this.client, requesterId, targetId);
   }
-  async getPendingFollowRequests(userId: string) {
+  getPendingFollowRequests(userId: string) {
     return listPendingRaw(this.client, userId);
   }
-  async getPendingFollowRequestsWithUsers(userId: string, limit: number, cursor?: string) {
+  getPendingFollowRequestsWithUsers(userId: string, limit: number, cursor?: string) {
     return listPendingWithUsers(this.client, userId, limit, cursor);
   }
-  async getFollowStateRaw(viewerId: string, targetUserId: string) {
+  getFollowStateRaw(viewerId: string, targetUserId: string) {
     return fetchFollowStateRaw(this.client, viewerId, targetUserId);
   }
 
-  searchUsers(
-    query: string,
-    opts: { excludeUserId: string; limit: number },
-  ): Promise<User[]> {
+  searchUsers(query: string, opts: { excludeUserId: string; limit: number }): Promise<User[]> {
     return searchUsers(this.client, query, opts);
   }
 
+  /** FR-NOTIF-014 — read, merge (`mergeNotificationPreferences`), write on the caller's `user_private`. */
   async updateNotificationPreferences(
     userId: string,
     partial: NotificationPreferencesPatch,
   ): Promise<NotificationPreferences> {
-    const merge: Record<string, unknown> = {};
-    if (partial.critical !== undefined) merge.critical = partial.critical;
-    if (partial.social !== undefined) merge.social = partial.social;
-    if (partial.quietHours !== undefined) merge.quietHours = partial.quietHours;
-    // The RPC merges `kinds` per key (0460), so only the toggled kinds are sent.
-    if (partial.kinds !== undefined) merge.kinds = partial.kinds;
-    const { data, error } = await this.client.rpc(
-      'users_merge_notification_preferences',
-      { p_user_id: userId, p_merge: merge },
+    const row = unwrapCall(
+      'table:user_private',
+      await this.client
+        .from('user_private')
+        .select('notification_preferences')
+        .eq('user_id', userId)
+        .maybeSingle(),
     );
-    if (error) throw new Error(`updateNotificationPreferences: ${error.message}`);
-    return data as NotificationPreferences;
+    if (!row) throw new Error('updateNotificationPreferences: no user_private row');
+    const stored = row.notification_preferences;
+    const merged = mergeNotificationPreferences(
+      stored !== null && typeof stored === 'object' && !Array.isArray(stored) ? stored : {},
+      partial,
+    );
+    await updateUserPrivate(this.client, userId, { notification_preferences: merged });
+    return toNotificationPreferences(merged);
   }
 
   findByAuthIdentity(_provider: string, _subject: string): Promise<never> {
     return Promise.reject(NOT_IMPL('findByAuthIdentity', 'P0.4'));
   }
   createAuthIdentity(): Promise<never> {
-    return Promise.reject(NOT_IMPL('createAuthIdentity', 'auto-created by handle_new_user trigger'));
+    return Promise.reject(NOT_IMPL('createAuthIdentity', 'auto-created by handle_new_auth_user trigger'));
   }
 }

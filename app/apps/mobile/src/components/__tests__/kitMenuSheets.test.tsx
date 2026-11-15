@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// Action menus and the guest join prompt on the kit `BottomSheet` (spec 17 §4.1.1,
+// Action menus on the kit `BottomSheet` (spec 17 §4.1.1,
 // TD-243): each renders its rows, runs the picked action, and dismisses from the
 // footer cancel and the ✕. Destructive rows are tinted `error`.
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -18,6 +18,11 @@ const router = vi.hoisted(() => ({ push: vi.fn() }));
 vi.mock('expo-router', () => ({ useRouter: () => router }));
 const block = vi.hoisted(() => ({ canBlock: true, isBlocked: false, busy: false, toggle: vi.fn() }));
 vi.mock('../../hooks/useUserBlock', () => ({ useUserBlock: () => block }));
+// Holds the deferred work so a test decides when the sheet has "finished dismissing" (#2062).
+const deferred = vi.hoisted(() => [] as Array<() => void | Promise<void>>);
+vi.mock('../../lib/runAfterBottomSheetDismiss', () => ({
+  runAfterBottomSheetDismiss: (work: () => void | Promise<void>) => void deferred.push(work),
+}));
 const adminRoles = vi.hoisted(() => ({ roles: [] as string[] }));
 vi.mock('../../hooks/useAdminRoles', () => ({ useAdminRoles: () => adminRoles }));
 // The sheets these menus open are covered in kitReportSheets.test.tsx.
@@ -37,7 +42,6 @@ vi.mock('../donationLinkRowHandlers', () => linkHandlers);
 import { finishModalAnimation, renderInTheme, rgb } from '../ui/__tests__/kitDialogTestKit';
 import { ChatActionMenu } from '../ChatActionMenu';
 import { DonationLinkRowMenu } from '../DonationLinkRowMenu';
-import { GuestJoinModal } from '../GuestJoinModal';
 import { MyProfileOverflowMenu } from '../profile/MyProfileOverflowMenu';
 import { ProfileOverflowMenu } from '../profile/ProfileOverflowMenu';
 
@@ -45,6 +49,7 @@ afterEach(() => {
   cleanup();
   vi.clearAllMocks();
   Object.assign(block, { canBlock: true, isBlocked: false, busy: false });
+  deferred.length = 0;
   adminRoles.roles = [];
 });
 
@@ -158,6 +163,9 @@ describe('ProfileOverflowMenu', () => {
     const blockRow = screen.getByTestId('profile-block-toggle');
     expect(textColor('moderation.block.block')).toBe(rgb(lightColors.error));
     fireEvent.click(blockRow);
+    // The confirmation Alert waits for the sheet to finish closing, or iOS drops it (#2062).
+    expect(block.toggle).not.toHaveBeenCalled();
+    deferred.forEach((work) => void work());
     expect(block.toggle).toHaveBeenCalledTimes(1);
   });
 
@@ -180,29 +188,5 @@ describe('ProfileOverflowMenu', () => {
     openMenu('moderation.report.user.title');
     fireEvent.click(screen.getByRole('button', { name: 'moderation.actions.ban' }));
     expect(screen.getByText('ban-user-sheet')).toBeTruthy();
-  });
-});
-
-describe('GuestJoinModal', () => {
-  function renderPrompt() {
-    const handlers = { onJoin: vi.fn(), onDismiss: vi.fn() };
-    renderInTheme(<GuestJoinModal visible message="Join to like posts" joinLabel="Join now" {...handlers} />);
-    return handlers;
-  }
-
-  it('shows the message and joins from the primary button', () => {
-    const { onJoin } = renderPrompt();
-    expect(screen.getByText('Join to like posts')).toBeTruthy();
-    const join = screen.getByRole('button', { name: 'Join now' });
-    expect(getComputedStyle(join).backgroundColor).toBe(rgb(lightColors.primary));
-    fireEvent.click(join);
-    expect(onJoin).toHaveBeenCalledTimes(1);
-  });
-
-  it('dismisses from the close button, the ✕ and Escape', () => {
-    const { onDismiss } = renderPrompt();
-    for (const close of screen.getAllByRole('button', { name: 'general.close' })) fireEvent.click(close);
-    fireEvent.keyUp(document, { key: 'Escape' });
-    expect(onDismiss).toHaveBeenCalledTimes(3);
   });
 });

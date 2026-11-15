@@ -56,6 +56,6 @@ from bot services.
 - `marketplace_set_whatsapp_consent` → `api_bot_set_match_consent`
 - `marketplace_match_respond` → `api_bot_record_match_response`
 
-Edge entrypoints: `whatsapp-webhook`, `whatsapp-intake-worker` (orchestration stub).
+Edge entrypoints: `whatsapp-webhook` (the Pro agent's tools) and `whatsapp-sender`. The `whatsapp-intake-worker` stub is retired; the bot RPCs on posts are `api_bot_search_posts`, `api_bot_publish_post`, `api_bot_my_posts` and `api_bot_my_matches` (the `integrations` module).
 
 Migrations: `0300`–`0304`. Contract tests: `supabase/tests/0300_whatsapp_bot_contract.sql`.

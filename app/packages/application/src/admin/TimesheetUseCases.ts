@@ -1,4 +1,4 @@
-// V2-ADMIN-TIME-10 — wrapper use cases for timesheets.
+// FR-ADMIN-033 — use cases for staff timesheets.
 import { TimesheetError, type TimesheetPage } from '@kc/domain';
 import type {
   ITimesheetsRepository, TimesheetListFilters, TimesheetUpsertInput,

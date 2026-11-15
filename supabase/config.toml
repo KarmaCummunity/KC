@@ -41,14 +41,13 @@ enable_signup = true
 double_confirm_changes = true
 enable_confirmations = false
 
-# Local-only mock auth for E2E / AI agent testing. verify_jwt=false because callers
-# are unauthenticated; the handler itself 404s on hosted Supabase URLs.
-[functions.mock-login]
-verify_jwt = false
-
 # Meta calls the webhook without a Supabase JWT; the handler verifies X-Hub-Signature-256 and fails closed.
 [functions.whatsapp-webhook]
 verify_jwt = false
 
 [functions.revenuecat-webhook]
+verify_jwt = false
+
+# The payment provider calls without a Supabase JWT; the handler verifies the provider's HMAC signature and fails closed.
+[functions.payments-webhook]
 verify_jwt = false

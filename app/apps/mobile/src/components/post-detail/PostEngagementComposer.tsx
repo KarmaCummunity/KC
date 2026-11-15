@@ -30,9 +30,12 @@ export function PostEngagementComposer({ embedded = false, bottomOverlayInset = 
       hide.remove();
     };
   }, []);
+  // The draft lives here, not in the engagement context: a keystroke re-renders only the composer,
+  // never the comment thread that reads that context (NFR-PERF-005).
+  const [draft, setDraft] = useState('');
   if (!engagement) return null;
 
-  const { draft, replyTo, setDraft, clearReply, onSubmitComment, busy } = engagement;
+  const { replyTo, clearReply, onSubmitComment, busy } = engagement;
   const canSend = draft.trim().length > 0 && !busy;
   const padBottom = embedded
     ? 0
@@ -78,7 +81,7 @@ export function PostEngagementComposer({ embedded = false, bottomOverlayInset = 
             !canSend ? styles.sendBtnDisabled : null,
             pressed && canSend ? styles.sendBtnPressed : null,
           ]}
-          onPress={onSubmitComment}
+          onPress={() => onSubmitComment(draft, () => setDraft(''))}
           disabled={!canSend}
         >
           <MirroredIcon

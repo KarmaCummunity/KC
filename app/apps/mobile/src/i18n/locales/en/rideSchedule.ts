@@ -93,7 +93,7 @@ export const rideSeries = {
   resume: 'Resume',
   reschedule: 'Reschedule',
   cancel: 'Cancel the recurring ride',
-  cancelConfirm: 'Cancel this recurring ride? Upcoming rides nobody booked are removed; a booked ride goes on as a single ride.',
+  cancelConfirm: 'Cancel the recurring ride? Every upcoming ride is cancelled, booked ones too, and the passengers are told.',
   cancelYes: 'Yes, cancel',
   keep: 'Keep',
   time: 'Departure time',

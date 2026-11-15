@@ -71,10 +71,19 @@ Configure in Supabase Dashboard → Edge Functions → Secrets (names only; neve
 |--------|---------|
 | `WHATSAPP_VERIFY_TOKEN` | `whatsapp-webhook` (GET challenge) |
 | `WHATSAPP_APP_SECRET` | `whatsapp-webhook` (signature HMAC) |
-| `WHATSAPP_CLOUD_API_TOKEN` | `whatsapp-sender` (outbound Graph API sends) |
+| `WHATSAPP_CLOUD_API_TOKEN` | `whatsapp-sender` (outbound Graph API sends); `whatsapp-webhook` (downloads a photo a Pro member sends for a bot draft) |
 | `WHATSAPP_PHONE_NUMBER_ID` | `whatsapp-sender` |
-| `WHATSAPP_GRAPH_API_VERSION` | Optional override (default in `whatsapp_channel_config`) |
+| `WHATSAPP_GRAPH_API_VERSION` | Optional override (default in `integrations.whatsapp_channel_config`) |
+| `GOOGLE_GENERATIVE_AI_API_KEY` | `whatsapp-webhook` (the Pro agent; unset → agent off) |
+| `GEMINI_MODEL_ID` | Optional, `whatsapp-webhook` agent model (default `gemini-flash-latest`) |
+| `KC_APP_BASE_URL` | Optional, `whatsapp-webhook`: web origin of the "finish in the app" links (default `https://karma-community-kc.com`) |
+| `WHATSAPP_WABA_ID` | `scripts/whatsapp-templates.mjs submit` only (template submission to Meta) |
 | `WHATSAPP_SKIP_SIGNATURE_VERIFY` | Local/dev only when app secret unset |
+
+The `whatsapp_send` job calls `whatsapp-sender` through `kc_private.invoke_edge_function`, which
+reads the Vault secrets `kc_project_url` and `kc_service_role_key` (shared with the other
+scheduled workers). Nothing is sent until a moderator switches the channel on in the admin
+WhatsApp console and a super admin marks the templates approved.
 
 RPC contract for MCP adapters: `docs/SSOT/MCP_MARKETPLACE_BOT_CONTRACT.md`.
 

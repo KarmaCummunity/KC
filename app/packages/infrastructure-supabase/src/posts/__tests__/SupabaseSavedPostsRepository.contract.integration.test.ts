@@ -19,7 +19,8 @@ describe('ISavedPostsRepository contract — SupabaseSavedPostsRepository (local
   beforeAll(async () => {
     harness = new PostContractHarness();
     const address = await harness.anyAddress();
-    ctx = { address, newActor: () => harness.newSavedPostsActor() };
+    // The baseline keeps a deleted post for seven days (reopen undoes it); bookmarks go with the purge.
+    ctx = { address, newActor: () => harness.newSavedPostsActor(), deleteKeepsPostForReopen: true };
   }, CASE_TIMEOUT_MS);
 
   afterAll(async () => {

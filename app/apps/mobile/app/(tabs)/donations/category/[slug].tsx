@@ -7,12 +7,14 @@ import { Redirect, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import {
   DONATION_CATEGORY_SLUGS,
+  worldSlugOfLinkList,
   type DonationCategorySlug,
 } from '@kc/domain';
 import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
 import type { Ionicons } from '@expo/vector-icons';
 import { DonationLinksList } from '../../../../src/components/DonationLinksList';
 import { MedicalBodiesSection } from '../../../../src/components/MedicalBodiesSection';
+import { WorldCuratedContent } from '../../../../src/components/giving/WorldCuratedContent';
 import { Screen } from '../../../../src/components/ui/Screen';
 import { IconTile } from '../../../../src/components/ui/IconTile';
 import { MotionEntry, ENTRY_DELAY } from '../../../../src/components/ui/MotionEntry';
@@ -131,6 +133,11 @@ export default function DonationCategoryScreen() {
 
         <MotionEntry variant="bottom" delay={ENTRY_DELAY.section + 80}>
           <DonationLinksList categorySlug={slug} />
+        </MotionEntry>
+
+        {/* Curated organizations, related worlds and knowledge topics of the world (migration 0024). */}
+        <MotionEntry variant="bottom" delay={ENTRY_DELAY.section + 120}>
+          <WorldCuratedContent worldSlug={worldSlugOfLinkList(slug)} />
         </MotionEntry>
       </ScrollView>
     </Screen>

@@ -1,16 +1,15 @@
 // IReportRepository contract (G39) — what every implementation must accept and
 // refuse when a member files a report. Mapped to FR-MOD-001 AC2 (reason + note
 // of at most 500 characters), AC3 (the report is stored) and AC7 (one report per
-// reporter and target per 24 hours), plus the target rules of the reports
-// validation trigger: no self-reports, the target must exist, and a chat may be
-// reported only by its participants.
+// reporter and target while the first is open), plus the target rules of the
+// reports validation trigger: no self-reports and the target must exist. A chat
+// target is stored as given: the baseline does not check it.
 //
 // The port exposes `submit` only, so each case observes acceptance or a typed
 // refusal. User and chat targets cover the rules; post and listing targets need
 // their own fixtures and stay in the DB tests (supabase/tests).
 
 import { REPORT_NOTE_MAX_LENGTH } from '@kc/domain';
-import type { IChatRepository } from '../ports/IChatRepository';
 import type { IReportRepository } from '../ports/IReportRepository';
 import type { ContractCase } from './types';
 import { assertRejects, assertRejectsWithCode } from './assert';
@@ -19,8 +18,6 @@ export interface ReportActor {
   readonly userId: string;
   /** Report repository acting as `userId` (for the Supabase adapter: that user's signed-in client). */
   readonly reports: IReportRepository;
-  /** Chat repository acting as `userId`: chats are a report target. */
-  readonly chats: IChatRepository;
 }
 
 export interface ReportContractContext {
@@ -52,7 +49,7 @@ const reportAnotherMember: ContractCase<Ctx> = {
 };
 
 const oneReportPerDay: ContractCase<Ctx> = {
-  name: 'submit: the same reporter may report a target once per 24 hours; other reporters still may (FR-MOD-001 AC7)',
+  name: 'submit: the same reporter may have one open report per target; other reporters still may (FR-MOD-001 AC7)',
   async run(ctx) {
     const reporter = await ctx.newActor();
     const second = await ctx.newActor();
@@ -63,21 +60,11 @@ const oneReportPerDay: ContractCase<Ctx> = {
   },
 };
 
-const generalReportsRepeat: ContractCase<Ctx> = {
-  name: "submit: a general report (target 'none') is not limited to one per day",
-  async run(ctx) {
-    const reporter = await ctx.newActor();
-    const general = { targetType: 'none' as const, targetId: null, reason: 'Other' as const, note: 'the map does not load' };
-    await reporter.reports.submit(reporter.userId, general);
-    await reporter.reports.submit(reporter.userId, general);
-  },
-};
-
 const noSelfReport: ContractCase<Ctx> = {
-  name: 'submit: a member cannot report themselves (invalid_target)',
+  name: 'submit: a member cannot report themselves (cannot_report_self)',
   async run(ctx) {
     const reporter = await ctx.newActor();
-    await assertRejectsWithCode(reportUser(reporter, reporter.userId), 'invalid_target', 'self-report');
+    await assertRejectsWithCode(reportUser(reporter, reporter.userId), 'cannot_report_self', 'self-report');
   },
 };
 
@@ -86,27 +73,6 @@ const targetMustExist: ContractCase<Ctx> = {
   async run(ctx) {
     const reporter = await ctx.newActor();
     await assertRejectsWithCode(reportUser(reporter, crypto.randomUUID()), 'invalid_target', 'report on an unknown user');
-    await assertRejectsWithCode(
-      reporter.reports.submit(reporter.userId, { targetType: 'chat', targetId: crypto.randomUUID(), reason: 'Offensive' }),
-      'invalid_target',
-      'report on an unknown chat',
-    );
-  },
-};
-
-const chatParticipantsOnly: ContractCase<Ctx> = {
-  name: 'submit: only a participant may report a chat (invalid_target for anyone else)',
-  async run(ctx) {
-    const a = await ctx.newActor();
-    const b = await ctx.newActor();
-    const outsider = await ctx.newActor();
-    const { chatId } = await a.chats.findOrCreateChat(a.userId, b.userId);
-    await b.reports.submit(b.userId, { targetType: 'chat', targetId: chatId, reason: 'Offensive' });
-    await assertRejectsWithCode(
-      outsider.reports.submit(outsider.userId, { targetType: 'chat', targetId: chatId, reason: 'Offensive' }),
-      'invalid_target',
-      "report on a chat the reporter is not in",
-    );
   },
 };
 
@@ -143,10 +109,8 @@ export function reportRepositoryContract(): ContractCase<ReportContractContext>[
   return [
     reportAnotherMember,
     oneReportPerDay,
-    generalReportsRepeat,
     noSelfReport,
     targetMustExist,
-    chatParticipantsOnly,
     noteBounded,
     reporterIsTheActor,
   ];

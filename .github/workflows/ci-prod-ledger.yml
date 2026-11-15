@@ -1,0 +1,43 @@
+name: PROD ledger watch
+
+# Read-only watch of the kc-prod migration ledger (D-228). Compares applied
+# versions to supabase/migrations and fails if a `myself` schema or Auth hook
+# appears. Uses the existing `supabase-prod` environment (same secrets as
+# ops-health / DB deploy). Never runs `db push` or the write query endpoint.
+# Holding prod secrets outside deploy.yml is tracked as TD-232.
+
+on:
+  schedule:
+    - cron: '41 * * * *' # hourly, offset from ops-health
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ledger:
+    name: ledger · ${{ matrix.target.env }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    strategy:
+      matrix:
+        target:
+          - { env: prod, environment: supabase-prod }
+    environment: ${{ matrix.target.environment }}
+    concurrency:
+      group: prod-ledger-${{ matrix.target.env }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version-file: .nvmrc
+      - name: Read-only PROD ledger check
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+        run: node scripts/check-prod-ledger.mjs

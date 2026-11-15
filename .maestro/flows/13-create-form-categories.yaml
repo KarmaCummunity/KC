@@ -16,10 +16,12 @@ tags: [posts]
     visible:
       id: unified-create-header
     timeout: 15000
+# The category row is at the top of the form: nothing covers it, and centering it would scroll it away.
 - scrollUntilVisible:
     element:
       id: create-category-rides
     timeout: 10000
+    centerElement: false
 - tapOn:
     id: create-category-rides
 - tapOn: "להציע"
@@ -77,8 +79,12 @@ tags: [posts]
       CATEGORY: housing
 - tapOn:
     id: create-category-housing
-- assertVisible:
-    id: listing-create-form
+# Housing is gated (FR-HOUSING-003 AC2): a member below verification level 2 sees the verification
+# card instead of the listing form. The seeded members span levels 0-2, so either is correct here.
+- extendedWaitUntil:
+    visible:
+      id: "housing-verify-gate|listing-create-form"
+    timeout: 15000
 - runFlow:
     file: ../subflows/reveal-create-category.yaml
     env:

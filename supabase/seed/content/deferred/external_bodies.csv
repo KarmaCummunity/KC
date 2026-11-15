@@ -1,0 +1,4 @@
+slug,world_slug,label_he,label_en,body_type,requires_routing,contact_url,is_verified,is_active
+health_ministry_hazardous,environment,משרד הבריאות — פסולת מסוכנת,Health ministry hazardous waste,government,true,,true,true
+municipal_ewaste,environment,רשות מקומית — אלקטרוניקה,Municipal e-waste,government,true,,false,true
+spni,environment,החברה להגנת הטבע,Society for the Protection of Nature in Israel,ngo,true,,true,true

@@ -13,7 +13,6 @@ import type { MarketplaceListingDetail } from '@kc/domain';
 const SETTLE = { timeout: 5000 };
 const push = vi.fn();
 const startChat = vi.fn();
-const shareToFeed = vi.fn();
 const back = vi.fn();
 // The block hook is driven per test: who it targets, its state and what toggle resolves to.
 const blockState = { canBlock: true, isBlocked: false, busy: false, toggle: vi.fn(async () => true) };
@@ -33,7 +32,7 @@ vi.mock('../../../hooks/useReducedMotion', () => ({ useReducedMotion: () => true
 vi.mock('@expo/vector-icons', async () => (await import('../../ui/__tests__/kitDialogTestKit')).iconsDouble);
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k: string) => k, i18n: { language: 'he' } }) }));
 vi.mock('../../../services/marketplaceComposition', () => ({
-  marketplaceRepository: () => ({ startChat, shareToFeed }),
+  marketplaceRepository: () => ({ startChat }),
 }));
 vi.mock('../../../lib/analyticsCoreLoop', () => ({ trackCoreLoop: vi.fn() }));
 const captureException = vi.fn();
@@ -76,36 +75,20 @@ function renderActions(
 }
 
 describe('ListingDetailActions', () => {
-  it('shows a viewer message and report, but not share to feed', () => {
+  it('shows a viewer message and report', () => {
     const { queryByTestId, onReport, getByTestId } = renderActions('u_viewer');
 
     expect(queryByTestId('listing-action-start-chat')).not.toBeNull();
-    expect(queryByTestId('listing-action-share-feed')).toBeNull();
     fireEvent.click(getByTestId('listing-action-report'));
     expect(onReport).toHaveBeenCalled();
   });
 
-  it('shows the owner share to feed, but not message or report', () => {
+  it('shows the owner the link share, but not message or report', () => {
     const { queryByTestId } = renderActions('u_owner');
 
-    expect(queryByTestId('listing-action-share-feed')).not.toBeNull();
+    expect(queryByTestId('listing-action-share-link')).not.toBeNull();
     expect(queryByTestId('listing-action-start-chat')).toBeNull();
     expect(queryByTestId('listing-action-report')).toBeNull();
-  });
-
-  it('keeps share to feed for the owner while the listing\'s post is hidden from the feed (0557)', () => {
-    const hidden = { ...DETAIL, feedPostId: 'p_hidden', feedHidden: true } as MarketplaceListingDetail;
-    const { queryByTestId } = renderActions('u_owner', vi.fn(), hidden);
-
-    expect(queryByTestId('listing-action-share-feed')).not.toBeNull();
-  });
-
-  it('hides share to feed from the owner once the listing has a feed mirror (D-206)', () => {
-    const mirrored = { ...DETAIL, feedPostId: 'p_mirror' } as MarketplaceListingDetail;
-    const { queryByTestId } = renderActions('u_owner', vi.fn(), mirrored);
-
-    expect(queryByTestId('listing-action-share-feed')).toBeNull();
-    expect(queryByTestId('listing-action-share-link')).not.toBeNull();
   });
 
   it('opens the chat on success and explains a known refusal without reporting it', async () => {

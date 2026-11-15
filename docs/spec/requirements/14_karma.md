@@ -72,10 +72,10 @@
 
 ## FR-KARMA-009 — Realtime live updates
 
-**AC1.** `SupabaseUserRealtime` subscribes to `postgres_changes` UPDATE on `public.users` filtered by `user_id=eq.<self>`, using `replica identity full` so the full row is broadcast.
+**AC1.** `SupabaseUserRealtime.subscribeToStats` joins the member's own private Broadcast topic `user:<id>:stats` (event `stats_changed`, migration `0026`), which the server sends when a counter of `user_stats` changes (karma, followers, following, given, received, open posts). Status after the baseline cut-over: ✅ restored 2026-11-11 (it was lost at the cut-over while this section still read done).
 **AC2.** On receiving an update, the hook patches the shared `['user-profile', userId]` React Query cache via `queryClient.setQueryData`. This updates the karma badge, profile counters, and stats strip in real time without a focus-refetch.
 **AC3.** `useMeRealtime` is mounted in `_layout.tsx` inside `QueryClientProvider` so it is always active for authenticated users.
-**AC4.** Channel errors trigger an `onError` callback that logs a warning in `__DEV__` mode.
+**AC4.** A dropped channel costs freshness only: every screen still reads the counters on mount.
 
 ---
 

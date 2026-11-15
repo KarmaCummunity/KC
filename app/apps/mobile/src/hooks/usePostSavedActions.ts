@@ -11,7 +11,17 @@ import { useAuthStore } from '../store/authStore';
 import { useFeedSessionStore } from '../store/feedSessionStore';
 import { hapticLightImpact } from '../lib/haptics';
 
-export function usePostSavedActions(postId: string) {
+interface PostSavedActionsOptions {
+  /**
+   * When false the saved-state lookup is not sent. Feed and profile grids render one
+   * menu button per card, so the lookup must wait until the menu is actually opened;
+   * otherwise every rendered card costs its own request. Defaults to true.
+   */
+  readonly enabled?: boolean;
+}
+
+export function usePostSavedActions(postId: string, options: PostSavedActionsOptions = {}) {
+  const { enabled = true } = options;
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const userId = useAuthStore((s) => s.session?.userId ?? null);
@@ -20,7 +30,7 @@ export function usePostSavedActions(postId: string) {
   const savedQuery = useQuery({
     queryKey: savedKey,
     queryFn: () => getIsPostSavedUseCase().execute(postId),
-    enabled: Boolean(userId),
+    enabled: enabled && Boolean(userId),
   });
 
   const invalidate = useCallback(() => {

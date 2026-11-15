@@ -3,12 +3,13 @@
 // upgrading to a paid DPA model (D-63/D-65) is a key + model-name change only.
 // Used by the KC `translate` Edge Function.
 
+import { readEnv } from '../readEnv.ts';
 import type { ProviderInput, ProviderResult, TranslationProvider } from './provider.ts';
 
-const API_KEY = Deno.env.get('GEMINI_API_KEY') ?? '';
+const API_KEY = readEnv('GEMINI_API_KEY');
 // Default to gemini-2.0-flash: Google retired the free tier for the 1.5 models
 // (free_tier_requests limit 0), so 1.5-flash is a dead default for free-tier use.
-const MODEL = Deno.env.get('GEMINI_MODEL') ?? 'gemini-2.0-flash';
+const MODEL = readEnv('GEMINI_MODEL', 'gemini-2.0-flash');
 const ENDPOINT = (model: string) =>
   `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
 

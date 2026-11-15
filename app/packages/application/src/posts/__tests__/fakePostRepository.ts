@@ -5,6 +5,7 @@ import type {
   IPostRepository,
   PostFeedFilter,
   PostWithOwner,
+  ProfileClosedPostsPage,
   UpdatePostInput,
 } from '../../ports/IPostRepository';
 import type { PostActorIdentityRow, UpsertPostActorIdentityInput } from '../../ports/postActorIdentity';
@@ -56,6 +57,7 @@ export class FakePostRepository implements IPostRepository {
   lastListPostActorIdentityPostId: string | null = null;
   lastUpsertPostActorIdentityArgs: UpsertPostActorIdentityInput | null = null;
   profileClosedPostsResult: ProfileClosedPostsItem[] = [];
+  profileClosedPostsNextCursor: string | null = null;
   listPostActorIdentitiesResult: PostActorIdentityRow[] = [];
 
   // Stubs / errors
@@ -178,7 +180,6 @@ export class FakePostRepository implements IPostRepository {
     cursor?: string,
     visibility?: PostVisibility,
     excludeVisibility?: PostVisibility,
-    _profileOpenLinks?: { readonly viewerUserId: string | null; readonly listMode: 'standard' | 'owner_only_me' },
   ): Promise<{ posts: Post[]; nextCursor: string | null }> => {
     this.lastGetMyPostsArgs = { userId, status, limit, cursor, visibility, excludeVisibility };
     return { posts: this.myPostsResult, nextCursor: this.myPostsNextCursor };
@@ -219,9 +220,9 @@ export class FakePostRepository implements IPostRepository {
     limit: number,
     cursor?: string,
     listMode?: ProfileClosedPostsListMode,
-  ): Promise<ProfileClosedPostsItem[]> => {
+  ): Promise<ProfileClosedPostsPage> => {
     this.lastGetProfileClosedPostsArgs = { profileUserId, viewerUserId, limit, cursor, listMode };
-    return this.profileClosedPostsResult;
+    return { items: this.profileClosedPostsResult, nextCursor: this.profileClosedPostsNextCursor };
   };
 
   listPostActorIdentities = async (postId: string): Promise<PostActorIdentityRow[]> => {

@@ -1,6 +1,6 @@
 export const timeVolunteer = {
   hubTitle: 'תרומת זמן',
-  hubIntro: 'גלו משמרות, הירשמו או הצטרפו לרשימת המתנה, בצעו צ׳ק-אין ביום האירוע וצברו נקודות קארמה על שעות שתועדו.',
+  hubIntro: 'גלו משמרות, הירשמו או הצטרפו לרשימת המתנה, והמארגנים יסמנו את הנוכחות שלכם — שעות שתועדו צוברות נקודות קארמה.',
   myShiftsLink: 'המשמרות שלי',
   opportunityDetail: 'פרטי התנדבות',
   organizerLink: 'ניהול התנדבויות',
@@ -12,8 +12,6 @@ export const timeVolunteer = {
   signUp: 'הרשמה',
   waitlist: 'רשימת המתנה',
   cancelSignup: 'ביטול הרשמה',
-  checkIn: 'צ׳ק-אין',
-  checkInDone: 'צ׳ק-אין בוצע — {{hours}} שעות, +{{karma}} נקודות קארמה',
   addCalendar: 'הוספה ליומן',
   calendarShareTitle: 'משמרת התנדבות',
   statusRegistered: 'רשום/ה',

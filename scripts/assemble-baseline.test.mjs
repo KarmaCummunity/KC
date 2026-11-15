@@ -86,6 +86,6 @@ test('the committed baseline matches supabase/schemas', () => {
   assert.equal(
     readFileSync(OUTPUT_FILE, 'utf8'),
     sql,
-    'supabase/baseline/0001_baseline.sql is stale — run: node scripts/assemble-baseline.mjs',
+    'supabase/migrations/0001_baseline.sql is stale',
   );
 });

@@ -14,6 +14,7 @@ A release is a PR from `dev` into `main`. CI judges it (`CI gate`, including the
 - [ ] **`dev` is deployed** — the latest `dev` push passed **CI** and the **Deploy** run for that commit is green (dev web serves it at `https://dev.karma-community.pages.dev/version.json`).
 - [ ] **`app/VERSION` is above the latest `v*` tag** — the release lane checks it; bump PATCH/MINOR/MAJOR on `dev` first if needed.
 - [ ] **Migration review (expand/contract)** — read each new migration since the last tag. The previous release's web and Edge Functions keep running against the new schema until the deploy finishes, so every migration must be **backward compatible**: *expand* first (add tables, nullable columns, new functions/policies alongside the old), switch the code in that or a later release, and *contract* (drop, rename, retype, `SET NOT NULL`, remove a policy) only in a later release once no deployed code uses the old shape. The release lane enforces it: a destructive line needs the `migration-safety: allow` marker **and** a line `Migration safety: <file>.sql — <reason>` in the release PR body; a `RENAME`, `ALTER COLUMN … TYPE`, `SET NOT NULL`, `DROP FUNCTION`, `DROP POLICY`, `ALTER POLICY` or `DISABLE ROW LEVEL SECURITY` needs that body line too (say why the previous code still works).
+- [ ] **Verification issues closed** — every open `verification` issue for work in this release is closed by the person who checked it, or the release PR body waives it by number with a reason. Agents split person-only checks into these issues (`.claude/skills/kc-issue-to-merge/references/task-types.md`).
 - [ ] **Release PR** — **`dev` → `main`**, Conventional Commits title, body with **Mapped to spec** and migration/rollout notes.
 
 ---
@@ -123,8 +124,7 @@ Feature PRs merge into `dev` first, through the merge queue of the ruleset `dev 
 ## B. Fill the config placeholders (after step A yields the values)
 
 - `app/apps/mobile/eas.json` → `submit.production.ios.ascAppId` stays a placeholder (public repo); `testflight-ios.yml` injects the real id from the `KC_ASC_APP_ID` variable on the runner.
-- `app/apps/mobile/public/.well-known/apple-app-site-association`: replace `REPLACE_WITH_APPLE_TEAM_ID`.
-- `app/apps/mobile/public/.well-known/assetlinks.json`: replace `REPLACE_WITH_ANDROID_RELEASE_SHA256` with the release signing cert SHA-256 (from `eas credentials` after the first Android build). Closes `TD-66` — until filled, universal/app links open the browser chooser instead of the app.
+- `app/apps/mobile/public/.well-known/apple-app-site-association` and `assetlinks.json`: filled (Team ID, Play app-signing and upload SHA-256). `check-well-known-links.mjs` fails CI if a placeholder returns and the deploy smoke's `applinks` check proves the live files; re-run the steps in `public/.well-known/README.md` only if a signing key rotates (`TD-66` closed).
 
 ## C. Store listing content (prepare before submitting)
 
@@ -162,5 +162,5 @@ eas submit --platform android --profile production --latest
 
 - [x] Real `extra.eas.projectId` committed (`TD-121`, closed).
 - [ ] Supabase Apple provider configured (`FR-AUTH-004`; closes the go-live half of `TD-24`).
-- [ ] Deep-link fingerprints filled (`TD-66`).
+- [x] Deep-link fingerprints filled (`TD-66`); verify live with the deploy smoke `applinks` check.
 - [ ] Remaining app bugs resolved (PM-tracked) — the first production store submission is gated on this (nightly tester builds are not).

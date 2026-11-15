@@ -1,7 +1,7 @@
 // Unit tests for scripts/ci-gate.mjs. Run: node --test scripts/ci-gate.test.mjs
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { deferralErrors, evaluateGate, mergeReused } from './ci-gate.mjs';
+import { EDIT_LANES, deferralErrors, evaluateGate, mergeReused } from './ci-gate.mjs';
 
 const ok = { result: 'success' };
 const skipped = { result: 'skipped' };
@@ -78,6 +78,21 @@ test('manual dispatch gates only dev and main', () => {
   assert.match(errors[0], /Manual runs gate only dev or main/);
 });
 
+// The Maestro Android lane is optional like `release`: absent from the plan it may only have been
+// skipped; planned, it must succeed, and a failed one fails the gate (that is what makes it required).
+test('a PR that does not touch the app passes with the maestro lane skipped', () => {
+  assert.deepEqual(evaluateGate({ ...PR, needs: { ...NEEDS, maestro: skipped }, plan: PLAN }), []);
+});
+
+test('a PR that touches the app cannot pass with the maestro lane failed, cancelled, skipped or unwired', () => {
+  const plan = { ...PLAN, maestro: true };
+  assert.deepEqual(evaluateGate({ ...PR, needs: { ...NEEDS, maestro: { result: 'failure' } }, plan }), ['job "maestro" failure']);
+  assert.deepEqual(evaluateGate({ ...PR, needs: { ...NEEDS, maestro: { result: 'cancelled' } }, plan }), ['job "maestro" cancelled']);
+  assert.deepEqual(evaluateGate({ ...PR, needs: { ...NEEDS, maestro: skipped }, plan }), ['job "maestro" is needed for this change but was skipped']);
+  assert.deepEqual(evaluateGate({ ...PR, needs: NEEDS, plan }), ['job "maestro" is planned but missing from the gate\'s needs: list']);
+  assert.deepEqual(evaluateGate({ ...PR, needs: { ...NEEDS, maestro: ok }, plan }), []);
+});
+
 // Review events re-run only the static lane and reuse the rest. `release` is
 // an optional lane: omitted from the plan, it is reused as skipped.
 const REVIEW_PLAN = { hygiene: true, static: true, frontend: true, backend: false, edge: false, bundles: false };
@@ -113,6 +128,16 @@ test('a review on a release PR needs the reused release lane to have passed', ()
 test('mergeReused leaves an optional lane alone when this ci.yml has no such job', () => {
   const { release: _release, ...own } = REVIEW_OWN;
   assert.equal('release' in mergeReused(own, { release: 'success' }), false);
+});
+
+test('an edited event keeps its own hygiene and static results and reuses the rest', () => {
+  const own = { changes: ok, hygiene: ok, static: ok, release: skipped, frontend: skipped, backend: skipped, edge: skipped, bundles: skipped };
+  const reused = { hygiene: 'failure', static: 'failure', release: 'skipped', frontend: 'success', backend: 'skipped', edge: 'skipped', bundles: 'skipped' };
+  const merged = mergeReused(own, reused, EDIT_LANES);
+  assert.deepEqual(merged.hygiene, ok);
+  assert.deepEqual(merged.static, ok);
+  assert.deepEqual(merged.frontend, ok);
+  assert.deepEqual(evaluateGate({ ...PR, event: 'pull_request', baseRef: 'dev', needs: merged, plan: REVIEW_PLAN }), []);
 });
 
 // Heavy lanes (D-195 addendum: PR = fast feedback, merge queue = full gate).

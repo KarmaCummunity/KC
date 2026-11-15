@@ -73,7 +73,7 @@ describe('TimeOpportunitiesSection', () => {
 
     fireEvent.click(screen.getByTestId('time-opportunities-toggle'));
     expect(screen.queryByTestId('opportunity-row-o4')).toBeNull();
-    expect(mocks.execute).toHaveBeenCalledWith(40, 0);
+    expect(mocks.execute).toHaveBeenCalledWith(40);
   });
 
   it('shows a short list in full, without a toggle, and opens a row', async () => {

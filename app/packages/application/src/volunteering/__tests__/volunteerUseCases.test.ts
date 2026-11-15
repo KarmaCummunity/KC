@@ -2,10 +2,8 @@ import { describe, it, expect, vi } from 'vitest';
 import type { IVolunteerRepository } from '../../ports/IVolunteerRepository';
 import {
   CancelVolunteerSignupUseCase,
-  CheckInVolunteerShiftUseCase,
   CloseVolunteerOpportunityUseCase,
   GetVolunteerOpportunityDetailUseCase,
-  GetVolunteerShiftIcsUseCase,
   ListMyOrganizerVolunteerOpportunitiesUseCase,
   ListMyVolunteerSignupsUseCase,
   ListShiftVolunteersUseCase,
@@ -21,8 +19,6 @@ function makeRepo() {
     signUpForShift: vi.fn(async () => ({ signupId: 's1', status: 'registered' })),
     cancelSignup: vi.fn(async () => undefined),
     listMySignups: vi.fn(async () => []),
-    checkIn: vi.fn(async () => ({ hoursLogged: 2, karmaPoints: 2 })),
-    getShiftIcs: vi.fn(async () => 'BEGIN:VCALENDAR'),
     closeOpportunity: vi.fn(async () => undefined),
     listMyOrganizerOpportunities: vi.fn(async () => []),
     listShiftVolunteers: vi.fn(async () => []),
@@ -33,13 +29,12 @@ function makeRepo() {
 describe('volunteer use cases', () => {
   it('delegate reads to the repository', async () => {
     const repo = makeRepo();
-    expect(await new ListVolunteerOpportunitiesUseCase(repo).execute(10, 5)).toEqual([]);
-    expect(repo.listOpportunities).toHaveBeenCalledWith(10, 5);
+    expect(await new ListVolunteerOpportunitiesUseCase(repo).execute(10)).toEqual([]);
+    expect(repo.listOpportunities).toHaveBeenCalledWith(10);
     expect(await new GetVolunteerOpportunityDetailUseCase(repo).execute('opp1')).toBeNull();
     expect(repo.getOpportunityDetail).toHaveBeenCalledWith('opp1');
     expect(await new ListMyVolunteerSignupsUseCase(repo).execute(7)).toEqual([]);
     expect(repo.listMySignups).toHaveBeenCalledWith(7);
-    expect(await new GetVolunteerShiftIcsUseCase(repo).execute('shift1')).toBe('BEGIN:VCALENDAR');
     expect(await new ListMyOrganizerVolunteerOpportunitiesUseCase(repo).execute(4)).toEqual([]);
     expect(repo.listMyOrganizerOpportunities).toHaveBeenCalledWith(4);
     expect(await new ListShiftVolunteersUseCase(repo).execute('shift1')).toEqual([]);
@@ -54,10 +49,6 @@ describe('volunteer use cases', () => {
     });
     await new CancelVolunteerSignupUseCase(repo).execute('s1');
     expect(repo.cancelSignup).toHaveBeenCalledWith('s1');
-    expect(await new CheckInVolunteerShiftUseCase(repo).execute('s1')).toEqual({
-      hoursLogged: 2,
-      karmaPoints: 2,
-    });
   });
 
   it('delegate organizer actions to the repository', async () => {

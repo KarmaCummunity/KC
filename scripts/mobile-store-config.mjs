@@ -3,19 +3,22 @@
 // Supabase backend from (D-195 "Mobile nightly").
 //
 // Tester builds come from `dev` and always use the kc-dev project. Production
-// store builds from `main` (prod backend) are not wired yet, so any other
-// source branch fails closed instead of silently shipping a dev-backed build
-// from main or a prod-backed build to testers.
+// store builds come from `main` and always use the kc-prod project, selected
+// by STORE_BACKEND=prod (prod-store-build.yml). The default (unset or any
+// other value) stays the existing dev path and still refuses a non-dev branch.
 //
-//   pin    Write the kc-dev URL and MOBILE_SUPABASE_ANON_KEY (from the
-//          `mobile-store` GitHub Environment) into the eas.json `nightly`
-//          profile `env`, on the runner only. eas-cli resolves a profile's
+//   pin    Write the selected backend URL and MOBILE_SUPABASE_ANON_KEY (from
+//          the `mobile-store` GitHub Environment) into the eas.json profile
+//          `env` (`nightly` for dev, `production` for prod, overridable with
+//          EAS_PROFILE), on the runner only. eas-cli resolves a profile's
 //          `env` over the EAS server environment; the build is still checked
 //          by `verify`, because a cloud builder also receives server variables.
 //   verify <bundle>
 //          Fail unless the JS bundle extracted from the built IPA / AAB
-//          contains the kc-dev project URL and no prod project URL. Hermes
-//          bytecode stores string literals verbatim, so a byte search works.
+//          contains the selected backend and not the other project's ref.
+//          In prod mode it also requires the 501 PROD Google web client ID
+//          and rejects the kc-dev web client (aqs65g…).
+//          Hermes bytecode stores string literals verbatim, so a byte search works.
 //
 // `pin` also writes the non-secret Sentry settings (EXPO_PUBLIC_SENTRY_DSN, SENTRY_ORG,
 // SENTRY_PROJECT, SENTRY_URL, from the `mobile-store` environment variables) into the same
@@ -23,7 +26,8 @@
 // stays a secret (runner env for iOS, EAS server environment for Android).
 //
 // Inputs (env): SOURCE_BRANCH, MOBILE_SUPABASE_ANON_KEY, optional Sentry vars (pin);
-// EAS_JSON (default app/apps/mobile/eas.json), EAS_PROFILE (default nightly).
+// STORE_BACKEND (prod or default dev), EAS_JSON (default app/apps/mobile/eas.json),
+// EAS_PROFILE (default nightly for dev, production for prod).
 
 import { appendFileSync, readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -32,6 +36,24 @@ import { fileURLToPath } from 'node:url';
 export const DEV_REF = 'enbqriuxvvuontiwslun';
 export const PROD_REF = 'kdqtbdbzwvlugkhonexg';
 export const DEV_URL = `https://${DEV_REF}.supabase.co`;
+export const PROD_URL = `https://${PROD_REF}.supabase.co`;
+
+/**
+ * Public Google OAuth *web* client IDs (ID-token audience). Near-term PROD
+ * Sign-In uses GCP project 501; the kc-dev web client must not ship in a
+ * production store bundle. Nightly/dev builds may keep the dev web client
+ * (and later may use the prod web client against kc-dev — so dev mode does
+ * not reject the prod ID).
+ */
+export const DEV_GOOGLE_WEB_CLIENT_ID =
+  '501128729523-aqs65gpts9moo7721ubgon55vbq0vpn8.apps.googleusercontent.com';
+export const PROD_GOOGLE_WEB_CLIENT_ID =
+  '501128729523-cpou07r8ed94b3f7caa8kct7tp4c7b3l.apps.googleusercontent.com';
+
+/** `prod` only when STORE_BACKEND is exactly "prod"; anything else is the dev path. */
+export function resolveStoreBackend(raw) {
+  return String(raw ?? '').trim() === 'prod' ? 'prod' : 'dev';
+}
 
 /** Decode a JWT payload, or return null when the key is not a JWT. */
 function jwtPayload(key) {
@@ -51,7 +73,15 @@ function jwtPayload(key) {
  */
 export function checkAnonKey(key, ref) {
   if (!key) return ['MOBILE_SUPABASE_ANON_KEY is not set'];
-  if (key.startsWith('sb_publishable_')) return [];
+  if (key.startsWith('sb_publishable_')) {
+    const other = ref === DEV_REF ? PROD_REF : DEV_REF;
+    if (key.includes(other)) {
+      return [
+        `MOBILE_SUPABASE_ANON_KEY is an sb_publishable_ key that embeds ${other}, not ${ref}`,
+      ];
+    }
+    return [];
+  }
   if (key.startsWith('sb_secret_')) return ['MOBILE_SUPABASE_ANON_KEY is a secret key; use the publishable (anon) key'];
   const payload = jwtPayload(key);
   if (!payload) return ['MOBILE_SUPABASE_ANON_KEY is neither an sb_publishable_ key nor a Supabase JWT'];
@@ -61,18 +91,41 @@ export function checkAnonKey(key, ref) {
   return errors;
 }
 
-/** Errors that block pinning the dev backend for a build from `branch`. */
-export function checkPin({ branch, anonKey }) {
+/** Errors that block pinning the selected backend for a build from `branch`. */
+export function checkPin({ branch, anonKey, mode = 'dev' }) {
+  const backend = resolveStoreBackend(mode);
+  if (backend === 'prod') {
+    if (branch !== 'main') {
+      return [`PROD store builds use the kc-prod backend and must come from main (got "${branch ?? ''}")`];
+    }
+    return checkAnonKey(anonKey, PROD_REF);
+  }
   if (branch !== 'dev') {
-    return [`store builds use the kc-dev backend and must come from dev (got "${branch ?? ''}"); prod store builds from main are not wired yet`];
+    return [`store builds use the kc-dev backend and must come from dev (got "${branch ?? ''}"); prod store builds from main go through prod-store-build.yml`];
   }
   return checkAnonKey(anonKey, DEV_REF);
 }
 
-/** Errors when a built JS bundle does not point at kc-dev only. */
-export function checkBundle(bundle) {
+/** Errors when a built JS bundle does not point at the selected backend only. */
+export function checkBundle(bundle, mode = 'dev') {
   const text = bundle.toString('latin1');
   const errors = [];
+  const backend = resolveStoreBackend(mode);
+  if (backend === 'prod') {
+    if (!text.includes(PROD_URL) && !text.includes(PROD_REF)) {
+      errors.push(`bundle does not contain the kc-prod URL ${PROD_URL}`);
+    }
+    if (text.includes(DEV_REF)) {
+      errors.push(`bundle contains the kc-dev project ref ${DEV_REF}`);
+    }
+    if (!text.includes(PROD_GOOGLE_WEB_CLIENT_ID)) {
+      errors.push('bundle does not contain the PROD Google web client ID');
+    }
+    if (text.includes(DEV_GOOGLE_WEB_CLIENT_ID)) {
+      errors.push('bundle contains the kc-dev Google web client ID');
+    }
+    return errors;
+  }
   if (!text.includes(DEV_URL)) errors.push(`bundle does not contain the kc-dev URL ${DEV_URL}`);
   if (text.includes(PROD_REF)) errors.push(`bundle contains the prod project ref ${PROD_REF}`);
   return errors;
@@ -108,32 +161,38 @@ function fail(errors) {
 
 function pin(env) {
   const anonKey = env.MOBILE_SUPABASE_ANON_KEY?.trim() ?? '';
-  const errors = checkPin({ branch: env.SOURCE_BRANCH, anonKey });
+  const backend = resolveStoreBackend(env.STORE_BACKEND);
+  const errors = checkPin({ branch: env.SOURCE_BRANCH, anonKey, mode: backend });
   if (errors.length) fail(errors);
   const easPath = env.EAS_JSON || 'app/apps/mobile/eas.json';
-  const profile = env.EAS_PROFILE || 'nightly';
+  const profile = env.EAS_PROFILE || (backend === 'prod' ? 'production' : 'nightly');
+  const supabaseUrl = backend === 'prod' ? PROD_URL : DEV_URL;
+  const ref = backend === 'prod' ? PROD_REF : DEV_REF;
   const easJson = JSON.parse(readFileSync(easPath, 'utf8'));
   const next = injectProfileEnv(easJson, profile, {
-    EXPO_PUBLIC_SUPABASE_URL: DEV_URL,
+    EXPO_PUBLIC_SUPABASE_URL: supabaseUrl,
     EXPO_PUBLIC_SUPABASE_ANON_KEY: anonKey,
     ...sentryVars(env),
   });
   writeFileSync(easPath, `${JSON.stringify(next, null, 2)}\n`);
-  const line = `Store build backend: Supabase **kc-dev** (\`${DEV_REF}\`), eas.json profile "${profile}".`;
+  const label = backend === 'prod' ? 'kc-prod' : 'kc-dev';
+  const line = `Store build backend: Supabase **${label}** (\`${ref}\`), eas.json profile "${profile}".`;
   console.log(line);
   if (env.GITHUB_STEP_SUMMARY) appendFileSync(env.GITHUB_STEP_SUMMARY, `${line}\n`);
 }
 
-function verify(bundlePath) {
+function verify(bundlePath, env = process.env) {
   if (!bundlePath) fail(['usage: mobile-store-config.mjs verify <bundle>']);
-  const errors = checkBundle(readFileSync(bundlePath));
+  const backend = resolveStoreBackend(env.STORE_BACKEND);
+  const errors = checkBundle(readFileSync(bundlePath), backend);
   if (errors.length) fail(errors);
-  console.log(`${bundlePath}: points at kc-dev only.`);
+  const label = backend === 'prod' ? 'kc-prod' : 'kc-dev';
+  console.log(`${bundlePath}: points at ${label} only.`);
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const [mode, arg] = process.argv.slice(2);
   if (mode === 'pin') pin(process.env);
-  else if (mode === 'verify') verify(arg);
+  else if (mode === 'verify') verify(arg, process.env);
   else fail([`unknown mode "${mode ?? ''}"; use pin or verify <bundle>`]);
 }

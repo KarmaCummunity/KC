@@ -87,6 +87,7 @@ export const marketplaceErrors = {
   housing_not_in_window: 'הפעולה הזו אינה אפשרית בזמן הזה של האירוח.',
   housing_note_too_long: 'ההודעה ארוכה מדי. עד 300 תווים.',
   housing_use_booking_cancel: 'ביטול אירוח נעשה מכרטיס ההזמנה.',
+  event_use_registration_cancel: 'ביטול הרשמה לאירוע נעשה מכרטיס ההרשמה.',
   // Organization events (0563).
   event_org_required: 'רק חברי הארגון יכולים לפרסם את האירוע שלו. בחרו אחד מהארגונים שלכם.',
   verification_required: 'האירוע פתוח לחברים מאומתים בלבד. אמתו את החשבון ונסו שוב.',

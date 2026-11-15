@@ -1,0 +1,210 @@
+name: Database backup
+description: >
+  Logical backup of one Supabase project (roles, schema, and the data of every
+  schema including auth and storage metadata), compressed, age-encrypted and uploaded as a workflow
+  artifact, then restored into a throwaway Postgres container as a sanity check.
+  Read-only against the project. Callers: db-backup-prod.yml, db-backup-dev.yml
+  (the job holds the Supabase environment and passes SUPABASE_ACCESS_TOKEN,
+  SUPABASE_DB_PASSWORD and SUPABASE_PROJECT_REF as env; the caller must check
+  the repository out first). Restore: docs/SSOT/OPERATOR_RUNBOOK.md
+  "Scheduled database backups".
+
+inputs:
+  target:
+    description: dev or prod (names the artifact and the manifest)
+    required: true
+  expected-ref:
+    description: The only project ref this run may touch; the run fails on any other
+    required: true
+  age-recipient:
+    description: age public key (age1...) every file is encrypted to
+    required: true
+  retention-days:
+    description: How long the artifact is kept
+    required: true
+  restore-check:
+    description: Restore the dump into a throwaway Postgres container and compare row counts
+    required: false
+    default: 'true'
+  restore-strict:
+    description: Stop the restore check at the first SQL error in schema.sql / data.sql (false only to list every error while developing the check)
+    required: false
+    default: 'true'
+
+runs:
+  using: composite
+  steps:
+    - name: Guard the project and the key
+      shell: bash
+      env:
+        TARGET: ${{ inputs.target }}
+        EXPECTED_REF: ${{ inputs.expected-ref }}
+        AGE_RECIPIENT: ${{ inputs.age-recipient }}
+      run: |
+        set -euo pipefail
+        [[ "$TARGET" == dev || "$TARGET" == prod ]] || { echo "::error::target must be dev or prod"; exit 1; }
+        [[ -n "${SUPABASE_ACCESS_TOKEN:-}" && -n "${SUPABASE_DB_PASSWORD:-}" ]] || { echo "::error::SUPABASE_ACCESS_TOKEN / SUPABASE_DB_PASSWORD missing from the $TARGET environment"; exit 1; }
+        [[ "${SUPABASE_PROJECT_REF:-}" == "$EXPECTED_REF" ]] || { echo "::error::SUPABASE_PROJECT_REF is not the expected $TARGET project"; exit 1; }
+        # Fails closed: without a valid recipient nothing is dumped, so no plaintext exists.
+        [[ "$AGE_RECIPIENT" =~ ^age1[0-9a-z]{58}$ ]] || { echo "::error::BACKUP_AGE_RECIPIENT is missing or is not an age public key (age1...)"; exit 1; }
+
+    - uses: ./.github/actions/setup-supabase-cli
+
+    - name: Install age
+      shell: bash
+      run: sudo apt-get update -qq && sudo apt-get install -y -qq age >/dev/null
+
+    # A paused Free project cannot be dumped; say so instead of a CLI timeout.
+    # The two small queries are real database work (see the runbook: Free
+    # projects pause after a week with too little database activity).
+    - name: Project is up, and touch the database
+      shell: bash
+      run: |
+        set -euo pipefail
+        api="https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF"
+        status=$(curl -fsS -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" "$api" | jq -r .status)
+        echo "project status: $status"
+        [[ "$status" == ACTIVE_HEALTHY ]] || { echo "::error::project status is $status (paused or unhealthy); restore it in the Supabase dashboard"; exit 1; }
+        for _ in 1 2; do
+          curl -fsS -X POST -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" -H 'Content-Type: application/json' \
+            -d '{"query":"select now() as at, current_database() as db"}' "$api/database/query" >/dev/null
+        done
+
+    # Plaintext (PII) exists only in $RUNNER_TEMP of this ephemeral runner, for
+    # the restore check, and is removed by the last step even on failure.
+    - name: Dump roles, schema and data
+      shell: bash
+      env:
+        SHA: ${{ github.sha }}
+        TARGET: ${{ inputs.target }}
+      run: |
+        set -euo pipefail
+        plain="$RUNNER_TEMP/db-backup-plain"
+        mkdir -p "$plain"
+        chmod 700 "$plain"
+        supabase link --project-ref "$SUPABASE_PROJECT_REF" --yes >/dev/null
+        # Each dump is bounded so a stuck connection fails the run instead of holding the runner.
+        dump() {
+          local name="$1"
+          shift
+          local started=$SECONDS
+          timeout 1200 supabase db dump --linked "$@" -f "$plain/$name.sql"
+          echo "dumped $name in $((SECONDS - started))s, $(stat -c %s "$plain/$name.sql") bytes"
+        }
+        dump roles --role-only
+        dump schema
+        # The data dump also carries the rows of Supabase-managed schemas (auth,
+        # storage), so accounts and file metadata are included. The files in
+        # Storage themselves are not in any dump.
+        dump data --data-only --use-copy
+        # A dump of a database with no tables is small but never empty: pg_dump
+        # always writes its SET header. A file without it is a failed dump.
+        for f in roles schema data; do
+          grep -q '^SET ' "$plain/$f.sql" || { echo "::error::$f.sql is empty or not a pg_dump file"; exit 1; }
+        done
+        node scripts/db-backup-manifest.mjs analyze --schema "$plain/schema.sql" --data "$plain/data.sql" \
+          --target "$TARGET" --ref "$SUPABASE_PROJECT_REF" --sha "$SHA" --out "$plain/manifest.json"
+
+    - name: Compress and encrypt
+      id: pack
+      shell: bash
+      env:
+        TARGET: ${{ inputs.target }}
+        AGE_RECIPIENT: ${{ inputs.age-recipient }}
+      run: |
+        set -euo pipefail
+        plain="$RUNNER_TEMP/db-backup-plain"
+        out="$RUNNER_TEMP/db-backup-out"
+        mkdir -p "$out"
+        for f in roles schema data manifest; do
+          ext=sql; [[ "$f" == manifest ]] && ext=json
+          gzip -9 -n -c "$plain/$f.$ext" | age -r "$AGE_RECIPIENT" -o "$out/$f.$ext.gz.age"
+          test -s "$out/$f.$ext.gz.age" || { echo "::error::empty backup file $f"; exit 1; }
+        done
+        {
+          echo "KC database backup"
+          echo "target:  $TARGET"
+          echo "project: $SUPABASE_PROJECT_REF"
+          echo "taken:   $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          echo "format:  <name>.gz.age = age-encrypted gzip. Restore: docs/SSOT/OPERATOR_RUNBOOK.md, Scheduled database backups."
+        } > "$out/BACKUP-INFO.txt"
+        (cd "$out" && sha256sum -- *.age > SHA256SUMS)
+        total=$(du -cb "$out"/*.age | tail -1 | cut -f1)
+        echo "bytes=$total" >> "$GITHUB_OUTPUT"
+        echo "date=$(date -u +%Y%m%d)" >> "$GITHUB_OUTPUT"
+        ls -l "$out"
+        [[ "$total" -lt 209715200 ]] || echo "::warning::backup is $((total / 1048576)) MiB; artifact storage is shared and finite, see the runbook"
+
+    - name: Summary
+      shell: bash
+      env:
+        TARGET: ${{ inputs.target }}
+        BYTES: ${{ steps.pack.outputs.bytes }}
+        RETENTION: ${{ inputs.retention-days }}
+      run: |
+        plain="$RUNNER_TEMP/db-backup-plain"
+        {
+          echo "### Database backup: $TARGET"
+          echo "- tables: $(jq -r .tableCount "$plain/manifest.json")"
+          echo "- rows: $(jq -r .totalRows "$plain/manifest.json")"
+          echo "- state: $(jq -r 'if .empty then "empty (no tables yet)" else "has data" end' "$plain/manifest.json")"
+          echo "- encrypted size: $((BYTES / 1024)) KiB"
+          echo "- kept for: $RETENTION days"
+          echo "- restore check: ${{ inputs.restore-check == 'true' && 'runs after the upload (see the step result)' || 'skipped' }}"
+        } >> "$GITHUB_STEP_SUMMARY"
+
+    - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      with:
+        name: db-backup-${{ inputs.target }}-${{ steps.pack.outputs.date }}-${{ github.run_id }}-${{ github.run_attempt }}
+        path: ${{ runner.temp }}/db-backup-out/
+        retention-days: ${{ inputs.retention-days }}
+        if-no-files-found: error
+
+    # Runs after the upload on purpose: a backup that exists but fails this check
+    # is still kept, and the failed run is the alarm.
+    - name: Restore into a throwaway Postgres and compare row counts
+      if: inputs.restore-check == 'true'
+      shell: bash
+      env:
+        STRICT: ${{ inputs.restore-strict }}
+      run: |
+        set -euo pipefail
+        plain="$RUNNER_TEMP/db-backup-plain"
+        empty=$(jq -r .empty "$plain/manifest.json")
+        # Same Postgres major and extension set as Supabase; bump together with the project.
+        docker run -d --name restore-check -e POSTGRES_PASSWORD=restore-check supabase/postgres:17.11.0.019 >/dev/null
+        for i in $(seq 1 60); do
+          docker exec restore-check pg_isready -U postgres -h localhost >/dev/null 2>&1 && break
+          [[ "$i" -lt 60 ]] || { docker logs restore-check | tail -20; echo "::error::throwaway Postgres did not start"; exit 1; }
+          sleep 2
+        done
+        stop=1; [[ "$STRICT" == true ]] || stop=0
+        # Rows of auth / storage / pgmq need tables only the platform creates; the check
+        # restores the schemas that schema.sql defines (see scripts/db-backup-manifest.mjs).
+        node scripts/db-backup-manifest.mjs split-data --manifest "$plain/manifest.json" --data "$plain/data.sql" --out "$plain/data-restorable.sql"
+        psql_in() { docker exec -i restore-check psql -U postgres -h localhost -d postgres -q "$@"; }
+        # Roles of Supabase services that the plain image does not run (realtime, ...) are
+        # created by the platform on a real project; roles.sql may reference them.
+        echo "::group::roles.sql"
+        psql_in -v ON_ERROR_STOP=0 < "$plain/roles.sql" 2>&1 | sed 's/^/  /' || true
+        echo "::endgroup::"
+        echo "::group::schema.sql"
+        psql_in -v ON_ERROR_STOP="$stop" < "$plain/schema.sql" 2>&1 | sed 's/^/  /'
+        echo "::endgroup::"
+        if [[ "$empty" == true ]]; then
+          echo "database has no tables yet: roles and schema restored, no row counts to compare"
+        else
+          echo "::group::data.sql"
+          psql_in -v ON_ERROR_STOP="$stop" < "$plain/data-restorable.sql" 2>&1 | sed 's/^/  /'
+          echo "::endgroup::"
+          node scripts/db-backup-manifest.mjs counts-sql --manifest "$plain/manifest.json" \
+            | docker exec -i restore-check psql -U postgres -h localhost -d postgres -At -F $'\t' -v ON_ERROR_STOP=1 > "$plain/restored-counts.tsv"
+          node scripts/db-backup-manifest.mjs verify --manifest "$plain/manifest.json" --counts "$plain/restored-counts.tsv"
+        fi
+
+    - name: Remove plaintext
+      if: always()
+      shell: bash
+      run: |
+        docker rm -f restore-check >/dev/null 2>&1 || true
+        rm -rf "$RUNNER_TEMP/db-backup-plain"

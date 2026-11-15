@@ -14,7 +14,7 @@ describe('isNotificationKindEnabled', () => {
   it('is disabled only by an explicit false for that kind', () => {
     const prefs = { kinds: { match_suggested: false } };
     expect(isNotificationKindEnabled(prefs, 'match_suggested')).toBe(false);
-    expect(isNotificationKindEnabled(prefs, 'match_accepted')).toBe(true);
+    expect(isNotificationKindEnabled(prefs, 'chat_message')).toBe(true);
   });
 
   it('is enabled by an explicit true', () => {

@@ -49,10 +49,11 @@ export const useCreatePostStyles = makeUseStyles(({ colors, isDark }) => ({
     justifyContent: 'center' as const,
     gap: spacing.xs,
   },
-  typeBtnActive: { backgroundColor: colors.requestTagBg },
-  typeBtnActiveGive: { backgroundColor: colors.giveTagBg },
+  // One solid selected state for both halves (#2058): the old per-side tag tints left "offer" a pale
+  // cream next to a solid "request". `primary` / `textInverse` keep AA contrast in light and dark.
+  typeBtnActive: { backgroundColor: colors.primary },
   typeBtnText: { ...typography.button, color: colors.textSecondary },
-  typeBtnTextActive: { color: colors.textPrimary },
+  typeBtnTextActive: { color: colors.textInverse },
   section: { gap: spacing.xs },
   sectionLabel: { ...typography.label, color: colors.textSecondary, textAlign: rtlTextAlignStart },
   required: { color: colors.error },

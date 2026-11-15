@@ -8,6 +8,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { makeUseStyles, spacing, radius, typography, shadow, useTheme, TextInput, Text, type TextInput as UiTextInput } from '@kc/ui';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { inputTextAlignStart } from '../../lib/rtlLayout';
 
 interface AnimatedAuthInputProps extends TextInputProps {
   label: string;
@@ -94,7 +95,7 @@ export const AnimatedAuthInput = forwardRef<UiTextInput, AnimatedAuthInputProps>
           ref={ref}
           style={styles.input}
           placeholderTextColor={colors.textDisabled}
-          textAlign={rtlTextAlignStart}
+          textAlign={inputTextAlignStart()}
           onFocus={handleFocus}
           onBlur={handleBlur}
           {...rest}

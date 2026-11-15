@@ -18,4 +18,6 @@ export interface PersonalActivityItem {
   readonly postTitle: string;
   /** Present when `kind === 'marked_as_recipient'` (post owner display name). */
   readonly actorDisplayName: string | null;
+  /** World of the post's listing (`0742`); null for a social post or a post that no longer exists. */
+  readonly worldSlug: string | null;
 }

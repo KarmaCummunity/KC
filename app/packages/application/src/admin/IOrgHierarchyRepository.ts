@@ -9,4 +9,6 @@ export interface IOrgHierarchyRepository {
   /** Aggregate counts for the layered hierarchy view (FR-ADMIN-028): the
    *  masked community base plus per-org affiliates, RBAC-scoped like the tree. */
   getHierarchyCensus(): Promise<HierarchyCensus>;
+  /** Gives an organization a new page slug (super admin only); returns the stored slug. */
+  setOrgSlug(orgId: string, slug: string): Promise<string>;
 }

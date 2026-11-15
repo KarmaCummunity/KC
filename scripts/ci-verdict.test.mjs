@@ -144,7 +144,7 @@ test('the committed rulesets: CI verdict from its own App, CI gate from Actions,
   const checks = ruleset.rules.find((r) => r.type === 'required_status_checks').parameters.required_status_checks;
   const verdict = checks.find((c) => c.context === VERDICT_CHECK);
   assert.ok(verdict, 'CI verdict must be required');
-  assert.notEqual(verdict.integration_id, 15368, 'CI verdict must come from the CI-verdict App, not GitHub Actions');
+  assert.equal(verdict.integration_id, 5554385, 'CI verdict must come from kc-ci-verdict (App ID), not a placeholder or GitHub Actions');
   assert.equal(checks.find((c) => c.context === GATE_JOB)?.integration_id, 15368);
   const tags = read('tags-no-branch-names.json');
   assert.equal(tags.target, 'tag');

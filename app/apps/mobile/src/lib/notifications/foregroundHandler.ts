@@ -11,11 +11,9 @@ export function installForegroundHandler(): void {
     handleNotification: (notification) => {
       const data = notification.request.content.data as Partial<PushData>;
       const activeRoute = useActiveScreenStore.getState().route;
-      if (
-        data?.kind === 'chat_message' &&
-        data.chat_id &&
-        activeRoute === `/chat/${data.chat_id}`
-      ) {
+      // FR-NOTIF-001 AC2: nothing is shown for the conversation the member is looking at.
+      const chatId = data?.entity?.type === 'chat' ? data.entity.id : null;
+      if (chatId && activeRoute === `/chat/${chatId}`) {
         return Promise.resolve({
           shouldShowBanner: false,
           shouldShowList: false,

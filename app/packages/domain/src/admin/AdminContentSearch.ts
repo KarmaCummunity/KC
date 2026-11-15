@@ -3,9 +3,15 @@ export interface AdminUserSearchResult {
   readonly displayName: string | null;
   readonly shareHandle: string | null;
   readonly accountStatus: string;
-  readonly cityName: string | null;
+  /** City id; the screen resolves its name from the cached city list. */
+  readonly cityId: string | null;
   readonly createdAt: Date;
-  readonly lastSeenAt: Date | null;
+}
+
+/** A member picked from the grant-role lookup: just enough to name them. */
+export interface AdminMemberRef {
+  readonly userId: string;
+  readonly displayName: string | null;
 }
 
 export interface AdminPostSearchResult {
@@ -32,13 +38,17 @@ export interface AdminAuditRow {
   readonly createdAt: Date;
 }
 
+/** Opaque keyset position of a search page: the adapter that issued it is the only reader. */
+export type AdminSearchCursor = Readonly<Record<string, unknown>>;
+
+/** One keyset page of an admin search; `nextCursor` is null on the last page. */
 export interface AdminSearchPage<T> {
   readonly rows: readonly T[];
-  readonly totalCount: number;
+  readonly nextCursor: AdminSearchCursor | null;
 }
 
 export class AdminContentError extends Error {
-  readonly code: 'forbidden' | 'invalid_status' | 'invalid_input' | 'unknown';
+  readonly code: 'forbidden' | 'invalid_input' | 'unknown';
 
   constructor(code: AdminContentError['code'], message?: string) {
     super(message ?? code);

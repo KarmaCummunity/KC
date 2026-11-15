@@ -10,7 +10,7 @@ import { rideBookingMachine } from './rideBooking';
  * every other world (items, food, animals, knowledge, and any world added later) uses the
  * giving handoff.
  *
- * SQL copy: `kc_private.handoff_machine_of` in `supabase/migrations/0694_fsm_handoffs.sql`.
+ * SQL copy: `kc_private.handoff_machine_of` in `supabase/schemas/25_handoffs/010_post_handoffs.sql`.
  */
 export function handoffMachineFor(worldSlug: string): FsmMachine<string, string> {
   switch (worldSlug) {

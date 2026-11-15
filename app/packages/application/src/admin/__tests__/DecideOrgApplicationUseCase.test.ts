@@ -27,16 +27,24 @@ describe('DecideOrgApplicationUseCase', () => {
   it('calls approve with a note when approve=true', async () => {
     const repo = makeRepo();
     const uc = new DecideOrgApplicationUseCase(repo);
-    await uc.execute({ applicationId: 'a1', approve: true, note: 'looks good' });
-    expect(repo.approve).toHaveBeenCalledWith('a1', 'looks good');
+    await uc.execute({ applicationId: 'a1', approve: true, slug: ' aid-for-all ', note: 'looks good' });
+    expect(repo.approve).toHaveBeenCalledWith('a1', 'aid-for-all', 'looks good');
     expect(repo.reject).not.toHaveBeenCalled();
   });
 
   it('calls approve with null when no note is given', async () => {
     const repo = makeRepo();
     const uc = new DecideOrgApplicationUseCase(repo);
-    await uc.execute({ applicationId: 'a1', approve: true });
-    expect(repo.approve).toHaveBeenCalledWith('a1', null);
+    await uc.execute({ applicationId: 'a1', approve: true, slug: 'aid' });
+    expect(repo.approve).toHaveBeenCalledWith('a1', 'aid', null);
+  });
+
+  it('refuses to approve without a valid web address', async () => {
+    const repo = makeRepo();
+    const uc = new DecideOrgApplicationUseCase(repo);
+    await expect(uc.execute({ applicationId: 'a1', approve: true })).rejects.toMatchObject({ code: 'invalid_slug' });
+    await expect(uc.execute({ applicationId: 'a1', approve: true, slug: 'Aid For All' })).rejects.toMatchObject({ code: 'invalid_slug' });
+    expect(repo.approve).not.toHaveBeenCalled();
   });
 
   it('calls reject when approve=false', async () => {

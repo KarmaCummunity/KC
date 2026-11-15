@@ -8,6 +8,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
 import { Screen } from '../../../../src/components/ui/Screen';
 import { TimeWorldSubScreenChrome } from '../../../../src/components/giving/TimeWorldSubScreenChrome';
+import { buildShiftIcs } from '@kc/application';
+import { canLeaveEventRegistration, type MyVolunteerSignupRow } from '@kc/domain';
 import { volunteerUseCases } from '../../../../src/services/volunteerComposition';
 import { useShellTabBarScrollInset } from '../../../../src/navigation/useShellTabBarVisibility';
 
@@ -19,7 +21,8 @@ const ROW = { marginHorizontal: spacing.lg };
 
 function statusLabel(status: string, t: (k: string) => string) {
   if (status === 'waitlisted') return t('timeVolunteer.statusWaitlisted');
-  if (status === 'checked_in') return t('timeVolunteer.statusCheckedIn');
+  // Attendance is marked by the organizer: an attended shift is the old "checked in".
+  if (status === 'handed_over') return t('timeVolunteer.statusCheckedIn');
   return t('timeVolunteer.statusRegistered');
 }
 
@@ -34,21 +37,6 @@ export default function MyVolunteerShiftsScreen() {
     queryFn: () => volunteerUseCases.listMySignups().execute(50),
   });
 
-  const onCheckIn = async (signupId: string) => {
-    try {
-      const result = await volunteerUseCases.checkIn().execute(signupId);
-      await qc.invalidateQueries({ queryKey: ['volunteer'] });
-      alert(
-        t('timeVolunteer.checkInDone', {
-          hours: result.hoursLogged,
-          karma: result.karmaPoints,
-        }),
-      );
-    } catch {
-      alert(t('timeVolunteer.errorGeneric'));
-    }
-  };
-
   const onCancel = async (signupId: string) => {
     try {
       await volunteerUseCases.cancelSignup().execute(signupId);
@@ -58,10 +46,10 @@ export default function MyVolunteerShiftsScreen() {
     }
   };
 
-  const onIcs = async (shiftId: string) => {
+  /** Shares the shift as a calendar file, built on the device from the event's start and end. */
+  const onIcs = async (shift: MyVolunteerSignupRow) => {
     try {
-      const ics = await volunteerUseCases.getIcs().execute(shiftId);
-      if (!ics) return;
+      const ics = buildShiftIcs({ shiftId: shift.shiftId, title: shift.title, startsAt: shift.startsAt, endsAt: shift.endsAt });
       const { Share } = await import('react-native');
       await Share.share({ message: ics, title: t('timeVolunteer.calendarShareTitle') });
     } catch {
@@ -105,17 +93,12 @@ export default function MyVolunteerShiftsScreen() {
               }
               footer={
                 <>
-                  {item.status === 'registered' ? (
-                    <Pressable onPress={() => onCheckIn(item.signupId)}>
-                      <Text style={styles.action}>{t('timeVolunteer.checkIn')}</Text>
-                    </Pressable>
-                  ) : null}
-                  {item.status === 'registered' || item.status === 'waitlisted' ? (
+                  {canLeaveEventRegistration(item.status) ? (
                     <Pressable onPress={() => onCancel(item.signupId)}>
                       <Text style={styles.action}>{t('timeVolunteer.cancelSignup')}</Text>
                     </Pressable>
                   ) : null}
-                  <Pressable onPress={() => onIcs(item.shiftId)}>
+                  <Pressable onPress={() => onIcs(item)}>
                     <Text style={styles.action}>{t('timeVolunteer.addCalendar')}</Text>
                   </Pressable>
                 </>

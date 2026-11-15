@@ -1,5 +1,5 @@
 /** FR-CLOSURE-005: reopen a closed post (with cleanup of recipient row + counter deltas via triggers). */
-import type { Post } from '@kc/domain';
+import { postOwnerActions, type Post } from '@kc/domain';
 import type { IPostRepository } from '../ports/IPostRepository';
 import { PostError } from './errors';
 
@@ -21,9 +21,8 @@ export class ReopenPostUseCase {
     if (post.ownerId !== input.ownerId)
       throw new PostError('closure_not_owner', 'closure_not_owner');
 
-    const isReopenable =
-      post.status === 'closed_delivered' || post.status === 'deleted_no_recipient';
-    if (!isReopenable)
+    // Reopening is a move of the post machine (an ending → open, by the owner).
+    if (!postOwnerActions(post.status).reopen)
       throw new PostError('closure_wrong_status', 'closure_wrong_status');
 
     if (post.status === 'deleted_no_recipient') {

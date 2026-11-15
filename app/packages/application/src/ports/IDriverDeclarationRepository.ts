@@ -1,17 +1,17 @@
-// FR-RIDE-041 — port for driver license + insurance declaration.
+// FR-RIDE-041 — port for the driver declaration (licence, insurance, no profit).
 
+/** The consent record of the declaration the member accepted. */
 export interface DriverDeclaration {
   readonly userId: string;
+  /** Version of the declaration text in force when it was accepted. */
+  readonly version: number;
   readonly declaredAt: string;
-  readonly licenseDeclared: boolean;
-  readonly insuranceDeclared: boolean;
-  readonly noProfitAcknowledged: boolean;
 }
 
 export interface IDriverDeclarationRepository {
-  /** Returns the caller's declaration row, or NULL if not yet accepted. */
+  /** The caller's acceptance of the declaration in force, or NULL if not yet accepted. */
   getMine(): Promise<DriverDeclaration | null>;
 
-  /** Inserts the (all-true) declaration for the caller. Idempotent on already-set. */
+  /** Records the caller's acceptance of the declaration in force. Idempotent on already-accepted. */
   accept(): Promise<DriverDeclaration>;
 }

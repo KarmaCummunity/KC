@@ -5,10 +5,12 @@
 // `can_manage_grant`, FR-ADMIN-027).
 import { useMemo, useState } from 'react';
 import { View } from 'react-native';
-import { canRevokeGrant, isAdminRoleError, type AdminGrant } from '@kc/domain';
+import { canRevokeGrant, type AdminGrant } from '@kc/domain';
 import { makeUseStyles, radius, spacing, Text, typography } from '@kc/ui';
 import { PrimaryButton } from '../../ui/Buttons';
 import { useRevokeAdminRole } from '../../../hooks/useAdminRoleMutations';
+import { notAvailableMessage } from '../../../lib/backendAvailability';
+import { BACKEND_UNAVAILABLE_CODE, roleErrorCode } from './roleErrors';
 import { useGrantAuthority } from '../../../hooks/useGrantAuthority';
 import { useHierarchyPyramid } from '../../../hooks/useHierarchyPyramid';
 import { PersonGrantRow } from './PersonGrantRow';
@@ -27,6 +29,7 @@ export interface PersonRolesSectionProps {
 type RevokeErrors = LocaleBundle['admin']['admins']['revokeErrors'];
 
 function revokeErrorText(L: LocaleBundle, code: string): string {
+  if (code === BACKEND_UNAVAILABLE_CODE) return notAvailableMessage();
   const errors: RevokeErrors = L.admin.admins.revokeErrors;
   return code in errors ? errors[code as keyof RevokeErrors] : errors.unknown;
 }
@@ -52,7 +55,7 @@ export function PersonRolesSection({ userId, personName, grants }: PersonRolesSe
   async function onRevoke(grantId: string) {
     setRevokeErr(null);
     try { await revoke.mutateAsync(grantId); }
-    catch (e) { setRevokeErr(isAdminRoleError(e) ? e.code : 'unknown'); }
+    catch (e) { setRevokeErr(roleErrorCode(e)); }
   }
 
   const hasActive = grants.some((g) => g.revokedAt === null);

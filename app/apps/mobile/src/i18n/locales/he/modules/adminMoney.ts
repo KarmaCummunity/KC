@@ -1,4 +1,6 @@
 // V2-ADMIN-MONEY-9 — Hebrew strings for /admin/money.
+import { moneyVisibilityParityHe, moneyVoidHe, moneyVoidErrorHe } from './adminHierarchyParity';
+
 export const adminMoneyHe = {
   title:           'כספים',
   forbiddenTitle:  'אין לך הרשאת גישה למסך זה.',
@@ -28,7 +30,7 @@ export const adminMoneyHe = {
   status: {
     pending:  'ממתין',
     cleared:  'סופי',
-    canceled: 'בוטל',
+    cancelled: 'בוטל',
   },
   row: {
     counterpartyPrefix: 'גורם:',
@@ -94,6 +96,7 @@ export const adminMoneyHe = {
     title:        'הצגה לציבור',
     intro:        'בחרו מה הציבור רואה בעמוד הארגון ובסטטיסטיקות. הכול כבוי כברירת מחדל, ושמות תורמים אינם מוצגים לעולם. ניתן להוציא רישום בודד מהנתונים הפומביים בעריכת הרישום.',
     superOnly:    'רק מנהל-על יכול לשנות הגדרות אלה.',
+    ...moneyVisibilityParityHe,
     saveFailed:   'השמירה נכשלה. אפשר לנסות שוב.',
     toggles: {
       show_totals:             { title: 'סכומי הכנסות והוצאות', hint: 'סה"כ הכנסות, הוצאות ויתרה.' },
@@ -127,6 +130,7 @@ export const adminMoneyHe = {
     publicLabel:        'נכלל בנתונים הפומביים',
     publicHint:         'בכפוף להגדרות ״הצגה לציבור״. שם הגורם לעולם לא מוצג.',
   },
+  void: moneyVoidHe,
   confirm: {
     delete:        'למחוק את הרישום? (מחיקה רכה)',
     deleteTitle:   'אישור מחיקה',
@@ -147,6 +151,7 @@ export const adminMoneyHe = {
     invalid_last4:           'יש להזין בדיוק 4 ספרות.',
     invalid_settings:        'הגדרות לא תקינות.',
     org_not_found:           'הארגון לא נמצא.',
+    ...moneyVoidErrorHe,
     unknown:                 'אירעה שגיאה. אפשר לנסות שוב.',
   },
 };

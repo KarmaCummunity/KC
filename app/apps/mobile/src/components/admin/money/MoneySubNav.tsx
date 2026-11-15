@@ -5,6 +5,7 @@ import { router, type Href } from 'expo-router';
 import { makeUseStyles, spacing } from '@kc/ui';
 import { AdminFilterChip } from '../AdminFilterChip';
 import { useLocaleBundle } from '../../../i18n/useLocaleBundle';
+import { useMoneyPermissions } from '../../../hooks/useMoneyPermissions';
 
 export type MoneySection = 'ledger' | 'accounts' | 'donors' | 'visibility';
 
@@ -20,9 +21,12 @@ const ORDER: readonly MoneySection[] = ['ledger', 'accounts', 'donors', 'visibil
 export function MoneySubNav({ active }: { readonly active: MoneySection }) {
   const styles = useStyles();
   const nav = useLocaleBundle().admin.money.nav;
+  // The donors overview is open to platform admins and org admins only (FR-FIN-023).
+  const { canTransparency } = useMoneyPermissions();
+  const sections = canTransparency ? ORDER : ORDER.filter((section) => section !== 'donors');
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
-      {ORDER.map((section) => (
+      {sections.map((section) => (
         <AdminFilterChip
           key={section}
           label={nav[section]}

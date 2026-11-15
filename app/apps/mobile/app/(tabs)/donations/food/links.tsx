@@ -7,7 +7,7 @@ export { RouteErrorBoundary as ErrorBoundary } from '../../../../src/components/
 export default function FoodLinksScreen() {
   return (
     <WorldLaunchGateBySlug worldSlug="food">
-      <WorldDedicatedLinksScreen worldSlug="food" categorySlug="food" />
+      <WorldDedicatedLinksScreen worldSlug="food" />
     </WorldLaunchGateBySlug>
   );
 }

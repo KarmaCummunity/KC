@@ -13,6 +13,8 @@ const rn = vi.hoisted(() => ({
 vi.mock('react-native', () => rn);
 vi.mock('../../../../i18n', () => ({ default: { t: (key: string) => key } }));
 
+import { ModerationError, ModerationForbiddenError } from '@kc/application';
+import { BackendUnavailableError } from '@kc/domain';
 import { confirmAndRun } from '../adminActions';
 
 const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
@@ -89,5 +91,37 @@ describe('confirmAndRun — native', () => {
     confirmAndRun({ action: 'restore', ...h });
     const [, , buttons] = rn.Alert.alert.mock.calls[0] as [string, string, AlertButton[]];
     expect(() => buttons[0]?.onPress?.()).not.toThrow();
+  });
+});
+
+describe('confirmAndRun — error messages', () => {
+  /** Runs an action that fails with `failure` and returns the message handed to onError. */
+  async function failWith(failure: unknown): Promise<string> {
+    rn.Platform.OS = 'web';
+    vi.stubGlobal('window', { confirm: vi.fn(() => true) });
+    const h = { ...handlers(), onConfirm: vi.fn(() => Promise.reject(failure)) };
+    confirmAndRun({ action: 'ban', ...h });
+    await flush();
+    return h.onError.mock.calls[0]?.[0] as string;
+  }
+
+  it.each([
+    [new ModerationForbiddenError(), 'moderation.actions.errors.forbidden'],
+    [new ModerationError('cannot_sanction_self'), 'moderation.actions.errors.cannotSanctionSelf'],
+    [new ModerationError('cannot_sanction_admin'), 'moderation.actions.errors.cannotSanctionAdmin'],
+    [new ModerationError('account_pending_deletion'), 'moderation.actions.errors.accountPendingDeletion'],
+    [new ModerationError('invalid_sanction_reason'), 'moderation.actions.errors.invalidSanctionReason'],
+    [new ModerationError('invalid_target_state'), 'moderation.actions.errors.invalidTargetState'],
+    [new ModerationError('report_not_open'), 'moderation.actions.errors.reportNotOpen'],
+    [new ModerationError('target_not_found'), 'moderation.actions.errors.targetNotFound'],
+    [new ModerationError('message_not_found'), 'moderation.actions.errors.messageNotFound'],
+    [new ModerationError('unknown'), 'moderation.actions.errors.networkError'],
+    [new Error('socket closed'), 'moderation.actions.errors.networkError'],
+  ])('maps %s to its locale key', async (failure, key) => {
+    expect(await failWith(failure)).toBe(key);
+  });
+
+  it('says "not available yet" when the backend object is missing (degrade rule)', async () => {
+    expect(await failWith(new BackendUnavailableError('rpc:admin_restore_chat', 'function'))).toBe('backend.notAvailableYet');
   });
 });

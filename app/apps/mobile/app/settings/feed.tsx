@@ -1,11 +1,10 @@
-// Settings → feed: mute keywords, categories and people (0281/0283 feed_mute_filters),
+// Settings → feed: mute keywords, worlds and people (feed_mute_filters),
 // plus quiet hours for social notifications (0256).
 import React, { useMemo, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { Stack } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { ALL_CATEGORIES } from '@kc/domain';
 import { makeUseStyles, spacing, typography, useTheme, Text } from '@kc/ui';
 import { Chip, TextField } from '../../src/components/ui';
 import { PrimaryButton } from '../../src/components/ui/Buttons';
@@ -21,7 +20,6 @@ import { FeedSettingsWorldsSection } from '../../src/components/settings/FeedSet
 import type { GivingWorldSlug } from '@kc/domain';
 import { QuietHoursSection } from '../../src/components/settings/QuietHoursSection';
 import {
-  findCategoryMute,
   groupMuteFilters,
   isKeywordMuted,
   normalizeMuteKeyword,
@@ -121,23 +119,6 @@ export default function FeedSettingsScreen() {
                 removeAccessibilityLabel={t('feedSettings.unmuteA11y', { value: k.filterValue })}
               />
             ))}
-          </View>
-        </FeedSettingsSection>
-
-        <FeedSettingsSection title={t('feedSettings.categoriesTitle')} hint={t('feedSettings.categoriesHint')}>
-          <View style={styles.chips}>
-            {ALL_CATEGORIES.map((c) => {
-              const muted = findCategoryMute(rows, c);
-              return (
-                <Chip
-                  key={c}
-                  selected={Boolean(muted)}
-                  onPress={() => (muted ? remove.mutate(muted.filterId) : add.mutate({ kind: 'category', value: c }))}
-                  label={t(`post.category.${c}`)}
-                  icon={muted ? 'eye-off-outline' : undefined}
-                />
-              );
-            })}
           </View>
         </FeedSettingsSection>
 

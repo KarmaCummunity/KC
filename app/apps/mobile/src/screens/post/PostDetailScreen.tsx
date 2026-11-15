@@ -9,7 +9,6 @@ import { useQuery } from '@tanstack/react-query';
 import { formatDistanceToNow } from 'date-fns';
 import { useTranslation } from 'react-i18next';
 import { resolveDateFnsLocale } from '../../lib/resolveDateFnsLocale';
-import type { PostWithOwner } from '@kc/application';
 import { useTheme, Text, iconSize } from '@kc/ui';
 import { EmptyState } from '../../components/EmptyState';
 import { useAuthStore } from '../../store/authStore';
@@ -22,6 +21,7 @@ import { PostMenuButton } from '../../components/post/PostMenuButton';
 import { PostShareButton } from '../../components/post/PostShareButton';
 import { PostDetailScrollContent } from './PostDetailScrollContent';
 import { usePostDetailStyles } from './postDetailScreen.styles';
+import { finishMark, startMark } from '../../lib/observability/perfMarks';
 import {
   useShellTabBarVisibility,
   shellTabBarHeightPx,
@@ -36,6 +36,8 @@ import { postDetailScrollBottomInset } from '../../components/post-detail/postDe
 import { useKeyboardVerticalOffset } from '../../lib/platform/useKeyboardVerticalOffset';
 import { postShowsEngagementSection } from '../../lib/postEngagementVisible';
 import { useSeededFeedPost } from '../../hooks/useSeededFeedPost';
+import { postLocationText } from '../../lib/postLocationText';
+import { resolveKeyboardAvoidingBehavior } from '../../lib/platform/keyboardVerticalOffset';
 
 function normalizeRoutePostId(raw: string | string[] | undefined): string | undefined {
   const id = Array.isArray(raw) ? raw[0] : raw;
@@ -53,12 +55,6 @@ function normalizeOptionalUserId(raw: string | string[] | undefined): string | n
   return trimmed;
 }
 
-function postLocationDisplayText(post: PostWithOwner, t: (key: string) => string): string {
-  if (post.locationDisplayLevel === 'CityOnly') return post.address.cityName;
-  if (post.locationDisplayLevel === 'CityAndStreet')
-    return `${post.address.cityName}, ${t('post.detail.streetPrefix')} ${post.address.street}`;
-  return `${post.address.cityName}, ${post.address.street} ${post.address.streetNumber}`;
-}
 
 export function PostDetailScreen() {
   const styles = usePostDetailStyles();
@@ -88,6 +84,14 @@ export function PostDetailScreen() {
     // the extra posts + identity reads; a stale copy still paints immediately.
     ...(seed ? { initialData: { post: seed.post }, initialDataUpdatedAt: seed.updatedAt } : {}),
   });
+  // NFR-PERF-005: how long a member waits from opening a post to seeing its content (cached or fetched).
+  const hasPost = Boolean(query.data?.post);
+  useEffect(() => {
+    startMark('post_detail.content_painted');
+  }, [postIdParam]);
+  useEffect(() => {
+    if (hasPost) finishMark('post_detail.content_painted');
+  }, [hasPost, postIdParam]);
   const challengeId = query.data?.post?.challengeId ?? null;
   useEffect(() => {
     if (!challengeId) return;
@@ -170,7 +174,7 @@ export function PostDetailScreen() {
   // FR-POST-015 AC1: owner-mode CTAs vs viewer's "Send Message to Poster" (FR-POST-014 AC6: open only).
   const isOwner = viewerId !== null && post.ownerId === viewerId;
   const isGive = post.type === 'Give';
-  const locationText = postLocationDisplayText(post, t);
+  const locationText = postLocationText(post, t('post.detail.streetPrefix'));
   const timeAgo = formatDistanceToNow(new Date(post.createdAt), {
     addSuffix: true,
     locale: resolveDateFnsLocale(i18n?.language ?? 'he'),
@@ -234,7 +238,7 @@ export function PostDetailScreen() {
       <PostEngagementProvider postId={post.postId} viewerId={viewerId}>
         <KeyboardAvoidingView
           style={{ flex: 1 }}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          behavior={resolveKeyboardAvoidingBehavior(Platform.OS)}
           keyboardVerticalOffset={keyboardOffset}
         >
           <PostDetailScrollContent

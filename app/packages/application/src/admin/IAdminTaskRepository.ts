@@ -1,6 +1,6 @@
 import type {
-  AdminTask,
   AdminTaskCategory,
+  AdminTaskPage,
   AdminTaskPriority,
   AdminTaskStatus,
   AdminTaskWithActivities,
@@ -21,7 +21,8 @@ export interface AdminTaskListFilters {
   /** Inclusive upper bound on `due_at`. */
   readonly dueTo?: Date;
   readonly limit?: number;
-  readonly offset?: number;
+  /** `nextCursor` of the previous page; omitted for the first page. */
+  readonly cursor?: string;
 }
 
 export interface CreateAdminTaskInput {
@@ -45,7 +46,9 @@ export interface UpdateAdminTaskInput {
 }
 
 export interface IAdminTaskRepository {
-  list(filters: AdminTaskListFilters): Promise<readonly AdminTask[]>;
+  list(filters: AdminTaskListFilters): Promise<AdminTaskPage>;
+  /** Tasks still being worked on (open or in progress), for the dashboard. */
+  openCount(): Promise<number>;
   getDetail(taskId: string): Promise<AdminTaskWithActivities | null>;
   create(input: CreateAdminTaskInput): Promise<string>;
   update(taskId: string, patch: UpdateAdminTaskInput): Promise<void>;

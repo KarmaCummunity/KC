@@ -1,6 +1,6 @@
 # ADR-005 — Library evaluation matrix
 
-- **Status:** Proposed (2026-11-03) · records library evaluation matrix, core mobile dependency selections, and dependabot grouping policy
+- **Status:** Accepted (2026-11-11; "to verify" items resolved from npm registry metadata on that date) · records library evaluation matrix, core mobile dependency selections, and dependabot grouping policy
 - **Issue:** KC#1024
 - **Related:** [ADR-001 client state](./ADR-001-client-state.md), [ADR-002 data layer](./ADR-002-data-layer.md), [ADR-003 realtime](./ADR-003-realtime.md), KC#896 (virtualized list wrapper), KC#1211 (FlatList migration fixing Android release build), KC#1276 (Expo SDK bump line)
 
@@ -27,13 +27,13 @@ For each category, this document records what the repository uses today, verifie
 
 | Category | Candidate / Options | What repo uses today | License | Expo SDK 54 / RN 0.81 status | RTL support | Approx bundle impact | Recommendation |
 |---|---|---|---|---|---|---|---|
-| **1. Navigation** | `expo-router` vs `react-navigation` | `expo-router ~6.0.23` (wraps `@react-navigation/*` v7) | MIT (verified) | Native to SDK 54 (verified) | Full RTL via RN `I18nManager` | ~80–120 KB JS gzip (already included) | **Keep `expo-router` v6**; direct `react-navigation` adds boilerplate with no benefit |
-| **2. Forms & Validation** | `react-hook-form` + `zod` vs current approach | Hand-rolled `useState` / custom hooks + `@kc/ui` inputs + domain gate functions | Current: in-house; `zod`: MIT (verified); `react-hook-form`: MIT (to verify) | Current: 100% compatible; RHF/Zod on RN 0.81 / React 19: to verify | Handled by `@kc/ui` `TextField` / `TextInput` | Current: 0 KB; RHF: ~9–10 KB gzip; Zod: ~13–15 KB gzip | **Keep current approach for MVP**; consider RHF + Zod only for complex multi-step forms |
-| **3. Maps** | `react-native-maps` vs `Mapbox` | `react-native-maps 1.26.20` (native) + `leaflet 1.9.4` (web) behind `<KcMap>` | `react-native-maps`: MIT; `leaflet`: BSD-2-Clause (verified); Mapbox: proprietary SDK / MIT wrapper | Native / Web split verified in SDK 54; Mapbox on RN 0.81 New Arch: to verify | Native maps inherit OS RTL; Leaflet via CSS; Mapbox needs RTL plugin | RN Maps: ~50–70 KB JS; Leaflet: ~40 KB JS; Mapbox: +15–25 MB native binary | **Keep `react-native-maps` (native) + `leaflet` (web)**; avoid Mapbox tokens and binary bloat |
-| **4. Media** | `expo-image`, `expo-video` | `expo-image ~3.0.11` via `<KCImage>`; video not installed | `expo-image`: MIT (verified); `expo-video`: MIT (to verify) | `expo-image`: native to SDK 54; `expo-video`: SDK 54 core module (to verify exact patch) | Image: full RTL; Video: native playback controls mirror | `expo-image`: ~15 KB JS gzip (native in Expo); `expo-video`: ~20 KB JS gzip | **Keep `expo-image` via `<KCImage>`**; adopt `expo-video` if video is required; avoid `expo-av` |
-| **5. Animation** | `react-native-reanimated`, `moti` | `react-native-reanimated ~4.1.7` + `react-native-worklets 0.5.1` via `<MotionEntry>` & tokens | `react-native-reanimated`: MIT (verified); `moti`: MIT (to verify) | Reanimated 4 native to SDK 54; Moti on Reanimated 4 / React 19: to verify | Full RTL transforms and transitions | Reanimated: ~100–120 KB JS gzip (included); Moti: +15–20 KB JS gzip | **Keep `react-native-reanimated` directly**; reject `moti` (avoids React 19 / Reanimated 4 friction) |
+| **1. Navigation** | `expo-router` vs `react-navigation` | `expo-router ~6.0.24` (wraps `@react-navigation/*` v7) | MIT (verified) | Native to SDK 54 (verified) | Full RTL via RN `I18nManager` | ~80–120 KB JS gzip (already included) | **Keep `expo-router` v6**; direct `react-navigation` adds boilerplate with no benefit |
+| **2. Forms & Validation** | `react-hook-form` + `zod` vs current approach | Hand-rolled `useState` / custom hooks + `@kc/ui` inputs + domain gate functions | Current: in-house; `zod`: MIT (verified); `react-hook-form`: MIT (verified, npm 7.92.0) | Current: 100% compatible; RHF peers `react ^16.8 \|\| ... \|\| ^19` (verified), Zod 4.6.7 has no native code or peers (verified) | Handled by `@kc/ui` `TextField` / `TextInput` | Current: 0 KB; RHF: ~9–10 KB gzip; Zod: ~13–15 KB gzip | **Keep current approach for MVP**; consider RHF + Zod only for complex multi-step forms |
+| **3. Maps** | `react-native-maps` vs `Mapbox` | `react-native-maps 1.29.11` (native) + `leaflet 1.9.4` (web) behind `<KcMap>` | `react-native-maps`: MIT; `leaflet`: BSD-2-Clause (verified); Mapbox: proprietary SDK / MIT wrapper | Native / Web split verified in SDK 54; Mapbox `@rnmapbox/maps` 10.3.18 peers `expo >=47`, `react-native >=0.79` (verified; not built in this repo) | Native maps inherit OS RTL; Leaflet via CSS; Mapbox needs RTL plugin | RN Maps: ~50–70 KB JS; Leaflet: ~40 KB JS; Mapbox: +15–25 MB native binary | **Keep `react-native-maps` (native) + `leaflet` (web)**; avoid Mapbox tokens and binary bloat |
+| **4. Media** | `expo-image`, `expo-video` | `expo-image ~3.0.11` via `<KCImage>`; video not installed | `expo-image`: MIT (verified); `expo-video`: MIT (verified) | `expo-image`: native to SDK 54; `expo-video`: SDK 54 line is `3.0.x` (latest `3.0.16`, verified on npm) | Image: full RTL; Video: native playback controls mirror | `expo-image`: ~15 KB JS gzip (native in Expo); `expo-video`: ~20 KB JS gzip | **Keep `expo-image` via `<KCImage>`**; adopt `expo-video` if video is required; avoid `expo-av` |
+| **5. Animation** | `react-native-reanimated`, `moti` | `react-native-reanimated ~4.1.7` + `react-native-worklets 0.5.1` via `<MotionEntry>` & tokens | `react-native-reanimated`: MIT (verified); `moti`: MIT (verified, npm 0.30.0) | Reanimated 4 native to SDK 54; Moti peers only `react-native-reanimated: *` (verified), but it is not built in this repo and adds a layer over `<MotionEntry>` | Full RTL transforms and transitions | Reanimated: ~100–120 KB JS gzip (included); Moti: +15–20 KB JS gzip | **Keep `react-native-reanimated` directly**; reject `moti` (avoids React 19 / Reanimated 4 friction) |
 | **6. i18n** | `i18next` | `i18next ^23.16.0` (23.16.8) + `react-i18next ^15.1.0` (15.7.4) + `expo-localization ~17.0.8` | `i18next`: MIT; `react-i18next`: MIT (verified) | 100% compatible with SDK 54 / React 19 (verified) | First-class Hebrew RTL primary, English secondary | ~15–20 KB JS gzip | **Keep `i18next` + `react-i18next`**; standard, type-safe, CI-guarded |
-| **7. Lists** | `FlashList` vs `FlatList` | `<KcFlashList>` wrapping RN `FlatList` (`@shopify/flash-list` removed in #1211) | `FlatList`: MIT (verified); `FlashList`: MIT (to verify) | `FlatList`: 100% compatible; FlashList v1: broken on RN 0.81 (verified); v2: to verify | Full RTL supported | FlatList: 0 KB extra; FlashList: +30–40 KB JS gzip + native views | **Keep `<KcFlashList>` backed by `FlatList`**; defer `@shopify/flash-list` until v2 stabilizes |
+| **7. Lists** | `FlashList` vs `FlatList` | `<KcFlashList>` wrapping RN `FlatList` (`@shopify/flash-list` removed in #1211) | `FlatList`: MIT (verified); `FlashList`: MIT (verified, npm 2.3.3) | `FlatList`: 100% compatible; FlashList v1: broken on RN 0.81 (verified); v2 (2.3.3) peers `react`/`react-native: *` but has not been built or benchmarked in this repo | Full RTL supported | FlatList: 0 KB extra; FlashList: +30–40 KB JS gzip + native views | **Keep `<KcFlashList>` backed by `FlatList`**; defer `@shopify/flash-list` until a v2 benchmark in this repo proves a gain |
 
 ---
 
@@ -42,13 +42,13 @@ For each category, this document records what the repository uses today, verifie
 ### 1. Navigation: `expo-router` vs `react-navigation`
 
 - **What the repo uses today:**
-  - `app/apps/mobile/package.json` specifies `"expo-router": "~6.0.23"` as a direct dependency.
+  - `app/apps/mobile/package.json` specifies `"expo-router": "~6.0.24"` as a direct dependency.
   - The application entry point is `"main": "expo-router/entry"`.
   - Over 80 files in `app/apps/mobile/` import directly from `'expo-router'` (`Stack`, `Tabs`, `useRouter`, `router`, `useLocalSearchParams`, `useSegments`, `usePathname`, `Redirect`, `Href`).
   - Typed routes are verified and generated via `scripts/generate-typed-routes.mjs`.
   - Standalone `@react-navigation/*` is not a direct dependency in `package.json` and has zero imports in application code. However, package metadata in `node_modules` verifies that `expo-router@6.0.23` directly depends on `@react-navigation/native` (7.2.2), `@react-navigation/native-stack` (7.3.16), and `@react-navigation/bottom-tabs` (7.4.0).
 - **Expo SDK compatibility:**
-  - `expo-router ~6.0.23` is the official routing library engineered for Expo SDK 54 (`~54.0.38`), React Native 0.81.5, and React 19.1.0.
+  - `expo-router ~6.0.24` is the official routing library engineered for Expo SDK 54 (`~54.0.38`), React Native 0.81.5, and React 19.1.0.
   - Bare `react-navigation` v7 is compatible with Expo SDK 54, but discarding `expo-router` would break file-based routing conventions and deep linking automation.
 - **RTL support:**
   - Supported natively: Expo Router respects React Native's `I18nManager.isRTL`. Headers, tabs, and screen slide transitions adapt to Hebrew RTL direction.
@@ -75,14 +75,14 @@ For each category, this document records what the repository uses today, verifie
   - `zod@4: ^4.6.6` is listed under `pnpm.overrides` in `app/package.json` and resolves to `zod@4.6.7` (MIT) as a transitive devDependency of `hermes-parser` / ESLint tooling.
 - **Expo SDK compatibility:**
   - Current approach: 100% compatible (pure React 19 state).
-  - `react-hook-form`: Headless JS library. Peer dependency compatibility with React 19.1.0 and React Native 0.81.5 in this repo: **to verify**.
-  - `zod`: Pure TypeScript/JavaScript library with zero native dependencies. Compatibility with React Native runtime: **to verify** for v4 (v3 is widely compatible).
+  - `react-hook-form`: Headless JS library. Peer range (npm 7.92.0) accepts React 19 and declares no `react-native` peer (verified), so it is compatible on paper; it is not installed in this repo.
+  - `zod`: Pure TypeScript/JavaScript library with zero native dependencies. Version 4.6.7 is already in the lockfile as a transitive tooling dependency and has no native code and no peers (verified); runtime use in the app bundle is not exercised today.
 - **RTL support:**
   - Current approach: Full RTL support handled at the `@kc/ui` input component layer (`TextField`, right-aligned text for Hebrew, explicit physical alignment in `hebrewSurveyFieldStyle.ts`).
   - `react-hook-form` + `zod`: Headless; RTL layout is completely delegated to the rendered input components. Localized validation messages are supported through `useTranslation` (`t('...')`).
 - **License:**
   - Current approach: Internal project code.
-  - `react-hook-form`: MIT (to verify from npm package metadata; not in `node_modules`).
+  - `react-hook-form`: MIT (verified from npm package metadata; not in `node_modules`).
   - `zod`: MIT (verified from `node_modules/zod/package.json`).
 - **Maintenance status:**
   - Current approach: Maintained internally; low risk of external breaking changes.
@@ -103,14 +103,14 @@ For each category, this document records what the repository uses today, verifie
 
 - **What the repo uses today:**
   - Architecture uses an explicit platform split under `<KcMap>`:
-    - Native (iOS & Android): `react-native-maps` (`1.26.20`, MIT) imported in `app/apps/mobile/src/components/map/KcMap.native.tsx` (`MapView`, `Marker`, `Polyline`, `Region`). On iOS it defaults to system Apple Maps (MapKit); on Android it renders Google Maps.
+    - Native (iOS & Android): `react-native-maps` (`1.29.11`, MIT) imported in `app/apps/mobile/src/components/map/KcMap.native.tsx` (`MapView`, `Marker`, `Polyline`, `Region`). On iOS it defaults to system Apple Maps (MapKit); on Android it renders Google Maps.
     - Web export: `leaflet` (`1.9.4`, BSD-2-Clause) imported in `app/apps/mobile/src/components/map/KcMap.web.tsx` using OpenStreetMap tiles (`tile.openstreetmap.org`), because `react-native-maps` does not support React Native Web.
   - Map features include clustered pins, debounced region change gates (`regionChangeGate.ts`), and polyline routes for rides.
   - Mapbox (`@rnmapbox/maps`): Not installed or imported anywhere in the monorepo.
 - **Expo SDK compatibility:**
-  - `react-native-maps`: Version 1.26.20 is installed and verified compatible with Expo SDK 54 (`~54.0.38`) via Expo dev-client and native prebuild.
+  - `react-native-maps`: Version 1.29.11 is installed and verified compatible with Expo SDK 54 (`~54.0.38`) via Expo dev-client and native prebuild.
   - `leaflet`: Version 1.9.4 is a pure DOM web mapping library, verified compatible with Expo Web export (`pnpm build:web`).
-  - `Mapbox` (`@rnmapbox/maps`): Requires native config plugin and native build. Compatibility with Expo SDK 54 and React Native 0.81 New Architecture: **to verify**.
+  - `Mapbox` (`@rnmapbox/maps`): Requires native config plugin and native build. Version 10.3.18 declares peers `expo >=47` and `react-native >=0.79` (verified from npm metadata); it was not built in this repo, and the RTL text plugin and native binary cost below already rule it out.
 - **RTL support:**
   - `react-native-maps`: Inherits native OS mapping controls. Markers, callouts, and cluster labels render localized Hebrew text cleanly.
   - `leaflet`: Full RTL support via CSS and Leaflet control positioning.
@@ -141,13 +141,13 @@ For each category, this document records what the repository uses today, verifie
   - Video: No video player library is installed. Neither `expo-video` nor legacy `expo-av` is present in `package.json` or imported.
 - **Expo SDK compatibility:**
   - `expo-image`: Core module in Expo SDK 54 (`~3.0.11`), fully certified.
-  - `expo-video`: Official video player module introduced to replace `expo-av`. Supported in Expo SDK 54 (exact SDK 54 patch version: **to verify**).
+  - `expo-video`: Official video player module introduced to replace `expo-av`. Supported in Expo SDK 54 (the SDK 54 line is `expo-video ~3.0.x`; latest `3.0.16`, verified on npm).
 - **RTL support:**
   - `expo-image`: Fully supports RTL layouts. Does not mirror raster images unintentionally.
   - `expo-video`: Native player controls (AVPlayer on iOS, ExoPlayer on Android) and custom playback progress bars respect RTL layout directions.
 - **License:**
   - `expo-image`: MIT (verified from `node_modules/expo-image/package.json`).
-  - `expo-video`: MIT (to verify from npm package metadata; official Expo module).
+  - `expo-video`: MIT (verified from npm package metadata; official Expo module).
 - **Maintenance status:**
   - `expo-image`: Flagship Expo library, actively developed and optimized with native SDWebImage (iOS) and Glide (Android) integrations.
   - `expo-video`: Actively maintained by Expo as the modern replacement for deprecated video components in `expo-av`.
@@ -171,13 +171,13 @@ For each category, this document records what the repository uses today, verifie
   - `moti`: Not installed or imported anywhere in the monorepo.
 - **Expo SDK compatibility:**
   - `react-native-reanimated ~4.1.7`: Verified compatible with Expo SDK 54, React Native 0.81.5, and the New Architecture.
-  - `moti`: Compatibility with Reanimated 4 and React 19: **to verify** (Moti was architected around Reanimated 2/3 and React 18; potential worklet or peer dependency mismatches).
+  - `moti`: Compatibility with Reanimated 4 and React 19: Moti 0.30.0 declares only `react-native-reanimated: *` as a peer (verified), so the peer range does not block it; whether it runs cleanly on Reanimated 4 was not tested in this repo. It stays rejected because `<MotionEntry>` and tokens already cover the app's animation needs.
 - **RTL support:**
   - `react-native-reanimated`: Full RTL support. Transform animations (translations, scales, fades) operate seamlessly with RTL layouts.
   - `moti`: Inherits Reanimated's layout and style capabilities.
 - **License:**
   - `react-native-reanimated`: MIT (verified from `node_modules/react-native-reanimated/package.json`).
-  - `moti`: MIT (to verify from npm package metadata).
+  - `moti`: MIT (verified from npm package metadata).
 - **Maintenance status:**
   - `react-native-reanimated`: Maintained with high velocity by Software Mansion.
   - `moti`: Community maintained by Fernando Rojo; slower release cadence relative to major React / Reanimated releases.
@@ -225,13 +225,13 @@ For each category, this document records what the repository uses today, verifie
   - `@shopify/flash-list` is neither in `package.json` nor installed in `node_modules`.
 - **Expo SDK compatibility:**
   - Current `<KcFlashList>` (`FlatList`): 100% compatible with Expo SDK 54, React Native 0.81.5 New Architecture, and React 19.
-  - `@shopify/flash-list`: FlashList v1 is incompatible with RN 0.81 Android release builds (verified by #1211). FlashList v2 is in development for the New Architecture; compatibility with Expo SDK 54 / RN 0.81.5 / React 19: **to verify**.
+  - `@shopify/flash-list`: FlashList v1 is incompatible with RN 0.81 Android release builds (verified by #1211). FlashList v2 (2.3.3 on npm) targets the New Architecture and declares wildcard peers (verified); it was not built or benchmarked against Expo SDK 54 / RN 0.81.5 here, so it stays deferred.
 - **RTL support:**
   - `FlatList`: Full, native RTL support out of the box in React Native.
   - `FlashList`: Supports RTL, though cell recycling previously caused layout offset quirks with dynamic-height items in RTL layouts.
 - **License:**
   - `FlatList`: MIT (part of `react-native`).
-  - `@shopify/flash-list`: MIT (to verify from npm package metadata; Shopify open source).
+  - `@shopify/flash-list`: MIT (verified from npm package metadata).
 - **Maintenance status:**
   - `FlatList`: Maintained directly by Meta as part of React Native core.
   - `@shopify/flash-list`: Maintained by Shopify; active efforts on v2 for New Architecture.
@@ -248,7 +248,7 @@ For each category, this document records what the repository uses today, verifie
 The repository manages automated dependency updates via `.github/dependabot.yml`. To prevent broken builds caused by uncoordinated major bumps (e.g. KC#1276 where individual `expo-*` major bumps broke CI), the following grouping configuration is proposed for text documentation.
 
 > [!IMPORTANT]
-> This section is an architectural proposal only. Per repository constraints, `.github/dependabot.yml` is not edited as part of this ADR.
+> This section is the recorded grouping policy. The live `.github/dependabot.yml` already implements the Expo, TanStack Query, lint/test and GitHub Actions groups and the semver-major ignores for `expo`, `expo-*`, `@expo/*`, `babel-preset-expo`, `react-native` and `vitest`. Two parts of the policy below are not applied there yet: a `react-native-ecosystem` group (and `react-native-*` major ignore), and `react` / `i18next` groups. Applying them is a CI-config change outside this documentation-only ADR; it is left to a separate CI-config change rather than done inline.
 
 ```yaml
 version: 2

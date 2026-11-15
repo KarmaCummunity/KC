@@ -40,18 +40,24 @@ body:
     id: test_plan
     attributes:
       label: Test plan
-      description: Automated tests to add/run and any manual checks (platform, persona, kc-dev).
+      description: Automated tests to add and run. Checks only a person can do go in the next field.
     validations: { required: true }
+  - type: textarea
+    id: person_verification
+    attributes:
+      label: Person verification (optional)
+      description: Checks an agent cannot automate (a device, TestFlight / Play build, store console, visual judgment). The agent opens a separate `verification` issue for them; this issue closes when its PR merges.
+      placeholder: "- [ ] On an Android device: … → expected …"
   - type: textarea
     id: files
     attributes:
       label: Likely files
-      placeholder: "supabase/migrations/0xxx_*.sql\napp/apps/mobile/app/(tabs)/…"
+      placeholder: "supabase/migrations/next-01_*.sql\napp/apps/mobile/app/(tabs)/…"
   - type: input
     id: migration_range
     attributes:
-      label: Migration range
-      description: Claimed in docs/agents/MIGRATION_RANGES.md, e.g. 0350-0354. "none" if no SQL.
+      label: Migration
+      description: Slug of each supabase/migrations/next-NN_slug.sql file (the number is assigned on merge, see docs/agents/MIGRATION_RANGES.md). "none" if no SQL.
       placeholder: none
     validations: { required: true }
   - type: textarea

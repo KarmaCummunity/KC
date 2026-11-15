@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { iconSize, spacing, Text, useTheme } from '@kc/ui';
-import { isFeedWorldSlug } from '@kc/domain';
+import { isFeedWorldSlug, isPostEditableByOwner } from '@kc/domain';
 import { Screen } from '../../src/components/ui/Screen';
 import { useAuthStore } from '../../src/store/authStore';
 import { getPostByIdUseCase } from '../../src/services/postsComposition';
@@ -18,6 +18,7 @@ import { useKeyboardVerticalOffset } from '../../src/lib/platform/useKeyboardVer
 import { TAB_INLINE_FORM_HEADER_HEIGHT } from '../../src/lib/platform/formChromeHeights';
 import { EmptyState } from '../../src/components/EmptyState';
 import type { CreateDirection } from '../../src/lib/unifiedCreate/createCategories';
+import { resolveKeyboardAvoidingBehavior } from '../../src/lib/platform/keyboardVerticalOffset';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
 
@@ -95,7 +96,7 @@ export default function EditListingScreen() {
     );
   }
 
-  if (post.status !== 'open') {
+  if (!isPostEditableByOwner(post.status)) {
     return (
       <Screen>
         <EmptyState icon="archive-outline" title={t('post.editPost.notEditableTitle')} subtitle={t('post.editPost.notEditableRemoved')} />
@@ -120,7 +121,7 @@ export default function EditListingScreen() {
       </View>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={resolveKeyboardAvoidingBehavior(Platform.OS)}
         keyboardVerticalOffset={keyboardOffset}
       >
         <ListingCreateForm

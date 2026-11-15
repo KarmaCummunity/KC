@@ -2,7 +2,7 @@
 // G1 step 5 (docs/spec/08_organizations.md Events, D31) — the time world's offer form for a member
 // of an organization: a volunteer shift by default, or the organization's event with its
 // organization, window and registration policy, published through the one createListing path.
-// A member of no organization sees exactly today's form.
+// A member of no organization sees today's form, with a hint how to publish an event (FR-ORG-002).
 import React from 'react';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -18,6 +18,7 @@ const mocks = vi.hoisted(() => ({
   listKindsForWorld: vi.fn(),
   listMyOrganizations: vi.fn(),
   createListing: vi.fn(),
+  push: vi.fn(),
   // The instant each date field picks when tapped, by detail key.
   picks: {} as Record<string, string>,
 }));
@@ -29,6 +30,8 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 vi.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
+// The organization membership hint (FR-ORG-002) opens My organizations.
+vi.mock('expo-router', () => ({ useRouter: () => ({ push: mocks.push }) }));
 vi.mock('@react-native-community/datetimepicker', () => ({ default: () => null, DateTimePickerAndroid: { open: vi.fn() } }));
 vi.mock('../../../services/marketplaceComposition', () => ({
   marketplaceRepository: () => ({
@@ -86,9 +89,9 @@ function renderTimeOffer() {
   return { onPublished };
 }
 
-/** Chooses the event, picks the window and the city. */
-async function fillEvent() {
-  fireEvent.click(await screen.findByTestId('time-offer-kind-event'));
+/** Chooses the event (an organization's by default), picks the window and the city. */
+async function fillEvent(kindChip = 'time-offer-kind-event') {
+  fireEvent.click(await screen.findByTestId(kindChip));
   fireEvent.click(await screen.findByTestId('listing-date-starts_at'));
   fireEvent.click(screen.getByTestId('listing-date-ends_at'));
   fireEvent.click(screen.getByTestId('city-picker'));
@@ -114,12 +117,35 @@ afterEach(() => {
 });
 
 describe('ListingCreateForm — organization event', () => {
-  it('a member of no organization sees today\'s form', async () => {
+  it('a member of no organization starts on today\'s form and may publish their own event (FR-POST-024)', async () => {
     mocks.listMyOrganizations.mockResolvedValue([]);
-    renderTimeOffer();
+    const { onPublished } = renderTimeOffer();
     expect(await screen.findByTestId('listing-field-duration_minutes')).toBeTruthy();
     await waitFor(() => expect(mocks.listMyOrganizations).toHaveBeenCalled());
-    expect(screen.queryByTestId('time-offer-kind')).toBeNull();
+    // The choice is theirs too, without the organization's chip or picker.
+    expect(await screen.findByTestId('time-offer-kind')).toBeTruthy();
+    expect(screen.queryByTestId('time-offer-kind-event')).toBeNull();
+    await fillEvent('time-offer-kind-personal-event');
+    expect(screen.queryByTestId('org-picker')).toBeNull();
+    expect(screen.getByTestId('event-recurrence')).toBeTruthy();
+    await publish();
+    await waitFor(() => expect(onPublished).toHaveBeenCalledWith('listing-event'));
+    const payload = mocks.createListing.mock.calls[0]![0] as { kindId: string; details: Record<string, unknown> };
+    expect(payload.kindId).toBe('k-event');
+    expect(payload.details).not.toHaveProperty('org_id');
+  });
+
+  it('tells a member of no organization how to publish an event, and opens My organizations', async () => {
+    mocks.listMyOrganizations.mockResolvedValue([]);
+    renderTimeOffer();
+    fireEvent.click(await screen.findByTestId('org-event-membership-hint-open'));
+    expect(mocks.push).toHaveBeenCalledWith('/settings/organizations');
+  });
+
+  it('shows a member of an organization no membership hint', async () => {
+    renderTimeOffer();
+    expect(await screen.findByTestId('time-offer-kind')).toBeTruthy();
+    expect(screen.queryByTestId('org-event-membership-hint')).toBeNull();
   });
 
   it('defaults to a volunteer shift and switches to the event fields', async () => {
@@ -139,7 +165,7 @@ describe('ListingCreateForm — organization event', () => {
     await waitFor(() => expect(onPublished).toHaveBeenCalledWith('listing-event'));
     expect(mocks.createListing).toHaveBeenCalledWith(
       expect.objectContaining({
-        kindId: 'k-org_event',
+        kindId: 'k-event',
         cityId: '4000',
         details: { starts_at: WINDOW.start, ends_at: WINDOW.end, registration_policy: 'automatic', org_id: ORG_A },
       }),

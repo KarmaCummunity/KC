@@ -26,6 +26,18 @@ export const DESTRUCTIVE_RULES = [
   },
 ];
 
+/**
+ * The initial schema is applied to an empty database, so its DROP / TRUNCATE (idempotent
+ * resets inside the generated file, not data loss) are not destructive. Only the generated
+ * baseline qualifies: `assemble-baseline --check` keeps it identical to supabase/schemas.
+ * Every later migration is scanned in full.
+ */
+export const INITIAL_SCHEMA_FILE = '0001_baseline.sql';
+const INITIAL_SCHEMA_HEADER = '-- Karma Community — production baseline.';
+export function isInitialSchema(name, content) {
+  return name === INITIAL_SCHEMA_FILE && content.startsWith(INITIAL_SCHEMA_HEADER);
+}
+
 const ALLOW_MARKER = 'migration-safety: allow';
 
 /**
@@ -134,6 +146,7 @@ export function checkMigrationSafety(migrationsDir) {
   for (const file of files) {
     const path = join(migrationsDir, file);
     const content = readFileSync(path, 'utf8');
+    if (isInitialSchema(file, content)) continue;
     errors.push(...scanMigrationSql(content, file, { permanentTables }));
   }
 
@@ -202,6 +215,7 @@ export function checkReleaseMigrations(files, prBody, { permanentTables = new Se
   const justified = justifiedFiles(prBody);
   const errors = [];
   for (const { name, content } of files) {
+    if (isInitialSchema(name, content)) continue;
     const ok = justified.has(name);
     const hits = [...scanMigrationSql(content, name, { honorAllow: ok, permanentTables }), ...(ok ? [] : scanCompatibility(content, name))];
     for (const hit of hits) {
@@ -211,6 +225,16 @@ export function checkReleaseMigrations(files, prBody, { permanentTables = new Se
   return errors;
 }
 
+/**
+ * True for a migration file the release scan must read: a `.sql` file directly
+ * under supabase/migrations. `archive/` holds the retired chain (D-228): it is
+ * never applied, so scanning it only buries the real findings.
+ * @param {string} path repo-relative path, forward slashes
+ */
+export function isScannedMigrationPath(path) {
+  return /^supabase\/migrations\/[^/]+\.sql$/.test(path);
+}
+
 /** Migrations added or modified between `base` and `head` (merge-base diff). */
 function changedMigrations(base, head) {
   const out = execFileSync(
@@ -218,7 +242,8 @@ function changedMigrations(base, head) {
     ['diff', '--name-only', '--no-renames', '--diff-filter=AM', `${base}...${head}`, '--', 'supabase/migrations/*.sql'],
     { cwd: REPO_ROOT, encoding: 'utf8' },
   );
-  return out.split('\n').filter(Boolean).map((path) => ({
+  // The pathspec's `*` also crosses `/`, so the archive must be filtered here.
+  return out.split('\n').filter(isScannedMigrationPath).map((path) => ({
     name: basename(path),
     content: readFileSync(join(REPO_ROOT, path), 'utf8'),
   }));

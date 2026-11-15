@@ -62,7 +62,7 @@ Found while working on #<N> (PR #<PR>).
 ### Likely files
 <paths>
 
-### Migration range
+### Migration
 none
 
 ### Out of scope

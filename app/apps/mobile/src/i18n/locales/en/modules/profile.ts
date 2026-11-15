@@ -80,6 +80,8 @@ export const profileEn = {
   followCooldownDays: 'You can send again in {{count}} days.',
   followErrorTitle: 'Error',
   followErrorMessage: 'The action failed. Please try again.',
+  followRateLimited: 'Too many follow requests. Please try again in a little while.',
+  followAccountNotActive: 'Your account is not active yet, so you cannot follow members right now.',
 
   // Avatar editor (EditProfileAvatar — FR-PROFILE-007)
   avatarChangeA11y: 'Change profile photo',

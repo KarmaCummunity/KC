@@ -15,7 +15,11 @@
 //   EXPO_PUBLIC_SUPABASE_URL, EXPO_PUBLIC_SUPABASE_ANON_KEY,
 //   EXPO_PUBLIC_ENVIRONMENT, WEB_URL.
 
+import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { checkProdSchemaMode, loadProdSchemaContext } from './check-prod-schema-mode.mjs';
+
+const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 export const TARGETS = {
   dev: { ref: 'enbqriuxvvuontiwslun', environment: 'development' },
@@ -59,6 +63,13 @@ export function checkWebEnv(target, env) {
   return errors;
 }
 
+
+/** D-228: reasons a prod supabase db push must not run (empty = not prod, or allowed). */
+export function checkProdSchemaSource(target, env, root = REPO_ROOT) {
+  if (target !== 'prod') return [];
+  return checkProdSchemaMode(loadProdSchemaContext({ root, env })).errors;
+}
+
 /** Supabase Management API status of the project; anything but ACTIVE_HEALTHY fails. */
 export async function checkProjectActive({ ref, token, fetch }) {
   const res = await fetch(`https://api.supabase.com/v1/projects/${ref}`, { headers: { Authorization: `Bearer ${token}` } });
@@ -74,6 +85,9 @@ async function main([kind, target]) {
   }
   const env = process.env;
   const errors = kind === 'web' ? checkWebEnv(target, env) : checkSupabaseEnv(target, env);
+  if (kind === 'supabase') {
+    errors.push(...checkProdSchemaSource(target, env));
+  }
   if (kind === 'supabase' && errors.length === 0) {
     errors.push(...(await checkProjectActive({ ref: TARGETS[target].ref, token: env.SUPABASE_ACCESS_TOKEN, fetch: globalThis.fetch })));
   }

@@ -12,7 +12,6 @@ export default function KnowledgeHubScreen() {
         worldSlug="knowledge"
         icon="school-outline"
         introKey="donations.knowledge.hubBody"
-        linksCategory="knowledge"
         subScreens={WORLD_CHROME_BY_SLUG.knowledge.subScreens}
       />
     </WorldLaunchGateBySlug>

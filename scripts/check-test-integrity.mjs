@@ -222,6 +222,26 @@ export function prDiff(base, head, cwd = process.cwd()) {
  * Parse the PR diff and attach whole-file texts to test files: `oldText` at
  * the merge-base, `newText` at head (for the assertion count).
  */
+/**
+ * When a PR targets `main`, `main` must already be an ancestor of the head.
+ * After a squash release, that is only true once the Sync main → dev
+ * ancestry PR has landed as a merge commit. Otherwise `git diff base...head`
+ * uses a stale merge-base and flags historical test deletions (e.g.
+ * formatRate.test.ts on #1600 vs `c242204b`) as if they were in this PR.
+ * Returns an error message, or null when ancestry is linked.
+ */
+export function ancestryGapMessage(base, head, cwd = process.cwd()) {
+  const baseSha = git(['rev-parse', '--verify', `${base}^{commit}`], cwd).trim();
+  const headSha = git(['rev-parse', '--verify', `${head}^{commit}`], cwd).trim();
+  const mergeBase = git(['merge-base', baseSha, headSha], cwd).trim();
+  if (mergeBase === baseSha) return null;
+  return (
+    `main (${baseSha.slice(0, 12)}) is not an ancestor of the PR head (${headSha.slice(0, 12)}). ` +
+    `The merge-base is ${mergeBase.slice(0, 12)}, which would flag historical test deletions as if they belonged to this release PR. ` +
+    'Open the Sync main → dev ancestry-only PR and merge it as a merge commit (not squash) before re-running test integrity. See #1876 / #1707.'
+  );
+}
+
 export function loadDiff(base, head, cwd = process.cwd()) {
   const mergeBase = git(['merge-base', base, head], cwd).trim();
   const files = parseDiff(prDiff(base, head, cwd));
@@ -238,6 +258,13 @@ async function main() {
   if (!['pull_request', 'pull_request_review', 'merge_group'].includes(env.EVENT_NAME)) {
     console.log(`Test integrity: a ${env.EVENT_NAME} run is not a PR diff; nothing to judge.`);
     return;
+  }
+  if (ownerApprovalRequired(env)) {
+    const gap = ancestryGapMessage(env.BASE_SHA, env.HEAD_SHA);
+    if (gap) {
+      console.log(`::error::Test integrity: ${gap}`);
+      process.exit(1);
+    }
   }
   const violations = findViolations(loadDiff(env.BASE_SHA, env.HEAD_SHA));
   if (violations.length === 0) {

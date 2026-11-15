@@ -1,6 +1,6 @@
 # 2.10 Personal & Community Statistics
 
-> **Status:** 🟡 FR-STATS-001..008 ✅ (platform statistics for admins and givings by world since 2026-11-03); FR-STATS-009 waits for ORG-P1. Personal stats screen (`/stats`), counters from `users`, community panel from `community_stats`, activity timeline from `user_personal_activity_log` + `rpc_my_activity_timeline` (migrations `0044_personal_activity_log`, `0045_stats_recompute_nightly`). Nightly `stats_recompute_personal_counters_nightly` + `stats_drift_events` + pg_cron job `stats_recompute_nightly` satisfy **FR-STATS-005** (operator: enable `pg_cron`, see `OPERATOR_RUNBOOK.md`). ⚠️ Audit 2026-05-16 (partial): FR-STATS-001 AC2 "reactive" focus-only gap **closed by FR-KARMA-009** — `useMeRealtime` (`_layout.tsx`) subscribes persistently to `postgres_changes UPDATE` on own `users` row and patches the React Query cache, so counters update live without a focus-refetch. Remaining open items tracked in TD-98: FR-STATS-006 AC2 says auth-only but view is granted to `anon` to satisfy FR-FEED-014 (spec contradiction); FR-STATS-003 AC1 caps at 30 but use case allows 50; section order on screen is community-first, spec is counters-first. See `docs/SSOT/archive/audit/2026-05-16/06_donations_stats_settings.md`.
+> **Status:** 🟡 FR-STATS-001..008 ✅ (platform statistics for admins and givings by world since 2026-11-03); FR-STATS-009 waits for ORG-P1. Personal stats screen (`/stats`), counters from `users`, community panel from `community_stats`, activity timeline from `user_personal_activity_log` + `rpc_my_activity_timeline` (migrations `0044_personal_activity_log`, `0045_stats_recompute_nightly`). Nightly `stats_recompute_personal_counters_nightly` + `stats_drift_events` + pg_cron job `stats_recompute_nightly` satisfy **FR-STATS-005** (operator: enable `pg_cron`, see `OPERATOR_RUNBOOK.md`). ⚠️ Audit 2026-05-16 (partial): FR-STATS-001 AC2 "reactive" focus-only gap **closed by FR-KARMA-009** — `useMeRealtime` (`_layout.tsx`) subscribes persistently to `postgres_changes UPDATE` on own `users` row and patches the React Query cache, so counters update live without a focus-refetch. Remaining open items tracked in TD-98: FR-STATS-006 AC2 now allows guests (the contradiction with FR-FEED-014 is closed); FR-STATS-003 AC1 caps at 30 but use case allows 50; section order on screen is community-first, spec is counters-first. See `docs/SSOT/archive/audit/2026-05-16/06_donations_stats_settings.md`.
 
 
 
@@ -143,7 +143,7 @@ Personal statistics are visible only to the user themselves.
 
 **Acceptance Criteria.**
 - AC1. The personal stats screen requires authentication and never exposes data about other users (counters of other users are exposed only as the public counters on `Other Profile`, with the public/internal split per `FR-PROFILE-013`).
-- AC2. Community stats are accessible to any authenticated user but never include identifying information.
+- AC2. Community stats (`FR-STATS-004`) are readable by anyone, guests included, because the public About page shows them; they are counts only and never include identifying information. D152
 
 ---
 
@@ -155,7 +155,7 @@ The team sees the whole platform's statistics in the admin portal (D106).
 **Acceptance Criteria.**
 - AC1. Admin portal → "Statistics" (`/admin/stats`), for the roles with `stats.view_platform` (super admin, moderator); the server re-checks the roles.
 - AC2. A window of 7 / 30 / 90 days. On top, the north-star total: givings closed in the window (`docs/spec/16_kpis.md`).
-- AC3. One card per world and direction: published, booked, confirmed, handed over, cancelled, closed, and median hours to the first booking and to the first handover, from `admin_world_flow_funnel` (`0542`, G43). Handoff stages read "not tracked" for worlds without giving handoffs.
+- AC3. One card per world and direction: published, booked, confirmed, handed over, cancelled, closed, and median hours to the first booking and to the first handover, from `admin_world_flow_funnel` (`0542`, G43; migration `0018` after the baseline cut-over, money has no handoff stages). Handoff stages read "not tracked" for worlds without giving handoffs.
 - AC4. Shows counts only; no member is identified.
 
 ## FR-STATS-008 — My givings by world
@@ -165,7 +165,7 @@ A member's statistics screen also breaks their givings down by world (D106).
 
 **Acceptance Criteria.**
 - AC1. Below the personal counters (`FR-STATS-001`): one row per world in which the member has activity, with **given** (handoffs on their listings that were handed over), **received** (handoffs they received that were handed over) and **closed** (their own listings closed).
-- AC2. Owner only (`FR-STATS-006` AC1): `my_world_givings` (`0547`) reads the session user and takes no user id.
+- AC2. Owner only (`FR-STATS-006` AC1): `my_world_givings` (`0547`; migration `0018` after the baseline cut-over) reads the session user and takes no user id.
 - AC3. With no activity yet, a short hint explains that handed-over givings will appear here.
 
 ## FR-STATS-009 — Organization impact

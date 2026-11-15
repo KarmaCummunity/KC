@@ -18,7 +18,7 @@ describe('Follow-graph contract — SupabaseUserRepository (local stack)', () =>
     newActor: async (privacyMode = 'Public') => {
       const { userId, client } = await users.signInNewUser();
       if (privacyMode !== 'Public') {
-        const { error } = await users.admin.from('users').update({ privacy_mode: privacyMode }).eq('user_id', userId);
+        const { error } = await users.admin.from('users').update({ privacy_mode: privacyMode }).eq('id', userId);
         if (error) throw new Error(`contract harness: privacy update failed (${error.message})`);
       }
       return { userId, users: new SupabaseUserRepository(client) };

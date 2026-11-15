@@ -5,12 +5,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { View } from 'react-native';
 import {
-  changeTargetsFor, isAdminRoleError, type AdminGrant, type GrantableAdminRole, type ViewerAuthority,
+  changeTargetsFor, type AdminGrant, type GrantableAdminRole, type ViewerAuthority,
 } from '@kc/domain';
 import { makeUseStyles, spacing, Text, typography } from '@kc/ui';
 import { useChangeAdminRole } from '../../../hooks/useAdminRoleMutations';
 import { ChoiceChips } from './ChoiceChips';
-import { roleScopeErrorText } from './roleErrors';
+import { roleErrorCode, roleScopeErrorText } from './roleErrors';
 import { textAlignStart } from '../../../lib/rtlLayout';
 import { useLocaleBundle } from '../../../i18n/useLocaleBundle';
 import { GhostButton, PrimaryButton } from '../../ui/Buttons';
@@ -49,7 +49,7 @@ export function ChangeRoleModal({ grant, orgName, authority, onClose }: ChangeRo
       await change.mutateAsync({ grantId: grant.grantId, newRole: role });
       onClose();
     } catch (e) {
-      setErrorCode(isAdminRoleError(e) ? e.code : 'unknown');
+      setErrorCode(roleErrorCode(e));
     }
   }
 

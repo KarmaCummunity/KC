@@ -4,7 +4,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
 const ROOT = join(import.meta.dirname, '../apps/mobile');
-const SKIP = new Set(['node_modules', '.expo', 'web-server']);
+const SKIP = new Set(['node_modules', '.expo', 'web-edge', 'functions']);
 // The KcFlashList wrapper is the one sanctioned place: it falls back to
 // FlatList on native under the New Architecture (FlashList v1 grid overlap).
 const ALLOW = new Set(['src/components/lists/KcFlashList.tsx']);

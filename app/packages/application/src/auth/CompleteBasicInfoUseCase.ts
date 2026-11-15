@@ -1,6 +1,7 @@
 /** FR-AUTH-010: Validate display_name + city; optional profile street/number (FR-PROFILE-007 shape);
  *  advance onboarding_state pending_basic_info → pending_avatar.
- *  City id+name come from the caller (CityPicker); DB FK is the final guard. */
+ *  City id+name come from the caller (CityPicker); only the id is stored (the name is the
+ *  `cities` row of the id) and the DB FK is the final guard. */
 import { STREET_NUMBER_PATTERN, dateOfBirthIssue } from '@kc/domain';
 import type { IAuthService } from '../ports/IAuthService';
 import type { IUserRepository } from '../ports/IUserRepository';
@@ -75,7 +76,6 @@ export class CompleteBasicInfoUseCase {
     await this.users.setBasicInfo(input.userId, {
       displayName: trimmedName,
       city: trimmedCityId,
-      cityName: trimmedCityName,
     });
     if (st.length > 0 && num.length > 0) {
       await this.users.setProfileAddressLines(input.userId, st, num);

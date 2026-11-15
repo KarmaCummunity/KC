@@ -9,25 +9,18 @@ import { defineMachine } from '../machine';
  * - Moderation: 5 distinct reporters suspend (`suspended_admin`), repeated false reports
  *   suspend the reporter (`suspended_for_false_reports`, levels 1–3), an admin bans. A
  *   moderator restores a suspension; only a super admin lifts a ban (checked by
- *   `admin_restore_target`, the graph carries no roles until wave 1c).
+ *   `kc_private` guards in the admin RPCs; the graph itself carries no roles).
  * - A false-report sanction never touches a heavier state: no edge leads from `suspended_admin`
  *   or `banned` to `suspended_for_false_reports`.
  * - Deletion: a member requests it (`pending_deletion`, 30 days) and may restore it to the
  *   status saved before the request. The purge deletes the row; there is no `deleted` state.
  * - A member under deletion is neither suspended nor banned: the account is leaving.
  *
- * SQL copy: `supabase/migrations/0696_fsm_account_status.sql`.
+ * SQL copy: `supabase/schemas/10_identity/030_user_account.sql` (`kc_private.fsm_state` / `fsm_edge` seeds).
  */
 export const accountStatusMachine = defineMachine({
   id: 'account_status',
-  states: [
-    'pending_verification',
-    'active',
-    'suspended_for_false_reports',
-    'suspended_admin',
-    'banned',
-    'pending_deletion',
-  ] as const,
+  states: ['pending_verification', 'active', 'suspended_for_false_reports', 'suspended_admin', 'banned', 'pending_deletion'] as const,
   edges: [
     { from: 'pending_verification', to: 'active' },
     { from: 'pending_verification', to: 'suspended_for_false_reports' },

@@ -120,7 +120,6 @@ export default function OtherProfileScreen() {
       userId: u!.userId,
       status: ['open'],
       limit: 30,
-      profileOpenLinks: { viewerUserId: me ?? null, listMode: 'standard' },
     }),
     enabled: Boolean(u?.userId) && activeTab === 'open',
     staleTime: 60_000, // PERF-3: profile (others) — follow state can flip; keep relatively fresh
@@ -162,7 +161,12 @@ export default function OtherProfileScreen() {
         options={{
           headerTitle: '',
           ...(!isMe
-            ? nativeStackHeaderRightIconOnly(() => <ProfileOverflowMenu targetUserId={u.userId} />)
+            ? nativeStackHeaderRightIconOnly(() => (
+                <ProfileOverflowMenu
+                  targetUserId={u.userId}
+                  profileShare={{ shareHandle: u.shareHandle, displayName: u.displayName }}
+                />
+              ))
             : { headerRight: undefined }),
         }}
       />

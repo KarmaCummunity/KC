@@ -81,30 +81,3 @@ export function rideFeedCardExtras(item: RideFeedItem, t: Translate): RideCardEx
   if (item.seriesMore > 0) lines.push({ icon: 'calendar-outline', text: t('rideSeries.moreDates', { count: item.seriesMore }) });
   return lines;
 }
-
-/** The fields of a corridor match (`find_ride_listing_matches`) the feed needs. */
-export interface RideRouteMatch {
-  readonly listing_id: string;
-  readonly title: string;
-  readonly seats_left: number;
-  readonly departs_at: string;
-  readonly origin_label: string | null;
-  readonly dest_label: string | null;
-}
-
-/** A corridor match as a feed item: matches are ride offers along the chosen route. */
-export function rideRouteMatchFeedItem(match: RideRouteMatch): RideFeedItem {
-  return {
-    listingId: match.listing_id,
-    direction: 'give',
-    title: match.title,
-    departsAt: match.departs_at,
-    originLabel: match.origin_label,
-    destLabel: match.dest_label,
-    meetingPoints: 0,
-    seatsLeft: match.seats_left,
-    passengers: null,
-    recurrence: null,
-    seriesMore: 0,
-  };
-}

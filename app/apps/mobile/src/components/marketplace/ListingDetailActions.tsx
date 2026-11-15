@@ -1,7 +1,6 @@
-// KC#1310 — the listing detail's action row, shown per viewer role: the owner can share the
-// listing to the feed (unless it is already mirrored there, D-206); anyone else can message the
-// owner, report the listing or block its owner (FR-MOD-003 AC1). Everyone can share the link —
-// the post's link once the listing has a post (G1 step 4c). Server failures surface as an
+// KC#1310 — the listing detail's action row, shown per viewer role: anyone but the owner can
+// message the owner, report the listing or block its owner (FR-MOD-003 AC1). Everyone can share
+// the listing's link (a listing is a post, so it is already in the feed). Server failures surface as an
 // alert instead of a silent no-op: a known refusal gets its own copy, anything else the generic
 // copy and a report (#1412).
 //
@@ -44,9 +43,6 @@ export function ListingDetailActions({ detail, viewerId, onReport, moderationInH
       if (changed && router.canGoBack()) router.back();
     });
   };
-  // Most worlds are listed in the feed on publish; the manual share is for a listing the feed does
-  // not list yet — no post, or a post kept out of the feed (0557: knowledge until shared).
-  const canShareToFeed = isOwner && (detail.feedPostId === null || detail.feedHidden);
   // The flow action (reserve, claim, book) is the screen's primary when the viewer has one.
   const MessageButton = listingFlowHasViewerAction(detail, viewerId) ? SecondaryButton : PrimaryButton;
 
@@ -68,12 +64,6 @@ export function ListingDetailActions({ detail, viewerId, onReport, moderationInH
       const chatId = await marketplaceRepository().startChat(detail.listingId, t('marketplace.chatOpener'));
       trackCoreLoop('chat_started', { world: detail.worldSlug, cityId: detail.cityId });
       router.push(`/chat/${chatId}`);
-    });
-
-  const shareToFeed = () =>
-    run('share_to_feed', async () => {
-      const postId = await marketplaceRepository().shareToFeed(detail.listingId);
-      router.push(`/post/${postId}`);
     });
 
   const shareLink = async () => {
@@ -100,15 +90,6 @@ export function ListingDetailActions({ detail, viewerId, onReport, moderationInH
           label={t('marketplace.shareLink')}
           size="md"
           onPress={() => void shareLink()}
-        />
-      ) : null}
-      {canShareToFeed ? (
-        <SecondaryButton
-          testID="listing-action-share-feed"
-          label={t('marketplace.shareFeed')}
-          size="md"
-          disabled={busy}
-          onPress={() => void shareToFeed()}
         />
       ) : null}
       {!isOwner && !moderationInHeader ? (

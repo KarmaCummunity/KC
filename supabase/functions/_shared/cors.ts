@@ -4,7 +4,9 @@
 // and always merged with local Expo/web dev origins so local UI never breaks
 // when the remote env var is set for production hosts only.
 
-const RAW = (Deno.env.get('PUBLIC_RESEARCH_ALLOWED_ORIGINS') ?? '').trim();
+import { readEnv } from './readEnv.ts';
+
+const RAW = readEnv('PUBLIC_RESEARCH_ALLOWED_ORIGINS').trim();
 
 const DEV_ORIGINS = [
   'http://localhost:8081',

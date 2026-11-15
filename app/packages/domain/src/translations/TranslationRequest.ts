@@ -10,11 +10,11 @@ export interface TranslationRequest {
   readonly targetLanguage: LanguageTag;
 }
 
-// posts carry title/description; messages carry body only.
+// Posts carry title/description; comments and messages carry body; users carry biography.
 const FIELDS_BY_TYPE: Record<ContentType, readonly TranslationField[]> = {
   post: ['title', 'description'],
+  comment: ['body'],
   message: ['body'],
-  ride_listing: ['title', 'description'],
   user: ['biography'],
 };
 

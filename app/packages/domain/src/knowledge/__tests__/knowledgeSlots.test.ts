@@ -128,12 +128,22 @@ describe('booking predicates', () => {
     expect(canBookKnowledgeSlot(open, new Date('2030-01-02T10:00:00Z'))).toBe(false);
   });
 
-  it('a session can be completed from 15 minutes before it starts, while active', () => {
+  it('an approved session can be completed from 15 minutes before it starts, by either side', () => {
     const booking = { status: 'confirmed' as const, startsAt: '2030-01-01T10:15:00Z' };
-    expect(canCompleteKnowledgeSession(booking, NOW)).toBe(true);
-    expect(canCompleteKnowledgeSession({ ...booking, startsAt: '2030-01-01T10:16:00Z' }, NOW)).toBe(false);
-    expect(canCompleteKnowledgeSession({ ...booking, status: 'cancelled' }, NOW)).toBe(false);
-    expect(canCompleteKnowledgeSession({ status: 'reserved', startsAt: null }, NOW)).toBe(true);
+    expect(canCompleteKnowledgeSession(booking, 'owner', NOW)).toBe(true);
+    expect(canCompleteKnowledgeSession(booking, 'recipient', NOW)).toBe(true);
+    expect(canCompleteKnowledgeSession({ ...booking, startsAt: '2030-01-01T10:16:00Z' }, 'owner', NOW)).toBe(false);
+    expect(canCompleteKnowledgeSession({ ...booking, status: 'cancelled' }, 'owner', NOW)).toBe(false);
+    expect(canCompleteKnowledgeSession({ status: 'confirmed', startsAt: null }, 'recipient', NOW)).toBe(true);
+  });
+
+  // Regression: the learner was offered "session held" on a request the giver had not answered,
+  // and the server refused it (`handoff_not_confirmed`).
+  it('a booking that still waits for the giver cannot be completed', () => {
+    const waiting = { status: 'reserved' as const, startsAt: '2030-01-01T10:05:00Z' };
+    expect(canCompleteKnowledgeSession(waiting, 'recipient', NOW)).toBe(false);
+    expect(canCompleteKnowledgeSession(waiting, 'owner', NOW)).toBe(false);
+    expect(canCompleteKnowledgeSession({ status: 'reserved', startsAt: null }, 'recipient', NOW)).toBe(false);
   });
 
   it('knows the booking statuses', () => {

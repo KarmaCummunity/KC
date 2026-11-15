@@ -23,12 +23,26 @@ export interface PostRepositoryContractContext {
   newActor(): Promise<PostRepositoryActor>;
   /** An address whose city the implementation knows (cities are a lookup table). */
   readonly address: Address;
+  /**
+   * The production baseline's rules that differ from the first implementation (default: the first):
+   * - `reopenCountReadable: false` — the count is an internal moderation signal, a reader sees 0;
+   * - `deleteKeepsPostForReopen: true` — deleting a published post moves it to `deleted_no_recipient`
+   *   for seven days (undone by a reopen) instead of removing it; a post already in that state cannot
+   *   be deleted again.
+   */
+  readonly reopenCountReadable?: boolean;
+  readonly deleteKeepsPostForReopen?: boolean;
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-/** Minimal valid Give post for `ownerId`; override what a case is about. */
+/** One photo under the owner's storage prefix: a Give post needs at least one (D132). A file belongs to one post, so each call names a new one. */
+function onePhoto(ownerId: string): CreatePostInput['mediaAssets'] {
+  return [{ path: `${ownerId}/${crypto.randomUUID()}.jpg`, mimeType: 'image/jpeg', sizeBytes: 1000 }];
+}
+
+/** Minimal valid Give post (with its required photo) for `ownerId`; override what a case is about. */
 export function newPostInput(
   ownerId: string,
   address: Address,
@@ -45,7 +59,7 @@ export function newPostInput(
     locationDisplayLevel: 'CityOnly',
     itemCondition: 'Good',
     urgency: null,
-    mediaAssets: [],
+    mediaAssets: onePhoto(ownerId),
     ...overrides,
   };
 }
@@ -71,11 +85,30 @@ const createReturnsOpenPost: ContractCase<Ctx> = {
     assertEqual(post.visibility, 'Public', 'visibility');
     assertEqual(post.itemCondition, 'Good', 'itemCondition');
     assertEqual(post.address.city, ctx.address.city, 'address.city');
-    assertEqual(post.mediaAssets.length, 0, 'mediaAssets of a post created without media');
+    assertEqual(post.mediaAssets.length, 1, 'mediaAssets of a post created with one photo');
+    assertEqual(post.mediaAssets[0]?.path, input.mediaAssets[0]?.path, 'the photo is stored with the post');
     assertEqual(post.recipient, null, 'recipient of a new post');
     assertEqual(post.reopenCount, 0, 'reopenCount of a new post');
     assertEqual(post.deleteAfter, null, 'deleteAfter of a new post');
     assertTrue(Number.isFinite(Date.parse(post.createdAt)), 'createdAt is a timestamp');
+  },
+};
+
+// D132 (KC#2020): an offer needs a photo; the server checks it when the post commits, so an
+// implementation must refuse the photo-less offer as a whole (no post left behind).
+const createOfferNeedsPhoto: ContractCase<Ctx> = {
+  name: 'create: an offer without a photo is refused; a request without one is created',
+  async run(ctx) {
+    const actor = await ctx.newActor();
+    await assertRejectsWithCode(
+      createFor(actor, ctx, { mediaAssets: [] }),
+      'image_required_for_give',
+      'Give post without a photo',
+    );
+    assertEqual(await actor.repo.countOpenByUser(actor.userId), 0, 'no post is left behind');
+
+    const request = await createFor(actor, ctx, { type: 'Request', itemCondition: null, mediaAssets: [] });
+    assertEqual(request.mediaAssets.length, 0, 'a request is created without a photo');
   },
 };
 
@@ -185,7 +218,7 @@ const reopenAfterClose: ContractCase<Ctx> = {
     await actor.repo.close(created.postId, null);
     const reopened = await actor.repo.reopen(created.postId);
     assertEqual(reopened.status, 'open', 'status after reopen');
-    assertEqual(reopened.reopenCount, 1, 'reopenCount after one reopen');
+    if (ctx.reopenCountReadable !== false) assertEqual(reopened.reopenCount, 1, 'reopenCount after one reopen');
     assertEqual(reopened.deleteAfter, null, 'deleteAfter after reopen');
     await assertRejectsWithCode(actor.repo.reopen(created.postId), 'closure_wrong_status', 'reopen of an open post');
   },
@@ -200,6 +233,12 @@ const deleteUnlinkedOwnPost: ContractCase<Ctx> = {
     const actor = await ctx.newActor();
     const open = await createFor(actor, ctx);
     await actor.repo.delete(open.postId);
+    if (ctx.deleteKeepsPostForReopen) {
+      const kept = await actor.repo.findById(open.postId, actor.userId);
+      assertEqual(kept?.status, 'deleted_no_recipient', 'the deleted post is kept for its seven-day window');
+      await assertRejectsWithCode(actor.repo.delete(open.postId), 'post_owner_delete_forbidden', 'delete twice');
+      return;
+    }
     assertEqual(await actor.repo.findById(open.postId, actor.userId), null, 'findById after delete');
     await assertRejectsWithCode(actor.repo.delete(open.postId), 'post_owner_delete_forbidden', 'delete twice');
     const closed = await createFor(actor, ctx);
@@ -213,6 +252,7 @@ const deleteUnlinkedOwnPost: ContractCase<Ctx> = {
 export function postRepositoryContract(): ContractCase<PostRepositoryContractContext>[] {
   return [
     createReturnsOpenPost,
+    createOfferNeedsPhoto,
     findByIdRoundTrip,
     updatePatchesFields,
     myPostsNewestFirstPaged,

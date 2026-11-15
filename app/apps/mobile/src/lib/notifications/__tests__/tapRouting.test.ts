@@ -22,7 +22,7 @@ const chatTap: Partial<PushData> = {
   category: 'social',
   kind: 'chat_message',
   notification_id: 'n1',
-  chat_id: UUID,
+  entity: { type: 'chat', id: UUID },
 };
 
 describe('isReadyToRoute', () => {
@@ -46,13 +46,17 @@ describe('toConcretePath', () => {
 });
 
 describe('decideTapAction', () => {
-  it('drops payloads that resolve to no allow-listed route', () => {
-    expect(decideTapAction({ kind: 'nope' } as unknown as Partial<PushData>, READY)).toEqual({
-      kind: 'drop',
-    });
+  it('drops a payload that is not a notification', () => {
+    expect(decideTapAction({} as Partial<PushData>, READY)).toEqual({ kind: 'drop' });
+    expect(decideTapAction({ kind: 7 } as unknown as Partial<PushData>, READY)).toEqual({ kind: 'drop' });
+  });
+
+  it('opens the notification centre for an unknown kind or a malformed id', () => {
+    const inbox = { kind: 'push', route: { pathname: '/notifications/inbox', params: {} } };
+    expect(decideTapAction({ kind: 'nope' } as unknown as Partial<PushData>, READY)).toEqual(inbox);
     expect(
-      decideTapAction({ kind: 'chat_message', chat_id: 'not-a-uuid' } as Partial<PushData>, READY),
-    ).toEqual({ kind: 'drop' });
+      decideTapAction({ kind: 'chat_message', entity: { type: 'chat', id: 'not-a-uuid' } }, READY),
+    ).toEqual(inbox);
   });
 
   it('pushes immediately when the app is ready', () => {

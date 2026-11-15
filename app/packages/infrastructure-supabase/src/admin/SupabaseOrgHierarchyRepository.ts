@@ -1,3 +1,5 @@
+// FR-ADMIN-025 / FR-ADMIN-028 — the staff hierarchy (org tree, layered census, manager edge) and
+// the super admin's change of an organization's page slug, over the RPCs of migrations 0011–0014.
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { IOrgHierarchyRepository } from '@kc/application';
 import {
@@ -8,135 +10,122 @@ import {
   type OrgHierarchyErrorCode,
   parseAdminRole,
 } from '@kc/domain';
+import type { Database } from '../database.types';
+import { toBackendUnavailable, type BackendErrorLike } from '../rpc/backendUnavailable';
+import type { CallResult } from '../rpc/mapRpcError';
 
-interface OrgTreeRow {
-  grant_id: string;
-  user_id: string;
-  display_name: string | null;
-  avatar_url: string | null;
-  role: string;
-  scope_org_id: string | null;
-  effective_org_id: string | null;
-  org_name: string | null;
-  is_platform: boolean | null;
-  manager_grant_id: string | null;
-  last_seen_at: string | null;
-}
+type Client = SupabaseClient<Database>;
+/** One row of `admin_org_tree` (migration 0012). */
+type TreeRow = Database['public']['Functions']['admin_org_tree']['Returns'][number];
 
-const KNOWN_ERROR_MESSAGES: ReadonlySet<OrgHierarchyErrorCode> = new Set([
-  'forbidden',
-  'forbidden_manage',
-  'invalid_input',
-  'invalid_manager',
-  'grant_not_found',
-  'grant_already_revoked',
-  'manager_not_found',
-  'manager_revoked',
-  'manager_other_org',
-  'manager_cycle',
-  'manager_rank',
+/** Refusals of admin_set_manager, the tree and census reads and admin_set_org_slug. */
+const KNOWN_ERROR_MESSAGES: ReadonlySet<string> = new Set<OrgHierarchyErrorCode>([
+  'forbidden', 'forbidden_manage', 'invalid_input', 'invalid_manager', 'grant_not_found', 'grant_already_revoked',
+  'manager_not_found', 'manager_revoked', 'manager_other_org', 'manager_cycle', 'manager_rank',
+  'invalid_slug', 'slug_taken', 'org_not_found',
 ]);
 
-function mapRpcError(err: { message?: string; code?: string } | null): OrgHierarchyError {
-  const raw = err?.message ?? '';
-  if ((KNOWN_ERROR_MESSAGES as Set<string>).has(raw)) {
-    return new OrgHierarchyError(raw as OrgHierarchyErrorCode, raw);
-  }
-  if (err?.code === '42501') {
-    return new OrgHierarchyError('forbidden', 'forbidden');
-  }
-  return new OrgHierarchyError('unknown', raw || 'unknown_org_hierarchy_rpc_error');
+function toHierarchyError(err: BackendErrorLike): OrgHierarchyError {
+  const raw = err.message ?? '';
+  if (KNOWN_ERROR_MESSAGES.has(raw)) return new OrgHierarchyError(raw as OrgHierarchyErrorCode, raw);
+  // A signed-out caller and an opaque permission failure both mean "no authority".
+  if (raw === 'unauthenticated' || err.code === '42501') return new OrgHierarchyError('forbidden', 'forbidden');
+  return new OrgHierarchyError('unknown', raw || 'unknown_org_hierarchy_error');
 }
 
-/** Shape of one `orgs[]` entry in the `admin_hierarchy_census` JSON payload. */
-interface CensusOrgJson {
-  org_id?: unknown;
-  name?: unknown;
-  is_platform?: unknown;
-  is_verified?: unknown;
-  affiliated_count?: unknown;
+function unwrap<T>(object: string, result: CallResult<T>): T {
+  if (!result.error) return result.data;
+  throw toBackendUnavailable(object, result.error) ?? toHierarchyError(result.error);
 }
 
-/** Non-negative integer from an untyped JSON value (0 for anything else). */
-function toCount(value: unknown): number {
-  return typeof value === 'number' && Number.isFinite(value) && value > 0 ? Math.floor(value) : 0;
-}
-
-function mapCensusOrg(raw: CensusOrgJson): HierarchyOrgCensus | null {
-  if (typeof raw.org_id !== 'string') return null;
-  return {
-    orgId: raw.org_id,
-    name: typeof raw.name === 'string' ? raw.name : '',
-    isPlatform: raw.is_platform === true,
-    isVerified: raw.is_verified === true,
-    affiliatedCount: toCount(raw.affiliated_count),
-  };
-}
-
-/** Parse the census JSON defensively: malformed org entries are dropped and
- *  missing counts read as zero, so a partial payload never crashes the view. */
-function mapCensus(data: unknown): HierarchyCensus {
-  const obj = (data ?? {}) as { community_total?: unknown; role_holder_total?: unknown; orgs?: unknown };
-  const orgs: HierarchyOrgCensus[] = [];
-  if (Array.isArray(obj.orgs)) {
-    for (const raw of obj.orgs as CensusOrgJson[]) {
-      const mapped = mapCensusOrg(raw ?? {});
-      if (mapped !== null) orgs.push(mapped);
-    }
-  }
-  return {
-    communityTotal: toCount(obj.community_total),
-    roleHolderTotal: toCount(obj.role_holder_total),
-    orgs,
-  };
-}
-
-function mapRow(row: OrgTreeRow): OrgTreeMember | null {
+/** A tree row as a node; null for a role this app does not know. */
+export function mapTreeMember(row: TreeRow): OrgTreeMember | null {
   const role = parseAdminRole(row.role);
   if (role === null) return null;
   return {
     grantId: row.grant_id,
     userId: row.user_id,
-    displayName: row.display_name,
-    avatarUrl: row.avatar_url,
+    displayName: row.display_name ?? null,
+    avatarUrl: row.avatar_url ?? null,
     role,
-    scopeOrgId: row.scope_org_id,
-    orgId: row.effective_org_id,
-    orgName: row.org_name,
+    scopeOrgId: row.scope_org_id ?? null,
+    orgId: row.effective_org_id ?? null,
+    orgName: row.org_name ?? null,
     isPlatform: row.is_platform === true,
-    managerGrantId: row.manager_grant_id,
-    lastSeenAt: row.last_seen_at === null ? null : new Date(row.last_seen_at),
+    managerGrantId: row.manager_grant_id ?? null,
+    lastSeenAt: row.last_seen_at ? new Date(row.last_seen_at) : null,
   };
 }
 
+/** Whether a JSON value is a plain object. */
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+/** One organization of the census payload; null when its shape is not the expected one. */
+function parseCensusOrg(value: unknown): HierarchyOrgCensus | null {
+  if (!isRecord(value) || typeof value.org_id !== 'string' || typeof value.name !== 'string') return null;
+  return {
+    orgId: value.org_id,
+    slug: typeof value.slug === 'string' ? value.slug : '',
+    name: value.name,
+    isPlatform: value.is_platform === true,
+    isVerified: value.is_verified === true,
+    affiliatedCount: typeof value.affiliated_count === 'number' ? value.affiliated_count : 0,
+  };
+}
+
+/** The `admin_hierarchy_census` JSON object as the domain census (missing counts read as 0). */
+export function parseHierarchyCensus(value: unknown): HierarchyCensus {
+  const payload = isRecord(value) ? value : {};
+  const orgs = Array.isArray(payload.orgs) ? payload.orgs : [];
+  return {
+    communityTotal: typeof payload.community_total === 'number' ? payload.community_total : 0,
+    roleHolderTotal: typeof payload.role_holder_total === 'number' ? payload.role_holder_total : 0,
+    orgs: orgs.flatMap((org) => {
+      const parsed = parseCensusOrg(org);
+      return parsed ? [parsed] : [];
+    }),
+  };
+}
+
+/**
+ * The tree and the census come from `admin_org_tree` and `admin_hierarchy_census`, which scope
+ * the rows to the organizations the caller's grants reach (everything for platform admins) and
+ * carry the names and last-seen times the grant rows alone cannot. A manager is changed, or
+ * (super admin only) cleared, with `admin_set_manager`.
+ */
 export class SupabaseOrgHierarchyRepository implements IOrgHierarchyRepository {
-  constructor(private readonly client: SupabaseClient) {}
+  constructor(private readonly client: Client) {}
 
   async getOrgTree(orgId: string | null): Promise<readonly OrgTreeMember[]> {
-    const { data, error } = await this.client.rpc('admin_org_tree', {
-      p_org_id: orgId,
+    const rows = unwrap(
+      'rpc:admin_org_tree',
+      await this.client.rpc('admin_org_tree', orgId === null ? {} : { p_org_id: orgId }),
+    ) ?? [];
+    return rows.flatMap((row) => {
+      const node = mapTreeMember(row);
+      return node ? [node] : [];
     });
-    if (error) throw mapRpcError(error);
-    if (!Array.isArray(data)) return [];
-    const out: OrgTreeMember[] = [];
-    for (const raw of data as OrgTreeRow[]) {
-      const mapped = mapRow(raw);
-      if (mapped !== null) out.push(mapped);
-    }
-    return out;
   }
 
   async setManager(grantId: string, managerGrantId: string | null): Promise<void> {
-    const { error } = await this.client.rpc('admin_set_manager', {
-      p_grant_id: grantId,
-      p_manager_grant_id: managerGrantId,
-    });
-    if (error) throw mapRpcError(error);
+    // No manager argument means "detach to the top of the tree" (super admin only, server-checked).
+    unwrap(
+      'rpc:admin_set_manager',
+      await this.client.rpc('admin_set_manager', managerGrantId === null
+        ? { p_grant_id: grantId }
+        : { p_grant_id: grantId, p_manager_grant_id: managerGrantId }),
+    );
   }
 
   async getHierarchyCensus(): Promise<HierarchyCensus> {
-    const { data, error } = await this.client.rpc('admin_hierarchy_census');
-    if (error) throw mapRpcError(error);
-    return mapCensus(data);
+    return parseHierarchyCensus(unwrap('rpc:admin_hierarchy_census', await this.client.rpc('admin_hierarchy_census')));
+  }
+
+  async setOrgSlug(orgId: string, slug: string): Promise<string> {
+    const stored = unwrap('rpc:admin_set_org_slug', await this.client.rpc('admin_set_org_slug', { p_org_id: orgId, p_slug: slug }));
+    if (typeof stored !== 'string') throw new OrgHierarchyError('unknown', 'admin_set_org_slug returned no slug');
+    return stored;
   }
 }

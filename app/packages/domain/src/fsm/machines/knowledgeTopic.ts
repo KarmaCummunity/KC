@@ -2,14 +2,14 @@ import { defineMachine } from '../machine';
 
 /**
  * Knowledge topic (`knowledge_topics.status`; spec `docs/spec/requirements/23_knowledge.md`
- * FR-KNOW-001, migration `0570`).
+ * FR-KNOW-001 AC5).
  *
- * - A member proposes a topic; an operator approves it (`proposed → active`) or merges it into an
- *   active topic, as can be done with an active topic too (`→ merged`, with `merged_into_id`).
- * - `merged` is final. Rejecting a proposal deletes the row, so it is not a state.
- * - Approving an active topic is a same-status no-op: it keeps the original `approved_by`.
+ * - A suggested topic is approved (`proposed → active`) or folded into another topic, as an
+ *   active topic can be too (`→ merged`, with `merged_into_id`).
+ * - `merged` is final: the slug of a merged topic keeps resolving to its replacement.
+ *   Rejecting a suggestion deletes the row, so it is not a state.
  *
- * SQL copy: `supabase/migrations/0702_fsm_comments_knowledge_topics.sql`.
+ * SQL copy: the forward migration `knowledge_topic_embedding_job_machines` (`supabase/migrations/`).
  */
 export const knowledgeTopicMachine = defineMachine({
   id: 'knowledge_topic',

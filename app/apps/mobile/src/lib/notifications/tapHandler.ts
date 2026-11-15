@@ -7,9 +7,9 @@ import { useAuthStore } from '../../store/authStore';
 import { useRedirectIntentStore } from '../../store/redirectIntentStore';
 import { decideTapAction, isReadyToRoute, type ResolvedRoute } from './tapRouting';
 
-// Routes are derived from the typed notification `kind` against a closed
-// allow-list (pushRouteAllowlist / TD-102), never from attacker-controllable
-// `data.route`. tapRouting.ts owns that resolution plus the cold-start gating.
+// Routes are derived from the typed notification `kind` against a closed map
+// (notificationRoutes / TD-102), never from a path carried in the payload.
+// tapRouting.ts owns that resolution plus the cold-start gating.
 
 function pushRoute(route: ResolvedRoute): void {
   router.push({ pathname: route.pathname as never, params: route.params });

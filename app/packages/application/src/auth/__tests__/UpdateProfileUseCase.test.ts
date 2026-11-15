@@ -218,7 +218,6 @@ describe('UpdateProfileUseCase', () => {
     expect(spy.mock.calls[0]?.[1]).toMatchObject({
       displayName: 'נוה ע',
       city: 'haifa',
-      cityName: 'חיפה',
       biography: 'אוהב לתת',
       avatarUrl: 'https://example.com/a.jpg',
       profileStreet: 'רוטשילד',

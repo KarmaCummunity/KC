@@ -8,6 +8,13 @@ describe('AdminRole', () => {
     }
   });
 
+  it('knows every role of the database vocabulary (kc_private.admin_roles)', () => {
+    for (const r of ['admin', 'org_treasurer', 'org_accountant', 'volunteer'] as const) {
+      expect(parseAdminRole(r)).toBe<AdminRole>(r);
+    }
+    expect(KNOWN_ADMIN_ROLES).toHaveLength(14);
+  });
+
   it('parseAdminRole returns the role for a known string', () => {
     expect(parseAdminRole('moderator')).toBe<AdminRole>('moderator');
   });

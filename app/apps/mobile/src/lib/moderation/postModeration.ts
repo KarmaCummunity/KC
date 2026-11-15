@@ -1,5 +1,5 @@
 // D33 / D61 — post moderation statuses as the owner and admins see them.
-import type { PostStatus, PostStatusBeforeAdminRemoval } from '@kc/domain';
+import { postAdminActions, type PostStatus, type PostStatusBeforeAdminRemoval } from '@kc/domain';
 
 /** Statuses an owner finds in the profile "removed" tab. */
 export const OWNER_MODERATED_POST_STATUSES: readonly PostStatus[] = ['removed_admin', 'hidden_pending_review'];
@@ -16,11 +16,12 @@ export function adminPostActions(
   status: string,
   perms: { canRemove: boolean; canRestore: boolean },
 ): { remove: boolean; restore: boolean } {
-  const hidden = status === 'hidden_pending_review';
+  // What staff may do with the post comes from the post machine (remove whatever is not
+  // removed yet; give back a removed or a hidden post); the permissions narrow it.
+  const actions = postAdminActions(status);
   return {
-    // Any post that is not already removed can be removed (`admin_remove_post`, 0682).
-    remove: perms.canRemove && status !== 'removed_admin',
-    restore: perms.canRestore && (status === 'removed_admin' || hidden),
+    remove: perms.canRemove && actions.remove,
+    restore: perms.canRestore && actions.restore,
   };
 }
 

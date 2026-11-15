@@ -61,11 +61,6 @@ export const challenges = {
     completed: 'השלמתם את האתגר',
     noStreak: 'באתגר גמיש אין רצף, רק ספירת מחזורים.',
     join: 'הצטרפות לאתגר',
-    joinProfileTitle: 'להציג את האתגר בפרופיל שלכם?',
-    joinProfileBody:
-      'הפוסט של האתגר יקושר אליכם. אפשר להציג אותו בטאב הפוסטים הפתוחים בפרופיל, או לשמור אותו רק אצלכם ב«מוסתרים».',
-    joinProfileShow: 'כן, להציג בפרופיל',
-    joinProfileHidden: 'לא, רק מוסתר אצלי',
     leave: 'עזיבת האתגר',
     leaveTitle: 'לעזוב את האתגר?',
     leaveBody: 'הדיווחים שלכם באתגר יימחקו.',
@@ -93,7 +88,7 @@ export const challenges = {
   errors: {
     generic: 'משהו השתבש. נסו שוב.',
     title_too_short: 'שם האתגר קצר מדי (לפחות 3 תווים).',
-    title_too_long: 'שם האתגר ארוך מדי (עד 120 תווים).',
+    title_too_long: 'שם האתגר ארוך מדי (עד 80 תווים).',
     description_too_long: 'התיאור ארוך מדי (עד 2,000 תווים).',
     topic_too_long: 'הנושא ארוך מדי (עד 50 תווים).',
     invalid_scope: 'בחרו מי רואה את האתגר.',

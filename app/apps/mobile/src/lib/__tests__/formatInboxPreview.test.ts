@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Message } from '@kc/domain';
-import { formatInboxPreview } from '../formatInboxPreview';
+import { formatInboxPreview, inboxMediaIcon } from '../formatInboxPreview';
 
 // Stub TFunction: returns the i18n key verbatim so we can assert prefixes
 // without bringing the full i18next runtime into the test bundle.
@@ -58,5 +58,23 @@ describe('formatInboxPreview — closure system messages (TD-148)', () => {
       systemPayload: { kind: 'post_closed', status: 'closed_delivered', recipient_user_id: null },
     });
     expect(formatInboxPreview(closed, t)).toBe('chat.inboxSystemPrefix chat.systemPostClosed.deliveredToOther');
+  });
+
+  it('shows a captionless media message by its icon alone, and a caption next to it', () => {
+    const photo = msg({ kind: 'media', body: '', mediaPayload: { type: 'image' } });
+    expect(inboxMediaIcon(photo)).toBe('image-outline');
+    expect(formatInboxPreview(photo, t)).toBe('');
+    expect(formatInboxPreview({ ...photo, body: 'look' }, t)).toBe('look');
+  });
+
+  it('gives no media icon to other messages or to an unknown media type', () => {
+    expect(inboxMediaIcon(msg())).toBeNull();
+    expect(inboxMediaIcon(msg({ kind: 'media', body: '', mediaPayload: { type: 'hologram' } }))).toBeNull();
+    expect(inboxMediaIcon(null)).toBeNull();
+  });
+
+  it('words a delivered post closure from the system payload', () => {
+    const closed = msg({ kind: 'system', body: '', systemPayload: { kind: 'post_closed', status: 'closed_delivered', delivered_to_chat_member: true } });
+    expect(formatInboxPreview(closed, t)).toBe('chat.inboxSystemPrefix chat.systemPostClosed.deliveredToYou');
   });
 });

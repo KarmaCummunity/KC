@@ -73,10 +73,11 @@ describe('BookKnowledgeSeatUseCase', () => {
 });
 
 describe('CompleteKnowledgeSessionUseCase', () => {
-  it('completes a session that starts within 15 minutes', async () => {
+  it('completes an approved session that starts within 15 minutes', async () => {
     const repo = new FakeKnowledgeBookingRepository();
     await new CompleteKnowledgeSessionUseCase(repo).execute(
       { handoffId: 'h1', status: 'confirmed', startsAt: '2030-01-01T10:10:00Z' },
+      'recipient',
       NOW,
     );
     expect(repo.calls).toEqual([['completeSession', 'h1']]);
@@ -85,10 +86,20 @@ describe('CompleteKnowledgeSessionUseCase', () => {
   it('refuses a session that is still far ahead or no longer active', async () => {
     const repo = new FakeKnowledgeBookingRepository();
     const uc = new CompleteKnowledgeSessionUseCase(repo);
-    await expect(uc.execute({ handoffId: 'h1', status: 'confirmed', startsAt: '2030-01-02T10:00:00Z' }, NOW)).rejects.toMatchObject({
+    await expect(
+      uc.execute({ handoffId: 'h1', status: 'confirmed', startsAt: '2030-01-02T10:00:00Z' }, 'owner', NOW),
+    ).rejects.toMatchObject({ code: 'session_not_started' });
+    await expect(uc.execute({ handoffId: 'h1', status: 'cancelled', startsAt: null }, 'owner', NOW)).rejects.toMatchObject({
       code: 'session_not_started',
     });
-    await expect(uc.execute({ handoffId: 'h1', status: 'cancelled', startsAt: null }, NOW)).rejects.toMatchObject({
+    expect(repo.calls).toEqual([]);
+  });
+
+  // Regression: a request the giver has not answered never reaches the server, which refuses it.
+  it('refuses a booking that still waits for the giver', async () => {
+    const repo = new FakeKnowledgeBookingRepository();
+    const waiting = { handoffId: 'h1', status: 'reserved' as const, startsAt: '2030-01-01T10:05:00Z' };
+    await expect(new CompleteKnowledgeSessionUseCase(repo).execute(waiting, 'recipient', NOW)).rejects.toMatchObject({
       code: 'session_not_started',
     });
     expect(repo.calls).toEqual([]);

@@ -15,6 +15,7 @@ import {
   formIntegerInputProps,
   formStreetNumberInputProps,
 } from '../../../lib/platform/formTextInputHints';
+import { valueOrNull } from '../../../lib/backendAvailability';
 
 interface Props {
   readonly listingId: string;
@@ -28,7 +29,7 @@ export function HousingHostPrivateDetailsEditor({ listingId, cityId }: Props) {
   const { busy, run } = useHousingAction(listingId);
   const saved = useQuery({
     queryKey: housingQueryKeys.privateDetails(listingId),
-    queryFn: () => housingUseCases.privateDetails().execute(listingId),
+    queryFn: () => valueOrNull(() => housingUseCases.privateDetails().execute(listingId)),
   });
   const [editing, setEditing] = useState(false);
   const [streetId, setStreetId] = useState<number | null>(null);

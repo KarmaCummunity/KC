@@ -16,7 +16,7 @@
  * **Skips (transitional / technical):**
  * - `docs/`, `PRD_V2_NOT_FOR_MVP/`, `app/apps/mobile/app.json` (Expo metadata).
  * - `app/apps/mobile/src/i18n/**` — canonical locale bundles (`he`, future `en`, etc.).
- * - `app/apps/mobile/web-server/i18n/**` — web-server locale bundles (Hono server has no React/i18next runtime).
+ * - `app/apps/mobile/web-edge/i18n/**` — edge locale bundle (the Workers runtime has no React/i18next).
  * - `supabase/migrations/**`, `supabase/seed.sql` — excluded until SQL adopts D-24 indirection.
  * - `supabase/tests/**` — DB regression tests: fixtures, like `__tests__/**`.
  * - `supabase/functions/**` — Edge bundles (including `i18n.json`).
@@ -130,16 +130,18 @@ function isSkippedContentTreeRel(relPosix) {
     return true;
   }
   if (relPosix === "supabase/seed.sql") return true;
+  // Archived pre-baseline material (legacy DB tests, the old demo seed): history, not UI copy.
+  if (relPosix === "supabase/archive" || relPosix.startsWith("supabase/archive/")) return true;
   // DB regression tests (supabase/tests/**) are fixtures like __tests__/**, not UI copy.
   if (relPosix === "supabase/tests" || relPosix.startsWith("supabase/tests/")) return true;
-  // Fake Hebrew test data for kc-dev (supabase/seed/kc-dev/**) – data, not UI copy.
+  // Seed data (reference, content, e2e) – data, not UI copy.
   if (relPosix.startsWith("supabase/seed/")) return true;
   if (relPosix === "app/apps/mobile/src/i18n" || relPosix.startsWith("app/apps/mobile/src/i18n/")) {
     return true;
   }
   if (
-    relPosix === "app/apps/mobile/web-server/i18n" ||
-    relPosix.startsWith("app/apps/mobile/web-server/i18n/")
+    relPosix === "app/apps/mobile/web-edge/i18n" ||
+    relPosix.startsWith("app/apps/mobile/web-edge/i18n/")
   ) {
     return true;
   }

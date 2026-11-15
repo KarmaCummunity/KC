@@ -2,11 +2,11 @@
 // knowledge, time): the world header in the TopBar (title menu of the world's screens, map,
 // filter button), a one-line intro, and the world's feed. The feed is the main feed narrowed to
 // the world: the same post card (`PostFeedList` → `PostCardGrid`) and the same filter sheet
-// (`PostFilterSheet`: search, sort, filters) with the world locked.
+// (`PostFilterSheet`: search, sort, filters) with the world locked. The feed ends with a short
+// list of the world's links and a button to its "links and knowledge" screen.
 import React, { useCallback, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import type { DonationCategorySlug } from '@kc/domain';
 import { Screen } from '../ui/Screen';
 import { PostFeedList } from '../PostFeedList';
 import { PostFilterSheet } from '../PostFilterSheet';
@@ -15,16 +15,14 @@ import { useWorldPostFeed, type WorldPostFeedState } from '../../hooks/useWorldP
 import { createRouteFor } from '../../lib/unifiedCreate/createCategories';
 import { WorldHubHeader, type WorldHubHeaderProps } from './WorldHubHeader';
 import { FEED_MATCHES_EVERY_N_POSTS } from '../../lib/feed/feedListLayout';
-import { WorldLinksSection } from './WorldLinksSection';
+import { WorldLinksPreview } from './WorldLinksPreview';
 import { useWorldHeader } from './useWorldHeader';
 
 export type WorldMarketplaceHubProps = WorldHubHeaderProps & {
   readonly worldSlug: string;
-  /** Community links list shown under the feed (FR-DONATE-007). */
-  readonly linksCategory?: DonationCategorySlug;
 };
 
-export function WorldMarketplaceHub({ worldSlug, linksCategory, subScreens = [], ...headerProps }: WorldMarketplaceHubProps) {
+export function WorldMarketplaceHub({ worldSlug, subScreens = [], ...headerProps }: WorldMarketplaceHubProps) {
   const feed = useWorldPostFeed(worldSlug);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const openFilters = useCallback(() => setFiltersOpen(true), []);
@@ -50,7 +48,7 @@ export function WorldMarketplaceHub({ worldSlug, linksCategory, subScreens = [],
         ListHeaderComponent={<WorldHubHeader {...headerProps} />}
         matchesEveryNPosts={FEED_MATCHES_EVERY_N_POSTS}
         matchesWorldSlug={worldSlug}
-        footer={linksCategory ? <WorldLinksSection categorySlug={linksCategory} /> : null}
+        footer={<WorldLinksPreview worldSlug={worldSlug} />}
         emptyComponent={<WorldFeedEmpty worldSlug={worldSlug} feed={feed} />}
       />
       <PostFilterSheet

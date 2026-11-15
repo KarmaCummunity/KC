@@ -26,10 +26,10 @@ export class BanUserUseCase {
       throw new ModerationForbiddenError();
     }
     if (input.adminId === input.targetUserId) {
-      throw new ModerationError('cannot_ban_self', 'cannot ban self');
+      throw new ModerationError('cannot_sanction_self', 'cannot sanction self');
     }
-    if (await this.repo.isUserAdmin(input.targetUserId)) {
-      throw new ModerationError('cannot_ban_admin', 'target is super admin');
+    if (await this.repo.isPlatformStaff(input.targetUserId)) {
+      throw new ModerationError('cannot_sanction_admin', 'target is platform staff');
     }
     await this.repo.banUser(input.targetUserId, input.reason, input.note);
   }

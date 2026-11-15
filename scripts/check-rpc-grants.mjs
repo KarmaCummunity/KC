@@ -15,7 +15,7 @@
 import { execFileSync } from 'node:child_process';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { RPC_RE, collectSymbols } from './check-rpc-contract.mjs';
+import { RPC_RE, collectSymbols, deferredObjects } from './check-rpc-contract.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DEFAULT_REPO_ROOT = join(__dirname, '..');
@@ -54,10 +54,13 @@ export function parseGrantRows(output) {
 }
 
 /** Lists one error per RPC that is missing from the database or not client-callable. */
-export function findUngrantedRpcs(rpcNames, callable) {
+export function findUngrantedRpcs(rpcNames, callable, deferred = new Set()) {
   const errors = [];
   for (const name of rpcNames) {
     if (!callable.has(name)) {
+      // A function the migration map files under launch tier `later` (behind a flag that is off
+      // at launch) may be missing; a missing function of a launch tier is still an error.
+      if (deferred.has(name)) continue;
       errors.push(`RPC '${name}' is called by the app but no function public.${name} exists`);
     } else if (!callable.get(name)) {
       errors.push(
@@ -84,7 +87,11 @@ function main() {
     process.exit(2);
   }
   const rpcNames = collectClientRpcs();
-  const errors = findUngrantedRpcs(rpcNames, parseGrantRows(queryGrants(dbUrl, rpcNames)));
+  const errors = findUngrantedRpcs(
+    rpcNames,
+    parseGrantRows(queryGrants(dbUrl, rpcNames)),
+    deferredObjects(DEFAULT_REPO_ROOT).rpcs,
+  );
   if (errors.length > 0) {
     console.error(`✗ RPC grant check failed (${errors.length} issue(s)):\n`);
     for (const err of errors) console.error(`  • ${err}`);

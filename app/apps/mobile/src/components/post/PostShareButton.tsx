@@ -25,7 +25,7 @@ export function PostShareButton({ post, placement = 'default' }: Props) {
       style={placement === 'header' ? styles.btnHeader : styles.btn}
       onPress={() => void share()}
       disabled={busy}
-      accessibilityLabel={t('post.detail.shareA11y')}
+      accessibilityLabel={t('share.post.a11y')}
       accessibilityRole="button"
       accessibilityState={{ busy }}
       hitSlop={8}

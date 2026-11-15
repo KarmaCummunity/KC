@@ -1,116 +1,121 @@
-// V2-ADMIN-CRM-8 — Supabase adapter for `crm_contacts`.
+// FR-ADMIN-032 — CRM contacts per organization over the crm_* RPCs (supabase/migrations/0035).
+//
+// Each organization keeps its own book; the server lets only its managers in (org_admin,
+// org_manager, and platform staff for the platform organization). The list is keyset-paged
+// and its total comes from `crm_contact_count` with the same filters.
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type {
-  CrmContactListFilters,
-  CrmContactUpsertInput,
-  ICrmContactsRepository,
-} from '@kc/application';
+import type { CrmContactListFilters, CrmContactUpsertInput, ICrmContactsRepository } from '@kc/application';
 import {
   CrmContactError,
-  type CrmContact,
-  type CrmContactPage,
   parseCrmContactStatus,
+  type CrmContact,
+  type CrmContactErrorCode,
+  type CrmContactPage,
+  type CrmOrg,
 } from '@kc/domain';
+import type { Database, Json } from '../database.types';
+import { toBackendUnavailable, type BackendErrorLike } from '../rpc/backendUnavailable';
+import type { CallResult } from '../rpc/mapRpcError';
+import { asRecord, date, decodeCursor, readPage, str, strings } from './backOfficePaging';
 
-interface ContactRow {
-  contact_id:        string;
-  name:              string;
-  organization:      string | null;
-  email:             string | null;
-  phone:             string | null;
-  role_title:        string | null;
-  notes:             string | null;
-  tags:              string[] | null;
-  status:            string;
-  last_contacted_at: string | null;
-  created_at:        string;
-  updated_at:        string;
-  total_count:       number | string;
+type Client = SupabaseClient<Database>;
+
+const DEFAULT_PAGE = 50;
+
+const KNOWN_ERRORS: ReadonlySet<string> = new Set<CrmContactErrorCode>([
+  'forbidden', 'invalid_name', 'invalid_status', 'invalid_email', 'invalid_phone', 'invalid_input',
+  'contact_not_found',
+]);
+
+function toError(err: BackendErrorLike): CrmContactError {
+  const message = err.message ?? '';
+  if (KNOWN_ERRORS.has(message)) return new CrmContactError(message as CrmContactErrorCode);
+  if (err.code === '42501') return new CrmContactError('forbidden');
+  return new CrmContactError('unknown', message || 'crm call failed');
 }
 
-function toError(err: { message?: string; code?: string } | null): CrmContactError {
-  const msg = err?.message ?? '';
-  if (msg === 'invalid_name')      return new CrmContactError('invalid_name');
-  if (msg === 'invalid_status')    return new CrmContactError('invalid_status');
-  if (msg === 'contact_not_found' || err?.code === 'P0002') {
-    return new CrmContactError('contact_not_found');
-  }
-  if (err?.code === '42501')       return new CrmContactError('forbidden');
-  return new CrmContactError('unknown', msg);
+function unwrap<T>(rpc: string, result: CallResult<T>): T {
+  if (!result.error) return result.data;
+  throw toBackendUnavailable(`rpc:${rpc}`, result.error) ?? toError(result.error);
 }
 
-function mapRow(row: ContactRow): CrmContact | null {
-  const status = parseCrmContactStatus(row.status);
-  if (status === null) return null;
+/** A contact record; null when it is not an object or its status is unknown. */
+export function mapCrmContact(value: Json): CrmContact | null {
+  const row = asRecord(value);
+  if (row === null) return null;
+  const contactId = str(row, 'contact_id');
+  const name = str(row, 'name');
+  const status = parseCrmContactStatus(str(row, 'status'));
+  const createdAt = date(row, 'created_at');
+  if (contactId === null || name === null || status === null || createdAt === null) return null;
   return {
-    contactId:       row.contact_id,
-    name:            row.name,
-    organization:    row.organization,
-    email:           row.email,
-    phone:           row.phone,
-    roleTitle:       row.role_title,
-    notes:           row.notes,
-    tags:            Array.isArray(row.tags) ? row.tags : [],
+    contactId,
+    name,
+    organization: str(row, 'organization'),
+    email: str(row, 'email'),
+    phone: str(row, 'phone'),
+    roleTitle: str(row, 'role_title'),
+    notes: str(row, 'notes'),
+    tags: strings(row, 'tags'),
     status,
-    lastContactedAt: row.last_contacted_at === null ? null : new Date(row.last_contacted_at),
-    createdAt:       new Date(row.created_at),
-    updatedAt:       new Date(row.updated_at),
+    lastContactedAt: date(row, 'last_contacted_at'),
+    createdAt,
+    updatedAt: date(row, 'updated_at') ?? createdAt,
   };
 }
 
-function totalOf(rows: readonly ContactRow[]): number {
-  if (rows.length === 0) return 0;
-  const first = rows[0]!.total_count;
-  return typeof first === 'number' ? first : Number.parseInt(first, 10);
-}
+/**
+ * A patch value: `undefined` keeps the field (the RPC reads null as "keep"), and `null`
+ * clears it (the RPC reads an empty string as "clear").
+ */
+const patch = (value: string | null | undefined): string | undefined => (value === null ? '' : value);
 
 export class SupabaseCrmContactsRepository implements ICrmContactsRepository {
-  constructor(private readonly client: SupabaseClient) {}
+  constructor(private readonly client: Client) {}
+
+  async listOrgs(): Promise<readonly CrmOrg[]> {
+    const rows = unwrap('crm_my_orgs', await this.client.rpc('crm_my_orgs'));
+    return (rows ?? []).map((row) => ({ orgId: row.org_id, name: row.name, isPlatform: row.is_platform }));
+  }
 
   async list(filters: CrmContactListFilters): Promise<CrmContactPage> {
-    const { data, error } = await this.client.rpc('crm_contact_list', {
-      p_status: filters.status ?? null,
-      p_query:  filters.query  ?? null,
-      p_tag:    filters.tag    ?? null,
-      p_limit:  filters.limit  ?? 50,
-      p_offset: filters.offset ?? 0,
-    });
-    if (error) throw toError(error);
-    const raw = Array.isArray(data) ? (data as ContactRow[]) : [];
-    const rows: CrmContact[] = [];
-    for (const r of raw) {
-      const m = mapRow(r);
-      if (m !== null) rows.push(m);
-    }
-    return { rows, totalCount: totalOf(raw) };
+    const limit = filters.limit ?? DEFAULT_PAGE;
+    const shared = {
+      p_org_id: filters.orgId,
+      p_status: filters.status,
+      p_query: filters.query?.trim() || undefined,
+      p_tag: filters.tag,
+    };
+    const [rows, total] = await Promise.all([
+      this.client.rpc('crm_contact_list', { ...shared, p_limit: limit, p_cursor: decodeCursor(filters.cursor) ?? undefined }),
+      this.client.rpc('crm_contact_count', shared),
+    ]);
+    const page = readPage(unwrap('crm_contact_list', rows), limit, (row) => mapCrmContact(row.contact));
+    return { ...page, totalCount: unwrap('crm_contact_count', total) ?? 0 };
   }
 
   async upsert(input: CrmContactUpsertInput): Promise<string> {
-    const { data, error } = await this.client.rpc('crm_contact_upsert', {
-      p_contact_id:  input.contactId  ?? null,
-      p_name:        input.name        ?? null,
-      p_organization: input.organization ?? null,
-      p_email:       input.email       ?? null,
-      p_phone:       input.phone       ?? null,
-      p_role_title:  input.roleTitle   ?? null,
-      p_notes:       input.notes       ?? null,
-      p_tags:        input.tags ? [...input.tags] : null,
-      p_status:      input.status      ?? null,
-    });
-    if (error) throw toError(error);
-    if (typeof data !== 'string') {
-      throw new CrmContactError('unknown', 'crm_contact_upsert did not return an id');
-    }
-    return data;
+    const id = unwrap('crm_contact_upsert', await this.client.rpc('crm_contact_upsert', {
+      p_org_id: input.orgId,
+      p_contact_id: input.contactId ?? undefined,
+      p_name: input.name,
+      p_organization: patch(input.organization),
+      p_email: patch(input.email),
+      p_phone: patch(input.phone),
+      p_role_title: patch(input.roleTitle),
+      p_notes: patch(input.notes),
+      p_tags: input.tags ? [...input.tags] : undefined,
+      p_status: input.status,
+    }));
+    if (typeof id !== 'string') throw new CrmContactError('unknown', 'crm_contact_upsert returned no id');
+    return id;
   }
 
   async delete(contactId: string): Promise<void> {
-    const { error } = await this.client.rpc('crm_contact_delete', { p_contact_id: contactId });
-    if (error) throw toError(error);
+    unwrap('crm_contact_delete', await this.client.rpc('crm_contact_delete', { p_contact_id: contactId }));
   }
 
   async markContacted(contactId: string): Promise<void> {
-    const { error } = await this.client.rpc('crm_contact_mark_contacted', { p_contact_id: contactId });
-    if (error) throw toError(error);
+    unwrap('crm_contact_mark_contacted', await this.client.rpc('crm_contact_mark_contacted', { p_contact_id: contactId }));
   }
 }

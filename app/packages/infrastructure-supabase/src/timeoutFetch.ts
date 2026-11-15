@@ -24,9 +24,6 @@ export function isTimeoutError(err: unknown): boolean {
 /** Storage uploads/downloads and Edge Functions can legitimately run long on slow networks. */
 const LONG_RUNNING_PATHS = ['/storage/v1/', '/functions/v1/'];
 
-/** kc-dev demo wipe/seed RPCs (FR-ADMIN-031) routinely run 1–3 minutes server-side. */
-const LONG_RUNNING_RPC_PATHS = ['/rpc/admin_seed_demo_data', '/rpc/admin_wipe_demo_data'];
-
 function requestUrl(input: RequestInfo | URL): string {
   if (typeof input === 'string') return input;
   if (input instanceof URL) return input.href;
@@ -35,10 +32,7 @@ function requestUrl(input: RequestInfo | URL): string {
 
 export function isLongRunningRequest(input: RequestInfo | URL): boolean {
   const url = requestUrl(input);
-  return (
-    LONG_RUNNING_PATHS.some((p) => url.includes(p)) ||
-    LONG_RUNNING_RPC_PATHS.some((p) => url.includes(p))
-  );
+  return LONG_RUNNING_PATHS.some((p) => url.includes(p));
 }
 
 export function createTimeoutFetch(

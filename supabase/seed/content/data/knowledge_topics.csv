@@ -1,0 +1,57 @@
+slug,world_slug,parent_slug,label_he,label_en,description_he,sort_order
+programming,knowledge,,תכנות וטכנולוגיה,Programming & technology,,1
+languages,knowledge,,שפות,Languages,,2
+math-science,knowledge,,מתמטיקה ומדעים,Math & science,,3
+professions,knowledge,,אקדמיה ומקצוע,Academia & professions,,4
+arts,knowledge,,אומנויות,Arts,,5
+cooking,knowledge,,בישול וקולינריה,Cooking,,6
+personal-development,knowledge,,התפתחות אישית,Personal development,,7
+parenting,knowledge,,הורות וחינוך,Parenting & education,,8
+life-skills,knowledge,,כישורי חיים,Life skills,,9
+tradition-heritage,knowledge,,מסורת ומורשת,Tradition & heritage,,10
+rights,knowledge,,זכויות,Rights,,11
+drawing,knowledge,arts,ציור,Drawing & painting,,1
+photography,knowledge,arts,צילום,Photography,,2
+music,knowledge,arts,מוזיקה,Music,,3
+theatre,knowledge,arts,תיאטרון,Theatre,,4
+creative-writing,knowledge,arts,כתיבה יוצרת,Creative writing,,5
+english,knowledge,languages,אנגלית,English,,1
+arabic,knowledge,languages,ערבית,Arabic,,2
+hebrew,knowledge,languages,עברית,Hebrew,,3
+french,knowledge,languages,צרפתית,French,,4
+russian,knowledge,languages,רוסית,Russian,,5
+spanish,knowledge,languages,ספרדית,Spanish,,6
+personal-finance,knowledge,life-skills,כלכלת המשפחה,Personal finance,,1
+insurance,knowledge,life-skills,ביטוח,Insurance,,2
+job-search,knowledge,life-skills,חיפוש עבודה,Job search,,3
+digital-literacy,knowledge,life-skills,אוריינות דיגיטלית,Digital literacy,,4
+mathematics,knowledge,math-science,מתמטיקה,Mathematics,,1
+statistics,knowledge,math-science,סטטיסטיקה,Statistics,,2
+physics,knowledge,math-science,פיזיקה,Physics,,3
+chemistry,knowledge,math-science,כימיה,Chemistry,,4
+biology,knowledge,math-science,ביולוגיה,Biology,,5
+early-childhood,knowledge,parenting,גיל הרך,Early childhood,,1
+teenagers,knowledge,parenting,גיל ההתבגרות,Teenagers,,2
+special-education,knowledge,parenting,חינוך מיוחד,Special education,,3
+time-management,knowledge,personal-development,ניהול זמן,Time management,,1
+meditation,knowledge,personal-development,מדיטציה,Meditation,,2
+public-speaking,knowledge,personal-development,דיבור מול קהל,Public speaking,,3
+law,knowledge,professions,משפטים,Law,,1
+health-sciences,knowledge,professions,מדעי הבריאות,Health sciences,,2
+management,knowledge,professions,ניהול,Management,,3
+economics,knowledge,professions,כלכלה,Economics,,4
+accounting,knowledge,professions,חשבונאות,Accounting,,5
+python,knowledge,programming,פייתון,Python,,1
+javascript,knowledge,programming,ג'אווהסקריפט,JavaScript,,2
+web-development,knowledge,programming,פיתוח ווב,Web development,,3
+artificial-intelligence,knowledge,programming,בינה מלאכותית,Artificial intelligence,,4
+cyber-security,knowledge,programming,סייבר,Cyber security,,5
+data-analysis,knowledge,programming,ניתוח נתונים,Data analysis,,6
+tenant-rights,knowledge,rights,זכויות דיירים,Tenant rights,,1
+employment-rights,knowledge,rights,זכויות עובדים,Employment rights,,2
+consumer-rights,knowledge,rights,זכויות צרכנים,Consumer rights,,3
+social-security,knowledge,rights,ביטוח לאומי,Social security,,4
+immigrant-rights,knowledge,rights,זכויות עולים,New immigrants' rights,,5
+jewish-texts,knowledge,tradition-heritage,מקורות יהודיים,Jewish texts,,1
+israeli-history,knowledge,tradition-heritage,תולדות ישראל,History of Israel,,2
+philosophy,knowledge,tradition-heritage,פילוסופיה,Philosophy,,3

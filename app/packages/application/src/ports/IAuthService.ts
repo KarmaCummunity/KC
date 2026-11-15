@@ -67,7 +67,11 @@ export interface IAuthService {
 
   getCurrentSession(): Promise<AuthSession | null>;
 
-  onSessionChange(listener: (session: AuthSession | null) => void): () => void;
+  /**
+   * `event` is the auth client's event name (e.g. `SIGNED_OUT`, `TOKEN_REFRESHED`); it lets callers
+   * tell an unexpected session loss from a normal one. Listeners may ignore it.
+   */
+  onSessionChange(listener: (session: AuthSession | null, event?: string) => void): () => void;
 
   getGoogleAuthUrl(redirectTo: string): Promise<string>;
 

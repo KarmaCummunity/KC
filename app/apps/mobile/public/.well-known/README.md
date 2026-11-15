@@ -1,57 +1,31 @@
-# Deep-link manifests — fingerprint placeholders
+# Deep-link manifests (universal links / app links)
 
-These two files are served from `/.well-known/` to register the app for
-universal links (iOS) and app links (Android). They are checked into the
-public bundle so the dev web server + production hosting both serve them.
+Served from `/.well-known/` on `karma-community-kc.com`; both files are checked in and copied into the web export.
 
-## Status (TD-66, escalated to 🔴 on audit 2026-05-16)
+| File | Value | Source |
+| --- | --- | --- |
+| `apple-app-site-association` | `HVW3H3DLRB.org.karmacommunity.app` (Apple Team ID + bundle id) | Apple Team ID (also the repo variable `KC_IOS_TEAM_ID`) |
+| `assetlinks.json` | package `org.karmacommunity.app`, two SHA-256 fingerprints | see below |
 
-Both files still contain placeholder fingerprints:
+Android fingerprints (public certificate hashes, not secrets):
 
-- `apple-app-site-association` → `appID: "REPLACE_WITH_APPLE_TEAM_ID.org.karmacommunity.app"`
-- `assetlinks.json` → `sha256_cert_fingerprints: ["REPLACE_WITH_ANDROID_RELEASE_SHA256"]`
+- `FA:D0:06:B5:…:C8:D4:16` — Google Play **app-signing key** (what users' installs are signed with; read from the Play Developer API `generatedApks` for the uploaded versions).
+- `F5:37:49:60:…:1B:B9:80` — **upload key** (the EAS-managed keystore; `eas credentials` → Android, or the Expo GraphQL `androidKeystore.sha256CertificateFingerprint`). It covers builds installed straight from EAS (internal distribution) and any build signed with the upload key.
 
-Until both placeholders are filled in with real values, the universal-link /
-app-link handoff falls back to the in-browser chooser dialog on a release
-build. The custom-scheme `karmacommunity://` fallback still works for dev
-(Expo Go), but production users will see "Open in browser?" instead of a
-direct app open.
+If Play ever rotates the app-signing key, or the EAS keystore changes, update `assetlinks.json` (Play Console → Test and release → App signing, https://play.google.com/console → the app → App integrity → App signing).
 
-## How to fill them
+## Paths
 
-### Apple Team ID
+`/auth/verify*`, `/auth/callback*`, `/post/*`, `/user/*`, `/chat/*` and `/sign-in`. They mirror the Android `intentFilters` in `app.json` (`check-well-known-links.mjs` fails when a claimed prefix is missing). `/sign-in` is the store-review email login (hidden from the UI in production, reachable by link). AASA also carries `webcredentials` for the `webcredentials:` associated domain.
 
-1. Log in to https://developer.apple.com/account → Membership → Team ID
-   (10-character alphanumeric).
-2. Replace `REPLACE_WITH_APPLE_TEAM_ID` in `apple-app-site-association`.
-3. Re-deploy. AASA is fetched by Apple at install time — already-installed
-   builds need to be reinstalled (or wait for the cache to expire).
+## Serving rules
 
-### Android SHA-256 release fingerprint
+Apple and Google fetch these files without following redirects and require JSON. `apple-app-site-association` has no extension, so `scripts/web-headers.mjs` writes an explicit `Content-Type: application/json` rule into the `_headers` of the Cloudflare Pages export (see `web-headers.test.mjs`).
 
-1. Build a release APK via EAS: `eas build --platform android --profile production`.
-2. After the build completes, EAS prints the upload-key SHA-256, or fetch it from:
-   `eas credentials --platform android` → "App signing key fingerprint (SHA-256)".
-3. Replace `REPLACE_WITH_ANDROID_RELEASE_SHA256` in `assetlinks.json` with
-   the colon-delimited fingerprint (e.g. `12:34:56:...`).
-4. Re-deploy. Android verifies app-link manifests on install; existing
-   installs need re-verification (Settings → Apps → KC → Open by default
-   → Verify links).
+Checks:
 
-## Path coverage
+- static lane: `node app/scripts/check-well-known-links.mjs` (no placeholders, ids match `app.json`, paths covered);
+- bundles lane: the same with `--dist` (both files present in the export and the JSON rule in `_headers`);
+- deploy smoke: the `applinks` check (HTTP 200 with no redirect, `application/json`, body equals the deployed commit's file).
 
-Both files now cover every route the app deep-links into:
-
-- `/auth/verify*` — email verification (FR-AUTH-006)
-- `/auth/callback*` — OAuth code exchange (FR-AUTH-003 Google, FR-AUTH-004 Apple)
-- `/post/*` — post detail (push tap from FR-NOTIF-007/008, share intent)
-- `/user/*` — profile (push tap, share intent)
-- `/chat/*` — chat thread (push tap from FR-NOTIF-001)
-
-Before this fix only `/auth/verify*` was claimed — every other deep link
-silently degraded to a web open even after Team ID is filled.
-
-`assetlinks.json` does not carry per-path coverage (Android verifies
-whole-domain), so the paths listed above are enforced by the AASA file
-alone on iOS and by the app's `android:autoVerify` intent filters on
-Android. Both surfaces need the fingerprint replaced before they verify.
+Apple caches the AASA at install time and through its CDN, so a changed file reaches devices after a reinstall or a delay; Android re-verifies on install (Settings → Apps → KC → Open by default).

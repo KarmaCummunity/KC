@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { resolveKeyboardVerticalOffset } from '../keyboardVerticalOffset';
+import { resolveKeyboardAvoidingBehavior, resolveKeyboardVerticalOffset } from '../keyboardVerticalOffset';
 
 describe('resolveKeyboardVerticalOffset', () => {
   it('returns 0 on android and web', () => {
@@ -26,5 +26,19 @@ describe('resolveKeyboardVerticalOffset', () => {
         contentBelowTopSafeArea: true,
       }),
     ).toBe(52);
+  });
+});
+
+describe('resolveKeyboardAvoidingBehavior', () => {
+  it('pads the bottom on iOS', () => {
+    expect(resolveKeyboardAvoidingBehavior('ios')).toBe('padding');
+  });
+
+  it('shrinks the height on android, where edge-to-edge no longer resizes the window', () => {
+    expect(resolveKeyboardAvoidingBehavior('android')).toBe('height');
+  });
+
+  it('does nothing on web, which has no software keyboard', () => {
+    expect(resolveKeyboardAvoidingBehavior('web')).toBeUndefined();
   });
 });

@@ -11,6 +11,10 @@ export type OrgHierarchyErrorCode =
   | 'manager_cycle'
   /** A report must be strictly junior to its new manager (FR-ADMIN-027). */
   | 'manager_rank'
+  /** Page slug change (super admin only): the slug breaks the rule, is taken, or the org is gone. */
+  | 'invalid_slug'
+  | 'slug_taken'
+  | 'org_not_found'
   | 'unknown';
 
 export class OrgHierarchyError extends Error {

@@ -40,10 +40,17 @@ vi.mock('expo-router', () => ({ useRouter: () => ({ back: vi.fn(), canGoBack: ()
 const blockMock = { canBlock: true, isBlocked: false, busy: false, toggle: vi.fn(async () => false) };
 vi.mock('../../../hooks/useUserBlock', () => ({ useUserBlock: () => blockMock }));
 
+// Captures the deferred work so a test decides when the sheet has "finished dismissing".
+const deferred: Array<() => void | Promise<void>> = [];
+vi.mock('../../../lib/runAfterBottomSheetDismiss', () => ({
+  runAfterBottomSheetDismiss: (work: () => void | Promise<void>) => void deferred.push(work),
+}));
+
 import { PostMenuSheet } from '../PostMenuSheet';
 
 afterEach(() => {
   cleanup();
+  deferred.length = 0;
   vi.clearAllMocks();
 });
 
@@ -95,6 +102,17 @@ describe('PostMenuSheet', () => {
   it('renders nothing while closed', () => {
     const { queryByRole } = renderMenu('u_viewer', { visible: false });
     expect(queryByRole('button', { name: 'post.menuSave' })).toBeNull();
+  });
+
+  // #2062: iOS drops a native Alert raised while the menu modal is still closing, so the block
+  // confirmation never appeared. It must wait until the sheet has finished dismissing.
+  it('asks to confirm a block only after the sheet has finished dismissing', () => {
+    const { getByRole, onClose } = renderMenu('u_viewer');
+    fireEvent.click(getByRole('button', { name: 'moderation.block.block' }));
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(blockMock.toggle).not.toHaveBeenCalled();
+    deferred.forEach((work) => void work());
+    expect(blockMock.toggle).toHaveBeenCalledTimes(1);
   });
 
   it('saves, then closes', () => {

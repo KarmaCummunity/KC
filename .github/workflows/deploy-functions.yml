@@ -6,8 +6,8 @@ name: Edge Functions deploy
 # trigger; to redeploy dev, dispatch the Deploy workflow on `dev`.
 #
 # Deploys every function scripts/edge-functions.mjs lists (all of
-# supabase/functions except shared code and local-only mock-login) to the
-# target project, so the remote cannot drift behind the branch (TD-53), then
+# supabase/functions except shared code, the LOCAL_ONLY set and the
+# NOT_DEPLOYED set, both defined in that script) to the target project, so the remote cannot drift behind the branch (TD-53), then
 # checks the project lists each one as ACTIVE. The deploy smoke probes the
 # ones that can be probed without side effects. The job starts with the
 # deploy guard (.github/actions/deploy-guard).

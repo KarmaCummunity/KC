@@ -2,6 +2,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  checkAppLinks,
+  checkSharedLinks,
   checkFunctions,
   checkPages,
   extractTitle,
@@ -13,6 +15,7 @@ import {
   renderSummary,
   runSmoke,
   waitForVersion,
+  isVersionBumpOf,
 } from './smoke-deploy.mjs';
 
 const SHA = 'a'.repeat(40);
@@ -188,4 +191,95 @@ test('checkPages reports HTTP errors and a page without a title', async () => {
   assert.equal(result.ok, false);
   assert.match(result.detail, /\/terms → HTTP 404/);
   assert.match(result.detail, /blank\.html has no <title>/);
+});
+
+const manifest = (status, body, type = 'application/json') => ({
+  ...response(status, body),
+  headers: { get: (h) => (h.toLowerCase() === 'content-type' ? type : null) },
+});
+const WK = { 'apple-app-site-association': '{"applinks":{}}', 'assetlinks.json': '[]' };
+const readSource = (name) => WK[name];
+
+test('checkAppLinks passes for direct 200 JSON that matches the checkout', async () => {
+  const { fetch, calls } = fakeFetch({
+    [`GET ${WEB}/.well-known/apple-app-site-association`]: manifest(200, '{ "applinks": {} }'),
+    [`GET ${WEB}/.well-known/assetlinks.json`]: manifest(200, '[]'),
+  });
+  const result = await checkAppLinks({ webUrl: WEB, fetch, readSource });
+  assert.equal(result.ok, true, result.detail);
+  assert.equal(calls.length, 2);
+});
+
+test('checkAppLinks fails on a redirect, a wrong content type and a stale body', async () => {
+  const { fetch } = fakeFetch({
+    [`GET ${WEB}/.well-known/apple-app-site-association`]: manifest(301, ''),
+    [`GET ${WEB}/.well-known/assetlinks.json`]: manifest(200, '[{"old":1}]', 'application/octet-stream'),
+  });
+  const result = await checkAppLinks({ webUrl: WEB, fetch, readSource });
+  assert.equal(result.ok, false);
+  assert.match(result.detail, /apple-app-site-association → HTTP 301 \(redirect/);
+  assert.match(result.detail, /assetlinks\.json content-type is "application\/octet-stream"/);
+  assert.match(result.detail, /assetlinks\.json body differs/);
+});
+
+const OG_CARD = '<meta property="og:title" content="x" /><meta property="og:image" content="y" />';
+/** Answers by User-Agent like the Pages function: a crawler gets the card, a browser the SPA. */
+const sharedLinksFetch = (card, spa) => async (_url, init = {}) =>
+  /WhatsApp/.test(init.headers['user-agent']) ? card : spa;
+
+test('checkSharedLinks passes when crawlers get the card and browsers get the app', async () => {
+  const result = await checkSharedLinks({ webUrl: WEB, fetch: sharedLinksFetch(response(200, OG_CARD), response(200, '<html>SPA</html>')) });
+  assert.equal(result.ok, true, result.detail);
+});
+
+test('checkSharedLinks fails when the function is missing (crawler gets the SPA shell)', async () => {
+  const result = await checkSharedLinks({ webUrl: WEB, fetch: sharedLinksFetch(response(200, '<html>SPA</html>'), response(200, '<html>SPA</html>')) });
+  assert.equal(result.ok, false);
+  assert.match(result.detail, /\/post\/.* as a crawler has no Open Graph card/);
+});
+
+test('checkSharedLinks fails when a browser is served the crawler card or an error', async () => {
+  const leaked = await checkSharedLinks({ webUrl: WEB, fetch: sharedLinksFetch(response(200, OG_CARD), response(200, OG_CARD)) });
+  assert.match(leaked.detail, /as a browser is served the crawler card/);
+  const broken = await checkSharedLinks({ webUrl: WEB, fetch: sharedLinksFetch(response(200, OG_CARD), response(500)) });
+  assert.match(broken.detail, /as a browser → HTTP 500/);
+});
+
+const BUMP = 'c'.repeat(40);
+const bumpCommit = (over = {}) => ({
+  parents: [{ sha: SHA }],
+  commit: { message: 'chore(release): bump app version to 1.9.98 [skip ci]' },
+  files: [{ filename: 'app/VERSION' }],
+  ...over,
+});
+
+test('isVersionBumpOf accepts only a VERSION-only bump commit whose single parent is the expected SHA', () => {
+  assert.equal(isVersionBumpOf(bumpCommit(), SHA), true);
+  assert.equal(isVersionBumpOf(bumpCommit(), OLD), false);
+  assert.equal(isVersionBumpOf(bumpCommit({ parents: [{ sha: SHA }, { sha: OLD }] }), SHA), false);
+  assert.equal(isVersionBumpOf(bumpCommit({ commit: { message: 'feat: something [skip ci]' } }), SHA), false);
+  assert.equal(isVersionBumpOf(bumpCommit({ files: [{ filename: 'app/VERSION' }, { filename: 'x.ts' }] }), SHA), false);
+  assert.equal(isVersionBumpOf(null, SHA), false);
+});
+
+test('waitForVersion accepts a build of the version-bump child only through isBumpOf', async () => {
+  const served = () => ({ [`GET ${WEB}/version.json`]: [response(200, JSON.stringify({ version: '1.9.98', sha: BUMP }))] });
+  const asked = [];
+  const isBumpOf = async (found, sha) => {
+    asked.push([found, sha]);
+    return found === BUMP && sha === SHA;
+  };
+  const ok = await waitForVersion({ webUrl: WEB, sha: SHA, timeoutMs: 1000, fetch: fakeFetch(served()).fetch, ...clock(), isBumpOf });
+  assert.equal(ok.ok, true);
+  assert.match(ok.detail, /version bump of a{40}/);
+  assert.deepEqual(asked[0], [BUMP, SHA]);
+  const strict = await waitForVersion({ webUrl: WEB, sha: SHA, timeoutMs: 1000, fetch: fakeFetch(served()).fetch, ...clock() });
+  assert.equal(strict.ok, false);
+});
+
+test('optionsFromEnv wires SMOKE_ACCEPT_VERSION_BUMP only with a token and repository', () => {
+  const base = { SMOKE_CHECKS: 'version', SMOKE_WEB_URL: WEB, SMOKE_SHA: SHA };
+  assert.equal(optionsFromEnv(base).acceptVersionBump, null);
+  assert.deepEqual(optionsFromEnv({ ...base, SMOKE_ACCEPT_VERSION_BUMP: '1', GITHUB_TOKEN: 't', GITHUB_REPOSITORY: 'o/r' }).acceptVersionBump, { token: 't', repo: 'o/r' });
+  assert.throws(() => optionsFromEnv({ ...base, SMOKE_ACCEPT_VERSION_BUMP: '1' }), /GITHUB_TOKEN/);
 });

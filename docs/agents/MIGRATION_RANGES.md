@@ -1,4 +1,39 @@
-# Migration range registry
+# Migration numbering
+
+> **Numbers are assigned on merge (D-234).** A PR never picks a migration number, so there is nothing to claim and no hot file to conflict on.
+> Before this, each PR claimed a range here; one PR was renumbered three times in the merge queue (KC#1619).
+
+## How to add a migration
+
+1. Create `supabase/migrations/next-NN_snake_slug.sql`. `NN` (`01`-`99`) only orders the files of your own PR: `next-01_…` runs before `next-02_…`. Use a slug that says what the file does; it must be unique among pending files.
+2. Write the pgTAP test in `supabase/tests/` as usual. Do not write a number anywhere (file name, comments, docs, PR body); refer to the migration by its slug.
+3. CI numbers the files in its throwaway checkout (`node scripts/migration-ids.mjs assign`), so the stack applies and tests them under the numbers they will receive.
+4. After the merge into `dev`, `bump-version-on-merge.yml` renames each `next-NN_slug.sql` to the next free `NNNN_slug.sql` after the highest existing file (never below `0050`) lists each new name in the production manifest (`supabase/baseline/prod-allowed-migrations.txt`; a PR never edits it for a pending file), and pushes one commit that CI certifies. The Deploy workflow refuses a tree that still holds a `next-*` file.
+5. A destructive-SQL waiver in the PR body names the pending file: `Migration safety: next-01_slug.sql - reason`.
+
+Locally, `scripts/dev-up.sh` numbers your pending files for its run and puts the names back on exit. To do it by hand: `node scripts/migration-ids.mjs assign`, then `node scripts/migration-ids.mjs restore`.
+
+The numbered files of the cut-over (`0001`-`0036`) and the hand-claimed numbers `0037`-`0049` below stay as they are. Automatic numbering starts at `0050`, so a branch still holding a number below that keeps it.
+
+## Ranges after the cut-over
+
+| Range | Owner / issue | Status |
+|---|---|---|
+| 0002 | #2150 organization entitlement (`0002_org_entitlements.sql`) | merged |
+| 0003–0010 | `claude/baseline-post-cutover`: the post-cut-over world, chat, research, housing, knowledge and money changes ported from the pre-cut-over baseline branches. `0003` post seat counts, `0004` ride series schedule, `0005` match quality, `0006` profile mine tab, `0007` chat inbox previews, `0008` post media sizes, `0009` research feedback and survey reports, `0010` housing, knowledge and finance reads | merged (#2155) |
+| 0011–0014 | `claude/parity-admin-hierarchy`: admin hierarchy parity. `0011` grant authority of the role functions (revoke / change authority, last organization administrator, `admin_set_manager` detach and errors, linked audit rows), `0012` staff roster and organization tree with last seen (`admin_list_admins`, `admin_org_tree`, `kc_private.user_last_seen`, team-manager read of grants), `0013` `admin_hierarchy_census` and `kc_private.bootstrap_super_admin`, `0014` `admin_set_org_slug` and the void reason of `finance_ledger_mark` | in progress |
+| 0015–0019 | `claude/parity-moderation-support` feature-parity restore of moderation, support and statistics: `0015` blocked users list and the staff support inbox (FR-MOD-004, FR-MOD-002, FR-ADMIN-013), `0016` report case tools (chat restore, restore dismisses the case, server inbox, case timeline, audit lookup by actor or target, comment restore; FR-ADMIN-002/007/012/013), `0017` report SLA alert sweep and `report_sla_warning` (FR-ADMIN-012 AC6), `0018` world flow funnel and my givings by world (FR-STATS-007/008, D106), `0019` KC support channels table (FR-DONATE-011, M20) | in progress |
+| 0020 | #2154 Section 46(a) status on the kernel (`0020_org_sec46_machine.sql`) | merged |
+| 0021–0023 | #2086 recurring events: `0021` post series, `0022` series RPCs and the end of a recurring ride, `0023` one date of a series in the feeds | in progress |
+| 0024 | #2163 links and knowledge of the giving worlds: `world_links`, `external_bodies`, `knowledge_topics`, `knowledge_topic_aliases` (`0024_world_content.sql`) | in progress |
+| 0025 | — | free |
+| 0026–0033 | `claude/parity-member-features` member features: `0026` member realtime (own counters, feed new-posts ping, online presence), `0027` rich notifications and the lost kinds, `0028` a hidden chat comes back clean, `0029` the street others see follows the display level, `0030` public nonprofit and transparency pages for `anon`, `0031` follow suggestions, profile nudge, org and tag search, About roster, `0032` staff set the verification level, `0033` housing apartment, floor and entrance | in progress |
+| 0034–0038 | `claude/parity-back-office` (inside the parity claim): `0034` admin tasks (FR-ADMIN-018), `0035` CRM contacts per organization (FR-ADMIN-032), `0036` staff timesheets (FR-ADMIN-033); `0037`–`0038` held | in progress |
+| 0039–0049 | feature-parity restore (WhatsApp and the rest), held by the parity coordinator | claimed |
+
+Hand-claimed numbers end at `0049`; later numbers are assigned on merge.
+
+## Retired chain (before D-228)
 
 **Rule:** before writing a migration, claim a range here, in your PR or a small docs PR to `dev`. Use only numbers inside your range. Files are `supabase/migrations/NNNN_snake_case.sql`. Gaps are fine; collisions are not.
 
@@ -126,7 +161,7 @@ Last applied on kc-dev when this was written: `0239`.
 | 0678 | #1964 verification 0..2 mix, OnlyMe posts, storage JPEG fixtures | in review |
 | 0679 | FR-ADMIN-031 admin_demo_data_status ride/org/media KPIs | in review |
 | 0705 | #2032 the listing detail resolves a former listing id (`posts.listing_id`) to its post | in progress |
-| 0680–0689, 0694–0699, 0701–0702, 0716–0725 | FSM kernel program (`docs/architecture/state-machines.md`): `0680` kernel catalog (`fsm_state` / `fsm_edge` / `fsm_assert_transition`) and the admin-task pilot; `0681` post S1 (wave 1a); `0682` admin restore (wave 1b-i); `0683` handoff writers (1b-ii); `0684` items without expiry and `0685` events expire (1b-iii); `0686` event owner actions (1b-iv); `0694` handoff machines (wave 2); `0695` legacy ride jobs retired (wave 1d); `0696` account status (wave 3a); `0697` account status writers (3a-2); `0698` onboarding (3b); `0699` retryable account purge (3c); `0701` reports and follow requests (4a); `0702` comments and knowledge topics (4b); `0716` item / animal reservation expiry (2c); `0717` review queues (4c); `0718` timesheets (5); `0719`–`0725` held for the next waves; `0692`, `0693` and `0700` are other work | in progress |
+| 0680–0689, 0694–0699, 0701–0702, 0716–0725 | FSM kernel program (`docs/architecture/state-machines.md`): `0680` kernel catalog (`fsm_state` / `fsm_edge` / `fsm_assert_transition`) and the admin-task pilot; `0681` post S1 (wave 1a); `0682` admin restore (wave 1b-i); `0683` handoff writers (1b-ii); `0684` items without expiry and `0685` events expire (1b-iii); `0686` event owner actions (1b-iv); `0694` handoff machines (wave 2); `0695` legacy ride jobs retired (wave 1d); `0696` account status (wave 3a); `0697` account status writers (3a-2); `0698` onboarding (3b); `0699` retryable account purge (3c); `0701` reports and follow requests (4a); `0702` comments and knowledge topics (4b); `0716` item / animal reservation expiry (2c); `0717` review queues (4c); `0718` timesheets (5); `0719` ride series and standing orders (6a); `0720`–`0725` held for the next waves; `0692`, `0693` and `0700` are other work | in progress |
 | 0690 | money sandbox completion behind the `sandbox_payments` server flag; org memberships written by definer functions only | merged (#1983) |
 | 0691 | #1961 reset the public schema comment (retired product cleanup) | in progress |
 | 0692 | G1 compatibility views (`listings`, `giving_handoffs`, `ride_listings`) follow the base tables' access rules | merged (#2017) |
@@ -134,11 +169,15 @@ Last applied on kc-dev when this was written: `0239`.
 | 0700 | #1398 `give_food` no longer requires `food_type` (the food type is the world sub-category) | in progress |
 | 0703–0714 | knowledge exchange posts, epic #1687 (KNOW-K1-B): `0703` six kinds, slots as rows, slot rules and sync (#2034), `0704` slot bookings, sweeps, pushes (#2034), `0705–0714` children #2035–#2039 | in progress |
 | 0715 | RLS auth initplan on the hot-table policies, all but posts (supersedes closed #1546, PR #2054) | in progress |
-| 0726+ | — | free |
+| 0730–0739 | Events and organizations (G18) and the handoff fixes found on the way: `0730` organization registration and members (FR-ORG-002 first slice), `0731` event notifications, `0732` demo events on kc-dev, `0733` animal handoff pushes (`fix/animals-handoff-push`), `0734` ride expiry settles bookings (`fix/rides-expiry-settles-bookings`), `0735` an event's close earns no fulfilled karma, `0736` the end of an event lapses its requests and waitlist; `0737`–`0739` unused (below the applied `0740`, not reissued) | merged (#2106, #2109, #2112) |
+| 0740 | delivered listing visibility: union of the two surfaces, recipient via handoff, `recipients` row for food / animals / items hand-overs + backfill (D-229) | in progress |
+| 0741 | #2020 offer photo rule on the server (D132): commit-time check on new posts and deleted listing photos, `create_post_with_media` | in progress |
+| 0742 | #2078 the personal activity timeline returns each post's world (volunteering wording, FR-CLOSURE-011 AC9) | in progress |
+| 0726–0729, 0743+ | — | free |
 
 ## Next free ranges
 
-`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0595–0599`, `0614–0619`, `0639`, `0640–0659`, `0726+`.
+`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0595–0599`, `0614–0619`, `0639`, `0640–0659`, `0726–0729`, `0743+`.
 
 ## How to claim
 

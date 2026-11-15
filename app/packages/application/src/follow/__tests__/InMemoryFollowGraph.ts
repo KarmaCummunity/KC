@@ -1,12 +1,12 @@
 // Behavioural in-memory FollowGraph (G39 contract fake). Unlike the spy
 // FollowFakeUserRepository (call capture + stubbed results), it implements the
-// follow and follow-request rules of 0003 and 0541 and must pass the same
+// follow and follow-request rules of the baseline social graph and must pass the same
 // followGraphContract cases as SupabaseUserRepository. One store plays the
 // database; each actor's instance plays an RLS-scoped client.
 
 import type { FollowEdge, FollowRequest, PrivacyMode, User } from '@kc/domain';
 import { FOLLOW_REQUEST_COOLDOWN_DAYS, type FollowGraph } from '../../contracts/followGraph.contract';
-import type { FollowStateRaw } from '../../ports/IUserRepository';
+import type { FollowOutcome, FollowStateRaw } from '../../ports/IUserRepository';
 import { FollowError } from '../errors';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -59,7 +59,6 @@ export class InMemoryFollowStore {
     const member = this.members.get(userId);
     return {
       userId,
-      authProvider: 'email',
       shareHandle: `u_${userId.slice(0, 8)}`,
       displayName: `member ${userId.slice(0, 6)}`,
       city: null,
@@ -98,16 +97,31 @@ export class InMemoryFollowGraph implements FollowGraph {
     private readonly actorId: string,
   ) {}
 
-  async follow(followerId: string, followedId: string): Promise<FollowEdge> {
-    if (followerId === followedId) throw new FollowError('self_follow', 'self_follow_forbidden');
-    // follow_edges_insert_self (0541): a member's own insert reaches Public profiles only.
-    if (followerId !== this.actorId || this.store.members.get(followedId)?.privacyMode === 'Private') {
-      throw new FollowError('blocked_relationship', 'new row violates row-level security policy');
+  /**
+   * `follow_user` (15_social_graph/040_follow_rpcs.sql): an edge at once on a Public profile, a
+   * pending request on a Private one; repeating the call changes nothing. Only the actor acts.
+   */
+  private followUser(requesterId: string, targetId: string): FollowOutcome {
+    if (requesterId === targetId) throw new FollowError('self_follow', 'self_follow_forbidden');
+    if (requesterId !== this.actorId) throw new FollowError('blocked_relationship', 'forbidden');
+    if (this.store.edgeOf(requesterId, targetId)) return 'following';
+    if (this.store.members.get(targetId)?.privacyMode !== 'Private') {
+      this.store.edges.push({ followerId: requesterId, followedId: targetId, createdAt: this.store.now() });
+      return 'following';
     }
-    if (this.store.edgeOf(followerId, followedId)) throw new FollowError('already_following', 'follow_edges_pkey');
-    const edge: FollowEdge = { followerId, followedId, createdAt: this.store.now() };
-    this.store.edges.push(edge);
-    return edge;
+    if (this.store.pendingOf(requesterId, targetId)) return 'requested';
+    const cooldownUntil = this.store.activeCooldown(requesterId, targetId);
+    if (cooldownUntil) throw new FollowError('cooldown_active', 'follow_request_cooldown_active', { cooldownUntil });
+    this.store.requests.push({ requesterId, targetId, createdAt: this.store.now(), status: 'pending', cooldownUntil: null });
+    return 'requested';
+  }
+
+  async follow(followerId: string, followedId: string): Promise<FollowEdge> {
+    // A direct follow of a Private profile is refused (FR-FOLLOW-012 AC2); the server has filed a request.
+    if (this.followUser(followerId, followedId) === 'requested') {
+      throw new FollowError('request_required', 'the profile is private; a follow request was filed');
+    }
+    return this.store.edgeOf(followerId, followedId) as FollowEdge;
   }
 
   async unfollow(followerId: string, followedId: string): Promise<void> {
@@ -133,17 +147,10 @@ export class InMemoryFollowGraph implements FollowGraph {
   }
 
   async sendFollowRequest(requesterId: string, targetId: string): Promise<FollowRequest> {
-    // follow_requests_validate_before_insert, in its order; then the one-pending index.
-    if (requesterId === targetId) throw new FollowError('self_follow', 'self_follow_request_forbidden');
-    if (this.store.edgeOf(requesterId, targetId)) throw new FollowError('already_following', 'already_following');
-    const cooldownUntil = this.store.activeCooldown(requesterId, targetId);
-    if (cooldownUntil) throw new FollowError('cooldown_active', 'follow_request_cooldown_active', { cooldownUntil });
-    if (this.store.pendingOf(requesterId, targetId)) {
-      throw new FollowError('pending_request_exists', 'follow_requests_one_pending_per_pair_idx');
+    if (this.followUser(requesterId, targetId) === 'following') {
+      return { requesterId, targetId, createdAt: this.store.now(), status: 'accepted', cooldownUntil: null };
     }
-    const request: FollowRequest = { requesterId, targetId, createdAt: this.store.now(), status: 'pending', cooldownUntil: null };
-    this.store.requests.push(request);
-    return request;
+    return this.store.pendingOf(requesterId, targetId) as FollowRequest;
   }
 
   async acceptFollowRequest(requesterId: string, targetId: string): Promise<void> {

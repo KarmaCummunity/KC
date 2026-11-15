@@ -4,7 +4,6 @@
 
 import { describe, it } from 'vitest';
 import { reportRepositoryContract, type ReportContractContext } from '../../contracts';
-import { InMemoryChatRepository } from '../../chat/__tests__/InMemoryChatRepository';
 import { InMemoryChatStore } from '../../chat/__tests__/inMemoryChatStore';
 import { InMemoryReportRepository, type StoredReport } from './InMemoryReportRepository';
 
@@ -17,7 +16,6 @@ const ctx: ReportContractContext = {
     return {
       userId,
       reports: new InMemoryReportRepository(store, reports, userId),
-      chats: new InMemoryChatRepository(store, userId),
     };
   },
 };

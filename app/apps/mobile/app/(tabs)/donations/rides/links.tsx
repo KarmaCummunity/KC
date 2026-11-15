@@ -7,7 +7,7 @@ export { RouteErrorBoundary as ErrorBoundary } from '../../../../src/components/
 export default function RidesLinksScreen() {
   return (
     <WorldLaunchGateByFlag flagKey="world_rides_enabled">
-      <WorldDedicatedLinksScreen worldSlug="rides" categorySlug="transport" />
+      <WorldDedicatedLinksScreen worldSlug="rides" />
     </WorldLaunchGateByFlag>
   );
 }

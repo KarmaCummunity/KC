@@ -1,6 +1,8 @@
 // FR-MOD-007/010 + FR-ADMIN-002..007 — moderation strings (TD-35 file-size budget).
 export const moderationEn = {
   report: {
+    // Placeholder inside the optional note box of every report sheet (post, chat, listing, user).
+    noteHint: 'Tell us what happened so we can review it',
     user: {
       title: 'Report user',
       reasonLabel: 'Reason for report',
@@ -119,6 +121,14 @@ export const moderationEn = {
     errors: {
       forbidden: 'You do not have permission for this action.',
       invalidRestoreState: 'The target cannot be restored in its current state.',
+      invalidTargetState: 'This action is not possible in the target\'s current state.',
+      reportNotOpen: 'This report was already handled.',
+      invalidSanctionReason: 'The sanction reason is not valid.',
+      cannotSanctionSelf: 'You cannot sanction yourself.',
+      cannotSanctionAdmin: 'Staff members cannot be sanctioned. Revoke their role first.',
+      accountPendingDeletion: 'This account is being deleted, so it cannot be sanctioned.',
+      targetNotFound: 'The target was not found.',
+      messageNotFound: 'The message was not found.',
       networkError: 'Network error. Please try again.',
     },
   },

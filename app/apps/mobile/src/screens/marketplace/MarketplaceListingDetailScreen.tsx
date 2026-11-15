@@ -14,18 +14,19 @@ type Props = {
   /** Rendered under the listing's actions; the post detail passes the post's likes and comments. */
   readonly footer?: ReactNode;
   readonly moderationInHeader?: boolean;
+  /**
+   * Shown while the detail loads instead of a bare spinner. The post detail passes what the feed
+   * card already knows (photo, title, description) so the screen opens with content at once.
+   */
+  readonly loadingPreview?: ReactNode;
 };
 
-export function MarketplaceListingDetailScreen({ listingId, bottomInset = 0, footer, moderationInHeader }: Props) {
+export function MarketplaceListingDetailScreen({ listingId, bottomInset = 0, footer, moderationInHeader, loadingPreview }: Props) {
   const { t } = useTranslation();
   const { data: detail, isLoading, isError, refetch } = useMarketplaceListingDetail(listingId);
 
   if (isLoading) {
-    return (
-      <Screen>
-        <ActivityIndicator style={{ marginTop: spacing.xl }} />
-      </Screen>
-    );
+    return <Screen>{loadingPreview ?? <ActivityIndicator style={{ marginTop: spacing.xl }} />}</Screen>;
   }
 
   if (isError) {

@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { makeUseStyles, spacing, Text } from '@kc/ui';
+import { isPostEnded } from '@kc/domain';
 import { KcRowCard } from '../../../../../src/components/cards/KcRowCard';
 import { Screen } from '../../../../../src/components/ui/Screen';
 import { TimeWorldSubScreenChrome } from '../../../../../src/components/giving/TimeWorldSubScreenChrome';
@@ -62,8 +63,8 @@ export default function OrganizerVolunteerListScreen() {
             badgeLabel={t('marketplace.world.time', { defaultValue: 'time' })}
             placeholderIcon="time-outline"
             title={item.title}
-            statusLabel={item.status}
-            closed={item.status === 'closed' || item.status === 'cancelled'}
+            statusLabel={t(`marketplace.listingStatus.${item.status}`, { defaultValue: item.status })}
+            closed={isPostEnded(item.status) || item.status === 'paused'}
             closedLabel={t('cards.closed')}
             onPress={() =>
               router.push({

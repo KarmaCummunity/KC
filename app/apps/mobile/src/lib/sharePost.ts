@@ -1,4 +1,4 @@
-// FR-POST-023 — share a post via the OS share sheet. Returns a discriminated
+// FR-POST-023 — share a link (a post or a profile) via the OS share sheet. Returns a discriminated
 // union outcome; never throws. The share URL appears in the message body
 // exactly once on every platform (the prior version's duplicated-link bug
 // in WhatsApp came from RN's Android Share concatenating the `url` field
@@ -15,6 +15,17 @@ import { Platform, Share } from 'react-native';
 
 import { buildPostShareUrl } from './buildPostShareUrl';
 import { downloadPostImageForShare } from './downloadPostImageForShare';
+
+export type ShareLinkInput = Readonly<{
+  /** The canonical link; it appears in the shared text exactly once. */
+  url: string;
+  title: string;
+  message: string;
+  /** Names the cached image file, so concurrent shares never overwrite each other. */
+  imageKey: string;
+  /** Public URL of the image to attach (a post's first photo). Omitted when there is none. */
+  remoteImageUrl?: string;
+}>;
 
 export type PostShareInput = Readonly<{
   postId: string;
@@ -37,29 +48,31 @@ type WebShareNavigator = {
   clipboard?: { writeText: (text: string) => Promise<void> };
 };
 
-async function fetchAsFile(remoteUrl: string, postId: string): Promise<File | null> {
+async function fetchAsFile(remoteUrl: string, imageKey: string): Promise<File | null> {
   if (typeof fetch === 'undefined' || typeof File === 'undefined') return null;
   try {
     const resp = await fetch(remoteUrl);
     if (!resp.ok) return null;
     const blob = await resp.blob();
     const ext = (blob.type.split('/')[1] ?? 'jpg').replace('jpeg', 'jpg');
-    const safeId = postId.replace(/[^a-zA-Z0-9-_]/g, '_');
+    const safeId = imageKey.replace(/[^a-zA-Z0-9-_]/g, '_');
     return new File([blob], `kc-share-${safeId}.${ext}`, { type: blob.type || 'image/jpeg' });
-  } catch {
+  } catch (err) {
+    // Image attach is best-effort; the share still goes out as text-only.
+    console.warn('[sharePost] fetchAsFile failed', err instanceof Error ? err.message : err);
     return null;
   }
 }
 
 async function shareWeb(
-  input: PostShareInput,
+  input: ShareLinkInput,
   url: string,
   nav: WebShareNavigator | undefined,
 ): Promise<SharePostOutcome> {
   if (nav?.share) {
     let file: File | null = null;
     if (input.remoteImageUrl && input.remoteImageUrl.trim() !== '') {
-      file = await fetchAsFile(input.remoteImageUrl, input.postId);
+      file = await fetchAsFile(input.remoteImageUrl, input.imageKey);
     }
     const filesPayload = file && (!nav.canShare || nav.canShare({ files: [file] })) ? [file] : undefined;
     try {
@@ -72,6 +85,8 @@ async function shareWeb(
     } catch (err) {
       const name = err instanceof Error ? err.name : '';
       if (name === 'AbortError') return { kind: 'dismissed' };
+      // Other Web Share failures fall through to the clipboard copy path below.
+      console.warn('[sharePost] navigator.share failed', err instanceof Error ? err.message : err);
     }
   }
   if (nav?.clipboard?.writeText) {
@@ -96,15 +111,17 @@ async function withShareImageDownloadTimeout<T>(promise: Promise<T>): Promise<T 
         timer = setTimeout(() => resolve(null), SHARE_IMAGE_DOWNLOAD_MS);
       }),
     ]);
-  } catch {
+  } catch (err) {
+    // A failed image download must not block the share sheet.
+    console.warn('[sharePost] image download failed', err instanceof Error ? err.message : err);
     return null;
   } finally {
     if (timer !== undefined) clearTimeout(timer);
   }
 }
 
-export async function sharePost(input: PostShareInput): Promise<SharePostOutcome> {
-  const url = buildPostShareUrl(input.postId, input.webBaseUrl);
+export async function shareLink(input: ShareLinkInput): Promise<SharePostOutcome> {
+  const { url } = input;
 
   if (Platform.OS === 'web') {
     const nav = typeof navigator !== 'undefined' ? (navigator as unknown as WebShareNavigator) : undefined;
@@ -117,7 +134,7 @@ export async function sharePost(input: PostShareInput): Promise<SharePostOutcome
   let localImageUri: string | undefined;
   if (Platform.OS === 'ios' && input.remoteImageUrl && input.remoteImageUrl.trim() !== '') {
     const downloaded = await withShareImageDownloadTimeout(
-      downloadPostImageForShare(input.remoteImageUrl, input.postId),
+      downloadPostImageForShare(input.remoteImageUrl, input.imageKey),
     );
     localImageUri = downloaded?.uri;
   }
@@ -139,4 +156,15 @@ export async function sharePost(input: PostShareInput): Promise<SharePostOutcome
   } catch (err) {
     return { kind: 'failed', reason: err instanceof Error ? err.message : 'share_failed' };
   }
+}
+
+/** Shares a post: its canonical `/post/<id>` link, the composed text and its first photo. */
+export async function sharePost(input: PostShareInput): Promise<SharePostOutcome> {
+  return shareLink({
+    url: buildPostShareUrl(input.postId, input.webBaseUrl),
+    title: input.title,
+    message: input.message,
+    imageKey: input.postId,
+    remoteImageUrl: input.remoteImageUrl,
+  });
 }

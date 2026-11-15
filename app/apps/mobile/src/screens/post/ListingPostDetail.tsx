@@ -7,6 +7,7 @@ import { KeyboardAvoidingView, Platform, View } from 'react-native';
 import { Stack } from 'expo-router';
 import type { PostWithOwner } from '@kc/application';
 import { MarketplaceListingDetailScreen } from '../marketplace/MarketplaceListingDetailScreen';
+import { ListingDetailLoadingPreview } from '../../components/marketplace/ListingDetailLoadingPreview';
 import { PostEngagementThread } from '../../components/post-detail/PostEngagementThread';
 import { PostEngagementComposer } from '../../components/post-detail/PostEngagementComposer';
 import { PostEngagementProvider } from '../../components/post-detail/PostEngagementContext';
@@ -21,6 +22,7 @@ import { ListingOwnerClosureBar } from '../../components/closure/ListingOwnerClo
 import { PostDetailBottomChrome } from '../../components/post-detail/PostDetailBottomChrome';
 import { ListingRepublishBar } from '../../components/closure/ListingRepublishBar';
 import { canRepublishListingPost } from '../../lib/unifiedCreate/listingRepublish';
+import { resolveKeyboardAvoidingBehavior } from '../../lib/platform/keyboardVerticalOffset';
 
 type Props = {
   readonly post: PostWithOwner;
@@ -42,7 +44,7 @@ export function ListingPostDetail({ post, listingId, viewerId, bottomInset }: Pr
   // D127: an expired post is never reopened; its owner republishes it as a new post instead.
   const canRepublish = canRepublishListingPost(post, viewerId);
   const ownerSlot = ownerCloseId ? (
-    <ListingOwnerClosureBar post={post} ownerId={ownerCloseId} embedded />
+    <ListingOwnerClosureBar post={post} listingId={listingId} ownerId={ownerCloseId} embedded />
   ) : canRepublish ? (
     <ListingRepublishBar listingId={listingId} />
   ) : undefined;
@@ -70,7 +72,7 @@ export function ListingPostDetail({ post, listingId, viewerId, bottomInset }: Pr
       <PostEngagementProvider postId={post.postId} viewerId={viewerId}>
         <KeyboardAvoidingView
           style={{ flex: 1 }}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          behavior={resolveKeyboardAvoidingBehavior(Platform.OS)}
           keyboardVerticalOffset={keyboardOffset}
         >
           <MarketplaceListingDetailScreen
@@ -78,6 +80,7 @@ export function ListingPostDetail({ post, listingId, viewerId, bottomInset }: Pr
             bottomInset={scrollInset}
             footer={footer}
             moderationInHeader
+            loadingPreview={<ListingDetailLoadingPreview post={post} bottomInset={scrollInset} />}
           />
           {showBottomChrome ? (
             <PostDetailBottomChrome

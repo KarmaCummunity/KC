@@ -28,7 +28,7 @@ function makeStoreApi(initialEpoch: number) {
 const CHAT: ChatWithPreview = {
   chatId: 'c_1', otherUser: { userId: 'u_1', displayName: 'A', shareHandle: 'a', avatarUrl: null, privacyMode: 'Public' },
   lastMessage: null, lastMessageAt: '2026-05-16T12:00:00.000Z', unreadCount: 0,
-  ownerHiddenForViewer: false, anchorPostId: null, anchorRideId: null, anchorPost: null,
+  ownerHiddenForViewer: false, anchorPostId: null, anchorPost: null,
 } as never;
 
 function makeRepo(opts: {

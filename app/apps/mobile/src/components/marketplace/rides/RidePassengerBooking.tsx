@@ -6,7 +6,7 @@ import { Pressable, Switch, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { Text } from '@kc/ui';
-import { isValidRideBookingSeats, type RidePlace } from '@kc/domain';
+import { canPerformBookingAction, isValidRideBookingSeats, type RideBookingAction, type RidePlace } from '@kc/domain';
 import { RidePlaceField } from '../../giving/RidePlaceField';
 import { useRidePlaces } from '../../../hooks/useRidePlaces';
 import { ridePlaceToMeetingPointPayload } from '../../../lib/rides/ridePlacePayload';
@@ -44,6 +44,9 @@ export function RidePassengerBooking({ listingId, cityId, capacity, details }: P
   });
 
   const h = booking.data;
+  // What the passenger may do with their booking, read from the ride booking graph.
+  const may = (action: RideBookingAction): boolean =>
+    h != null && canPerformBookingAction(h.status, action, rated, 'recipient');
   const departsAtRaw = details['departs_at'];
   const departsAtIso = typeof departsAtRaw === 'string' ? departsAtRaw : null;
   const departsTime = departsAtIso ? new Date(departsAtIso).getTime() : null;
@@ -145,12 +148,9 @@ export function RidePassengerBooking({ listingId, cityId, capacity, details }: P
       ) : null}
 
       {h?.status === 'reserved' ? (
-        <>
-          <Text style={styles.caption} testID="ride-booking-waiting">
-            {t('rideBooking.waitingForDriver', { time: formatRideTime(h.confirmBy) ?? '' })}
-          </Text>
-          {cancelMine(h.handoffId)}
-        </>
+        <Text style={styles.caption} testID="ride-booking-waiting">
+          {t('rideBooking.waitingForDriver', { time: formatRideTime(h.confirmBy) ?? '' })}
+        </Text>
       ) : null}
 
       {h?.status === 'confirmed' ? (
@@ -158,25 +158,30 @@ export function RidePassengerBooking({ listingId, cityId, capacity, details }: P
           <Text style={styles.caption} testID="ride-booking-confirmed">{t('rideBooking.confirmed')}</Text>
           {/* An approved passenger is on the ride: the emergency call shows while it is under way. */}
           <RideEmergencyButton listingId={listingId} details={details} />
-          <View style={styles.actions}>
-            <HandoffActionButton
-              inRow
-              testID="giving-handoff-complete"
-              label={t('rideBooking.completeTrip')}
-              busy={busy}
-              onPress={() =>
-                void run(
-                  () => rideBookingUseCases.complete().execute(h.handoffId, { status: h.status, departsAt: departsAtIso }),
-                  'handover_completed',
-                )
-              }
-            />
-            {cancelMine(h.handoffId, true)}
-          </View>
         </>
       ) : null}
 
-      {h?.status === 'handed_over' && !rated ? (
+      {/* A booking the passenger may complete shows both actions in one row; one they can only leave, the cancel alone. */}
+      {h && may('complete') ? (
+        <View style={styles.actions}>
+          <HandoffActionButton
+            inRow
+            testID="giving-handoff-complete"
+            label={t('rideBooking.completeTrip')}
+            busy={busy}
+            onPress={() =>
+              void run(
+                () => rideBookingUseCases.complete().execute(h.handoffId, { status: h.status, departsAt: departsAtIso }),
+                'handover_completed',
+              )
+            }
+          />
+          {may('cancel') ? cancelMine(h.handoffId, true) : null}
+        </View>
+      ) : null}
+      {h && !may('complete') && may('cancel') ? cancelMine(h.handoffId) : null}
+
+      {h && may('rate') ? (
         <HandoffRatingForm
           busy={busy}
           onSubmit={(rating, note) =>

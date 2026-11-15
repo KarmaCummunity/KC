@@ -1,52 +1,63 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { AccountGateResult, IAccountGateRepository } from '@kc/application';
+import type { AccountGateReason, AccountGateResult, IAccountGateRepository } from '@kc/application';
 import { InfrastructureError, RestoreAccountError } from '@kc/application';
 import type { RestoreAccountErrorCode } from '@kc/application';
+import { BackendRuleError, BackendUnavailableError } from '@kc/domain';
 import type { Database } from '../database.types';
+import { unwrapCall } from '../rpc/mapRpcError';
+import { fetchBootstrapSession, type BootstrapAccount } from './bootstrapSession';
+
+/** Account statuses that keep a member out of the main screens, exactly the gate reasons. */
+const GATE_REASONS: readonly AccountGateReason[] = [
+  'pending_verification',
+  'banned',
+  'suspended_admin',
+  'suspended_for_false_reports',
+  'pending_deletion',
+];
+
+/** Stable refusals of `restore_account` mapped to the use case's error codes. */
+const RESTORE_CODES: Readonly<Record<string, RestoreAccountErrorCode>> = {
+  grace_expired: 'grace_expired',
+  not_pending_deletion: 'not_pending_deletion',
+  unauthenticated: 'unauthenticated',
+};
+
+/** The gate decision for an account: allowed only when it is `active`. */
+function gateFromAccount(account: BootstrapAccount): AccountGateResult {
+  if (account.status === 'active') return { allowed: true };
+  const reason = GATE_REASONS.find((candidate) => candidate === account.status);
+  if (!reason) throw new InfrastructureError(`unknown account status: ${account.status}`);
+  // A pending deletion is restorable until its purge date; a suspension ends at `status_until`.
+  const until = reason === 'pending_deletion' ? account.deletionPurgeAt : account.statusUntil;
+  return { allowed: false, reason, until: until ?? undefined };
+}
 
 /**
- * FR-MOD-010 — thin wrapper over the `auth_check_account_gate` RPC. Returns
- * `{ allowed: true }` when the user may proceed, otherwise the rejection
- * reason and (optional) until-timestamp surfaced by the RPC.
+ * FR-MOD-010 — the account gate is the `account` block of `bootstrap_session()`: the caller's
+ * own status, so the gate takes no user argument and has no `allowed` flag of its own; the app
+ * derives it from the status.
  */
 export class SupabaseAccountGateRepository implements IAccountGateRepository {
   constructor(private readonly client: SupabaseClient<Database>) {}
 
-  async checkAccountGate(userId: string): Promise<AccountGateResult> {
-    const { data, error } = await this.client.rpc('auth_check_account_gate', {
-      p_user_id: userId,
-    });
-    if (error) {
-      throw new InfrastructureError(
-        `auth_check_account_gate failed: ${error.message}`,
-        error,
-      );
-    }
-    const rows = (data ?? []) as Array<{
-      allowed: boolean;
-      reason: string | null;
-      until_at: string | null;
-    }>;
-    const row = rows[0];
-    if (!row || row.allowed) return { allowed: true };
-    return {
-      allowed: false,
-      reason: row.reason as AccountGateResult['reason'],
-      until: row.until_at ?? undefined,
-    };
+  /** `_userId` is kept by the port; the server reads the identity from the session. */
+  async checkAccountGate(_userId: string): Promise<AccountGateResult> {
+    const session = await fetchBootstrapSession(this.client);
+    return gateFromAccount(session.account);
   }
 
-  /** FR-AUTH-016 — `rpc_restore_account`; its error text carries the reason. */
+  /** FR-AUTH-016 — `restore_account`; its stable refusal reason becomes the error code. */
   async restoreAccount(): Promise<void> {
-    const { error } = await this.client.rpc('rpc_restore_account');
-    if (!error) return;
-    throw new RestoreAccountError(mapRestoreError(error.message ?? ''), error);
+    try {
+      unwrapCall('rpc:restore_account', await this.client.rpc('restore_account'));
+    } catch (error) {
+      if (error instanceof BackendRuleError) {
+        throw new RestoreAccountError(RESTORE_CODES[error.reason] ?? 'network', error);
+      }
+      // A missing function (BackendUnavailableError) goes to the screen's degrade rule.
+      if (error instanceof BackendUnavailableError) throw error;
+      throw new RestoreAccountError('network', error);
+    }
   }
-}
-
-function mapRestoreError(message: string): RestoreAccountErrorCode {
-  if (message.includes('grace_expired')) return 'grace_expired';
-  if (message.includes('not_pending_deletion')) return 'not_pending_deletion';
-  if (message.includes('unauthenticated')) return 'unauthenticated';
-  return 'network';
 }

@@ -9,7 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { marketplaceRepository } from '../services/marketplaceComposition';
 import { pickListingImages, uploadListingImages } from '../services/listingImageUpload';
 import { listingOwnerErrorKey } from '../lib/listingOwnerError';
-import type { MyListingRow } from '@kc/domain';
+import { ORG_EVENT_KIND_SLUG, type MyListingRow } from '@kc/domain';
 import { useAuthStore } from '../store/authStore';
 import { useClosureStore } from '../store/closureStore';
 import { listingOfferAllowsCloseWithout } from '../lib/listingOwnerClosure';
@@ -88,6 +88,16 @@ export function useMyListingActions(refetch: () => Promise<unknown>): MyListingA
   );
   const fulfill = useCallback(
     (listing: MyListingRow) => {
+      // An organization's event ends (G18, D124): nobody receives it, so it skips the recipient flow.
+      if (listing.kindSlug === ORG_EVENT_KIND_SLUG) {
+        void confirmThenRun(
+          listing.listingId,
+          'eventPost.ownerClose.confirmTitle',
+          'eventPost.ownerClose.neutral',
+          () => marketplaceRepository().fulfillMyListing(listing.listingId),
+        );
+        return;
+      }
       // Requests keep the listing close. Offers name a recipient on the post.
       if (listing.direction === 'request') {
         void confirmThenRun(
@@ -127,8 +137,8 @@ export function useMyListingActions(refetch: () => Promise<unknown>): MyListingA
         const picked = await pickListingImages(0);
         if (picked.length === 0) return;
         await run(listingId, async () => {
-          const paths = await uploadListingImages(userId, picked);
-          await marketplaceRepository().addMyListingMedia(listingId, paths);
+          const media = await uploadListingImages(userId, picked);
+          await marketplaceRepository().addMyListingMedia(listingId, media);
           notify(t('marketplace.myListingsAddPhotos'), t('marketplace.myListingsPhotosAdded'));
         });
       })();

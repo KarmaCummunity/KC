@@ -4,7 +4,9 @@
 // Rebuilt on top of the shared filterKit (issue #1457).
 import { useCallback, useMemo, useState } from 'react';
 import { Pressable, RefreshControl, View } from 'react-native';
-import { type AdminAuditRow, type AdminPermission, type AdminRole, hasPermission } from '@kc/domain';
+import {
+  type AdminAuditRow, type AdminPermission, type AdminRole, type AdminSearchCursor, hasPermission,
+} from '@kc/domain';
 import type { AdminAuditSearchFilters } from '@kc/application';
 import { makeUseStyles, radius, spacing, Text, typography } from '@kc/ui';
 import { TextField } from '../../../src/components/ui/TextField';
@@ -50,6 +52,21 @@ function parseToDate(value: string): Date | undefined {
   return Number.isNaN(d.getTime()) ? undefined : d;
 }
 
+/** Rows a CSV export carries at most; the server serves audit pages of at most 200 rows. */
+const EXPORT_MAX_ROWS = 500;
+
+/** Walks the audit pages (oldest cursor last) until the export cap or the end of the trail. */
+async function collectAuditRows(filters: AdminAuditSearchFilters): Promise<AdminAuditRow[]> {
+  const rows: AdminAuditRow[] = [];
+  let cursor: AdminSearchCursor | null = null;
+  do {
+    const page = await container.adminSearchAudit.execute({ ...filters, limit: 150, cursor });
+    rows.push(...page.rows);
+    cursor = page.nextCursor;
+  } while (cursor !== null && rows.length < EXPORT_MAX_ROWS);
+  return rows.slice(0, EXPORT_MAX_ROWS);
+}
+
 export default function AuditScreen() {
   const styles = useStyles();
   const L = useLocaleBundle();
@@ -86,14 +103,10 @@ export default function AuditScreen() {
     }
     setExporting(true);
     try {
-      const page = await container.adminSearchAudit.execute({
-        ...filters,
-        limit: 500,
-        offset: 0,
-      });
+      const rows = await collectAuditRows(filters);
       const stamp = new Date().toISOString().slice(0, 19).replace(/[T:]/g, '-');
       const name  = `audit-${stamp}.csv`;
-      const ok = downloadAuditCsv(page.rows, name);
+      const ok = downloadAuditCsv(rows, name);
       if (!ok) setExportError(L.admin.content.csvExport.failed);
     } catch (err) {
       setExportError(err instanceof Error ? err.message : L.admin.content.csvExport.failed);
@@ -185,12 +198,16 @@ export default function AuditScreen() {
       {exportError !== null ? (
         <Text style={styles.exportError}>{exportError}</Text>
       ) : null}
-      <Text style={styles.totalLabel}>{L.admin.content.totalCount(result.page.totalCount)}</Text>
+      {!result.hasMore && (
+        <Text style={styles.totalLabel}>{L.admin.content.totalCount(result.rows.length)}</Text>
+      )}
       <KcFlashList
-        data={result.page.rows}
+        data={result.rows}
         keyExtractor={auditKeyExtractor}
         estimatedItemSize={64}
         renderItem={renderItem}
+        onEndReached={result.fetchMore}
+        onEndReachedThreshold={0.5}
         refreshControl={<RefreshControl refreshing={result.isRefetching} onRefresh={result.refetch} />}
         ListEmptyComponent={
           !result.isLoading ? (

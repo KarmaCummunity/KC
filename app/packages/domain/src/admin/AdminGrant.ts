@@ -20,14 +20,17 @@ export function isAdminGrantActive(g: AdminGrant): boolean {
   return g.revokedAt === null;
 }
 
-/** Every role the portal can grant; super_admin is DB-only (CLAUDE.md §7). */
-export type GrantableAdminRole = Exclude<AdminRole, 'super_admin'>;
+/**
+ * Every role the portal can grant. `super_admin` is created by the operator only
+ * (FR-ADMIN-017), and no role lists the legacy `volunteer` as grantable.
+ */
+export type GrantableAdminRole = Exclude<AdminRole, 'super_admin' | 'volunteer'>;
 
-/** Grantable roles, highest authority first (FR-ADMIN-016 V2 hierarchy). */
+/** Grantable roles, highest authority first (FR-ADMIN-016 V2 hierarchy, FR-FIN-002). */
 export const GRANTABLE_ADMIN_ROLES: readonly GrantableAdminRole[] = [
-  'moderator', 'support',
-  'org_admin', 'org_manager', 'operators_manager', 'volunteer_manager',
-  'org_employee', 'operator', 'org_volunteer',
+  'admin', 'moderator', 'support',
+  'org_admin', 'org_manager', 'org_treasurer', 'operators_manager', 'volunteer_manager',
+  'org_employee', 'operator', 'org_accountant', 'org_volunteer',
 ];
 
 export function isGrantableAdminRole(role: AdminRole): role is GrantableAdminRole {
@@ -35,7 +38,7 @@ export function isGrantableAdminRole(role: AdminRole): role is GrantableAdminRol
 }
 
 /** Roles granted on the platform (null scope); every other grantable role needs an org. */
-const PLATFORM_GRANT_ROLES: ReadonlySet<GrantableAdminRole> = new Set(['moderator', 'support']);
+const PLATFORM_GRANT_ROLES: ReadonlySet<GrantableAdminRole> = new Set(['admin', 'moderator', 'support']);
 
 export function isPlatformGrantRole(role: GrantableAdminRole): boolean {
   return PLATFORM_GRANT_ROLES.has(role);

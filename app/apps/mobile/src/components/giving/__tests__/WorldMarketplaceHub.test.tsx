@@ -44,7 +44,7 @@ vi.mock('../../../store/authStore', () => ({
 vi.mock('../../../services/postsComposition', () => ({ getFeedUseCase: () => ({ execute: mocks.execute }) }));
 // Surfaces with their own tests and their own I/O.
 vi.mock('../../ui/Screen', () => ({ Screen: ({ children }: { children: React.ReactNode }) => <div>{children}</div> }));
-vi.mock('../WorldLinksSection', () => ({ WorldLinksSection: () => null }));
+vi.mock('../WorldLinksPreview', () => ({ WorldLinksPreview: () => null }));
 vi.mock('../../PostFeedList', () => ({
   PostFeedList: ({ data, isLoading, emptyComponent }: { data?: FeedPost[]; isLoading: boolean; emptyComponent?: React.ReactNode }) => (
     <div>

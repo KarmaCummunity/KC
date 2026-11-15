@@ -80,6 +80,8 @@ export const profileHe = {
   followCooldownDays: 'ניתן לשלוח שוב בעוד {{count}} ימים.',
   followErrorTitle: 'שגיאה',
   followErrorMessage: 'הפעולה נכשלה. נסו שוב.',
+  followRateLimited: 'יותר מדי בקשות מעקב. נסו שוב עוד מעט.',
+  followAccountNotActive: 'החשבון שלך עדיין לא פעיל, ולכן אי אפשר לעקוב אחרי חברים כרגע.',
 
   // Avatar editor (EditProfileAvatar — FR-PROFILE-007)
   avatarChangeA11y: 'החלפת תמונת פרופיל',
@@ -100,14 +102,14 @@ export const profileHe = {
 
   // CityPicker (FR-AUTH-010 AC2 — also reused by EditProfileAddressBlock)
   cityPickerTitle: 'לבחור עיר',
-  cityPickerSearchPlaceholder: '...חיפוש עיר',
+  cityPickerSearchPlaceholder: 'חיפוש עיר…',
   cityPickerError: 'שגיאה בטעינת רשימת הערים. אפשר לנסות שוב.',
   cityPickerEmpty: 'לא נמצאו ערים תואמות.',
   cityPickerCloseA11y: 'סגור',
 
   // StreetPicker (FR-PROFILE-007 AC1 — city-dependent canonical streets)
   streetPickerTitle: 'בחרו רחוב',
-  streetPickerSearchPlaceholder: '...חיפוש רחוב',
+  streetPickerSearchPlaceholder: 'חיפוש רחוב…',
   streetPickerError: 'שגיאה בטעינת רשימת הרחובות. נסו שוב.',
   streetPickerEmpty: 'לא נמצאו רחובות תואמים.',
   streetPickerNeedCity: 'בחרו עיר תחילה',

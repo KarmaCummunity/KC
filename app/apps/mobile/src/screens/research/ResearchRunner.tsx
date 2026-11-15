@@ -24,6 +24,7 @@ import { SurveyIntroBlock } from './SurveyIntroBlock';
 import { useKeyboardVerticalOffset } from '../../lib/platform/useKeyboardVerticalOffset';
 import { useFormFieldFocus } from '../../hooks/useFormFieldFocus';
 import { KeyboardFormAccessory } from '../../components/ui/KeyboardFormAccessory';
+import { resolveKeyboardAvoidingBehavior } from '../../lib/platform/keyboardVerticalOffset';
 
 export type AnswerEntry = { rating: number | null; answerText: string | null };
 
@@ -110,7 +111,7 @@ export function ResearchRunner({
   return (
     <KeyboardAvoidingView
       style={styles.flex}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={resolveKeyboardAvoidingBehavior(Platform.OS)}
       keyboardVerticalOffset={keyboardOffset}
     >
       <KeyboardFormAccessory

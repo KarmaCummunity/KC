@@ -46,6 +46,9 @@
           "remote-notification"
         ]
       },
+      "entitlements": {
+        "com.apple.developer.usernotifications.time-sensitive": true
+      },
       "privacyManifests": {
         "NSPrivacyTracking": false,
         "NSPrivacyAccessedAPITypes": [
@@ -204,6 +207,11 @@
               "scheme": "https",
               "host": "karma-community-kc.com",
               "pathPrefix": "/chat"
+            },
+            {
+              "scheme": "https",
+              "host": "karma-community-kc.com",
+              "pathPrefix": "/sign-in"
             }
           ],
           "category": [

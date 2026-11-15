@@ -1,4 +1,4 @@
-// V2-ADMIN-CRM-8 — admin CRM contact entity + error type.
+// FR-ADMIN-032 — CRM contacts: each organization keeps its own contact book.
 
 export const CRM_CONTACT_STATUSES = ['cold', 'warm', 'active', 'inactive'] as const;
 export type CrmContactStatus = (typeof CRM_CONTACT_STATUSES)[number];
@@ -27,13 +27,26 @@ export interface CrmContact {
 
 export interface CrmContactPage {
   readonly rows: readonly CrmContact[];
+  /** Contacts matching the filters across every page. */
   readonly totalCount: number;
+  /** Continues after the last row; null at the end. */
+  readonly nextCursor: string | null;
+}
+
+/** An organization whose contact book the viewer manages. */
+export interface CrmOrg {
+  readonly orgId: string;
+  readonly name: string;
+  readonly isPlatform: boolean;
 }
 
 export type CrmContactErrorCode =
   | 'forbidden'
   | 'invalid_name'
   | 'invalid_status'
+  | 'invalid_email'
+  | 'invalid_phone'
+  | 'invalid_input'
   | 'contact_not_found'
   | 'unknown';
 

@@ -10,8 +10,8 @@ describe('worldChromeRegistry', () => {
     expect(worldFeedPath('time')).toBe('/(tabs)/donations/time');
   });
 
-  it('configures dedicated links sub-screen for applicable marketplace giving worlds', () => {
-    const worldsWithLinks = ['food', 'animals', 'housing', 'time', 'knowledge', 'rides'] as const;
+  it('gives every world with a feed its links and knowledge sub-screen', () => {
+    const worldsWithLinks = ['items', 'food', 'animals', 'housing', 'time', 'knowledge', 'rides', 'challenges'] as const;
     for (const slug of worldsWithLinks) {
       const config = resolveWorldChrome(slug);
       expect(config, `world ${slug} must be registered`).toBeTruthy();
@@ -20,8 +20,6 @@ describe('worldChromeRegistry', () => {
       expect(link?.path).toBe(`/(tabs)/donations/${slug}/links`);
       expect(link?.labelKey).toBe('donations.worldLinksNav');
     }
-    // items has no links portal
-    expect(resolveWorldChrome('items')?.subScreens.some((s) => s.testID === 'world-hub-items-links')).toBe(false);
   });
 
   it('MY_LISTINGS_PATH is stable for menu navigation', () => {

@@ -11,11 +11,6 @@ export interface GetMyPostsInput {
   visibility?: PostVisibility;
   /** When set, posts with this visibility are excluded. */
   excludeVisibility?: PostVisibility;
-  /** Open-tab challenge posts joined by this profile user (0655). */
-  profileOpenLinks?: {
-    readonly viewerUserId: string | null;
-    readonly listMode: 'standard' | 'owner_only_me';
-  };
 }
 
 export interface GetMyPostsOutput {
@@ -42,7 +37,6 @@ export class GetMyPostsUseCase {
       input.cursor,
       input.visibility,
       input.excludeVisibility,
-      input.profileOpenLinks,
     );
   }
 }

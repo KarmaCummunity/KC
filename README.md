@@ -37,7 +37,7 @@ docs/SSOT/             # specs, backlog, decisions
 | Doc | Purpose |
 | --- | --- |
 | [`docs/agents/OPERATING_MODEL.md`](docs/agents/OPERATING_MODEL.md) | Who ships what; PR → `dev` → deploy |
-| [`docs/agents/MIGRATION_RANGES.md`](docs/agents/MIGRATION_RANGES.md) | Claim SQL version ranges before writing migrations |
+| [`docs/agents/MIGRATION_RANGES.md`](docs/agents/MIGRATION_RANGES.md) | Add `next-NN_slug.sql`; migration numbers are assigned on merge |
 | [`docs/agents/ARCHITECTURE.md`](docs/agents/ARCHITECTURE.md) | Apps / packages / supabase map |
 | [`docs/agents/DEPLOY.md`](docs/agents/DEPLOY.md) | DB + web + mobile deploy pointers |
 | [`docs/agents/RELEASE.md`](docs/agents/RELEASE.md) | Versioning, TestFlight / Play internal, rollback |

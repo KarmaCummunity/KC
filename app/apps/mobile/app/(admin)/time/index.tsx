@@ -1,20 +1,22 @@
 // app/apps/mobile/app/(admin)/time/index.tsx
-// V2-ADMIN-TIME-10 — V2 §13.10 Admin Time (timesheets).
+// FR-ADMIN-033 — staff timesheets: own entries, the queue of direct reports to decide, and
+// everything the viewer may see (the server scopes each list and marks `canDecide` per row).
 import React, { useCallback, useMemo, useState } from 'react';
 import { Alert, Platform, RefreshControl, View } from 'react-native';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   hasPermission,
   isTimesheetError,
   type AdminPermission,
   type AdminRole,
   type TimesheetEntry,
-  type TimesheetStatus,
+  type TimesheetScope,
 } from '@kc/domain';
 import { makeUseStyles, spacing, Text, typography } from '@kc/ui';
 import { useAuthStore } from '../../../src/store/authStore';
 import { useAdminRoles } from '../../../src/hooks/useAdminRoles';
 import { container } from '../../../src/lib/container';
+import { useKeysetPages } from '../../../src/hooks/useKeysetPages';
 import { TimesheetEntryCard } from '../../../src/components/admin/time/TimesheetEntryCard';
 import { TimesheetFormModal } from '../../../src/components/admin/time/TimesheetFormModal';
 import { AdminFilterTopBarButton } from '../../../src/components/admin/AdminSearchFilterToolbar';
@@ -29,6 +31,8 @@ import { KcFlashList } from '../../../src/components/lists/KcFlashList';
 export { RouteErrorBoundary as ErrorBoundary } from '../../../src/components/RouteErrorBoundary';
 
 type Tab = 'mine' | 'pending' | 'all';
+
+const SCOPE_OF_TAB: Readonly<Record<Tab, TimesheetScope>> = { mine: 'mine', pending: 'to_decide', all: 'all' };
 
 function confirmDelete(message: string, L: LocaleBundle): Promise<boolean> {
   const t = L.admin.time.confirm;
@@ -89,25 +93,18 @@ export default function TimeScreen() {
   const queryClient = useQueryClient();
   const myId = useAuthStore((s) => s.session?.userId ?? null);
 
+  // Approvers see the decision queue and the entries of their reports; the server decides
+  // which rows those are and whether each may be decided.
   const canApprove = can('time.approve');
   const [tab, setTab] = useState<Tab>('mine');
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<TimesheetEntry | null>(null);
   const [creating, setCreating] = useState(false);
 
-  const filters = useMemo(() => {
-    const f: { status?: TimesheetStatus; userId?: string; limit: number } = { limit: 100 };
-    if (tab === 'mine')    f.userId = myId ?? undefined;
-    if (tab === 'pending') f.status = 'submitted';
-    return f;
-  }, [tab, myId]);
-
-  const list = useQuery({
-    queryKey: ['admin.time.list', filters],
-    queryFn:  () => container.listTimesheets.execute(filters),
-    enabled:  can('time.report'),
-    staleTime: 15_000,
-  });
+  const filters = useMemo(() => ({ scope: SCOPE_OF_TAB[tab], limit: 100 }), [tab]);
+  const list = useKeysetPages<TimesheetEntry, typeof filters>(
+    ['admin.time.list'], filters, (f) => container.listTimesheets.execute(f), can('time.report'),
+  );
 
   const invalidate = () => { void queryClient.invalidateQueries({ queryKey: ['admin.time.list'] }); };
   const submit  = useMutation({ mutationFn: (id: string) => container.submitTimesheet.execute(id),  onSuccess: invalidate });
@@ -146,7 +143,7 @@ export default function TimeScreen() {
       <TimesheetRowItem
         entry={item}
         isMine={item.userId === myId}
-        canApprove={canApprove}
+        canApprove={item.canDecide}
         onEdit={handleEdit}
         onSubmit={handleSubmit}
         onDelete={handleDelete}
@@ -154,7 +151,7 @@ export default function TimeScreen() {
         onReject={handleReject}
       />
     ),
-    [canApprove, handleApprove, handleDelete, handleEdit, handleReject, handleSubmit, myId],
+    [handleApprove, handleDelete, handleEdit, handleReject, handleSubmit, myId],
   );
 
   const portalTitle = useMemo(() => {
@@ -187,7 +184,7 @@ export default function TimeScreen() {
         filterButtonTestID="admin-time-filter-button"
         filterSheetContent={(
           <FilterSection<Tab>
-            options={(['mine', 'pending', 'all'] as const).map((value) => ({
+            options={(canApprove ? (['mine', 'pending', 'all'] as const) : (['mine'] as const)).map((value) => ({
               value,
               label: value === 'mine' ? t.myEntriesTab : value === 'pending' ? t.pendingTab : t.allTab,
             }))}
@@ -196,15 +193,17 @@ export default function TimeScreen() {
           />
         )}
       />
-      <Text style={styles.totalLabel}>{t.totalCount(list.data?.totalCount ?? 0)}</Text>
+      <Text style={styles.totalLabel}>{t.totalCount(list.totalCount)}</Text>
 
       <KcFlashList
-        data={list.data?.rows ?? []}
+        data={list.rows}
         keyExtractor={timesheetKeyExtractor}
         estimatedItemSize={140}
         renderItem={renderItem}
+        onEndReached={list.fetchMore}
+        onEndReachedThreshold={0.5}
         refreshControl={
-          <RefreshControl refreshing={list.isRefetching} onRefresh={() => { void list.refetch(); }} />
+          <RefreshControl refreshing={list.isRefetching} onRefresh={list.refetch} />
         }
         ListEmptyComponent={
           !list.isLoading ? <AdminListEmpty title={t.emptyTitle} hint={t.emptyHint} /> : null

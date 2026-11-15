@@ -3,80 +3,36 @@ import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
-  deleteExecute: vi.fn(), resetOnboarding: vi.fn(), signOut: vi.fn(), setLocal: vi.fn(), setSkipped: vi.fn(),
+  deleteExecute: vi.fn(), signOut: vi.fn(),
   replace: vi.fn(), t: vi.fn((key: string, options?: { msg?: string }) => options ? `${key}:${options.msg}` : key),
-  alert: vi.fn(), confirm: vi.fn(), platform: { os: 'web' as string },
+  alert: vi.fn(),
 }));
 vi.mock('../../services/userComposition', () => ({
   getDeleteAccountUseCase: () => ({ execute: mocks.deleteExecute }),
-  resetOnboardingForDev: mocks.resetOnboarding,
 }));
 vi.mock('../../services/performFullSignOut', () => ({ performFullSignOut: mocks.signOut }));
 vi.mock('../../store/authStore', () => ({
-  useAuthStore: Object.assign(
-      (selector: (state: { session: { userId: string } | null; setOnboardingState: typeof mocks.setLocal; signOut: typeof mocks.signOut }) => unknown) =>
-        selector({ session: { userId: 'u1' }, setOnboardingState: mocks.setLocal, signOut: mocks.signOut }),
-      {
-        getState: () => ({ setBasicInfoSkipped: mocks.setSkipped }),
-      },
-  ),
+  useAuthStore: (selector: (state: { signOut: typeof mocks.signOut }) => unknown) =>
+    selector({ signOut: mocks.signOut }),
 }));
 vi.mock('expo-router', () => ({ useRouter: () => ({ replace: mocks.replace }) }));
 vi.mock('@tanstack/react-query', () => ({ useQueryClient: () => ({ clear: vi.fn() }) }));
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: mocks.t }) }));
 vi.mock('react-native', async (importOriginal) => {
   const actual = await importOriginal<typeof import('react-native')>();
-  return {
-    ...actual,
-    Alert: { ...actual.Alert, alert: (...args: unknown[]) => mocks.alert(...args) },
-    Platform: { ...actual.Platform, get OS() { return mocks.platform.os; } },
-  };
+  return { ...actual, Alert: { ...actual.Alert, alert: (...args: unknown[]) => mocks.alert(...args) } };
 });
 vi.mock('../../lib/container', () => ({ container: { deviceRepo: { deactivate: vi.fn() } } }));
 import { useSettingsAccountActions } from '../useSettingsAccountActions';
 
 beforeEach(() => {
-  vi.useRealTimers(); vi.clearAllMocks(); mocks.platform.os = 'web';
-  vi.stubGlobal('confirm', mocks.confirm);
-  vi.stubGlobal('alert', mocks.alert);
-  mocks.deleteExecute.mockResolvedValue(undefined); mocks.resetOnboarding.mockResolvedValue(undefined);
-  mocks.signOut.mockResolvedValue(undefined); mocks.confirm.mockReturnValue(true);
+  vi.useRealTimers(); vi.clearAllMocks();
+  mocks.deleteExecute.mockResolvedValue(undefined);
+  mocks.signOut.mockResolvedValue(undefined);
 });
 afterEach(() => vi.useRealTimers());
 
 describe('useSettingsAccountActions', () => {
-  it('resets onboarding after web confirmation and reports backend failure', async () => {
-    const { result } = renderHook(() => useSettingsAccountActions());
-    await act(async () => result.current.handleResetOnboarding());
-    expect(mocks.confirm).toHaveBeenCalledWith('settings.resetOnboardingConfirmMsg');
-    expect(mocks.resetOnboarding).toHaveBeenCalledOnce();
-    expect(mocks.setLocal).toHaveBeenCalledWith('pending_basic_info');
-    expect(mocks.setSkipped).toHaveBeenCalledWith(false);
-    expect(mocks.replace).toHaveBeenCalledWith('/(onboarding)/about-intro');
-
-    mocks.resetOnboarding.mockRejectedValueOnce(new Error('offline'));
-    await act(async () => result.current.handleResetOnboarding());
-    expect(mocks.alert).toHaveBeenCalledWith('settings.resetOnboardingFailed:offline');
-    expect(result.current.resettingOnboarding).toBe(false);
-  });
-
-  it('uses native confirmation and alert, and skips duplicate or cancelled resets', async () => {
-    mocks.platform.os = 'ios';
-    const { result } = renderHook(() => useSettingsAccountActions());
-    act(() => result.current.handleResetOnboarding());
-    const actions = mocks.alert.mock.calls[0]?.[2] as Array<{ onPress?: () => void; style?: string }>;
-    expect(actions.map((action) => action.style)).toEqual(['cancel', 'destructive']);
-    act(() => actions[0]?.onPress?.());
-    expect(mocks.resetOnboarding).not.toHaveBeenCalled();
-    await act(async () => actions[1]?.onPress?.());
-    expect(mocks.resetOnboarding).toHaveBeenCalledOnce();
-    mocks.resetOnboarding.mockRejectedValueOnce('unknown');
-    await act(async () => result.current.handleResetOnboarding());
-    const errorActions = mocks.alert.mock.calls.at(-1)?.[2] as Array<{ onPress?: () => void }>;
-    await act(async () => errorActions[1]?.onPress?.());
-    expect(mocks.alert).toHaveBeenLastCalledWith('settings.resetOnboardingFailed:', 'general.unknownError');
-  });
-
   it('signs out successfully, handles failure, and delays delete sign-out after success', async () => {
     const { result } = renderHook(() => useSettingsAccountActions());
     await act(async () => result.current.handleSignOut());
@@ -99,11 +55,13 @@ describe('useSettingsAccountActions', () => {
     expect(mocks.replace).toHaveBeenLastCalledWith('/(auth)');
   });
 
-  it('does not reset when web confirmation is declined', () => {
-    mocks.confirm.mockReturnValue(false);
+  it('keeps the member signed in and the success overlay hidden when the deletion request is refused', async () => {
+    mocks.deleteExecute.mockRejectedValueOnce(new Error('suspended'));
     const { result } = renderHook(() => useSettingsAccountActions());
-    act(() => result.current.handleResetOnboarding());
-    expect(mocks.resetOnboarding).not.toHaveBeenCalled();
-    expect(result.current.resettingOnboarding).toBe(false);
+
+    await expect(act(async () => result.current.handleDeleteConfirm())).rejects.toThrow('suspended');
+
+    expect(result.current.deleteSuccessVisible).toBe(false);
+    expect(mocks.signOut).not.toHaveBeenCalled();
   });
 });

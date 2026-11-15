@@ -1,4 +1,6 @@
 // V2-ADMIN-ORG-7 — domain types for NGO org applications.
+import { allowsMove } from '../fsm/machine';
+import { orgApplicationMachine } from '../fsm/machines/orgApplication';
 
 export const ORG_APPLICATION_STATUSES = ['pending', 'approved', 'rejected'] as const;
 export type OrgApplicationStatus = (typeof ORG_APPLICATION_STATUSES)[number];
@@ -10,6 +12,15 @@ export function parseOrgApplicationStatus(
   return (ORG_APPLICATION_STATUSES as readonly string[]).includes(value)
     ? (value as OrgApplicationStatus)
     : null;
+}
+
+/**
+ * Whether the application still waits for a decision: the application graph gives an admin a
+ * move to `approved`. Only an open application is decided, and a member has one open
+ * application at a time. A status the app does not know is not open.
+ */
+export function isOrgApplicationOpen(status: string): boolean {
+  return allowsMove(orgApplicationMachine, status, 'approved', 'admin');
 }
 
 export interface OrgApplication {
@@ -39,6 +50,10 @@ export type OrgApplicationErrorCode =
   | 'invalid_status'
   | 'application_not_found'
   | 'application_already_decided'
+  /** The organization's web address is missing or not in the allowed form. */
+  | 'invalid_slug'
+  /** Another organization already has this web address. */
+  | 'slug_taken'
   | 'unknown';
 
 export class OrgApplicationError extends Error {

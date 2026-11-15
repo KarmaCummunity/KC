@@ -1,7 +1,7 @@
 import { assertEquals } from 'jsr:@std/assert@1';
 import type { FetchFn } from '../_shared/whatsapp/meta.ts';
 import type { RpcFn } from '../_shared/whatsapp/sender.ts';
-import { createSenderHandler, type SenderDeps } from './handler.ts';
+import { createSenderHandler, loadChannelConfigViaRpc, type SenderDeps } from './handler.ts';
 
 const SERVICE_KEY = 'service-role-key-for-tests';
 
@@ -77,4 +77,19 @@ Deno.test('enabled + configured: claims and sends through the (mocked) Graph API
   const res = await post(createSenderHandler(base({}, calls)));
   assertEquals(await res.json(), { ok: true, claimed: 1, sent: 1, retried: 0, failed: 0 });
   assertEquals(calls, ['https://graph.facebook.com/v21.0/555/messages']);
+});
+
+Deno.test('the channel settings are read through api_whatsapp_channel_config, never the table', async () => {
+  const seen: string[] = [];
+  const cfg = { is_enabled: true, phone_number_id: 'pn-1', graph_api_version: 'v21.0' };
+  const ok: RpcFn = (fn) => {
+    seen.push(fn);
+    return Promise.resolve({ data: cfg, error: null });
+  };
+  assertEquals(await loadChannelConfigViaRpc(ok), cfg);
+  assertEquals(seen, ['api_whatsapp_channel_config']);
+  const failing: RpcFn = () => Promise.resolve({ data: null, error: { message: 'boom' } });
+  assertEquals(await loadChannelConfigViaRpc(failing), null);
+  const partial: RpcFn = () => Promise.resolve({ data: { is_enabled: 'yes' }, error: null });
+  assertEquals(await loadChannelConfigViaRpc(partial), { is_enabled: false, phone_number_id: null, graph_api_version: null });
 });

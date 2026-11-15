@@ -165,4 +165,37 @@ describe('useUnifiedCreateCategory', () => {
     expect(tiles).toHaveLength(12);
     expect(screen.getByTestId('create-category-rides').getAttribute('aria-checked')).toBe('true');
   });
+
+  // #2059: usage is still counted and saved on every pick, but the chip order is fixed for the
+  // whole visit so the row never jumps under the member's thumb.
+  it('keeps the chip order stable while the form is open, however often categories are picked', async () => {
+    mocks.load.mockResolvedValue({ categoryId: 'rides', directions: {}, usageCounts: { rides: 5, food: 2 } });
+    await renderHarness();
+    const order = () =>
+      screen
+        .getAllByRole('checkbox')
+        .map((t) => t.getAttribute('data-testid'))
+        .filter((id) => (id ?? '').startsWith('create-category-'));
+    const before = order();
+    for (const id of ['housing', 'housing', 'items', 'housing']) {
+      fireEvent.click(screen.getByTestId(`create-category-${id}`));
+      fireEvent.click(screen.getByTestId('create-category-food'));
+    }
+    expect(order()).toEqual(before);
+    // The picks are still remembered, for the next time the form opens.
+    expect(mocks.save).toHaveBeenLastCalledWith(
+      'u1',
+      expect.objectContaining({ usageCounts: expect.objectContaining({ housing: 3, items: 1 }) }),
+    );
+  });
+
+  it('reflects the accumulated usage when the form is opened again', async () => {
+    mocks.load.mockResolvedValue({ categoryId: 'rides', directions: {}, usageCounts: { housing: 9, rides: 1 } });
+    await renderHarness();
+    const first = screen
+      .getAllByRole('checkbox')
+      .map((t) => t.getAttribute('data-testid'))
+      .find((id) => (id ?? '').startsWith('create-category-'));
+    expect(first).toBe('create-category-housing');
+  });
 });

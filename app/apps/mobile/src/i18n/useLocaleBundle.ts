@@ -32,3 +32,11 @@ export function useLocaleBundle(): LocaleBundle {
 export function localeBundle(): LocaleBundle {
   return bundleFor(i18n.language);
 }
+
+/**
+ * Both language bundles at once, for code that must match text in either language regardless of
+ * the UI language (the admin portal search, #2081). Never use it to render copy.
+ */
+export function bothLocaleBundles(): { readonly he: LocaleBundle; readonly en: LocaleBundle } {
+  return { he, en: en as unknown as LocaleBundle };
+}

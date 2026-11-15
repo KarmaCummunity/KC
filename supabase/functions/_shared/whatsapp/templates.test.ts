@@ -48,16 +48,32 @@ Deno.test('resolveTemplateParams prefers localized keys and refuses missing para
   assertEquals(resolveTemplateParams(TEMPLATE.reminder, 'en', { listing_title: 'a\n\tb    c' }), ['a b c']);
 });
 
-Deno.test('migration 0307 seed mirrors templates.json (he + en bodies and params)', async () => {
-  const sql = await Deno.readTextFile(
-    new URL('../../../migrations/0307_whatsapp_templates_registry.sql', import.meta.url),
-  );
+Deno.test('placeholderCount counts the numbered placeholders of a body', () => {
+  assertEquals(placeholderCount('a {{1}} b {{2}}'), 2);
+});
+
+// The seed migration is `next-NN_…` on a branch and `00NN_…` once merged, so match it by slug.
+const TEMPLATE_SEED_SLUG = '_whatsapp_channel_schema.sql';
+
+async function templateSeedSql(): Promise<{ name: string; sql: string }> {
+  const dir = new URL('../../../migrations/', import.meta.url);
+  const names: string[] = [];
+  for await (const e of Deno.readDir(dir)) {
+    if (e.isFile && e.name.endsWith(TEMPLATE_SEED_SLUG)) names.push(e.name);
+  }
+  assertEquals(names.length, 1, `exactly one migration ends with ${TEMPLATE_SEED_SLUG}: ${names.join(', ')}`);
+  return { name: names[0], sql: await Deno.readTextFile(new URL(names[0], dir)) };
+}
+
+Deno.test('the template seed migration mirrors templates.json (he + en bodies and params)', async () => {
+  const { name, sql } = await templateSeedSql();
   for (const t of TEMPLATES) {
     for (const lang of ['he', 'en'] as const) {
       const body = t.languages[lang].body.replaceAll("'", "''");
-      const row = `('${t.name}', '${lang}', '${t.category.toLowerCase()}', '${body}', '${JSON.stringify(t.params)}'::jsonb`;
-      assert(sql.includes(row), `0307 seed out of sync for ${t.name}/${lang} — regenerate with scripts/whatsapp-templates.mjs sql`);
+      const row = `('${t.name}', '${lang}', '${t.category.toLowerCase()}', '${body}', '${JSON.stringify(t.params)}', `;
+      assert(sql.includes(row), `${name} seed out of sync for ${t.name}/${lang}; regenerate with scripts/whatsapp-templates.mjs sql`);
     }
   }
-  assertEquals(placeholderCount('a {{1}} b {{2}}'), 2);
+  const seeded = sql.match(/^\s*\('[a-z0-9_]+_v\d+', '(he|en)', /gm) ?? [];
+  assertEquals(seeded.length, TEMPLATES.length * 2, 'the seed has a row per template and language, and no others');
 });

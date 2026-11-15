@@ -7,6 +7,7 @@ import { track } from '../../../lib/analytics';
 import { trackCoreLoop } from '../../../lib/analyticsCoreLoop';
 import { hapticSuccess } from '../../../lib/haptics';
 import { handoffErrorKey } from '../../../lib/marketplaceCreateErrors';
+import { isBackendUnavailable, notAvailableMessage } from '../../../lib/backendAvailability';
 import { knowledgeBookingsQueryKey, knowledgeSlotsQueryKey } from '../../../services/knowledgeBookingComposition';
 
 /** Core-loop events a booking action can complete. */
@@ -33,7 +34,7 @@ export function useKnowledgeBookingAction(listingId: string, cityId: string | nu
       ]);
       return true;
     } catch (err) {
-      alert(t(handoffErrorKey(err) ?? 'givingHandoff.errorGeneric'));
+      alert(isBackendUnavailable(err) ? notAvailableMessage() : t(handoffErrorKey(err) ?? 'givingHandoff.errorGeneric'));
       return false;
     } finally {
       setBusy(false);

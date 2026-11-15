@@ -7,7 +7,7 @@ create table public.user_private (
   user_id                     uuid primary key references public.users (id) on delete cascade,
   -- Contact number shown to a counterparty only through a dedicated RPC.
   contact_phone               text check (char_length(btrim(contact_phone)) between 1 and 20),
-  -- Used for age-restricted worlds; written once through an RPC, never directly.
+  -- Used for the 18+ rule and age-restricted worlds; written only through set_date_of_birth.
   date_of_birth               date,
   -- Default pickup address, prefilled into new posts. Both parts or neither.
   profile_street              text check (char_length(profile_street) between 1 and 80),
@@ -47,7 +47,7 @@ create policy user_private_update_self on public.user_private
   with check (user_id = (select auth.uid()));
 
 grant select on public.user_private to authenticated;
--- date_of_birth is excluded: it is set through an RPC that validates it and forbids changes.
+-- date_of_birth is excluded: it is written only by set_date_of_birth, which enforces 18+.
 grant update (
   contact_phone, profile_street, profile_street_number, notification_preferences,
   show_active_status, closure_explainer_dismissed, first_post_nudge_dismissed, basic_info_skipped

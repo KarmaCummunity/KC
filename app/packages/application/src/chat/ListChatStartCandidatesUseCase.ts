@@ -1,5 +1,5 @@
 /** FR-CHAT-017 — recipients the "+" on the Inbox offers: people I follow, then other people found by name. */
-import type { User } from '@kc/domain';
+import { BackendUnavailableError, type User } from '@kc/domain';
 import type { IBlockRepository } from '../ports/IBlockRepository';
 import type { IUserRepository } from '../ports/IUserRepository';
 
@@ -33,7 +33,12 @@ export class ListChatStartCandidatesUseCase {
       searching
         ? this.users.searchUsers(query, { excludeUserId: input.viewerId, limit: OTHERS_LIMIT })
         : Promise.resolve([] as User[]),
-      this.blocks.listMyBlockedUsers(),
+      // Blocked people are also hidden by the server (users_hide_blocked); a backend without the
+      // blocked-users list degrades to that filter alone instead of failing the screen.
+      this.blocks.listMyBlockedUsers().catch((error: unknown) => {
+        if (error instanceof BackendUnavailableError) return [];
+        throw error;
+      }),
     ]);
     const hidden = new Set(myBlocks.map((b) => b.userId));
     const offerable = (u: User) =>

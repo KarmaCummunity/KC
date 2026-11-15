@@ -5,13 +5,15 @@ import type {
 import { AdminSearchUsersUseCase } from '../AdminSearchUsersUseCase';
 import { AdminSearchPostsUseCase } from '../AdminSearchPostsUseCase';
 import { AdminSearchAuditUseCase } from '../AdminSearchAuditUseCase';
+import { AdminFindMembersUseCase } from '../AdminFindMembersUseCase';
 import type { IAdminContentRepository } from '../IAdminContentRepository';
 
 function fakeRepo(overrides: Partial<IAdminContentRepository> = {}): IAdminContentRepository {
   return {
-    searchUsers: vi.fn(async () => ({ rows: [], totalCount: 0 })),
-    searchPosts: vi.fn(async () => ({ rows: [], totalCount: 0 })),
-    searchAudit: vi.fn(async () => ({ rows: [], totalCount: 0 })),
+    findActiveMembers: vi.fn(async () => []),
+    searchUsers: vi.fn(async () => ({ rows: [], nextCursor: null })),
+    searchPosts: vi.fn(async () => ({ rows: [], nextCursor: null })),
+    searchAudit: vi.fn(async () => ({ rows: [], nextCursor: null })),
     ...overrides,
   };
 }
@@ -20,9 +22,9 @@ describe('AdminSearchUsersUseCase', () => {
   it('forwards filters and returns the repo page', async () => {
     const repo = fakeRepo();
     const uc = new AdminSearchUsersUseCase(repo);
-    await uc.execute({ query: 'אל', status: 'banned', limit: 10, offset: 20 });
+    await uc.execute({ query: 'אל', status: 'banned', limit: 10, cursor: { createdAt: 't', id: 'u0' } });
     expect(repo.searchUsers).toHaveBeenCalledWith({
-      query: 'אל', status: 'banned', limit: 10, offset: 20,
+      query: 'אל', status: 'banned', limit: 10, cursor: { createdAt: 't', id: 'u0' },
     });
   });
 
@@ -30,9 +32,9 @@ describe('AdminSearchUsersUseCase', () => {
     const page: AdminSearchPage<AdminUserSearchResult> = {
       rows: [{
         userId: 'u1', displayName: 'A', shareHandle: null, accountStatus: 'active',
-        cityName: null, createdAt: new Date(), lastSeenAt: null,
+        cityId: null, createdAt: new Date(),
       }],
-      totalCount: 1,
+      nextCursor: { createdAt: 't', id: 'u1' },
     };
     const repo = fakeRepo({ searchUsers: vi.fn(async () => page) });
     const uc = new AdminSearchUsersUseCase(repo);
@@ -63,6 +65,21 @@ describe('AdminSearchAuditUseCase', () => {
     const r = await uc.execute({});
     expect(repo.searchAudit).toHaveBeenCalledWith({});
     expect(r.rows).toEqual([]);
-    expect(r.totalCount).toBe(0);
+    expect(r.nextCursor).toBeNull();
+  });
+});
+
+describe('AdminFindMembersUseCase', () => {
+  it('looks members up by the trimmed text with the picker limit', async () => {
+    const repo = fakeRepo({ findActiveMembers: vi.fn(async () => [{ userId: 'u1', displayName: 'Dana' }]) });
+    const found = await new AdminFindMembersUseCase(repo).execute('  dan  ');
+    expect(repo.findActiveMembers).toHaveBeenCalledWith('dan', 8);
+    expect(found).toEqual([{ userId: 'u1', displayName: 'Dana' }]);
+  });
+
+  it('does not query for fewer than two characters', async () => {
+    const repo = fakeRepo();
+    expect(await new AdminFindMembersUseCase(repo).execute(' d ')).toEqual([]);
+    expect(repo.findActiveMembers).not.toHaveBeenCalled();
   });
 });

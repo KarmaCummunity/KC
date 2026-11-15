@@ -2,6 +2,7 @@
 // registration-status guards.
 import { describe, expect, it } from 'vitest';
 import {
+  canLeaveEventRegistration,
   EVENT_REGISTRATION_POLICIES,
   EVENT_REGISTRATION_STATUSES,
   isActiveEventRegistrationStatus,
@@ -59,6 +60,13 @@ describe('event guards', () => {
     expect(isActiveEventRegistrationStatus('no_show')).toBe(false);
     expect(isActiveEventRegistrationStatus('cancelled')).toBe(false);
     expect(isActiveEventRegistrationStatus(null)).toBe(false);
+  });
+
+  it('lets a registrant leave exactly while the registration is active', () => {
+    for (const status of EVENT_REGISTRATION_STATUSES) {
+      expect(canLeaveEventRegistration(status)).toBe(isActiveEventRegistrationStatus(status));
+    }
+    expect(canLeaveEventRegistration('a_newer_status')).toBe(false);
   });
 
   it('knows every registration state, attendance and the waitlist included', () => {

@@ -38,7 +38,7 @@ describe('foregroundHandler — install side effects', () => {
 describe('foregroundHandler — handleNotification', () => {
   it('suppresses banner/sound/badge/list when the user is on the exact chat thread the push targets', async () => {
     useActiveScreenStore.setState({ route: '/chat/c_1' });
-    const out = await dispatch({ kind: 'chat_message', chat_id: 'c_1' });
+    const out = await dispatch({ kind: 'chat_message', entity: { type: 'chat', id: 'c_1' } });
     expect(out).toEqual({
       shouldShowBanner: false,
       shouldShowList: false,
@@ -49,7 +49,7 @@ describe('foregroundHandler — handleNotification', () => {
 
   it('shows everything when active route is the inbox (not the specific chat)', async () => {
     useActiveScreenStore.setState({ route: '/chat' });
-    const out = await dispatch({ kind: 'chat_message', chat_id: 'c_1' });
+    const out = await dispatch({ kind: 'chat_message', entity: { type: 'chat', id: 'c_1' } });
     expect(out).toEqual({
       shouldShowBanner: true,
       shouldShowList: true,
@@ -60,23 +60,23 @@ describe('foregroundHandler — handleNotification', () => {
 
   it('shows everything when active route is a DIFFERENT chat (c_2 vs the push for c_1)', async () => {
     useActiveScreenStore.setState({ route: '/chat/c_2' });
-    const out = await dispatch({ kind: 'chat_message', chat_id: 'c_1' });
+    const out = await dispatch({ kind: 'chat_message', entity: { type: 'chat', id: 'c_1' } });
     expect((out as { shouldShowBanner: boolean }).shouldShowBanner).toBe(true);
   });
 
   it('shows everything when active route is null (cold app + foreground push)', async () => {
     useActiveScreenStore.setState({ route: null });
-    const out = await dispatch({ kind: 'chat_message', chat_id: 'c_1' });
+    const out = await dispatch({ kind: 'chat_message', entity: { type: 'chat', id: 'c_1' } });
     expect((out as { shouldShowBanner: boolean }).shouldShowBanner).toBe(true);
   });
 
-  it('shows everything for non-chat kinds even when route happens to match (kind gate)', async () => {
+  it('shows everything when the entity is not a chat even if its id matches the route', async () => {
     useActiveScreenStore.setState({ route: '/chat/c_1' });
-    const out = await dispatch({ kind: 'system_announcement', chat_id: 'c_1' });
+    const out = await dispatch({ kind: 'post_comment', entity: { type: 'post', id: 'c_1' } });
     expect((out as { shouldShowBanner: boolean }).shouldShowBanner).toBe(true);
   });
 
-  it('shows everything when chat_id is missing from the push payload (defensive)', async () => {
+  it('shows everything when the entity is missing from the push payload (defensive)', async () => {
     useActiveScreenStore.setState({ route: '/chat/c_1' });
     const out = await dispatch({ kind: 'chat_message' });
     expect((out as { shouldShowBanner: boolean }).shouldShowBanner).toBe(true);

@@ -20,12 +20,11 @@ describe('CompleteBasicInfoUseCase', () => {
       [userId]: {
         displayName: 'placeholder',
         city: '5000',
-        cityName: 'תל אביב - יפו',
         onboardingState: 'pending_basic_info',
       },
     });
 
-  it('persists trimmed display_name + city + city_name and advances state to pending_avatar', async () => {
+  it('persists trimmed display_name + city id (not the name) and advances state to pending_avatar', async () => {
     const repo = seed();
     const useCase = makeUc(repo);
 
@@ -40,7 +39,6 @@ describe('CompleteBasicInfoUseCase', () => {
     expect(repo.rows.get(userId)).toEqual({
       displayName: 'נווה',
       city: '4000',
-      cityName: 'חיפה',
       onboardingState: 'pending_avatar',
       basicInfoSkipped: false,
       profileStreet: null,
@@ -174,7 +172,6 @@ describe('CompleteBasicInfoUseCase', () => {
     expect(repo.rows.get(userId)).toMatchObject({
       displayName: 'נווה',
       city: '4000',
-      cityName: 'חיפה',
       profileStreet: 'הרצל',
       profileStreetNumber: '12',
       onboardingState: 'pending_avatar',

@@ -5,9 +5,10 @@
 // @kc/application, so the fake and the adapter cannot drift apart unnoticed.
 
 import { afterAll, describe, it } from 'vitest';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { reportRepositoryContract, type ReportContractContext } from '@kc/application';
 import { ContractUsers } from '../../__tests__/contractUsers';
-import { SupabaseChatRepository } from '../../chat/SupabaseChatRepository';
+import type { Database } from '../../database.types';
 import { SupabaseReportRepository } from '../SupabaseReportRepository';
 
 // Cases seed up to three users and sign each in; the stack takes a few hundred ms per step.
@@ -18,7 +19,9 @@ describe('IReportRepository contract — SupabaseReportRepository (local stack)'
   const ctx: ReportContractContext = {
     newActor: async () => {
       const { userId, client } = await users.signInNewUser();
-      return { userId, reports: new SupabaseReportRepository(client), chats: new SupabaseChatRepository(client) };
+      // ContractUsers (owned by P1) still types its client against the legacy schema; it is the
+      // same connection, so only the type is converted.
+      return { userId, reports: new SupabaseReportRepository(client as unknown as SupabaseClient<Database>) };
     },
   };
 

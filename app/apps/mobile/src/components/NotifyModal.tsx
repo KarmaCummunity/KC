@@ -27,7 +27,7 @@ export function NotifyModal({ visible, title, message, ctaLabel, onDismiss }: Pr
       visible={visible}
       title={title}
       onDismiss={onDismiss}
-      footer={<PrimaryButton label={label} size="md" fullWidth onPress={onDismiss} />}
+      footer={<PrimaryButton testID="notify-modal-dismiss" label={label} size="md" fullWidth onPress={onDismiss} />}
     >
       <Text style={styles.message}>{message}</Text>
     </Modal>

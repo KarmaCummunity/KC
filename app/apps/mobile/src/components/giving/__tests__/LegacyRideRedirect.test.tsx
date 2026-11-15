@@ -1,18 +1,16 @@
 // @vitest-environment jsdom
-// G44 / D70 — an old link to a retired legacy ride opens its listing, or the rides hub.
+// G44 / D70 — an old link to a retired legacy ride opens the ride's listing, or the rides hub.
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import React from 'react';
-import { cleanup, render, waitFor } from '@testing-library/react';
+import { cleanup, render } from '@testing-library/react';
 import { ThemeProvider } from '@kc/ui';
 
-const { replace, findListingForLegacyRide, params } = vi.hoisted(() => ({
+const { replace, params } = vi.hoisted(() => ({
   replace: vi.fn(),
-  findListingForLegacyRide: vi.fn(),
-  params: { id: 'r1' as string | undefined },
+  params: { id: undefined as string | undefined },
 }));
 
 vi.mock('expo-router', () => ({ useRouter: () => ({ replace }), useLocalSearchParams: () => params }));
-vi.mock('../../../services/rideLegacyLinkComposition', () => ({ findListingForLegacyRide }));
 
 import { LegacyRideRedirect } from '../LegacyRideRedirect';
 
@@ -29,24 +27,18 @@ const renderRedirect = () =>
   );
 
 describe('LegacyRideRedirect', () => {
-  it('opens the listing the legacy ride became', async () => {
-    findListingForLegacyRide.mockResolvedValue('l9');
+  it('opens the listing of a well-formed ride id', () => {
+    params.id = '11111111-1111-4111-8111-111111111111';
     renderRedirect();
-    await waitFor(() =>
-      expect(replace).toHaveBeenCalledWith({ pathname: '/(tabs)/donations/marketplace/[listingId]', params: { listingId: 'l9' } }),
-    );
-    expect(findListingForLegacyRide).toHaveBeenCalledWith('r1');
+    expect(replace).toHaveBeenCalledWith({
+      pathname: '/(tabs)/donations/marketplace/[listingId]',
+      params: { listingId: params.id },
+    });
   });
 
-  it('falls back to the rides hub when there is no listing or the lookup fails', async () => {
-    findListingForLegacyRide.mockResolvedValueOnce(null);
+  it('falls back to the rides hub for an id that cannot be a ride', () => {
+    params.id = 'r1';
     renderRedirect();
-    await waitFor(() => expect(replace).toHaveBeenCalledWith('/(tabs)/donations/rides'));
-
-    cleanup();
-    replace.mockClear();
-    findListingForLegacyRide.mockRejectedValueOnce(new Error('offline'));
-    renderRedirect();
-    await waitFor(() => expect(replace).toHaveBeenCalledWith('/(tabs)/donations/rides'));
+    expect(replace).toHaveBeenCalledWith('/(tabs)/donations/rides');
   });
 });

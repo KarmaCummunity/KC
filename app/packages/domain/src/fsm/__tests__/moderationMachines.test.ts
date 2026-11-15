@@ -5,8 +5,9 @@ import { reportMachine } from '../machines/report';
 
 describe('report machine', () => {
   it('resolves an open report once, as a confirmation or a dismissal', () => {
-    expect(canTransition(reportMachine, 'open', 'confirmed_violation')).toEqual({ ok: true, changed: true });
-    expect(canTransition(reportMachine, 'open', 'dismissed_no_violation')).toEqual({ ok: true, changed: true });
+    expect(canTransition(reportMachine, 'open', 'confirmed_violation', 'admin')).toEqual({ ok: true, changed: true });
+    expect(canTransition(reportMachine, 'open', 'dismissed_no_violation', 'admin')).toEqual({ ok: true, changed: true });
+    expect(canTransition(reportMachine, 'open', 'confirmed_violation')).toEqual({ ok: false, code: 'forbidden_role' });
   });
 
   it('never reopens or flips a resolved report', () => {
@@ -20,9 +21,11 @@ describe('report machine', () => {
 
 describe('follow request machine', () => {
   it('resolves a pending request by accept, reject or cancel', () => {
-    for (const outcome of ['accepted', 'rejected', 'cancelled']) {
-      expect(canTransition(followRequestMachine, 'pending', outcome).ok).toBe(true);
-    }
+    expect(canTransition(followRequestMachine, 'pending', 'accepted', 'target').ok).toBe(true);
+    expect(canTransition(followRequestMachine, 'pending', 'rejected', 'target').ok).toBe(true);
+    expect(canTransition(followRequestMachine, 'pending', 'cancelled', 'requester').ok).toBe(true);
+    expect(canTransition(followRequestMachine, 'pending', 'cancelled', 'system').ok).toBe(true);
+    expect(canTransition(followRequestMachine, 'pending', 'accepted', 'requester').ok).toBe(false);
   });
 
   it('keeps every outcome final', () => {

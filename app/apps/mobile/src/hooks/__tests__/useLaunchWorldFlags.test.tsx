@@ -7,9 +7,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const { fetchRemoteFeatureFlags } = vi.hoisted(() => ({ fetchRemoteFeatureFlags: vi.fn() }));
 vi.mock('../../services/featureFlagsComposition', () => ({ fetchRemoteFeatureFlags }));
 import { useHubTileLaunchEnabled, useLaunchWorldEnabled, useMarketplaceWorldLaunchEnabled, useRemoteAppFlags } from '../useLaunchWorldFlags';
+import { useAuthStore } from '../../store/authStore';
 let client: QueryClient;
 const wrapper = ({ children }: { children: ReactNode }) => <QueryClientProvider client={client}>{children}</QueryClientProvider>;
-beforeEach(() => { client = new QueryClient({ defaultOptions: { queries: { retry: false } } }); vi.clearAllMocks(); });
+beforeEach(() => {
+  client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  vi.clearAllMocks();
+  useAuthStore.setState({ session: { userId: 'u_member' } as never, isAuthenticated: true });
+});
 afterEach(cleanup);
 
 describe('launch world flag hooks', () => {

@@ -70,7 +70,7 @@ export class ApproveRideBookingUseCase {
     if (context) {
       const target = context.bookings.find((b) => b.handoffId === handoffId);
       if (target) {
-        if (target.status !== 'reserved') {
+        if (!canPerformBookingAction(target.status, 'approve')) {
           return Promise.reject(new RideError('invalid_status', 'only reserved bookings can be approved'));
         }
         if (!canApproveRideBooking(context.capacity, context.bookings, target)) {
@@ -91,7 +91,7 @@ export class DeclineRideBookingUseCase {
   execute(handoffId: string, context?: DeclineRideBookingContext): Promise<void> {
     if (context?.bookings) {
       const target = context.bookings.find((b) => b.handoffId === handoffId);
-      if (target && target.status !== 'reserved') {
+      if (target && !canPerformBookingAction(target.status, 'decline')) {
         return Promise.reject(new RideError('invalid_status', 'only reserved bookings can be declined'));
       }
     }
@@ -108,7 +108,7 @@ export class CancelRideBookingUseCase {
   constructor(private readonly repo: IRideBookingRepository) {}
   execute(handoffId: string, context?: CancelRideBookingContext): Promise<void> {
     const status = context?.status ?? context?.bookings?.find((b) => b.handoffId === handoffId)?.status;
-    if (status && !canPerformBookingAction(status as RideBookingStatus, 'cancel')) {
+    if (status && !canPerformBookingAction(status, 'cancel')) {
       return Promise.reject(new RideError('invalid_status', 'only reserved or confirmed bookings can be cancelled'));
     }
     return this.repo.cancel(handoffId);
@@ -126,7 +126,7 @@ export class CompleteRideTripUseCase {
   constructor(private readonly repo: IRideBookingRepository) {}
   execute(handoffId: string, context?: CompleteRideTripContext): Promise<void> {
     const status = context?.status ?? context?.bookings?.find((b) => b.handoffId === handoffId)?.status;
-    if (status && !canPerformBookingAction(status as RideBookingStatus, 'complete')) {
+    if (status && !canPerformBookingAction(status, 'complete')) {
       return Promise.reject(new RideError('invalid_status', 'only reserved or confirmed bookings can be completed'));
     }
     if (context?.departsAt && !isRideTripCompletable(context.departsAt, context.now)) {

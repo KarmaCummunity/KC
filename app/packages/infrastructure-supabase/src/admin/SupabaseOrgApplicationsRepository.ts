@@ -1,104 +1,106 @@
-// V2-ADMIN-ORG-7 — Supabase adapter for `org_applications`.
+// V2-ADMIN-ORG-7, FR-ORG-002 — Supabase adapter for the review of organization applications.
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type {
-  IOrgApplicationsRepository,
-  OrgApplicationListFilters,
-} from '@kc/application';
+import type { IOrgApplicationsRepository, OrgApplicationListFilters } from '@kc/application';
 import {
   OrgApplicationError,
-  type OrgApplication,
-  type OrgApplicationPage,
   parseOrgApplicationStatus,
+  type OrgApplication,
+  type OrgApplicationErrorCode,
+  type OrgApplicationPage,
 } from '@kc/domain';
+import type { Database } from '../database.types';
+import { toBackendUnavailable, type BackendErrorLike } from '../rpc/backendUnavailable';
+import type { CallResult } from '../rpc/mapRpcError';
 
-interface OrgApplicationRow {
-  application_id: string;
-  applicant_user_id: string;
-  applicant_name: string | null;
-  org_name: string;
-  org_description: string | null;
-  contact_email: string | null;
-  contact_phone: string | null;
-  website_url: string | null;
-  status: string;
-  created_at: string;
-  reviewed_at: string | null;
-  reviewed_by: string | null;
-  reviewer_name: string | null;
-  review_note: string | null;
-  total_count: number | string;
-}
+type Client = SupabaseClient<Database>;
+type ApplicationRow = Database['public']['Tables']['org_applications']['Row'];
 
-function toError(err: { message?: string; code?: string } | null): OrgApplicationError {
-  const msg = err?.message ?? '';
-  if (msg === 'invalid_status') return new OrgApplicationError('invalid_status');
-  if (msg === 'application_not_found' || err?.code === 'P0002') {
-    return new OrgApplicationError('application_not_found');
-  }
-  if (msg === 'application_already_decided') return new OrgApplicationError('application_already_decided');
-  if (err?.code === '42501') return new OrgApplicationError('forbidden');
+const DEFAULT_PAGE = 50;
+
+const BY_MESSAGE: Readonly<Record<string, OrgApplicationErrorCode>> = {
+  application_not_found: 'application_not_found',
+  application_already_decided: 'application_already_decided',
+  slug_required: 'invalid_slug',
+  forbidden: 'forbidden',
+  unauthenticated: 'forbidden',
+  invalid_status: 'invalid_status',
+};
+
+function toError(err: BackendErrorLike): OrgApplicationError {
+  const msg = err.message ?? '';
+  const mapped = BY_MESSAGE[msg];
+  if (mapped) return new OrgApplicationError(mapped);
+  if (err.code === '42501') return new OrgApplicationError('forbidden');
+  // The organization slug is unique; a check violation is a slug the table refuses.
+  if (err.code === '23505') return new OrgApplicationError('slug_taken');
+  if (err.code === '23514') return new OrgApplicationError('invalid_slug');
   return new OrgApplicationError('unknown', msg);
 }
 
-function mapRow(row: OrgApplicationRow): OrgApplication | null {
+function unwrap<T>(object: string, result: CallResult<T>): T {
+  if (!result.error) return result.data;
+  throw toBackendUnavailable(object, result.error) ?? toError(result.error);
+}
+
+export function mapOrgApplicationRow(row: ApplicationRow, names: ReadonlyMap<string, string | null>): OrgApplication | null {
   const status = parseOrgApplicationStatus(row.status);
   if (status === null) return null;
   return {
-    applicationId:    row.application_id,
-    applicantUserId:  row.applicant_user_id,
-    applicantName:    row.applicant_name,
-    orgName:          row.org_name,
-    orgDescription:   row.org_description,
-    contactEmail:     row.contact_email,
-    contactPhone:     row.contact_phone,
-    websiteUrl:       row.website_url,
+    applicationId: row.id,
+    applicantUserId: row.applicant_id,
+    applicantName: names.get(row.applicant_id) ?? null,
+    orgName: row.org_name,
+    orgDescription: row.org_description,
+    contactEmail: row.contact_email,
+    contactPhone: row.contact_phone,
+    websiteUrl: row.website_url,
     status,
-    createdAt:        new Date(row.created_at),
-    reviewedAt:       row.reviewed_at === null ? null : new Date(row.reviewed_at),
-    reviewedBy:       row.reviewed_by,
-    reviewerName:     row.reviewer_name,
-    reviewNote:       row.review_note,
+    createdAt: new Date(row.created_at),
+    reviewedAt: row.reviewed_at === null ? null : new Date(row.reviewed_at),
+    reviewedBy: row.reviewed_by,
+    reviewerName: row.reviewed_by ? (names.get(row.reviewed_by) ?? null) : null,
+    reviewNote: row.review_note,
   };
 }
 
-function totalOf(rows: readonly OrgApplicationRow[]): number {
-  if (rows.length === 0) return 0;
-  const first = rows[0]!.total_count;
-  return typeof first === 'number' ? first : Number.parseInt(first, 10);
-}
-
+/**
+ * Applications are a direct read of `org_applications` (policy `org_applications_select_reviewers`,
+ * platform admins) with the applicant's and reviewer's names from `users`; the decision goes through
+ * `admin_org_application_approve` / `_reject` (supabase/schemas/80_organizations/030).
+ */
 export class SupabaseOrgApplicationsRepository implements IOrgApplicationsRepository {
-  constructor(private readonly client: SupabaseClient) {}
+  constructor(private readonly client: Client) {}
 
   async list(filters: OrgApplicationListFilters): Promise<OrgApplicationPage> {
-    const { data, error } = await this.client.rpc('admin_org_application_list', {
-      p_status: filters.status ?? null,
-      p_limit:  filters.limit  ?? 50,
-      p_offset: filters.offset ?? 0,
-    });
-    if (error) throw toError(error);
-    const raw = Array.isArray(data) ? (data as OrgApplicationRow[]) : [];
-    const rows: OrgApplication[] = [];
-    for (const r of raw) {
-      const m = mapRow(r);
-      if (m !== null) rows.push(m);
-    }
-    return { rows, totalCount: totalOf(raw) };
+    let query = this.client.from('org_applications').select('*', { count: 'exact' });
+    if (filters.status) query = query.eq('status', filters.status);
+    const result = await query
+      .order('created_at', { ascending: false })
+      .order('id', { ascending: false })
+      .limit(filters.limit ?? DEFAULT_PAGE);
+    const rows = unwrap('table:org_applications', result) ?? [];
+    const memberIds = [...new Set(rows.flatMap((r) => (r.reviewed_by ? [r.applicant_id, r.reviewed_by] : [r.applicant_id])))];
+    const users = memberIds.length > 0
+      ? unwrap('table:users', await this.client.from('users').select('id, display_name').in('id', memberIds)) ?? []
+      : [];
+    const names = new Map(users.map((u) => [u.id, u.display_name]));
+    return {
+      rows: rows.map((row) => mapOrgApplicationRow(row, names)).filter((a): a is OrgApplication => a !== null),
+      totalCount: result.count ?? rows.length,
+    };
   }
 
-  async approve(applicationId: string, note?: string | null): Promise<void> {
-    const { error } = await this.client.rpc('admin_org_application_approve', {
-      p_application_id: applicationId,
-      p_note: note ?? null,
-    });
-    if (error) throw toError(error);
+  async approve(applicationId: string, slug: string, note?: string | null): Promise<void> {
+    unwrap(
+      'rpc:admin_org_application_approve',
+      await this.client.rpc('admin_org_application_approve', { p_application_id: applicationId, p_slug: slug, p_note: note ?? undefined }),
+    );
   }
 
   async reject(applicationId: string, note?: string | null): Promise<void> {
-    const { error } = await this.client.rpc('admin_org_application_reject', {
-      p_application_id: applicationId,
-      p_note: note ?? null,
-    });
-    if (error) throw toError(error);
+    unwrap(
+      'rpc:admin_org_application_reject',
+      await this.client.rpc('admin_org_application_reject', { p_application_id: applicationId, p_note: note ?? undefined }),
+    );
   }
 }

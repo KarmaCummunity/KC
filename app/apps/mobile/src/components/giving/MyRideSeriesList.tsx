@@ -1,13 +1,13 @@
 // "My recurring rides" (docs/spec/05_giving_worlds.md §5.3 step 1, FR-RIDE-046): every
 // series the member runs, with pause / resume, reschedule and cancel. The server keeps the
-// occurrences in step: a paused or cancelled series drops its upcoming unbooked rides, a booked
-// ride stays an agreed ride.
+// occurrences in step: a paused series drops its upcoming unbooked rides and keeps a booked one;
+// a cancelled series ends every upcoming ride and tells the booked passengers (FR-RIDE-046 AC6).
 import React, { useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
-import { readRideRoute, type RideSeries } from '@kc/domain';
+import { readRideRoute, rideSeriesActions, type RideSeries } from '@kc/domain';
 import { MY_RIDE_SERIES_QUERY_KEY, rideSeriesUseCases } from '../../services/rideSeriesComposition';
 import { RIDES_FEED_QUERY_KEY } from '../../services/ridesFeedComposition';
 import { handoffErrorKey } from '../../lib/marketplaceCreateErrors';
@@ -75,7 +75,9 @@ function SeriesRow({ series }: Readonly<{ series: RideSeries }>) {
   const [editing, setEditing] = useState(false);
   const [confirmingCancel, setConfirmingCancel] = useState(false);
   const route = readRideRoute(series.details);
+  // Display only: the status pill. Which buttons show comes from the series machine.
   const paused = series.status === 'paused';
+  const offered = rideSeriesActions(series.status);
 
   const setStatus = (status: 'active' | 'paused' | 'cancelled') =>
     run(() => rideSeriesUseCases.setStatus().execute(series.id, status));
@@ -96,14 +98,16 @@ function SeriesRow({ series }: Readonly<{ series: RideSeries }>) {
     </View>
   ) : (
     <View style={styles.actions}>
-      <SecondaryButton
-        testID={`ride-series-${paused ? 'resume' : 'pause'}-${series.id}`}
-        size="sm"
-        icon={paused ? 'play-outline' : 'pause-outline'}
-        label={t(paused ? 'rideSeries.resume' : 'rideSeries.pause')}
-        disabled={busy}
-        onPress={() => void setStatus(paused ? 'active' : 'paused')}
-      />
+      {offered.pause || offered.resume ? (
+        <SecondaryButton
+          testID={`ride-series-${offered.resume ? 'resume' : 'pause'}-${series.id}`}
+          size="sm"
+          icon={offered.resume ? 'play-outline' : 'pause-outline'}
+          label={t(offered.resume ? 'rideSeries.resume' : 'rideSeries.pause')}
+          disabled={busy}
+          onPress={() => void setStatus(offered.resume ? 'active' : 'paused')}
+        />
+      ) : null}
       <GhostButton
         testID={`ride-series-edit-${series.id}`}
         size="sm"
@@ -112,13 +116,15 @@ function SeriesRow({ series }: Readonly<{ series: RideSeries }>) {
         disabled={busy}
         onPress={() => setEditing((v) => !v)}
       />
-      <DangerButton
-        testID={`ride-series-cancel-${series.id}`}
-        size="sm"
-        label={t('rideSeries.cancel')}
-        disabled={busy}
-        onPress={() => setConfirmingCancel(true)}
-      />
+      {offered.cancel ? (
+        <DangerButton
+          testID={`ride-series-cancel-${series.id}`}
+          size="sm"
+          label={t('rideSeries.cancel')}
+          disabled={busy}
+          onPress={() => setConfirmingCancel(true)}
+        />
+      ) : null}
     </View>
   );
 

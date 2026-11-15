@@ -18,6 +18,7 @@ import { OrgSwitcher } from '../OrgSwitcher';
 import { HierarchyStatsStrip } from './HierarchyStatsStrip';
 import { HierarchyLayerBand } from './HierarchyLayerBand';
 import { MaskedCommunityBand } from './MaskedCommunityBand';
+import { OrgSlugCard } from './OrgSlugCard';
 import { buildOrgAccents, layerPhoneInset, layerWidePct } from './layerVisuals';
 import { useLocaleBundle } from '../../../../i18n/useLocaleBundle';
 
@@ -27,6 +28,8 @@ const BAND_STAGGER_MS = 80;
 export interface AdminsLayersViewProps {
   readonly isWide: boolean;
   readonly onSelect: (userId: string) => void;
+  /** The viewer is the super admin, who alone changes an organization's page slug. */
+  readonly canChangeSlug?: boolean;
 }
 
 /** Wide screens: bands taper into a pyramid. */
@@ -45,9 +48,10 @@ interface PyramidBodyProps {
   readonly onFocus: (orgId: string | null) => void;
   readonly isWide: boolean;
   readonly onSelect: (userId: string) => void;
+  readonly canChangeSlug: boolean;
 }
 
-function PyramidBody({ pyramid, focusOrgId, onFocus, isWide, onSelect }: PyramidBodyProps) {
+function PyramidBody({ pyramid, focusOrgId, onFocus, isWide, onSelect, canChangeSlug }: PyramidBodyProps) {
   const styles = useStyles();
   const { colors } = useTheme();
   const L = useLocaleBundle();
@@ -59,6 +63,8 @@ function PyramidBody({ pyramid, focusOrgId, onFocus, isWide, onSelect }: Pyramid
     [pyramid.orgs],
   );
   const orgOptions = useMemo(() => pyramid.orgs.map((o) => ({ id: o.orgId, name: o.name })), [pyramid.orgs]);
+  // The focused organization's page address; only the super admin may change it (FR-ORG-001 AC5).
+  const focusedOrg = pyramid.orgs.find((o) => o.orgId === focusOrgId) ?? null;
   const total = pyramid.layers.length;
 
   return (
@@ -72,6 +78,7 @@ function PyramidBody({ pyramid, focusOrgId, onFocus, isWide, onSelect }: Pyramid
       {orgOptions.length > 1 && (
         <OrgSwitcher orgs={orgOptions} selected={focusOrgId} onSelect={onFocus} accents={orgAccents} />
       )}
+      {canChangeSlug && focusedOrg !== null && focusedOrg.slug !== '' && <OrgSlugCard org={focusedOrg} />}
       <View style={styles.stack}>
         {total === 0 && <Text style={styles.emptyText}>{L.admin.admins.layers.empty}</Text>}
         {pyramid.layers.map((layer, i) => (
@@ -97,7 +104,7 @@ function PyramidBody({ pyramid, focusOrgId, onFocus, isWide, onSelect }: Pyramid
   );
 }
 
-export function AdminsLayersView({ isWide, onSelect }: AdminsLayersViewProps) {
+export function AdminsLayersView({ isWide, onSelect, canChangeSlug = false }: AdminsLayersViewProps) {
   const styles = useStyles();
   const L = useLocaleBundle();
   const [focusOrgId, setFocusOrgId] = useState<string | null>(null);
@@ -133,6 +140,7 @@ export function AdminsLayersView({ isWide, onSelect }: AdminsLayersViewProps) {
         onFocus={setFocusOrgId}
         isWide={isWide}
         onSelect={onSelect}
+        canChangeSlug={canChangeSlug}
       />
     );
   }

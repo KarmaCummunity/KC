@@ -11,8 +11,9 @@ export interface FinanceEntryCardProps {
   readonly entry: FinanceEntry;
   /** Resolved name of `entry.accountId`, when known. */
   readonly accountName?: string | null;
-  readonly onEdit: () => void;
-  readonly onDelete: () => void;
+  /** Edit and void; both omitted for a viewer who only reads the books. */
+  readonly onEdit?: () => void;
+  readonly onDelete?: () => void;
 }
 
 function fmtDate(d: Date): string {
@@ -68,12 +69,14 @@ function FinanceEntryCardInner({ entry, accountName, onEdit, onDelete }: Finance
       {entry.description && (
         <Text style={styles.description} numberOfLines={3}>{entry.description}</Text>
       )}
-      <AdminCardActions
-        editLabel={t.row.edit}
-        deleteLabel={t.row.delete}
-        onEdit={onEdit}
-        onDelete={onDelete}
-      />
+      {onEdit && onDelete && (
+        <AdminCardActions
+          editLabel={t.row.edit}
+          deleteLabel={t.row.delete}
+          onEdit={onEdit}
+          onDelete={onDelete}
+        />
+      )}
     </View>
   );
 }

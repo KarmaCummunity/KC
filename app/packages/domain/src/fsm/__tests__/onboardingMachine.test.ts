@@ -16,29 +16,21 @@ describe('onboarding machine', () => {
     expect(canTransition(onboardingMachine, 'pending_avatar', 'pending_avatar')).toEqual({ ok: true, changed: false });
   });
 
-  it('never moves a member back', () => {
-    expect(canTransition(onboardingMachine, 'completed', 'pending_avatar')).toEqual({
-      ok: false,
-      code: 'illegal_transition',
-    });
-    expect(canTransition(onboardingMachine, 'completed', 'pending_basic_info')).toEqual({
-      ok: false,
-      code: 'forbidden_role',
-    });
-    expect(canTransition(onboardingMachine, 'pending_avatar', 'pending_basic_info')).toEqual({
-      ok: false,
-      code: 'forbidden_role',
-    });
-  });
-
-  it('lets only the developer reset tool return to step 1', () => {
-    expect(canTransition(onboardingMachine, 'completed', 'pending_basic_info', 'dev_reset').ok).toBe(true);
-    expect(canTransition(onboardingMachine, 'pending_avatar', 'pending_basic_info', 'dev_reset').ok).toBe(true);
-  });
-
-  it('has no dead end: a reset can leave every stage', () => {
-    for (const state of onboardingMachine.states) {
-      expect(isTerminal(onboardingMachine, state)).toBe(false);
+  it('never moves a member back, and the developer reset is gone', () => {
+    for (const [from, to] of [
+      ['completed', 'pending_avatar'],
+      ['completed', 'pending_basic_info'],
+      ['pending_avatar', 'pending_basic_info'],
+    ] as const) {
+      expect(canTransition(onboardingMachine, from, to)).toEqual({ ok: false, code: 'illegal_transition' });
+      expect(canTransition(onboardingMachine, from, to, 'dev_reset')).toEqual({
+        ok: false,
+        code: 'illegal_transition',
+      });
     }
+  });
+
+  it('ends at completed: it is the only terminal stage', () => {
+    expect(onboardingMachine.states.filter((state) => isTerminal(onboardingMachine, state))).toEqual(['completed']);
   });
 });

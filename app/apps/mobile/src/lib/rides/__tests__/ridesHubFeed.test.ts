@@ -6,7 +6,6 @@ import {
   rideFeedCardExtras,
   rideFeedCardRow,
   rideFeedGridSections,
-  rideRouteMatchFeedItem,
 } from '../ridesHubFeed';
 
 const t = (key: string, options?: Record<string, unknown>) =>
@@ -93,32 +92,5 @@ describe('rideFeedCardExtras', () => {
     const lines = rideFeedCardExtras(ride('o9', 'give', { recurrence, seriesMore: 27 }), t);
     expect(lines.map((line) => line.icon)).toEqual(['repeat-outline', 'calendar-outline']);
     expect(lines[1]!.text).toBe('rideSeries.moreDates:27');
-  });
-});
-
-describe('rideRouteMatchFeedItem', () => {
-  it('turns a corridor match into an offer feed item', () => {
-    expect(
-      rideRouteMatchFeedItem({
-        listing_id: 'm1',
-        title: 'Lod → Tel Aviv',
-        seats_left: 2,
-        departs_at: '2026-11-05T06:00:00Z',
-        origin_label: 'Lod',
-        dest_label: null,
-      }),
-    ).toEqual({
-      listingId: 'm1',
-      direction: 'give',
-      title: 'Lod → Tel Aviv',
-      departsAt: '2026-11-05T06:00:00Z',
-      originLabel: 'Lod',
-      destLabel: null,
-      meetingPoints: 0,
-      seatsLeft: 2,
-      passengers: null,
-      recurrence: null,
-      seriesMore: 0,
-    });
   });
 });

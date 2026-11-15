@@ -13,9 +13,7 @@ describe('GetDriverDeclarationUseCase', () => {
     const declaration: DriverDeclaration = {
       userId: ME,
       declaredAt: '2026-05-31T10:00:00Z',
-      licenseDeclared: true,
-      insuranceDeclared: true,
-      noProfitAcknowledged: true,
+      version: 1,
     };
     const repo: IDriverDeclarationRepository = {
       getMine: vi.fn().mockResolvedValue(declaration),

@@ -64,7 +64,7 @@ Rules for every function:
 
 ### 6. Migrations
 
-- Sequential files `supabase/migrations/NNNN_snake_case.sql`. Claim the number in [`MIGRATION_RANGES.md`](../../agents/MIGRATION_RANGES.md) in the same PR, and check open PRs for the same number before pushing.
+- Sequential files `supabase/migrations/NNNN_snake_case.sql`. A PR adds `next-NN_snake_case.sql` instead and the number is assigned on merge ([`MIGRATION_RANGES.md`](../../agents/MIGRATION_RANGES.md)), so parallel PRs never collide.
 - Applied to kc-dev only by the **Deploy** workflow (database stage) / `supabase db push`. **Never** with the MCP `apply_migration` tool (it records a timestamp version and breaks the next deploy).
 - Wrap in `begin; … commit;`; additive and backward compatible. Destructive statements need `migration-safety: allow` with a justification (`scripts/check-migration-safety.mjs`, run by the static lane of CI; for a release into `main` the release lane also requires a `Migration safety: <file> — <reason>` line in the PR body).
 

@@ -4,8 +4,6 @@ import {
   chunkPaths,
   collectObjectPaths,
   LIST_PAGE_SIZE,
-  purgeUserFolders,
-  type StorageGateway,
   type StorageListEntry,
 } from './storageCleanup.ts';
 
@@ -62,74 +60,4 @@ Deno.test('stops descending at the depth limit', async () => {
 Deno.test('chunks paths for the remove API', () => {
   assertEquals(chunkPaths(['a', 'b', 'c'], 2), [['a', 'b'], ['c']]);
   assertEquals(chunkPaths([], 2), []);
-});
-
-/**
- * In-memory Storage holding full object paths per bucket. `list` returns the direct
- * children of a prefix the way Supabase Storage does: folders carry `id: null`.
- */
-function fakeStorage(objects: Record<string, string[]>, failing: { list?: string; remove?: string } = {}) {
-  const buckets = new Map(Object.entries(objects).map(([bucket, paths]) => [bucket, new Set(paths)]));
-  const gateway: StorageGateway = {
-    list(bucket, prefix, offset, limit) {
-      if (bucket === failing.list) return Promise.reject(new Error(`list failed: ${bucket}`));
-      const children = new Map<string, StorageListEntry>();
-      for (const path of buckets.get(bucket) ?? []) {
-        if (!path.startsWith(`${prefix}/`)) continue;
-        const [name, ...rest] = path.slice(prefix.length + 1).split('/');
-        children.set(name, { name, id: rest.length > 0 ? null : `id-${path}` });
-      }
-      return Promise.resolve([...children.values()].slice(offset, offset + limit));
-    },
-    remove(bucket, paths) {
-      if (bucket === failing.remove) return Promise.reject(new Error(`remove failed: ${bucket}`));
-      for (const path of paths) buckets.get(bucket)?.delete(path);
-      return Promise.resolve();
-    },
-  };
-  const remaining = (bucket: string) => [...(buckets.get(bucket) ?? [])].sort();
-  return { gateway, remaining };
-}
-
-Deno.test('purges every object the user owns in every user-folder bucket, and nothing of another user', async () => {
-  const { gateway, remaining } = fakeStorage({
-    'avatars': ['u1/avatar.jpg', 'u1/avatar-thumb.jpg', 'u2/avatar.jpg'],
-    'post-images': ['u1/batch1/0.jpg', 'u1/batch1/0-thumb.jpg', 'u1/draft/0.jpg', 'u2/batch9/0.jpg'],
-    'chat-media': ['u1/chatA/m1.jpg', 'u2/chatA/m2.jpg'],
-    'listing-images': ['u1/batch2/0.jpg', 'u2/batch3/0.jpg'],
-  });
-  const errors: string[] = [];
-
-  await purgeUserFolders(gateway, 'u1', (_error, bucket) => {
-    errors.push(bucket);
-    return Promise.resolve();
-  });
-
-  assertEquals(errors, []);
-  assertEquals(remaining('avatars'), ['u2/avatar.jpg']);
-  assertEquals(remaining('post-images'), ['u2/batch9/0.jpg']);
-  assertEquals(remaining('chat-media'), ['u2/chatA/m2.jpg']);
-  assertEquals(remaining('listing-images'), ['u2/batch3/0.jpg']);
-});
-
-Deno.test('a bucket that fails is reported and the other buckets are still purged', async () => {
-  const { gateway, remaining } = fakeStorage(
-    {
-      'avatars': ['u1/avatar.jpg'],
-      'post-images': ['u1/batch1/0.jpg'],
-      'chat-media': ['u1/chatA/m1.jpg'],
-      'listing-images': ['u1/batch2/0.jpg'],
-    },
-    { list: 'chat-media', remove: 'listing-images' },
-  );
-  const errors: string[] = [];
-
-  await purgeUserFolders(gateway, 'u1', (_error, bucket) => {
-    errors.push(bucket);
-    return Promise.resolve();
-  });
-
-  assertEquals(errors.sort(), ['chat-media', 'listing-images']);
-  assertEquals(remaining('avatars'), []);
-  assertEquals(remaining('post-images'), []);
 });

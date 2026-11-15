@@ -10,7 +10,6 @@
 // Without them vitest.config.ts does not collect the contract suites at all.
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '../database.types';
 import { createIntegrationClient } from './integrationSupabaseClient';
 
 const PASSWORD = 'contract-p4ssword!!';
@@ -26,8 +25,13 @@ function requireEnv(name: string): string {
 export interface ContractUser {
   readonly userId: string;
   readonly displayName: string;
-  /** Signed in through the anon key, so RLS applies exactly as in the app. */
-  readonly client: SupabaseClient<Database>;
+  /**
+   * Signed in through the anon key, so RLS applies exactly as in the app. Untyped (`any` schema)
+   * because the suites that share this harness address the baseline and, until their package
+   * moves, the old schema.
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  readonly client: SupabaseClient<any>;
 }
 
 /** Creates confirmed, active members on the stack and deletes them on teardown. */
@@ -52,15 +56,14 @@ export class ContractUsers {
     this.cleanup.push(async () => {
       await this.admin.auth.admin.deleteUser(userId);
     });
-    // The on_auth_user_created trigger created the profile row; insert policies
-    // (posts, chats) require account_status = active, which the trigger grants a
-    // confirmed email. Stated explicitly so a stack whose trigger lags does not
-    // fail every case. A per-user display name lets cases check counterpart data.
+    // The on_auth_user_created trigger created the member rows and, for a confirmed email,
+    // an `active` user_account (insert policies of posts and chats require it). A per-user
+    // display name lets cases check counterpart data.
     const displayName = `contract ${tag}`;
     const { error: profileError } = await this.admin
       .from('users')
-      .update({ account_status: 'active', display_name: displayName })
-      .eq('user_id', userId);
+      .update({ display_name: displayName })
+      .eq('id', userId);
     if (profileError) throw new Error(`contract harness: profile update failed (${profileError.message})`);
 
     const client = createIntegrationClient(this.url, this.anonKey);

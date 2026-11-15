@@ -1,137 +1,52 @@
-import { describe, expect, it, vi } from 'vitest';
-import { RideError } from '@kc/domain';
-import { SupabaseDriverDeclarationRepository } from '../SupabaseDriverDeclarationRepository';
+import { describe, expect, it } from 'vitest';
+import { BackendRuleError, BackendUnavailableError } from '@kc/domain';
+import { callsTo, createFakeClient } from '../../__tests__/fakeBaselineClient';
+import { fail, ok } from '../../posts/__tests__/cardFixtures';
+import { SupabaseDriverDeclarationRepository, parseDeclarationState } from '../SupabaseDriverDeclarationRepository';
 
-type AnyClient = ConstructorParameters<typeof SupabaseDriverDeclarationRepository>[0];
+const SESSION = (accepted: boolean) => ({ consents: { driver_declaration: { version: 1, accepted } } });
+const CONSENT = { id: 'c1', user_id: 'u1', version: 1, accepted_at: '2026-01-01T00:00:00Z' };
 
-const ROW = {
-  user_id: 'u1',
-  declared_at: '2026-06-01T00:00:00Z',
-  license_declared: true,
-  insurance_declared: true,
-  no_profit_acknowledged: true,
-} as const;
-
-function authStub(userId: string | null) {
-  return { getUser: async () => ({ data: { user: userId ? { id: userId } : null } }) };
-}
-
-describe('SupabaseDriverDeclarationRepository.getMine', () => {
-  it('queries driver_declarations by user_id and maps the row', async () => {
-    const maybeSingle = vi.fn().mockResolvedValue({ data: ROW, error: null });
-    const eq = vi.fn().mockReturnValue({ maybeSingle });
-    const select = vi.fn().mockReturnValue({ eq });
-    const from = vi.fn().mockReturnValue({ select });
-    const client = { auth: authStub('u1'), from } as unknown as AnyClient;
-
-    const repo = new SupabaseDriverDeclarationRepository(client);
-    const out = await repo.getMine();
-
-    expect(from).toHaveBeenCalledWith('driver_declarations');
-    expect(select).toHaveBeenCalledWith('*');
-    expect(eq).toHaveBeenCalledWith('user_id', 'u1');
-    expect(out).toEqual({
-      userId: 'u1',
-      declaredAt: '2026-06-01T00:00:00Z',
-      licenseDeclared: true,
-      insuranceDeclared: true,
-      noProfitAcknowledged: true,
-    });
-  });
-
-  it('returns null when no row matches', async () => {
-    const maybeSingle = vi.fn().mockResolvedValue({ data: null, error: null });
-    const eq = vi.fn().mockReturnValue({ maybeSingle });
-    const select = vi.fn().mockReturnValue({ eq });
-    const from = vi.fn().mockReturnValue({ select });
-    const client = { auth: authStub('u1'), from } as unknown as AnyClient;
-
-    const repo = new SupabaseDriverDeclarationRepository(client);
-    expect(await repo.getMine()).toBeNull();
-  });
-
-  it('throws RideError(auth_required) when not signed in', async () => {
-    const from = vi.fn();
-    const client = { auth: authStub(null), from } as unknown as AnyClient;
-
-    const repo = new SupabaseDriverDeclarationRepository(client);
-    await expect(repo.getMine()).rejects.toMatchObject({ code: 'auth_required' });
-    await expect(repo.getMine()).rejects.toBeInstanceOf(RideError);
-    expect(from).not.toHaveBeenCalled();
-  });
-
-  it('throws a generic Error on Supabase error', async () => {
-    const maybeSingle = vi.fn().mockResolvedValue({ data: null, error: { message: 'denied' } });
-    const eq = vi.fn().mockReturnValue({ maybeSingle });
-    const select = vi.fn().mockReturnValue({ eq });
-    const from = vi.fn().mockReturnValue({ select });
-    const client = { auth: authStub('u1'), from } as unknown as AnyClient;
-
-    const repo = new SupabaseDriverDeclarationRepository(client);
-    await expect(repo.getMine()).rejects.toThrow('denied');
+describe('parseDeclarationState', () => {
+  it('reads the version in force and whether the caller accepted it', () => {
+    expect(parseDeclarationState(SESSION(true))).toEqual({ version: 1, accepted: true });
+    expect(parseDeclarationState({})).toBeNull();
+    expect(parseDeclarationState({ consents: { driver_declaration: { version: 'x' } } })).toBeNull();
   });
 });
 
-describe('SupabaseDriverDeclarationRepository.accept', () => {
-  it('inserts a new declaration and maps the returned row when none exists', async () => {
-    // getMine path → null, then insert path → ROW.
-    const maybeSingle = vi.fn().mockResolvedValue({ data: null, error: null });
-    const selectGet = vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ maybeSingle }) });
-    const single = vi.fn().mockResolvedValue({ data: ROW, error: null });
-    const selectIns = vi.fn().mockReturnValue({ single });
-    const insert = vi.fn().mockReturnValue({ select: selectIns });
-    const from = vi
-      .fn()
-      .mockReturnValueOnce({ select: selectGet }) // getMine
-      .mockReturnValueOnce({ insert }); // insert
-    const client = { auth: authStub('u1'), from } as unknown as AnyClient;
-
-    const repo = new SupabaseDriverDeclarationRepository(client);
-    const out = await repo.accept();
-
-    expect(insert).toHaveBeenCalledWith({
-      user_id: 'u1',
-      license_declared: true,
-      insurance_declared: true,
-      no_profit_acknowledged: true,
+describe('SupabaseDriverDeclarationRepository', () => {
+  it('returns the accepted declaration of the version in force', async () => {
+    const { client } = createFakeClient({ rpc: { bootstrap_session: ok(SESSION(true)) }, tables: { user_consents: ok(CONSENT) } });
+    expect(await new SupabaseDriverDeclarationRepository(client).getMine()).toEqual({
+      userId: 'u1', version: 1, declaredAt: '2026-01-01T00:00:00Z',
     });
-    expect(out.userId).toBe('u1');
-    expect(out.licenseDeclared).toBe(true);
   });
 
-  it('returns the existing declaration without inserting when one exists', async () => {
-    const maybeSingle = vi.fn().mockResolvedValue({ data: ROW, error: null });
-    const selectGet = vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ maybeSingle }) });
-    const insert = vi.fn();
-    const from = vi.fn().mockReturnValue({ select: selectGet, insert });
-    const client = { auth: authStub('u1'), from } as unknown as AnyClient;
-
-    const repo = new SupabaseDriverDeclarationRepository(client);
-    const out = await repo.accept();
-
-    expect(insert).not.toHaveBeenCalled();
-    expect(out.userId).toBe('u1');
+  it('returns null before the declaration is accepted', async () => {
+    const { client } = createFakeClient({ rpc: { bootstrap_session: ok(SESSION(false)) } });
+    expect(await new SupabaseDriverDeclarationRepository(client).getMine()).toBeNull();
   });
 
-  it('throws RideError(auth_required) when not signed in', async () => {
-    const client = { auth: authStub(null), from: vi.fn() } as unknown as AnyClient;
-    const repo = new SupabaseDriverDeclarationRepository(client);
-    await expect(repo.accept()).rejects.toMatchObject({ code: 'auth_required' });
+  it('accepts the version in force', async () => {
+    const { client, calls } = createFakeClient({
+      rpc: { bootstrap_session: ok(SESSION(false)), accept_world_consent: ok(CONSENT) },
+    });
+    const declaration = await new SupabaseDriverDeclarationRepository(client).accept();
+    expect(declaration.version).toBe(1);
+    expect(callsTo(calls, 'accept_world_consent')[0]?.args).toEqual({ p_kind: 'driver_declaration', p_version: 1 });
   });
 
-  it('throws a generic Error when the insert returns an error', async () => {
-    const maybeSingle = vi.fn().mockResolvedValue({ data: null, error: null });
-    const selectGet = vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ maybeSingle }) });
-    const single = vi.fn().mockResolvedValue({ data: null, error: { message: 'rls_denied' } });
-    const selectIns = vi.fn().mockReturnValue({ single });
-    const insert = vi.fn().mockReturnValue({ select: selectIns });
-    const from = vi
-      .fn()
-      .mockReturnValueOnce({ select: selectGet })
-      .mockReturnValueOnce({ insert });
-    const client = { auth: authStub('u1'), from } as unknown as AnyClient;
+  it('does not accept twice', async () => {
+    const { client, calls } = createFakeClient({ rpc: { bootstrap_session: ok(SESSION(true)) }, tables: { user_consents: ok(CONSENT) } });
+    await new SupabaseDriverDeclarationRepository(client).accept();
+    expect(callsTo(calls, 'accept_world_consent')).toHaveLength(0);
+  });
 
-    const repo = new SupabaseDriverDeclarationRepository(client);
-    await expect(repo.accept()).rejects.toThrow('rls_denied');
+  it('keeps a stale-version refusal and reports a missing function', async () => {
+    const stale = createFakeClient({ rpc: { bootstrap_session: ok(SESSION(false)), accept_world_consent: fail('P0001', 'consent_version_stale') } });
+    await expect(new SupabaseDriverDeclarationRepository(stale.client).accept()).rejects.toBeInstanceOf(BackendRuleError);
+    const missing = createFakeClient({ rpc: { bootstrap_session: fail('PGRST202', 'nope') } });
+    await expect(new SupabaseDriverDeclarationRepository(missing.client).getMine()).rejects.toBeInstanceOf(BackendUnavailableError);
   });
 });

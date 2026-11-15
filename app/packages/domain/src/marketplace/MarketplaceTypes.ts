@@ -69,6 +69,9 @@ export interface MarketplaceListingOwner {
 export interface MarketplaceListingMedia {
   readonly storagePath: string;
   readonly sortOrder: number;
+  /** Type and size recorded at upload: a republish attaches the same file again with them. */
+  readonly mimeType: string;
+  readonly sizeBytes: number;
 }
 
 export interface MarketplaceListingDetail {

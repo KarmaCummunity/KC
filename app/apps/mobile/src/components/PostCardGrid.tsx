@@ -1,6 +1,7 @@
 // app/apps/mobile/src/components/PostCardGrid.tsx
 import React from 'react';
 import { useRouter } from 'expo-router';
+import { useQueryClient } from '@tanstack/react-query';
 import { formatDistanceToNow } from 'date-fns';
 import { useTranslation } from 'react-i18next';
 import { resolveDateFnsLocale } from '../lib/resolveDateFnsLocale';
@@ -15,16 +16,17 @@ import { PostMenuButton } from './post/PostMenuButton';
 import { KcCard } from './cards/KcCard';
 import { usePostCardGridStyles } from './PostCardGrid.styles';
 import { prefetchImages } from '../lib/imagePrefetch';
+import { prefetchMarketplaceListingDetail } from '../hooks/useMarketplaceListingDetail';
 import { finishMark } from '../lib/observability/perfMarks';
 import { cleanDisplayTitle } from '../lib/displayTitle';
 import { feedCardCategory } from '../lib/feedCardCategory';
+import { postLocationText } from '../lib/postLocationText';
 
 // The menu sits on the image scrim, which is dark in both themes, so the icon is always white.
 const OVERLAY_ICON = avatarPalette.foreground;
 
 interface PostCardGridProps {
   post: PostWithOwner;
-  onPressOverride?: () => void;
   /** Per-post press handler — receives the full post so the parent avoids per-item closures. */
   onCardPress?: (post: PostWithOwner) => void;
   /** Grid density — home feed uses 2; profile grids use 3. */
@@ -43,7 +45,6 @@ interface PostCardGridProps {
 
 function PostCardGridInner({
   post,
-  onPressOverride,
   onCardPress,
   columns = 2,
   gap = spacing.sm,
@@ -55,6 +56,7 @@ function PostCardGridInner({
   // renders only the title; description is translated for post-detail reuse.
 }: PostCardGridProps) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { t, i18n } = useTranslation();
   const styles = usePostCardGridStyles();
   const cardWidth = usePostGridCardWidth(columns, gap);
@@ -69,13 +71,11 @@ function PostCardGridInner({
     [post.createdAt, dateLocale],
   );
 
-  const locationText = post.locationDisplayLevel === 'CityOnly'
-    ? post.address.cityName
-    : `${post.address.cityName}, ${post.address.street}`;
+  const locationText = postLocationText(post);
 
   const firstImage = post.mediaAssets[0] ?? null;
   const firstImagePath = firstImage?.path ?? null;
-  // A feed mirror of a listing borrows its photos from the listing-images bucket (D-206).
+  // Post photos live in the post-images bucket; an asset that names no bucket is read from it.
   const imageBucket = firstImage?.bucket ?? 'post-images';
   // PERF-4: serve the 400px thumb for the grid surface (~25-40KB vs ~300-500KB
   // for the 2048px full). KCImage falls back to the full URL if the thumb is
@@ -100,17 +100,16 @@ function PostCardGridInner({
     finishMark('image.first_paint');
   }, []);
 
-  const warmPostImage = React.useCallback(() => {
+  // Press-down warm-up: the photo for every post, and for a listing-world post (rides, food,
+  // housing…) also the listing detail its screen waits for.
+  const warmPostDetail = React.useCallback(() => {
     prefetchImages([thumbUrl, fullUrl]);
-  }, [thumbUrl, fullUrl]);
+    if (post.listingId) prefetchMarketplaceListingDetail(queryClient, post.listingId);
+  }, [thumbUrl, fullUrl, post.listingId, queryClient]);
 
   const navigateToPost = React.useCallback(() => {
     if (onCardPress) {
       onCardPress(post);
-      return;
-    }
-    if (onPressOverride) {
-      onPressOverride();
       return;
     }
     if (post.challengeId) {
@@ -125,7 +124,7 @@ function PostCardGridInner({
         ? `?fromProfile=${encodeURIComponent(closedPostsProfileUserId)}`
         : '';
     router.push(`/post/${post.postId}${q}`);
-  }, [onCardPress, onPressOverride, post, closedPostsProfileUserId, router]);
+  }, [onCardPress, post, closedPostsProfileUserId, router]);
 
   let roleBadgeLabel: string | null = null;
   if (economicRole) roleBadgeLabel = economicRole === 'giver' ? t('feed.giverBadge') : t('feed.receiverBadge');
@@ -136,7 +135,7 @@ function PostCardGridInner({
       width={cardWidth}
       dense={isProfileGrid}
       onPress={navigateToPost}
-      onPressIn={warmPostImage}
+      onPressIn={warmPostDetail}
       accessibilityLabel={cleanDisplayTitle(post.title)}
       imageUri={thumbUrl}
       fallbackUri={fullUrl}

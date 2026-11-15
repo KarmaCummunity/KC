@@ -1,8 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import fs from "node:fs";
-import path from "node:path";
-import { loadRegistry, toMetaPayload, toSqlValues } from "./whatsapp-templates.mjs";
+import { loadRegistry, toMetaPayload } from "./whatsapp-templates.mjs";
 
 const reg = loadRegistry();
 
@@ -18,12 +16,4 @@ test("Meta payload carries name, language, category and body examples", () => {
 test("templates without params send no example block", () => {
   const t = reg.templates.find((x) => x.params.length === 0);
   assert.equal(toMetaPayload(t, "he").components[0].example, undefined);
-});
-
-test("DB seed migration 0307 matches the registry", () => {
-  const sql = fs.readFileSync(
-    path.join(import.meta.dirname, "../supabase/migrations/0307_whatsapp_templates_registry.sql"),
-    "utf8",
-  );
-  assert.ok(sql.includes(toSqlValues(reg)), "regenerate the 0307 seed with `node scripts/whatsapp-templates.mjs sql`");
 });

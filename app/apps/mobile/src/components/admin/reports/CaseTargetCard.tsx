@@ -6,6 +6,7 @@
 //
 //   post → preview snippet + status badge + "Open post" quick-link
 //   user → display name + account-status badge + "Open profile" quick-link
+//   comment → text snippet + status badge + author and post quick-links
 //   chat → hidden/active label (no link — chats are private; we link to
 //          the reporter side from the reporter list instead)
 import { router } from 'expo-router';
@@ -68,43 +69,30 @@ export function CaseTargetCard({ targetType, targetId, target }: CaseTargetCardP
     );
   }
 
-  if (targetType === 'listing') {
-    const title = asString(target['title']);
-    const summary = asString(target['summary']);
-    const status = asString(target['status']);
-    const ownerId = asString(target['owner_id']);
-    const worldSlug = asString(target['world_slug']);
-    const kindSlug = asString(target['kind_slug']);
+  if (targetType === 'comment') {
+    const preview  = asString(target['preview']);
+    const status   = asString(target['status']);
+    const authorId = asString(target['author_id']);
+    const postId   = asString(target['post_id']);
     return (
       <View style={styles.card}>
         <View style={styles.headerRow}>
-          <Text style={styles.kind}>{t.listingKind}</Text>
+          <Text style={styles.kind}>{t.commentKind}</Text>
           {status && <Badge label={status} />}
         </View>
-        <Text style={styles.preview} numberOfLines={2}>
-          {title ?? t.noPreview}
+        <Text style={styles.preview} numberOfLines={4}>
+          {preview && preview.length > 0 ? preview : t.noPreview}
         </Text>
-        {summary ? (
-          <Text style={styles.metaText} numberOfLines={3}>
-            {summary}
-          </Text>
-        ) : null}
-        {(worldSlug || kindSlug) && (
-          <Text style={styles.metaText}>
-            {[worldSlug, kindSlug].filter(Boolean).join(' · ')}
-          </Text>
-        )}
-        {ownerId ? (
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => router.push(`/user/${ownerId}`)}
-          >
-            <Text style={styles.link}>{t.openOwner}</Text>
+        {authorId && (
+          <Pressable accessibilityRole="button" onPress={() => router.push(`/user/${authorId}`)}>
+            <Text style={styles.link}>{t.openAuthor}</Text>
           </Pressable>
-        ) : null}
-        <View style={styles.primaryBtn}>
-          <PrimaryButton testID="case-target-open-listing" label={t.openListing} size="sm" onPress={() => router.push(`/listing/${targetId}`)} />
-        </View>
+        )}
+        {postId && (
+          <View style={styles.primaryBtn}>
+            <PrimaryButton testID="case-target-open-post" label={t.openPost} size="sm" onPress={() => router.push(`/post/${postId}`)} />
+          </View>
+        )}
       </View>
     );
   }

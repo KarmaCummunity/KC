@@ -2,10 +2,11 @@
 // States: idle / ready / submitting / error_recoverable / error_critical / blocked_suspended.
 // submitting and error_critical are non-dismissible (no tap-outside, no back, no ✕, no Escape).
 
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { DeleteAccountError } from '@kc/application';
+import { canRequestAccountDeletion } from '@kc/domain';
 import { Text } from '@kc/ui';
 import { useDeleteAccountConfirmModalStyles } from './DeleteAccountConfirmModal.styles';
 import { DangerButton, SecondaryButton } from './ui/Buttons';
@@ -49,11 +50,9 @@ export function DeleteAccountConfirmModal(props: DeleteAccountConfirmModalProps)
   const [state, setState] = useState<LocalState>({ kind: 'idle' });
   const keyword = t('settings.deleteAccountModal.confirmKeyword');
 
-  const isBlocked = useMemo(() => {
-    return accountStatus === 'suspended_for_false_reports'
-      || accountStatus === 'suspended_admin'
-      || accountStatus === 'banned';
-  }, [accountStatus]);
+  // A suspended or banned account cannot ask for deletion (`request_account_deletion` refuses
+  // it); an unknown status (null) is left to the server.
+  const isBlocked = accountStatus !== null && !canRequestAccountDeletion(accountStatus);
 
   React.useEffect(() => {
     if (visible && isBlocked) setState({ kind: 'blocked' });

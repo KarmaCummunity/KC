@@ -26,7 +26,6 @@ const mockStyles = {
 
 const createMockUser = (overrides: Partial<User> = {}): User => ({
   userId: 'user-1',
-  authProvider: 'google',
   shareHandle: 'jane_doe',
   displayName: 'Jane Doe',
   city: 'tel_aviv',

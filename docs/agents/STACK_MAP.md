@@ -34,4 +34,4 @@ _Updated by the coordinator. Last update: 2026-10-17._
 ## Rules
 
 - Keep stacks shallow. Start new work from `origin/dev`, not from a stack tip, unless you really depend on it.
-- Each PR stays self-contained: its own migrations (see [MIGRATION_RANGES.md](./MIGRATION_RANGES.md)), and tests.
+- Each PR stays self-contained: its own migrations (`next-NN_slug.sql`, numbered on merge; see [MIGRATION_RANGES.md](./MIGRATION_RANGES.md)), and tests.

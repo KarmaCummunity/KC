@@ -6,7 +6,7 @@ How AI agents (and humans) ship work on KC. Rules in [`AGENTS.md`](../../AGENTS.
 
 | Role | Owns | Typical paths |
 |---|---|---|
-| **Coordinator** | Board, issue writing, migration range claims, stack order, merges to `dev` | `docs/agents/**`, GitHub Project |
+| **Coordinator** | Board, issue writing, stack order, merges to `dev` | `docs/agents/**`, GitHub Project |
 | **DB** | Schema, RLS, RPCs, crons, Edge Functions, generated types | `supabase/**`, `app/packages/infrastructure-supabase/**` |
 | **Mobile/UI** | Expo app, native polish, performance on device | `app/apps/mobile/**`, `app/packages/ui/**` |
 | **Marketplace** | Giving worlds (money, time, items, ...), search, matching UI | `app/apps/mobile/app/**` marketplace routes + their RPCs |
@@ -25,7 +25,7 @@ issue (agent_task form) -> branch from origin/dev -> PR to dev -> CI green
 
 Agents run this flow through the [`kc-issue-to-merge`](../../.claude/skills/kc-issue-to-merge/SKILL.md) skill.
 
-1. **Issue**: use the `Agent task` form. It needs acceptance criteria, and a migration range if it touches SQL.
+1. **Issue**: use the `Agent task` form. It needs acceptance criteria, and a note on the migration (a `next-NN_slug.sql` file) if it touches SQL.
 2. **Branch**: `<type>/<issue#>-<area>-<slug>`, for example `feat/905-marketplace-map`.
 3. **PR**: base `dev`. The body includes `Closes #N` and `Mapped to spec` (checked by the `hygiene` lane of `CI gate`).
 4. **CI**: the single required check `CI gate` is green. Don't disable or skip a gate. Fix the cause, or add a documented exception.
@@ -39,6 +39,7 @@ Agents run this flow through the [`kc-issue-to-merge`](../../.claude/skills/kc-i
 - `area:*`, `database`: set automatically from paths by [`labeler.yml`](../../.github/labeler.yml).
 - `agent-ready`: the author's or coordinator's signal that the PR is done and may auto-merge.
 - `epic`, `size:*`: set by the coordinator.
+- `verification` + `human`: a person checks merged work an agent cannot verify (device, store, visual). Agents split these off at definition time; open ones block the `dev` → `main` release (`docs/SSOT/RELEASE_CHECKLIST.md`).
 - `found-by-agent` + `needs-triage`: an issue an agent opened from a finding outside its task. Agents never pick a `needs-triage` issue; the PM removes the label to release it to the queue. Process labels are declared in [`sync-agent-labels.yml`](../../.github/workflows/sync-agent-labels.yml).
 
 ## Weekly hygiene

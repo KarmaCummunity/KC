@@ -3,10 +3,13 @@
 // builds and verifies it has a green CI push run on dev (D-195).
 //
 // workflow_call: requires inputs.ref (validated). workflow_dispatch on dev:
-// optional inputs.ref, otherwise the newest green dev commit (same walkback
-// as mobile-nightly resolve). A `[skip ci]` version bump on dev may certify
-// via its parent's green `CI gate` when it matches deploy-target.mjs bump
-// shape; the bump SHA itself is built, not the parent.
+// optional inputs.ref, otherwise the dispatched tip (`GITHUB_SHA`) when that
+// SHA is certified — including a `[skip ci]` version bump that inherits its
+// parent's green `CI gate` (deploy-target.mjs bump shape), so the store build
+// ships the latest app/VERSION. Only if the tip cannot be certified do we
+// walk back to the newest commit with its own successful CI push run (same
+// walk as mobile-nightly resolve). A certified bump SHA itself is built, not
+// the parent.
 //
 // Env: GITHUB_TOKEN, GITHUB_REPOSITORY, GITHUB_API_URL (optional),
 // EVENT_NAME, GITHUB_REF, GITHUB_SHA (ignored when resolving),
@@ -116,30 +119,51 @@ export async function resolveStoreTarget(env, api = (path) => githubGet(path, en
 
   assertDevDispatchAllowed(eventName, env.GITHUB_REF);
 
-  let resolvedGreenSha = null;
-  if (eventName === 'workflow_dispatch' && !inputRef) {
-    const branch = 'dev';
-    const lookback = parseLookback(env.LOOKBACK);
-    resolvedGreenSha = await resolveNewestGreenDevSha(api, { repo, branch, lookback });
-    if (!resolvedGreenSha) {
-      throw new Error(
-        `No commit among the last ${lookback} on ${branch} has a successful CI push run.`,
-      );
-    }
-  }
-
-  const sha = pickBuildSha({ eventName, inputRef, resolvedGreenSha });
-  if (!isCommitSha(sha)) throw new Error(`Ref is not a commit SHA: ${sha}`);
-
   const jobsOf = async (runId) =>
     (await api(`/repos/${repo}/actions/runs/${runId}/jobs?per_page=100`)).jobs;
+
+  // Dispatch with no explicit ref: prefer the tip so a [skip ci] bump still
+  // ships the latest version, then walk back if the tip cannot be certified.
+  if (eventName === 'workflow_dispatch' && !inputRef) {
+    const tip = (env.GITHUB_SHA || '').trim() || null;
+    if (isCommitSha(tip)) {
+      try {
+        const certifiedTip = await certifyStoreBuildSha(api, repo, tip, { jobsOf });
+        return {
+          sha: certifiedTip.sha,
+          branch: certifiedTip.branch,
+          inheritedFrom: certifiedTip.inheritedFrom,
+          resolvedFromGreenWalk: false,
+        };
+      } catch {
+        // Tip has no green run and is not a certified bump; walk back.
+      }
+    }
+    const lookback = parseLookback(env.LOOKBACK);
+    const resolvedGreenSha = await resolveNewestGreenDevSha(api, { repo, branch: 'dev', lookback });
+    if (!resolvedGreenSha) {
+      throw new Error(
+        `No commit among the last ${lookback} on dev has a successful CI push run.`,
+      );
+    }
+    const certified = await certifyStoreBuildSha(api, repo, resolvedGreenSha, { jobsOf });
+    return {
+      sha: certified.sha,
+      branch: certified.branch,
+      inheritedFrom: certified.inheritedFrom,
+      resolvedFromGreenWalk: true,
+    };
+  }
+
+  const sha = pickBuildSha({ eventName, inputRef, resolvedGreenSha: null });
+  if (!isCommitSha(sha)) throw new Error(`Ref is not a commit SHA: ${sha}`);
   const certified = await certifyStoreBuildSha(api, repo, sha, { jobsOf });
 
   return {
     sha: certified.sha,
     branch: certified.branch,
     inheritedFrom: certified.inheritedFrom,
-    resolvedFromGreenWalk: Boolean(resolvedGreenSha && !inputRef),
+    resolvedFromGreenWalk: false,
   };
 }
 

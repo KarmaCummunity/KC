@@ -165,11 +165,13 @@ export const marketplaceAvailabilityLabels = {
   ongoing: 'Ongoing',
 } as const;
 
-/** Owner-facing listing status pill in "My listings" (`marketplace.listingStatus.<status>`). */
+/** Owner-facing status pill in "My listings", by post status (`marketplace.listingStatus.<status>`). */
 export const marketplaceListingStatusLabels = {
   open: 'Open',
-  cancelled: 'Paused',
-  closed: 'Completed',
+  paused: 'Paused',
+  closed_delivered: 'Completed',
+  deleted_no_recipient: 'Deleted',
   expired: 'Expired',
   hidden_pending_review: 'Hidden for review',
+  removed_admin: 'Removed',
 } as const;

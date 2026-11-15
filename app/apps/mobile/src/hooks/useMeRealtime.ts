@@ -1,26 +1,23 @@
-// FR-KARMA-009 — push karma_points + all per-user counters live by patching the
-// shared ['user-profile', userId] query cache from the self-row subscription.
+// FR-KARMA-009 — keeps the signed-in member's karma and profile counters live: the counters the
+// server pushes on the member's own stats topic patch the shared ['user-profile', userId] cache,
+// and the karma history is marked stale so it re-reads when shown. A dropped channel costs only
+// freshness: every screen still reads the counters on mount.
 import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import type { User } from '@kc/domain';
 import { useAuthStore } from '../store/authStore';
 import { getUserRealtime } from '../services/userRealtimeComposition';
-import { mergeSelfRealtimeUser } from '../lib/mergeSelfRealtimeUser';
-import type { User } from '@kc/domain';
+import { mergeStatsChange } from '../lib/mergeStatsChange';
 
+/** Mount once near the root. */
 export function useMeRealtime(): void {
-  const userId = useAuthStore((s) => s.session?.userId);
+  const userId = useAuthStore((s) => s.session?.userId ?? null);
   const queryClient = useQueryClient();
   useEffect(() => {
     if (!userId) return;
-    const unsub = getUserRealtime().subscribeToSelf(
-      userId,
-      (user) => {
-        // Payload lacks owner-private columns (karma_points) — merge, then refetch via RPC.
-        queryClient.setQueryData<User | null>(['user-profile', userId], (prev) => mergeSelfRealtimeUser(prev, user));
-        void queryClient.invalidateQueries({ queryKey: ['user-profile', userId] });
-      },
-      (err) => { if (__DEV__) console.warn('[karma] self-realtime channel error:', err.message); },
-    );
-    return unsub;
+    return getUserRealtime().subscribeToStats(userId, (change) => {
+      queryClient.setQueryData<User | null>(['user-profile', userId], (prev) => mergeStatsChange(prev, change));
+      void queryClient.invalidateQueries({ queryKey: ['karma-history', userId] });
+    });
   }, [userId, queryClient]);
 }

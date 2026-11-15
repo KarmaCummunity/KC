@@ -57,21 +57,25 @@ describe('listingImageUpload', () => {
   });
 
   describe('uploadListingImages', () => {
-    it('compresses and uploads images to the listing-images bucket', async () => {
+    it('compresses and uploads images to the post-images bucket, answering their real type and size', async () => {
       mockManipulateAsync.mockResolvedValue({ base64: Buffer.from('jpeg-bytes').toString('base64') });
       mockUpload.mockResolvedValue({ error: null });
 
-      const paths = await uploadListingImages('user-1', sampleImages);
+      const uploaded = await uploadListingImages('user-1', sampleImages);
 
-      expect(paths).toEqual(['user-1/batch-uuid-1/0.jpg', 'user-1/batch-uuid-1/1.jpg']);
-      expect(mockClient.storage.from).toHaveBeenCalledWith('listing-images');
+      // 'jpeg-bytes' is ten bytes once decoded: the size recorded is the size stored.
+      expect(uploaded).toEqual([
+        { path: 'user-1/batch-uuid-1/0.jpg', mimeType: 'image/jpeg', sizeBytes: 10 },
+        { path: 'user-1/batch-uuid-1/1.jpg', mimeType: 'image/jpeg', sizeBytes: 10 },
+      ]);
+      expect(mockClient.storage.from).toHaveBeenCalledWith('post-images');
       expect(mockUpload).toHaveBeenCalledTimes(2);
       expect(mockUpload).toHaveBeenCalledWith(
         'user-1/batch-uuid-1/0.jpg',
         expect.any(Uint8Array),
         {
           contentType: 'image/jpeg',
-          upsert: true,
+          upsert: false,
           cacheControl: 'public, max-age=31536000, immutable',
         },
       );
@@ -115,14 +119,14 @@ describe('listingImageUpload', () => {
   describe('listingImagePublicUrl', () => {
     it('returns publicUrl from Supabase storage', () => {
       mockGetPublicUrl.mockReturnValueOnce({
-        data: { publicUrl: 'https://cdn.example.com/listing-images/u/b/0.jpg' },
+        data: { publicUrl: 'https://cdn.example.com/post-images/u/b/0.jpg' },
       });
 
       const url = listingImagePublicUrl('u/b/0.jpg');
 
-      expect(mockClient.storage.from).toHaveBeenCalledWith('listing-images');
+      expect(mockClient.storage.from).toHaveBeenCalledWith('post-images');
       expect(mockGetPublicUrl).toHaveBeenCalledWith('u/b/0.jpg');
-      expect(url).toBe('https://cdn.example.com/listing-images/u/b/0.jpg');
+      expect(url).toBe('https://cdn.example.com/post-images/u/b/0.jpg');
     });
   });
 });

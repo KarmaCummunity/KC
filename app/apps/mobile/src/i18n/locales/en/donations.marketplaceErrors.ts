@@ -87,6 +87,7 @@ export const marketplaceErrors = {
   housing_not_in_window: 'This action isn\'t possible at this point of the stay.',
   housing_note_too_long: 'The note is too long. Up to 300 characters.',
   housing_use_booking_cancel: 'Cancel a stay from its booking card.',
+  event_use_registration_cancel: 'Cancel an event registration from its registration card.',
   // Organization events (0563).
   event_org_required: 'Only a member of the organization can publish its event. Pick one of your organizations.',
   verification_required: 'This event is open to verified members only. Verify your account and try again.',

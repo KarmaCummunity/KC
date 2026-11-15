@@ -6,6 +6,7 @@
 // 0563 (an organization's event ends after it starts) and 0612 (animals are no longer routed).
 
 import { knowledgeSlotsFromDetails, knowledgeSlotsProblem } from '../knowledge/knowledgeSlots';
+import { MARKETPLACE_SERVER_ERROR_CODES, type MarketplaceServerErrorCode } from './marketplaceServerErrorCodes';
 
 // Animals left this list in 0612: members give and take directly there (PM 2026-11-04).
 export const ROUTED_WORLDS = ['medical', 'environment'] as const;
@@ -35,110 +36,7 @@ export type MarketplaceRuleErrorCode =
   | 'knowledge_slots_overlap'
   | 'event_window_invalid';
 
-/** Server-raised listing error codes the UI has friendly copy for. */
-export const MARKETPLACE_SERVER_ERROR_CODES = [
-  'offer_photo_required',
-  'food_subcategory_required',
-  'food_expiry_required',
-  'routed_world_requires_external_body',
-  'ride_route_required',
-  'ride_departure_past',
-  'knowledge_slot_invalid',
-  'event_window_invalid',
-  // #2034 (0703–0704) — knowledge slots, bookings and the consulting-hour identity gate.
-  'knowledge_slot_duration_invalid',
-  'knowledge_slot_in_past',
-  'knowledge_slots_overlap',
-  'knowledge_slot_has_booking',
-  'knowledge_slot_capacity_below_bookings',
-  'consulting_requires_id_verification',
-  'slot_not_found',
-  'booking_expired',
-  'account_not_active',
-  'seats_exhausted',
-  'ride_seats_exhausted',
-  'slots_exhausted',
-  'already_booked',
-  'ride_departed',
-  'ride_not_started',
-  'slot_started',
-  'session_not_started',
-  'own_listing',
-  'listing_not_available',
-  'item_already_reserved',
-  'medical_listing_requires_external_body',
-  'external_body_invalid',
-  'world_permission_denied',
-  'food_posting_banned',
-  'ride_cost_share_cap_exceeded',
-  'money_active_campaign_cap',
-  'matchmaking_min_age',
-  'details_schema_mismatch',
-  'listing_details_schema_mismatch',
-  'media_path_must_be_owned',
-  'member_inactive',
-  'auth_required',
-  'kind_not_found',
-  // D73 (0511) — ride booking management: wrong side, stale state or a vanished booking.
-  'owner_only',
-  'not_participant',
-  'invalid_status',
-  'handoff_not_found',
-  // Items & food handoffs (0382, 0453, 0510).
-  'invalid_pickup_mode',
-  'handoff_not_confirmed',
-  'invalid_rating',
-  // D71 (0512) — ride places come only from official catalogs; at most 3 meeting points.
-  'ride_place_invalid',
-  'too_many_meeting_points',
-  // D21 / D75 (0514) — the estimated end must follow the departure.
-  'ride_arrival_before_departure',
-  'ride_time_invalid',
-  // D74 (0516) — saved routes: at most 10, and a route must go somewhere.
-  'saved_routes_limit',
-  'same_route',
-  // D70 (0517) — the emergency button works only during the ride, once per 5 minutes.
-  'ride_not_active',
-  'emergency_throttled',
-  // FR-RIDE-046 (0531) — recurring rides: the schedule, ownership and the terminal cancelled state.
-  'ride_series_weekdays_invalid',
-  'ride_series_duration_invalid',
-  'ride_series_ends_in_past',
-  'ride_series_no_occurrence',
-  'ride_series_not_found',
-  'ride_series_cancelled',
-  'ride_series_status_invalid',
-  // Housing stays (0600–0603, spec 21_housing.md): conduct, dates, capacity, privacy, lifecycle.
-  'housing_conduct_required',
-  'housing_conduct_version_stale',
-  'housing_nights_out_of_range',
-  'housing_dates_invalid',
-  'housing_dates_unavailable',
-  'housing_details_invalid',
-  'housing_tent_facilities_required',
-  'housing_capacity_exceeded',
-  'housing_policy_mismatch',
-  'housing_minor_unaccompanied',
-  'housing_message_required',
-  'housing_pending_cap',
-  'housing_booking_overlap',
-  'housing_private_details_hidden',
-  'housing_city_required',
-  'housing_booking_started',
-  'housing_cancel_reason_required',
-  'housing_not_in_window',
-  'housing_note_too_long',
-  'housing_use_booking_cancel',
-  // G1 step 5 (0563) — organization events: membership, verified-only registration, organizer actions.
-  'event_org_required',
-  'verification_required',
-  'not_owner',
-  'invalid_transition',
-  // G1 step 5c (0564) — attendance is marked only once the event has started.
-  'event_not_started',
-] as const;
-
-export type MarketplaceServerErrorCode = (typeof MARKETPLACE_SERVER_ERROR_CODES)[number];
+export { MARKETPLACE_SERVER_ERROR_CODES, type MarketplaceServerErrorCode };
 
 export interface WorldRulesInput {
   worldSlug: string;

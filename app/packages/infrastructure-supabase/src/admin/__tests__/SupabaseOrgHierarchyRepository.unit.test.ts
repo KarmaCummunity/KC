@@ -1,153 +1,113 @@
-import { describe, expect, it, vi } from 'vitest';
-import type { SupabaseClient } from '@supabase/supabase-js';
-import { isOrgHierarchyError, OrgHierarchyError } from '@kc/domain';
-import { SupabaseOrgHierarchyRepository } from '../SupabaseOrgHierarchyRepository';
+// FR-ADMIN-025 / FR-ADMIN-028 — the staff hierarchy over admin_org_tree, admin_hierarchy_census,
+// admin_set_manager and admin_set_org_slug (migrations 0011–0014).
+import { describe, expect, it } from 'vitest';
+import { BackendUnavailableError, isOrgHierarchyError } from '@kc/domain';
+import { callsTo, createFakeClient, type FakeClientConfig } from '../../__tests__/fakeBaselineClient';
+import { fail, ok } from '../../posts/__tests__/cardFixtures';
+import { parseHierarchyCensus, SupabaseOrgHierarchyRepository } from '../SupabaseOrgHierarchyRepository';
 
-function mockClient(rpcImpl: (name: string, args?: unknown) => unknown): SupabaseClient {
-  return { rpc: vi.fn(rpcImpl as never) } as unknown as SupabaseClient;
-}
+const treeRow = (over: Record<string, unknown>) => ({
+  grant_id: 'g0', user_id: 'u0', display_name: 'Root', avatar_url: null, role: 'super_admin',
+  scope_org_id: null, effective_org_id: 'kc', org_name: 'Karma Community', is_platform: true,
+  manager_grant_id: null, last_seen_at: '2026-03-02T10:00:00.000Z', ...over,
+});
+const TREE = [
+  treeRow({}),
+  treeRow({ grant_id: 'g1', user_id: 'u1', display_name: 'Alice', avatar_url: 'a.png', role: 'org_treasurer',
+    scope_org_id: 'org-1', effective_org_id: 'org-1', org_name: 'Org One', is_platform: false,
+    manager_grant_id: 'g0', last_seen_at: null }),
+  treeRow({ grant_id: 'g2', role: 'mystery' }),
+];
+const CENSUS = {
+  community_total: 40, role_holder_total: 6,
+  orgs: [
+    { org_id: 'kc', slug: 'kc', name: 'Karma Community', is_platform: true, is_verified: false, affiliated_count: 0 },
+    { org_id: 'org-1', slug: 'one', name: 'Org One', is_platform: false, is_verified: true, affiliated_count: 3 },
+    { name: 'no id' },
+  ],
+};
 
-const ROW = {
-  grant_id: 'g1',
-  user_id: 'u1',
-  display_name: 'Alice',
-  avatar_url: null,
-  role: 'org_admin',
-  scope_org_id: 'org-1',
-  effective_org_id: 'org-1',
-  org_name: 'Org One',
-  is_platform: false,
-  manager_grant_id: null,
-  last_seen_at: '2026-01-02T00:00:00.000Z',
+const repoOf = (config: FakeClientConfig = {}) => {
+  const fake = createFakeClient({
+    ...config,
+    rpc: { admin_org_tree: ok(TREE), admin_hierarchy_census: ok(CENSUS), admin_set_manager: ok(null), ...config.rpc },
+  });
+  return { ...fake, repo: new SupabaseOrgHierarchyRepository(fake.client) };
 };
 
 describe('SupabaseOrgHierarchyRepository — getOrgTree', () => {
-  it('maps rows to OrgTreeMember + parses last_seen_at', async () => {
-    const repo = new SupabaseOrgHierarchyRepository(mockClient(() => ({ data: [ROW], error: null })));
-    const out = await repo.getOrgTree(null);
-    expect(out).toHaveLength(1);
-    expect(out[0]).toMatchObject({
-      grantId: 'g1',
-      userId: 'u1',
-      role: 'org_admin',
-      orgId: 'org-1',
-      orgName: 'Org One',
-      isPlatform: false,
-      managerGrantId: null,
-    });
-    expect(out[0]?.lastSeenAt).toBeInstanceOf(Date);
+  it('maps the rows of admin_org_tree, last seen included, and drops unknown roles', async () => {
+    const { repo, calls } = repoOf();
+    const tree = await repo.getOrgTree(null);
+    expect(tree.map((n) => [n.grantId, n.orgId, n.orgName, n.isPlatform, n.displayName])).toEqual([
+      ['g0', 'kc', 'Karma Community', true, 'Root'],
+      ['g1', 'org-1', 'Org One', false, 'Alice'],
+    ]);
+    expect(tree[0]?.lastSeenAt?.toISOString()).toBe('2026-03-02T10:00:00.000Z');
+    expect(tree[1]).toMatchObject({ role: 'org_treasurer', scopeOrgId: 'org-1', managerGrantId: 'g0', lastSeenAt: null });
+    expect(callsTo(calls, 'admin_org_tree')[0]?.args).toEqual({});
   });
 
-  it('passes p_org_id through to the RPC', async () => {
-    const rpc = vi.fn(() => ({ data: [], error: null }));
-    const repo = new SupabaseOrgHierarchyRepository({ rpc } as unknown as SupabaseClient);
-    await repo.getOrgTree('org-9');
-    expect(rpc).toHaveBeenCalledWith('admin_org_tree', { p_org_id: 'org-9' });
+  it('narrows the tree to one organization on the server', async () => {
+    const { repo, calls } = repoOf();
+    await repo.getOrgTree('org-1');
+    expect(callsTo(calls, 'admin_org_tree')[0]?.args).toEqual({ p_org_id: 'org-1' });
   });
 
-  it('drops rows with an unparseable role', async () => {
-    const repo = new SupabaseOrgHierarchyRepository(
-      mockClient(() => ({ data: [{ ...ROW, role: 'not_a_role' }], error: null })),
-    );
-    expect(await repo.getOrgTree(null)).toEqual([]);
-  });
-
-  it('returns empty array on null data', async () => {
-    const repo = new SupabaseOrgHierarchyRepository(mockClient(() => ({ data: null, error: null })));
-    expect(await repo.getOrgTree(null)).toEqual([]);
-  });
-
-  it('maps forbidden by SQLSTATE when message is opaque', async () => {
-    const repo = new SupabaseOrgHierarchyRepository(
-      mockClient(() => ({ data: null, error: { message: 'permission denied', code: '42501' } })),
-    );
-    await expect(repo.getOrgTree(null)).rejects.toMatchObject({ code: 'forbidden' });
+  it('reports a missing function and maps a refusal', async () => {
+    await expect(repoOf({ rpc: { admin_org_tree: fail('PGRST202', 'nope') } }).repo.getOrgTree(null))
+      .rejects.toBeInstanceOf(BackendUnavailableError);
+    await expect(repoOf({ rpc: { admin_org_tree: fail('42501', 'forbidden') } }).repo.getOrgTree(null))
+      .rejects.toMatchObject({ code: 'forbidden' });
   });
 });
 
 describe('SupabaseOrgHierarchyRepository — setManager', () => {
-  it('resolves to void on success', async () => {
-    const repo = new SupabaseOrgHierarchyRepository(mockClient(() => ({ data: null, error: null })));
-    await expect(repo.setManager('g1', 'm1')).resolves.toBeUndefined();
-  });
-
-  it('passes both params to the RPC (null clears)', async () => {
-    const rpc = vi.fn(() => ({ data: null, error: null }));
-    const repo = new SupabaseOrgHierarchyRepository({ rpc } as unknown as SupabaseClient);
+  it('moves a grant under another one, and detaches it by sending no manager', async () => {
+    const { repo, calls } = repoOf();
+    await repo.setManager('g1', 'g0');
     await repo.setManager('g1', null);
-    expect(rpc).toHaveBeenCalledWith('admin_set_manager', { p_grant_id: 'g1', p_manager_grant_id: null });
+    expect(callsTo(calls, 'admin_set_manager').map((c) => c.args)).toEqual([
+      { p_grant_id: 'g1', p_manager_grant_id: 'g0' },
+      { p_grant_id: 'g1' },
+    ]);
   });
 
-  it('maps manager_cycle by message', async () => {
-    const repo = new SupabaseOrgHierarchyRepository(
-      mockClient(() => ({ data: null, error: { message: 'manager_cycle', code: 'P0001' } })),
-    );
-    const err = await repo.setManager('g1', 'm1').catch((e) => e);
-    expect(isOrgHierarchyError(err)).toBe(true);
-    expect((err as OrgHierarchyError).code).toBe('manager_cycle');
-  });
-
-  it('maps manager_rank by message (FR-ADMIN-027 rank rule)', async () => {
-    const repo = new SupabaseOrgHierarchyRepository(
-      mockClient(() => ({ data: null, error: { message: 'manager_rank', code: '22023' } })),
-    );
-    const err = await repo.setManager('g1', 'm1').catch((e) => e);
-    expect((err as OrgHierarchyError).code).toBe('manager_rank');
-  });
-
-  it('maps manager_other_org by message', async () => {
-    const repo = new SupabaseOrgHierarchyRepository(
-      mockClient(() => ({ data: null, error: { message: 'manager_other_org', code: '22023' } })),
-    );
-    await expect(repo.setManager('g1', 'm1')).rejects.toMatchObject({ code: 'manager_other_org' });
-  });
-
-  it('falls back to unknown on unrecognized error', async () => {
-    const repo = new SupabaseOrgHierarchyRepository(
-      mockClient(() => ({ data: null, error: { message: 'weird', code: '99999' } })),
-    );
-    await expect(repo.setManager('g1', 'm1')).rejects.toMatchObject({ code: 'unknown' });
-  });
+  it.each(['forbidden_manage', 'manager_not_found', 'manager_revoked', 'manager_other_org', 'manager_cycle', 'manager_rank'])(
+    'maps the server reason %s', async (reason) => {
+      const { repo } = repoOf({ rpc: { admin_set_manager: fail('P0001', reason) } });
+      const error = await repo.setManager('g1', 'g0').catch((e: unknown) => e);
+      expect(isOrgHierarchyError(error) && error.code).toBe(reason);
+    });
 });
 
 describe('SupabaseOrgHierarchyRepository — getHierarchyCensus', () => {
-  it('maps the census payload and calls the RPC without args', async () => {
-    const rpc = vi.fn(() => ({
-      data: {
-        community_total: 120,
-        role_holder_total: 7,
-        orgs: [
-          { org_id: 'p', name: 'Karma Community', is_platform: true, is_verified: true, affiliated_count: 0 },
-          { org_id: 'o1', name: 'Alpha', is_platform: false, is_verified: false, affiliated_count: 3 },
-        ],
-      },
-      error: null,
-    }));
-    const repo = new SupabaseOrgHierarchyRepository({ rpc } as unknown as SupabaseClient);
+  it('reads the census of the server, slugs included, and skips a malformed organization', async () => {
+    const { repo } = repoOf();
     const census = await repo.getHierarchyCensus();
-    expect(rpc).toHaveBeenCalledWith('admin_hierarchy_census');
-    expect(census).toEqual({
-      communityTotal: 120,
-      roleHolderTotal: 7,
-      orgs: [
-        { orgId: 'p', name: 'Karma Community', isPlatform: true, isVerified: true, affiliatedCount: 0 },
-        { orgId: 'o1', name: 'Alpha', isPlatform: false, isVerified: false, affiliatedCount: 3 },
-      ],
-    });
+    expect(census.communityTotal).toBe(40);
+    expect(census.roleHolderTotal).toBe(6);
+    expect(census.orgs).toEqual([
+      { orgId: 'kc', slug: 'kc', name: 'Karma Community', isPlatform: true, isVerified: false, affiliatedCount: 0 },
+      { orgId: 'org-1', slug: 'one', name: 'Org One', isPlatform: false, isVerified: true, affiliatedCount: 3 },
+    ]);
   });
 
-  it('tolerates a malformed payload: drops bad orgs and zeroes bad counts', async () => {
-    const repo = new SupabaseOrgHierarchyRepository(mockClient(() => ({
-      data: { community_total: -4, role_holder_total: 'x', orgs: [{ name: 'no id' }, null] },
-      error: null,
-    })));
-    expect(await repo.getHierarchyCensus()).toEqual({ communityTotal: 0, roleHolderTotal: 0, orgs: [] });
+  it('reads a missing payload as an empty census', () => {
+    expect(parseHierarchyCensus(null)).toEqual({ communityTotal: 0, roleHolderTotal: 0, orgs: [] });
   });
+});
 
-  it('maps a 42501 rejection to forbidden', async () => {
-    const repo = new SupabaseOrgHierarchyRepository(
-      mockClient(() => ({ data: null, error: { message: 'forbidden', code: '42501' } })),
-    );
-    await expect(repo.getHierarchyCensus()).rejects.toMatchObject({ code: 'forbidden' });
+describe('SupabaseOrgHierarchyRepository — setOrgSlug', () => {
+  it('returns the stored slug and maps the refusals', async () => {
+    const { repo, calls } = repoOf({ rpc: { admin_set_org_slug: ok('aid-israel') } });
+    expect(await repo.setOrgSlug('org-1', 'aid-israel')).toBe('aid-israel');
+    expect(callsTo(calls, 'admin_set_org_slug')[0]?.args).toEqual({ p_org_id: 'org-1', p_slug: 'aid-israel' });
+    for (const reason of ['slug_taken', 'invalid_slug', 'org_not_found']) {
+      const refused = repoOf({ rpc: { admin_set_org_slug: fail('P0001', reason) } });
+      await expect(refused.repo.setOrgSlug('org-1', 'x')).rejects.toMatchObject({ code: reason });
+    }
+    await expect(repoOf({ rpc: { admin_set_org_slug: ok(null) } }).repo.setOrgSlug('org-1', 'x'))
+      .rejects.toMatchObject({ code: 'unknown' });
   });
 });

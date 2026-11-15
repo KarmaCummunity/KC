@@ -24,6 +24,7 @@ export interface TranslationProvider {
   translate(input: ProviderInput): Promise<ProviderResult>;
 }
 
+import { readEnv } from '../readEnv.ts';
 import { GeminiFlashProvider } from './gemini.ts';
 import { GoogleFreeProvider } from './googlefree.ts';
 
@@ -32,7 +33,7 @@ import { GoogleFreeProvider } from './googlefree.ts';
 // directive is "free models only, no billing". Gemini stays opt-in via
 // TRANSLATION_PROVIDER=gemini for when a DPA/paid key lands (D-63/D-65).
 export function selectProvider(): TranslationProvider {
-  const kind = (Deno.env.get('TRANSLATION_PROVIDER') ?? 'googlefree').toLowerCase();
+  const kind = readEnv('TRANSLATION_PROVIDER', 'googlefree').toLowerCase();
   switch (kind) {
     case 'googlefree':
     case 'google':

@@ -1,7 +1,7 @@
 /** FR-POST-008 + FR-POST-009: edit an existing post; visibility may change freely (D-32). */
 import type { IPostRepository, UpdatePostInput } from '../ports/IPostRepository';
 import type { Post } from '@kc/domain';
-import { TITLE_MAX_CHARS, DESCRIPTION_MAX_CHARS, MAX_MEDIA_ASSETS } from '@kc/domain';
+import { TITLE_MAX_CHARS, DESCRIPTION_MAX_CHARS, MAX_MEDIA_ASSETS, isPostEditableByOwner } from '@kc/domain';
 import { PostError } from './errors';
 
 export interface UpdatePostUseCaseInput {
@@ -47,12 +47,13 @@ export class UpdatePostUseCase {
 }
 
 /**
- * FR-POST-009 + D-34: on closed_delivered / deleted_no_recipient, only a
- * visibility-only patch is allowed (owner-driven Hide / Unhide).
+ * A draft, an open post and a paused one are edited freely (spec 07 §7.1, the same list as
+ * the server's row policy). FR-POST-009 + D-34: on closed_delivered / deleted_no_recipient,
+ * only a visibility-only patch is allowed (owner-driven Hide / Unhide).
  * removed_admin and expired remain fully locked.
  */
 function assertEditable(current: Post, patch: UpdatePostInput): void {
-  if (current.status === 'open') return;
+  if (isPostEditableByOwner(current.status)) return;
   const isClosedHideable =
     current.status === 'closed_delivered' || current.status === 'deleted_no_recipient';
   const patchKeys = Object.keys(patch).filter(

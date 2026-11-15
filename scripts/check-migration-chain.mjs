@@ -3,6 +3,7 @@
 import { readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { pendingErrors } from './migration-ids.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DEFAULT_DIR = join(__dirname, '..', 'supabase', 'migrations');
@@ -14,12 +15,16 @@ export function checkMigrationChain(migrationsDir) {
     .filter((f) => f.endsWith('.sql'))
     .sort();
 
+  // Pending files (next-NN_slug.sql) get their number on merge; they are validated
+  // together by migration-ids.mjs and take no part in the prefix uniqueness check.
+  errors.push(...pendingErrors(files));
   const seen = new Map();
 
   for (const file of files) {
+    if (file.startsWith('next-')) continue;
     const match = file.match(MIGRATION_RE);
     if (!match) {
-      errors.push(`invalid migration filename: ${file} (expected NNNN_snake_case.sql)`);
+      errors.push(`invalid migration filename: ${file} (expected NNNN_snake_case.sql, or next-NN_snake_case.sql in a PR)`);
       continue;
     }
     const prefix = match[1];

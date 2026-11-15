@@ -22,6 +22,8 @@ describe('ReportError', () => {
       'invalid_target',
       'duplicate_within_24h',
       'target_already_moderated',
+      'cannot_report_self',
+      'rate_limited',
       'unknown',
     ] as const) {
       expect(new ReportError(code, code).code).toBe(code);

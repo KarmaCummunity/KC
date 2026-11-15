@@ -8,6 +8,7 @@ import { useAuthStore } from '../../src/store/authStore';
 import { AuthFormScreen } from '../../src/components/auth/AuthFormScreen';
 import { useAuthEmailForm } from '../../src/components/auth/useAuthEmailForm';
 import { GhostButton } from '../../src/components/ui/Buttons';
+import { useLaunchSurface } from '../../src/hooks/useLaunchSurface';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
 
@@ -15,6 +16,8 @@ export default function SignInScreen() {
   const router = useRouter();
   const { t } = useTranslation();
   const setSession = useAuthStore((s) => s.setSession);
+  // Reachable by direct link even when hidden (store-review demo login); the links to the other email flows are not.
+  const emailFlowsLinked = useLaunchSurface('emailAuth');
   const form = useAuthEmailForm({
     missingFieldsMessage: t('auth.fillEmailAndPassword'),
     failureTitle: t('auth.signInFailedTitle'),
@@ -39,21 +42,25 @@ export default function SignInScreen() {
       passwordPlaceholder={t('auth.passwordPlaceholder')}
       submitLabel={t('auth.signIn')}
       beforeSubmit={
-        <GhostButton
-          testID="auth-forgot-password"
-          label={t('auth.forgotPassword')}
-          size="sm"
-          disabled={form.loading}
-          onPress={() => router.push({ pathname: '/(auth)/forgot-password', params: { email: form.email } })}
-        />
+        emailFlowsLinked ? (
+          <GhostButton
+            testID="auth-forgot-password"
+            label={t('auth.forgotPassword')}
+            size="sm"
+            disabled={form.loading}
+            onPress={() => router.push({ pathname: '/(auth)/forgot-password', params: { email: form.email } })}
+          />
+        ) : undefined
       }
       footer={
-        <GhostButton
-          label={t('auth.noAccountSwitchCta')}
-          size="md"
-          disabled={form.loading}
-          onPress={() => router.replace('/(auth)/sign-up')}
-        />
+        emailFlowsLinked ? (
+          <GhostButton
+            label={t('auth.noAccountSwitchCta')}
+            size="md"
+            disabled={form.loading}
+            onPress={() => router.replace('/(auth)/sign-up')}
+          />
+        ) : undefined
       }
     />
   );

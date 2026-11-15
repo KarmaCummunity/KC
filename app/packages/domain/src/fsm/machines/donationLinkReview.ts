@@ -9,14 +9,14 @@ import { defineMachine } from '../machine';
  * - Editing the link's content (URL, name, description, category) sends it back to `pending`
  *   for a new review, from either decision (`donation_links_review_guard`).
  *
- * SQL copy: `supabase/migrations/0717_fsm_review_queues.sql`.
+ * SQL copy: `supabase/schemas/80_organizations/050_donation_links.sql` (`kc_private.fsm_state` / `fsm_edge` seeds).
  */
 export const donationLinkReviewMachine = defineMachine({
   id: 'donation_link_review',
   states: ['pending', 'approved', 'rejected'] as const,
   edges: [
-    { from: 'pending', to: 'approved' },
-    { from: 'pending', to: 'rejected' },
+    { from: 'pending', to: 'approved', roles: ['reviewer'] },
+    { from: 'pending', to: 'rejected', roles: ['reviewer'] },
     { from: 'approved', to: 'pending' },
     { from: 'rejected', to: 'pending' },
   ],

@@ -7,11 +7,12 @@ import { act, cleanup, fireEvent, render } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from '@kc/ui';
 
-const { router, payments, listings, external } = vi.hoisted(() => ({
+const { router, payments, listings, external, linking } = vi.hoisted(() => ({
   router: { back: vi.fn(), push: vi.fn(), replace: vi.fn() },
-  payments: { getNonprofitPage: vi.fn(), donateNow: vi.fn(), confirmDonation: vi.fn() },
+  payments: { getNonprofitPage: vi.fn(), donateNow: vi.fn() },
   listings: { getListingDetail: vi.fn(), updateMyListing: vi.fn() },
   external: { external: false, openExternal: vi.fn() },
+  linking: { openURL: vi.fn(async () => true) },
 }));
 
 vi.mock('react-native-reanimated', async () => (await import('../ui/__tests__/kitDialogTestKit')).reanimatedDouble);
@@ -29,7 +30,16 @@ vi.mock('../../navigation/useShellTabBarVisibility', () => ({
   useShellTabBarVisibility: () => false,
   shellTabBarHeightPx: () => 0,
 }));
-vi.mock('../money/CampaignProgressBar', () => ({ CampaignProgressBar: () => null }));
+// The real helper pulls in the i18n bootstrap; only its behaviour matters here.
+vi.mock('../../lib/backendAvailability', () => ({
+  valueOrNull: (load: () => Promise<unknown>) => load(),
+  runAction: async (action: () => Promise<unknown>) => ({ status: 'done', value: await action() }),
+  notAvailableMessage: () => 'backend.notAvailableYet',
+}));
+vi.mock('react-native', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('react-native')>();
+  return { ...actual, Linking: { openURL: linking.openURL } };
+});
 vi.mock('../../hooks/useExternalDonations', () => ({ useExternalDonations: () => external }));
 vi.mock('../../lib/analytics', () => ({ track: vi.fn() }));
 vi.mock('../../services/paymentsComposition', () => ({
@@ -45,7 +55,7 @@ import DonateNowScreen from '../../../app/(tabs)/donations/money/donate/[orgId]'
 import EditMyListingScreen from '../../../app/(tabs)/donations/marketplace/my-listings/edit/[listingId]';
 import { AboutContactLinks } from '../../features/about-landing/AboutContactLinks';
 
-const PAGE = { orgId: 'org_1', name: 'KC', aboutHe: null, aboutEn: null, taglineHe: null, taglineEn: null, totalRaisedIls: 0, campaigns: [] };
+const PAGE = { orgId: 'org_1', name: 'KC', aboutHe: null, aboutEn: null, taglineHe: null, taglineEn: null, totalRaisedAgorot: 0, campaigns: [] };
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -84,15 +94,23 @@ describe('nonprofit page', () => {
 });
 
 describe('donate screen', () => {
-  it('confirms the sandbox donation and opens its receipt', async () => {
-    payments.donateNow.mockResolvedValue({ intentId: 'i_1' });
-    payments.confirmDonation.mockResolvedValue({ paymentId: 'p_1' });
+  it('starts the donation in agorot and sends the member to the checkout page', async () => {
+    payments.donateNow.mockResolvedValue({ intentId: 'i_1', checkoutUrl: 'https://pay.example.test/i_1' });
     const { getByRole } = renderScreen(<DonateNowScreen />);
     fireEvent.click(getByRole('button', { name: 'moneyPayments.confirmDonate' }));
-    await vi.waitFor(() =>
-      expect(router.replace).toHaveBeenCalledWith({ pathname: '/(tabs)/donations/money/receipt/[paymentId]', params: { paymentId: 'p_1' } }),
-    );
-    expect(payments.donateNow).toHaveBeenCalledWith({ orgId: 'org_1', amountIls: 72, idempotencyKey: 'key-donate', listingId: 'l_1' });
+    await vi.waitFor(() => expect(router.replace).toHaveBeenCalledWith('/(tabs)/donations/money/history'));
+    expect(linking.openURL).toHaveBeenCalledWith('https://pay.example.test/i_1');
+    expect(payments.donateNow).toHaveBeenCalledWith({ orgId: 'org_1', amountAgorot: 7200, idempotencyKey: 'key-donate', postId: 'l_1' });
+  });
+
+  it('says the donation is not available while the intent has no checkout page', async () => {
+    const alert = vi.spyOn(window, 'alert').mockImplementation(() => undefined);
+    payments.donateNow.mockResolvedValue({ intentId: 'i_1', checkoutUrl: null });
+    const { getByRole } = renderScreen(<DonateNowScreen />);
+    fireEvent.click(getByRole('button', { name: 'moneyPayments.confirmDonate' }));
+    await vi.waitFor(() => expect(alert).toHaveBeenCalledWith('backend.notAvailableYet'));
+    expect(router.replace).not.toHaveBeenCalled();
+    alert.mockRestore();
   });
 });
 

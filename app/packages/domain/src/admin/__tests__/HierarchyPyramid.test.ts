@@ -33,9 +33,9 @@ const CENSUS: HierarchyCensus = {
   communityTotal: 100,
   roleHolderTotal: 6,
   orgs: [
-    { orgId: PLATFORM, name: 'Karma Community', isPlatform: true, isVerified: true, affiliatedCount: 0 },
-    { orgId: 'org-a', name: 'Alpha', isPlatform: false, isVerified: true, affiliatedCount: 4 },
-    { orgId: 'org-b', name: 'Beta', isPlatform: false, isVerified: false, affiliatedCount: 1 },
+    { orgId: PLATFORM, slug: 'kc', name: 'Karma Community', isPlatform: true, isVerified: true, affiliatedCount: 0 },
+    { orgId: 'org-a', slug: 'alpha', name: 'Alpha', isPlatform: false, isVerified: true, affiliatedCount: 4 },
+    { orgId: 'org-b', slug: 'beta', name: 'Beta', isPlatform: false, isVerified: false, affiliatedCount: 1 },
   ],
 };
 
@@ -60,6 +60,13 @@ describe('roleBaseLevel', () => {
     expect(roleBaseLevel('org_manager', false)).toBe(2);
     expect(roleBaseLevel('volunteer_manager', false)).toBe(3);
     expect(roleBaseLevel('org_volunteer', false)).toBe(4);
+  });
+
+  it('places the platform admin, the finance roles and the legacy volunteer', () => {
+    expect(roleBaseLevel('admin', true)).toBe(1);
+    expect(roleBaseLevel('org_treasurer', false)).toBe(3);
+    expect(roleBaseLevel('org_accountant', false)).toBe(4);
+    expect(roleBaseLevel('volunteer', false)).toBe(4);
   });
 
   it('places operations roles by scope', () => {

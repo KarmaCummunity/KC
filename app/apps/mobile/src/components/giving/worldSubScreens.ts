@@ -16,7 +16,7 @@ export function worldSubScreens(
   ];
 }
 
-/** Link to the world's dedicated links-only sub-screen (#1963). */
+/** Link to the world's "links and knowledge" sub-screen (#1963). */
 export function worldLinksSubScreenLink(worldSlug: string): WorldSubScreenLink {
   return {
     labelKey: 'donations.worldLinksNav',
