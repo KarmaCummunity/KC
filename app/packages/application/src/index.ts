@@ -19,7 +19,6 @@ export type { IRidesRealtime, RidesRealtimeCallbacks } from './ports/IRidesRealt
 export type { CommunityStatsSnapshot, IStatsRepository, MyWorldGivings, WorldFlowFunnelRow } from './ports/IStatsRepository';
 export type { IAboutRepository } from './ports/IAboutRepository';
 export * from './auth';
-export * from './feed/selectGuestPreviewPosts';
 export * from './feed/GetFeedUseCase';
 export * from './feed/GetActivePostsCountUseCase';
 export * from './feed/DismissFirstPostNudgeUseCase';
