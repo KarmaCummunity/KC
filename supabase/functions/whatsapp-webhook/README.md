@@ -7,8 +7,8 @@ Per inbound message:
 
 0. `api_whatsapp_claim_inbound(wamid)` — dedupe of Meta retries (#1089). A duplicate wamid is
    skipped entirely; if processing fails the claim is released so the retry is handled.
-   Signature: `X-Hub-Signature-256` HMAC with `WHATSAPP_APP_SECRET`; with no secret every POST
-   is rejected (401). There is no bypass switch; locally, set a test `WHATSAPP_APP_SECRET` and sign the request.
+   Signature: `X-Hub-Signature-256` HMAC with `WHATSAPP_APP_SECRET`; with no secret the POST
+   is rejected (401) unless `WHATSAPP_SKIP_SIGNATURE_VERIFY=true` (dev only).
 1. `api_whatsapp_inbound_allowed(wa_id)` — per-phone inbound throttle (#938). Throttled
    messages are not stored or handed to the agent (Meta still gets `200`).
 2. `api_whatsapp_ingest_inbound` — idempotent storage in `integrations.whatsapp_inbound_messages`
@@ -33,6 +33,7 @@ Per inbound message:
 | `WHATSAPP_GRAPH_API_VERSION` | e.g. `v21.0` (optional; DB config has default) |
 | `GOOGLE_GENERATIVE_AI_API_KEY` | Gemini key for the Pro agent (#1091). Unset → agent disabled, no LLM calls |
 | `GEMINI_MODEL_ID` | Optional, default `gemini-flash-latest` |
+| `WHATSAPP_SKIP_SIGNATURE_VERIFY` | Dev only: set `true` when `WHATSAPP_APP_SECRET` is unset |
 
 `whatsapp-sender` also needs the database to be able to call it: the `whatsapp_send` job uses
 `kc_private.invoke_edge_function`, configured like the other scheduled workers.
