@@ -1,6 +1,6 @@
 # 2.1 Authentication & Onboarding
 
-> **Status:** 🟡 Partial — Google shipped; guest preview removed (`{{D:no-guest-feed}}`); email/password via secondary link on welcome. Full `FR-AUTH-002` picker (Phone OTP, tabbed email) deferred — `TD-151`; Apple SSO (`FR-AUTH-004`) implemented natively (`D-58`, 2026-06-04), live flow pends Supabase Apple provider config. Onboarding + sessions + delete: ✅. **Audit 2026-05-29:** `performFullSignOut` + restore expiry sign-out shipped (TD-164). ⚠️ Audit 2026-05-16: ~~🔴 **FR-AUTH-017 AC3** sign-out leaves Expo push token active~~ addressed by TD-164; ~~welcome screen has no email entry per FR-AUTH-001 AC2 (TD-104)~~ ✅ 2026-10-30 — "continue with email" text link restored on every platform (KC#1269, `testID=auth-email-entry`); ~~Forgot Password button dead (FR-AUTH-008 unimplemented)~~ ✅ FR-AUTH-008 implemented 2026-10-30; FR-AUTH-015 soft-gate wired only to post-create (not follow + chat); FR-AUTH-016 30-day re-registration cooldown unimplemented; FR-AUTH-011 AC2 avatar resize 512 vs spec'd 1024; SignInWithEmail short-circuits `invalid_email` distinct from `authentication_failed` (D-22 spirit). See `docs/SSOT/archive/audit/2026-05-16/02_auth_profile.md`.
+> **Status:** 🟡 Partial — Google shipped; guest preview removed (`D166`); email/password via secondary link on welcome. Full `FR-AUTH-002` picker (Phone OTP, tabbed email) deferred — `TD-151`; Apple SSO (`FR-AUTH-004`) implemented natively (`D-58`, 2026-06-04), live flow pends Supabase Apple provider config. Onboarding + sessions + delete: ✅. **Audit 2026-05-29:** `performFullSignOut` + restore expiry sign-out shipped (TD-164). ⚠️ Audit 2026-05-16: ~~🔴 **FR-AUTH-017 AC3** sign-out leaves Expo push token active~~ addressed by TD-164; ~~welcome screen has no email entry per FR-AUTH-001 AC2 (TD-104)~~ ✅ 2026-10-30 — "continue with email" text link restored on every platform (KC#1269, `testID=auth-email-entry`); ~~Forgot Password button dead (FR-AUTH-008 unimplemented)~~ ✅ FR-AUTH-008 implemented 2026-10-30; FR-AUTH-015 soft-gate wired only to post-create (not follow + chat); FR-AUTH-016 30-day re-registration cooldown unimplemented; FR-AUTH-011 AC2 avatar resize 512 vs spec'd 1024; SignInWithEmail short-circuits `invalid_email` distinct from `authentication_failed` (D-22 spirit). See `docs/SSOT/archive/audit/2026-05-16/02_auth_profile.md`.
 
 
 
@@ -39,7 +39,7 @@ Every unauthenticated launch starts on the Splash / Welcome screen showing the v
 **Acceptance Criteria.**
 - AC1. The screen renders within `NFR-PERF-001` (cold-start budget) and exposes both CTAs above the fold on every supported breakpoint.
 - AC2. Tapping "Sign up" or "Log in" navigates to the auth screen (`FR-AUTH-002`).
-- AC3. *Removed (`{{D:no-guest-feed}}`).* The screen offers no guest entry: the feed is for members only.
+- AC3. *Removed (`D166`).* The screen offers no guest entry: the feed is for members only.
 - AC4. The screen is the only screen reachable in the unauthenticated state; any deep link that targets an authenticated screen redirects here first.
 
 **Edge Cases.**
@@ -330,7 +330,7 @@ A user with a valid session token who launches the app skips Splash and Auth and
 
 ## FR-AUTH-014 — Guest Preview — **REMOVED**
 
-**Status.** ⛔ Removed (`{{D:no-guest-feed}}`).
+**Status.** ⛔ Removed (`D166`).
 
 **Rationale.** Signed-out access is minimal by decision: only the sign-in flow, the published legal
 text, the About pages, the public research form and public nonprofit pages open without an account.

@@ -302,7 +302,7 @@ The Followers / Following lists (`FR-PROFILE-009`) and the Inbox (`FR-CHAT-001`)
 
 ## FR-FEED-012 — Guest feed preview — **REMOVED**
 
-**Status.** ⛔ Removed with `FR-AUTH-014` (`{{D:no-guest-feed}}`): the feed is read by signed-in
+**Status.** ⛔ Removed with `FR-AUTH-014` (`D166`): the feed is read by signed-in
 members only, and no feed query runs for a signed-out visitor.
 
 **Related.** Screens: 1.7 (retired).
@@ -333,7 +333,7 @@ The original AC contract is preserved in the TopBar badge:
 A live "{N} פוסטים פעילים בקהילה" counter that surfaces in the warm empty
 state of the signed-in feed and in any future onboarding/marketing surface
 that wants to highlight community activity. (The guest banner that also
-showed it was removed with `FR-AUTH-014`, `{{D:no-guest-feed}}`.)
+showed it was removed with `FR-AUTH-014`, `D166`.)
 
 **Source.**
 - PRD: `03_Core_Features.md` §3.3.1.4.
