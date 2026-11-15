@@ -8,7 +8,7 @@
  ],
  "summary": {
   "bucket": {
-   "callSites": 22,
+   "callSites": 21,
    "distinct": 4
   },
   "channel": {
@@ -46,15 +46,6 @@
    "symbol": "ProPaywallScreen",
    "via": "literal",
    "name": "api_my_pro_status"
-  },
-  {
-   "kind": "bucket",
-   "file": "app/apps/mobile/src/components/PostImageCarousel.tsx",
-   "line": 72,
-   "area": "mobile",
-   "symbol": "PostImageCarousel",
-   "via": "const",
-   "name": "post-images"
   },
   {
    "kind": "table",
