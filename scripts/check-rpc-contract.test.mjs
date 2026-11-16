@@ -183,3 +183,25 @@ test('an object defined only in the archived legacy chain does not count', () =>
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test('an RPC of the dev-only demo-data seed counts (FR-ADMIN-031)', () => {
+  const root = mkdtempSync(join(tmpdir(), 'contract-demo-seed-'));
+  try {
+    const infra = join(root, 'app/packages/infrastructure-supabase/src');
+    const demoLib = join(root, 'supabase/seed/demo/lib');
+    mkdirSync(infra, { recursive: true });
+    mkdirSync(demoLib, { recursive: true });
+    mkdirSync(join(root, 'scripts'), { recursive: true });
+    seedAllowlist(root);
+    seedTypesStub(root);
+    writeFileSync(join(infra, 'Repo.ts'), `client.rpc('admin_demo_data_status');`);
+    writeFileSync(
+      join(demoLib, '80_admin_rpcs.sql'),
+      'create or replace function public.admin_demo_data_status() returns jsonb language sql as $$ select null::jsonb $$;',
+    );
+    const result = checkRpcContract({ repoRoot: root });
+    assert.equal(result.ok, true, result.errors.join('\n'));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});

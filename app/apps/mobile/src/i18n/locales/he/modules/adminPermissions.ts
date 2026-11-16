@@ -37,5 +37,6 @@ export const adminPermissionsHe: Readonly<Record<AdminPermission, string>> = {
   'matching.view_quality':      'צפייה באיכות התאמות',
   'donation_links.review':      'אישור קישורי תרומה',
   'stats.view_platform':        'צפייה בסטטיסטיקות הפלטפורמה',
+  'demo_data.manage':           'ניהול נתוני דמה',
   ...moneyPermissionsParityHe,
 };
