@@ -3,7 +3,8 @@
  * Read-only go/no-go for a PROD store build against the kc-prod ledger.
  *
  * Fails closed unless:
- *   - KC_PROD_STORE_BUILD_ENABLED is exactly "true"
+ *   - at least one platform is enabled (KC_PROD_STORE_BUILD_IOS_ENABLED /
+ *     KC_PROD_STORE_BUILD_ANDROID_ENABLED, falling back to KC_PROD_STORE_BUILD_ENABLED)
  *   - KC_PROD_SCHEMA_MODE is "baseline"
  *   - supabase/baseline/prod-allowed-migrations.txt is non-empty
  *   - the kc-prod migration ledger is non-empty and exactly matches that
@@ -32,7 +33,7 @@ import {
   listMigrationFiles,
   normalizeProdSchemaMode,
 } from './check-prod-schema-mode.mjs';
-import { enabledErrors } from './prod-store-build-gate.mjs';
+import { ENABLED_VAR, PLATFORM_VARS, anyPlatformEnabledErrors } from './prod-store-build-gate.mjs';
 
 export { PROD_REF };
 
@@ -44,6 +45,7 @@ export function allowlistVersions(allowed) {
 
 export function evaluateProdStoreReady({
   enabled,
+  flags = {},
   mode,
   allowed = [],
   projectRef,
@@ -53,7 +55,7 @@ export function evaluateProdStoreReady({
   myselfAuthHits = [],
 }) {
   const errors = [];
-  errors.push(...enabledErrors(enabled));
+  errors.push(...anyPlatformEnabledErrors({ [ENABLED_VAR]: enabled, ...flags }));
 
   const normalized = normalizeProdSchemaMode(mode);
   if (normalized !== 'baseline') {
@@ -128,6 +130,10 @@ export async function main(env, io = {}) {
 
   const errors = evaluateProdStoreReady({
     enabled: env.KC_PROD_STORE_BUILD_ENABLED,
+    flags: {
+      [PLATFORM_VARS.ios]: env.KC_PROD_STORE_BUILD_IOS_ENABLED,
+      [PLATFORM_VARS.android]: env.KC_PROD_STORE_BUILD_ANDROID_ENABLED,
+    },
     mode: env.KC_PROD_SCHEMA_MODE,
     allowed,
     projectRef,

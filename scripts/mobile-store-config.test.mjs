@@ -1,7 +1,7 @@
 // Unit tests for scripts/mobile-store-config.mjs. Run: node --test scripts/mobile-store-config.test.mjs
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { DEV_REF, DEV_URL, DEV_GOOGLE_WEB_CLIENT_ID, PROD_REF, PROD_URL, PROD_GOOGLE_WEB_CLIENT_ID, checkAnonKey, checkBundle, checkPin, googleClientVars, injectProfileEnv, resolveStoreBackend, sentryVars } from './mobile-store-config.mjs';
+import { DEV_REF, DEV_URL, DEV_GOOGLE_WEB_CLIENT_ID, PROD_REF, PROD_URL, PROD_GOOGLE_WEB_CLIENT_ID, checkAnonKey, checkBundle, checkPlatformArtifact, googleIosUrlScheme, checkPin, googleClientVars, injectProfileEnv, resolveStoreBackend, sentryVars } from './mobile-store-config.mjs';
 
 /** Build an unsigned JWT with the given payload (only the payload is inspected). */
 const jwt = (payload) =>
@@ -139,4 +139,37 @@ test('prod check passes when the web client is only in the embedded app.config',
   assert.deepEqual(checkBundle(Buffer.from(`${bundle}\n${appConfig}`), 'prod'), []);
   const devConfig = JSON.stringify({ extra: { googleWebClientId: DEV_GOOGLE_WEB_CLIENT_ID } });
   assert.ok(checkBundle(Buffer.from(`${bundle}\n${devConfig}`), 'prod').some((e) => e.includes('kc-dev Google web client')));
+});
+
+const IOS_ID = '501128729523-example.apps.googleusercontent.com';
+
+test('googleIosUrlScheme reverses an iOS client ID and rejects anything else', () => {
+  assert.equal(googleIosUrlScheme(IOS_ID), 'com.googleusercontent.apps.501128729523-example');
+  assert.equal(googleIosUrlScheme('nope'), undefined);
+  assert.equal(googleIosUrlScheme(undefined), undefined);
+});
+
+test('ios artifact: URL scheme must be in Info.plist when the native Google sheet is configured', () => {
+  const appConfig = { ios: { bundleIdentifier: 'org.karmacommunity.app' }, extra: { googleIosClientId: IOS_ID } };
+  const plist = '<string>com.googleusercontent.apps.501128729523-example</string>';
+  assert.deepEqual(checkPlatformArtifact({ platform: 'ios', appConfig, infoPlist: plist }).errors, []);
+  const missing = checkPlatformArtifact({ platform: 'ios', appConfig, infoPlist: '<plist/>' });
+  assert.match(missing.errors[0], /URL scheme/);
+});
+
+test('ios artifact: no iOS client = warning only; wrong bundle id = error', () => {
+  const noClient = checkPlatformArtifact({ platform: 'ios', appConfig: { extra: {} }, infoPlist: '' });
+  assert.deepEqual(noClient.errors, []);
+  assert.equal(noClient.warnings.length, 1);
+  const wrong = checkPlatformArtifact({ platform: 'ios', appConfig: { ios: { bundleIdentifier: 'x.y' } }, infoPlist: '' });
+  assert.match(wrong.errors[0], /bundleIdentifier/);
+});
+
+test('android artifact: package must be ours; missing web client = warning', () => {
+  const ok = checkPlatformArtifact({ platform: 'android', appConfig: { android: { package: 'org.karmacommunity.app' }, extra: { googleWebClientId: 'x' } } });
+  assert.deepEqual(ok, { errors: [], warnings: [] });
+  const wrong = checkPlatformArtifact({ platform: 'android', appConfig: { android: { package: 'com.other' }, extra: {} } });
+  assert.match(wrong.errors[0], /android.package/);
+  assert.equal(wrong.warnings.length, 1);
+  assert.match(checkPlatformArtifact({ platform: 'web', appConfig: {} }).errors[0], /unknown platform/);
 });
