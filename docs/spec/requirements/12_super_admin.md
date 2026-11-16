@@ -589,7 +589,7 @@ The team sees how well matching v2 works per world, to tune `matching_settings` 
 
 ## FR-ADMIN-031 — Demo data removal and restore
 
-> **Status (2026-11-13):** ✅ Restored by the PM (`{{D:restore-demo-data-screen}}`) on the production baseline. The tools are a dev-only seed (`supabase/seed/demo/`, `{{ENG:demo-data-dev-seed-tools}}`), installed on kc-dev by the **Seed KC dev** workflow (action `demo`) and never on kc-prod, so the production schema still holds no demo object.
+> **Status (2026-11-13):** ✅ Restored by the PM (`D168`) on the production baseline. The tools are a dev-only seed (`supabase/seed/demo/`, `D-239`), installed on kc-dev by the **Seed KC dev** workflow (action `demo`) and never on kc-prod, so the production schema still holds no demo object.
 >
 > *(History: ✅ 2026-11-03 on the legacy chain; ⛔ removed at the baseline cut-over 2026-11-11.)*
 
@@ -675,4 +675,4 @@ Platform staff report the hours they worked; the reporter's direct manager appro
 | 0.20 | 2026-11-11 | `FR-ADMIN-031` removed: the baseline has no `admin_demo_data_status` / `admin_wipe_demo_data` / `admin_seed_demo_data` RPCs; screen, repository and `demo_data.manage` deleted from the app (application migration package P4). |
 | 0.21 | 2026-11-12 | FR-ADMIN-018 rebuilt on the baseline (`0034`): `kc_private` tables, keyset list, category / assignee / due-range filters, audit (AC7), purge keeps the task (AC8), the `taskTitle` text argument. Added §19: FR-ADMIN-032 CRM contacts per organization (`0035`, `D150`) and FR-ADMIN-033 staff timesheets decided by the direct manager (`0036`, `D151`). |
 | 0.22 | 2026-11-13 | Admin WhatsApp console (`(admin)/whatsapp`, #939) restored on the `integrations` module: kill switch, seven-day overview (with pending reviews), review queue of bot posts (approve publishes on the owner's behalf, reject keeps the draft; D156), outbound queue with Resend, consent with Block, activity, templates. Permission `whatsapp.manage` (moderator+); the new `whatsapp.configure` (super admin only) gates the send limits and template status (D161). Every console write is audited. |
-| 0.23 | 2026-11-13 | `FR-ADMIN-031` restored (`{{D:restore-demo-data-screen}}`): the Demo data screen, `demo_data.manage` and the three demo-data RPCs come back for kc-dev as dev-only seed tools (`supabase/seed/demo/`, `{{ENG:demo-data-dev-seed-tools}}`), rewritten for the baseline, stepped, with ACs 1–11. |
+| 0.23 | 2026-11-13 | `FR-ADMIN-031` restored (`D168`): the Demo data screen, `demo_data.manage` and the three demo-data RPCs come back for kc-dev as dev-only seed tools (`supabase/seed/demo/`, `D-239`), rewritten for the baseline, stepped, with ACs 1–11. |

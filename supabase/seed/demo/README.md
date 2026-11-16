@@ -3,7 +3,7 @@
 The functions behind the admin portal's **Demo data** screen (FR-ADMIN-031): demo counts,
 "Delete all demo data" and "Restore demo data". **DEV ONLY**: kc-dev, a local stack or a scratch
 test database. They are a seed, not a migration, so kc-prod never gets them
-(`docs/db/target-design.md` §6, §9; decision `{{ENG:demo-data-dev-seed-tools}}`).
+(`docs/db/target-design.md` §6, §9; decision `D-239`).
 
 | File | What |
 | --- | --- |

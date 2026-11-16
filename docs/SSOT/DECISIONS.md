@@ -2000,9 +2000,9 @@ Owner rules that go with it:
 - Rules: `AGENTS.md` §6 and §13.
 - Docs: `docs/agents/ISSUE_CLAIMS.md`, `docs/agents/OPERATING_MODEL.md` and `docs/SSOT/RELEASE_CHECKLIST.md`.
 
-## {{ENG:demo-data-dev-seed-tools}} — The demo-data tools are a dev-only seed, not a migration (2026-11-13)
+## D-239 — The demo-data tools are a dev-only seed, not a migration (2026-11-13)
 
-**Decision.** The Demo data screen (FR-ADMIN-031, restored by the PM in `{{D:restore-demo-data-screen}}`) runs on functions installed by `supabase/seed/demo/` (`install.sql`, loaded by `load.sql` from the **Seed KC dev** workflow, action `demo`), never by a file in `supabase/migrations/`:
+**Decision.** The Demo data screen (FR-ADMIN-031, restored by the PM in `D168`) runs on functions installed by `supabase/seed/demo/` (`install.sql`, loaded by `load.sql` from the **Seed KC dev** workflow, action `demo`), never by a file in `supabase/migrations/`:
 - `public.admin_demo_data_status`, `admin_wipe_demo_data_step` and `admin_seed_demo_data_step(p_password)` are granted to `authenticated` and admit only `kc_private.can_manage_demo_data` (super admin, or the org admin of the platform organization).
 - The seed logic is `kc_private.demo_*`, rewritten for the baseline (users split into four tables, one post model with `post_ride_details`, `chats` + `chat_members`, `follows`, `admin_role_grants` → `org_memberships`, `audit.events` through `kc_private.audit_record`). `load.sql`, `wipe.sql` and the portal run the same phases, so there is one source of truth.
 - Wipe and restore are stepped: one RPC call runs one phase (≈0.5 s locally) and records the next in `kc_private.demo_data_state`, so no call nears the API statement timeout. A stalled operation is resumed, or taken over after 10 minutes.
