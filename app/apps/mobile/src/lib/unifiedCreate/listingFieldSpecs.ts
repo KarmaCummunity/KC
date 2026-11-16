@@ -13,6 +13,7 @@ import {
 } from '@kc/domain';
 import type { CreateDirection } from './createCategories';
 import { ANIMALS_FIELD_SPECS } from './animalsFieldSpecs';
+import { EMPLOYMENT_FIELD_SPECS } from './employmentFieldSpecs';
 import { HOUSING_FIELD_SPECS } from './housingFieldSpecs';
 import { KNOWLEDGE_FIELD_SPECS } from './knowledgeFieldSpecs';
 
@@ -80,6 +81,7 @@ const SPECS_BY_KIND: Readonly<Record<string, readonly ListingFieldSpec[]>> = {
   ...HOUSING_FIELD_SPECS,
   ...KNOWLEDGE_FIELD_SPECS,
   ...ANIMALS_FIELD_SPECS,
+  ...EMPLOYMENT_FIELD_SPECS,
   volunteer_offer: [{ key: 'duration_minutes', type: 'duration', options: DURATIONS_MIN, defaultValue: 60 }],
   // An organization's event (G1 step 5, 0563). The organization (`org_id`) has its own picker
   // (OrganizationPicker), so it is not a field here; the window rule is checked on publish.

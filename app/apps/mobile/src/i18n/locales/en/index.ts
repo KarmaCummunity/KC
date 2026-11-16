@@ -24,6 +24,7 @@ import { authEn } from './modules/auth';
 import { authVerificationHintEn } from './modules/authVerificationHint';
 import { offlineSyncEn } from './modules/offlineSync';
 import { onboardingEn } from './modules/onboarding';
+import { onboardingReplayEn } from './modules/onboardingReplay';
 import { dateOfBirthEn } from './modules/dateOfBirth';
 import { verificationEn } from './modules/verification';
 import { errorsEn } from './modules/errors';
@@ -80,6 +81,8 @@ const en = {
 
   // Onboarding (FR-AUTH-010..012, FR-AUTH-018) — see modules/onboarding.ts
   onboarding: onboardingEn,
+  // Onboarding replay for admins (FR-ADMIN-035) — see modules/onboardingReplay.ts
+  onboardingReplay: onboardingReplayEn,
   dateOfBirth: dateOfBirthEn,
   verification: verificationEn,
 

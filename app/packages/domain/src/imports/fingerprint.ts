@@ -1,0 +1,19 @@
+// Placeholders survive canonicalization; they are swapped for private-use tokens while
+// the rest is flattened, so punctuation stripping cannot eat their angle brackets.
+const PLACEHOLDER = /<(phone|email|id|url)>/g;
+
+/**
+ * Canonical form of a scrubbed text for duplicate detection (FR-IMPORT-008 AC1-AC2): lower
+ * case, digit runs collapsed to `#`, punctuation and emoji dropped, whitespace collapsed.
+ * Hashing (SHA-256) is an adapter concern: the Edge Function uses `crypto.subtle`.
+ */
+export function canonicalFingerprintText(scrubbedText: string): string {
+  return scrubbedText
+    .toLowerCase()
+    .replace(PLACEHOLDER, '\uE000$1\uE001')
+    .replace(/\p{N}+/gu, '#')
+    .replace(/[^\p{L}#\s\uE000\uE001]/gu, ' ')
+    .replace(/\uE000(\w+)\uE001/g, '<$1>')
+    .replace(/\s+/g, ' ')
+    .trim();
+}

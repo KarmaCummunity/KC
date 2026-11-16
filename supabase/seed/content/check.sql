@@ -24,7 +24,14 @@ begin
   select count(*) into v_n from public.surveys s
    join public.survey_versions sv on sv.survey_id = s.id and sv.version = s.current_version
   where exists (select 1 from public.survey_questions q where q.survey_version_id = sv.id);
-  if v_n <> 3 then raise exception 'seed: surveys incomplete (% of 3)', v_n; end if;
+  if v_n <> 4 then raise exception 'seed: surveys incomplete (% of 4)', v_n; end if;
+
+  -- The public research form (FR-RESEARCH-001 AC3) reads its survey through this function;
+  -- without the row the page shows "survey not active" to every visitor.
+  select jsonb_array_length(public.get_public_research_questions('alt-platforms-research') -> 'questions') into v_n;
+  if v_n is distinct from 11 then
+    raise exception 'seed: public research survey incomplete (% of 11 questions)', coalesce(v_n, 0);
+  end if;
 
   select count(*) into v_n from public.organizations where is_platform and slug = 'karma-community';
   if v_n <> 1 then raise exception 'seed: platform organization missing'; end if;

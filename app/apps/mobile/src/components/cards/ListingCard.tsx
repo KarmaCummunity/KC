@@ -24,6 +24,7 @@ const WORLD_ICON: Record<string, IconName> = {
   knowledge: 'school-outline',
   time: 'time-outline',
   animals: 'paw-outline',
+  employment: 'briefcase-outline',
   money: 'cash-outline',
 };
 

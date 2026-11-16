@@ -20,8 +20,10 @@
 //         whose own ci.yml could fake the gate, makes the commit unprovable;
 //       – the merge commit's second parent is the head SHA and its first
 //         parent is already part of the base branch's tip with no gate file
-//         (.github/**, scripts/ci-*, scripts/check-*) changed since, so the
-//         workflow and judges that ran are the base branch's own;
+//         changed since (ci.yml, the lane workflows the run used,
+//         .github/actions/**, .github/owners.json, scripts/ci-*,
+//         scripts/check-*), so the workflow and judges that ran are the base
+//         branch's own;
 //   • for merge groups: a queue branch of dev or main; for pushes and
 //     dispatches: dev or main itself. ci-verdict.mjs never certifies pushes or
 //     dispatches (deploy.yml checks its push runs itself).
@@ -32,7 +34,20 @@ import { githubGet, githubList } from './ci-github.mjs';
 export const CI_PATH = '.github/workflows/ci.yml';
 export const PROTECTED = new Set(['dev', 'main']);
 export const PR_EVENTS = new Set(['pull_request', 'pull_request_review']);
-const GATE_FILES = [/^\.github\//, /^scripts\/ci-/, /^scripts\/check-/];
+// Files that shape every PR run's verdict, whatever lanes it ran: the entry workflow, the
+// composite actions its lanes call, the owners list approvals trust (scripts/ci-github.mjs)
+// and the judges. The lane workflows a run used come from the run itself (runWorkflowFiles).
+// Any other .github file (CODEOWNERS, dependabot, rulesets docs, release / deploy / store
+// workflows) never runs in a PR's CI, and the merge group re-judges the final tree anyway,
+// so its change no longer voids a green run (#2369).
+const GATE_FILES = [
+  /^\.github\/workflows\/ci\.yml$/,
+  /^\.github\/actions\//,
+  /^\.github\/owners\.json$/,
+  /^scripts\/ci-/,
+  /^scripts\/check-/,
+];
+const RUN_WORKFLOW_FILE = /^[^/]+\/[^/]+\/(\.github\/workflows\/[^/@]+\.ya?ml)@/i;
 const QUEUE_BRANCH = /^gh-readonly-queue\/(dev|main)\//;
 
 const same = (a, b) => typeof a === 'string' && typeof b === 'string' && a.toLowerCase() === b.toLowerCase();
@@ -94,9 +109,23 @@ export function mergeRefOf(run, repo) {
   return { sha: first.sha, pr: first.pr };
 }
 
-/** Gate files among a compare's changed files. Pure. */
-export function gateFilesChanged(files) {
-  return files.map((f) => f.filename).filter((name) => GATE_FILES.some((re) => re.test(name)));
+/**
+ * Repository paths of the reusable workflows a run executed (`.github/workflows/x.yml`),
+ * read from its recorded references in either form (`…@refs/pull/N/merge` or `…@<sha>`).
+ * GitHub records every reusable workflow the run resolved, nested ones included. Pure.
+ */
+export function runWorkflowFiles(run) {
+  const files = (run.referenced_workflows ?? []).map((w) => RUN_WORKFLOW_FILE.exec(w.path ?? '')?.[1]);
+  return new Set(files.filter(Boolean));
+}
+
+/**
+ * Gate files among a compare's changed files: the fixed GATE_FILES plus `runWorkflows`, the
+ * lane workflows the judged run used. A renamed file counts under its old name too. Pure.
+ */
+export function gateFilesChanged(files, runWorkflows = new Set()) {
+  const isGate = (name) => typeof name === 'string' && (runWorkflows.has(name) || GATE_FILES.some((re) => re.test(name)));
+  return files.filter((f) => isGate(f.filename) || isGate(f.previous_filename)).map((f) => f.filename);
 }
 
 /** Reasons PR #N (the API object) is not the PR this run built. Pure. */
@@ -151,7 +180,7 @@ export async function bindPrRun(run, repo, env, expect = {}) {
     return { errors: [`the run's base ${parents[0]} is not part of ${pr.base.ref} (${cmp.status})`] };
   }
   if ((cmp.files?.length ?? 0) >= 300) return { errors: [`${pr.base.ref} moved too far since the run to verify; re-run CI`] };
-  const moved = gateFilesChanged(cmp.files ?? []);
+  const moved = gateFilesChanged(cmp.files ?? [], runWorkflowFiles(run));
   if (moved.length) return { errors: [`${pr.base.ref} changed gate files since the run (${moved.join(', ')}); re-run CI`] };
   return { errors: [], pr };
 }
