@@ -1,6 +1,6 @@
 # 2.15 Public Market Research
 
-> **Status:** 🟡 Code complete, post-merge QA pending — Survey B captures pain-language from alt-platform users (FB / WhatsApp / Agora). Output: Karma Phrasebook (see design spec §2). Migration `0123`, Edge Functions `public-research-submit` + `rotate-research-salt`, and `.web.tsx` routes are implemented; individual FR statuses remain ⏳ Planned until manual QA on dev confirms ACs.
+> **Status:** 🟡 FR-RESEARCH-001..003 done and verified end to end (one open defect: KC#2381, desktop navigation rail); FR-RESEARCH-004 post-merge QA pending — Survey B captures pain-language from alt-platform users (FB / WhatsApp / Agora). Output: Karma Phrasebook (see design spec §2). Migration `0123`, Edge Functions `public-research-submit` + `rotate-research-salt`, and `.web.tsx` routes are implemented; verified on kc-dev on 2026-11-16 by the Playwright journey `tests/e2e/journeys/research-submit.spec.ts` (KC#1646).
 > **Post-merge QA (2026-06-14):** fixed mid-survey draft loss on reload — answers lived in ephemeral React state and were wiped by any refresh; now persisted to `localStorage` (FR-RESEARCH-001 AC7). The public form was also reflowed into a single, more spacious scroll column (intro + progress + question scroll together; only the prev/next nav stays pinned). Backend save path verified healthy end-to-end on prod (origin allowlist, daily salt, service-role, RPC insert).
 > **Post-merge QA (2026-11-16, KC#1646):** on the baseline database the survey `alt-platforms-research` did not exist (its questions lived only in the archived migration `0131`), so the form answered "survey not active" on kc-dev. The survey is now part of the content seed (`supabase/seed/content/`, checked by `check.sql`), and the Playwright journey `tests/e2e/journeys/research-submit.spec.ts` covers the form end to end (open signed out, rate 11 questions, send, stored-row id from the gateway, thank-you page, draft kept on reload and cleared after sending).
 > **In progress:** FR-RESEARCH-004 (share affordance) — three viral surfaces (public thank-you page, public survey header, in-app Settings row) to make the survey self-spreading among non-registered users.
@@ -15,7 +15,7 @@ A public, anonymous web form at `/research/[slug]?src=...`, served from the Expo
 
 ## FR-RESEARCH-001 — Public market research runner
 
-**Status.** ⏳ Planned
+**Status.** 🟡 Done and verified end to end on kc-dev (2026-11-16), except AC2 at desktop width: the app navigation rail is still shown (KC#2381).
 
 **Acceptance Criteria.**
 - AC1. Web-only route `/research/[slug]` rendered via Expo Router `.web.tsx` platform extension. The route file does not exist in iOS/Android bundles (bundle-inspection test).
@@ -30,7 +30,7 @@ A public, anonymous web form at `/research/[slug]?src=...`, served from the Expo
 
 ## FR-RESEARCH-002 — Anti-abuse for public research form
 
-**Status.** ⏳ Planned
+**Status.** ✅ Done (database rules covered by `supabase/tests/090_research.sql`; gateway verified on kc-dev 2026-11-16).
 
 **Acceptance Criteria.**
 - AC1. Hidden honeypot field; non-empty value → silent reject (200 OK but no row inserted).
@@ -43,7 +43,7 @@ A public, anonymous web form at `/research/[slug]?src=...`, served from the Expo
 
 ## FR-RESEARCH-003 — Contact-request opt-in
 
-**Status.** ⏳ Planned
+**Status.** ✅ Done
 
 **Acceptance Criteria.**
 - AC1. Submission can optionally include `contact_email` (RFC-5322-lite validated) + `contact_window_he` (free text ≤200 chars).
@@ -77,3 +77,4 @@ A public, anonymous web form at `/research/[slug]?src=...`, served from the Expo
 | 0.2 | 2026-05-28 | FR-RESEARCH-004 (share affordance) — three viral surfaces to self-spread the survey. |
 | 0.3 | 2026-06-14 | FR-RESEARCH-001 AC7 — in-progress answers persist across reload (localStorage draft, cleared on submit). Public form reflowed into one spacious scroll column. |
 | 0.4 | 2026-11-16 | Survey `alt-platforms-research` restored through the content seed; end-to-end journey added (KC#1646). No AC changed. |
+| 0.5 | 2026-11-16 | FR-RESEARCH-001..003 statuses updated after the end-to-end run on kc-dev (KC#1646); AC2 desktop defect tracked in KC#2381. |
