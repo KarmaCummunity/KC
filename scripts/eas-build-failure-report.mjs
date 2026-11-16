@@ -28,7 +28,13 @@ export function parseLogLines(text) {
     if (!line.trim()) continue;
     try {
       const j = JSON.parse(line);
-      out.push({ phase: j.phase ?? null, msg: String(j.msg ?? ''), marker: j.marker ?? null, result: j.result ?? null });
+      out.push({
+        phase: j.phase ?? null,
+        msg: String(j.msg ?? ''),
+        marker: j.marker ?? null,
+        result: j.result ?? null,
+        keys: Object.keys(j),
+      });
     } catch {
       out.push({ phase: null, msg: line, marker: null, result: null });
     }
@@ -49,8 +55,16 @@ export function failingPhase(entries) {
   return last;
 }
 
-export function summarize(entries, { tail = 200, matches = 120 } = {}) {
-  const phase = failingPhase(entries);
+/** EAS errors often name the phase: 'See logs for the "Run gradlew" phase'. */
+export function phaseFromMessage(message, entries) {
+  const m = /logs for the "([^"]+)" phase/i.exec(message ?? '');
+  if (!m) return null;
+  const want = m[1].toUpperCase().replace(/[^A-Z0-9]+/g, '_');
+  return entries.some((e) => e.phase === want) ? want : null;
+}
+
+export function summarize(entries, { tail = 200, matches = 120, errorMessage } = {}) {
+  const phase = phaseFromMessage(errorMessage, entries) ?? failingPhase(entries);
   const inPhase = entries.filter((e) => e.msg && (phase == null || e.phase === phase));
   const hits = inPhase.filter((e) => INTERESTING_RE.test(e.msg)).slice(-matches);
   return { phase, hits: hits.map((e) => e.msg), tail: inPhase.slice(-tail).map((e) => e.msg) };
@@ -111,7 +125,10 @@ async function main() {
     console.log('No EAS log files could be downloaded.');
     return;
   }
-  const s = summarize(entries);
+  const s = summarize(entries, { errorMessage: err.message });
+  const counts = new Map();
+  for (const e of entries) if (e.phase) counts.set(e.phase, (counts.get(e.phase) ?? 0) + 1);
+  console.log(`Phases (log lines): ${[...counts].map(([p, n]) => `${p}=${n}`).join(' ')}`);
   console.log(`Failing phase: ${s.phase ?? 'unknown'}`);
   console.log('::group::Error-looking lines in the failing phase');
   for (const l of s.hits) console.log(l);

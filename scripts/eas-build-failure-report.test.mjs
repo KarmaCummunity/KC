@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { findBuildId, parseLogLines, failingPhase, summarize } from './eas-build-failure-report.mjs';
+import { findBuildId, parseLogLines, failingPhase, summarize, phaseFromMessage } from './eas-build-failure-report.mjs';
 
 const ID = 'cc93cd14-0d1c-47bb-b45f-e09ff742ce33';
 
@@ -33,4 +33,12 @@ test('parseLogLines keeps non-JSON lines as plain messages', () => {
   const e = parseLogLines('plain error line\n');
   assert.equal(e[0].msg, 'plain error line');
   assert.equal(e[0].phase, null);
+});
+
+test('phaseFromMessage follows the phase named in the EAS error', () => {
+  const entries = parseLogLines(JSON.stringify({ phase: 'RUN_GRADLEW', msg: '> Task :app:x FAILED' }));
+  const msg = 'Gradle build failed with unknown error. See logs for the "Run gradlew" phase for more information.';
+  assert.equal(phaseFromMessage(msg, entries), 'RUN_GRADLEW');
+  assert.equal(phaseFromMessage('other', entries), null);
+  assert.deepEqual(summarize(entries, { errorMessage: msg }).hits, ['> Task :app:x FAILED']);
 });
