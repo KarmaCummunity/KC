@@ -182,6 +182,7 @@ export default tseslint.config(
       '**/*.config.{js,cjs}',
       'apps/mobile/babel.config.js',
       'apps/mobile/metro.config.js',
+      'apps/mobile/metro/*.js',
     ],
     languageOptions: {
       sourceType: 'commonjs',
