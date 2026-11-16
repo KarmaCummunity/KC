@@ -164,7 +164,8 @@ select is(pg_temp.run('s', $$select public.admin_seed_demo_data_step('short')$$)
 select is(
   pg_temp.steps('s', $$select public.admin_seed_demo_data_step('SeedPass-2026')$$,
                 'select public.admin_seed_demo_data_step(null)') -> 'result',
-  '{"demo_users": 200, "demo_organizations": 3, "demo_item_posts": 600, "demo_ride_posts": 120,
+  -- 610 = 600 item posts + 10 world posts (the test catalog has 5 plan rows, two posts each).
+  '{"demo_users": 200, "demo_organizations": 3, "demo_item_posts": 610, "demo_ride_posts": 120,
     "demo_follows": 1600, "demo_chats": 150, "demo_org_memberships": 24}'::jsonb,
   'the stepped restore creates members, item posts, rides, follows, chats and the demo nonprofits (AC7)');
 select is((select count(distinct g.role)::int from public.admin_role_grants g
@@ -217,7 +218,7 @@ select is(pg_temp.run_id((kc_private.demo_member_ids())[1], 'select public.admin
 -- One demo nonprofit has a finance account: billing keeps it from being deleted (AC4).
 insert into billing.org_finance_accounts (org_id, name, kind) values ('00000000-0000-4000-8000-00000000d001', 'cash', 'cash');
 select is(pg_temp.steps('s', 'select public.admin_wipe_demo_data_step()', 'select public.admin_wipe_demo_data_step()') -> 'result',
-  '{"posts_deleted": 720, "chats_deleted": 150, "users_deleted": 200, "organizations_deleted": 2, "organizations_kept": 1}'::jsonb,
+  '{"posts_deleted": 730, "chats_deleted": 150, "users_deleted": 200, "organizations_deleted": 2, "organizations_kept": 1}'::jsonb,
   'the wipe finishes: every demo member goes, and a nonprofit with payment history is kept and reported (AC2, AC4)');
 select is(pg_temp.run('s', 'select public.admin_demo_data_status()')::jsonb - 'can_seed' - 'has_saved_password',
   '{"demo_users": 0, "demo_organizations": 1, "demo_item_posts": 0, "demo_ride_posts": 0, "demo_follows": 0,
