@@ -21,8 +21,11 @@ export function useFirstPostNudge(viewerId: string | null): UseFirstPostNudgeRes
   const sessionDismissed = useFeedSessionStore((s) => s.firstPostNudgeDismissedThisSession);
   const dismissForSession = useFeedSessionStore((s) => s.dismissNudgeForSession);
 
+  // The member's own profile under the key every other own-profile reader uses (profile chrome,
+  // privacy toggle, completion nudge), so the feed shares their read instead of repeating it: one
+  // own-profile read is five requests (users, cities, user_stats, bootstrap_session, karma).
   const userQuery = useQuery({
-    queryKey: [...userProfileKeys.byId(viewerId ?? ''), 'nudge'],
+    queryKey: userProfileKeys.byId(viewerId ?? ''),
     queryFn: () => (viewerId ? getUserRepo().findById(viewerId) : null),
     enabled: viewerId !== null,
     staleTime: 5 * 60_000, // PERF-3: profile (self) — dismissForever refetches explicitly
