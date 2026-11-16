@@ -80,6 +80,7 @@ export const adminHe = {
     surveysKpi: 'סקרים',
     auditKpi: 'יומן פעולות',
     auditOpenLabel: 'פתיחה',
+    onboardingReplayKpi: 'שידור חוזר של ההצטרפות',
     noCount: '—',
     searchPlaceholder: 'חיפוש מסך או הגדרה בפורטל',
     searchEmpty: 'לא נמצא מסך תואם',

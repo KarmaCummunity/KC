@@ -22,6 +22,7 @@ import { authHe } from './modules/auth';
 import { authVerificationHintHe } from './modules/authVerificationHint';
 import { offlineSyncHe } from './modules/offlineSync';
 import { onboardingHe } from './modules/onboarding';
+import { onboardingReplayHe } from './modules/onboardingReplay';
 import { dateOfBirthHe } from './modules/dateOfBirth';
 import { verificationHe } from './modules/verification';
 import { errorsHe } from './modules/errors';
@@ -78,6 +79,8 @@ const he = {
 
   // Onboarding (FR-AUTH-010..012, FR-AUTH-018) — see modules/onboarding.ts
   onboarding: onboardingHe,
+  // Onboarding replay for admins (FR-ADMIN-035) — see modules/onboardingReplay.ts
+  onboardingReplay: onboardingReplayHe,
   dateOfBirth: dateOfBirthHe,
   verification: verificationHe,
 

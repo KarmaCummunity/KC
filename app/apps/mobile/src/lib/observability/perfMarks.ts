@@ -39,7 +39,9 @@ function getGate(): SentryGate | null {
 
 type MarkName = 'app.cold_start' | 'feed.first_render' | 'image.first_paint' | 'post_detail.content_painted';
 type Span = { end?(endTimestamp?: number): void; finish?(): void };
-type FinishedMark = { name: MarkName; startMs: number; endMs: number };
+/** Low-cardinality facts about how a mark ended (e.g. `source: 'cache'`), sent as span attributes. */
+type MarkAttributes = Readonly<Record<string, string>>;
+type FinishedMark = { name: MarkName; startMs: number; endMs: number; attributes?: MarkAttributes };
 
 const coldStartT0 =
   typeof performance !== 'undefined' && typeof performance.now === 'function'
@@ -77,6 +79,7 @@ function report(mark: FinishedMark): boolean {
       name: mark.name,
       op: 'mark',
       startTime: mark.startMs / 1000,
+      ...(mark.attributes ? { attributes: mark.attributes } : {}),
     }) as unknown as Span | undefined;
     if (span) endSpan(span, mark.endMs / 1000);
   } catch {
@@ -90,7 +93,11 @@ export function startMark(name: MarkName): void {
   active.set(name, Date.now());
 }
 
-export function finishMark(name: MarkName): boolean {
+/**
+ * Ends a running mark and reports it. `attributes` describe how it ended, so one mark can be
+ * split in Sentry by cause instead of mixing unlike waits into one percentile.
+ */
+export function finishMark(name: MarkName, attributes?: MarkAttributes): boolean {
   const startMs = active.get(name);
   if (startMs === undefined) return false;
   active.delete(name);
@@ -100,9 +107,18 @@ export function finishMark(name: MarkName): boolean {
   }
   // No DSN: nothing to send. With a DSN, send now or keep the mark until init has settled.
   if (!getGate()) return true;
-  const mark = { name, startMs, endMs };
+  const mark: FinishedMark = { name, startMs, endMs, ...(attributes ? { attributes } : {}) };
   if (!report(mark) && pending.length < MAX_PENDING_MARKS) pending.push(mark);
   return true;
+}
+
+/**
+ * Drops a running mark without reporting it. Call it when the wait is abandoned (the screen
+ * unmounts first): `startMark` keeps an existing start, so a leftover one would be reported
+ * later with the idle time in between counted as waiting.
+ */
+export function cancelMark(name: MarkName): void {
+  active.delete(name);
 }
 
 /** Sends the marks that finished before Sentry was ready; call once `initSentry()` has settled. */

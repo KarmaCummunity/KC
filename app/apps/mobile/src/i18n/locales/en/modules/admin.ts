@@ -80,6 +80,7 @@ export const adminEn = {
     surveysKpi: 'Surveys',
     auditKpi: 'Audit Log',
     auditOpenLabel: 'Open',
+    onboardingReplayKpi: 'Replay Onboarding',
     noCount: '—',
     searchPlaceholder: 'Search admin screens and settings',
     searchEmpty: 'No matching screen',

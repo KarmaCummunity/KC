@@ -51,3 +51,17 @@ test('every kind the server handoff flow names exists in the seed', () => {
   const seeded = new Set(postKinds().map((row) => row.slug));
   assert.deepEqual(named.filter((slug) => !seeded.has(slug)), []);
 });
+
+test('the employment world has a job offer and a job request (#2278)', () => {
+  // docs/spec/05_giving_worlds.md (employment): give = offer a job, take = look for work.
+  const employment = Object.fromEntries(postKinds().filter((row) => row.world_slug === 'employment').map((row) => [row.slug, row.direction]));
+  assert.deepEqual(employment, { job_offer: 'offer', job_request: 'request' });
+});
+
+test('every employment kind the create form has fields for exists in the seed', () => {
+  const source = read('app/apps/mobile/src/lib/unifiedCreate/employmentFieldSpecs.ts');
+  const formKinds = [...source.matchAll(/^ {2}([a-z_]+): \[/gm)].map((m) => m[1]);
+  assert.ok(formKinds.length > 0, 'no field sets found in employmentFieldSpecs.ts');
+  const seeded = new Set(postKinds().filter((row) => row.world_slug === 'employment').map((row) => row.slug));
+  assert.deepEqual(formKinds.filter((slug) => !seeded.has(slug)), []);
+});
