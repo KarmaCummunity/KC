@@ -45,7 +45,7 @@ The world has four **housing sub-categories** (the "item subcategory" pattern, D
 ---
 
 ## FR-HOUSING-001 — World entry and launch gate
-- AC1. The Donations tab tile **דיור** routes to the housing world screen. While `app_flags.world_housing_enabled=false` the world is a **portal** (D60, D107): knowledge blocks, the curated housing organizations list and the hotline block only — no feed, no form. Tester (development) builds open the in-app feed regardless of the flag (#1630); a production build follows the flag.
+- AC1. The Donations tab tile **דיור** routes to the housing world screen. While `app_flags.world_housing_enabled=false` the world is a **portal** (D60, D107): knowledge blocks, the curated housing organizations list and the hotline block only — no feed, no form. Every build follows the flag, which the super admin switches per environment from the admin portal (FR-ADMIN-034; the tester-build override of #1630 is removed).
 - AC2. The flag is turned on only when H1 (§ Phasing) is complete, an ID-verification path exists (FR-HOUSING-003 AC5) **and** counsel has reviewed the legal drafts (D118, launch plan 96 L6). Counsel review gates the launch only; no phase waits for it.
 - AC3. The create form lists housing in its category picker only while the flag is on; the sub-category picker then shows the three community sub-categories plus a fourth entry **"I need an emergency roof"** that opens FR-HOUSING-031 (never the regular form).
 
