@@ -20,8 +20,8 @@
    "distinct": 3
   },
   "rpc": {
-   "callSites": 270,
-   "distinct": 246
+   "callSites": 274,
+   "distinct": 250
   },
   "table": {
    "callSites": 184,
@@ -382,6 +382,15 @@
   },
   {
    "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAppFlagsAdminRepository.ts",
+   "line": 13,
+   "area": "admin",
+   "symbol": "SupabaseAppFlagsAdminRepository.setFlag",
+   "via": "literal",
+   "name": "admin_set_app_flag"
+  },
+  {
+   "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/admin/SupabaseCrmContactsRepository.ts",
    "line": 77,
    "area": "admin",
@@ -433,6 +442,33 @@
    "symbol": "SupabaseCrmContactsRepository.markContacted",
    "via": "literal",
    "name": "crm_contact_mark_contacted"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseDemoDataRepository.ts",
+   "line": 31,
+   "area": "admin",
+   "symbol": "SupabaseDemoDataRepository.getStatus",
+   "via": "literal",
+   "name": "admin_demo_data_status"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseDemoDataRepository.ts",
+   "line": 36,
+   "area": "admin",
+   "symbol": "SupabaseDemoDataRepository.wipeStep",
+   "via": "literal",
+   "name": "admin_wipe_demo_data_step"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseDemoDataRepository.ts",
+   "line": 43,
+   "area": "admin",
+   "symbol": "SupabaseDemoDataRepository.seedStep",
+   "via": "literal",
+   "name": "admin_seed_demo_data_step"
   },
   {
    "kind": "rpc",

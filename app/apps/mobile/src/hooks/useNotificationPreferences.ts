@@ -1,9 +1,10 @@
 // Notification preferences (FR-NOTIF-014 / 0256): shared by Settings → notifications and feed settings.
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { NotificationPreferences } from '@kc/domain';
+import type { NotificationPreferences, User } from '@kc/domain';
 import { applyNotificationPreferencesPatch, type NotificationPreferencesPatch } from '@kc/application';
 import { useAuthStore } from '../store/authStore';
 import { container } from '../lib/container';
+import { userProfileKeys } from '../lib/queryKeys';
 
 export const DEFAULT_QUIET_HOURS = {
   enabled: false,
@@ -21,14 +22,14 @@ export const DEFAULT_NOTIFICATION_PREFS: NotificationPreferences = {
 export function useNotificationPreferences() {
   const userId = useAuthStore((s) => s.session?.userId);
   const qc = useQueryClient();
-  const queryKey = ['notification-preferences', userId] as const;
+  // The preferences are a field of the member's own profile, so they are read from the shared
+  // own-profile query instead of a second five-request profile read (NFR-PERF-005).
+  const queryKey = userProfileKeys.byId(userId ?? '');
 
   const query = useQuery({
     queryKey,
-    queryFn: async () => {
-      const user = await container.userRepo.findById(userId!);
-      return user?.notificationPreferences ?? DEFAULT_NOTIFICATION_PREFS;
-    },
+    queryFn: () => container.userRepo.findById(userId!),
+    select: (user) => user?.notificationPreferences ?? DEFAULT_NOTIFICATION_PREFS,
     enabled: !!userId,
     staleTime: 5 * 60_000, // PERF-3: mutation invalidates explicitly via onSettled
   });
@@ -38,9 +39,19 @@ export function useNotificationPreferences() {
       container.updateNotificationPreferences.execute({ userId: userId!, ...partial }),
     onMutate: async (partial) => {
       await qc.cancelQueries({ queryKey });
-      const previous = qc.getQueryData<NotificationPreferences>(queryKey);
-      qc.setQueryData<NotificationPreferences>(queryKey, (old) =>
-        applyNotificationPreferencesPatch(old ?? DEFAULT_NOTIFICATION_PREFS, partial),
+      const previous = qc.getQueryData<User | null>(queryKey);
+      // Patch only the preferences field of the cached profile; a profile that has not loaded
+      // yet has nothing to patch and is filled by the refetch in `onSettled`.
+      qc.setQueryData<User | null>(queryKey, (old) =>
+        old
+          ? {
+              ...old,
+              notificationPreferences: applyNotificationPreferencesPatch(
+                old.notificationPreferences ?? DEFAULT_NOTIFICATION_PREFS,
+                partial,
+              ),
+            }
+          : old,
       );
       return { previous };
     },

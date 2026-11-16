@@ -51,11 +51,14 @@ function listSqlFiles(dir, { recursive = false } = {}, out = []) {
 
 // What the database declares: the migrations applied in order (`0001_baseline.sql` and the
 // forward-only files after it; `archive/` is the retired chain and never counts), the
-// baseline schema sources (`supabase/schemas`) and the generated types.
+// baseline schema sources (`supabase/schemas`), the generated types, and the dev-only demo-data
+// tools (`supabase/seed/demo`, FR-ADMIN-031): installed on kc-dev by the seed workflow, never a
+// migration, so the production baseline stays free of demo objects.
 function loadCorpus(repoRoot) {
   const sqlFiles = [
     ...listSqlFiles(join(repoRoot, 'supabase/migrations')),
     ...listSqlFiles(join(repoRoot, 'supabase/schemas'), { recursive: true }),
+    ...listSqlFiles(join(repoRoot, 'supabase/seed/demo'), { recursive: true }),
   ];
   const sql = sqlFiles.map((file) => readFileSync(file, 'utf8')).join('\n');
   const typesFile = join(repoRoot, 'app/packages/infrastructure-supabase/src/database.types.ts');

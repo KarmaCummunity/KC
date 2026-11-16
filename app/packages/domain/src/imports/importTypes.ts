@@ -1,0 +1,74 @@
+// Shared types of the external post import pipeline (FR-IMPORT-003, ADR-008). Pure data only.
+
+export const IMPORT_DIRECTIONS = ['offer', 'request', 'unknown'] as const;
+export type ImportDirection = (typeof IMPORT_DIRECTIONS)[number];
+
+/** Why an extraction is not a publishable post (FR-IMPORT-003). */
+export const IMPORT_REJECT_REASONS = ['not_a_post', 'commercial', 'forbidden', 'unsupported'] as const;
+export type ImportRejectReason = (typeof IMPORT_REJECT_REASONS)[number];
+
+export const IMPORT_TIME_KINDS = ['none', 'relative_day', 'weekday', 'date', 'recurring'] as const;
+export type ImportTimeKind = (typeof IMPORT_TIME_KINDS)[number];
+
+/** Part-of-day words (in the morning, in the evening, …) that disambiguate a bare hour. */
+export const IMPORT_TIME_PERIODS = ['morning', 'afternoon', 'evening', 'night'] as const;
+export type ImportTimePeriod = (typeof IMPORT_TIME_PERIODS)[number];
+
+/**
+ * Time exactly as written in the text. The model never computes an absolute date: code resolves
+ * this against the message timestamp (resolveRelativeTime.ts). Weekdays use 0 = Sunday.
+ */
+export interface ExtractedTimeHint {
+  readonly kind: ImportTimeKind;
+  readonly dayOffset: number | null;
+  readonly weekday: number | null;
+  readonly month: number | null;
+  readonly dayOfMonth: number | null;
+  /** "HH:MM" as written; a bare "8" arrives as "08:00" and is disambiguated by the resolver. */
+  readonly timeHhmm: string | null;
+  readonly timePeriod: ImportTimePeriod | null;
+  readonly recurringWeekdays: readonly number[];
+}
+
+/** Raw place words from the text; resolved against the official catalog later (FR-IMPORT-004). */
+export interface ExtractedPlaceTexts {
+  readonly cityText: string | null;
+  readonly streetText: string | null;
+  readonly neighborhoodText: string | null;
+}
+
+export interface ExtractedRideHint {
+  readonly originText: string | null;
+  readonly destinationText: string | null;
+  readonly meetingTexts: readonly string[];
+  readonly seats: number | null;
+}
+
+export interface ExtractionConfidence {
+  /** 0..1 */
+  readonly overall: number;
+  /** 0..1 per contract field name (direction, world, title, city, …). */
+  readonly perField: Readonly<Record<string, number>>;
+}
+
+/** The validated result of one provider call (FR-IMPORT-003). */
+export interface ExtractedPost {
+  readonly isPost: boolean;
+  readonly rejectReason: ImportRejectReason | null;
+  readonly direction: ImportDirection;
+  readonly worldSlug: string | null;
+  readonly subcategory: string | null;
+  readonly title: string | null;
+  readonly description: string | null;
+  readonly place: ExtractedPlaceTexts;
+  readonly time: ExtractedTimeHint;
+  readonly ride: ExtractedRideHint | null;
+  readonly details: Readonly<Record<string, string | number | boolean>>;
+  readonly language: string | null;
+  readonly confidence: ExtractionConfidence;
+}
+
+/** How an extraction is offered to the member (FR-IMPORT-006 AC2). */
+export type ImportRouting = 'ready' | 'confirm' | 'manual';
+
+export const IMPORT_TIMEZONE = 'Asia/Jerusalem';

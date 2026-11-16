@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../store/authStore';
+import { useOnboardingReplayStore } from '../store/onboardingReplayStore';
 import {
   getCompleteOnboardingUseCase,
   getSetAvatarUseCase,
@@ -25,7 +26,13 @@ export function useOnboardingPhotoFlow() {
   const [uploading, setUploading] = useState(false);
   const [finalizing, setFinalizing] = useState(false);
 
-  const avatarUrl = session?.avatarUrl ?? null;
+  // FR-ADMIN-035: an admin replay shows only the photo picked during the replay (none at first,
+  // like a new member) and never uploads it or writes the profile.
+  const replayActive = useOnboardingReplayStore((s) => s.active);
+  const replayAvatarUri = useOnboardingReplayStore((s) => s.avatarPreviewUri);
+  const setReplayAvatar = useOnboardingReplayStore((s) => s.setAvatarPreview);
+
+  const avatarUrl = replayActive ? replayAvatarUri : (session?.avatarUrl ?? null);
   const hasAvatar = !!avatarUrl;
   const busy = uploading || finalizing;
 
@@ -35,6 +42,10 @@ export function useOnboardingPhotoFlow() {
     try {
       const picked = await pickAvatarImage(source);
       if (!picked) return;
+      if (replayActive) {
+        setReplayAvatar(picked.uri);
+        return;
+      }
       const url = await resizeAndUploadAvatar(picked, session.userId);
       await getSetAvatarUseCase().execute({
         sessionUserId: session.userId,
@@ -52,6 +63,10 @@ export function useOnboardingPhotoFlow() {
 
   const remove = async () => {
     if (!session) return;
+    if (replayActive) {
+      setReplayAvatar(null);
+      return;
+    }
     setUploading(true);
     try {
       await removeUploadedAvatar(session.userId); // TD-108: delete Storage object first.
@@ -71,6 +86,10 @@ export function useOnboardingPhotoFlow() {
 
   const finalize = async () => {
     if (!session) return;
+    if (replayActive) {
+      router.replace('/(onboarding)/tour');
+      return;
+    }
     setFinalizing(true);
     try {
       if (onboardingState === 'pending_avatar') {

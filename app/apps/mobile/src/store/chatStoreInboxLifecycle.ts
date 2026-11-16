@@ -6,12 +6,18 @@ import { chatInboxQueryKey, readChatInboxSnapshot, writeChatInboxSnapshot } from
 import { reduceBumpInboxForIncomingInsert } from './chatStoreInboxBump';
 import { runRefreshInbox } from './chatStoreInboxRefresh';
 import { useActiveScreenStore } from '../lib/notifications/useActiveScreenStore';
+import { reportHandledError } from '../lib/observability/reportHandledError';
 
 type StoreApi = {
   getState: () => ChatState;
   setState: (partial: Partial<ChatState>) => void;
 };
 
+/**
+ * Loads the inbox once and opens its realtime subscription (FR-CHAT-001). `noopUnsub` is the
+ * placeholder the store holds while this runs: if it was replaced meanwhile (sign-out, a second
+ * start), the work is abandoned so only one subscription ever lives.
+ */
 export async function runStartInboxSub(
   api: StoreApi,
   noopUnsub: () => void,
@@ -20,7 +26,15 @@ export async function runStartInboxSub(
   realtime: IChatRealtime,
   qc: QueryClient,
 ): Promise<void> {
-  await runRefreshInbox(api, userId, repo, qc);
+  // The first snapshot is a head start, not a precondition: when it fails (a timeout at sign-in,
+  // KC#2213) the live subscription must still start, or the member gets no inbox updates for the
+  // whole session. The inbox query is marked stale so its own retry policy loads the list.
+  try {
+    await runRefreshInbox(api, userId, repo, qc);
+  } catch (error) {
+    reportHandledError(error, 'manual', chatInboxQueryKey(userId));
+    void qc.invalidateQueries({ queryKey: chatInboxQueryKey(userId) });
+  }
 
   if (api.getState().inboxSub !== noopUnsub) {
     return;
