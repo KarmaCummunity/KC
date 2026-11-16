@@ -21,7 +21,7 @@ import { PostMenuButton } from '../../components/post/PostMenuButton';
 import { PostShareButton } from '../../components/post/PostShareButton';
 import { PostDetailScrollContent } from './PostDetailScrollContent';
 import { usePostDetailStyles } from './postDetailScreen.styles';
-import { finishMark, startMark } from '../../lib/observability/perfMarks';
+import { cancelMark, finishMark, startMark } from '../../lib/observability/perfMarks';
 import {
   useShellTabBarVisibility,
   shellTabBarHeightPx,
@@ -84,13 +84,21 @@ export function PostDetailScreen() {
     // the extra posts + identity reads; a stale copy still paints immediately.
     ...(seed ? { initialData: { post: seed.post }, initialDataUpdatedAt: seed.updatedAt } : {}),
   });
-  // NFR-PERF-005: how long a member waits from opening a post to seeing its content (cached or fetched).
+  // NFR-PERF-005: how long a member waits from opening a post to seeing its content.
+  // `source` separates a post painted from the feed's cached row (near zero) from one that
+  // had to be fetched; mixed together, the cached opens hide the real network wait.
   const hasPost = Boolean(query.data?.post);
+  const paintSource = query.isFetchedAfterMount ? 'network' : 'cache';
   useEffect(() => {
     startMark('post_detail.content_painted');
+    // Leaving before the content arrived abandons the wait; never report it against a later open.
+    return () => cancelMark('post_detail.content_painted');
   }, [postIdParam]);
   useEffect(() => {
-    if (hasPost) finishMark('post_detail.content_painted');
+    if (hasPost) finishMark('post_detail.content_painted', { source: paintSource });
+    // `paintSource` is read at the moment the content first appears; a later background
+    // refetch must not re-run this effect.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasPost, postIdParam]);
   const challengeId = query.data?.post?.challengeId ?? null;
   useEffect(() => {
