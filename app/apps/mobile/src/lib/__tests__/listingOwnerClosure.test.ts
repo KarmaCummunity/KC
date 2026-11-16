@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { listingOfferAllowsCloseWithout, listingOwnerMarkCtaKey } from '../listingOwnerClosure';
+import { listingClosureOptions, listingOfferAllowsCloseWithout, listingOwnerMarkCtaKey } from '../listingOwnerClosure';
 
 describe('listingOwnerClosure', () => {
   it('uses the world label for animals, housing and rides', () => {
@@ -20,5 +20,17 @@ describe('listingOwnerClosure', () => {
     expect(listingOfferAllowsCloseWithout('rides')).toBe(false);
     expect(listingOfferAllowsCloseWithout('housing')).toBe(false);
     expect(listingOfferAllowsCloseWithout(null)).toBe(false);
+  });
+});
+
+describe("listingClosureOptions (#2360)", () => {
+  it("routes a ride through the owner-assign flow, naming one person", () => {
+    expect(listingClosureOptions("rides")).toEqual({ offerAssign: true, allowCloseWithout: false });
+  });
+  it("lets an items listing close with nobody named", () => {
+    expect(listingClosureOptions("items")).toEqual({ offerAssign: true, allowCloseWithout: true });
+  });
+  it("leaves a social post on the generic closure", () => {
+    expect(listingClosureOptions(null)).toEqual({});
   });
 });

@@ -22,7 +22,7 @@ import { KcRowCard } from '../cards/KcRowCard';
 import { cleanDisplayTitle } from '../../lib/displayTitle';
 import { getSupabaseImageThumbUrl, getSupabasePublicImageUrl } from '../../lib/imageUrl';
 import { rowDirectionStart } from '../../lib/rtlLayout';
-import { listingOwnerMarkCtaKey } from '../../lib/listingOwnerClosure';
+import { listingClosureOptions, listingOwnerMarkCtaKey } from '../../lib/listingOwnerClosure';
 
 interface Props {
   chatId: string;
@@ -146,6 +146,7 @@ export function AnchoredPostCard({ chatId, anchorPostId, viewerId, counterpartId
       ...(counterpartId != null ? { preselectedRecipientId: counterpartId } : {}),
       initiator: 'chat',
       worldSlug: post.listingWorldSlug,
+      ...listingClosureOptions(post.listingWorldSlug),
     });
   };
 
