@@ -75,10 +75,10 @@ const ICON_BY_ID: Readonly<Record<CreateCategoryId, CreateCategoryIcon>> = {
 
 /**
  * Worlds whose listing form opens only once the world is launched (D60). Until then they are
- * portals and take community links, like the challenges world; production keeps that while the
- * remote flag is off, tester builds launch them (#1630, #1625).
+ * portals and take community links, like the challenges world; every build follows the remote
+ * flag, which the super admin switches per environment (#2277).
  */
-const LAUNCH_GATED_LISTING_WORLDS: readonly string[] = ['knowledge', 'animals'];
+const LAUNCH_GATED_LISTING_WORLDS: readonly string[] = ['knowledge', 'animals', 'employment'];
 
 /** Items keep the mature post form (drafts, address display level, visibility, karma value). */
 function engineFor(id: CreateCategoryId): CreateEngine {

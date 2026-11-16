@@ -37,7 +37,7 @@ export interface WorldSubScreenLink {
 }
 
 export interface WorldHubHeaderProps {
-  readonly icon: 'car-outline' | 'school-outline' | 'gift-outline' | 'restaurant-outline' | 'home-outline' | 'time-outline' | 'paw-outline' | 'trophy-outline';
+  readonly icon: 'car-outline' | 'school-outline' | 'gift-outline' | 'restaurant-outline' | 'home-outline' | 'time-outline' | 'paw-outline' | 'trophy-outline' | 'briefcase-outline';
   readonly introKey: string;
   /** The world's own screens, in display order (the title menu, `useWorldHeader`). */
   readonly subScreens?: readonly WorldSubScreenLink[];

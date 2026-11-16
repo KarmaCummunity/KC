@@ -3,11 +3,13 @@
 // humanized key in ListingSchemaFields.
 
 import { animalFieldLabels, animalOptionLabels } from './donations.animalFields';
+import { employmentFieldLabels, employmentOptionLabels } from './donations.employmentFields';
 import { housingFieldLabels, housingOptionLabels } from './donations.housingFields';
 
 export const marketplaceFieldLabels = {
   ...housingFieldLabels,
   ...animalFieldLabels,
+  ...employmentFieldLabels,
   item_condition: 'Condition',
   min_condition: 'Minimum condition',
   pickup_mode: 'Pickup or delivery',
@@ -83,6 +85,7 @@ export const marketplaceFieldLabels = {
 export const marketplaceOptionLabels = {
   ...housingOptionLabels,
   ...animalOptionLabels,
+  ...employmentOptionLabels,
   New: 'New',
   LikeNew: 'Like new',
   Good: 'Good',
