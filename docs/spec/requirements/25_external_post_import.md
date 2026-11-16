@@ -1,6 +1,6 @@
 # 2.25 External post import (ייבוא פוסט מבחוץ)
 
-> **Status:** ⏳ Spec v1 (2026-11-16). Nothing is implemented. Product decision `{{D:external-post-import}}`; working assumption `{{S:import-own-post-attestation}}` awaits PM approval; gap `G27` (phase 1). Engineering design: [ADR-008](../../architecture/adr/ADR-008-external-post-import.md). Issue: #2343.
+> **Status:** ⏳ Spec v1 (2026-11-16). Nothing is implemented. Product decision `D167`; working assumption `S90` awaits PM approval; gap `G27` (phase 1). Engineering design: [ADR-008](../../architecture/adr/ADR-008-external-post-import.md). Issue: #2343.
 
 Prefix: `FR-IMPORT-*`
 
@@ -89,7 +89,7 @@ One provider call per text (`FR-IMPORT-009` for the provider rules) returns exac
 ## FR-IMPORT-007 — Review, attestation and publish
 
 - AC1. The draft is the existing create form prefilled (the mechanism of D130 / `FR-POST-008` republish prefill): the member edits anything, adds photos, and publishes through the normal `FR-POST-006` confirmation. All world rules apply unchanged: an **offer** in items, food, housing or animals needs a photo (D132) — images that came with the share are attached as candidates, never required to be the final photos; guardrails `FR-POST-020`; the active-post cap `FR-POST-011`.
-- AC2. **Attestation `{{S:import-own-post-attestation}}`.** Before publishing an import draft the member confirms: "This is my own post — I am the one giving / asking." A member who found someone else's post cannot publish it as their own; the screen explains that and offers "ask the author to post it here" (share link to KC). Third-party content enters only through the admin-approved path of S21 (`G27` phase 2).
+- AC2. **Attestation `S90`.** Before publishing an import draft the member confirms: "This is my own post — I am the one giving / asking." A member who found someone else's post cannot publish it as their own; the screen explains that and offers "ask the author to post it here" (share link to KC). Third-party content enters only through the admin-approved path of S21 (`G27` phase 2).
 - AC3. The published post carries `source = imported` (ADR-006), `source_platform` and a provenance chip on the card and the detail ("from WhatsApp / Facebook / Yad2"). It is otherwise an ordinary post: feed, matching, chat, closure and karma are unchanged. No group name is stored for a member's own import.
 - AC4. The imported text is not kept (`FR-IMPORT-009`); edit after publish follows `FR-POST-008`.
 - AC5. Karma follows `FR-KARMA-*` for a published post; there is no extra karma for importing.
