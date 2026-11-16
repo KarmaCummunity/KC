@@ -42,8 +42,10 @@
 
 ## FR-KARMA-005 — Post created / removed awards
 
-**AC1.** On `posts` INSERT, `karma_on_post_change()` AFTER INSERT trigger awards `+5` via `karma_grant_once` (event_type `'post_created'`).
-**AC2.** When a post transitions to `status = 'removed_admin'`, the trigger awards `-5` (event_type `'post_removed'`) to the owner.
+**AC1.** Publishing a post awards `+5` to its owner, once per post, whatever the giving world or post type (an item, a ride, an organization's event). The award is recorded when the post leaves draft or is created already published: a trigger on `posts` (`posts_karma_events`) records an `award` event (`event_type` `post_published`, subject `post:<id>:published`) on outbox topic `karma`, and the karma consumer pays the configured value (`karma_values`) within a minute. Restored 2026-11-16 (KC#2289): the baseline had dropped this award, so publishing paid nothing.
+**AC2.** When an admin removes a post (`status = 'removed_admin'`), the points its owner still holds for publishing it are taken back as a `reversal` entry; restoring the post records the award again. A total never goes below zero.
+**AC3.** At most 5 publishing awards per member per Israel calendar day (project book §7.6); a sixth post published that day earns nothing.
+**AC4.** Not rewarded: a post the scheduler publishes (the next date of a recurring ride or event; the member took no action), the post of a challenge (opening a challenge has its own award), and an imported post (rewarded when a member claims it; no claim flow exists yet).
 
 ---
 

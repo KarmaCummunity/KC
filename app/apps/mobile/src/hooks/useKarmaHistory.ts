@@ -43,10 +43,12 @@ const KNOWN = new Set([
   'donation', 'standing_order_month', 'reversal',
 ]);
 
-/** The baseline's handoff awards, shown with the label of the same award in the old vocabulary. */
+/** The baseline's awards that share the label of the same award in the old vocabulary. */
 const ALIASES: Readonly<Record<string, string>> = {
   handoff_giver: 'giving_handoff_giver',
   handoff_receiver: 'giving_handoff_receiver',
+  // Publishing a post (FR-KARMA-005).
+  post_published: 'post_created',
 };
 
 /** i18n key suffix for a ledger event type (unknown types map to `other`). */

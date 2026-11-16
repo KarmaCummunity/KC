@@ -99,7 +99,7 @@ All engagement earns; closed giving earns most (D12). Visible only to the owner;
 | Question asked / accepted answer | 2 / 5 | 5/day / – |
 | Post removed by admin (existing) | −5 | – |
 
-Tech: D12,D29,D32,D43,D52 · `14_karma`, migration 0099, FR-KARMA-007/008 · `karma_ledger`, hard-coded values · G16 · items earn through the post closure only (giver 20 + value bonus, receiver 15), also when handed over through a reservation (G34 ✅, `0559`); the other worlds' handoffs through `karma_handoff_points` (`0453`, `0603`) · "Rating given" 2 for handoff and ride ratings, once per rating (`0510`, KC#1306)
+Tech: D12,D29,D32,D43,D52 · `14_karma`, migration 0099, FR-KARMA-007/008 · `karma_ledger`, hard-coded values · G16 · items earn through the post closure only (giver 20 + value bonus, receiver 15), also when handed over through a reservation (G34 ✅, `0559`); the other worlds' handoffs through `karma_handoff_points` (`0453`, `0603`) · "Rating given" 2 for handoff and ride ratings, once per rating (`0510`, KC#1306) · "Publish post" 5 with the 5/day cap, reversed on an admin's removal, through the `karma` outbox (`post_published`, FR-KARMA-005, KC#2289)
 
 ## 7.7 Ratings
 After each handoff both sides rate 1–5 with a note — one generic rating for all types (D15, D19). **Users never see ratings, not even their own**; only KC admins (D24). Ratings feed the trust engine.
