@@ -1,0 +1,93 @@
+import type { ExtractedPost, ImportRouting } from './importTypes';
+
+/** Routing thresholds are config, tuned against the golden set (FR-IMPORT-006 AC5, FR-IMPORT-010). */
+export interface ImportConfidenceThresholds {
+  readonly ready: number;
+  readonly confirm: number;
+}
+export const DEFAULT_IMPORT_THRESHOLDS: ImportConfidenceThresholds = { ready: 0.85, confirm: 0.5 };
+
+/** One catalog match: similarity of the winner and its lead over the runner-up (FR-IMPORT-004). */
+export interface PlaceMatchSignal {
+  readonly score: number;
+  readonly margin: number;
+}
+
+/** Objective evidence gathered by code, never by the model (FR-IMPORT-006 AC1). */
+export interface ConfidenceSignals {
+  /** Contract field names that must be present for the post to be useful (direction, world, title, city, …). */
+  readonly required: readonly string[];
+  /** The text has an explicit cue for the direction ("מוסר", "מחפש", "נוסע"). */
+  readonly directionCue: boolean;
+  /** Both an offer cue and a request cue appear. */
+  readonly conflictingCues: boolean;
+  readonly textLength: number;
+  readonly place: { readonly city?: PlaceMatchSignal | null; readonly street?: PlaceMatchSignal | null };
+  /** Fields the resolver picked on its own and the member should confirm. */
+  readonly autoPickedFields: readonly string[];
+}
+
+export interface RecalibratedConfidence {
+  readonly overall: number;
+  readonly perField: Readonly<Record<string, number>>;
+  readonly routing: ImportRouting;
+  /** Fields to highlight in the draft. */
+  readonly confirmFields: readonly string[];
+}
+
+const SHORT_TEXT_CHARS = 15;
+const SHORT_TEXT_FACTOR = 0.7;
+const NO_CUE_FACTOR = 0.8;
+const CONFLICT_CAP = 0.4;
+const THIN_MARGIN = 0.1;
+const THIN_MARGIN_CAP = 0.6;
+
+function fieldValue(name: string, e: ExtractedPost, s: ConfidenceSignals): number {
+  const model = e.confidence.perField[name] ?? e.confidence.overall;
+  switch (name) {
+    case 'direction':
+      if (e.direction === 'unknown') return 0;
+      return s.conflictingCues ? Math.min(model, CONFLICT_CAP) : model * (s.directionCue ? 1 : NO_CUE_FACTOR);
+    case 'world':
+      return e.worldSlug ? model : 0;
+    case 'subcategory':
+      return e.subcategory ? model : 0;
+    case 'title':
+      return e.title ? model : 0;
+    case 'city': {
+      const m = s.place.city;
+      if (!e.place.cityText || !m) return 0;
+      const capped = Math.min(model, m.score);
+      return m.margin < THIN_MARGIN ? Math.min(capped, THIN_MARGIN_CAP) : capped;
+    }
+    default:
+      return model;
+  }
+}
+
+/**
+ * Recompute confidence from the model's score AND objective signals, then route the draft
+ * (FR-IMPORT-006 AC1-AC2). Overall is the minimum over the required fields; a rejected or
+ * non-post extraction is always manual. `confirmFields` lists what to highlight: fields the
+ * resolver auto-picked plus required fields that are present but below the ready bar.
+ */
+export function recalibrateConfidence(
+  extraction: ExtractedPost,
+  signals: ConfidenceSignals,
+  thresholds: ImportConfidenceThresholds = DEFAULT_IMPORT_THRESHOLDS,
+): RecalibratedConfidence {
+  const lengthFactor = signals.textLength < SHORT_TEXT_CHARS ? SHORT_TEXT_FACTOR : 1;
+  const perField: Record<string, number> = {};
+  for (const name of signals.required) perField[name] = fieldValue(name, extraction, signals) * lengthFactor;
+  const values = Object.values(perField);
+  const overall = values.length > 0 ? Math.min(...values) : extraction.confidence.overall * lengthFactor;
+
+  const weak = signals.required.filter((n) => perField[n]! > 0 && perField[n]! < thresholds.ready);
+  const confirmFields = [...new Set([...signals.autoPickedFields, ...weak])];
+  const rejected = !extraction.isPost || extraction.rejectReason !== null;
+
+  let routing: ImportRouting = 'manual';
+  if (!rejected && overall >= thresholds.confirm) routing = 'confirm';
+  if (!rejected && overall >= thresholds.ready && confirmFields.length === 0) routing = 'ready';
+  return { overall, perField, routing, confirmFields };
+}
