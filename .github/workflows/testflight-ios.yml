@@ -215,7 +215,7 @@ jobs:
       - name: Verify bundle identifier
         run: |
           set -euo pipefail
-          actual="$(npx --yes expo config --json --type public | jq -r '.ios.bundleIdentifier')"
+          actual="$(npx --no expo config --json --type public | jq -r '.ios.bundleIdentifier')"
           if [ "$actual" != "$BUNDLE_ID" ]; then
             echo "::error::iOS bundleIdentifier is '$actual', expected '$BUNDLE_ID'"
             exit 1
