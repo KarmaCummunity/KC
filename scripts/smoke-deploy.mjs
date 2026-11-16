@@ -9,6 +9,10 @@
 //              still serve the previous build, or index.html (SPA fallback)
 //              before version.json exists.
 //   web        `/` returns HTML and every script it references returns 200.
+//   backend    the scripts `/` references talk to this environment's Supabase
+//              project and to no other one. Catches a bundle built against the
+//              wrong backend (a wrong secret at build time, an old build served
+//              by the domain) that every other check would pass (KC#2249).
 //   pages      every static public page in app/apps/mobile/public (privacy,
 //              terms, support, delete-account, child-safety — the URLs the
 //              stores link to) is served as itself, at both /<name> and
@@ -45,7 +49,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { SMOKE_PROBES, listDeployableFunctions } from './edge-functions.mjs';
 
-export const ALL_CHECKS = ['version', 'web', 'pages', 'applinks', 'sharedlinks', 'supabase', 'functions'];
+export const ALL_CHECKS = ['version', 'web', 'backend', 'pages', 'applinks', 'sharedlinks', 'supabase', 'functions'];
 const PUBLIC_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'app', 'apps', 'mobile', 'public');
 const FIRST_DELAY_MS = 5_000;
 const MAX_DELAY_MS = 30_000;
@@ -129,6 +133,33 @@ export async function checkWeb({ webUrl, fetch }) {
     if (r.status !== 200) broken.push(`${src} → HTTP ${r.status}`);
   }
   return broken.length ? { ok: false, detail: broken.join('; ') } : { ok: true, detail: `${scripts.length} scripts load` };
+}
+
+/** Every Supabase project host (`<ref>.supabase.co`) named in `source`, sorted and de-duplicated. */
+export function extractSupabaseHosts(source) {
+  return [...new Set(source.match(/\b[a-z0-9]{3,40}\.supabase\.co\b/g) ?? [])].sort();
+}
+
+/**
+ * The bundle served at `/` must talk to the project of `supabaseUrl` and to no other. The project
+ * URL is inlined into the web bundle at build time, so its host is readable in the scripts; only
+ * hosts are compared and reported, never a key.
+ */
+export async function checkBackend({ webUrl, supabaseUrl, fetch }) {
+  const expected = new URL(supabaseUrl).host;
+  const res = await request(fetch, `${webUrl}/`, { cache: 'no-store' });
+  const scripts = res.ok ? extractScriptSrcs(await res.text(), `${webUrl}/`) : [];
+  if (scripts.length === 0) return { ok: false, detail: `GET / → HTTP ${res.status}, no script bundle to inspect` };
+  const sources = await Promise.all(
+    scripts.map(async (src) => {
+      const script = await request(fetch, src);
+      return script.status === 200 ? script.text() : '';
+    }),
+  );
+  const found = extractSupabaseHosts(sources.join('\n'));
+  if (found.length === 0) return { ok: false, detail: `no Supabase project found in the bundle, expected ${expected}` };
+  if (found.length === 1 && found[0] === expected) return { ok: true, detail: `bundle uses ${expected}` };
+  return { ok: false, detail: `bundle uses ${found.join(', ')}, expected ${expected}` };
 }
 
 /** Decoded text of the first <title> in `html`, or '' when there is none. */
@@ -273,6 +304,7 @@ export async function runSmoke(opts) {
   const runners = {
     version: () => waitForVersion(opts),
     web: () => checkWeb(opts),
+    backend: () => checkBackend(opts),
     pages: () => checkPages(opts),
     applinks: () => checkAppLinks(opts),
     sharedlinks: () => checkSharedLinks(opts),
@@ -305,7 +337,7 @@ export function optionsFromEnv(env) {
     if (!env[name]) throw new Error(`${name} is required for checks ${checks.join(',')}`);
     return env[name].replace(/\/$/, '');
   };
-  const needsSupabase = checks.some((c) => c === 'supabase' || c === 'functions');
+  const needsSupabase = checks.some((c) => c === 'backend' || c === 'supabase' || c === 'functions');
   return {
     checks,
     webUrl: need('SMOKE_WEB_URL'),

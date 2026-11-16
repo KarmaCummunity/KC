@@ -35,6 +35,8 @@
 /scripts/*-guard*                           @navesarussi
 /scripts/mobile-*                           @navesarussi
 /scripts/testflight-*                        @navesarussi
+/scripts/eas-*                               @navesarussi
+/scripts/sync-eas-*                          @navesarussi
 /scripts/release-version.mjs                @navesarussi
 /scripts/resolve-green-dev-sha.mjs           @navesarussi
 /scripts/prod-store-build-gate.mjs           @navesarussi
@@ -59,6 +61,8 @@
 /scripts/db-connect-retry.mjs               @navesarussi
 /scripts/kc-dev-slot.mjs                    @navesarussi
 /scripts/release-merge.mjs @navesarussi
+/scripts/release-train.mjs @navesarussi
+/scripts/release-train-lib.mjs @navesarussi
 /scripts/bump-app-version.mjs               @navesarussi
 /scripts/close-linked-issues.mjs            @navesarussi
 /scripts/run-baseline-tests.sh              @navesarussi

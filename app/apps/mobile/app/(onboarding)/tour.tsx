@@ -8,6 +8,7 @@ import { makeUseStyles, spacing } from '@kc/ui';
 import { OnboardingStepHeader } from '../../src/components/OnboardingStepHeader';
 import { TourSlidePager, type TourSlide } from '../../src/components/animations/TourSlidePager';
 import { PrimaryButton } from '../../src/components/ui/Buttons';
+import { onboardingExitHref, useOnboardingReplayStore } from '../../src/store/onboardingReplayStore';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
 
@@ -16,6 +17,9 @@ export default function OnboardingTourScreen() {
   const router = useRouter();
   const { t } = useTranslation();
   const [index, setIndex] = useState(0);
+  // FR-ADMIN-035: an admin replay ends back in the admin portal, a real onboarding in the app.
+  const replayActive = useOnboardingReplayStore((s) => s.active);
+  const leaveOnboarding = () => router.replace(onboardingExitHref(replayActive));
 
   const slides = useMemo<readonly TourSlide[]>(
     () => [
@@ -41,7 +45,7 @@ export default function OnboardingTourScreen() {
   const isLast = index === slides.length - 1;
 
   const handleNext = () => {
-    if (isLast) router.replace('/(tabs)');
+    if (isLast) leaveOnboarding();
     else setIndex(index + 1);
   };
 
@@ -50,7 +54,7 @@ export default function OnboardingTourScreen() {
       <View style={styles.headerPad}>
         <OnboardingStepHeader
           step={4}
-          onSkip={() => router.replace('/(tabs)')}
+          onSkip={leaveOnboarding}
           onBack={() => router.replace('/(onboarding)/photo')}
         />
       </View>

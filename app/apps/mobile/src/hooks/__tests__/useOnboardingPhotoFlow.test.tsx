@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
 
 const { state, replace, alert, pickAvatarImage, removeUploadedAvatar, resizeAndUploadAvatar, setAvatar, complete, t } = vi.hoisted(() => ({
@@ -13,6 +13,7 @@ vi.mock('../../store/authStore', () => ({ useAuthStore: (selector: (s: typeof st
 vi.mock('../../services/userComposition', () => ({ getSetAvatarUseCase: () => ({ execute: setAvatar }), getCompleteOnboardingUseCase: () => ({ execute: complete }) }));
 vi.mock('../../services/avatarUpload', () => ({ pickAvatarImage, removeUploadedAvatar, resizeAndUploadAvatar }));
 import { useOnboardingPhotoFlow } from '../useOnboardingPhotoFlow';
+import { useOnboardingReplayStore } from '../../store/onboardingReplayStore';
 
 beforeEach(() => { vi.clearAllMocks(); state.session = { userId: 'u1', avatarUrl: null }; state.onboardingState = 'pending_avatar'; });
 
@@ -69,5 +70,38 @@ describe('useOnboardingPhotoFlow', () => {
     state.session = { userId: 'u1', avatarUrl: null }; pickAvatarImage.mockReturnValue(new Promise(() => {})); rerender();
     await act(async () => { void result.current.pick('camera'); });
     act(() => result.current.goBack()); expect(replace).not.toHaveBeenCalled();
+  });
+  // FR-ADMIN-035 — an admin replay previews the photo step without uploading or saving anything.
+  describe('admin replay (sandbox)', () => {
+    beforeEach(() => { state.session = { userId: 'u1', avatarUrl: 'https://real/avatar.jpg' }; state.onboardingState = 'completed'; useOnboardingReplayStore.getState().start(); });
+    afterEach(() => useOnboardingReplayStore.getState().stop());
+
+    it('starts without a photo, like a new member, whatever the admin has', () => {
+      const { result } = renderHook(() => useOnboardingPhotoFlow());
+      expect(result.current.avatarUrl).toBeNull();
+      expect(result.current.hasAvatar).toBe(false);
+    });
+
+    it('previews the picked photo locally and removes it, with no upload and no profile write', async () => {
+      pickAvatarImage.mockResolvedValueOnce({ uri: 'file://picked.jpg' });
+      const { result } = renderHook(() => useOnboardingPhotoFlow());
+      await act(async () => { await result.current.pick('gallery'); });
+      expect(result.current.avatarUrl).toBe('file://picked.jpg');
+      await act(async () => { await result.current.remove(); });
+      expect(result.current.avatarUrl).toBeNull();
+      expect(resizeAndUploadAvatar).not.toHaveBeenCalled();
+      expect(removeUploadedAvatar).not.toHaveBeenCalled();
+      expect(setAvatar).not.toHaveBeenCalled();
+      expect(state.setSession).not.toHaveBeenCalled();
+    });
+
+    it('continues to the tour without completing anything', async () => {
+      state.onboardingState = 'pending_avatar';
+      const { result } = renderHook(() => useOnboardingPhotoFlow());
+      await act(async () => { await result.current.finalize(); });
+      expect(complete).not.toHaveBeenCalled();
+      expect(state.setOnboardingState).not.toHaveBeenCalled();
+      expect(replace).toHaveBeenCalledWith('/(onboarding)/tour');
+    });
   });
 });
