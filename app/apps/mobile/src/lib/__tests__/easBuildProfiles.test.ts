@@ -16,7 +16,8 @@ describe('eas.json build profiles', () => {
   });
 
   // D-195 Mobile nightly: TestFlight / Play internal tester builds use the dev backend,
-  // so they must look like dev builds (banner, OTA channel, EAS env), never production.
+  // so they keep dev settings (OTA channel, EAS env), never production. They are still
+  // store binaries, so the DEV strip is hidden there (EXPO_PUBLIC_STORE_BUILD, DevBanner).
   it('keeps the nightly store profile on dev settings with store build numbers', () => {
     const raw = readFileSync(join(__dirname, '../../../eas.json'), 'utf8');
     const eas = JSON.parse(raw) as {

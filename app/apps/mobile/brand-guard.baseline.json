@@ -21,13 +21,6 @@
       "spacingLiteral": 13,
       "shadowLiteral": 4
     },
-    "src/components/PostImageCarousel.tsx": {
-      "colorLiteral": 2,
-      "fontWeightLiteral": 1,
-      "radiusLiteral": 2,
-      "spacingLiteral": 2,
-      "iconSizeLiteral": 1
-    },
     "src/components/PostImageViewerModal.tsx": {
       "colorLiteral": 3,
       "fontWeightLiteral": 1,
@@ -103,9 +96,6 @@
       "shadowLiteral": 4,
       "adHocChip": 1,
       "iconSizeLiteral": 1
-    },
-    "src/screens/guest/feed.styles.ts": {
-      "spacingLiteral": 1
     },
     "src/screens/research/SurveyIntroBlock.tsx": {
       "fontWeightLiteral": 1,

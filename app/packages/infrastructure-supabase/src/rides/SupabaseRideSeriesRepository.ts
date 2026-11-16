@@ -99,7 +99,7 @@ export class SupabaseRideSeriesRepository implements IRideSeriesRepository {
       ) ?? [];
     const open = rows.flatMap((row) => {
       const post = Array.isArray(row.posts) ? row.posts[0] : row.posts;
-      return post && post.status === 'open' ? [{ row, offer: post.direction === 'offer' }] : [];
+      return post?.status === 'open' ? [{ row, offer: post.direction === 'offer' }] : [];
     });
     const seats = await loadSeatCounts(this.client, open.filter((o) => o.offer).map((o) => o.row.post_id));
     return open.map(({ row, offer }) => ({

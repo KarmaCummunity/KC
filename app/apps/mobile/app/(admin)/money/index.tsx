@@ -188,7 +188,7 @@ export default function MoneyScreen() {
         )}
       />
       {/* The count is known only when every entry fits on the first page (keyset paging). */}
-      {list.data && list.data.nextCursor === null ? (
+      {list.data?.nextCursor === null ? (
         <Text style={styles.totalLabel}>{t.totalCount(list.data.rows.length)}</Text>
       ) : null}
 

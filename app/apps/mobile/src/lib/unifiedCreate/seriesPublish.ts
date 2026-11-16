@@ -43,8 +43,10 @@ export async function publishRideSeries(args: SeriesPublishArgs, direction: 'giv
 
 /** Whole minutes between an event's start and end; null when either is missing or not a date. */
 export function eventDurationMinutes(details: Record<string, unknown>): number | null {
-  const starts = Date.parse(String(details.starts_at ?? ''));
-  const ends = Date.parse(String(details.ends_at ?? ''));
+  const startsAt = details.starts_at;
+  const endsAt = details.ends_at;
+  const starts = Date.parse(typeof startsAt === 'string' ? startsAt : '');
+  const ends = Date.parse(typeof endsAt === 'string' ? endsAt : '');
   if (Number.isNaN(starts) || Number.isNaN(ends)) return null;
   return Math.round((ends - starts) / 60_000);
 }

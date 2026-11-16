@@ -117,3 +117,25 @@ test('text that is not the CLI table is not a ledger', () => {
 test('an empty ledger counts every local migration as pending', () => {
   assert.deepEqual(pendingMigrations(EMPTY_LEDGER_OUTPUT, ['0001']), ['0001']);
 });
+
+// deploy-db.yml reads `pending=` and `fresh=` from --count-pending; fresh=true (empty remote
+// ledger) is what makes it load the reference + content seed once on a new database.
+async function countPending(cliOutput) {
+  const { spawnSync } = await import('node:child_process');
+  const { fileURLToPath } = await import('node:url');
+  const script = fileURLToPath(new URL('./check-migration-drift.mjs', import.meta.url));
+  const res = spawnSync(process.execPath, [script, '--count-pending'], { input: cliOutput, encoding: 'utf8', env: { ...process.env, GITHUB_OUTPUT: '' } });
+  return res;
+}
+
+test('--count-pending reports fresh=true for an empty remote ledger', async () => {
+  const res = await countPending('\n   LOCAL | REMOTE | TIME (UTC)\n  -------|--------|-----------\n   0001  |        | 0001\n');
+  assert.equal(res.status, 0);
+  assert.match(res.stdout, /^fresh=true$/m);
+});
+
+test('--count-pending reports fresh=false once the ledger has a version', async () => {
+  const res = await countPending('\n   LOCAL | REMOTE | TIME (UTC)\n  -------|--------|-----------\n   0001  | 0001   | 0001\n');
+  assert.equal(res.status, 0);
+  assert.match(res.stdout, /^fresh=false$/m);
+});

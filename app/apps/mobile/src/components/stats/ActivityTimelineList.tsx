@@ -3,7 +3,7 @@
 import React from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import { formatDistanceToNow } from 'date-fns';
-import { he as dateFnsHe } from 'date-fns/locale';
+import { he as dateFnsHe } from 'date-fns/locale/he';
 import { Ionicons } from '@expo/vector-icons';
 import type { PersonalActivityItem, PersonalActivityKind } from '@kc/domain';
 import { iconSize, makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';

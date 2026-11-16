@@ -122,7 +122,6 @@ function ThemedRootShell() {
               }}
             >
               <Stack.Screen name="(auth)" />
-              <Stack.Screen name="(guest)" />
               <Stack.Screen name="(onboarding)" />
               <Stack.Screen name="(tabs)" />
               {/* FR-POST-001 AC9 — the create form slides up over the screen it was opened from. */}

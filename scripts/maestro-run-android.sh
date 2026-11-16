@@ -60,9 +60,21 @@ run_flow() {
 # so the retry meets a working environment instead of the same outage. A flow that passes only on the
 # retry is reported as a warning (and its first attempt keeps its video and debug output), so an
 # unstable flow stays visible; a flow that fails twice is a real failure.
+#
+# Fail fast instead of grinding: a failed flow costs up to ~15 min (2 attempts + the sign-in wait), so
+# on a stalled kc-dev the 19 flows would run for hours and end as a step timeout or a manual cancel
+# (15 Nov 2026: 9 jobs, all cancelled after 24–47 min). The run stops, failed, with the reason, when
+#  - kc-dev never signs anyone in during the wait (an outage: the retry would only repeat it), or
+#  - KC_MAESTRO_MAX_CONSECUTIVE_FAILS (default 3) flows in a row fail twice.
+# The flows not run are listed. The gate still fails; nothing is skipped silently.
+max_consecutive="${KC_MAESTRO_MAX_CONSECUTIVE_FAILS:-3}"
+flows=(.maestro/flows/*.yaml)
 failed=()
 retried=()
-for flow in .maestro/flows/*.yaml; do
+consecutive=0
+stop_reason=""
+for i in "${!flows[@]}"; do
+  flow="${flows[$i]}"
   name="$(basename "$flow" .yaml)"
   echo "::group::$name"
 
@@ -70,9 +82,11 @@ for flow in .maestro/flows/*.yaml; do
     result=passed
   else
     echo "::warning::$name failed; waiting for kc-dev sign-in, then running it once more"
-    # Exit 1 means no sign-in worked within the wait: the retry still runs, and its failure reads as the outage.
-    node "$(dirname "$0")/maestro-wait-kc-dev.mjs" || true
-    if run_flow "$flow" "$name-retry"; then
+    if ! node "$(dirname "$0")/maestro-wait-kc-dev.mjs"; then
+      result="failed (kc-dev unavailable)"
+      failed+=("$name")
+      stop_reason="kc-dev did not sign in the seed user during the wait (outage on kc-dev, not this PR's journeys)"
+    elif run_flow "$flow" "$name-retry"; then
       result="passed on retry"
       retried+=("$name")
     else
@@ -81,8 +95,20 @@ for flow in .maestro/flows/*.yaml; do
     fi
   fi
 
+  if [[ "$result" == failed* ]]; then consecutive=$((consecutive + 1)); else consecutive=0; fi
+  if [[ -z "$stop_reason" ]] && ((consecutive >= max_consecutive)); then
+    stop_reason="$consecutive flows in a row failed twice (kc-dev degraded or a broken build)"
+  fi
+
   echo "$name: $result"
   echo "::endgroup::"
+
+  if [[ -n "$stop_reason" ]]; then
+    not_run=()
+    for rest in "${flows[@]:$((i + 1))}"; do not_run+=("$(basename "$rest" .yaml)"); done
+    echo "::error::Maestro stopped early: $stop_reason. Not run (${#not_run[@]}): ${not_run[*]:-none}"
+    break
+  fi
 done
 
 if ((${#retried[@]} > 0)); then

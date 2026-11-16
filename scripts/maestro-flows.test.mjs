@@ -108,9 +108,18 @@ test('a failed flow is retried once and a pass on the retry is reported, so the 
   const runner = readFileSync(join(ROOT, 'scripts', 'maestro-run-android.sh'), 'utf8');
   assert.match(runner, /run_flow "\$flow" "\$name-retry"/);
   // The retry waits for kc-dev to sign someone in first: a deploy can leave it unable to for minutes.
-  assert.match(runner, /maestro-wait-kc-dev\.mjs" \|\| true[\s\S]*run_flow "\$flow" "\$name-retry"/);
+  assert.match(runner, /if ! node "\$\(dirname "\$0"\)\/maestro-wait-kc-dev\.mjs"; then[\s\S]*run_flow "\$flow" "\$name-retry"/);
   assert.match(runner, /Maestro flows that passed only on retry/);
   assert.match(runner, /Maestro flows failed: /);
+});
+
+test('the runner stops early, failed and with the reason, when kc-dev is down or flows keep failing (no hour-long grind)', () => {
+  const runner = readFileSync(join(ROOT, 'scripts', 'maestro-run-android.sh'), 'utf8');
+  assert.match(runner, /result="failed \(kc-dev unavailable\)"\n\s+failed\+=\("\$name"\)/);
+  assert.match(runner, /KC_MAESTRO_MAX_CONSECUTIVE_FAILS:-3/);
+  assert.match(runner, /::error::Maestro stopped early: \$stop_reason\. Not run/);
+  // Stopping early never turns into a pass: the failed list still decides the exit status.
+  assert.match(runner, /if \(\(\$\{#failed\[@\]\} > 0\)\); then\n\s+echo "::error::Maestro flows failed: \$\{failed\[\*\]\}"\n\s+exit 1/);
 });
 
 test('the Maestro workflow is a lane of the CI gate: reusable, secret passed by ci.yml, no job-level skip', () => {
