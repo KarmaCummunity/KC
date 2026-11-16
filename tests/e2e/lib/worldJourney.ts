@@ -20,7 +20,7 @@ import { STORAGE_B, USER_A, USER_B } from './env';
 
 export interface WorldJourney {
   /** Marketplace world slug — the fixture that plugs a world into this journey. */
-  readonly world: 'items' | 'food';
+  readonly world: 'items' | 'food' | 'animals';
   /** `post_kinds.slug` of the "offer" kind the post is published under. */
   readonly kindSlug: string;
   /**
@@ -32,7 +32,7 @@ export interface WorldJourney {
   readonly titleHe: string;
   /**
    * The recipient's first action on the listing page: testID + Hebrew label fallback, and
-   * the handoff status it produces — items reserve and wait for the owner (`reserved`),
+   * the handoff status it produces — items and animal adoption reserve and wait for the owner (`reserved`),
    * the food quick claim is confirmed at once (`confirmed`, 0383; no owner approval step).
    */
   readonly claim: { readonly testId: string; readonly label: string; readonly resultsIn: 'reserved' | 'confirmed' };
@@ -81,6 +81,35 @@ function handoffStatus(page: Page) {
   return page.getByTestId('giving-handoff-status').or(page.getByText(/^סטטוס: /)).first();
 }
 
+/**
+ * After a handoff action: the server row (read as `user`, through RLS) reaches `status`
+ * first, then the listing page shows it. On a slow dev backend the action's own refetch can
+ * lag behind the write, so the page gets one reload instead of a longer blind wait; an action
+ * that never reaches the server still fails, with a message that says so.
+ */
+async function expectHandoffStatus(
+  page: Page,
+  path: string,
+  user: Credentials,
+  postId: string,
+  status: keyof typeof STATUS_LABEL_HE,
+): Promise<HandoffRow> {
+  await expect
+    .poll(async () => (await handoffAs(user, postId))?.status ?? 'no handoff row', {
+      timeout: 60_000,
+      message: `handoff on ${postId} reaches '${status}' on the server`,
+    })
+    .toBe(status);
+  const label = STATUS_LABEL_HE[status];
+  try {
+    await expect(handoffStatus(page)).toContainText(label, { timeout: 10_000 });
+  } catch {
+    await gotoApp(page, path);
+    await expect(handoffStatus(page)).toContainText(label, { timeout: 30_000 });
+  }
+  return (await handoffAs(user, postId))!;
+}
+
 /** Registers the serial two-user journey for one world. */
 export function defineWorldJourney(journey: WorldJourney): void {
   test.describe.serial(`${journey.world}: two-user giving journey`, () => {
@@ -97,17 +126,17 @@ export function defineWorldJourney(journey: WorldJourney): void {
     });
 
     const claimed = journey.claim.resultsIn;
-    const claimedLabel = STATUS_LABEL_HE[claimed];
 
     test(`user B claims it from the listing page; the handoff is ${claimed} for B`, async ({ browser }) => {
       expect(listingId, 'listing from the publish step').not.toBe('');
+      test.setTimeout(150_000);
       const b = await openAs(browser, STORAGE_B);
       await gotoApp(b.page, listingPath());
+      await expect(b.page.getByText(title).first()).toBeVisible();
       await action(b.page, journey.claim.testId, journey.claim.label).click();
-      await expect(handoffStatus(b.page)).toContainText(claimedLabel, { timeout: 20_000 });
+      const row = await expectHandoffStatus(b.page, listingPath(), USER_B, listingId, claimed);
       await b.ctx.close();
 
-      const row = await handoffAs(USER_B, listingId);
       const { userId: bId } = await tokenFor(USER_B);
       expect(row?.status).toBe(claimed);
       expect(row?.recipient_id).toBe(bId);
@@ -119,22 +148,22 @@ export function defineWorldJourney(journey: WorldJourney): void {
         expect(handoffId, 'handoff from the claim step').not.toBe('');
         page.on('dialog', (dialog) => void dialog.accept());
         await gotoApp(page, listingPath());
+        test.setTimeout(150_000);
         await action(page, 'giving-handoff-confirm', 'אישור שריון').click();
-        await expect(handoffStatus(page)).toContainText(STATUS_LABEL_HE.confirmed, { timeout: 20_000 });
-        expect((await handoffAs(USER_A, listingId))?.status).toBe('confirmed');
+        await expectHandoffStatus(page, listingPath(), USER_A, listingId, 'confirmed');
       });
     }
 
     test('user A marks it handed over: the listing closes and karma is written', async ({ page }) => {
-      // The karma consumer is a once-a-minute job: allow it a full cycle plus the run itself.
-      test.setTimeout(180_000);
+      // The karma consumer is a once-a-minute job: allow it a full cycle plus the run itself,
+      // after up to 100 s for the handover to show (server poll + one reload).
+      test.setTimeout(240_000);
       page.on('dialog', (dialog) => void dialog.accept());
       await gotoApp(page, listingPath());
       await action(page, 'giving-handoff-complete', 'סומן כנמסר').click();
-      await expect(handoffStatus(page)).toContainText(STATUS_LABEL_HE.handed_over, { timeout: 20_000 });
+      await expectHandoffStatus(page, listingPath(), USER_A, listingId, 'handed_over');
 
       const { token, userId: aId } = await tokenFor(USER_A);
-      expect((await handoffAs(USER_A, listingId))?.status).toBe('handed_over');
       const [post] = await rest<{ status: string }[]>(token, `posts?select=status&id=eq.${listingId}`);
       // A delivered handoff closes the post as `closed_delivered` (the post status machine).
       expect(post?.status).toBe('closed_delivered');

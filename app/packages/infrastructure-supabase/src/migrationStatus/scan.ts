@@ -21,15 +21,15 @@ export type Offender = { readonly file: string; readonly reasons: readonly strin
 export type BaselineObjects = { readonly rpc: ReadonlySet<string>; readonly table: ReadonlySet<string> };
 
 const SECTION = /^ {4}(Tables|Views|Functions|Enums|CompositeTypes): \{/;
-const NAME = /^ {6}([A-Za-z0-9_]+): /;
+const NAME = /^ {6}(\w+): /;
 const LEGACY_REFERENCE = /database\.legacy\.types|getLegacySupabaseClient|\blegacySupabase\b|\bLegacyDatabase\b/;
 /**
  * The legacy view is removed (every package moved), so only this file, which names the
  * pattern, is exempt: any other legacy reference is reported as an unmigrated file.
  */
-const LEGACY_VIEW_DEFINITIONS: readonly string[] = [
+const LEGACY_VIEW_DEFINITIONS: ReadonlySet<string> = new Set([
   'packages/infrastructure-supabase/src/migrationStatus/scan.ts',
-];
+]);
 /**
  * RPCs of the dev-only demo-data tools (FR-ADMIN-031, `supabase/seed/demo`). They are installed on
  * kc-dev by the Seed KC dev workflow and never by a migration, so the baseline types do not list
@@ -69,7 +69,7 @@ function listSources(dir: string): string[] {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) return entry.name === 'node_modules' ? [] : listSources(full);
-    return /\.(ts|tsx)$/.test(entry.name) && !/\.d\.ts$/.test(entry.name) ? [full] : [];
+    return /\.(ts|tsx)$/.test(entry.name) && !entry.name.endsWith('.d.ts') ? [full] : [];
   });
 }
 
@@ -109,10 +109,10 @@ export function findUnmigrated(
     if (problem) add(file, problem);
   }
   for (const file of sources) {
-    if (LEGACY_VIEW_DEFINITIONS.includes(file) || MACHINERY_TESTS.test(file)) continue;
+    if (LEGACY_VIEW_DEFINITIONS.has(file) || MACHINERY_TESTS.test(file)) continue;
     if (LEGACY_REFERENCE.test(fs.readFileSync(path.join(appRoot, file), 'utf8'))) add(file, 'legacy view');
   }
   return [...reasons.entries()]
-    .map(([file, set]) => ({ file, reasons: [...set].sort() }))
+    .map(([file, set]) => ({ file, reasons: [...set].sort((a, b) => a.localeCompare(b)) }))
     .sort((a, b) => a.file.localeCompare(b.file));
 }

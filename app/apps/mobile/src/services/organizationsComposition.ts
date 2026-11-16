@@ -15,7 +15,7 @@ import { pickAuthStorage } from './authSecureStorage';
 let repo: IOrganizationsRepository | null = null;
 
 function organizationsRepository(): IOrganizationsRepository {
-  if (!repo) repo = new SupabaseOrganizationsRepository(getSupabaseClient({ storage: pickAuthStorage() }));
+  repo ??= new SupabaseOrganizationsRepository(getSupabaseClient({ storage: pickAuthStorage() }));
   return repo;
 }
 

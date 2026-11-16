@@ -23,6 +23,39 @@ describe('SupabasePostRepository.getFeed', () => {
     expect(page.nextCursor).toBe(JSON.stringify({ id: 'b' }));
   });
 
+  it('is one call for a page of open posts: no read of posts or challenges for the extras', async () => {
+    const { client, calls } = feed([row('a'), row('b')]);
+
+    await new SupabasePostRepository(client).getFeed('viewer', { type: 'Give' }, 2);
+
+    expect(calls.filter((call) => call.kind === 'rpc').map((call) => call.fn)).toEqual(['feed_page']);
+    expect(callsTo(calls, 'posts')).toHaveLength(0);
+    expect(callsTo(calls, 'challenges')).toHaveLength(0);
+  });
+
+  it('maps the map point and the language from the card itself', async () => {
+    const { client } = feed([row('a', { source_language: 'ar', geo_approx: '0101000020E6100000000000000000F03F000000000000F03F' })]);
+
+    const page = await new SupabasePostRepository(client).getFeed('viewer', { type: 'Give' }, 2);
+
+    expect(page.posts[0]).toMatchObject({ sourceLanguage: 'ar', mapPoint: { lat: 1, lng: 1 } });
+  });
+
+  it('reads the recipient of a delivered post of the page and nothing else', async () => {
+    const { client, calls } = createFakeClient({
+      tables: pageTables({
+        post_handoffs: ok([{ post_id: 'a', recipient_id: 'u-r', handed_over_at: '2026-01-05T00:00:00Z', updated_at: '2026-01-05T00:00:00Z' }]),
+        users: ok([{ id: 'u-r', display_name: 'Ron', avatar_url: null, share_handle: 'ron', verification_level: 1 }]),
+      }),
+      rpc: { feed_page: ok([row('a', { status: 'closed_delivered' }), row('b')]) },
+    });
+
+    await new SupabasePostRepository(client).getFeed('viewer', { type: 'Give', statusFilter: 'all' }, 2);
+
+    expect(callsTo(calls, 'post_handoffs')[0]?.filters).toContainEqual(['in', 'post_id', ['a']]);
+    expect(callsTo(calls, 'posts')).toHaveLength(0);
+  });
+
   it('narrows the page by item condition while the cursor still advances', async () => {
     const { client } = feed([
       row('a', { details: { item_condition: 'New' } }),

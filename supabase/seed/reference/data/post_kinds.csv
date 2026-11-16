@@ -16,3 +16,7 @@ knowledge,mentoring_request,מחפש/ת מנטור,Looking for a mentor,request,
 knowledge,question,שאלה,Question,request,60
 housing,host_offer,הצעת אירוח,Hosting offer,offer,10
 housing,stay_request,בקשת אירוח,Stay request,request,20
+animals,adoption_offer,מסירת בעל חיים,Animal to give away,offer,10
+animals,adoption_request,מחפש/ת לאמץ,Looking to adopt,request,20
+animals,foster_offer,פנסיון / שמירה על בעל חיים,Boarding or pet-sitting offer,offer,30
+animals,foster_request,מחפש/ת פנסיון / שמירה,Looking for boarding or pet-sitting,request,40

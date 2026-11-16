@@ -60,6 +60,12 @@ export function makeCard(overrides: Partial<PostCardRow> = {}): PostCardRow {
     viewer_saved: false,
     viewer_follows_owner: false,
     owner_identity_masked: false,
+    geo_approx: null,
+    source_language: null,
+    status_before_removal: null,
+    shown_street: null,
+    shown_street_number: null,
+    challenge_id: null,
     ...overrides,
   };
 }

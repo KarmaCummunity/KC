@@ -101,7 +101,7 @@ export const OPTIONAL_LANES = ['release', 'maestro'];
 /**
  * Paths that change what the Maestro Android journeys see: the app, its packages and lockfile, the
  * flows and their runner, and the workflow itself. The `maestro` lane is needed on a PR that touches
- * one of them; nothing else plans it (see `plan`).
+ * one of them (and is not in MAESTRO_IGNORE); nothing else plans it (see `plan`).
  */
 export const MAESTRO_RULES = [
   /^app\/apps\/mobile\//,
@@ -111,6 +111,29 @@ export const MAESTRO_RULES = [
   /^scripts\/maestro-/,
   /^\.github\/workflows\/ci-maestro-android\.yml$/,
 ];
+
+/**
+ * Files under MAESTRO_RULES that never reach the E2E APK, so they alone do not plan the lane: the
+ * web-only static files, Cloudflare Pages functions and edge code (Expo bundles `public/` only for
+ * web), unit tests, their mocks and ratchet baselines (vitest only), and docs. A PR that changes only
+ * these (e.g. #2301: public/*.html + a vitest file) skips a 25–60 min emulator run whose result they
+ * cannot change; the frontend lane still runs their tests. Anything else under the app plans it.
+ */
+export const MAESTRO_IGNORE = [
+  /^app\/apps\/mobile\/public\//,
+  /^app\/apps\/mobile\/functions\//,
+  /^app\/apps\/mobile\/web-edge\//,
+  /^app\/(apps|packages)\/.+\/__(tests|mocks)__\//,
+  /^app\/(apps|packages)\/.+\.(test|spec)\.[cm]?[jt]sx?$/,
+  /^app\/(apps|packages)\/[^/]+\/vitest\.(config|setup)\.[cm]?[jt]s$/,
+  /^app\/apps\/mobile\/[^/]+\.baseline\.json$/,
+  /^app\/.+\.md$/,
+];
+
+/** True when `file` can change what the Maestro journeys see. */
+export function touchesMaestro(file) {
+  return MAESTRO_RULES.some((re) => re.test(file)) && !MAESTRO_IGNORE.some((re) => re.test(file));
+}
 
 /** Map changed paths to the heavy lanes they need. */
 export function classify(files) {
@@ -167,7 +190,7 @@ export function plan({ event, draft, actor, ref, baseRef, files, action, baseCha
   const sonarTarget = (isPr && base === 'main' && actor !== 'dependabot[bot]') || (!isPr && event !== 'merge_group' && ref === 'refs/heads/main');
   // The seed password reaches only runs that get secrets, so a Dependabot PR does not plan Maestro.
   // An undiffable PR (files === null) runs it: fail closed.
-  const maestro = isPr && actor !== 'dependabot[bot]' && (files === null || files.some((f) => MAESTRO_RULES.some((re) => re.test(f))));
+  const maestro = isPr && actor !== 'dependabot[bot]' && (files === null || files.some(touchesMaestro));
   const needed = {
     hygiene: isPr,
     static: true,

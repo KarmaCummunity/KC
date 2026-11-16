@@ -22,7 +22,8 @@ export const ReviewQueueRow = React.memo(function ReviewQueueRow({ entry, myUser
   const styles = useStyles();
   const t = useLocaleBundle().admin.reviewQueue;
   const mine = entry.assigneeId !== null && entry.assigneeId === myUserId;
-  const assignee = entry.assigneeId === null ? null : mine ? t.assignedToMe : t.assigned;
+  let assignee: string | null = null;
+  if (entry.assigneeId !== null) assignee = mine ? t.assignedToMe : t.assigned;
   return (
     <View style={styles.card} testID={`admin-review-entry-${entry.entryId}`}>
       <Text style={styles.reason}>{`${t.reasons[entry.reason]} · ${t.targets[entry.targetType]}`}</Text>

@@ -8,7 +8,7 @@
  ],
  "summary": {
   "bucket": {
-   "callSites": 22,
+   "callSites": 21,
    "distinct": 4
   },
   "channel": {
@@ -24,8 +24,8 @@
    "distinct": 249
   },
   "table": {
-   "callSites": 186,
-   "distinct": 63
+   "callSites": 184,
+   "distinct": 62
   }
  },
  "entries": [
@@ -46,15 +46,6 @@
    "symbol": "ProPaywallScreen",
    "via": "literal",
    "name": "api_my_pro_status"
-  },
-  {
-   "kind": "bucket",
-   "file": "app/apps/mobile/src/components/PostImageCarousel.tsx",
-   "line": 72,
-   "area": "mobile",
-   "symbol": "PostImageCarousel",
-   "via": "const",
-   "name": "post-images"
   },
   {
    "kind": "table",
@@ -1919,7 +1910,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/marketplace/listingOwnerActions.ts",
-   "line": 71,
+   "line": 78,
    "area": "marketplace",
    "symbol": "updateMyListing",
    "via": "literal",
@@ -1932,7 +1923,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/marketplace/listingOwnerActions.ts",
-   "line": 89,
+   "line": 96,
    "area": "marketplace",
    "symbol": "addMyListingMedia",
    "via": "literal",
@@ -2690,31 +2681,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/posts/postCardExtras.ts",
-   "line": 27,
-   "area": "posts",
-   "symbol": "loadPostColumns",
-   "via": "literal",
-   "ops": [
-    "select"
-   ],
-   "name": "posts"
-  },
-  {
-   "kind": "table",
-   "file": "app/packages/infrastructure-supabase/src/posts/postCardExtras.ts",
-   "line": 36,
-   "area": "posts",
-   "symbol": "loadChallengeIds",
-   "via": "literal",
-   "ops": [
-    "select"
-   ],
-   "name": "challenges"
-  },
-  {
-   "kind": "table",
-   "file": "app/packages/infrastructure-supabase/src/posts/postCardExtras.ts",
-   "line": 44,
+   "line": 29,
    "area": "posts",
    "symbol": "loadPurgeDeadlines",
    "via": "literal",
@@ -2726,7 +2693,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/posts/postCardExtras.ts",
-   "line": 56,
+   "line": 41,
    "area": "posts",
    "symbol": "loadRecipients",
    "via": "literal",
@@ -2738,7 +2705,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/posts/postCardExtras.ts",
-   "line": 65,
+   "line": 50,
    "area": "posts",
    "symbol": "loadRecipients",
    "via": "literal",
@@ -3167,7 +3134,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/reports/reportTargetPreviews.ts",
-   "line": 33,
+   "line": 35,
    "area": "reports",
    "symbol": "postPreviews",
    "via": "literal",
@@ -3179,7 +3146,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/reports/reportTargetPreviews.ts",
-   "line": 50,
+   "line": 52,
    "area": "reports",
    "symbol": "userPreviews",
    "via": "literal",
@@ -3191,7 +3158,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/reports/reportTargetPreviews.ts",
-   "line": 54,
+   "line": 56,
    "area": "reports",
    "symbol": "userPreviews",
    "via": "literal",
@@ -3203,7 +3170,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/reports/reportTargetPreviews.ts",
-   "line": 71,
+   "line": 73,
    "area": "reports",
    "symbol": "commentPreviews",
    "via": "literal",
@@ -3215,7 +3182,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/reports/reportTargetPreviews.ts",
-   "line": 89,
+   "line": 91,
    "area": "reports",
    "symbol": "chatPreviews",
    "via": "literal",
@@ -3227,7 +3194,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/reports/reportTargetPreviews.ts",
-   "line": 121,
+   "line": 123,
    "area": "reports",
    "symbol": "loadDisplayNames",
    "via": "literal",

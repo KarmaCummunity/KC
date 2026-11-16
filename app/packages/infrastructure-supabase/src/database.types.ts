@@ -6570,6 +6570,12 @@ export type Database = {
         viewer_saved: boolean | null
         viewer_follows_owner: boolean | null
         owner_identity_masked: boolean | null
+        geo_approx: string | null
+        source_language: string | null
+        status_before_removal: string | null
+        shown_street: string | null
+        shown_street_number: string | null
+        challenge_id: string | null
       }
     }
   }

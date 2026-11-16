@@ -4,26 +4,37 @@ import { callsTo, createFakeClient } from '../../__tests__/fakeBaselineClient';
 import { loadCardExtras } from '../postCardExtras';
 import { fail, makeCard, ok } from './cardFixtures';
 
-const POST_ROW = { id: 'post-1', geo_approx: null, source_language: 'he', status_before_removal: null };
-
 describe('loadCardExtras', () => {
-  it('reads the posts columns once for the page and skips sources no card can use', async () => {
-    const { client, calls } = createFakeClient({ tables: { posts: ok([POST_ROW]) } });
+  it('builds the extras of open posts from the cards without a single read', async () => {
+    const { client, calls } = createFakeClient();
 
-    const extras = await loadCardExtras(client, [makeCard()]);
+    const extras = await loadCardExtras(client, [
+      makeCard({
+        geo_approx: '0101000020E610000000000000000000000000000000000000',
+        source_language: 'he',
+        status_before_removal: 'open',
+        shown_street: 'Herzl',
+        shown_street_number: '4',
+        challenge_id: 'ch-1',
+      }),
+    ]);
 
-    expect(extras.get('post-1')).toMatchObject({ sourceLanguage: 'he', challengeId: null, purgeAfter: null, recipient: null });
-    expect(callsTo(calls, 'posts')[0]?.filters).toContainEqual(['in', 'id', ['post-1']]);
-    expect(callsTo(calls, 'challenges')).toHaveLength(0);
-    expect(callsTo(calls, 'post_closures')).toHaveLength(0);
-    expect(callsTo(calls, 'post_handoffs')).toHaveLength(0);
+    expect(extras.get('post-1')).toEqual({
+      geo: '0101000020E610000000000000000000000000000000000000',
+      shownStreet: 'Herzl',
+      shownStreetNumber: '4',
+      sourceLanguage: 'he',
+      statusBeforeRemoval: 'open',
+      challengeId: 'ch-1',
+      purgeAfter: null,
+      recipient: null,
+    });
+    expect(calls).toHaveLength(0);
   });
 
-  it('finds the challenge, the restore window and the recipient of the cards that have them', async () => {
-    const { client } = createFakeClient({
+  it('finds the restore window and the recipient of the cards that have them', async () => {
+    const { client, calls } = createFakeClient({
       tables: {
-        posts: ok([POST_ROW, { ...POST_ROW, id: 'post-2' }, { ...POST_ROW, id: 'post-3' }]),
-        challenges: ok([{ id: 'ch-1', post_id: 'post-1' }]),
         post_closures: ok([{ post_id: 'post-2', purge_after: '2026-02-01T00:00:00Z' }]),
         post_handoffs: ok([
           { post_id: 'post-3', recipient_id: 'u-r', handed_over_at: '2026-01-05T00:00:00Z', updated_at: '2026-01-06T00:00:00Z' },
@@ -33,22 +44,23 @@ describe('loadCardExtras', () => {
     });
 
     const extras = await loadCardExtras(client, [
-      makeCard({ id: 'post-1', post_type: 'challenge' }),
+      makeCard({ id: 'post-1' }),
       makeCard({ id: 'post-2', status: 'deleted_no_recipient' }),
       makeCard({ id: 'post-3', status: 'closed_delivered' }),
     ]);
 
-    expect(extras.get('post-1')?.challengeId).toBe('ch-1');
     expect(extras.get('post-2')?.purgeAfter).toBe('2026-02-01T00:00:00Z');
     expect(extras.get('post-3')?.recipient).toEqual({
       recipient: { postId: 'post-3', recipientUserId: 'u-r', markedAt: '2026-01-05T00:00:00Z' },
       user: { userId: 'u-r', displayName: 'Ron', shareHandle: 'ron', avatarUrl: null, verificationLevel: 1 },
     });
+    expect(callsTo(calls, 'posts')).toHaveLength(0);
+    expect(callsTo(calls, 'challenges')).toHaveLength(0);
   });
 
   it('gives no recipient when the caller cannot read the handoff', async () => {
     const { client, calls } = createFakeClient({
-      tables: { posts: ok([POST_ROW]), post_handoffs: ok([]) },
+      tables: { post_handoffs: ok([]) },
     });
 
     const extras = await loadCardExtras(client, [makeCard({ status: 'closed_delivered' })]);
@@ -64,7 +76,7 @@ describe('loadCardExtras', () => {
   });
 
   it('reports a missing object as unavailable', async () => {
-    const { client } = createFakeClient({ tables: { posts: fail('PGRST205', 'no table posts') } });
-    await expect(loadCardExtras(client, [makeCard()])).rejects.toBeInstanceOf(BackendUnavailableError);
+    const { client } = createFakeClient({ tables: { post_handoffs: fail('PGRST205', 'no table post_handoffs') } });
+    await expect(loadCardExtras(client, [makeCard({ status: 'closed_delivered' })])).rejects.toBeInstanceOf(BackendUnavailableError);
   });
 });

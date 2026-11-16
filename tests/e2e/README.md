@@ -17,6 +17,7 @@ User journeys against the deployed dev web app (`DEV_WEB_URL`, default
 |---|---|
 | `journeys/items.spec.ts` | **two-user items journey (G40):** A publishes → B reserves → A confirms → A hands over (listing closed, karma) → B rates |
 | `journeys/food.spec.ts` | **two-user food journey (G40):** A publishes with expiry → B quick-claims (confirmed at once) → A hands over → B rates |
+| `journeys/animals.spec.ts` | **two-user animals journey (§5.9, D125):** A publishes an adoption offer → B reserves → A confirms → A hands over (listing closed, karma) → B rates. Runs while the world flag is off: the server does not gate publishing on it |
 | `journeys/world-links.spec.ts` | **links and knowledge of a world:** the food feed ends with a short list of links and a button, the button opens the dedicated screen; knowledge topics on the knowledge world; organizations and related worlds on a link-only world (medical); a world without a community list (items). Needs the content seed on kc-dev |
 | `journeys/qa/auth.spec.ts` | email login with the seeded user, wrong password, sign-up form |
 | `journeys/qa/feed.spec.ts` | feed renders without failed API calls, create a post, like, comment |

@@ -78,7 +78,20 @@ export function isOrgMemberRole(value: unknown): value is OrgMemberRole {
   return typeof value === 'string' && (ORG_MEMBER_ROLES as readonly string[]).includes(value);
 }
 
-const EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+const NO_SPACE = /^\S+$/;
+
+/**
+ * `local@domain` with no whitespace, exactly one `@`, and a dot inside the domain with a
+ * character on each side: the same rule as `^[^@\s]+@[^@\s]+\.[^@\s]+$`, without that
+ * pattern's super-linear backtracking.
+ */
+function isEmailLike(value: string): boolean {
+  if (!NO_SPACE.test(value)) return false;
+  const parts = value.split('@');
+  if (parts.length !== 2) return false;
+  const [local, domain] = parts as [string, string];
+  return local.length > 0 && domain.slice(1, -1).includes('.');
+}
 const SECURE_URL = /^https:\/\/[^\s@]+$/;
 
 /**
@@ -91,7 +104,7 @@ export function validateOrgApplication(input: SubmitOrgApplicationInput): OrgErr
   if (name.length < 2 || name.length > 120) return 'org_name_invalid';
   const about = input.orgDescription.trim();
   if (about.length === 0 || about.length > 4000) return 'org_description_required';
-  if (!EMAIL.test(input.contactEmail.trim())) return 'org_contact_email_invalid';
+  if (!isEmailLike(input.contactEmail.trim())) return 'org_contact_email_invalid';
   const site = input.websiteUrl?.trim() ?? '';
   if (site !== '' && !SECURE_URL.test(site)) return 'org_website_invalid';
   if (!input.declaredNonprofit) return 'org_nonprofit_declaration_required';

@@ -3,9 +3,9 @@
 // The card carries the post, its owner, the location name, the cover photo, the counters and the
 // viewer's own state, with the owner already masked by the server when the post hides its poster
 // (FR-POST-021, `owner_identity_masked`). Whatever the app still needs and the card lacks — the
-// recipient, the approximate map point, the purge deadline — arrives in `CardExtras`, loaded once
-// per page by `postCardExtras.ts`. Fields that no longer exist in the baseline get the neutral
-// values documented on `mapCardToPost`.
+// recipient, the approximate map point, the purge deadline — arrives in `CardExtras`, built once
+// per page by `postCardExtras.ts` (most of it from the card itself). Fields that no longer exist
+// in the baseline get the neutral values documented on `mapCardToPost`.
 
 import {
   ITEM_CONDITIONS,
@@ -38,7 +38,7 @@ export interface CardRecipient {
 
 /** What a page of cards is completed with after the first call. */
 export interface CardExtras {
-  /** `posts.geo_approx` as PostgREST serialises it (hex WKB). */
+  /** `posts.geo_approx` as hex WKB text (the card carries it as text). */
   readonly geo: unknown;
   /** The street and (with FullAddress) number the poster's display level shows to others. */
   readonly shownStreet?: string | null;
