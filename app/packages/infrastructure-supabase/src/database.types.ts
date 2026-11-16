@@ -635,6 +635,73 @@ export type Database = {
           },
         ]
       }
+      external_post_imports: {
+        Row: {
+          channel: string
+          confidence: number
+          created_at: string
+          extraction: Json | null
+          extraction_version: string
+          id: string
+          model: string | null
+          post_id: string | null
+          provider_called: boolean
+          reason: string
+          routing: string
+          source_platform: string
+          status: string
+          text_fingerprint: string
+          user_id: string
+        }
+        Insert: {
+          channel: string
+          confidence?: number
+          created_at?: string
+          extraction?: Json | null
+          extraction_version: string
+          id?: string
+          model?: string | null
+          post_id?: string | null
+          provider_called?: boolean
+          reason: string
+          routing: string
+          source_platform?: string
+          status?: string
+          text_fingerprint: string
+          user_id: string
+        }
+        Update: {
+          channel?: string
+          confidence?: number
+          created_at?: string
+          extraction?: Json | null
+          extraction_version?: string
+          id?: string
+          model?: string | null
+          post_id?: string | null
+          provider_called?: boolean
+          reason?: string
+          routing?: string
+          source_platform?: string
+          status?: string
+          text_fingerprint?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "external_post_imports_post_id_fkey"
+            columns: ["post_id"]
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "external_post_imports_user_id_fkey"
+            columns: ["user_id"]
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       feed_hides: {
         Row: {
           hidden_at: string
@@ -1967,6 +2034,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      post_extraction_cache: {
+        Row: {
+          created_at: string
+          extraction_version: string
+          fingerprint: string
+          result: Json
+        }
+        Insert: {
+          created_at?: string
+          extraction_version: string
+          fingerprint: string
+          result: Json
+        }
+        Update: {
+          created_at?: string
+          extraction_version?: string
+          fingerprint?: string
+          result?: Json
+        }
+        Relationships: []
       }
       post_food_details: {
         Row: {

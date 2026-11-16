@@ -20,12 +20,12 @@
    "distinct": 3
   },
   "rpc": {
-   "callSites": 274,
-   "distinct": 250
+   "callSites": 275,
+   "distinct": 251
   },
   "table": {
-   "callSites": 186,
-   "distinct": 62
+   "callSites": 192,
+   "distinct": 64
   }
  },
  "entries": [
@@ -4561,6 +4561,71 @@
   },
   {
    "kind": "rpc",
+   "file": "supabase/functions/_shared/post-extraction/catalog.ts",
+   "line": 20,
+   "area": "fn:_shared",
+   "symbol": "rpcPlaceResolver",
+   "via": "literal",
+   "name": "api_resolve_place"
+  },
+  {
+   "kind": "table",
+   "file": "supabase/functions/_shared/post-extraction/lists.ts",
+   "line": 28,
+   "area": "fn:_shared",
+   "symbol": "loadExtractionLists",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "worlds"
+  },
+  {
+   "kind": "table",
+   "file": "supabase/functions/_shared/post-extraction/lists.ts",
+   "line": 30,
+   "area": "fn:_shared",
+   "symbol": "rows",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "item_subcategories"
+  },
+  {
+   "kind": "table",
+   "file": "supabase/functions/_shared/post-extraction/lists.ts",
+   "line": 32,
+   "area": "fn:_shared",
+   "symbol": "rows",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "post_kinds"
+  },
+  {
+   "kind": "table",
+   "file": "supabase/functions/_shared/post-extraction/store.ts",
+   "line": 43,
+   "area": "fn:_shared",
+   "symbol": "supabaseImportStore",
+   "via": "literal",
+   "ops": [],
+   "name": "external_post_imports"
+  },
+  {
+   "kind": "table",
+   "file": "supabase/functions/_shared/post-extraction/store.ts",
+   "line": 58,
+   "area": "fn:_shared",
+   "symbol": "supabaseExtractionCache",
+   "via": "literal",
+   "ops": [],
+   "name": "post_extraction_cache"
+  },
+  {
+   "kind": "rpc",
    "file": "supabase/functions/_shared/whatsapp/agent/run.ts",
    "line": 57,
    "area": "fn:_shared",
@@ -4720,6 +4785,18 @@
    "symbol": "jobs",
    "via": "literal",
    "name": "embedding_job_fail"
+  },
+  {
+   "kind": "table",
+   "file": "supabase/functions/extract-external-post/index.ts",
+   "line": 28,
+   "area": "fn:extract-external-post",
+   "symbol": "<module>",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "app_flags"
   },
   {
    "kind": "rpc",
