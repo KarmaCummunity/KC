@@ -87,7 +87,7 @@ begin
 end;
 $$;
 
-select plan(25);
+select plan(26);
 
 -- s super admin · a org admin of the platform · o org admin of another org · g org manager of
 -- the platform · m moderator · x member · e an e2e member on the seed domain.
@@ -162,8 +162,12 @@ select is(
   pg_temp.steps('s', $$select public.admin_seed_demo_data_step('SeedPass-2026')$$,
                 'select public.admin_seed_demo_data_step(null)') -> 'result',
   '{"demo_users": 200, "demo_organizations": 3, "demo_item_posts": 600, "demo_ride_posts": 120,
-    "demo_follows": 1600, "demo_chats": 150, "demo_org_memberships": 12}'::jsonb,
+    "demo_follows": 1600, "demo_chats": 150, "demo_org_memberships": 24}'::jsonb,
   'the stepped restore creates members, item posts, rides, follows, chats and the demo nonprofits (AC7)');
+select is((select count(distinct g.role)::int from public.admin_role_grants g
+            where g.scope_org_id = any (kc_private.demo_org_ids()) and g.revoked_at is null
+              and g.user_id = any (kc_private.demo_member_ids())), 6,
+  'demo nonprofits have members in every staff role (#1964)');
 select ok((select password_hash like '$2%' and password_hash <> 'SeedPass-2026' from kc_private.demo_data_state),
   'only the bcrypt hash of the password is kept (AC9)');
 select is((select count(*)::int from auth.users u
