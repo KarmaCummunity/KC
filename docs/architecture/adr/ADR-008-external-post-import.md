@@ -58,7 +58,7 @@ A **deterministic–LLM–deterministic sandwich**. The model does only what rul
 | `@kc/application/imports/` | `ExtractExternalPostUseCase`; port `IPostExtractionService` (calls the function). No I/O. Place resolution has no app-side port: `api_resolve_place` is called from inside the Edge Function, so a port would have no caller (YAGNI); one is added only if the app needs it. |
 | `@kc/infrastructure-supabase` | Adapter: invokes `extract-external-post`. |
 | `supabase/functions/extract-external-post/` | `handler.ts` (DI, unit-tested), `index.ts` (wiring only). |
-| `supabase/functions/_shared/post-extraction/` | `provider.ts` (seam), `gemini.ts`, `prompt.ts`, `schema.ts`, plus **mirrors** of the pure domain stages. A **parity test** runs the golden cases through both copies and fails if they diverge (same discipline as the translation short-circuit). |
+| `supabase/functions/_shared/post-extraction/` | `provider.ts` (seam), `gemini.ts`, `prompt.ts`, `schema.ts`, plus **mirrors** of the pure domain stages. The mirror is **generated** (`scripts/sync-post-extraction-mirror.mjs`) and a script test fails when the committed copy is stale, so the two cannot diverge. |
 | `apps/mobile` | Share target registration, paste screen, draft hand-off to the create form, highlight of "confirm" fields, attestation, provenance chip. |
 
 The scrub and validation run **server-side** (authoritative) and, for the preview notice only, on the client.
@@ -91,7 +91,7 @@ Model confidence is only one input. Recalibration combines: catalog match score 
 
 ### Quality harness
 
-`supabase/functions/_shared/post-extraction/__fixtures__/golden.jsonl` (≥ 150 hand-labelled, rewritten messages) with a runner that scores per-field accuracy. CI replays **recorded** provider responses (free, deterministic) and enforces the thresholds of `FR-IMPORT-010`; `pnpm eval:extraction --live` re-records against the live provider on demand and on a schedule, and reports drift and cost per extraction. Production telemetry (`import_field_edit_rate`) closes the loop: real corrections become new golden cases (rewritten).
+`supabase/functions/_shared/post-extraction/eval/`: `golden.ts` (160 hand-labelled, rewritten messages), `metrics.ts` (per-field scores, F1, calibration table, the gate), `replay.ts` (the real pipeline with a recorded model) and `live.ts` (the same set against the real model: `deno run --allow-env --allow-net --allow-read …/eval/live.ts [--limit N] [--record file]`, needs `GEMINI_API_KEY`, exit 1 below a minimum). CI replays the **recorded** answers (free, deterministic) and enforces the minimums of `FR-IMPORT-010`. **v1 caveat:** the recorded answers are derived from the labels with a few deliberate mistakes, so the replay guards the deterministic stages and the gate itself; how good the real model is only the `live.ts` run says, and the answers it records should replace these once a key is available. Production telemetry (`import_field_edit_rate`) closes the loop: real corrections become new golden cases (rewritten).
 
 ### Rollout
 
