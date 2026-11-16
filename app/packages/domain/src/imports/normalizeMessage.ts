@@ -12,7 +12,7 @@ export interface NormalizedMessage {
 
 // Niqqud / cantillation marks and bidi controls: invisible, and they break fuzzy matching.
 const HEBREW_MARKS = /[\u0591-\u05C7]/g;
-const BIDI_CONTROLS = /[‎‏‪-‮⁦-⁩]/g;
+const BIDI_CONTROLS = /[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g;
 
 const DATE = String.raw`(\d{1,2})[./](\d{1,2})[./](\d{2,4})`;
 const TIME = String.raw`(\d{1,2}):(\d{2})`;
