@@ -51,3 +51,11 @@ test('every kind the server handoff flow names exists in the seed', () => {
   const seeded = new Set(postKinds().map((row) => row.slug));
   assert.deepEqual(named.filter((slug) => !seeded.has(slug)), []);
 });
+
+test('the challenges world has an offer kind, which create_challenge requires (#2318)', () => {
+  // create_challenge raises challenge_world_not_configured when the catalog has no such kind.
+  const rpc = read('supabase/schemas/74_challenges/030_challenge_rpcs.sql');
+  assert.ok(rpc.includes("k.world_slug = 'challenges' and k.is_active and k.direction in ('offer', 'either')"));
+  const kinds = postKinds().filter((row) => row.world_slug === 'challenges');
+  assert.ok(kinds.some((row) => row.direction === 'offer'), 'no offer kind for challenges in the seed');
+});
