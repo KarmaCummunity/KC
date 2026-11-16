@@ -21,6 +21,10 @@
 //   • the PR changed ci.yml's jobs or header (scripts/ci-workflow-diff.mjs)
 //     and no owner approved its head SHA (TD-203);
 //   • a PR or review run targets a base other than dev/main;
+//   • a third-party scan (GitGuardian App check, Snyk status) that reported
+//     on the head SHA failed, or is still pending after a bounded wait; one
+//     that never reports for this event type is ignored
+//     (scripts/ci-app-checks.mjs — identified by App id / status creator);
 //   • on a review event, the PR's latest `pull_request` run for the head SHA
 //     is missing, unfinished after a wait, or cannot be bound to this PR and
 //     base (scripts/ci-run-binding.mjs), so there are no lane results to reuse.
@@ -46,6 +50,7 @@
 // GITHUB_REPOSITORY, GITHUB_TOKEN.
 
 import { appendFileSync } from 'node:fs';
+import { appCheckErrors } from './ci-app-checks.mjs';
 import { fileURLToPath } from 'node:url';
 import { HEAVY_LANES, LANE_JOBS, OPTIONAL_LANES as OPTIONAL_LANE_IDS, PR_ONLY_LANES, REVIEW_LANES, readPrAction } from './ci-changes.mjs';
 import { ownerApprovalRequired } from './ci-base.mjs';
@@ -204,6 +209,13 @@ async function judge(env, needs, plan) {
       errors.push(...(await ciWorkflowErrors(env)));
     } catch (err) {
       errors.push(`could not compare ci.yml with the base commit: ${err.message}`);
+    }
+    try {
+      const scans = await appCheckErrors(env);
+      for (const note of scans.notes) console.log(`third-party scan: ${note}`);
+      errors.push(...scans.errors);
+    } catch (err) {
+      errors.push(`could not read the third-party scan results: ${err.message}`);
     }
   }
   return { judged, errors };

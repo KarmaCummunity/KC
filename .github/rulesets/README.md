@@ -12,6 +12,8 @@ Read from the GitHub API on 2026-11-16 (audit item 6). Re-check with
 | `main` | classic branch protection | `CI gate` (15368) + `CI verdict` (5554385), strict (up to date) | enforce admins on |
 | tags `dev` / `main` | ruleset `no tags named like protected branches (D-195)` | — | from `tags-no-branch-names.json` |
 
+GitGuardian and Snyk are deliberately **not** required contexts here: `CI gate` judges them when they report (`scripts/ci-app-checks.mjs`, see `SECURITY.md`).
+
 So `CI verdict` **is** enforced on both `dev` and `main`, with the CI-verdict App as
 its source (not just any workflow posting a check with that name).
 
