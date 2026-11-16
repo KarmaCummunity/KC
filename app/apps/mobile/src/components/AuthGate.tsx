@@ -7,7 +7,7 @@ import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Image, View } from 'react-native';
 import { spacing, typography, useTheme, Text } from '@kc/ui';
 import { useTranslation } from 'react-i18next';
-import { useRouter, useSegments, usePathname, type Href } from 'expo-router';
+import { useRouter, useSegments, usePathname, useRootNavigationState, type Href } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useQueryClient } from '@tanstack/react-query';
 import { subscribeToSession } from '../services/authComposition';
@@ -23,7 +23,7 @@ import { useRedirectIntentStore } from '../store/redirectIntentStore';
 import { container } from '../lib/container';
 import { useEnforceAccountGate } from '../hooks/useEnforceAccountGate';
 import { finishMark } from '../lib/observability/perfMarks';
-import { isSignedOutSurface } from '../navigation/signedOutSurfaces';
+import { resolveAuthRedirect } from '../navigation/authRedirect';
 import { PrimaryButton } from './ui/Buttons';
 
 export function AuthGate({ children }: Readonly<{ children: React.ReactNode }>) {
@@ -32,6 +32,8 @@ export function AuthGate({ children }: Readonly<{ children: React.ReactNode }>) 
   const segments: string[] = useSegments();
   const queryClient = useQueryClient();
   const pathname = usePathname();
+  // The root navigation state gets its key once the root navigator is mounted.
+  const navigationReady = Boolean(useRootNavigationState()?.key);
   const capturePendingPath = useRedirectIntentStore((s) => s.capturePath);
   const consumePendingPath = useRedirectIntentStore((s) => s.consumePath);
   const session = useAuthStore((s) => s.session);
@@ -152,46 +154,33 @@ export function AuthGate({ children }: Readonly<{ children: React.ReactNode }>) 
     };
   }, [session?.userId]);
 
-  // Redirect rules:
-  //   - Unauth + outside the signed-out surfaces (navigation/signedOutSurfaces.ts) → (auth).
-  //   - Auth + just landed in (auth) or an auth return route → onboarding step matching
-  //     onboarding_state, or (tabs) when completed.
-  //   - Auth + already past the gates → no auto-redirect (FR-AUTH-015 soft-gate
-  //     handles pending_basic_info on first meaningful action; auto-redirecting
-  //     from tabs back to onboarding would loop after the FR-AUTH-010 AC3 Skip).
+  // Redirects between (auth) / (onboarding) / (tabs). The rules are the pure
+  // `resolveAuthRedirect` (navigation/authRedirect.ts); this effect only performs its answer.
+  // It waits for the root navigator: after Android recreates the activity the store is already
+  // loaded, and navigating in that first commit throws inside expo-router (KC#2250).
   useEffect(() => {
-    if (isLoading) return;
-    if (!isAuthenticated) {
-      if (!isSignedOutSurface(segments, typeof pathname === 'string' ? pathname : '')) {
-        // FR-POST-023 AC6 — remember the deep-link target so we can restore
-        // it after the user completes sign-in / onboarding.
-        if (typeof pathname === 'string') capturePendingPath(pathname);
-        router.replace('/(auth)');
-      }
-      return;
-    }
-
-    // A session exists: only the entry routes (welcome group, OAuth return, email verification)
-    // forward into onboarding or the tabs.
-    const inAuthGroup = segments[0] === '(auth)';
-    const isAuthReturn = segments[0] === 'auth' && (segments[1] === 'callback' || segments[1] === 'verify');
-    if (!inAuthGroup && !isAuthReturn) return;
-    if (onboardingState === null) return;
-
-    if (onboardingState === 'pending_basic_info' && basicInfoSkipped === true) {
-      // FR-POST-023 AC6 — restore a captured deep-link if the user signed in
-      // straight through the basic-info skip path.
-      const pending = consumePendingPath();
-      router.replace((pending ?? '/(tabs)') as Href);
-    } else if (onboardingState === 'pending_basic_info') {
-      router.replace('/(onboarding)/about-intro');
-    } else if (onboardingState === 'pending_avatar') {
-      router.replace('/(onboarding)/photo');
+    const redirect = resolveAuthRedirect({
+      navigationReady,
+      isLoading,
+      isAuthenticated,
+      onboardingState,
+      basicInfoSkipped,
+      segments,
+      pathname: typeof pathname === 'string' ? pathname : null,
+    });
+    if (redirect.kind === 'stay') return;
+    if (redirect.kind === 'welcome') {
+      // FR-POST-023 AC6 — remember the deep-link target so we can restore
+      // it after the user completes sign-in / onboarding.
+      if (redirect.rememberPath !== null) capturePendingPath(redirect.rememberPath);
+      router.replace('/(auth)');
+    } else if (redirect.kind === 'onboarding') {
+      router.replace(redirect.href);
     } else {
-      const pending = consumePendingPath();
-      router.replace((pending ?? '/(tabs)') as Href);
+      // FR-POST-023 AC6 — restore the deep-link captured before sign-in, if any.
+      router.replace((consumePendingPath() ?? '/(tabs)') as Href);
     }
-  }, [isLoading, isAuthenticated, onboardingState, basicInfoSkipped, segments, pathname, router, capturePendingPath, consumePendingPath]);
+  }, [navigationReady, isLoading, isAuthenticated, onboardingState, basicInfoSkipped, segments, pathname, router, capturePendingPath, consumePendingPath]);
 
   if (isLoading) {
     return (
