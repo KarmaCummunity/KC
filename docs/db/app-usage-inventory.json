@@ -1919,7 +1919,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/marketplace/listingOwnerActions.ts",
-   "line": 78,
+   "line": 79,
    "area": "marketplace",
    "symbol": "updateMyListing",
    "via": "literal",
@@ -1932,7 +1932,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/marketplace/listingOwnerActions.ts",
-   "line": 96,
+   "line": 97,
    "area": "marketplace",
    "symbol": "addMyListingMedia",
    "via": "literal",
@@ -1956,7 +1956,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/marketplace/listingWrites.ts",
-   "line": 78,
+   "line": 81,
    "area": "marketplace",
    "symbol": "unwrapCall",
    "via": "literal",
@@ -1965,7 +1965,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/marketplace/listingWrites.ts",
-   "line": 89,
+   "line": 92,
    "area": "marketplace",
    "symbol": "createPlain",
    "via": "literal",
@@ -1978,7 +1978,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/marketplace/listingWrites.ts",
-   "line": 97,
+   "line": 100,
    "area": "marketplace",
    "symbol": "postId",
    "via": "literal",
@@ -1987,7 +1987,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/marketplace/listingWrites.ts",
-   "line": 100,
+   "line": 103,
    "area": "marketplace",
    "symbol": "postId",
    "via": "literal",
@@ -1999,7 +1999,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/marketplace/listingWrites.ts",
-   "line": 129,
+   "line": 132,
    "area": "marketplace",
    "symbol": "createListing",
    "via": "literal",
@@ -2089,7 +2089,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-   "line": 112,
+   "line": 122,
    "area": "marketplace",
    "symbol": "fetchListingDetail",
    "via": "literal",
@@ -2098,7 +2098,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-   "line": 115,
+   "line": 125,
    "area": "marketplace",
    "symbol": "fetchListingDetail",
    "via": "literal",

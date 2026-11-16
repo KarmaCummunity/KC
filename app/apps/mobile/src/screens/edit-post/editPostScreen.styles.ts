@@ -1,11 +1,11 @@
 import { makeUseStyles, radius, spacing, typography } from '@kc/ui';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { rtlTextAlignEnd, rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 
 export const useEditPostScreenStyles = makeUseStyles(({ colors }) => ({
   container: { flex: 1, backgroundColor: colors.background },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: spacing.base },
   errorTitle: { ...typography.h3, color: colors.textPrimary, textAlign: 'center' as const },
-  retryBtn: { paddingHorizontal: spacing.xl, paddingVertical: spacing.sm, backgroundColor: colors.primary, borderRadius: 999 },
+  retryBtn: { paddingHorizontal: spacing.xl, paddingVertical: spacing.sm, backgroundColor: colors.primary, borderRadius: radius.full },
   retryText: { ...typography.button, color: colors.textInverse },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
@@ -18,7 +18,7 @@ export const useEditPostScreenStyles = makeUseStyles(({ colors }) => ({
   saveBtnText: { ...typography.button, color: colors.textInverse },
   scroll: { flex: 1 },
   scrollContent: { padding: spacing.base, gap: spacing.base, paddingBottom: spacing['3xl'] },
-  typeBadge: { paddingVertical: spacing.sm, paddingHorizontal: spacing.base, borderRadius: radius.md, alignItems: 'center', gap: 4 },
+  typeBadge: { paddingVertical: spacing.sm, paddingHorizontal: spacing.base, borderRadius: radius.md, alignItems: 'center', gap: spacing.xs },
   typeBadgeGive: { backgroundColor: colors.giveTagBg },
   typeBadgeRequest: { backgroundColor: colors.requestTagBg },
   typeBadgeText: { ...typography.button, color: colors.textPrimary },
@@ -32,20 +32,10 @@ export const useEditPostScreenStyles = makeUseStyles(({ colors }) => ({
     ...typography.body, color: colors.textPrimary, minHeight: 48,
   },
   textarea: { minHeight: 100, textAlignVertical: 'top', paddingTop: spacing.md },
-  charCount: { ...typography.caption, color: colors.textDisabled, textAlign: 'left' as const },
+  charCount: { ...typography.caption, color: colors.textDisabled, textAlign: rtlTextAlignEnd },
   streetRow: { flexDirection: 'row', gap: spacing.sm, alignItems: 'stretch' },
   streetInputStreet: { flex: 2, minWidth: 0 },
   streetInputHouse: { flex: 1, minWidth: 0, maxWidth: 120 },
-  chips: { flexDirection: 'row' },
-  chip: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.full, borderWidth: 1.5, borderColor: colors.border, marginLeft: spacing.sm, backgroundColor: colors.surface },
-  chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  chipText: { ...typography.label, color: colors.textSecondary },
-  chipTextActive: { color: colors.textInverse },
-  conditionRow: { flexDirection: 'row', gap: spacing.sm },
-  conditionBtn: { flex: 1, paddingVertical: spacing.sm, borderRadius: radius.md, borderWidth: 1.5, borderColor: colors.border, alignItems: 'center', backgroundColor: colors.surface },
-  conditionBtnActive: { backgroundColor: colors.primarySurface, borderColor: colors.primary },
-  conditionText: { ...typography.label, color: colors.textSecondary },
-  conditionTextActive: { color: colors.primary },
   visRow: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.md,
     paddingVertical: spacing.sm, paddingHorizontal: spacing.md,
@@ -53,7 +43,7 @@ export const useEditPostScreenStyles = makeUseStyles(({ colors }) => ({
   },
   visRowActive: { borderColor: colors.primary, backgroundColor: colors.primarySurface },
   visRowDisabled: { opacity: 0.5 },
-  radio: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: colors.border },
+  radio: { width: spacing.lg, height: spacing.lg, borderRadius: radius.full, borderWidth: 2, borderColor: colors.border },
   radioActive: { borderColor: colors.primary, backgroundColor: colors.primary },
   visLabel: { ...typography.body, color: colors.textPrimary, textAlign: rtlTextAlignStart },
   visSub: { ...typography.caption, color: colors.textSecondary, textAlign: rtlTextAlignStart },

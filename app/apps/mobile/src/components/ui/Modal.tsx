@@ -26,6 +26,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { makeUseStyles, radius, shadow, spacing } from '@kc/ui';
 import { ErrorBoundary } from '../ErrorBoundary';
 import { OverlayBackdrop, OverlayHeader, useFocusTitleOnOpen, useOverlayLifecycle } from './overlayParts';
+import { FormScope } from './FormScope';
 
 /** Widest the dialog grows on tablets and desktop web, in points (a layout size). */
 const DIALOG_MAX_WIDTH = 440;
@@ -95,10 +96,12 @@ export function Modal({
             titleRef={titleRef}
             closeTestID={testID ? `${testID}-close` : undefined}
           />
-          <ErrorBoundary boundary="modal-body">
-            {children}
-          </ErrorBoundary>
-          {footer ? <View style={styles.footer}>{footer}</View> : null}
+          <FormScope isolated>
+            <ErrorBoundary boundary="modal-body">
+              {children}
+            </ErrorBoundary>
+            {footer ? <View style={styles.footer}>{footer}</View> : null}
+          </FormScope>
         </View>
       </View>
     </RNModal>

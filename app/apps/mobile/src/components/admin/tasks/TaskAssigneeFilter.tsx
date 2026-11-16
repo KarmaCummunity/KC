@@ -44,7 +44,6 @@ export function TaskAssigneeFilter({ value, onChange }: TaskAssigneeFilterProps)
 
   return (
     <FilterChipRow<string>
-      scrollable
       showAllChip
       allLabel={L.admin.tasks.assigneeFilter.all}
       options={options}

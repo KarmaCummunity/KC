@@ -8,9 +8,9 @@ import { useTranslation } from 'react-i18next';
 import { SUPPORT_ISSUE_DESCRIPTION_MAX, SUPPORT_ISSUE_DESCRIPTION_MIN } from '@kc/application';
 import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
 import { Chip } from '../ui/Chip';
+import { ChipSelectRow } from '../filterKit/ChipSelectRow';
 import { TextField } from '../ui/TextField';
 import { Card } from '../ui/Card';
-import type { FormFieldFocusBindings } from '../../hooks/useFormFieldFocus';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 import { webTextRtl, webViewRtl } from '../../lib/webRtlStyle';
 
@@ -23,8 +23,6 @@ export interface ReportIssueFormProps {
   readonly onCategoryChange: (category: string | null) => void;
   readonly description: string;
   readonly onDescriptionChange: (text: string) => void;
-  /** Keyboard-toolbar wiring for the description field (useFormFieldFocus). */
-  readonly descriptionField?: FormFieldFocusBindings;
 }
 
 export function ReportIssueForm({
@@ -32,22 +30,18 @@ export function ReportIssueForm({
   onCategoryChange,
   description,
   onDescriptionChange,
-  descriptionField,
 }: ReportIssueFormProps) {
   const { t } = useTranslation();
   const styles = useReportIssueFormStyles();
   const trimmedLength = description.trim().length;
   const tooShort = trimmedLength > 0 && trimmedLength < SUPPORT_ISSUE_DESCRIPTION_MIN;
-  const { ref: descriptionRef, ...descriptionFocusProps } = descriptionField ?? {};
-
   return (
     <>
       <Text style={styles.intro}>{t('settings.reportIssueScreen.copy')}</Text>
 
       <Card padding="base" style={styles.card}>
         <Text style={styles.sectionLabel}>{t('settings.reportIssueScreen.categoryLabel')}</Text>
-        {/* Two equal chips per row, so no category is left alone on a line. */}
-        <View style={styles.chipGrid}>
+        <ChipSelectRow>
           {REPORT_ISSUE_CATEGORIES.map((cat) => {
             const selected = category === cat;
             return (
@@ -55,21 +49,18 @@ export function ReportIssueForm({
                 key={cat}
                 testID={`report-issue-category-${cat}`}
                 size="md"
-                style={styles.chipCell}
                 selected={selected}
                 onPress={() => onCategoryChange(selected ? null : cat)}
                 label={t(`settings.reportIssueScreen.categories.${cat}`)}
               />
             );
           })}
-        </View>
+        </ChipSelectRow>
 
         {/* No `textAlign` here: TextField aligns the placeholder to the reading-start edge and
             lets typed text follow its own language (FR-RESP-006 AC21). A physical `left` would
             pin both to the left on native, where inputs do not mirror under forced RTL. */}
         <TextField
-          ref={descriptionRef}
-          {...descriptionFocusProps}
           testID="report-issue-description"
           label={t('settings.reportIssueScreen.descriptionLabel')}
           style={styles.input}
@@ -103,9 +94,6 @@ const useReportIssueFormStyles = makeUseStyles(({ colors }) => ({
     textAlign: rtlTextAlignStart,
     ...webTextRtl,
   },
-  chipGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, ...webViewRtl },
-  // Just under half the row, growing to fill it: two chips per row whatever the label length.
-  chipCell: { flexBasis: '40%', flexGrow: 1, justifyContent: 'center' },
   // About five lines of text before the field scrolls.
   input: { minHeight: spacing['4xl'] * 2 },
   inputFooter: {

@@ -1,10 +1,7 @@
 // FR-AUTH-015 dialog — display_name + city + date of birth + optional address, "Save and continue".
 // Built on the kit `Modal` (spec 17 §4.1).
 import { useState } from 'react';
-import { ScrollView } from 'react-native';
-import { useFormFieldFocus } from '../hooks/useFormFieldFocus';
-import { formPhoneInputProps } from '../lib/platform/formTextInputHints';
-import { KeyboardFormAccessory } from './ui/KeyboardFormAccessory';
+import { FormScrollView } from './ui/FormScrollView';
 import { dateOfBirthIssue } from '@kc/domain';
 import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
 import { DateOfBirthField } from './DateOfBirthField';
@@ -40,10 +37,6 @@ export function OnboardingSoftGateModal({ visible, onClose, onSaved }: Props) {
   const [dateOfBirth, setDateOfBirth] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveErrorMsg, setSaveErrorMsg] = useState<string | null>(null);
-  const fieldFocus = useFormFieldFocus(3);
-  const nameField = fieldFocus.bindField(0);
-  const streetNumberField = fieldFocus.bindField(1);
-  const phoneField = fieldFocus.bindField(2);
 
   const addressIssue = getProfileAddressPairIssue(street, streetNumber);
   const hasRequiredFields =
@@ -92,15 +85,6 @@ export function OnboardingSoftGateModal({ visible, onClose, onSaved }: Props) {
 
   return (
     <>
-      {visible ? (
-        <KeyboardFormAccessory
-          canGoPrev={fieldFocus.canGoPrev}
-          canGoNext={fieldFocus.canGoNext}
-          onPrev={fieldFocus.focusPrev}
-          onNext={fieldFocus.focusNext}
-          onDone={fieldFocus.dismiss}
-        />
-      ) : null}
       <Modal
         visible={visible}
         title={t('onboarding.softGateTitle')}
@@ -121,7 +105,7 @@ export function OnboardingSoftGateModal({ visible, onClose, onSaved }: Props) {
           />
         }
       >
-        <ScrollView
+        <FormScrollView
           style={styles.scroll}
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
@@ -131,18 +115,12 @@ export function OnboardingSoftGateModal({ visible, onClose, onSaved }: Props) {
           <Text style={styles.subtitle}>{t('onboarding.basicInfoSubtitle')}</Text>
 
           <TextField
-            ref={nameField.ref}
             label={t('onboarding.displayName')}
             value={displayName}
             onChangeText={setDisplayName}
             placeholder={t('onboarding.fullNamePlaceholder')}
             maxLength={50}
             editable={!saving}
-            onFocus={nameField.onFocus}
-            inputAccessoryViewID={nameField.inputAccessoryViewID}
-            returnKeyType={nameField.returnKeyType}
-            blurOnSubmit={nameField.blurOnSubmit}
-            onSubmitEditing={nameField.onSubmitEditing}
           />
 
           <DateOfBirthField value={dateOfBirth} onChange={setDateOfBirth} disabled={saving} />
@@ -155,32 +133,18 @@ export function OnboardingSoftGateModal({ visible, onClose, onSaved }: Props) {
             onStreetChange={setStreet}
             onStreetNumberChange={setStreetNumber}
             disabled={saving}
-            streetNumberRef={streetNumberField.ref}
-            streetNumberInputProps={{
-              onFocus: streetNumberField.onFocus,
-              inputAccessoryViewID: streetNumberField.inputAccessoryViewID,
-              returnKeyType: streetNumberField.returnKeyType,
-              blurOnSubmit: streetNumberField.blurOnSubmit,
-              onSubmitEditing: streetNumberField.onSubmitEditing,
-            }}
           />
 
           <TextField
-            ref={phoneField.ref}
             label={t('onboarding.contactPhoneLabel')}
             value={contactPhone}
             onChangeText={setContactPhone}
             placeholder={t('onboarding.contactPhonePlaceholder')}
             maxLength={20}
             editable={!saving}
-            {...formPhoneInputProps}
-            onFocus={phoneField.onFocus}
-            inputAccessoryViewID={phoneField.inputAccessoryViewID}
-            returnKeyType={phoneField.returnKeyType}
-            blurOnSubmit={phoneField.blurOnSubmit}
-            onSubmitEditing={phoneField.onSubmitEditing}
+            inputKind="phone"
           />
-        </ScrollView>
+        </FormScrollView>
       </Modal>
       <NotifyModal visible={!!saveErrorMsg} title={t('onboarding.saveFailed')} message={saveErrorMsg ?? ''} onDismiss={() => setSaveErrorMsg(null)} />
     </>

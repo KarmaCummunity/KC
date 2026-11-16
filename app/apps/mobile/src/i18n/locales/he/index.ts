@@ -26,6 +26,7 @@ import { onboardingReplayHe } from './modules/onboardingReplay';
 import { dateOfBirthHe } from './modules/dateOfBirth';
 import { verificationHe } from './modules/verification';
 import { errorsHe } from './modules/errors';
+import { createPostValidationHe } from './createPostValidation';
 import { chatHe } from './modules/chat';
 import { chatNewHe } from './modules/chatNew';
 import { chatMessagingHe } from './modules/chatMessaging';
@@ -223,6 +224,7 @@ const he = {
 
   // Error messages (auth/post/profile/media/createPost) — see modules/errors.ts
   errors: errorsHe,
+  createPostValidation: createPostValidationHe,
 
   // Misc chrome — see modules/ui.ts
   errorBoundary: errorBoundaryHe,

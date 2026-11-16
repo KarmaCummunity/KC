@@ -6,19 +6,19 @@ import { useTranslation } from 'react-i18next';
 import { DONATION_LINK_DESCRIPTION_MAX, DONATION_LINK_DISPLAY_NAME_MAX } from '@kc/domain';
 import { makeUseStyles, typography, Text } from '@kc/ui';
 import { rtlTextAlignStart } from '../lib/rtlTextAlignStart';
-import { formUrlInputProps } from '../lib/platform/formTextInputHints';
 import { TextField } from './ui/TextField';
 import type { useAddOrEditDonationLinkModal } from './useAddOrEditDonationLinkModal';
 
 type LinkFormState = ReturnType<typeof useAddOrEditDonationLinkModal>;
 
 type Props = Readonly<
-  Pick<LinkFormState, 'url' | 'setUrl' | 'name' | 'setName' | 'desc' | 'setDesc' | 'isEdit' | 'submitting' | 'errorKey'>
+  Pick<LinkFormState, 'url' | 'setUrl' | 'name' | 'setName' | 'desc' | 'setDesc' | 'isEdit' | 'submitting' | 'errorKey' | 'fieldErrors'>
 >;
 
-export function DonationLinkFields({ url, setUrl, name, setName, desc, setDesc, isEdit, submitting, errorKey }: Props) {
+export function DonationLinkFields({ url, setUrl, name, setName, desc, setDesc, isEdit, submitting, errorKey, fieldErrors }: Props) {
   const { t } = useTranslation();
   const styles = useStyles();
+  const problem = (key: string | undefined) => (key ? t(`createPostValidation.${key}`) : undefined);
   return (
     <>
       <TextField
@@ -27,7 +27,8 @@ export function DonationLinkFields({ url, setUrl, name, setName, desc, setDesc, 
         onChangeText={setUrl}
         placeholder={t('donations.addLinkModal.urlPlaceholder')}
         editable={!submitting}
-        {...formUrlInputProps}
+        inputKind="url"
+        errorText={problem(fieldErrors.url)}
       />
       <TextField
         label={t('donations.addLinkModal.nameLabel')}
@@ -36,6 +37,7 @@ export function DonationLinkFields({ url, setUrl, name, setName, desc, setDesc, 
         placeholder={t('donations.addLinkModal.namePlaceholder')}
         maxLength={DONATION_LINK_DISPLAY_NAME_MAX}
         editable={!submitting}
+        errorText={problem(fieldErrors.name)}
       />
       <TextField
         label={t('donations.addLinkModal.descriptionLabel')}
@@ -45,6 +47,7 @@ export function DonationLinkFields({ url, setUrl, name, setName, desc, setDesc, 
         maxLength={DONATION_LINK_DESCRIPTION_MAX}
         multiline
         editable={!submitting}
+        errorText={problem(fieldErrors.desc)}
       />
       <Text style={styles.helper}>
         {isEdit ? t('donations.addLinkModal.editHelperText') : t('donations.addLinkModal.helperText')}

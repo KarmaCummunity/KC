@@ -104,6 +104,16 @@ async function loadFoodDetails(client: Client, postId: string): Promise<Record<s
   return { expires_at: row.expires_at, allergens: row.allergens, ...kosher };
 }
 
+/** The card's audience and address level, when they are values the app knows (anything else is left unsaid). */
+function exposureOf(card: PostCardRow): Pick<MarketplaceListingDetail, 'visibility' | 'locationDisplayLevel'> {
+  const visibility = card.visibility === 'Public' || card.visibility === 'FollowersOnly' || card.visibility === 'OnlyMe' ? card.visibility : undefined;
+  const level =
+    card.location_display_level === 'CityOnly' || card.location_display_level === 'CityAndStreet' || card.location_display_level === 'FullAddress'
+      ? card.location_display_level
+      : undefined;
+  return { ...(visibility ? { visibility } : {}), ...(level ? { locationDisplayLevel: level } : {}) };
+}
+
 /** The detail of a listing, or null when the caller cannot read the post. */
 export async function fetchListingDetail(client: Client, listingId: string): Promise<MarketplaceListingDetail | null> {
   // Everything that needs only the listing id (or nothing) starts with `post_detail`; the world's own
@@ -137,6 +147,7 @@ export async function fetchListingDetail(client: Client, listingId: string): Pro
     summary: card.description,
     details,
     cityId: card.city_id,
+    ...exposureOf(card),
     urgencyLevel: card.urgency_level ?? 2,
     availabilityStatus: availabilityOf(card.status),
     listingStatus: card.status ?? 'open',

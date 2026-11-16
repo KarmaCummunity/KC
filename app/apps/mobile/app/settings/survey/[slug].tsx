@@ -5,7 +5,6 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  ScrollView,
   View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -28,8 +27,6 @@ import {
   useShellTabBarVisibility,
 } from '../../../src/navigation/useShellTabBarVisibility';
 import { useKeyboardVerticalOffset } from '../../../src/lib/platform/useKeyboardVerticalOffset';
-import { useFormFieldFocus } from '../../../src/hooks/useFormFieldFocus';
-import { KeyboardFormAccessory } from '../../../src/components/ui/KeyboardFormAccessory';
 import { webTextRtl, webViewRtl } from '../../../src/lib/webRtlStyle';
 import { container } from '../../../src/lib/container';
 import {
@@ -39,6 +36,7 @@ import {
 import { track } from '../../../src/lib/analytics';
 import { SurveyQuestionPanel } from '../../../src/screens/settings/survey/SurveyQuestionPanel';
 import { resolveKeyboardAvoidingBehavior } from '../../../src/lib/platform/keyboardVerticalOffset';
+import { FormScrollView } from '../../../src/components/ui/FormScrollView';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../../src/components/RouteErrorBoundary';
 
@@ -70,8 +68,6 @@ function RunnerContent({
   const { t } = useTranslation();
   const styles = useRunnerStyles();
   const keyboardOffset = useKeyboardVerticalOffset();
-  const fieldFocus = useFormFieldFocus(1);
-  const textFieldFocus = fieldFocus.bindField(0);
 
   const questions = bundle.questions as SurveyQuestion[];
   const total = questions.length;
@@ -88,13 +84,6 @@ function RunnerContent({
       behavior={resolveKeyboardAvoidingBehavior(Platform.OS)}
       keyboardVerticalOffset={keyboardOffset}
     >
-      <KeyboardFormAccessory
-        canGoPrev={fieldFocus.canGoPrev}
-        canGoNext={fieldFocus.canGoNext}
-        onPrev={fieldFocus.focusPrev}
-        onNext={fieldFocus.focusNext}
-        onDone={fieldFocus.dismiss}
-      />
       <View style={styles.progressBar}>
         <Text style={styles.progressText}>
           {t('survey.progress', { current: activeIndex + 1, total })}
@@ -107,7 +96,7 @@ function RunnerContent({
       <View style={styles.body}>
         {useSideRail ? <SurveyQuestionMap {...mapProps} variant="rail" /> : null}
 
-        <ScrollView
+        <FormScrollView
           style={styles.mainScroll}
           contentContainerStyle={[styles.mainContent, { paddingBottom: scrollBottomPad }]}
           keyboardShouldPersistTaps="handled"
@@ -122,9 +111,8 @@ function RunnerContent({
             onRating={(rating) => onAnswerChange(question.id, { ...answer, rating })}
             onChoice={(choiceKey) => onAnswerChange(question.id, { ...answer, choiceKey })}
             onText={(answerText) => onAnswerChange(question.id, { ...answer, answerText })}
-            textFieldFocus={textFieldFocus}
           />
-        </ScrollView>
+        </FormScrollView>
       </View>
 
       <SurveyFloatingNav
