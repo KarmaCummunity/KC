@@ -24,6 +24,8 @@
 | מצב חירום | Emergency mode | App mode by region & world, 4 levels (D42) |
 | אתגר | Challenge | Personal, group or community (D43) |
 | פוסט מיובא / תביעה | Imported post / claim | From WhatsApp; ownership confirmed by phone verification (D38, S21) |
+| ייבוא פוסט | External post import | Share or paste of a post from WhatsApp, Facebook or Yad2 turned into a reviewed create-form draft (`FR-IMPORT-*`); never scraping |
+| טיוטת ייבוא | Import draft | The prefilled create form produced from one shared text; not a post until the member publishes |
 | גשר קבוצה | Group bridge | Parallel community + summaries during migration (S23) |
 | מקום רשמי | Official place | A city, street, or named junction/interchange from an official catalog; the only kind of place a ride may use (D71) |
 | נקודת איסוף | Meeting point | An official place along a ride where passengers board; up to 3 per ride (D71) |

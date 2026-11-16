@@ -37,6 +37,19 @@ on:
         type: string
         required: false
         default: dev
+    # Declared so callers pass only this platform's secrets by name (no
+    # `secrets: inherit`). The values resolve from the `mobile-store`
+    # environment this job selects (environment secrets take precedence).
+    # Not `required`: the preflight step below fails closed with a clear list.
+    secrets:
+      EXPO_TOKEN:
+        required: false
+      GOOGLE_PLAY_SERVICE_ACCOUNT_JSON:
+        required: false
+      MOBILE_SUPABASE_ANON_KEY:
+        required: false
+      MOBILE_SUPABASE_ANON_KEY_PROD:
+        required: false
     outputs:
       version_code:
         description: Android versionCode of the submitted AAB
@@ -187,7 +200,7 @@ jobs:
       - name: Verify Android package
         run: |
           set -euo pipefail
-          actual="$(npx --yes expo config --json --type public | jq -r '.android.package')"
+          actual="$(npx --no expo config --json --type public | jq -r '.android.package')"
           if [ "$actual" != "$PACKAGE_NAME" ]; then
             echo "::error::Android package is '$actual', expected '$PACKAGE_NAME'"
             exit 1
@@ -221,12 +234,14 @@ jobs:
           # The Google web client ID is in the embedded Expo config (extra), not the JS bundle.
           unzip -p "$RUNNER_TEMP/app.aab" 'base/assets/app.config' > "$RUNNER_TEMP/app.config"
           node "$GITHUB_WORKSPACE/scripts/mobile-store-config.mjs" verify "$RUNNER_TEMP/index.android.bundle" "$RUNNER_TEMP/app.config"
+          # Android-only artifact checks (package name, Google web client present).
+          node "$GITHUB_WORKSPACE/scripts/mobile-store-config.mjs" verify-platform android "$RUNNER_TEMP/app.config"
           # The versionCode of this very build (EAS remote autoIncrement assigned it).
           version_code="$(jq -r '.[0].appBuildVersion // empty' build.json)"
           [ -n "$version_code" ] || { echo "::error::EAS returned no appBuildVersion (versionCode)"; exit 1; }
           eas submit --platform android --profile production --url "$url" --non-interactive
           echo "version_code=$version_code" >> "$GITHUB_OUTPUT"
-          echo "Play internal upload: Android versionCode $version_code from $BUILD_SHA ($STORE_BACKEND backend, profile $EAS_PROFILE)" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Android → Play internal: submitted** versionCode $version_code from $BUILD_SHA ($STORE_BACKEND backend, profile $EAS_PROFILE)" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Remove key file
         if: always()

@@ -31,6 +31,8 @@ git log --oneline origin/dev --since='2 weeks ago' --grep=''
 
 **Mobile nightly** ([`mobile-nightly.yml`](../../.github/workflows/mobile-nightly.yml), 23:43 UTC) ships the newest green `dev` commit to TestFlight + Play internal after the P0 E2E journeys pass (`D-195`). The store workflows can also be dispatched by hand on `dev`, for a commit with a green `CI` push run. Missing secrets fail the job. Tester builds use the kc-dev backend (eas.json `nightly` profile, key in GitHub Environment `mobile-store`), and a build whose bundle points anywhere else is not uploaded — see [`ENVIRONMENTS.md`](../SSOT/ENVIRONMENTS.md).
 
+iOS and Android are independent lanes end to end (own gate output, enable flag, build number, shipped tag, concurrency group, secrets and verdict); one platform failing never blocks the other. Design and switches: [`docs/release/MOBILE-STORE-LANES.md`](../release/MOBILE-STORE-LANES.md).
+
 | Stage | Workflow | What it does | Secrets (names only) |
 |---|---|---|---|
 | Preview smoke | [`kc-mobile-eas-preview.yml`](../../.github/workflows/kc-mobile-eas-preview.yml) | EAS `preview` profile build, no store submit | `EXPO_TOKEN` |

@@ -17,7 +17,6 @@ concurrency:
 
 permissions:
   contents: read
-  pull-requests: write
 
 jobs:
   snyk:
@@ -31,8 +30,10 @@ jobs:
 
       - name: Detect SNYK_TOKEN
         id: token
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         run: |
-          if [ -z "${{ secrets.SNYK_TOKEN }}" ]; then
+          if [ -z "$SNYK_TOKEN" ]; then
             echo "::notice::SNYK_TOKEN not set — Snyk scan skipped. Add repo/org secret per SECURITY.md."
             echo "configured=false" >> "$GITHUB_OUTPUT"
           else
@@ -65,4 +66,4 @@ jobs:
         continue-on-error: true
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        run: pnpm dlx snyk@latest test --all-projects --severity-threshold=high
+        run: pnpm dlx snyk@1.1308.4 test --all-projects --severity-threshold=high
