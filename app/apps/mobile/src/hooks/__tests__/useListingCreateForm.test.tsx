@@ -86,6 +86,7 @@ describe('useListingCreateForm', () => {
 describe('republish an expired listing (D127)', () => {
   const source = {
     listingId: 'old-1', ownerId: 'u1', worldSlug: 'food', kindSlug: 'food_offer', direction: 'give', cityId: 'city-1',
+    worldSubcategoryId: 'cat-cooked',
     details: { food_type: 'cooked', expires_at: '2026-11-01T10:00:00Z' },
     media: [
       { storagePath: 'u1/b/1.jpg', sortOrder: 1, mimeType: 'image/jpeg', sizeBytes: 2048 },
@@ -107,19 +108,29 @@ describe('republish an expired listing (D127)', () => {
     expect(result.current.city?.id).toBe('city-1');
     expect(result.current.carriedMedia.map((m) => m.path)).toEqual(['u1/b/0.jpg', 'u1/b/1.jpg']);
     act(() => result.current.setDetail('expires_at', '2099-11-20T10:00:00Z'));
-    // The source's sub-category is not carried (the detail does not expose it), so the member picks it again.
+    // The source's food type (its world subcategory) is carried, so publishing does not ask for it again (KC#2042).
+    expect(result.current.subcategoryId).toBe('cat-cooked');
     await act(() => result.current.publish());
-    expect(result.current.error).toEqual({ message: 'marketplace.errors.food_subcategory_required', field: 'subcategory' });
-    act(() => result.current.setSubcategoryId('cat-cooked'));
-    await act(() => result.current.publish());
+    expect(result.current.error).toBeNull();
     expect(repo.updateMyListing).not.toHaveBeenCalled();
     const payload = repo.createListing.mock.calls[0]![0];
     expect(payload.details).toEqual({ food_type: 'cooked', expires_at: '2099-11-20T10:00:00Z' });
+    expect(payload.categoryId).toBe('cat-cooked');
     expect(payload.media).toEqual([
       { path: 'u1/b/0.jpg', mimeType: 'image/jpeg', sizeBytes: 1024 },
       { path: 'u1/b/1.jpg', mimeType: 'image/jpeg', sizeBytes: 2048 },
     ]);
     expect(onPublished).toHaveBeenCalledWith('new-1');
+  });
+
+  it('asks for the food type when the source has none', async () => {
+    repo.getListingDetail.mockResolvedValue({ ...source, worldSubcategoryId: null });
+    const { result } = renderHook(() => useListingCreateForm({ worldSlug: 'food', direction: 'give', title: 'Soup', summary: '', onPublished: vi.fn(), republishFromListingId: 'old-1' }), { wrapper });
+    await waitFor(() => expect(result.current.details).toEqual({ food_type: 'cooked' }));
+    act(() => result.current.setDetail('expires_at', '2099-11-20T10:00:00Z'));
+    await act(() => result.current.publish());
+    expect(result.current.error).toEqual({ message: 'marketplace.errors.food_subcategory_required', field: 'subcategory' });
+    expect(repo.createListing).not.toHaveBeenCalled();
   });
 
   it('refuses a republished offer once every carried photo is removed (D132)', async () => {
