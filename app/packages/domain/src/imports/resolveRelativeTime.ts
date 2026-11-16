@@ -81,7 +81,7 @@ function explicitDate(hint: ExtractedTimeHint, today: IsraelParts): Day | 'inval
 }
 
 /**
- * Turn a time as written ("מחר ב-8", "עד חמישי", "כל יום ראשון") into a calendar day and
+ * Turn a time as written ("tomorrow at 8", "by Thursday", "every Sunday", in Hebrew) into a calendar day and
  * instant in Asia/Jerusalem (FR-IMPORT-005). The model never computes dates: relative words are
  * resolved against the message timestamp, and a result already behind `now` is dropped, never
  * moved to next week (AC2).

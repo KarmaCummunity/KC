@@ -17,7 +17,7 @@ export interface PlaceMatchSignal {
 export interface ConfidenceSignals {
   /** Contract field names that must be present for the post to be useful (direction, world, title, city, …). */
   readonly required: readonly string[];
-  /** The text has an explicit cue for the direction ("מוסר", "מחפש", "נוסע"). */
+  /** The text has an explicit cue for the direction (Hebrew words for "giving away", "looking for", "driving"). */
   readonly directionCue: boolean;
   /** Both an offer cue and a request cue appear. */
   readonly conflictingCues: boolean;

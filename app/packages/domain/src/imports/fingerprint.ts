@@ -1,4 +1,4 @@
-// Placeholders survive canonicalization; they are swapped for control-character tokens while
+// Placeholders survive canonicalization; they are swapped for private-use tokens while
 // the rest is flattened, so punctuation stripping cannot eat their angle brackets.
 const PLACEHOLDER = /<(phone|email|id|url)>/g;
 
@@ -10,10 +10,10 @@ const PLACEHOLDER = /<(phone|email|id|url)>/g;
 export function canonicalFingerprintText(scrubbedText: string): string {
   return scrubbedText
     .toLowerCase()
-    .replace(PLACEHOLDER, '\u0001$1\u0002')
+    .replace(PLACEHOLDER, '\uE000$1\uE001')
     .replace(/\p{N}+/gu, '#')
-    .replace(/[^\p{L}#\s\u0001\u0002]/gu, ' ')
-    .replace(/\u0001(\w+)\u0002/g, '<$1>')
+    .replace(/[^\p{L}#\s\uE000\uE001]/gu, ' ')
+    .replace(/\uE000(\w+)\uE001/g, '<$1>')
     .replace(/\s+/g, ' ')
     .trim();
 }

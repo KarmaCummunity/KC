@@ -27,7 +27,7 @@ const DAY_OFFSET_MAX = 30;
 const RIDES_WORLD = 'rides';
 const HHMM = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
 // Control characters except \n and \t.
-const CONTROL_CHARS = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g;
+const CONTROL_CHARS = /(?![\n\t])\p{Cc}/gu;
 
 const isObject = (v: unknown): v is Json => typeof v === 'object' && v !== null && !Array.isArray(v);
 

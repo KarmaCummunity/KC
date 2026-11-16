@@ -11,7 +11,7 @@ export interface NormalizedMessage {
 }
 
 // Niqqud / cantillation marks and bidi controls: invisible, and they break fuzzy matching.
-const HEBREW_MARKS = /[֑-ׇ]/g;
+const HEBREW_MARKS = /[\u0591-\u05C7]/g;
 const BIDI_CONTROLS = /[‎‏‪-‮⁦-⁩]/g;
 
 const DATE = String.raw`(\d{1,2})[./](\d{1,2})[./](\d{2,4})`;
@@ -24,9 +24,11 @@ const PREFIXES: ReadonlyArray<{ re: RegExp; order: 'dateFirst' | 'timeFirst' }> 
   { re: new RegExp(String.raw`^\[${TIME}(?::\d{2})?,?\s+${DATE}\]\s*${SENDER}`), order: 'timeFirst' },
 ];
 
-// Whole-line artefacts that carry no post content.
+// Whole-line artefacts that carry no post content. The Hebrew alternatives are written as escapes
+// (source files hold no Hebrew text): "media not included", "this message was edited",
+// "image omitted", "forwarded".
 const SYSTEM_LINE =
-  /^(?:<?This message was edited>?|<?Media omitted>?|<?המדיה לא נכללה>?|הודעה זו נערכה|התמונה הושמטה|הועבר|Forwarded)$/i;
+  /^(?:<?This message was edited>?|<?Media omitted>?|<?\u05D4\u05DE\u05D3\u05D9\u05D4 \u05DC\u05D0 \u05E0\u05DB\u05DC\u05DC\u05D4>?|\u05D4\u05D5\u05D3\u05E2\u05D4 \u05D6\u05D5 \u05E0\u05E2\u05E8\u05DB\u05D4|\u05D4\u05EA\u05DE\u05D5\u05E0\u05D4 \u05D4\u05D5\u05E9\u05DE\u05D8\u05D4|\u05D4\u05D5\u05E2\u05D1\u05E8|Forwarded)$/i;
 
 /** Parse the first-line WhatsApp prefix into (timestamp, rest). Israeli date order: day.month.year. */
 function takeTimestampPrefix(text: string): { rest: string; at: Date | null } {

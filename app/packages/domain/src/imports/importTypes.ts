@@ -10,7 +10,7 @@ export type ImportRejectReason = (typeof IMPORT_REJECT_REASONS)[number];
 export const IMPORT_TIME_KINDS = ['none', 'relative_day', 'weekday', 'date', 'recurring'] as const;
 export type ImportTimeKind = (typeof IMPORT_TIME_KINDS)[number];
 
-/** Part-of-day words ("בבוקר", "בערב") that disambiguate a bare hour. */
+/** Part-of-day words (in the morning, in the evening, …) that disambiguate a bare hour. */
 export const IMPORT_TIME_PERIODS = ['morning', 'afternoon', 'evening', 'night'] as const;
 export type ImportTimePeriod = (typeof IMPORT_TIME_PERIODS)[number];
 

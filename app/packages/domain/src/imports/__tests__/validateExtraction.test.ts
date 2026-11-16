@@ -25,14 +25,9 @@ const valid = {
 };
 
 const fails = (raw: unknown, reason?: string) => {
-  try {
-    validateExtraction(raw, lists);
-  } catch (e) {
-    expect(e).toBeInstanceOf(ImportExtractionError);
-    if (reason) expect((e as ImportExtractionError).reason).toBe(reason);
-    return;
-  }
-  throw new Error('expected validateExtraction to throw');
+  const run = () => validateExtraction(raw, lists);
+  expect(run).toThrow(ImportExtractionError);
+  if (reason) expect(run).toThrow(expect.objectContaining({ reason }));
 };
 
 describe('validateExtraction', () => {
