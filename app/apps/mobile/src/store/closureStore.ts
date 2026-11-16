@@ -13,6 +13,13 @@ import {
 } from '../services/userComposition';
 import { getGetClosureCandidatesUseCase } from '../services/postsComposition';
 import { completeOwnerClosure, type ClosureOutcome } from './completeOwnerClosure';
+import { isPostError } from '@kc/application';
+import { mapPostErrorToHebrew } from '../services/postMessages';
+
+/** Text for the closure error pane: Hebrew copy for a typed post error, never its raw backend code (#2360). */
+function closureErrorText(e: unknown): string {
+  return isPostError(e) ? mapPostErrorToHebrew(e.code) : (e as Error).message;
+}
 
 export type ClosureStep = 'idle' | 'confirm' | 'pick' | 'explainer' | 'done' | 'error';
 export type PickMode = 'chats' | 'search';
@@ -180,7 +187,7 @@ export const useClosureStore = create<ClosureState & ClosureActions>((set, get) 
       });
       set({ step: 'explainer', isBusy: false, lastOutcome });
     } catch (e) {
-      set({ step: 'error', isBusy: false, errorMessage: (e as Error).message });
+      set({ step: 'error', isBusy: false, errorMessage: closureErrorText(e) });
     }
   },
 

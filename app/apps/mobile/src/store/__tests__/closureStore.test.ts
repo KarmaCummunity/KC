@@ -19,6 +19,7 @@ vi.mock('../../services/userComposition', () => ({
   getSearchUsersForClosureUseCase: () => ({ execute: () => searchUsersImpl() }),
 }));
 
+import { PostError } from '@kc/application';
 import { useClosureStore } from '../closureStore';
 
 beforeEach(() => {
@@ -131,6 +132,15 @@ describe('closureStore — closeWith', () => {
     await useClosureStore.getState().closeWith('u_recipient', 'owner_1');
     expect(useClosureStore.getState().step).toBe('error');
     expect(useClosureStore.getState().errorMessage).toBe('post_already_closed');
+  });
+
+  it('a typed post error shows Hebrew copy, never the raw backend code (#2360)', async () => {
+    useClosureStore.setState({ postId: 'p_1', step: 'pick' });
+    markDeliveredImpl = () => Promise.reject(new PostError('closure_wrong_status', 'world_not_assignable'));
+    await useClosureStore.getState().closeWith('u_recipient', 'owner_1');
+    const msg = useClosureStore.getState().errorMessage;
+    expect(msg).not.toContain('world_not_assignable');
+    expect(msg).toMatch(/[֐-׿]/);
   });
 
   it('is a silent no-op when postId is null (defensive guard)', async () => {
