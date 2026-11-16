@@ -2,6 +2,7 @@
 
 > **Status:** 🟡 Code complete, post-merge QA pending — Survey B captures pain-language from alt-platform users (FB / WhatsApp / Agora). Output: Karma Phrasebook (see design spec §2). Migration `0123`, Edge Functions `public-research-submit` + `rotate-research-salt`, and `.web.tsx` routes are implemented; individual FR statuses remain ⏳ Planned until manual QA on dev confirms ACs.
 > **Post-merge QA (2026-06-14):** fixed mid-survey draft loss on reload — answers lived in ephemeral React state and were wiped by any refresh; now persisted to `localStorage` (FR-RESEARCH-001 AC7). The public form was also reflowed into a single, more spacious scroll column (intro + progress + question scroll together; only the prev/next nav stays pinned). Backend save path verified healthy end-to-end on prod (origin allowlist, daily salt, service-role, RPC insert).
+> **Post-merge QA (2026-11-16, KC#1646):** on the baseline database the survey `alt-platforms-research` did not exist (its questions lived only in the archived migration `0131`), so the form answered "survey not active" on kc-dev. The survey is now part of the content seed (`supabase/seed/content/`, checked by `check.sql`), and the Playwright journey `tests/e2e/journeys/research-submit.spec.ts` covers the form end to end (open signed out, rate 11 questions, send, stored-row id from the gateway, thank-you page, draft kept on reload and cleared after sending).
 > **In progress:** FR-RESEARCH-004 (share affordance) — three viral surfaces (public thank-you page, public survey header, in-app Settings row) to make the survey self-spreading among non-registered users.
 
 Prefix: `FR-RESEARCH-*`
@@ -75,3 +76,4 @@ A public, anonymous web form at `/research/[slug]?src=...`, served from the Expo
 | 0.1 | 2026-05-26 | Initial draft. FR-RESEARCH-001..003 (public market research runner, anti-abuse, contact opt-in). |
 | 0.2 | 2026-05-28 | FR-RESEARCH-004 (share affordance) — three viral surfaces to self-spread the survey. |
 | 0.3 | 2026-06-14 | FR-RESEARCH-001 AC7 — in-progress answers persist across reload (localStorage draft, cleared on submit). Public form reflowed into one spacious scroll column. |
+| 0.4 | 2026-11-16 | Survey `alt-platforms-research` restored through the content seed; end-to-end journey added (KC#1646). No AC changed. |
