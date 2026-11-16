@@ -200,7 +200,7 @@ jobs:
       - name: Verify Android package
         run: |
           set -euo pipefail
-          actual="$(npx --yes expo config --json --type public | jq -r '.android.package')"
+          actual="$(npx --no expo config --json --type public | jq -r '.android.package')"
           if [ "$actual" != "$PACKAGE_NAME" ]; then
             echo "::error::Android package is '$actual', expected '$PACKAGE_NAME'"
             exit 1
