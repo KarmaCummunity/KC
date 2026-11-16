@@ -32,8 +32,10 @@ jobs:
 
       - name: Detect GITGUARDIAN_API_KEY
         id: token
+        env:
+          GITGUARDIAN_API_KEY: ${{ secrets.GITGUARDIAN_API_KEY }}
         run: |
-          if [ -z "${{ secrets.GITGUARDIAN_API_KEY }}" ]; then
+          if [ -z "$GITGUARDIAN_API_KEY" ]; then
             echo "::notice::GITGUARDIAN_API_KEY not set — GitGuardian scan skipped. See SECURITY.md."
             echo "configured=false" >> "$GITHUB_OUTPUT"
           else

@@ -105,7 +105,7 @@ jobs:
           # Full fetch (no --depth) so a merge base with the PR branch exists;
           # checkout above is fetch-depth:0, so the repo is already complete.
           git fetch --no-tags origin "$BASE_REF" || true
-          npx --yes fallow audit --changed-since "origin/$BASE_REF"
+          npx --yes fallow@3.43.1 audit --changed-since "origin/$BASE_REF"
 
   expo-doctor:
     name: expo-doctor (project health)
@@ -138,7 +138,7 @@ jobs:
 
       - name: Run expo-doctor
         working-directory: app/apps/mobile
-        run: npx --yes expo-doctor
+        run: npx --yes expo-doctor@1.21.8
 
   dependency-health:
     name: dependency health (depcheck · ncu)
@@ -158,12 +158,12 @@ jobs:
       - name: Unused / missing dependencies (depcheck — informational)
         continue-on-error: true
         working-directory: app/apps/mobile
-        run: npx --yes depcheck --ignore-bin-package
+        run: npx --yes depcheck@1.4.7 --ignore-bin-package
 
       - name: Outdated dependencies (npm-check-updates — informational)
         continue-on-error: true
         working-directory: app/apps/mobile
-        run: npx --yes npm-check-updates
+        run: npx --yes npm-check-updates@23.1.1
 
   link-check:
     name: markdown link check (informational)

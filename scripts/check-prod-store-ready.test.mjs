@@ -72,3 +72,15 @@ test('evaluateProdStoreReady still flags a myself hook or the wrong project', ()
   });
   assert.ok(refErrors.some((e) => /SUPABASE_PROJECT_REF must be the prod project/.test(e)));
 });
+
+test('evaluateProdStoreReady passes the flag check when only one platform is enabled', () => {
+  const errors = evaluateProdStoreReady({
+    enabled: undefined,
+    flags: { KC_PROD_STORE_BUILD_IOS_ENABLED: 'true' },
+    mode: 'baseline',
+    allowed,
+    projectRef: PROD,
+    ledger,
+  });
+  assert.ok(!errors.some((e) => e.includes('No requested platform')), errors.join('; '));
+});
