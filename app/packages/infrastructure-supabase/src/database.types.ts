@@ -6138,6 +6138,10 @@ export type Database = {
         }
       }
       reopen_post: { Args: { p_post_id: string }; Returns: undefined }
+      replace_post_media: {
+        Args: { p_media: Json; p_post_id: string }
+        Returns: undefined
+      }
       report_challenge_progress: {
         Args: {
           p_challenge_id: string

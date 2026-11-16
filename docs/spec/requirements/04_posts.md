@@ -189,6 +189,7 @@ The post owner **or** the Super Admin (`users.is_super_admin = true`) can re-ope
 **Acceptance Criteria.**
 - AC0. **Authorization:** editing is allowed when `auth.uid()` is the post `owner_id` **or** `users.is_super_admin = true` for that session (re-checked by RLS on `posts` / `media_assets` updates; migration `0049_admin_post_edit_rls.sql`).
 - AC1. Editable fields: title, description, category, address, location-display level, item condition (give-only), urgency (request-only), images, **and** visibility (any level may be chosen; `FR-POST-009`).
+- AC1a. *(KC#2118, 2026-11-16)* A photo edit is one server call (`replace_post_media`): the gallery becomes exactly the list the form sends, in order, in one transaction. A photo whose file and position did not change keeps its row; swapping the only photo of an offer, or removing the first of several, works. A live offer in a photo world (D132) that would be left without a photo is refused (`offer_photo_required`) and nothing changes; five photos at most (`too_many_photos`). Deleting the last photo row directly stays refused.
 - AC2. The post `type` (Give vs Request) is **not** editable in MVP; the user must delete and recreate.
 - AC3. Edits do **not** bump the post to the top of the feed; `created_at` is immutable while `updated_at` advances.
 - AC4. Editing a post emits an `audit_event` (`R-MVP-Safety-3`) with the changed fields.

@@ -1,9 +1,10 @@
 // Photo rows of a post (`post_media`, FR-POST-005, FR-POST-008 AC1).
 //
 // The file is uploaded to the `post-images` bucket under the member's own folder first; this module
-// records the row (`pending` until the media pipeline marks it `ready`). A device may insert and
-// delete its own rows but never update one, so an edit keeps the rows whose file and position are
-// unchanged (they stay `ready`), deletes the rest, and inserts the new ones.
+// records the row (`pending` until the media pipeline marks it `ready`). A new post inserts its rows
+// directly. An edit goes through `replace_post_media`, which makes the gallery match in one
+// transaction: the server refuses to delete the last photo of a live offer (D132), so a delete
+// followed by an insert from the device could not swap the only photo of a post (KC#2118).
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { MediaAssetInput } from '@kc/application';
@@ -41,31 +42,25 @@ export async function writePostMedia(
   );
 }
 
-/** Makes the post's photos exactly `assets`, in order, touching only the rows that differ. */
+/**
+ * Makes the post's photos exactly `assets`, in order. The server keeps the rows whose file and
+ * position are unchanged (they stay processed) and rewrites the rest; a live offer of a photo
+ * world that would be left without a photo is refused (`offer_photo_required`).
+ */
 export async function replacePostMedia(
   client: Client,
   postId: string,
-  ownerId: string,
   assets: readonly MediaAssetInput[],
 ): Promise<void> {
-  const existing =
-    unwrapCall(
-      'table:post_media',
-      await client.from('post_media').select('id, storage_key, ordinal').eq('post_id', postId),
-    ) ?? [];
-  const wanted = new Map(assets.map((asset, ordinal) => [`${ordinal}|${asset.path}`, ordinal]));
-  const kept = new Set<string>();
-  const staleIds: string[] = [];
-  for (const row of existing) {
-    const key = `${row.ordinal}|${row.storage_key}`;
-    if (wanted.has(key)) kept.add(key);
-    else staleIds.push(row.id);
-  }
-  if (staleIds.length > 0) {
-    unwrapCall('table:post_media', await client.from('post_media').delete().in('id', staleIds));
-  }
-  const missing = assets.flatMap((asset, ordinal) =>
-    kept.has(`${ordinal}|${asset.path}`) ? [] : [toMediaRow(postId, ownerId, asset, ordinal)],
+  unwrapCall(
+    'rpc:replace_post_media',
+    await client.rpc('replace_post_media', {
+      p_post_id: postId,
+      p_media: assets.map((asset) => ({
+        storage_key: asset.path,
+        mime_type: asset.mimeType,
+        size_bytes: asset.sizeBytes,
+      })),
+    }),
   );
-  if (missing.length > 0) unwrapCall('table:post_media', await client.from('post_media').insert(missing));
 }
