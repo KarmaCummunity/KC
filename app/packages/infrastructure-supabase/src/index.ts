@@ -56,6 +56,7 @@ export { SupabaseSupportInboxRepository } from './moderation/SupabaseSupportInbo
 export { SupabaseModerationQueueRepository } from './moderation/SupabaseModerationQueueRepository';
 export { SupabaseAccountGateRepository } from './auth/SupabaseAccountGateRepository';
 export { SupabaseDonationLinksRepository } from './donations/SupabaseDonationLinksRepository';
+export { SupabaseAppFlagsAdminRepository } from './admin/SupabaseAppFlagsAdminRepository';
 export { SupabaseWorldContentRepository } from './worlds/SupabaseWorldContentRepository';
 export { SupabaseSearchRepository } from './search/SupabaseSearchRepository';
 export { SupabaseDeviceRepository } from './notifications/SupabaseDeviceRepository';

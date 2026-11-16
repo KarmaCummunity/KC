@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
-// Mapped to spec: FR-HOUSING-001 AC1 / FR-KNOW-* — tester (development) builds open housing and
-// knowledge as in-app feeds; a production build keeps the remote launch flag (#1630).
+// Mapped to spec: FR-ADMIN-034 AC3, FR-HOUSING-001 AC1 / FR-KNOW-* — every build follows the remote
+// launch flag, which the super admin switches per environment (#2277). This reverses #1630, under
+// which tester (development) builds opened housing and knowledge regardless of the flag.
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { cleanup, renderHook, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
@@ -27,14 +28,23 @@ afterEach(() => {
   else process.env['EXPO_PUBLIC_ENVIRONMENT'] = ORIGINAL;
 });
 
-describe('housing and knowledge launch in tester builds (#1630)', () => {
-  it('are active in a development build even though the remote flags are off', async () => {
+describe('housing and knowledge follow the remote launch flag in every build (#2277)', () => {
+  it('stay portals in a development build while the remote flags are off (was: forced active, #1630)', async () => {
     process.env['EXPO_PUBLIC_ENVIRONMENT'] = 'development';
     const housing = renderHook(() => useMarketplaceWorldLaunchEnabled('housing'), { wrapper });
     const knowledgeTile = renderHook(() => useHubTileLaunchEnabled('knowledge'), { wrapper });
-    expect(housing.result.current).toBe(true);
     await waitFor(() => expect(fetchRemoteFeatureFlags).toHaveBeenCalled());
-    expect(housing.result.current).toBe(true);
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(housing.result.current).toBe(false);
+    expect(knowledgeTile.result.current).toBe(false);
+  });
+
+  it('become active in a development build once the super admin switches them on', async () => {
+    process.env['EXPO_PUBLIC_ENVIRONMENT'] = 'development';
+    fetchRemoteFeatureFlags.mockResolvedValue({ world_housing_enabled: true, world_knowledge_enabled: true });
+    const housing = renderHook(() => useMarketplaceWorldLaunchEnabled('housing'), { wrapper });
+    const knowledgeTile = renderHook(() => useHubTileLaunchEnabled('knowledge'), { wrapper });
+    await waitFor(() => expect(housing.result.current).toBe(true));
     expect(knowledgeTile.result.current).toBe(true);
   });
 
