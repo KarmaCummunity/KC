@@ -10,6 +10,7 @@ import {
   parseReferencedWorkflow,
   prMismatchErrors,
   runShapeErrors,
+  runWorkflowFiles,
   siblingPrErrors,
 } from './ci-run-binding.mjs';
 
@@ -154,6 +155,40 @@ test('gateFilesChanged picks workflow and judge files only', () => {
   assert.deepEqual(gateFilesChanged(files), ['.github/workflows/ci.yml', 'scripts/ci-gate.mjs', 'scripts/check-x.mjs']);
 });
 
+test('gateFilesChanged counts the lane workflows the run used, the actions and the owners list (#2369)', () => {
+  const used = runWorkflowFiles(prRun());
+  const files = [
+    '.github/workflows/ci-pr.yml',
+    '.github/workflows/ci-static-guards.yml',
+    '.github/actions/setup-pnpm-turbo/action.yml',
+    '.github/owners.json',
+  ].map((filename) => ({ filename }));
+  assert.deepEqual(gateFilesChanged(files, used), files.map((f) => f.filename));
+});
+
+test('gateFilesChanged ignores .github files the run never used (#2369)', () => {
+  // Each of these voided a green PR run on 2026-11-16 although none runs in a PR's CI.
+  const files = [
+    '.github/CODEOWNERS',
+    '.github/dependabot.yml',
+    '.github/rulesets/README.md',
+    '.github/workflows/release-train.yml',
+    '.github/workflows/deploy-smoke.yml',
+    '.github/workflows/play-internal.yml',
+  ].map((filename) => ({ filename }));
+  assert.deepEqual(gateFilesChanged(files, runWorkflowFiles(prRun())), []);
+});
+
+test('gateFilesChanged counts a gate file under its old name when dev renamed it (#2369)', () => {
+  const files = [{ filename: '.github/workflows/ci-pr-renamed.yml', previous_filename: '.github/workflows/ci-pr.yml' }];
+  assert.deepEqual(gateFilesChanged(files, runWorkflowFiles(prRun())), ['.github/workflows/ci-pr-renamed.yml']);
+});
+
+test('runWorkflowFiles reads the repository paths of both reference forms', () => {
+  const run = prRun({ referenced_workflows: [ref('ci-pr.yml'), refByMergeSha('ci-backend.yml')] });
+  assert.deepEqual([...runWorkflowFiles(run)].sort(), ['.github/workflows/ci-backend.yml', '.github/workflows/ci-pr.yml']);
+});
+
 test('bindPrRun binds a run of a PR into dev', async () => {
   const { errors, pr } = await withApi(api(), () => bindPrRun(prRun(), REPO, ENV, { pr: 7, baseRef: 'dev' }));
   assert.deepEqual(errors, []);
@@ -193,6 +228,15 @@ test('bindPrRun rejects another PR, another base, a moved head, a foreign merge 
   assert.match((await withApi(api({ status: 'diverged' }), () => bindPrRun(prRun(), REPO, ENV))).errors[0], /not part of dev/);
   const gate = api({ files: [{ filename: '.github/workflows/ci.yml' }] });
   assert.match((await withApi(gate, () => bindPrRun(prRun(), REPO, ENV))).errors[0], /changed gate files/);
+  const lane = api({ files: [{ filename: '.github/workflows/ci-pr.yml' }] });
+  assert.match((await withApi(lane, () => bindPrRun(prRun(), REPO, ENV))).errors[0], /changed gate files since the run \(\.github\/workflows\/ci-pr\.yml\)/);
+});
+
+test('bindPrRun keeps a run whose base only moved in .github files the run never used (#2369)', async () => {
+  const unrelated = api({ files: [{ filename: '.github/CODEOWNERS' }, { filename: '.github/workflows/release-train.yml' }] });
+  const { errors, pr } = await withApi(unrelated, () => bindPrRun(prRun(), REPO, ENV));
+  assert.deepEqual(errors, []);
+  assert.equal(pr.number, 7);
 });
 
 test('bindPrRun rejects a run without merge references before calling the API', async () => {

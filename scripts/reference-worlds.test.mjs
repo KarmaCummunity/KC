@@ -32,3 +32,11 @@ test('every world has exactly one launch flag', () => {
   const missing = rows('worlds.csv').map((w) => `world_${w.slug}_enabled`).filter((key) => !flags.has(key));
   assert.deepEqual(missing, []);
 });
+
+test('the animals world is open to every member: no verified identity needed (PM 2026-11-16, #2254)', () => {
+  // docs/spec/05_giving_worlds.md §5.9: everyone may publish and take; the D125 verification rule is lifted.
+  const animals = rows('worlds.csv').find((w) => w.slug === 'animals');
+  assert.ok(animals, 'animals world missing from worlds.csv');
+  assert.equal(animals.requires_verification, 'false');
+  assert.equal(animals.shows_in_main_feed, 'true');
+});
