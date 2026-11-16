@@ -228,7 +228,7 @@ A warm card prompting the viewer (guest or signed-in — see AC5) to back the pl
   - `AboutSectionBlocksTop` — between the Vision section card and the Problems section card, wrapped in the same `AnimatedEntry` stagger as adjacent sections.
   - `settings.tsx` — first element inside the outer `ScrollView`, padded with `spacing.base` on both axes (`supportCardWrap`).
 - AC7. Touch targets ≥ 44 × 44 px; each button's accessibility label names the channel and provider (`supportKc.channelA11y`).
-- AC8. The only network read is the channel list; when it cannot load, the card shows `supportKc.unavailable` and no payment link.
+- AC8. The only network read is the channel list. While it loads, when it cannot load, or when no channel is active, `SupportKcCard` (and so `DonationSupportCard`, the Money hub and the Money world portal) renders nothing: no title, no unavailable notice, no disclosure (App Store 3.2.2, owner decision 2026-11-16). Re-activating a channel shows the card again with no code change.
 
 **Related.** `FR-DONATE-011` (shared card, channels and legal notice). Independent of the community-curated NGO links (`FR-DONATE-007..009`).
 
