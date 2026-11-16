@@ -121,7 +121,7 @@ All feature PRs target `dev`. **Live today:** `dev` has the ruleset `dev protect
 | --- | --- | --- |
 | Single PR gate | CI | `CI gate` |
 
-**Required checks, live state (read back 2026-10-31):** `dev` requires only `CI gate` (ruleset, done). `main` still uses classic branch protection with eight legacy contexts that no workflow reports any more — `typecheck · test · lint`, `Hebrew source scan (no inline UI copy)`, `web export (production bundle)`, `migration chain lint`, `apply migrations · rls · types · sql probes`, `rpc · table contract`, `PR hygiene`, `SonarCloud quality gate` — plus "require branches to be up to date". **Owner action:** replace them with the single check `CI gate` (source: GitHub Actions) before the next release; until then a `dev` → `main` PR waits on contexts that never report (`INFRA-CI-OWNER`). Add `CI verdict` once it is enabled.
+**Required checks, live state (read back 2026-11-16):** `dev` (ruleset `dev protection (merge queue)`) and `main` (classic protection, branches must be up to date, admins included) both require exactly `CI gate` (GitHub Actions, `integration_id` 15368) and `CI verdict` (CI-verdict App, 5554385). The eight legacy `main` contexts listed here before are gone. GitGuardian and Snyk are judged inside `CI gate`, not as required contexts. Details: [`.github/rulesets/README.md`](../../.github/rulesets/README.md).
 
 `main` requires the same single check: the release lane runs inside `CI gate` for PRs into `main` (see [`RELEASE_CHECKLIST.md`](./RELEASE_CHECKLIST.md#merge-gates-automated--must-be-green)). Never require deploy jobs on a PR rule; they run after the merge. A `dev` → `main` release PR that carries changes to code-owned paths also needs the owner's code-owner approval.
 
