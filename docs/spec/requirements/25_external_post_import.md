@@ -1,6 +1,6 @@
 # 2.25 External post import (ייבוא פוסט מבחוץ)
 
-> **Status:** 🟡 Spec v1 (2026-11-16). ✅ Domain core (`@kc/domain/imports`: FR-IMPORT-002, 003 AC3, 005, 006 AC1-AC2, fingerprint of 008 AC1, #2345) is implemented; the Edge Function, catalog resolution, quality gate and mobile flow are still ⏳. Product decision `D167`; working assumption `S90` awaits PM approval; gap `G27` (phase 1). Engineering design: [ADR-008](../../architecture/adr/ADR-008-external-post-import.md). Issue: #2343.
+> **Status:** 🟡 Spec v1 (2026-11-16). ✅ Domain core (`@kc/domain/imports`: FR-IMPORT-002, 003 AC3, 005, 006 AC1-AC2, fingerprint of 008 AC1, #2345) is implemented, and ✅ official place resolution (FR-IMPORT-004: `api_resolve_place`, #2346); the Edge Function, quality gate and mobile flow are still ⏳. Product decision `D167`; working assumption `S90` awaits PM approval; gap `G27` (phase 1). Engineering design: [ADR-008](../../architecture/adr/ADR-008-external-post-import.md). Issue: #2343.
 
 Prefix: `FR-IMPORT-*`
 
@@ -70,6 +70,7 @@ One provider call per text (`FR-IMPORT-009` for the provider rules) returns exac
 - AC3. A single candidate above the floor and clearly ahead of the runner-up (margin ≥ 0.10) is **auto-picked** and marked "confirm"; two close candidates or none leave the field **empty with up to 3 suggestions**.
 - AC4. A street without a resolved city is resolved only when exactly one city has that street name; otherwise it is left for the member.
 - AC5. Abbreviations and nicknames ("ת"א", "ב"ש", "פ"ת") come from a maintained alias list shipped with the catalog, tested by golden cases.
+- AC6. **Matching rule (implemented by `api_resolve_place(level, text, city_id, limit)`).** Names and query are compared after normalization (niqqud, quote marks, dashes and punctuation removed). A leading prefix letter (in / to / from / the / that / and / like) is tried both kept and removed, up to two letters, so "in Haifa" finds Haifa and "Bnei Brak" keeps its own letter. The score is the best of the trigram similarity (1.0 for the same name) and 0.9 × the share of the query found inside a longer official name ("Tel Aviv" inside "Tel Aviv - Yafo" scores 0.9). `margin` is the lead over the next row, rounded to two decimals, so an exact street name beats "Herzl Boulevard" by exactly 0.10. Rows below 0.5 are not returned; the floors of AC2 and the margin of AC3 are applied by the caller. A street needs its city (AC4's lookup without a city is the caller's job).
 
 ## FR-IMPORT-005 — Time resolution
 

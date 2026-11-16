@@ -1661,6 +1661,24 @@ export type Database = {
           },
         ]
       }
+      place_import_aliases: {
+        Row: {
+          alias_norm: string
+          canonical_norm: string
+          level: string
+        }
+        Insert: {
+          alias_norm: string
+          canonical_norm: string
+          level: string
+        }
+        Update: {
+          alias_norm?: string
+          canonical_norm?: string
+          level?: string
+        }
+        Relationships: []
+      }
       post_actor_identity: {
         Row: {
           created_at: string
@@ -4514,6 +4532,21 @@ export type Database = {
         }
         Returns: string
       }
+      api_resolve_place: {
+        Args: {
+          p_city_id?: string
+          p_level: string
+          p_limit?: number
+          p_text: string
+        }
+        Returns: {
+          city_id: string
+          margin: number
+          name_he: string
+          place_id: string
+          score: number
+        }[]
+      }
       api_revenuecat_set_org_entitlement: {
         Args: { p_active: boolean; p_expires_at: string; p_org_id: string }
         Returns: Json
@@ -5614,6 +5647,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      import_normalize_place_text: { Args: { p_text: string }; Returns: string }
       join_challenge: { Args: { p_challenge_id: string }; Returns: undefined }
       knowledge_slot_seats: {
         Args: { p_post_id: string }
