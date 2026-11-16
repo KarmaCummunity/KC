@@ -120,7 +120,6 @@ export default function TasksScreen() {
   const filtersBar = (
     <View style={styles.filterSheetBody}>
       <FilterChipRow<AdminTaskStatus>
-        scrollable
         showAllChip
         allLabel={L.admin.tasks.filters.all}
         options={ADMIN_TASK_STATUSES.map((s) => ({
@@ -149,7 +148,6 @@ export default function TasksScreen() {
       </FilterChipRow>
 
       <FilterChipRow<AdminTaskCategory>
-        scrollable
         showAllChip
         allLabel={L.admin.tasks.categoryFilters.all}
         options={ADMIN_TASK_CATEGORIES.map((c) => ({

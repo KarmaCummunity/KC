@@ -25,7 +25,7 @@ export function TimeOfferKindChooser({ choice, disabled = false }: Props) {
     <>
       <View style={styles.section} testID="time-offer-kind">
         <Text style={styles.sectionLabel}>{t('eventPost.create.kindLabel')}</Text>
-        <ChipSelectRow testID="time-offer-kind-chips" expandable={false}>
+        <ChipSelectRow testID="time-offer-kind-chips">
           <Chip
             testID="time-offer-kind-shift"
             label={t('eventPost.create.kindShift')}

@@ -60,3 +60,5 @@
 0063_worlds_main_feed_and_launch.sql
 0064_match_announce_skips_blocked.sql
 0065_import_place_resolution.sql
+0066_karma_post_published.sql
+0067_import_extraction_store.sql

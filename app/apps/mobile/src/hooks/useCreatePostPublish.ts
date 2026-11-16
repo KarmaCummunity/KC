@@ -62,7 +62,10 @@ export function useCreatePostPublish(args: {
   const checkedFirstPostRef = useRef(false);
   const prePublishOpenCountRef = useRef<number | null>(null);
   const publishStartedRef = useRef(false);
-  const [addressValidationTouched, setAddressValidationTouched] = useState(false);
+  // True once the user pressed Publish with something missing; from then on gaps show inline.
+  const [validationTouched, setValidationTouched] = useState(false);
+  // Counts rejected Publish presses so the form can jump to the first problem again each time.
+  const [failedSubmitCount, setFailedSubmitCount] = useState(0);
 
   const fieldSnapshot = useMemo(
     () => ({
@@ -89,8 +92,12 @@ export function useCreatePostPublish(args: {
     args.streetNumber,
   );
   const addressInlineMessage =
-    addressValidationTouched && addressIssue !== 'none'
-      ? buildAddressInlineErrorMessage(addressIssue)
+    validationTouched && addressIssue !== 'none' ? buildAddressInlineErrorMessage(addressIssue) : null;
+  const titleInlineMessage =
+    validationTouched && fieldSnapshot.title.trim().length === 0 ? t('createPostValidation.missingTitle') : null;
+  const photoInlineMessage =
+    validationTouched && fieldSnapshot.isGive && fieldSnapshot.uploadsLength === 0
+      ? t('createPostValidation.missingPhoto')
       : null;
 
   const publish = useMutation({
@@ -167,7 +174,7 @@ export function useCreatePostPublish(args: {
 
   const tryPublish = () => {
     if (isPublishing) return;
-    setAddressValidationTouched(true);
+    setValidationTouched(true);
 
     const addressGap = hasAddressRequiredFieldGaps(
       args.city,
@@ -179,6 +186,7 @@ export function useCreatePostPublish(args: {
       if (nonAddressToast.length > 0) {
         useFeedSessionStore.getState().showEphemeralToast(nonAddressToast, 'error', 2500);
       }
+      setFailedSubmitCount((count) => count + 1);
       return;
     }
     if (args.visibilityRef.current === 'FollowersOnly') {
@@ -194,5 +202,8 @@ export function useCreatePostPublish(args: {
     runPublishAfterGate,
     isPublishing,
     addressInlineMessage,
+    titleInlineMessage,
+    photoInlineMessage,
+    failedSubmitCount,
   };
 }

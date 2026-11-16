@@ -42,18 +42,19 @@ describe('unified create — listing payload per category', () => {
     const p = buildListingCreatePayload({
       kindId: `k-${c.id}`, kindDirection: 'either', direction: 'request', title: ' כותרת ', summary: ' ',
       details: { a: 1 }, cityId: 'c1', lat: 1, lng: 2, radiusKm: 25, media: [{ path: 'm', mimeType: 'image/jpeg', sizeBytes: 512 }],
-      worldSubcategoryId: 'cat-1',
+      worldSubcategoryId: 'cat-1', visibility: 'Public', locationDisplayLevel: 'CityAndStreet',
     });
     expect(p).toEqual({
       kindId: `k-${c.id}`, title: 'כותרת', summary: null, details: { a: 1 }, direction: 'request',
       cityId: 'c1', lat: 1, lng: 2, maxRadiusKm: 25, media: [{ path: 'm', mimeType: 'image/jpeg', sizeBytes: 512 }], externalBodyId: null,
-      categoryId: 'cat-1',
+      categoryId: 'cat-1', visibility: 'Public', locationDisplayLevel: 'CityAndStreet',
     });
   });
   it('fixed-direction kinds send null direction', () => {
     const p = buildListingCreatePayload({
       kindId: 'k', kindDirection: 'give', direction: 'give', title: 't', summary: 's', details: {},
       cityId: null, lat: null, lng: null, radiusKm: 5, media: [], worldSubcategoryId: null,
+      visibility: 'Public', locationDisplayLevel: null,
     });
     expect(p).toMatchObject({ direction: null, summary: 's', externalBodyId: null, categoryId: null });
   });
@@ -61,8 +62,19 @@ describe('unified create — listing payload per category', () => {
     const p = buildListingCreatePayload({
       kindId: 'k', kindDirection: 'give', direction: 'give', title: 't', summary: 's', details: {},
       cityId: null, lat: null, lng: null, radiusKm: 5, media: [], worldSubcategoryId: null,
-      additionalWorldSlugs: ['knowledge', 'employment'],
+      additionalWorldSlugs: ['knowledge', 'employment'], visibility: 'Public', locationDisplayLevel: null,
     });
     expect(p.additionalWorldSlugs).toEqual(['knowledge', 'employment']);
+  });
+  // FR-POST-003 / FR-POST-009 — the exposure choices ride along; a listing with no address of its own sends no level.
+  it('carries the chosen audience and address level, and omits the level for a listing without an address', () => {
+    const base = {
+      kindId: 'k', kindDirection: 'give' as const, direction: 'give' as const, title: 't', summary: 's', details: {},
+      cityId: 'c1', lat: null, lng: null, radiusKm: 5, media: [], worldSubcategoryId: null,
+    };
+    expect(buildListingCreatePayload({ ...base, visibility: 'FollowersOnly', locationDisplayLevel: 'CityOnly' })).toMatchObject({
+      visibility: 'FollowersOnly', locationDisplayLevel: 'CityOnly',
+    });
+    expect(buildListingCreatePayload({ ...base, visibility: 'OnlyMe', locationDisplayLevel: null })).not.toHaveProperty('locationDisplayLevel');
   });
 });

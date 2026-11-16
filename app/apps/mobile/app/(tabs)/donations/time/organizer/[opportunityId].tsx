@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -10,6 +10,7 @@ import { TextField } from '../../../../../src/components/ui/TextField';
 import { DangerButton, GhostButton, PrimaryButton } from '../../../../../src/components/ui/Buttons';
 import { volunteerUseCases } from '../../../../../src/services/volunteerComposition';
 import { rtlTextAlignStart } from '../../../../../src/lib/rtlTextAlignStart';
+import { FormScrollView } from '../../../../../src/components/ui/FormScrollView';
 
 const useStyles = makeUseStyles(({ colors }) => ({
   scroll: { padding: spacing.lg, gap: spacing.md },
@@ -74,7 +75,7 @@ export default function OrganizerOpportunityManageScreen() {
     <>
       <TimeWorldSubScreenChrome activeScreenTestId="time-organizer" />
       <Screen blobs="off" hasNativeHeader>
-      <ScrollView contentContainerStyle={styles.scroll}>
+      <FormScrollView contentContainerStyle={styles.scroll}>
         <Text style={styles.title}>{d.title}</Text>
         {d.shifts.map((shift) => {
           const when = new Date(shift.startsAt).toLocaleString(
@@ -115,7 +116,7 @@ export default function OrganizerOpportunityManageScreen() {
           </View>
         ) : null}
         <DangerButton label={t('timeVolunteer.closeOpportunity')} size="md" onPress={() => void closeOpp()} />
-      </ScrollView>
+      </FormScrollView>
       </Screen>
     </>
   );

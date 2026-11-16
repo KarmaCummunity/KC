@@ -5,9 +5,10 @@ import { karmaReasonKey } from '../../hooks/useKarmaHistory';
 import he from '../locales/he';
 import en from '../locales/en';
 
-// supabase/schemas/72_karma: the karma_values rows plus `reversal`, the entry that takes points back.
+// The karma_values rows (supabase/schemas/72_karma and the later migrations) plus `reversal`, the
+// entry that takes points back.
 const BASELINE_EVENT_TYPES = [
-  'handoff_giver', 'handoff_receiver', 'item_value_bonus', 'rating_given',
+  'handoff_giver', 'handoff_receiver', 'item_value_bonus', 'rating_given', 'post_published',
   'challenge_opened', 'challenge_report', 'challenge_completed',
   'donation', 'standing_order_month', 'reversal',
 ] as const;

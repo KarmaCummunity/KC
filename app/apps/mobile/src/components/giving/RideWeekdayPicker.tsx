@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 import { RIDE_WEEKDAYS, type RideWeekday } from '@kc/domain';
-import { SearchChip } from '../search/SearchChip';
+import { FilterChipRow } from '../filterKit/FilterChipRow';
 
 interface Props {
   readonly value: readonly RideWeekday[];
@@ -16,18 +16,18 @@ interface Props {
 export function RideWeekdayPicker({ value, onChange, disabled }: Props) {
   const { t } = useTranslation();
   const styles = useStyles();
-  const toggle = (day: RideWeekday) => {
-    if (disabled) return;
-    onChange(value.includes(day) ? value.filter((d) => d !== day) : [...value, day].sort((a, b) => a - b));
-  };
   return (
     <View style={styles.block}>
       <Text style={styles.label}>{t('rideSeries.daysLabel')}</Text>
-      <View style={styles.chips} testID="ride-weekday-picker">
-        {RIDE_WEEKDAYS.map((day) => (
-          <SearchChip key={day} label={t(`rideRoutes.weekday.${day}`)} active={value.includes(day)} onPress={() => toggle(day)} />
-        ))}
-      </View>
+      <FilterChipRow<RideWeekday>
+        multiSelect
+        testID="ride-weekday-picker"
+        testIDPrefix="ride-weekday"
+        chipSize="md"
+        options={RIDE_WEEKDAYS.map((day) => ({ value: day, label: t(`rideRoutes.weekday.${day}`) }))}
+        value={value}
+        onChange={(next) => !disabled && onChange([...next].sort((a, b) => a - b))}
+      />
     </View>
   );
 }
@@ -35,5 +35,4 @@ export function RideWeekdayPicker({ value, onChange, disabled }: Props) {
 const useStyles = makeUseStyles(({ colors }) => ({
   block: { gap: spacing.xs },
   label: { ...typography.caption, color: colors.textSecondary, textAlign: rtlTextAlignStart },
-  chips: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: spacing.sm },
 }));

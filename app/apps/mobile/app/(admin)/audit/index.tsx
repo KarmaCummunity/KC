@@ -19,7 +19,6 @@ import { useLocaleBundle, type LocaleBundle } from '../../../src/i18n/useLocaleB
 import { KcFlashList } from '../../../src/components/lists/KcFlashList';
 import { AdminSearchFilterToolbar } from '../../../src/components/admin/AdminSearchFilterToolbar';
 import { FilterSection } from '../../../src/components/filterKit/FilterSection';
-import { formIsoDateInputProps } from '../../../src/lib/platform/formTextInputHints';
 
 const COMMON_ACTIONS = [
   null,
@@ -168,14 +167,14 @@ export default function AuditScreen() {
               value={fromRaw}
               onChangeText={setFromRaw}
               placeholder="YYYY-MM-DD"
-              {...formIsoDateInputProps}
+              inputKind="date"
             />
             <TextField
               label={L.admin.content.dateToLabel}
               value={toRaw}
               onChangeText={setToRaw}
               placeholder="YYYY-MM-DD"
-              {...formIsoDateInputProps}
+              inputKind="date"
             />
           </>
         )}

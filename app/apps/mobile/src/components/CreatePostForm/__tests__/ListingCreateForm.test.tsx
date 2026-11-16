@@ -19,6 +19,8 @@ const mocks = vi.hoisted(() => ({
   nativeDatePicker: vi.fn(() => null),
 }));
 
+vi.mock('../../../services/postsComposition', async () => (await import('../../../lib/unifiedCreate/__tests__/listingExposureDoubles')).postsCompositionDouble);
+vi.mock('../../../services/userComposition', async () => (await import('../../../lib/unifiedCreate/__tests__/listingExposureDoubles')).userCompositionDouble);
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (k: string, o?: Record<string, unknown>) => (o?.field ? `${k}:${String(o.field)}` : k),
@@ -90,7 +92,6 @@ vi.mock('../../CityPicker', () => ({
   ),
 }));
 import { ListingCreateForm } from '../ListingCreateForm';
-
 const RIDE_FILL = vi.hoisted(() => ({
   origin_label: 'לוד',
   dest_label: 'תל אביב',
@@ -119,7 +120,6 @@ function renderForm(worldSlug: string, direction: 'give' | 'request', title = '�
   const view = render(ui(direction));
   return { onPublished, rerender: (dir: 'give' | 'request') => view.rerender(ui(dir)) };
 }
-
 /** Taps Publish once the form has settled (the kind's default fields applied), as a member would. */
 async function tapPublishWhenReady() {
   const button = await screen.findByTestId('listing-publish');

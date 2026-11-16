@@ -50,6 +50,22 @@ describe('fetchListingDetail read order', () => {
   });
 });
 
+describe('fetchListingDetail exposure', () => {
+  // FR-POST-003 / FR-POST-009 — the edit form starts from the listing's real audience and address level.
+  it('carries the audience and the address level of the card', async () => {
+    const { client } = setup({ visibility: 'FollowersOnly', location_display_level: 'CityOnly' });
+    const detail = await fetchListingDetail(client, 'p1');
+    expect(detail).toMatchObject({ visibility: 'FollowersOnly', locationDisplayLevel: 'CityOnly' });
+  });
+
+  it('leaves them unsaid when the card holds a value the app does not know', async () => {
+    const { client } = setup({ visibility: 'Weird', location_display_level: null });
+    const detail = await fetchListingDetail(client, 'p1');
+    expect(detail).not.toHaveProperty('visibility');
+    expect(detail).not.toHaveProperty('locationDisplayLevel');
+  });
+});
+
 describe('listing detail shared with the post read', () => {
   it('lets the listing screen take the read the post read started', async () => {
     const { client, calls } = setup();

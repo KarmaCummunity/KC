@@ -17,6 +17,7 @@ import { useLocaleBundle } from '../../../src/i18n/useLocaleBundle';
 import { useAdminScreenTitle } from '../../../src/components/admin/useAdminScreenTitle';
 import { openExternalUrl } from '../../../src/utils/openExternalUrl';
 import { adminChipScroll } from '../../../src/components/admin/adminChipScroll';
+import { FormScrollView } from '../../../src/components/ui/FormScrollView';
 export { RouteErrorBoundary as ErrorBoundary } from '../../../src/components/RouteErrorBoundary';
 
 const STATUS_TABS: readonly DonationLinkReviewStatus[] = ['pending', 'approved', 'rejected'];
@@ -101,7 +102,7 @@ export default function DonationLinkReviewScreen() {
   if (!allowed) return <Text style={styles.message}>{t.forbidden}</Text>;
 
   return (
-    <ScrollView
+    <FormScrollView
       contentContainerStyle={styles.body}
       refreshControl={<RefreshControl refreshing={review.isRefetching} onRefresh={() => void review.refetch()} />}
     >
@@ -131,7 +132,7 @@ export default function DonationLinkReviewScreen() {
           styles={styles}
         />
       ))}
-    </ScrollView>
+    </FormScrollView>
   );
 }
 

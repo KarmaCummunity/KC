@@ -11,10 +11,6 @@ import { housingQueryKeys, housingUseCases } from '../../../services/housingComp
 import { useRideBookingStyles } from '../rides/rideBookingStyles';
 import { HousingAddressCard } from './HousingAddressCard';
 import { useHousingAction } from './useHousingAction';
-import {
-  formIntegerInputProps,
-  formStreetNumberInputProps,
-} from '../../../lib/platform/formTextInputHints';
 import { valueOrNull } from '../../../lib/backendAvailability';
 
 interface Props {
@@ -113,21 +109,21 @@ export function HousingHostPrivateDetailsEditor({ listingId, cityId }: Props) {
         value={houseNumber}
         onChangeText={setHouseNumber}
         editable={!busy}
-        {...formStreetNumberInputProps}
+        inputKind="streetNumber"
       />
       <TextField
         label={t('housingStay.privateDetails.apartment')}
         value={apartment}
         onChangeText={setApartment}
         editable={!busy}
-        {...formIntegerInputProps}
+        inputKind="integer"
       />
       <TextField
         label={t('housingStay.privateDetails.floor')}
         value={floor}
         onChangeText={setFloor}
         editable={!busy}
-        {...formIntegerInputProps}
+        inputKind="integer"
       />
       <TextField
         label={t('housingStay.privateDetails.entrance')}

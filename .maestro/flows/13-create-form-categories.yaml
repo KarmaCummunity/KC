@@ -33,6 +33,11 @@ tags: [posts]
     id: create-header-publish
 - assertVisible:
     id: listing-create-form
+# The failed publish scrolled the form down to the missing route; the request toggle is in the header.
+- scrollUntilVisible:
+    element: "לבקש"
+    timeout: 10000
+    direction: UP
 - tapOn: "לבקש"
 - assertVisible:
     id: ride-departs-at
