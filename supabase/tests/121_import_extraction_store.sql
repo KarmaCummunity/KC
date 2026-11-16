@@ -23,7 +23,7 @@ begin
 end;
 $$;
 
-select plan(18);
+select plan(17);
 
 insert into auth.users (id, email, email_confirmed_at, raw_app_meta_data) values
   ('00000000-0000-4000-8000-00000000000a', 'alice@example.test', now(), '{"provider":"email"}'),
@@ -78,10 +78,6 @@ select throws_ok(
   '42501', null, 'a signed-out caller cannot read the extraction cache');
 select is(pg_temp.rows_as('service_role', null, 'select 1 from public.post_extraction_cache'),
   1::bigint, 'the service role reads the cache');
-
--- ── The feature ships switched off ─────────────────────────────────────────
-select is((select enabled from public.app_flags where key = 'external_post_import_enabled'),
-  false, 'the import feature flag exists and is off');
 
 -- ── Checks keep malformed rows out ─────────────────────────────────────────
 select throws_ok(

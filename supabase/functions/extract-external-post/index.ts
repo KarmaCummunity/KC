@@ -23,7 +23,7 @@ const dailyBudget = Number.parseInt(readEnv('EXTRACTION_DAILY_BUDGET', ''), 10);
 
 Deno.serve(withObservability('extract-external-post', createHandler({
   authenticate,
-  // A missing flag row means off: the feature is opt-in.
+  // A missing flag row means off: the feature is opt-in, the super admin creates the flag to switch it on.
   isEnabled: async () => {
     const { data } = await service.from('app_flags').select('enabled').eq('key', FLAG_KEY).maybeSingle();
     return (data as { enabled: boolean } | null)?.enabled === true;

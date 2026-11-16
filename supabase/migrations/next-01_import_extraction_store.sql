@@ -77,8 +77,3 @@ alter table public.post_extraction_cache enable row level security;
 alter table public.post_extraction_cache force row level security;
 -- No policy: no API role can read or write the cache; the service role bypasses row security.
 grant select, insert, update, delete on public.post_extraction_cache to service_role;
-
--- Kill switch of the whole feature (FR-IMPORT-001 AC4); off until the super admin switches it on.
-insert into public.app_flags (key, enabled, description)
-values ('external_post_import_enabled', false, 'Import a post shared from WhatsApp, Facebook or Yad2: share target, paste field and extraction (FR-IMPORT-001)')
-on conflict (key) do nothing;
