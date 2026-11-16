@@ -136,6 +136,9 @@ test('release-train.yml guards', () => {
   assert.ok(wf.on.schedule?.length === 1, 'weekly schedule');
   assert.equal(wf.on.workflow_dispatch.inputs.dry_run.default, true, 'dispatch defaults to a dry run');
   assert.equal(wf.concurrency['cancel-in-progress'], false);
+  assert.deepEqual(wf.on.push.branches, ['dev'], 'push runs only on dev');
+  const dry = wf.jobs.train.env.DRY_RUN;
+  assert.match(dry, /github\.event_name == 'schedule' \|\| \(github\.event_name == 'workflow_dispatch' && !inputs\.dry_run\)\) && 'false' \|\| 'true'/, 'real only on schedule / unticked dispatch');
   assert.deepEqual(Object.keys(wf.permissions), ['contents']);
   for (const [id, j] of Object.entries(wf.jobs)) {
     assert.ok(j['timeout-minutes'] > 0, `${id} has a timeout`);

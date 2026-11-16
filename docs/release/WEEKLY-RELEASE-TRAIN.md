@@ -13,7 +13,9 @@ If a gate fails, the train **stops and reports**. It never waits for an approval
 | Status for bots | artifact `release-train-status` (JSON, kept 90 days) on the run, plus the job summary |
 | Store review | repo variable `KC_STORE_AUTO_SUBMIT_REVIEW` (default `false`). This is a stub only: nothing submits for review |
 
-The schedule and real runs use **main's** copy of the workflow, because main is the default branch. A change to the train takes effect only after a release carries it. To test a change on dev first, dispatch a dry run from dev:
+The schedule and real runs use **main's** copy of the workflow, because main is the default branch. A change to the train takes effect only after a release carries it.
+
+On dev, a push that changes the train (the workflow or its two scripts) runs a **dry run** of dev's copy automatically. The push trigger is never a real run. To test again, dispatch a dry run from dev:
 
 ```sh
 gh workflow run release-train.yml --ref dev -f dry_run=true
