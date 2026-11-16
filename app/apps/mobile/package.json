@@ -30,7 +30,7 @@
     "typecheck": "node ../../../scripts/generate-typed-routes.mjs && tsc --noEmit"
   },
   "dependencies": {
-    "@babel/runtime": "^8.0.10",
+    "@babel/runtime": "^8.1.2",
     "@expo-google-fonts/rubik": "0.4.2",
     "@expo/metro-runtime": "6.1.2",
     "@expo/vector-icons": "^15.1.1",
