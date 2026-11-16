@@ -601,7 +601,7 @@ As soon as an active `card_one_time` row exists, the app hides Bit / PayBox on i
 
 The app has **no compiled payment links**: if this table cannot be read, donors see "unavailable" rather than a stale link.
 
-Pause a channel: `update public.kc_support_channels set is_active = false where channel = '<channel>';`
+Pause a channel: `update public.kc_support_channels set is_active = false where channel = '<channel>';`. Pausing every channel hides the whole card (title and legal disclosure included), not only the buttons; the app has no compiled fallback.
 
 ### Standing-order cancellation requests (legal obligation)
 
