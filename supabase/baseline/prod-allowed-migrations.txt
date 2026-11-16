@@ -62,3 +62,4 @@
 0065_import_place_resolution.sql
 0066_karma_post_published.sql
 0067_import_extraction_store.sql
+0068_replace_post_media.sql
