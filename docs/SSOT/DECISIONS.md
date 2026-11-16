@@ -2035,7 +2035,7 @@ Owner rules that go with it:
 
 **Affected.** `docs/spec/requirements/25_external_post_import.md`, `docs/architecture/adr/ADR-008-external-post-import.md`, later `supabase/functions/extract-external-post/`, `app/packages/{domain,application,infrastructure-supabase}`, `app/apps/mobile`.
 
-## {{ENG:ci-gate-files-run-scoped}} — A PR run is voided only by gate files it used (2026-11-16)
+## D-240 — A PR run is voided only by gate files it used (2026-11-16)
 
 **Decision.** `CI verdict` voids a green PR run when the base branch changed a gate file after the run, and a gate file is now only what can shape that run's verdict: `.github/workflows/ci.yml`, the lane workflows the run itself recorded (`referenced_workflows`, nested ones included), `.github/actions/**`, `.github/owners.json`, `scripts/ci-*` and `scripts/check-*`. A renamed file counts under its old name. Every other `.github` file (`CODEOWNERS`, `dependabot.yml`, rulesets docs, release, deploy and store workflows) no longer voids a run.
 
