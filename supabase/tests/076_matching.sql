@@ -83,7 +83,7 @@ as $$
     from generate_series(1, 1536) i;
 $$;
 
-select plan(50);
+select plan(52);
 
 -- Alice offers. Bob, Carol, Dan and Eve ask. Carol and Alice are blocked.
 insert into auth.users (id, email, raw_app_meta_data)
