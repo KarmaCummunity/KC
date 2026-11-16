@@ -12,6 +12,9 @@
 // (`editable={false}`: muted fill, textDisabled), multiline (taller, text on top).
 // The border width never changes between states, so focus causes no layout shift.
 //
+// Inside a `FormScreen` every field joins the form scope automatically: keyboard Next / Done follows
+// the on-screen order, and a field that newly shows an error is scrolled into view.
+//
 // Typed text follows its own direction (FR-RESP-006 AC21): Hebrew reads from
 // the right, an English e-mail from the left, inside the same RTL form.
 import React, { forwardRef, useImperativeHandle, useRef, useState } from 'react';
@@ -28,6 +31,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { makeUseStyles, radius, spacing, typography, useTheme, Text, TextInput, type ColorPalette } from '@kc/ui';
 import { emptyInputDirectionStyle } from '../../lib/rtlLayout';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { formInputKindProps, type FormInputKind } from '../../lib/platform/formTextInputHints';
+import { useFormScopeField } from './useFormScopeField';
 
 /** Ionicons glyph size inside the field and next to the error message. */
 const FIELD_ICON_SIZE = 20;
@@ -68,6 +73,11 @@ export interface TextFieldProps extends TextInputProps {
   readonly helperText?: string;
   /** Validation message. When set the field shows its error state and hides the helper. */
   readonly errorText?: string;
+  /**
+   * What the field holds; picks the matching keyboard (numbers, e-mail, phone, dates…) and autofill
+   * hints. Explicit `TextInput` props still win over the kind's defaults.
+   */
+  readonly inputKind?: FormInputKind;
   /** Ionicons glyph on the start side of the field (right in Hebrew). */
   readonly leadingIcon?: keyof typeof Ionicons.glyphMap;
   /** Outer wrapper style (margins, width). `style` still targets the text input. */
@@ -85,12 +95,14 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
     helperText,
     errorText,
     leadingIcon,
+    inputKind = 'text',
     containerStyle,
     style,
     accessibilityLabel,
     onFocus,
     onBlur,
     onChangeText,
+    onSubmitEditing,
     ...inputProps
   },
   ref,
@@ -101,6 +113,14 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
   // Callers get the native input itself (focus(), blur(), clear()).
   useImperativeHandle(ref, () => inputRef.current as TextInput);
   const [focused, setFocused] = useState(false);
+  const containerRef = useRef<View>(null);
+  const scopeProps = useFormScopeField({
+    inputRef,
+    viewRef: containerRef,
+    editable: inputProps.editable !== false,
+    hasError: Boolean(errorText),
+    multiline: Boolean(inputProps.multiline),
+  });
   const { hasText, handleChangeText } = useHasText({ ...inputProps, onChangeText });
 
   const disabled = inputProps.editable === false;
@@ -112,15 +132,21 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
 
   const handleFocus = (e: FocusEvent) => {
     setFocused(true);
+    scopeProps.onFocus();
     onFocus?.(e);
   };
   const handleBlur = (e: BlurEvent) => {
     setFocused(false);
+    scopeProps.onBlur();
     onBlur?.(e);
+  };
+  const handleSubmitEditing: TextInputProps['onSubmitEditing'] = (e) => {
+    onSubmitEditing?.(e);
+    scopeProps.onSubmitEditing();
   };
 
   return (
-    <View style={[styles.container, containerStyle]}>
+    <View ref={containerRef} collapsable={false} style={[styles.container, containerStyle]}>
       {/* Hidden from screen readers: the input below announces the label itself. */}
       {hideLabel ? null : (
         <Text style={styles.label} aria-hidden>
@@ -151,10 +177,13 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
         <TextInput
           ref={inputRef}
           placeholderTextColor={colors.textSecondary}
+          {...formInputKindProps[inputKind]}
+          {...scopeProps.inputProps}
           {...inputProps}
           onChangeText={handleChangeText}
           onFocus={handleFocus}
           onBlur={handleBlur}
+          onSubmitEditing={handleSubmitEditing}
           // aria-* props work on native and web alike (RN-Web drops accessibilityState).
           aria-label={inputAccessibilityLabel}
           accessibilityLabel={inputAccessibilityLabel}

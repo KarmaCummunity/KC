@@ -97,4 +97,22 @@ describe('TextField', () => {
     expect(getByLabelText('Details').tagName).toBe('TEXTAREA');
     expect(queryByRole('alert')).toBeNull();
   });
+
+  describe('inputKind', () => {
+    it.each([
+      ['email', 'email'],
+      ['phone', 'tel'],
+      ['integer', 'numeric'],
+      ['decimal', 'decimal'],
+      ['url', 'url'],
+    ] as const)('%s opens the %s keyboard', (inputKind, inputMode) => {
+      const { getByLabelText } = withTheme(<TextField label="F" inputKind={inputKind} />);
+      expect((getByLabelText('F') as HTMLInputElement).inputMode).toBe(inputMode);
+    });
+
+    it('lets explicit props override the kind defaults', () => {
+      const { getByLabelText } = withTheme(<TextField label="F" inputKind="email" inputMode="text" />);
+      expect((getByLabelText('F') as HTMLInputElement).inputMode).toBe('text');
+    });
+  });
 });

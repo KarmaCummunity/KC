@@ -41,11 +41,14 @@ function flowIds() {
 
 /**
  * True when the app renders `id` as a testID: a JSX literal (`testID="id"`), a literal in a
- * data table the screen maps over (`testID: 'id'`, e.g. hub tiles), or the tab bar's
+ * data table the screen maps over (`testID: 'id'`, e.g. hub tiles), a form section's
+ * `errorTestID="id"`, or the tab bar's
  * `tab-${key}` template.
  */
 function appHasTestId(id) {
   if (source.includes(`testID="${id}"`) || source.includes(`testID: '${id}'`)) return true;
+  // `FormSection` renders its `errorTestID` prop as the testID of the error message under a field.
+  if (source.includes(`errorTestID="${id}"`)) return true;
   const tab = id.match(/^tab-(\w+)$/);
   if (tab && source.includes('testID={`tab-${tab.key}`}') && source.includes(`key: '${tab[1]}'`)) return true;
   const createCategory = id.match(/^create-category-([a-z0-9_]+)$/);

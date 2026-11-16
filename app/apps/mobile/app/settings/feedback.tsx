@@ -13,7 +13,6 @@ import { webTextRtl, webViewRtl } from '../../src/lib/webRtlStyle';
 import { useFeedSessionStore } from '../../src/store/feedSessionStore';
 import { container } from '../../src/lib/container';
 import { track } from '../../src/lib/analytics';
-import { useFormFieldFocus } from '../../src/hooks/useFormFieldFocus';
 
 const MIN_BODY = 10;
 const MAX_BODY = 500;
@@ -25,8 +24,6 @@ export default function FreeFeedbackScreen() {
   const styles = useFeedbackStyles();
   const { colors } = useTheme();
   const showToast = useFeedSessionStore((s) => s.showEphemeralToast);
-  const fieldFocus = useFormFieldFocus(1);
-  const bodyField = fieldFocus.bindField(0);
 
   const [rating, setRating] = useState<number | null>(null);
   const [body, setBody] = useState('');
@@ -76,13 +73,6 @@ export default function FreeFeedbackScreen() {
       <FormScreen
         edges={['bottom', 'left', 'right']}
         contentContainerStyle={{ ...styles.scrollContent, ...webViewRtl }}
-        keyboardAccessory={{
-          canGoPrev: fieldFocus.canGoPrev,
-          canGoNext: fieldFocus.canGoNext,
-          onPrev: fieldFocus.focusPrev,
-          onNext: fieldFocus.focusNext,
-          onDone: fieldFocus.dismiss,
-        }}
         footer={
           <PrimaryButton
             label={
@@ -105,7 +95,6 @@ export default function FreeFeedbackScreen() {
 
         <View style={styles.inputWrap}>
           <TextField
-            ref={bodyField.ref}
             label={t('survey.feedbackBodyLabel')}
             style={styles.textInput}
             value={body}
@@ -116,11 +105,6 @@ export default function FreeFeedbackScreen() {
             multiline
             maxLength={MAX_BODY}
             accessibilityLabel={t('survey.feedbackBodyLabel')}
-            onFocus={bodyField.onFocus}
-            inputAccessoryViewID={bodyField.inputAccessoryViewID}
-            returnKeyType={bodyField.returnKeyType}
-            blurOnSubmit={bodyField.blurOnSubmit}
-            onSubmitEditing={bodyField.onSubmitEditing}
           />
           <Text
             style={[

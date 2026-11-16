@@ -5,7 +5,7 @@
 import React from 'react';
 import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, spacing, Text } from '@kc/ui';
+import { makeUseStyles, spacing } from '@kc/ui';
 import { CityPicker } from '../CityPicker';
 import { StreetAddressRow } from '../address/StreetAddressRow';
 import type { ListingStreetAddressForm } from '../../hooks/useListingStreetAddress';
@@ -31,11 +31,8 @@ export function ListingLocationSection({ city, onCityChange, address, disabled }
       style={styles.section}
       contentStyle={sectionStyles.controls}
       testID="listing-location"
-      label={
-        <Text style={styles.sectionLabel}>
-          {t(address.enabled ? 'post.address' : 'post.unifiedCreate.cityLabel')} <Text style={styles.required}>*</Text>
-        </Text>
-      }
+      label={t(address.enabled ? 'post.address' : 'post.unifiedCreate.cityLabel')}
+      required
     >
       <CityPicker value={city} onChange={onCityChange} disabled={disabled} />
       {address.enabled ? (

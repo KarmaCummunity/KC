@@ -28,6 +28,7 @@ import { onboardingReplayEn } from './modules/onboardingReplay';
 import { dateOfBirthEn } from './modules/dateOfBirth';
 import { verificationEn } from './modules/verification';
 import { errorsEn } from './modules/errors';
+import { createPostValidationEn } from './createPostValidation';
 import { chatEn } from './modules/chat';
 import { chatNewEn } from './modules/chatNew';
 import { chatMessagingEn } from './modules/chatMessaging';
@@ -225,6 +226,7 @@ const en = {
 
   // Error messages (auth/post/profile/media/createPost) — see modules/errors.ts
   errors: errorsEn,
+  createPostValidation: createPostValidationEn,
 
   // Misc chrome — see modules/ui.ts
   errorBoundary: errorBoundaryEn,

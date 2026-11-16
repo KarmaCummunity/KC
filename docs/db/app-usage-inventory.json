@@ -20,12 +20,12 @@
    "distinct": 3
   },
   "rpc": {
-   "callSites": 275,
-   "distinct": 251
+   "callSites": 276,
+   "distinct": 252
   },
   "table": {
-   "callSites": 183,
-   "distinct": 62
+   "callSites": 189,
+   "distinct": 64
   }
  },
  "entries": [
@@ -1919,7 +1919,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/marketplace/listingOwnerActions.ts",
-   "line": 78,
+   "line": 79,
    "area": "marketplace",
    "symbol": "updateMyListing",
    "via": "literal",
@@ -1932,7 +1932,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/marketplace/listingOwnerActions.ts",
-   "line": 96,
+   "line": 97,
    "area": "marketplace",
    "symbol": "addMyListingMedia",
    "via": "literal",
@@ -1956,7 +1956,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/marketplace/listingWrites.ts",
-   "line": 78,
+   "line": 81,
    "area": "marketplace",
    "symbol": "unwrapCall",
    "via": "literal",
@@ -1965,7 +1965,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/marketplace/listingWrites.ts",
-   "line": 89,
+   "line": 92,
    "area": "marketplace",
    "symbol": "createPlain",
    "via": "literal",
@@ -1978,7 +1978,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/marketplace/listingWrites.ts",
-   "line": 97,
+   "line": 100,
    "area": "marketplace",
    "symbol": "postId",
    "via": "literal",
@@ -1987,7 +1987,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/marketplace/listingWrites.ts",
-   "line": 100,
+   "line": 103,
    "area": "marketplace",
    "symbol": "postId",
    "via": "literal",
@@ -1999,7 +1999,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/marketplace/listingWrites.ts",
-   "line": 129,
+   "line": 132,
    "area": "marketplace",
    "symbol": "createListing",
    "via": "literal",
@@ -2089,7 +2089,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-   "line": 112,
+   "line": 122,
    "area": "marketplace",
    "symbol": "fetchListingDetail",
    "via": "literal",
@@ -2098,7 +2098,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-   "line": 115,
+   "line": 125,
    "area": "marketplace",
    "symbol": "fetchListingDetail",
    "via": "literal",
@@ -4534,6 +4534,71 @@
   },
   {
    "kind": "rpc",
+   "file": "supabase/functions/_shared/post-extraction/catalog.ts",
+   "line": 20,
+   "area": "fn:_shared",
+   "symbol": "rpcPlaceResolver",
+   "via": "literal",
+   "name": "api_resolve_place"
+  },
+  {
+   "kind": "table",
+   "file": "supabase/functions/_shared/post-extraction/lists.ts",
+   "line": 28,
+   "area": "fn:_shared",
+   "symbol": "loadExtractionLists",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "worlds"
+  },
+  {
+   "kind": "table",
+   "file": "supabase/functions/_shared/post-extraction/lists.ts",
+   "line": 30,
+   "area": "fn:_shared",
+   "symbol": "rows",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "item_subcategories"
+  },
+  {
+   "kind": "table",
+   "file": "supabase/functions/_shared/post-extraction/lists.ts",
+   "line": 32,
+   "area": "fn:_shared",
+   "symbol": "rows",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "post_kinds"
+  },
+  {
+   "kind": "table",
+   "file": "supabase/functions/_shared/post-extraction/store.ts",
+   "line": 43,
+   "area": "fn:_shared",
+   "symbol": "supabaseImportStore",
+   "via": "literal",
+   "ops": [],
+   "name": "external_post_imports"
+  },
+  {
+   "kind": "table",
+   "file": "supabase/functions/_shared/post-extraction/store.ts",
+   "line": 58,
+   "area": "fn:_shared",
+   "symbol": "supabaseExtractionCache",
+   "via": "literal",
+   "ops": [],
+   "name": "post_extraction_cache"
+  },
+  {
+   "kind": "rpc",
    "file": "supabase/functions/_shared/whatsapp/agent/run.ts",
    "line": 57,
    "area": "fn:_shared",
@@ -4693,6 +4758,18 @@
    "symbol": "jobs",
    "via": "literal",
    "name": "embedding_job_fail"
+  },
+  {
+   "kind": "table",
+   "file": "supabase/functions/extract-external-post/index.ts",
+   "line": 28,
+   "area": "fn:extract-external-post",
+   "symbol": "<module>",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "app_flags"
   },
   {
    "kind": "rpc",

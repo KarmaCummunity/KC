@@ -6,7 +6,6 @@ import React from 'react';
 import { View } from 'react-native';
 import { makeUseStyles, spacing } from '@kc/ui';
 import { StreetPicker } from '../StreetPicker';
-import type { FormFieldFocusBindings } from '../../hooks/useFormFieldFocus';
 import { CompactStreetNumberField } from './CompactStreetNumberField';
 
 interface Props {
@@ -19,8 +18,6 @@ interface Props {
   readonly disabled?: boolean;
   /** Placeholder of the number box; the field has its own default. */
   readonly streetNumberPlaceholder?: string;
-  /** Keyboard "next / done" wiring of the number box, when the form has a field order. */
-  readonly streetNumberFocus?: FormFieldFocusBindings;
   readonly streetNumberTestID?: string;
 }
 
@@ -32,7 +29,6 @@ export function StreetAddressRow({
   onStreetNumberChange,
   disabled = false,
   streetNumberPlaceholder,
-  streetNumberFocus,
   streetNumberTestID,
 }: Props) {
   const styles = useStyles();
@@ -48,18 +44,12 @@ export function StreetAddressRow({
         />
       </View>
       <CompactStreetNumberField
-        ref={streetNumberFocus?.ref}
         testID={streetNumberTestID}
         containerStyle={styles.number}
         value={streetNumber}
         onChangeText={onStreetNumberChange}
         placeholder={streetNumberPlaceholder}
         editable={!disabled && cityId !== null}
-        onFocus={streetNumberFocus?.onFocus}
-        inputAccessoryViewID={streetNumberFocus?.inputAccessoryViewID}
-        returnKeyType={streetNumberFocus?.returnKeyType}
-        blurOnSubmit={streetNumberFocus?.blurOnSubmit}
-        onSubmitEditing={streetNumberFocus?.onSubmitEditing}
       />
     </View>
   );

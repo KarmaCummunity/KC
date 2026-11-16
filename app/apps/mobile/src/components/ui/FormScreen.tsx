@@ -4,7 +4,6 @@ import {
   Keyboard,
   KeyboardAvoidingView,
   Platform,
-  ScrollView,
   StyleSheet,
   View,
   type StyleProp,
@@ -18,7 +17,7 @@ import {
   shellTabBarHeightPx,
   useShellTabBarVisibility,
 } from '../../navigation/useShellTabBarVisibility';
-import { KeyboardFormAccessory, type KeyboardFormAccessoryProps } from './KeyboardFormAccessory';
+import { FormScope, FormScopeScrollView } from './FormScope';
 
 export interface FormScreenProps {
   readonly children: React.ReactNode;
@@ -28,7 +27,6 @@ export interface FormScreenProps {
   readonly headerless?: boolean;
   readonly headerHeight?: number;
   readonly contentContainerStyle?: StyleProp<ViewStyle>;
-  readonly keyboardAccessory?: Omit<KeyboardFormAccessoryProps, 'nativeId'> & { nativeId?: string };
   readonly testID?: string;
   /** Inside an existing `Screen` — skip the outer SafeAreaView. */
   readonly embedded?: boolean;
@@ -46,7 +44,6 @@ export function FormScreen({
   headerless,
   headerHeight,
   contentContainerStyle,
-  keyboardAccessory,
   testID,
   embedded,
   tabBarFooterInset = true,
@@ -82,31 +79,32 @@ export function FormScreen({
 
   return (
     <Root {...rootProps}>
-      <KeyboardAvoidingView
-        style={styles.fill}
-        behavior={resolveKeyboardAvoidingBehavior(Platform.OS)}
-        keyboardVerticalOffset={keyboardOffset}
-      >
-        <View style={styles.fill}>
-          <ScrollView
-            style={styles.fill}
-            contentContainerStyle={scrollStyles}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-          >
-            {children}
-          </ScrollView>
-          {keyboardAccessory ? <KeyboardFormAccessory {...keyboardAccessory} /> : null}
-          {footer ? (
-            <View
-              testID="form-screen-footer"
-              style={[styles.footer, footerTabBarLift > 0 && { paddingBottom: spacing.base + footerTabBarLift }]}
+      <FormScope>
+        <KeyboardAvoidingView
+          style={styles.fill}
+          behavior={resolveKeyboardAvoidingBehavior(Platform.OS)}
+          keyboardVerticalOffset={keyboardOffset}
+        >
+          <View style={styles.fill}>
+            <FormScopeScrollView
+              style={styles.fill}
+              contentContainerStyle={scrollStyles}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
             >
-              {footer}
-            </View>
-          ) : null}
-        </View>
-      </KeyboardAvoidingView>
+              {children}
+            </FormScopeScrollView>
+            {footer ? (
+              <View
+                testID="form-screen-footer"
+                style={[styles.footer, footerTabBarLift > 0 && { paddingBottom: spacing.base + footerTabBarLift }]}
+              >
+                {footer}
+              </View>
+            ) : null}
+          </View>
+        </KeyboardAvoidingView>
+      </FormScope>
     </Root>
   );
 }

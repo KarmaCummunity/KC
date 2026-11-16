@@ -7,7 +7,8 @@
 // `scroll` is intentional: if the screen already brings its own KcFlashList /
 // ScrollView (e.g. feed), pass `scroll={false}` and render the list directly.
 import React, { useMemo } from 'react';
-import { ScrollView, StyleSheet, View, type ViewStyle } from 'react-native';
+import { StyleSheet, View, type ViewStyle } from 'react-native';
+import { FormScope, FormScopeScrollView } from './FormScope';
 import { SafeAreaView, type Edge } from 'react-native-safe-area-context';
 import { useTheme } from '@kc/ui';
 import { AmbientBlobs } from './AmbientBlobs';
@@ -78,14 +79,14 @@ export function Screen({
   }, [contentContainerStyle, tabBarInset, scroll, tabBarVisible, tabBarPad]);
 
   const body = scroll ? (
-    <ScrollView
+    <FormScopeScrollView
       style={staticStyles.flex}
       contentContainerStyle={scrollContentStyle}
       showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps="handled"
     >
       {children}
-    </ScrollView>
+    </FormScopeScrollView>
   ) : (
     <View style={[staticStyles.flex, contentContainerStyle]}>{children}</View>
   );
@@ -97,7 +98,7 @@ export function Screen({
       edges={effectiveEdges}
     >
       {blobs !== 'off' && <AmbientBlobs density={blobs} />}
-      {body}
+      <FormScope>{body}</FormScope>
     </SafeAreaView>
   );
 }

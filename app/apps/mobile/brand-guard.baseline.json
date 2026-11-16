@@ -97,12 +97,6 @@
       "adHocChip": 1,
       "iconSizeLiteral": 1
     },
-    "src/screens/edit-post/editPostScreen.styles.ts": {
-      "radiusLiteral": 2,
-      "spacingLiteral": 1,
-      "physicalSide": 2,
-      "adHocChip": 1
-    },
     "src/screens/research/SurveyIntroBlock.tsx": {
       "fontWeightLiteral": 1,
       "radiusLiteral": 2,

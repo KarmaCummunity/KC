@@ -47,6 +47,7 @@ export const SMOKE_PROBES = {
   'backfill-image-thumbs': { expect: [405], why: 'method guard (POST only) runs first' },
   'dispatch-notification': { expect: [401], why: 'service-role bearer check runs before the body is read' },
   'embed-worker': { expect: [401], why: 'service-role bearer check runs first' },
+  'extract-external-post': { expect: [200], why: 'answers the preflight for the deployed web origin (403 = origin not allowlisted)' },
   'match-rerank': { expect: [405], why: 'method guard (POST only) runs first' },
   'payments-webhook': { expect: [405], why: 'method guard (POST only) runs first' },
   'public-research-submit': { expect: [200], why: 'answers the preflight for the deployed web origin (403 = origin not allowlisted)' },
