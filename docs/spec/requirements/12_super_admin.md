@@ -653,7 +653,7 @@ Platform staff report the hours they worked; the reporter's direct manager appro
 ## FR-ADMIN-034 — Giving worlds: portal or active
 
 **Description.**
-The super admin decides, per giving world and per environment, whether the world is a **portal** (links and knowledge only, D60) or an **active world** (feed, posts, create form and the world's own screens). PM, 2026-11-13 (#2277); decision {{D:admin-world-switch}}.
+The super admin decides, per giving world and per environment, whether the world is a **portal** (links and knowledge only, D60) or an **active world** (feed, posts, create form and the world's own screens). PM, 2026-11-13 (#2277); decision D169.
 
 **Acceptance Criteria.**
 - AC1. `(admin)/worlds` lists the twelve giving worlds (items, food, rides, time, money, knowledge, housing, medical, animals, employment, democracy, challenges), each with its current mode in this environment.
