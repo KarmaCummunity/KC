@@ -803,13 +803,13 @@ Welcome thread: [Discussion #736](https://github.com/KarmaCummunity/KC/discussio
 
 ### Security tooling secrets (INFRA-OSS-4/5/6)
 
-Workflows are committed; scans **skip gracefully** until secrets exist:
+No repo secrets: Snyk, GitGuardian and CodeRabbit run as GitHub integrations (the `CI — Snyk` / `CI — GitGuardian` workflows were removed 2026-11-16; their secrets were empty and they never ran). `CI gate` judges their results on each PR when they report (`scripts/ci-app-checks.mjs`, see `SECURITY.md`).
 
-| Secret | Workflow | Obtain |
-| --- | --- | --- |
-| `SNYK_TOKEN` | `CI — Snyk` | https://app.snyk.io/account |
-| `GITGUARDIAN_API_KEY` | `CI — GitGuardian` | GitGuardian dashboard → API |
-| *(none)* | CodeRabbit | Install https://github.com/apps/coderabbitai on the repo |
+| Tool | How it runs |
+| --- | --- |
+| Snyk | Snyk GitHub integration (status `security/snyk (navesarussi)`) |
+| GitGuardian | GitGuardian GitHub App (check `GitGuardian Security Checks`) |
+| CodeRabbit | Install https://github.com/apps/coderabbitai on the repo |
 
 Full matrix: [`SECURITY.md`](../../SECURITY.md) at repo root.
 

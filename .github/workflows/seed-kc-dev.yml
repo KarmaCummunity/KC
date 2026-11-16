@@ -9,20 +9,24 @@ name: Seed KC dev
 #               the platform organization
 #   e2e-users   user1 … user4 @seed.kc.test for tests/e2e  supabase/seed/e2e/load.sql
 #   all         the three above, in that order
+#   demo        the demo-data tools behind the admin portal's Demo data screen (FR-ADMIN-031):
+#               supabase/seed/demo/load.sql installs them and marks kc-dev as the one database
+#               where a restore may run. No demo data is created: an admin presses "Restore demo
+#               data" in the portal. Not part of `all`; run it again after the tools change.
 #   vault       the two Vault secrets the database needs to start Edge Functions from its jobs
 #               (kc_project_url, kc_service_role_key): created or updated, never printed. Not
 #               part of `all`: it is an operator step after the schema is applied.
 #
 # Every seed is idempotent, so running one again changes nothing that is already loaded. The
-# old Hebrew demo dataset (posts, chats, follows) was retired with the migration chain; it is
-# kept for reference in supabase/archive/seed-kc-dev-demo.
+# Hebrew demo dataset (members, posts, rides, chats, follows, [DEMO] nonprofits) is created and
+# deleted from the portal once the `demo` action has installed its tools.
 on:
   workflow_dispatch:
     inputs:
       action:
         description: 'which seed to load'
         type: choice
-        options: [all, reference, content, e2e-users, vault]
+        options: [all, reference, content, e2e-users, demo, vault]
         default: all
 
 permissions:
@@ -83,6 +87,11 @@ jobs:
               echo "select set_config('kc.seed_target', 'dev', false), set_config('kc.seed_password', :'pw', false) \gset"
               cat supabase/seed/e2e/load.sql
             } | psql "$url" -v ON_ERROR_STOP=1 -v pw="$E2E_SEED_PASSWORD" -qAt -f -
+          fi
+          if [ "$ACTION" = demo ]; then
+            echo "── demo data tools ──"
+            psql "$url" -v ON_ERROR_STOP=1 --single-transaction -qAt \
+              -c "select set_config('kc.seed_target', 'dev', false)" -f supabase/seed/demo/load.sql
           fi
 
       # The service-role key is read from the Management API with the environment's access

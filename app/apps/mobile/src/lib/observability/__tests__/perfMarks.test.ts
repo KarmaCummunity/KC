@@ -97,6 +97,31 @@ describe('perfMarks with a DSN', () => {
     expect(startInactiveSpan).toHaveBeenCalledTimes(1);
   });
 
+  it('sends the attributes a mark finished with, so Sentry can split one mark by cause', async () => {
+    sdkReady = true;
+    const marks = await load();
+    marks.startMark('post_detail.content_painted');
+    marks.finishMark('post_detail.content_painted', { source: 'network' });
+    expect(startInactiveSpan).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'post_detail.content_painted', attributes: { source: 'network' } }),
+    );
+  });
+
+  it('drops a cancelled mark, so the next start is not timed from the abandoned one', async () => {
+    sdkReady = true;
+    const marks = await load();
+    marks.startMark('post_detail.content_painted');
+    marks.cancelMark('post_detail.content_painted');
+    expect(marks.finishMark('post_detail.content_painted')).toBe(false);
+
+    vi.setSystemTime(new Date('2026-01-01T00:05:00Z'));
+    marks.startMark('post_detail.content_painted');
+    marks.finishMark('post_detail.content_painted');
+    const restart = Date.parse('2026-01-01T00:05:00Z') / 1000;
+    expect(startInactiveSpan).toHaveBeenCalledTimes(1);
+    expect(startInactiveSpan).toHaveBeenCalledWith(expect.objectContaining({ startTime: restart }));
+  });
+
   it('does not throw when the SDK fails to create a span', async () => {
     sdkReady = true;
     startInactiveSpan.mockImplementation(() => {

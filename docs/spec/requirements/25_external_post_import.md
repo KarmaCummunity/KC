@@ -1,6 +1,6 @@
 # 2.25 External post import (ייבוא פוסט מבחוץ)
 
-> **Status:** ⏳ Spec v1 (2026-11-16). Nothing is implemented. Product decision `D167`; working assumption `S90` awaits PM approval; gap `G27` (phase 1). Engineering design: [ADR-008](../../architecture/adr/ADR-008-external-post-import.md). Issue: #2343.
+> **Status:** 🟡 Spec v1 (2026-11-16). ✅ Domain core (`@kc/domain/imports`: FR-IMPORT-002, 003 AC3, 005, 006 AC1-AC2, fingerprint of 008 AC1, #2345) is implemented; the Edge Function, catalog resolution, quality gate and mobile flow are still ⏳. Product decision `D167`; working assumption `S90` awaits PM approval; gap `G27` (phase 1). Engineering design: [ADR-008](../../architecture/adr/ADR-008-external-post-import.md). Issue: #2343.
 
 Prefix: `FR-IMPORT-*`
 
@@ -52,7 +52,7 @@ One provider call per text (`FR-IMPORT-009` for the provider rules) returns exac
 | `title` | string ≤ 80 | imperative-free noun phrase, no personal names, no contact, no price |
 | `description` | string ≤ 1,000 | the cleaned body; the member's own words, not embellished |
 | `place` | `{ city_text, street_text, neighborhood_text }` | raw strings as written; resolved by `FR-IMPORT-004`, never trusted |
-| `time` | `{ kind, day_offset, weekday, time_hhmm, date_iso, recurring_weekdays }` | relative expressions kept relative; resolved by `FR-IMPORT-005` |
+| `time` | `{ kind, day_offset, weekday, month, day_of_month, time_hhmm, time_period, recurring_weekdays }` | `kind` ∈ none / relative_day / weekday / date / recurring; everything as written (day number and month for an explicit date, never a computed date); resolved by `FR-IMPORT-005` |
 | `ride` | `{ origin_text, destination_text, meeting_texts[≤3], seats }` | only when `world_slug` is the transport world |
 | `details` | object | per-world detail fields allowed by that world's detail schema (condition, quantity, allergens, expiry …), unknown keys dropped |
 | `language` | BCP-47 | for `source_language` (`FR-TRANSLATE-001`) |
@@ -96,7 +96,7 @@ One provider call per text (`FR-IMPORT-009` for the provider rules) returns exac
 
 ## FR-IMPORT-008 — Dedupe and limits
 
-- AC1. **Cross-post guard.** The text fingerprint (`sha256` of the scrubbed, normalized, lower-cased text with digits collapsed) and a trigram similarity against the member's own open posts: a match ≥ 0.80 shows "you already have this post" with a link; publishing anyway is allowed (a deliberate repost) but marked.
+- AC1. **Cross-post guard.** The text fingerprint (`sha256` of the canonical form: scrubbed, lower-cased text with digit runs collapsed and punctuation dropped; `@kc/domain` builds the canonical string, the Edge Function hashes it) and a trigram similarity against the member's own open posts: a match ≥ 0.80 shows "you already have this post" with a link; publishing anyway is allowed (a deliberate repost) but marked.
 - AC2. **Extraction cache.** The same fingerprint within 24 h returns the stored extraction without a new provider call (any member; the cache holds no member id and no raw text).
 - AC3. Limits per member: **20 extractions / day** and **5 / hour** (config); over the limit ⇒ the manual route with a "try again later" note. A global daily provider budget stops extraction at the cap and falls back to manual for everyone; the budget is visible in the admin health registry (D68).
 - AC4. Abuse: an account younger than 24 h cannot import; a member whose imports were removed by moderation 3 times in 30 days loses the entry point for 14 days (`FR-MOD-*` audit event).

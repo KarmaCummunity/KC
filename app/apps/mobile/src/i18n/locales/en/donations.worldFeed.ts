@@ -18,6 +18,7 @@ export const worldFeed = {
   sectionRoute: 'Route',
   emptyTitle: 'No open listings here yet',
   emptyBody: 'Post the first request or offer.',
+  employmentIntro: 'Work in the community: offer a job or look for one, and talk it over directly in chat.',
   animalsIntro: 'Animals in the community: give away or adopt an animal, and offer or ask for boarding, part-time boarding and pet-sitting.',
   challengesIntro: 'Open a challenge, join others and report your progress. The streak holds as long as you do not skip a cycle.',
   housingIntro: 'Hosting and stays in the community: offer a place to sleep, or ask to be hosted for a night or longer.',

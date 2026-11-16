@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { act, renderHook } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const { state, replace, complete, skip, toast, setOnboarding, setSkipped } = vi.hoisted(() => ({
   state: { session: { userId: 'u1', displayName: 'Name' } as { userId: string; displayName?: string } | null },
   replace: vi.fn(), complete: vi.fn(), skip: vi.fn(), toast: vi.fn(), setOnboarding: vi.fn(), setSkipped: vi.fn(),
@@ -13,6 +13,7 @@ vi.mock('../../store/authStore', () => ({ useAuthStore: Object.assign((selector:
 vi.mock('../../store/feedSessionStore', () => ({ useFeedSessionStore: { getState: () => ({ showEphemeralToast: toast }) } }));
 vi.mock('../../services/userComposition', () => ({ getCompleteBasicInfoUseCase: () => ({ execute: complete }), markBasicInfoSkipped: skip }));
 import { useOnboardingBasicInfoFlow } from '../useOnboardingBasicInfoFlow';
+import { useOnboardingReplayStore } from '../../store/onboardingReplayStore';
 describe('useOnboardingBasicInfoFlow', () => {
   beforeEach(() => { vi.clearAllMocks(); state.session = { userId: 'u1', displayName: 'Name' }; complete.mockResolvedValue(undefined); skip.mockResolvedValue(undefined); });
   it('validates missing name and address pairs and resets address on city changes', async () => {
@@ -77,5 +78,31 @@ describe('useOnboardingBasicInfoFlow', () => {
     state.session = { userId: 'u1' }; rerender();
     act(() => result.current.handleBack());
     expect(replace).toHaveBeenCalledWith('/(onboarding)/about-intro');
+  });
+  // FR-ADMIN-035 — an admin replay runs the same step without touching the profile.
+  describe('admin replay (sandbox)', () => {
+    beforeEach(() => useOnboardingReplayStore.getState().start());
+    afterEach(() => useOnboardingReplayStore.getState().stop());
+
+    it('validates like the real step, then moves on without saving', async () => {
+      const { result } = renderHook(() => useOnboardingBasicInfoFlow());
+      act(() => result.current.setDisplayName(''));
+      await act(() => result.current.handleContinue());
+      expect(toast).toHaveBeenCalledWith('onboarding.fillNameAndCity', 'error', 2500);
+      expect(replace).not.toHaveBeenCalled();
+      act(() => { result.current.setDisplayName('Name'); result.current.setCity({ id: 'c1', name: 'Town' }); result.current.setDateOfBirth('1990-05-15'); });
+      await act(() => result.current.handleContinue());
+      expect(complete).not.toHaveBeenCalled();
+      expect(setOnboarding).not.toHaveBeenCalled();
+      expect(replace).toHaveBeenCalledWith('/(onboarding)/photo');
+    });
+
+    it('skips without recording the skip', async () => {
+      const { result } = renderHook(() => useOnboardingBasicInfoFlow());
+      await act(() => result.current.handleSkip());
+      expect(skip).not.toHaveBeenCalled();
+      expect(setSkipped).not.toHaveBeenCalled();
+      expect(replace).toHaveBeenCalledWith('/(onboarding)/photo');
+    });
   });
 });

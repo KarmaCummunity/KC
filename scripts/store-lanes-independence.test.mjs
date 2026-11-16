@@ -9,7 +9,9 @@ import { parse } from 'yaml';
 const load = (name) => parse(readFileSync(`.github/workflows/${name}`, 'utf8'));
 const needsOf = (job) => [job?.needs ?? []].flat();
 
-const IOS_ONLY = ['ASC_API_KEY_ID', 'ASC_API_KEY_ISSUER_ID', 'ASC_API_KEY_P8', 'KC_IOS_TEAM_ID', 'KC_IOS_DIST_P12_B64', 'KC_IOS_DIST_P12_PASSWORD', 'SENTRY_AUTH_TOKEN'];
+// SENTRY_AUTH_TOKEN is shared on purpose: iOS uploads source maps from the runner,
+// Android syncs it into the EAS environment (scripts/sync-eas-sentry-token.mjs).
+const IOS_ONLY = ['ASC_API_KEY_ID', 'ASC_API_KEY_ISSUER_ID', 'ASC_API_KEY_P8', 'KC_IOS_TEAM_ID', 'KC_IOS_DIST_P12_B64', 'KC_IOS_DIST_P12_PASSWORD'];
 const ANDROID_ONLY = ['GOOGLE_PLAY_SERVICE_ACCOUNT_JSON'];
 
 /** [caller workflow, iOS job ids, Android job ids] */

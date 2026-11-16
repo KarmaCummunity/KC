@@ -1,0 +1,183 @@
+name: Weekly release train
+
+# dev → main → production → TestFlight / Play internal, once a week, with no
+# human click (owner decision, 16 Nov 2026). Full design, gates and runbook:
+# docs/release/WEEKLY-RELEASE-TRAIN.md. The logic is scripts/release-train.mjs
+# (rules unit-tested in scripts/release-train.test.mjs); this file only orders
+# the steps and scopes the credentials.
+#
+#   plan      read-only gates: kill switch, new commits on dev, no release in
+#             flight, strict migration scan (destructive → stop), fresh prod
+#             backup, release head, train credentials. A dry run stops here.
+#   freeze    dequeue / disarm auto-merge on open dev PRs (+ no-auto-merge).
+#   head      dev tip is a [skip ci] bump → version-only PR through the queue,
+#             so the release head is a commit real CI ran on.
+#   open-pr   release PR dev → main (karma-community-kc).
+#   wait      CI gate, CI verdict, release E2E, every other check; one
+#             automatic re-run of failed jobs, then any red check stops.
+#   merge     squash with the release-merge message (no skip tokens).
+#   deploy    approve `production` on the Deploy (main) run with the approver
+#             token, then verify backup, migrations, functions, web, smoke,
+#             tag v<VERSION> and the live /version.json. A failed functions/
+#             web/smoke stage is rolled back by deploy.yml itself.
+#   sync      merge the sync-main-to-dev PR as a merge commit.
+#   unfreeze  always: restore what freeze touched.
+#   stores    report the automatic prod-store-build run (TestFlight + Play
+#             internal only; no review submission).
+#   report    always: job summary + `release-train-status` artifact (JSON).
+#
+# Kill switch: repo variable KC_WEEKLY_RELEASE_ENABLED must be exactly "true"
+# for the schedule (and a non-dry dispatch) to do anything. Dry runs ignore it.
+#
+# The schedule and real runs use main's copy (the default branch). A push to
+# dev that changes the train runs a dry run of dev's copy; dispatch one from
+# dev to test again before it is released.
+
+on:
+  schedule:
+    # Sunday 04:00 UTC = 06:00 Israel in winter, 07:00 in summer. After the
+    # nightly prod backup (01:17 UTC) and the kc-dev nightlies (≤ 02:00 UTC).
+    - cron: '0 4 * * 0'
+  # A change to the train on dev runs a dry run of the changed copy (and
+  # registers the workflow so it can be dispatched from dev before a release
+  # brings it to main). Never a real run: see DRY_RUN below.
+  push:
+    branches: [dev]
+    paths:
+      - .github/workflows/release-train.yml
+      - scripts/release-train.mjs
+      - scripts/release-train-lib.mjs
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Dry run (read-only plan; no freeze, PR, merge or deploy)
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+# One train at a time; never cancel one mid-flight (it may hold a freeze or a
+# half-done release). Dry runs queue separately.
+concurrency:
+  group: release-train${{ (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && !inputs.dry_run)) && '' || '-dry' }}
+  cancel-in-progress: false
+
+jobs:
+  train:
+    name: release train
+    runs-on: ubuntu-latest
+    # Version PR (≤ 120) + release checks (≤ 240) can't both run long: the
+    # hosted-runner job limit is 360 min.
+    timeout-minutes: 350
+    # The two train secrets live only on this environment (deployment
+    # branches: main, dev). It has no reviewers: the train is unattended.
+    environment: release-train
+    permissions:
+      contents: read
+      actions: read
+      checks: read
+      statuses: read
+      pull-requests: read
+      issues: write # optional status comment (KC_RELEASE_TRAIN_ISSUE)
+    env:
+      # Real only for the schedule and a dispatch with dry_run unticked.
+      DRY_RUN: ${{ (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && !inputs.dry_run)) && 'false' || 'true' }}
+      GITHUB_TOKEN: ${{ github.token }}
+      KC_WEEKLY_RELEASE_ENABLED: ${{ vars.KC_WEEKLY_RELEASE_ENABLED }}
+      KC_STORE_AUTO_SUBMIT_REVIEW: ${{ vars.KC_STORE_AUTO_SUBMIT_REVIEW }}
+      KC_RELEASE_TRAIN_ISSUE: ${{ vars.KC_RELEASE_TRAIN_ISSUE }}
+      KC_PROD_URL: ${{ vars.KC_PROD_URL }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          filter: blob:none
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version-file: .nvmrc
+
+      - name: State file
+        run: echo "TRAIN_STATE=$RUNNER_TEMP/release-train-status.json" >> "$GITHUB_ENV"
+
+      - name: Plan (read-only gates)
+        id: plan
+        env:
+          OPERATOR_TOKEN: ${{ secrets.KC_RELEASE_TRAIN_TOKEN }}
+          APPROVER_TOKEN: ${{ secrets.KC_RELEASE_TRAIN_APPROVER_TOKEN }}
+        run: node scripts/release-train.mjs plan
+
+      - name: Freeze dev
+        id: freeze
+        if: steps.plan.outputs.proceed == 'true'
+        env:
+          OPERATOR_TOKEN: ${{ secrets.KC_RELEASE_TRAIN_TOKEN }}
+        run: node scripts/release-train.mjs freeze
+
+      - name: Release head (version PR when dev's tip is a [skip ci] bump)
+        if: steps.plan.outputs.proceed == 'true'
+        timeout-minutes: 140
+        env:
+          OPERATOR_TOKEN: ${{ secrets.KC_RELEASE_TRAIN_TOKEN }}
+        run: node scripts/release-train.mjs head
+
+      - name: Open the release PR
+        if: steps.plan.outputs.proceed == 'true'
+        env:
+          OPERATOR_TOKEN: ${{ secrets.KC_RELEASE_TRAIN_TOKEN }}
+        run: node scripts/release-train.mjs open-pr
+
+      - name: Wait for every check (CI gate, CI verdict, release E2E)
+        if: steps.plan.outputs.proceed == 'true'
+        timeout-minutes: 250
+        env:
+          OPERATOR_TOKEN: ${{ secrets.KC_RELEASE_TRAIN_TOKEN }}
+        run: node scripts/release-train.mjs wait
+
+      - name: Merge to main
+        id: merge
+        if: steps.plan.outputs.proceed == 'true'
+        env:
+          OPERATOR_TOKEN: ${{ secrets.KC_RELEASE_TRAIN_TOKEN }}
+        run: node scripts/release-train.mjs merge
+
+      - name: Deploy to production (approve, verify smoke + tag)
+        id: deploy
+        if: steps.plan.outputs.proceed == 'true'
+        timeout-minutes: 220
+        env:
+          APPROVER_TOKEN: ${{ secrets.KC_RELEASE_TRAIN_APPROVER_TOKEN }}
+        run: node scripts/release-train.mjs deploy
+
+      - name: Sync main → dev
+        if: always() && steps.merge.outcome == 'success'
+        timeout-minutes: 40
+        env:
+          OPERATOR_TOKEN: ${{ secrets.KC_RELEASE_TRAIN_TOKEN }}
+        run: node scripts/release-train.mjs sync
+
+      - name: Lift the freeze
+        if: always() && steps.freeze.outcome != 'skipped' && steps.plan.outputs.proceed == 'true'
+        env:
+          OPERATOR_TOKEN: ${{ secrets.KC_RELEASE_TRAIN_TOKEN }}
+        run: node scripts/release-train.mjs unfreeze
+
+      - name: Store builds (TestFlight + Play internal; report only)
+        if: steps.deploy.outcome == 'success'
+        timeout-minutes: 110
+        run: node scripts/release-train.mjs stores
+
+      - name: Report
+        if: always()
+        run: node scripts/release-train.mjs report
+
+      - name: Status file for bots
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release-train-status
+          path: ${{ runner.temp }}/release-train-status.json
+          retention-days: 90
+          if-no-files-found: warn

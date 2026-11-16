@@ -42,6 +42,14 @@ describe('useFirstPostNudge', () => {
     expect(mocks.countOpenByUser).toHaveBeenCalledWith('u1');
   });
 
+  it('shares the own-profile read with the other readers of that profile (NFR-PERF-005)', async () => {
+    // Another screen already holds the member's profile under the shared key.
+    client.setQueryData(['user-profile', 'u1'], { firstPostNudgeDismissed: false });
+    const { result } = renderHook(() => useFirstPostNudge('u1'), { wrapper });
+    await waitFor(() => expect(result.current.show).toBe(true));
+    expect(mocks.findById).not.toHaveBeenCalled();
+  });
+
   it('hides for signed-out, already dismissed, session-dismissed, or users with open posts', async () => {
     const guest = renderHook(() => useFirstPostNudge(null), { wrapper });
     expect(guest.result.current.show).toBe(false);

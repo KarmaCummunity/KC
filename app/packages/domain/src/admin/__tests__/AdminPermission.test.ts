@@ -33,6 +33,16 @@ describe('AdminPermission matrix', () => {
     expect(hasPermission([], perm)).toBe(false);
   });
 
+  it('demo data management is super_admin and org_admin only (FR-ADMIN-031 AC6)', () => {
+    expect(hasPermission(['super_admin'], 'demo_data.manage')).toBe(true);
+    expect(hasPermission(['org_admin'], 'demo_data.manage')).toBe(true);
+    expect(hasPermission(['admin'], 'demo_data.manage')).toBe(false);
+    expect(hasPermission(['org_manager'], 'demo_data.manage')).toBe(false);
+    expect(hasPermission(['org_volunteer'], 'demo_data.manage')).toBe(false);
+    expect(hasPermission(['moderator'], 'demo_data.manage')).toBe(false);
+    expect(hasPermission(['support'], 'demo_data.manage')).toBe(false);
+  });
+
   it('match quality is visible to super_admin and moderator only (FR-ADMIN-029)', () => {
     expect(hasPermission(['super_admin'], 'matching.view_quality')).toBe(true);
     expect(hasPermission(['moderator'], 'matching.view_quality')).toBe(true);
@@ -112,4 +122,10 @@ describe('AdminPermission matrix', () => {
     expect(hasPermission(['super_admin'], 'whatsapp.configure')).toBe(true);
     expect(hasPermission(['admin'], 'whatsapp.configure')).toBe(false);
     expect(hasPermission(['moderator'], 'whatsapp.configure')).toBe(false);
+  });
+
+  it('worlds.launch (switching a world between portal and active) is super admin only (#2277)', () => {
+    expect(hasPermission(['super_admin'], 'worlds.launch')).toBe(true);
+    expect(hasPermission(['admin'], 'worlds.launch')).toBe(false);
+    expect(hasPermission(['moderator'], 'worlds.launch')).toBe(false);
   });

@@ -56,7 +56,7 @@ describe('useNotificationPreferences', () => {
     await waitFor(() => expect(result.current.prefs.social).toBe(true));
     expect(mocks.execute).toHaveBeenCalledWith({ userId: 'u1', social: true });
     await act(async () => finishMutation?.());
-    await waitFor(() => expect(invalidate).toHaveBeenCalledWith({ queryKey: ['notification-preferences', 'u1'] }));
+    await waitFor(() => expect(invalidate).toHaveBeenCalledWith({ queryKey: ['user-profile', 'u1'] }));
   });
 
   it('rolls back a failed optimistic update and still invalidates', async () => {
@@ -67,6 +67,6 @@ describe('useNotificationPreferences', () => {
     act(() => result.current.update({ social: true }));
     await waitFor(() => expect(mocks.execute).toHaveBeenCalled());
     await waitFor(() => expect(result.current.prefs).toEqual(preferences));
-    await waitFor(() => expect(invalidate).toHaveBeenCalledWith({ queryKey: ['notification-preferences', 'u1'] }));
+    await waitFor(() => expect(invalidate).toHaveBeenCalledWith({ queryKey: ['user-profile', 'u1'] }));
   });
 });
