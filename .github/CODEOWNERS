@@ -35,6 +35,8 @@
 /scripts/*-guard*                           @navesarussi
 /scripts/mobile-*                           @navesarussi
 /scripts/testflight-*                        @navesarussi
+/scripts/eas-*                               @navesarussi
+/scripts/sync-eas-*                          @navesarussi
 /scripts/release-version.mjs                @navesarussi
 /scripts/resolve-green-dev-sha.mjs           @navesarussi
 /scripts/prod-store-build-gate.mjs           @navesarussi
