@@ -35,6 +35,7 @@ export const ADMIN_PERMISSIONS = [
   'donation_links.review',
   'stats.view_platform',
   'worlds.launch',
+  'demo_data.manage',
 ] as const;
 
 export type AdminPermission = (typeof ADMIN_PERMISSIONS)[number];
@@ -110,6 +111,10 @@ export const PERMISSION_MATRIX: Readonly<Record<AdminPermission, readonly AdminR
   'stats.view_platform':        MODERATOR_UP,
   // #2277: only the super admin switches a giving world between portal and active.
   'worlds.launch':              ['super_admin'],
+  // FR-ADMIN-031 — delete and restore the kc-dev demo data. A coarse client gate: the server
+  // (kc_private.can_manage_demo_data) admits the super admin and only the org admin of the
+  // platform organization.
+  'demo_data.manage':           ['super_admin', 'org_admin'],
 };
 
 export function hasPermission(
