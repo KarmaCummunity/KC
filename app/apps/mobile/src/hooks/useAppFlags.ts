@@ -13,7 +13,8 @@ import type { RemoteFeatureFlags } from '../config/featureFlags';
 import { fetchRemoteFeatureFlags } from '../services/featureFlagsComposition';
 import { useAuthStore } from '../store/authStore';
 
-const APP_FLAGS_QUERY_ROOT = 'app-flags';
+/** Root of the app-flags query key; a flag write invalidates it so every gate re-reads. */
+export const APP_FLAGS_QUERY_ROOT = 'app-flags';
 const APP_FLAGS_STALE_MS = 5 * 60 * 1000;
 
 /** Remote flag values of the signed-in member; `undefined` while signed out, loading or offline. */
