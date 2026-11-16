@@ -5647,6 +5647,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      import_normalize_place_text: { Args: { p_text: string }; Returns: string }
       join_challenge: { Args: { p_challenge_id: string }; Returns: undefined }
       knowledge_slot_seats: {
         Args: { p_post_id: string }
