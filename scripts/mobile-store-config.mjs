@@ -20,6 +20,15 @@
 //          and rejects the kc-dev web client (aqs65g…).
 //          Hermes bytecode stores string literals verbatim, so a byte search works.
 //
+//   verify-platform <ios|android> <embedded app.config> [Info.plist as XML]
+//          Platform-specific artifact checks (each store lane runs only its own):
+//          ios     — app.config ios.bundleIdentifier (when present) is ours; when
+//                    the native Google sheet is configured (extra.googleIosClientId)
+//                    the IPA's Info.plist must carry its reversed URL scheme,
+//                    otherwise the Google Sign-In SDK crashes on tap (#1955).
+//                    No iOS client ID = browser OAuth fallback: warning only.
+//          android — app.config android.package (when present) is ours.
+//
 // `pin` also writes the non-secret Sentry settings (EXPO_PUBLIC_SENTRY_DSN, SENTRY_ORG,
 // SENTRY_PROJECT, SENTRY_URL, from the `mobile-store` environment variables) into the same
 // profile env, so iOS and Android builds read Sentry from one place. SENTRY_AUTH_TOKEN
@@ -165,6 +174,72 @@ export function injectProfileEnv(easJson, profile, vars) {
   };
 }
 
+export const APP_ID = 'org.karmacommunity.app';
+const GOOGLE_CLIENT_ID_SUFFIX = '.apps.googleusercontent.com';
+
+/** Reversed iOS client ID = the URL scheme the Google Sign-In SDK needs (mirrors app.config.ts). */
+export function googleIosUrlScheme(iosClientId) {
+  const id = String(iosClientId ?? '');
+  if (!id.endsWith(GOOGLE_CLIENT_ID_SUFFIX)) return undefined;
+  return `com.googleusercontent.apps.${id.slice(0, -GOOGLE_CLIENT_ID_SUFFIX.length)}`;
+}
+
+/**
+ * Platform-specific checks of the embedded Expo config (and, for iOS, the
+ * Info.plist as XML text). Returns { errors, warnings }.
+ */
+export function checkPlatformArtifact({ platform, appConfig, infoPlist = '' }) {
+  const errors = [];
+  const warnings = [];
+  const extra = appConfig?.extra ?? {};
+  if (platform === 'ios') {
+    const bundleId = appConfig?.ios?.bundleIdentifier;
+    if (bundleId !== undefined && bundleId !== APP_ID) {
+      errors.push(`embedded app.config ios.bundleIdentifier is "${bundleId}", expected "${APP_ID}"`);
+    }
+    const iosClientId = extra.googleIosClientId;
+    if (!iosClientId) {
+      warnings.push('no Google iOS client ID in the build (extra.googleIosClientId): iOS uses the browser OAuth flow, not the native Google sheet');
+    } else {
+      const scheme = googleIosUrlScheme(iosClientId);
+      if (!scheme) errors.push('extra.googleIosClientId does not end with .apps.googleusercontent.com');
+      else if (!String(infoPlist).includes(scheme)) {
+        errors.push('Info.plist has no URL scheme for the Google iOS client (the Google Sign-In SDK would crash on tap)');
+      }
+    }
+    return { errors, warnings };
+  }
+  if (platform === 'android') {
+    const pkg = appConfig?.android?.package;
+    if (pkg !== undefined && pkg !== APP_ID) {
+      errors.push(`embedded app.config android.package is "${pkg}", expected "${APP_ID}"`);
+    }
+    if (!extra.googleWebClientId) {
+      warnings.push('no Google web client ID in the build (extra.googleWebClientId): Android uses the browser OAuth flow');
+    }
+    return { errors, warnings };
+  }
+  return { errors: [`unknown platform "${platform ?? ''}"; use ios or android`], warnings };
+}
+
+function verifyPlatform(platform, appConfigPath, infoPlistPath) {
+  if (!platform || !appConfigPath) {
+    fail(['usage: mobile-store-config.mjs verify-platform <ios|android> <app.config> [Info.plist.xml]']);
+  }
+  let appConfig;
+  try {
+    appConfig = JSON.parse(readFileSync(appConfigPath, 'utf8'));
+  } catch (err) {
+    fail([`embedded app.config is not JSON: ${err instanceof Error ? err.message : String(err)}`]);
+  }
+  const infoPlist = infoPlistPath ? readFileSync(infoPlistPath, 'utf8') : '';
+  if (platform === 'ios' && !infoPlistPath) fail(['verify-platform ios needs the Info.plist (as XML)']);
+  const { errors, warnings } = checkPlatformArtifact({ platform, appConfig, infoPlist });
+  for (const w of warnings) console.log(`::warning::${w}`);
+  if (errors.length) fail(errors);
+  console.log(`${platform} artifact checks passed.`);
+}
+
 function fail(errors) {
   for (const e of errors) console.log(`::error::${e}`);
   process.exit(1);
@@ -211,5 +286,6 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const [mode, arg, ...rest] = process.argv.slice(2);
   if (mode === 'pin') pin(process.env);
   else if (mode === 'verify') verify(arg, process.env, rest);
-  else fail([`unknown mode "${mode ?? ''}"; use pin or verify <bundle>`]);
+  else if (mode === 'verify-platform') verifyPlatform(arg, rest[0], rest[1]);
+  else fail([`unknown mode "${mode ?? ''}"; use pin, verify <bundle> or verify-platform <ios|android> <app.config>`]);
 }

@@ -114,7 +114,7 @@ jobs:
     with:
       target: prod
       sha: ${{ inputs.previous_sha }}
-      checks: ${{ inputs.previous_sha != '' && 'version,web,supabase,functions' || 'web,supabase,functions' }}
+      checks: ${{ inputs.previous_sha != '' && 'version,web,backend,supabase,functions' || 'web,backend,supabase,functions' }}
     secrets: inherit
 
   report:

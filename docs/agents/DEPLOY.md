@@ -28,9 +28,10 @@ See [RELEASE.md](./RELEASE.md): version bump → EAS preview → TestFlight / Pl
 | Content (organization links, legal texts, surveys, the platform organization) | Same workflow, action `content` (`supabase/seed/content/load.sh`). Idempotent; classification in [`supabase/seed/content/README.md`](../../supabase/seed/content/README.md). |
 | The e2e members `user1`…`user4@seed.kc.test` | Same workflow, action `e2e-users` (`supabase/seed/e2e/load.sql`; password from the `E2E_SEED_PASSWORD` secret). Idempotent. |
 | All three | Action `all`. |
+| The demo-data tools of the admin portal's Demo data screen (FR-ADMIN-031) | Same workflow, action `demo` (`supabase/seed/demo/load.sql`): installs them and marks kc-dev as the database where a restore may run. Then an admin opens Admin → Demo data and presses **Restore demo data** (the demo members' password is typed once). Run it again whenever `supabase/seed/demo/` changes. Never part of `all`. |
 | A change to reference or content data | Edit the CSV under `supabase/seed/`, run the loader, review the diff in the PR. Seeds are data, never migrations. |
 
-The old fake Hebrew dataset (posts, chats, follows) was retired with the migration chain; it is kept for reference in `supabase/archive/seed-kc-dev-demo/`.
+The fake Hebrew dataset (members, posts, rides, chats, follows, `[DEMO]` nonprofits) is created and deleted from the portal once the `demo` action ran; the legacy version is kept for reference in `supabase/archive/seed-kc-dev-demo/`.
 
 Never seed prod. The seed password lives only in the `E2E_SEED_PASSWORD` Actions secret; never paste them into code, issues, PRs or chat.
 

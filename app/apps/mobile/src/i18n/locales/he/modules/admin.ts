@@ -13,6 +13,7 @@ import { adminSurveysHe } from './adminSurveys';
 import { adminTasksHe } from './adminTasks';
 import { adminAdminsParityHe } from './adminAdminsParity';
 import { adminRolesParityHe } from './adminHierarchyParity';
+import { adminWorldsHe } from './adminWorlds';
 
 export const adminHe = {
   portalTitle: 'פורטל ניהול',
@@ -34,6 +35,7 @@ export const adminHe = {
     matching:      'איכות התאמות',
     donationLinks: 'קישורי תרומה',
     stats:         'סטטיסטיקות',
+    worlds:        'עולמות נתינה',
   },
   roles: {
     super_admin: 'מנהל-על',
@@ -63,6 +65,7 @@ export const adminHe = {
     money: 'כסף תשלום תרומה',
     donationLinks: 'תרומה קישור',
     stats: 'סטטיסטיקה נתונים מדדים',
+    worlds: 'עולם עולמות פורטל הפעלה דגל קטגוריה',
   },
   dashboard: {
     welcome: 'ברוך הבא לפורטל הניהול',
@@ -172,5 +175,6 @@ export const adminHe = {
   crm: adminCrmHe,
   orgApprovals: adminOrgApprovalsHe,
   donationLinks: adminDonationLinksHe,
+  worlds: adminWorldsHe,
   surveys: adminSurveysHe,
 } as const;

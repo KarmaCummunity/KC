@@ -5,7 +5,7 @@ The biggest risk is critical mass, and the solution already exists: a huge marke
 **GTM (D47):** migrate **one group at a time**, items or rides; learn; only then the next.
 
 ## Import channels (S22)
-1. **Manual paste / share (MVP)** — paste or share (OS share sheet) a WhatsApp, Facebook or Yad2 post → extraction → reviewed post draft, only for the member's own post (`FR-IMPORT-*`, {{D:external-post-import}}). KC never scrapes or reads those platforms.
+1. **Manual paste / share (MVP)** — paste or share (OS share sheet) a WhatsApp, Facebook or Yad2 post → extraction → reviewed post draft, only for the member's own post (`FR-IMPORT-*`, D167). KC never scrapes or reads those platforms.
 2. **Chat-export upload (next to launch)** — group admin uploads an export; auto-classification to post type, world, city; low confidence → review queue.
 3. **Live bot (phase 2)** — only in groups whose admin added it, and only via an interface permitted by WhatsApp's terms.
 4. **Bridge & migration (S23)** — each group gets a parallel community in the app; bot posts summaries with links to the group; when most activity moved, the admin locks the group.

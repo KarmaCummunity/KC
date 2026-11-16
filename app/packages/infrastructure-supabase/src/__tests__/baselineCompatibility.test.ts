@@ -13,7 +13,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { MIGRATION_STATUS, PACKAGE_IDS } from '../migrationStatus';
 import {
-  findUnmigrated, listAppSources, readBaselineObjects, type InventoryEntry, type MapRow, type Offender,
+  DEV_SEED_RPCS, findUnmigrated, listAppSources, readBaselineObjects, type InventoryEntry, type MapRow, type Offender,
 } from '../migrationStatus/scan';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -60,6 +60,15 @@ describe('baseline compatibility inventory', () => {
     expect(everything.filter(({ file }) => !fs.existsSync(path.join(APP_ROOT, file))).map(({ file }) => file)).toEqual([]);
     expect(new Set(everything.map(({ file }) => file)).size).toBe(everything.length);
     expect(Object.keys(MIGRATION_STATUS).sort()).toEqual([...PACKAGE_IDS].sort());
+  });
+
+  it('every dev-only seed RPC the scan accepts is declared by the demo-data seed (FR-ADMIN-031)', () => {
+    const seedDir = path.join(REPO_ROOT, 'supabase/seed/demo/lib');
+    const seedSql = fs.readdirSync(seedDir).map((file) => fs.readFileSync(path.join(seedDir, file), 'utf8')).join('\n');
+    const undeclared = [...DEV_SEED_RPCS].filter((name) => !seedSql.includes(`function public.${name}(`));
+    expect(undeclared).toEqual([]);
+    // Never a baseline object: a migrated RPC must leave this list.
+    expect([...DEV_SEED_RPCS].filter((name) => baseline.rpc.has(name))).toEqual([]);
   });
 
   it('the frozen legacy types go away with the last entry', () => {

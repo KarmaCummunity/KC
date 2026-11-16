@@ -1,6 +1,6 @@
 # ADR-008 — External post import: share → scrub → extract → resolve → review
 
-- **Status:** Proposed (2026-11-16) · for gap `G27` phase 1 (decision `{{D:external-post-import}}`, engineering `{{ENG:post-extraction-pipeline}}`)
+- **Status:** Proposed (2026-11-16) · for gap `G27` phase 1 (decision `D167`, engineering `D-238`)
 - **Requirements:** [`FR-IMPORT-001..010`](../../spec/requirements/25_external_post_import.md)
 - **Related:** [ADR-002](./ADR-002-data-layer.md) (new-RPC checklist), [ADR-006](./ADR-006-one-post-model.md) (`posts.source`), `D-63` / `D-65` (provider seam, DPA), `D-202` (Edge observability), `FR-TRANSLATE-002` (same cache and single-flight ideas)
 
@@ -128,4 +128,4 @@ Behind `external_post_import_enabled`, dev first, then a dogfood group. Provider
 - **Provider terms:** the free tier is not zero-retention; the DPA provider and model are chosen at launch readiness (operator item, no code change).
 - **Share-target library** on Expo / iOS extension needs a prebuild config change; decided in slice 5 by the ADR-005 matrix.
 - **Alias coverage** for places grows from production corrections; owned by the places catalog task (`G45`).
-- **Attestation is a working assumption** (`{{S:import-own-post-attestation}}`) until the PM approves; the pipeline itself is independent of it.
+- **Attestation is a working assumption** (`S90`) until the PM approves; the pipeline itself is independent of it.

@@ -3,8 +3,15 @@
  * Gate the automatic PROD store-build pipeline.
  *
  * A store build may proceed only when all of the following hold:
- *   1. KC_PROD_STORE_BUILD_ENABLED is exactly "true" (unset / any other
- *      value = fail closed; default is block). This script never sets the var.
+ *   1. The platform is enabled (fail closed; default is block; this script
+ *      never sets a variable). iOS and Android are decided separately:
+ *        KC_PROD_STORE_BUILD_IOS_ENABLED / KC_PROD_STORE_BUILD_ANDROID_ENABLED
+ *      exactly "true" enables that platform, any other non-empty value
+ *      (e.g. "false") disables it, and unset falls back to the legacy
+ *      KC_PROD_STORE_BUILD_ENABLED (exactly "true" = both platforms).
+ *      A disabled platform is skipped (notice) while the other still builds;
+ *      the run fails closed only when no requested platform is enabled, or
+ *      when a dispatch explicitly asked for a disabled platform.
  *   2. The triggering event is a successful PROD Deploy on main whose
  *      "tag release" job succeeded (a skipped-only Deploy on main must not
  *      start a store build), or a workflow_dispatch of a SHA that is on
@@ -24,6 +31,12 @@ import { fileURLToPath } from 'node:url';
 const SHA_RE = /^[0-9a-f]{40}$/i;
 
 export const ENABLED_VAR = 'KC_PROD_STORE_BUILD_ENABLED';
+export const PLATFORMS = ['ios', 'android'];
+export const PLATFORM_VARS = {
+  ios: 'KC_PROD_STORE_BUILD_IOS_ENABLED',
+  android: 'KC_PROD_STORE_BUILD_ANDROID_ENABLED',
+};
+export const PLATFORM_LABELS = { ios: 'iOS (TestFlight)', android: 'Android (Play internal)' };
 export const TAG_JOB_NAME = 'tag release';
 
 /**
@@ -45,6 +58,61 @@ export function enabledErrors(raw) {
   return [
     `${ENABLED_VAR} is not true (default: block). The automatic PROD store-build pipeline will not run until this repo variable is set to exactly true.`,
   ];
+}
+
+/**
+ * Whether one platform may build. Its own variable wins when set (only the
+ * exact token "true" enables); unset falls back to the legacy shared flag.
+ * @returns {{ enabled: boolean, source: string }}
+ */
+export function platformEnabled(platform, flags = {}) {
+  const name = PLATFORM_VARS[platform];
+  if (!name) throw new Error(`unknown platform "${platform}"`);
+  const own = String(flags[name] ?? '').trim();
+  if (own !== '') return { enabled: own === 'true', source: `${name}=${own}` };
+  const legacy = String(flags[ENABLED_VAR] ?? '').trim();
+  return { enabled: isStoreBuildEnabled(legacy), source: `${ENABLED_VAR}=${legacy || '(unset)'} (fallback)` };
+}
+
+/** Platforms a run asks for: '', 'both' (default) or one platform. */
+export function requestedPlatforms(raw) {
+  const v = String(raw ?? '').trim().toLowerCase();
+  if (v === '' || v === 'both') return { platforms: [...PLATFORMS], errors: [] };
+  if (PLATFORMS.includes(v)) return { platforms: [v], errors: [] };
+  return { platforms: [], errors: [`platform input must be both, ios or android (got "${raw}")`] };
+}
+
+/**
+ * Per-platform plan. `explicit` = the caller named one platform, so a
+ * disabled platform is an error instead of a quiet skip.
+ */
+export function planPlatforms({ flags = {}, platform } = {}) {
+  const { platforms: requested, errors } = requestedPlatforms(platform);
+  const explicit = requested.length === 1;
+  const plan = {};
+  const notices = [];
+  for (const p of PLATFORMS) {
+    const { enabled, source } = platformEnabled(p, flags);
+    const isRequested = requested.includes(p);
+    plan[p] = { requested: isRequested, enabled, build: isRequested && enabled, source };
+    if (isRequested && !enabled) {
+      const msg = `${PLATFORM_LABELS[p]} PROD store build is disabled (${source}).`;
+      if (explicit) errors.push(`${msg} The dispatch asked for ${p} only.`);
+      else notices.push(`${msg} Skipping it; the other platform is not affected.`);
+    }
+  }
+  if (requested.length > 0 && !PLATFORMS.some((p) => plan[p].build) && errors.length === 0) {
+    errors.push(
+      `No requested platform is enabled (${PLATFORMS.map((p) => plan[p].source).join(', ')}). ` +
+        `Set ${PLATFORM_VARS.ios} / ${PLATFORM_VARS.android} or ${ENABLED_VAR} to exactly true (default: block).`,
+    );
+  }
+  return { plan, errors, notices };
+}
+
+/** Errors when no platform at all is enabled (used by the read-only ledger job). */
+export function anyPlatformEnabledErrors(flags = {}) {
+  return planPlatforms({ flags }).errors;
 }
 
 /**
@@ -92,28 +160,35 @@ export function checkDispatchSha({ sha, aheadBy, tags }) {
   return { errors, sha: value, tags: vtags };
 }
 
-export function decide({ eventName, enabled, deploy, dispatch }) {
+export function decide({ eventName, enabled, flags, platform, deploy, dispatch }) {
+  const allFlags = { [ENABLED_VAR]: enabled, ...(flags ?? {}) };
   if (eventName === 'workflow_dispatch') {
     const { errors: shaErrors, sha, tags } = checkDispatchSha(dispatch ?? {});
-    const errors = [...enabledErrors(enabled), ...shaErrors];
+    const { plan, errors: platformErrors, notices } = planPlatforms({ flags: allFlags, platform });
+    const errors = [...platformErrors, ...shaErrors];
     return {
       proceed: errors.length === 0,
       quiet: false,
       sha: errors.length === 0 ? sha : undefined,
       tag: tags?.[0],
+      platforms: plan,
+      notices,
       errors,
     };
   }
   if (eventName === 'workflow_run') {
     const classified = classifyDeployRun(deploy ?? {});
     if (classified.kind !== 'prod-tagged') {
-      return { proceed: false, quiet: true, errors: [], reason: classified.reason };
+      return { proceed: false, quiet: true, errors: [], notices: [], reason: classified.reason };
     }
-    const errors = enabledErrors(enabled);
+    // A tagged release always asks for both platforms.
+    const { plan, errors, notices } = planPlatforms({ flags: allFlags, platform: 'both' });
     return {
       proceed: errors.length === 0,
       quiet: false,
       sha: classified.sha,
+      platforms: plan,
+      notices,
       errors,
       reason: classified.reason,
     };
@@ -121,6 +196,7 @@ export function decide({ eventName, enabled, deploy, dispatch }) {
   return {
     proceed: false,
     quiet: false,
+    notices: [],
     errors: [`unsupported event "${eventName ?? ''}" for the PROD store-build gate`],
   };
 }
@@ -223,23 +299,36 @@ export async function main(env, io = {}) {
   const decision = decide({
     eventName,
     enabled: env.KC_PROD_STORE_BUILD_ENABLED,
+    flags: {
+      [PLATFORM_VARS.ios]: env.KC_PROD_STORE_BUILD_IOS_ENABLED,
+      [PLATFORM_VARS.android]: env.KC_PROD_STORE_BUILD_ANDROID_ENABLED,
+    },
+    platform: env.INPUT_PLATFORM,
     deploy,
     dispatch,
   });
 
   const log = io.log ?? console;
+  const writePlatforms = (on) => {
+    for (const p of PLATFORMS) writeOutput(io, p, on && decision.platforms?.[p]?.build ? 'true' : 'false');
+  };
   if (decision.quiet) {
     log.info?.(`PROD store-build: skipping (${decision.reason})`) ?? log.log(`PROD store-build: skipping (${decision.reason})`);
     writeOutput(io, 'proceed', 'false');
+    writePlatforms(false);
     return 0;
   }
+  for (const n of decision.notices ?? []) (log.info ?? log.log)(`::notice::${n}`);
   if (!decision.proceed) {
     for (const e of decision.errors) (log.error ?? log.log)(`::error::${e}`);
     writeOutput(io, 'proceed', 'false');
+    writePlatforms(false);
     return 1;
   }
-  (log.info ?? log.log)(`PROD store-build gate passed for ${decision.sha}`);
+  const building = PLATFORMS.filter((p) => decision.platforms[p].build);
+  (log.info ?? log.log)(`PROD store-build gate passed for ${decision.sha}: ${building.join(' + ')}`);
   writeOutput(io, 'proceed', 'true');
+  writePlatforms(true);
   writeOutput(io, 'sha', decision.sha);
   if (decision.tag) writeOutput(io, 'tag', decision.tag);
   return 0;
