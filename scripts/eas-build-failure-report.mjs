@@ -3,13 +3,11 @@
 //
 // `eas build --json --wait` only prints "✖ Build failed", so a red store job
 // used to need an expo.dev login to see the cause. This reads the build id
-// from the captured eas stderr (or argv), asks `eas build:view --json` for
-// the error, downloads the build log files and prints the failing phase.
+// from the captured eas stderr (or argv), asks the Expo API for the error, downloads the build log files and prints the failing phase.
 // EAS redacts secret-type env values in its logs; GitHub masks job secrets.
 //
 // Usage: node scripts/eas-build-failure-report.mjs <eas-stderr-file | build-id>
 // Never fails the job by itself (exit 0); it only reports.
-import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 
@@ -56,8 +54,22 @@ export function summarize(entries, { tail = 150, matches = 80 } = {}) {
   return { phase, hits: hits.map((e) => e.msg), tail: inPhase.slice(-tail).map((e) => e.msg) };
 }
 
-function sh(cmd, args) {
-  return execFileSync(cmd, args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 64 * 1024 * 1024 });
+const BUILD_QUERY = `query BuildReport($id: ID!) {
+  builds { byId(buildId: $id) { id status platform buildProfile logFiles error { errorCode message docsUrl } } }
+}`;
+
+/** Same Expo GraphQL API eas-cli uses; needs no project checkout. */
+async function fetchBuild(id, token) {
+  const res = await fetch('https://api.expo.dev/graphql', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
+    body: JSON.stringify({ query: BUILD_QUERY, variables: { id } }),
+  });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok || body.errors) {
+    throw new Error(`HTTP ${res.status}: ${(body.errors ?? []).map((e) => e.message).join('; ')}`);
+  }
+  return body.data.builds.byId;
 }
 
 async function main() {
@@ -68,11 +80,16 @@ async function main() {
     console.log('::warning::eas-build-failure-report: no EAS build id found');
     return;
   }
+  const token = process.env.EXPO_TOKEN;
+  if (!token) {
+    console.log('::warning::eas-build-failure-report: EXPO_TOKEN is not set');
+    return;
+  }
   let view;
   try {
-    view = JSON.parse(sh('eas', ['build:view', id, '--json']));
+    view = await fetchBuild(id, token);
   } catch (err) {
-    console.log(`::warning::eas build:view ${id} failed: ${String(err.message).split('\n')[0]}`);
+    console.log(`::warning::EAS build ${id} lookup failed: ${err.message}`);
     return;
   }
   const err = view.error ?? {};
