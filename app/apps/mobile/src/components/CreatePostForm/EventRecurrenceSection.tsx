@@ -17,7 +17,8 @@ interface Props {
 
 /** The event's start as a date; null until the member picked one. */
 function startOf(details: Readonly<Record<string, unknown>>): Date | null {
-  const at = Date.parse(String(details.starts_at ?? ''));
+  const startsAt = details.starts_at;
+  const at = Date.parse(typeof startsAt === 'string' ? startsAt : '');
   return Number.isNaN(at) ? null : new Date(at);
 }
 

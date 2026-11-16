@@ -13,7 +13,14 @@ export function isValidOrgSlug(slug: string): boolean {
 /** The lowercase Latin words of `text`, hyphen-joined, within the slug limits ('' when none). */
 function slugWords(text: string): string {
   const words = text.toLowerCase().split(/[^a-z0-9]+/).filter((word) => word.length > 0).slice(0, MAX_WORDS);
-  return words.join('-').slice(0, ORG_SLUG_MAX).replace(/-+$/, '');
+  return trimTrailingHyphens(words.join('-').slice(0, ORG_SLUG_MAX));
+}
+
+/** `text` without its trailing hyphens (a loop, not `/-+$/`, which backtracks super-linearly). */
+function trimTrailingHyphens(text: string): string {
+  let end = text.length;
+  while (end > 0 && text[end - 1] === '-') end -= 1;
+  return text.slice(0, end);
 }
 
 /**

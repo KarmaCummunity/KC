@@ -106,7 +106,7 @@ export class SupabasePostSeriesRepository implements IPostSeriesRepository {
       ) ?? [];
     return rows.flatMap((row) => {
       const post = Array.isArray(row.posts) ? row.posts[0] : row.posts;
-      if (!post || post.status !== 'open' || !row.series_on) return [];
+      if (post?.status !== 'open' || !row.series_on) return [];
       return [{ postId: row.post_id, occurrenceOn: row.series_on, startsAt: row.starts_at }];
     });
   }

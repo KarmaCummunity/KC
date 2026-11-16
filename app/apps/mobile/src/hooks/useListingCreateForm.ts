@@ -157,10 +157,10 @@ export function useListingCreateForm({
     const creating = editListingId ? {} : { photoCount, subcategoryId: showSubcategory ? subcategoryId : undefined };
     const rule = marketplaceRuleFieldError({ worldSlug, direction, details: submitted, ...creating });
     if (rule) return { message: t(rule.key), field: fieldForRule(rule.code, submitted) };
-    if (isRides && recurrence && recurrence.weekdays.length === 0) {
+    if (isRides && recurrence?.weekdays.length === 0) {
       return { message: t('rideSeries.errors.weekdaysRequired'), field: 'ride:recurrence' };
     }
-    if (eventSeries && eventSeries.weekdays.length === 0) return { message: t('postSeries.errors.weekdaysRequired'), field: null };
+    if (eventSeries?.weekdays.length === 0) return { message: t('postSeries.errors.weekdaysRequired'), field: null };
     if (eventSeries && !isEventSeriesDuration(submitted)) return { message: t('postSeries.errors.durationInvalid'), field: null };
     if (isRides && !recurrence && hasInvalidRideHouseNumber(houseNumbers)) {
       return { message: t('ridePlaces.houseNumberInvalid'), field: fieldForHouseNumbers(houseNumbers) };

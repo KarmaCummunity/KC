@@ -6,7 +6,7 @@ import { gotoApp } from '../../lib/app';
 /**
  * FR-MOD-002 (#2096): report a problem from Settings, end to end. A too-short description keeps
  * Send disabled; a valid report opens the support thread, shows the report there and is stored
- * as a message in that thread. Leaves one tagged report in user A's support thread on kc-dev.
+ * as a system message in that thread. Leaves one tagged report in user A's support thread on kc-dev.
  */
 test('report a problem opens the support thread with the report', async ({ page }) => {
   const description = `${runTag()} report-a-problem journey check`;
@@ -28,12 +28,16 @@ test('report a problem opens the support thread with the report', async ({ page 
   await page.waitForURL(/\/chat\/[0-9a-f-]{36}/, { timeout: 30_000 });
   await expect(page.getByText(description).first()).toBeVisible({ timeout: 30_000 });
 
-  // The report is stored once, as a message of that thread (readable by its participant).
+  // The report is stored once, as a system message of that thread (submit_support_issue,
+  // migration 0015: kind `system`, payload kind `support_issue` with the description), readable
+  // by its participant. The system message may land a moment after the screen switched.
   const chatId = page.url().match(/\/chat\/([0-9a-f-]{36})/)![1];
   const { session } = await sessionFor(USER_A);
-  const rows = await rest<{ id: string }[]>(
-    session.access_token,
-    `messages?select=id&chat_id=eq.${chatId}&body=eq.${encodeURIComponent(`Bug\n\n${description}`)}`,
-  );
-  expect(rows).toHaveLength(1);
+  const path =
+    `messages?select=id&chat_id=eq.${chatId}&kind=eq.system` +
+    `&system_payload->>kind=eq.support_issue` +
+    `&system_payload->>description=eq.${encodeURIComponent(description)}`;
+  await expect
+    .poll(async () => (await rest<{ id: string }[]>(session.access_token, path)).length, { timeout: 30_000 })
+    .toBe(1);
 });
