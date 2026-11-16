@@ -1,6 +1,6 @@
 # 2.25 External post import (ייבוא פוסט מבחוץ)
 
-> **Status:** 🟡 Spec v1 (2026-11-16). ✅ Domain core (`@kc/domain/imports`: FR-IMPORT-002, 003 AC3, 005, 006 AC1-AC2, fingerprint of 008 AC1, #2345) is implemented, and ✅ official place resolution (FR-IMPORT-004: `api_resolve_place`, #2346); the Edge Function, quality gate and mobile flow are still ⏳. Product decision `D167`; working assumption `S90` awaits PM approval; gap `G27` (phase 1). Engineering design: [ADR-008](../../architecture/adr/ADR-008-external-post-import.md). Issue: #2343.
+> **Status:** 🟡 Spec v1 (2026-11-16). ✅ Domain core (`@kc/domain/imports`: FR-IMPORT-002, 003 AC3, 005, 006 AC1-AC2, fingerprint of 008 AC1, #2345) is implemented, and ✅ official place resolution (FR-IMPORT-004: `api_resolve_place`, #2346); and ✅ the extraction pipeline library (`_shared/post-extraction`: provider seam, prompt and schema, place and time resolution, confidence routing, #2347 part 1); the Edge Function with cache and limits, quality gate and mobile flow are still ⏳. Product decision `D167`; working assumption `S90` awaits PM approval; gap `G27` (phase 1). Engineering design: [ADR-008](../../architecture/adr/ADR-008-external-post-import.md). Issue: #2343.
 
 Prefix: `FR-IMPORT-*`
 
