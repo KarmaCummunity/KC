@@ -15,6 +15,11 @@ on:
           - ios
           - android
         default: all
+      report_build_id:
+        description: Optional existing EAS build id — only print its error and failing-phase log (read-only, no new build)
+        type: string
+        required: false
+        default: ''
 
 permissions:
   contents: read
@@ -24,11 +29,42 @@ env:
   EAS_CLI_VERSION: 24.12.1
 
 jobs:
+  # Read-only: diagnose an existing EAS build (e.g. a red Play internal or
+  # PROD store Android build) without an expo.dev login. No build, no submit.
+  report:
+    name: EAS build report (${{ inputs.report_build_id }})
+    if: inputs.report_build_id != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            .nvmrc
+            scripts/eas-build-failure-report.mjs
+          sparse-checkout-cone-mode: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version-file: .nvmrc
+      - name: Install EAS CLI
+        run: npm install -g "eas-cli@$EAS_CLI_VERSION" --ignore-scripts
+      - name: Report
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          BUILD_ID: ${{ inputs.report_build_id }}
+        run: |
+          printf '%s' "$BUILD_ID" | grep -Eq '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' || { echo "::error::report_build_id must be an EAS build UUID"; exit 1; }
+          node scripts/eas-build-failure-report.mjs "$BUILD_ID"
+
   # One job per platform (matrix, fail-fast off): an iOS failure never cancels
   # the Android build and vice versa; each platform has its own concurrency
   # group (a newer run of the same platform replaces the older one).
   preview:
     name: EAS preview build (${{ matrix.platform }})
+    if: inputs.report_build_id == ''
     runs-on: ubuntu-latest
     timeout-minutes: 90
     permissions:
@@ -82,9 +118,18 @@ jobs:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
           PLATFORM: ${{ matrix.platform }}
         run: |
+          set -o pipefail
           eas build \
             --platform "$PLATFORM" \
             --profile preview \
             --non-interactive \
-            --wait
+            --wait 2>&1 | tee "$RUNNER_TEMP/eas-build.log"
           echo "**EAS preview ($PLATFORM): built**" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Report EAS build failure
+        if: failure()
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          [ -f "$RUNNER_TEMP/eas-build.log" ] || exit 0
+          node "$GITHUB_WORKSPACE/scripts/eas-build-failure-report.mjs" "$RUNNER_TEMP/eas-build.log"

@@ -4,7 +4,7 @@ Rows a new environment ships with that are **content, not schema and not demo da
 lists of organization links, the links and knowledge of the giving worlds, the legal texts,
 the in-app surveys and the platform organization. They were exported once, read-only, from kc-dev (2026-11-11) and are the
 version-controlled source from now on. Reference data (cities, streets, junctions, worlds,
-post kinds, subcategories, world flags) stays in `../reference/`; the retired demo data is in `../../archive/seed-kc-dev-demo/`
+post kinds, subcategories, world flags) stays in `../reference/`; the demo data is made by the dev-only tools in `../demo/`
 and never reaches kc-prod.
 
 ```bash
@@ -21,7 +21,7 @@ loads reference and content on the baseline twice and runs `check.sql`; CI runs 
 | `data/donation_link_categories.csv` | 11 | `donation_link_categories` (icon, order; labels live in the app's locale files) |
 | `data/donation_links.csv` | 108 | `donation_links`, curated (no submitter), approved after loading |
 | `data/legal_document_versions.csv` | 2 | `legal_documents` pointer + `legal_document_versions` (terms, privacy, version 1, Hebrew) |
-| `data/surveys.csv`, `survey_versions.csv`, `survey_questions.csv` | 3 / 3 / 8 | `surveys`, `survey_versions`, `survey_questions` |
+| `data/surveys.csv`, `survey_versions.csv`, `survey_questions.csv` | 4 / 4 / 19 | `surveys`, `survey_versions`, `survey_questions`: the three in-app surveys and the public research survey `alt-platforms-research` (11 questions, FR-RESEARCH-001; restored from the archived migration `0131`, it was missing from the kc-dev export) |
 | `data/world_links.csv` | 8 | `world_links`: paths from one giving world to a related one (migration `0024`), matched by world + link slug |
 | `data/external_bodies.csv` | 7 | `external_bodies`: organizations a world works through, matched by slug; the site address is filled only where the app already curated it |
 | `data/knowledge_topics.csv`, `knowledge_topic_aliases.csv` | 56 / 78 | `knowledge_topics` (all in the knowledge world, 11 roots) and `knowledge_topic_aliases`, matched by slug / normalized alias |

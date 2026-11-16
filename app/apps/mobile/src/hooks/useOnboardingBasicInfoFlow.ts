@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import { dateOfBirthIssue } from '@kc/domain';
 import { useAuthStore } from '../store/authStore';
 import { useFeedSessionStore } from '../store/feedSessionStore';
+import { useOnboardingReplayStore } from '../store/onboardingReplayStore';
 import { getCompleteBasicInfoUseCase, markBasicInfoSkipped } from '../services/userComposition';
 import { mapEditProfileSaveError } from '../lib/editProfileSaveErrors';
 import { getProfileAddressPairIssue } from '../lib/profileAddressFieldGate';
@@ -23,6 +24,8 @@ export function useOnboardingBasicInfoFlow() {
   /** ISO `YYYY-MM-DD`, or null until the three parts form a real date (FR-AUTH-010 AC2.d). */
   const [dateOfBirth, setDateOfBirth] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  // FR-ADMIN-035: in an admin replay the step validates and moves on but saves nothing.
+  const replayActive = useOnboardingReplayStore((s) => s.active);
 
   const addressIssue = getProfileAddressPairIssue(street, streetNumber);
   const hasRequiredFields =
@@ -60,6 +63,10 @@ export function useOnboardingBasicInfoFlow() {
       showAddressToast();
       return;
     }
+    if (replayActive) {
+      router.replace('/(onboarding)/photo');
+      return;
+    }
     setLoading(true);
     try {
       await getCompleteBasicInfoUseCase().execute({
@@ -86,6 +93,10 @@ export function useOnboardingBasicInfoFlow() {
 
   const handleSkip = async () => {
     if (!session) return;
+    if (replayActive) {
+      router.replace('/(onboarding)/photo');
+      return;
+    }
     setLoading(true);
     try {
       await markBasicInfoSkipped(session.userId);
