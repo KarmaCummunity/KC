@@ -1,0 +1,28 @@
+import { ImportExtractionError } from './ImportExtractionError';
+import { normalizeMessage } from './normalizeMessage';
+import { IMPORT_PLACEHOLDER_PATTERN, scrubPii, type ScrubResult } from './scrubPii';
+
+export interface PreparedImportText {
+  /** Scrubbed text: the only form that may be sent to a provider or fingerprinted. */
+  readonly text: string;
+  readonly messageAt: Date | null;
+  readonly truncated: boolean;
+  readonly removed: ScrubResult['removed'];
+}
+
+/**
+ * Normalize, then scrub, one shared text. Throws `empty_text` when nothing but placeholders,
+ * symbols or emoji is left (FR-IMPORT-002 AC5): there is nothing to extract.
+ */
+export function prepareImportText(raw: string): PreparedImportText {
+  const normalized = normalizeMessage(raw);
+  const scrubbed = scrubPii(normalized.text);
+  const letters = scrubbed.text.replace(IMPORT_PLACEHOLDER_PATTERN, '').replace(/[^\p{L}]/gu, '');
+  if (letters.length === 0) throw new ImportExtractionError('empty_text', 'Import text has no readable content');
+  return {
+    text: scrubbed.text,
+    messageAt: normalized.messageAt,
+    truncated: normalized.truncated,
+    removed: scrubbed.removed,
+  };
+}

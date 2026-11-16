@@ -2034,3 +2034,11 @@ Owner rules that go with it:
 **Open.** Provider and DPA choice at launch readiness; share-target library per ADR-005; the own-post attestation (`S90`) awaits PM approval.
 
 **Affected.** `docs/spec/requirements/25_external_post_import.md`, `docs/architecture/adr/ADR-008-external-post-import.md`, later `supabase/functions/extract-external-post/`, `app/packages/{domain,application,infrastructure-supabase}`, `app/apps/mobile`.
+
+## D-240 — A PR run is voided only by gate files it used (2026-11-16)
+
+**Decision.** `CI verdict` voids a green PR run when the base branch changed a gate file after the run, and a gate file is now only what can shape that run's verdict: `.github/workflows/ci.yml`, the lane workflows the run itself recorded (`referenced_workflows`, nested ones included), `.github/actions/**`, `.github/owners.json`, `scripts/ci-*` and `scripts/check-*`. A renamed file counts under its old name. Every other `.github` file (`CODEOWNERS`, `dependabot.yml`, rulesets docs, release, deploy and store workflows) no longer voids a run.
+
+**Why.** A PR that touches the app runs the Maestro lane for 40–90 minutes, and `dev` changes some `.github` file several times a day. On 2026-11-16 one PR lost five green runs this way, four of them to files no PR run uses (#2369). The binding still proves that the workflow and judges that ran are the base branch's own, and the merge-group run re-judges the final tree before anything merges.
+
+**Affected.** `scripts/ci-run-binding.mjs`, `docs/SSOT/ENVIRONMENTS.md`. `CI verdict` runs from `main`, so the rule takes effect with the next release to `main`.
