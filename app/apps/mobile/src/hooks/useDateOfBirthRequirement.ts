@@ -4,6 +4,7 @@ import { useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../store/authStore';
 import { getUserRepo } from '../services/userComposition';
+import { userProfileKeys } from '../lib/queryKeys';
 
 const FIVE_MINUTES_MS = 5 * 60_000;
 
@@ -15,20 +16,24 @@ export function useDateOfBirthRequirement() {
     const userId = useAuthStore.getState().session?.userId;
     if (!userId) return false;
     try {
-      const dateOfBirth = await queryClient.fetchQuery({
-        queryKey: ['my-date-of-birth', userId],
-        queryFn: async () => (await getUserRepo().findById(userId))?.dateOfBirth ?? null,
+      // The shared own-profile query (NFR-PERF-005): a profile another screen loaded in the last
+      // five minutes answers this without a second five-request profile read.
+      const user = await queryClient.fetchQuery({
+        queryKey: userProfileKeys.byId(userId),
+        queryFn: () => getUserRepo().findById(userId),
         staleTime: FIVE_MINUTES_MS,
       });
-      return dateOfBirth === null;
+      return (user?.dateOfBirth ?? null) === null;
     } catch {
       return false;
     }
   }, [queryClient]);
 
-  /** Forget the cached answer after the date is saved, so the next check reads the stored value. */
+  /** Mark the cached profile stale after the date is saved, so the next check reads the stored value. */
   const forgetDateOfBirthAnswer = useCallback(() => {
-    void queryClient.invalidateQueries({ queryKey: ['my-date-of-birth'] });
+    const userId = useAuthStore.getState().session?.userId;
+    if (!userId) return;
+    void queryClient.invalidateQueries({ queryKey: userProfileKeys.byId(userId) });
   }, [queryClient]);
 
   return { isDateOfBirthMissing, forgetDateOfBirthAnswer };
