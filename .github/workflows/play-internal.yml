@@ -223,7 +223,7 @@ jobs:
           BUILD_SHA: ${{ steps.target.outputs.sha }}
         run: |
           set -euo pipefail
-          eas build --platform android --profile "$EAS_PROFILE" --non-interactive --wait --json > build.json
+          eas build --platform android --profile "$EAS_PROFILE" --non-interactive --wait --json > build.json 2> >(tee "$RUNNER_TEMP/eas-build.err" >&2)
           url="$(jq -r '.[0].artifacts.buildUrl // empty' build.json)"
           [ -n "$url" ] || { echo "::error::No AAB artifact URL from EAS"; exit 1; }
           # Refuse to submit unless the shipped JS bundle points at the selected
@@ -242,6 +242,17 @@ jobs:
           eas submit --platform android --profile production --url "$url" --non-interactive
           echo "version_code=$version_code" >> "$GITHUB_OUTPUT"
           echo "**Android → Play internal: submitted** versionCode $version_code from $BUILD_SHA ($STORE_BACKEND backend, profile $EAS_PROFILE)" >> "$GITHUB_STEP_SUMMARY"
+
+      # `eas build --json` prints only "Build failed"; surface the EAS error
+      # and the failing phase's log in this job (no expo.dev login needed).
+      - name: Report EAS build failure
+        if: failure() && steps.build.conclusion == 'failure'
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          report="$GITHUB_WORKSPACE/scripts/eas-build-failure-report.mjs"
+          [ -f "$RUNNER_TEMP/eas-build.err" ] && [ -f "$report" ] || exit 0
+          node "$report" "$RUNNER_TEMP/eas-build.err"
 
       - name: Remove key file
         if: always()

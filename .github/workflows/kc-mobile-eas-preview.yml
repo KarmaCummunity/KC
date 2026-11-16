@@ -82,9 +82,18 @@ jobs:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
           PLATFORM: ${{ matrix.platform }}
         run: |
+          set -o pipefail
           eas build \
             --platform "$PLATFORM" \
             --profile preview \
             --non-interactive \
-            --wait
+            --wait 2>&1 | tee "$RUNNER_TEMP/eas-build.log"
           echo "**EAS preview ($PLATFORM): built**" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Report EAS build failure
+        if: failure()
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          [ -f "$RUNNER_TEMP/eas-build.log" ] || exit 0
+          node "$GITHUB_WORKSPACE/scripts/eas-build-failure-report.mjs" "$RUNNER_TEMP/eas-build.log"
