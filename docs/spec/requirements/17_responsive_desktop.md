@@ -26,6 +26,8 @@ This domain covers adapting the mobile app to desktop browsers (≥ 768px viewpo
 
 Wire `AppShell` into root `_layout.tsx`, replacing `ShellWithTabBar` with `ShellWithResponsiveChrome`. Flip `SHELL_V2_ENABLED` default to `true`.
 
+- *(KC#2381, 2026-11-16)* The navigation rail and the aside panel are shown to signed-in members only. A signed-out visitor (welcome, About, legal pages, the public research form) and everyone on the sign-in, onboarding, `auth/callback`, `auth/verify` and public research surfaces (`FR-RESEARCH-001` AC2) get the page alone: every rail item leads to a member route. The rule is `shellNavigationRailVisible` (`navigation/shellChromePolicy.ts`). The rail stays on a chat thread, where only the floating tab bar of the phone layout is hidden.
+
 ## FR-RESP-003 — Aside panels for feed, donations, profile, search
 
 **Status:** ✅ Done

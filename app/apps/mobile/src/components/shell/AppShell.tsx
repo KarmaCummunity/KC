@@ -3,6 +3,7 @@ import { Platform, View } from 'react-native';
 import { useSegments } from 'expo-router';
 import { makeUseStyles, useBreakpoint, useTheme, spacing, shellDimensions, AsidePanel, AsideProvider, type BreakpointToken } from '@kc/ui';
 import { NavigationRail } from './NavigationRail';
+import { useShellNavigationRailVisibility } from '../../navigation/useShellTabBarVisibility';
 
 type ShellVariant = 'wide' | 'narrow';
 
@@ -21,6 +22,9 @@ type AppShellProps = {
  *   component is never on the mobile render path until PR 2 wires it in.
  * - Tablet (768-1023): icon-only NavigationRail + <main>, no aside.
  * - Desktop / wide (>=1024): labeled NavigationRail + <main> + AsidePanel.
+ * - A signed-out visitor, and the sign-in, onboarding and public research surfaces, get the
+ *   main column alone: the rail leads only to member routes and the aside is filled by member
+ *   screens (`useShellNavigationRailVisibility`).
  *
  * Narrow variant caps <main> at shellDimensions.contentMaxNarrow. Used by
  * form-style screens (settings, edit-profile, auth, onboarding, composer).
@@ -31,6 +35,7 @@ export function AppShell({ children, variant: variantProp }: AppShellProps) {
   const styles = useStyles();
   const detectedVariant = useDetectedVariant();
   const variant = variantProp ?? detectedVariant;
+  const showNavigation = useShellNavigationRailVisibility();
 
   const isWebDesktop = Platform.OS === 'web' && bp !== 'mobile';
   if (!isWebDesktop) {
@@ -38,7 +43,7 @@ export function AppShell({ children, variant: variantProp }: AppShellProps) {
   }
 
   const contentMax = pickContentMax(bp, variant);
-  const showAside = bp === 'desktop' || bp === 'wide';
+  const showAside = showNavigation && (bp === 'desktop' || bp === 'wide');
 
   return (
     <AsideProvider>
@@ -53,7 +58,7 @@ export function AppShell({ children, variant: variantProp }: AppShellProps) {
             {children}
           </View>
         </View>
-        <NavigationRail />
+        {showNavigation && <NavigationRail />}
       </View>
     </AsideProvider>
   );
