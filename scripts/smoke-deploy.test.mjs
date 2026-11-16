@@ -8,6 +8,7 @@ import {
   checkPages,
   extractTitle,
   listPublicPages,
+  checkBackend,
   checkSupabase,
   checkWeb,
   extractScriptSrcs,
@@ -81,6 +82,37 @@ test('checkWeb requires HTML and a loadable bundle', async () => {
   assert.match((await checkWeb({ webUrl: WEB, fetch: missing.fetch })).detail, /entry-1\.js → HTTP 404/);
   const noScripts = fakeFetch({ [`GET ${WEB}/`]: response(200, '<html></html>') });
   assert.match((await checkWeb({ webUrl: WEB, fetch: noScripts.fetch })).detail, /no script bundle/);
+});
+
+// KC#2249: the production domain once served a bundle built against the dev project and every
+// other check passed, because none of them looks at what the bundle talks to.
+test('checkBackend passes only when the served bundle talks to this environment\'s Supabase project', async () => {
+  const bundle = (body) => fakeFetch({ [`GET ${WEB}/_expo`]: response(200, body), [`GET ${WEB}/`]: response(200, INDEX) }).fetch;
+  const run = (body) => checkBackend({ webUrl: WEB, supabaseUrl: SB, fetch: bundle(body) });
+
+  assert.deepEqual(await run('x="https://ref.supabase.co";y="https://ref.supabase.co/rest/v1"'), {
+    ok: true,
+    detail: 'bundle uses ref.supabase.co',
+  });
+
+  const wrong = await run('x="https://other.supabase.co"');
+  assert.equal(wrong.ok, false);
+  assert.match(wrong.detail, /bundle uses other\.supabase\.co, expected ref\.supabase\.co/);
+
+  const mixed = await run('x="https://ref.supabase.co";y="https://other.supabase.co"');
+  assert.equal(mixed.ok, false);
+  assert.match(mixed.detail, /other\.supabase\.co, ref\.supabase\.co/);
+
+  const none = await run('console.log("no backend here")');
+  assert.equal(none.ok, false);
+  assert.match(none.detail, /no Supabase project/);
+});
+
+test('checkBackend fails on a page without a bundle or a bundle that does not load', async () => {
+  const noScripts = fakeFetch({ [`GET ${WEB}/`]: response(200, '<html></html>') });
+  assert.match((await checkBackend({ webUrl: WEB, supabaseUrl: SB, fetch: noScripts.fetch })).detail, /no script bundle/);
+  const broken = fakeFetch({ [`GET ${WEB}/_expo`]: response(404), [`GET ${WEB}/`]: response(200, INDEX) });
+  assert.match((await checkBackend({ webUrl: WEB, supabaseUrl: SB, fetch: broken.fetch })).detail, /no Supabase project/);
 });
 
 test('checkSupabase needs a 200 from auth health', async () => {

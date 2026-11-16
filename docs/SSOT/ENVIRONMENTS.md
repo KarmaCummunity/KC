@@ -197,7 +197,7 @@ Branch protection on `dev` uses the table above; `main` release PRs use [`RELEAS
 
 **CI gates on `main` PRs:** the same `CI gate`, plus the `release` lane it plans for every PR into `main`.
 
-**Post-deploy smoke:** the smoke stage of **Deploy** (see "Deploy pipeline" above) checks the environment it just deployed.
+**Post-deploy smoke:** the smoke stage of **Deploy** (see "Deploy pipeline" above) checks the environment it just deployed. Its `backend` check reads the served web bundle and fails when the bundle talks to any Supabase project other than the one of that environment.
 
 | GitHub | Name | Value / purpose |
 | --- | --- | --- |
