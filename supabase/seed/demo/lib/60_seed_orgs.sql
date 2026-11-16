@@ -45,6 +45,16 @@ begin
     on conflict do nothing;
   end if;
 
+  -- #1964: one holder of every other org role, so each role shows up in the org screens. They
+  -- take members 10..21, after the admin and volunteers above.
+  if cardinality(v_members) >= 21 then
+    insert into public.admin_role_grants (user_id, role, scope_org_id)
+    select v_members[9 + (o - 1) * 4 + r.k], r.role, v_ids[o]
+      from generate_series(1, 3) o
+      cross join (values (1, 'org_manager'), (2, 'org_employee'), (3, 'org_treasurer'), (4, 'org_accountant')) r (k, role)
+    on conflict do nothing;
+  end if;
+
   -- AC10: the admin running the restore manages each demo nonprofit too.
   if p_actor_id is not null and exists (select 1 from public.users u where u.id = p_actor_id) then
     insert into public.admin_role_grants (user_id, role, scope_org_id, granted_by)
