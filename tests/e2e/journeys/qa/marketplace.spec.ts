@@ -148,9 +148,27 @@ test.describe.serial('create + reserve', () => {
     test.skip(!row, 'listing was not created');
     const ctx = await browser.newContext({ storageState: STORAGE_B, locale: 'he-IL' });
     const page = await ctx.newPage();
-    await gotoApp(page, `/post/${row!.id}`);
+    test.setTimeout(150_000);
+    const listingPath = `/post/${row!.id}`;
     const claim = page.getByTestId('giving-handoff-claim').or(page.getByTestId('giving-handoff-reserve')).first();
+    // On a slow dev backend the listing's first load can stall; reload once instead of waiting blind.
+    await gotoApp(page, listingPath);
+    try {
+      await expect(claim).toBeVisible({ timeout: 30_000 });
+    } catch {
+      await gotoApp(page, listingPath);
+      await expect(claim).toBeVisible({ timeout: 45_000 });
+    }
     await claim.click();
+    // The claim is judged on the server (B's handoff row, read through RLS), then on the page.
+    const { session: b } = await sessionFor(USER_B);
+    await expect
+      .poll(
+        async () =>
+          (await rest<{ id: string }[]>(b.access_token as string, `post_handoffs?select=id&post_id=eq.${row!.id}`)).length,
+        { timeout: 45_000, message: `B's handoff on ${row!.id} exists on the server` },
+      )
+      .toBe(1);
     await expect(claim).toHaveCount(0, { timeout: 20_000 });
     await ctx.close();
   });

@@ -69,7 +69,7 @@ describe('comment draft ownership', () => {
     fireEvent.change(input, { target: { value: 'hi' } });
 
     expect((input as HTMLTextAreaElement).value).toBe('hi');
-    expect(onThreadRender.mock.calls.length).toBe(rendersBeforeTyping);
+    expect(onThreadRender.mock.calls).toHaveLength(rendersBeforeTyping);
   });
 
   it('submits the typed text, then clears the draft', async () => {

@@ -1,0 +1,18 @@
+# The welcome screen offers sign-in only: there is no guest preview of the feed.
+# Spec: docs/spec/requirements/01_auth_and_onboarding.md FR-AUTH-001 AC4 (FR-AUTH-014 removed).
+appId: org.karmacommunity.app
+name: Auth — the welcome screen has no guest entry
+tags: [auth, smoke]
+---
+- launchApp:
+    clearState: true
+    permissions:
+      all: allow
+- runFlow: ../subflows/dismiss-gates.yaml
+# The email entry is the last control of the welcome screen, so once it shows the screen is complete.
+- extendedWaitUntil:
+    visible:
+      id: auth-email-entry
+    timeout: 30000
+# The removed button is matched by its former label: a flow may only use ids that exist in the app.
+- assertNotVisible: "הצץ בפיד.*"

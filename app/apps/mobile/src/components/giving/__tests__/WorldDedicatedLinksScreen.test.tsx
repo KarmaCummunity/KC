@@ -10,7 +10,27 @@ import type { WorldContentState } from '../../../hooks/useWorldContent';
 
 const mocks = vi.hoisted(() => ({ state: null as WorldContentState | null, retry: vi.fn() }));
 
-vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k: string) => k }) }));
+vi.mock('react-i18next', () => ({
+  // `exists` mirrors the locale: only the worlds with a subject keyword have one.
+  useTranslation: () => ({
+    t: (k: string) => k,
+    i18n: { exists: (k: string) => !k.endsWith('.items') },
+  }),
+}));
+vi.mock('../WorldLinksToolbar', () => ({
+  WorldLinksToolbar: (p: { onQueryChange: (q: string) => void; onKindChange: (k: 'links' | 'posts') => void }) => (
+    <div>
+      <button data-testid="set-query" onClick={() => p.onQueryChange('dog')} />
+      <button data-testid="kind-posts" onClick={() => p.onKindChange('posts')} />
+      <button data-testid="kind-links" onClick={() => p.onKindChange('links')} />
+    </div>
+  ),
+}));
+vi.mock('../WorldInfoPostsSection', () => ({
+  WorldInfoPostsSection: (p: { subjectKeyword: string; query: string }) => (
+    <div data-testid="info-posts" data-keyword={p.subjectKeyword} data-query={p.query} />
+  ),
+}));
 vi.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
 vi.mock('../../../navigation/useShellTabBarVisibility', () => ({ useShellTabBarScrollInset: () => 64 }));
 vi.mock('../../../hooks/useWorldContent', () => ({ useWorldContent: () => mocks.state }));
@@ -83,5 +103,28 @@ describe('WorldDedicatedLinksScreen (#1963)', () => {
     expect(view.queryByTestId('world-content-empty')).toBeNull();
     fireEvent.click(view.getByTestId('world-content-retry'));
     expect(mocks.retry).toHaveBeenCalledTimes(1);
+  });
+
+  it('lists the knowledge posts of the world subject beside its links', () => {
+    const view = show('animals');
+    expect(view.getByTestId('info-posts').getAttribute('data-keyword')).toBe('donations.worldLinks.subject.animals');
+  });
+
+  it('lists every knowledge post on the knowledge world and none on a world without a subject', () => {
+    expect(show('knowledge').getByTestId('info-posts').getAttribute('data-keyword')).toBe('');
+    cleanup();
+    expect(show('items').queryByTestId('info-posts')).toBeNull();
+  });
+
+  it('the item-type filter shows one section and the search reaches the posts', () => {
+    const view = show('animals', { content: { ...emptyWorldContent('animals'), externalBodies: [BODY] } });
+    fireEvent.click(view.getByTestId('kind-posts'));
+    expect(view.queryByTestId('donation-links-animals')).toBeNull();
+    expect(view.queryByTestId('sections-animals')).toBeNull();
+    fireEvent.click(view.getByTestId('set-query'));
+    expect(view.getByTestId('info-posts').getAttribute('data-query')).toBe('dog');
+    fireEvent.click(view.getByTestId('kind-links'));
+    expect(view.getByTestId('donation-links-animals')).toBeTruthy();
+    expect(view.queryByTestId('info-posts')).toBeNull();
   });
 });

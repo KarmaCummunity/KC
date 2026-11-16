@@ -88,14 +88,27 @@ export default function ProPaywallScreen() {
   const open = (url: string) => void Linking.openURL(url);
   const packages = packagesQuery.data ?? [];
 
-  return (
-    <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
-      <Stack.Screen options={{ title: t('karma.proTitle') }} />
-      <Text accessibilityRole="header" style={styles.title}>{t('karma.proTitle')}</Text>
+  const renderPackageButtons = () => {
+    if (packagesQuery.isLoading) return <ActivityIndicator accessibilityLabel={t('general.loading')} />;
+    if (packages.length === 0) return <Text style={styles.note}>{t('karma.proUnavailable')}</Text>;
+    return packages.map((pkg) => (
+      <Pressable
+        key={pkg.id}
+        accessibilityRole="button"
+        accessibilityState={{ disabled: busy }}
+        disabled={busy}
+        onPress={() => void onBuy(pkg)}
+        style={[styles.button, busy && styles.disabled]}
+      >
+        <Text style={styles.buttonText}>{t('karma.proSubscribe', { price: pkg.priceString })}</Text>
+      </Pressable>
+    ));
+  };
 
-      {proQuery.isLoading ? (
-        <ActivityIndicator accessibilityLabel={t('general.loading')} />
-      ) : isPro ? (
+  const renderBody = () => {
+    if (proQuery.isLoading) return <ActivityIndicator accessibilityLabel={t('general.loading')} />;
+    if (isPro) {
+      return (
         <View style={styles.card}>
           <Text style={styles.heading}>{t('karma.proActiveTitle')}</Text>
           <Text style={styles.body}>{t('karma.proActiveBody')}</Text>
@@ -103,43 +116,36 @@ export default function ProPaywallScreen() {
             <Text style={styles.linkText}>{t('karma.proManage')}</Text>
           </Pressable>
         </View>
-      ) : (
-        <>
-          <Text style={styles.body}>{t('karma.proSubtitle')}</Text>
-          <View style={styles.card}>
-            <Text style={styles.body}>• {t('karma.proFeatureWhatsapp')}</Text>
-            <Text style={styles.body}>• {t('karma.proFeatureAdmin')}</Text>
-            <Text style={styles.note}>{t('karma.proFreeCore')}</Text>
-          </View>
+      );
+    }
+    return (
+      <>
+        <Text style={styles.body}>{t('karma.proSubtitle')}</Text>
+        <View style={styles.card}>
+          <Text style={styles.body}>• {t('karma.proFeatureWhatsapp')}</Text>
+          <Text style={styles.body}>• {t('karma.proFeatureAdmin')}</Text>
+          <Text style={styles.note}>{t('karma.proFreeCore')}</Text>
+        </View>
 
-          {packagesQuery.isLoading ? (
-            <ActivityIndicator accessibilityLabel={t('general.loading')} />
-          ) : packages.length === 0 ? (
-            <Text style={styles.note}>{t('karma.proUnavailable')}</Text>
-          ) : (
-            packages.map((pkg) => (
-              <Pressable
-                key={pkg.id}
-                accessibilityRole="button"
-                accessibilityState={{ disabled: busy }}
-                disabled={busy}
-                onPress={() => void onBuy(pkg)}
-                style={[styles.button, busy && styles.disabled]}
-              >
-                <Text style={styles.buttonText}>{t('karma.proSubscribe', { price: pkg.priceString })}</Text>
-              </Pressable>
-            ))
-          )}
+        {renderPackageButtons()}
 
-          <Text style={styles.note}>{t('karma.proAutoRenew')}</Text>
-          <Pressable accessibilityRole="button" disabled={busy} onPress={() => void onRestore()} style={styles.link}>
-            <Text style={styles.linkText}>{t('karma.proRestore')}</Text>
-          </Pressable>
-          <Pressable accessibilityRole="link" onPress={() => open(manageSubscriptionUrl())} style={styles.link}>
-            <Text style={styles.linkText}>{t('karma.proManage')}</Text>
-          </Pressable>
-        </>
-      )}
+        <Text style={styles.note}>{t('karma.proAutoRenew')}</Text>
+        <Pressable accessibilityRole="button" disabled={busy} onPress={() => void onRestore()} style={styles.link}>
+          <Text style={styles.linkText}>{t('karma.proRestore')}</Text>
+        </Pressable>
+        <Pressable accessibilityRole="link" onPress={() => open(manageSubscriptionUrl())} style={styles.link}>
+          <Text style={styles.linkText}>{t('karma.proManage')}</Text>
+        </Pressable>
+      </>
+    );
+  };
+
+  return (
+    <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
+      <Stack.Screen options={{ title: t('karma.proTitle') }} />
+      <Text accessibilityRole="header" style={styles.title}>{t('karma.proTitle')}</Text>
+
+      {renderBody()}
 
       <View style={styles.legalRow}>
         <Pressable accessibilityRole="link" onPress={() => router.push('/legal/terms')}>
