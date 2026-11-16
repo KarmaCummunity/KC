@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { callsTo, createFakeClient, type FakeCall } from '../../__tests__/fakeBaselineClient';
+import { callsTo, createFakeClient } from '../../__tests__/fakeBaselineClient';
 import { replacePostMedia, writePostMedia } from '../postMediaWrites';
-import { ok } from './cardFixtures';
+import { fail, ok } from './cardFixtures';
 
 const asset = (n: number) => ({ path: `u1/b/${n}.jpg`, mimeType: 'image/jpeg', sizeBytes: 100 + n });
 
@@ -25,38 +25,41 @@ describe('writePostMedia', () => {
 });
 
 describe('replacePostMedia', () => {
-  const existing = [
-    { id: 'row-0', storage_key: 'u1/b/0.jpg', ordinal: 0 },
-    { id: 'row-1', storage_key: 'u1/b/1.jpg', ordinal: 1 },
-  ];
-  const setup = () =>
-    createFakeClient({ tables: { post_media: (call: FakeCall) => ok(call.kind === 'select' ? existing : null) } });
+  it('hands the whole gallery, in order, to replace_post_media', async () => {
+    const { client, calls } = createFakeClient({ rpc: { replace_post_media: ok(null) } });
 
-  it('keeps the rows whose file and position are unchanged, deletes the rest and inserts the new', async () => {
-    const { client, calls } = setup();
+    await replacePostMedia(client, 'p1', [asset(2), asset(0)]);
 
-    await replacePostMedia(client, 'p1', 'u1', [asset(0), asset(2)]);
-
-    const remove = callsTo(calls, 'post_media').find((call) => call.kind === 'delete');
-    const insert = callsTo(calls, 'post_media').find((call) => call.kind === 'insert');
-    expect(remove?.filters).toContainEqual(['in', 'id', ['row-1']]);
-    expect(insert?.payload).toEqual([expect.objectContaining({ storage_key: 'u1/b/2.jpg', ordinal: 1 })]);
+    expect(calls).toHaveLength(1);
+    expect(callsTo(calls, 'replace_post_media')[0]?.args).toEqual({
+      p_post_id: 'p1',
+      p_media: [
+        { storage_key: 'u1/b/2.jpg', mime_type: 'image/jpeg', size_bytes: 102 },
+        { storage_key: 'u1/b/0.jpg', mime_type: 'image/jpeg', size_bytes: 100 },
+      ],
+    });
   });
 
-  it('does not touch an unchanged gallery', async () => {
-    const { client, calls } = setup();
+  it('sends an empty list when every photo was removed', async () => {
+    const { client, calls } = createFakeClient({ rpc: { replace_post_media: ok(null) } });
 
-    await replacePostMedia(client, 'p1', 'u1', [asset(0), asset(1)]);
+    await replacePostMedia(client, 'p1', []);
 
-    expect(callsTo(calls, 'post_media').map((call) => call.kind)).toEqual(['select']);
+    expect(callsTo(calls, 'replace_post_media')[0]?.args).toEqual({ p_post_id: 'p1', p_media: [] });
   });
 
-  it('deletes everything when the photos were removed', async () => {
-    const { client, calls } = setup();
+  it('never deletes or inserts photo rows from the device', async () => {
+    // A device delete of the last photo of a live offer is refused by the server (D132), so the
+    // edit must not go through the table (KC#2118).
+    const { client, calls } = createFakeClient({ rpc: { replace_post_media: ok(null) } });
 
-    await replacePostMedia(client, 'p1', 'u1', []);
+    await replacePostMedia(client, 'p1', [asset(1)]);
 
-    const remove = callsTo(calls, 'post_media').find((call) => call.kind === 'delete');
-    expect(remove?.filters).toContainEqual(['in', 'id', ['row-0', 'row-1']]);
+    expect(callsTo(calls, 'post_media')).toHaveLength(0);
+  });
+
+  it('passes the server refusal on', async () => {
+    const { client } = createFakeClient({ rpc: { replace_post_media: fail('P0001', 'offer_photo_required') } });
+    await expect(replacePostMedia(client, 'p1', [])).rejects.toMatchObject({ reason: 'offer_photo_required' });
   });
 });
