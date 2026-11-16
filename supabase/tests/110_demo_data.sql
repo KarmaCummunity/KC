@@ -87,7 +87,7 @@ begin
 end;
 $$;
 
-select plan(26);
+select plan(27);
 
 -- s super admin · a org admin of the platform · o org admin of another org · g org manager of
 -- the platform · m moderator · x member · e an e2e member on the seed domain.
@@ -115,10 +115,13 @@ insert into public.cities (city_id, name_he, name_en, location) values
   ('c1', 'c1', 'City One', 'SRID=4326;POINT(34.78 32.08)'),
   ('c2', 'c2', 'City Two', 'SRID=4326;POINT(35.21 31.77)'),
   ('c3', 'c3', 'City Three', 'SRID=4326;POINT(34.99 32.79)');
-insert into public.worlds (slug, label_he, label_en) values ('items', 'items', 'Items'), ('rides', 'rides', 'Rides');
+insert into public.worlds (slug, label_he, label_en) values ('items', 'items', 'Items'), ('rides', 'rides', 'Rides'),
+  ('food', 'food', 'Food'), ('animals', 'animals', 'Animals');
 insert into public.post_kinds (world_slug, slug, label_he, label_en, direction) values
   ('items', 'item_offer', 'o', 'o', 'offer'), ('items', 'item_request', 'r', 'r', 'request'),
-  ('rides', 'ride_offer', 'o', 'o', 'offer'), ('rides', 'ride_request', 'r', 'r', 'request');
+  ('rides', 'ride_offer', 'o', 'o', 'offer'), ('rides', 'ride_request', 'r', 'r', 'request'),
+  ('food', 'food_offer', 'o', 'o', 'offer'), ('food', 'food_request', 'r', 'r', 'request'),
+  ('animals', 'adoption_offer', 'o', 'o', 'offer'), ('animals', 'foster_request', 'r', 'r', 'request');
 insert into public.item_subcategories (world_slug, slug, label_he, label_en) values ('items', 'furniture', 'f', 'Furniture');
 
 -- ── Who may call ────────────────────────────────────────────────────────────
@@ -168,6 +171,13 @@ select is((select count(distinct g.role)::int from public.admin_role_grants g
             where g.scope_org_id = any (kc_private.demo_org_ids()) and g.revoked_at is null
               and g.user_id = any (kc_private.demo_member_ids())), 6,
   'demo nonprofits have members in every staff role (#1964)');
+select ok((select count(distinct k.slug) = 4 and bool_and(p.owner_id = any (kc_private.demo_member_ids()))
+              and (select count(*) from public.post_food_details d join public.posts f on f.id = d.post_id
+                    where f.owner_id = any (kc_private.demo_member_ids()))
+                  = count(*) filter (where p.world_slug = 'food' and p.direction = 'offer')
+             from public.posts p join public.post_kinds k on k.id = p.kind_id
+            where p.world_slug in ('food', 'animals')),
+  'demo posts exist for every active food and animals kind, food offers with their detail row (#1964)');
 select ok((select password_hash like '$2%' and password_hash <> 'SeedPass-2026' from kc_private.demo_data_state),
   'only the bcrypt hash of the password is kept (AC9)');
 select is((select count(*)::int from auth.users u

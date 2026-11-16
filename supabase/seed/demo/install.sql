@@ -10,6 +10,7 @@
 \ir lib/20_wipe.sql
 \ir lib/30_seed_members.sql
 \ir lib/40_seed_posts.sql
+\ir lib/45_seed_worlds.sql
 \ir lib/50_seed_social.sql
 \ir lib/60_seed_orgs.sql
 \ir lib/70_operations.sql
