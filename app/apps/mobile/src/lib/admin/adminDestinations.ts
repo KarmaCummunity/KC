@@ -41,4 +41,6 @@ export const ADMIN_DESTINATIONS: readonly AdminDestination[] = [
   { key: 'money',     href: '/(admin)/money',    icon: 'wallet-outline',           perm: 'money.view' },
   { key: 'donationLinks', href: '/(admin)/donation-links', icon: 'link-outline',     perm: 'donation_links.review' },
   { key: 'stats',     href: '/(admin)/stats',    icon: 'stats-chart-outline',      perm: 'stats.view_platform' },
+  // FR-ADMIN-031 — kc-dev demo data; elsewhere the screen says its tools are not installed.
+  { key: 'demoData',  href: '/(admin)/demo-data', icon: 'flask-outline',           perm: 'demo_data.manage' },
 ];
