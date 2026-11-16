@@ -24,6 +24,14 @@ export const WORLD_CHROME_BY_SLUG: Record<string, WorldChromeConfig> = {
       worldLinksSubScreenLink('food'),
     ]),
   },
+  // A job is answered in chat, not handed over (#2278): no "my handoffs" screen.
+  employment: {
+    feedPath: '/(tabs)/donations/employment',
+    subScreens: [
+      { labelKey: 'marketplace.myListingsNav', path: MY_LISTINGS_PATH, testID: 'world-hub-my-listings' },
+      worldLinksSubScreenLink('employment'),
+    ],
+  },
   animals: {
     feedPath: '/(tabs)/donations/animals',
     subScreens: worldSubScreens('/(tabs)/donations/animals/handoffs', [

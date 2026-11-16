@@ -1,0 +1,121 @@
+import { israelLocalToUtc, israelParts, type IsraelParts } from './israelTime';
+import type { ExtractedTimeHint, ImportTimePeriod } from './importTypes';
+
+export interface TimeResolutionContext {
+  /** When the original message was sent (WhatsApp prefix); null falls back to `now`. */
+  readonly messageAt: Date | null;
+  /** When the member imports it; a result before this instant is stale and dropped. */
+  readonly now: Date;
+}
+
+export interface ResolvedTime {
+  /** The instant, only when the text gave a time of day. */
+  readonly at: Date | null;
+  /** The Israel calendar day, `YYYY-MM-DD`, also when no time of day was written. */
+  readonly dateIso: string | null;
+  readonly recurringWeekdays: readonly number[];
+  /** The hour was written without a part-of-day word and a default was chosen: show it to confirm. */
+  readonly ambiguousHour: boolean;
+  /** Why nothing was resolved: the moment is behind `now`, or the calendar date does not exist. */
+  readonly dropped: 'past' | 'invalid' | null;
+}
+
+const NOTHING: ResolvedTime = { at: null, dateIso: null, recurringWeekdays: [], ambiguousHour: false, dropped: null };
+const dropped = (why: 'past' | 'invalid'): ResolvedTime => ({ ...NOTHING, dropped: why });
+
+interface Day { readonly year: number; readonly month: number; readonly day: number }
+interface Hour { readonly candidates: readonly number[]; readonly ambiguous: boolean }
+
+const pad = (n: number) => String(n).padStart(2, '0');
+const toIso = (d: Day) => `${d.year}-${pad(d.month)}-${pad(d.day)}`;
+const sameDay = (a: Day, b: Day) => toIso(a) === toIso(b);
+
+/** Calendar addition, independent of any time zone or DST. */
+function addDays(d: Day, n: number): Day {
+  const t = new Date(Date.UTC(d.year, d.month - 1, d.day + n));
+  return { year: t.getUTCFullYear(), month: t.getUTCMonth() + 1, day: t.getUTCDate() };
+}
+
+/**
+ * Hour candidates for a written hour (FR-IMPORT-005 AC3). 13..23 and 00 are final; a part-of-day
+ * word decides; otherwise 7..11 default to morning and 1..6 to afternoon, and the other reading
+ * stays as a candidate for the same-day check.
+ */
+function readHour(hour: number, period: ImportTimePeriod | null): Hour {
+  if (hour >= 13 || hour === 0) return { candidates: [hour], ambiguous: false };
+  if (period === 'morning') return { candidates: [hour], ambiguous: false };
+  if (period === 'afternoon' || period === 'evening') return { candidates: [hour < 12 ? hour + 12 : hour], ambiguous: false };
+  if (period === 'night') return { candidates: [hour === 12 ? 0 : hour <= 5 ? hour : hour + 12], ambiguous: false };
+  if (hour === 12) return { candidates: [12], ambiguous: false };
+  return { candidates: hour >= 7 ? [hour, hour + 12] : [hour + 12, hour], ambiguous: true };
+}
+
+/** The first candidate still ahead of the message on the same day, else the default reading. */
+function chooseHour(h: Hour, minute: number, anchorMinutes: number | null): number {
+  const first = h.candidates[0]!;
+  if (anchorMinutes === null) return first;
+  const ahead = h.candidates.find((c) => c * 60 + minute >= anchorMinutes);
+  return ahead ?? first;
+}
+
+/** Days from `today` to the coming `weekday`; today counts only for a final, still-ahead time. */
+function daysUntil(weekday: number, today: IsraelParts, todayStillAhead: boolean): number {
+  const ahead = (weekday - today.weekday + 7) % 7;
+  return ahead === 0 && !todayStillAhead ? 7 : ahead;
+}
+
+function explicitDate(hint: ExtractedTimeHint, today: IsraelParts): Day | 'invalid' | 'past' {
+  const month = hint.month!;
+  const dayOfMonth = hint.dayOfMonth!;
+  const todayDay: Day = { year: today.year, month: today.month, day: today.day };
+  const valid = (year: number) => {
+    const t = new Date(Date.UTC(year, month - 1, dayOfMonth));
+    return t.getUTCMonth() === month - 1 && t.getUTCDate() === dayOfMonth;
+  };
+  if (!valid(today.year)) return 'invalid';
+  const thisYear: Day = { year: today.year, month, day: dayOfMonth };
+  if (toIso(thisYear) >= toIso(todayDay)) return thisYear;
+  // Only the year-end wrap ("3.1" written in December) moves to next year; anything else is the past.
+  const wraps = today.month >= 10 && month <= 3 && valid(today.year + 1);
+  return wraps ? { year: today.year + 1, month, day: dayOfMonth } : 'past';
+}
+
+/**
+ * Turn a time as written ("tomorrow at 8", "by Thursday", "every Sunday", in Hebrew) into a calendar day and
+ * instant in Asia/Jerusalem (FR-IMPORT-005). The model never computes dates: relative words are
+ * resolved against the message timestamp, and a result already behind `now` is dropped, never
+ * moved to next week (AC2).
+ */
+export function resolveTimeHint(hint: ExtractedTimeHint, ctx: TimeResolutionContext): ResolvedTime {
+  if (hint.kind === 'none') return NOTHING;
+  const today = israelParts(ctx.messageAt ?? ctx.now);
+  const todayDay: Day = { year: today.year, month: today.month, day: today.day };
+  const anchor = today.hour * 60 + today.minute;
+  const [hh, mm] = hint.timeHhmm ? hint.timeHhmm.split(':').map(Number) as [number, number] : [null, null];
+  const hour = hh === null ? null : readHour(hh, hint.timePeriod);
+
+  // "Today" is a weekday answer only when the time is final (not guessed) and still ahead.
+  const finalHourAhead = hour !== null && !hour.ambiguous && hour.candidates[0]! * 60 + mm! >= anchor;
+  let day: Day;
+  if (hint.kind === 'relative_day') {
+    day = addDays(todayDay, hint.dayOffset!);
+  } else if (hint.kind === 'weekday') {
+    day = addDays(todayDay, daysUntil(hint.weekday!, today, finalHourAhead));
+  } else if (hint.kind === 'recurring') {
+    day = addDays(todayDay, Math.min(...hint.recurringWeekdays.map((w) => daysUntil(w, today, finalHourAhead))));
+  } else {
+    const picked = explicitDate(hint, today);
+    if (typeof picked === 'string') return dropped(picked);
+    day = picked;
+  }
+
+  const recurringWeekdays = hint.kind === 'recurring' ? hint.recurringWeekdays : [];
+  const nowDay = israelParts(ctx.now);
+  if (toIso(day) < toIso({ year: nowDay.year, month: nowDay.month, day: nowDay.day })) return dropped('past');
+  if (hour === null) return { ...NOTHING, dateIso: toIso(day), recurringWeekdays };
+
+  const chosen = chooseHour(hour, mm!, sameDay(day, todayDay) ? anchor : null);
+  const at = israelLocalToUtc(day.year, day.month, day.day, chosen, mm!);
+  if (at === null || at.getTime() < ctx.now.getTime()) return dropped('past');
+  return { at, dateIso: toIso(day), recurringWeekdays, ambiguousHour: hour.ambiguous, dropped: null };
+}

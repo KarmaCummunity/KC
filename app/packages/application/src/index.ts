@@ -87,6 +87,9 @@ export * from './donations/ReviewDonationLinksUseCases'; // D9 review queue + de
 export { ListDonationLinksUseCase } from './donations/ListDonationLinksUseCase';
 export { GetWorldContentUseCase } from './worlds/GetWorldContentUseCase';
 export type { IWorldContentRepository } from './ports/IWorldContentRepository';
+export { SetWorldLaunchModeUseCase } from './worlds/SetWorldLaunchModeUseCase';
+export type { SetWorldLaunchModeInput } from './worlds/SetWorldLaunchModeUseCase';
+export type { IAppFlagsAdminRepository } from './ports/IAppFlagsAdminRepository';
 export { AddDonationLinkUseCase } from './donations/AddDonationLinkUseCase';
 export { UpdateDonationLinkUseCase } from './donations/UpdateDonationLinkUseCase';
 export { RemoveDonationLinkUseCase } from './donations/RemoveDonationLinkUseCase';
@@ -189,6 +192,8 @@ export * from './admin/GetOrgTreeUseCase';
 export * from './admin/SetManagerUseCase';
 export * from './admin/SetOrgSlugUseCase';
 export * from './admin/GetHierarchySnapshotUseCase';
+export * from './admin/IDemoDataRepository';
+export * from './admin/DemoDataUseCases';
 
 // A1 — admin reports inbox & case detail
 export * from './reports/IReportsRepository';

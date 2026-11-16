@@ -17,10 +17,10 @@ GitHub/org integrations on every PR.
 | # | Tool | Status | Blocks merge? | Notes |
 | - | ---- | ------ | ------------- | ----- |
 | 1 | **SonarCloud** (SonarQube SaaS) | ✅ Active | **Yes** (inside `CI gate`, `frontend` lane) | Workflow: `.github/workflows/ci-sonar.yml`. Setup: `docs/dev/SONAR.md`. |
-| 2 | **Snyk** | ✅ Active (`SNYK_TOKEN` set) | No (promote later) | Workflow: `.github/workflows/ci-snyk.yml`. |
+| 2 | **Snyk** (GitHub integration) | ✅ Active (Snyk app, PR status `security/snyk (navesarussi)`) | **Yes, through `CI gate`** when it reports (PRs into `dev`/`main`); not on merge-queue commits, where it never reports | No CI workflow and no repo secret (the `ci-snyk.yml` workflow was removed 2026-11-16: its `SNYK_TOKEN` was empty, so it never ran). Tests only PRs that change a manifest. |
 | 3 | **CodeRabbit** | ✅ Active (org App installed) | No (review comments only) | `.coderabbit.yaml` reviews `app/**`, `supabase/**`, `scripts/**` and `docs/spec/**`. |
 | 4 | **GitHub Dependabot** | ✅ Active | N/A (opens fix PRs) | Config: `.github/dependabot.yml`. Security updates: **enabled**. |
-| 5 | **GitGuardian** (ggshield) | ✅ Active (`GITGUARDIAN_API_KEY` set) | No (promote later) | Workflow: `.github/workflows/ci-gitguardian.yml`. |
+| 5 | **GitGuardian** (GitHub App) | ✅ Active (check `GitGuardian Security Checks`, App id 46505) | **Yes, through `CI gate`** when it reports (PRs and merge-queue commits) | Runs on every PR (incl. Dependabot) and on merge-queue commits. Very large PRs (big release PRs) get `neutral` "too large to scan", which passes. No CI workflow or secret (`ci-gitguardian.yml` removed 2026-11-16, its key was empty). |
 | 6 | **Secret Scanning** | ✅ Active | Push-time block | Enabled + push protection on the public repo. |
 | 7 | **Dependency audit** | ✅ Active | **Yes** (`CI gate`, `static` lane, when a dependency file changes) | `scripts/check-dependency-audit.mjs`: every lockfile + Edge Function npm imports; daily on `dev` and `main` via `.github/workflows/dependency-audit.yml`. See "Dependency audit" below. |
 | 8 | **Automated tests** | ✅ Active | **Yes** (`CI gate`) | Unit: Vitest in the `frontend` lane. Integration: the `backend` lane (migrations, RLS, types, SQL probes) and the RPC contract check in the `static` lane. E2E on `main` release: the `release` lane's P0 journeys. |
@@ -53,8 +53,6 @@ Add these under **GitHub → Settings → Secrets and variables → Actions** (r
 | Secret | Tool | How to obtain |
 | --- | --- | --- |
 | `SONAR_TOKEN` | SonarCloud | ✅ Already set. SonarCloud → My Account → Security → token. |
-| `SNYK_TOKEN` | Snyk | [snyk.io](https://app.snyk.io/account) → Auth token → org service account recommended. |
-| `GITGUARDIAN_API_KEY` | GitGuardian | [GitGuardian dashboard](https://dashboard.gitguardian.com/) → API → service account or personal token. Alternative: install the [GitGuardian GitHub App](https://github.com/apps/gitguardian) instead of CI. |
 
 ### CodeRabbit (GitHub App — no secret in repo)
 
@@ -62,13 +60,26 @@ Add these under **GitHub → Settings → Secrets and variables → Actions** (r
 2. `.coderabbit.yaml` is already committed — reviews cover the KC app, backend and scripts.
 3. Open a test PR; verify CodeRabbit posts review comments (non-merging).
 
-### Promoting Snyk / GitGuardian to required checks
+### Snyk / GitGuardian in the CI gate (2026-11-16)
 
-After 1–2 weeks of clean baselines:
+Both run as GitHub integrations, not CI workflows, and are **not** separate
+required checks in the ruleset / branch protection (Snyk never reports on
+merge-queue commits, so a required context would hang every queue entry).
+Instead `CI gate` judges them on the head SHA (`scripts/ci-app-checks.mjs`,
+run from the base commit like every judge module):
 
-1. Remove `continue-on-error: true` from the workflow job (or flip to hard-fail).
-2. Add `Snyk dependency scan` / `GitGuardian secret scan` to branch protection on `dev`/`main`.
-3. Update `docs/SSOT/ENVIRONMENTS.md` "Dev merge gates" table in the same PR.
+- reported and `success` / `neutral` / `skipped` → ok; any failure → the gate fails;
+- still pending after 8 minutes → the gate fails ("still pending", re-run CI);
+- never reported for that event type (60 s grace) → ignored;
+- GitGuardian is matched by check name **and** App id 46505; Snyk by the
+  status context `security/snyk (<login>)` **and** a status creator equal to that
+  allowlisted user (the integration posts with a user token, so there is no App
+  id). A workflow cannot fake or hide either.
+- Push and dispatch runs do not judge them.
+- Limitation: the gate judges once per CI run. A scan that turns red after the
+  gate passed (e.g. a Snyk re-test) blocks only after CI is re-run.
+- If the Snyk integration is reconnected under another account, add that login
+  to `creators` in `scripts/ci-app-checks.mjs`.
 
 ## Dependency audit
 

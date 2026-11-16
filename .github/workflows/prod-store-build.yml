@@ -163,6 +163,7 @@ jobs:
       GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
       MOBILE_SUPABASE_ANON_KEY: ${{ secrets.MOBILE_SUPABASE_ANON_KEY }}
       MOBILE_SUPABASE_ANON_KEY_PROD: ${{ secrets.MOBILE_SUPABASE_ANON_KEY_PROD }}
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
     with:
       ref: ${{ needs.gate.outputs.sha }}
       backend: prod

@@ -299,7 +299,8 @@ The outbox is the seam: any of these can leave Postgres later without touching t
 | `match_*`, `matching_settings`, `embedding_jobs`, `rate_limit_buckets`, `fsm_*` | `kc_private.*` |
 | `whatsapp_*`, `bot_*`, `ingestion_*`, `raw_records`, `extractions`, `field_provenance`, `entity_*`, `er_candidates` | `integrations.*` |
 | `match_runs`, `listing_matches`, `claim_requests`, `marketplace_actors`, `listing_feed_posts`, `listing_user_signals`, `profile_enrichments`, `closure_cleanup_metrics`, `user_feed_cache`, `feed_mv_refresh_state`, `feed_open_posts_mv`, `social_rpc_explain_snapshots`, `kc_dev_*` | not carried over |
-| 48 unreferenced functions, 31 detached trigger functions, demo seed / wipe RPCs | not carried over |
+| 48 unreferenced functions, 31 detached trigger functions | not carried over |
+| demo seed / wipe RPCs | dev-only seed `supabase/seed/demo/` (kc-dev and local only, never a migration; FR-ADMIN-031) |
 | `supabase_realtime` publication tables | Broadcast channels |
 
 ## 9. Application changes required
