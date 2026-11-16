@@ -24,7 +24,7 @@
    "distinct": 250
   },
   "table": {
-   "callSites": 184,
+   "callSites": 186,
    "distinct": 62
   }
  },
@@ -2115,6 +2115,30 @@
    "symbol": "loadSeatCounts",
    "via": "literal",
    "name": "post_seat_counts"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/marketplace/SupabaseListingStreetAddressRepository.ts",
+   "line": 22,
+   "area": "marketplace",
+   "symbol": "SupabaseListingStreetAddressRepository.unwrapCall",
+   "via": "literal",
+   "ops": [
+    "upsert"
+   ],
+   "name": "post_private_locations"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/marketplace/SupabaseListingStreetAddressRepository.ts",
+   "line": 35,
+   "area": "marketplace",
+   "symbol": "SupabaseListingStreetAddressRepository.getOwn",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "post_private_locations"
   },
   {
    "kind": "rpc",

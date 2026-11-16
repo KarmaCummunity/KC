@@ -79,7 +79,7 @@ Per `docs/SSOT/ENVIRONMENTS.md`: `preview` and `production` each hold `EXPO_PUBL
 |---|---|---|
 | `world_*_enabled` | yes, same defaults on both | — |
 | `launch_email_auth_enabled`, `launch_whatsapp_bot_enabled`, `launch_payments_enabled` | **no** | build default: ON when `EXPO_PUBLIC_ENVIRONMENT=development`, OFF in production (`launchSurfaces.ts`); `EXPO_PUBLIC_LAUNCH_*` overrides |
-| Support-KC options (Bit / PayBox, `useKcSupportOptions`) | no (`kc_support_channels` is in `supabase/seed/content/deferred/`) | server config with a compiled fallback in the app, so shown on both (owner decision 15 Nov: ON at launch) |
+| Support-KC options (Bit / PayBox, `useKcSupportOptions`) | no (`kc_support_channels` is in `supabase/seed/content/deferred/`) | server config, no compiled fallback; the card is hidden whenever no channel is active (all paused 2026-11-16, App Store 3.2.2) |
 
 The current per-project values are read in the admin portal; they are not copied here.
 

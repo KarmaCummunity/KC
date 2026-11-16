@@ -76,7 +76,8 @@ describe('listing field specs — per kind', () => {
     expect(keysOf('foster_request')).toEqual(['species', 'care_mode', 'location_mode', 'starts_on', 'ends_on']);
     expect(keysOf('volunteer_offer')).toEqual(['duration_minutes']);
     expect(keysOf('volunteer_request')).toEqual(['support_type', 'duration_minutes']);
-    expect(keysOf('event')).toEqual(['starts_at', 'ends_at', 'registration_policy', 'capacity', 'address']);
+    // The place is the form's address section, not a field of the kind (KC#2288).
+    expect(keysOf('event')).toEqual(['starts_at', 'ends_at', 'registration_policy', 'capacity']);
   });
 
   it('offers no emotional-support option: it is routed to a hotline (docs/spec/05 §5.4)', () => {
