@@ -11,6 +11,8 @@ import { useCreatePostStyles } from '../../screens/tabs/create.styles';
 import { useShellTabBarScrollInset } from '../../navigation/useShellTabBarVisibility';
 import { ChallengeCreateForm } from '../challenges/ChallengeCreateForm';
 import { CHALLENGES_QUERY_KEY, challengeUseCases } from '../../services/challengeComposition';
+import { ChallengeError } from '@kc/domain';
+import { reportHandledError } from '../../lib/observability/reportHandledError';
 import { challengeErrorMessage } from '../../lib/challenges/challengeErrorMessage';
 import { closeCreateForm } from '../../navigation/closeCreateForm';
 
@@ -39,6 +41,10 @@ export function ChallengeWorldCreateForm({ header, onPublishActionChange }: Prop
       await queryClient.invalidateQueries({ queryKey: ['feed'] });
       closeCreateForm(router);
     } catch (error) {
+      // A missing catalog row is not something the user can fix, so it must reach Sentry.
+      if (error instanceof ChallengeError && error.code === 'challenge_world_not_configured') {
+        reportHandledError(error, 'manual', ['challenge_create']);
+      }
       setErrorMessage(challengeErrorMessage(t, error));
     } finally {
       setBusy(false);

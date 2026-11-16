@@ -61,7 +61,7 @@ export function ChallengeCreateForm({ busy, errorMessage, onSubmit, onPublishAct
         onChangeText={(text) => set('title', text)}
         testID="challenge-form-title"
       />
-      {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
+
       <TextField
         label={t('challenges.form.description')}
         value={form.description}
