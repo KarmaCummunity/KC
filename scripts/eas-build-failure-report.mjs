@@ -3,13 +3,11 @@
 //
 // `eas build --json --wait` only prints "✖ Build failed", so a red store job
 // used to need an expo.dev login to see the cause. This reads the build id
-// from the captured eas stderr (or argv), asks `eas build:view --json` for
-// the error, downloads the build log files and prints the failing phase.
+// from the captured eas stderr (or argv), asks the Expo API for the error, downloads the build log files and prints the failing phase.
 // EAS redacts secret-type env values in its logs; GitHub masks job secrets.
 //
 // Usage: node scripts/eas-build-failure-report.mjs <eas-stderr-file | build-id>
 // Never fails the job by itself (exit 0); it only reports.
-import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 
@@ -30,7 +28,13 @@ export function parseLogLines(text) {
     if (!line.trim()) continue;
     try {
       const j = JSON.parse(line);
-      out.push({ phase: j.phase ?? null, msg: String(j.msg ?? ''), marker: j.marker ?? null, result: j.result ?? null });
+      out.push({
+        phase: j.phase ?? null,
+        msg: String(j.msg ?? ''),
+        marker: j.marker ?? null,
+        result: j.result ?? null,
+        keys: Object.keys(j),
+      });
     } catch {
       out.push({ phase: null, msg: line, marker: null, result: null });
     }
@@ -38,26 +42,50 @@ export function parseLogLines(text) {
   return out;
 }
 
-/** The phase that ended with result "fail", else the last phase that started. */
+/**
+ * The first phase that ended with result "fail" (later ones such as
+ * FAIL_BUILD only restate it), else the last phase that started.
+ */
 export function failingPhase(entries) {
-  let failed = null;
   let last = null;
   for (const e of entries) {
-    if (e.marker === 'END_PHASE' && e.result === 'fail') failed = e.phase;
+    if (e.marker === 'END_PHASE' && e.result === 'fail' && e.phase) return e.phase;
     if (e.marker === 'START_PHASE' && e.phase) last = e.phase;
   }
-  return failed ?? last;
+  return last;
 }
 
-export function summarize(entries, { tail = 150, matches = 80 } = {}) {
-  const phase = failingPhase(entries);
+/** EAS errors often name the phase: 'See logs for the "Run gradlew" phase'. */
+export function phaseFromMessage(message, entries) {
+  const m = /logs for the "([^"]+)" phase/i.exec(message ?? '');
+  if (!m) return null;
+  const want = m[1].toUpperCase().replace(/[^A-Z0-9]+/g, '_');
+  return entries.some((e) => e.phase === want) ? want : null;
+}
+
+export function summarize(entries, { tail = 200, matches = 120, errorMessage } = {}) {
+  const phase = phaseFromMessage(errorMessage, entries) ?? failingPhase(entries);
   const inPhase = entries.filter((e) => e.msg && (phase == null || e.phase === phase));
   const hits = inPhase.filter((e) => INTERESTING_RE.test(e.msg)).slice(-matches);
   return { phase, hits: hits.map((e) => e.msg), tail: inPhase.slice(-tail).map((e) => e.msg) };
 }
 
-function sh(cmd, args) {
-  return execFileSync(cmd, args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 64 * 1024 * 1024 });
+const BUILD_QUERY = `query BuildReport($id: ID!) {
+  builds { byId(buildId: $id) { id status platform buildProfile logFiles error { errorCode message docsUrl } } }
+}`;
+
+/** Same Expo GraphQL API eas-cli uses; needs no project checkout. */
+async function fetchBuild(id, token) {
+  const res = await fetch('https://api.expo.dev/graphql', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
+    body: JSON.stringify({ query: BUILD_QUERY, variables: { id } }),
+  });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok || body.errors) {
+    throw new Error(`HTTP ${res.status}: ${(body.errors ?? []).map((e) => e.message).join('; ')}`);
+  }
+  return body.data.builds.byId;
 }
 
 async function main() {
@@ -68,11 +96,16 @@ async function main() {
     console.log('::warning::eas-build-failure-report: no EAS build id found');
     return;
   }
+  const token = process.env.EXPO_TOKEN;
+  if (!token) {
+    console.log('::warning::eas-build-failure-report: EXPO_TOKEN is not set');
+    return;
+  }
   let view;
   try {
-    view = JSON.parse(sh('eas', ['build:view', id, '--json']));
+    view = await fetchBuild(id, token);
   } catch (err) {
-    console.log(`::warning::eas build:view ${id} failed: ${String(err.message).split('\n')[0]}`);
+    console.log(`::warning::EAS build ${id} lookup failed: ${err.message}`);
     return;
   }
   const err = view.error ?? {};
@@ -92,7 +125,10 @@ async function main() {
     console.log('No EAS log files could be downloaded.');
     return;
   }
-  const s = summarize(entries);
+  const s = summarize(entries, { errorMessage: err.message });
+  const counts = new Map();
+  for (const e of entries) if (e.phase) counts.set(e.phase, (counts.get(e.phase) ?? 0) + 1);
+  console.log(`Phases (log lines): ${[...counts].map(([p, n]) => `${p}=${n}`).join(' ')}`);
   console.log(`Failing phase: ${s.phase ?? 'unknown'}`);
   console.log('::group::Error-looking lines in the failing phase');
   for (const l of s.hits) console.log(l);
