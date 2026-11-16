@@ -15,7 +15,7 @@ set search_path = ''
 as $$
   select case p_operation
     when 'wipe' then array['wipe_content', 'wipe_accounts']
-    when 'seed' then array['wipe_content', 'wipe_accounts', 'members', 'items', 'rides', 'social', 'chats', 'orgs']
+    when 'seed' then array['wipe_content', 'wipe_accounts', 'members', 'items', 'rides', 'worlds', 'social', 'chats', 'orgs']
   end;
 $$;
 
@@ -68,6 +68,7 @@ begin
                           (select s.password_hash from kc_private.demo_data_state s)))
     when 'items' then jsonb_build_object('items_created', kc_private.demo_seed_items())
     when 'rides' then jsonb_build_object('rides_created', kc_private.demo_seed_rides())
+    when 'worlds' then jsonb_build_object('world_posts_created', kc_private.demo_seed_worlds())
     when 'social' then jsonb_build_object('follows_created', kc_private.demo_seed_social())
     when 'chats' then jsonb_build_object('chats_created', kc_private.demo_seed_chats())
     when 'orgs' then jsonb_build_object('organizations_created', kc_private.demo_seed_orgs(p_actor_id))

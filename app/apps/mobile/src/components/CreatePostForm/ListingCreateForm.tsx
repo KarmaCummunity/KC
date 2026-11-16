@@ -14,7 +14,7 @@ import type { CreateDirection } from '../../lib/unifiedCreate/createCategories';
 import { useListingCreateForm } from '../../hooks/useListingCreateForm';
 import { visibleDetailSpecs } from '../../lib/unifiedCreate/listingFieldSpecs';
 import { inlineProblemField, renderedListingFields } from '../../lib/unifiedCreate/listingFormProblem';
-import { CityPicker } from '../CityPicker';
+import { ListingLocationSection } from './ListingLocationSection';
 import { RideCreateSection } from '../giving/RideCreateSection';
 import { WorldSubcategoryPicker } from '../marketplace/WorldSubcategoryPicker';
 import { AdditionalWorldsPicker } from './AdditionalWorldsPicker';
@@ -230,14 +230,7 @@ export function ListingCreateForm({
           {form.isRides ? photoPicker : null}
 
           {form.isRides ? null : (
-            <ListingFieldFrame
-              field="city"
-              style={styles.section}
-              label={t('post.unifiedCreate.cityLabel')}
-              required
-            >
-              <CityPicker value={form.city} onChange={form.setCity} disabled={form.busy} />
-            </ListingFieldFrame>
+            <ListingLocationSection city={form.city} onCityChange={form.setCity} address={form.address} disabled={form.busy} />
           )}
 
           {/* A recurring ride or event is published by the server date by date, with the usual defaults: no exposure to set. */}

@@ -3,11 +3,10 @@ import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Text } from '@kc/ui';
 import { TextField } from '../ui/TextField';
-import { CompactStreetNumberField } from '../address/CompactStreetNumberField';
+import { StreetAddressRow } from '../address/StreetAddressRow';
 import { ALL_CATEGORIES, ITEM_CONDITIONS } from '@kc/domain';
 import type { Category, ItemCondition, LocationDisplayLevel, PostVisibility } from '@kc/domain';
 import { CityPicker } from '../CityPicker';
-import { StreetPicker } from '../StreetPicker';
 import { PhotoPicker } from '../CreatePostForm/PhotoPicker';
 import { ExposureSettingsSection } from './ExposureSettingsSection';
 import type { UploadedAsset } from '../../services/imageUpload';
@@ -114,23 +113,15 @@ export function EditPostFormScrollContent({
 
       <FormSection label={t('post.editPost.sectionAddress')} required outlined={false}>
         <CityPicker value={city} onChange={onCityChange} disabled={isSaving} />
-        <View style={styles.streetRow}>
-          <View style={styles.streetInputStreet}>
-            <StreetPicker
-              cityId={city?.id ?? null}
-              value={street ? { id: '', name: street } : null}
-              onChange={(sel) => onStreetChange(sel.name)}
-              disabled={isSaving}
-            />
-          </View>
-          <CompactStreetNumberField
-            containerStyle={styles.streetInputHouse}
-            value={streetNumber}
-            onChangeText={onStreetNumberChange}
-            placeholder={t('post.editPost.streetNumberPlaceholder')}
-            editable={!isSaving && !!city}
-          />
-        </View>
+        <StreetAddressRow
+          cityId={city?.id ?? null}
+          street={street}
+          streetNumber={streetNumber}
+          onStreetChange={onStreetChange}
+          onStreetNumberChange={onStreetNumberChange}
+          disabled={isSaving}
+          streetNumberPlaceholder={t('post.editPost.streetNumberPlaceholder')}
+        />
       </FormSection>
 
       <FormSection label={t('post.editPost.sectionCategory')}>

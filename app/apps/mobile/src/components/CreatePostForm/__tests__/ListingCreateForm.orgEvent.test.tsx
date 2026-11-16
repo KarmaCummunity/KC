@@ -18,6 +18,7 @@ const mocks = vi.hoisted(() => ({
   listKindsForWorld: vi.fn(),
   listMyOrganizations: vi.fn(),
   createListing: vi.fn(),
+  saveStreetAddress: vi.fn(),
   push: vi.fn(),
   // The instant each date field picks when tapped, by detail key.
   picks: {} as Record<string, string>,
@@ -66,6 +67,20 @@ vi.mock('../../CityPicker', () => ({
   ),
 }));
 
+// Street picker stand-in: one tap picks a street of the chosen city.
+vi.mock('../../StreetPicker', () => ({
+  StreetPicker: ({ onChange }: { onChange: (s: { id: string; name: string }) => void }) => (
+    <button type="button" data-testid="street-picker" onClick={() => onChange({ id: 's1', name: 'הרצל' })} />
+  ),
+}));
+vi.mock('../../../services/listingStreetAddressComposition', () => ({
+  listingStreetAddressUseCases: {
+    save: () => ({ execute: mocks.saveStreetAddress }),
+    getOwn: () => ({ execute: async () => null }),
+  },
+  listingStreetAddressQueryKey: (id: string) => ['listing-street-address', id],
+}));
+
 import { ListingCreateForm } from '../ListingCreateForm';
 
 function renderTimeOffer() {
@@ -91,12 +106,14 @@ function renderTimeOffer() {
   return { onPublished };
 }
 
-/** Chooses the event (an organization's by default), picks the window and the city. */
-async function fillEvent(kindChip = 'time-offer-kind-event') {
+/** Chooses the event (an organization's by default), picks the window and the full address. */
+async function fillEvent(kindChip = 'time-offer-kind-event', streetNumber = '12') {
   fireEvent.click(await screen.findByTestId(kindChip));
   fireEvent.click(await screen.findByTestId('listing-date-starts_at'));
   fireEvent.click(screen.getByTestId('listing-date-ends_at'));
   fireEvent.click(screen.getByTestId('city-picker'));
+  fireEvent.click(screen.getByTestId('street-picker'));
+  fireEvent.change(screen.getByTestId('listing-street-number'), { target: { value: streetNumber } });
 }
 
 async function publish() {
@@ -109,6 +126,7 @@ beforeEach(() => {
   mocks.listKindsForWorld.mockImplementation(async (world: string) => KINDS_BY_WORLD[world] ?? []);
   mocks.listMyOrganizations.mockResolvedValue([{ orgId: ORG_A, name: 'Clean Coast' }]);
   mocks.createListing.mockResolvedValue('listing-event');
+  mocks.saveStreetAddress.mockResolvedValue(undefined);
   mocks.picks.starts_at = WINDOW.start;
   mocks.picks.ends_at = WINDOW.end;
 });
@@ -169,9 +187,70 @@ describe('ListingCreateForm — organization event', () => {
       expect.objectContaining({
         kindId: 'k-event',
         cityId: '4000',
-        details: { starts_at: WINDOW.start, ends_at: WINDOW.end, registration_policy: 'automatic', org_id: ORG_A },
+        details: {
+          starts_at: WINDOW.start,
+          ends_at: WINDOW.end,
+          registration_policy: 'automatic',
+          org_id: ORG_A,
+          address: 'הרצל 12',
+        },
       }),
     );
+  });
+
+  // KC#2288: the event form had a free-text address and, apart, a city picker.
+  it('takes one structured address: no free-text address field, the street row sits with the city', async () => {
+    renderTimeOffer();
+    fireEvent.click(await screen.findByTestId('time-offer-kind-event'));
+    expect(await screen.findByTestId('listing-street-address')).toBeTruthy();
+    expect(screen.queryByTestId('listing-field-address')).toBeNull();
+    // One section holds the city and the street row.
+    expect(screen.getByTestId('listing-location').contains(screen.getByTestId('city-picker'))).toBe(true);
+    expect(screen.getByTestId('listing-location').contains(screen.getByTestId('street-picker'))).toBe(true);
+  });
+
+  it('stores the street and the house number with the published event', async () => {
+    const { onPublished } = renderTimeOffer();
+    await fillEvent();
+    await publish();
+    await waitFor(() => expect(onPublished).toHaveBeenCalledWith('listing-event'));
+    expect(mocks.saveStreetAddress).toHaveBeenCalledWith('listing-event', { street: 'הרצל', streetNumber: '12' });
+  });
+
+  it('asks for the street and the number before publishing, in the address section', async () => {
+    renderTimeOffer();
+    fireEvent.click(await screen.findByTestId('time-offer-kind-event'));
+    fireEvent.click(await screen.findByTestId('listing-date-starts_at'));
+    fireEvent.click(screen.getByTestId('listing-date-ends_at'));
+    fireEvent.click(screen.getByTestId('city-picker'));
+    await publish();
+    expect((await screen.findByTestId('listing-error')).textContent).toBe('errors.createPost.missingAddressPairBeforePublish');
+    expect(screen.getByTestId('listing-location').contains(screen.getByTestId('listing-error'))).toBe(true);
+    expect(mocks.createListing).not.toHaveBeenCalled();
+  });
+
+  it('refuses a house number the database would refuse', async () => {
+    renderTimeOffer();
+    await fillEvent('time-offer-kind-event', '12-14');
+    await publish();
+    expect((await screen.findByTestId('listing-error')).textContent).toBe('errors.post.street_number_invalid');
+    expect(mocks.createListing).not.toHaveBeenCalled();
+  });
+
+  it('still opens the event when storing the street fails: the event shows the address either way', async () => {
+    mocks.saveStreetAddress.mockRejectedValue(new Error('offline'));
+    const { onPublished } = renderTimeOffer();
+    await fillEvent();
+    await publish();
+    await waitFor(() => expect(onPublished).toHaveBeenCalledWith('listing-event'));
+    expect(mocks.createListing).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps the city-only location for a volunteer shift', async () => {
+    renderTimeOffer();
+    expect(await screen.findByTestId('listing-field-duration_minutes')).toBeTruthy();
+    expect(screen.getByTestId('listing-location')).toBeTruthy();
+    expect(screen.queryByTestId('listing-street-address')).toBeNull();
   });
 
   it('blocks an event that ends before it starts', async () => {

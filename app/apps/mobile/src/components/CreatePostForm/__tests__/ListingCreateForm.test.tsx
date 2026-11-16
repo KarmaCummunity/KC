@@ -85,7 +85,7 @@ vi.mock('../../../store/authStore', () => {
   useAuthStore.getState = () => state;
   return { useAuthStore };
 });
-// City picker stand-in: one tap picks Lod.
+vi.mock('../../StreetPicker', () => ({ StreetPicker: () => null })); // shown for an event only; next: the city stand-in, one tap picks Lod
 vi.mock('../../CityPicker', () => ({
   CityPicker: ({ onChange }: { onChange: (c: { id: string; name: string }) => void }) => (
     <button type="button" data-testid="city-picker" onClick={() => onChange({ id: '7000', name: 'לוד' })} />

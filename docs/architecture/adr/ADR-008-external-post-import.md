@@ -55,8 +55,8 @@ A **deterministic–LLM–deterministic sandwich**. The model does only what rul
 | Layer | Content |
 |---|---|
 | `@kc/domain/imports/` | `normalizeMessage`, `scrubPii`, `fingerprint`, `validateExtraction`, `resolveRelativeTime`, `recalibrateConfidence`, types `ExtractedPost`, `ImportRouting`, `ImportError` (typed errors). Pure, zero deps, tests in `__tests__/`. |
-| `@kc/application/imports/` | `ExtractExternalPostUseCase`; ports `IPostExtractionService` (calls the function), `IPlaceCatalogRepository.resolve(level, text, cityId)`. No I/O. |
-| `@kc/infrastructure-supabase` | Adapters: invokes `extract-external-post`; calls `api_resolve_place`. |
+| `@kc/application/imports/` | `ExtractExternalPostUseCase`; port `IPostExtractionService` (calls the function). No I/O. Place resolution has no app-side port: `api_resolve_place` is called from inside the Edge Function, so a port would have no caller (YAGNI); one is added only if the app needs it. |
+| `@kc/infrastructure-supabase` | Adapter: invokes `extract-external-post`. |
 | `supabase/functions/extract-external-post/` | `handler.ts` (DI, unit-tested), `index.ts` (wiring only). |
 | `supabase/functions/_shared/post-extraction/` | `provider.ts` (seam), `gemini.ts`, `prompt.ts`, `schema.ts`, plus **mirrors** of the pure domain stages. A **parity test** runs the golden cases through both copies and fails if they diverge (same discipline as the translation short-circuit). |
 | `apps/mobile` | Share target registration, paste screen, draft hand-off to the create form, highlight of "confirm" fields, attestation, provenance chip. |
@@ -74,9 +74,9 @@ external_post_imports
   post_id uuid null → posts, created_at timestamptz default now()
   -- no raw text, no placeholders; purged after 90 days; RLS: owner reads own rows, writes via RPC only
 extraction_cache (fingerprint pk, extraction jsonb, version, created_at)   -- service-role only, 24 h TTL, no user id
-import_alias (alias_text, canonical_place_id)                              -- ת"א → Tel Aviv-Yafo, etc.
+place_import_aliases (level, alias_norm, canonical_norm)                 -- the short form of a city, matched by name, no codes
 posts + source_platform text null                                          -- source already planned in ADR-006
-api_resolve_place(p_level, p_text, p_city_id) → table(place_id, name, score)   -- pg_trgm on a normalized column
+api_resolve_place(p_level, p_text, p_city_id, p_limit) → table(place_id, name_he, city_id, score, margin)   -- pg_trgm, FR-IMPORT-004 AC6
 ```
 
 RLS, an SQL test per policy and the ADR-002 new-RPC checklist apply. No destructive SQL.
@@ -100,7 +100,7 @@ Behind `external_post_import_enabled`, dev first, then a dogfood group. Provider
 ### Implementation slices (each its own PR with tests)
 
 1. **Domain core:** normalize, scrub, fingerprint, validate, time resolution, recalibration + golden-case unit tests.
-2. **Catalog resolution:** `api_resolve_place`, alias table, normalized columns, SQL tests, application port.
+2. **Catalog resolution:** `api_resolve_place`, alias table, normalized columns, SQL tests (no app-side port: the Edge Function calls the RPC).
 3. **Edge Function + provider seam:** handler, schema, prompt, mirrors + parity test, rate limits, cache, observability; recorded-response tests.
 4. **Eval harness:** golden set v1, CI gate, `--live` re-record, report.
 5. **Mobile:** share target (library per ADR-005), paste screen, prefilled form hand-off, confirm highlights, attestation, provenance chip, Maestro flow.

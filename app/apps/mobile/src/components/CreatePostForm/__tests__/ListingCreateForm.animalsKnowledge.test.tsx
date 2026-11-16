@@ -59,6 +59,8 @@ vi.mock('../../../store/authStore', () => {
   useAuthStore.getState = () => state;
   return { useAuthStore };
 });
+// Only an event shows the street row; these forms never open the picker.
+vi.mock('../../StreetPicker', () => ({ StreetPicker: () => null }));
 vi.mock('../../CityPicker', () => ({
   CityPicker: ({ onChange }: { onChange: (c: { id: string; name: string }) => void }) => (
     <button type="button" data-testid="city-picker" onClick={() => onChange({ id: '7000', name: 'לוד' })} />

@@ -24,6 +24,12 @@ vi.mock('@react-native-community/datetimepicker', () => ({ default: () => null, 
 vi.mock('../../../services/marketplaceComposition', () => ({
   marketplaceRepository: () => ({ listKindsForWorld: mocks.listKindsForWorld, createListing: mocks.createListing, listWorldSubcategories: async () => [] }),
 }));
+vi.mock('../../../services/listingStreetAddressComposition', () => ({
+  listingStreetAddressUseCases: { save: () => ({ execute: vi.fn() }), getOwn: () => ({ execute: async () => null }) },
+  listingStreetAddressQueryKey: (id: string) => ['listing-street-address', id],
+}));
+// Street picker stand-in: the real one pulls in native animation modules.
+vi.mock('../../StreetPicker', () => ({ StreetPicker: () => null }));
 vi.mock('../../../services/listingImageUpload', () => ({ pickListingImages: vi.fn(async () => []), uploadListingImages: vi.fn() }));
 vi.mock('../../../services/rideSeriesComposition', () => ({ rideSeriesUseCases: { create: () => ({ execute: vi.fn() }) } }));
 vi.mock('../../../lib/rides/rideStartDetails', () => ({ rememberRideRoute: vi.fn() }));
