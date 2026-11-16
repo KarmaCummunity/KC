@@ -67,6 +67,8 @@ select plan(50);
 insert into auth.users (id, email, raw_app_meta_data)
 select ('00000000-0000-4000-8000-00000000000' || x)::uuid, x || '@example.test', '{"provider":"google"}'
   from unnest(array['a', 'b', 'c', 'd']) x;
+-- Signing up has its own karma award and suite (072_karma_engagement.sql); set it aside.
+delete from kc_private.outbox_events where topic = 'karma';
 insert into public.blocks (blocker_id, blocked_id) values
   ('00000000-0000-4000-8000-00000000000d', '00000000-0000-4000-8000-00000000000a');
 insert into public.cities (city_id, name_he, name_en, location) values ('c1', 'c1', 'City One', 'SRID=4326;POINT(34.78 32.08)');
