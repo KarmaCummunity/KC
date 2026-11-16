@@ -78,7 +78,7 @@ const ICON_BY_ID: Readonly<Record<CreateCategoryId, CreateCategoryIcon>> = {
  * portals and take community links, like the challenges world; production keeps that while the
  * remote flag is off, tester builds launch them (#1630, #1625).
  */
-const LAUNCH_GATED_LISTING_WORLDS: readonly string[] = ['knowledge', 'animals'];
+const LAUNCH_GATED_LISTING_WORLDS: readonly string[] = ['knowledge', 'animals', 'employment'];
 
 /** Items keep the mature post form (drafts, address display level, visibility, karma value). */
 function engineFor(id: CreateCategoryId): CreateEngine {

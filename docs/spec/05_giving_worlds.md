@@ -112,6 +112,8 @@ Give and take for animals (D100): supplies, foster, adoption, care and training 
 Kept as a world, empty for now (D100). Content is the governance layer of [11](./11_governance.md): rules, rule parameters, proposals and votes (KC#1032), civic knowledge and advocacy nonprofits (D40). Strict party-political neutrality (S25).
 
 ## 5.11 Employment (`employment`) — phase 2
+**First slice ({{D:employment-first-slice}}, #2278).** Two kinds, `job_offer` (give) and `job_request` (take), posted by any member for now; the create form collects the role, the scope (full-time, part-time, shifts, freelance, temporary) and the area. Posts show in the employment feed and the main feed and are answered by chat. The organization-only rule below and the applications inbox follow in #1476; until then the world opens from the admin portal's world switch.
+
 Give = post a job; take = apply (D100). **Only a verified organization that is regulated by law and may legally employ people posts jobs**; an organization that is not such recruits volunteers in the time world (PM 2026-11-02; refines D41, D53, D57). Free posting; philanthropic and nonprofit-sector roles only; no karma on paid jobs (S27). Applications open a chat anchored on the job; no CV storage in v1. Job board gap: G28.
 
 ## 5.12 Challenges (`challenges`) — phase 2

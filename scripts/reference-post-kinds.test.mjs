@@ -34,6 +34,20 @@ test('the animals world has the four kinds of D125, each in its direction', () =
   });
 });
 
+test('the employment world has a job offer and a job request (#2278)', () => {
+  // docs/spec/05_giving_worlds.md §5.11, first slice: a job offered (give) and a job sought (take).
+  const employment = Object.fromEntries(postKinds().filter((row) => row.world_slug === 'employment').map((row) => [row.slug, row.direction]));
+  assert.deepEqual(employment, { job_offer: 'offer', job_request: 'request' });
+});
+
+test('every employment kind the create form has fields for exists in the seed', () => {
+  const source = read('app/apps/mobile/src/lib/unifiedCreate/employmentFieldSpecs.ts');
+  const formKinds = [...source.matchAll(/^ {2}([a-z_]+): \[/gm)].map((m) => m[1]);
+  assert.ok(formKinds.length > 0, 'no field sets found in employmentFieldSpecs.ts');
+  const seeded = new Set(postKinds().filter((row) => row.world_slug === 'employment').map((row) => row.slug));
+  assert.deepEqual(formKinds.filter((slug) => !seeded.has(slug)), []);
+});
+
 test('every kind the create form has fields for exists in the seed', () => {
   // The animals create form keys its field sets by kind slug; each must be a seeded kind.
   const source = read('app/apps/mobile/src/lib/unifiedCreate/animalsFieldSpecs.ts');

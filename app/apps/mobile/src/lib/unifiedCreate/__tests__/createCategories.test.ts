@@ -174,3 +174,20 @@ describe('resolveCreateCategory — animals opens as a listing form once launche
     expect(resolveCreateCategory(medical, { world_medical_enabled: true, world_animals_enabled: true })).toBe(medical);
   });
 });
+
+describe('resolveCreateCategory — employment opens as a listing form once launched (#2278)', () => {
+  const employment = findCreateCategory('employment');
+
+  it('keeps the community-link form while the employment world is a portal', () => {
+    for (const remote of [undefined, {}, { world_employment_enabled: false }]) {
+      expect(resolveCreateCategory(employment, remote)).toBe(employment);
+    }
+    expect(employment.engine).toBe('link');
+  });
+
+  it('writes a marketplace listing to the employment world once it is active', () => {
+    expect(resolveCreateCategory(employment, { world_employment_enabled: true })).toMatchObject({
+      id: 'employment', engine: 'listing', worldSlug: 'employment', linkCategory: null,
+    });
+  });
+});
