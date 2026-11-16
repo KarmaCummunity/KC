@@ -8,8 +8,8 @@ export const FREEZE_LABEL = 'no-auto-merge';
 export const TRAIN_LABELS = ['area:ci', 'agent:kc-bot'];
 export const RELEASE_E2E_CHECK = 'release / dev E2E on the release head';
 export const REQUIRED_CHECKS = ['CI gate', 'CI verdict'];
-/** Check runs that are never the train's business (deploy jobs on the same SHA, skipped callers). */
-export const IGNORED_CHECKS = new Set(['approve release', 'tag release']);
+/** Check runs that are never the train's business: skipped deploy callers, and the train's own dry run on a dev push. */
+export const IGNORED_CHECKS = new Set(['approve release', 'tag release', 'release train']);
 const FAILED = new Set(['failure', 'timed_out', 'cancelled', 'startup_failure', 'action_required', 'stale']);
 
 /** `1.9.143` → `1.9.144`. Throws on anything but MAJOR.MINOR.PATCH. */
