@@ -21,6 +21,7 @@ import { useChatStore } from '../store/chatStore';
 import { usePostDraftStore } from '../store/postDraftStore';
 import { useRedirectIntentStore } from '../store/redirectIntentStore';
 import { container } from '../lib/container';
+import { reportHandledError } from '../lib/observability/reportHandledError';
 import { useEnforceAccountGate } from '../hooks/useEnforceAccountGate';
 import { finishMark } from '../lib/observability/perfMarks';
 import { resolveAuthRedirect } from '../navigation/authRedirect';
@@ -126,7 +127,12 @@ export function AuthGate({ children }: Readonly<{ children: React.ReactNode }>) 
   useEffect(() => {
     if (isDevGhostSessionEnabled()) return;
     if (session?.userId) {
-      void useChatStore.getState().startInboxSub(session.userId, container.chatRepo, container.chatRealtime);
+      // The start rejects only when the realtime subscription itself cannot open; nothing awaits
+      // it here, so report it rather than leave an unhandled rejection (KC#2213).
+      useChatStore
+        .getState()
+        .startInboxSub(session.userId, container.chatRepo, container.chatRealtime)
+        .catch((error: unknown) => reportHandledError(error, 'manual', ['chat-inbox-start']));
     } else {
       useChatStore.getState().resetOnSignOut();
       queryClient.clear();
