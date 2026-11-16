@@ -3,11 +3,10 @@ import { ScrollView, TouchableOpacity, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Text } from '@kc/ui';
 import { TextField } from '../ui/TextField';
-import { CompactStreetNumberField } from '../address/CompactStreetNumberField';
+import { StreetAddressRow } from '../address/StreetAddressRow';
 import { ALL_CATEGORIES, ITEM_CONDITIONS } from '@kc/domain';
 import type { Category, ItemCondition, LocationDisplayLevel, PostVisibility } from '@kc/domain';
 import { CityPicker } from '../CityPicker';
-import { StreetPicker } from '../StreetPicker';
 import { LocationDisplayLevelChooser } from '../CreatePostForm/LocationDisplayLevelChooser';
 import { PhotoPicker } from '../CreatePostForm/PhotoPicker';
 import { EditPostExposureSection } from './EditPostExposureSection';
@@ -143,29 +142,16 @@ export function EditPostFormScrollContent({
           {t('post.editPost.sectionAddress')} <Text style={styles.required}>*</Text>
         </Text>
         <CityPicker value={city} onChange={onCityChange} disabled={isSaving} />
-        <View style={styles.streetRow}>
-          <View style={styles.streetInputStreet}>
-            <StreetPicker
-              cityId={city?.id ?? null}
-              value={street ? { id: '', name: street } : null}
-              onChange={(sel) => onStreetChange(sel.name)}
-              disabled={isSaving}
-            />
-          </View>
-          <CompactStreetNumberField
-            ref={streetNumberField.ref}
-            containerStyle={styles.streetInputHouse}
-            value={streetNumber}
-            onChangeText={onStreetNumberChange}
-            placeholder={t('post.editPost.streetNumberPlaceholder')}
-            editable={!isSaving && !!city}
-            onFocus={streetNumberField.onFocus}
-            inputAccessoryViewID={streetNumberField.inputAccessoryViewID}
-            returnKeyType={streetNumberField.returnKeyType}
-            blurOnSubmit={streetNumberField.blurOnSubmit}
-            onSubmitEditing={streetNumberField.onSubmitEditing}
-          />
-        </View>
+        <StreetAddressRow
+          cityId={city?.id ?? null}
+          street={street}
+          streetNumber={streetNumber}
+          onStreetChange={onStreetChange}
+          onStreetNumberChange={onStreetNumberChange}
+          disabled={isSaving}
+          streetNumberPlaceholder={t('post.editPost.streetNumberPlaceholder')}
+          streetNumberFocus={streetNumberField}
+        />
       </View>
 
       <View style={styles.section}>
