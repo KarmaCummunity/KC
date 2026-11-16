@@ -15,7 +15,7 @@ import { useListingCreateForm } from '../../hooks/useListingCreateForm';
 import { useScrollToListingProblem } from '../../hooks/useScrollToListingProblem';
 import { visibleDetailSpecs } from '../../lib/unifiedCreate/listingFieldSpecs';
 import { inlineProblemField, renderedListingFields } from '../../lib/unifiedCreate/listingFormProblem';
-import { CityPicker } from '../CityPicker';
+import { ListingLocationSection } from './ListingLocationSection';
 import { RideCreateSection } from '../giving/RideCreateSection';
 import { WorldSubcategoryPicker } from '../marketplace/WorldSubcategoryPicker';
 import { AdditionalWorldsPicker } from './AdditionalWorldsPicker';
@@ -251,17 +251,7 @@ export function ListingCreateForm({
           {form.isRides ? photoPicker : null}
 
           {form.isRides ? null : (
-            <ListingFieldFrame
-              field="city"
-              style={styles.section}
-              label={
-                <Text style={styles.sectionLabel}>
-                  {t('post.unifiedCreate.cityLabel')} <Text style={styles.required}>*</Text>
-                </Text>
-              }
-            >
-              <CityPicker value={form.city} onChange={form.setCity} disabled={form.busy} />
-            </ListingFieldFrame>
+            <ListingLocationSection city={form.city} onCityChange={form.setCity} address={form.address} disabled={form.busy} />
           )}
 
           {/* Only problems no section owns (server errors) sit above Publish. */}

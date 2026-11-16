@@ -40,7 +40,8 @@ import { postSeriesErrorKey } from '../lib/postSeriesError';
 import type { RideRecurrenceDraft } from '../components/giving/RideRecurrenceFields';
 import { useOrgEventChoice } from './useOrgEventChoice';
 import { useListingFormSource } from './useListingFormSource';
-import { rideAutoTitle, withEventOrg } from '../lib/unifiedCreate/listingCreateDetails';
+import { useListingStreetAddress } from './useListingStreetAddress';
+import { rideAutoTitle, withEventAddress, withEventOrg } from '../lib/unifiedCreate/listingCreateDetails';
 
 export { rideAutoTitle };
 
@@ -110,10 +111,6 @@ export function useListingCreateForm({
   const publishLock = useRef(false);
 
   // The red outline goes away as soon as the member edits the form again.
-  useEffect(() => {
-    setError(null);
-  }, [title, details, city, recurrence, houseNumbers, eventChoice.orgId]);
-
   // Edit / republish source: hydration and the per-kind defaults reset (useListingFormSource).
   const source = useListingFormSource({
     editListingId,
@@ -130,10 +127,22 @@ export function useListingCreateForm({
 
   const setDetail = (key: string, value: unknown) => setDetails((prev) => ({ ...prev, [key]: value }));
   const isRides = worldSlug === 'rides';
+  const isEvent = kind?.slug === ORG_EVENT_KIND_SLUG;
+  // An event happens at a place: one structured address (city + street + number), KC#2288.
+  const address = useListingStreetAddress({ enabled: isEvent, editListingId });
+  const { street, streetNumber, clear: clearAddress } = address;
+  /** A street belongs to its city, so another city starts the street over. */
+  const changeCity = (next: City | null) => {
+    if (next?.id !== city?.id) clearAddress();
+    setCity(next);
+  };
   // The recurrence of an event (a volunteering shift or an organization's); null on a single
   // event, an edit or another kind.
-  const isEvent = kind?.slug === ORG_EVENT_KIND_SLUG;
   const eventSeries = isEvent && !editListingId ? recurrence : null;
+  // The red outline goes away as soon as the member edits the form again.
+  useEffect(() => {
+    setError(null);
+  }, [title, details, city, street, streetNumber, recurrence, houseNumbers, eventChoice.orgId]);
   const showSubcategory = WORLDS_WITH_SUBCATEGORY_PICKER.includes(worldSlug);
   const effectiveTitle = isRides
     ? rideAutoTitle(details, (origin, dest) => t('post.unifiedCreate.rideAutoTitle', { origin, dest })) ||
@@ -153,6 +162,8 @@ export function useListingCreateForm({
     }
     if (eventChoice.isOrgEvent && !eventChoice.orgId) return { message: t('eventPost.create.orgRequired'), field: 'org' };
     if (!isRides && !city) return { message: t('post.unifiedCreate.errors.cityRequired'), field: 'city' };
+    const addressProblem = address.problem();
+    if (addressProblem) return { message: addressProblem, field: 'city' };
     // An edit keeps the listing's photos and sub-category, so it passes neither and skips those rules.
     const creating = editListingId ? {} : { photoCount, subcategoryId: showSubcategory ? subcategoryId : undefined };
     const rule = marketplaceRuleFieldError({ worldSlug, direction, details: submitted, ...creating });
@@ -173,7 +184,7 @@ export function useListingCreateForm({
     if (!userId || !kind || busy || publishLock.current) return;
     if (source.loading) return;
     const timed = isRides && !editListingId && leaveNow ? withLeaveNowDeparture(details, new Date()) : details;
-    const submitted = withEventOrg(detailsForSubmit(specs, timed), eventChoice);
+    const submitted = withEventAddress(withEventOrg(detailsForSubmit(specs, timed), eventChoice), address.label);
     const problem = validate(submitted);
     setError(problem);
     if (problem) return;
@@ -187,6 +198,7 @@ export function useListingCreateForm({
           details: submitted,
           cityId: isRides ? null : city?.id ?? null,
         });
+        await address.save(editListingId);
         onSaved?.();
         return;
       }
@@ -231,6 +243,7 @@ export function useListingCreateForm({
         const flags = { isOffer: direction === 'give', originFromHere, leaveNow, recurring: false };
         await afterRidePublished(id, submitted, houseNumbers, flags);
       }
+      await address.save(id);
       onPublished(id);
     } catch (err) {
       setError({ message: t(postSeriesErrorKey(err) ?? marketplaceServerErrorKey(err)), field: null });
@@ -250,7 +263,9 @@ export function useListingCreateForm({
     setDetails,
     setDetail,
     city,
-    setCity,
+    setCity: changeCity,
+    /** Street and house number of an event; `enabled` is false for every other kind. */
+    address,
     photos,
     setPhotos,
     carriedMedia: source.carriedMedia,
@@ -259,11 +274,8 @@ export function useListingCreateForm({
     setSubcategoryId,
     additionalWorlds,
     setAdditionalWorlds,
-    toggleAdditionalWorld: (slug: string) => {
-      setAdditionalWorlds((prev) =>
-        prev.includes(slug) ? prev.filter((s) => s !== slug) : [...prev, slug],
-      );
-    },
+    toggleAdditionalWorld: (slug: string) =>
+      setAdditionalWorlds((prev) => (prev.includes(slug) ? prev.filter((s) => s !== slug) : [...prev, slug])),
     recurrence,
     setRecurrence,
     leaveNow,
@@ -279,7 +291,7 @@ export function useListingCreateForm({
     busy,
     error,
     publish,
-    canPublish: Boolean(userId && kind) && !busy && !source.loading,
+    canPublish: Boolean(userId && kind) && !busy && !source.loading && !address.loading,
     isEdit: Boolean(editListingId),
     /** The edit / republish source is loading. */
     editLoading: source.loading,
