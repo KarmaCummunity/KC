@@ -30,7 +30,7 @@ Spec is clear; code does not match yet. These are **tasks, not contradictions**.
 | G24 | 🟡 2026-10-30 — 8 world slugs incl. `experiences` and the 11 domains exist in code; the Donations tab has a tile and a screen for every world and every domain (D62). Remaining: `domain_slug` on posts, challenges not a world (D45) | 04 |
 | G25 | Emergency mode (D42) | 09 |
 | G26 | 🟡 2026-11-03 — Challenges layer (D43): first slice shipped, active by default (`world_challenges_enabled`) — personal and community challenges, join/leave/end, per-cycle reports, live streaks, participants-only leaderboard, karma (migration `0550`, test `supabase/tests/0550_challenges.sql`, screens under `donations/challenges`). Open: giving challenge counted from closings, group scope and group chat lock (S29), challenge notifications, karma reversal on leave/removal, moderation of challenges, challenge images | 10 |
-| G27 | WhatsApp import & bridge (D38) | 13 |
+| G27 | 🟡 WhatsApp import & bridge (D38). Phase 1 specified 2026-11-16: share / paste import with smart extraction (`FR-IMPORT-001..010`, ADR-008, #2343); nothing built. Phase 2: chat-export upload + S21 review queue on the same pipeline; phase 3: bridge | 13, 25 |
 | G28 | Job board (D41) | 06 |
 | G29 | Polls & votes (D40) | 11 |
 | G30 | Registrar data import & proper-management badge (S35) | 12 |

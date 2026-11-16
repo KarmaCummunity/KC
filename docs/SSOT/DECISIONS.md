@@ -1999,3 +1999,15 @@ Owner rules that go with it:
 - Tooling: `scripts/agent-task.mjs`, its test, and `.github/workflows/sync-agent-labels.yml`.
 - Rules: `AGENTS.md` §6 and §13.
 - Docs: `docs/agents/ISSUE_CLAIMS.md`, `docs/agents/OPERATING_MODEL.md` and `docs/SSOT/RELEASE_CHECKLIST.md`.
+
+## {{ENG:post-extraction-pipeline}} — External post import: deterministic–LLM–deterministic extraction (2026-11-16)
+
+**Decision.** Posts from outside KC enter by member share or paste, never by scraping. One Edge Function runs: PII scrub and normalization (pure), a cache lookup by text fingerprint, ONE schema-constrained provider call (temperature 0, text passed as untrusted data), strict validation, resolution of places against the official catalog (`pg_trgm`, Hebrew-normalized), resolution of relative time against the message timestamp in Asia/Jerusalem, and recalibrated confidence that routes to ready / confirm / manual. The result only prefills the create form; it never publishes. Pure stages live in `@kc/domain` with Deno mirrors guarded by a parity test; the provider sits behind a seam like `TranslationProvider` (DPA provider before public launch).
+
+**Why.** Free Hebrew text is where rules plateau and where models guess dates and streets; splitting the work makes accuracy measurable (golden set of 150+ messages with a CI gate, plus production edit rate per field) and failures explainable.
+
+**Rejected.** Scraping and logging in to platforms (terms, S21, fragility); official APIs (none exist for groups or Yad2); an agent loop (cost, latency, no measured gain); auto-publish by confidence; an on-device model for now.
+
+**Open.** Provider and DPA choice at launch readiness; share-target library per ADR-005; the own-post attestation (`{{S:import-own-post-attestation}}`) awaits PM approval.
+
+**Affected.** `docs/spec/requirements/25_external_post_import.md`, `docs/architecture/adr/ADR-008-external-post-import.md`, later `supabase/functions/extract-external-post/`, `app/packages/{domain,application,infrastructure-supabase}`, `app/apps/mobile`.
