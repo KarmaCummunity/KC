@@ -10,14 +10,16 @@ test('findBuildId reads the id from eas stderr or a bare uuid', () => {
   assert.equal(findBuildId('no build here'), null);
 });
 
-test('failingPhase prefers the phase that ended with fail', () => {
+test('failingPhase picks the first phase that ended with fail, not FAIL_BUILD', () => {
   const log = [
     { marker: 'START_PHASE', phase: 'INSTALL' },
     { marker: 'END_PHASE', phase: 'INSTALL', result: 'success' },
     { marker: 'START_PHASE', phase: 'RUN_GRADLEW' },
     { phase: 'RUN_GRADLEW', msg: 'FAILURE: Build failed with an exception.' },
     { marker: 'END_PHASE', phase: 'RUN_GRADLEW', result: 'fail' },
-    { marker: 'START_PHASE', phase: 'ON_BUILD_ERROR_HOOK' },
+    { marker: 'START_PHASE', phase: 'FAIL_BUILD' },
+    { phase: 'FAIL_BUILD', msg: 'Build failed: Gradle build failed with unknown error.' },
+    { marker: 'END_PHASE', phase: 'FAIL_BUILD', result: 'fail' },
   ]
     .map((o) => JSON.stringify(o))
     .join('\n');

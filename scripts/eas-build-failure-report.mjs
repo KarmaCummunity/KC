@@ -36,18 +36,20 @@ export function parseLogLines(text) {
   return out;
 }
 
-/** The phase that ended with result "fail", else the last phase that started. */
+/**
+ * The first phase that ended with result "fail" (later ones such as
+ * FAIL_BUILD only restate it), else the last phase that started.
+ */
 export function failingPhase(entries) {
-  let failed = null;
   let last = null;
   for (const e of entries) {
-    if (e.marker === 'END_PHASE' && e.result === 'fail') failed = e.phase;
+    if (e.marker === 'END_PHASE' && e.result === 'fail' && e.phase) return e.phase;
     if (e.marker === 'START_PHASE' && e.phase) last = e.phase;
   }
-  return failed ?? last;
+  return last;
 }
 
-export function summarize(entries, { tail = 150, matches = 80 } = {}) {
+export function summarize(entries, { tail = 200, matches = 120 } = {}) {
   const phase = failingPhase(entries);
   const inPhase = entries.filter((e) => e.msg && (phase == null || e.phase === phase));
   const hits = inPhase.filter((e) => INTERESTING_RE.test(e.msg)).slice(-matches);
