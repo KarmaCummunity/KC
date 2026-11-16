@@ -6,6 +6,7 @@
 // the manual route (FR-IMPORT-006 AC3-AC4).
 
 import { directionCues } from './cues.ts';
+import { sha256Hex } from './hash.ts';
 import { ImportExtractionError } from './domain/ImportExtractionError.ts';
 import { canonicalFingerprintText } from './domain/fingerprint.ts';
 import type { ExtractedPost, ImportRouting } from './domain/importTypes.ts';
@@ -21,8 +22,15 @@ import { EXTRACTION_PROMPT_VERSION } from './prompt.ts';
 import { decidePlace, resolveRidePlace, type PlaceResolver, type ResolvedPlace } from './places.ts';
 import type { PostExtractionProvider } from './providerTypes.ts';
 
+/** Day cache of validated model answers by fingerprint (FR-IMPORT-008 AC2). Failures here never fail an extraction. */
+export interface ExtractionCache {
+  get(fingerprint: string, version: string): Promise<unknown | null>;
+  put(fingerprint: string, version: string, result: unknown): Promise<void>;
+}
+
 export interface ExtractDeps {
   provider: PostExtractionProvider;
+  cache?: ExtractionCache;
   resolvePlace: PlaceResolver;
   lists: ExtractionLists;
   now: () => Date;
@@ -46,9 +54,13 @@ export interface ExtractionOutcome {
   /** What the scrub removed, for the "contact details were removed" notice (FR-IMPORT-002 AC3). */
   removed: PreparedImportText['removed'] | null;
   truncated: boolean;
-  /** Canonical text to hash for the cache and the cross-post guard (FR-IMPORT-008). */
-  fingerprintText: string | null;
+  /** SHA-256 hex of the canonical scrubbed text: the key of the cache and the cross-post guard (FR-IMPORT-008). */
+  fingerprint: string | null;
   model: string | null;
+  /** A model call was made; the daily budget counts these. */
+  providerCalled: boolean;
+  /** The answer came from the day cache. */
+  cacheHit: boolean;
   promptVersion: string;
 }
 
@@ -59,30 +71,49 @@ const REQUIRED_FIELDS = ['direction', 'world', 'title'] as const;
 function manual(reason: ExtractionReason, partial: Partial<ExtractionOutcome> = {}): ExtractionOutcome {
   return {
     routing: 'manual', reason, extraction: null, city: null, street: null, ride: null, time: null,
-    confirmFields: [], confidence: 0, removed: null, truncated: false, fingerprintText: null,
-    model: null, promptVersion: EXTRACTION_PROMPT_VERSION, ...partial,
+    confirmFields: [], confidence: 0, removed: null, truncated: false, fingerprint: null,
+    model: null, providerCalled: false, cacheHit: false, promptVersion: EXTRACTION_PROMPT_VERSION, ...partial,
   };
 }
 
-type Called = { extraction: ExtractedPost; model: string } | 'provider_failed' | 'invalid_result';
+type Called =
+  | { extraction: ExtractedPost; model: string; providerCalled: boolean; cacheHit: boolean }
+  | { failure: 'provider_failed' | 'invalid_result'; providerCalled: boolean };
+
+/** A cached answer, validated again; a missing, broken or unreadable entry is simply a miss. */
+async function fromCache(deps: ExtractDeps, fingerprint: string): Promise<ExtractedPost | null> {
+  if (!deps.cache) return null;
+  try {
+    const hit = await deps.cache.get(fingerprint, EXTRACTION_PROMPT_VERSION);
+    return hit ? validateExtraction(hit, deps.lists) : null;
+  } catch {
+    return null;
+  }
+}
 
 /** One call; an invalid contract answer is retried once (FR-IMPORT-003 AC3), a provider failure is final. */
-async function callProvider(deps: ExtractDeps, prepared: PreparedImportText): Promise<Called> {
+async function callProvider(deps: ExtractDeps, prepared: PreparedImportText, fingerprint: string): Promise<Called> {
+  const cached = await fromCache(deps, fingerprint);
+  if (cached) return { extraction: cached, model: 'cache', providerCalled: false, cacheHit: true };
+
   const input = { text: prepared.text, messageAtIso: prepared.messageAt?.toISOString() ?? null, lists: deps.lists };
   for (let attempt = 0; attempt < 2; attempt++) {
     let result;
     try {
       result = await deps.provider.extract(input);
     } catch {
-      return 'provider_failed';
+      return { failure: 'provider_failed', providerCalled: true };
     }
     try {
-      return { extraction: validateExtraction(result.raw, deps.lists), model: result.model };
+      const extraction = validateExtraction(result.raw, deps.lists);
+      // Best effort: the member's answer must not wait on, or fail with, the cache.
+      await deps.cache?.put(fingerprint, EXTRACTION_PROMPT_VERSION, result.raw).catch(() => undefined);
+      return { extraction, model: result.model, providerCalled: true, cacheHit: false };
     } catch (error) {
       if (!(error instanceof ImportExtractionError)) throw error;
     }
   }
-  return 'invalid_result';
+  return { failure: 'invalid_result', providerCalled: true };
 }
 
 async function resolveRide(deps: ExtractDeps, extraction: ExtractedPost): Promise<ExtractionOutcome['ride']> {
@@ -95,6 +126,16 @@ async function resolveRide(deps: ExtractDeps, extraction: ExtractedPost): Promis
   return { origin: origin!, destination: destination!, meetings };
 }
 
+/** The fingerprint of any raw text, also one with nothing left to extract (the attempt is still recorded). */
+export async function fingerprintFor(rawText: string): Promise<string> {
+  try {
+    return await sha256Hex(canonicalFingerprintText(prepareImportText(rawText).text));
+  } catch (error) {
+    if (error instanceof ImportExtractionError) return await sha256Hex('');
+    throw error;
+  }
+}
+
 /** Run the pipeline for one shared text. */
 export async function extractExternalPost(deps: ExtractDeps, rawText: string): Promise<ExtractionOutcome> {
   let prepared: PreparedImportText;
@@ -104,13 +145,15 @@ export async function extractExternalPost(deps: ExtractDeps, rawText: string): P
     if (error instanceof ImportExtractionError) return manual('empty_text');
     throw error;
   }
-  const base = { removed: prepared.removed, truncated: prepared.truncated, fingerprintText: canonicalFingerprintText(prepared.text) };
+  const fingerprint = await sha256Hex(canonicalFingerprintText(prepared.text));
+  const base = { removed: prepared.removed, truncated: prepared.truncated, fingerprint };
 
-  const called = await callProvider(deps, prepared);
-  if (typeof called === 'string') return manual(called, base);
-  const { extraction, model } = called;
-  if (!extraction.isPost) return manual('not_a_post', { ...base, extraction, model });
-  if (extraction.rejectReason) return manual('rejected', { ...base, extraction, model });
+  const called = await callProvider(deps, prepared, fingerprint);
+  if ('failure' in called) return manual(called.failure, { ...base, providerCalled: called.providerCalled });
+  const { extraction, model, providerCalled, cacheHit } = called;
+  const answer = { ...base, extraction, model, providerCalled, cacheHit };
+  if (!extraction.isPost) return manual('not_a_post', answer);
+  if (extraction.rejectReason) return manual('rejected', answer);
 
   const city = extraction.place.cityText ? decidePlace('city', await deps.resolvePlace('city', extraction.place.cityText, null)) : null;
   const street = extraction.place.streetText && city?.picked
@@ -139,7 +182,7 @@ export async function extractExternalPost(deps: ExtractDeps, rawText: string): P
     deps.thresholds ?? DEFAULT_IMPORT_THRESHOLDS,
   );
   return {
-    ...manual('ok'), ...base, routing: scored.routing, extraction, city, street, ride, time,
-    confirmFields: [...scored.confirmFields], confidence: scored.overall, model,
+    ...manual('ok'), ...answer, routing: scored.routing, city, street, ride, time,
+    confirmFields: [...scored.confirmFields], confidence: scored.overall,
   };
 }

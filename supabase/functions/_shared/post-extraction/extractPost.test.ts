@@ -156,8 +156,66 @@ Deno.test('a conflicting offer and request in one text can never be ready', asyn
   assert(out.confidence <= 0.4);
 });
 
-Deno.test('the fingerprint text is canonical and carries no contact detail', async () => {
+Deno.test('the fingerprint is a SHA-256 of the canonical text and ignores contact details and punctuation', async () => {
   const a = await extractExternalPost(deps(fakeProvider([base])), 'מוסר ספה!!! קומה 3, 050-1234567');
   const b = await extractExternalPost(deps(fakeProvider([base])), 'מוסר ספה קומה 4  052-7654321');
-  assertEquals(a.fingerprintText, b.fingerprintText);
+  assert(/^[0-9a-f]{64}$/.test(a.fingerprint!));
+  assertEquals(a.fingerprint, b.fingerprint);
+});
+
+/** An in-memory cache that records what happened to it. */
+function memoryCache(initial: Record<string, unknown> = {}, failing = false) {
+  const store = new Map(Object.entries(initial));
+  const log: string[] = [];
+  return {
+    store, log,
+    get: (fp: string, version: string) => {
+      log.push(`get:${version}`);
+      if (failing) return Promise.reject(new Error('cache down'));
+      return Promise.resolve(store.get(fp) ?? null);
+    },
+    put: (fp: string, version: string, value: unknown) => {
+      log.push(`put:${version}`);
+      if (failing) return Promise.reject(new Error('cache down'));
+      store.set(fp, value);
+      return Promise.resolve();
+    },
+  };
+}
+
+Deno.test('a validated answer is cached and the same text is then answered without the provider', async () => {
+  const cache = memoryCache();
+  const seen: ExtractionProviderInput[] = [];
+  const first = await extractExternalPost({ ...deps(fakeProvider([base], seen)), cache }, 'מוסר ספה בתל אביב');
+  assertEquals([first.providerCalled, first.cacheHit], [true, false]);
+  assertEquals(cache.store.size, 1);
+  const second = await extractExternalPost({ ...deps(fakeProvider([], seen)), cache }, 'מוסר ספה בתל אביב!');
+  assertEquals([second.providerCalled, second.cacheHit, second.model], [false, true, 'cache']);
+  assertEquals(seen.length, 1);
+  assertEquals(second.extraction?.title, first.extraction?.title);
+});
+
+Deno.test('a cached answer still goes through resolution: the time follows the new message', async () => {
+  const cache = memoryCache();
+  const raw = { ...base, time: { kind: 'relative_day', day_offset: 1, time_hhmm: '17:00' } };
+  await extractExternalPost({ ...deps(fakeProvider([raw])), cache }, 'מוסר ספה מחר ב-17');
+  const again = await extractExternalPost({ ...deps(fakeProvider([])), cache }, '5.11.2026, 09:00 - דנה: מוסר ספה מחר ב-17');
+  assertEquals(again.cacheHit, true);
+  assertEquals(again.time?.dateIso, '2026-11-06');
+});
+
+Deno.test('a cache that fails or holds garbage never fails the extraction', async () => {
+  const down = await extractExternalPost({ ...deps(fakeProvider([base])), cache: memoryCache({}, true) }, 'מוסר ספה');
+  assertEquals(down.reason, 'ok');
+  assertEquals(down.providerCalled, true);
+  const fp = (await extractExternalPost(deps(fakeProvider([base])), 'מוסר ספה')).fingerprint!;
+  const broken = await extractExternalPost({ ...deps(fakeProvider([base])), cache: memoryCache({ [fp]: { is_post: 'maybe' } }) }, 'מוסר ספה');
+  assertEquals([broken.reason, broken.providerCalled], ['ok', true]);
+});
+
+Deno.test('a failed extraction is never cached', async () => {
+  const cache = memoryCache();
+  await extractExternalPost({ ...deps(fakeProvider([{ direction: 'sell' }, 'junk'])), cache }, 'מוסר ספה');
+  await extractExternalPost({ ...deps(fakeProvider([new ExtractionProviderError('http', 'x')])), cache }, 'מוסר כיסא');
+  assertEquals(cache.store.size, 0);
 });
