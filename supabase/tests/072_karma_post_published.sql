@@ -64,7 +64,8 @@ insert into public.worlds (slug, label_he, label_en) values ('items', 'items', '
 insert into public.worlds (slug, label_he, label_en, geo_mode) values ('challenges', 'challenges', 'challenges', 'remote');
 insert into public.post_kinds (id, world_slug, slug, label_he, label_en, direction) values
   ('20000000-0000-4000-8000-000000000001', 'items', 'item', 'item', 'item', 'either'),
-  ('20000000-0000-4000-8000-000000000002', 'time', 'event', 'event', 'event', 'offer');
+  ('20000000-0000-4000-8000-000000000002', 'time', 'event', 'event', 'event', 'offer'),
+  ('20000000-0000-4000-8000-000000000003', 'challenges', 'challenge', 'challenge', 'challenge', 'offer');
 
 -- ── A draft earns nothing; publishing it pays once ──────────────────────────
 select is(pg_temp.act('a', $$insert into public.posts (owner_id, world_slug, kind_id, direction, status, title, city_id)
@@ -120,7 +121,9 @@ values ('00000000-0000-4000-8000-00000000000c', 'items', '20000000-0000-4000-800
 select is(pg_temp.events('award', 'c'), 0::bigint, 'a post the scheduler publishes and an imported post record no award');
 select is(pg_temp.act('c', $$select public.create_challenge('Read a page', 'personal', 'yes_no', 'daily', p_city_id => 'c1')$$), 'ok',
   'Carol opens a challenge');
-select is(pg_temp.events('award', 'c'), 0::bigint, 'the post of a challenge records no publishing award');
+select is(pg_temp.events('award', 'c') || '/' || (select count(*) from public.posts p
+                                                  where p.post_type = 'challenge' and p.published_at is not null),
+  '0/1', 'the published post of a challenge records no publishing award');
 
 -- ── Daily cap ────────────────────────────────────────────────────────────────
 insert into public.posts (owner_id, world_slug, kind_id, direction, status, title, city_id)
