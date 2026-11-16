@@ -65,8 +65,8 @@ values ('20000000-0000-4000-8000-000000000001', 'items', 'item', 'item', 'item',
 insert into public.posts (id, owner_id, world_slug, kind_id, direction, status, title, city_id, details)
 values ('10000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-00000000000a', 'items',
         '20000000-0000-4000-8000-000000000001', 'offer', 'open', 'a chair', 'c1', '{"estimated_value": 400}');
--- Publishing the post records its own award (072_karma_post_published.sql); this suite is
--- about the handoff, so that event is set aside.
+-- Signing up and publishing a post record their own awards (072_karma_engagement.sql,
+-- 072_karma_post_published.sql); this suite is about the handoff, so they are set aside.
 delete from kc_private.outbox_events where topic = 'karma';
 
 -- ── A completed handoff pays both members, once ─────────────────────────────

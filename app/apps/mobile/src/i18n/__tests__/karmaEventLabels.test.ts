@@ -11,6 +11,7 @@ const BASELINE_EVENT_TYPES = [
   'handoff_giver', 'handoff_receiver', 'item_value_bonus', 'rating_given', 'post_published',
   'challenge_opened', 'challenge_report', 'challenge_completed',
   'donation', 'standing_order_month', 'reversal',
+  'registration', 'follower_gained', 'outreach',
 ] as const;
 
 describe('karma event labels (he/en)', () => {
