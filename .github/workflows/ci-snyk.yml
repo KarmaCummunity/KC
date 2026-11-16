@@ -1,7 +1,10 @@
 # Snyk — dependency vulnerability scan on PRs to dev/main.
 # Requires repo/org secret SNYK_TOKEN (https://app.snyk.io/account).
-# Non-blocking until baseline is clean; promote to required check in branch
-# protection + ENVIRONMENTS.md when ready. See SECURITY.md § Quality tooling.
+# Fails closed: a missing/empty SNYK_TOKEN is an error (it used to skip green,
+# so the scan silently never ran). Fails on CRITICAL vulnerabilities only
+# (high and below are reported by dependency-audit). Dependabot-triggered runs
+# only see Dependabot secrets, so SNYK_TOKEN must exist there too.
+# Not a required check yet: see SECURITY.md § Quality tooling.
 
 name: CI — Snyk
 
@@ -28,27 +31,22 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Detect SNYK_TOKEN
-        id: token
+      - name: Require SNYK_TOKEN
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         run: |
           if [ -z "$SNYK_TOKEN" ]; then
-            echo "::notice::SNYK_TOKEN not set — Snyk scan skipped. Add repo/org secret per SECURITY.md."
-            echo "configured=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "configured=true" >> "$GITHUB_OUTPUT"
+            echo "::error::SNYK_TOKEN is missing or empty — the Snyk scan cannot run. Set the repo Actions secret (and the Dependabot secret) per SECURITY.md."
+            exit 1
           fi
 
       - name: Setup pnpm
-        if: steps.token.outputs.configured == 'true'
         uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
         with:
           package_json_file: app/package.json
           run_install: false
 
       - name: Setup Node.js
-        if: steps.token.outputs.configured == 'true'
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version-file: .nvmrc
@@ -56,14 +54,11 @@ jobs:
           cache-dependency-path: app/pnpm-lock.yaml
 
       - name: Install dependencies
-        if: steps.token.outputs.configured == 'true'
         working-directory: app
         run: pnpm install --frozen-lockfile
 
       - name: Snyk test (app monorepo)
-        if: steps.token.outputs.configured == 'true'
         working-directory: app
-        continue-on-error: true
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        run: pnpm dlx snyk@1.1308.4 test --all-projects --severity-threshold=high
+        run: pnpm dlx snyk@1.1308.4 test --all-projects --severity-threshold=critical

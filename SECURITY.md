@@ -17,10 +17,10 @@ GitHub/org integrations on every PR.
 | # | Tool | Status | Blocks merge? | Notes |
 | - | ---- | ------ | ------------- | ----- |
 | 1 | **SonarCloud** (SonarQube SaaS) | ✅ Active | **Yes** (inside `CI gate`, `frontend` lane) | Workflow: `.github/workflows/ci-sonar.yml`. Setup: `docs/dev/SONAR.md`. |
-| 2 | **Snyk** | ✅ Active (`SNYK_TOKEN` set) | No (promote later) | Workflow: `.github/workflows/ci-snyk.yml`. |
+| 2 | **Snyk** | ⚠️ Fails closed: red until `SNYK_TOKEN` holds a real token (on 2026-11-16 the secret existed but was empty, so the scan never ran). Fails on critical only | No (promote later) | Workflow: `.github/workflows/ci-snyk.yml`. Also set it as a Dependabot secret. |
 | 3 | **CodeRabbit** | ✅ Active (org App installed) | No (review comments only) | `.coderabbit.yaml` reviews `app/**`, `supabase/**`, `scripts/**` and `docs/spec/**`. |
 | 4 | **GitHub Dependabot** | ✅ Active | N/A (opens fix PRs) | Config: `.github/dependabot.yml`. Security updates: **enabled**. |
-| 5 | **GitGuardian** (ggshield) | ✅ Active (`GITGUARDIAN_API_KEY` set) | No (promote later) | Workflow: `.github/workflows/ci-gitguardian.yml`. |
+| 5 | **GitGuardian** (ggshield) | ⚠️ Fails closed: red until `GITGUARDIAN_API_KEY` holds a real key (on 2026-11-16 the secret existed but was empty, so the scan never ran). Fails on any finding | No (promote later) | Workflow: `.github/workflows/ci-gitguardian.yml`. Also set it as a Dependabot secret. |
 | 6 | **Secret Scanning** | ✅ Active | Push-time block | Enabled + push protection on the public repo. |
 | 7 | **Dependency audit** | ✅ Active | **Yes** (`CI gate`, `static` lane, when a dependency file changes) | `scripts/check-dependency-audit.mjs`: every lockfile + Edge Function npm imports; daily on `dev` and `main` via `.github/workflows/dependency-audit.yml`. See "Dependency audit" below. |
 | 8 | **Automated tests** | ✅ Active | **Yes** (`CI gate`) | Unit: Vitest in the `frontend` lane. Integration: the `backend` lane (migrations, RLS, types, SQL probes) and the RPC contract check in the `static` lane. E2E on `main` release: the `release` lane's P0 journeys. |
@@ -66,7 +66,7 @@ Add these under **GitHub → Settings → Secrets and variables → Actions** (r
 
 After 1–2 weeks of clean baselines:
 
-1. Remove `continue-on-error: true` from the workflow job (or flip to hard-fail).
+1. Done 2026-11-16: both workflows hard-fail (missing secret, GitGuardian finding, Snyk critical).
 2. Add `Snyk dependency scan` / `GitGuardian secret scan` to branch protection on `dev`/`main`.
 3. Update `docs/SSOT/ENVIRONMENTS.md` "Dev merge gates" table in the same PR.
 

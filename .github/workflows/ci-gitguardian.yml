@@ -1,6 +1,9 @@
 # GitGuardian ggshield — secret leak scan on PR diffs.
 # Requires repo/org secret GITGUARDIAN_API_KEY (GitGuardian dashboard → API).
-# Non-blocking until baseline is clean; promote to required when ready.
+# Fails closed: a missing/empty GITGUARDIAN_API_KEY is an error (it used to
+# skip green), and any secret ggshield finds in the PR diff fails the check.
+# Dependabot-triggered runs only see Dependabot secrets, so the key must exist
+# there too. Not a required check yet: see SECURITY.md § Quality tooling.
 # Complements GitHub Secret Scanning (push-time). See SECURITY.md § Quality tooling.
 
 name: CI — GitGuardian
@@ -30,22 +33,17 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Detect GITGUARDIAN_API_KEY
-        id: token
+      - name: Require GITGUARDIAN_API_KEY
         env:
           GITGUARDIAN_API_KEY: ${{ secrets.GITGUARDIAN_API_KEY }}
         run: |
           if [ -z "$GITGUARDIAN_API_KEY" ]; then
-            echo "::notice::GITGUARDIAN_API_KEY not set — GitGuardian scan skipped. See SECURITY.md."
-            echo "configured=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "configured=true" >> "$GITHUB_OUTPUT"
+            echo "::error::GITGUARDIAN_API_KEY is missing or empty — the GitGuardian scan cannot run. Set the repo Actions secret (and the Dependabot secret) per SECURITY.md."
+            exit 1
           fi
 
       - name: GitGuardian scan
-        if: steps.token.outputs.configured == 'true'
         uses: GitGuardian/ggshield-action@5cc1ed2be3e8bf625d354c7170731880670f74de # v1.56.1
-        continue-on-error: true
         env:
           GITGUARDIAN_API_KEY: ${{ secrets.GITGUARDIAN_API_KEY }}
           GITHUB_PULL_BASE_SHA: ${{ github.event.pull_request.base.sha }}
