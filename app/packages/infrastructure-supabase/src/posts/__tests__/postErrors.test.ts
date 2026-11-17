@@ -12,7 +12,7 @@ describe('toPostError', () => {
     ['post_limit_exceeded', 'active_post_limit_exceeded'],
     ['post_not_found', 'not_found'],
     ['account_not_active', 'forbidden'],
-    ['followers_only_requires_public_profile', 'invalid_visibility'],
+    ['followers_only_requires_private', 'followers_only_requires_private'],
   ])('maps the rule refusal %s to the code %s', (reason, code) => {
     const mapped = toPostError(new BackendRuleError(reason, 'rpc:x'));
     expect(mapped).toBeInstanceOf(PostError);

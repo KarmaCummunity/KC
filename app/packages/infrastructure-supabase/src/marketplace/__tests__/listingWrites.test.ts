@@ -162,6 +162,14 @@ describe('listing owner actions', () => {
     expect(callsTo(calls, 'posts').find((c) => c.kind === 'update')?.payload).toEqual({ location_display_level: 'FullAddress' });
   });
 
+  it('edits who may see the listing (FR-POST-009: either way, at any time)', async () => {
+    const { client, calls } = createFakeClient({
+      tables: { posts: (c: FakeCall) => (c.kind === 'update' ? ok([{ id: 'p1' }]) : ok({ post_type: 'standard', world_slug: 'items', direction: 'offer', details: {} })) },
+    });
+    await owner.updateMyListing(client, 'p1', { visibility: 'OnlyMe' });
+    expect(callsTo(calls, 'posts').find((c) => c.kind === 'update')?.payload).toEqual({ visibility: 'OnlyMe' });
+  });
+
   it('refuses an edit the row policy let no row through', async () => {
     const { client } = createFakeClient({
       tables: { posts: (c: FakeCall) => (c.kind === 'update' ? ok([]) : ok({ post_type: 'standard', world_slug: 'items', direction: 'offer', details: {} })) },

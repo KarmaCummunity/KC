@@ -1,6 +1,6 @@
 // Mapped to spec: FR-RESP-006 AC25 — the form scope as a component. `Screen`, `BottomSheet`, `Modal`,
 // `FormScreen` and `FormScrollView` each mount one, so any form built on them behaves the same.
-import React, { useContext } from 'react';
+import React, { useContext, useEffect, useRef } from 'react';
 import { ScrollView, type ScrollViewProps } from 'react-native';
 import { KeyboardFormAccessory } from './KeyboardFormAccessory';
 import { FormScopeContext, useFormScopeController } from './formScope';
@@ -27,8 +27,26 @@ export function FormScope({ children, isolated = false }: FormScopeProps) {
   );
 }
 
-/** A `ScrollView` wired to the enclosing form scope (scroll offset + target for jump-to-problem). */
+/**
+ * A `ScrollView` wired to the enclosing form scope (scroll offset + target for jump-to-problem).
+ * The scope owns `ref`, `onScroll` and `scrollEventThrottle`: values passed for them are replaced.
+ */
 export function FormScopeScrollView(props: ScrollViewProps) {
   const scope = useContext(FormScopeContext);
   return <ScrollView keyboardShouldPersistTaps="handled" {...props} {...scope?.scrollProps} />;
+}
+
+/**
+ * Scrolls to the first problem field whenever `signal` changes (not on mount). Render it inside the
+ * scope; bump `signal` on every rejected submit so a repeat with unchanged errors still jumps.
+ */
+export function JumpOnSignal({ signal }: { readonly signal: number }) {
+  const scrollToFirstInvalid = useContext(FormScopeContext)?.scrollToFirstInvalid;
+  const last = useRef(signal);
+  useEffect(() => {
+    if (last.current === signal) return;
+    last.current = signal;
+    scrollToFirstInvalid?.();
+  }, [signal, scrollToFirstInvalid]);
+  return null;
 }

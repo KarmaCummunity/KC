@@ -1,0 +1,1 @@
+export { ExtractExternalPostUseCase } from './ExtractExternalPostUseCase';

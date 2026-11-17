@@ -92,6 +92,7 @@ export { SupabaseUserActivityRepository } from './survey/SupabaseUserActivityRep
 export { SupabasePublicResearchRepository } from './research/SupabasePublicResearchRepository';
 export { SupabaseTranslationCacheRepository } from './translations/SupabaseTranslationCacheRepository';
 export { EdgeFnTranslationService } from './translations/EdgeFnTranslationService';
+export { EdgeFnPostExtractionService } from './imports/EdgeFnPostExtractionService';
 export { SupabasePostTranslationReader } from './translations/SupabasePostTranslationReader';
 export { SupabaseMarketplaceRepository } from './marketplace/SupabaseMarketplaceRepository';
 export { SupabasePaymentsRepository } from './payments/SupabasePaymentsRepository';
