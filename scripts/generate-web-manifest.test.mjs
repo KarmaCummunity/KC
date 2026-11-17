@@ -50,3 +50,14 @@ test('the real token file yields the brand backdrop and the decoration orange', 
   assert.match(themeColor, /^#[0-9A-Fa-f]{6}$/);
   assert.notEqual(background.toUpperCase(), '#FFFFFF');
 });
+
+// FR-IMPORT-001 AC1 — the installed web app receives shared text on the import screen.
+test('declares the import screen as the share target for text', () => {
+  const manifest = buildManifest('KC', { background: '#000000', themeColor: '#111111' });
+  assert.deepEqual(manifest.share_target, {
+    action: '/import-post',
+    method: 'GET',
+    params: { title: 'title', text: 'text', url: 'url' },
+  });
+});
+
