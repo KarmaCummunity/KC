@@ -14,6 +14,7 @@ import { rideBooking } from './rideBooking';
 import { knowledgeBooking } from './knowledgeBooking';
 import { housingStay } from './housingStay';
 import { eventPost } from './eventPost';
+import { jobOffer } from './jobOffer';
 import { organizations } from './organizations';
 import { postSeries } from './postSeries';
 import { postImport } from './postImport';
@@ -195,6 +196,8 @@ const he = {
   housingStay,
   // Organization events (G1 step 5) — see eventPost.ts
   eventPost,
+  // Job offers' organization (§5.11, #1476) — see jobOffer.ts
+  jobOffer,
   // Organizations (FR-ORG-002, G18) — see organizations.ts
   organizations,
   // Recurring time posts (FR-POST-024) — see postSeries.ts

@@ -23,10 +23,17 @@ import { requireRpcRow } from './rpcRow';
 
 type Client = SupabaseClient<Database>;
 
-/** One membership row with its organization's name embedded (org_memberships → organizations). */
+/** The embedded organization of a membership row: its name and whether it may post jobs. */
+interface MembershipOrganization {
+  readonly name: string;
+  readonly may_post_jobs: boolean;
+  readonly is_platform: boolean;
+}
+
+/** One membership row with its organization embedded (org_memberships → organizations). */
 interface MembershipRow {
   readonly org_id: string;
-  readonly organizations: { readonly name: string } | { readonly name: string }[] | null;
+  readonly organizations: MembershipOrganization | MembershipOrganization[] | null;
 }
 
 /** The caller's registration from a handoff row; null once it is no longer active. */
@@ -55,7 +62,10 @@ export function toMembershipOptions(rows: readonly MembershipRow[]): Organizatio
   const byId = new Map<string, OrganizationMembershipOption>();
   for (const row of rows) {
     const organization = Array.isArray(row.organizations) ? row.organizations[0] : row.organizations;
-    if (organization && !byId.has(row.org_id)) byId.set(row.org_id, { orgId: row.org_id, name: organization.name });
+    if (!organization || byId.has(row.org_id)) continue;
+    // The platform organization always may post jobs; any other needs the admin's switch (§5.11).
+    const mayPostJobs = organization.is_platform || organization.may_post_jobs;
+    byId.set(row.org_id, { orgId: row.org_id, name: organization.name, mayPostJobs });
   }
   return [...byId.values()].sort((a, b) => a.name.localeCompare(b.name));
 }
@@ -145,13 +155,13 @@ export async function getMyEventRegistration(client: Client, postId: string): Pr
   return row ? mapMyEventRegistration(row) : null;
 }
 
-/** The organizations the caller belongs to, for the event form's picker. */
+/** The organizations the caller belongs to, for the event and job offer forms' pickers. */
 export async function listMyOrganizations(client: Client): Promise<OrganizationMembershipOption[]> {
   const userId = await sessionUserId(client);
   if (!userId) return [];
   const rows = unwrapCall(
     'table:org_memberships',
-    await client.from('org_memberships').select('org_id, organizations(name)').eq('user_id', userId),
+    await client.from('org_memberships').select('org_id, organizations(name, may_post_jobs, is_platform)').eq('user_id', userId),
   );
   return toMembershipOptions(rows ?? []);
 }

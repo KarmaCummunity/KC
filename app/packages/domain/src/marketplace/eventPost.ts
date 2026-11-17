@@ -62,6 +62,8 @@ export interface MyEventRegistration {
 export interface OrganizationMembershipOption {
   readonly orgId: string;
   readonly name: string;
+  /** The organization may publish job offers: the platform organization or one an admin allowed (§5.11). */
+  readonly mayPostJobs: boolean;
 }
 
 /** The event fields of an `event` listing's details, parsed for display. */
