@@ -33,10 +33,10 @@ import { emptyInputDirectionStyle } from '../../lib/rtlLayout';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 import { formInputKindProps, type FormInputKind } from '../../lib/platform/formTextInputHints';
 import { useFormScopeField } from './useFormScopeField';
+import { FieldMessage } from './FieldMessage';
 
-/** Ionicons glyph size inside the field and next to the error message. */
+/** Ionicons glyph size inside the field. */
 const FIELD_ICON_SIZE = 20;
-const MESSAGE_ICON_SIZE = 14;
 
 /** Web only: the border colour is the focus indicator, so drop the browser's focus ring. */
 const WEB_NO_FOCUS_RING: TextStyle =
@@ -204,22 +204,6 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
   );
 });
 
-/** Helper text, or the error message with an alert icon (announced politely). */
-function FieldMessage({ helperText, errorText }: Pick<TextFieldProps, 'helperText' | 'errorText'>) {
-  const styles = useTextFieldStyles();
-  const { colors } = useTheme();
-  if (errorText) {
-    return (
-      <View style={styles.messageRow} role="alert" aria-live="polite">
-        <Ionicons name="alert-circle" size={MESSAGE_ICON_SIZE} color={colors.error} />
-        <Text style={[styles.message, styles.messageError]}>{errorText}</Text>
-      </View>
-    );
-  }
-  if (!helperText) return null;
-  return <Text style={styles.message}>{helperText}</Text>;
-}
-
 const useTextFieldStyles = makeUseStyles(({ colors }) => ({
   container: { gap: spacing.xs },
   label: { ...typography.label, color: colors.textSecondary, textAlign: rtlTextAlignStart },
@@ -255,7 +239,4 @@ const useTextFieldStyles = makeUseStyles(({ colors }) => ({
   },
   inputMultiline: { verticalAlign: 'top' },
   inputDisabled: { color: colors.textDisabled },
-  messageRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  message: { ...typography.bodySmall, color: colors.textSecondary, textAlign: rtlTextAlignStart },
-  messageError: { color: colors.error },
 }));

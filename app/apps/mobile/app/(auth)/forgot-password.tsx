@@ -1,4 +1,5 @@
-// Forgot password — FR-AUTH-008 (email accounts).
+// Forgot password — FR-AUTH-008 (email accounts). A missing or refused address is reported under
+// the address field (FR-RESP-006 AC29).
 import React, { useState } from 'react';
 import { View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -27,7 +28,7 @@ function ForgotPasswordScreenContent() {
 
   const onSubmit = async () => {
     if (!email.trim()) {
-      setError(t('auth.forgotPasswordEmailRequired'));
+      setError(t('formField.emailRequired'));
       return;
     }
     setError(null);
@@ -87,12 +88,15 @@ function ForgotPasswordScreenContent() {
         testID="forgot-password-email"
         label={t('auth.email')}
         value={email}
-        onChangeText={setEmail}
+        onChangeText={(value) => {
+          setEmail(value);
+          setError(null);
+        }}
         placeholder={t('auth.emailPlaceholder')}
         editable={!loading}
         inputKind="email"
+        errorText={error ?? undefined}
       />
-      {error ? <Text style={styles.error}>{error}</Text> : null}
     </FormScreen>
   );
 }

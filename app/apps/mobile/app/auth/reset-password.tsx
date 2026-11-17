@@ -1,4 +1,5 @@
-// Password reset landing route — FR-AUTH-008.
+// Password reset landing route — FR-AUTH-008. A mismatch is reported under the confirmation and a
+// refused password under the new one (FR-RESP-006 AC29).
 import React, { useState } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -30,21 +31,22 @@ function ResetPasswordScreenContent() {
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [passwordError, setPasswordError] = useState<string | undefined>();
+  const [confirmError, setConfirmError] = useState<string | undefined>();
 
   const onSubmit = async () => {
-    if (password !== confirm) {
-      setError(t('auth.resetPasswordMismatch'));
-      return;
-    }
-    setError(null);
+    const missing = password ? undefined : t('formField.passwordRequired');
+    const mismatch = password && password !== confirm ? t('auth.resetPasswordMismatch') : undefined;
+    setPasswordError(missing);
+    setConfirmError(mismatch);
+    if (missing || mismatch) return;
     setLoading(true);
     try {
       await getResetPasswordUseCase().execute({ tokenHash, code, newPassword: password });
       setPhase('done');
     } catch (err) {
       if (isAuthError(err) && INVALID_LINK_CODES.has(err.code)) setPhase('invalid');
-      else setError(isAuthError(err) ? mapAuthErrorToHebrew(err.code) : t('auth.callbackGenericError'));
+      else setPasswordError(isAuthError(err) ? mapAuthErrorToHebrew(err.code) : t('auth.callbackGenericError'));
     } finally {
       setLoading(false);
     }
@@ -84,23 +86,34 @@ function ResetPasswordScreenContent() {
         testID="reset-password-new"
         label={t('auth.passwordRuleLabel')}
         value={password}
-        onChangeText={setPassword}
+        onChangeText={(value) => {
+          setPassword(value);
+          setPasswordError(undefined);
+        }}
         placeholder={t('auth.passwordPlaceholderNew')}
+        inputKind="password"
         secureTextEntry
         autoComplete="new-password"
+        textContentType="newPassword"
         editable={!loading}
+        errorText={passwordError}
       />
       <AnimatedAuthInput
         testID="reset-password-confirm"
         label={t('auth.resetPasswordConfirmLabel')}
         value={confirm}
-        onChangeText={setConfirm}
+        onChangeText={(value) => {
+          setConfirm(value);
+          setConfirmError(undefined);
+        }}
         placeholder={t('auth.passwordPlaceholderNew')}
+        inputKind="password"
         secureTextEntry
         autoComplete="new-password"
+        textContentType="newPassword"
         editable={!loading}
+        errorText={confirmError}
       />
-      {error ? <Text style={styles.error}>{error}</Text> : null}
     </FormScreen>
   );
 }
