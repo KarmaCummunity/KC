@@ -147,6 +147,7 @@ export async function fetchListingDetail(client: Client, listingId: string): Pro
     summary: card.description,
     details,
     cityId: card.city_id,
+    worldSubcategoryId: card.item_subcategory_id ?? null,
     ...exposureOf(card),
     urgencyLevel: card.urgency_level ?? 2,
     availabilityStatus: availabilityOf(card.status),

@@ -9,7 +9,6 @@ import { PostError, type CreatePostInput, type UpdatePostInput } from '@kc/appli
 import { BackendRuleError, type Category } from '@kc/domain';
 import type { Database, Json } from '../database.types';
 import { unwrapCall } from '../rpc/mapRpcError';
-import { sessionUserId } from '../users/userReads';
 import { toPostError } from './postErrors';
 import { ITEMS_WORLD, directionOf, loadPostCatalog, requireKindId, requireSubcategoryId } from './postCatalog';
 import { replacePostMedia, writePostMedia } from './postMediaWrites';
@@ -154,11 +153,7 @@ export async function updatePost(client: Client, postId: string, patch: UpdatePo
       if (!updated || updated.length === 0) throw new PostError('post_not_open', 'update: no editable post');
     }
     if (patch.address) await writePrivateLocation(client, postId, patch.address);
-    if (patch.mediaAssets !== undefined) {
-      const ownerId = await sessionUserId(client);
-      if (!ownerId) throw new PostError('forbidden', 'update: not signed in');
-      await replacePostMedia(client, postId, ownerId, patch.mediaAssets);
-    }
+    if (patch.mediaAssets !== undefined) await replacePostMedia(client, postId, patch.mediaAssets);
   } catch (error) {
     throw toPostError(error);
   }

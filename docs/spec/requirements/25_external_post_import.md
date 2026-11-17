@@ -104,7 +104,7 @@ One provider call per text (`FR-IMPORT-009` for the provider rules) returns exac
 
 ## FR-IMPORT-009 — Privacy, provider and retention
 
-- AC1. **No raw text is stored.** Only the fingerprint, the extraction JSON (post-scrub, no placeholders), the confidence, the channel, the source platform and timestamps are kept in `external_post_imports` (ADR-008), 90 days, then purged. The member's own edits live in the post as usual.
+- AC1. **No raw text is stored.** Only the fingerprint, the extraction JSON (post-scrub, no placeholders), the confidence, the channel, the source platform and timestamps are kept in `external_post_imports` (ADR-008), 90 days, then purged: the period is the retention rule `external_post_imports` (`kc_private.retention_rules`) and a nightly job removes older records (KC#2394). The member's own edits live in the post as usual.
 - AC2. The provider sits behind a one-method seam (`PostExtractionProvider`), like `TranslationProvider` (D-65). Dev may use a free tier; **before public launch the provider must be zero-retention under a DPA** (D-63 parity); switching is a key and model-name change only.
 - AC3. The `translate` and extraction Edge Functions share the observability wrapper (D-202); logs carry ids and enum outcomes, never text.
 - AC4. The Edge Function is callable only by an authenticated member (JWT) for their own import; service role is not accepted for member requests.

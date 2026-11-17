@@ -85,6 +85,7 @@ describe('listingRepublishSeed', () => {
   it('carries the details without dates, and the photos in order with their type and size', () => {
     const seed = listingRepublishSeed({
       kindSlug: 'food_offer',
+      worldSubcategoryId: 'cat-cooked',
       details: { food_type: 'cooked', expires_at: '2026-11-09T10:00:00Z' },
       media: [
         { storagePath: 'u1/b/1.jpg', sortOrder: 1, mimeType: 'image/jpeg', sizeBytes: 2048 },
@@ -98,6 +99,8 @@ describe('listingRepublishSeed', () => {
       details: { food_type: 'cooked' },
       isOrgEvent: false,
       orgId: null,
+      // The food type travels with the republish (KC#2042).
+      worldSubcategoryId: 'cat-cooked',
       media: [
         { path: 'u1/b/0.jpg', mimeType: 'image/png', sizeBytes: 1024 },
         { path: 'u1/b/1.jpg', mimeType: 'image/jpeg', sizeBytes: 2048 },

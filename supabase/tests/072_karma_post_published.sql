@@ -67,6 +67,9 @@ insert into public.post_kinds (id, world_slug, slug, label_he, label_en, directi
   ('20000000-0000-4000-8000-000000000002', 'time', 'event', 'event', 'event', 'offer'),
   ('20000000-0000-4000-8000-000000000003', 'challenges', 'challenge', 'challenge', 'challenge', 'offer');
 
+-- Signing up has its own award and suite (072_karma_engagement.sql); set it aside.
+delete from kc_private.outbox_events where topic = 'karma';
+
 -- ── A draft earns nothing; publishing it pays once ──────────────────────────
 select is(pg_temp.act('a', $$insert into public.posts (owner_id, world_slug, kind_id, direction, status, title, city_id)
   values (@a, 'items', '20000000-0000-4000-8000-000000000001', 'request', 'draft', 'chair', 'c1')$$), 'ok', 'Alice saves a draft');

@@ -4,7 +4,7 @@ import { spacing } from '@kc/ui';
 import { useAuthStore } from '../store/authStore';
 import { parseTruthyQueryParam } from '../lib/query/parseTruthyQueryParam';
 import { isAboutMarketingPath } from './aboutMarketingPaths';
-import { shellTabBarHiddenForSegments } from './shellChromePolicy';
+import { shellNavigationRailVisible, shellTabBarHiddenForSegments } from './shellChromePolicy';
 
 // Visual height of the floating pill (see TabBar.tsx TAB_BAR_HEIGHT = 48, slimmed in #1631).
 // Scroll padding adds this plus safe-area insets separately.
@@ -32,6 +32,14 @@ export function useShellTabBarVisibility(): boolean {
     !shellTabBarHiddenForSegments(segments);
 
   return base && !hideBottomBar;
+}
+
+/** Whether the desktop shell renders the navigation rail and its aside panel (`shellNavigationRailVisible`). */
+export function useShellNavigationRailVisibility(): boolean {
+  const segments = useSegments() as string[];
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const isLoading = useAuthStore((s) => s.isLoading);
+  return shellNavigationRailVisible({ isLoading, isAuthenticated, segments });
 }
 
 export function shellTabBarHeightPx(visible: boolean): number {

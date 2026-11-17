@@ -112,6 +112,7 @@ export function useListingCreateForm({
     setDetails,
     setCity,
     setChosenKindSlug,
+    setSubcategoryId,
     setError,
     eventChoice,
   });
