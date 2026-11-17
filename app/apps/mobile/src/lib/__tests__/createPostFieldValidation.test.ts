@@ -13,8 +13,10 @@ import {
   getAddressValidationIssue,
   hasAddressRequiredFieldGaps,
   hasNonAddressRequiredFieldGaps,
+  hasPostFieldErrors,
   isStreetMissing,
   isStreetNumberMissing,
+  postFieldErrors,
 } from '../createPostFieldValidation';
 
 const COMPLETE = {
@@ -139,5 +141,28 @@ describe('hasAddressRequiredFieldGaps', () => {
   it('is true when any address part is missing', () => {
     expect(hasAddressRequiredFieldGaps(null, 'Main', '1')).toBe(true);
     expect(hasAddressRequiredFieldGaps(COMPLETE.city, '', '1')).toBe(true);
+  });
+});
+
+// FR-RESP-006 AC27 / AC29 — the create and the edit form mark the same parts with the same messages.
+describe('postFieldErrors', () => {
+  it('finds nothing to fix in a complete give post', () => {
+    const errors = postFieldErrors(COMPLETE);
+    expect(errors).toEqual({ title: null, photo: null, address: null });
+    expect(hasPostFieldErrors(errors)).toBe(false);
+  });
+
+  it('marks the title, the photo of a give post and the address, each on its own part', () => {
+    const errors = postFieldErrors({ ...COMPLETE, title: '  ', uploadsLength: 0, streetNumber: '' });
+    expect(errors).toEqual({
+      title: '[t:createPostValidation.missingTitle]',
+      photo: '[t:createPostValidation.missingPhoto]',
+      address: '[t:errors.createPost.missingStreetNumberBeforePublish]',
+    });
+    expect(hasPostFieldErrors(errors)).toBe(true);
+  });
+
+  it('does not ask a request post for a photo', () => {
+    expect(postFieldErrors({ ...COMPLETE, isGive: false, uploadsLength: 0 }).photo).toBeNull();
   });
 });

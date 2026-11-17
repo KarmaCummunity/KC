@@ -9,7 +9,7 @@ import { useTranslation } from 'react-i18next';
 import type { OrgErrorCode } from '@kc/domain';
 import { OrgError } from '@kc/domain';
 import { makeUseStyles, PlatformSwitch, spacing, typography, Text } from '@kc/ui';
-import { Card, FormScreen, PrimaryButton, TextField } from '../../../src/components/ui';
+import { Card, FormScreen, FormSection, PrimaryButton, TextField } from '../../../src/components/ui';
 import { useShellStackScreenOptions } from '../../../src/navigation/shellStackScreenOptions';
 import { orgErrorKey } from '../../../src/lib/organizations/orgErrorMessage';
 import { rtlTextAlignStart } from '../../../src/lib/rtlTextAlignStart';
@@ -110,8 +110,7 @@ export default function RegisterOrganizationScreen() {
             label={t('organizations.register.emailLabel')}
             value={email}
             onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
+            inputKind="email"
             maxLength={320}
             errorText={fieldError('email')}
           />
@@ -119,7 +118,7 @@ export default function RegisterOrganizationScreen() {
             label={t('organizations.register.phoneLabel')}
             value={phone}
             onChangeText={setPhone}
-            keyboardType="phone-pad"
+            inputKind="phone"
             maxLength={20}
           />
           <TextField
@@ -127,21 +126,22 @@ export default function RegisterOrganizationScreen() {
             placeholder={t('organizations.register.websitePlaceholder')}
             value={website}
             onChangeText={setWebsite}
-            keyboardType="url"
-            autoCapitalize="none"
+            inputKind="url"
             maxLength={2000}
             errorText={fieldError('website')}
           />
-          <View style={styles.switchRow}>
-            <Text style={[styles.switchLabel, webTextRtl]}>{t('organizations.register.nonprofitLabel')}</Text>
-            <PlatformSwitch
-              testID="org-register-nonprofit"
-              accessibilityLabel={t('organizations.register.nonprofitLabel')}
-              value={nonprofit}
-              onValueChange={setNonprofit}
-            />
-          </View>
-          {error?.field === 'nonprofit' ? <Text style={styles.error}>{t(error.key)}</Text> : null}
+          {/* A section of its own, so a missing declaration is marked under it and jumped to. */}
+          <FormSection error={fieldError('nonprofit') ?? null} outlined={false}>
+            <View style={styles.switchRow}>
+              <Text style={[styles.switchLabel, webTextRtl]}>{t('organizations.register.nonprofitLabel')}</Text>
+              <PlatformSwitch
+                testID="org-register-nonprofit"
+                accessibilityLabel={t('organizations.register.nonprofitLabel')}
+                value={nonprofit}
+                onValueChange={setNonprofit}
+              />
+            </View>
+          </FormSection>
         </Card>
         {error?.field === null ? (
           <Text style={[styles.error, webTextRtl]} testID="org-register-error">{t(error.key)}</Text>

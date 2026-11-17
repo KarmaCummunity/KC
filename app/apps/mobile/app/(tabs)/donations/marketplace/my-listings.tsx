@@ -10,6 +10,7 @@ import { KcRowCard } from '../../../../src/components/cards/KcRowCard';
 import { listingWorldIcon } from '../../../../src/components/cards/ListingCard';
 import { cleanDisplayTitle } from '../../../../src/lib/displayTitle';
 import { myListingRowActions } from '../../../../src/lib/myListingRowActions';
+import { hrefForPostEdit } from '../../../../src/lib/postEditNavigation';
 import { Screen } from '../../../../src/components/ui/Screen';
 import { useMyMarketplaceListings } from '../../../../src/hooks/useMyMarketplaceListings';
 import { useMyListingActions } from '../../../../src/hooks/useMyListingActions';
@@ -156,13 +157,14 @@ export default function MyListingsScreen() {
     [router],
   );
 
+  // The same full editor the listing page opens (FR-POST-008): the create form's order, exposure
+  // settings and inline problems, rather than a title-and-summary-only screen.
   const handleEdit = useCallback(
-    (listingId: string) =>
-      router.push({
-        pathname: '/(tabs)/donations/marketplace/my-listings/edit/[listingId]',
-        params: { listingId, ...(worldSlug ? { world: worldSlug } : {}) },
-      }),
-    [router, worldSlug],
+    (listingId: string) => {
+      const row = rows.find((candidate) => candidate.listingId === listingId);
+      router.push(hrefForPostEdit({ postId: listingId, listingId, listingWorldSlug: row?.worldSlug ?? null }));
+    },
+    [router, rows],
   );
 
   const contentContainerStyle = useMemo(() => ({ paddingBottom: inset }), [inset]);

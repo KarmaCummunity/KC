@@ -47,9 +47,6 @@
       "shadowLiteral": 12,
       "adHocChip": 1
     },
-    "src/components/marketplace/listingChipStyles.ts": {
-      "adHocChip": 1
-    },
     "src/components/research/ResearchEndShareCard.tsx": {
       "fontWeightLiteral": 2,
       "radiusLiteral": 2,

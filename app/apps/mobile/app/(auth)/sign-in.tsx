@@ -19,7 +19,6 @@ export default function SignInScreen() {
   // Reachable by direct link even when hidden (store-review demo login); the links to the other email flows are not.
   const emailFlowsLinked = useLaunchSurface('emailAuth');
   const form = useAuthEmailForm({
-    missingFieldsMessage: t('auth.fillEmailAndPassword'),
     failureTitle: t('auth.signInFailedTitle'),
     submit: async (email, password) => {
       try {

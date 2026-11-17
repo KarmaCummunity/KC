@@ -32,7 +32,7 @@
   {
    "kind": "bucket",
    "file": "app/apps/mobile/app/edit-post/[id].tsx",
-   "line": 46,
+   "line": 47,
    "area": "mobile",
    "symbol": "assetUrl",
    "via": "const",

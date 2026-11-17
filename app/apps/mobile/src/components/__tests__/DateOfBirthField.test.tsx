@@ -60,4 +60,10 @@ describe('DateOfBirthField', () => {
     renderInTheme(<DateOfBirthField value={null} onChange={vi.fn()} />);
     expect(screen.getByText('dateOfBirth.helper')).toBeTruthy();
   });
+
+  it("shows the form's own message (an unfinished date on save) when the parts show no problem", () => {
+    renderInTheme(<DateOfBirthField value={null} onChange={vi.fn()} errorText="dateOfBirth.errors.invalid" />);
+    expect(screen.getByText('dateOfBirth.errors.invalid')).toBeTruthy();
+    expect(screen.queryByText('dateOfBirth.helper')).toBeNull();
+  });
 });

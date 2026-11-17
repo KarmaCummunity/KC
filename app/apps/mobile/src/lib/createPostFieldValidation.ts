@@ -76,3 +76,28 @@ export function hasAddressRequiredFieldGaps(
 }
 
 export { isStreetMissing, isStreetNumberMissing };
+
+/** The inline problem of each required part of the items form; null where nothing is wrong. */
+export interface PostFieldErrors {
+  readonly title: string | null;
+  readonly photo: string | null;
+  readonly address: string | null;
+}
+
+/**
+ * What the items form (create and edit alike, FR-RESP-006 AC27/AC29) marks under each required
+ * part: a title, at least one photo for a give post, and a full address.
+ */
+export function postFieldErrors(s: CreatePostFieldSnapshot): PostFieldErrors {
+  const addressIssue = getAddressValidationIssue(s.city, s.street, s.streetNumber);
+  return {
+    title: s.title.trim().length === 0 ? i18n.t('createPostValidation.missingTitle') : null,
+    photo: s.isGive && s.uploadsLength === 0 ? i18n.t('createPostValidation.missingPhoto') : null,
+    address: addressIssue === 'none' ? null : buildAddressInlineErrorMessage(addressIssue),
+  };
+}
+
+/** True when the items form has nothing to fix. */
+export function hasPostFieldErrors(errors: PostFieldErrors): boolean {
+  return errors.title !== null || errors.photo !== null || errors.address !== null;
+}

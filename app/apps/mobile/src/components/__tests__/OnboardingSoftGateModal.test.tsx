@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 // FR-AUTH-015 soft gate on the kit `Modal` (spec 17 §4.1.1, TD-243): the save
-// stays disabled until the required fields are filled, saves the basic info,
-// and the ✕ keeps the old "Cancel" name.
+// stays enabled and explains a missing field under that field (FR-RESP-006
+// AC29), saves the basic info, and the ✕ keeps the old "Cancel" name.
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, screen } from '@testing-library/react';
 
@@ -34,8 +34,11 @@ vi.mock('../EditProfileAddressBlock', () => ({
 
 // The date of birth field is its own component; a button stands in for typing a valid adult date.
 vi.mock('../DateOfBirthField', () => ({
-  DateOfBirthField: ({ onChange }: { onChange: (iso: string | null) => void }) => (
-    <button type="button" onClick={() => onChange('1990-05-15')}>pick date of birth</button>
+  DateOfBirthField: ({ onChange, errorText }: { onChange: (iso: string | null) => void; errorText?: string }) => (
+    <>
+      <button type="button" onClick={() => onChange('1990-05-15')}>pick date of birth</button>
+      {errorText ? <span>{errorText}</span> : null}
+    </>
   ),
 }));
 
@@ -58,14 +61,17 @@ describe('OnboardingSoftGateModal', () => {
   it('saves the basic info once the name, city and date of birth are filled', async () => {
     const { onSaved } = renderGate();
     expect(screen.getByRole('dialog', { name: 'onboarding.softGateTitle' })).toBeTruthy();
-    const save = screen.getByRole('button', { name: 'onboarding.saveAndContinue' });
-    expect(save.getAttribute('aria-disabled')).toBe('true');
+    const save = () => screen.getByRole('button', { name: 'onboarding.saveAndContinue' });
 
     fireEvent.change(screen.getByLabelText('onboarding.displayName'), { target: { value: 'Dana' } });
     fireEvent.click(screen.getByRole('button', { name: 'pick city' }));
-    // Name and city alone are not enough: the date of birth is required (FR-AUTH-010 AC2.d).
-    expect(screen.getByRole('button', { name: 'onboarding.saveAndContinue' }).getAttribute('aria-disabled')).toBe('true');
+    // Name and city alone are not enough: the date of birth is required (FR-AUTH-010 AC2.d), and the
+    // save says so under the date instead of greying out.
+    fireEvent.click(save());
+    expect(execute).not.toHaveBeenCalled();
+    expect(screen.getByText('dateOfBirth.errors.invalid')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'pick date of birth' }));
+    expect(screen.queryByText('dateOfBirth.errors.invalid')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'onboarding.saveAndContinue' }));
 
     await vi.waitFor(() => expect(onSaved).toHaveBeenCalledTimes(1));
