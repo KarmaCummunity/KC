@@ -17,6 +17,12 @@ export const FEATURE_FLAG_DEFAULTS = {
    * flip via `public.app_flags` (key `ugc_auto_translation`).
    */
   ugc_auto_translation: false,
+  /**
+   * Import a post shared or pasted from WhatsApp, Facebook or Yad2 (FR-IMPORT-001 AC4): the paste
+   * field, the share target and the extraction. Off until the super admin creates the flag in
+   * `public.app_flags` (key `external_post_import_enabled`); the Edge Function checks the same row.
+   */
+  external_post_import_enabled: false,
 } as const satisfies Record<string, boolean>;
 
 export type FeatureFlagKey = keyof typeof FEATURE_FLAG_DEFAULTS;
