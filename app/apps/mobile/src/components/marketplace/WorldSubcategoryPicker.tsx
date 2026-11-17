@@ -2,14 +2,11 @@
 // KC#1296 — the choice is sent as `p_category_id`; tapping the selected chip clears it.
 // Renders nothing when the world has no subcategories or they failed to load.
 import React, { useEffect, useState } from 'react';
-import { Pressable, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import type { WorldSubcategory } from '@kc/domain';
-import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 import { marketplaceRepository } from '../../services/marketplaceComposition';
-import { useListingChipStyles } from './listingChipStyles';
-import { ChipSelectRow } from '../filterKit/ChipSelectRow';
+import { FilterChipRow } from '../filterKit/FilterChipRow';
+import { FormSection } from '../ui/FormSection';
 
 interface Props {
   readonly worldSlug: string;
@@ -20,8 +17,6 @@ interface Props {
 
 export function WorldSubcategoryPicker({ worldSlug, value, onChange, disabled = false }: Props) {
   const { t, i18n } = useTranslation();
-  const styles = useStyles();
-  const chipStyles = useListingChipStyles();
   const [subcategories, setSubcategories] = useState<WorldSubcategory[]>([]);
 
   useEffect(() => {
@@ -40,33 +35,20 @@ export function WorldSubcategoryPicker({ worldSlug, value, onChange, disabled = 
 
   const hebrew = i18n.language.startsWith('he');
   return (
-    <View style={styles.root}>
-      <Text style={styles.label}>{t('marketplace.fieldWorldSubcategory')}</Text>
-      <Text style={styles.hint}>{t('marketplace.fieldWorldSubcategoryHint')}</Text>
-      <ChipSelectRow testID="world-subcategory-chips">
-        {subcategories.map((s) => {
-          const selected = s.categoryId === value;
-          return (
-            <Pressable
-              key={s.categoryId}
-              testID={`world-subcategory-${s.slug}`}
-              disabled={disabled}
-              onPress={() => onChange(selected ? null : s.categoryId)}
-              style={[chipStyles.chip, selected && chipStyles.chipOn]}
-              accessibilityRole="button"
-              accessibilityState={{ selected, disabled }}
-            >
-              <Text style={chipStyles.chipText}>{hebrew ? s.labelHe : (s.labelEn ?? s.labelHe)}</Text>
-            </Pressable>
-          );
-        })}
-      </ChipSelectRow>
-    </View>
+    <FormSection label={t('marketplace.fieldWorldSubcategory')} hint={t('marketplace.fieldWorldSubcategoryHint')}>
+      <FilterChipRow<string>
+        testID="world-subcategory-chips"
+        chipSize="md"
+        disabled={disabled}
+        options={subcategories.map((s) => ({
+          value: s.categoryId,
+          label: hebrew ? s.labelHe : (s.labelEn ?? s.labelHe),
+          testID: `world-subcategory-${s.slug}`,
+        }))}
+        value={value}
+        // Optional choice: tapping the selected chip clears it.
+        onChange={(next) => onChange(next === value ? null : next)}
+      />
+    </FormSection>
   );
 }
-
-const useStyles = makeUseStyles(({ colors }) => ({
-  root: { gap: spacing.xs },
-  label: { ...typography.caption, color: colors.textSecondary, textAlign: rtlTextAlignStart },
-  hint: { ...typography.caption, color: colors.textSecondary, textAlign: rtlTextAlignStart },
-}));
