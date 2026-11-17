@@ -29,7 +29,7 @@ Run locally: `node scripts/check-main-dev-parity.mjs --main origin/main` (or `--
 | ↳ `E2E_SEED_PASSWORD` | secret on `supabase-dev` only | — | seeded test users exist on kc-dev only |
 | Deploy approval | — | `production` (no secrets; reviewers only) | only `deploy.yml` may use it (`check-deploy-isolation.mjs`) |
 | Store builds | `mobile-store` (shared) | `mobile-store` (shared) | `MOBILE_SUPABASE_ANON_KEY` (kc-dev, nightly) vs `MOBILE_SUPABASE_ANON_KEY_PROD` (kc-prod, `backend=prod`); everything else (ASC / Play / iOS signing / `EXPO_TOKEN` / `SENTRY_AUTH_TOKEN` secrets; `EXPO_PUBLIC_SENTRY_DSN`, `EXPO_PUBLIC_POSTHOG_KEY/HOST`, `SENTRY_*`, `KC_*` variables) is the same for both backends |
-| PROD store switch | — | repo variable `KC_PROD_STORE_BUILD_ENABLED` | unset (block) → `"true"` only by the owner; `prod-store-build.yml` never sets it |
+| PROD store switch | — | repo variables `KC_PROD_STORE_BUILD_IOS_ENABLED` / `KC_PROD_STORE_BUILD_ANDROID_ENABLED` (per platform), fallback `KC_PROD_STORE_BUILD_ENABLED` | per platform: exactly `"true"` = on, any other value (e.g. `"false"`) = that platform off, unset = use `KC_PROD_STORE_BUILD_ENABLED` (unset = block); set only by the owner; `prod-store-build.yml` never sets them — see [MOBILE-STORE-LANES.md](./MOBILE-STORE-LANES.md) |
 
 Repo-level secrets `EXPO_PUBLIC_SUPABASE_URL` / `EXPO_PUBLIC_SUPABASE_ANON_KEY` exist too; jobs in an environment read the environment's value first, and the prod preflight rejects a non-kc-prod URL, so a missing env secret cannot silently ship the repo-level value to PROD web.
 
@@ -79,7 +79,7 @@ Per `docs/SSOT/ENVIRONMENTS.md`: `preview` and `production` each hold `EXPO_PUBL
 |---|---|---|
 | `world_*_enabled` | yes, same defaults on both | — |
 | `launch_email_auth_enabled`, `launch_whatsapp_bot_enabled`, `launch_payments_enabled` | **no** | build default: ON when `EXPO_PUBLIC_ENVIRONMENT=development`, OFF in production (`launchSurfaces.ts`); `EXPO_PUBLIC_LAUNCH_*` overrides |
-| Support-KC options (Bit / PayBox, `useKcSupportOptions`) | no (`kc_support_channels` is in `supabase/seed/content/deferred/`) | server config with a compiled fallback in the app, so shown on both (owner decision 15 Nov: ON at launch) |
+| Support-KC options (Bit / PayBox, `useKcSupportOptions`) | no (`kc_support_channels` is in `supabase/seed/content/deferred/`) | server config, no compiled fallback; the card is hidden whenever no channel is active (all paused 2026-11-16, App Store 3.2.2) |
 
 The current per-project values are read in the admin portal; they are not copied here.
 

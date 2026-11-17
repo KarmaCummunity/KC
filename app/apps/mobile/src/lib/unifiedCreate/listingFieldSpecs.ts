@@ -13,6 +13,7 @@ import {
 } from '@kc/domain';
 import type { CreateDirection } from './createCategories';
 import { ANIMALS_FIELD_SPECS } from './animalsFieldSpecs';
+import { EMPLOYMENT_FIELD_SPECS } from './employmentFieldSpecs';
 import { HOUSING_FIELD_SPECS } from './housingFieldSpecs';
 import { KNOWLEDGE_FIELD_SPECS } from './knowledgeFieldSpecs';
 
@@ -80,15 +81,17 @@ const SPECS_BY_KIND: Readonly<Record<string, readonly ListingFieldSpec[]>> = {
   ...HOUSING_FIELD_SPECS,
   ...KNOWLEDGE_FIELD_SPECS,
   ...ANIMALS_FIELD_SPECS,
+  ...EMPLOYMENT_FIELD_SPECS,
   volunteer_offer: [{ key: 'duration_minutes', type: 'duration', options: DURATIONS_MIN, defaultValue: 60 }],
   // An organization's event (G1 step 5, 0563). The organization (`org_id`) has its own picker
   // (OrganizationPicker), so it is not a field here; the window rule is checked on publish.
+  // The place is the form's address section (city + street + number, useListingStreetAddress),
+  // which fills `details.address`; it is not a free-text field here (KC#2288).
   [ORG_EVENT_KIND_SLUG]: [
     { key: 'starts_at', type: 'dateTime', required: true },
     { key: 'ends_at', type: 'dateTime', required: true },
     { key: 'registration_policy', type: 'choice', required: true, options: EVENT_REGISTRATION_POLICIES, defaultValue: 'automatic' },
     { key: 'capacity', type: 'integer', min: EVENT_CAPACITY_MIN, max: EVENT_CAPACITY_MAX },
-    { key: 'address', type: 'text', maxLength: 160 },
   ],
   // Emotional support is routed to a hotline, never a member post (docs/spec/05 §5.4).
   volunteer_request: [

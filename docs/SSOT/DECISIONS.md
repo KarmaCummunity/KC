@@ -1999,3 +1999,46 @@ Owner rules that go with it:
 - Tooling: `scripts/agent-task.mjs`, its test, and `.github/workflows/sync-agent-labels.yml`.
 - Rules: `AGENTS.md` §6 and §13.
 - Docs: `docs/agents/ISSUE_CLAIMS.md`, `docs/agents/OPERATING_MODEL.md` and `docs/SSOT/RELEASE_CHECKLIST.md`.
+
+## D-239 — The demo-data tools are a dev-only seed, not a migration (2026-11-13)
+
+**Decision.** The Demo data screen (FR-ADMIN-031, restored by the PM in `D168`) runs on functions installed by `supabase/seed/demo/` (`install.sql`, loaded by `load.sql` from the **Seed KC dev** workflow, action `demo`), never by a file in `supabase/migrations/`:
+- `public.admin_demo_data_status`, `admin_wipe_demo_data_step` and `admin_seed_demo_data_step(p_password)` are granted to `authenticated` and admit only `kc_private.can_manage_demo_data` (super admin, or the org admin of the platform organization).
+- The seed logic is `kc_private.demo_*`, rewritten for the baseline (users split into four tables, one post model with `post_ride_details`, `chats` + `chat_members`, `follows`, `admin_role_grants` → `org_memberships`, `audit.events` through `kc_private.audit_record`). `load.sql`, `wipe.sql` and the portal run the same phases, so there is one source of truth.
+- Wipe and restore are stepped: one RPC call runs one phase (≈0.5 s locally) and records the next in `kc_private.demo_data_state`, so no call nears the API statement timeout. A stalled operation is resumed, or taken over after 10 minutes.
+- `kc_private.demo_data_state.is_dev_environment` is the dev marker: only `load.sql` sets it, and only with `kc.seed_target = 'dev'`. Without it a restore refuses (`not_dev_environment`).
+- Scope is exact: demo members are `demoN@seed.kc.test` with `app_metadata.demo = true`, so the e2e members (`userN@seed.kc.test`) are never touched; the three `[DEMO]` nonprofits have fixed ids.
+
+**Why.** Every file in `supabase/migrations/` is appended to the production manifest on merge (D-234) and so reaches kc-prod, while the baseline rule is that no seed, demo or dev object exists in the production schema (`docs/db/target-design.md` §6, and §9: "demo seeding moves to dev-only seed scripts"). A dev-only seed honours both: kc-dev gets the screen back, kc-prod gets nothing.
+
+**Consequences.**
+- The RPCs are not in the generated `database.types.ts`; the adapter calls them through an untyped view of the client, and on a database without them it reports `not_installed`, which the screen explains.
+- `scripts/check-rpc-contract.mjs` counts `supabase/seed/demo/**` as declared, and the backend CI lane installs the tools on its throwaway stack (without the marker) so the RPC grant check covers them; the pgTAP suite `supabase/tests/110_demo_data.sql` installs them itself.
+- After a change to `supabase/seed/demo/`, kc-dev needs the **Seed KC dev** workflow's `demo` action again.
+- Demo item offers are published without photos: a `post_media` row must point at a file under its owner's folder, and the database cannot upload one.
+
+**Rejected.**
+- **A migration guarded by a dev marker.** The functions and the marker table would exist on kc-prod, against the baseline rule.
+- **One long RPC per operation.** The API's statement timeout cuts it off on a real database.
+
+**Affected.** `supabase/seed/demo/**`, `supabase/tests/110_demo_data.sql`, `.github/workflows/seed-kc-dev.yml`, `.github/workflows/ci-backend.yml`, `scripts/check-rpc-contract.mjs`, the app's `DemoData` domain types, `IDemoDataRepository`, `SupabaseDemoDataRepository`, `(admin)/demo-data`, `demo_data.manage`.
+
+## D-238 — External post import: deterministic–LLM–deterministic extraction (2026-11-16)
+
+**Decision.** Posts from outside KC enter by member share or paste, never by scraping. One Edge Function runs: PII scrub and normalization (pure), a cache lookup by text fingerprint, ONE schema-constrained provider call (temperature 0, text passed as untrusted data), strict validation, resolution of places against the official catalog (`pg_trgm`, Hebrew-normalized), resolution of relative time against the message timestamp in Asia/Jerusalem, and recalibrated confidence that routes to ready / confirm / manual. The result only prefills the create form; it never publishes. Pure stages live in `@kc/domain` with Deno mirrors guarded by a parity test; the provider sits behind a seam like `TranslationProvider` (DPA provider before public launch).
+
+**Why.** Free Hebrew text is where rules plateau and where models guess dates and streets; splitting the work makes accuracy measurable (golden set of 150+ messages with a CI gate, plus production edit rate per field) and failures explainable.
+
+**Rejected.** Scraping and logging in to platforms (terms, S21, fragility); official APIs (none exist for groups or Yad2); an agent loop (cost, latency, no measured gain); auto-publish by confidence; an on-device model for now.
+
+**Open.** Provider and DPA choice at launch readiness; share-target library per ADR-005; the own-post attestation (`S90`) awaits PM approval.
+
+**Affected.** `docs/spec/requirements/25_external_post_import.md`, `docs/architecture/adr/ADR-008-external-post-import.md`, later `supabase/functions/extract-external-post/`, `app/packages/{domain,application,infrastructure-supabase}`, `app/apps/mobile`.
+
+## D-240 — A PR run is voided only by gate files it used (2026-11-16)
+
+**Decision.** `CI verdict` voids a green PR run when the base branch changed a gate file after the run, and a gate file is now only what can shape that run's verdict: `.github/workflows/ci.yml`, the lane workflows the run itself recorded (`referenced_workflows`, nested ones included), `.github/actions/**`, `.github/owners.json`, `scripts/ci-*` and `scripts/check-*`. A renamed file counts under its old name. Every other `.github` file (`CODEOWNERS`, `dependabot.yml`, rulesets docs, release, deploy and store workflows) no longer voids a run.
+
+**Why.** A PR that touches the app runs the Maestro lane for 40–90 minutes, and `dev` changes some `.github` file several times a day. On 2026-11-16 one PR lost five green runs this way, four of them to files no PR run uses (#2369). The binding still proves that the workflow and judges that ran are the base branch's own, and the merge-group run re-judges the final tree before anything merges.
+
+**Affected.** `scripts/ci-run-binding.mjs`, `docs/SSOT/ENVIRONMENTS.md`. `CI verdict` runs from `main`, so the rule takes effect with the next release to `main`.

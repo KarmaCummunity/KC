@@ -49,7 +49,12 @@ updates:
     open-pull-requests-limit: 8
 
   - package-ecosystem: "github-actions"
-    directory: "/"
+    # "/" covers .github/workflows; the composite actions under
+    # .github/actions/* are only scanned when listed explicitly, otherwise
+    # their pins drift behind the workflows (audit 2026-11-16, item 2).
+    directories:
+      - "/"
+      - "/.github/actions/*"
     target-branch: "dev"
     schedule:
       interval: "monthly"

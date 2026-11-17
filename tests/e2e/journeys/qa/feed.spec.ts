@@ -15,7 +15,13 @@ import { USER_A } from '../../lib/env';
 test('feed renders posts with no failed API calls', async ({ page }) => {
   const errors = trackApiErrors(page);
   await gotoApp(page, '/');
-  await expect(page.getByTestId('feed-screen')).toBeVisible();
+  // A seeded user with an admin role (user1 holds the platform `support` role) lands on the admin
+  // portal at `/`, not the home feed: open the Home tab, as journeys/feed.spec.ts and auth.setup.ts do.
+  const feed = page.getByTestId('feed-screen');
+  if (!(await feed.isVisible({ timeout: 5_000 }).catch(() => false))) {
+    await page.getByRole('tab', { name: 'בית' }).click();
+  }
+  await expect(feed).toBeVisible();
   await expect(page.getByTestId('feed-post-card').first().or(page.getByTestId('feed-empty-state'))).toBeVisible();
   await page.waitForLoadState('networkidle');
   expect(errors).toEqual([]);

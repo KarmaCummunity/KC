@@ -10,7 +10,6 @@ import { FormScreen, PrimaryButton } from '../../src/components/ui';
 import { ReportIssueForm } from '../../src/components/settings/ReportIssueForm';
 import { NotifyModal } from '../../src/components/NotifyModal';
 import { useShellStackScreenOptions } from '../../src/navigation/shellStackScreenOptions';
-import { useFormFieldFocus } from '../../src/hooks/useFormFieldFocus';
 import { useReportIssueSubmit } from '../../src/hooks/useReportIssueSubmit';
 import { webViewRtl } from '../../src/lib/webRtlStyle';
 
@@ -19,7 +18,6 @@ export default function ReportIssueScreen() {
   const router = useRouter();
   const { t } = useTranslation();
   const { colors } = useTheme();
-  const fieldFocus = useFormFieldFocus(1);
   const [category, setCategory] = useState<string | null>(null);
   const [description, setDescription] = useState('');
 
@@ -45,13 +43,6 @@ export default function ReportIssueScreen() {
         testID="report-issue-screen"
         edges={['bottom', 'left', 'right']}
         contentContainerStyle={{ padding: spacing.base, gap: spacing.lg, paddingBottom: spacing.xl, ...webViewRtl }}
-        keyboardAccessory={{
-          canGoPrev: fieldFocus.canGoPrev,
-          canGoNext: fieldFocus.canGoNext,
-          onPrev: fieldFocus.focusPrev,
-          onNext: fieldFocus.focusNext,
-          onDone: fieldFocus.dismiss,
-        }}
         footer={
           <PrimaryButton
             testID="report-issue-submit"
@@ -69,7 +60,6 @@ export default function ReportIssueScreen() {
           onCategoryChange={setCategory}
           description={description}
           onDescriptionChange={setDescription}
-          descriptionField={fieldFocus.bindField(0)}
         />
       </FormScreen>
       <NotifyModal

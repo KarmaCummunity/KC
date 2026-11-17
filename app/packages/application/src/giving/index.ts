@@ -44,5 +44,7 @@ export {
 export type { IRideSeriesRepository } from '../ports/IRideSeriesRepository';
 export { SaveRideHouseNumbersUseCase, GetRideHouseNumbersUseCase } from './rideHouseNumberUseCases';
 export type { IRideHouseNumberRepository } from '../ports/IRideHouseNumberRepository';
+export { SaveListingStreetAddressUseCase, GetOwnListingStreetAddressUseCase } from './listingStreetAddressUseCases';
+export type { IListingStreetAddressRepository } from '../ports/IListingStreetAddressRepository';
 export { RaiseRideEmergencyUseCase } from './RaiseRideEmergencyUseCase';
 export type { IRideSafetyRepository } from '../ports/IRideSafetyRepository';

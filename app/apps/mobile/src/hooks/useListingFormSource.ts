@@ -99,6 +99,9 @@ export function useListingFormSource({
   return {
     /** The source is still loading; the form shows a spinner and cannot publish yet. */
     loading: Boolean(sourceId) && sourceQuery.isLoading,
+    /** The listing being edited or republished, once loaded. */
+    detail: sourceQuery.data ?? undefined,
+    sourceId,
     carriedMedia,
     removeCarriedMedia: (path: string) => setCarriedMedia((prev) => prev.filter((m) => m.path !== path)),
   };

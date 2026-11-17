@@ -35,12 +35,14 @@ vi.mock('../../../lib/copyOrShareText', () => ({ copyOrShareText: (text: string)
 import { SupportKcOptions } from '../SupportKcOptions';
 import { SupportKcDisclosure } from '../SupportKcDisclosure';
 import { DonationSupportCard } from '../../DonationSupportCard';
+import { SupportKcCard } from '../SupportKcCard';
 
 afterEach(() => {
   cleanup();
   cancelState.canRequest = true;
   cancelState.failed = false;
   optionsQuery.data = undefined;
+  optionsQuery.isLoading = false;
 });
 
 const withTheme = (ui: React.ReactElement) =>
@@ -141,10 +143,29 @@ describe('DonationSupportCard (About + Settings, FR-DONATE-010)', () => {
     expect(getByTestId('support-kc-disclosure')).toBeTruthy();
   });
 
-  it('shows the unavailable notice instead of payment links when channels cannot load', () => {
-    const { getByText, queryAllByRole } = withTheme(<DonationSupportCard />);
-    expect(getByText('supportKc.unavailable')).toBeTruthy();
-    expect(queryAllByRole('button')).toHaveLength(0);
+  it('renders nothing when channels cannot load or are all paused', () => {
+    const { queryByTestId } = withTheme(<DonationSupportCard />);
+    expect(queryByTestId('donation-support-card')).toBeNull();
+    expect(queryByTestId('support-kc-disclosure')).toBeNull();
+  });
+});
+
+describe('SupportKcCard hides when no channel is active (App Store 3.2.2)', () => {
+  it('renders nothing for undefined, empty and loading options', () => {
+    optionsQuery.data = undefined;
+    expect(withTheme(<SupportKcCard />).queryByTestId('support-kc-card')).toBeNull();
+    cleanup();
+    optionsQuery.data = { oneTime: [], standingOrder: null };
+    expect(withTheme(<SupportKcCard />).queryByTestId('support-kc-card')).toBeNull();
+    cleanup();
+    optionsQuery.data = full;
+    optionsQuery.isLoading = true;
+    expect(withTheme(<SupportKcCard />).queryByTestId('support-kc-card')).toBeNull();
+  });
+
+  it('still renders when at least one channel exists', () => {
+    optionsQuery.data = full;
+    expect(withTheme(<SupportKcCard />).getByTestId('support-kc-card')).toBeTruthy();
   });
 });
 

@@ -5,13 +5,21 @@ name: Mobile nightly
 # internal tester tracks, built with the eas.json `nightly` profile on the
 # kc-dev Supabase backend (each store job checks the built bundle for it).
 #
-#   resolve → e2e (P0 against dev) → ios ∥ android → record
+#   resolve → e2e (P0 against dev) → ios → record-ios
+#                                  → android → record-android
+#
+# iOS and Android are independent lanes: neither lane needs the other, each
+# records its own shipped tag, and one platform failing never skips or blocks
+# the other's build or record. Shared preconditions only: `resolve` and the
+# platform-agnostic P0 E2E against kc-dev.
 #
 # `resolve` picks the newest dev commit whose `CI` push run succeeded and builds
-# that exact SHA, never the tip. Nothing is built when that SHA already carries
-# a `mobile/v*` tag (the macOS runner is the costly part), unless `force` is
-# set. `record` creates that tag only after both stores accepted the build, so
-# a night where either store failed is retried in full the next night.
+# that exact SHA, never the tip, and decides per platform: a platform is skipped
+# when that SHA already carries its shipped tag (`mobile/ios/v*` or
+# `mobile/android/v*`; the legacy combined `mobile/v*` counts for both), unless
+# `force` is set, or when its kill switch KC_NIGHTLY_IOS_ENABLED /
+# KC_NIGHTLY_ANDROID_ENABLED is "false" (unset = on). A night where only
+# Android failed therefore rebuilds only Android the next night.
 #
 # Scheduled runs use the default branch's (main's) copy of this file, so the
 # schedule takes effect once it reaches main; it still builds dev's commit.
@@ -22,14 +30,21 @@ on:
   workflow_dispatch:
     inputs:
       force:
-        description: Build even if the newest green dev commit was already built
+        description: Build even if the newest green dev commit was already built for that platform
         type: boolean
         default: false
+      platform:
+        description: Which store lane to run
+        type: choice
+        options: [both, ios, android]
+        default: both
 
-# One nightly at a time; a second run queues instead of cancelling a build
-# that has already consumed store build numbers.
+# One nightly per platform selection at a time; a second run queues instead of
+# cancelling a build that has already consumed store build numbers. The store
+# jobs also hold per-platform groups (testflight-ios-*, play-internal-android-*),
+# so an android-only rerun never waits behind a running iOS build.
 concurrency:
-  group: mobile-nightly
+  group: mobile-nightly-${{ inputs.platform || 'both' }}
   cancel-in-progress: false
 
 permissions: {}
@@ -46,6 +61,8 @@ jobs:
       sha: ${{ steps.pick.outputs.sha }}
       version: ${{ steps.pick.outputs.version }}
       build: ${{ steps.pick.outputs.build }}
+      build_ios: ${{ steps.pick.outputs.build_ios }}
+      build_android: ${{ steps.pick.outputs.build_android }}
     steps:
       # A dispatch from a feature branch would run that branch's copy of the
       # store workflows; only dev's (or the schedule's main) copy may ship.
@@ -61,20 +78,24 @@ jobs:
             scripts/resolve-green-dev-sha.mjs
             scripts/mobile-nightly-resolve.mjs
           sparse-checkout-cone-mode: false
+          persist-credentials: false
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version-file: .nvmrc
-      - name: Pick the commit and decide whether to build
+      - name: Pick the commit and decide per platform
         id: pick
         env:
           GITHUB_TOKEN: ${{ github.token }}
           BRANCH: dev
           LOOKBACK: '30'
           FORCE: ${{ inputs.force }}
+          PLATFORM: ${{ inputs.platform }}
+          KC_NIGHTLY_IOS_ENABLED: ${{ vars.KC_NIGHTLY_IOS_ENABLED }}
+          KC_NIGHTLY_ANDROID_ENABLED: ${{ vars.KC_NIGHTLY_ANDROID_ENABLED }}
         run: node scripts/mobile-nightly-resolve.mjs
 
   # Jobs that call a reusable workflow cannot set timeout-minutes; each called
-  # job sets its own (e2e 30, ios 90, android 90 minutes).
+  # job sets its own (e2e 30, ios 150, android 90 minutes).
   e2e:
     name: e2e
     needs: resolve
@@ -86,58 +107,77 @@ jobs:
     with:
       p0_only: true
       ref: ${{ needs.resolve.outputs.sha }}
-    # The called workflow reads E2E_SEED_PASSWORD; without this it receives an empty secret.
+    # The called workflow reads E2E_SEED_PASSWORD (a repo secret); without this it receives an empty secret.
     secrets: inherit
 
+  # Store lanes: no `secrets: inherit`. Each lane is passed only its own
+  # platform's secrets by name; values resolve from the `mobile-store`
+  # environment the called job selects (environment secrets take precedence).
   ios:
     name: ios
     needs: [resolve, e2e]
-    if: needs.resolve.outputs.build == 'true'
+    if: needs.resolve.outputs.build_ios == 'true'
     permissions:
       contents: read
       actions: read
     uses: ./.github/workflows/testflight-ios.yml
+    secrets:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      ASC_API_KEY_ID: ${{ secrets.ASC_API_KEY_ID }}
+      ASC_API_KEY_ISSUER_ID: ${{ secrets.ASC_API_KEY_ISSUER_ID }}
+      ASC_API_KEY_P8: ${{ secrets.ASC_API_KEY_P8 }}
+      KC_IOS_TEAM_ID: ${{ secrets.KC_IOS_TEAM_ID }}
+      KC_IOS_DIST_P12_B64: ${{ secrets.KC_IOS_DIST_P12_B64 }}
+      KC_IOS_DIST_P12_PASSWORD: ${{ secrets.KC_IOS_DIST_P12_PASSWORD }}
+      MOBILE_SUPABASE_ANON_KEY: ${{ secrets.MOBILE_SUPABASE_ANON_KEY }}
+      MOBILE_SUPABASE_ANON_KEY_PROD: ${{ secrets.MOBILE_SUPABASE_ANON_KEY_PROD }}
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
     with:
       ref: ${{ needs.resolve.outputs.sha }}
-    # The store credentials live in the mobile-store environment and are read in the called job.
-    secrets: inherit
 
   android:
     name: android
     needs: [resolve, e2e]
-    if: needs.resolve.outputs.build == 'true'
+    if: needs.resolve.outputs.build_android == 'true'
     permissions:
       contents: read
       actions: read
     uses: ./.github/workflows/play-internal.yml
+    secrets:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+      MOBILE_SUPABASE_ANON_KEY: ${{ secrets.MOBILE_SUPABASE_ANON_KEY }}
+      MOBILE_SUPABASE_ANON_KEY_PROD: ${{ secrets.MOBILE_SUPABASE_ANON_KEY_PROD }}
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
     with:
       ref: ${{ needs.resolve.outputs.sha }}
-    secrets: inherit
 
-  record:
-    name: record
-    needs: [resolve, ios, android]
-    if: needs.resolve.outputs.build == 'true'
+  record-ios:
+    name: record ios
+    needs: [resolve, ios]
+    if: needs.resolve.outputs.build_ios == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
       contents: write # create the traceability tag
     steps:
-      - name: Tag the shipped commit
+      - name: Tag the shipped commit (iOS)
         env:
           GH_TOKEN: ${{ github.token }}
           SHA: ${{ needs.resolve.outputs.sha }}
           VERSION: ${{ needs.resolve.outputs.version }}
-          IOS_BUILD: ${{ needs.ios.outputs.build_number }}
-          ANDROID_CODE: ${{ needs.android.outputs.version_code }}
+          BUILD: ${{ needs.ios.outputs.build_number }}
+          TAG_PREFIX: mobile/ios/v
+          MARKER: b
+          LABEL: iOS build
         run: |
           set -euo pipefail
-          if [ -z "$IOS_BUILD" ] || [ -z "$ANDROID_CODE" ]; then
-            echo "::error::A store job reported no build number"
+          if [ -z "$BUILD" ]; then
+            echo "::error::The store job reported no build number"
             exit 1
           fi
-          # Traceability, and the marker resolve uses to skip a shipped commit.
-          tag="mobile/v$VERSION-ios$IOS_BUILD-android$ANDROID_CODE"
+          # Traceability, and the marker resolve uses to skip this platform for this commit.
+          tag="${TAG_PREFIX}${VERSION}-${MARKER}${BUILD}"
           # Create or move the tag; idempotent, so a retry after a lost response is safe.
           put_tag() {
             gh api -X PATCH "repos/$GITHUB_REPOSITORY/git/refs/tags/$tag" -f sha="$SHA" -F force=true > /dev/null 2>&1 ||
@@ -146,15 +186,62 @@ jobs:
           for delay in 2 4 8 0; do
             if put_tag; then break; fi
             if [ "$delay" -eq 0 ]; then
-              echo "::error::Could not create tag $tag on $SHA; tomorrow's run will rebuild this commit."
+              echo "::error::Could not create tag $tag on $SHA; tomorrow's run will rebuild this platform."
               exit 1
             fi
             sleep "$delay"
           done
           {
-            echo "### Mobile nightly shipped"
+            echo "### Mobile nightly shipped — $LABEL"
             echo
-            echo "| Version | Commit | iOS build | Android versionCode | Supabase | Tag |"
-            echo "| --- | --- | --- | --- | --- | --- |"
-            echo "| $VERSION | \`$SHA\` | $IOS_BUILD | $ANDROID_CODE | kc-dev | \`$tag\` |"
+            echo "| Version | Commit | $LABEL | Supabase | Tag |"
+            echo "| --- | --- | --- | --- | --- |"
+            echo "| $VERSION | \`$SHA\` | $BUILD | kc-dev | \`$tag\` |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  record-android:
+    name: record android
+    needs: [resolve, android]
+    if: needs.resolve.outputs.build_android == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write # create the traceability tag
+    steps:
+      - name: Tag the shipped commit (Android)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ needs.resolve.outputs.sha }}
+          VERSION: ${{ needs.resolve.outputs.version }}
+          BUILD: ${{ needs.android.outputs.version_code }}
+          TAG_PREFIX: mobile/android/v
+          MARKER: c
+          LABEL: Android versionCode
+        run: |
+          set -euo pipefail
+          if [ -z "$BUILD" ]; then
+            echo "::error::The store job reported no build number"
+            exit 1
+          fi
+          # Traceability, and the marker resolve uses to skip this platform for this commit.
+          tag="${TAG_PREFIX}${VERSION}-${MARKER}${BUILD}"
+          # Create or move the tag; idempotent, so a retry after a lost response is safe.
+          put_tag() {
+            gh api -X PATCH "repos/$GITHUB_REPOSITORY/git/refs/tags/$tag" -f sha="$SHA" -F force=true > /dev/null 2>&1 ||
+              gh api -X POST "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$tag" -f sha="$SHA" > /dev/null
+          }
+          for delay in 2 4 8 0; do
+            if put_tag; then break; fi
+            if [ "$delay" -eq 0 ]; then
+              echo "::error::Could not create tag $tag on $SHA; tomorrow's run will rebuild this platform."
+              exit 1
+            fi
+            sleep "$delay"
+          done
+          {
+            echo "### Mobile nightly shipped — $LABEL"
+            echo
+            echo "| Version | Commit | $LABEL | Supabase | Tag |"
+            echo "| --- | --- | --- | --- | --- |"
+            echo "| $VERSION | \`$SHA\` | $BUILD | kc-dev | \`$tag\` |"
           } >> "$GITHUB_STEP_SUMMARY"

@@ -24,9 +24,11 @@ import { authEn } from './modules/auth';
 import { authVerificationHintEn } from './modules/authVerificationHint';
 import { offlineSyncEn } from './modules/offlineSync';
 import { onboardingEn } from './modules/onboarding';
+import { onboardingReplayEn } from './modules/onboardingReplay';
 import { dateOfBirthEn } from './modules/dateOfBirth';
 import { verificationEn } from './modules/verification';
 import { errorsEn } from './modules/errors';
+import { createPostValidationEn } from './createPostValidation';
 import { chatEn } from './modules/chat';
 import { chatNewEn } from './modules/chatNew';
 import { chatMessagingEn } from './modules/chatMessaging';
@@ -57,6 +59,7 @@ import { researchEn } from './modules/research';
 import { adminEn } from './modules/admin';
 import { adminOrgApprovalsBaselineEn } from './modules/adminOrgApprovalsBaseline';
 import { adminStaffToolsEn } from './modules/adminStaffTools';
+import { adminDemoDataEn } from './modules/adminDemoData';
 import { adminCrmBaselineEn, adminTimeBaselineEn } from './modules/adminBackOfficeBaseline';
 import { karmaEn } from './modules/karma';
 import { karmaEventsEn } from './modules/karmaEvents';
@@ -79,6 +82,8 @@ const en = {
 
   // Onboarding (FR-AUTH-010..012, FR-AUTH-018) — see modules/onboarding.ts
   onboarding: onboardingEn,
+  // Onboarding replay for admins (FR-ADMIN-035) — see modules/onboardingReplay.ts
+  onboardingReplay: onboardingReplayEn,
   dateOfBirth: dateOfBirthEn,
   verification: verificationEn,
 
@@ -122,9 +127,12 @@ const en = {
   // The baseline approval copy joins admin.orgApprovals — see modules/adminOrgApprovalsBaseline.ts;
   // the back-office copy joins admin.crm and admin.time — see modules/adminBackOfficeBaseline.ts.
   // The support inbox and review queue copy — see modules/adminStaffTools.ts.
+  // The Demo data screen (FR-ADMIN-031) — see modules/adminDemoData.ts.
   admin: {
     ...adminEn,
-    nav: { ...adminEn.nav, ...adminStaffToolsEn.nav },
+    nav: { ...adminEn.nav, ...adminStaffToolsEn.nav, ...adminDemoDataEn.nav },
+    searchKeywords: { ...adminEn.searchKeywords, ...adminDemoDataEn.searchKeywords },
+    demoData: adminDemoDataEn.demoData,
     supportInbox: adminStaffToolsEn.supportInbox,
     reviewQueue: adminStaffToolsEn.reviewQueue,
     orgApprovals: {
@@ -218,6 +226,7 @@ const en = {
 
   // Error messages (auth/post/profile/media/createPost) — see modules/errors.ts
   errors: errorsEn,
+  createPostValidation: createPostValidationEn,
 
   // Misc chrome — see modules/ui.ts
   errorBoundary: errorBoundaryEn,

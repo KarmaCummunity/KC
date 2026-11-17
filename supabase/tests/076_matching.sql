@@ -83,7 +83,7 @@ as $$
     from generate_series(1, 1536) i;
 $$;
 
-select plan(50);
+select plan(52);
 
 -- Alice offers. Bob, Carol, Dan and Eve ask. Carol and Alice are blocked.
 insert into auth.users (id, email, raw_app_meta_data)
@@ -135,6 +135,17 @@ select is((select (components ->> 'text')::numeric >= 0.5 and (components ->> 'g
 select is(pg_temp.queued('notification', 'match_suggested'), 2::bigint, 'both owners are told about a pair above the announce score');
 select is(kc_private.match_compute_for_post('10000000-0000-4000-8000-000000000001') || '/' || pg_temp.pairs()
           || '/' || kc_private.match_announce(), '1/01-02:suggested/0', 'a repeated run changes nothing and announces nothing twice');
+
+-- A block made after the pair was computed still keeps it from being announced (FR-MOD-009 AC1).
+savepoint after_block;
+update kc_private.match_candidates set notified_offer_at = null, notified_request_at = null;
+insert into public.blocks (blocker_id, blocked_id) values
+  ('00000000-0000-4000-8000-00000000000b', '00000000-0000-4000-8000-00000000000a');
+select is(kc_private.match_announce(), 0, 'a pair whose owners block each other is not announced');
+delete from public.blocks
+ where blocker_id = '00000000-0000-4000-8000-00000000000b' and blocked_id = '00000000-0000-4000-8000-00000000000a';
+select is(kc_private.match_announce(), 2, 'without the block the same pair is announced to both owners');
+rollback to savepoint after_block;
 
 -- ── Embedding jobs ───────────────────────────────────────────────────────────
 select is((select count(*) || '/' || count(*) filter (where title is not null) from public.embedding_jobs_claim(50)), '6/6',

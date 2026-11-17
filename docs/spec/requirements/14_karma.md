@@ -18,8 +18,9 @@
 
 ## FR-KARMA-002 — Registration award
 
-**AC1.** On user INSERT, `karma_on_user_insert()` AFTER INSERT trigger awards `+1` via `karma_grant_once` (event_type `'registration'`).
-**AC2.** The award is idempotent — re-running for an existing user is a no-op.
+**AC1.** A new member earns `+1`, once: a trigger on `users` (`users_karma_registration`) records an `award` event (`event_type` `registration`, subject `user:<id>:registration`) on outbox topic `karma`, and the karma consumer pays the configured value (`karma_values`) within a minute. Restored 2026-11-16 (KC#2391): the baseline had dropped this award.
+**AC2.** The award is idempotent — performing the event again pays nothing. Members who signed up while the award was missing get no retroactive points.
+**AC3.** *(New follower, project book §7.6.)* A new follow edge pays `+1` to the followed member (`follower_gained`, subject `follow:<followed>:<follower>`). When the edge goes (an unfollow, a removed follower) the point is taken back as a `reversal` entry; a new follow pays again. The follower earns nothing.
 
 ---
 
@@ -42,15 +43,17 @@
 
 ## FR-KARMA-005 — Post created / removed awards
 
-**AC1.** On `posts` INSERT, `karma_on_post_change()` AFTER INSERT trigger awards `+5` via `karma_grant_once` (event_type `'post_created'`).
-**AC2.** When a post transitions to `status = 'removed_admin'`, the trigger awards `-5` (event_type `'post_removed'`) to the owner.
+**AC1.** Publishing a post awards `+5` to its owner, once per post, whatever the giving world or post type (an item, a ride, an organization's event). The award is recorded when the post leaves draft or is created already published: a trigger on `posts` (`posts_karma_events`) records an `award` event (`event_type` `post_published`, subject `post:<id>:published`) on outbox topic `karma`, and the karma consumer pays the configured value (`karma_values`) within a minute. Restored 2026-11-16 (KC#2289): the baseline had dropped this award, so publishing paid nothing.
+**AC2.** When an admin removes a post (`status = 'removed_admin'`), the points its owner still holds for publishing it are taken back as a `reversal` entry; restoring the post records the award again. A total never goes below zero.
+**AC3.** At most 5 publishing awards per member per Israel calendar day (project book §7.6); a sixth post published that day earns nothing.
+**AC4.** Not rewarded: a post the scheduler publishes (the next date of a recurring ride or event; the member took no action), the post of a challenge (opening a challenge has its own award), and an imported post (rewarded when a member claims it; no claim flow exists yet).
 
 ---
 
 ## FR-KARMA-006 — Outreach award (soft daily cap)
 
-**AC1.** First message a non-owner sends in a post-anchored chat awards `+1` to the sender via `karma_grant_once` (event_type `'outreach'`, `ref_id = anchor_post_id`). System messages (sender null) are ignored.
-**AC2.** A soft daily cap of 10 `outreach` events per sender per calendar day prevents mass-DM farming (checked at trigger time).
+**AC1.** The first message a member sends in a chat pinned to another member's post awards `+1` to the sender (`event_type` `outreach`, subject `outreach:<post id>:<sender id>`), once per post and sender. System messages, the post owner's own messages and chats that are not pinned to a post earn nothing. Restored 2026-11-16 (KC#2391) through the `karma` outbox (trigger `messages_karma_outreach`).
+**AC2.** A soft daily cap of 10 `outreach` awards per sender per Israel calendar day prevents mass-DM farming (`karma_values.daily_cap`, checked by the consumer).
 **AC3.** The cap is enforced server-side; the client has no visibility into it.
 
 ---

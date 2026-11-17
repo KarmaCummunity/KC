@@ -20,12 +20,12 @@
    "distinct": 3
   },
   "rpc": {
-   "callSites": 270,
-   "distinct": 246
+   "callSites": 276,
+   "distinct": 252
   },
   "table": {
-   "callSites": 184,
-   "distinct": 62
+   "callSites": 189,
+   "distinct": 64
   }
  },
  "entries": [
@@ -382,6 +382,15 @@
   },
   {
    "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAppFlagsAdminRepository.ts",
+   "line": 13,
+   "area": "admin",
+   "symbol": "SupabaseAppFlagsAdminRepository.setFlag",
+   "via": "literal",
+   "name": "admin_set_app_flag"
+  },
+  {
+   "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/admin/SupabaseCrmContactsRepository.ts",
    "line": 77,
    "area": "admin",
@@ -433,6 +442,33 @@
    "symbol": "SupabaseCrmContactsRepository.markContacted",
    "via": "literal",
    "name": "crm_contact_mark_contacted"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseDemoDataRepository.ts",
+   "line": 31,
+   "area": "admin",
+   "symbol": "SupabaseDemoDataRepository.getStatus",
+   "via": "literal",
+   "name": "admin_demo_data_status"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseDemoDataRepository.ts",
+   "line": 36,
+   "area": "admin",
+   "symbol": "SupabaseDemoDataRepository.wipeStep",
+   "via": "literal",
+   "name": "admin_wipe_demo_data_step"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseDemoDataRepository.ts",
+   "line": 43,
+   "area": "admin",
+   "symbol": "SupabaseDemoDataRepository.seedStep",
+   "via": "literal",
+   "name": "admin_seed_demo_data_step"
   },
   {
    "kind": "rpc",
@@ -1883,7 +1919,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/marketplace/listingOwnerActions.ts",
-   "line": 78,
+   "line": 79,
    "area": "marketplace",
    "symbol": "updateMyListing",
    "via": "literal",
@@ -1896,7 +1932,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/marketplace/listingOwnerActions.ts",
-   "line": 96,
+   "line": 97,
    "area": "marketplace",
    "symbol": "addMyListingMedia",
    "via": "literal",
@@ -1920,7 +1956,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/marketplace/listingWrites.ts",
-   "line": 78,
+   "line": 81,
    "area": "marketplace",
    "symbol": "unwrapCall",
    "via": "literal",
@@ -1929,7 +1965,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/marketplace/listingWrites.ts",
-   "line": 89,
+   "line": 92,
    "area": "marketplace",
    "symbol": "createPlain",
    "via": "literal",
@@ -1942,7 +1978,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/marketplace/listingWrites.ts",
-   "line": 97,
+   "line": 100,
    "area": "marketplace",
    "symbol": "postId",
    "via": "literal",
@@ -1951,7 +1987,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/marketplace/listingWrites.ts",
-   "line": 100,
+   "line": 103,
    "area": "marketplace",
    "symbol": "postId",
    "via": "literal",
@@ -1963,7 +1999,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/marketplace/listingWrites.ts",
-   "line": 129,
+   "line": 132,
    "area": "marketplace",
    "symbol": "createListing",
    "via": "literal",
@@ -2053,7 +2089,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-   "line": 112,
+   "line": 122,
    "area": "marketplace",
    "symbol": "fetchListingDetail",
    "via": "literal",
@@ -2062,7 +2098,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-   "line": 115,
+   "line": 125,
    "area": "marketplace",
    "symbol": "fetchListingDetail",
    "via": "literal",
@@ -2079,6 +2115,30 @@
    "symbol": "loadSeatCounts",
    "via": "literal",
    "name": "post_seat_counts"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/marketplace/SupabaseListingStreetAddressRepository.ts",
+   "line": 22,
+   "area": "marketplace",
+   "symbol": "SupabaseListingStreetAddressRepository.unwrapCall",
+   "via": "literal",
+   "ops": [
+    "upsert"
+   ],
+   "name": "post_private_locations"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/marketplace/SupabaseListingStreetAddressRepository.ts",
+   "line": 35,
+   "area": "marketplace",
+   "symbol": "SupabaseListingStreetAddressRepository.getOwn",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "post_private_locations"
   },
   {
    "kind": "rpc",
@@ -2759,7 +2819,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/posts/postMediaWrites.ts",
-   "line": 40,
+   "line": 41,
    "area": "posts",
    "symbol": "unwrapCall",
    "via": "literal",
@@ -2769,40 +2829,13 @@
    "name": "post_media"
   },
   {
-   "kind": "table",
+   "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/posts/postMediaWrites.ts",
-   "line": 54,
+   "line": 57,
    "area": "posts",
    "symbol": "unwrapCall",
    "via": "literal",
-   "ops": [
-    "select"
-   ],
-   "name": "post_media"
-  },
-  {
-   "kind": "table",
-   "file": "app/packages/infrastructure-supabase/src/posts/postMediaWrites.ts",
-   "line": 65,
-   "area": "posts",
-   "symbol": "replacePostMedia",
-   "via": "literal",
-   "ops": [
-    "delete"
-   ],
-   "name": "post_media"
-  },
-  {
-   "kind": "table",
-   "file": "app/packages/infrastructure-supabase/src/posts/postMediaWrites.ts",
-   "line": 70,
-   "area": "posts",
-   "symbol": "replacePostMedia",
-   "via": "literal",
-   "ops": [
-    "insert"
-   ],
-   "name": "post_media"
+   "name": "replace_post_media"
   },
   {
    "kind": "table",
@@ -2861,7 +2894,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/posts/postWriteMethods.ts",
-   "line": 47,
+   "line": 46,
    "area": "posts",
    "symbol": "unwrapCall",
    "via": "literal",
@@ -2873,7 +2906,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/posts/postWriteMethods.ts",
-   "line": 60,
+   "line": 59,
    "area": "posts",
    "symbol": "insertDraft",
    "via": "literal",
@@ -2886,7 +2919,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/posts/postWriteMethods.ts",
-   "line": 94,
+   "line": 93,
    "area": "posts",
    "symbol": "completeDraft",
    "via": "literal",
@@ -2895,7 +2928,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/posts/postWriteMethods.ts",
-   "line": 105,
+   "line": 104,
    "area": "posts",
    "symbol": "createPost",
    "via": "literal",
@@ -2907,7 +2940,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/posts/postWriteMethods.ts",
-   "line": 127,
+   "line": 126,
    "area": "posts",
    "symbol": "mergedDetails",
    "via": "literal",
@@ -2919,7 +2952,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/posts/postWriteMethods.ts",
-   "line": 150,
+   "line": 149,
    "area": "posts",
    "symbol": "updatePost",
    "via": "literal",
@@ -2932,7 +2965,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/posts/postWriteMethods.ts",
-   "line": 170,
+   "line": 165,
    "area": "posts",
    "symbol": "deletePost",
    "via": "literal",
@@ -2941,7 +2974,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/posts/postWriteMethods.ts",
-   "line": 180,
+   "line": 175,
    "area": "posts",
    "symbol": "adminRemovePost",
    "via": "literal",
@@ -4501,6 +4534,71 @@
   },
   {
    "kind": "rpc",
+   "file": "supabase/functions/_shared/post-extraction/catalog.ts",
+   "line": 20,
+   "area": "fn:_shared",
+   "symbol": "rpcPlaceResolver",
+   "via": "literal",
+   "name": "api_resolve_place"
+  },
+  {
+   "kind": "table",
+   "file": "supabase/functions/_shared/post-extraction/lists.ts",
+   "line": 28,
+   "area": "fn:_shared",
+   "symbol": "loadExtractionLists",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "worlds"
+  },
+  {
+   "kind": "table",
+   "file": "supabase/functions/_shared/post-extraction/lists.ts",
+   "line": 30,
+   "area": "fn:_shared",
+   "symbol": "rows",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "item_subcategories"
+  },
+  {
+   "kind": "table",
+   "file": "supabase/functions/_shared/post-extraction/lists.ts",
+   "line": 32,
+   "area": "fn:_shared",
+   "symbol": "rows",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "post_kinds"
+  },
+  {
+   "kind": "table",
+   "file": "supabase/functions/_shared/post-extraction/store.ts",
+   "line": 43,
+   "area": "fn:_shared",
+   "symbol": "supabaseImportStore",
+   "via": "literal",
+   "ops": [],
+   "name": "external_post_imports"
+  },
+  {
+   "kind": "table",
+   "file": "supabase/functions/_shared/post-extraction/store.ts",
+   "line": 58,
+   "area": "fn:_shared",
+   "symbol": "supabaseExtractionCache",
+   "via": "literal",
+   "ops": [],
+   "name": "post_extraction_cache"
+  },
+  {
+   "kind": "rpc",
    "file": "supabase/functions/_shared/whatsapp/agent/run.ts",
    "line": 57,
    "area": "fn:_shared",
@@ -4660,6 +4758,18 @@
    "symbol": "jobs",
    "via": "literal",
    "name": "embedding_job_fail"
+  },
+  {
+   "kind": "table",
+   "file": "supabase/functions/extract-external-post/index.ts",
+   "line": 28,
+   "area": "fn:extract-external-post",
+   "symbol": "<module>",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "app_flags"
   },
   {
    "kind": "rpc",

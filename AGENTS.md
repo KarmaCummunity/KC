@@ -157,7 +157,8 @@ docs/spec/requirements/
 ├── 21_housing.md                FR-HOUSING-*
 ├── 22_identity_verification.md  FR-VERIFY-*
 ├── 23_knowledge.md              FR-KNOW-*
-└── 24_ride_event_groups.md      FR-EVRIDE-*
+├── 24_ride_event_groups.md      FR-EVRIDE-*
+└── 25_external_post_import.md   FR-IMPORT-*
 ```
 
 Note: `17_responsive_desktop.md` was formerly `14_responsive_desktop.md` (renamed 2026-10-30 to remove the duplicate `14_` and fill the missing `17_`). FR-RESP-* IDs are unchanged.

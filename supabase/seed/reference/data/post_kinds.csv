@@ -20,3 +20,6 @@ animals,adoption_offer,מסירת בעל חיים,Animal to give away,offer,10
 animals,adoption_request,מחפש/ת לאמץ,Looking to adopt,request,20
 animals,foster_offer,פנסיון / שמירה על בעל חיים,Boarding or pet-sitting offer,offer,30
 animals,foster_request,מחפש/ת פנסיון / שמירה,Looking for boarding or pet-sitting,request,40
+challenges,challenge,אתגר,Challenge,offer,10
+employment,job_offer,אני מציע/ה עבודה,I am offering a job,offer,10
+employment,job_request,אני מחפש/ת עבודה,I am looking for work,request,20

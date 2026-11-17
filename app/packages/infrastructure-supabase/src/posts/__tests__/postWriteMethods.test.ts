@@ -179,16 +179,20 @@ describe('updatePost', () => {
     expect(calls).toHaveLength(0);
   });
 
-  it('replaces the photos of the signed-in owner', async () => {
-    const { client, calls } = createFakeClient({
-      userId: 'u-owner',
-      tables: { post_media: (call: FakeCall) => ok(call.kind === 'select' ? [] : null) },
-    });
+  it('replaces the photos in one server call', async () => {
+    const { client, calls } = createFakeClient({ rpc: { replace_post_media: ok(null) } });
 
     await updatePost(client, 'p1', { mediaAssets: [{ path: 'u-owner/b/1.jpg', mimeType: 'image/jpeg', sizeBytes: 5 }] });
 
-    const insert = callsTo(calls, 'post_media').find((call) => call.kind === 'insert');
-    expect(insert?.payload).toEqual([expect.objectContaining({ owner_id: 'u-owner', storage_key: 'u-owner/b/1.jpg', ordinal: 0 })]);
+    expect(callsTo(calls, 'replace_post_media')[0]?.args).toEqual({
+      p_post_id: 'p1',
+      p_media: [{ storage_key: 'u-owner/b/1.jpg', mime_type: 'image/jpeg', size_bytes: 5 }],
+    });
+  });
+
+  it('reports an offer that would be left without a photo', async () => {
+    const { client } = createFakeClient({ rpc: { replace_post_media: fail('P0001', 'offer_photo_required') } });
+    await expect(updatePost(client, 'p1', { mediaAssets: [] })).rejects.toMatchObject({ code: 'image_required_for_give' });
   });
 });
 

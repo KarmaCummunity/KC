@@ -34,6 +34,31 @@ on:
         type: string
         required: false
         default: dev
+    # Declared so callers pass only this platform's secrets by name (no
+    # `secrets: inherit`). The values resolve from the `mobile-store`
+    # environment this job selects (environment secrets take precedence).
+    # Not `required`: the preflight step below fails closed with a clear list.
+    secrets:
+      EXPO_TOKEN:
+        required: false
+      ASC_API_KEY_ID:
+        required: false
+      ASC_API_KEY_ISSUER_ID:
+        required: false
+      ASC_API_KEY_P8:
+        required: false
+      KC_IOS_TEAM_ID:
+        required: false
+      KC_IOS_DIST_P12_B64:
+        required: false
+      KC_IOS_DIST_P12_PASSWORD:
+        required: false
+      MOBILE_SUPABASE_ANON_KEY:
+        required: false
+      MOBILE_SUPABASE_ANON_KEY_PROD:
+        required: false
+      SENTRY_AUTH_TOKEN:
+        required: false
     outputs:
       build_number:
         description: CFBundleVersion of the uploaded build
@@ -51,6 +76,7 @@ permissions:
 env:
   BUNDLE_ID: org.karmacommunity.app
   # Same eas-cli pin in play-internal.yml and kc-mobile-eas-preview.yml; bump all three together.
+  # (One pin on purpose: a per-platform pin would let the two lanes drift on eas.json semantics.)
   EAS_CLI_VERSION: 24.12.1
 
 jobs:
@@ -189,7 +215,7 @@ jobs:
       - name: Verify bundle identifier
         run: |
           set -euo pipefail
-          actual="$(npx --yes expo config --json --type public | jq -r '.ios.bundleIdentifier')"
+          actual="$(npx --no expo config --json --type public | jq -r '.ios.bundleIdentifier')"
           if [ "$actual" != "$BUNDLE_ID" ]; then
             echo "::error::iOS bundleIdentifier is '$actual', expected '$BUNDLE_ID'"
             exit 1
@@ -251,13 +277,16 @@ jobs:
           node "$GITHUB_WORKSPACE/scripts/mobile-store-config.mjs" verify "$RUNNER_TEMP/main.jsbundle" "$RUNNER_TEMP/app.config"
           # The build number actually inside the IPA (EAS remote autoIncrement assigned it).
           unzip -p ./build-kc.ipa 'Payload/*.app/Info.plist' > "$RUNNER_TEMP/Info.plist"
+          # iOS-only artifact checks (bundle id, Google Sign-In URL scheme vs iOS client).
+          plutil -convert xml1 -o "$RUNNER_TEMP/Info.xml" "$RUNNER_TEMP/Info.plist"
+          node "$GITHUB_WORKSPACE/scripts/mobile-store-config.mjs" verify-platform ios "$RUNNER_TEMP/app.config" "$RUNNER_TEMP/Info.xml"
           build_number="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$RUNNER_TEMP/Info.plist")"
           [ -n "$build_number" ] || { echo "::error::Could not read CFBundleVersion from the IPA"; exit 1; }
           # eas.json keeps a placeholder (public repo); inject the real ASC app id on the runner only.
           tmp="$(mktemp)"; jq --arg id "$ASC_APP_ID" --arg k "$EXPO_ASC_API_KEY_PATH" --arg kid "$EXPO_ASC_KEY_ID" --arg iss "$EXPO_ASC_ISSUER_ID" '.submit.production.ios += {ascAppId: $id, ascApiKeyPath: $k, ascApiKeyId: $kid, ascApiKeyIssuerId: $iss}' eas.json > "$tmp" && mv "$tmp" eas.json
           eas submit --platform ios --profile production --path ./build-kc.ipa --non-interactive
           echo "build_number=$build_number" >> "$GITHUB_OUTPUT"
-          echo "TestFlight upload: iOS build $build_number from $BUILD_SHA ($STORE_BACKEND backend, profile $EAS_PROFILE)" >> "$GITHUB_STEP_SUMMARY"
+          echo "**iOS → TestFlight: uploaded** build $build_number from $BUILD_SHA ($STORE_BACKEND backend, profile $EAS_PROFILE)" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Distribute to external testers & submit for Beta App Review (non-fatal)
         if: success() && env.STORE_BACKEND != 'prod'

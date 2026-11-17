@@ -4,7 +4,6 @@ import React, { forwardRef } from 'react';
 import type { TextInput as KitTextInput } from '@kc/ui';
 import { useTranslation } from 'react-i18next';
 import { TextField, type TextFieldProps } from '../ui/TextField';
-import { formStreetNumberInputProps } from '../../lib/platform/formTextInputHints';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 
 export type CompactStreetNumberFieldProps = Omit<TextFieldProps, 'label' | 'hideLabel'> & {
@@ -25,7 +24,7 @@ export const CompactStreetNumberField = forwardRef<KitTextInput, CompactStreetNu
         placeholder={resolvedPlaceholder}
         maxLength={maxLength}
         style={[ { textAlign: rtlTextAlignStart }, style]}
-        {...formStreetNumberInputProps}
+        inputKind="streetNumber"
         {...rest}
       />
     );

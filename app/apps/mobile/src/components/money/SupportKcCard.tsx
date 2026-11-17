@@ -6,6 +6,7 @@ import React, { useCallback } from 'react';
 import { View, type StyleProp, type ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
+import { hasKcSupportOptions } from '@kc/domain';
 import { iconSize, makeUseStyles, useTheme, Text } from '@kc/ui';
 import { warmPromptCardBase } from '../warmPromptCardStyles';
 import { aboutOpenExternalUrl } from '../../features/about-landing/aboutOpenExternalUrl';
@@ -42,6 +43,10 @@ export function SupportKcCard({
     (url: string) => void aboutOpenExternalUrl(url, t('supportKc.linkError')),
     [t],
   );
+
+  // App Store 3.2.2: with no active channel (loading, error, or all paused) the whole
+  // card, including the legal disclosure, stays hidden. `is_active` is the kill switch.
+  if (isLoading || !data || !hasKcSupportOptions(data)) return null;
 
   return (
     <View style={[styles.card, style]} testID={testID}>

@@ -9,7 +9,6 @@ import { inputTextAlignStart } from '../../lib/rtlLayout';
 import { RIDE_HOUSE_NUMBER_MAX_LENGTH, streetPlaceId, type RidePlace } from '@kc/domain';
 import { SearchablePicker } from '../SearchablePicker/SearchablePicker';
 import { StreetPicker } from '../StreetPicker';
-import { formStreetNumberInputProps } from '../../lib/platform/formTextInputHints';
 import { TextField } from '../ui/TextField';
 
 const useStyles = makeUseStyles(({ colors }) => ({
@@ -123,7 +122,7 @@ export function RidePlaceField({
           editable={!disabled}
           style={styles.houseNumber}
           testID={houseNumberTestID}
-          {...formStreetNumberInputProps}
+          inputKind="streetNumber"
         />
       ) : null}
     </>

@@ -2,15 +2,17 @@
 // challenges world: "give" is opening a challenge. The creator joins automatically and earns
 // karma for opening (07 §7.6, awarded by the database).
 import React, { useState, type ReactNode } from 'react';
-import { ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import type { ChallengeDraft } from '@kc/domain';
 import { useCreatePostStyles } from '../../screens/tabs/create.styles';
 import { useShellTabBarScrollInset } from '../../navigation/useShellTabBarVisibility';
+import { FormScrollView } from '../ui/FormScrollView';
 import { ChallengeCreateForm } from '../challenges/ChallengeCreateForm';
 import { CHALLENGES_QUERY_KEY, challengeUseCases } from '../../services/challengeComposition';
+import { ChallengeError } from '@kc/domain';
+import { reportHandledError } from '../../lib/observability/reportHandledError';
 import { challengeErrorMessage } from '../../lib/challenges/challengeErrorMessage';
 import { closeCreateForm } from '../../navigation/closeCreateForm';
 
@@ -39,6 +41,10 @@ export function ChallengeWorldCreateForm({ header, onPublishActionChange }: Prop
       await queryClient.invalidateQueries({ queryKey: ['feed'] });
       closeCreateForm(router);
     } catch (error) {
+      // A missing catalog row is not something the user can fix, so it must reach Sentry.
+      if (error instanceof ChallengeError && error.code === 'challenge_world_not_configured') {
+        reportHandledError(error, 'manual', ['challenge_create']);
+      }
       setErrorMessage(challengeErrorMessage(t, error));
     } finally {
       setBusy(false);
@@ -46,10 +52,9 @@ export function ChallengeWorldCreateForm({ header, onPublishActionChange }: Prop
   };
 
   return (
-    <ScrollView
+    <FormScrollView
       style={styles.scroll}
       contentContainerStyle={[styles.scrollContent, { paddingBottom: tabBarPad }]}
-      keyboardShouldPersistTaps="handled"
       testID="challenge-create-form"
     >
       {header}
@@ -59,6 +64,6 @@ export function ChallengeWorldCreateForm({ header, onPublishActionChange }: Prop
         onSubmit={(draft) => void submit(draft)}
         onPublishActionChange={onPublishActionChange}
       />
-    </ScrollView>
+    </FormScrollView>
   );
 }

@@ -17,6 +17,17 @@ export function withEventOrg(details: Record<string, unknown>, choice: OrgEventC
   return choice.isOrgEvent && choice.orgId ? { ...details, org_id: choice.orgId } : details;
 }
 
+/**
+ * An event shows its place as one line built from the structured address ("Herzl 12"). `label`
+ * is null for a kind without a street address, whose details are returned as they are; an event
+ * always gets the current line, so an older free-text address never survives an edit.
+ */
+export function withEventAddress(details: Record<string, unknown>, label: string | null): Record<string, unknown> {
+  if (label === null) return details;
+  const { address: _replaced, ...rest } = details;
+  return label ? { ...rest, address: label } : rest;
+}
+
 /** The ride route + schedule of `details` (empty for every other world). */
 export function pickRideDetails(details: Readonly<Record<string, unknown>>): Record<string, unknown> {
   const out: Record<string, unknown> = {};

@@ -635,6 +635,73 @@ export type Database = {
           },
         ]
       }
+      external_post_imports: {
+        Row: {
+          channel: string
+          confidence: number
+          created_at: string
+          extraction: Json | null
+          extraction_version: string
+          id: string
+          model: string | null
+          post_id: string | null
+          provider_called: boolean
+          reason: string
+          routing: string
+          source_platform: string
+          status: string
+          text_fingerprint: string
+          user_id: string
+        }
+        Insert: {
+          channel: string
+          confidence?: number
+          created_at?: string
+          extraction?: Json | null
+          extraction_version: string
+          id?: string
+          model?: string | null
+          post_id?: string | null
+          provider_called?: boolean
+          reason: string
+          routing: string
+          source_platform?: string
+          status?: string
+          text_fingerprint: string
+          user_id: string
+        }
+        Update: {
+          channel?: string
+          confidence?: number
+          created_at?: string
+          extraction?: Json | null
+          extraction_version?: string
+          id?: string
+          model?: string | null
+          post_id?: string | null
+          provider_called?: boolean
+          reason?: string
+          routing?: string
+          source_platform?: string
+          status?: string
+          text_fingerprint?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "external_post_imports_post_id_fkey"
+            columns: ["post_id"]
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "external_post_imports_user_id_fkey"
+            columns: ["user_id"]
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       feed_hides: {
         Row: {
           hidden_at: string
@@ -1661,6 +1728,24 @@ export type Database = {
           },
         ]
       }
+      place_import_aliases: {
+        Row: {
+          alias_norm: string
+          canonical_norm: string
+          level: string
+        }
+        Insert: {
+          alias_norm: string
+          canonical_norm: string
+          level: string
+        }
+        Update: {
+          alias_norm?: string
+          canonical_norm?: string
+          level?: string
+        }
+        Relationships: []
+      }
       post_actor_identity: {
         Row: {
           created_at: string
@@ -1949,6 +2034,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      post_extraction_cache: {
+        Row: {
+          created_at: string
+          extraction_version: string
+          fingerprint: string
+          result: Json
+        }
+        Insert: {
+          created_at?: string
+          extraction_version: string
+          fingerprint: string
+          result: Json
+        }
+        Update: {
+          created_at?: string
+          extraction_version?: string
+          fingerprint?: string
+          result?: Json
+        }
+        Relationships: []
       }
       post_food_details: {
         Row: {
@@ -4514,6 +4620,21 @@ export type Database = {
         }
         Returns: string
       }
+      api_resolve_place: {
+        Args: {
+          p_city_id?: string
+          p_level: string
+          p_limit?: number
+          p_text: string
+        }
+        Returns: {
+          city_id: string
+          margin: number
+          name_he: string
+          place_id: string
+          score: number
+        }[]
+      }
       api_revenuecat_set_org_entitlement: {
         Args: { p_active: boolean; p_expires_at: string; p_org_id: string }
         Returns: Json
@@ -5614,6 +5735,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      import_normalize_place_text: { Args: { p_text: string }; Returns: string }
       join_challenge: { Args: { p_challenge_id: string }; Returns: undefined }
       knowledge_slot_seats: {
         Args: { p_post_id: string }
@@ -6104,6 +6226,10 @@ export type Database = {
         }
       }
       reopen_post: { Args: { p_post_id: string }; Returns: undefined }
+      replace_post_media: {
+        Args: { p_media: Json; p_post_id: string }
+        Returns: undefined
+      }
       report_challenge_progress: {
         Args: {
           p_challenge_id: string

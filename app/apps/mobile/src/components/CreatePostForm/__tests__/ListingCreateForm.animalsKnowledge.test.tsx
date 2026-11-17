@@ -20,6 +20,8 @@ const mocks = vi.hoisted(() => ({
   uploadListingImages: vi.fn(async () => [] as { path: string; mimeType: string; sizeBytes: number }[]),
 }));
 
+vi.mock('../../../services/postsComposition', async () => (await import('../../../lib/unifiedCreate/__tests__/listingExposureDoubles')).postsCompositionDouble);
+vi.mock('../../../services/userComposition', async () => (await import('../../../lib/unifiedCreate/__tests__/listingExposureDoubles')).userCompositionDouble);
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (k: string, o?: Record<string, unknown>) => (o?.field ? `${k}:${String(o.field)}` : k),
@@ -57,6 +59,8 @@ vi.mock('../../../store/authStore', () => {
   useAuthStore.getState = () => state;
   return { useAuthStore };
 });
+// Only an event shows the street row; these forms never open the picker.
+vi.mock('../../StreetPicker', () => ({ StreetPicker: () => null }));
 vi.mock('../../CityPicker', () => ({
   CityPicker: ({ onChange }: { onChange: (c: { id: string; name: string }) => void }) => (
     <button type="button" data-testid="city-picker" onClick={() => onChange({ id: '7000', name: 'לוד' })} />
