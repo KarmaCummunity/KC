@@ -29,4 +29,11 @@ export const postImport = {
     origin: 'Starting point',
     destination: 'Destination',
   },
+  // The chip on an imported post's card and detail (FR-IMPORT-007 AC3).
+  provenance: {
+    whatsapp: 'From WhatsApp',
+    facebook: 'From Facebook',
+    yad2: 'From Yad2',
+    imported: 'Imported',
+  },
 } as const;

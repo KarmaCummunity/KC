@@ -9,6 +9,7 @@
 
 import {
   ITEM_CONDITIONS,
+  importedFromOf,
   toVerificationLevel,
   type Address,
   type ItemCondition,
@@ -170,6 +171,8 @@ export function mapCardToPost(card: PostCardRow, ctx: MapCardContext): Post {
     createdAt: card.created_at ?? '',
     updatedAt: card.created_at ?? '',
     sourceLanguage: extras?.sourceLanguage ?? null,
+    // FR-IMPORT-007 AC3: the provenance chip; null for a post made in KC.
+    importedFrom: importedFromOf(card.source, card.source_platform),
   };
 }
 

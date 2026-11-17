@@ -91,3 +91,22 @@ describe('PostCardGrid — giving world of a listing mirror', () => {
     expect(view.getByTestId('icon-book-outline')).toBeTruthy();
   });
 });
+
+// FR-IMPORT-007 AC3 — an imported post says where it came from; a post made in KC says nothing.
+describe('PostCardGrid — provenance of an imported post', () => {
+  it('shows the platform an imported post came from', () => {
+    const view = renderCard({ ...BASE, importedFrom: 'whatsapp' });
+    expect(view.getByText('postImport.provenance.whatsapp')).toBeTruthy();
+  });
+
+  it('says only "imported" when the platform is unknown', () => {
+    const view = renderCard({ ...BASE, importedFrom: 'unknown' });
+    expect(view.getByText('postImport.provenance.imported')).toBeTruthy();
+  });
+
+  it('shows no provenance on a post made in KC', () => {
+    const view = renderCard({ ...BASE, importedFrom: null });
+    expect(view.queryByText(/postImport\.provenance/)).toBeNull();
+  });
+});
+
