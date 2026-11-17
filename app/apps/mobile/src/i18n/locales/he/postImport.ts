@@ -36,4 +36,11 @@ export const postImport = {
     yad2: 'מיד2',
     imported: 'יובא מבחוץ',
   },
+  // Why no draft was made (FR-IMPORT-008 AC3-AC4); the pasted text is in the description.
+  limits: {
+    rate_limited: 'הגעתם למספר הייבואים המותר כרגע. אפשר לנסות שוב מאוחר יותר, או למלא את הטופס בעצמכם.',
+    budget_exhausted: 'הכנת טיוטה אוטומטית לא זמינה כרגע. הטקסט שהדבקתם נמצא בתיאור.',
+    import_locked: 'הייבוא חסום אצלכם לזמן מה, כי כמה פוסטים שייבאתם הוסרו. אפשר לפרסם כרגיל.',
+    account_too_new: 'ייבוא מהודעה אפשרי מיום אחרי ההרשמה. בינתיים אפשר לפרסם כרגיל.',
+  },
 } as const;

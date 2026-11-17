@@ -7,7 +7,7 @@
 import { corsHeaders, isAllowedOrigin } from '../_shared/cors.ts';
 import { extractExternalPost, fingerprintFor, type ExtractionCache, type ExtractionOutcome } from '../_shared/post-extraction/extractPost.ts';
 import type { ExtractionLists } from '../_shared/post-extraction/domain/validateExtraction.ts';
-import { checkLimits, DEFAULT_LIMITS, type LimitConfig, type LimitReason } from '../_shared/post-extraction/limits.ts';
+import { checkLimits, DEFAULT_LIMITS, lockoutLookbackMs, type LimitConfig, type LimitReason } from '../_shared/post-extraction/limits.ts';
 import type { PlaceResolver } from '../_shared/post-extraction/places.ts';
 import type { PostExtractionProvider } from '../_shared/post-extraction/providerTypes.ts';
 import { EXTRACTION_PROMPT_VERSION } from '../_shared/post-extraction/prompt.ts';
@@ -83,15 +83,20 @@ function startOfUtcDay(now: Date): Date {
 
 async function limitReason(deps: HandlerDeps, member: AuthedMember): Promise<LimitReason | null> {
   const now = deps.now();
+  const config = deps.limits ?? DEFAULT_LIMITS;
   const ago = (ms: number) => new Date(now.getTime() - ms).toISOString();
-  const [hour, day, calls] = await Promise.all([
+  const [hour, day, calls, removals] = await Promise.all([
     deps.store.attemptsSince(member.id, ago(60 * 60 * 1000)),
     deps.store.attemptsSince(member.id, ago(24 * 60 * 60 * 1000)),
     deps.store.providerCallsSince(startOfUtcDay(now).toISOString()),
+    deps.store.moderationRemovalsSince(member.id, ago(lockoutLookbackMs(config))),
   ]);
   return checkLimits(
-    { accountCreatedAt: member.createdAt, now, attemptsLastHour: hour, attemptsLastDay: day, providerCallsToday: calls },
-    deps.limits ?? DEFAULT_LIMITS,
+    {
+      accountCreatedAt: member.createdAt, now, attemptsLastHour: hour, attemptsLastDay: day,
+      providerCallsToday: calls, moderationRemovals: removals,
+    },
+    config,
   );
 }
 

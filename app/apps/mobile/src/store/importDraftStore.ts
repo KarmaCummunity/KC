@@ -18,7 +18,14 @@ export interface ImportReview {
   readonly confirmFields: readonly string[];
   /** The text was longer than the limit and only its start was read. */
   readonly truncated: boolean;
+  /** Why no extraction ran (FR-IMPORT-008 AC3-AC4), for a "try later" note; null when it ran. */
+  readonly limit: ImportLimitNote | null;
 }
+
+/** The refusals the member is told about; other manual reasons need no note. */
+export const IMPORT_LIMIT_NOTES = ['rate_limited', 'budget_exhausted', 'import_locked', 'account_too_new'] as const;
+export type ImportLimitNote = (typeof IMPORT_LIMIT_NOTES)[number];
+const isLimitNote = (reason: string): reason is ImportLimitNote => (IMPORT_LIMIT_NOTES as readonly string[]).includes(reason);
 
 function reviewOf(draft: ImportDraft): ImportReview {
   const r = draft.removed;
@@ -26,6 +33,7 @@ function reviewOf(draft: ImportDraft): ImportReview {
     removedContacts: r !== null && r.phone + r.email + r.id + r.url > 0,
     confirmFields: draft.confirmFields,
     truncated: draft.truncated,
+    limit: isLimitNote(draft.reason) ? draft.reason : null,
   };
 }
 

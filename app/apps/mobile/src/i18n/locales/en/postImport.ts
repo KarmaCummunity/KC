@@ -36,4 +36,11 @@ export const postImport = {
     yad2: 'From Yad2',
     imported: 'Imported',
   },
+  // Why no draft was made (FR-IMPORT-008 AC3-AC4); the pasted text is in the description.
+  limits: {
+    rate_limited: 'You have reached the number of imports allowed for now. Try again later, or fill in the form yourself.',
+    budget_exhausted: 'Automatic drafts are not available right now. The text you pasted is in the description.',
+    import_locked: 'Importing is paused for you for a while, because some posts you imported were removed. You can still publish as usual.',
+    account_too_new: 'Importing from a message opens a day after you sign up. Meanwhile you can publish as usual.',
+  },
 } as const;

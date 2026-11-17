@@ -14,7 +14,7 @@ vi.mock('react-i18next', () => ({
 import { ImportReviewNotice } from '../ImportReviewNotice';
 import { useImportDraftStore, type ImportReview } from '../../../store/importDraftStore';
 
-const review = (over: Partial<ImportReview> = {}): ImportReview => ({ removedContacts: false, confirmFields: [], truncated: false, ...over });
+const review = (over: Partial<ImportReview> = {}): ImportReview => ({ removedContacts: false, confirmFields: [], truncated: false, limit: null, ...over });
 const renderNotice = () =>
   render(
     <ThemeProvider mode="light" systemScheme="light" setMode={() => {}}>
@@ -52,6 +52,11 @@ describe('ImportReviewNotice', () => {
     const view = renderNotice();
     expect(view.getByTestId('import-review-removed')).toBeTruthy();
     expect(view.getByTestId('import-review-truncated')).toBeTruthy();
+  });
+
+  it('says why no draft was made when a limit refused it', () => {
+    useImportDraftStore.setState({ review: review({ limit: 'rate_limited' }) });
+    expect(renderNotice().getByTestId('import-review-limit').textContent).toBe('postImport.limits.rate_limited');
   });
 
   it('goes away when the form forgets the import', () => {

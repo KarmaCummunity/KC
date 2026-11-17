@@ -20,8 +20,8 @@
    "distinct": 4
   },
   "rpc": {
-   "callSites": 278,
-   "distinct": 254
+   "callSites": 279,
+   "distinct": 255
   },
   "table": {
    "callSites": 190,
@@ -4619,7 +4619,7 @@
   {
    "kind": "table",
    "file": "supabase/functions/_shared/post-extraction/store.ts",
-   "line": 43,
+   "line": 45,
    "area": "fn:_shared",
    "symbol": "supabaseImportStore",
    "via": "literal",
@@ -4627,9 +4627,18 @@
    "name": "external_post_imports"
   },
   {
+   "kind": "rpc",
+   "file": "supabase/functions/_shared/post-extraction/store.ts",
+   "line": 52,
+   "area": "fn:_shared",
+   "symbol": "moderationRemovalsSince",
+   "via": "literal",
+   "name": "import_moderation_removals"
+  },
+  {
    "kind": "table",
    "file": "supabase/functions/_shared/post-extraction/store.ts",
-   "line": 58,
+   "line": 66,
    "area": "fn:_shared",
    "symbol": "supabaseExtractionCache",
    "via": "literal",
