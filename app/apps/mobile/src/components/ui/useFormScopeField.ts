@@ -1,10 +1,10 @@
 // Mapped to spec: FR-RESP-006 — lets any text input (`TextField` or a bare `TextInput`) join the
-// enclosing `FormScreen` / `FormScrollView` scope.
+// enclosing form scope (`Screen`, `FormScreen`, `FormScrollView`, `BottomSheet`, `Modal`).
 import { useEffect, useId, useRef } from 'react';
 import type { TextInputProps } from 'react-native';
 import type { TextInput } from '@kc/ui';
 import type { FieldView } from '../../lib/platform/formFieldOrder';
-import { useFormScopeContext } from './formScope';
+import { useFormScopeContext, type FormScopeValue } from './formScope';
 
 const NOT_FOCUSABLE = (): boolean => false;
 const NOTHING_TO_FOCUS = (): void => {};
@@ -43,8 +43,8 @@ export function useFormScopeField({
   // The registry reads this lazily, so it always sees the latest render without re-registering.
   const editableRef = useRef(editable);
   editableRef.current = editable;
-  const firstRender = useRef(true);
-  const hasNext = Boolean(scope?.multiField && scope.canGoNext);
+  // Each field knows its own place: only the last focusable one gets "done".
+  const hasNext = Boolean(scope?.multiField && scope.lastFocusableId !== id);
   const register = scope?.register;
   const setInvalid = scope?.setInvalid;
 
@@ -56,11 +56,7 @@ export function useFormScopeField({
     });
   }, [register, id, inputRef, viewRef]);
 
-  useEffect(() => {
-    // Skip the scroll on mount: only an error that appears later (a failed submit) should move the screen.
-    setInvalid?.(id, hasError, !firstRender.current);
-    firstRender.current = false;
-  }, [setInvalid, id, hasError]);
+  useReportError(setInvalid, id, hasError);
 
   return {
     onFocus: () => scope?.notifyFocus(id),
@@ -86,15 +82,24 @@ export function useFormScopeAnchor(viewRef: React.RefObject<FieldView | null>, h
   const id = useId();
   const scope = useFormScopeContext();
   const register = scope?.register;
-  const setInvalid = scope?.setInvalid;
-  const firstRender = useRef(true);
 
   useEffect(() => {
     return register?.(id, { focus: NOTHING_TO_FOCUS, view: () => viewRef.current, isFocusable: NOT_FOCUSABLE });
   }, [register, id, viewRef]);
 
+  useReportError(scope?.setInvalid, id, hasError);
+}
+
+/**
+ * Reports the error state to the scope. Only an error that newly appears (a failed submit) may move
+ * the screen: one present on mount does not, and neither does a re-run of the same state (a React
+ * StrictMode double effect, or the scope re-registering the field).
+ */
+function useReportError(setInvalid: FormScopeValue['setInvalid'] | undefined, id: string, hasError: boolean): void {
+  const previous = useRef<boolean | null>(null);
   useEffect(() => {
-    setInvalid?.(id, hasError, !firstRender.current);
-    firstRender.current = false;
+    const appeared = hasError && previous.current === false;
+    previous.current = hasError;
+    setInvalid?.(id, hasError, appeared);
   }, [setInvalid, id, hasError]);
 }
