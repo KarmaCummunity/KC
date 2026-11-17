@@ -23,6 +23,7 @@ import { ListingFieldFrame, ListingFieldProblemContext } from './ListingFieldFra
 import { ListingFormPhotoPicker } from './ListingFormPhotoPicker';
 import { ListingKindChooser } from './ListingKindChooser';
 import { KindGate } from './ListingKindGate';
+import { JobOfferOrgSection } from './JobOfferOrgSection';
 import { TimeOfferKindChooser } from './TimeOfferKindChooser';
 import { OrgEventMembershipHint } from './OrgEventMembershipHint';
 import { EventRecurrenceSection } from './EventRecurrenceSection';
@@ -150,6 +151,7 @@ export function ListingCreateForm({
               anyone else is told how to become one (FR-ORG-002). */}
           {form.eventChoice.personalAvailable ? <TimeOfferKindChooser choice={form.eventChoice} disabled={form.busy} /> : null}
           {form.eventChoice.suggestMembership ? <OrgEventMembershipHint /> : null}
+          <JobOfferOrgSection choice={form.jobOfferOrg} disabled={form.busy} />
 
           {form.isRides ? null : photoPicker}
 

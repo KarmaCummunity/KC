@@ -1685,7 +1685,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/marketplace/eventRegistrations.ts",
-   "line": 66,
+   "line": 76,
    "area": "marketplace",
    "symbol": "registerForEvent",
    "via": "literal",
@@ -1694,7 +1694,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/marketplace/eventRegistrations.ts",
-   "line": 78,
+   "line": 88,
    "area": "marketplace",
    "symbol": "unwrapCall",
    "via": "literal",
@@ -1703,7 +1703,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/marketplace/eventRegistrations.ts",
-   "line": 84,
+   "line": 94,
    "area": "marketplace",
    "symbol": "cancelEventRegistration",
    "via": "literal",
@@ -1712,7 +1712,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/marketplace/eventRegistrations.ts",
-   "line": 91,
+   "line": 101,
    "area": "marketplace",
    "symbol": "unwrapCall",
    "via": "literal",
@@ -1721,7 +1721,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/marketplace/eventRegistrations.ts",
-   "line": 100,
+   "line": 110,
    "area": "marketplace",
    "symbol": "unwrapCall",
    "via": "literal",
@@ -1730,7 +1730,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/marketplace/eventRegistrations.ts",
-   "line": 114,
+   "line": 124,
    "area": "marketplace",
    "symbol": "unwrapCall",
    "via": "literal",
@@ -1742,7 +1742,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/marketplace/eventRegistrations.ts",
-   "line": 120,
+   "line": 130,
    "area": "marketplace",
    "symbol": "unwrapCall",
    "via": "literal",
@@ -1754,7 +1754,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/marketplace/eventRegistrations.ts",
-   "line": 136,
+   "line": 146,
    "area": "marketplace",
    "symbol": "getMyEventRegistration",
    "via": "literal",
@@ -1766,7 +1766,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/marketplace/eventRegistrations.ts",
-   "line": 154,
+   "line": 164,
    "area": "marketplace",
    "symbol": "listMyOrganizations",
    "via": "literal",
