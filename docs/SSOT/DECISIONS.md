@@ -2043,7 +2043,7 @@ Owner rules that go with it:
 
 **Affected.** `scripts/ci-run-binding.mjs`, `docs/SSOT/ENVIRONMENTS.md`. `CI verdict` runs from `main`, so the rule takes effect with the next release to `main`.
 
-## {{ENG:demo-tools-on-dev-deploy}} — Every dev deploy installs the demo-data tools (2026-11-17)
+## D-241 — Every dev deploy installs the demo-data tools (2026-11-17)
 
 **Decision.** `deploy-db.yml` runs `supabase/seed/demo/load.sql` after the migrations whenever the target is `dev` (step **Demo-data tools (kc-dev only)**). The step refuses any project ref but kc-dev's and is skipped for prod. It installs the tools and sets the dev marker; it creates no demo data (no password is passed). The **Seed KC dev** action `demo` stays, for installing them between deploys.
 

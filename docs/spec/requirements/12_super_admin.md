@@ -589,7 +589,7 @@ The team sees how well matching v2 works per world, to tune `matching_settings` 
 
 ## FR-ADMIN-031 — Demo data removal and restore
 
-> **Status (2026-11-17):** ✅ Restored by the PM (`D168`) on the production baseline. The tools are a dev-only seed (`supabase/seed/demo/`, `D-239`), installed on kc-dev by every dev deploy (`{{ENG:demo-tools-on-dev-deploy}}`; the **Seed KC dev** workflow's action `demo` installs them between deploys) and never on kc-prod, so the production schema still holds no demo object. The screen words the two actions as **hide** (the wipe) and **show** (the restore).
+> **Status (2026-11-17):** ✅ Restored by the PM (`D168`) on the production baseline. The tools are a dev-only seed (`supabase/seed/demo/`, `D-239`), installed on kc-dev by every dev deploy (`D-241`; the **Seed KC dev** workflow's action `demo` installs them between deploys) and never on kc-prod, so the production schema still holds no demo object. The screen words the two actions as **hide** (the wipe) and **show** (the restore).
 >
 > *(History: ✅ 2026-11-03 on the legacy chain; ⛔ removed at the baseline cut-over 2026-11-11.)*
 
@@ -724,4 +724,4 @@ A job offer is published only in the name of an organization allowed to post job
 | 0.23 | 2026-11-13 | `FR-ADMIN-031` restored (`D168`): the Demo data screen, `demo_data.manage` and the three demo-data RPCs come back for kc-dev as dev-only seed tools (`supabase/seed/demo/`, `D-239`), rewritten for the baseline, stepped, with ACs 1–11. |
 | 0.24 | 2026-11-16 | Added FR-ADMIN-035 (onboarding replay for admins, sandboxed; KC#2080). |
 | 0.25 | 2026-11-17 | Added FR-ADMIN-036 (organizations allowed to post jobs, switched by platform admins; #1476). |
-| 0.26 | 2026-11-17 | `FR-ADMIN-031` — hide / show wording with a state line, AC1 separates "not installed" from "out of date" and names the connected environment, AC12: every dev deploy installs the tools (`{{ENG:demo-tools-on-dev-deploy}}`, #2434). |
+| 0.26 | 2026-11-17 | `FR-ADMIN-031` — hide / show wording with a state line, AC1 separates "not installed" from "out of date" and names the connected environment, AC12: every dev deploy installs the tools (`D-241`, #2434). |
