@@ -17,6 +17,7 @@ import { eventPost } from './eventPost';
 import { jobOffer } from './jobOffer';
 import { organizations } from './organizations';
 import { postSeries } from './postSeries';
+import { postImport } from './postImport';
 import { ridePlaces } from './ridePlaces';
 import { dateTimeField, rideFeed, rideRoutes, rideSafety, rideSchedule, rideSeries } from './rideSchedule';
 import { authHe } from './modules/auth';
@@ -201,6 +202,8 @@ const he = {
   organizations,
   // Recurring time posts (FR-POST-024) — see postSeries.ts
   postSeries,
+  // Import a post from a message (FR-IMPORT-001) — see postImport.ts
+  postImport,
   // Ride places (D71) — see ridePlaces.ts
   ridePlaces,
   // Ride quick publish (D75) and the shared date-time field — see rideSchedule.ts

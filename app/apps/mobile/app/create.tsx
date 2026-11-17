@@ -29,6 +29,7 @@ import { useCreatePostPublish } from '../src/hooks/useCreatePostPublish';
 import { CreatePostFormScrollContent } from '../src/components/CreatePostForm/CreatePostFormScrollContent';
 import { useUnifiedCreateCategory } from '../src/hooks/useUnifiedCreateCategory';
 import { useRepublishPrefill } from '../src/hooks/useRepublishPrefill';
+import { useImportPrefill } from '../src/hooks/useImportPrefill';
 import { WorldCreateForm } from '../src/components/CreatePostForm/WorldCreateForm';
 import { CreateFormHeaderPublishAction } from '../src/components/CreatePostForm/CreateFormHeaderPublishAction';
 import { useKeyboardVerticalOffset } from '../src/lib/platform/useKeyboardVerticalOffset';
@@ -66,6 +67,9 @@ export default function CreatePostScreen() {
     ownerId, ready, activeCategoryId: activeCategory.id, selectCategory,
     setTitle: form.setTitle, setDescription: form.setDescription,
   });
+
+  // FR-IMPORT-007 AC1: `?importDraft=1` opens the world, direction and texts of the held import draft.
+  useImportPrefill({ ready, selectCategory, setTitle: form.setTitle, setDescription: form.setDescription });
 
   const draftHydration = usePostDraftHydration(ownerId);
 
