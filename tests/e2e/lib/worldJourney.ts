@@ -4,7 +4,8 @@
  * One journey shape, one fixture per world: user A publishes a post the same way the app
  * does (a draft + photo + `publish_post` for items, `create_post_with_details` for food, on
  * the production baseline D-228), user B claims it from the post page, A
- * confirms, A hands it over (listing closes, karma is written), B rates. UI steps
+ * confirms, A hands it over (listing closes, karma is written), B rates. A request kind
+ * takes no handoff, so its journey is the first half: publish, discovery, the chat. UI steps
  * run in the browser as each user; every state change is re-read through the
  * REST API as the acting user, so RLS is exercised as in the app.
  *
@@ -35,8 +36,10 @@ export interface WorldJourney {
    * The recipient's first action on the listing page: testID + Hebrew label fallback, and
    * the handoff status it produces — items and animal adoption reserve and wait for the owner (`reserved`),
    * the food quick claim is confirmed at once (`confirmed`, 0383; no owner approval step).
+   * Omitted for a kind that takes no handoff (a request, `kc_private.handoff_flow_of` is null):
+   * a member answers it in the chat on the post, so its journey ends at the chat step.
    */
-  readonly claim: { readonly testId: string; readonly label: string; readonly resultsIn: 'reserved' | 'confirmed' };
+  readonly claim?: { readonly testId: string; readonly label: string; readonly resultsIn: 'reserved' | 'confirmed' };
   /** The detail row the create form would collect (food: `expires_at`, `allergens`, `kosher`). */
   readonly details: () => Record<string, unknown>;
 }
@@ -113,7 +116,9 @@ async function expectHandoffStatus(
 
 /** Registers the serial two-user journey for one world. */
 export function defineWorldJourney(journey: WorldJourney): void {
-  test.describe.serial(`${journey.world} (${journey.kindSlug}): two-user giving journey`, () => {
+  // The title says which shape runs: the full handoff of an offer, or the chat-only half of a request.
+  const shape = journey.claim ? 'giving' : 'request';
+  test.describe.serial(`${journey.world} (${journey.kindSlug}): two-user ${shape} journey`, () => {
     let listingId = '';
     let title = '';
     let handoffId = '';
@@ -159,7 +164,14 @@ export function defineWorldJourney(journey: WorldJourney): void {
       await b.ctx.close();
     });
 
-    const claimed = journey.claim.resultsIn;
+    test.afterAll(async () => {
+      await cleanupE2eContent(USER_A);
+    });
+
+    // A kind without a handoff ends here: publish, discovery and the chat are its whole journey.
+    const claim = journey.claim;
+    if (!claim) return;
+    const claimed = claim.resultsIn;
 
     test(`user B claims it from the listing page; the handoff is ${claimed} for B`, async ({ browser }) => {
       expect(listingId, 'listing from the publish step').not.toBe('');
@@ -167,7 +179,7 @@ export function defineWorldJourney(journey: WorldJourney): void {
       const b = await openAs(browser, STORAGE_B);
       await gotoApp(b.page, listingPath());
       await expect(b.page.getByText(title).first()).toBeVisible();
-      await action(b.page, journey.claim.testId, journey.claim.label).click();
+      await action(b.page, claim.testId, claim.label).click();
       const row = await expectHandoffStatus(b.page, listingPath(), USER_B, listingId, claimed);
       await b.ctx.close();
 
@@ -232,10 +244,6 @@ export function defineWorldJourney(journey: WorldJourney): void {
         )
         .toEqual([5]);
       await b.ctx.close();
-    });
-
-    test.afterAll(async () => {
-      await cleanupE2eContent(USER_A);
     });
   });
 }

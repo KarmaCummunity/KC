@@ -1,13 +1,10 @@
-// Animals world (docs/spec/05_giving_worlds.md §5.9, D125): publish → found in the world feed and
-// the main feed → chat on the post → reserve → confirm → hand over → rate, two users (#1027).
+// Animals world (docs/spec/05_giving_worlds.md §5.9, D125), two users, all four kinds (#1027).
 // An adoption or foster offer takes the item handoff (kc_private.handoff_flow_of: 'request'), so
-// each journey is the items shape.
+// its journey is the items shape: publish → found in the world feed and the main feed → chat on
+// the post → reserve → confirm → hand over → rate. A request (looking to adopt, looking for
+// boarding) takes no handoff: a member answers it in the chat on the post, where its journey ends.
 import { test, expect } from '@playwright/test';
 import { expectNoRawI18nKeys, gotoApp } from '../lib/app';
-import { cleanupE2eContent, runTag, sessionFor } from '../lib/api';
-import { USER_A, USER_B } from '../lib/env';
-import { feedShows } from '../lib/postDiscovery';
-import { publishPostAs } from '../lib/publish';
 import { defineWorldJourney } from '../lib/worldJourney';
 
 // Handing an animal over for adoption.
@@ -31,25 +28,22 @@ defineWorldJourney({
   details: () => ({ species: 'cat', care_mode: 'full_boarding', location_mode: 'my_home', duration_days: 7 }),
 });
 
-// Looking to adopt (a request): it takes no handoff, so the journey is publish and discovery.
-test.describe.serial('animals (adoption_request): looking to adopt', () => {
-  test('user A asks to adopt; user B finds the request in the animals feed and the main feed', async () => {
-    const { id, title } = await publishPostAs(USER_A, {
-      world: 'animals',
-      kindSlug: 'adoption_request',
-      publish: 'plain',
-      title: `${runTag()} מחפשים לאמץ כלב`,
-      details: () => ({ species: 'dog', size: 'small' }),
-    });
-    const { session } = await sessionFor(USER_B);
-    const token = session.access_token as string;
-    await expect.poll(() => feedShows(token, id, title, 'animals'), { timeout: 30_000, message: 'animals feed' }).toBe(true);
-    await expect.poll(() => feedShows(token, id, title, null), { timeout: 30_000, message: 'main feed' }).toBe(true);
-  });
+// Looking to adopt: a request, answered in the chat on the post.
+defineWorldJourney({
+  world: 'animals',
+  kindSlug: 'adoption_request',
+  publish: 'plain',
+  titleHe: 'מחפשים לאמץ כלב',
+  details: () => ({ species: 'dog', size: 'small' }),
+});
 
-  test.afterAll(async () => {
-    await cleanupE2eContent(USER_A);
-  });
+// Looking for boarding / pet-sitting: the other request, with the care fields of the foster offer.
+defineWorldJourney({
+  world: 'animals',
+  kindSlug: 'foster_request',
+  publish: 'plain',
+  titleHe: 'מחפשים שמירה על חתול לסוף שבוע',
+  details: () => ({ species: 'cat', care_mode: 'pet_sitting', location_mode: 'owner_home' }),
 });
 
 // he/en RTL (#1027): the animals world reads left to right in English with every label translated.
