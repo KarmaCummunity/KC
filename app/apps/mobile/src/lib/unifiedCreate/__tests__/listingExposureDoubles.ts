@@ -12,6 +12,9 @@ export const postsCompositionDouble = {
     listPostActorIdentities: exposureSpies.listIdentities,
     upsertPostActorIdentity: exposureSpies.upsertIdentity,
   }),
+  // The edit path saves the mask through the same use cases as the items form.
+  getListPostActorIdentityUseCase: () => ({ execute: () => exposureSpies.listIdentities() }),
+  getUpsertPostActorIdentityUseCase: () => ({ execute: exposureSpies.upsertIdentity }),
 };
 
 export const userCompositionDouble = {

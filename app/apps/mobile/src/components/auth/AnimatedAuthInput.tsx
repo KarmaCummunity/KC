@@ -67,7 +67,12 @@ export const AnimatedAuthInput = forwardRef<UiTextInput, AnimatedAuthInputProps>
   const fieldRef = useRef<View>(null);
   // Callers keep getting the native input; the form scope reads it through the same ref.
   useImperativeHandle(ref, () => inputRef.current as UiTextInput);
-  const scope = useFormScopeField({ inputRef, viewRef: fieldRef, editable: rest.editable !== false });
+  const scope = useFormScopeField({
+    inputRef,
+    viewRef: fieldRef,
+    editable: rest.editable !== false,
+    multiline: rest.multiline === true,
+  });
   const { colors } = useTheme();
   const styles = useAnimatedAuthInputStyles();
   const [focused, setFocused] = useState(false);

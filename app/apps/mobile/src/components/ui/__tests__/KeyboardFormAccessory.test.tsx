@@ -30,6 +30,7 @@ describe('KeyboardFormAccessory', () => {
     const { getByLabelText, getByTestId } = render(
       <ThemeProvider mode="light" systemScheme="light" setMode={() => {}}>
         <KeyboardFormAccessory
+          nativeId="kc-form-keyboard-test"
           canGoPrev
           canGoNext
           onPrev={onPrev}
@@ -45,5 +46,22 @@ describe('KeyboardFormAccessory', () => {
     expect(onPrev).toHaveBeenCalledOnce();
     expect(onNext).toHaveBeenCalledOnce();
     expect(onDone).toHaveBeenCalledOnce();
+  });
+
+  it('mounts nothing on iOS when the form has a single field', () => {
+    const { queryByTestId } = render(
+      <ThemeProvider mode="light" systemScheme="light" setMode={() => {}}>
+        <KeyboardFormAccessory
+          nativeId="kc-form-keyboard-test"
+          enabled={false}
+          canGoPrev={false}
+          canGoNext={false}
+          onPrev={() => {}}
+          onNext={() => {}}
+          onDone={() => {}}
+        />
+      </ThemeProvider>,
+    );
+    expect(queryByTestId('input-accessory')).toBeNull();
   });
 });

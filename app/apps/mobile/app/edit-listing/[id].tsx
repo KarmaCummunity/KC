@@ -17,6 +17,7 @@ import { CreateFormHeaderPublishAction } from '../../src/components/CreatePostFo
 import { useKeyboardVerticalOffset } from '../../src/lib/platform/useKeyboardVerticalOffset';
 import { TAB_INLINE_FORM_HEADER_HEIGHT } from '../../src/lib/platform/formChromeHeights';
 import { EmptyState } from '../../src/components/EmptyState';
+import { postActorIdentityQueryKey } from '../../src/hooks/useListingExposure';
 import type { CreateDirection } from '../../src/lib/unifiedCreate/createCategories';
 import { resolveKeyboardAvoidingBehavior } from '../../src/lib/platform/keyboardVerticalOffset';
 
@@ -66,8 +67,14 @@ export default function EditListingScreen() {
   const onSaved = useCallback(() => {
     void queryClient.invalidateQueries({ queryKey: ['post', id] });
     void queryClient.invalidateQueries({ queryKey: ['feed'] });
+    // The audience and the mask may have changed: every list that filters on them refreshes,
+    // the same set the items edit refreshes.
+    for (const queryKey of [['my-posts'], ['my-hidden-open-posts'], ['profile-tab-open-count']]) {
+      void queryClient.invalidateQueries({ queryKey });
+    }
     if (listingId) {
       void queryClient.invalidateQueries({ queryKey: ['marketplace', 'detail', listingId] });
+      void queryClient.invalidateQueries({ queryKey: postActorIdentityQueryKey(listingId) });
     }
     router.back();
   }, [queryClient, id, listingId, router]);

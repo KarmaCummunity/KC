@@ -36,6 +36,7 @@ import { useListingFormSource } from './useListingFormSource';
 import { useListingStreetAddress } from './useListingStreetAddress';
 import { rideAutoTitle, withEventAddress, withEventOrg } from '../lib/unifiedCreate/listingCreateDetails';
 import { useListingExposure } from './useListingExposure';
+import { saveMaskOrWithdraw } from '../lib/unifiedCreate/saveMaskOrWithdraw';
 
 export { rideAutoTitle };
 
@@ -171,6 +172,7 @@ export function useListingCreateForm({
           details: submitted,
           cityId: isRides ? null : city?.id ?? null,
           ...(exposedLevel ? { locationDisplayLevel: exposedLevel } : {}),
+          visibility: exposure.visibility,
         });
         await exposure.saveIdentity(editListingId);
         await address.save(editListingId);
@@ -210,7 +212,7 @@ export function useListingCreateForm({
           locationDisplayLevel: exposedLevel,
         }),
       );
-      await exposure.saveIdentity(id);
+      await saveMaskOrWithdraw(id, exposure.saveIdentity);
       trackCoreLoop('listing_created', { world: worldSlug, cityId: city?.id ?? null });
       void trackActivationIfFirst({
         world: worldSlug,
@@ -270,7 +272,7 @@ export function useListingCreateForm({
     busy,
     error,
     publish,
-    canPublish: Boolean(userId && kind) && !busy && !source.loading && !address.loading,
+    canPublish: Boolean(userId && kind) && !busy && !source.loading && !address.loading && !exposure.loading,
     isEdit: Boolean(editListingId),
     /** The edit / republish source is loading. */
     editLoading: source.loading,
