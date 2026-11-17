@@ -20,6 +20,8 @@ export interface ImportReview {
   readonly truncated: boolean;
   /** Why no extraction ran (FR-IMPORT-008 AC3-AC4), for a "try later" note; null when it ran. */
   readonly limit: ImportLimitNote | null;
+  /** FR-IMPORT-008 AC1 — the member's open post this import repeats, linked from the notice. */
+  readonly duplicatePostId: string | null;
 }
 
 /** The refusals the member is told about; other manual reasons need no note. */
@@ -34,6 +36,7 @@ function reviewOf(draft: ImportDraft): ImportReview {
     confirmFields: draft.confirmFields,
     truncated: draft.truncated,
     limit: isLimitNote(draft.reason) ? draft.reason : null,
+    duplicatePostId: draft.duplicatePostId,
   };
 }
 

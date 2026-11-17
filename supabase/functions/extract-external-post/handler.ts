@@ -64,7 +64,7 @@ function parseBody(raw: unknown): Body | 'too_long' | null {
 
 /** A manual-route answer that never reached the pipeline (switched off, or a limit). */
 function refused(reason: Reason) {
-  return { importId: null, routing: 'manual' as const, reason, confidence: 0, extraction: null, confirmFields: [] as string[] };
+  return { importId: null, routing: 'manual' as const, reason, confidence: 0, extraction: null, confirmFields: [] as string[], duplicatePostId: null };
 }
 
 /** What the app gets: the draft and how sure we are, never the fingerprint or the raw text. */
@@ -100,14 +100,26 @@ async function limitReason(deps: HandlerDeps, member: AuthedMember): Promise<Lim
   );
 }
 
+/**
+ * The cross-post guard (FR-IMPORT-008 AC1): the member's open post this draft repeats, compared on
+ * the extracted title and description (what would become the post), or null. Only a post draft is
+ * checked; a manual route has nothing to compare.
+ */
+async function repeatedOpenPost(deps: HandlerDeps, member: AuthedMember, o: ExtractionOutcome): Promise<string | null> {
+  const e = o.extraction;
+  if (!e?.isPost) return null;
+  const text = [e.title, e.description].filter((part): part is string => !!part).join(' ').trim();
+  return text === '' ? null : deps.store.similarOpenPost(member.id, text);
+}
+
 /** The row kept for an attempt: no raw text, only the fingerprint and the validated extraction. */
-async function toRecord(member: AuthedMember, body: Body, o: ExtractionOutcome): Promise<ImportRecord> {
+async function toRecord(member: AuthedMember, body: Body, o: ExtractionOutcome, duplicatePostId: string | null): Promise<ImportRecord> {
   return {
     user_id: member.id, channel: body.channel, source_platform: body.sourcePlatform,
     text_fingerprint: o.fingerprint ?? await fingerprintFor(body.text),
     routing: o.routing, reason: o.reason, confidence: Math.round(o.confidence * 100) / 100,
     extraction: o.extraction, extraction_version: EXTRACTION_PROMPT_VERSION, model: o.model,
-    provider_called: o.providerCalled,
+    provider_called: o.providerCalled, duplicate_post_id: duplicatePostId,
   };
 }
 
@@ -143,8 +155,9 @@ export function createHandler(deps: HandlerDeps) {
         { provider: deps.provider, cache: deps.cache, resolvePlace: deps.resolvePlace, lists: await deps.loadLists(), now: deps.now },
         body.text,
       );
-      const importId = await deps.store.record(await toRecord(member, body, outcome));
-      return json(toResponse(importId, outcome), 200, headers);
+      const duplicatePostId = await repeatedOpenPost(deps, member, outcome);
+      const importId = await deps.store.record(await toRecord(member, body, outcome, duplicatePostId));
+      return json({ ...toResponse(importId, outcome), duplicatePostId }, 200, headers);
     } catch (error) {
       await deps.report(error, req);
       return json({ error: 'internal' }, 500, headers);

@@ -1,8 +1,10 @@
 // Mapped to spec: FR-IMPORT-007 AC2 — after an import the create form says it was filled from the
 // pasted message, that contact details were taken out, and which fields the pipeline was unsure
-// of, so the member checks them before publishing. Nothing shows on a form opened without an import.
+// of, so the member checks them before publishing; FR-IMPORT-008 AC1 — and links the member's open
+// post the import repeats. Nothing shows on a form opened without an import.
 import React from 'react';
-import { View } from 'react-native';
+import { TouchableOpacity, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { iconSize, makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
@@ -24,12 +26,14 @@ const useStyles = makeUseStyles(({ colors }) => ({
   lines: { flex: 1, gap: spacing.xs },
   title: { ...typography.body, color: colors.textPrimary },
   line: { ...typography.caption, color: colors.textSecondary },
+  link: { ...typography.caption, ...typography.bold, color: colors.primary },
 }));
 
 export function ImportReviewNotice() {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const styles = useStyles();
+  const router = useRouter();
   const review = useImportDraftStore((s) => s.review);
   if (!review) return null;
 
@@ -45,6 +49,17 @@ export function ImportReviewNotice() {
         {review.removedContacts ? <Text style={styles.line} testID="import-review-removed">{t('postImport.reviewRemoved')}</Text> : null}
         {review.truncated ? <Text style={styles.line} testID="import-review-truncated">{t('postImport.reviewTruncated')}</Text> : null}
         {review.limit ? <Text style={styles.line} testID="import-review-limit">{t(`postImport.limits.${review.limit}`)}</Text> : null}
+        {review.duplicatePostId ? (
+          // FR-IMPORT-008 AC1: publishing anyway is allowed; the member may prefer the post they have.
+          <TouchableOpacity
+            testID="import-review-duplicate"
+            accessibilityRole="link"
+            onPress={() => router.push(`/post/${review.duplicatePostId}`)}
+          >
+            <Text style={styles.line}>{t('postImport.reviewDuplicate')}</Text>
+            <Text style={styles.link}>{t('postImport.reviewDuplicateOpen')}</Text>
+          </TouchableOpacity>
+        ) : null}
       </View>
     </View>
   );

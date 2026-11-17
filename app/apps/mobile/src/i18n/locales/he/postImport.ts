@@ -17,6 +17,8 @@ export const postImport = {
   reviewTitle: 'הטופס מולא מתוך ההודעה שהדבקתם. בדקו אותו לפני הפרסום.',
   reviewRemoved: 'הסרנו מהטקסט פרטי קשר כמו טלפון ומייל. בצ\'אט של KC אפשר לתאם בלי לחשוף אותם.',
   reviewTruncated: 'ההודעה ארוכה, ולכן קראנו רק את ההתחלה שלה.',
+  reviewDuplicate: 'כבר יש לכם פוסט פתוח דומה. אפשר לפרסם שוב, או להשאיר את הקיים.',
+  reviewDuplicateOpen: 'לפוסט הקיים',
   reviewCheck: 'כדאי לבדוק במיוחד: {{fields}}',
   fields: {
     world: 'תחום',

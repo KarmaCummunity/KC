@@ -72,6 +72,13 @@ describe('parseImportDraft', () => {
     expect(d.confidence).toBe(0);
   });
 
+  // FR-IMPORT-008 AC1 — the cross-post guard's match.
+  it('reads the open post the text repeats, and nothing when there is none', () => {
+    expect(parseImportDraft({ ...wire, duplicatePostId: 'post-9' }).duplicatePostId).toBe('post-9');
+    expect(parseImportDraft(wire).duplicatePostId).toBeNull();
+    expect(parseImportDraft({ ...wire, duplicatePostId: 42 }).duplicatePostId).toBeNull();
+  });
+
   it('an unknown enum value becomes its safe default', () => {
     const d = parseImportDraft({ ...wire, extraction: { ...wireExtraction, direction: 'sell', time: { kind: 'later' } } });
     expect(d.extraction?.direction).toBe('unknown');

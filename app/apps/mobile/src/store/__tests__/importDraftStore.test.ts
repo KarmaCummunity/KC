@@ -49,7 +49,7 @@ describe('importDraftStore', () => {
     };
     useImportDraftStore.getState().hold(draft, 'text');
     useImportDraftStore.getState().take();
-    expect(useImportDraftStore.getState().review).toEqual({ removedContacts: true, confirmFields: ['city'], truncated: false, limit: null });
+    expect(useImportDraftStore.getState().review).toEqual({ removedContacts: true, confirmFields: ['city'], truncated: false, limit: null, duplicatePostId: null });
   });
 
   it('nothing removed means no contact notice', () => {

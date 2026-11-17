@@ -16,10 +16,10 @@ const answer = {
 };
 const city: PlaceCandidate = { level: 'city', placeId: '5000', nameHe: 'x', cityId: '5000', score: 0.9, margin: 0.5 };
 
-interface Spy { records: ImportRecord[]; providerCalls: number; counts: { hour: number; day: number; calls: number }; removals: Date[]; removalsSince: string[] }
+interface Spy { records: ImportRecord[]; providerCalls: number; counts: { hour: number; day: number; calls: number }; removals: Date[]; removalsSince: string[]; similar: string | null; similarTexts: string[] }
 
 function setup(overrides: Partial<HandlerDeps> = {}, spy: Partial<Spy> = {}) {
-  const state: Spy = { records: [], providerCalls: 0, counts: { hour: 0, day: 0, calls: 0 }, removals: [], removalsSince: [], ...spy };
+  const state: Spy = { records: [], providerCalls: 0, counts: { hour: 0, day: 0, calls: 0 }, removals: [], removalsSince: [], similar: null, similarTexts: [], ...spy };
   const deps: HandlerDeps = {
     authenticate: () => Promise.resolve(MEMBER),
     isEnabled: () => Promise.resolve(true),
@@ -27,6 +27,7 @@ function setup(overrides: Partial<HandlerDeps> = {}, spy: Partial<Spy> = {}) {
       attemptsSince: (_u, since) => Promise.resolve(Date.parse(since) > NOW.getTime() - 2 * 3600_000 ? state.counts.hour : state.counts.day),
       providerCallsSince: () => Promise.resolve(state.counts.calls),
       moderationRemovalsSince: (_u, since) => { state.removalsSince.push(since); return Promise.resolve(state.removals); },
+      similarOpenPost: (_u, text) => { state.similarTexts.push(text); return Promise.resolve(state.similar); },
       record: (row) => { state.records.push(row); return Promise.resolve('import-1'); },
     },
     cache: { get: () => Promise.resolve(null), put: () => Promise.resolve() },
@@ -111,10 +112,36 @@ Deno.test('a failed removals read is a 500, never an open lockout', async () => 
       attemptsSince: () => Promise.resolve(0),
       providerCallsSince: () => Promise.resolve(0),
       moderationRemovalsSince: () => Promise.reject(new Error('down')),
+      similarOpenPost: () => Promise.resolve(null),
       record: () => Promise.resolve('x'),
     },
   });
   assertEquals((await handler(post({ text: TEXT }))).status, 500);
+});
+
+// FR-IMPORT-008 AC1 — the cross-post guard.
+Deno.test('a draft that repeats an open post of the member names it, and the record keeps the mark', async () => {
+  const { handler, state } = setup({}, { similar: 'post-9' });
+  const body = await (await handler(post({ text: TEXT }))).json();
+  assertEquals(body.duplicatePostId, 'post-9');
+  assertEquals(state.records[0].duplicate_post_id, 'post-9');
+  // Compared on what would become the post: the extracted title and description.
+  assertEquals(state.similarTexts.length, 1);
+  assert(state.similarTexts[0].length > 0);
+});
+
+Deno.test('no similar open post is no warning', async () => {
+  const { handler, state } = setup();
+  const body = await (await handler(post({ text: TEXT }))).json();
+  assertEquals(body.duplicatePostId, null);
+  assertEquals(state.records[0].duplicate_post_id, null);
+});
+
+Deno.test('a refused attempt is not compared', async () => {
+  const { handler, state } = setup({}, { counts: { hour: 5, day: 0, calls: 0 } });
+  const body = await (await handler(post({ text: TEXT }))).json();
+  assertEquals([body.reason, body.duplicatePostId], ['rate_limited', null]);
+  assertEquals(state.similarTexts, []);
 });
 
 Deno.test('a good share returns the draft and records the attempt without any raw text', async () => {
@@ -165,6 +192,7 @@ Deno.test('a failing store is a 500 that leaks nothing', async () => {
       attemptsSince: () => Promise.reject(new Error('secret connection string')),
       providerCallsSince: () => Promise.resolve(0),
       moderationRemovalsSince: () => Promise.resolve([]),
+      similarOpenPost: () => Promise.resolve(null),
       record: () => Promise.resolve('x'),
     },
   });

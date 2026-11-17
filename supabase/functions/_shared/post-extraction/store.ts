@@ -6,6 +6,9 @@
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 import type { ExtractionCache } from './extractPost.ts';
 
+/** The similarity from which an import counts as repeating one of the member's open posts (AC1). */
+export const CROSS_POST_MIN_SIMILARITY = 0.8;
+
 /** How long a cached answer is reused (FR-IMPORT-008 AC2). */
 export const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
@@ -22,6 +25,8 @@ export interface ImportRecord {
   extraction_version: string;
   model: string | null;
   provider_called: boolean;
+  /** The member's open post this import repeats, when the cross-post guard found one (AC1). */
+  duplicate_post_id: string | null;
 }
 
 export interface ImportStore {
@@ -29,6 +34,8 @@ export interface ImportStore {
   attemptsSince(userId: string, sinceIso: string): Promise<number>;
   /** Model calls by everyone since the instant (the daily budget). */
   providerCallsSince(sinceIso: string): Promise<number>;
+  /** The member's open post the text repeats (trigram similarity at or above the guard), or null (AC1). */
+  similarOpenPost(userId: string, text: string): Promise<string | null>;
   /** When moderation removed the member's imported posts since the instant (the lockout, AC4). */
   moderationRemovalsSince(userId: string, sinceIso: string): Promise<Date[]>;
   /** Stores one attempt and returns its id. */
@@ -48,6 +55,12 @@ export function supabaseImportStore(svc: SupabaseClient): ImportStore {
       count(imports().select('id', { count: 'exact', head: true }).eq('user_id', userId).gte('created_at', sinceIso)),
     providerCallsSince: (sinceIso) =>
       count(imports().select('id', { count: 'exact', head: true }).eq('provider_called', true).gte('created_at', sinceIso)),
+    async similarOpenPost(userId, text) {
+      const { data, error } = await svc.rpc('import_similar_open_post', { p_user_id: userId, p_text: text, p_min: CROSS_POST_MIN_SIMILARITY });
+      if (error) throw new Error(`import store: ${error.message}`);
+      const row = ((data as { post_id: string }[] | null) ?? [])[0];
+      return row?.post_id ?? null;
+    },
     async moderationRemovalsSince(userId, sinceIso) {
       const { data, error } = await svc.rpc('import_moderation_removals', { p_user_id: userId, p_since: sinceIso });
       // A failed read is an error, not "no removals": the lockout must not silently open.

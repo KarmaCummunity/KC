@@ -62,13 +62,15 @@ export interface ImportDraft {
   /** What the scrub removed, for the "contact details were removed" notice. */
   readonly removed: { readonly phone: number; readonly email: number; readonly id: number; readonly url: number } | null;
   readonly truncated: boolean;
+  /** FR-IMPORT-008 AC1 — the member's open post this text repeats; null when none. */
+  readonly duplicatePostId: string | null;
 }
 
 /** The empty draft: nothing extracted, the member fills the create form themselves. */
 export function manualImportDraft(reason: string): ImportDraft {
   return {
     importId: null, routing: 'manual', reason, confidence: 0, extraction: null, city: null, street: null,
-    ride: null, time: null, confirmFields: [], removed: null, truncated: false,
+    ride: null, time: null, confirmFields: [], removed: null, truncated: false, duplicatePostId: null,
   };
 }
 
@@ -166,5 +168,6 @@ export function parseImportDraft(raw: unknown): ImportDraft {
     importId: str(raw.importId), routing: usable ? routing : 'manual', reason: str(raw.reason) ?? 'ok', confidence: num(raw.confidence),
     extraction: usable ? extraction : null, city: parsePlace(raw.city), street: parsePlace(raw.street), ride: parseRide(raw.ride),
     time: parseTime(raw.time), confirmFields: strings(raw.confirmFields), removed: parseRemoved(raw.removed), truncated: raw.truncated === true,
+    duplicatePostId: str(raw.duplicatePostId),
   };
 }
