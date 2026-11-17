@@ -9,7 +9,7 @@ import {
 } from '@kc/domain';
 import type { AdminAuditSearchFilters } from '@kc/application';
 import { makeUseStyles, radius, spacing, Text, typography } from '@kc/ui';
-import { TextField } from '../../../src/components/ui/TextField';
+import { AdminDateField } from '../../../src/components/admin/AdminDateField';
 import { useAdminRoles } from '../../../src/hooks/useAdminRoles';
 import { useAdminAuditSearch } from '../../../src/hooks/useAdminContentSearch';
 import { AuditLogRow } from '../../../src/components/admin/content/AuditLogRow';
@@ -162,20 +162,9 @@ export default function AuditScreen() {
               value={action ?? '__all__'}
               onChange={(val) => setAction(val === '__all__' || val === null ? null : val)}
             />
-            <TextField
-              label={L.admin.content.dateFromLabel}
-              value={fromRaw}
-              onChangeText={setFromRaw}
-              placeholder="YYYY-MM-DD"
-              inputKind="date"
-            />
-            <TextField
-              label={L.admin.content.dateToLabel}
-              value={toRaw}
-              onChangeText={setToRaw}
-              placeholder="YYYY-MM-DD"
-              inputKind="date"
-            />
+            {/* Picked, not typed (FR-RESP-006 AC31); cleared by the sheet's "clear filters". */}
+            <AdminDateField label={L.admin.content.dateFromLabel} value={fromRaw} onChange={setFromRaw} />
+            <AdminDateField label={L.admin.content.dateToLabel} value={toRaw} onChange={setToRaw} />
           </>
         )}
       />

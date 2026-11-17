@@ -1,13 +1,17 @@
-// FR-FIN-003 — bottom-sheet modal to create / edit a financial account.
+// FR-FIN-003 — bottom sheet to create / edit a financial account, on the kit sheet (its own form
+// scope: keyboard Next / Previous, jump to a problem) with the shared chip row and date picker.
 import { useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { View } from 'react-native';
 import { useMutation } from '@tanstack/react-query';
 import {
   FINANCE_ACCOUNT_KINDS, isFinanceLedgerError,
   type FinanceAccount, type FinanceAccountKind,
 } from '@kc/domain';
-import { makeUseStyles, radius, spacing, Text, typography } from '@kc/ui';
-import { AdminFilterChip } from '../AdminFilterChip';
+import { makeUseStyles, spacing } from '@kc/ui';
+import { BottomSheet } from '../../ui/BottomSheet';
+import { FormSection } from '../../ui/FormSection';
+import { FilterChipRow } from '../../filterKit/FilterChipRow';
+import { AdminDateField } from '../AdminDateField';
 import { AdminFormField } from '../AdminFormField';
 import { AdminFormActions } from '../AdminFormActions';
 import { container } from '../../../lib/container';
@@ -57,49 +61,44 @@ export function FinanceAccountFormModal({ initial, onClose, onSaved }: FinanceAc
     },
   });
 
+  const submit = () => { setErrorMsg(null); void save.mutateAsync().catch(() => undefined); };
+
   return (
-    <View style={styles.backdrop} pointerEvents="box-none">
-      <ScrollView style={styles.sheet} contentContainerStyle={styles.content}>
-        <Text style={styles.title}>{initial ? f.editTitle : f.createTitle}</Text>
-
-        <AdminFormField label={f.nameLabel} value={name} onChange={setName} />
-
-        <Text style={styles.label}>{f.kindLabel}</Text>
-        <View style={styles.optionsRow}>
-          {FINANCE_ACCOUNT_KINDS.map((k) => (
-            <AdminFilterChip key={k} label={t.accounts.kind[k]} active={kind === k} onPress={() => setKind(k)} />
-          ))}
-        </View>
-
-        {kind === 'bank' && <AdminFormField label={f.last4Label} value={last4} onChange={setLast4} keyboardNumeric />}
-        <AdminFormField label={f.openingBalanceLabel} value={opening} onChange={setOpening} keyboardNumeric />
-        <AdminFormField label={f.openingDateLabel} value={openingDate} onChange={setOpeningDate} />
-
+    <BottomSheet
+      visible
+      onDismiss={onClose}
+      dismissible={!save.isPending}
+      title={initial ? f.editTitle : f.createTitle}
+      testID="finance-account-form"
+      footer={
         <AdminFormActions
           cancelLabel={f.cancel}
           submitLabel={f.submit}
           submittingLabel={f.submitting}
           isPending={save.isPending}
           onCancel={onClose}
-          onSubmit={() => { setErrorMsg(null); void save.mutateAsync().catch(() => undefined); }}
+          onSubmit={submit}
           errorMsg={errorMsg}
         />
-      </ScrollView>
-    </View>
+      }
+    >
+      <View style={styles.content}>
+        <AdminFormField label={f.nameLabel} value={name} onChange={setName} required />
+        <FormSection label={f.kindLabel}>
+          <FilterChipRow<FinanceAccountKind>
+            options={FINANCE_ACCOUNT_KINDS.map((k) => ({ value: k, label: t.accounts.kind[k] }))}
+            value={kind}
+            onChange={(next) => next && setKind(next)}
+          />
+        </FormSection>
+        {kind === 'bank' && <AdminFormField label={f.last4Label} value={last4} onChange={setLast4} inputKind="integer" />}
+        <AdminFormField label={f.openingBalanceLabel} value={opening} onChange={setOpening} inputKind="decimal" />
+        <AdminDateField label={f.openingDateLabel} value={openingDate} onChange={setOpeningDate} />
+      </View>
+    </BottomSheet>
   );
 }
 
-const useStyles = makeUseStyles(({ colors }) => ({
-  backdrop: {
-    position: 'absolute', top: 0, start: 0, end: 0, bottom: 0,
-    backgroundColor: colors.overlay, justifyContent: 'flex-end',
-  },
-  sheet: {
-    maxHeight: '90%', backgroundColor: colors.surface,
-    borderTopStartRadius: radius.lg, borderTopEndRadius: radius.lg,
-  },
-  content: { padding: spacing.base, gap: spacing.md },
-  title: { ...typography.h3, ...typography.bold, color: colors.textPrimary },
-  label: { ...typography.label, color: colors.textSecondary },
-  optionsRow: { flexDirection: 'row', gap: spacing.xs, flexWrap: 'wrap' },
+const useStyles = makeUseStyles(() => ({
+  content: { gap: spacing.md },
 }));

@@ -57,17 +57,6 @@ export const useCreatePostStyles = makeUseStyles(({ colors, isDark }) => ({
   section: { gap: spacing.xs },
   sectionLabel: { ...typography.label, color: colors.textSecondary, textAlign: rtlTextAlignStart },
   required: { color: colors.error },
-  input: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: isDark ? 1 : 1.5,
-    borderColor: colors.border,
-    paddingHorizontal: spacing.base,
-    paddingVertical: spacing.md,
-    ...typography.body,
-    color: colors.textPrimary,
-    minHeight: 52,
-  },
   textarea: { minHeight: 100, textAlignVertical: 'top' as const, paddingTop: spacing.md },
   charCount: { ...typography.caption, color: colors.textDisabled, textAlign: rtlTextAlignEnd },
   sectionHint: {
@@ -77,9 +66,6 @@ export const useCreatePostStyles = makeUseStyles(({ colors, isDark }) => ({
     lineHeight: 18,
     ...layoutWritingDirectionStyle(),
   },
-  streetRow: { flexDirection: 'row' as const, gap: spacing.sm, alignItems: 'stretch' as const },
-  streetInputStreet: { flex: 2, minWidth: 0 },
-  streetInputHouse: { flex: 1, minWidth: 0, maxWidth: 120 },
   exposureAccordion: {
     borderRadius: radius.lg,
     borderWidth: 1,

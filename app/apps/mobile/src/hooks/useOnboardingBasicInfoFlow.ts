@@ -1,15 +1,15 @@
-// FR-AUTH-010 — basic-info step state + save/skip (keeps screen file under arch line cap).
+// FR-AUTH-010 — basic-info step state + save/skip (keeps screen file under arch line cap). A rejected
+// Continue marks each field it is about under that field and jumps to the first (FR-RESP-006 AC29).
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRouter } from 'expo-router';
-import { dateOfBirthIssue } from '@kc/domain';
 import { useAuthStore } from '../store/authStore';
 import { useFeedSessionStore } from '../store/feedSessionStore';
 import { useOnboardingReplayStore } from '../store/onboardingReplayStore';
 import { getCompleteBasicInfoUseCase, markBasicInfoSkipped } from '../services/userComposition';
 import { mapEditProfileSaveError } from '../lib/editProfileSaveErrors';
-import { getProfileAddressPairIssue } from '../lib/profileAddressFieldGate';
 import { useAddressStateWithCityReset } from './useAddressStateWithCityReset';
+import { useProfileFieldErrors } from './useProfileFieldErrors';
 
 export function useOnboardingBasicInfoFlow() {
   const { t } = useTranslation();
@@ -27,19 +27,10 @@ export function useOnboardingBasicInfoFlow() {
   // FR-ADMIN-035: in an admin replay the step validates and moves on but saves nothing.
   const replayActive = useOnboardingReplayStore((s) => s.active);
 
-  const addressIssue = getProfileAddressPairIssue(street, streetNumber);
-  const hasRequiredFields =
-    displayName.trim().length > 0 && city !== null && dateOfBirth !== null && dateOfBirthIssue(dateOfBirth, new Date()) === null;
-  const canSubmit = hasRequiredFields && addressIssue === null;
-
-  const showAddressToast = () => {
-    if (!addressIssue) return;
-    useFeedSessionStore.getState().showEphemeralToast(
-      mapEditProfileSaveError(addressIssue),
-      'error',
-      2800,
-    );
-  };
+  // The date of birth is required here (FR-AUTH-010 AC2.d), so it is always checked.
+  const { fieldErrors, failedSubmitCount, acceptSubmit } = useProfileFieldErrors({
+    displayName, cityId: city?.id ?? null, street, streetNumber, contactPhone, dateOfBirth, dateOfBirthChanged: true,
+  });
 
   const handleBack = () => {
     if (loading) return;
@@ -55,14 +46,8 @@ export function useOnboardingBasicInfoFlow() {
       );
       return;
     }
-    if (!hasRequiredFields || !city || !dateOfBirth) {
-      useFeedSessionStore.getState().showEphemeralToast(t('onboarding.fillNameAndCity'), 'error', 2500);
-      return;
-    }
-    if (!canSubmit) {
-      showAddressToast();
-      return;
-    }
+    // City and date are among the field errors; repeated so the save below has them.
+    if (!acceptSubmit() || !city || !dateOfBirth) return;
     if (replayActive) {
       router.replace('/(onboarding)/photo');
       return;
@@ -125,8 +110,8 @@ export function useOnboardingBasicInfoFlow() {
     dateOfBirth,
     setDateOfBirth,
     loading,
-    hasRequiredFields,
-    canSubmit,
+    fieldErrors,
+    failedSubmitCount,
     handleBack,
     handleContinue,
     handleSkip,

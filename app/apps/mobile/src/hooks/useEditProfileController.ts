@@ -1,10 +1,10 @@
-// FR-PROFILE-007 + FR-VERIFY-012 — edit-profile state, load, and save.
+// FR-PROFILE-007 + FR-VERIFY-012 — edit-profile state, load, and save. A rejected save marks each
+// field it is about under that field (FR-RESP-006 AC29); the messages follow the values until fixed.
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import type { AuthSession } from '@kc/application';
-import { dateOfBirthIssue } from '@kc/domain';
 import {
   getEditableProfile,
   getSetDateOfBirthUseCase,
@@ -15,6 +15,7 @@ import {
 import { useAuthStore } from '../store/authStore';
 import { removeUploadedAvatar } from '../services/avatarUpload';
 import { mapEditProfileSaveError } from '../lib/editProfileSaveErrors';
+import { useProfileFieldErrors } from './useProfileFieldErrors';
 
 export type EditProfileInitialState = {
   readonly displayName: string | null;
@@ -106,49 +107,18 @@ export function useEditProfileController(
     );
   }, [initial, displayName, city, biography, avatarUrl, street, streetNumber, contactPhone, dateOfBirth]);
 
+  const dobChanged = initial !== null && dateOfBirth !== (initial.dateOfBirth ?? null);
+  const { fieldErrors, failedSubmitCount, acceptSubmit } = useProfileFieldErrors({
+    displayName, cityId: city?.id ?? null, street, streetNumber, contactPhone, dateOfBirth, dateOfBirthChanged: dobChanged,
+  });
+
   const handleSave = useCallback(async () => {
     if (!session || !initial) return;
-    if (displayName.trim().length === 0 || displayName.trim().length > 50) {
-      setNotify({ title: t('profile.editScreen.invalidNameTitle'), message: t('profile.editScreen.invalidNameMessage') });
-      return;
-    }
-    if (!city) {
-      setNotify({ title: t('profile.editScreen.missingCityTitle'), message: t('profile.editScreen.missingCityMessage') });
-      return;
-    }
+    // A missing city is one of the field errors; `!city` is repeated so the save below knows the city.
+    if (!acceptSubmit() || !city) return;
     const ts = street.trim();
     const tn = streetNumber.trim();
-    const addrTitle = t('profile.editScreen.incompleteAddressTitle');
-    if (ts.length > 0 && tn.length === 0) {
-      setNotify({ title: addrTitle, message: t('profile.editScreen.incompleteAddressMessageNumber') });
-      return;
-    }
-    if (tn.length > 0 && ts.length === 0) {
-      setNotify({ title: addrTitle, message: t('profile.editScreen.incompleteAddressMessageStreet') });
-      return;
-    }
     const tp = contactPhone.trim();
-    if (tp.length > 20) {
-      setNotify({
-        title: t('profile.editScreen.invalidContactPhoneTitle'),
-        message: t('profile.editScreen.invalidContactPhoneMessage'),
-      });
-      return;
-    }
-    const dobChanged = dateOfBirth !== (initial.dateOfBirth ?? null);
-    if (dobChanged) {
-      if (!dateOfBirth || dateOfBirthIssue(dateOfBirth, new Date())) {
-        setNotify({
-          title: t('profile.editScreen.saveFailedTitle'),
-          message: t(
-            dateOfBirthIssue(dateOfBirth ?? '', new Date()) === 'underage'
-              ? 'dateOfBirth.errors.underage'
-              : 'dateOfBirth.errors.invalid',
-          ),
-        });
-        return;
-      }
-    }
     setSaving(true);
     try {
       const trimmedName = displayName.trim();
@@ -209,7 +179,7 @@ export function useEditProfileController(
     }
   }, [
     session, initial, displayName, city, street, streetNumber, contactPhone, biography,
-    avatarUrl, dateOfBirth, t, router, queryClient, setSession,
+    avatarUrl, dateOfBirth, dobChanged, acceptSubmit, t, router, queryClient, setSession,
   ]);
 
   return {
@@ -232,6 +202,8 @@ export function useEditProfileController(
     dateOfBirth,
     setDateOfBirth,
     isDirty,
+    fieldErrors,
+    failedSubmitCount,
     notify,
     setNotify,
     handleSave,
