@@ -36,6 +36,8 @@ import { useListingFormSource } from './useListingFormSource';
 import { useListingStreetAddress } from './useListingStreetAddress';
 import { rideAutoTitle, withEventAddress, withEventOrg } from '../lib/unifiedCreate/listingCreateDetails';
 import { useListingExposure } from './useListingExposure';
+import { withJobOfferOrg } from '../lib/unifiedCreate/jobOfferOrg';
+import { useJobOfferOrgChoice } from './useJobOfferOrgChoice';
 
 export { rideAutoTitle };
 
@@ -84,6 +86,8 @@ export function useListingCreateForm({
     [kindsQuery.data, direction, eventChoice.isEvent, chosenKindSlug],
   );
   const specs = useMemo(() => (kind ? fieldsForKind(kind) : []), [kind]);
+  // A new job offer names an organization allowed to post jobs (§5.11, #1476); an edit keeps its own.
+  const jobOfferOrg = useJobOfferOrgChoice(worldSlug, editListingId ? null : kind?.slug);
 
   const [details, setDetails] = useState<Record<string, unknown>>({});
   const [city, setCity] = useState<City | null>(null);
@@ -138,7 +142,7 @@ export function useListingCreateForm({
   // The red outline goes away as soon as the member edits the form again.
   useEffect(() => {
     setError(null);
-  }, [title, details, city, street, streetNumber, recurrence, houseNumbers, eventChoice.orgId]);
+  }, [title, details, city, street, streetNumber, recurrence, houseNumbers, eventChoice.orgId, jobOfferOrg.orgId]);
   const showSubcategory = WORLDS_WITH_SUBCATEGORY_PICKER.includes(worldSlug);
   const effectiveTitle = isRides
     ? rideAutoTitle(details, (origin, dest) => t('post.unifiedCreate.rideAutoTitle', { origin, dest })) ||
@@ -149,6 +153,7 @@ export function useListingCreateForm({
   const validate = (submitted: Record<string, unknown>): ListingFormProblem | null =>
     firstListingProblem({
       t, submitted, worldSlug, direction, kind, specs, details, city, effectiveTitle, isRides, eventChoice,
+      jobOfferOrg,
       addressProblem: address.problem(), editListingId, photoCount,
       subcategoryId: showSubcategory ? subcategoryId : undefined, recurrence, eventSeries, houseNumbers,
     });
@@ -157,7 +162,10 @@ export function useListingCreateForm({
     if (!userId || !kind || busy || publishLock.current) return;
     if (source.loading) return;
     const timed = isRides && !editListingId && leaveNow ? withLeaveNowDeparture(details, new Date()) : details;
-    const submitted = withEventAddress(withEventOrg(detailsForSubmit(specs, timed), eventChoice), address.label);
+    const submitted = withJobOfferOrg(
+      withEventAddress(withEventOrg(detailsForSubmit(specs, timed), eventChoice), address.label),
+      jobOfferOrg,
+    );
     const problem = validate(submitted);
     setError(problem);
     if (problem) return;
@@ -263,6 +271,7 @@ export function useListingCreateForm({
     houseNumbers,
     setHouseNumbers,
     eventChoice,
+    jobOfferOrg,
     showSubcategory,
     isRides,
     /** The form publishes an event, which may recur (FR-POST-024). */

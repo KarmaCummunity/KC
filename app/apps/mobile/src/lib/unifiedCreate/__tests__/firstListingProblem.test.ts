@@ -12,6 +12,7 @@ const t = ((key: string, o?: { field?: string }) => (o?.field ? `${key}:${o.fiel
 const valid = (): ListingProblemInput => ({
   t, submitted: {}, worldSlug: 'time', direction: 'give', kind: null, specs: [], details: {},
   city: { id: '7000' }, effectiveTitle: 'A fine title', isRides: false, eventChoice: { isOrgEvent: false, orgId: null },
+  jobOfferOrg: { required: false, loaded: true, organizations: [], orgId: null },
   addressProblem: null, editListingId: null, photoCount: 0, subcategoryId: undefined,
   recurrence: null, eventSeries: null, houseNumbers: {},
 });
@@ -35,6 +36,18 @@ describe('firstListingProblem', () => {
     expect(firstListingProblem({ ...valid(), eventChoice: { isOrgEvent: true, orgId: null } })).toEqual({
       message: 'eventPost.create.orgRequired', field: 'org',
     });
+  });
+
+  it('asks for the organization of a job offer, or says none may post jobs (§5.11)', () => {
+    const allowed = { orgId: 'o1', name: 'Employer', mayPostJobs: true };
+    const jobOffer = (orgs: (typeof allowed)[], orgId: string | null) => ({
+      ...valid(), jobOfferOrg: { required: true, loaded: true, organizations: orgs, orgId },
+    });
+    expect(firstListingProblem(jobOffer([allowed, { ...allowed, orgId: 'o2' }], null))).toEqual({
+      message: 'jobOffer.create.orgRequired', field: 'org',
+    });
+    expect(firstListingProblem(jobOffer([], null))).toEqual({ message: 'jobOffer.create.noEligibleOrg', field: 'org' });
+    expect(firstListingProblem(jobOffer([allowed], 'o1'))).toBeNull();
   });
 
   it('asks for a city on the city field, except for a ride', () => {

@@ -14,7 +14,7 @@ import {
 } from '../eventRegistrationUseCases';
 
 const mine = { handoffId: 'h1', status: 'confirmed', reservedAt: '2026-11-01T00:00:00Z', confirmedAt: null };
-const orgs = [{ orgId: 'o1', name: 'Food bank' }];
+const orgs = [{ orgId: 'o1', name: 'Food bank', mayPostJobs: false }];
 
 function makeRepo() {
   const repo = {

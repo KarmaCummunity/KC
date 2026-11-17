@@ -91,6 +91,8 @@ export const marketplaceErrors = {
   // Organization events (0563).
   event_org_required: 'Only a member of the organization can publish its event. Pick one of your organizations.',
   verification_required: 'This event is open to verified members only. Verify your account and try again.',
+  // Job offers (§5.11, #1476).
+  job_offer_org_required: 'A job offer is published only for an organization approved to post jobs. Choose one.',
   not_owner: 'Only the event organizer can do that.',
   event_not_started: 'Attendance can be marked once the event has started.',
   invalid_transition: 'This registration was already updated. Refresh and try again.',

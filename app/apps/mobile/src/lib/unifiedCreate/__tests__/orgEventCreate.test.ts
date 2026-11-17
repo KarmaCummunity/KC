@@ -7,8 +7,8 @@ import {
 import { KINDS_BY_WORLD } from './listingKindFixtures';
 
 const TIME = KINDS_BY_WORLD.time!;
-const ONE_ORG = [{ orgId: 'o1', name: 'Food bank' }];
-const TWO_ORGS = [...ONE_ORG, { orgId: 'o2', name: 'Shelter' }];
+const ONE_ORG = [{ orgId: 'o1', name: 'Food bank', mayPostJobs: false }];
+const TWO_ORGS = [...ONE_ORG, { orgId: 'o2', name: 'Shelter', mayPostJobs: false }];
 
 describe('canChooseOrgEvent', () => {
   it('offers the event to a member of an organization making an offer', () => {

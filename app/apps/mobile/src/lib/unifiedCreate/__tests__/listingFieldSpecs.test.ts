@@ -30,7 +30,9 @@ describe('listing field specs — per kind', () => {
 
   it('every rendered key exists in the kind schema (the server rejects unknown keys)', () => {
     for (const kind of ALL_KINDS) {
-      const props = (kind.detailSchema as { properties: Record<string, unknown> }).properties;
+      const props = (kind.detailSchema as { properties?: Record<string, unknown> }).properties;
+      // An open schema (no properties, e.g. the employment kinds) has no unknown keys to reject.
+      if (!props) continue;
       for (const spec of fieldsForKind(kind)) expect(Object.keys(props)).toContain(spec.key);
     }
   });

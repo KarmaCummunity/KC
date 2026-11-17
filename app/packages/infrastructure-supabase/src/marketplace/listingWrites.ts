@@ -138,5 +138,11 @@ export async function createListing(client: Client, input: CreateInput): Promise
     await recordPhotos(client, postId, ownerId, input.media ?? [], 0);
     return postId;
   }
-  return createPlain(client, ownerId, postDocument(input, kind, direction, cityId), input, freeDetails(form, 'plain'));
+  // A post in an organization's name (a job offer, §5.11) names it from the insert: the server
+  // judges a job offer when it is published, so the organization must already be set by then.
+  const orgId = typeof form['org_id'] === 'string' ? form['org_id'] : null;
+  const post = postDocument(input, kind, direction, cityId);
+  const plainDetails = freeDetails(form, 'plain');
+  delete plainDetails['org_id'];
+  return createPlain(client, ownerId, orgId ? { ...post, beneficiary_org_id: orgId } : post, input, plainDetails);
 }

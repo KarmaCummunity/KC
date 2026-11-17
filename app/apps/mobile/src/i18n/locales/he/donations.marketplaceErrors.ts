@@ -91,6 +91,8 @@ export const marketplaceErrors = {
   // Organization events (0563).
   event_org_required: 'רק חברי הארגון יכולים לפרסם את האירוע שלו. בחרו אחד מהארגונים שלכם.',
   verification_required: 'האירוע פתוח לחברים מאומתים בלבד. אמתו את החשבון ונסו שוב.',
+  // Job offers (§5.11, #1476).
+  job_offer_org_required: 'הצעת עבודה מתפרסמת רק בשם ארגון שאושר לפרסם משרות. בחרו ארגון כזה.',
   not_owner: 'רק מארגני האירוע יכולים לעשות את זה.',
   event_not_started: 'אפשר לסמן נוכחות רק אחרי שהאירוע התחיל.',
   invalid_transition: 'ההרשמה כבר עודכנה. רעננו ונסו שוב.',

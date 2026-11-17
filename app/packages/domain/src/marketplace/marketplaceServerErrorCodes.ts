@@ -101,6 +101,8 @@ export const MARKETPLACE_SERVER_ERROR_CODES = [
   // G1 step 5 (0563) — organization events: membership, verified-only registration, organizer actions.
   'event_org_required',
   'verification_required',
+  // A job offer names an organization allowed to post jobs (§5.11, #1476).
+  'job_offer_org_required',
   'not_owner',
   'invalid_transition',
   // G1 step 5c (0564) — attendance is marked only once the event has started.
