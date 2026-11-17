@@ -20,11 +20,11 @@
    "distinct": 4
   },
   "rpc": {
-   "callSites": 277,
-   "distinct": 253
+   "callSites": 278,
+   "distinct": 254
   },
   "table": {
-   "callSites": 189,
+   "callSites": 190,
    "distinct": 64
   }
  },
@@ -610,6 +610,27 @@
    "symbol": "SupabaseOrgHierarchyRepository.setOrgSlug",
    "via": "literal",
    "name": "admin_set_org_slug"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseOrgJobPostingAdminRepository.ts",
+   "line": 34,
+   "area": "admin",
+   "symbol": "SupabaseOrgJobPostingAdminRepository.listOrganizations",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "organizations"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseOrgJobPostingAdminRepository.ts",
+   "line": 42,
+   "area": "admin",
+   "symbol": "SupabaseOrgJobPostingAdminRepository.unwrapCall",
+   "via": "literal",
+   "name": "admin_set_org_may_post_jobs"
   },
   {
    "kind": "rpc",

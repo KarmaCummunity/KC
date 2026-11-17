@@ -681,6 +681,21 @@ An admin walks through the full onboarding again, as often as needed, to review 
 
 ---
 
+## FR-ADMIN-036 — Organizations allowed to post jobs
+
+**Description.**
+A job offer is published only in the name of an organization allowed to post jobs (`spec/05_giving_worlds.md` §5.11, `D175`). Until the verification levels record the legal right to employ (FR-ORG-019 AC4), platform admins switch it per organization from the admin portal. PM, 2026-11-16 (#1476).
+
+**Acceptance Criteria.**
+- AC1. `(admin)/org-jobs` lists every organization by name with whether it may post jobs. Karma Community (the platform organization) always may and a suspended organization never does, so neither has a switch.
+- AC2. Only platform admins (permission `org.job_posting`: super admin, admin) see the switch and the menu entry. The server refuses anyone else (`admin_set_org_may_post_jobs`, 42501) and audits each change (`org_job_posting_set`; `supabase/tests/081_employment_job_offers.sql`).
+- AC3. After a switch, the list and the members' job-offer form re-read the organizations, so an allowed organization appears in the form's organization picker without a new build.
+- AC4. Stopping an organization blocks its new job offers and leaves those already published open.
+
+**Related.** `ListOrgJobPostingUseCase`, `SetOrgMayPostJobsUseCase`, `SupabaseOrgJobPostingAdminRepository`, `OrgJobPostingList`.
+
+---
+
 | Version | Date | Summary |
 | ------- | ---- | ------- |
 | 0.1 | 2026-05-05 | Initial draft from PRD §2.2 and Flow 9. |
@@ -707,3 +722,4 @@ An admin walks through the full onboarding again, as often as needed, to review 
 | 0.22 | 2026-11-13 | Admin WhatsApp console (`(admin)/whatsapp`, #939) restored on the `integrations` module: kill switch, seven-day overview (with pending reviews), review queue of bot posts (approve publishes on the owner's behalf, reject keeps the draft; D156), outbound queue with Resend, consent with Block, activity, templates. Permission `whatsapp.manage` (moderator+); the new `whatsapp.configure` (super admin only) gates the send limits and template status (D161). Every console write is audited. |
 | 0.23 | 2026-11-13 | `FR-ADMIN-031` restored (`D168`): the Demo data screen, `demo_data.manage` and the three demo-data RPCs come back for kc-dev as dev-only seed tools (`supabase/seed/demo/`, `D-239`), rewritten for the baseline, stepped, with ACs 1–11. |
 | 0.24 | 2026-11-16 | Added FR-ADMIN-035 (onboarding replay for admins, sandboxed; KC#2080). |
+| 0.25 | 2026-11-17 | Added FR-ADMIN-036 (organizations allowed to post jobs, switched by platform admins; #1476). |
