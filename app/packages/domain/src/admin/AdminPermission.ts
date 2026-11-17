@@ -35,6 +35,7 @@ export const ADMIN_PERMISSIONS = [
   'donation_links.review',
   'stats.view_platform',
   'worlds.launch',
+  'org.job_posting',
   'demo_data.manage',
 ] as const;
 
@@ -111,6 +112,8 @@ export const PERMISSION_MATRIX: Readonly<Record<AdminPermission, readonly AdminR
   'stats.view_platform':        MODERATOR_UP,
   // #2277: only the super admin switches a giving world between portal and active.
   'worlds.launch':              ['super_admin'],
+  // §5.11 (#1476): platform admins allow an organization to post job offers (server: admin role).
+  'org.job_posting':            ADMIN_UP,
   // FR-ADMIN-031 — delete and restore the kc-dev demo data. A coarse client gate: the server
   // (kc_private.can_manage_demo_data) admits the super admin and only the org admin of the
   // platform organization.

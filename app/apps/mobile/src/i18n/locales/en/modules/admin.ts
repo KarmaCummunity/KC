@@ -14,6 +14,7 @@ import { adminTasksEn } from './adminTasks';
 import { adminAdminsParityEn } from './adminAdminsParity';
 import { adminRolesParityEn } from './adminHierarchyParity';
 import { adminWorldsEn } from './adminWorlds';
+import { adminOrgJobsEn } from './adminOrgJobs';
 
 export const adminEn = {
   portalTitle: 'Admin Portal',
@@ -36,6 +37,7 @@ export const adminEn = {
     donationLinks: 'Donation links',
     stats:         'Statistics',
     worlds:        'Giving worlds',
+    orgJobs:       'Organizations & jobs',
   },
   roles: {
     super_admin: 'Super Admin',
@@ -66,6 +68,7 @@ export const adminEn = {
     donationLinks: 'donate link url',
     stats: 'stats analytics metrics kpi numbers',
     worlds: 'world worlds portal launch flag category',
+    orgJobs: 'job jobs employment work organization employer allow',
   },
   dashboard: {
     welcome: 'Welcome to the Admin Portal',
@@ -177,5 +180,6 @@ export const adminEn = {
   orgApprovals: adminOrgApprovalsEn,
   donationLinks: adminDonationLinksEn,
   worlds: adminWorldsEn,
+  orgJobs: adminOrgJobsEn,
   surveys: adminSurveysEn,
 } as const;

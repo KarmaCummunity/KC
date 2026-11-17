@@ -43,6 +43,8 @@ export const ADMIN_DESTINATIONS: readonly AdminDestination[] = [
   { key: 'stats',     href: '/(admin)/stats',    icon: 'stats-chart-outline',      perm: 'stats.view_platform' },
   // #2277: every admin sees the worlds' modes; only the super admin switches them (worlds.launch).
   { key: 'worlds',    href: '/(admin)/worlds',   icon: 'globe-outline',            perm: null },
+  // §5.11 (#1476): platform admins allow an organization to publish job offers.
+  { key: 'orgJobs',   href: '/(admin)/org-jobs', icon: 'briefcase-outline',        perm: 'org.job_posting' },
   // FR-ADMIN-031 — kc-dev demo data; elsewhere the screen says its tools are not installed.
   { key: 'demoData',  href: '/(admin)/demo-data', icon: 'flask-outline',           perm: 'demo_data.manage' },
 ];
