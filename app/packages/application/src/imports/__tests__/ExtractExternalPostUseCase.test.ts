@@ -8,6 +8,7 @@ const draft: ImportDraft = { ...manualImportDraft('ok'), importId: 'imp-1', rout
 const serviceReturning = (result: ImportDraft | null | Error): IPostExtractionService => ({
   extract: vi.fn(() => (result instanceof Error ? Promise.reject(result) : Promise.resolve(result))),
   attachPost: vi.fn(() => Promise.resolve(true)),
+  recordEdits: vi.fn(() => Promise.resolve(true)),
 });
 
 describe('ExtractExternalPostUseCase', () => {

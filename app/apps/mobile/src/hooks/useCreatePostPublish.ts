@@ -125,7 +125,13 @@ export function useCreatePostPublish(args: {
     onSuccess: ({ post }) => {
       const { ownerId, city, street, streetNumber } = args;
       // FR-IMPORT-007 AC3 — a post seeded from an import is recorded as imported (never blocks).
-      void attachPendingImport(post.postId);
+      void attachPendingImport(post.postId, {
+        world: 'items',
+        direction: args.isGive ? 'give' : 'request',
+        title: args.title,
+        description: args.description,
+        city: city?.id ?? null,
+      });
       if (city) {
         useLastAddressStore.getState().setLastAddress({
           cityId: city.id,

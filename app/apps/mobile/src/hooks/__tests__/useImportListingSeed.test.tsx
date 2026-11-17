@@ -38,7 +38,7 @@ function setup(over: { worldSlug?: string; kinds?: ListingKindOption[] | undefin
 
 describe('useImportListingSeed', () => {
   beforeEach(() => {
-    useImportDraftStore.setState({ held: null, pendingImportId: null, seededDraft: null, review: null });
+    useImportDraftStore.setState({ held: null, pendingImportId: null, seededDraft: null, review: null, seededFields: {} });
     listWorldSubcategories.mockReset();
     listWorldSubcategories.mockResolvedValue([{ categoryId: 'sub-bakery', slug: 'bakery', labelHe: 'b', labelEn: null }]);
   });
@@ -50,6 +50,8 @@ describe('useImportListingSeed', () => {
     expect(fns.chooseKind).toHaveBeenCalledWith('food_offer');
     expect(fns.setSubcategoryId).toHaveBeenCalledWith('sub-bakery');
     expect(useImportDraftStore.getState().seededDraft).toBeNull();
+    // FR-IMPORT-010 AC4: the world form notes its own seeded fields.
+    expect(useImportDraftStore.getState().seededFields).toEqual({ kind: 'food_offer', subcategory: 'sub-bakery', city: 'c1' });
   });
 
   it('waits for the kinds, then seeds once', async () => {
@@ -89,6 +91,7 @@ describe('useImportListingSeed', () => {
     const { fns } = setup({ worldSlug: 'rides', kinds: [kind('ride_offer', 'give'), kind('ride_request', 'request')] });
     await waitFor(() => expect(fns.chooseKind).toHaveBeenCalledWith('ride_offer'));
     expect(fns.setCity).not.toHaveBeenCalled();
+    expect(useImportDraftStore.getState().seededFields).not.toHaveProperty('city');
   });
 
   it('nothing seeded means nothing happens', async () => {

@@ -9,6 +9,7 @@ export * from './ports/IStreetRepository';
 export type { ITranslationCacheRepository, CachedTranslation, TranslationCacheKey } from './ports/ITranslationCacheRepository';
 export type { BatchTranslationItem, ITranslationService } from './ports/ITranslationService';
 export type { IPostExtractionService, PostExtractionRequest } from './ports/IPostExtractionService';
+export type { IImportTelemetryRepository, ImportFunnel, ImportFieldEditRate } from './ports/IImportTelemetryRepository';
 export * from './imports';
 export type { IPostTranslationReader, PostTranslationHit } from './ports/IPostTranslationReader';
 export type * from './ports/IMarketplaceRepository';

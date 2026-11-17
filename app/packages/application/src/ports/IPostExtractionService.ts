@@ -1,5 +1,5 @@
 // app/packages/application/src/ports/IPostExtractionService.ts
-import type { ImportChannel, ImportDraft, ImportSourcePlatform } from '@kc/domain';
+import type { ImportChannel, ImportDraft, ImportEditableField, ImportSourcePlatform } from '@kc/domain';
 
 export interface PostExtractionRequest {
   /** The text the member shared or pasted, as they have it; the server scrubs it. */
@@ -26,4 +26,11 @@ export interface IPostExtractionService {
    * failure is `false`, never an exception: the post already exists and must not be undone.
    */
   attachPost(importId: string, postId: string): Promise<boolean>;
+
+  /**
+   * FR-IMPORT-010 AC4 — records which draft fields the member changed before publishing (the
+   * edit-rate signal). Only for an import already attached to its post; `false` on any refusal or
+   * failure, never an exception: telemetry must not disturb the member.
+   */
+  recordEdits(importId: string, editedFields: readonly ImportEditableField[]): Promise<boolean>;
 }

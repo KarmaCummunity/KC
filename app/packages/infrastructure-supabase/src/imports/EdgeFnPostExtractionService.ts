@@ -1,7 +1,7 @@
 // app/packages/infrastructure-supabase/src/imports/EdgeFnPostExtractionService.ts
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { IPostExtractionService, PostExtractionRequest } from '@kc/application';
-import { parseImportDraft, type ImportDraft } from '@kc/domain';
+import { parseImportDraft, type ImportDraft, type ImportEditableField } from '@kc/domain';
 
 /**
  * FR-IMPORT-001..009 — calls the `extract-external-post` Edge Function (ADR-008). The caller's
@@ -22,6 +22,11 @@ export class EdgeFnPostExtractionService implements IPostExtractionService {
 
   async attachPost(importId: string, postId: string): Promise<boolean> {
     const { error } = await this.client.rpc('api_import_attach_post', { p_import_id: importId, p_post_id: postId });
+    return !error;
+  }
+
+  async recordEdits(importId: string, editedFields: readonly ImportEditableField[]): Promise<boolean> {
+    const { error } = await this.client.rpc('api_import_record_edits', { p_import_id: importId, p_edited_fields: [...editedFields] });
     return !error;
   }
 }

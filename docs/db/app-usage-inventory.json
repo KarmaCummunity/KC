@@ -20,8 +20,8 @@
    "distinct": 4
   },
   "rpc": {
-   "callSites": 279,
-   "distinct": 255
+   "callSites": 282,
+   "distinct": 258
   },
   "table": {
    "callSites": 190,
@@ -1576,6 +1576,33 @@
    "symbol": "EdgeFnPostExtractionService.attachPost",
    "via": "literal",
    "name": "api_import_attach_post"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/imports/EdgeFnPostExtractionService.ts",
+   "line": 29,
+   "area": "imports",
+   "symbol": "EdgeFnPostExtractionService.recordEdits",
+   "via": "literal",
+   "name": "api_import_record_edits"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/imports/SupabaseImportTelemetryRepository.ts",
+   "line": 16,
+   "area": "imports",
+   "symbol": "SupabaseImportTelemetryRepository.getFunnel",
+   "via": "literal",
+   "name": "admin_import_funnel"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/imports/SupabaseImportTelemetryRepository.ts",
+   "line": 31,
+   "area": "imports",
+   "symbol": "SupabaseImportTelemetryRepository.getFieldEditRates",
+   "via": "literal",
+   "name": "admin_import_field_edit_rates"
   },
   {
    "kind": "rpc",

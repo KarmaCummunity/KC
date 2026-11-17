@@ -20,4 +20,28 @@ export const adminStatsHe = {
     hoursToCompletion: 'שעות עד מסירה (חציון)',
   },
   notTracked: 'לא נמדד בעולם הזה',
+  // FR-IMPORT-010 AC4 — the external post import: funnel and how often members fix each field.
+  imports: {
+    title: 'ייבוא פוסטים מבחוץ',
+    subtitle: 'ניסיונות הייבוא בתקופה, והחלק מהפוסטים שפורסמו שבהם החבר תיקן כל שדה לפני הפרסום.',
+    empty: 'לא היו ניסיונות ייבוא בתקופה הזו.',
+    metrics: {
+      attempts: 'ניסיונות',
+      manual: 'ללא טיוטה',
+      drafted: 'טיוטות',
+      published: 'פורסמו',
+      discarded: 'ננטשו',
+      providerCalls: 'קריאות למודל',
+    },
+    editRates: 'שיעור התיקון לפי שדה',
+    fields: {
+      world: 'תחום',
+      direction: 'נותנים או מבקשים',
+      kind: 'סוג',
+      subcategory: 'קטגוריה',
+      title: 'כותרת',
+      description: 'תיאור',
+      city: 'עיר',
+    },
+  },
 } as const;
