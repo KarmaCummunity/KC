@@ -1,13 +1,11 @@
-// app/apps/mobile/src/components/admin/tasks/TaskDueRangeFilter.tsx
-// V2-ADMIN-TASKS-3 — due-date range filter inputs (from / to) as plain text
-// fields formatted YYYY-MM-DD. The list screen owns parsing; this component
-// just renders + validates the format.
-import { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
-import { makeUseStyles, radius, spacing, typography, Text, TextInput } from '@kc/ui';
+// V2-ADMIN-TASKS-3 — due-date range filter (from / to). Each day is picked with the kit date field
+// (FR-RESP-006 AC31) and kept as `YYYY-MM-DD`; the list screen owns parsing.
+import { useState } from 'react';
+import { View } from 'react-native';
+import { makeUseStyles, spacing } from '@kc/ui';
 import { useLocaleBundle } from '../../../i18n/useLocaleBundle';
-import { formIsoDateInputProps } from '../../../lib/platform/formTextInputHints';
-import { rtlTextAlignStart } from '../../../lib/rtlTextAlignStart';
+import { AdminDateField } from '../AdminDateField';
+import { GhostButton, PrimaryButton } from '../../ui/Buttons';
 
 export interface TaskDueRangeFilterProps {
   readonly fromValue: string;
@@ -18,81 +16,51 @@ export interface TaskDueRangeFilterProps {
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
+/** True for '' (unset) or a real `YYYY-MM-DD` day; the screen reads URL / state values through it. */
 export function isValidIsoDate(value: string): boolean {
-  if (value.length === 0) return true; // empty = unset
+  if (value.length === 0) return true;
   if (!ISO_DATE.test(value)) return false;
-  const d = new Date(`${value}T00:00:00Z`);
-  return !Number.isNaN(d.getTime());
+  return !Number.isNaN(new Date(`${value}T00:00:00Z`).getTime());
 }
 
 export function TaskDueRangeFilter({ fromValue, toValue, onChange, onClear }: TaskDueRangeFilterProps) {
   const styles = useStyles();
-  const L = useLocaleBundle();
+  const t = useLocaleBundle().admin.tasks.dueRange;
   const [from, setFrom] = useState(fromValue);
-  const [to, setTo]     = useState(toValue);
-
-  const fromOk = useMemo(() => isValidIsoDate(from), [from]);
-  const toOk   = useMemo(() => isValidIsoDate(to),   [to]);
-  const dirty  = from !== fromValue || to !== toValue;
+  const [to, setTo] = useState(toValue);
+  const dirty = from !== fromValue || to !== toValue;
 
   return (
-    <View style={styles.row}>
-      <View style={styles.fieldCol}>
-        <Text style={styles.label}>{L.admin.tasks.dueRange.fromLabel}</Text>
-        <TextInput // brand-guard-allow: admin date range filter input, not a form field
-          style={[styles.input, !fromOk && styles.invalid]}
-          value={from}
-          onChangeText={setFrom}
-          placeholder={L.admin.tasks.dueRange.placeholder}
-          textAlign={rtlTextAlignStart}
-          {...formIsoDateInputProps}
-        />
+    <View style={styles.root}>
+      <View style={styles.fields}>
+        <View style={styles.field}>
+          <AdminDateField label={t.fromLabel} value={from} onChange={setFrom} />
+        </View>
+        <View style={styles.field}>
+          <AdminDateField label={t.toLabel} value={to} onChange={setTo} />
+        </View>
       </View>
-      <View style={styles.fieldCol}>
-        <Text style={styles.label}>{L.admin.tasks.dueRange.toLabel}</Text>
-        <TextInput // brand-guard-allow: admin date range filter input, not a form field
-          style={[styles.input, !toOk && styles.invalid]}
-          value={to}
-          onChangeText={setTo}
-          placeholder={L.admin.tasks.dueRange.placeholder}
-          textAlign={rtlTextAlignStart}
-          {...formIsoDateInputProps}
-        />
-      </View>
-      <View style={styles.actionsCol}>
-        <Pressable
-          disabled={!dirty || !fromOk || !toOk}
-          onPress={() => onChange({ from, to })}
-          style={[styles.applyBtn, (!dirty || !fromOk || !toOk) && styles.disabledBtn]}
-        >
-          <Text style={styles.applyText}>{L.admin.tasks.dueRange.apply}</Text>
-        </Pressable>
-        {(fromValue.length > 0 || toValue.length > 0) && (
-          <Pressable
-            onPress={() => { setFrom(''); setTo(''); onClear(); }}
-            style={styles.clearBtn}
-          >
-            <Text style={styles.clearText}>{L.admin.tasks.dueRange.clear}</Text>
-          </Pressable>
-        )}
+      <View style={styles.actions}>
+        <PrimaryButton label={t.apply} size="sm" disabled={!dirty} onPress={() => onChange({ from, to })} />
+        {fromValue.length > 0 || toValue.length > 0 ? (
+          <GhostButton
+            label={t.clear}
+            size="sm"
+            onPress={() => {
+              setFrom('');
+              setTo('');
+              onClear();
+            }}
+          />
+        ) : null}
       </View>
     </View>
   );
 }
 
-const useStyles = makeUseStyles(({ colors }) => ({
-  row:       { flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.base, paddingBottom: spacing.sm, alignItems: 'flex-end' },
-  fieldCol:  { flex: 1, gap: spacing.xs },
-  actionsCol:{ gap: spacing.xs },
-  label:     { ...typography.caption, opacity: 0.7 },
-  input: {
-    borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, borderRadius: radius.md,
-    padding: spacing.sm, ...typography.caption, textAlign: rtlTextAlignStart, backgroundColor: colors.surface, minWidth: 110,
-  },
-  invalid:   { borderColor: colors.error },
-  applyBtn:  { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.md, backgroundColor: colors.primary },
-  applyText: { color: colors.textInverse, ...typography.caption, ...typography.bold },
-  disabledBtn: { opacity: 0.4 },
-  clearBtn:  { paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: radius.md, backgroundColor: colors.secondaryLight },
-  clearText: { color: colors.textPrimary, ...typography.caption, ...typography.semiBold },
+const useStyles = makeUseStyles(() => ({
+  root: { gap: spacing.sm, paddingHorizontal: spacing.base, paddingBottom: spacing.sm },
+  fields: { flexDirection: 'row', gap: spacing.sm },
+  field: { flex: 1, minWidth: 0 },
+  actions: { flexDirection: 'row', gap: spacing.sm },
 }));

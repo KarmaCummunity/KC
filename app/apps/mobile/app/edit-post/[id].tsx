@@ -30,6 +30,7 @@ import {
   type UploadedAsset,
 } from '../../src/services/imageUpload';
 import { useAddressStateWithCityReset } from '../../src/hooks/useAddressStateWithCityReset';
+import { useEditPostValidation } from '../../src/hooks/useEditPostValidation';
 import { EmptyState } from '../../src/components/EmptyState';
 import { EditPostFormScrollContent } from '../../src/components/post/EditPostFormScrollContent';
 import { mapPostErrorToHebrew } from '../../src/services/postMessages';
@@ -89,6 +90,14 @@ export default function EditPostScreen() {
   const [notify, setNotify] = useState<{ title: string; message: string } | null>(null);
 
   const post = query.data?.post;
+  const validation = useEditPostValidation({
+    isGive: post?.type === 'Give',
+    title,
+    city,
+    street,
+    streetNumber,
+    uploadsLength: uploads.length,
+  });
 
   const profileQuery = useQuery({
     queryKey: ['user-profile', viewerId],
@@ -284,12 +293,10 @@ export default function EditPostScreen() {
   const isGive = post.type === 'Give';
   const isSaving = save.isPending || uploadingCount > 0;
 
-  const isFormValid =
-    title.trim().length > 0 &&
-    city !== null &&
-    street.trim().length > 0 &&
-    streetNumber.trim().length > 0 &&
-    (!isGive || uploads.length > 0);
+  // Save stays enabled: pressing it with something missing marks it and jumps there (FR-RESP-006 AC29).
+  const onSavePress = () => {
+    if (validation.acceptSubmit()) save.mutate();
+  };
 
   const profilePrivacy = profileQuery.data?.privacyMode ?? 'Public';
 
@@ -301,10 +308,12 @@ export default function EditPostScreen() {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('post.editPost.headerTitle')}</Text>
         <TouchableOpacity
-          style={[styles.saveBtn, (isSaving || !isFormValid) && { opacity: 0.5 }]}
-          onPress={() => save.mutate()}
-          disabled={isSaving || !isFormValid}
-          accessibilityState={{ disabled: isSaving || !isFormValid }}
+          testID="edit-post-save"
+          style={[styles.saveBtn, isSaving && { opacity: 0.5 }]}
+          onPress={onSavePress}
+          disabled={isSaving}
+          accessibilityRole="button"
+          accessibilityState={{ disabled: isSaving }}
         >
           {isSaving ? (
             <ActivityIndicator color={colors.textInverse} size="small" />
@@ -320,6 +329,8 @@ export default function EditPostScreen() {
         keyboardVerticalOffset={keyboardOffset}
       >
         <EditPostFormScrollContent
+          fieldErrors={validation.fieldErrors}
+          failedSubmitCount={validation.failedSubmitCount}
           isGive={isGive}
           isSaving={isSaving}
           uploads={uploads}

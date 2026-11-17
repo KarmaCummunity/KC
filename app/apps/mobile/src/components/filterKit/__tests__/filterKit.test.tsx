@@ -167,6 +167,14 @@ describe('filterKit — FilterChipRow', () => {
     fireEvent.click(screen.getByTestId('scroll-row-opt2'));
     expect(onChange).toHaveBeenCalledWith(['opt1', 'opt2']);
   });
+
+  it('disabled blocks every chip', () => {
+    const onChange = vi.fn();
+    render(<FilterChipRow options={options} value={null} onChange={onChange} disabled testID="off-row" />);
+    fireEvent.click(screen.getByTestId('off-row-opt1'));
+    expect(onChange).not.toHaveBeenCalled();
+    expect(screen.getByTestId('off-row-opt1').getAttribute('aria-disabled')).toBe('true');
+  });
 });
 
 describe('filterKit — FilterSection', () => {

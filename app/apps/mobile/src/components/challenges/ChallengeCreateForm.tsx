@@ -1,3 +1,5 @@
+// Mapped to spec: docs/spec/10_challenges.md / FR-RESP-006 AC29 — the "open a challenge" form. A
+// submit the domain rules refuse marks the field it is about and jumps there; nothing is sent.
 import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -17,6 +19,9 @@ import {
   type ChallengeFormState,
 } from '../../lib/challenges/challengeDraftFromForm';
 import { FormSection } from '../ui/FormSection';
+import { useScrollToFirstInvalid } from '../ui/formScope';
+import { challengeFormProblem, type ChallengeFormField } from '../../lib/challenges/challengeFormProblem';
+import { challengeCodeMessage } from '../../lib/challenges/challengeErrorMessage';
 
 interface ChallengeCreateFormProps {
   readonly busy: boolean;
@@ -34,10 +39,26 @@ export function ChallengeCreateForm({ busy, errorMessage, onSubmit, onPublishAct
   const set = <K extends keyof ChallengeFormState>(key: K, value: ChallengeFormState[K]) =>
     setForm((current) => ({ ...current, [key]: value }));
   const isNumeric = form.measurement !== 'yes_no';
+  const jumpToProblem = useScrollToFirstInvalid();
+  // Nothing is marked before the first refused submit; from then on the mark follows the values.
+  const [refusedSubmits, setRefusedSubmits] = useState(0);
+  const problem = refusedSubmits > 0 ? challengeFormProblem(form) : null;
+  /** The message under `field`, when the current problem is about it. */
+  const errorOf = (field: ChallengeFormField) => (problem?.field === field ? challengeCodeMessage(t, problem.code) : undefined);
+  // A refusal about no single field, or the server's own refusal, shows at the end of the form.
+  const formError = problem && problem.field === null ? challengeCodeMessage(t, problem.code) : errorMessage;
 
   // Keep the header's publish action pointing at the latest form state without re-registering it.
   const submitRef = useRef<() => void>(() => undefined);
-  submitRef.current = () => onSubmit(challengeDraftFromForm(form));
+  submitRef.current = () => {
+    if (challengeFormProblem(form)) {
+      setRefusedSubmits((n) => n + 1);
+      // Also when the same problem is still marked: the screen moves back to it every time.
+      jumpToProblem();
+      return;
+    }
+    onSubmit(challengeDraftFromForm(form));
+  };
   useEffect(() => {
     onPublishActionChange(() => submitRef.current(), busy);
     return () => onPublishActionChange(null, false);
@@ -50,12 +71,14 @@ export function ChallengeCreateForm({ busy, errorMessage, onSubmit, onPublishAct
         placeholder={t('challenges.form.titlePlaceholder')}
         value={form.title}
         onChangeText={(text) => set('title', text)}
+        errorText={errorOf('title')}
         testID="challenge-form-title"
       />
       <TextField
         label={t('challenges.form.description')}
         value={form.description}
         onChangeText={(text) => set('description', text)}
+        errorText={errorOf('description')}
         multiline
       />
       <OptionChips
@@ -85,6 +108,7 @@ export function ChallengeCreateForm({ busy, errorMessage, onSubmit, onPublishAct
             label={t('challenges.form.goalValue')}
             value={form.goalValue}
             onChangeText={(text) => set('goalValue', text)}
+            errorText={errorOf('goalValue')}
             inputKind="decimal"
           />
           <OptionChips
@@ -92,6 +116,7 @@ export function ChallengeCreateForm({ busy, errorMessage, onSubmit, onPublishAct
             options={CHALLENGE_GOAL_DIRECTIONS.map((value) => ({ value, label: t(`challenges.direction.${value}`) }))}
             selected={form.goalDirection}
             onSelect={(value) => set('goalDirection', value)}
+            error={errorOf('goalDirection')}
           />
         </>
       ) : null}
@@ -106,16 +131,18 @@ export function ChallengeCreateForm({ busy, errorMessage, onSubmit, onPublishAct
         placeholder={t('challenges.form.topicPlaceholder')}
         value={form.topicLabel}
         onChangeText={(text) => set('topicLabel', text)}
+        errorText={errorOf('topicLabel')}
       />
       <TextField
         label={t('challenges.form.targetCycles')}
         helperText={t('challenges.form.targetCyclesHint')}
         value={form.targetCycles}
         onChangeText={(text) => set('targetCycles', text)}
+        errorText={errorOf('targetCycles')}
         inputKind="integer"
       />
-      {errorMessage ? (
-        <FormSection error={errorMessage} outlined={false} testID="challenge-form-error">
+      {formError ? (
+        <FormSection error={formError} outlined={false} testID="challenge-form-error">
           {null}
         </FormSection>
       ) : null}

@@ -10,7 +10,8 @@ const router = { back: vi.fn(), push: vi.fn(), replace: vi.fn() };
 const basicInfo = {
   displayName: '', setDisplayName: vi.fn(), city: null, setCity: vi.fn(), street: '', setStreet: vi.fn(),
   streetNumber: '', setStreetNumber: vi.fn(), contactPhone: '', setContactPhone: vi.fn(),
-  loading: false, hasRequiredFields: true, canSubmit: true,
+  dateOfBirth: null, setDateOfBirth: vi.fn(),
+  loading: false, fieldErrors: {} as Record<string, string>, failedSubmitCount: 0,
   handleBack: vi.fn(), handleContinue: vi.fn(), handleSkip: vi.fn(),
 };
 const photo = {
@@ -32,6 +33,7 @@ vi.mock('../animations/TourSlidePager', () => ({ TourSlidePager: () => null }));
 vi.mock('../OnboardingStepHeader', () => ({ OnboardingStepHeader: () => null }));
 vi.mock('../CityPicker', () => ({ CityPicker: () => null }));
 vi.mock('../StreetPicker', () => ({ StreetPicker: () => null }));
+vi.mock('../EditProfileAddressBlock', () => ({ EditProfileAddressBlock: () => null }));
 vi.mock('../PhotoSourceSheet', () => ({ PhotoSourceSheet: () => null }));
 vi.mock('../AvatarInitials', () => ({ AvatarInitials: () => null }));
 vi.mock('../../hooks/useOnboardingBasicInfoFlow', () => ({ useOnboardingBasicInfoFlow: () => basicInfo }));
@@ -45,7 +47,7 @@ import { renderInTheme } from '../ui/__tests__/kitDialogTestKit';
 
 beforeEach(() => {
   vi.clearAllMocks();
-  Object.assign(basicInfo, { loading: false, hasRequiredFields: true });
+  Object.assign(basicInfo, { loading: false, fieldErrors: {}, failedSubmitCount: 0 });
   Object.assign(photo, { hasAvatar: false, finalizing: false, busy: false });
 });
 afterEach(cleanup);
@@ -57,22 +59,26 @@ describe('onboarding calls to action', () => {
     expect(router.replace).toHaveBeenCalledWith('/(onboarding)/basic-info');
   });
 
-  it('step 2 continues once the required fields are filled', () => {
+  it('step 2 continues from its call to action', () => {
     const { getByRole } = renderInTheme(<BasicInfoScreen />);
     fireEvent.click(getByRole('button', { name: 'onboarding.continueA11y' }));
     expect(basicInfo.handleContinue).toHaveBeenCalledTimes(1);
   });
 
-  it('step 2 holds the call to action without the required fields and while saving', () => {
-    basicInfo.hasRequiredFields = false;
-    const { getByRole, unmount } = renderInTheme(<BasicInfoScreen />);
-    const blocked = getByRole('button', { name: 'onboarding.continueA11y' });
-    expect(blocked.getAttribute('aria-disabled')).toBe('true');
-    fireEvent.click(blocked);
-    expect(basicInfo.handleContinue).not.toHaveBeenCalled();
-    unmount();
+  it('step 2 keeps the call to action enabled and shows what is missing under each field', () => {
+    Object.assign(basicInfo, { fieldErrors: { displayName: 'name-missing', dateOfBirth: 'date-missing' }, failedSubmitCount: 1 });
+    const { getByRole, getByText } = renderInTheme(<BasicInfoScreen />);
+    // The date of birth field is on the step (FR-AUTH-010 AC2.d): it was lost once, so it is checked.
+    expect(getByText('date-missing')).toBeTruthy();
+    expect(getByText('name-missing')).toBeTruthy();
+    const continueCta = getByRole('button', { name: 'onboarding.continueA11y' });
+    expect(continueCta.getAttribute('aria-disabled')).not.toBe('true');
+    fireEvent.click(continueCta);
+    expect(basicInfo.handleContinue).toHaveBeenCalledTimes(1);
+  });
 
-    Object.assign(basicInfo, { hasRequiredFields: true, loading: true });
+  it('step 2 holds the call to action while saving', () => {
+    Object.assign(basicInfo, { loading: true });
     const saving = renderInTheme(<BasicInfoScreen />).getByRole('button', { name: 'onboarding.continueA11y' });
     expect(saving.getAttribute('aria-busy')).toBe('true');
     fireEvent.click(saving);

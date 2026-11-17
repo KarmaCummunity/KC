@@ -1,16 +1,18 @@
 // FR-PROFILE-007 — city + city-dependent street picker + house number.
 // When the user picks a different city the previously typed street + number
 // reset to empty so a stale Tel Aviv street can never accompany a Jerusalem
-// submission. The street-number input is editable only when a city is set.
+// submission. The street-number input is editable only when a city is set. The block is one form
+// section: a missing city or half an address is reported under it (FR-RESP-006 AC29).
 
 import React, { useCallback } from 'react';
 import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
+import { makeUseStyles, spacing } from '@kc/ui';
 import { CompactStreetNumberField } from './address/CompactStreetNumberField';
 import { CityPicker } from './CityPicker';
 import { StreetPicker } from './StreetPicker';
 import { applyAddressResetOnCityChange } from '../lib/addressResetOnCityChange';
+import { FormSection } from './ui/FormSection';
 import { rtlTextAlignStart } from '../lib/rtlTextAlignStart';
 
 export interface EditProfileAddressBlockProps {
@@ -21,6 +23,8 @@ export interface EditProfileAddressBlockProps {
   readonly onStreetChange: (v: string) => void;
   readonly onStreetNumberChange: (v: string) => void;
   readonly disabled: boolean;
+  /** What is wrong with the address (missing city, street without number or the reverse). */
+  readonly error?: string;
 }
 
 export function EditProfileAddressBlock({
@@ -31,6 +35,7 @@ export function EditProfileAddressBlock({
   onStreetChange,
   onStreetNumberChange,
   disabled,
+  error,
 }: EditProfileAddressBlockProps) {
   const styles = useStyles();
   const { t } = useTranslation();
@@ -57,9 +62,15 @@ export function EditProfileAddressBlock({
   );
 
   return (
-    <View style={styles.container}>
+    <FormSection
+      label={t('profile.addressLabel')}
+      required
+      error={error ?? null}
+      outlined={false}
+      style={styles.container}
+      testID="edit-profile-address"
+    >
       <View style={styles.field}>
-        <Text style={styles.label}>{t('profile.addressLabel')}</Text>
         <CityPicker value={city} onChange={handleCityChange} disabled={disabled} />
       </View>
       <View style={styles.field}>
@@ -81,14 +92,13 @@ export function EditProfileAddressBlock({
           />
         </View>
       </View>
-    </View>
+    </FormSection>
   );
 }
 
-const useStyles = makeUseStyles(({ colors }) => ({
+const useStyles = makeUseStyles(() => ({
   container: { width: '100%', maxWidth: 500, alignSelf: 'center' },
   field: { marginVertical: spacing.xs, gap: spacing.xs },
-  label: { ...typography.label, color: colors.textSecondary, textAlign: rtlTextAlignStart },
   streetRow: { flexDirection: 'row', gap: spacing.sm, alignItems: 'flex-start', width: '100%' },
   streetCol: { flex: 2, minWidth: 0 },
   streetInputHouse: { flex: 1, minWidth: 0, maxWidth: 120 },

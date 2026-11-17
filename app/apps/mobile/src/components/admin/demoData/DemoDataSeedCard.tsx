@@ -34,9 +34,9 @@ export function DemoDataSeedCard({ label, needsPassword, pending, progressLabel,
           helperText={t.passwordHint}
           value={password}
           onChangeText={setPassword}
-          secureTextEntry
-          autoCapitalize="none"
-          autoCorrect={false}
+          inputKind="password"
+          // A password for the demo accounts being created, not the admin's own sign-in.
+          autoComplete="new-password"
           testID="admin-demo-password"
         />
       ) : null}

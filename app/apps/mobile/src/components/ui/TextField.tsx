@@ -33,10 +33,10 @@ import { emptyInputDirectionStyle } from '../../lib/rtlLayout';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 import { formInputKindProps, type FormInputKind } from '../../lib/platform/formTextInputHints';
 import { useFormScopeField } from './useFormScopeField';
+import { FieldMessage } from './FieldMessage';
 
-/** Ionicons glyph size inside the field and next to the error message. */
+/** Ionicons glyph size inside the field. */
 const FIELD_ICON_SIZE = 20;
-const MESSAGE_ICON_SIZE = 14;
 
 /** Web only: the border colour is the focus indicator, so drop the browser's focus ring. */
 const WEB_NO_FOCUS_RING: TextStyle =
@@ -67,6 +67,8 @@ function useHasText({ value, defaultValue, onChangeText }: TextInputProps) {
 export interface TextFieldProps extends TextInputProps {
   /** Visible label above the field; also the screen-reader name of the input. */
   readonly label: string;
+  /** Adds the red required star after the visible label, as `FormSection` does. */
+  readonly required?: boolean;
   /** Hide the visible label (the placeholder carries it); it stays the screen-reader name. */
   readonly hideLabel?: boolean;
   /** Guidance below the field; read as the accessibility hint. */
@@ -91,6 +93,7 @@ export interface TextFieldProps extends TextInputProps {
 export const TextField = forwardRef<TextInput, TextFieldProps>(function TextField(
   {
     label,
+    required = false,
     hideLabel,
     helperText,
     errorText,
@@ -151,6 +154,7 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
       {hideLabel ? null : (
         <Text style={styles.label} aria-hidden>
           {label}
+          {required ? <Text style={styles.required}> *</Text> : null}
         </Text>
       )}
       {/* The whole box is the tap target, so a tap on the icon still focuses the input. */}
@@ -204,25 +208,10 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
   );
 });
 
-/** Helper text, or the error message with an alert icon (announced politely). */
-function FieldMessage({ helperText, errorText }: Pick<TextFieldProps, 'helperText' | 'errorText'>) {
-  const styles = useTextFieldStyles();
-  const { colors } = useTheme();
-  if (errorText) {
-    return (
-      <View style={styles.messageRow} role="alert" aria-live="polite">
-        <Ionicons name="alert-circle" size={MESSAGE_ICON_SIZE} color={colors.error} />
-        <Text style={[styles.message, styles.messageError]}>{errorText}</Text>
-      </View>
-    );
-  }
-  if (!helperText) return null;
-  return <Text style={styles.message}>{helperText}</Text>;
-}
-
 const useTextFieldStyles = makeUseStyles(({ colors }) => ({
   container: { gap: spacing.xs },
   label: { ...typography.label, color: colors.textSecondary, textAlign: rtlTextAlignStart },
+  required: { color: colors.error },
   field: {
     // Plain `row`: it already starts on the reading-start edge (native mirrors it
     // under forceRTL, web inherits `dir="rtl"`), so the icon lands on the start side.
@@ -255,7 +244,4 @@ const useTextFieldStyles = makeUseStyles(({ colors }) => ({
   },
   inputMultiline: { verticalAlign: 'top' },
   inputDisabled: { color: colors.textDisabled },
-  messageRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  message: { ...typography.bodySmall, color: colors.textSecondary, textAlign: rtlTextAlignStart },
-  messageError: { color: colors.error },
 }));

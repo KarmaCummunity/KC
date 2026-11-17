@@ -10,6 +10,7 @@ const router = { back: vi.fn(), push: vi.fn(), replace: vi.fn() };
 let params: Record<string, string> = {};
 const requestReset = vi.fn();
 const verifyEmail = vi.fn();
+const resetPassword = vi.fn(() => Promise.resolve());
 
 vi.mock('react-native-reanimated', async () => (await import('../../ui/__tests__/kitDialogTestKit')).reanimatedDouble);
 vi.mock('expo-haptics', async () => (await import('../../ui/__tests__/kitDialogTestKit')).hapticsDouble);
@@ -24,7 +25,7 @@ vi.mock('../../../services/authMessages', () => ({ mapAuthErrorToHebrew: (code: 
 vi.mock('../../../services/authComposition', () => ({
   AUTH_RESET_PASSWORD_URL: 'kc://reset',
   getRequestPasswordResetUseCase: () => ({ execute: requestReset }),
-  getResetPasswordUseCase: () => ({ execute: () => Promise.resolve() }),
+  getResetPasswordUseCase: () => ({ execute: resetPassword }),
   getVerifyEmailUseCase: () => ({ execute: verifyEmail }),
   exchangeOAuthCode: () => Promise.resolve({ userId: 'u1' }),
 }));
@@ -61,7 +62,12 @@ describe('forgot-password screen', () => {
     const { getByTestId, getByText } = renderInTheme(<ForgotPasswordScreen />);
     fireEvent.click(getByTestId('forgot-password-submit'));
     expect(requestReset).not.toHaveBeenCalled();
-    expect(getByText('auth.forgotPasswordEmailRequired')).toBeTruthy();
+    expect(getByText('formField.emailRequired')).toBeTruthy();
+    // Shown under the address field and read with it; typing clears it.
+    const field = getByTestId('forgot-password-email');
+    expect(field.getAttribute('aria-label')).toBe('auth.email, formField.emailRequired');
+    fireEvent.change(field, { target: { value: 'd' } });
+    expect(field.getAttribute('aria-label')).toBe('auth.email');
   });
 });
 
@@ -79,6 +85,17 @@ describe('reset-password screen', () => {
     fireEvent.change(getByTestId('reset-password-new'), { target: { value: 'first-pass' } });
     fireEvent.click(getByTestId('reset-password-submit'));
     expect(getByText('auth.resetPasswordMismatch')).toBeTruthy();
+    // The mismatch belongs to the confirmation field, not the new password.
+    expect(getByTestId('reset-password-confirm').getAttribute('aria-label')).toBe('auth.resetPasswordConfirmLabel, auth.resetPasswordMismatch');
+    expect(getByTestId('reset-password-new').getAttribute('aria-label')).toBe('auth.passwordRuleLabel');
+  });
+
+  it('asks for a new password before submitting an empty one', () => {
+    params = { token_hash: 'hash' };
+    const { getByTestId } = renderInTheme(<ResetPasswordScreen />);
+    fireEvent.click(getByTestId('reset-password-submit'));
+    expect(resetPassword).not.toHaveBeenCalled();
+    expect(getByTestId('reset-password-new').getAttribute('aria-label')).toBe('auth.passwordRuleLabel, formField.passwordRequired');
   });
 });
 
