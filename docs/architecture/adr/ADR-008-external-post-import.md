@@ -128,4 +128,4 @@ Behind `external_post_import_enabled`, dev first, then a dogfood group. Provider
 - **Provider terms:** the free tier is not zero-retention; the DPA provider and model are chosen at launch readiness (operator item, no code change).
 - **Share-target library** on Expo / iOS extension needs a prebuild config change; decided in slice 5 by the ADR-005 matrix.
 - **Alias coverage** for places grows from production corrections; owned by the places catalog task (`G45`).
-- **Attestation is a working assumption** (`S90`) until the PM approves; the pipeline itself is independent of it.
+- **Attestation** (`S90`) was approved by the PM on 2026-11-17; the pipeline itself is independent of it.
