@@ -1928,7 +1928,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/marketplace/listingOwnerActions.ts",
-   "line": 79,
+   "line": 80,
    "area": "marketplace",
    "symbol": "updateMyListing",
    "via": "literal",
@@ -1941,7 +1941,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/marketplace/listingOwnerActions.ts",
-   "line": 97,
+   "line": 98,
    "area": "marketplace",
    "symbol": "addMyListingMedia",
    "via": "literal",

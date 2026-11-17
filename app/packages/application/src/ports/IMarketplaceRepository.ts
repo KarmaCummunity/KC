@@ -74,6 +74,8 @@ export interface IMarketplaceRepository {
       urgencyLevel?: number;
       availabilityStatus?: string;
       locationDisplayLevel?: LocationDisplayLevel;
+      /** Who may see the listing (FR-POST-009: the owner may change it either way at any time). */
+      visibility?: PostVisibility;
     },
   ): Promise<void>;
   pauseMyListing(listingId: string): Promise<void>;

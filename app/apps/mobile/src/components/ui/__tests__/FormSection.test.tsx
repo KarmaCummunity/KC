@@ -15,7 +15,7 @@ function fakeScope() {
   const setInvalid = vi.fn();
   const scope = {
     multiField: true,
-    canGoNext: true,
+    lastFocusableId: null,
     accessoryId: 'x',
     scrollProps: {},
     register,
