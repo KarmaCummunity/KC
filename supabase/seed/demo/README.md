@@ -1,7 +1,7 @@
 # Demo data tools (kc-dev only)
 
 The functions behind the admin portal's **Demo data** screen (FR-ADMIN-031): demo counts,
-"Delete all demo data" and "Restore demo data". **DEV ONLY**: kc-dev, a local stack or a scratch
+"Hide demo data" (a wipe) and "Show demo data" (a restore). **DEV ONLY**: kc-dev, a local stack or a scratch
 test database. They are a seed, not a migration, so kc-prod never gets them
 (`docs/db/target-design.md` §6, §9; decision `D-239`).
 
@@ -15,7 +15,10 @@ test database. They are a seed, not a migration, so kc-prod never gets them
 | `lib/70_operations.sql` | The stepped driver (`demo_advance`) and the one-transaction runner (`demo_run_all`) |
 | `lib/80_admin_rpcs.sql` | `admin_demo_data_status`, `admin_wipe_demo_data_step`, `admin_seed_demo_data_step` |
 
-On kc-dev: Actions → **Seed KC dev**, action `demo`; then Admin → Demo data → **Restore demo data**.
+On kc-dev nothing has to be run: every dev deploy installs the tools after the migrations
+(`deploy-db.yml`, step **Demo-data tools (kc-dev only)**), so they always match `dev`. Then Admin →
+Demo data → **Show demo data** / **Hide demo data**. Between deploys: Actions → **Seed KC dev**,
+action `demo`.
 Locally (the paths in the files are relative, so pass the file, not stdin):
 
 ```bash

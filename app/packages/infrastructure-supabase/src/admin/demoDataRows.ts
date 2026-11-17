@@ -73,15 +73,25 @@ const SERVER_CODES: ReadonlySet<string> = new Set(DEMO_DATA_SERVER_ERROR_CODES);
 /** Postgres `query_canceled`: the request's statement timeout. */
 const STATEMENT_TIMEOUT = '57014';
 
+/** PostgREST's "function not in the schema cache": the RPC that was called does not exist. */
+const RPC_NOT_FOUND = 'PGRST202';
+
 /**
- * A failed demo-data call as a DemoDataError. A database without the tools (kc-prod, or kc-dev
- * before the Seed KC dev workflow's `demo` action) answers "function not found": `not_installed`.
+ * A failed demo-data call as a DemoDataError. Two "missing object" cases are kept apart:
+ *  - the RPC itself is absent (kc-prod, or a kc-dev that never got the tools): `not_installed`;
+ *  - the RPC ran and an object inside it is missing or not granted (the installed copy is older
+ *    than the schema): `outdated`, which the next dev deploy repairs.
+ * PostgREST versions without error codes describe a missing RPC in the message only, so an
+ * uncoded "function" miss counts as `not_installed` too.
  */
 export function toDemoDataError(rpc: string, err: BackendErrorLike): DemoDataError {
   const message = (err.message ?? '').trim();
   if (SERVER_CODES.has(message)) return new DemoDataError(message as DemoDataErrorCode);
   const missing: BackendUnavailableError | null = toBackendUnavailable(`rpc:${rpc}`, err);
-  if (missing) return new DemoDataError('not_installed', missing.message);
+  if (missing) {
+    const rpcAbsent = err.code === RPC_NOT_FOUND || (!err.code && missing.kind === 'function');
+    return new DemoDataError(rpcAbsent ? 'not_installed' : 'outdated', missing.message);
+  }
   if (err.code === '42501') return new DemoDataError('forbidden');
   if (err.code === STATEMENT_TIMEOUT) return new DemoDataError('timeout');
   return new DemoDataError('unknown', message || 'demo data call failed');
