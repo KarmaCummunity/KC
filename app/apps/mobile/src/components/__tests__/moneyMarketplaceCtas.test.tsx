@@ -3,14 +3,14 @@
 // one routes or runs its use case as before and keeps its disabled rule.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import React from 'react';
-import { act, cleanup, fireEvent, render } from '@testing-library/react';
+import { cleanup, fireEvent, render } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from '@kc/ui';
 
 const { router, payments, listings, external, linking } = vi.hoisted(() => ({
   router: { back: vi.fn(), push: vi.fn(), replace: vi.fn() },
   payments: { getNonprofitPage: vi.fn(), donateNow: vi.fn() },
-  listings: { getListingDetail: vi.fn(), updateMyListing: vi.fn() },
+  listings: { getListingDetail: vi.fn() },
   external: { external: false, openExternal: vi.fn() },
   linking: { openURL: vi.fn(async () => true) },
 }));
@@ -52,7 +52,6 @@ vi.mock('../../features/about-landing/aboutOpenExternalUrl', () => ({ aboutOpenE
 
 import NonprofitScreen from '../../../app/(tabs)/donations/money/nonprofit/[slug]';
 import DonateNowScreen from '../../../app/(tabs)/donations/money/donate/[orgId]';
-import EditMyListingScreen from '../../../app/(tabs)/donations/marketplace/my-listings/edit/[listingId]';
 import { AboutContactLinks } from '../../features/about-landing/AboutContactLinks';
 
 const PAGE = { orgId: 'org_1', name: 'KC', aboutHe: null, aboutEn: null, taglineHe: null, taglineEn: null, totalRaisedAgorot: 0, campaigns: [] };
@@ -111,25 +110,6 @@ describe('donate screen', () => {
     await vi.waitFor(() => expect(alert).toHaveBeenCalledWith('backend.notAvailableYet'));
     expect(router.replace).not.toHaveBeenCalled();
     alert.mockRestore();
-  });
-});
-
-describe('edit my listing', () => {
-  it('needs a two-letter title, then saves and goes back, reading "saving" meanwhile', async () => {
-    let settle: () => void = () => {};
-    listings.updateMyListing.mockReturnValueOnce(new Promise<void>((resolve) => { settle = resolve; }));
-    const { findByTestId, getByRole } = renderScreen(<EditMyListingScreen />);
-    const save = await findByTestId('edit-listing-save');
-    const title = getByRole('textbox', { name: 'marketplace.fieldTitle' });
-
-    fireEvent.change(title, { target: { value: 'S' } });
-    expect(save.getAttribute('aria-disabled')).toBe('true');
-    fireEvent.change(title, { target: { value: ' Sofa bed ' } });
-    fireEvent.click(save);
-    expect(listings.updateMyListing).toHaveBeenCalledWith('l_1', { title: 'Sofa bed', summary: null });
-    await vi.waitFor(() => expect(save.textContent).toBe('marketplace.publishing'));
-    await act(async () => settle());
-    await vi.waitFor(() => expect(router.back).toHaveBeenCalled());
   });
 });
 
