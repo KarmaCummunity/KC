@@ -56,11 +56,11 @@ Index only — the binding wording lives in the linked spec files. All decided b
 | D50 | Iron-constitution core — open, later | 11 | Deferred |
 | D51 | General emergency — main admin only; org manager/security officer — inside the org | 09 | Approved |
 | D52 | Every challenge interaction earns karma; community > private, large > small | 07.6, 10 | Approved |
-| D53 | Every registered org is verified; can post jobs & recruit; org verification levels | 08 | Approved; job posting superseded by {{D:job-offer-org-switch}} |
+| D53 | Every registered org is verified; can post jobs & recruit; org verification levels | 08 | Approved; job posting superseded by D175 |
 | D54 | WhatsApp import consent — stays open | 13, 92 | Open |
 | D55 | Everything free for orgs for now; parallel tool for orgs | 08, 11 | Approved |
 | D56 | Verified official/state body declares emergency within its permissions | 09 | Approved |
-| D57 | Social venture = org; any registered org (incl. private person) may post jobs | 08 | Approved; job posting superseded by {{D:job-offer-org-switch}} |
+| D57 | Social venture = org; any registered org (incl. private person) may post jobs | 08 | Approved; job posting superseded by D175 |
 | D58 | Standing goals: spec maintenance, store release + updates, modular scalable code | 00 | Approved |
 | D59 | Items and all requests never expire; instead the owner gets relevance reminders (S3: 14 days after publish, then every 30 days) — answers P5 | 07.1 | Approved (PM 2026-10-30) |
 | D60 | Every world is shown in full. Two kinds: **active** worlds (full in-app flow, e.g. items, rides) and **portal** worlds (links + knowledge + org blocks). Launch flags choose active vs portal; they never hide a world — refines D3, answers Q-1 | 04, 14 | Approved (PM 2026-10-30) |
@@ -178,4 +178,4 @@ Index only — the binding wording lives in the linked spec files. All decided b
 | D169 | The super admin switches each giving world between portal and active from the admin portal, per environment (each database keeps its own launch flags); every build, testers' included, follows the flags as they are | 04, 12 | Approved (PM 2026-11-13) |
 | D170 | Employment opens with a basic slice: a job offer (give) and a job request (looking for work, take), each with role, scope and where, answered in chat; it is active on kc-dev only until the organization-only rule (#1476) ships, and the super admin switches it from the admin portal | 05 | Approved (PM 2026-11-13) |
 | D171 | Every member may publish and take in the animals world; no verified identity is needed. Lifts the verification rule of D125, matching the seed and the server (#2254) | 05.9 | Approved (PM 2026-11-16) |
-| {{D:job-offer-org-switch}} | A job offer is published only in the name of an organization allowed to post jobs: the platform organization, or one a platform admin switches on per organization until the verification levels record the legal right to employ; looking for work is open to every member. Supersedes the employment parts of D53 and D57 | 05.11 | Approved (PM 2026-11-16) |
+| D175 | A job offer is published only in the name of an organization allowed to post jobs: the platform organization, or one a platform admin switches on per organization until the verification levels record the legal right to employ; looking for work is open to every member. Supersedes the employment parts of D53 and D57 | 05.11 | Approved (PM 2026-11-16) |
