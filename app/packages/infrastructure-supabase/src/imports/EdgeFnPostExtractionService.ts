@@ -19,4 +19,9 @@ export class EdgeFnPostExtractionService implements IPostExtractionService {
     if (error || data === null || data === undefined) return null;
     return parseImportDraft(data);
   }
+
+  async attachPost(importId: string, postId: string): Promise<boolean> {
+    const { error } = await this.client.rpc('api_import_attach_post', { p_import_id: importId, p_post_id: postId });
+    return !error;
+  }
 }

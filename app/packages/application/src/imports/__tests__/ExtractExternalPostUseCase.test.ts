@@ -7,6 +7,7 @@ const request: PostExtractionRequest = { text: 'sofa for free', channel: 'paste'
 const draft: ImportDraft = { ...manualImportDraft('ok'), importId: 'imp-1', routing: 'confirm' };
 const serviceReturning = (result: ImportDraft | null | Error): IPostExtractionService => ({
   extract: vi.fn(() => (result instanceof Error ? Promise.reject(result) : Promise.resolve(result))),
+  attachPost: vi.fn(() => Promise.resolve(true)),
 });
 
 describe('ExtractExternalPostUseCase', () => {

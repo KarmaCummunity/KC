@@ -19,4 +19,11 @@ export interface IPostExtractionService {
    * the manual route, not `null`.
    */
   extract(request: PostExtractionRequest): Promise<ImportDraft | null>;
+
+  /**
+   * FR-IMPORT-007 AC3 — after the member publishes a post from an import draft, marks the post as
+   * imported from that import and links the two. Returns whether it was linked; a refusal or a
+   * failure is `false`, never an exception: the post already exists and must not be undone.
+   */
+  attachPost(importId: string, postId: string): Promise<boolean>;
 }
