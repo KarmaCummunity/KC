@@ -84,6 +84,19 @@ export function placeholderRows(text, registry) {
   return [...text.matchAll(row)].map((match) => match[1]);
 }
 
+/**
+ * 1-based line numbers of entries whose ID is the bare prefix: `| D | … |` or `## D- — …`.
+ * Such an entry is neither numbered nor a placeholder, so `assign` would never number it and
+ * nothing could cite it (KC#2021).
+ */
+export function bareIdRows(text, registry) {
+  const shape = ROW_SHAPES[registry.row];
+  // A table cell ends at the next `|`; a heading ID is followed by a space or the line end.
+  const end = registry.row === 'table' ? '\\*?\\s*\\|' : '(?=\\s|$)';
+  const row = new RegExp(`${shape.start}${escapeRegExp(registry.idPrefix)}${end}`);
+  return text.split('\n').flatMap((line, index) => (row.test(line) ? [index + 1] : []));
+}
+
 /** Every well-formed placeholder in a text, as `{ token, key, slug }`. */
 export function findPlaceholders(text) {
   return [...text.matchAll(PLACEHOLDER)].map(([token, key, slug]) => ({ token, key, slug }));
@@ -119,6 +132,11 @@ export function validate(registryTexts, placeholderTexts) {
       const token = `{{${registry.key}:${slug}}}`;
       if (defined.has(token)) errors.push(`${registry.file}: ${token} is defined by more than one entry`);
       defined.add(token);
+    }
+    for (const line of bareIdRows(text, registry)) {
+      errors.push(
+        `${registry.file}:${line}: the entry's ID is a bare "${registry.idPrefix}" (use a placeholder such as {{${registry.key}:short-slug}})`,
+      );
     }
   }
 
