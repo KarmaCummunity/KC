@@ -28,6 +28,7 @@ import { buildPostCreatePayload } from '../lib/unifiedCreate/unifiedCreatePayloa
 import { trackActivationIfFirst, trackCoreLoop } from '../lib/analyticsCoreLoop';
 import { useAuthStore } from '../store/authStore';
 import { closeCreateForm } from '../navigation/closeCreateForm';
+import { attachPendingImport } from '../lib/attachPendingImport';
 import type { UploadedAsset } from '../services/imageUpload';
 import type { PrePromptTrigger } from '../lib/notifications/usePushPermissionGate';
 
@@ -112,8 +113,10 @@ export function useCreatePostPublish(args: {
         }),
       );
     },
-    onSuccess: () => {
+    onSuccess: ({ post }) => {
       const { ownerId, city, street, streetNumber } = args;
+      // FR-IMPORT-007 AC3 — a post seeded from an import is recorded as imported (never blocks).
+      void attachPendingImport(post.postId);
       if (city) {
         useLastAddressStore.getState().setLastAddress({
           cityId: city.id,

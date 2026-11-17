@@ -12,17 +12,28 @@ export interface HeldImport {
 
 interface ImportDraftState {
   readonly held: HeldImport | null;
+  /** The import the form was seeded from; read once at publish to record the post as imported. */
+  readonly pendingImportId: string | null;
   hold: (draft: ImportDraft, pastedText: string) => void;
   /** Returns the held import and forgets it, so a later visit to the form does not prefill again. */
   take: () => HeldImport | null;
+  /** Returns the pending import id and forgets it, so one import is attached to one post only. */
+  consumePendingImportId: () => string | null;
 }
 
 export const useImportDraftStore = create<ImportDraftState>((set, get) => ({
   held: null,
+  pendingImportId: null,
   hold: (draft, pastedText) => set({ held: { draft, pastedText } }),
   take: () => {
     const held = get().held;
-    set({ held: null });
+    // The form now owns the draft; its import id waits here until the member publishes.
+    set({ held: null, pendingImportId: held?.draft.importId ?? null });
     return held;
+  },
+  consumePendingImportId: () => {
+    const id = get().pendingImportId;
+    set({ pendingImportId: null });
+    return id;
   },
 }));
