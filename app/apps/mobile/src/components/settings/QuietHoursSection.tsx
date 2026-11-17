@@ -53,7 +53,7 @@ function TimeField({ label, value, onCommit }: { label: string; value: string; o
           onChangeText={setText}
           onBlur={commit}
           onSubmitEditing={commit}
-          keyboardType="numbers-and-punctuation"
+          inputKind="time"
           maxLength={5}
           placeholder="22:00"
           accessibilityLabel={label}

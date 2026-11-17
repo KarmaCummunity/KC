@@ -67,6 +67,8 @@ function useHasText({ value, defaultValue, onChangeText }: TextInputProps) {
 export interface TextFieldProps extends TextInputProps {
   /** Visible label above the field; also the screen-reader name of the input. */
   readonly label: string;
+  /** Adds the red required star after the visible label, as `FormSection` does. */
+  readonly required?: boolean;
   /** Hide the visible label (the placeholder carries it); it stays the screen-reader name. */
   readonly hideLabel?: boolean;
   /** Guidance below the field; read as the accessibility hint. */
@@ -91,6 +93,7 @@ export interface TextFieldProps extends TextInputProps {
 export const TextField = forwardRef<TextInput, TextFieldProps>(function TextField(
   {
     label,
+    required = false,
     hideLabel,
     helperText,
     errorText,
@@ -151,6 +154,7 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
       {hideLabel ? null : (
         <Text style={styles.label} aria-hidden>
           {label}
+          {required ? <Text style={styles.required}> *</Text> : null}
         </Text>
       )}
       {/* The whole box is the tap target, so a tap on the icon still focuses the input. */}
@@ -207,6 +211,7 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
 const useTextFieldStyles = makeUseStyles(({ colors }) => ({
   container: { gap: spacing.xs },
   label: { ...typography.label, color: colors.textSecondary, textAlign: rtlTextAlignStart },
+  required: { color: colors.error },
   field: {
     // Plain `row`: it already starts on the reading-start edge (native mirrors it
     // under forceRTL, web inherits `dir="rtl"`), so the icon lands on the start side.

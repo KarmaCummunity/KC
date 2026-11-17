@@ -16,6 +16,7 @@ import { ANIMALS_FIELD_SPECS } from './animalsFieldSpecs';
 import { EMPLOYMENT_FIELD_SPECS } from './employmentFieldSpecs';
 import { HOUSING_FIELD_SPECS } from './housingFieldSpecs';
 import { KNOWLEDGE_FIELD_SPECS } from './knowledgeFieldSpecs';
+import type { FormInputKind } from '../platform/formTextInputHints';
 
 /** Shows a field only while another detail holds a given value. */
 interface VisibleWhen {
@@ -43,7 +44,8 @@ export type ListingFieldSpec =
   | (BaseSpec & { readonly type: 'amount'; readonly max: number })
   // An optional whole number typed in, clamped to [min, max] (an event's capacity).
   | (BaseSpec & { readonly type: 'integer'; readonly min: number; readonly max: number })
-  | (BaseSpec & { readonly type: 'text'; readonly multiline?: boolean; readonly maxLength: number })
+  // Free text; `inputKind` picks the keyboard when the text has a known shape (a link, FR-RESP-006 AC26).
+  | (BaseSpec & { readonly type: 'text'; readonly multiline?: boolean; readonly maxLength: number; readonly inputKind?: FormInputKind })
   | (BaseSpec & { readonly type: 'toggle'; readonly defaultValue?: boolean })
   // Bookable time slots of a knowledge lesson or consulting hour (#2034): `[{starts_at, ends_at}]`.
   | (BaseSpec & { readonly type: 'slotList'; readonly maxSlots: number })

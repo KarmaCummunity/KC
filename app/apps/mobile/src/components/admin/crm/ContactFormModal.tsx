@@ -63,7 +63,7 @@ export function ContactFormModal({ initial, orgId, onClose, onSaved }: ContactFo
       <FormScrollView style={styles.sheet} contentContainerStyle={styles.content}>
         <Text style={styles.title}>{isEdit ? t.form.editTitle : t.form.createTitle}</Text>
 
-        <TextField label={t.form.nameLabel}         value={name}         onChangeText={setName} />
+        <TextField label={t.form.nameLabel} value={name} onChangeText={setName} inputKind="name" />
         <TextField label={t.form.organizationLabel} value={organization} onChangeText={setOrg} />
         <TextField label={t.form.emailLabel} value={email} onChangeText={setEmail} inputKind="email" />
         <TextField label={t.form.phoneLabel} value={phone} onChangeText={setPhone} inputKind="phone" />

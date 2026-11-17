@@ -66,6 +66,12 @@ describe('TextField', () => {
     expect(fieldBorderColor(input)).toBe(rgb(lightColors.error));
   });
 
+  it('marks a required field with the red star, without changing its screen-reader name', () => {
+    const { getByText, getByLabelText } = withTheme(<TextField label="Title" required />);
+    expect(getByText('*', { exact: false })).toBeTruthy();
+    expect(getByLabelText('Title')).toBeTruthy();
+  });
+
   it('forwards the ref to the native input', () => {
     const ref = createRef<TextInput>();
     const { getByLabelText } = withTheme(<TextField ref={ref} label="Name" />);

@@ -116,7 +116,8 @@ export function EditPostFormScrollContent({
       <FormSection outlined={false}>
         <TextField
           testID="edit-post-title"
-          label={`${t('post.editPost.sectionTitle')} *`}
+          label={t('post.editPost.sectionTitle')}
+          required
           errorText={fieldErrors.title ?? undefined}
           value={title}
           onChangeText={onTitleChange}
