@@ -9,6 +9,11 @@ function service(result: { data: unknown; error: unknown }) {
   return { svc: new EdgeFnPostExtractionService({ functions: { invoke } } as unknown as SupabaseClient), invoke };
 }
 
+function rpcService(error: unknown) {
+  const rpc = vi.fn().mockResolvedValue({ data: null, error });
+  return { svc: new EdgeFnPostExtractionService({ rpc } as unknown as SupabaseClient), rpc };
+}
+
 describe('EdgeFnPostExtractionService', () => {
   it('calls extract-external-post with the text, channel and platform and nothing else', async () => {
     const { svc, invoke } = service({ data: { routing: 'manual', reason: 'disabled', extraction: null }, error: null });
@@ -35,5 +40,17 @@ describe('EdgeFnPostExtractionService', () => {
     [{ data: undefined, error: null }],
   ])('no usable answer is null (%j)', async (result) => {
     expect(await service(result).svc.extract(request)).toBeNull();
+  });
+
+  describe('attachPost', () => {
+    it('calls api_import_attach_post with the two ids and says it linked', async () => {
+      const { svc, rpc } = rpcService(null);
+      expect(await svc.attachPost('imp-1', 'post-1')).toBe(true);
+      expect(rpc).toHaveBeenCalledWith('api_import_attach_post', { p_import_id: 'imp-1', p_post_id: 'post-1' });
+    });
+
+    it('a refusal or an error is false, never a throw', async () => {
+      expect(await rpcService({ message: 'import_not_found', code: 'P0002' }).svc.attachPost('i', 'p')).toBe(false);
+    });
   });
 });

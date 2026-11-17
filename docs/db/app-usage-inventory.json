@@ -20,8 +20,8 @@
    "distinct": 4
   },
   "rpc": {
-   "callSites": 276,
-   "distinct": 252
+   "callSites": 277,
+   "distinct": 253
   },
   "table": {
    "callSites": 189,
@@ -1546,6 +1546,15 @@
    "symbol": "EdgeFnPostExtractionService.extract",
    "via": "literal",
    "name": "extract-external-post"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/imports/EdgeFnPostExtractionService.ts",
+   "line": 24,
+   "area": "imports",
+   "symbol": "EdgeFnPostExtractionService.attachPost",
+   "via": "literal",
+   "name": "api_import_attach_post"
   },
   {
    "kind": "rpc",

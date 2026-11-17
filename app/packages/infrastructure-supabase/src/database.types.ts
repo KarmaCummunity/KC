@@ -2870,6 +2870,7 @@ export type Database = {
           shown_street_number: string | null
           source: string
           source_language: string | null
+          source_platform: string | null
           status: string
           status_before_removal: string | null
           time_window: unknown
@@ -2901,6 +2902,7 @@ export type Database = {
           shown_street_number?: string | null
           source?: string
           source_language?: string | null
+          source_platform?: string | null
           status?: string
           status_before_removal?: string | null
           time_window?: unknown
@@ -2932,6 +2934,7 @@ export type Database = {
           shown_street_number?: string | null
           source?: string
           source_language?: string | null
+          source_platform?: string | null
           status?: string
           status_before_removal?: string | null
           time_window?: unknown
@@ -4589,6 +4592,10 @@ export type Database = {
           p_intent_id: string
           p_provider_ref: string
         }
+        Returns: undefined
+      }
+      api_import_attach_post: {
+        Args: { p_import_id: string; p_post_id: string }
         Returns: undefined
       }
       api_match_llm_pending: {
