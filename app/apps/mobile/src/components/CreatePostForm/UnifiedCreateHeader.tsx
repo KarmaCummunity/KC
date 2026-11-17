@@ -4,10 +4,12 @@
 // toggle — which is hidden for worlds whose form is "add a link" (they have no give / take direction).
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ScrollView, TouchableOpacity, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { iconSize, makeUseStyles, spacing, useTheme, Text } from '@kc/ui';
 import { Chip } from '../ui/Chip';
+import { useFeatureFlag } from '../../hooks/useFeatureFlag';
 import { useCreatePostStyles } from '../../screens/tabs/create.styles';
 import type {
   CreateCategoryConfig,
@@ -40,9 +42,12 @@ export function UnifiedCreateHeader({
   onDirectionChange,
 }: Props) {
   const { t } = useTranslation();
+  const router = useRouter();
   const { colors } = useTheme();
   const styles = useCreatePostStyles();
   const header = useHeaderStyles();
+  // FR-IMPORT-001 AC4: the import entry exists only while the feature is switched on.
+  const importEnabled = useFeatureFlag('external_post_import_enabled');
   const scrollRef = useRef<ScrollView>(null);
   const [viewportWidth, setViewportWidth] = useState(0);
   const chipBoxes = useRef<Record<string, { x: number; width: number }>>({});
@@ -112,6 +117,11 @@ export function UnifiedCreateHeader({
           {toggle('request', 'search-outline', t('post.unifiedCreate.request'))}
           {toggle('give', 'gift-outline', t('post.unifiedCreate.offer'))}
         </View>
+      ) : null}
+      {importEnabled ? (
+        <TouchableOpacity testID="create-import-entry" onPress={() => router.push('/import-post')} accessibilityRole="button" accessibilityHint={t('postImport.entryHint')}>
+          <Text style={styles.sectionLabel}>{t('postImport.entry')}</Text>
+        </TouchableOpacity>
       ) : null}
     </View>
   );
