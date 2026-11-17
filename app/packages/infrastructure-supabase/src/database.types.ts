@@ -1624,6 +1624,7 @@ export type Database = {
           id: string
           is_platform: boolean
           is_verified_nonprofit: boolean
+          may_post_jobs: boolean
           name: string
           org_type: string | null
           public_about_en: string | null
@@ -1656,6 +1657,7 @@ export type Database = {
           id?: string
           is_platform?: boolean
           is_verified_nonprofit?: boolean
+          may_post_jobs?: boolean
           name: string
           org_type?: string | null
           public_about_en?: string | null
@@ -1688,6 +1690,7 @@ export type Database = {
           id?: string
           is_platform?: boolean
           is_verified_nonprofit?: boolean
+          may_post_jobs?: boolean
           name?: string
           org_type?: string | null
           public_about_en?: string | null
@@ -4363,6 +4366,10 @@ export type Database = {
       }
       admin_set_manager: {
         Args: { p_grant_id: string; p_manager_grant_id?: string }
+        Returns: undefined
+      }
+      admin_set_org_may_post_jobs: {
+        Args: { p_enabled: boolean; p_org_id: string }
         Returns: undefined
       }
       admin_set_org_slug: {

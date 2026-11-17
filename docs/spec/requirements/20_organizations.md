@@ -330,6 +330,7 @@ Web link: `https://karma.community/org/{slug}` (same Universal Link / App Link s
 - AC1. The profile header shows the highest level as a badge with Hebrew label: 1 *"ארגון רשום ב-KC"*, 2 *"ניהול תקין"*, 3 *"דירוג מידות"*, 4 *"שקיפות"*, 5 *"אפקטיביות"*; tapping explains the level (sheet). Levels are set by KC admins (`admin_org_set_verification_level`, audited) or by rules defined in `08_organizations.md` S40/S41 when they land.
 - AC2. Search sub-filter *"רמת אימות"* and the card badge read the same column.
 - AC3. The Section 46(a) badge from `spec/19_org_finance.md` FR-FIN-007 renders beside the level badge when active.
+- AC4. Until a level records the legal right to employ, a separate switch set by platform admins says whether the organization may publish job offers (`organizations.may_post_jobs`, `admin_set_org_may_post_jobs`, audited; `spec/05_giving_worlds.md` §5.11, `{{D:job-offer-org-switch}}`). The platform organization always may.
 
 ---
 
