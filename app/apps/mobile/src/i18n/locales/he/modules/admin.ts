@@ -14,6 +14,7 @@ import { adminTasksHe } from './adminTasks';
 import { adminAdminsParityHe } from './adminAdminsParity';
 import { adminRolesParityHe } from './adminHierarchyParity';
 import { adminWorldsHe } from './adminWorlds';
+import { adminOrgJobsHe } from './adminOrgJobs';
 
 export const adminHe = {
   portalTitle: 'פורטל ניהול',
@@ -36,6 +37,7 @@ export const adminHe = {
     donationLinks: 'קישורי תרומה',
     stats:         'סטטיסטיקות',
     worlds:        'עולמות נתינה',
+    orgJobs:       'ארגונים ומשרות',
   },
   roles: {
     super_admin: 'מנהל-על',
@@ -66,6 +68,7 @@ export const adminHe = {
     donationLinks: 'תרומה קישור',
     stats: 'סטטיסטיקה נתונים מדדים',
     worlds: 'עולם עולמות פורטל הפעלה דגל קטגוריה',
+    orgJobs: 'משרה משרות תעסוקה עבודה ארגון מעסיק אישור',
   },
   dashboard: {
     welcome: 'ברוך הבא לפורטל הניהול',
@@ -177,5 +180,6 @@ export const adminHe = {
   orgApprovals: adminOrgApprovalsHe,
   donationLinks: adminDonationLinksHe,
   worlds: adminWorldsHe,
+  orgJobs: adminOrgJobsHe,
   surveys: adminSurveysHe,
 } as const;
