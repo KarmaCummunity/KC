@@ -11,6 +11,7 @@ import { iconSize, makeUseStyles, spacing, useTheme, Text } from '@kc/ui';
 import { Chip } from '../ui/Chip';
 import { useFeatureFlag } from '../../hooks/useFeatureFlag';
 import { useCreatePostStyles } from '../../screens/tabs/create.styles';
+import { ImportReviewNotice } from './ImportReviewNotice';
 import type {
   CreateCategoryConfig,
   CreateCategoryId,
@@ -83,6 +84,8 @@ export function UnifiedCreateHeader({
 
   return (
     <View style={header.wrap} testID="unified-create-header">
+      {/* FR-IMPORT-007 AC2: shown only while the form holds a seeded import draft. */}
+      <ImportReviewNotice />
       <Text style={styles.sectionLabel}>{t('post.unifiedCreate.categoryLabel')}</Text>
       {/* testID: Maestro swipes this row to reach chips beyond the screen edge (flow 13). */}
       <ScrollView

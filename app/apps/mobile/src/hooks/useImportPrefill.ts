@@ -14,6 +14,8 @@ interface Args {
   readonly selectCategory: (id: CreateCategoryId, direction?: CreateDirection) => void;
   readonly setTitle: (title: string) => void;
   readonly setDescription: (description: string) => void;
+  /** The items form's city; the world forms seed their own city (useImportListingSeed). */
+  readonly setCity: (city: { id: string; name: string }) => void;
 }
 
 /** Expo Router may hand a repeated query key over as an array; keep the first value. */
@@ -24,7 +26,7 @@ function firstParam(value: string | string[] | undefined): string | null {
 /** The kinds and sub-categories are loaded by the listing form itself; here only the basics are needed. */
 const NO_LOOKUPS = { kinds: [], subcategories: [] } as const;
 
-export function useImportPrefill({ ready, selectCategory, setTitle, setDescription }: Args): void {
+export function useImportPrefill({ ready, selectCategory, setTitle, setDescription, setCity }: Args): void {
   const params = useLocalSearchParams<{ importDraft?: string | string[] }>();
   const requested = firstParam(params.importDraft) === '1';
   const applied = useRef(false);
@@ -42,5 +44,10 @@ export function useImportPrefill({ ready, selectCategory, setTitle, setDescripti
     selectCategory(seed.categoryId, seed.direction ?? undefined);
     setTitle(seed.title);
     setDescription(seed.description);
-  }, [requested, ready, selectCategory, setTitle, setDescription]);
+    // Only a city the catalog matched clearly; setting it also stops the last-address prefill.
+    if (seed.city) setCity(seed.city);
+  }, [requested, ready, selectCategory, setTitle, setDescription, setCity]);
+
+  // Closing the form drops the import: a later post must never be seeded or marked from it.
+  useEffect(() => () => useImportDraftStore.getState().forget(), []);
 }

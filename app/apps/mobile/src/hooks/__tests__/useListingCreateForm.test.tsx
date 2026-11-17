@@ -9,6 +9,8 @@ const { repo, auth, upload, track, activation, remember } = vi.hoisted(() => ({
   auth: { current: 'u1' as string | null }, upload: vi.fn(), track: vi.fn(), activation: vi.fn(), remember: vi.fn(),
 }));
 vi.hoisted(() => { (globalThis as { __DEV__?: boolean }).__DEV__ = false; });
+const attach = vi.hoisted(() => vi.fn());
+vi.mock('../../lib/attachPendingImport', () => ({ attachPendingImport: attach }));
 vi.mock('../../components/giving/RideCreateSection', () => ({ RIDE_CREATE_DETAIL_KEYS: [] }));
 vi.mock('../../services/postsComposition', async () => (await import('../../lib/unifiedCreate/__tests__/listingExposureDoubles')).postsCompositionDouble);
 vi.mock('../../services/userComposition', async () => (await import('../../lib/unifiedCreate/__tests__/listingExposureDoubles')).userCompositionDouble);
@@ -66,6 +68,8 @@ describe('useListingCreateForm', () => {
     expect(upload).toHaveBeenCalledWith('u1', [{ uri: 'file://bread.jpg' }]);
     expect(repo.createListing).toHaveBeenCalledWith({ kindId: 'k1', title: 'Bread', summary: 'fresh', details: { expires_at: '2030-01-01' }, direction: null, cityId: 'city-1', lat: null, lng: null, maxRadiusKm: 25, media: [{ path: 'u1/bread.jpg', mimeType: 'image/jpeg', sizeBytes: 81920 }], externalBodyId: null, categoryId: 'cat-cooked', visibility: 'Public', locationDisplayLevel: 'CityAndStreet' });
     expect(onPublished).toHaveBeenCalledWith('l1');
+    // FR-IMPORT-007 AC3 — the published post id is handed to the import attach step.
+    expect(attach).toHaveBeenCalledWith('l1');
     expect(track).toHaveBeenCalledWith('listing_created', { world: 'food', cityId: 'city-1' });
     expect(activation).toHaveBeenCalledWith({ world: 'food', cityId: 'city-1', accountCreatedAt: 'today' });
     repo.createListing.mockRejectedValueOnce(new Error('offline'));
@@ -121,6 +125,7 @@ describe('republish an expired listing (D127)', () => {
       { path: 'u1/b/1.jpg', mimeType: 'image/jpeg', sizeBytes: 2048 },
     ]);
     expect(onPublished).toHaveBeenCalledWith('new-1');
+    expect(attach).toHaveBeenCalledWith('new-1');
   });
 
   it('asks for the food type when the source has none', async () => {
@@ -154,6 +159,8 @@ describe('republish an expired listing (D127)', () => {
     expect(repo.createListing).not.toHaveBeenCalled();
     expect(repo.updateMyListing).toHaveBeenCalledWith('old-1', expect.objectContaining({ details: open.details }));
     expect(onSaved).toHaveBeenCalled();
+    // An edit is not a new post: no import is ever attached to it.
+    expect(attach).not.toHaveBeenCalled();
   });
 
   it('an edit saves the audience the owner picked (FR-POST-009: either way, at any time)', async () => {
