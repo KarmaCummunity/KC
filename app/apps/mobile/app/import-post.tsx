@@ -7,7 +7,7 @@ import { TouchableOpacity, View } from 'react-native';
 import { Redirect, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
-import { iconSize, makeUseStyles, spacing, useTheme, Text } from '@kc/ui';
+import { iconSize, makeUseStyles, spacing, typography, useTheme, Text } from '@kc/ui';
 import { Screen } from '../src/components/ui/Screen';
 import { FormScreen, PrimaryButton, TextField } from '../src/components/ui';
 import { useFeatureFlag } from '../src/hooks/useFeatureFlag';
@@ -17,7 +17,7 @@ export { RouteErrorBoundary as ErrorBoundary } from '../src/components/RouteErro
 
 const useStyles = makeUseStyles(({ colors }) => ({
   header: { flexDirection: 'row' as const, alignItems: 'center' as const, justifyContent: 'space-between' as const, padding: spacing.base },
-  title: { fontSize: 18, fontWeight: '600' as const, color: colors.textPrimary },
+  title: { ...typography.h2, color: colors.textPrimary },
   body: { gap: spacing.base, padding: spacing.base },
   hint: { color: colors.textSecondary },
   own: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: spacing.sm },
