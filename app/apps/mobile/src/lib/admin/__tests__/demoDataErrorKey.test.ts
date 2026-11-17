@@ -1,6 +1,6 @@
 // Mapped to spec: FR-ADMIN-031 — every refusal of the demo-data tools has its own explanation.
 import { describe, expect, it } from 'vitest';
-import { DemoDataError } from '@kc/domain';
+import { DEMO_DATA_SEED_PHASES, DemoDataError } from '@kc/domain';
 import { bothLocaleBundles } from '../../../i18n/useLocaleBundle';
 import { demoDataErrorKey } from '../demoDataErrorKey';
 
@@ -10,16 +10,34 @@ describe('demoDataErrorKey', () => {
     expect(demoDataErrorKey(new DemoDataError('cannot_wipe_self'))).toBe('cannotWipeSelf');
     expect(demoDataErrorKey(new DemoDataError('demo_operation_busy'))).toBe('operationBusy');
     expect(demoDataErrorKey(new DemoDataError('not_installed'))).toBe('notInstalled');
+    expect(demoDataErrorKey(new DemoDataError('outdated'))).toBe('outdated');
     expect(demoDataErrorKey(new DemoDataError('unknown'))).toBe('generic');
     expect(demoDataErrorKey(new Error('network'))).toBe('generic');
   });
 
   it('every line exists in both languages', () => {
     const { he, en } = bothLocaleBundles();
-    for (const err of ['forbidden', 'password_required', 'password_too_short', 'timeout', 'incomplete'] as const) {
+    for (const err of ['forbidden', 'password_required', 'password_too_short', 'timeout', 'incomplete', 'outdated'] as const) {
       const key = demoDataErrorKey(new DemoDataError(err));
       expect(he.admin.demoData.errors[key]).toBeTruthy();
       expect(en.admin.demoData.errors[key]).toBeTruthy();
+    }
+  });
+
+  // The restore reports its phase by key; a phase without a label would show no progress.
+  it('every restore and wipe phase has a progress label in both languages', () => {
+    const { he, en } = bothLocaleBundles();
+    for (const phase of [...DEMO_DATA_SEED_PHASES, 'done'] as const) {
+      expect(he.admin.demoData.progress[phase]).toBeTruthy();
+      expect(en.admin.demoData.progress[phase]).toBeTruthy();
+    }
+  });
+
+  it('names the environment the build is connected to in both languages', () => {
+    const { he, en } = bothLocaleBundles();
+    for (const bundle of [he, en]) {
+      expect(bundle.admin.demoData.connectedTo.development).toBeTruthy();
+      expect(bundle.admin.demoData.connectedTo.production).toBeTruthy();
     }
   });
 });
