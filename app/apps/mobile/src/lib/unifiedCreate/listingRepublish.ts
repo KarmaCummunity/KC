@@ -89,13 +89,15 @@ export interface ListingRepublishSeed {
   readonly details: Record<string, unknown>;
   readonly isOrgEvent: boolean;
   readonly orgId: string | null;
+  /** The source's world subcategory (the food type of a food offer); null when it has none. */
+  readonly worldSubcategoryId: string | null;
   /** The source's photos, in order, with their recorded type and size; reused as-is (already in the owner's storage folder). */
   readonly media: MediaAssetInput[];
 }
 
 /** The republish seed of `source` (see ListingRepublishSeed). */
 export function listingRepublishSeed(
-  source: Pick<MarketplaceListingDetail, 'kindSlug' | 'details' | 'media'>,
+  source: Pick<MarketplaceListingDetail, 'kindSlug' | 'details' | 'media' | 'worldSubcategoryId'>,
 ): ListingRepublishSeed {
   const { org_id: orgId, ...rest } = withoutTimeBoundDetails(source.details);
   return {
@@ -103,6 +105,7 @@ export function listingRepublishSeed(
     details: rest,
     isOrgEvent: source.kindSlug === ORG_EVENT_KIND_SLUG,
     orgId: typeof orgId === 'string' ? orgId : null,
+    worldSubcategoryId: source.worldSubcategoryId ?? null,
     media: [...source.media]
       .sort((a, b) => a.sortOrder - b.sortOrder)
       // A file without a recorded size cannot be attached again (`post_media` requires one).

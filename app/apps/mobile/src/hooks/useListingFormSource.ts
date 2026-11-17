@@ -1,7 +1,8 @@
 // Mapped to spec: FR-POST-001 AC3 (owner edit, G1) + D127 (republish an expired post as a new one).
 // The listing the listing form starts from. Edit loads the listing and fills the form with all of
 // its details (saved through `updateMyListing`). Republish loads the source the same way but fills
-// the form with everything except its dates, keeps its photos, and publishes a NEW listing. Also
+// the form with everything except its dates, keeps its photos and its world subcategory, and
+// publishes a NEW listing. Also
 // owns the "a new kind starts from its own defaults" reset, because a republish seed has to
 // survive the kind switch it causes.
 import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
@@ -24,6 +25,8 @@ interface Args {
   readonly setDetails: Dispatch<SetStateAction<Record<string, unknown>>>;
   readonly setCity: (city: City | null) => void;
   readonly setChosenKindSlug: (slug: string | null) => void;
+  /** Selects the world subcategory; a republish starts from the source's (KC#2042). */
+  readonly setSubcategoryId: (id: string | null) => void;
   readonly setError: (problem: null) => void;
   readonly eventChoice: OrgEventChoice;
 }
@@ -36,6 +39,7 @@ export function useListingFormSource({
   setDetails,
   setCity,
   setChosenKindSlug,
+  setSubcategoryId,
   setError,
   eventChoice,
 }: Args) {
@@ -91,10 +95,12 @@ export function useListingFormSource({
     if (seed.isOrgEvent && seed.orgId) setWantsOrgEvent(true);
     else if (seed.isOrgEvent) setWantsPersonalEvent(true);
     if (seed.orgId) setOrgId(seed.orgId);
+    // The subcategory is not a detail of the kind, so it does not wait for the kind switch.
+    if (seed.worldSubcategoryId) setSubcategoryId(seed.worldSubcategoryId);
     setCarriedMedia(seed.media);
     pendingSeed.current = seed;
     setSeedVersion((v) => v + 1);
-  }, [sourceId, editListingId, sourceQuery.data, setCity, setChosenKindSlug, setDetails, setError, setWantsOrgEvent, setWantsPersonalEvent, setOrgId]);
+  }, [sourceId, editListingId, sourceQuery.data, setCity, setChosenKindSlug, setSubcategoryId, setDetails, setError, setWantsOrgEvent, setWantsPersonalEvent, setOrgId]);
 
   return {
     /** The source is still loading; the form shows a spinner and cannot publish yet. */

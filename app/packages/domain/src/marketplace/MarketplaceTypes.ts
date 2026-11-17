@@ -89,6 +89,8 @@ export interface MarketplaceListingDetail {
   readonly summary: string | null;
   readonly details: Record<string, unknown>;
   readonly cityId: string | null;
+  /** The post's world subcategory (food type, item subcategory); null or absent when it has none. */
+  readonly worldSubcategoryId?: string | null;
   /** Who may see the listing; absent when the source does not say. */
   readonly visibility?: PostVisibility;
   /** How much of the address the listing shows; absent when the source does not say. */
