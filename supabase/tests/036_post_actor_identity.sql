@@ -92,10 +92,10 @@ select is(pg_temp.act('b', $$select public.upsert_post_actor_identity(#01, 'Publ
 select is(pg_temp.act('a', $$select public.upsert_post_actor_identity(#01, 'Everyone', false)$$), 'invalid_surface_visibility', 'the audience must be a known level');
 select is(pg_temp.act('a', $$select public.upsert_post_actor_identity(#01, 'Public', false, 'Secret')$$), 'invalid_identity_visibility', 'so must the identity level');
 select is(pg_temp.act('a', $$select public.upsert_post_actor_identity('10000000-0000-4000-8000-000000000099', 'Public', false)$$), 'post_not_found', 'a missing post is reported');
+select is(pg_temp.act('a', $$select public.upsert_post_actor_identity(#01, 'FollowersOnly', false)$$), 'followers_only_requires_private', 'a public profile cannot limit a post to followers');
 update public.users set privacy_mode = 'Private' where id = '00000000-0000-4000-8000-00000000000a';
-select is(pg_temp.act('a', $$select public.upsert_post_actor_identity(#01, 'FollowersOnly', false)$$), 'followers_only_requires_public_profile', 'followers-only audience needs a public profile');
-update public.users set privacy_mode = 'Public' where id = '00000000-0000-4000-8000-00000000000a';
 select is(pg_temp.act('a', $$select public.upsert_post_actor_identity(#01, 'FollowersOnly', true)$$), 'ok', 'the owner sets the audience of an open post');
+update public.users set privacy_mode = 'Public' where id = '00000000-0000-4000-8000-00000000000a';
 select is(pg_temp.q('a', $$select surface_visibility || hide_from_counterparty::text || coalesce(identity_visibility, '-') from public.post_actor_identity where post_id = #01$$),
   'FollowersOnlytrue-', 'the row keeps the choice and leaves the identity level to the world');
 select is(pg_temp.q('a', $$select visibility from public.posts where id = #01$$), 'Public', 'an open post keeps its own audience column');

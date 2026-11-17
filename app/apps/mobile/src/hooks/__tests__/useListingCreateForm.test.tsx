@@ -155,6 +155,15 @@ describe('republish an expired listing (D127)', () => {
     expect(repo.updateMyListing).toHaveBeenCalledWith('old-1', expect.objectContaining({ details: open.details }));
     expect(onSaved).toHaveBeenCalled();
   });
+
+  it('an edit saves the audience the owner picked (FR-POST-009: either way, at any time)', async () => {
+    repo.getListingDetail.mockResolvedValue({ ...source, visibility: 'Public', details: { food_type: 'cooked', expires_at: '2099-01-01T10:00:00Z' } });
+    const { result } = renderHook(() => useListingCreateForm({ worldSlug: 'food', direction: 'give', title: 'Soup', summary: '', onPublished: vi.fn(), editListingId: 'old-1', onSaved: vi.fn() }), { wrapper });
+    await waitFor(() => expect(result.current.canPublish).toBe(true));
+    act(() => result.current.exposure.setVisibility('OnlyMe'));
+    await act(() => result.current.publish());
+    expect(repo.updateMyListing).toHaveBeenCalledWith('old-1', expect.objectContaining({ visibility: 'OnlyMe' }));
+  });
 });
 
 describe('rideAutoTitle (#1411)', () => {
