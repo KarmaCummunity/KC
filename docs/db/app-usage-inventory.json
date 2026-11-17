@@ -16,8 +16,8 @@
    "distinct": 9
   },
   "edge_function": {
-   "callSites": 4,
-   "distinct": 3
+   "callSites": 5,
+   "distinct": 4
   },
   "rpc": {
    "callSites": 276,
@@ -1537,6 +1537,15 @@
     "select"
    ],
    "name": "posts"
+  },
+  {
+   "kind": "edge_function",
+   "file": "app/packages/infrastructure-supabase/src/imports/EdgeFnPostExtractionService.ts",
+   "line": 15,
+   "area": "imports",
+   "symbol": "EdgeFnPostExtractionService.extract",
+   "via": "literal",
+   "name": "extract-external-post"
   },
   {
    "kind": "rpc",

@@ -1925,6 +1925,33 @@
    ]
   },
   {
+   "old": "extract-external-post",
+   "kind": "edge_function",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "New function of the external post import (ADR-008): the app invokes it with the shared text, channel and source platform; the member comes from the session.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "edge",
+     "name": "extract-external-post"
+    }
+   ],
+   "areas": [
+    "imports"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/imports/EdgeFnPostExtractionService.ts",
+     "line": 15,
+     "symbol": "EdgeFnPostExtractionService.extract",
+     "area": "imports"
+    }
+   ]
+  },
+  {
    "old": "validate-donation-link",
    "kind": "edge_function",
    "status": "same",

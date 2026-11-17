@@ -57,6 +57,7 @@ export * from './imports/fingerprint';
 export * from './imports/validateExtraction';
 export * from './imports/resolveRelativeTime';
 export * from './imports/recalibrateConfidence';
+export * from './imports/importDraft';
 export * from './translations/TranslationTypes';
 export * from './translations/TranslationError';
 export * from './translations/TranslationRequest';
