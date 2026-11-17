@@ -20,7 +20,7 @@ const extraction: ExtractedPost = {
 const usable: ImportDraft = { ...manualImportDraft('ok'), routing: 'confirm', extraction };
 
 function setup(over: { ready?: boolean } = {}) {
-  const fns = { selectCategory: vi.fn(), setTitle: vi.fn(), setDescription: vi.fn() };
+  const fns = { selectCategory: vi.fn(), setTitle: vi.fn(), setDescription: vi.fn(), setCity: vi.fn() };
   const view = renderHook((p: { ready: boolean }) => useImportPrefill({ ...p, ...fns }), { initialProps: { ready: over.ready ?? true } });
   return { fns, ...view };
 }
@@ -28,7 +28,7 @@ function setup(over: { ready?: boolean } = {}) {
 describe('useImportPrefill', () => {
   beforeEach(() => {
     mocks.params = { importDraft: '1' };
-    useImportDraftStore.setState({ held: null });
+    useImportDraftStore.setState({ held: null, pendingImportId: null, seededDraft: null, review: null });
   });
 
   it('opens the world, direction, title and description of a usable draft', () => {
@@ -76,5 +76,27 @@ describe('useImportPrefill', () => {
     const { fns } = setup();
     expect(fns.selectCategory).not.toHaveBeenCalled();
     expect(fns.setDescription).not.toHaveBeenCalled();
+  });
+
+  it('seeds a clearly matched city and leaves an unsure one to the member', () => {
+    const picked = { status: 'picked' as const, picked: { level: 'city' as const, placeId: 'c1', nameHe: 'Haifa', cityId: null, score: 0.95, margin: 0.3 }, suggestions: [] };
+    useImportDraftStore.getState().hold({ ...usable, city: picked }, 'pasted');
+    const { fns } = setup();
+    expect(fns.setCity).toHaveBeenCalledWith({ id: 'c1', name: 'Haifa' });
+  });
+
+  it('a draft with no picked city does not touch the city', () => {
+    useImportDraftStore.getState().hold(usable, 'pasted');
+    const { fns } = setup();
+    expect(fns.setCity).not.toHaveBeenCalled();
+  });
+
+  it('closing the form forgets the import, so a later post is not marked from it', () => {
+    useImportDraftStore.getState().hold({ ...usable, importId: 'imp-1' }, 'pasted');
+    const { unmount } = setup();
+    expect(useImportDraftStore.getState().pendingImportId).toBe('imp-1');
+    unmount();
+    expect(useImportDraftStore.getState().pendingImportId).toBeNull();
+    expect(useImportDraftStore.getState().review).toBeNull();
   });
 });

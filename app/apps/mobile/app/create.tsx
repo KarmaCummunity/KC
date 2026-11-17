@@ -69,7 +69,7 @@ export default function CreatePostScreen() {
   });
 
   // FR-IMPORT-007 AC1: `?importDraft=1` opens the world, direction and texts of the held import draft.
-  useImportPrefill({ ready, selectCategory, setTitle: form.setTitle, setDescription: form.setDescription });
+  useImportPrefill({ ready, selectCategory, setTitle: form.setTitle, setDescription: form.setDescription, setCity });
 
   const draftHydration = usePostDraftHydration(ownerId);
 

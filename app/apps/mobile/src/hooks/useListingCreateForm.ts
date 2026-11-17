@@ -39,6 +39,7 @@ import { useListingExposure } from './useListingExposure';
 import { withJobOfferOrg } from '../lib/unifiedCreate/jobOfferOrg';
 import { useJobOfferOrgChoice } from './useJobOfferOrgChoice';
 import { saveMaskOrWithdraw } from '../lib/unifiedCreate/saveMaskOrWithdraw';
+import { attachPendingImport } from '../lib/attachPendingImport';
 
 export { rideAutoTitle };
 
@@ -194,6 +195,7 @@ export function useListingCreateForm({
         const firstId = isRides ? await publishRideSeries(args, direction) : await publishEventSeries(args, city?.id ?? '');
         trackCoreLoop('listing_created', { world: worldSlug, cityId: isRides ? null : city?.id ?? null });
         if (isRides) void rememberRideRoute(submitted);
+        void attachPendingImport(firstId); // FR-IMPORT-007 AC3: the series' first post carries the import
         onPublished(firstId);
         return;
       }
@@ -232,6 +234,7 @@ export function useListingCreateForm({
         await afterRidePublished(id, submitted, houseNumbers, flags);
       }
       await address.save(id);
+      void attachPendingImport(id); // FR-IMPORT-007 AC3: a post seeded from an import is marked imported
       onPublished(id);
     } catch (err) {
       setError({ message: t(postSeriesErrorKey(err) ?? marketplaceServerErrorKey(err)), field: null });

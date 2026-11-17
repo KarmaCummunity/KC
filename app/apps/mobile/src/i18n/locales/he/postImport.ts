@@ -13,4 +13,20 @@ export const postImport = {
   submit: 'הכנת טיוטה',
   working: 'מכינים טיוטה',
   close: 'סגירה',
+  // The notice above the create form after an import (FR-IMPORT-007 AC2).
+  reviewTitle: 'הטופס מולא מתוך ההודעה שהדבקתם. בדקו אותו לפני הפרסום.',
+  reviewRemoved: 'הסרנו מהטקסט פרטי קשר כמו טלפון ומייל. בצ\'אט של KC אפשר לתאם בלי לחשוף אותם.',
+  reviewTruncated: 'ההודעה ארוכה, ולכן קראנו רק את ההתחלה שלה.',
+  reviewCheck: 'כדאי לבדוק במיוחד: {{fields}}',
+  fields: {
+    world: 'תחום',
+    direction: 'נותנים או מבקשים',
+    subcategory: 'קטגוריה',
+    title: 'כותרת',
+    city: 'עיר',
+    street: 'רחוב',
+    time: 'מועד',
+    origin: 'נקודת יציאה',
+    destination: 'יעד',
+  },
 } as const;

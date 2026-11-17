@@ -17,6 +17,7 @@ import { inlineProblemField, renderedListingFields } from '../../lib/unifiedCrea
 import { ListingLocationSection } from './ListingLocationSection';
 import { RideCreateSection } from '../giving/RideCreateSection';
 import { WorldSubcategoryPicker } from '../marketplace/WorldSubcategoryPicker';
+import { useImportListingSeed } from '../../hooks/useImportListingSeed';
 import { AdditionalWorldsPicker } from './AdditionalWorldsPicker';
 import { ListingDetailFields } from './ListingDetailFields';
 import { ListingFieldFrame, ListingFieldProblemContext } from './ListingFieldFrame';
@@ -78,6 +79,15 @@ export function ListingCreateForm({
     editListingId,
     onSaved,
     republishFromListingId,
+  });
+  // FR-IMPORT-007 AC1: a form opened from an import starts on the kind, sub-category and city it found.
+  useImportListingSeed({
+    worldSlug,
+    kinds: form.kindsQuery.data,
+    enabled: !editListingId && !republishFromListingId,
+    chooseKind: form.chooseKind,
+    setSubcategoryId: form.setSubcategoryId,
+    setCity: form.setCity,
   });
   const publishRef = useRef(form.publish);
   publishRef.current = form.publish;

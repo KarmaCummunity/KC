@@ -13,4 +13,20 @@ export const postImport = {
   submit: 'Make a draft',
   working: 'Making a draft',
   close: 'Close',
+  // The notice above the create form after an import (FR-IMPORT-007 AC2).
+  reviewTitle: 'The form was filled from the message you pasted. Check it before you publish.',
+  reviewRemoved: 'We removed contact details such as phone numbers and e-mails. In KC chat you can coordinate without sharing them.',
+  reviewTruncated: 'The message is long, so only its start was read.',
+  reviewCheck: 'Worth checking: {{fields}}',
+  fields: {
+    world: 'World',
+    direction: 'Giving or asking',
+    subcategory: 'Category',
+    title: 'Title',
+    city: 'City',
+    street: 'Street',
+    time: 'Time',
+    origin: 'Starting point',
+    destination: 'Destination',
+  },
 } as const;
