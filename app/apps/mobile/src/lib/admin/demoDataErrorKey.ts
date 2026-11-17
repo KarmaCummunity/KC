@@ -3,7 +3,7 @@ import { isDemoDataError, type DemoDataErrorCode } from '@kc/domain';
 
 export type DemoDataErrorKey =
   | 'generic' | 'forbidden' | 'notDevEnvironment' | 'cannotWipeSelf' | 'passwordRequired'
-  | 'passwordTooShort' | 'operationBusy' | 'notInstalled' | 'timeout' | 'incomplete';
+  | 'passwordTooShort' | 'operationBusy' | 'notInstalled' | 'outdated' | 'timeout' | 'incomplete';
 
 const KEY_BY_CODE: Readonly<Record<DemoDataErrorCode, DemoDataErrorKey>> = {
   forbidden: 'forbidden',
@@ -13,6 +13,7 @@ const KEY_BY_CODE: Readonly<Record<DemoDataErrorCode, DemoDataErrorKey>> = {
   password_too_short: 'passwordTooShort',
   demo_operation_busy: 'operationBusy',
   not_installed: 'notInstalled',
+  outdated: 'outdated',
   timeout: 'timeout',
   incomplete: 'incomplete',
   unknown: 'generic',

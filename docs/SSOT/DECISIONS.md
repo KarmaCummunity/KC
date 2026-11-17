@@ -2042,3 +2042,13 @@ Owner rules that go with it:
 **Why.** A PR that touches the app runs the Maestro lane for 40–90 minutes, and `dev` changes some `.github` file several times a day. On 2026-11-16 one PR lost five green runs this way, four of them to files no PR run uses (#2369). The binding still proves that the workflow and judges that ran are the base branch's own, and the merge-group run re-judges the final tree before anything merges.
 
 **Affected.** `scripts/ci-run-binding.mjs`, `docs/SSOT/ENVIRONMENTS.md`. `CI verdict` runs from `main`, so the rule takes effect with the next release to `main`.
+
+## D-241 — Every dev deploy installs the demo-data tools (2026-11-17)
+
+**Decision.** `deploy-db.yml` runs `supabase/seed/demo/load.sql` after the migrations whenever the target is `dev` (step **Demo-data tools (kc-dev only)**). The step refuses any project ref but kc-dev's and is skipped for prod. It installs the tools and sets the dev marker; it creates no demo data (no password is passed). The **Seed KC dev** action `demo` stays, for installing them between deploys.
+
+The Demo data screen keeps two failures apart: the RPC itself is missing (`not_installed`: kc-prod, by design) and the RPC ran but an object inside it is missing (`outdated`: an installed copy older than the schema). Both name the environment the build is connected to.
+
+**Why.** The tools are a seed, not a migration (`D-239`), so nothing brought a change to kc-dev except a manual workflow run. On 2026-11-17 kc-dev ran a copy two merges old (no `worlds` phase, no org staff in every role), and the screen answered "not installed" for every missing-object error, so a production-wired build, an old copy and a broken copy all looked the same (#2434).
+
+**Affected.** `.github/workflows/deploy-db.yml`, `supabase/seed/demo/README.md`, `docs/agents/DEPLOY.md`, `DemoData.ts` (`outdated`, `DEMO_DATA_SEED_PHASES`), `demoDataRows.ts`, `(admin)/demo-data`, `FR-ADMIN-031 AC1, AC11, AC12`.

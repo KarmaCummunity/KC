@@ -252,6 +252,7 @@ export default function ChatScreen() {
               }}
               placeholder={t('chat.inputPlaceholder')}
               placeholderTextColor={colors.textDisabled}
+              testID="chat-input"
               textAlign={rtlTextAlignStart}
               multiline
               maxLength={MESSAGE_MAX_CHARS}

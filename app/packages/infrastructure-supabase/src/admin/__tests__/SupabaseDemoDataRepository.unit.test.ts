@@ -86,4 +86,14 @@ describe('SupabaseDemoDataRepository', () => {
     const { repo } = repoWith(refuse('Could not find the function public.admin_demo_data_status without parameters in the schema cache', 'PGRST202'));
     await expect(repo.getStatus()).rejects.toMatchObject({ code: 'not_installed' });
   });
+
+  // The RPC exists but an object it reads is gone: the installed copy is older than the schema.
+  it.each([
+    ['column p.post_type does not exist', '42703'],
+    ['relation "public.org_memberships" does not exist', '42P01'],
+    ['function kc_private.demo_data_counts() does not exist', '42883'],
+  ])('tools that fail inside (%s) answer outdated, not not_installed', async (message, code) => {
+    const { repo } = repoWith(refuse(message, code));
+    await expect(repo.getStatus()).rejects.toMatchObject({ code: 'outdated' });
+  });
 });
