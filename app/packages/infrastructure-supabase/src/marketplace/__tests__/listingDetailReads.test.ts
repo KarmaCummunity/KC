@@ -58,6 +58,14 @@ describe('fetchListingDetail exposure', () => {
     expect(detail).toMatchObject({ visibility: 'FollowersOnly', locationDisplayLevel: 'CityOnly' });
   });
 
+  // FR-IMPORT-007 AC3 — the listing detail shows where an imported listing came from.
+  it('carries the platform of an imported listing, and none for one made in KC', async () => {
+    const imported = await fetchListingDetail(setup({ source: 'imported', source_platform: 'yad2' }).client, 'p1');
+    expect(imported?.importedFrom).toBe('yad2');
+    const native = await fetchListingDetail(setup().client, 'p1');
+    expect(native?.importedFrom).toBeNull();
+  });
+
   it('leaves them unsaid when the card holds a value the app does not know', async () => {
     const { client } = setup({ visibility: 'Weird', location_display_level: null });
     const detail = await fetchListingDetail(client, 'p1');

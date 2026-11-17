@@ -6,7 +6,7 @@
 // RPC and the tables run with the caller's rights.
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { toVerificationLevel, type MarketplaceListingDetail } from '@kc/domain';
+import { importedFromOf, toVerificationLevel, type MarketplaceListingDetail } from '@kc/domain';
 import type { Database, Json } from '../database.types';
 import { unwrapCall } from '../rpc/mapRpcError';
 import { parseWkbPoint } from '../posts/postMapPoint';
@@ -173,6 +173,8 @@ export async function fetchListingDetail(client: Client, listingId: string): Pro
         }
       : null,
     feedPostId: card.id,
+    // FR-IMPORT-007 AC3: the provenance chip on the listing detail.
+    importedFrom: importedFromOf(card.source, card.source_platform),
     feedHidden: false,
   };
 }

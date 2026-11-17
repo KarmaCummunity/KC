@@ -21,6 +21,7 @@ import { finishMark } from '../lib/observability/perfMarks';
 import { cleanDisplayTitle } from '../lib/displayTitle';
 import { feedCardCategory } from '../lib/feedCardCategory';
 import { postLocationText } from '../lib/postLocationText';
+import { provenanceLabelKey } from '../lib/importProvenance';
 
 // The menu sits on the image scrim, which is dark in both themes, so the icon is always white.
 const OVERLAY_ICON = avatarPalette.foreground;
@@ -126,6 +127,8 @@ function PostCardGridInner({
     router.push(`/post/${post.postId}${q}`);
   }, [onCardPress, post, closedPostsProfileUserId, router]);
 
+  // FR-IMPORT-007 AC3: an imported post says where it came from.
+  const provenanceKey = provenanceLabelKey(post.importedFrom);
   let roleBadgeLabel: string | null = null;
   if (economicRole) roleBadgeLabel = economicRole === 'giver' ? t('feed.giverBadge') : t('feed.receiverBadge');
 
@@ -157,6 +160,7 @@ function PostCardGridInner({
         />
       }
       chip={t(cardCategory.chipKey)}
+      details={provenanceKey ? [{ icon: 'share-social-outline', text: t(provenanceKey) }] : undefined}
       location={locationText}
       timeAgo={timeAgo}
       closed={post.status !== 'open'}

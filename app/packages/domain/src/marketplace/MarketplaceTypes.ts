@@ -1,5 +1,6 @@
 // Unified giving marketplace (Epic #893).
 import type { VerificationLevel } from '../verificationLevel';
+import type { ImportSourcePlatform } from '../imports/importDraft';
 import type { LocationDisplayLevel, PostVisibility } from '../value-objects';
 
 export const MARKETPLACE_WORLD_SLUGS = [
@@ -109,6 +110,8 @@ export interface MarketplaceListingDetail {
   readonly feedPostId: string | null;
   /** The post exists but the main feed does not list it yet (0557): unshared, or a later ride occurrence. */
   readonly feedHidden: boolean;
+  /** FR-IMPORT-007 AC3 — the platform an imported listing came from; null or absent when made in KC. */
+  readonly importedFrom?: ImportSourcePlatform | null;
 }
 
 export interface MarketplaceSimilarListing {

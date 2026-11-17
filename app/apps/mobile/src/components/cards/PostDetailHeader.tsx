@@ -1,5 +1,5 @@
 // Post / listing detail header in the same design language as the base post card (KcCard):
-// type pill (give/request tone) + category chip + optional closed chip, then the title.
+// type pill (give/request tone) + category chip + optional provenance and closed chips, then the title.
 import React from 'react';
 import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -16,6 +16,8 @@ interface Props {
   readonly badgeLabel: string;
   readonly chip?: string | null;
   readonly closed?: boolean;
+  /** FR-IMPORT-007 AC3: "from WhatsApp / Facebook / Yad2" on an imported post; null on a KC post. */
+  readonly provenance?: string | null;
 }
 
 const useStyles = makeUseStyles(({ colors }) => ({
@@ -38,7 +40,7 @@ const useStyles = makeUseStyles(({ colors }) => ({
   },
 }));
 
-export function PostDetailHeader({ title, titleNode, tone, badgeLabel, chip, closed }: Props) {
+export function PostDetailHeader({ title, titleNode, tone, badgeLabel, chip, closed, provenance }: Props) {
   const { t } = useTranslation();
   const s = useStyles();
   const isGive = tone === 'give';
@@ -51,6 +53,11 @@ export function PostDetailHeader({ title, titleNode, tone, badgeLabel, chip, clo
         {chip ? (
           <View style={[s.pill, s.neutralPill]}>
             <Text style={[s.pillText, s.neutralPillText]}>{chip}</Text>
+          </View>
+        ) : null}
+        {provenance ? (
+          <View style={[s.pill, s.neutralPill]} testID="post-detail-provenance">
+            <Text style={[s.pillText, s.neutralPillText]}>{provenance}</Text>
           </View>
         ) : null}
         {closed ? (

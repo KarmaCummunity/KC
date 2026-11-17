@@ -6716,6 +6716,8 @@ export type Database = {
         shown_street: string | null
         shown_street_number: string | null
         challenge_id: string | null
+        source: string | null
+        source_platform: string | null
       }
     }
   }
