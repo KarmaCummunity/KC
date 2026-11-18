@@ -8,12 +8,15 @@
 //   3. deletes the account as the member (`request_account_deletion`): the grace period starts
 //      and the files must still be there (AC2, "nothing is deleted yet");
 //   4. moves that one account's purge date into the past (the only direct database write);
-//   5. calls `purge-deleted-accounts` the way the daily job does, with the service-role key;
+//   5. has the database start `purge-deleted-accounts` exactly as its daily job `account_purge`
+//      does (`kc_private.invoke_edge_function`, with the key the database keeps in Vault), and
+//      reads the worker's answer from pg_net;
 //   6. fails unless every folder is empty and the auth identity is gone (AC4).
 //
 // Whatever happens, the member and the planted files are removed before the script exits.
-// It refuses any project but kc-dev. It needs the service-role key and a database connection,
-// so it runs only inside the `E2E account purge (dev)` workflow, never from a laptop or a browser.
+// It refuses any project but kc-dev. It needs the service-role key (to create the member and to
+// read and write storage as an operator) and a database connection, so it runs only inside the
+// `E2E account purge (dev)` workflow, never from a laptop or a browser.
 //
 // Env: SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY (never printed),
 //      PURGE_PROOF_DB_URL (pooler address, no password) and PGPASSWORD (read by psql).
@@ -52,12 +55,12 @@ export function fileFor(allowed) {
 
 /** The project's HTTP APIs, each call as the service role unless a member token is given. */
 export function createApi({ supabaseUrl, anonKey, serviceKey, fetch = globalThis.fetch }) {
-  const call = async (path, { method = 'GET', token = serviceKey, apikey = serviceKey, body, contentType = 'application/json', timeoutMs = 60_000 } = {}) => {
+  const call = async (path, { method = 'GET', token = serviceKey, apikey = serviceKey, body, contentType = 'application/json' } = {}) => {
     const res = await fetch(`${supabaseUrl}${path}`, {
       method,
       headers: { apikey, Authorization: `Bearer ${token}`, 'Content-Type': contentType },
       body: body === undefined || Buffer.isBuffer(body) ? body : JSON.stringify(body),
-      signal: AbortSignal.timeout(timeoutMs),
+      signal: AbortSignal.timeout(60_000),
     });
     const text = await res.text();
     let json = null;
@@ -107,36 +110,63 @@ export function createApi({ supabaseUrl, anonKey, serviceKey, fetch = globalThis
     upload: (bucket, path, file) => must(`upload to ${bucket}`, `/storage/v1/object/${bucket}/${path}`, { method: 'POST', body: file.bytes, contentType: file.contentType }),
     listAll,
     remove: (bucket, paths) => call(`/storage/v1/object/${bucket}`, { method: 'DELETE', body: { prefixes: paths } }),
-    // The worker walks every bucket of every due account; give it the platform's own limit.
-    purge: () => call('/functions/v1/purge-deleted-accounts', { method: 'POST', body: {}, timeoutMs: 150_000 }),
   };
 }
 
-/** The one direct database write: the account's purge date moves into the past. Returns true when a row moved. */
+/**
+ * The database side, through psql. Values travel as psql variables read from stdin, so an id
+ * never becomes part of the SQL text.
+ */
 export function createSql({ dbUrl, run = spawnSync }) {
+  const query = (sql, vars = {}) => {
+    const args = [dbUrl, '-v', 'ON_ERROR_STOP=1', '-qAt'];
+    for (const [name, value] of Object.entries(vars)) args.push('-v', `${name}=${value}`);
+    const out = run('psql', [...args, '-f', '-'], { input: sql, encoding: 'utf8' });
+    if (out.status !== 0) throw new Error(`psql exited with ${out.status}: ${String(out.stderr).trim().split('\n')[0]}`);
+    return String(out.stdout).trim();
+  };
   return {
+    /** The one direct write: the account's purge date moves into the past. True when a row moved. */
     makeDue(userId) {
       if (!UUID.test(userId)) throw new Error('makeDue: not a user id');
-      // Read from stdin so psql fills in :'uid' itself; the id never becomes part of the SQL text.
-      const sql =
+      const moved = query(
         "update public.user_account set deletion_requested_at = now() - interval '31 days', deletion_purge_at = now() - interval '1 day' " +
-        "where user_id = :'uid' and status = 'pending_deletion' returning 1;";
-      const out = run('psql', [dbUrl, '-v', 'ON_ERROR_STOP=1', '-qAt', '-v', `uid=${userId}`, '-f', '-'], { input: sql, encoding: 'utf8' });
-      if (out.status !== 0) throw new Error(`psql exited with ${out.status}: ${String(out.stderr).trim().split('\n')[0]}`);
-      return String(out.stdout).trim() === '1';
+          "where user_id = :'uid' and status = 'pending_deletion' returning 1;",
+        { uid: userId },
+      );
+      return moved === '1';
+    },
+    /** Starts the worker the way the daily job does. The pg_net request id, or null when nothing was queued. */
+    startPurge() {
+      const id = query("select kc_private.invoke_edge_function('purge-deleted-accounts');");
+      return /^\d+$/.test(id) ? id : null;
+    },
+    /**
+     * The worker's answer to that request, as pg_net recorded it: `{ status, body }`, or null while
+     * there is none. `status` is the HTTP code, `timeout` (pg_net waits 30 s) or `error`.
+     */
+    purgeAnswer(requestId) {
+      if (!/^\d+$/.test(String(requestId))) throw new Error('purgeAnswer: not a request id');
+      const row = query(
+        "select coalesce(r.status_code::text, case when r.timed_out then 'timeout' else 'error' end) || ' ' || " +
+          "left(regexp_replace(coalesce(r.content, r.error_msg, ''), '\\s+', ' ', 'g'), 200) from net._http_response r where r.id = :id;",
+        { id: requestId },
+      );
+      if (row === '') return null;
+      const [status, ...rest] = row.split(' ');
+      return { status, body: rest.join(' ') };
     },
   };
 }
 
-/** Calls the purge until it answers: the function can be repeated, and kc-dev stalls at times. */
-async function purgeUntilAnswered(api, log, attempts = 3) {
-  let last = { status: 0 };
-  for (let attempt = 1; attempt <= attempts; attempt += 1) {
-    last = await api.purge().catch((error) => ({ status: 0, text: String(error) }));
-    if (last.status === 200 && last.json?.ok === true) return last.json;
-    log(`purge attempt ${attempt}: HTTP ${last.status}`);
+/** Polls pg_net for the worker's answer; pg_net itself stops waiting after 30 s. */
+async function waitForPurgeAnswer(sql, requestId, sleep, tries = 30) {
+  for (let i = 0; i < tries; i += 1) {
+    const answer = sql.purgeAnswer(requestId);
+    if (answer) return answer;
+    await sleep(2000);
   }
-  throw new Error(`purge-deleted-accounts did not succeed (last answer: HTTP ${last.status})`);
+  return { status: 'error', body: 'pg_net recorded no answer within a minute' };
 }
 
 /** Objects still under the member's folder, as `bucket/path`, over every bucket. */
@@ -150,7 +180,14 @@ async function leftovers(api, buckets, memberId) {
  * Runs the proof. Resolves to what it checked; rejects with the first thing that was wrong.
  * `api` and `sql` are the two ports above, so the self-test runs it against fakes.
  */
-export async function runProof({ api, sql, log = console.log, stamp = Date.now(), password = randomBytes(24).toString('base64url') }) {
+export async function runProof({
+  api,
+  sql,
+  log = console.log,
+  stamp = Date.now(),
+  password = randomBytes(24).toString('base64url'),
+  sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+}) {
   const email = `purge-proof-${stamp}@seed.kc.test`;
   const planted = [];
   let memberId = null;
@@ -175,12 +212,25 @@ export async function runProof({ api, sql, log = console.log, stamp = Date.now()
     if (kept.length !== planted.length) throw new Error(`AC2: ${planted.length - kept.length} files vanished when the account was only deactivated`);
 
     if (!sql.makeDue(memberId)) throw new Error('the account was not pending deletion, so its purge date could not be moved');
-    const summary = await purgeUntilAnswered(api, log);
-    log(`purge answered: purged ${summary.purged}, failed ${summary.failed}`);
+    const requestId = sql.startPurge();
+    if (!requestId) throw new Error('the database did not queue the purge call (pg_net or the Vault secrets are missing)');
+    const answer = await waitForPurgeAnswer(sql, requestId, sleep);
+    log(`the worker answered the database: ${answer.status} ${answer.body}`);
+    // `timeout` is pg_net giving up after 30 s, not the worker's verdict; the checks below decide.
+    // Any other answer than 200 is the worker refusing the database's key, or failing.
+    if (answer.status !== '200' && answer.status !== 'timeout') {
+      throw new Error(`the purge worker answered ${answer.status} to the database's own call: ${answer.body}`);
+    }
 
+    // After a timeout the worker may still be at work: the identity gets two minutes to go.
+    let exists = await api.memberExists(memberId);
+    for (let i = 0; exists && answer.status === 'timeout' && i < 24; i += 1) {
+      await sleep(5000);
+      exists = await api.memberExists(memberId);
+    }
     const left = await leftovers(api, buckets, memberId);
     if (left.length > 0) throw new Error(`AC4: ${left.length} files are still in storage after the purge: ${left.join(', ')}`);
-    if (await api.memberExists(memberId)) throw new Error('AC4: the auth identity still exists after the purge');
+    if (exists) throw new Error('AC4: the auth identity still exists after the purge');
     const checked = { buckets: buckets.length, files: planted.length };
     memberId = null;
     planted.length = 0;
