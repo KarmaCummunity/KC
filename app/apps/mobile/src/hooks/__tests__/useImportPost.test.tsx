@@ -5,8 +5,8 @@ import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { manualImportDraft } from '@kc/domain';
 
-const mocks = vi.hoisted(() => ({ replace: vi.fn(), execute: vi.fn() }));
-vi.mock('expo-router', () => ({ useRouter: () => ({ replace: mocks.replace }) }));
+const mocks = vi.hoisted(() => ({ replace: vi.fn(), execute: vi.fn(), params: {} as Record<string, string> }));
+vi.mock('expo-router', () => ({ useRouter: () => ({ replace: mocks.replace }), useLocalSearchParams: () => mocks.params }));
 vi.mock('../../services/importComposition', () => ({
   extractExternalPostUseCase: () => ({ execute: mocks.execute }),
 }));
@@ -19,6 +19,7 @@ describe('useImportPost', () => {
     mocks.replace.mockReset();
     mocks.execute.mockReset().mockResolvedValue({ ...manualImportDraft('ok'), importId: 'imp-1' });
     useImportDraftStore.setState({ held: null });
+    mocks.params = {};
   });
 
   it('cannot submit without text or without the own-post confirmation', () => {
@@ -51,5 +52,21 @@ describe('useImportPost', () => {
     expect(useImportDraftStore.getState().held?.draft.importId).toBe('imp-1');
     expect(mocks.replace).toHaveBeenCalledWith('/create?importDraft=1');
     expect(result.current.busy).toBe(false);
+  });
+
+  // FR-IMPORT-001 AC1 — a share opens the screen with its text, sent as the share channel.
+  it('a share fills the field and is sent as a share', async () => {
+    mocks.params = { title: 'Sofa', text: 'Three seats, free' };
+    const { result } = renderHook(() => useImportPost());
+    expect(result.current.text).toBe('Sofa\nThree seats, free');
+    act(() => result.current.setConfirmedOwn(true));
+    await act(() => result.current.submit());
+    expect(mocks.execute).toHaveBeenCalledWith({ text: 'Sofa\nThree seats, free', channel: 'share', sourcePlatform: 'unknown' });
+  });
+
+  it('a share still needs the own-post confirmation', () => {
+    mocks.params = { text: 'Three seats, free' };
+    const { result } = renderHook(() => useImportPost());
+    expect(result.current.canSubmit).toBe(false);
   });
 });
