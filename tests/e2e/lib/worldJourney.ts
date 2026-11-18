@@ -17,7 +17,7 @@ import { test, expect, type Browser, type BrowserContext, type Page } from '@pla
 import { gotoApp } from './app';
 import { cleanupE2eContent, rest, runTag, sessionFor } from './api';
 import { publishPostAs } from './publish';
-import { anchoredChatId, chatBodies, feedShows, messageOwnerFromPost } from './postDiscovery';
+import { anchoredChatHolds, feedShows, messageOwnerFromPost, seen } from './postDiscovery';
 import { STORAGE_B, USER_A, USER_B } from './env';
 
 export interface WorldJourney {
@@ -134,33 +134,34 @@ export function defineWorldJourney(journey: WorldJourney): void {
     // FR-FEED-001, D165: every world's posts reach its own feed and the main feed (#1027).
     test('user B finds it in the world feed and in the main feed', async () => {
       expect(listingId, 'listing from the publish step').not.toBe('');
+      // Two polls of up to a minute each: a busy kc-dev may fail a few reads before one answers.
+      test.setTimeout(150_000);
       const { token } = await tokenFor(USER_B);
       await expect
-        .poll(() => feedShows(token, listingId, title, journey.world), { timeout: 30_000, message: `${journey.world} feed shows the post` })
-        .toBe(true);
+        .poll(() => seen(() => feedShows(token, listingId, title, journey.world)), { timeout: 60_000, message: `${journey.world} feed shows the post` })
+        .toBe('yes');
       await expect
-        .poll(() => feedShows(token, listingId, title, null), { timeout: 30_000, message: 'main feed shows the post' })
-        .toBe(true);
+        .poll(() => seen(() => feedShows(token, listingId, title, null)), { timeout: 60_000, message: 'main feed shows the post' })
+        .toBe('yes');
     });
 
     // FR-CHAT-014: a member contacts the owner from the post; the chat is anchored on it (#1027).
     test('user B messages the owner from the post page; the owner reads it in the chat on the post', async ({ browser }) => {
       expect(listingId, 'listing from the publish step').not.toBe('');
       test.setTimeout(150_000);
-      const text = `${runTag()} ${journey.world} chat`;
+      // The two members share one chat across all their posts, so the text names this post:
+      // a message from an earlier journey or attempt can never satisfy the check.
+      const text = `${runTag()} ${journey.world} chat on ${listingId}`;
       const b = await openAs(browser, STORAGE_B);
       await gotoApp(b.page, listingPath());
       await messageOwnerFromPost(b.page, text);
       const { token } = await tokenFor(USER_A);
       await expect
-        .poll(
-          async () => {
-            const chatId = await anchoredChatId(token, listingId);
-            return chatId ? chatBodies(token, chatId) : [];
-          },
-          { timeout: 60_000, message: 'the owner reads the message in the chat anchored on the post' },
-        )
-        .toContain(text);
+        .poll(() => seen(() => anchoredChatHolds(token, listingId, text)), {
+          timeout: 60_000,
+          message: 'the owner reads the message in the chat anchored on the post',
+        })
+        .toBe('yes');
       await b.ctx.close();
     });
 
