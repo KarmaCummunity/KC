@@ -701,7 +701,7 @@ A job offer is published only in the name of an organization allowed to post job
 
 ## FR-ADMIN-037 — Weekly anonymized copy of production data to kc-dev
 
-> **Status (2026-11-18):** ⏳ Specified (`{{D:prod-to-dev-weekly-copy}}`), not built. The copy stays off until the owner switches it on (AC1).
+> **Status (2026-11-18):** ⏳ Specified (`D176`), not built. The copy stays off until the owner switches it on (AC1).
 
 **Description.**
 Once a week an automated job copies the production community into kc-dev, so tests run on data shaped like the real one (volume, worlds, cities, posting patterns) without anyone on kc-dev seeing who the real members are. The copy is **added** to kc-dev's own data and never replaces it. Real data is anonymized before it leaves the step that reads production, and the most private content (chats, contact details, exact locations, photos, payments) is never copied at all. The admin portal's Demo data screen (FR-ADMIN-031) shows what was copied and can delete it.
@@ -753,4 +753,4 @@ Once a week an automated job copies the production community into kc-dev, so tes
 | 0.24 | 2026-11-16 | Added FR-ADMIN-035 (onboarding replay for admins, sandboxed; KC#2080). |
 | 0.25 | 2026-11-17 | Added FR-ADMIN-036 (organizations allowed to post jobs, switched by platform admins; #1476). |
 | 0.26 | 2026-11-17 | `FR-ADMIN-031` — hide / show wording with a state line, AC1 separates "not installed" from "out of date" and names the connected environment, AC12: every dev deploy installs the tools (`D-241`, #2434). |
-| 0.27 | 2026-11-18 | Added §20 / FR-ADMIN-037 — weekly anonymized copy of production data into kc-dev (added to kc-dev's data, chats / contact details / photos / payments never copied, cleaned text, keyed ids, Demo data screen card with delete). `{{D:prod-to-dev-weekly-copy}}`. |
+| 0.27 | 2026-11-18 | Added §20 / FR-ADMIN-037 — weekly anonymized copy of production data into kc-dev (added to kc-dev's data, chats / contact details / photos / payments never copied, cleaned text, keyed ids, Demo data screen card with delete). `D176`. |
