@@ -69,3 +69,4 @@
 0072_followers_only_needs_private_profile.sql
 0073_import_attach_post.sql
 0074_post_card_provenance.sql
+0075_import_moderation_lockout.sql
