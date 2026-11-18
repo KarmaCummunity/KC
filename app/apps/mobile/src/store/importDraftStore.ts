@@ -2,7 +2,7 @@
 // In memory only: the pasted text is the member's own and must not outlive the session, and the
 // create form takes the draft exactly once.
 import { create } from 'zustand';
-import type { ImportDraft } from '@kc/domain';
+import type { ImportDraft, ImportFieldValues } from '@kc/domain';
 
 export interface HeldImport {
   readonly draft: ImportDraft;
@@ -48,6 +48,8 @@ interface ImportDraftState {
   readonly seededDraft: ImportDraft | null;
   /** Shown above the form while it holds a seeded draft; null on a form opened without an import. */
   readonly review: ImportReview | null;
+  /** What the draft put in the form, field by field, to tell at publish which fields the member changed. */
+  readonly seededFields: ImportFieldValues;
   hold: (draft: ImportDraft, pastedText: string) => void;
   /** Returns the held import and forgets it, so a later visit to the form does not prefill again. */
   take: () => HeldImport | null;
@@ -55,6 +57,8 @@ interface ImportDraftState {
   consumePendingImportId: () => string | null;
   /** Returns the seeded draft and forgets it, so the world form seeds its fields only once. */
   takeSeededDraft: () => ImportDraft | null;
+  /** Adds what a prefill step put in the form (the basics, then the world form's own fields). */
+  noteSeeded: (fields: ImportFieldValues) => void;
   /** The create form closed: whatever it was seeded from no longer applies to a later post. */
   forget: () => void;
 }
@@ -64,8 +68,9 @@ export const useImportDraftStore = create<ImportDraftState>((set, get) => ({
   pendingImportId: null,
   seededDraft: null,
   review: null,
+  seededFields: {},
   // A new paste starts over: nothing of an earlier import may leak into the next post.
-  hold: (draft, pastedText) => set({ held: { draft, pastedText }, pendingImportId: null, seededDraft: null, review: null }),
+  hold: (draft, pastedText) => set({ held: { draft, pastedText }, pendingImportId: null, seededDraft: null, review: null, seededFields: {} }),
   take: () => {
     const held = get().held;
     // The form now owns the draft; its import id waits here until the member publishes.
@@ -87,5 +92,6 @@ export const useImportDraftStore = create<ImportDraftState>((set, get) => ({
     set({ seededDraft: null });
     return draft;
   },
-  forget: () => set({ pendingImportId: null, seededDraft: null, review: null }),
+  noteSeeded: (fields) => set({ seededFields: { ...get().seededFields, ...fields } }),
+  forget: () => set({ pendingImportId: null, seededDraft: null, review: null, seededFields: {} }),
 }));

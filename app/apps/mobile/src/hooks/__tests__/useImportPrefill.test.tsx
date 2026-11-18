@@ -28,7 +28,7 @@ function setup(over: { ready?: boolean } = {}) {
 describe('useImportPrefill', () => {
   beforeEach(() => {
     mocks.params = { importDraft: '1' };
-    useImportDraftStore.setState({ held: null, pendingImportId: null, seededDraft: null, review: null });
+    useImportDraftStore.setState({ held: null, pendingImportId: null, seededDraft: null, review: null, seededFields: {} });
   });
 
   it('opens the world, direction, title and description of a usable draft', () => {
@@ -83,6 +83,14 @@ describe('useImportPrefill', () => {
     useImportDraftStore.getState().hold({ ...usable, city: picked }, 'pasted');
     const { fns } = setup();
     expect(fns.setCity).toHaveBeenCalledWith({ id: 'c1', name: 'Haifa' });
+  });
+
+  it('notes what the draft put in the form, for the edit-rate signal', () => {
+    useImportDraftStore.getState().hold(usable, 'pasted');
+    setup();
+    expect(useImportDraftStore.getState().seededFields).toEqual({
+      world: 'items', direction: 'give', title: 'Sofa', description: 'Three seats', city: null,
+    });
   });
 
   it('a draft with no picked city does not touch the city', () => {

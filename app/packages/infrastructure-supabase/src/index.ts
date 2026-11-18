@@ -94,6 +94,7 @@ export { SupabasePublicResearchRepository } from './research/SupabasePublicResea
 export { SupabaseTranslationCacheRepository } from './translations/SupabaseTranslationCacheRepository';
 export { EdgeFnTranslationService } from './translations/EdgeFnTranslationService';
 export { EdgeFnPostExtractionService } from './imports/EdgeFnPostExtractionService';
+export { SupabaseImportTelemetryRepository } from './imports/SupabaseImportTelemetryRepository';
 export { SupabasePostTranslationReader } from './translations/SupabasePostTranslationReader';
 export { SupabaseMarketplaceRepository } from './marketplace/SupabaseMarketplaceRepository';
 export { SupabasePaymentsRepository } from './payments/SupabasePaymentsRepository';

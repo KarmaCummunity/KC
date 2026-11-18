@@ -16,6 +16,7 @@ import { AdminListEmpty } from '../../../src/components/admin/AdminListEmpty';
 import { useLocaleBundle } from '../../../src/i18n/useLocaleBundle';
 import { textAlignStart } from '../../../src/lib/rtlLayout';
 import { listOrEmpty } from '../../../src/lib/backendAvailability';
+import { AdminImportTelemetry } from '../../../src/components/admin/AdminImportTelemetry';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../../src/components/RouteErrorBoundary';
 
@@ -115,6 +116,9 @@ export default function PlatformStatsScreen() {
           </View>
         </View>
       ))}
+
+      {/* FR-IMPORT-010 AC4: the external post import of the same period. */}
+      <AdminImportTelemetry days={days} />
     </ScrollView>
   );
 }

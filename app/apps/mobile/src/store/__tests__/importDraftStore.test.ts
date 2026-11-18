@@ -3,7 +3,7 @@ import { manualImportDraft } from '@kc/domain';
 import { useImportDraftStore } from '../importDraftStore';
 
 describe('importDraftStore', () => {
-  beforeEach(() => useImportDraftStore.setState({ held: null, pendingImportId: null, seededDraft: null, review: null }));
+  beforeEach(() => useImportDraftStore.setState({ held: null, pendingImportId: null, seededDraft: null, review: null, seededFields: {} }));
 
   it('holds a draft with the pasted text and gives it out once', () => {
     const draft = manualImportDraft('ok');
@@ -63,7 +63,7 @@ describe('importDraftStore', () => {
     useImportDraftStore.getState().take();
     useImportDraftStore.getState().forget();
     const s = useImportDraftStore.getState();
-    expect([s.pendingImportId, s.seededDraft, s.review]).toEqual([null, null, null]);
+    expect([s.pendingImportId, s.seededDraft, s.review, s.seededFields]).toEqual([null, null, null, {}]);
   });
 
   it('a refused extraction carries its reason for the note; other manual reasons carry none', () => {
@@ -73,5 +73,13 @@ describe('importDraftStore', () => {
     useImportDraftStore.getState().hold(manualImportDraft('provider_failed'), 't');
     useImportDraftStore.getState().take();
     expect(useImportDraftStore.getState().review?.limit).toBeNull();
+  });
+
+  it('seeded fields add up across the prefill steps and a new paste clears them', () => {
+    useImportDraftStore.getState().noteSeeded({ world: 'food', title: 'Bread' });
+    useImportDraftStore.getState().noteSeeded({ kind: 'food_offer' });
+    expect(useImportDraftStore.getState().seededFields).toEqual({ world: 'food', title: 'Bread', kind: 'food_offer' });
+    useImportDraftStore.getState().hold(manualImportDraft('ok'), 't');
+    expect(useImportDraftStore.getState().seededFields).toEqual({});
   });
 });

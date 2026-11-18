@@ -46,6 +46,14 @@ export function useImportPrefill({ ready, selectCategory, setTitle, setDescripti
     setDescription(seed.description);
     // Only a city the catalog matched clearly; setting it also stops the last-address prefill.
     if (seed.city) setCity(seed.city);
+    // FR-IMPORT-010 AC4: what the draft put in the form, to tell at publish what the member changed.
+    useImportDraftStore.getState().noteSeeded({
+      world: seed.categoryId,
+      direction: seed.direction,
+      title: seed.title,
+      description: seed.description,
+      city: seed.city?.id ?? null,
+    });
   }, [requested, ready, selectCategory, setTitle, setDescription, setCity]);
 
   // Closing the form drops the import: a later post must never be seeded or marked from it.

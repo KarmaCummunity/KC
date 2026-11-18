@@ -640,6 +640,7 @@ export type Database = {
           channel: string
           confidence: number
           created_at: string
+          edited_fields: string[] | null
           extraction: Json | null
           extraction_version: string
           id: string
@@ -657,6 +658,7 @@ export type Database = {
           channel: string
           confidence?: number
           created_at?: string
+          edited_fields?: string[] | null
           extraction?: Json | null
           extraction_version: string
           id?: string
@@ -674,6 +676,7 @@ export type Database = {
           channel?: string
           confidence?: number
           created_at?: string
+          edited_fields?: string[] | null
           extraction?: Json | null
           extraction_version?: string
           id?: string
@@ -4176,6 +4179,26 @@ export type Database = {
         Returns: string
       }
       admin_hierarchy_census: { Args: never; Returns: Json }
+      admin_import_field_edit_rates: {
+        Args: { p_days?: number }
+        Returns: {
+          edit_rate: number
+          edited: number
+          field: string
+          reported: number
+        }[]
+      }
+      admin_import_funnel: {
+        Args: { p_days?: number }
+        Returns: {
+          attempts: number
+          discarded: number
+          drafted: number
+          manual: number
+          provider_calls: number
+          published: number
+        }[]
+      }
       admin_join_support_thread: {
         Args: { p_chat_id: string }
         Returns: {
@@ -4596,6 +4619,10 @@ export type Database = {
       }
       api_import_attach_post: {
         Args: { p_import_id: string; p_post_id: string }
+        Returns: undefined
+      }
+      api_import_record_edits: {
+        Args: { p_edited_fields: string[]; p_import_id: string }
         Returns: undefined
       }
       api_match_llm_pending: {

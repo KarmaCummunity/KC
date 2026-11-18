@@ -58,6 +58,12 @@ export function useImportListingSeed({ worldSlug, kinds, enabled, chooseKind, se
       if (seed.worldSubcategoryId) apply.setSubcategoryId(seed.worldSubcategoryId);
       // A ride is placed by its route, never by a city.
       if (seed.city && worldSlug !== 'rides') apply.setCity(seed.city);
+      // FR-IMPORT-010 AC4: the world form's own seeded fields (a ride has no city to judge).
+      useImportDraftStore.getState().noteSeeded({
+        kind: seed.kindSlug,
+        subcategory: seed.worldSubcategoryId,
+        ...(worldSlug === 'rides' ? {} : { city: seed.city?.id ?? null }),
+      });
     });
   }, [enabled, kinds, worldSlug]);
 }

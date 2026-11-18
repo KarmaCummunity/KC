@@ -53,4 +53,17 @@ describe('EdgeFnPostExtractionService', () => {
       expect(await rpcService({ message: 'import_not_found', code: 'P0002' }).svc.attachPost('i', 'p')).toBe(false);
     });
   });
+
+  // FR-IMPORT-010 AC4 — the edit-rate signal.
+  describe('recordEdits', () => {
+    it('calls api_import_record_edits with the import and the fields', async () => {
+      const { svc, rpc } = rpcService(null);
+      expect(await svc.recordEdits('imp-1', ['title', 'city'])).toBe(true);
+      expect(rpc).toHaveBeenCalledWith('api_import_record_edits', { p_import_id: 'imp-1', p_edited_fields: ['title', 'city'] });
+    });
+
+    it('a refusal is false, never a throw', async () => {
+      expect(await rpcService({ message: 'import_not_published', code: 'P0001' }).svc.recordEdits('i', [])).toBe(false);
+    });
+  });
 });

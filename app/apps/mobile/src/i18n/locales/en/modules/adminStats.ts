@@ -20,4 +20,28 @@ export const adminStatsEn = {
     hoursToCompletion: 'Hours to handover (median)',
   },
   notTracked: 'Not tracked in this world',
+  // FR-IMPORT-010 AC4 — the external post import: funnel and how often members fix each field.
+  imports: {
+    title: 'Post import',
+    subtitle: 'Import attempts in the period, and the share of published imports where the member fixed each field before publishing.',
+    empty: 'No import attempts in this period.',
+    metrics: {
+      attempts: 'Attempts',
+      manual: 'No draft',
+      drafted: 'Drafts',
+      published: 'Published',
+      discarded: 'Abandoned',
+      providerCalls: 'Model calls',
+    },
+    editRates: 'Edit rate by field',
+    fields: {
+      world: 'World',
+      direction: 'Giving or asking',
+      kind: 'Kind',
+      subcategory: 'Category',
+      title: 'Title',
+      description: 'Description',
+      city: 'City',
+    },
+  },
 } as const;

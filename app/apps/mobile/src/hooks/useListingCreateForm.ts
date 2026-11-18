@@ -171,6 +171,9 @@ export function useListingCreateForm({
     const problem = validate(submitted);
     setError(problem);
     if (problem) return;
+    // FR-IMPORT-010 AC4: the values an import draft's fields are compared with after publishing.
+    const publishedFields = { world: worldSlug, direction, kind: kind.slug, subcategory: showSubcategory ? subcategoryId : null,
+      title: effectiveTitle, description: summary, ...(isRides ? {} : { city: city?.id ?? null }) };
     publishLock.current = true;
     setBusy(true);
     try {
@@ -195,7 +198,7 @@ export function useListingCreateForm({
         const firstId = isRides ? await publishRideSeries(args, direction) : await publishEventSeries(args, city?.id ?? '');
         trackCoreLoop('listing_created', { world: worldSlug, cityId: isRides ? null : city?.id ?? null });
         if (isRides) void rememberRideRoute(submitted);
-        void attachPendingImport(firstId); // FR-IMPORT-007 AC3: the series' first post carries the import
+        void attachPendingImport(firstId, publishedFields); // FR-IMPORT-007 AC3: the series' first post carries the import
         onPublished(firstId);
         return;
       }
@@ -234,7 +237,7 @@ export function useListingCreateForm({
         await afterRidePublished(id, submitted, houseNumbers, flags);
       }
       await address.save(id);
-      void attachPendingImport(id); // FR-IMPORT-007 AC3: a post seeded from an import is marked imported
+      void attachPendingImport(id, publishedFields); // FR-IMPORT-007 AC3: a post seeded from an import is marked imported
       onPublished(id);
     } catch (err) {
       setError({ message: t(postSeriesErrorKey(err) ?? marketplaceServerErrorKey(err)), field: null });
