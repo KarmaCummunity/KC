@@ -1,4 +1,4 @@
-// Mapped to spec: FR-POST-001 AC1 — the arithmetic of a sideways row that scrolls in a circle: the row
+// Mapped to spec: FR-POST-001 AC6 — the arithmetic of a sideways row that scrolls in a circle: the row
 // holds identical copies of its items and is kept on the middle one (`CreateCategoryLoopRow`).
 
 /**

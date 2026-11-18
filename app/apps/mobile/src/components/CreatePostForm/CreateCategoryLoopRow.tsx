@@ -1,12 +1,12 @@
-// Mapped to spec: FR-POST-001 AC1 — the category row at the top of the create form scrolls in a
+// Mapped to spec: FR-POST-001 AC6 — the category row at the top of the create form scrolls in a
 // circle: past the last giving world comes the first again, in both directions.
 //
 // The row holds three identical copies of the chips and is kept on the middle one: once the member
 // has scrolled the middle copy fully out of view, the offset jumps by exactly one copy (plus the gap)
 // without animation.
 // The content is periodic, so the jump cannot be seen. Only the middle copy is visible to screen
-// readers and carries test ids; when every chip fits on screen there is nothing to loop and the row
-// is a single copy.
+// readers and carries the plain chip test ids; when every chip fits on screen there is nothing to
+// loop and the row is a single copy.
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ScrollView, View, type LayoutChangeEvent, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -123,7 +123,8 @@ export function CreateCategoryLoopRow({ categories, categoryId, onCategoryChange
                 } : undefined}
               >
                 <Chip
-                  testID={isCentre ? `create-category-${c.id}` : undefined}
+                  // The flows' ids name the middle copy; a side copy's chip has its own suffixed id.
+                  testID={`create-category-${c.id}${isCentre ? '' : `-copy${copy}`}`}
                   icon={c.icon}
                   label={t(c.labelKey)}
                   selected={c.id === categoryId}

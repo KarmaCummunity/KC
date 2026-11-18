@@ -1,4 +1,4 @@
-// FR-POST-001 AC1 — the category row loops: once the middle copy of the chips is fully out of view,
+// FR-POST-001 AC6 — the category row loops: once the middle copy of the chips is fully out of view,
 // the offset jumps exactly one period, which shows the same chips, so the jump cannot be seen.
 import { describe, expect, it } from 'vitest';
 import { loopedOffset } from '../loopedOffset';
