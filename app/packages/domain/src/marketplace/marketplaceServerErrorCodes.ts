@@ -18,6 +18,13 @@ export const MARKETPLACE_SERVER_ERROR_CODES = [
   'knowledge_slots_overlap',
   'knowledge_slot_has_booking',
   'knowledge_slot_capacity_below_bookings',
+  // #2035 / #2479 — the weekly series of a recurring lesson offer.
+  'knowledge_series_not_allowed',
+  'knowledge_series_exists',
+  'knowledge_series_has_slots',
+  'knowledge_series_schedule_invalid',
+  'knowledge_series_no_occurrence',
+  'knowledge_series_not_found',
   'consulting_requires_id_verification',
   'slot_not_found',
   'booking_expired',
