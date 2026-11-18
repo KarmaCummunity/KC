@@ -25,6 +25,19 @@ Deno.test('a count that fails is an error, not zero (a limit must not silently o
   await assertRejects(() => store.attemptsSince('u1', 'x'), Error, 'import store');
 });
 
+Deno.test('the lockout reads the member\'s moderation removals since the instant', async () => {
+  const calls: Call[] = [];
+  const store = supabaseImportStore(fakeClient({ import_moderation_removals: { data: ['2026-11-10T08:00:00Z'] } }, calls));
+  const removals = await store.moderationRemovalsSince('u1', '2026-10-03T12:00:00Z');
+  assertEquals(removals.map((d) => d.toISOString()), ['2026-11-10T08:00:00.000Z']);
+  assertEquals(calls[0], ['rpc.import_moderation_removals', { p_user_id: 'u1', p_since: '2026-10-03T12:00:00Z' }]);
+});
+
+Deno.test('a failed removals read is an error, not an open lockout', async () => {
+  const store = supabaseImportStore(fakeClient({ import_moderation_removals: { error: { message: 'down' } } }));
+  await assertRejects(() => store.moderationRemovalsSince('u1', 'x'), Error, 'import store');
+});
+
 Deno.test('recording an attempt returns its id and sends exactly the row', async () => {
   const calls: Call[] = [];
   const store = supabaseImportStore(fakeClient({ external_post_imports: { data: { id: 'row-1' } } }, calls));

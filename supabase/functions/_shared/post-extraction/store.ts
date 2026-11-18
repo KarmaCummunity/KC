@@ -29,6 +29,8 @@ export interface ImportStore {
   attemptsSince(userId: string, sinceIso: string): Promise<number>;
   /** Model calls by everyone since the instant (the daily budget). */
   providerCallsSince(sinceIso: string): Promise<number>;
+  /** When moderation removed the member's imported posts since the instant (the lockout, AC4). */
+  moderationRemovalsSince(userId: string, sinceIso: string): Promise<Date[]>;
   /** Stores one attempt and returns its id. */
   record(row: ImportRecord): Promise<string>;
 }
@@ -46,6 +48,12 @@ export function supabaseImportStore(svc: SupabaseClient): ImportStore {
       count(imports().select('id', { count: 'exact', head: true }).eq('user_id', userId).gte('created_at', sinceIso)),
     providerCallsSince: (sinceIso) =>
       count(imports().select('id', { count: 'exact', head: true }).eq('provider_called', true).gte('created_at', sinceIso)),
+    async moderationRemovalsSince(userId, sinceIso) {
+      const { data, error } = await svc.rpc('import_moderation_removals', { p_user_id: userId, p_since: sinceIso });
+      // A failed read is an error, not "no removals": the lockout must not silently open.
+      if (error) throw new Error(`import store: ${error.message}`);
+      return ((data as string[] | null) ?? []).map((at) => new Date(at));
+    },
     async record(row) {
       const { data, error } = await imports().insert(row).select('id').single();
       if (error || !data) throw new Error(`import store: ${error?.message ?? 'no row returned'}`);

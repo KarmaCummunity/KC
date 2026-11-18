@@ -49,7 +49,7 @@ describe('importDraftStore', () => {
     };
     useImportDraftStore.getState().hold(draft, 'text');
     useImportDraftStore.getState().take();
-    expect(useImportDraftStore.getState().review).toEqual({ removedContacts: true, confirmFields: ['city'], truncated: false });
+    expect(useImportDraftStore.getState().review).toEqual({ removedContacts: true, confirmFields: ['city'], truncated: false, limit: null });
   });
 
   it('nothing removed means no contact notice', () => {
@@ -64,5 +64,14 @@ describe('importDraftStore', () => {
     useImportDraftStore.getState().forget();
     const s = useImportDraftStore.getState();
     expect([s.pendingImportId, s.seededDraft, s.review]).toEqual([null, null, null]);
+  });
+
+  it('a refused extraction carries its reason for the note; other manual reasons carry none', () => {
+    useImportDraftStore.getState().hold(manualImportDraft('import_locked'), 't');
+    useImportDraftStore.getState().take();
+    expect(useImportDraftStore.getState().review?.limit).toBe('import_locked');
+    useImportDraftStore.getState().hold(manualImportDraft('provider_failed'), 't');
+    useImportDraftStore.getState().take();
+    expect(useImportDraftStore.getState().review?.limit).toBeNull();
   });
 });

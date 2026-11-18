@@ -44,6 +44,7 @@ export function ImportReviewNotice() {
         ) : null}
         {review.removedContacts ? <Text style={styles.line} testID="import-review-removed">{t('postImport.reviewRemoved')}</Text> : null}
         {review.truncated ? <Text style={styles.line} testID="import-review-truncated">{t('postImport.reviewTruncated')}</Text> : null}
+        {review.limit ? <Text style={styles.line} testID="import-review-limit">{t(`postImport.limits.${review.limit}`)}</Text> : null}
       </View>
     </View>
   );

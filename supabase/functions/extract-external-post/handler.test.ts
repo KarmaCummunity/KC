@@ -16,16 +16,17 @@ const answer = {
 };
 const city: PlaceCandidate = { level: 'city', placeId: '5000', nameHe: 'x', cityId: '5000', score: 0.9, margin: 0.5 };
 
-interface Spy { records: ImportRecord[]; providerCalls: number; counts: { hour: number; day: number; calls: number } }
+interface Spy { records: ImportRecord[]; providerCalls: number; counts: { hour: number; day: number; calls: number }; removals: Date[]; removalsSince: string[] }
 
 function setup(overrides: Partial<HandlerDeps> = {}, spy: Partial<Spy> = {}) {
-  const state: Spy = { records: [], providerCalls: 0, counts: { hour: 0, day: 0, calls: 0 }, ...spy };
+  const state: Spy = { records: [], providerCalls: 0, counts: { hour: 0, day: 0, calls: 0 }, removals: [], removalsSince: [], ...spy };
   const deps: HandlerDeps = {
     authenticate: () => Promise.resolve(MEMBER),
     isEnabled: () => Promise.resolve(true),
     store: {
       attemptsSince: (_u, since) => Promise.resolve(Date.parse(since) > NOW.getTime() - 2 * 3600_000 ? state.counts.hour : state.counts.day),
       providerCallsSince: () => Promise.resolve(state.counts.calls),
+      moderationRemovalsSince: (_u, since) => { state.removalsSince.push(since); return Promise.resolve(state.removals); },
       record: (row) => { state.records.push(row); return Promise.resolve('import-1'); },
     },
     cache: { get: () => Promise.resolve(null), put: () => Promise.resolve() },
@@ -92,6 +93,30 @@ Deno.test('a limit answers manual with its reason and never calls the model', as
   }
 });
 
+// FR-IMPORT-008 AC4 — imports removed by moderation 3 times in 30 days lock the member for 14 days.
+Deno.test('a member locked by moderation removals gets the manual route and no model call', async () => {
+  const day = 24 * 3600_000;
+  const removals = [1, 2, 3].map((n) => new Date(NOW.getTime() - n * day));
+  const { handler, state } = setup({}, { removals });
+  const body = await (await handler(post({ text: TEXT }))).json();
+  assertEquals([body.routing, body.reason], ['manual', 'import_locked']);
+  assertEquals([state.providerCalls, state.records.length], [0, 0]);
+  // The removals are read back over a 30-day window plus the 14-day lock.
+  assertEquals(state.removalsSince, [new Date(NOW.getTime() - 44 * day).toISOString()]);
+});
+
+Deno.test('a failed removals read is a 500, never an open lockout', async () => {
+  const { handler } = setup({
+    store: {
+      attemptsSince: () => Promise.resolve(0),
+      providerCallsSince: () => Promise.resolve(0),
+      moderationRemovalsSince: () => Promise.reject(new Error('down')),
+      record: () => Promise.resolve('x'),
+    },
+  });
+  assertEquals((await handler(post({ text: TEXT }))).status, 500);
+});
+
 Deno.test('a good share returns the draft and records the attempt without any raw text', async () => {
   const { handler, state } = setup();
   const res = await handler(post({ text: TEXT, channel: 'share', sourcePlatform: 'whatsapp' }));
@@ -139,6 +164,7 @@ Deno.test('a failing store is a 500 that leaks nothing', async () => {
     store: {
       attemptsSince: () => Promise.reject(new Error('secret connection string')),
       providerCallsSince: () => Promise.resolve(0),
+      moderationRemovalsSince: () => Promise.resolve([]),
       record: () => Promise.resolve('x'),
     },
   });

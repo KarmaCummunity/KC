@@ -5749,6 +5749,10 @@ export type Database = {
           user_id: string
         }[]
       }
+      import_moderation_removals: {
+        Args: { p_since: string; p_user_id: string }
+        Returns: string[]
+      }
       import_normalize_place_text: { Args: { p_text: string }; Returns: string }
       join_challenge: { Args: { p_challenge_id: string }; Returns: undefined }
       knowledge_slot_seats: {
