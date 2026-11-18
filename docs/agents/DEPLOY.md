@@ -52,6 +52,7 @@ Playwright QA suite against `https://dev.karma-community.pages.dev` + kc-dev: [`
 | `deploy-smoke.yml` | manual | Read-only smoke against dev or prod |
 | `seed-kc-dev.yml` | manual | Destructive dev reseed / wipe |
 | `e2e-nightly-dev.yml` | nightly + manual | QA suite against dev |
+| `e2e-account-purge-dev.yml` | nightly + manual + when the proof changes on dev | Account purge proof on kc-dev (FR-SETTINGS-012 AC4): a throwaway member with a file in every bucket is deleted and purged, and the run fails if a file or the identity is left (`scripts/e2e-account-purge.mjs`) |
 | `k6-load-dev.yml` | manual | Load test against dev |
 | `mobile-nightly.yml` → `testflight-ios.yml`, `play-internal.yml` | nightly + manual (dev) | Store builds of the newest green dev commit, see [RELEASE.md](./RELEASE.md) |
 | `kc-mobile-eas-preview.yml` | manual | EAS preview build, no store submit |

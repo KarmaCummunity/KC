@@ -243,6 +243,7 @@ KC relies on two scheduling planes: database-level `pg_cron` jobs running direct
 |---|---|---|---|
 | `mobile-nightly` | `.github/workflows/mobile-nightly.yml` | `43 23 * * *` (nightly) | Builds the latest green `dev` commit with EAS and dispatches tester builds to TestFlight iOS and Google Play internal track. |
 | `e2e-nightly-dev` | `.github/workflows/e2e-nightly-dev.yml` | `0 1 * * *` (nightly) | Executes end-to-end Playwright tests against `dev.karma-community.pages.dev` and `kc-dev`. |
+| `e2e-account-purge-dev` | `.github/workflows/e2e-account-purge-dev.yml` | `37 2 * * *` (nightly) | Proves on `kc-dev` that purging a deleted account removes the member's files from every storage bucket and the auth identity. |
 | `ci-migration-drift` | `.github/workflows/ci-migration-drift.yml` | `17 */6 * * *` (every 6h) | Verifies schema consistency between the `supabase/migrations/` ledger and the active `kc-dev` database. |
 | `ops-health` | `.github/workflows/ops-health.yml` | `23 * * * *` (hourly) | Probes public API health and web endpoints to detect service degradations. |
 | `issue-claims` | `.github/workflows/issue-claims.yml` | `23 * * * *` (hourly) | Releases stale agent issue claims older than 6 hours without active pull requests. |
