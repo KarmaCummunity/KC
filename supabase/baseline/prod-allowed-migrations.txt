@@ -70,3 +70,4 @@
 0073_import_attach_post.sql
 0074_post_card_provenance.sql
 0075_import_moderation_lockout.sql
+0076_import_telemetry.sql

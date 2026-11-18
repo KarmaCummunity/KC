@@ -27,6 +27,11 @@ export const USER_B = {
   email: process.env.E2E_USER_B_EMAIL ?? 'user2@seed.kc.test',
   password: process.env.E2E_USER_B_PASSWORD ?? SEED_PASSWORD,
 };
+/** A third seeded member, for journeys that need someone outside what A and B share (a chat, a post). */
+export const USER_C = {
+  email: process.env.E2E_USER_C_EMAIL ?? 'user3@seed.kc.test',
+  password: process.env.E2E_USER_C_PASSWORD ?? SEED_PASSWORD,
+};
 
 let cachedAnon: string | undefined;
 
