@@ -8,7 +8,8 @@ import { useTranslation } from 'react-i18next';
 import { MESSAGE_MAX_CHARS } from '@kc/domain';
 import { ChatError } from '@kc/application';
 import { useTheme, Text, TextInput, iconSize } from '@kc/ui';
-import { rtlTextAlignStart } from '../../src/lib/rtlLayout';
+import { emptyInputDirectionStyle } from '../../src/lib/rtlLayout';
+import { MirroredIcon } from '../../src/components/ui/MirroredIcon';
 import { useChatStore, type OptimisticMessage } from '../../src/store/chatStore';
 import { useAuthStore } from '../../src/store/authStore';
 import { container } from '../../src/lib/container';
@@ -231,6 +232,26 @@ export default function ChatScreen() {
           <Text style={styles.typingHint}>{t('chat.typingIndicator')}</Text>
         ) : null}
         <View style={styles.inputBar}>
+          {/* Composer order follows the reading direction: text field at the reading-start edge
+              (right in Hebrew, left in English), then attach, with "send" at the reading-end edge. */}
+          <View style={{ flex: 1 }}>
+            <TextInput // brand-guard-allow: chat composer is a non-form input (spec 17 §4.1)
+              // Native inputs do not mirror `textAlign`, so an empty field pins its placeholder
+              // to the layout's start edge; typed text keeps natural per-script alignment.
+              style={[styles.input, input.length === 0 ? emptyInputDirectionStyle() : null]}
+              value={input}
+              onChangeText={(text) => {
+                setInput(text);
+                notifyComposerChanged();
+              }}
+              placeholder={t('chat.inputPlaceholder')}
+              placeholderTextColor={colors.textDisabled}
+              multiline
+              maxLength={MESSAGE_MAX_CHARS}
+              onKeyPress={webEnterToSend(send, sendDisabled)}
+            />
+            {showCounter && <Text style={styles.counter}>{counter}/{MESSAGE_MAX_CHARS}</Text>}
+          </View>
           <TouchableOpacity
             style={styles.attachBtn}
             onPress={() => void handleAttachImage()}
@@ -240,25 +261,9 @@ export default function ChatScreen() {
           </TouchableOpacity>
           <TouchableOpacity style={[styles.sendBtn, sendDisabled && styles.sendBtnDisabled]} onPress={() => { notifyMessageSent(); void send(); }} disabled={sendDisabled}
             accessibilityRole="button" accessibilityLabel={t('chat.send')} testID="chat-send">
-            <Ionicons name="send" size={iconSize.lg} color={colors.textInverse} />
+            {/* The paper-plane glyph points right; MirroredIcon turns it to point left in RTL. */}
+            <MirroredIcon name="send" size={iconSize.lg} color={colors.textInverse} />
           </TouchableOpacity>
-          <View style={{ flex: 1 }}>
-            <TextInput // brand-guard-allow: chat composer is a non-form input (spec 17 §4.1)
-              style={styles.input}
-              value={input}
-              onChangeText={(text) => {
-                setInput(text);
-                notifyComposerChanged();
-              }}
-              placeholder={t('chat.inputPlaceholder')}
-              placeholderTextColor={colors.textDisabled}
-              textAlign={rtlTextAlignStart}
-              multiline
-              maxLength={MESSAGE_MAX_CHARS}
-              onKeyPress={webEnterToSend(send, sendDisabled)}
-            />
-            {showCounter && <Text style={styles.counter}>{counter}/{MESSAGE_MAX_CHARS}</Text>}
-          </View>
         </View>
       </KeyboardAvoidingView>
 
