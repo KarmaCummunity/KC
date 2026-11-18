@@ -51,3 +51,7 @@ verify_jwt = false
 # The payment provider calls without a Supabase JWT; the handler verifies the provider's HMAC signature and fails closed.
 [functions.payments-webhook]
 verify_jwt = false
+
+# Identity provider decisions (FR-VERIFY-005 AC4): authenticated by the provider signature.
+[functions.identity-verification-webhook]
+verify_jwt = false
