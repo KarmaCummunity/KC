@@ -32,6 +32,11 @@ export const USER_C = {
   email: process.env.E2E_USER_C_EMAIL ?? 'user3@seed.kc.test',
   password: process.env.E2E_USER_C_PASSWORD ?? SEED_PASSWORD,
 };
+/** A fourth seeded member no other journey signs in as: a journey that spends a member's quota uses it. */
+export const USER_D = {
+  email: process.env.E2E_USER_D_EMAIL ?? 'user4@seed.kc.test',
+  password: process.env.E2E_USER_D_PASSWORD ?? SEED_PASSWORD,
+};
 
 let cachedAnon: string | undefined;
 
