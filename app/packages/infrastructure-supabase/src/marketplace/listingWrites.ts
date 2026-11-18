@@ -4,14 +4,16 @@
 // detail row in one transaction, published at once); every other kind is a plain post, written as
 // a draft, given its photos and published with `publish_post`, so a failure half-way leaves nothing
 // behind. Organization events are then attached to their organization with `set_post_organization`.
+// A weekly lesson offer starts its series on the draft, before the publish (FR-KNOW-004 AC1).
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { ValidationError } from '@kc/domain';
+import { ValidationError, knowledgeSeriesInputFromDetails, withoutKnowledgeSeriesKeys } from '@kc/domain';
 import type { IMarketplaceRepository, MediaAssetInput } from '@kc/application';
 import type { Database, Json } from '../database.types';
 import { unwrapCall } from '../rpc/mapRpcError';
 import { requireRpcRow } from './rpcRow';
 import { sessionUserId } from '../users/userReads';
+import { startKnowledgeSlotSeries } from '../knowledge/SupabaseKnowledgeSlotSeriesRepository';
 import { loadKindCatalog, postDirectionOf } from './kindCatalog';
 import {
   eventDetailColumns,
@@ -84,8 +86,18 @@ async function createWithDetails(client: Client, post: JsonObject, detailColumns
   );
 }
 
-/** Creates a plain post: draft, photos, publish. A failure after the draft exists removes the draft. */
-async function createPlain(client: Client, ownerId: string, post: JsonObject, input: CreateInput, details: JsonObject): Promise<string> {
+/**
+ * Creates a plain post: draft, photos, `beforePublish` (work the post needs before it goes live),
+ * publish. A failure after the draft exists removes the draft.
+ */
+async function createPlain(
+  client: Client,
+  ownerId: string,
+  post: JsonObject,
+  input: CreateInput,
+  details: JsonObject,
+  beforePublish?: (postId: string) => Promise<unknown>,
+): Promise<string> {
   const row = unwrapCall(
     'table:posts',
     await client
@@ -97,6 +109,7 @@ async function createPlain(client: Client, ownerId: string, post: JsonObject, in
   const postId = (row as { id: string }).id;
   try {
     await recordPhotos(client, postId, ownerId, input.media ?? [], 0);
+    if (beforePublish) await beforePublish(postId);
     unwrapCall('rpc:publish_post', await client.rpc('publish_post', { p_post_id: postId }));
     return postId;
   } catch (error) {
@@ -142,7 +155,11 @@ export async function createListing(client: Client, input: CreateInput): Promise
   // judges a job offer when it is published, so the organization must already be set by then.
   const orgId = typeof form['org_id'] === 'string' ? form['org_id'] : null;
   const post = postDocument(input, kind, direction, cityId);
-  const plainDetails = freeDetails(form, 'plain');
+  // A lesson offer's weekly schedule lives on its series, not in the post's details.
+  const isKnowledge = kind.world_slug === 'knowledge';
+  const series = isKnowledge ? knowledgeSeriesInputFromDetails('', form) : null;
+  const plainDetails = freeDetails(isKnowledge ? withoutKnowledgeSeriesKeys(form) : form, 'plain');
   delete plainDetails['org_id'];
-  return createPlain(client, ownerId, orgId ? { ...post, beneficiary_org_id: orgId } : post, input, plainDetails);
+  const startSeries = series ? (postId: string) => startKnowledgeSlotSeries(client, { ...series, postId }) : undefined;
+  return createPlain(client, ownerId, orgId ? { ...post, beneficiary_org_id: orgId } : post, input, plainDetails, startSeries);
 }
