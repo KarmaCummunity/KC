@@ -3,8 +3,9 @@ name: E2E account purge (dev)
 # Proof on kc-dev that purging a deleted account removes all of the member's media
 # (FR-SETTINGS-012 AC2 and AC4, SEC-1065). scripts/e2e-account-purge.mjs creates a throwaway
 # member, plants a file in every storage bucket, deletes the account as the member, moves
-# that account's purge date into the past and calls purge-deleted-accounts with the
-# service-role key. It fails unless every folder is empty and the auth identity is gone.
+# that account's purge date into the past and has the database start purge-deleted-accounts
+# the way its daily job does (with the key the database keeps in Vault). It fails unless
+# every folder is empty and the auth identity is gone.
 #
 # Never targets prod: the environment is fixed to supabase-dev, the project ref is checked
 # before anything runs, and the script itself refuses any project but kc-dev.

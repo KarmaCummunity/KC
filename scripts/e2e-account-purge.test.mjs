@@ -14,10 +14,13 @@ const BUCKETS = [
  *   keepIdentity    the purge leaves the auth identity
  *   eagerDelete     deactivating the account already removes a file (breaks AC2)
  *   notPending      the purge date cannot be moved
+ *   notQueued       the database cannot start the worker (no pg_net or Vault secret)
+ *   refused         the worker refuses the database's key
+ *   slow            pg_net stops waiting before the worker is done; the purge lands two polls later
  */
 function fakeProject(faults = {}) {
   const files = new Map(BUCKETS.map((b) => [b.id, new Set()]));
-  const state = { member: null, due: false, calls: [], removed: [], deletedMember: false };
+  const state = { member: null, due: false, calls: [], removed: [], deletedMember: false, pendingPurge: 0 };
   const api = {
     async createMember() {
       state.calls.push('createMember');
@@ -25,6 +28,8 @@ function fakeProject(faults = {}) {
       return MEMBER;
     },
     async memberExists() {
+      // A slow worker finishes while the proof is still polling.
+      if (state.pendingPurge > 0 && (state.pendingPurge -= 1) === 0) purgeNow();
       return state.member !== null;
     },
     async deleteMember() {
@@ -53,16 +58,15 @@ function fakeProject(faults = {}) {
       state.removed.push(...paths.map((path) => `${bucket}/${path}`));
       for (const path of paths) files.get(bucket).delete(path);
     },
-    async purge() {
-      state.calls.push('purge');
-      if (!state.due) return { status: 200, json: { ok: true, purged: 0, failed: 0 } };
-      for (const [bucket, set] of files) {
-        for (const path of [...set]) if (!(faults.keepFile && bucket === 'chat-media')) set.delete(path);
-      }
-      if (!faults.keepIdentity) state.member = null;
-      return { status: 200, json: { ok: true, purged: 1, failed: 0 } };
-    },
   };
+  /** What the worker does for a due account. */
+  function purgeNow() {
+    if (!state.due) return;
+    for (const [bucket, set] of files) {
+      for (const path of [...set]) if (!(faults.keepFile && bucket === 'chat-media')) set.delete(path);
+    }
+    if (!faults.keepIdentity) state.member = null;
+  }
   const sql = {
     makeDue(userId) {
       state.calls.push(`makeDue:${userId}`);
@@ -70,11 +74,27 @@ function fakeProject(faults = {}) {
       state.due = true;
       return true;
     },
+    startPurge() {
+      state.calls.push('startPurge');
+      return faults.notQueued ? null : '7';
+    },
+    purgeAnswer(requestId) {
+      state.calls.push(`purgeAnswer:${requestId}`);
+      // The first poll finds nothing yet; the second has the answer.
+      if ((state.polls = (state.polls ?? 0) + 1) === 1) return null;
+      if (faults.refused) return { status: '401', body: '{"ok":false,"error":"unauthenticated"}' };
+      if (faults.slow) {
+        state.pendingPurge = 2;
+        return { status: 'timeout', body: '' };
+      }
+      purgeNow();
+      return { status: '200', body: '{"ok":true,"purged":1,"failed":0}' };
+    },
   };
   return { api, sql, state, files };
 }
 
-const run = (project) => runProof({ api: project.api, sql: project.sql, log: () => {}, stamp: 1, password: 'pw' });
+const run = (project) => runProof({ api: project.api, sql: project.sql, log: () => {}, stamp: 1, password: 'pw', sleep: async () => {} });
 
 test('passes when the purge empties every bucket and removes the identity, in the documented order', async () => {
   const project = fakeProject();
@@ -87,7 +107,9 @@ test('passes when the purge empties every bucket and removes the identity, in th
     'signIn',
     'requestDeletion:member-token',
     `makeDue:${MEMBER}`,
-    'purge',
+    'startPurge',
+    'purgeAnswer:7',
+    'purgeAnswer:7',
   ]);
   // Nothing to clean up after a real purge.
   assert.deepEqual(project.state.removed, []);
@@ -110,28 +132,34 @@ test('fails when the auth identity survives the purge, and removes the member', 
 test('fails when deactivating the account already deletes a file (AC2), before any purge', async () => {
   const project = fakeProject({ eagerDelete: true });
   await assert.rejects(run(project), /AC2: 2 files vanished/);
-  assert.ok(!project.state.calls.includes('purge'));
+  assert.ok(!project.state.calls.includes('startPurge'));
   assert.equal(project.state.deletedMember, true);
 });
 
-test('fails without calling the purge when the purge date could not be moved', async () => {
+test('fails without starting the purge when the purge date could not be moved', async () => {
   const project = fakeProject({ notPending: true });
   await assert.rejects(run(project), /not pending deletion/);
-  assert.ok(!project.state.calls.includes('purge'));
+  assert.ok(!project.state.calls.includes('startPurge'));
   assert.equal(project.state.deletedMember, true);
 });
 
-test('repeats a purge call that did not answer, and gives up after three', async () => {
-  const flaky = fakeProject();
-  const purge = flaky.api.purge;
-  let n = 0;
-  flaky.api.purge = async () => ((n += 1) === 1 ? { status: 504, json: null } : purge());
-  assert.deepEqual(await run(flaky), { buckets: 2, files: 3 });
+test('fails when the database cannot start the worker', async () => {
+  const project = fakeProject({ notQueued: true });
+  await assert.rejects(run(project), /did not queue the purge call/);
+  assert.equal(project.state.deletedMember, true);
+});
 
-  const down = fakeProject();
-  down.api.purge = async () => ({ status: 503, json: null });
-  await assert.rejects(run(down), /did not succeed \(last answer: HTTP 503\)/);
-  assert.equal(down.state.deletedMember, true);
+test('fails with the worker\'s own answer when it refuses the database\'s key', async () => {
+  const project = fakeProject({ refused: true });
+  await assert.rejects(run(project), /answered 401 to the database's own call: \{"ok":false,"error":"unauthenticated"\}/);
+  assert.equal(project.state.deletedMember, true);
+});
+
+test('a pg_net timeout is not a verdict: the proof waits for the worker and still checks the result', async () => {
+  assert.deepEqual(await run(fakeProject({ slow: true })), { buckets: 2, files: 3 });
+  // A worker that timed out and never finished still fails on what it left.
+  const stuck = fakeProject({ slow: true, keepIdentity: true });
+  await assert.rejects(run(stuck), /AC4: the auth identity still exists/);
 });
 
 test('refuses any project but kc-dev', () => {
@@ -209,4 +237,26 @@ test('the purge date is moved for one validated user id, passed to psql as a var
   assert.throws(() => sql.makeDue("x'; drop table users; --"), /not a user id/);
   assert.equal(createSql({ dbUrl: 'postgresql://db', run: () => ({ status: 0, stdout: '', stderr: '' }) }).makeDue(MEMBER), false);
   assert.throws(() => createSql({ dbUrl: 'postgresql://db', run: () => ({ status: 2, stdout: '', stderr: 'boom\nmore' }) }).makeDue(MEMBER), /psql exited with 2: boom/);
+});
+
+test('the worker is started through the job\'s own function, and its answer is read from pg_net', () => {
+  const answers = ['42\n', '', '200 {"ok":true,"purged":1,"failed":0}\n', 'timeout \n'];
+  const inputs = [];
+  const sql = createSql({
+    dbUrl: 'postgresql://db',
+    run: (_cmd, args, options) => {
+      inputs.push({ args, input: options.input });
+      return { status: 0, stdout: answers.shift(), stderr: '' };
+    },
+  });
+  assert.equal(sql.startPurge(), '42');
+  assert.match(inputs[0].input, /kc_private\.invoke_edge_function\('purge-deleted-accounts'\)/);
+  assert.equal(sql.purgeAnswer('42'), null);
+  assert.deepEqual(sql.purgeAnswer('42'), { status: '200', body: '{"ok":true,"purged":1,"failed":0}' });
+  assert.deepEqual(sql.purgeAnswer('42'), { status: 'timeout', body: '' });
+  assert.ok(inputs[1].args.includes('id=42'));
+  assert.match(inputs[1].input, /from net\._http_response r where r\.id = :id/);
+  assert.throws(() => sql.purgeAnswer('42; drop'), /not a request id/);
+  // Nothing queued: the function returned null, which psql prints as an empty line.
+  assert.equal(createSql({ dbUrl: 'postgresql://db', run: () => ({ status: 0, stdout: '\n', stderr: '' }) }).startPurge(), null);
 });
