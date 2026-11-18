@@ -105,11 +105,11 @@ async function limitReason(deps: HandlerDeps, member: AuthedMember): Promise<Lim
  * the extracted title and description (what would become the post), or null. Only a post draft is
  * checked; a manual route has nothing to compare.
  */
-async function repeatedOpenPost(deps: HandlerDeps, member: AuthedMember, o: ExtractionOutcome): Promise<string | null> {
+function repeatedOpenPost(deps: HandlerDeps, member: AuthedMember, o: ExtractionOutcome): Promise<string | null> {
   const e = o.extraction;
-  if (!e?.isPost) return null;
+  if (!e?.isPost) return Promise.resolve(null);
   const text = [e.title, e.description].filter((part): part is string => !!part).join(' ').trim();
-  return text === '' ? null : deps.store.similarOpenPost(member.id, text);
+  return text === '' ? Promise.resolve(null) : deps.store.similarOpenPost(member.id, text);
 }
 
 /** The row kept for an attempt: no raw text, only the fingerprint and the validated extraction. */
