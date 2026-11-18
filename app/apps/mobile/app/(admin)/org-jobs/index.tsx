@@ -7,6 +7,7 @@ import { Platform, ScrollView } from 'react-native';
 import { hasPermission, type AdminRole } from '@kc/domain';
 import { makeUseStyles, spacing, Text, typography } from '@kc/ui';
 import { OrgJobPostingList } from '../../../src/components/admin/OrgJobPostingList';
+import { rtlTextAlignStart } from '../../../src/lib/rtlLayout';
 import { useAdminScreenTitle } from '../../../src/components/admin/useAdminScreenTitle';
 import { useAdminRoles } from '../../../src/hooks/useAdminRoles';
 import { useOrgJobPostingAdmin } from '../../../src/hooks/useOrgJobPostingAdmin';
@@ -56,6 +57,7 @@ export default function AdminOrgJobsScreen() {
 
 const useStyles = makeUseStyles(({ colors }) => ({
   body: { padding: spacing.lg, gap: spacing.md },
-  hint: { ...typography.caption, color: colors.textSecondary },
-  message: { ...typography.body, color: colors.textSecondary, padding: spacing.lg },
+  // The hint mixes Hebrew with the Latin "Karma Community": pin it to the reading-start edge.
+  hint: { ...typography.caption, color: colors.textSecondary, textAlign: rtlTextAlignStart },
+  message: { ...typography.body, color: colors.textSecondary, padding: spacing.lg, textAlign: rtlTextAlignStart },
 }));
