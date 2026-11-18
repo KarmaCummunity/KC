@@ -1,8 +1,8 @@
 // FR-AUTH-015 dialog — display_name + city + date of birth + optional address, "Save and continue".
-// Built on the kit `Modal` (spec 17 §4.1).
+// Built on the kit `Modal` (spec 17 §4.1). Save stays enabled: pressing it explains what is missing under
+// each field and jumps to the first (FR-RESP-006 AC29).
 import { useState } from 'react';
 import { FormScrollView } from './ui/FormScrollView';
-import { dateOfBirthIssue } from '@kc/domain';
 import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
 import { DateOfBirthField } from './DateOfBirthField';
 import { EditProfileAddressBlock } from './EditProfileAddressBlock';
@@ -13,8 +13,8 @@ import { TextField } from './ui/TextField';
 import { useAuthStore } from '../store/authStore';
 import { getCompleteBasicInfoUseCase } from '../services/userComposition';
 import { mapEditProfileSaveError } from '../lib/editProfileSaveErrors';
-import { getProfileAddressPairIssue } from '../lib/profileAddressFieldGate';
 import { useFeedSessionStore } from '../store/feedSessionStore';
+import { useProfileFieldErrors } from '../hooks/useProfileFieldErrors';
 import { useTranslation } from 'react-i18next';
 import { rtlTextAlignStart } from '../lib/rtlTextAlignStart';
 
@@ -38,26 +38,15 @@ export function OnboardingSoftGateModal({ visible, onClose, onSaved }: Props) {
   const [saving, setSaving] = useState(false);
   const [saveErrorMsg, setSaveErrorMsg] = useState<string | null>(null);
 
-  const addressIssue = getProfileAddressPairIssue(street, streetNumber);
-  const hasRequiredFields =
-    displayName.trim().length > 0 && city !== null && dateOfBirth !== null && dateOfBirthIssue(dateOfBirth, new Date()) === null;
-  const canSubmit = hasRequiredFields && addressIssue === null;
-
-  const showAddressToast = () => {
-    if (!addressIssue) return;
-    useFeedSessionStore.getState().showEphemeralToast(
-      mapEditProfileSaveError(addressIssue),
-      'error',
-      2800,
-    );
-  };
+  // The date of birth is required here, as in onboarding (FR-AUTH-015 AC1), so it is always checked.
+  const { fieldErrors, failedSubmitCount, acceptSubmit } = useProfileFieldErrors({
+    displayName, cityId: city?.id ?? null, street, streetNumber, contactPhone, dateOfBirth, dateOfBirthChanged: true,
+  });
 
   const handleSave = async () => {
-    if (!session || !hasRequiredFields || !city || !dateOfBirth) return;
-    if (!canSubmit) {
-      showAddressToast();
-      return;
-    }
+    if (!session) return;
+    // City and date are among the field errors; repeated so the save below has them.
+    if (!acceptSubmit() || !city || !dateOfBirth) return;
     setSaving(true);
     try {
       await getCompleteBasicInfoUseCase().execute({
@@ -98,8 +87,6 @@ export function OnboardingSoftGateModal({ visible, onClose, onSaved }: Props) {
             label={t('onboarding.saveAndContinue')}
             size="md"
             fullWidth
-            // An address issue keeps the button enabled: pressing it explains the issue in a toast.
-            disabled={!hasRequiredFields}
             loading={saving}
             onPress={() => void handleSave()}
           />
@@ -109,6 +96,7 @@ export function OnboardingSoftGateModal({ visible, onClose, onSaved }: Props) {
           style={styles.scroll}
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
+          jumpToProblemSignal={failedSubmitCount}
           // iOS: inset the form above the keyboard so the focused field stays visible.
           automaticallyAdjustKeyboardInsets
         >
@@ -120,10 +108,12 @@ export function OnboardingSoftGateModal({ visible, onClose, onSaved }: Props) {
             onChangeText={setDisplayName}
             placeholder={t('onboarding.fullNamePlaceholder')}
             maxLength={50}
+            inputKind="name"
             editable={!saving}
+            errorText={fieldErrors.displayName}
           />
 
-          <DateOfBirthField value={dateOfBirth} onChange={setDateOfBirth} disabled={saving} />
+          <DateOfBirthField value={dateOfBirth} onChange={setDateOfBirth} disabled={saving} errorText={fieldErrors.dateOfBirth} />
 
           <EditProfileAddressBlock
             city={city}
@@ -133,6 +123,7 @@ export function OnboardingSoftGateModal({ visible, onClose, onSaved }: Props) {
             onStreetChange={setStreet}
             onStreetNumberChange={setStreetNumber}
             disabled={saving}
+            error={fieldErrors.address}
           />
 
           <TextField
@@ -143,6 +134,7 @@ export function OnboardingSoftGateModal({ visible, onClose, onSaved }: Props) {
             maxLength={20}
             editable={!saving}
             inputKind="phone"
+            errorText={fieldErrors.contactPhone}
           />
         </FormScrollView>
       </Modal>

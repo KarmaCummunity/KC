@@ -1,14 +1,12 @@
 // Mute entire giving worlds from the home feed (filter_kind = world, slug in feed_mute_filters).
 import React from 'react';
-import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { GIVING_WORLD_SLUGS, type GivingWorldSlug } from '@kc/domain';
 import { makeUseStyles, spacing } from '@kc/ui';
-import { Chip } from '../ui';
+import { Chip } from '../ui/Chip';
+import { ChipSelectRow } from '../filterKit/ChipSelectRow';
 import { FeedSettingsSection } from './FeedSettingsSection';
 import { findWorldMute, type MuteFilter } from '../../lib/feedMuteFilters';
-import { rowDirectionStart } from '../../lib/rtlLayout';
-import { webViewRtl } from '../../lib/webRtlStyle';
 
 function worldTitleKey(world: GivingWorldSlug): string {
   if (world === 'items') return 'donations.items.title';
@@ -31,7 +29,8 @@ export function FeedSettingsWorldsSection({
   const styles = useStyles();
   return (
     <FeedSettingsSection title={t('feedSettings.worldsTitle')} hint={t('feedSettings.worldsHint')}>
-      <View style={styles.chips}>
+      {/* Multi-select with a muted icon, so the kit chips go straight into the row (not FilterChipRow). */}
+      <ChipSelectRow contentContainerStyle={styles.chips} testID="feed-settings-worlds">
         {GIVING_WORLD_SLUGS.map((world) => {
           const muted = findWorldMute(rows, world);
           return (
@@ -45,18 +44,11 @@ export function FeedSettingsWorldsSection({
             />
           );
         })}
-      </View>
+      </ChipSelectRow>
     </FeedSettingsSection>
   );
 }
 
 const useStyles = makeUseStyles(() => ({
-  chips: {
-    flexDirection: rowDirectionStart,
-    flexWrap: 'wrap' as const,
-    gap: spacing.sm,
-    paddingHorizontal: spacing.base,
-    paddingBottom: spacing.base,
-    ...webViewRtl,
-  },
+  chips: { paddingHorizontal: spacing.base, paddingBottom: spacing.base },
 }));

@@ -15,11 +15,10 @@ import { useFeedSessionStore } from '../store/feedSessionStore';
 import { useLastAddressStore } from '../store/lastAddressStore';
 import { usePostDraftStore } from '../store/postDraftStore';
 import {
-  buildAddressInlineErrorMessage,
   buildCreatePostNonAddressToastMessage,
-  getAddressValidationIssue,
   hasAddressRequiredFieldGaps,
   hasNonAddressRequiredFieldGaps,
+  postFieldErrors,
 } from '../lib/createPostFieldValidation';
 import { mapPostErrorToHebrew } from '../services/postMessages';
 import { invalidatePersonalStatsCaches } from '../lib/invalidatePersonalStatsCaches';
@@ -87,19 +86,11 @@ export function useCreatePostPublish(args: {
     ],
   );
 
-  const addressIssue = getAddressValidationIssue(
-    args.city,
-    args.street,
-    args.streetNumber,
-  );
-  const addressInlineMessage =
-    validationTouched && addressIssue !== 'none' ? buildAddressInlineErrorMessage(addressIssue) : null;
-  const titleInlineMessage =
-    validationTouched && fieldSnapshot.title.trim().length === 0 ? t('createPostValidation.missingTitle') : null;
-  const photoInlineMessage =
-    validationTouched && fieldSnapshot.isGive && fieldSnapshot.uploadsLength === 0
-      ? t('createPostValidation.missingPhoto')
-      : null;
+  // The same per-field rules as the edit form (`postFieldErrors`), shown once Publish was rejected.
+  const fieldErrors = postFieldErrors(fieldSnapshot);
+  const addressInlineMessage = validationTouched ? fieldErrors.address : null;
+  const titleInlineMessage = validationTouched ? fieldErrors.title : null;
+  const photoInlineMessage = validationTouched ? fieldErrors.photo : null;
 
   const publish = useMutation({
     mutationFn: async () => {

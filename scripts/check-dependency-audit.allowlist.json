@@ -49,6 +49,13 @@
       "reason": "Same @expo/metro-config@54 pin of postcss ~8.4 as GHSA-6g55-p6wh-862q: build time only, on the repository's own CSS. Clears with the Expo SDK upgrade (#1433).",
       "reviewed": "2026-11-03",
       "expires": "2027-01-31"
+    },
+    {
+      "advisory": "GHSA-fc5q-39xc-vjpf",
+      "package": "picomatch",
+      "reason": "Published 2026-11-17 with no fixed release (4.0.7 and 2.3.2 are the latest of their lines). Reached only through build and test tooling (vitest, vite, tinyglobby, typescript-eslint, jest-util under react-native), which matches globs from the repository's own configuration, never user input. Approved by the owner on 2026-11-17; remove when a fixed release ships.",
+      "reviewed": "2026-11-17",
+      "expires": "2027-02-14"
     }
   ]
 }

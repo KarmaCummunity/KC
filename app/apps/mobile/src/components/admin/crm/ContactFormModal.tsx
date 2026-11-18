@@ -1,4 +1,5 @@
-// V2-ADMIN-CRM-8 — bottom-sheet modal for create / edit CRM contact.
+// V2-ADMIN-CRM-8 — bottom sheet to create / edit a CRM contact, on the kit sheet (its own form scope)
+// with the shared chip row for the status.
 import { useState } from 'react';
 import { View } from 'react-native';
 import { useMutation } from '@tanstack/react-query';
@@ -6,13 +7,14 @@ import {
   CRM_CONTACT_STATUSES, isCrmContactError,
   type CrmContact, type CrmContactStatus,
 } from '@kc/domain';
-import { makeUseStyles, radius, spacing, Text, typography } from '@kc/ui';
+import { makeUseStyles, spacing } from '@kc/ui';
 import { TextField } from '../../ui/TextField';
-import { Chip } from '../../ui/Chip';
 import { AdminFormActions } from '../AdminFormActions';
 import { container } from '../../../lib/container';
 import { useLocaleBundle } from '../../../i18n/useLocaleBundle';
-import { FormScrollView } from '../../ui/FormScrollView';
+import { BottomSheet } from '../../ui/BottomSheet';
+import { FormSection } from '../../ui/FormSection';
+import { FilterChipRow } from '../../filterKit/FilterChipRow';
 
 export interface ContactFormModalProps {
   readonly initial: CrmContact | null;
@@ -59,32 +61,13 @@ export function ContactFormModal({ initial, orgId, onClose, onSaved }: ContactFo
   });
 
   return (
-    <View style={styles.backdrop} pointerEvents="box-none">
-      <FormScrollView style={styles.sheet} contentContainerStyle={styles.content}>
-        <Text style={styles.title}>{isEdit ? t.form.editTitle : t.form.createTitle}</Text>
-
-        <TextField label={t.form.nameLabel}         value={name}         onChangeText={setName} />
-        <TextField label={t.form.organizationLabel} value={organization} onChangeText={setOrg} />
-        <TextField label={t.form.emailLabel} value={email} onChangeText={setEmail} inputKind="email" />
-        <TextField label={t.form.phoneLabel} value={phone} onChangeText={setPhone} inputKind="phone" />
-        <TextField label={t.form.roleLabel}         value={roleTitle}    onChangeText={setRoleTitle} />
-
-        <Text style={styles.label}>{t.form.statusLabel}</Text>
-        <View style={styles.statusRow}>
-          {CRM_CONTACT_STATUSES.map((s) => (
-            <Chip
-              key={s}
-              label={t.status[s]}
-              selected={status === s}
-              onPress={() => setStatus(s)}
-              size="sm"
-            />
-          ))}
-        </View>
-
-        <TextField label={t.form.tagsLabel}  value={tagsRaw} onChangeText={setTagsRaw} />
-        <TextField label={t.form.notesLabel} value={notes}   onChangeText={setNotes} multiline />
-
+    <BottomSheet
+      visible
+      onDismiss={onClose}
+      dismissible={!save.isPending}
+      title={isEdit ? t.form.editTitle : t.form.createTitle}
+      testID="crm-contact-form"
+      footer={
         <AdminFormActions
           cancelLabel={t.form.cancel}
           submitLabel={t.form.submit}
@@ -94,20 +77,28 @@ export function ContactFormModal({ initial, orgId, onClose, onSaved }: ContactFo
           onSubmit={() => { void save.mutateAsync(); }}
           errorMsg={errorMsg}
         />
-      </FormScrollView>
-    </View>
+      }
+    >
+      <View style={styles.content}>
+        <TextField label={t.form.nameLabel} value={name} onChangeText={setName} inputKind="name" required />
+        <TextField label={t.form.organizationLabel} value={organization} onChangeText={setOrg} />
+        <TextField label={t.form.emailLabel} value={email} onChangeText={setEmail} inputKind="email" />
+        <TextField label={t.form.phoneLabel} value={phone} onChangeText={setPhone} inputKind="phone" />
+        <TextField label={t.form.roleLabel} value={roleTitle} onChangeText={setRoleTitle} />
+        <FormSection label={t.form.statusLabel}>
+          <FilterChipRow<CrmContactStatus>
+            options={CRM_CONTACT_STATUSES.map((s) => ({ value: s, label: t.status[s] }))}
+            value={status}
+            onChange={(next) => next && setStatus(next)}
+          />
+        </FormSection>
+        <TextField label={t.form.tagsLabel} value={tagsRaw} onChangeText={setTagsRaw} />
+        <TextField label={t.form.notesLabel} value={notes} onChangeText={setNotes} multiline />
+      </View>
+    </BottomSheet>
   );
 }
 
-const useStyles = makeUseStyles(({ colors }) => ({
-  backdrop: {
-    position: 'absolute', top: 0, start: 0, end: 0, bottom: 0,
-    backgroundColor: colors.overlay, justifyContent: 'flex-end',
-  },
-  sheet:   { maxHeight: '90%', backgroundColor: colors.surface,
-             borderTopStartRadius: radius.lg, borderTopEndRadius: radius.lg },
-  content: { padding: spacing.base, gap: spacing.md },
-  title:   { ...typography.h3, ...typography.bold, color: colors.textPrimary },
-  label:   { ...typography.label, color: colors.textSecondary },
-  statusRow: { flexDirection: 'row', gap: spacing.xs, flexWrap: 'wrap' },
+const useStyles = makeUseStyles(() => ({
+  content: { gap: spacing.md },
 }));

@@ -4,7 +4,6 @@
 // a main flow is an `lg` kit button). `AmountCheckoutScreen` frames it and shows
 // the external-provider notice instead while in-app payments are off.
 import React, { useState } from 'react';
-import { View } from 'react-native';
 import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
 import type { ExternalDonationKind } from '../../config/featureFlags';
 import { useExternalDonations } from '../../hooks/useExternalDonations';
@@ -12,7 +11,7 @@ import { Screen } from '../ui/Screen';
 import { FormScreen } from '../ui/FormScreen';
 import { TextField } from '../ui/TextField';
 import { PrimaryButton } from '../ui/Buttons';
-import { Chip } from '../ui/Chip';
+import { FilterChipRow } from '../filterKit/FilterChipRow';
 import { ExternalDonationNotice } from './ExternalDonationNotice';
 
 /** Smallest amount, in shekels, either screen accepts. */
@@ -80,11 +79,12 @@ export function AmountCheckoutForm(props: AmountCheckoutFormProps) {
         style={styles.amount}
       />
       {presets.length > 0 ? (
-        <View style={styles.presets}>
-          {presets.map((preset) => (
-            <Chip key={preset} label={`₪${preset}`} selected={parsed === preset} onPress={() => setAmount(String(preset))} />
-          ))}
-        </View>
+        <FilterChipRow<number>
+          chipSize="md"
+          options={presets.map((preset) => ({ value: preset, label: `₪${preset}` }))}
+          value={presets.includes(parsed) ? parsed : null}
+          onChange={(next) => next !== null && setAmount(String(next))}
+        />
       ) : null}
       {note ? <Text style={styles.note}>{note}</Text> : null}
     </FormScreen>
@@ -117,6 +117,5 @@ const useStyles = makeUseStyles(({ colors }) => ({
   intro: { ...typography.body, color: colors.textSecondary },
   // The amount is the point of the screen: shown larger than ordinary field text.
   amount: { ...typography.h3, color: colors.textPrimary },
-  presets: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   note: { ...typography.caption, color: colors.textSecondary },
 }));

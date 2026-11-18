@@ -41,6 +41,8 @@ export interface AuthFormScreenProps {
   readonly submitLabel: string;
   /** Extra action between the fields and the submit (e.g. "forgot password"). */
   readonly beforeSubmit?: React.ReactNode;
+  /** Sign-up: the password is a new one (autofill offers to generate it). */
+  readonly newPassword?: boolean;
   /** Shown under the form while no address is pending (the "switch screen" link). */
   readonly footer: React.ReactNode;
 }
@@ -74,6 +76,7 @@ export function AuthFormScreen({
   passwordPlaceholder,
   submitLabel,
   beforeSubmit,
+  newPassword = false,
   footer,
 }: AuthFormScreenProps) {
   const styles = useStyles();
@@ -120,6 +123,7 @@ export function AuthFormScreen({
                     passwordPlaceholder={passwordPlaceholder}
                     submitLabel={submitLabel}
                     beforeSubmit={beforeSubmit}
+                    newPassword={newPassword}
                   />
                 </View>
 
@@ -142,7 +146,7 @@ export function AuthFormScreen({
 /** The props the credential fields read: the form state, the password labels and the submit. */
 type AuthCredentialFieldsProps = Pick<
   AuthFormScreenProps,
-  'form' | 'passwordLabel' | 'passwordPlaceholder' | 'submitLabel' | 'beforeSubmit'
+  'form' | 'passwordLabel' | 'passwordPlaceholder' | 'submitLabel' | 'beforeSubmit' | 'newPassword'
 >;
 
 /** Address and password inputs, the optional extra action and the submit. */
@@ -152,6 +156,7 @@ function AuthCredentialFields({
   passwordPlaceholder,
   submitLabel,
   beforeSubmit,
+  newPassword,
 }: AuthCredentialFieldsProps) {
   const { t } = useTranslation();
   return (
@@ -164,6 +169,7 @@ function AuthCredentialFields({
         placeholder={t('auth.emailPlaceholder')}
         editable={!form.loading}
         inputKind="email"
+        errorText={form.emailError}
       />
       <AnimatedAuthInput
         testID="auth-password"
@@ -171,8 +177,12 @@ function AuthCredentialFields({
         value={form.password}
         onChangeText={form.setPassword}
         placeholder={passwordPlaceholder}
+        inputKind="password"
+        // A new account gets a new password, so password managers offer to generate one.
+        {...(newPassword ? { autoComplete: 'new-password' as const, textContentType: 'newPassword' as const } : {})}
         secureTextEntry
         editable={!form.loading}
+        errorText={form.passwordError}
       />
       {beforeSubmit}
       {/* Literal id: the Maestro flows (and their testID checker) target the submit by it. */}

@@ -19,10 +19,6 @@ export default function MarketplaceLayout() {
       <Stack.Screen name="map" options={{ headerTitle: t('feed.openMapA11y') }} />
       <Stack.Screen name="[listingId]" options={{ headerTitle: '' }} />
       <Stack.Screen name="my-listings" options={{ headerTitle: t('marketplace.myListingsTitle') }} />
-      <Stack.Screen
-        name="my-listings/edit/[listingId]"
-        options={{ headerTitle: t('marketplace.myListingsEdit') }}
-      />
     </Stack>
   );
 }

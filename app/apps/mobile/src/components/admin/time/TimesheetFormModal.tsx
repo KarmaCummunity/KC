@@ -1,14 +1,17 @@
-// V2-ADMIN-TIME-10 — modal for create/edit own timesheet draft.
+// V2-ADMIN-TIME-10 — bottom sheet to create / edit one's own timesheet draft, on the kit sheet (its
+// own form scope); the work day is picked in local time.
 import { useState } from 'react';
 import { View } from 'react-native';
 import { useMutation } from '@tanstack/react-query';
 import { isTimesheetError, type TimesheetEntry } from '@kc/domain';
-import { makeUseStyles, radius, spacing, Text, typography } from '@kc/ui';
+import { makeUseStyles, spacing } from '@kc/ui';
 import { TextField } from '../../ui/TextField';
 import { AdminFormActions } from '../AdminFormActions';
 import { container } from '../../../lib/container';
 import { useLocaleBundle } from '../../../i18n/useLocaleBundle';
-import { FormScrollView } from '../../ui/FormScrollView';
+import { BottomSheet } from '../../ui/BottomSheet';
+import { AdminDateField } from '../AdminDateField';
+import { dateToLocalDay } from '../../../lib/localDay';
 
 export interface TimesheetFormModalProps {
   readonly initial: TimesheetEntry | null;
@@ -21,7 +24,8 @@ export function TimesheetFormModal({ initial, onClose, onSaved }: TimesheetFormM
   const L = useLocaleBundle();
   const t = L.admin.time;
   const isEdit = initial !== null;
-  const today = new Date().toISOString().slice(0, 10);
+  // Today in local time: a UTC date would be yesterday shortly after midnight in Israel.
+  const today = dateToLocalDay(new Date());
   const [workDate,    setWorkDate]    = useState(initial?.workDate ?? today);
   const [hoursText,   setHoursText]   = useState(initial ? (initial.hoursX100 / 100).toString() : '');
   const [project,     setProject]     = useState(initial?.project ?? '');
@@ -51,15 +55,13 @@ export function TimesheetFormModal({ initial, onClose, onSaved }: TimesheetFormM
   });
 
   return (
-    <View style={styles.backdrop} pointerEvents="box-none">
-      <FormScrollView style={styles.sheet} contentContainerStyle={styles.content}>
-        <Text style={styles.title}>{isEdit ? t.form.editTitle : t.form.createTitle}</Text>
-
-        <TextField label={t.form.workDateLabel} value={workDate} onChangeText={setWorkDate} inputKind="date" />
-        <TextField label={t.form.hoursLabel} value={hoursText} onChangeText={setHoursText} inputKind="decimal" />
-        <TextField label={t.form.projectLabel}     value={project}     onChangeText={setProject} />
-        <TextField label={t.form.descriptionLabel} value={description} onChangeText={setDescription} multiline />
-
+    <BottomSheet
+      visible
+      onDismiss={onClose}
+      dismissible={!save.isPending}
+      title={isEdit ? t.form.editTitle : t.form.createTitle}
+      testID="timesheet-form"
+      footer={
         <AdminFormActions
           cancelLabel={t.form.cancel}
           submitLabel={t.form.submit}
@@ -69,18 +71,18 @@ export function TimesheetFormModal({ initial, onClose, onSaved }: TimesheetFormM
           onSubmit={() => { void save.mutateAsync(); }}
           errorMsg={errorMsg}
         />
-      </FormScrollView>
-    </View>
+      }
+    >
+      <View style={styles.content}>
+        <AdminDateField label={t.form.workDateLabel} value={workDate} onChange={setWorkDate} />
+        <TextField label={t.form.hoursLabel} value={hoursText} onChangeText={setHoursText} inputKind="decimal" required />
+        <TextField label={t.form.projectLabel} value={project} onChangeText={setProject} />
+        <TextField label={t.form.descriptionLabel} value={description} onChangeText={setDescription} multiline />
+      </View>
+    </BottomSheet>
   );
 }
 
-const useStyles = makeUseStyles(({ colors }) => ({
-  backdrop: {
-    position: 'absolute', top: 0, start: 0, end: 0, bottom: 0,
-    backgroundColor: colors.overlay, justifyContent: 'flex-end',
-  },
-  sheet:   { maxHeight: '90%', backgroundColor: colors.surface,
-             borderTopStartRadius: radius.lg, borderTopEndRadius: radius.lg },
-  content: { padding: spacing.base, gap: spacing.md },
-  title:   { ...typography.h3, ...typography.bold, color: colors.textPrimary },
+const useStyles = makeUseStyles(() => ({
+  content: { gap: spacing.md },
 }));

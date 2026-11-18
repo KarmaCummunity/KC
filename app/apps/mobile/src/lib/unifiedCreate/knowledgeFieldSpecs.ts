@@ -74,5 +74,5 @@ export const KNOWLEDGE_FIELD_SPECS: Readonly<Record<string, readonly ListingFiel
     LANGUAGE,
   ],
   // The question itself is the post's title and description.
-  question: [TOPIC, { key: 'context_url', type: 'text', maxLength: 500 }],
+  question: [TOPIC, { key: 'context_url', type: 'text', maxLength: 500, inputKind: 'url' }],
 };

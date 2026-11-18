@@ -68,3 +68,4 @@
 0071_employment_job_offer_orgs.sql
 0072_followers_only_needs_private_profile.sql
 0073_import_attach_post.sql
+0074_post_card_provenance.sql

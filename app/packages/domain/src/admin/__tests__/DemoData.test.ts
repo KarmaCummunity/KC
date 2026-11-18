@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { DemoDataError, hasDemoData, isDemoDataError, type DemoDataStatus } from '../DemoData';
+import {
+  DEMO_DATA_MAX_STEPS, DEMO_DATA_SEED_PHASES, DemoDataError, hasDemoData, isDemoDataError, type DemoDataStatus,
+} from '../DemoData';
 
 const EMPTY: DemoDataStatus = {
   demoUsers: 0, demoOrganizations: 0, demoItemPosts: 0, demoRidePosts: 0, demoFollows: 0,
@@ -12,6 +14,13 @@ describe('DemoData (FR-ADMIN-031)', () => {
     expect(hasDemoData({ ...EMPTY, demoUsers: 1 })).toBe(true);
     // A nonprofit kept for its payment history is still demo data the wipe reports.
     expect(hasDemoData({ ...EMPTY, demoOrganizations: 1 })).toBe(true);
+  });
+
+  // The step bound of the use cases follows the phase list, so a new phase cannot outgrow it.
+  it('a restore wipes first, then creates, and the step bound covers every phase', () => {
+    expect(DEMO_DATA_SEED_PHASES.slice(0, 2)).toEqual(['wipe_content', 'wipe_accounts']);
+    expect(new Set(DEMO_DATA_SEED_PHASES).size).toBe(DEMO_DATA_SEED_PHASES.length);
+    expect(DEMO_DATA_MAX_STEPS).toBe(DEMO_DATA_SEED_PHASES.length);
   });
 
   it('DemoDataError carries its code and is recognised by the guard', () => {

@@ -46,6 +46,7 @@ export default function EditProfileScreen() {
     <>
       <FormScreen
         edges={['bottom']}
+        jumpToProblemSignal={form.failedSubmitCount}
         contentContainerStyle={styles.scroll}
         footer={
           <PrimaryButton
@@ -80,8 +81,10 @@ export default function EditProfileScreen() {
             value={form.displayName}
             onChangeText={form.setDisplayName}
             maxLength={50}
+            inputKind="name"
             editable={!form.saving}
             placeholder={t('profile.editScreen.fullNamePlaceholder')}
+            errorText={form.fieldErrors.displayName}
           />
           <Text style={styles.count}>{form.displayName.length}/50</Text>
         </View>
@@ -89,6 +92,7 @@ export default function EditProfileScreen() {
           value={form.dateOfBirth}
           onChange={form.setDateOfBirth}
           disabled={form.saving}
+          errorText={form.fieldErrors.dateOfBirth}
         />
         <EditProfileAddressBlock
           city={form.city}
@@ -98,6 +102,7 @@ export default function EditProfileScreen() {
           onStreetChange={form.setStreet}
           onStreetNumberChange={form.setStreetNumber}
           disabled={form.saving}
+          error={form.fieldErrors.address}
         />
         <View style={styles.field}>
           <TextField
@@ -110,6 +115,7 @@ export default function EditProfileScreen() {
             textAlign={inputTextAlignStart()}
             editable={!form.saving}
             placeholder={t('profile.editScreen.contactPhonePlaceholder')}
+            errorText={form.fieldErrors.contactPhone}
           />
           <Text style={styles.helper}>{t('profile.editScreen.contactPhoneHelper')}</Text>
         </View>

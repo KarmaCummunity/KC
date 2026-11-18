@@ -14,13 +14,15 @@ interface OptionChipsProps<T extends string> {
   readonly onSelect: (value: T) => void;
   /** Explains the selected option (shown under the label). */
   readonly hint?: string;
+  /** What is wrong with the choice; shown under the chips and jumped to on a rejected submit. */
+  readonly error?: string | null;
   readonly testID?: string;
 }
 
 /** A labelled single-choice row of chips (one sideways-scrolling line), used by the "open a challenge" form. */
-export function OptionChips<T extends string>({ label, options, selected, onSelect, hint, testID }: OptionChipsProps<T>) {
+export function OptionChips<T extends string>({ label, options, selected, onSelect, hint, error = null, testID }: OptionChipsProps<T>) {
   return (
-    <FormSection label={label} hint={hint} testID={testID}>
+    <FormSection label={label} hint={hint} error={error} testID={testID}>
       <FilterChipRow<T> chipSize="md" options={options} value={selected} onChange={(next) => next && onSelect(next)} />
     </FormSection>
   );
