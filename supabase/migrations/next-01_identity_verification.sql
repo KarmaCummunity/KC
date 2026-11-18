@@ -48,8 +48,8 @@ create table public.identity_verifications (
                       check (status in ('created', 'in_progress', 'review', 'approved', 'declined', 'resubmit')),
   decision_reason_code text check (char_length(decision_reason_code) between 1 and 60),
   document_type       text check (document_type in ('il_id_card', 'il_passport', 'foreign_passport')),
-  -- ISO 3166-1 alpha-2 issuing country.
-  document_country    text check (document_country ~ '^[A-Z]{2}$'),
+  -- ISO 3166-1 alpha-3 issuing country, as identity providers report it (e.g. ISR).
+  document_country    text check (document_country ~ '^[A-Z]{3}$'),
   document_expires_on date,
   -- Whether the legal name on the document matches the profile name; the name itself is never stored.
   name_match          boolean,

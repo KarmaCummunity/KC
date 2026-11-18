@@ -36,7 +36,7 @@ returns jsonb
 language sql
 as $$
   select jsonb_build_object('type', 'identity.decided', 'provider_session_id', p_session, 'outcome', p_outcome,
-    'document_type', 'il_id_card', 'document_country', 'IL', 'document_expires_on', '2099-01-01',
+    'document_type', 'il_id_card', 'document_country', 'ISR', 'document_expires_on', '2099-01-01',
     'date_of_birth', '1990-05-05', 'name_match', true, 'identity_hash', repeat('a', 64)) || p_extra
 $$;
 
