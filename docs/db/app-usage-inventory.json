@@ -20,8 +20,8 @@
    "distinct": 4
   },
   "rpc": {
-   "callSites": 282,
-   "distinct": 258
+   "callSites": 283,
+   "distinct": 259
   },
   "table": {
    "callSites": 190,
@@ -4646,7 +4646,7 @@
   {
    "kind": "table",
    "file": "supabase/functions/_shared/post-extraction/store.ts",
-   "line": 45,
+   "line": 52,
    "area": "fn:_shared",
    "symbol": "supabaseImportStore",
    "via": "literal",
@@ -4656,7 +4656,16 @@
   {
    "kind": "rpc",
    "file": "supabase/functions/_shared/post-extraction/store.ts",
-   "line": 52,
+   "line": 59,
+   "area": "fn:_shared",
+   "symbol": "similarOpenPost",
+   "via": "literal",
+   "name": "import_similar_open_post"
+  },
+  {
+   "kind": "rpc",
+   "file": "supabase/functions/_shared/post-extraction/store.ts",
+   "line": 65,
    "area": "fn:_shared",
    "symbol": "moderationRemovalsSince",
    "via": "literal",
@@ -4665,7 +4674,7 @@
   {
    "kind": "table",
    "file": "supabase/functions/_shared/post-extraction/store.ts",
-   "line": 66,
+   "line": 79,
    "area": "fn:_shared",
    "symbol": "supabaseExtractionCache",
    "via": "literal",

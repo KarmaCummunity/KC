@@ -640,6 +640,7 @@ export type Database = {
           channel: string
           confidence: number
           created_at: string
+          duplicate_post_id: string | null
           edited_fields: string[] | null
           extraction: Json | null
           extraction_version: string
@@ -658,6 +659,7 @@ export type Database = {
           channel: string
           confidence?: number
           created_at?: string
+          duplicate_post_id?: string | null
           edited_fields?: string[] | null
           extraction?: Json | null
           extraction_version: string
@@ -676,6 +678,7 @@ export type Database = {
           channel?: string
           confidence?: number
           created_at?: string
+          duplicate_post_id?: string | null
           edited_fields?: string[] | null
           extraction?: Json | null
           extraction_version?: string
@@ -691,6 +694,12 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "external_post_imports_duplicate_post_id_fkey"
+            columns: ["duplicate_post_id"]
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "external_post_imports_post_id_fkey"
             columns: ["post_id"]
@@ -5781,6 +5790,13 @@ export type Database = {
         Returns: string[]
       }
       import_normalize_place_text: { Args: { p_text: string }; Returns: string }
+      import_similar_open_post: {
+        Args: { p_min?: number; p_text: string; p_user_id: string }
+        Returns: {
+          post_id: string
+          similarity: number
+        }[]
+      }
       join_challenge: { Args: { p_challenge_id: string }; Returns: undefined }
       knowledge_slot_seats: {
         Args: { p_post_id: string }

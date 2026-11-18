@@ -17,6 +17,8 @@ export const postImport = {
   reviewTitle: 'The form was filled from the message you pasted. Check it before you publish.',
   reviewRemoved: 'We removed contact details such as phone numbers and e-mails. In KC chat you can coordinate without sharing them.',
   reviewTruncated: 'The message is long, so only its start was read.',
+  reviewDuplicate: 'You already have a similar open post. You can publish again, or keep the one you have.',
+  reviewDuplicateOpen: 'Open that post',
   reviewCheck: 'Worth checking: {{fields}}',
   fields: {
     world: 'World',
