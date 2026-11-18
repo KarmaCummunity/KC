@@ -18,5 +18,4 @@ export const usePasswordResetStyles = makeUseStyles(({ colors }) => ({
   centered: { alignItems: 'center' as const },
   title: { ...typography.h2, color: colors.textPrimary, textAlign: 'center' as const },
   body: { ...typography.body, color: colors.textSecondary, textAlign: 'center' as const },
-  error: { ...typography.caption, color: colors.error, textAlign: 'center' as const },
 }));

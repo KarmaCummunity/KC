@@ -1,14 +1,19 @@
-// V2-ADMIN-MONEY-9 — bottom-sheet modal for create/edit a ledger entry.
+// V2-ADMIN-MONEY-9 — bottom sheet to create / edit a ledger entry, on the kit sheet (its own form
+// scope) with the shared chip rows and a picked (local) day.
 import { useState } from 'react';
-import { ScrollView, Switch, View } from 'react-native';
+import { Switch, View } from 'react-native';
 import { useMutation } from '@tanstack/react-query';
 import {
   FINANCE_ENTRY_KINDS, FINANCE_ENTRY_STATUSES, categoriesForDirection, directionOfKind,
   isFinanceCategoryKey, isFinanceLedgerError,
   type FinanceAccount, type FinanceEntry, type FinanceEntryKind, type FinanceEntryStatus,
 } from '@kc/domain';
-import { makeUseStyles, radius, spacing, Text, typography } from '@kc/ui';
-import { Chip } from '../../ui/Chip';
+import { makeUseStyles, spacing, Text, typography } from '@kc/ui';
+import { BottomSheet } from '../../ui/BottomSheet';
+import { FormSection } from '../../ui/FormSection';
+import { FilterChipRow } from '../../filterKit/FilterChipRow';
+import { AdminDateField } from '../AdminDateField';
+import { dateToLocalDay } from '../../../lib/localDay';
 import { container } from '../../../lib/container';
 import { AdminFormField } from '../AdminFormField';
 import { AdminFormActions } from '../AdminFormActions';
@@ -34,7 +39,7 @@ export function FinanceEntryFormModal({
   const isEdit = initial !== null;
   const [kind, setKind]           = useState<FinanceEntryKind>(initial?.kind ?? 'donation_in');
   const [amountText, setAmount]   = useState(initial ? (initial.amountCents / 100).toString() : '');
-  const [occurredText, setOccurred] = useState(initial ? toIsoDate(initial.occurredAt) : toIsoDate(new Date()));
+  const [occurredText, setOccurred] = useState(initial ? toIsoDate(initial.occurredAt) : dateToLocalDay(new Date()));
   const [counterparty, setCounter] = useState(initial?.counterparty ?? '');
   const [category, setCategory]   = useState(initial?.category ?? '');
   // Free-text category: an existing non-key value, or the user picked "other".
@@ -74,68 +79,22 @@ export function FinanceEntryFormModal({
     },
   });
 
+  const changeKind = (next: FinanceEntryKind) => {
+    setKind(next);
+    // A default category belongs to one direction; drop it if the new kind flips it.
+    if (isFinanceCategoryKey(category) && !categoriesForDirection(directionOfKind(next) ?? 'out').includes(category)) {
+      setCategory('');
+    }
+  };
+
   return (
-    <View style={styles.backdrop} pointerEvents="box-none">
-      <ScrollView style={styles.sheet} contentContainerStyle={styles.content}>
-        <Text style={styles.title}>{isEdit ? t.form.editTitle : t.form.createTitle}</Text>
-
-        <Text style={styles.label}>{t.form.kindLabel}</Text>
-        <View style={styles.optionsRow}>
-          {FINANCE_ENTRY_KINDS.map((k) => (
-            <Chip
-              key={k}
-              label={t.kind[k]}
-              selected={kind === k}
-              onPress={() => {
-                setKind(k);
-                // A default category belongs to one direction; drop it if the new kind flips it.
-                if (isFinanceCategoryKey(category) && !categoriesForDirection(directionOfKind(k) ?? 'out').includes(category)) {
-                  setCategory('');
-                }
-              }}
-              size="sm"
-            />
-          ))}
-        </View>
-
-        <AdminFormField label={t.form.amountLabel}        value={amountText}  onChange={setAmount}     keyboardNumeric />
-        <AdminFormField label={t.form.occurredAtLabel}    value={occurredText} onChange={setOccurred} />
-        <AdminFormField label={t.form.counterpartyLabel}  value={counterparty} onChange={setCounter} />
-        <Text style={styles.label}>{t.form.accountLabel}</Text>
-        <AccountPicker accounts={accounts} value={accountId} onChange={setAccountId} />
-
-        <Text style={styles.label}>{t.form.categoryLabel}</Text>
-        <CategoryPicker
-          direction={directionOfKind(kind) ?? 'out'}
-          value={category}
-          customMode={customCategory}
-          onPick={(key) => { setCustomCategory(false); setCategory(key); }}
-          onCustom={() => { setCustomCategory(true); if (isFinanceCategoryKey(category)) setCategory(''); }}
-        />
-        {customCategory && <AdminFormField label={t.form.categoryCustom} value={category} onChange={setCategory} />}
-        <AdminFormField label={t.form.descriptionLabel}   value={description}  onChange={setDesc} multiline />
-
-        <Text style={styles.label}>{t.form.statusLabel}</Text>
-        <View style={styles.optionsRow}>
-          {FINANCE_ENTRY_STATUSES.map((s) => (
-            <Chip
-              key={s}
-              label={t.status[s]}
-              selected={status === s}
-              onPress={() => setStatus(s)}
-              size="sm"
-            />
-          ))}
-        </View>
-
-        <View style={styles.switchRow}>
-          <View style={styles.switchText}>
-            <Text style={styles.switchLabel}>{t.form.publicLabel}</Text>
-            <Text style={styles.label}>{t.form.publicHint}</Text>
-          </View>
-          <Switch value={isPublic} onValueChange={setIsPublic} accessibilityLabel={t.form.publicLabel} />
-        </View>
-
+    <BottomSheet
+      visible
+      onDismiss={onClose}
+      dismissible={!save.isPending}
+      title={isEdit ? t.form.editTitle : t.form.createTitle}
+      testID="finance-entry-form"
+      footer={
         <AdminFormActions
           cancelLabel={t.form.cancel}
           submitLabel={t.form.submit}
@@ -145,23 +104,56 @@ export function FinanceEntryFormModal({
           onSubmit={() => { void save.mutateAsync(); }}
           errorMsg={errorMsg}
         />
-      </ScrollView>
-    </View>
+      }
+    >
+      <View style={styles.content}>
+        <FormSection label={t.form.kindLabel}>
+          <FilterChipRow<FinanceEntryKind>
+            options={FINANCE_ENTRY_KINDS.map((k) => ({ value: k, label: t.kind[k] }))}
+            value={kind}
+            onChange={(next) => next && changeKind(next)}
+          />
+        </FormSection>
+        <AdminFormField label={t.form.amountLabel} value={amountText} onChange={setAmount} inputKind="decimal" required />
+        <AdminDateField label={t.form.occurredAtLabel} value={occurredText} onChange={setOccurred} />
+        <AdminFormField label={t.form.counterpartyLabel} value={counterparty} onChange={setCounter} />
+        <FormSection label={t.form.accountLabel}>
+          <AccountPicker accounts={accounts} value={accountId} onChange={setAccountId} />
+        </FormSection>
+        <FormSection label={t.form.categoryLabel}>
+          <CategoryPicker
+            direction={directionOfKind(kind) ?? 'out'}
+            value={category}
+            customMode={customCategory}
+            onPick={(key) => { setCustomCategory(false); setCategory(key); }}
+            onCustom={() => { setCustomCategory(true); if (isFinanceCategoryKey(category)) setCategory(''); }}
+          />
+        </FormSection>
+        {customCategory && <AdminFormField label={t.form.categoryCustom} value={category} onChange={setCategory} />}
+        <AdminFormField label={t.form.descriptionLabel} value={description} onChange={setDesc} multiline />
+        <FormSection label={t.form.statusLabel}>
+          <FilterChipRow<FinanceEntryStatus>
+            options={FINANCE_ENTRY_STATUSES.map((s) => ({ value: s, label: t.status[s] }))}
+            value={status}
+            onChange={(next) => next && setStatus(next)}
+          />
+        </FormSection>
+        <View style={styles.switchRow}>
+          <View style={styles.switchText}>
+            <Text style={styles.switchLabel}>{t.form.publicLabel}</Text>
+            <Text style={styles.hint}>{t.form.publicHint}</Text>
+          </View>
+          <Switch value={isPublic} onValueChange={setIsPublic} accessibilityLabel={t.form.publicLabel} />
+        </View>
+      </View>
+    </BottomSheet>
   );
 }
 
 const useStyles = makeUseStyles(({ colors }) => ({
-  backdrop: {
-    position: 'absolute', top: 0, start: 0, end: 0, bottom: 0,
-    backgroundColor: colors.overlay, justifyContent: 'flex-end',
-  },
-  sheet:   { maxHeight: '90%', backgroundColor: colors.surface,
-             borderTopStartRadius: radius.lg, borderTopEndRadius: radius.lg },
-  content: { padding: spacing.base, gap: spacing.md },
-  title:   { ...typography.h3, ...typography.bold, color: colors.textPrimary },
-  label:   { ...typography.label, color: colors.textSecondary },
-  optionsRow: { flexDirection: 'row', gap: spacing.xs, flexWrap: 'wrap' },
-  switchRow:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
+  content: { gap: spacing.md },
+  hint: { ...typography.label, color: colors.textSecondary },
+  switchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
   switchText: { flex: 1, gap: spacing.xs },
   switchLabel: { ...typography.body, ...typography.semiBold, color: colors.textPrimary },
 }));

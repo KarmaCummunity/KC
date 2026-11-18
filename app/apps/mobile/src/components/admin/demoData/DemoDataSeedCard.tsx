@@ -1,5 +1,6 @@
-// FR-ADMIN-031 — restore card of the Demo data screen. Asks for the demo members' password only
-// while the server has none saved (AC9), then hands it to `onSeed`.
+// FR-ADMIN-031 — the card of the Demo data screen that creates the demo data: "show" while there
+// is none, "create again" while some exists. Asks for the demo members' password only while the
+// server has none saved (AC9), then hands it to `onSeed`.
 import { useState } from 'react';
 import { View } from 'react-native';
 import { MIN_DEMO_PASSWORD_LENGTH } from '@kc/domain';
@@ -8,6 +9,8 @@ import { PrimaryButton, TextField } from '../../ui';
 import { useLocaleBundle } from '../../../i18n/useLocaleBundle';
 
 interface Props {
+  /** The action's name: showing hidden demo data, or creating the existing data again. */
+  readonly label: string;
   /** True when the server has no saved password hash, so one must be typed. */
   readonly needsPassword: boolean;
   readonly pending: boolean;
@@ -16,7 +19,7 @@ interface Props {
   readonly onSeed: (password: string | undefined) => void;
 }
 
-export function DemoDataSeedCard({ needsPassword, pending, progressLabel, onSeed }: Props) {
+export function DemoDataSeedCard({ label, needsPassword, pending, progressLabel, onSeed }: Props) {
   const styles = useStyles();
   const t = useLocaleBundle().admin.demoData;
   const [password, setPassword] = useState('');
@@ -31,14 +34,14 @@ export function DemoDataSeedCard({ needsPassword, pending, progressLabel, onSeed
           helperText={t.passwordHint}
           value={password}
           onChangeText={setPassword}
-          secureTextEntry
-          autoCapitalize="none"
-          autoCorrect={false}
+          inputKind="password"
+          // A password for the demo accounts being created, not the admin's own sign-in.
+          autoComplete="new-password"
           testID="admin-demo-password"
         />
       ) : null}
       <PrimaryButton
-        label={pending ? (progressLabel ?? t.seeding) : t.seedButton}
+        label={pending ? (progressLabel ?? t.seeding) : label}
         onPress={() => onSeed(needsPassword ? password : undefined)}
         disabled={pending || tooShort}
         fullWidth

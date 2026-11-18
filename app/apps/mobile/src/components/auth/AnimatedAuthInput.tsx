@@ -1,4 +1,5 @@
-// Animated input with orange border glow on focus — RTL-ready.
+// Animated input with orange border glow on focus — RTL-ready. Shows its validation message under the
+// field like the kit `TextField` (FR-RESP-006 AC29), so the form scope can jump to it.
 import React, { forwardRef, useImperativeHandle, useRef, useState } from 'react';
 import { View, type TextInputProps } from 'react-native';
 import Animated, {
@@ -11,12 +12,15 @@ import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 import { inputTextAlignStart } from '../../lib/rtlLayout';
 import { useFormScopeField } from '../ui/useFormScopeField';
 import { formInputKindProps, type FormInputKind } from '../../lib/platform/formTextInputHints';
+import { FieldMessage } from '../ui/FieldMessage';
 
 interface AnimatedAuthInputProps extends TextInputProps {
   label: string;
   testID?: string;
   /** What the field holds; picks the matching keyboard and autofill hints (explicit props still win). */
   inputKind?: FormInputKind;
+  /** Validation message: the field turns red and shows it underneath. */
+  errorText?: string;
 }
 
 const AuthFieldInput = TextInput;
@@ -40,6 +44,7 @@ const useAnimatedAuthInputStyles = makeUseStyles(({ colors, isDark }) => ({
     paddingHorizontal: spacing.base,
     justifyContent: 'center' as const,
   },
+  inputContainerError: { borderColor: colors.error },
   inputContainerFocused: {
     borderColor: colors.primary,
     backgroundColor: isDark ? colors.surface : colors.background,
@@ -59,6 +64,7 @@ export const AnimatedAuthInput = forwardRef<UiTextInput, AnimatedAuthInputProps>
     onBlur,
     onSubmitEditing,
     inputKind = 'text',
+    errorText,
     ...rest
   },
   ref,
@@ -72,6 +78,7 @@ export const AnimatedAuthInput = forwardRef<UiTextInput, AnimatedAuthInputProps>
     viewRef: fieldRef,
     editable: rest.editable !== false,
     multiline: rest.multiline === true,
+    hasError: Boolean(errorText),
   });
   const { colors } = useTheme();
   const styles = useAnimatedAuthInputStyles();
@@ -106,6 +113,7 @@ export const AnimatedAuthInput = forwardRef<UiTextInput, AnimatedAuthInputProps>
         style={[
           styles.inputContainer,
           focused && styles.inputContainerFocused,
+          errorText ? styles.inputContainerError : null,
           wrapperStyle,
         ]}
       >
@@ -114,6 +122,8 @@ export const AnimatedAuthInput = forwardRef<UiTextInput, AnimatedAuthInputProps>
           style={styles.input}
           placeholderTextColor={colors.textDisabled}
           textAlign={inputTextAlignStart()}
+          // The label is the input's name; a shown error is read with it.
+          accessibilityLabel={errorText ? `${label}, ${errorText}` : label}
           onFocus={handleFocus}
           onBlur={handleBlur}
           {...formInputKindProps[inputKind]}
@@ -125,6 +135,7 @@ export const AnimatedAuthInput = forwardRef<UiTextInput, AnimatedAuthInputProps>
           }}
         />
       </Animated.View>
+      <FieldMessage errorText={errorText} />
     </View>
   );
 });

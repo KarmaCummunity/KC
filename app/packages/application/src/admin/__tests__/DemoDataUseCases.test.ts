@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { DemoDataError, type DemoDataSeedResult, type DemoDataStep, type DemoDataWipeResult } from '@kc/domain';
+import { DEMO_DATA_MAX_STEPS, DemoDataError, type DemoDataSeedResult, type DemoDataStep, type DemoDataWipeResult } from '@kc/domain';
 import { GetDemoDataStatusUseCase, RestoreDemoDataUseCase, WipeDemoDataUseCase } from '../DemoDataUseCases';
 import type { IDemoDataRepository } from '../IDemoDataRepository';
 
@@ -71,6 +71,7 @@ describe('Demo data use cases (FR-ADMIN-031)', () => {
   it('an operation that never reports done stops with `incomplete`', async () => {
     const wipeStep = vi.fn<IDemoDataRepository['wipeStep']>().mockResolvedValue(step('wipe_content'));
     await expect(new WipeDemoDataUseCase(makeRepo({ wipeStep })).execute()).rejects.toMatchObject({ code: 'incomplete' });
-    expect(wipeStep).toHaveBeenCalledTimes(16);
+    // Twice the longest list of phases: a stalled operation resumes before it restarts.
+    expect(wipeStep).toHaveBeenCalledTimes(DEMO_DATA_MAX_STEPS * 2);
   });
 });

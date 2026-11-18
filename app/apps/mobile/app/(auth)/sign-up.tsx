@@ -19,7 +19,6 @@ function SignUpScreenContent() {
   const { t } = useTranslation();
   const setSession = useAuthStore((s) => s.setSession);
   const form = useAuthEmailForm({
-    missingFieldsMessage: t('auth.fillAllFields'),
     failureTitle: t('auth.signUpFailedTitle'),
     submit: async (email, password) => {
       const { session, pendingVerification } = await getSignUpUseCase().execute({
@@ -39,6 +38,7 @@ function SignUpScreenContent() {
       title={t('auth.signUp')}
       subtitle={t('auth.signUpSubtitle')}
       form={form}
+      newPassword
       passwordLabel={t('auth.passwordRuleLabel')}
       passwordPlaceholder={t('auth.passwordPlaceholderNew')}
       submitLabel={t('auth.signUp')}

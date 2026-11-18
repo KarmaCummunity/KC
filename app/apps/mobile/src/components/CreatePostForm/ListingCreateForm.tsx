@@ -170,7 +170,8 @@ export function ListingCreateForm({
             <ListingFieldFrame field="title" outlined={false} style={styles.section}>
               <TextField
                 testID="listing-title"
-                label={`${t('post.title')} *`}
+                label={t('post.title')}
+                required
                 value={title}
                 onChangeText={onTitleChange}
                 placeholder={t(`post.unifiedCreate.titlePlaceholder.${worldSlug}`, { defaultValue: t('post.titlePlaceholder') })}
