@@ -55,6 +55,16 @@ describe('mapCardToPost', () => {
     expect(post.mediaAssets).toEqual([]);
   });
 
+  // FR-IMPORT-007 AC3 — the card's provenance becomes the chip's platform.
+  it('a post made in KC has no provenance', async () => {
+    expect(mapCardToPost(makeCard(), { catalog: await catalog() }).importedFrom).toBeNull();
+  });
+
+  it('an imported post carries the platform it came from', async () => {
+    const post = mapCardToPost(makeCard({ source: 'imported', source_platform: 'facebook' }), { catalog: await catalog() });
+    expect(post.importedFrom).toBe('facebook');
+  });
+
   it('ignores a condition that is not one of the known values', async () => {
     const post = mapCardToPost(makeCard({ details: { item_condition: 'Mint' } }), { catalog: await catalog() });
     expect(post.itemCondition).toBeNull();

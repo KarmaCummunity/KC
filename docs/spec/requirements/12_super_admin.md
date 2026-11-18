@@ -589,25 +589,26 @@ The team sees how well matching v2 works per world, to tune `matching_settings` 
 
 ## FR-ADMIN-031 — Demo data removal and restore
 
-> **Status (2026-11-13):** ✅ Restored by the PM (`D168`) on the production baseline. The tools are a dev-only seed (`supabase/seed/demo/`, `D-239`), installed on kc-dev by the **Seed KC dev** workflow (action `demo`) and never on kc-prod, so the production schema still holds no demo object.
+> **Status (2026-11-17):** ✅ Restored by the PM (`D168`) on the production baseline. The tools are a dev-only seed (`supabase/seed/demo/`, `D-239`), installed on kc-dev by every dev deploy (`D-241`; the **Seed KC dev** workflow's action `demo` installs them between deploys) and never on kc-prod, so the production schema still holds no demo object. The screen words the two actions as **hide** (the wipe) and **show** (the restore).
 >
 > *(History: ✅ 2026-11-03 on the legacy chain; ⛔ removed at the baseline cut-over 2026-11-11.)*
 
 **Description.**
-The kc-dev environment can carry fake demo data. The super admin or the org admin of the platform organization deletes it from the portal to test on real data only, and brings it back when needed.
+The kc-dev environment can carry fake demo data. The super admin or the org admin of the platform organization hides it from the portal to test on real data only, and shows it again when needed. Hiding deletes the demo data and showing creates it again, so nothing fake is ever left behind a flag.
 
 **Acceptance Criteria.**
-- AC1. Admin → Demo data shows how many demo members, demo nonprofits, item posts, rides, follows, chats and roles in the demo nonprofits exist (`admin_demo_data_status`). With none it shows an empty state that says whether a restore is possible here. Where the tools are not installed (kc-prod) the screen says so.
-- AC2. "Delete all demo data" asks for confirmation, then deletes every demo member with all their content (posts, rides, chats, follows) and the demo nonprofits (`admin_wipe_demo_data_step`, called until done; the screen shows the running phase). The result shows what was deleted.
+- AC1. Admin → Demo data shows how many demo members, demo nonprofits, item posts, rides, follows, chats and roles in the demo nonprofits exist (`admin_demo_data_status`). A state line says whether the demo data is shown or hidden; with none, an empty state says whether showing it is possible here. Where the tools are not installed (kc-prod, the RPC itself is missing) the screen says so; where they are installed but an object they read is missing (an installed copy older than the schema) it says they are out of date. Both states name the environment the build is connected to (development or production).
+- AC2. "Hide demo data" asks for confirmation, then deletes every demo member with all their content (posts, rides, chats, follows) and the demo nonprofits (`admin_wipe_demo_data_step`, called until done; the screen shows the running phase). The result shows what was deleted.
 - AC3. Scope is exact: only auth accounts `demoN@seed.kc.test` flagged `app_metadata.demo = true`, and the three `[DEMO]` nonprofits by their fixed ids. Real members and the e2e members (`userN@seed.kc.test`, no `demo` flag) are never touched.
 - AC4. A demo nonprofit with payment history (a restricting billing foreign key) is kept and reported instead of failing the wipe.
 - AC5. A demo member cannot wipe or restore the demo data it belongs to (`cannot_wipe_self`).
 - AC6. Only the super admin and the org admin of the platform organization can call the RPCs (`forbidden`, `42501` otherwise; anon has no execute). The org admins of every other organization are refused. The rule is the single predicate `kc_private.can_manage_demo_data`; the client gate is the `demo_data.manage` permission (super admin, org admin).
-- AC7. "Restore demo data" (`admin_seed_demo_data_step`, called until done) wipes any leftovers and recreates 200 demo members (Hebrew names, cities, verification levels 0–2, one in seven private, legal consents accepted, every third a declared driver), 600 item posts, 120 upcoming rides between cities, about 1,600 follows, 400 saved posts, 150 chats with six messages each, and three verified `[DEMO]` nonprofits with a small team. `supabase/seed/demo/load.sql` (with a password) and `wipe.sql` run the same phases from the command line.
+- AC7. "Show demo data" (`admin_seed_demo_data_step`, called until done; "Create it again" while some exists) wipes any leftovers and recreates 200 demo members (Hebrew names, cities, verification levels 0–2, one in seven private, legal consents accepted, every third a declared driver), 600 item posts, 120 upcoming rides between cities, about 1,600 follows, 400 saved posts, 150 chats with six messages each, and three verified `[DEMO]` nonprofits with a small team. `supabase/seed/demo/load.sql` (with a password) and `wipe.sql` run the same phases from the command line.
 - AC8. Restoring works only on a database carrying the dev marker (`kc_private.demo_data_state.is_dev_environment`, set only by `load.sql` with `kc.seed_target = 'dev'`). Anywhere else it fails with `not_dev_environment` and the screen explains that restoring is unavailable.
 - AC9. The demo members' login password is typed once (at least 8 characters), stored only as a bcrypt hash, and reused by later restores. Each completed restore and wipe is audit-logged (`admin_seed_demo_data`, `admin_wipe_demo_data`) with counts only.
 - AC10. The admin who runs a restore becomes an org admin of each demo nonprofit, so the organization screens can be tried at once; the wipe removes the nonprofits with their roles.
-- AC11. Wipe and restore are stepped: each call runs one phase, so no call nears the API time limit. Another operation in progress is refused (`demo_operation_busy`) unless it stalled for ten minutes; an interrupted operation continues where it stopped.
+- AC11. Wipe and restore are stepped: each call runs one phase, so no call nears the API time limit, and every phase has a progress label (the app's phase list is checked against `kc_private.demo_phases`). Another operation in progress is refused (`demo_operation_busy`) unless it stalled for ten minutes; an interrupted operation continues where it stopped.
+- AC12. kc-dev always carries the current tools: every dev deploy installs `supabase/seed/demo/load.sql` after the migrations and sets the dev marker, guarded to the kc-dev project ref. No demo data is created by a deploy.
 
 Not restored from the legacy screen: demo photos (a post photo must live under its owner's storage folder, which the database cannot fill), demo matches, and the demo nonprofits' events.
 
@@ -681,6 +682,21 @@ An admin walks through the full onboarding again, as often as needed, to review 
 
 ---
 
+## FR-ADMIN-036 — Organizations allowed to post jobs
+
+**Description.**
+A job offer is published only in the name of an organization allowed to post jobs (`spec/05_giving_worlds.md` §5.11, `D175`). Until the verification levels record the legal right to employ (FR-ORG-019 AC4), platform admins switch it per organization from the admin portal. PM, 2026-11-16 (#1476).
+
+**Acceptance Criteria.**
+- AC1. `(admin)/org-jobs` lists every organization by name with whether it may post jobs. Karma Community (the platform organization) always may and a suspended organization never does, so neither has a switch.
+- AC2. Only platform admins (permission `org.job_posting`: super admin, admin) see the switch and the menu entry. The server refuses anyone else (`admin_set_org_may_post_jobs`, 42501) and audits each change (`org_job_posting_set`; `supabase/tests/081_employment_job_offers.sql`).
+- AC3. After a switch, the list and the members' job-offer form re-read the organizations, so an allowed organization appears in the form's organization picker without a new build.
+- AC4. Stopping an organization blocks its new job offers and leaves those already published open.
+
+**Related.** `ListOrgJobPostingUseCase`, `SetOrgMayPostJobsUseCase`, `SupabaseOrgJobPostingAdminRepository`, `OrgJobPostingList`.
+
+---
+
 | Version | Date | Summary |
 | ------- | ---- | ------- |
 | 0.1 | 2026-05-05 | Initial draft from PRD §2.2 and Flow 9. |
@@ -707,3 +723,5 @@ An admin walks through the full onboarding again, as often as needed, to review 
 | 0.22 | 2026-11-13 | Admin WhatsApp console (`(admin)/whatsapp`, #939) restored on the `integrations` module: kill switch, seven-day overview (with pending reviews), review queue of bot posts (approve publishes on the owner's behalf, reject keeps the draft; D156), outbound queue with Resend, consent with Block, activity, templates. Permission `whatsapp.manage` (moderator+); the new `whatsapp.configure` (super admin only) gates the send limits and template status (D161). Every console write is audited. |
 | 0.23 | 2026-11-13 | `FR-ADMIN-031` restored (`D168`): the Demo data screen, `demo_data.manage` and the three demo-data RPCs come back for kc-dev as dev-only seed tools (`supabase/seed/demo/`, `D-239`), rewritten for the baseline, stepped, with ACs 1–11. |
 | 0.24 | 2026-11-16 | Added FR-ADMIN-035 (onboarding replay for admins, sandboxed; KC#2080). |
+| 0.25 | 2026-11-17 | Added FR-ADMIN-036 (organizations allowed to post jobs, switched by platform admins; #1476). |
+| 0.26 | 2026-11-17 | `FR-ADMIN-031` — hide / show wording with a state line, AC1 separates "not installed" from "out of date" and names the connected environment, AC12: every dev deploy installs the tools (`D-241`, #2434). |

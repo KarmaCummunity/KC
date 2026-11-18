@@ -17,12 +17,14 @@ import { inlineProblemField, renderedListingFields } from '../../lib/unifiedCrea
 import { ListingLocationSection } from './ListingLocationSection';
 import { RideCreateSection } from '../giving/RideCreateSection';
 import { WorldSubcategoryPicker } from '../marketplace/WorldSubcategoryPicker';
+import { useImportListingSeed } from '../../hooks/useImportListingSeed';
 import { AdditionalWorldsPicker } from './AdditionalWorldsPicker';
 import { ListingDetailFields } from './ListingDetailFields';
 import { ListingFieldFrame, ListingFieldProblemContext } from './ListingFieldFrame';
 import { ListingFormPhotoPicker } from './ListingFormPhotoPicker';
 import { ListingKindChooser } from './ListingKindChooser';
 import { KindGate } from './ListingKindGate';
+import { JobOfferOrgSection } from './JobOfferOrgSection';
 import { TimeOfferKindChooser } from './TimeOfferKindChooser';
 import { OrgEventMembershipHint } from './OrgEventMembershipHint';
 import { EventRecurrenceSection } from './EventRecurrenceSection';
@@ -77,6 +79,15 @@ export function ListingCreateForm({
     editListingId,
     onSaved,
     republishFromListingId,
+  });
+  // FR-IMPORT-007 AC1: a form opened from an import starts on the kind, sub-category and city it found.
+  useImportListingSeed({
+    worldSlug,
+    kinds: form.kindsQuery.data,
+    enabled: !editListingId && !republishFromListingId,
+    chooseKind: form.chooseKind,
+    setSubcategoryId: form.setSubcategoryId,
+    setCity: form.setCity,
   });
   const publishRef = useRef(form.publish);
   publishRef.current = form.publish;
@@ -150,6 +161,7 @@ export function ListingCreateForm({
               anyone else is told how to become one (FR-ORG-002). */}
           {form.eventChoice.personalAvailable ? <TimeOfferKindChooser choice={form.eventChoice} disabled={form.busy} /> : null}
           {form.eventChoice.suggestMembership ? <OrgEventMembershipHint /> : null}
+          <JobOfferOrgSection choice={form.jobOfferOrg} disabled={form.busy} />
 
           {form.isRides ? null : photoPicker}
 
@@ -158,7 +170,8 @@ export function ListingCreateForm({
             <ListingFieldFrame field="title" outlined={false} style={styles.section}>
               <TextField
                 testID="listing-title"
-                label={`${t('post.title')} *`}
+                label={t('post.title')}
+                required
                 value={title}
                 onChangeText={onTitleChange}
                 placeholder={t(`post.unifiedCreate.titlePlaceholder.${worldSlug}`, { defaultValue: t('post.titlePlaceholder') })}

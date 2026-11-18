@@ -23,6 +23,7 @@ Tracking issue: KC#1235. Workflow: [`ci-maestro-android.yml`](../../.github/work
 | `14-world-feed` | food world: request / offer, search and direction filter; "request" opens the food request form | FR-FEED-020 AC2 |
 | `18-org-event-create-and-register` | time offer form: an organization member's event choice and fields, the unchanged shift form otherwise (no seeded membership or event yet, see the flow header) | `docs/spec/08` Events, FR-POST-001 AC6 |
 | `19-edit-profile-keyboard-toolbar` | edit profile (deep link): focusing the phone field keeps the sticky save button on screen, with the keyboard open and after it closes | FR-RESP-006 AC5 |
+| `20-import-post-kill-switch` | with `external_post_import_enabled` off, the import link opens the plain create form and the form offers no import entry | FR-IMPORT-001 AC4 |
 
 `.maestro/subflows/` holds the shared steps (`sign-in`, `open-email-sign-in`, `dismiss-gates`); `config.yaml` runs only `flows/`.
 

@@ -1,5 +1,6 @@
 // Mapped to spec: FR-RESP-006 — keyboard next/previous follows the on-screen reading order.
-import { I18nManager, type View } from 'react-native';
+import type { View } from 'react-native';
+import { isLayoutRtl } from '../rtlLayout';
 
 /** Fields whose tops differ by less than this many px count as sitting on one row. */
 export const SAME_ROW_TOLERANCE_PX = 8;
@@ -21,10 +22,24 @@ export function measureFieldPosition(view: FieldView | null): Promise<FieldPosit
 }
 
 /**
- * Reading order: top to bottom, and within one row from the reading-start edge
+ * Sorts items into reading order: top to bottom, and within one row from the reading-start edge
  * (right in an RTL layout, left in LTR) towards the end.
+ *
+ * Rows are formed first and sorted second, so the result is well defined even when tops drift:
+ * a field joins the current row while its top is within `SAME_ROW_TOLERANCE_PX` of the row's
+ * first (top-most) field. A pairwise "close enough" comparator would not be transitive.
  */
-export function compareReadingOrder(a: FieldPosition, b: FieldPosition, isRtl: boolean = I18nManager.isRTL): number {
-  if (Math.abs(a.y - b.y) >= SAME_ROW_TOLERANCE_PX) return a.y - b.y;
-  return isRtl ? b.x - a.x : a.x - b.x;
+export function sortByReadingOrder<T extends { readonly position: FieldPosition }>(
+  items: readonly T[],
+  isRtl: boolean = isLayoutRtl(),
+): T[] {
+  const byTop = [...items].sort((a, b) => a.position.y - b.position.y);
+  const rows: T[][] = [];
+  for (const item of byTop) {
+    const row = rows[rows.length - 1];
+    if (row && item.position.y - row[0]!.position.y < SAME_ROW_TOLERANCE_PX) row.push(item);
+    else rows.push([item]);
+  }
+  const inRow = (a: T, b: T) => (isRtl ? b.position.x - a.position.x : a.position.x - b.position.x);
+  return rows.flatMap((row) => row.sort(inRow));
 }

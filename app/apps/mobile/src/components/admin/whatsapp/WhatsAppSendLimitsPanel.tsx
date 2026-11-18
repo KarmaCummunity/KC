@@ -67,7 +67,7 @@ export function WhatsAppSendLimitsPanel() {
               label={t.limits.fields[field]}
               value={draft[field] ?? ''}
               onChange={(v) => setDraft((d) => ({ ...d, [field]: v }))}
-              keyboardNumeric
+              inputKind="integer"
             />
             {shown ? <Text style={styles.muted}>{t.limits.current(shown[field])}</Text> : null}
           </View>

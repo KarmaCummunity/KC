@@ -29,6 +29,7 @@ import { usePostDetailStyles } from '../../screens/post/postDetailScreen.styles'
 import { ListingMediaGallery } from './ListingMediaGallery';
 import { useCityName } from '../../hooks/useCityName';
 import { useRideHouseNumbers } from '../../hooks/useRideHouseNumbers';
+import { provenanceLabelKey } from '../../lib/importProvenance';
 
 const useStyles = makeUseStyles(({ colors }) => ({
   // Flow actions (reserve / claim / book / message) sit below the content card, like the post page's CTA.
@@ -79,6 +80,8 @@ export function MarketplaceListingDetailView({ detail, bottomInset, footer, mode
   const similar = similarRaw.filter((item) => !isTestListingTitle(item.title));
 
   const worldLabel = i18n.language.startsWith('he') ? detail.worldLabelHe : detail.worldLabelEn;
+  // FR-IMPORT-007 AC3: an imported listing says where it came from.
+  const provenanceKey = provenanceLabelKey(detail.importedFrom);
   const kindLabel = i18n.language.startsWith('he') ? detail.kindLabelHe : detail.kindLabelEn;
   const ownerCityName = useCityName(detail.owner?.cityId ?? null);
   const rideHouseNumbers = useRideHouseNumbers(detail.listingId, detail.worldSlug === 'rides');
@@ -95,6 +98,7 @@ export function MarketplaceListingDetailView({ detail, bottomInset, footer, mode
             tone={detail.direction === 'request' ? 'request' : 'give'}
             badgeLabel={detail.direction === 'request' ? t('feed.requestTypeShort') : t('feed.giveTypeShort')}
             chip={worldLabel}
+            provenance={provenanceKey ? t(provenanceKey) : null}
           />
           {detail.worldSlug === 'rides' ? (
             <RideRouteCard

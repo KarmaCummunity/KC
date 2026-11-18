@@ -16,6 +16,8 @@ vi.mock('../../lib/haptics', () => ({ hapticLightImpact: () => undefined, haptic
 vi.mock('../../lib/invalidateMyProfilePostQueries', () => ({ invalidateMyProfilePostQueries: invalidateProfile }));
 vi.mock('../../lib/invalidatePersonalStatsCaches', () => ({ invalidatePersonalStatsCaches: invalidatePersonal }));
 vi.mock('../../store/authStore', () => ({ useAuthStore: { getState: () => ({ session: null }) } }));
+const attach = vi.hoisted(() => vi.fn());
+vi.mock('../../lib/attachPendingImport', () => ({ attachPendingImport: attach }));
 
 import { useCreatePostPublish } from '../useCreatePostPublish';
 
@@ -29,7 +31,7 @@ const baseArgs = (): PublishArgs => ({
   uploadingCount: 0, presentPrePrompt: vi.fn(),
 });
 
-beforeEach(() => { vi.clearAllMocks(); execute.mockResolvedValue({ postId: 'p1' }); countOpenByUser.mockResolvedValue(2); });
+beforeEach(() => { vi.clearAllMocks(); execute.mockResolvedValue({ post: { postId: 'p1' } }); countOpenByUser.mockResolvedValue(2); });
 
 describe('useCreatePostPublish', () => {
   it('validates required fields, upload state, and followers confirmation before mutation', () => {
@@ -55,6 +57,8 @@ describe('useCreatePostPublish', () => {
     await waitFor(() => expect(execute).toHaveBeenCalled());
     await waitFor(() => expect(back).toHaveBeenCalledOnce());
     expect(countOpenByUser).toHaveBeenCalledWith('u1');
+    // FR-IMPORT-007 AC3 — the new post id is handed to the import attach step.
+    expect(attach).toHaveBeenCalledWith('p1', { world: 'items', direction: 'request', title: 'Title', description: 'Description', city: 'city-1' });
     expect(track).toHaveBeenCalledWith('listing_created', { world: 'items', cityId: 'city-1' });
     expect(haptic).toHaveBeenCalled();
   });

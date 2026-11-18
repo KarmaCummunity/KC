@@ -13,6 +13,7 @@ import { firstMissingRequiredField, type ListingFieldSpec } from './listingField
 import { marketplaceRuleFieldError } from '../marketplaceCreateErrors';
 import type { RideRecurrenceDraft } from '../../components/giving/RideRecurrenceFields';
 import { isEventSeriesDuration } from './seriesPublish';
+import { jobOfferOrgProblem, type JobOfferOrgState } from './jobOfferOrg';
 import { detailField, fieldForHouseNumbers, fieldForRule, type ListingFormProblem } from './listingFormProblem';
 
 /** The shortest title a listing may have. */
@@ -32,6 +33,8 @@ export interface ListingProblemInput {
   readonly effectiveTitle: string;
   readonly isRides: boolean;
   readonly eventChoice: { readonly isOrgEvent: boolean; readonly orgId: string | null };
+  /** The organization of a job offer (§5.11, #1476). */
+  readonly jobOfferOrg: JobOfferOrgState;
   /** The structured address's own problem (an event), or null. */
   readonly addressProblem: string | null;
   readonly editListingId: string | null;
@@ -55,6 +58,8 @@ export function firstListingProblem(i: ListingProblemInput): ListingFormProblem 
     return { message, field: detailField(missing.key) };
   }
   if (i.eventChoice.isOrgEvent && !i.eventChoice.orgId) return { message: t('eventPost.create.orgRequired'), field: 'org' };
+  const jobOrgProblem = jobOfferOrgProblem(i.jobOfferOrg);
+  if (jobOrgProblem) return { message: t(jobOrgProblem), field: 'org' };
   if (!i.isRides && !i.city) return { message: t('post.unifiedCreate.errors.cityRequired'), field: 'city' };
   if (i.addressProblem) return { message: i.addressProblem, field: 'city' };
   // An edit keeps the listing's photos and sub-category, so it passes neither and skips those rules.

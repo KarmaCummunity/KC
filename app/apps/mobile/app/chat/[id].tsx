@@ -246,6 +246,7 @@ export default function ChatScreen() {
               }}
               placeholder={t('chat.inputPlaceholder')}
               placeholderTextColor={colors.textDisabled}
+              testID="chat-input"
               multiline
               maxLength={MESSAGE_MAX_CHARS}
               onKeyPress={webEnterToSend(send, sendDisabled)}

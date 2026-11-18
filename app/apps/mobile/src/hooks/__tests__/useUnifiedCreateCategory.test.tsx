@@ -15,7 +15,8 @@ const mocks = vi.hoisted(() => ({
 }));
 vi.mock('../useLaunchWorldFlags', () => ({ useRemoteAppFlags: () => mocks.flags }));
 
-vi.mock('expo-router', () => ({ useLocalSearchParams: () => mocks.params }));
+vi.mock('expo-router', () => ({ useLocalSearchParams: () => mocks.params, useRouter: () => ({ push: vi.fn() }) }));
+vi.mock('../useFeatureFlag', () => ({ useFeatureFlag: () => false }));
 vi.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k: string) => k, i18n: { language: 'he' } }) }));
 vi.mock('../../lib/unifiedCreate/createPreferencesStorage', () => ({

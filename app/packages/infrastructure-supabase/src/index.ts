@@ -57,6 +57,7 @@ export { SupabaseModerationQueueRepository } from './moderation/SupabaseModerati
 export { SupabaseAccountGateRepository } from './auth/SupabaseAccountGateRepository';
 export { SupabaseDonationLinksRepository } from './donations/SupabaseDonationLinksRepository';
 export { SupabaseAppFlagsAdminRepository } from './admin/SupabaseAppFlagsAdminRepository';
+export { SupabaseOrgJobPostingAdminRepository } from './admin/SupabaseOrgJobPostingAdminRepository';
 export { SupabaseWorldContentRepository } from './worlds/SupabaseWorldContentRepository';
 export { SupabaseSearchRepository } from './search/SupabaseSearchRepository';
 export { SupabaseDeviceRepository } from './notifications/SupabaseDeviceRepository';
@@ -92,6 +93,8 @@ export { SupabaseUserActivityRepository } from './survey/SupabaseUserActivityRep
 export { SupabasePublicResearchRepository } from './research/SupabasePublicResearchRepository';
 export { SupabaseTranslationCacheRepository } from './translations/SupabaseTranslationCacheRepository';
 export { EdgeFnTranslationService } from './translations/EdgeFnTranslationService';
+export { EdgeFnPostExtractionService } from './imports/EdgeFnPostExtractionService';
+export { SupabaseImportTelemetryRepository } from './imports/SupabaseImportTelemetryRepository';
 export { SupabasePostTranslationReader } from './translations/SupabasePostTranslationReader';
 export { SupabaseMarketplaceRepository } from './marketplace/SupabaseMarketplaceRepository';
 export { SupabasePaymentsRepository } from './payments/SupabasePaymentsRepository';

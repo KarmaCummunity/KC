@@ -8,6 +8,7 @@ import { describe, it, after } from 'node:test';
 import {
   REGISTRIES,
   applyAssignments,
+  bareIdRows,
   findMalformed,
   findPlaceholders,
   planAssignments,
@@ -31,6 +32,14 @@ describe('spec-ids parsing', () => {
     assert.deepEqual(rowNumbers(text, ENGINEERING), [198, 41]);
   });
 
+  it('finds entries whose ID is a bare prefix, by line', () => {
+    const table = '| # | Decision |\n| D1 | a |\n| D | b |\n| {{D:new-one}} | c |\n| D* | d |\n| Draft | e |\n';
+    assert.deepEqual(bareIdRows(table, DECISIONS), [3, 5]);
+    assert.deepEqual(bareIdRows('| G12 | a |\n| G | b |\n', GAPS), [2]);
+    const headings = '## D-198 — a\n## D- — b\n### D-\n## D-day plan\n## {{ENG:x}} — c\n';
+    assert.deepEqual(bareIdRows(headings, ENGINEERING), [2, 3]);
+  });
+
   it('finds well-formed placeholders and flags malformed ones', () => {
     const text = 'see {{G:ci-window}} and {{D:Bad Slug}} and {{G:half}';
     assert.deepEqual(findPlaceholders(text), [{ token: '{{G:ci-window}}', key: 'G', slug: 'ci-window' }]);
@@ -48,6 +57,13 @@ describe('spec-ids validate', () => {
   it('rejects a new duplicate number but tolerates the known legacy ones', () => {
     const texts = registries({ [ENGINEERING.file]: '## D-38 — a\n## D-38 — b\n## D-7 — c\n## D-7 — d\n' });
     assert.deepEqual(validate(texts, new Map()), [`${ENGINEERING.file}: D-7 is used by more than one entry`]);
+  });
+
+  it('rejects an entry whose ID cell is a bare prefix (KC#2021)', () => {
+    const texts = registries({ [DECISIONS.file]: '| D1 | a |\n| D | never numbered |\n' });
+    assert.deepEqual(validate(texts, new Map()), [
+      `${DECISIONS.file}:2: the entry's ID is a bare "D" (use a placeholder such as {{D:short-slug}})`,
+    ]);
   });
 
   it('rejects a placeholder with no row, one defined twice, and a malformed one', () => {

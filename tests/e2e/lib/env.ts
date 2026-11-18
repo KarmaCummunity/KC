@@ -27,6 +27,16 @@ export const USER_B = {
   email: process.env.E2E_USER_B_EMAIL ?? 'user2@seed.kc.test',
   password: process.env.E2E_USER_B_PASSWORD ?? SEED_PASSWORD,
 };
+/** A third seeded member, for journeys that need someone outside what A and B share (a chat, a post). */
+export const USER_C = {
+  email: process.env.E2E_USER_C_EMAIL ?? 'user3@seed.kc.test',
+  password: process.env.E2E_USER_C_PASSWORD ?? SEED_PASSWORD,
+};
+/** A fourth seeded member no other journey signs in as: a journey that spends a member's quota uses it. */
+export const USER_D = {
+  email: process.env.E2E_USER_D_EMAIL ?? 'user4@seed.kc.test',
+  password: process.env.E2E_USER_D_PASSWORD ?? SEED_PASSWORD,
+};
 
 let cachedAnon: string | undefined;
 

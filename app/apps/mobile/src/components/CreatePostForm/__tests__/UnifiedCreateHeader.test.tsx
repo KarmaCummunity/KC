@@ -10,11 +10,20 @@ vi.mock('@expo/vector-icons', () => ({
   Ionicons: ({ name }: { name: string }) => <span data-testid={`icon-${name}`} />,
 }));
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k: string) => k, i18n: { language: 'he' } }) }));
+// The import entry (FR-IMPORT-001 AC4) reads the flag and navigates; the picker tests need neither.
+const flagOn = vi.hoisted(() => ({ value: false }));
+const push = vi.hoisted(() => vi.fn());
+vi.mock('expo-router', () => ({ useRouter: () => ({ push }) }));
+vi.mock('../../../hooks/useFeatureFlag', () => ({ useFeatureFlag: () => flagOn.value }));
 
 import { UnifiedCreateHeader } from '../UnifiedCreateHeader';
 import { CREATE_CATEGORIES } from '../../../lib/unifiedCreate/createCategories';
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  flagOn.value = false;
+  push.mockReset();
+});
 
 function renderHeader(over: Partial<React.ComponentProps<typeof UnifiedCreateHeader>> = {}) {
   const props = {
@@ -80,5 +89,19 @@ describe('UnifiedCreateHeader', () => {
     // The unselected side carries no fill at all, so it reads clearly different.
     expect(fill('request', 'give')).toBeUndefined();
     expect(fill('give', 'request')).toBeUndefined();
+  });
+});
+
+describe('the import entry (FR-IMPORT-001 AC4)', () => {
+  it('is not shown while the feature is switched off', () => {
+    const { view } = renderHeader();
+    expect(view.queryByTestId('create-import-entry')).toBeNull();
+  });
+
+  it('is shown once the feature is on and opens the paste screen', () => {
+    flagOn.value = true;
+    const { view } = renderHeader();
+    fireEvent.click(view.getByTestId('create-import-entry'));
+    expect(push).toHaveBeenCalledWith('/import-post');
   });
 });

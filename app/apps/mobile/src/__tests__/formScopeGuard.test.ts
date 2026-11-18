@@ -9,7 +9,7 @@ import { MOBILE_ROOT } from './guardKit/ratchet';
 // never a bare `ScrollView`, or its fields silently miss the behaviour.
 
 const SCANNED_DIRS = ['src', 'app'] as const;
-const FIELD = /<(TextField|AnimatedAuthInput)\b/;
+const FIELD = /<(TextField|AnimatedAuthInput|AdminFormField)\b/;
 // A JSX tag (not a generic such as useRef<ScrollView>) that is not a horizontal scroller.
 const BARE_VERTICAL_SCROLLVIEW = /(?<!\w)<ScrollView\b(?![^>]*\bhorizontal\b)/;
 /** Mounts its own `FormScope` around a bare ScrollView because it needs that ScrollView's ref. */

@@ -1,12 +1,13 @@
 // Mapped to spec: FR-POST-003 / FR-POST-009 / FR-POST-021 — the exposure settings of the listing form:
 // who may see the listing, how much of the address it shows, and whether the counterparty sees who
 // published it. A new listing starts from the member's usual defaults; an edit or a republish starts
-// from the source listing. The audience and the identity mask are saved through the post's actor
-// identity row, which is also how an already published post moves its audience.
-import { useEffect, useRef, useState } from 'react';
+// from the source listing. The audience is a column of the post (written by create / update); the
+// identity mask lives in the owner's actor-identity row, saved the same way the items form saves it.
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import type { LocationDisplayLevel, MarketplaceListingDetail, PostVisibility } from '@kc/domain';
 import { POST_DRAFT_DEFAULTS } from '../lib/postDraftFormState';
+import { syncOwnerPostActorIdentity } from '../lib/syncOwnerPostActorIdentity';
 import { getPostRepo } from '../services/postsComposition';
 import { getUserRepo } from '../services/userComposition';
 
@@ -20,23 +21,17 @@ interface Args {
   readonly userId: string | null;
 }
 
-/** What a save must write to the post's identity row, or null when nothing differs from a fresh post. */
-export function identityToSave(
-  exposure: { visibility: PostVisibility; hideFromCounterparty: boolean },
-  isEdit: boolean,
-): { surfaceVisibility: PostVisibility; hideFromCounterparty: boolean } | null {
-  // A new post is public and unmasked already; an edit may be moving back to that, so it always writes.
-  if (!isEdit && exposure.visibility === 'Public' && !exposure.hideFromCounterparty) return null;
-  return { surfaceVisibility: exposure.visibility, hideFromCounterparty: exposure.hideFromCounterparty };
-}
+/** Query key of a post's actor-identity rows; shared with the post screens that read the same rows. */
+export const postActorIdentityQueryKey = (postId: string | null) => ['post-actor-identity', postId] as const;
 
 export function useListingExposure({ sourceListingId, sourceDetail, editListingId, userId }: Args) {
   const [visibility, setVisibility] = useState<PostVisibility>('Public');
   const [locationDisplayLevel, setLocationDisplayLevel] = useState<LocationDisplayLevel>(POST_DRAFT_DEFAULTS.locationDisplayLevel);
-  const [hideFromCounterparty, setHideFromCounterparty] = useState(false);
+  const [hideFromCounterparty, setHide] = useState(false);
   const hydratedFor = useRef<string | null>(null);
+  /** The member changed the mask: a late-arriving stored value must not overwrite that choice. */
+  const hideTouched = useRef(false);
 
-  // A public profile cannot limit a post to followers: that choice is offered only to a private one.
   const profileQuery = useQuery({
     queryKey: ['user-profile', userId],
     queryFn: () => getUserRepo().findById(userId!),
@@ -44,12 +39,15 @@ export function useListingExposure({ sourceListingId, sourceDetail, editListingI
     staleTime: 5 * 60_000,
   });
   const profilePrivacy = profileQuery.data?.privacyMode ?? 'Public';
-  // Only once the profile is known: until then "public" is a placeholder, and a followers-only listing
-  // being edited must not be flipped to public on its way in.
+  // Only a private profile may limit a post to followers. A new listing (or a republish) whose
+  // source was followers-only falls back to public for a public profile; an edit keeps what is
+  // stored (a profile turned public later never rewrites existing posts — FR-POST-009 AC4). The
+  // profile must be loaded first: until then "public" is only a placeholder.
   const profileKnown = profileQuery.data !== undefined && profileQuery.data !== null;
   useEffect(() => {
-    if (profileKnown && profilePrivacy === 'Public' && visibility === 'FollowersOnly') setVisibility('Public');
-  }, [profileKnown, profilePrivacy, visibility]);
+    if (editListingId || !profileKnown) return;
+    if (profilePrivacy === 'Public' && visibility === 'FollowersOnly') setVisibility('Public');
+  }, [editListingId, profileKnown, profilePrivacy, visibility]);
 
   // Start from the source listing, once per source.
   useEffect(() => {
@@ -60,7 +58,7 @@ export function useListingExposure({ sourceListingId, sourceDetail, editListingI
   }, [sourceDetail]);
 
   const identityQuery = useQuery({
-    queryKey: ['post-actor-identity', sourceListingId],
+    queryKey: postActorIdentityQueryKey(sourceListingId),
     queryFn: () => getPostRepo().listPostActorIdentities(sourceListingId!),
     enabled: Boolean(sourceListingId && userId),
     staleTime: 60_000,
@@ -69,14 +67,27 @@ export function useListingExposure({ sourceListingId, sourceDetail, editListingI
   useEffect(() => {
     if (!sourceListingId || !userId || !identityQuery.data || identityLoaded.current === sourceListingId) return;
     identityLoaded.current = sourceListingId;
-    setHideFromCounterparty(identityQuery.data.find((row) => row.userId === userId)?.hideFromCounterparty ?? false);
+    if (hideTouched.current) return;
+    setHide(identityQuery.data.find((row) => row.userId === userId)?.hideFromCounterparty ?? false);
   }, [identityQuery.data, sourceListingId, userId]);
 
-  /** Writes the audience and the mask of `postId` when they differ from what a fresh post has. */
+  const setHideFromCounterparty = useCallback((next: boolean) => {
+    hideTouched.current = true;
+    setHide(next);
+  }, []);
+
+  /**
+   * Saves the owner's mask after the post is written. A new post needs a row only when it is masked
+   * ("only me" always masks); an edit also rewrites an existing row so it follows the new audience.
+   */
   const saveIdentity = async (postId: string): Promise<void> => {
     if (!userId) return;
-    const toSave = identityToSave({ visibility, hideFromCounterparty }, editListingId !== null);
-    if (toSave) await getPostRepo().upsertPostActorIdentity({ postId, userId, ...toSave });
+    if (editListingId) {
+      await syncOwnerPostActorIdentity({ postId, ownerId: userId, visibility, hideFromCounterparty });
+      return;
+    }
+    const hide = hideFromCounterparty || visibility === 'OnlyMe';
+    if (hide) await getPostRepo().upsertPostActorIdentity({ postId, userId, surfaceVisibility: visibility, hideFromCounterparty: true });
   };
 
   return {
@@ -88,5 +99,7 @@ export function useListingExposure({ sourceListingId, sourceDetail, editListingI
     hideFromCounterparty,
     setHideFromCounterparty,
     saveIdentity,
+    /** An edit waits for the stored mask, so saving early never overwrites it with the default. */
+    loading: Boolean(editListingId) && identityQuery.isLoading,
   };
 }

@@ -56,6 +56,13 @@ export function buildManifest(appName, { background, themeColor }) {
       { src: '/pwa-icon-192-maskable.png', sizes: '192x192', type: 'image/png', purpose: 'maskable' },
       { src: '/pwa-icon-512-maskable.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
     ],
+    // FR-IMPORT-001 AC1: an installed KC is a share target for text. The OS opens the import
+    // screen with the shared title, text and link in the query; the screen prefills its field.
+    share_target: {
+      action: '/import-post',
+      method: 'GET',
+      params: { title: 'title', text: 'text', url: 'url' },
+    },
   };
 }
 

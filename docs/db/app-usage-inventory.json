@@ -16,15 +16,15 @@
    "distinct": 9
   },
   "edge_function": {
-   "callSites": 4,
-   "distinct": 3
+   "callSites": 5,
+   "distinct": 4
   },
   "rpc": {
-   "callSites": 276,
-   "distinct": 252
+   "callSites": 283,
+   "distinct": 259
   },
   "table": {
-   "callSites": 189,
+   "callSites": 190,
    "distinct": 64
   }
  },
@@ -32,7 +32,7 @@
   {
    "kind": "bucket",
    "file": "app/apps/mobile/app/edit-post/[id].tsx",
-   "line": 46,
+   "line": 47,
    "area": "mobile",
    "symbol": "assetUrl",
    "via": "const",
@@ -610,6 +610,27 @@
    "symbol": "SupabaseOrgHierarchyRepository.setOrgSlug",
    "via": "literal",
    "name": "admin_set_org_slug"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseOrgJobPostingAdminRepository.ts",
+   "line": 34,
+   "area": "admin",
+   "symbol": "SupabaseOrgJobPostingAdminRepository.listOrganizations",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "organizations"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseOrgJobPostingAdminRepository.ts",
+   "line": 42,
+   "area": "admin",
+   "symbol": "SupabaseOrgJobPostingAdminRepository.unwrapCall",
+   "via": "literal",
+   "name": "admin_set_org_may_post_jobs"
   },
   {
    "kind": "rpc",
@@ -1539,6 +1560,51 @@
    "name": "posts"
   },
   {
+   "kind": "edge_function",
+   "file": "app/packages/infrastructure-supabase/src/imports/EdgeFnPostExtractionService.ts",
+   "line": 15,
+   "area": "imports",
+   "symbol": "EdgeFnPostExtractionService.extract",
+   "via": "literal",
+   "name": "extract-external-post"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/imports/EdgeFnPostExtractionService.ts",
+   "line": 24,
+   "area": "imports",
+   "symbol": "EdgeFnPostExtractionService.attachPost",
+   "via": "literal",
+   "name": "api_import_attach_post"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/imports/EdgeFnPostExtractionService.ts",
+   "line": 29,
+   "area": "imports",
+   "symbol": "EdgeFnPostExtractionService.recordEdits",
+   "via": "literal",
+   "name": "api_import_record_edits"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/imports/SupabaseImportTelemetryRepository.ts",
+   "line": 16,
+   "area": "imports",
+   "symbol": "SupabaseImportTelemetryRepository.getFunnel",
+   "via": "literal",
+   "name": "admin_import_funnel"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/imports/SupabaseImportTelemetryRepository.ts",
+   "line": 31,
+   "area": "imports",
+   "symbol": "SupabaseImportTelemetryRepository.getFieldEditRates",
+   "via": "literal",
+   "name": "admin_import_field_edit_rates"
+  },
+  {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/knowledge/SupabaseKnowledgeBookingRepository.ts",
    "line": 31,
@@ -1667,7 +1733,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/marketplace/eventRegistrations.ts",
-   "line": 66,
+   "line": 76,
    "area": "marketplace",
    "symbol": "registerForEvent",
    "via": "literal",
@@ -1676,7 +1742,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/marketplace/eventRegistrations.ts",
-   "line": 78,
+   "line": 88,
    "area": "marketplace",
    "symbol": "unwrapCall",
    "via": "literal",
@@ -1685,7 +1751,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/marketplace/eventRegistrations.ts",
-   "line": 84,
+   "line": 94,
    "area": "marketplace",
    "symbol": "cancelEventRegistration",
    "via": "literal",
@@ -1694,7 +1760,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/marketplace/eventRegistrations.ts",
-   "line": 91,
+   "line": 101,
    "area": "marketplace",
    "symbol": "unwrapCall",
    "via": "literal",
@@ -1703,7 +1769,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/marketplace/eventRegistrations.ts",
-   "line": 100,
+   "line": 110,
    "area": "marketplace",
    "symbol": "unwrapCall",
    "via": "literal",
@@ -1712,7 +1778,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/marketplace/eventRegistrations.ts",
-   "line": 114,
+   "line": 124,
    "area": "marketplace",
    "symbol": "unwrapCall",
    "via": "literal",
@@ -1724,7 +1790,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/marketplace/eventRegistrations.ts",
-   "line": 120,
+   "line": 130,
    "area": "marketplace",
    "symbol": "unwrapCall",
    "via": "literal",
@@ -1736,7 +1802,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/marketplace/eventRegistrations.ts",
-   "line": 136,
+   "line": 146,
    "area": "marketplace",
    "symbol": "getMyEventRegistration",
    "via": "literal",
@@ -1748,7 +1814,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/marketplace/eventRegistrations.ts",
-   "line": 154,
+   "line": 164,
    "area": "marketplace",
    "symbol": "listMyOrganizations",
    "via": "literal",
@@ -1919,7 +1985,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/marketplace/listingOwnerActions.ts",
-   "line": 79,
+   "line": 80,
    "area": "marketplace",
    "symbol": "updateMyListing",
    "via": "literal",
@@ -1932,7 +1998,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/marketplace/listingOwnerActions.ts",
-   "line": 97,
+   "line": 98,
    "area": "marketplace",
    "symbol": "addMyListingMedia",
    "via": "literal",
@@ -4580,7 +4646,7 @@
   {
    "kind": "table",
    "file": "supabase/functions/_shared/post-extraction/store.ts",
-   "line": 43,
+   "line": 52,
    "area": "fn:_shared",
    "symbol": "supabaseImportStore",
    "via": "literal",
@@ -4588,9 +4654,27 @@
    "name": "external_post_imports"
   },
   {
+   "kind": "rpc",
+   "file": "supabase/functions/_shared/post-extraction/store.ts",
+   "line": 59,
+   "area": "fn:_shared",
+   "symbol": "similarOpenPost",
+   "via": "literal",
+   "name": "import_similar_open_post"
+  },
+  {
+   "kind": "rpc",
+   "file": "supabase/functions/_shared/post-extraction/store.ts",
+   "line": 65,
+   "area": "fn:_shared",
+   "symbol": "moderationRemovalsSince",
+   "via": "literal",
+   "name": "import_moderation_removals"
+  },
+  {
    "kind": "table",
    "file": "supabase/functions/_shared/post-extraction/store.ts",
-   "line": 58,
+   "line": 79,
    "area": "fn:_shared",
    "symbol": "supabaseExtractionCache",
    "via": "literal",

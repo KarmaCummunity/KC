@@ -25,7 +25,7 @@ const CODE_BY_REASON: Readonly<Record<string, PostErrorCode>> = {
   account_not_active: 'forbidden',
   unauthenticated: 'forbidden',
   not_participant: 'forbidden',
-  followers_only_requires_public_profile: 'invalid_visibility',
+  followers_only_requires_private: 'followers_only_requires_private',
   invalid_surface_visibility: 'invalid_visibility',
   invalid_identity_visibility: 'invalid_visibility',
 };

@@ -30,7 +30,9 @@ describe('listing field specs — per kind', () => {
 
   it('every rendered key exists in the kind schema (the server rejects unknown keys)', () => {
     for (const kind of ALL_KINDS) {
-      const props = (kind.detailSchema as { properties: Record<string, unknown> }).properties;
+      const props = (kind.detailSchema as { properties?: Record<string, unknown> }).properties;
+      // An open schema (no properties, e.g. the employment kinds) has no unknown keys to reject.
+      if (!props) continue;
       for (const spec of fieldsForKind(kind)) expect(Object.keys(props)).toContain(spec.key);
     }
   });
@@ -70,6 +72,8 @@ describe('listing field specs — per kind', () => {
     expect(keysOf('learning_request')).toEqual(['topic', 'level', 'preferred_modality', 'language', 'availability_note']);
     expect(keysOf('mentoring_request')).toEqual(['topic', 'goal', 'cadence', 'level', 'preferred_modality', 'language']);
     expect(keysOf('question')).toEqual(['topic', 'context_url']);
+    // A link gets the web-address keyboard (FR-RESP-006 AC26).
+    expect(fieldsForKind(ALL_KINDS.find((k) => k.slug === 'question')!).find((f) => f.key === 'context_url')).toMatchObject({ inputKind: 'url' });
     expect(keysOf('adoption_offer')).toEqual(['species', 'age_group', 'sex', 'size', 'vaccinated', 'neutered', 'good_with']);
     expect(keysOf('adoption_request')).toEqual(['species', 'age_group', 'size']);
     expect(keysOf('foster_offer')).toEqual(['species', 'care_mode', 'location_mode', 'duration_days']);

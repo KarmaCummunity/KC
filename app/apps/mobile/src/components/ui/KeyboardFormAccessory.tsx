@@ -8,7 +8,6 @@ import {
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
-import { KC_FORM_KEYBOARD_ACCESSORY_ID } from '../../lib/platform/formKeyboardConstants';
 
 interface ToolbarProps {
   readonly canGoPrev: boolean;
@@ -58,14 +57,17 @@ function AccessoryToolbar({ canGoPrev, canGoNext, onPrev, onNext, onDone }: Tool
 }
 
 export interface KeyboardFormAccessoryProps extends ToolbarProps {
-  readonly nativeId?: string;
+  /** iOS: the `inputAccessoryViewID` the scope's fields point at; unique per scope. */
+  readonly nativeId: string;
+  /** iOS: mount the toolbar only when the form has 2+ fields. Default true. */
+  readonly enabled?: boolean;
   /** Android only (iOS attaches by `nativeID`): hide the row, e.g. when no form field is focused. Default true. */
   readonly visible?: boolean;
 }
 
 /** iOS: toolbar mounted in `InputAccessoryView`. Android: row shown while keyboard is open. */
 export function KeyboardFormAccessory(props: KeyboardFormAccessoryProps) {
-  const { nativeId = KC_FORM_KEYBOARD_ACCESSORY_ID, visible = true, ...toolbar } = props;
+  const { nativeId, enabled = true, visible = true, ...toolbar } = props;
   const styles = useToolbarStyles();
   const [keyboardOpen, setKeyboardOpen] = useState(false);
 
@@ -86,6 +88,7 @@ export function KeyboardFormAccessory(props: KeyboardFormAccessoryProps) {
   }, []);
 
   if (Platform.OS === 'ios') {
+    if (!enabled) return null;
     return (
       <InputAccessoryView nativeID={nativeId}>
         <AccessoryToolbar {...toolbar} />

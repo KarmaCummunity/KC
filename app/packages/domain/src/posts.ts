@@ -4,6 +4,7 @@
 import { DomainError } from './errors';
 import { hasEdge } from './fsm/machine';
 import { postMachine } from './fsm/machines/post';
+import type { ImportSourcePlatform } from './imports/importDraft';
 import type {
   Address,
   Category,
@@ -73,6 +74,11 @@ export interface Post {
   updatedAt: string;
   /** FR-TRANSLATE — detected BCP-47 source language of title/description; null = not yet detected. */
   sourceLanguage: string | null;
+  /**
+   * FR-IMPORT-007 AC3 — the platform an imported post came from (`unknown` when the member did not
+   * say); null or absent for a post made in KC. Read from the card; drives the provenance chip.
+   */
+  readonly importedFrom?: ImportSourcePlatform | null;
 }
 
 // ── Profile closed-posts view ─────────────────

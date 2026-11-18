@@ -58,11 +58,16 @@ function fillCredentials() {
 }
 
 describe('sign-in screen', () => {
-  it('asks for both fields before calling the use case', () => {
-    const { getByRole, getByText } = renderInTheme(<SignInScreen />);
+  it('asks for each empty field under that field before calling the use case', () => {
+    const { getByRole, getByTestId, queryByText } = renderInTheme(<SignInScreen />);
     fireEvent.click(getByRole('button', { name: 'auth.signIn' }));
     expect(signIn).not.toHaveBeenCalled();
-    expect(getByText('auth.fillEmailAndPassword')).toBeTruthy();
+    expect(getByTestId('auth-email').getAttribute('aria-label')).toBe('auth.email, formField.emailRequired');
+    expect(getByTestId('auth-password').getAttribute('aria-label')).toMatch(/, formField\.passwordRequired$/);
+    // No dialog for a field problem: the message sits where it is fixed.
+    expect(queryByText('auth.genericErrorTitle')).toBeNull();
+    fireEvent.change(getByTestId('auth-password'), { target: { value: 'x' } });
+    expect(getByTestId('auth-password').getAttribute('aria-label')).not.toMatch(/passwordRequired/);
   });
 
   it('runs the sign-in and keeps the submit busy while it runs', async () => {

@@ -129,3 +129,10 @@ describe('AdminPermission matrix', () => {
     expect(hasPermission(['admin'], 'worlds.launch')).toBe(false);
     expect(hasPermission(['moderator'], 'worlds.launch')).toBe(false);
   });
+
+  it('org.job_posting (allowing an organization to post job offers) is for platform admins (#1476)', () => {
+    expect(hasPermission(['super_admin'], 'org.job_posting')).toBe(true);
+    expect(hasPermission(['admin'], 'org.job_posting')).toBe(true);
+    expect(hasPermission(['moderator'], 'org.job_posting')).toBe(false);
+    expect(hasPermission(['org_admin'], 'org.job_posting')).toBe(false);
+  });

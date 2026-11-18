@@ -1,31 +1,27 @@
 // FR-VERIFY-012 / FR-AUTH-010 — date of birth on Edit profile (required for verification level 1).
+// `DateOfBirthField` already draws the label, the hint and the message; this block only places it.
 import React from 'react';
 import { View } from 'react-native';
-import { useTranslation } from 'react-i18next';
-import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
+import { makeUseStyles, spacing } from '@kc/ui';
 import { DateOfBirthField } from '../DateOfBirthField';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 
 type Props = {
   readonly value: string | null;
   readonly onChange: (iso: string | null) => void;
   readonly disabled?: boolean;
+  /** The form's message for the date, e.g. an unfinished date on save. */
+  readonly errorText?: string;
 };
 
-export function EditProfileDateOfBirthBlock({ value, onChange, disabled }: Props) {
+export function EditProfileDateOfBirthBlock({ value, onChange, disabled, errorText }: Props) {
   const styles = useStyles();
-  const { t } = useTranslation();
   return (
     <View style={styles.field} testID="edit-profile-dob">
-      <Text style={styles.label}>{t('dateOfBirth.label')}</Text>
-      <Text style={styles.helper}>{t('dateOfBirth.helper')}</Text>
-      <DateOfBirthField value={value} onChange={onChange} disabled={disabled} />
+      <DateOfBirthField value={value} onChange={onChange} disabled={disabled} errorText={errorText} />
     </View>
   );
 }
 
-const useStyles = makeUseStyles(({ colors }) => ({
-  field: { gap: spacing.xs, marginBottom: spacing.md },
-  label: { ...typography.bodySmall, ...typography.bold, color: colors.textPrimary, textAlign: rtlTextAlignStart },
-  helper: { ...typography.caption, color: colors.textSecondary, textAlign: rtlTextAlignStart, marginBottom: spacing.xs },
+const useStyles = makeUseStyles(() => ({
+  field: { marginBottom: spacing.md },
 }));

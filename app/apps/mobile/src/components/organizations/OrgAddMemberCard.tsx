@@ -1,13 +1,13 @@
 // FR-ORG (G18) — add a member by share handle, with a role. The roles offered are the ones the
 // viewer may give (canAssignOrgRole): an admin gives any role, a manager employee and volunteer.
 import React, { useState } from 'react';
-import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { canAssignOrgRole, ORG_MEMBER_ROLES, type OrgMemberRole } from '@kc/domain';
 import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
 import { PrimaryButton } from '../ui/Buttons';
 import { Card } from '../ui/Card';
-import { Chip } from '../ui/Chip';
+import { FilterChipRow } from '../filterKit/FilterChipRow';
+import { FormSection } from '../ui/FormSection';
 import { TextField } from '../ui/TextField';
 import { orgErrorKey } from '../../lib/organizations/orgErrorMessage';
 import { webTextRtl } from '../../lib/webRtlStyle';
@@ -49,19 +49,15 @@ export function OrgAddMemberCard({ myRole, busy, onAdd }: OrgAddMemberCardProps)
         autoCorrect={false}
         errorText={errorKey ? t(errorKey) : undefined}
       />
-      <Text style={[styles.label, webTextRtl]}>{t('organizations.members.roleLabel')}</Text>
-      <View style={styles.roles}>
-        {roles.map((option) => (
-          <Chip
-            key={option}
-            testID={`org-add-member-role-${option}`}
-            size="md"
-            selected={role === option}
-            onPress={() => setRole(option)}
-            label={t(`organizations.roles.${option}`)}
-          />
-        ))}
-      </View>
+      <FormSection label={t('organizations.members.roleLabel')}>
+        <FilterChipRow<OrgMemberRole>
+          chipSize="md"
+          testIDPrefix="org-add-member-role"
+          options={roles.map((option) => ({ value: option, label: t(`organizations.roles.${option}`) }))}
+          value={role}
+          onChange={(next) => next && setRole(next)}
+        />
+      </FormSection>
       <PrimaryButton
         testID="org-add-member-submit"
         label={t('organizations.members.add')}
@@ -77,6 +73,4 @@ export function OrgAddMemberCard({ myRole, busy, onAdd }: OrgAddMemberCardProps)
 const useStyles = makeUseStyles(({ colors }) => ({
   card: { gap: spacing.sm },
   title: { ...typography.bodyLarge, ...typography.semiBold, color: colors.textPrimary },
-  label: { ...typography.caption, color: colors.textSecondary },
-  roles: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: spacing.xs },
 }));

@@ -64,7 +64,7 @@ interface ControlProps {
 function FieldControl({ spec, value, onChange, disabled }: ControlProps) {
   const { t } = useTranslation();
   const set = (next: unknown) => onChange(spec.key, next);
-  const label = `${t(`marketplace.field.${spec.key}`)}${spec.required ? ' *' : ''}`;
+  const label = t(`marketplace.field.${spec.key}`);
   const errorText = useListingFieldProblem(detailField(spec.key)) ?? undefined;
 
   switch (spec.type) {
@@ -156,6 +156,7 @@ function FieldControl({ spec, value, onChange, disabled }: ControlProps) {
       return (
         <TextField
           label={label}
+          required={spec.required}
           errorText={errorText}
           inputKind="decimal"
           value={typeof value === 'number' ? String(value) : ''}
@@ -172,6 +173,7 @@ function FieldControl({ spec, value, onChange, disabled }: ControlProps) {
         <TextField
           testID={`listing-integer-${spec.key}`}
           label={label}
+          required={spec.required}
           errorText={errorText}
           inputKind="integer"
           value={typeof value === 'number' ? String(value) : ''}
@@ -184,9 +186,11 @@ function FieldControl({ spec, value, onChange, disabled }: ControlProps) {
       return (
         <TextField
           label={label}
+          required={spec.required}
           errorText={errorText}
           value={typeof value === 'string' ? value : ''}
           onChangeText={set}
+          inputKind={spec.inputKind}
           multiline={spec.multiline}
           maxLength={spec.maxLength}
           editable={!disabled}

@@ -92,6 +92,9 @@ export const KINDS_BY_WORLD: Readonly<Record<string, readonly ListingKindOption[
       gear: { type: 'array', items: { type: 'string' } },
     })),
   ],
+  // The two employment kinds of #2278 are seeded without a detail schema, so they take the column
+  // default, an open object (020_posts/010_catalog.sql): the form's specs alone shape them.
+  employment: [kind('job_offer', 'give', { type: 'object' }), kind('job_request', 'request', { type: 'object' })],
   animals: [
     // Binding schemas of migration 0612 (adoption and boarding / pet-sitting, offers and requests).
     kind('adoption_offer', 'give', obj({

@@ -1,5 +1,5 @@
 // Mapped to spec: FR-RESP-006 AC25 — scroll a form field into view on every platform.
-import type { ScrollView, View } from 'react-native';
+import { AccessibilityInfo, findNodeHandle, Platform, type ScrollView, type View } from 'react-native';
 import { spacing } from '@kc/ui';
 
 /** Space kept above a field scrolled to, so its label is not glued to the top edge. */
@@ -24,4 +24,11 @@ export function scrollFieldWithWindow(scroll: ScrollView, node: Measurable, scro
       scroll.scrollTo({ y: Math.max(0, scrollY + (fy - sy) - pad), animated: true });
     });
   });
+}
+
+/** Moves the screen reader to the field, which then reads its label and error (native only). */
+export function focusForScreenReader(node: Measurable): void {
+  if (Platform.OS === 'web') return;
+  const handle = findNodeHandle(node as unknown as Parameters<typeof findNodeHandle>[0]);
+  if (handle !== null) AccessibilityInfo.setAccessibilityFocus(handle);
 }

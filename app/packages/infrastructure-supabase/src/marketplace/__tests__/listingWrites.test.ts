@@ -11,6 +11,7 @@ const KINDS = [
   { id: 'k-food', slug: 'food_offer', world_slug: 'food', direction: 'offer', label_he: 'a', label_en: 'a', detail_schema: {} },
   { id: 'k-item', slug: 'item_offer', world_slug: 'items', direction: 'offer', label_he: 'a', label_en: 'a', detail_schema: {} },
   { id: 'k-either', slug: 'either_kind', world_slug: 'items', direction: 'either', label_he: 'a', label_en: 'a', detail_schema: {} },
+  { id: 'k-job', slug: 'job_offer', world_slug: 'employment', direction: 'offer', label_he: 'a', label_en: 'a', detail_schema: {} },
 ];
 const RIDE_FORM = {
   origin_place_kind: 'city', origin_place_id: 'IL-001', origin_label: 'a', origin_lat: 1, origin_lng: 2, origin_city_id: 'IL-001',
@@ -91,6 +92,21 @@ describe('createListing', () => {
     expect(plain).not.toHaveProperty('location_display_level');
   });
 
+  it('writes a job offer in its organization\'s name from the insert, so the publish is judged with it (§5.11)', async () => {
+    const { client, calls } = setup();
+    await createListing(client, { kindId: 'k-job', title: 'Coordinator', cityId: 'IL-001', details: { role: 'Coordinator', org_id: 'org-1' } });
+    const insert = callsTo(calls, 'posts').find((c) => c.kind === 'insert');
+    expect(insert?.payload).toMatchObject({ world_slug: 'employment', status: 'draft', beneficiary_org_id: 'org-1', details: { role: 'Coordinator' } });
+    expect((insert?.payload as { details: Record<string, unknown> }).details).not.toHaveProperty('org_id');
+    expect(callsTo(calls, 'publish_post')[0]?.args).toEqual({ p_post_id: 'new-1' });
+  });
+
+  it('leaves a plain post without an organization unattached', async () => {
+    const { client, calls } = setup();
+    await createListing(client, { kindId: 'k-item', title: 'Chair', cityId: 'IL-001', details: { a: 1 } });
+    expect(callsTo(calls, 'posts').find((c) => c.kind === 'insert')?.payload).not.toHaveProperty('beneficiary_org_id');
+  });
+
   it('removes the draft when completing it fails', async () => {
     const { client, calls } = setup({ publish_post: fail('P0001', 'post_limit_exceeded') });
     await expect(createListing(client, { kindId: 'k-item', title: 'Chair', cityId: 'IL-001' })).rejects.toBeInstanceOf(BackendRuleError);
@@ -144,6 +160,14 @@ describe('listing owner actions', () => {
     });
     await owner.updateMyListing(client, 'p1', { locationDisplayLevel: 'FullAddress' });
     expect(callsTo(calls, 'posts').find((c) => c.kind === 'update')?.payload).toEqual({ location_display_level: 'FullAddress' });
+  });
+
+  it('edits who may see the listing (FR-POST-009: either way, at any time)', async () => {
+    const { client, calls } = createFakeClient({
+      tables: { posts: (c: FakeCall) => (c.kind === 'update' ? ok([{ id: 'p1' }]) : ok({ post_type: 'standard', world_slug: 'items', direction: 'offer', details: {} })) },
+    });
+    await owner.updateMyListing(client, 'p1', { visibility: 'OnlyMe' });
+    expect(callsTo(calls, 'posts').find((c) => c.kind === 'update')?.payload).toEqual({ visibility: 'OnlyMe' });
   });
 
   it('refuses an edit the row policy let no row through', async () => {

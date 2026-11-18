@@ -640,6 +640,8 @@ export type Database = {
           channel: string
           confidence: number
           created_at: string
+          duplicate_post_id: string | null
+          edited_fields: string[] | null
           extraction: Json | null
           extraction_version: string
           id: string
@@ -657,6 +659,8 @@ export type Database = {
           channel: string
           confidence?: number
           created_at?: string
+          duplicate_post_id?: string | null
+          edited_fields?: string[] | null
           extraction?: Json | null
           extraction_version: string
           id?: string
@@ -674,6 +678,8 @@ export type Database = {
           channel?: string
           confidence?: number
           created_at?: string
+          duplicate_post_id?: string | null
+          edited_fields?: string[] | null
           extraction?: Json | null
           extraction_version?: string
           id?: string
@@ -688,6 +694,12 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "external_post_imports_duplicate_post_id_fkey"
+            columns: ["duplicate_post_id"]
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "external_post_imports_post_id_fkey"
             columns: ["post_id"]
@@ -1624,6 +1636,7 @@ export type Database = {
           id: string
           is_platform: boolean
           is_verified_nonprofit: boolean
+          may_post_jobs: boolean
           name: string
           org_type: string | null
           public_about_en: string | null
@@ -1656,6 +1669,7 @@ export type Database = {
           id?: string
           is_platform?: boolean
           is_verified_nonprofit?: boolean
+          may_post_jobs?: boolean
           name: string
           org_type?: string | null
           public_about_en?: string | null
@@ -1688,6 +1702,7 @@ export type Database = {
           id?: string
           is_platform?: boolean
           is_verified_nonprofit?: boolean
+          may_post_jobs?: boolean
           name?: string
           org_type?: string | null
           public_about_en?: string | null
@@ -2867,6 +2882,7 @@ export type Database = {
           shown_street_number: string | null
           source: string
           source_language: string | null
+          source_platform: string | null
           status: string
           status_before_removal: string | null
           time_window: unknown
@@ -2898,6 +2914,7 @@ export type Database = {
           shown_street_number?: string | null
           source?: string
           source_language?: string | null
+          source_platform?: string | null
           status?: string
           status_before_removal?: string | null
           time_window?: unknown
@@ -2929,6 +2946,7 @@ export type Database = {
           shown_street_number?: string | null
           source?: string
           source_language?: string | null
+          source_platform?: string | null
           status?: string
           status_before_removal?: string | null
           time_window?: unknown
@@ -4170,6 +4188,26 @@ export type Database = {
         Returns: string
       }
       admin_hierarchy_census: { Args: never; Returns: Json }
+      admin_import_field_edit_rates: {
+        Args: { p_days?: number }
+        Returns: {
+          edit_rate: number
+          edited: number
+          field: string
+          reported: number
+        }[]
+      }
+      admin_import_funnel: {
+        Args: { p_days?: number }
+        Returns: {
+          attempts: number
+          discarded: number
+          drafted: number
+          manual: number
+          provider_calls: number
+          published: number
+        }[]
+      }
       admin_join_support_thread: {
         Args: { p_chat_id: string }
         Returns: {
@@ -4363,6 +4401,10 @@ export type Database = {
       }
       admin_set_manager: {
         Args: { p_grant_id: string; p_manager_grant_id?: string }
+        Returns: undefined
+      }
+      admin_set_org_may_post_jobs: {
+        Args: { p_enabled: boolean; p_org_id: string }
         Returns: undefined
       }
       admin_set_org_slug: {
@@ -4582,6 +4624,14 @@ export type Database = {
           p_intent_id: string
           p_provider_ref: string
         }
+        Returns: undefined
+      }
+      api_import_attach_post: {
+        Args: { p_import_id: string; p_post_id: string }
+        Returns: undefined
+      }
+      api_import_record_edits: {
+        Args: { p_edited_fields: string[]; p_import_id: string }
         Returns: undefined
       }
       api_match_llm_pending: {
@@ -5735,7 +5785,18 @@ export type Database = {
           user_id: string
         }[]
       }
+      import_moderation_removals: {
+        Args: { p_since: string; p_user_id: string }
+        Returns: string[]
+      }
       import_normalize_place_text: { Args: { p_text: string }; Returns: string }
+      import_similar_open_post: {
+        Args: { p_min?: number; p_text: string; p_user_id: string }
+        Returns: {
+          post_id: string
+          similarity: number
+        }[]
+      }
       join_challenge: { Args: { p_challenge_id: string }; Returns: undefined }
       knowledge_slot_seats: {
         Args: { p_post_id: string }
@@ -6702,6 +6763,8 @@ export type Database = {
         shown_street: string | null
         shown_street_number: string | null
         challenge_id: string | null
+        source: string | null
+        source_platform: string | null
       }
     }
   }
