@@ -62,6 +62,10 @@ export { SupabaseWorldContentRepository } from './worlds/SupabaseWorldContentRep
 export { SupabaseSearchRepository } from './search/SupabaseSearchRepository';
 export { SupabaseDeviceRepository } from './notifications/SupabaseDeviceRepository';
 export { SupabaseLegalDocumentRepository } from './legal/SupabaseLegalDocumentRepository';
+export {
+  SupabaseIdentityVerificationService,
+  IDENTITY_VERIFICATION_SESSION_FUNCTION,
+} from './identityVerification/SupabaseIdentityVerificationService';
 export { LegalDocumentCache, type AsyncKVStorage } from './legal/legalCache';
 export * from './admin/SupabaseAdminRoleRepository';
 export * from './admin/SupabaseAdminTaskRepository';
