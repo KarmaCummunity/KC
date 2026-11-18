@@ -13,9 +13,10 @@
  * the Hebrew labels, so the journey also runs against a dev deployment that
  * predates the testIDs.
  */
-import { test, expect, type Browser, type BrowserContext, type Page } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 import { gotoApp } from './app';
-import { cleanupE2eContent, rest, runTag, sessionFor } from './api';
+import { cleanupE2eContent, rest, runTag } from './api';
+import { action, handoffStatus, openAs, takeHandoffStep, tokenFor, watchTrouble } from './handoffStep';
 import { publishPostAs } from './publish';
 import { anchoredChatHolds, feedShows, messageOwnerFromPost, seen } from './postDiscovery';
 import { STORAGE_B, USER_A, USER_B } from './env';
@@ -42,76 +43,6 @@ export interface WorldJourney {
   readonly claim?: { readonly testId: string; readonly label: string; readonly resultsIn: 'reserved' | 'confirmed' };
   /** The detail row the create form would collect (food: `expires_at`, `allergens`, `kosher`). */
   readonly details: () => Record<string, unknown>;
-}
-
-interface HandoffRow {
-  id: string;
-  status: 'reserved' | 'confirmed' | 'handed_over' | 'cancelled' | 'no_show';
-  owner_id: string;
-  recipient_id: string;
-}
-
-type Credentials = { email: string; password: string };
-
-/** `givingHandoff.statusLabel.*` (he) — what the listing page prints after each step. */
-const STATUS_LABEL_HE = { reserved: 'משוריין', confirmed: 'אושר', handed_over: 'נמסר' } as const;
-
-async function tokenFor(user: Credentials): Promise<{ token: string; userId: string }> {
-  const { session } = await sessionFor(user);
-  return { token: session.access_token as string, userId: (session.user as { id: string }).id };
-}
-
-/** The handoff row as `user` sees it (participant-only RLS); `null` when none exists. */
-async function handoffAs(user: Credentials, postId: string): Promise<HandoffRow | null> {
-  const { token } = await tokenFor(user);
-  const [row] = await rest<HandoffRow[]>(token, `post_handoffs?select=id,status,owner_id,recipient_id&post_id=eq.${postId}&order=created_at.desc&limit=1`);
-  return row ?? null;
-}
-
-async function openAs(browser: Browser, storageState: string): Promise<{ ctx: BrowserContext; page: Page }> {
-  const ctx = await browser.newContext({ storageState, locale: 'he-IL' });
-  const page = await ctx.newPage();
-  // The rating step thanks the user with a native alert; accept it instead of leaving it open.
-  page.on('dialog', (dialog) => void dialog.accept());
-  return { ctx, page };
-}
-
-/** A handoff button by testID, or by its Hebrew label on a deployment without the testIDs. */
-function action(page: Page, testId: string, label: string) {
-  return page.getByTestId(testId).or(page.getByText(label, { exact: true })).first();
-}
-
-function handoffStatus(page: Page) {
-  return page.getByTestId('giving-handoff-status').or(page.getByText(/^סטטוס: /)).first();
-}
-
-/**
- * After a handoff action: the server row (read as `user`, through RLS) reaches `status`
- * first, then the listing page shows it. On a slow dev backend the action's own refetch can
- * lag behind the write, so the page gets one reload instead of a longer blind wait; an action
- * that never reaches the server still fails, with a message that says so.
- */
-async function expectHandoffStatus(
-  page: Page,
-  path: string,
-  user: Credentials,
-  postId: string,
-  status: keyof typeof STATUS_LABEL_HE,
-): Promise<HandoffRow> {
-  await expect
-    .poll(async () => (await handoffAs(user, postId))?.status ?? 'no handoff row', {
-      timeout: 60_000,
-      message: `handoff on ${postId} reaches '${status}' on the server`,
-    })
-    .toBe(status);
-  const label = STATUS_LABEL_HE[status];
-  try {
-    await expect(handoffStatus(page)).toContainText(label, { timeout: 10_000 });
-  } catch {
-    await gotoApp(page, path);
-    await expect(handoffStatus(page)).toContainText(label, { timeout: 30_000 });
-  }
-  return (await handoffAs(user, postId))!;
 }
 
 /** Registers the serial two-user journey for one world. */
@@ -176,12 +107,18 @@ export function defineWorldJourney(journey: WorldJourney): void {
 
     test(`user B claims it from the listing page; the handoff is ${claimed} for B`, async ({ browser }) => {
       expect(listingId, 'listing from the publish step').not.toBe('');
-      test.setTimeout(150_000);
+      test.setTimeout(200_000);
       const b = await openAs(browser, STORAGE_B);
       await gotoApp(b.page, listingPath());
       await expect(b.page.getByText(title).first()).toBeVisible();
-      await action(b.page, claim.testId, claim.label).click();
-      const row = await expectHandoffStatus(b.page, listingPath(), USER_B, listingId, claimed);
+      const row = await takeHandoffStep({
+        ...b,
+        path: listingPath(),
+        user: USER_B,
+        postId: listingId,
+        button: () => action(b.page, claim.testId, claim.label),
+        status: claimed,
+      });
       await b.ctx.close();
 
       const { userId: bId } = await tokenFor(USER_B);
@@ -193,22 +130,36 @@ export function defineWorldJourney(journey: WorldJourney): void {
     if (claimed === 'reserved') {
       test('user A confirms the reservation', async ({ page }) => {
         expect(handoffId, 'handoff from the claim step').not.toBe('');
-        page.on('dialog', (dialog) => void dialog.accept());
+        test.setTimeout(200_000);
+        const trouble = watchTrouble(page);
         await gotoApp(page, listingPath());
-        test.setTimeout(150_000);
-        await action(page, 'giving-handoff-confirm', 'אישור שריון').click();
-        await expectHandoffStatus(page, listingPath(), USER_A, listingId, 'confirmed');
+        await takeHandoffStep({
+          page,
+          trouble,
+          path: listingPath(),
+          user: USER_A,
+          postId: listingId,
+          button: () => action(page, 'giving-handoff-confirm', 'אישור שריון'),
+          status: 'confirmed',
+        });
       });
     }
 
     test('user A marks it handed over: the listing closes and karma is written', async ({ page }) => {
       // The karma consumer is a once-a-minute job: allow it a full cycle plus the run itself,
-      // after up to 100 s for the handover to show (server poll + one reload).
-      test.setTimeout(240_000);
-      page.on('dialog', (dialog) => void dialog.accept());
+      // after up to 140 s for the handover to show (two server polls, one press again, one reload).
+      test.setTimeout(300_000);
+      const trouble = watchTrouble(page);
       await gotoApp(page, listingPath());
-      await action(page, 'giving-handoff-complete', 'סומן כנמסר').click();
-      await expectHandoffStatus(page, listingPath(), USER_A, listingId, 'handed_over');
+      await takeHandoffStep({
+        page,
+        trouble,
+        path: listingPath(),
+        user: USER_A,
+        postId: listingId,
+        button: () => action(page, 'giving-handoff-complete', 'סומן כנמסר'),
+        status: 'handed_over',
+      });
 
       const { token, userId: aId } = await tokenFor(USER_A);
       const [post] = await rest<{ status: string }[]>(token, `posts?select=status&id=eq.${listingId}`);
