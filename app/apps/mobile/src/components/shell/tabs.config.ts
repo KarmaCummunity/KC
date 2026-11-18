@@ -5,6 +5,7 @@
 // Mapped to: SRS §6.1 — 5 tabs (RTL: Profile | Search | Plus | Donations | Home), per D-16.
 import type { Ionicons } from '@expo/vector-icons';
 import type { Href } from 'expo-router';
+import { routeHead } from './shellRoute';
 
 export type IoniconName = keyof typeof Ionicons.glyphMap;
 
@@ -70,33 +71,26 @@ export const TABS: readonly TabDefinition[] = [
   },
 ] as const;
 
-const NAMED_TAB_SEGMENTS = ['profile', 'search', 'donations', 'create'] as const;
+const NAMED_TAB_SEGMENTS: readonly string[] = ['profile', 'search', 'donations', 'create'];
 
-/** True when `tab` matches the current expo-router segment trail. */
+/**
+ * True when `tab` matches the current expo-router segment trail. Only the head of the trail
+ * decides (`routeHead`): a tab name deeper in another route selects nothing (#1768).
+ */
 export function isTabActive(tab: TabDefinition, segments: readonly string[]): boolean {
-  const parts = tab.route.split('/').filter(Boolean);
-  const named = parts[0] === '(tabs)' ? parts[1] : parts[0];
-
-  if (!named) {
-    // Home — active inside (tabs) without a named sibling, or on flat web segments.
-    return !NAMED_TAB_SEGMENTS.some((segment) => segments.includes(segment));
-  }
-
-  return segments.includes(named);
+  const head = routeHead(segments);
+  const named = routeHead(tab.route.split('/').filter(Boolean));
+  // Home has no named segment: it is active wherever no named tab leads the trail.
+  if (!named) return head === undefined || !NAMED_TAB_SEGMENTS.includes(head);
+  return head === named;
 }
 
 /** Active bottom-rail / tab-bar key, or null when outside the tab navigator. */
 export function resolveActiveTabKey(segments: readonly string[]): TabKey | null {
+  const head = routeHead(segments);
+  // The tab navigator: its group, a named tab, or the root (`index`, or no segment on flat web).
   const onTabSurface =
-    segments.includes('(tabs)') ||
-    NAMED_TAB_SEGMENTS.some((segment) => segments.includes(segment)) ||
-    segments.includes('index') ||
-    segments.length === 0;
-
+    segments[0] === '(tabs)' || head === undefined || head === 'index' || NAMED_TAB_SEGMENTS.includes(head);
   if (!onTabSurface) return null;
-
-  for (const tab of TABS) {
-    if (isTabActive(tab, segments)) return tab.key;
-  }
-  return null;
+  return TABS.find((tab) => isTabActive(tab, segments))?.key ?? null;
 }
