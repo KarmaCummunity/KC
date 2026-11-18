@@ -71,6 +71,11 @@ export const marketplaceFieldLabels = {
   address: 'כתובת',
   // Knowledge exchange kinds (#2034, migration 0703).
   capacity_per_slot: 'מקומות בכל מועד',
+  schedule: 'מתי מתקיים השיעור',
+  series_weekdays: 'באילו ימים',
+  series_time: 'שעת התחלה',
+  series_duration_minutes: 'משך כל מפגש',
+  series_ends_on: 'עד תאריך (לא חובה)',
   slots: 'מועדים',
   audience: 'למי זה מתאים',
   cadence: 'תדירות המפגשים',
@@ -137,6 +142,7 @@ export const marketplaceOptionLabels = {
   manual: 'באישור המארגנים',
   verified_only: 'מאומתים בלבד',
   // Knowledge exchange kinds (#2034, migration 0703).
+  one_off: 'מועדים חד־פעמיים',
   weekly: 'כל שבוע',
   biweekly: 'כל שבועיים',
   flexible: 'גמיש',

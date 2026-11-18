@@ -2,7 +2,7 @@
 // cover every key the binding schema of migration 0703 requires, and the slot list of a lesson.
 // Split from listingFieldSpecs.test.ts (300-line cap).
 import { describe, expect, it } from 'vitest';
-import { fieldsForKind, firstMissingRequiredField, kindChoices, kindForDirection } from '../listingFieldSpecs';
+import { detailsForSubmit, fieldsForKind, firstMissingRequiredField, kindChoices, kindForDirection } from '../listingFieldSpecs';
 import { KINDS_BY_WORLD } from './listingKindFixtures';
 
 describe('listing field specs — knowledge (#1630, #2034)', () => {
@@ -27,6 +27,18 @@ describe('listing field specs — knowledge (#1630, #2034)', () => {
     const specs = fieldsForKind(kinds[0]!);
     expect(specs.find((s) => s.key === 'slots')).toMatchObject({ type: 'slotList', required: true, maxSlots: 20 });
     expect(specs.find((s) => s.key === 'capacity_per_slot')).toMatchObject({ type: 'count', min: 1, defaultValue: 1 });
+  });
+
+  it('lets a lesson run one-off times or every week, asking only for what the choice needs (#2479)', () => {
+    const specs = fieldsForKind(kinds[0]!);
+    const filled = { modality: 'video', capacity_per_slot: 1 };
+    expect(specs.find((s) => s.key === 'schedule')).toMatchObject({ type: 'choice', options: ['one_off', 'weekly'], defaultValue: 'one_off' });
+    expect(firstMissingRequiredField(specs, { ...filled, schedule: 'one_off' })?.key).toBe('slots');
+    expect(firstMissingRequiredField(specs, { ...filled, schedule: 'weekly' })?.key).toBe('series_weekdays');
+    expect(firstMissingRequiredField(specs, { ...filled, schedule: 'weekly', series_weekdays: [0], series_time: '18:00' })).toBeNull();
+    const weekly = { ...filled, schedule: 'weekly', slots: [{ starts_at: 'x', ends_at: 'y' }], series_weekdays: [0], series_time: '18:00' };
+    expect(detailsForSubmit(specs, weekly)).not.toHaveProperty('slots');
+    expect(detailsForSubmit(specs, { ...weekly, schedule: 'one_off' })).not.toHaveProperty('series_weekdays');
   });
 
   it('treats the consulting disclaimer as unanswered until it is switched on', () => {

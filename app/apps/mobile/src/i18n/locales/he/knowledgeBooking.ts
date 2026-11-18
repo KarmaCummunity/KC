@@ -38,4 +38,14 @@ export const knowledgeBooking = {
   slotLength: '{{minutes}} דק׳',
   addSlot: '+ הוספת מועד',
   removeSlot: 'הסרת המועד',
+  series: {
+    title: 'שיעור קבוע',
+    status: { active: 'המועדים נפתחים כל שבוע', paused: 'מושהה: לא נפתחים מועדים חדשים', ended: 'השיעור הקבוע הסתיים' },
+    pause: 'השהיה',
+    resume: 'חידוש',
+    end: 'סיום השיעור הקבוע',
+    endConfirm: 'לסיים את השיעור הקבוע? מועדים שלא הוזמנו יוסרו, ומפגשים שכבר הוזמנו יישארו.',
+    endYes: 'כן, לסיים',
+    keep: 'להמשיך',
+  },
 };
