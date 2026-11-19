@@ -1017,6 +1017,83 @@ export type Database = {
           },
         ]
       }
+      identity_verification_consents: {
+        Row: {
+          accepted_at: string
+          user_id: string
+          version: string
+        }
+        Insert: {
+          accepted_at?: string
+          user_id: string
+          version: string
+        }
+        Update: {
+          accepted_at?: string
+          user_id?: string
+          version?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "identity_verification_consents_user_id_fkey"
+            columns: ["user_id"]
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      identity_verifications: {
+        Row: {
+          created_at: string
+          decided_at: string | null
+          decision_reason_code: string | null
+          document_country: string | null
+          document_expires_on: string | null
+          document_type: string | null
+          id: string
+          name_match: boolean | null
+          provider: string
+          provider_session_id: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          decided_at?: string | null
+          decision_reason_code?: string | null
+          document_country?: string | null
+          document_expires_on?: string | null
+          document_type?: string | null
+          id?: string
+          name_match?: boolean | null
+          provider: string
+          provider_session_id?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          decided_at?: string | null
+          decision_reason_code?: string | null
+          document_country?: string | null
+          document_expires_on?: string | null
+          document_type?: string | null
+          id?: string
+          name_match?: boolean | null
+          provider?: string
+          provider_session_id?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "identity_verifications_user_id_fkey"
+            columns: ["user_id"]
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       item_subcategories: {
         Row: {
           created_at: string
@@ -3607,6 +3684,7 @@ export type Database = {
           status_until: string | null
           updated_at: string
           user_id: string
+          verification_expires_at: string | null
           verification_method: string | null
           verified_at: string | null
         }
@@ -3622,6 +3700,7 @@ export type Database = {
           status_until?: string | null
           updated_at?: string
           user_id: string
+          verification_expires_at?: string | null
           verification_method?: string | null
           verified_at?: string | null
         }
@@ -3637,6 +3716,7 @@ export type Database = {
           status_until?: string | null
           updated_at?: string
           user_id?: string
+          verification_expires_at?: string | null
           verification_method?: string | null
           verified_at?: string | null
         }
@@ -4141,6 +4221,10 @@ export type Database = {
           sort_order: number
         }[]
       }
+      accept_identity_verification_consent: {
+        Args: { p_version: string }
+        Returns: undefined
+      }
       accept_legal_document: {
         Args: {
           p_doc_type: string
@@ -4443,6 +4527,10 @@ export type Database = {
         Args: { p_approve: boolean; p_link_id: string; p_note?: string }
         Returns: string
       }
+      admin_revoke_identity_verification: {
+        Args: { p_reason: string; p_user_id: string }
+        Returns: undefined
+      }
       admin_revoke_role: { Args: { p_grant_id: string }; Returns: undefined }
       admin_set_app_flag: {
         Args: { p_description?: string; p_enabled: boolean; p_key: string }
@@ -4685,6 +4773,14 @@ export type Database = {
           p_intent_id: string
           p_provider_ref: string
         }
+        Returns: undefined
+      }
+      api_identity_verification_begin: {
+        Args: { p_provider: string; p_user_id: string }
+        Returns: string
+      }
+      api_identity_verification_set_session: {
+        Args: { p_attempt_id: string; p_provider_session_id: string }
         Returns: undefined
       }
       api_import_attach_post: {
@@ -5846,6 +5942,14 @@ export type Database = {
           user_id: string
         }[]
       }
+      identity_verification_apply: {
+        Args: { p_event_id: string; p_payload: Json; p_provider_slug: string }
+        Returns: {
+          event_error_code: string
+          event_status: string
+          webhook_event_id: string
+        }[]
+      }
       import_moderation_removals: {
         Args: { p_since: string; p_user_id: string }
         Returns: string[]
@@ -6058,6 +6162,16 @@ export type Database = {
           post_id: string
           post_title: string
           world_slug: string
+        }[]
+      }
+      my_identity_verification: {
+        Args: never
+        Returns: {
+          decided_at: string
+          expires_at: string
+          reason_code: string
+          status: string
+          verified_at: string
         }[]
       }
       my_karma_points: { Args: never; Returns: number }

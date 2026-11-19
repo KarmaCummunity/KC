@@ -7,7 +7,7 @@ import type { PushDatabase, PushTransport } from './types.ts';
 export interface HandlerDeps {
   readonly db: PushDatabase;
   readonly transport: PushTransport;
-  readonly serviceRoleKey: string;
+  readonly serviceRoleKey: string | string[];
   readonly options?: Partial<DispatchOptions>;
   /** Stop starting new rounds after this many milliseconds. */
   readonly budgetMs?: number;

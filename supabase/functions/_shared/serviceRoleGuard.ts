@@ -30,14 +30,38 @@ function timingSafeEqual(a: string, b: string): boolean {
 }
 
 /**
- * True only for `Authorization: Bearer <serviceKey>`. A function without a configured
- * key rejects every caller, so a missing secret never opens the endpoint.
+ * Every key the runtime currently treats as service-role: the injected
+ * SUPABASE_SERVICE_ROLE_KEY plus any comma-separated SUPABASE_SECRET_KEYS
+ * (the JWT Signing Keys migration can change either). Empties dropped, deduped.
  */
-export function isServiceRoleRequest(req: Request, serviceKey: string): boolean {
-  if (!serviceKey) return false;
+export function currentServiceRoleKeys(env: { get(name: string): string | undefined } = Deno.env): string[] {
+  const keys: string[] = [];
+  const primary = env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+  if (primary) keys.push(primary);
+  for (const raw of (env.get('SUPABASE_SECRET_KEYS') ?? '').split(',')) {
+    const k = raw.trim();
+    if (k && !keys.includes(k)) keys.push(k);
+  }
+  return keys;
+}
+
+/** First configured service-role key, for building the admin client; '' when none. */
+export function primaryServiceRoleKey(env: { get(name: string): string | undefined } = Deno.env): string {
+  return currentServiceRoleKeys(env)[0] ?? '';
+}
+
+/**
+ * True only for `Authorization: Bearer <key>` where key is one of the configured
+ * service-role keys. A function without a configured key rejects every caller,
+ * so a missing secret never opens the endpoint.
+ */
+export function isServiceRoleRequest(req: Request, serviceKey: string | string[]): boolean {
+  const keys = (Array.isArray(serviceKey) ? serviceKey : [serviceKey]).filter((k) => k);
+  if (keys.length === 0) return false;
   const header = req.headers.get('Authorization') ?? '';
   if (!header.startsWith('Bearer ')) return false;
-  return timingSafeEqual(header.slice('Bearer '.length), serviceKey);
+  const bearer = header.slice('Bearer '.length);
+  return keys.some((key) => timingSafeEqual(bearer, key));
 }
 
 /** The 401 body every guarded worker answers with. */
