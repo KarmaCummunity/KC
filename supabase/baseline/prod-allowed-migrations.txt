@@ -72,3 +72,4 @@
 0075_import_moderation_lockout.sql
 0076_import_telemetry.sql
 0077_import_cross_post_guard.sql
+0078_identity_verification.sql
