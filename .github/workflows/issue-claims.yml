@@ -62,5 +62,8 @@ jobs:
             [ -z "$claimed" ] && continue
             [ "$(date -u -d "$claimed" +%s)" -gt "$cutoff" ] && continue
             prs=$(gh pr list --state open --search "$n in:body" --json number -q 'length')
-            [ "$prs" = 0 ] && release "$n" stale
+            # A retained claim is a successful no-op, not a failed loop status.
+            if [ "$prs" = 0 ]; then
+              release "$n" stale
+            fi
           done
