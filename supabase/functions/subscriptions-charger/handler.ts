@@ -17,7 +17,7 @@ export interface DueCharge {
 
 export interface ChargerDeps {
   /** The project's service-role key; the only credential the worker accepts. */
-  readonly serviceRoleKey: string;
+  readonly serviceRoleKey: string | string[];
   /** Calls `api_standing_orders_charge_due(limit)`. */
   readonly openDueCharges: (limit: number) => Promise<DueCharge[]>;
   /** Sends one charge to the payment provider. Absent until a provider adapter is wired. */
