@@ -55,3 +55,7 @@ verify_jwt = false
 # Identity provider decisions (FR-VERIFY-005 AC4): authenticated by the provider signature.
 [functions.identity-verification-webhook]
 verify_jwt = false
+
+# Service-only worker authenticates against every current service key in its handler.
+[functions.process-post-media]
+verify_jwt = false
