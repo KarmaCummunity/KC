@@ -1,7 +1,7 @@
 # KC release runbook
 
 How we version, ship TestFlight / Play internal, promote, and roll back.  
-**`main` / kc-prod / public store submission always need Nave's explicit approval.** Agents never push to `main` or run prod deploys.
+**Public store submission and manual main/production actions need explicit approval.** The owner approved the scheduled smart, gated release-train path on 2026-11-19, not direct pushes or bypasses. See [current authority and safety hold](../release/WEEKLY-RELEASE-TRAIN.md#owner-authorization-and-safety-checkpoint-2026-11-19). Technical blocker #2509 remains; approval is not deployment readiness.
 
 Related: #949, #840, #841, #866. Version source of truth: [`app/VERSION`](../../app/VERSION).
 
@@ -59,7 +59,7 @@ Client observability env (EAS / EAS secrets — never commit values):
 
 1. **Internal QA** — TestFlight + Play internal from the workflows above (still on builds from `dev` / production EAS profile).
 2. **Public App Store / Play production** — **Nave only.** Submit from App Store Connect / Play Console (or a future dedicated workflow after explicit approval). Do not add `agent-ready` to a prod-submit PR.
-3. **Web / DB prod (kc-prod)** — separate from mobile; same rule: Nave approval only.
+3. **Web / DB prod (kc-prod)** — scheduled smart releases have the scoped 2026-11-19 approval above; manual actions and gate overrides are not covered.
 
 ## Rollback
 
@@ -78,4 +78,5 @@ Never `supabase db reset` against shared remotes. Never edit already-applied mig
 |---|---|
 | Merge to `dev`, kc-dev DB/web deploy | CI + `agent-ready` auto-merge (coordinator) |
 | TestFlight / Play **internal** dispatch | Maintainer with secrets access (agents may prepare; human triggers if policy requires) |
-| Public store / `main` / kc-prod | **Nave** |
+| Scheduled gated dev → main → kc-prod | Owner authorized 2026-11-19; mandatory gates and current #2509 safety hold still apply |
+| Public store review/publication, manual main/prod actions | **Nave**, separate approval |
