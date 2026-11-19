@@ -32,7 +32,16 @@ update kc_private.retention_rules r
 -- alert_after (5 minutes) still covers three periods, so jobs_late keeps its meaning.
 -- The update reconciles pg_cron through the scheduled_jobs_sync trigger; the guard on the
 -- current value keeps a re-run from rescheduling an unchanged job.
-update kc_private.scheduled_jobs j
-   set schedule = '30 seconds'
- where j.name = 'chat_system_messages'
-   and j.schedule is distinct from '30 seconds';
+-- A statement-level UPDATE trigger fires even when UPDATE matches zero rows.
+-- Skip the statement itself on a repeat run, not just the row change.
+do $$
+begin
+  if exists (select 1 from kc_private.scheduled_jobs j
+              where j.name = 'chat_system_messages'
+                and j.schedule is distinct from '30 seconds') then
+    update kc_private.scheduled_jobs j
+       set schedule = '30 seconds'
+     where j.name = 'chat_system_messages'
+       and j.schedule is distinct from '30 seconds';
+  end if;
+end $$;
