@@ -2,7 +2,7 @@
 
 > **Human source of truth:** the Hebrew page "KC – ספר הפרויקט (מקור אמת)" maintained by the PM (Nave) with the KC assistant. This folder is its English, AI-agent-friendly derivation. If the two disagree, the Hebrew page wins and this folder must be updated in the same week (decision **D35**, **D58**).
 >
-> Snapshot date: **2026-10-30**. Decisions **D1–D92** included.
+> Reconciliation checkpoint: **2026-11-19**. Decision log extends through **D178**. This date does not mean every chapter or requirement has been reconciled. See [store-review checkpoint](./97_store_review_checkpoint.md) and [reconciliation](./95_reconciliation.md).
 
 ## How to read
 
@@ -82,3 +82,7 @@ One file per domain, each with FR-IDs, acceptance criteria and a status header. 
 3. Add a row to `90_decisions_log.md`.
 4. An `S#` approved by the PM becomes a `D#`; a closed question is removed from 92; a code mismatch becomes a `G#`.
 5. Every dev task / bug cites: spec section + code + automated test.
+
+## Dated operational checkpoints
+
+- [97_store_review_checkpoint.md](./97_store_review_checkpoint.md): November 19 Apple/Google status, limited guest decision and unresolved build provenance. Not a full-book reconciliation.
