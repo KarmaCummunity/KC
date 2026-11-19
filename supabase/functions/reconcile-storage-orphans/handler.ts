@@ -27,7 +27,7 @@ export interface OrphanStorage {
 export interface OrphanDeps {
   readonly db: OrphanDatabase;
   readonly storage: OrphanStorage;
-  readonly serviceRoleKey: string;
+  readonly serviceRoleKey: string | string[];
   readonly report: (error: unknown, tags: { stage: 'scan' | 'remove'; bucket: string }) => Promise<void>;
   /** Buckets whose objects are recorded row by row. */
   readonly buckets?: readonly string[];
@@ -116,4 +116,4 @@ export function createOrphanDatabase(query: Query): OrphanDatabase {
       return (await query(ORPHAN_SQL, [bucket, keys])).map((row) => String(row.key));
     },
   };
-}
+  }
