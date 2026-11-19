@@ -1,0 +1,198 @@
+name: Production copy to kc-dev
+
+# FR-ADMIN-037: once a week an anonymized copy of production is added to kc-dev, so tests run
+# on data shaped like the real community without anyone on kc-dev seeing who its members are.
+#
+#   gate    does nothing unless the owner set the repository variable PROD_COPY_ENABLED=true (AC1)
+#   export  kc-prod, READ-ONLY: reads the allowed rows (scripts/prod-copy-export.sql), anonymizes
+#           them in the same step (scripts/prod-copy-anonymize.mjs) and removes the raw file;
+#           only the age-encrypted anonymized document leaves the job (AC10). A listed read-only
+#           monitor of scripts/check-deploy-isolation.mjs: it never waits for the `production`
+#           approval and cannot deploy.
+#   load    kc-dev: decrypts the document and adds it in ONE transaction with
+#           kc_private.prod_copy_apply (supabase/seed/prod-copy, installed by every dev deploy).
+#           A failure leaves kc-dev as it was (AC11). The artifact is deleted at the end.
+#
+# Both jobs check their project ref against the pinned one before they connect (AC2). Logs carry
+# counts only (AC10). Scheduled runs use the workflow file on `main`, so the copy starts with the
+# release that carries it. Setup and secrets: docs/SSOT/OPERATOR_RUNBOOK.md "Production copy to kc-dev".
+
+on:
+  schedule:
+    - cron: '41 20 * * 6' # Saturday 20:41 UTC: 22:41 / 23:41 Israel time, after Shabbat
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: prod-copy-to-dev
+  cancel-in-progress: false
+
+jobs:
+  gate:
+    name: switched on?
+    runs-on: ubuntu-latest
+    outputs:
+      enabled: ${{ steps.gate.outputs.enabled }}
+    steps:
+      - id: gate
+        env:
+          ENABLED: ${{ vars.PROD_COPY_ENABLED }}
+        run: |
+          if [ "$ENABLED" = "true" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::The production copy is off: set the repository variable PROD_COPY_ENABLED=true to turn it on."
+          fi
+
+  export:
+    name: export (${{ matrix.target.env }}, read-only)
+    needs: gate
+    if: needs.gate.outputs.enabled == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      matrix:
+        target:
+          - { env: prod, environment: supabase-prod }
+    environment: ${{ matrix.target.environment }}
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+      KC_PROD_REF: kdqtbdbzwvlugkhonexg
+      AGE_RECIPIENT: ${{ vars.PROD_COPY_AGE_RECIPIENT }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # Fails closed: without the pinned ref, the id key and a valid recipient nothing is read.
+      - name: Guard – kc-prod, read-only, keys present
+        env:
+          PROD_COPY_ID_KEY: ${{ secrets.PROD_COPY_ID_KEY }}
+        run: |
+          set -euo pipefail
+          [ "${SUPABASE_PROJECT_REF:-}" = "$KC_PROD_REF" ] || { echo "::error::supabase-prod SUPABASE_PROJECT_REF is not kc-prod; refusing."; exit 1; }
+          [ "${#PROD_COPY_ID_KEY}" -ge 32 ] || { echo "::error::PROD_COPY_ID_KEY is missing or shorter than 32 characters (supabase-prod environment)."; exit 1; }
+          [[ "$AGE_RECIPIENT" =~ ^age1[0-9a-z]{58}$ ]] || { echo "::error::PROD_COPY_AGE_RECIPIENT is missing or is not an age public key (age1...)."; exit 1; }
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version-file: .nvmrc
+
+      - uses: ./.github/actions/setup-supabase-cli
+
+      - name: Install age
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq age >/dev/null
+
+      # The raw export (production ids and text) exists only in this step, in a private folder of
+      # this ephemeral runner, and is removed before the step ends, even on failure.
+      - name: Read, anonymize and encrypt
+        env:
+          # Read by psql; never written to a file or a command line. The export opens a read-only
+          # transaction itself, so it cannot write.
+          PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          PROD_COPY_ID_KEY: ${{ secrets.PROD_COPY_ID_KEY }}
+        run: |
+          set -euo pipefail
+          supabase link --project-ref "$SUPABASE_PROJECT_REF" --yes >/dev/null
+          url="$(cat supabase/.temp/pooler-url)"
+          case "$url" in *"$KC_PROD_REF"*) ;; *) echo "::error::pooler address is not kc-prod's; refusing."; exit 1 ;; esac
+          work="$RUNNER_TEMP/prod-copy"
+          mkdir -p "$work" && chmod 700 "$work"
+          trap 'rm -f "$work/raw.json" "$work/copy.json"' EXIT
+          psql "$url" -X -v ON_ERROR_STOP=1 -qAt -f scripts/prod-copy-export.sql > "$work/raw.json"
+          echo "anonymized: $(node scripts/prod-copy-anonymize.mjs "$work/raw.json" "$work/copy.json")"
+          rm -f "$work/raw.json"
+          age -r "$AGE_RECIPIENT" -o "$work/copy.json.age" "$work/copy.json"
+          test -s "$work/copy.json.age" || { echo "::error::empty encrypted copy"; exit 1; }
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: prod-copy-${{ github.run_id }}
+          path: ${{ runner.temp }}/prod-copy/copy.json.age
+          retention-days: 1
+          if-no-files-found: error
+
+  load:
+    name: load (kc-dev)
+    needs: export
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: supabase-dev
+    permissions:
+      contents: read
+      # Only to delete this run's artifact once it is loaded.
+      actions: write
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+      KC_DEV_REF: enbqriuxvvuontiwslun
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Guard – kc-dev only, key present
+        env:
+          AGE_IDENTITY: ${{ secrets.PROD_COPY_AGE_IDENTITY }}
+        run: |
+          set -euo pipefail
+          [ "${SUPABASE_PROJECT_REF:-}" = "$KC_DEV_REF" ] || { echo "::error::supabase-dev SUPABASE_PROJECT_REF is not kc-dev; refusing."; exit 1; }
+          [[ "$AGE_IDENTITY" == AGE-SECRET-KEY-1* ]] || { echo "::error::PROD_COPY_AGE_IDENTITY is missing (supabase-dev environment)."; exit 1; }
+
+      - uses: ./.github/actions/setup-supabase-cli
+
+      - name: Install age
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq age >/dev/null
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: prod-copy-${{ github.run_id }}
+          path: ${{ runner.temp }}/prod-copy
+
+      # One transaction: a failure anywhere leaves kc-dev as it was (AC11). The document is
+      # read by psql from the file, never passed on a command line.
+      - name: Add the copy to kc-dev
+        env:
+          PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          AGE_IDENTITY: ${{ secrets.PROD_COPY_AGE_IDENTITY }}
+        run: |
+          set -euo pipefail
+          supabase link --project-ref "$SUPABASE_PROJECT_REF" --yes >/dev/null
+          url="$(cat supabase/.temp/pooler-url)"
+          case "$url" in *"$KC_DEV_REF"*) ;; *) echo "::error::pooler address is not kc-dev's; refusing."; exit 1 ;; esac
+          work="$RUNNER_TEMP/prod-copy"
+          trap 'rm -f "$work/copy.json" "$work/identity.txt"' EXIT
+          (umask 077 && printf '%s\n' "$AGE_IDENTITY" > "$work/identity.txt")
+          age -d -i "$work/identity.txt" -o "$work/copy.json" "$work/copy.json.age"
+          rm -f "$work/identity.txt"
+          export PROD_COPY_FILE="$work/copy.json"
+          # psql reads the file itself (the backquoted command expands the variable above).
+          result="$(psql "$url" -X -v ON_ERROR_STOP=1 --single-transaction -qAt <<'SQL'
+          \set copy_json `cat "$PROD_COPY_FILE"`
+          select kc_private.prod_copy_apply(:'copy_json'::jsonb);
+          SQL
+          )"
+          echo "kc-dev: $result"
+          {
+            echo "### Production copy added to kc-dev"
+            echo '```json'
+            echo "$result"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # The artifact is encrypted, but nothing of the copy is kept once it is loaded (AC10).
+      - name: Delete the artifact
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          for id in $(gh api "repos/$REPO/actions/runs/$RUN_ID/artifacts" --jq '.artifacts[] | select(.name | startswith("prod-copy-")) | .id'); do
+            gh api -X DELETE "repos/$REPO/actions/artifacts/$id"
+          done
