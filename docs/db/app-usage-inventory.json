@@ -20,8 +20,8 @@
    "distinct": 4
   },
   "rpc": {
-   "callSites": 283,
-   "distinct": 259
+   "callSites": 285,
+   "distinct": 261
   },
   "table": {
    "callSites": 190,
@@ -661,6 +661,24 @@
    "symbol": "SupabaseTransparencySettingsRepository.unwrapFinance",
    "via": "literal",
    "name": "finance_transparency_settings_set"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseProdCopyRepository.ts",
+   "line": 41,
+   "area": "admin",
+   "symbol": "SupabaseProdCopyRepository.getStatus",
+   "via": "literal",
+   "name": "admin_prod_copy_status"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseProdCopyRepository.ts",
+   "line": 46,
+   "area": "admin",
+   "symbol": "SupabaseProdCopyRepository.deleteAll",
+   "via": "literal",
+   "name": "admin_delete_prod_copy"
   },
   {
    "kind": "rpc",
