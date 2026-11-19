@@ -95,7 +95,7 @@ Shown only to the signed-in member about their **own** profile, only while their
 
 ## FR-VERIFY-011 — Provider selection (PM action)
 - AC1. Requirements: Israeli identity card (smart card) and passports of every country; certified liveness (ISO/IEC 30107-3 presentation-attack detection, tested by an accredited lab); Hebrew UI and RTL; a hosted web flow; signed webhooks; configurable image retention ≤ 30 days; a data-processing agreement acceptable under the Israeli Privacy Protection Law and its amendment 13; per-verification pricing within the launch budget.
-- AC2. Candidates to evaluate (no preference implied): Au10tix (Israeli), Sumsub, Veriff, Onfido, Persona.
+- AC2. Candidates to evaluate (no preference implied): Au10tix (Israeli), Sumsub, Veriff, Onfido, Persona, Didit, ID Analyzer. Didit and ID Analyzer advertise a free monthly allowance and Israeli document support; their claims are vendor-reported and are checked in a sandbox before any choice. No public Israeli government register lookup exists, so every candidate verifies a document plus a live face only.
 - AC3. The PM chooses, signs the contract and DPA, and provides the sandbox and production keys through the environment secrets of FR-VERIFY-010 AC3. This is the blocker of HOUSING-H0.
 
 ## Notifications
@@ -119,3 +119,4 @@ Shown only to the signed-in member about their **own** profile, only while their
 |---|---|---|
 | 0.1 | 2026-11-03 | New domain file: ID document + live selfie via a certified provider (`D117`); FR-VERIFY-001…011. |
 | 0.2 | 2026-11-07 | Levels reshaped (D172): 1 = complete profile (FR-VERIFY-012, replaces verified phone), 2 = ID, 3 = recognised organization; color-tier badges and display surfaces (FR-VERIFY-001 AC2–AC5); complete-profile nudges (FR-VERIFY-013). |
+| 0.3 | 2026-11-18 | FR-VERIFY-011 AC2: added Didit and ID Analyzer as provider candidates (free monthly allowance, to be verified in a sandbox). |
