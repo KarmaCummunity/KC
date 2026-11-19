@@ -31,6 +31,7 @@
 /scripts/check-*                            @navesarussi
 /scripts/deploy-*                           @navesarussi
 /scripts/db-backup-*                          @navesarussi
+/scripts/prod-copy-*                          @navesarussi
 /scripts/smoke-*                            @navesarussi
 /scripts/*-guard*                           @navesarussi
 /scripts/mobile-*                           @navesarussi

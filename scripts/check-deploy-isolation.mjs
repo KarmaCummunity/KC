@@ -75,6 +75,9 @@ export const MONITORS = {
   'prod-store-build.yml': { job: 'ledger', envs: ['supabase-prod'], triggers: ['workflow_run', 'workflow_dispatch'] },
   // Daily encrypted `supabase db dump` of kc-prod (read-only; Supabase Free has no backups).
   'db-backup-prod.yml': { job: 'backup', envs: ['supabase-prod'], triggers: ['schedule', 'workflow_dispatch'] },
+  // Weekly read of kc-prod for the anonymized copy added to kc-dev (FR-ADMIN-037): a read-only
+  // transaction, anonymized in the same job; its load job holds supabase-dev only.
+  'prod-copy-to-dev.yml': { job: 'export', envs: ['supabase-prod'], triggers: ['schedule', 'workflow_dispatch'] },
 };
 
 const PROD_ENVS = new Set(['production', 'supabase-prod', 'cloudflare-prod']);

@@ -6,6 +6,7 @@ import React from 'react';
 import { View } from 'react-native';
 import type { OrgJobPostingRow } from '@kc/application';
 import { makeUseStyles, radius, spacing, Text, typography } from '@kc/ui';
+import { rowDirectionStart, rtlTextAlignStart } from '../../lib/rtlLayout';
 import { PrimaryButton, SecondaryButton } from '../ui/Buttons';
 
 export interface OrgJobPostingStrings {
@@ -70,7 +71,8 @@ export function OrgJobPostingList({ organizations, canSwitch, busyOrgId, onSwitc
 const useStyles = makeUseStyles(({ colors }) => ({
   list: { gap: spacing.sm },
   row: {
-    flexDirection: 'row' as const,
+    // Reading-direction row: the text block sits at the right edge, the switch at the left (RTL).
+    flexDirection: rowDirectionStart,
     alignItems: 'center' as const,
     justifyContent: 'space-between' as const,
     gap: spacing.md,
@@ -81,7 +83,9 @@ const useStyles = makeUseStyles(({ colors }) => ({
     backgroundColor: colors.surface,
   },
   text: { flex: 1, gap: spacing.xs },
-  name: { ...typography.h3, color: colors.textPrimary },
-  allowed: { ...typography.caption, color: colors.primary },
-  muted: { ...typography.caption, color: colors.textSecondary },
+  // Explicit start alignment: natural alignment follows the first strong character, so a Latin
+  // name such as "Karma Community" would otherwise sit on the wrong edge of an RTL card.
+  name: { ...typography.h3, color: colors.textPrimary, textAlign: rtlTextAlignStart },
+  allowed: { ...typography.caption, color: colors.primary, textAlign: rtlTextAlignStart },
+  muted: { ...typography.caption, color: colors.textSecondary, textAlign: rtlTextAlignStart },
 }));
