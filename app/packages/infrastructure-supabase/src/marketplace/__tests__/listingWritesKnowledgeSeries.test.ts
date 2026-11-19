@@ -26,6 +26,22 @@ const insertedDetails = (calls: FakeCall[]) =>
   (calls.find((c) => c.table === 'posts' && c.kind === 'insert')?.payload as { details: Record<string, unknown> }).details;
 
 describe('createListing — weekly lesson offer', () => {
+  it('drops hidden one-off times on a one-off to weekly switch before inserting the draft', async () => {
+    const stale = [{ starts_at: '2030-06-01T10:00:00Z', ends_at: '2030-06-01T11:00:00Z' }];
+    const { client, calls } = setup(ok('series-1'));
+    await createListing(client, { kindId: 'k-lesson', title: 'Algebra', cityId: 'IL-001', details: { ...WEEKLY, slots: stale } });
+    expect(insertedDetails(calls)).toEqual({ topic: 'algebra', modality: 'video', capacity_per_slot: 2 });
+    expect(calls.filter((c) => c.kind === 'rpc').map((c) => c.fn)).toEqual(['start_knowledge_slot_series', 'publish_post']);
+    expect(callsTo(calls, 'post_knowledge_slots')).toHaveLength(0);
+  });
+
+  it('preserves one-off times when switching back from weekly', async () => {
+    const slots = [{ starts_at: '2030-06-01T10:00:00Z', ends_at: '2030-06-01T11:00:00Z' }];
+    const { client, calls } = setup(ok('series-1'));
+    await createListing(client, { kindId: 'k-lesson', title: 'Algebra', cityId: 'IL-001', details: { ...WEEKLY, schedule: 'one_off', slots } });
+    expect(insertedDetails(calls)).toEqual({ topic: 'algebra', modality: 'video', capacity_per_slot: 2, slots });
+    expect(callsTo(calls, 'start_knowledge_slot_series')).toHaveLength(0);
+  });
   it('stores the offer without the schedule inputs, starts the series, then publishes', async () => {
     const { client, calls } = setup(ok('series-1'));
     expect(await createListing(client, { kindId: 'k-lesson', title: 'Algebra', cityId: 'IL-001', details: WEEKLY })).toBe('new-1');

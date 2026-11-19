@@ -63,6 +63,10 @@ export function knowledgeSeriesInputFromDetails(
 /** The details without the weekly schedule inputs (what the post itself stores). */
 export function withoutKnowledgeSeriesKeys(details: Readonly<Record<string, unknown>>): Record<string, unknown> {
   const drop = new Set<string>(KNOWLEDGE_SERIES_DETAIL_KEYS);
+  // Switching the create form from one-off times to weekly keeps hidden form
+  // state. Never insert those stale times on the weekly draft: #2478 syncs
+  // them atomically and the series RPC correctly refuses upcoming one-offs.
+  if (details.schedule === 'weekly') drop.add('slots');
   return Object.fromEntries(Object.entries(details).filter(([key]) => !drop.has(key)));
 }
 
