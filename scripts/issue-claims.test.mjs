@@ -12,7 +12,7 @@ const marker = '        run: |\n';
 const script = yaml.slice(yaml.indexOf(marker) + marker.length)
   .split('\n').map(line => line.startsWith('          ') ? line.slice(10) : line).join('\n');
 
-function run({ list = '42 OPEN', count = '1', claimed = '2000-01-01T00:00:00Z', fail = '' } = {}) {
+function run({ list = '42 OPEN', count = '1', claimed = '2000-01-01T00:00:00Z', fail = '', labels = 'in-progress,agent:other' } = {}) {
   const dir = mkdtempSync(join(tmpdir(), 'kc-claims-'));
   try {
     const gh = join(dir, 'gh');
@@ -24,7 +24,7 @@ if (op === process.env.FAIL) { console.error('offline API failure'); process.exi
 if (op === 'issue list') process.stdout.write(process.env.LIST ? process.env.LIST + '\\n' : '');
 else if (a[0] === 'api') console.log(process.env.CLAIMED);
 else if (op === 'pr list') console.log(process.env.COUNT);
-else if (op === 'issue view') console.log('in-progress,agent:other');
+else if (op === 'issue view') console.log(process.env.LABELS);
 else if (op === 'issue edit') fs.appendFileSync(process.env.EDITS, a.join(' ') + '\\n');
 else { console.error('unexpected offline gh operation'); process.exit(9); }
 `);
@@ -35,7 +35,7 @@ else { console.error('unexpected offline gh operation'); process.exit(9); }
     const result = spawnSync('bash', ['-e', file], {
       encoding: 'utf8', timeout: 5000,
       env: { PATH: dir + ':' + process.env.PATH, GH_REPO: 'offline/test',
-        PUSH_SHA: '', PR_NUMBER: '', LIST: list, COUNT: count, CLAIMED: claimed, FAIL: fail, EDITS: edits },
+        PUSH_SHA: '', PR_NUMBER: '', LIST: list, COUNT: count, CLAIMED: claimed, FAIL: fail, LABELS: labels, EDITS: edits },
     });
     return { ...result, edits: existsSync(edits) ? readFileSync(edits, 'utf8') : '' };
   } finally { rmSync(dir, { recursive: true, force: true }); }
@@ -61,4 +61,23 @@ test('PR lookup failure still fails instead of being masked', () => {
 });
 test('claim-list API failure stays red without edits', () => {
   const r = run({ fail: 'issue list' }); assert.notEqual(r.status, 0); assert.equal(r.edits, '');
+});
+test('failed stale-claim label edit stays red', () => {
+  const r = run({ count: '0', fail: 'issue edit' });
+  assert.notEqual(r.status, 0); assert.equal(r.edits, '');
+  assert.doesNotMatch(r.stdout, /released #/);
+});
+test('failed closed-claim label edit stays red', () => {
+  const r = run({ list: '42 CLOSED', fail: 'issue edit' });
+  assert.notEqual(r.status, 0); assert.equal(r.edits, '');
+  assert.doesNotMatch(r.stdout, /released #/);
+});
+test('failed issue label lookup stays red', () => {
+  const r = run({ count: '0', fail: 'issue view' });
+  assert.notEqual(r.status, 0); assert.equal(r.edits, '');
+});
+test('already absent claim labels remain a successful no-op', () => {
+  const r = run({ count: '0', labels: '' });
+  assert.equal(r.status, 0, r.stderr); assert.equal(r.edits, '');
+  assert.doesNotMatch(r.stdout, /released #/);
 });
