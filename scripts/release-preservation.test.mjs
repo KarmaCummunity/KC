@@ -26,7 +26,7 @@ for(const p of Object.keys(PRESERVATION_FILES)) {
 writeFileSync(join(dir,'scripts/release-train.mjs'),readFileSync(join(dir,'scripts/release-train.mjs'),'utf8').replace('const MIN = 60_000;', 'const MIN = 1;'));
 mkdirSync(join(dir,'app'),{recursive:true});writeFileSync(join(dir,'app/VERSION'),'1.9.226');
 const safe=commit('safe reviewed contract');git('remote','add','origin',dir);
-let main=safe,dev=safe,calls=[],apiFailure=false,draft=false,drift=false,driftLate=false,mainReads=0;
+let main=safe,dev=safe,calls=[],apiFailure=false,draft=false,manualHold=false,drift=false,driftLate=false,mainReads=0;
 const server=createServer((req,res)=>{
  const call={method:req.method,path:req.url,body:''};calls.push(call);req.on('data',d=>call.body+=d);
  let body={};const p=req.url;
@@ -37,6 +37,7 @@ const server=createServer((req,res)=>{
  else if(p.includes('deploy.yml/runs'))body={workflow_runs:[{id:123,status:'waiting',head_sha:safe,head_branch:'main',event:'workflow_run'}]};
  else if(p.includes('/pending_deployments'))body=[{current_user_can_approve:true,environment:{id:1,name:'production'}}];
  else if(p.includes('ci.yml/runs'))body={workflow_runs:[]};
+ else if(p.includes('/events?'))body=[{id:manualHold?99:10,event:'labeled',label:{name:'no-auto-merge'},actor:{login:manualHold?'human':'operator'}}];
  else if(p.includes('/pulls?'))body=[];
  else if(p.includes('/pulls/'))body={state:'open',draft,node_id:'P1',labels:[],number:7,base:{ref:'main'},head:{ref:'dev',sha:dev},mergeable_state:'clean'};
  else if(p.includes('db-backup-prod'))body={workflow_runs:[{updated_at:new Date().toISOString(),html_url:'fixture'}]};
@@ -88,5 +89,6 @@ try {
  await test('ref drift fails closed',async()=>{const result=await run('merge',safe,safe,{moved:true});assert.equal(result.code,1);noEffects(result);assert.match(result.output,/moved/);});
  await test('production approval rechecks immutable refs after waiting and refuses late drift',async()=>{const result=await run('deploy',safe,safe,{late:true});assert.equal(result.code,1);noEffects(result);assert.match(result.output,/moved/);assert.ok(result.calls.some(c=>c.path.includes('/pending_deployments')));});
  await test('API failure fails closed',async()=>{const result=await run('freeze',safe,safe,{fail:true});assert.equal(result.code,1);noEffects(result);});
+ await test('unfreeze preserves a newly manual no-auto-merge label instead of assuming ownership',async()=>{manualHold=true;const result=await run('unfreeze',safe,safe,{state:{operator:'operator',freeze:[{number:7,armed:true,addLabel:true,hold_event_id:10}]}});assert.equal(result.code,0);noEffects(result);manualHold=false;});
  await test('unfreeze keeps a newly Draft PR held without mutation',async()=>{draft=true;const result=await run('unfreeze',safe,safe,{state:{freeze:[{number:7,armed:true,addLabel:true}]}});assert.equal(result.code,0);noEffects(result);draft=false;});
 } finally {server.close();rmSync(dir,{recursive:true,force:true});}

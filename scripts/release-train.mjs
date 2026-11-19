@@ -283,7 +283,12 @@ async function freezeNew(s) {
   for (const p of fp) {
     if (p.queued) await gql('operator', 'mutation($id:ID!){dequeuePullRequest(input:{id:$id}){clientMutationId}}', { id: ids[p.number] });
     if (p.armed) await gql('operator', 'mutation($id:ID!){disablePullRequestAutoMerge(input:{pullRequestId:$id}){clientMutationId}}', { id: ids[p.number] });
-    if (p.addLabel) await api('operator', 'POST', repoPath(`issues/${p.number}/labels`), { labels: [FREEZE_LABEL] });
+    if (p.addLabel) {
+      await api('operator', 'POST', repoPath(`issues/${p.number}/labels`), { labels: [FREEZE_LABEL] });
+      const events = await list('workflow', repoPath(`issues/${p.number}/events`));
+      const last = events.filter(e => ['labeled', 'unlabeled'].includes(e.event) && e.label?.name === FREEZE_LABEL).at(-1);
+      if (last?.event === 'labeled' && last.actor?.login === s.operator) p.hold_event_id = last.id;
+    }
     const prev = s.freeze.find((x) => x.number === p.number);
     if (prev) Object.assign(prev, { armed: prev.armed || p.armed, queued: prev.queued || p.queued, addLabel: prev.addLabel || p.addLabel });
     else { s.freeze.push(p); s.frozen.push(p.number); }
@@ -304,7 +309,14 @@ async function unfreeze(s) {
   for (const p of fp) {
     try {
       const current = await get('workflow', repoPath(`pulls/${p.number}`));
-      if (current.draft) continue;
+      if (current.draft || current.state !== 'open') continue;
+      // A train-created label can have been removed and added again by a human.
+      // Only our exact label event remains ours; unknown/legacy state stays held.
+      if (p.addLabel) {
+        const events = await list('workflow', repoPath(`issues/${p.number}/events`));
+        const last = events.filter(e => ['labeled', 'unlabeled'].includes(e.event) && e.label?.name === FREEZE_LABEL).at(-1);
+        if (!p.hold_event_id || last?.id !== p.hold_event_id || last.actor?.login !== s.operator || last.event !== 'labeled') continue;
+      }
       if (p.addLabel) await api('operator', 'DELETE', repoPath(`issues/${p.number}/labels/${encodeURIComponent(FREEZE_LABEL)}`), null, { allow: [404] });
       if (p.armed || p.queued) {
         const pr = await get('workflow', repoPath(`pulls/${p.number}`));
@@ -396,7 +408,7 @@ async function openPr(s) {
   const commits = await get('workflow', repoPath(`compare/${s.main_sha}...${s.head_sha}`));
   const body = [
     'Opened by: agent:kc-bot', '',
-    `Weekly release train ${RUN_URL}: v${s.version}, dev head \`${s.head_sha}\`. No human approval (owner decision 16 Nov 2026); the train stops on any failing check, a destructive migration, a missing backup, or a failed deploy.`,
+    `Weekly release train ${RUN_URL}: v${s.version}, dev head \`${s.head_sha}\`. Release preparation scope recorded 19 Nov 2026; release execution remains subject to the applicable owner approval. The train stops on any failing check, a destructive migration, a missing backup, or a failed deploy.`,
     '', '## Summary',
     `${commits.ahead_by} commit(s), ${commits.files?.length ?? '?'} file(s) on top of main \`${s.main_sha.slice(0, 8)}\`.`,
     s.migrations?.length ? `Migrations: ${s.migrations.map((m) => `\`${m}\``).join(', ')} (strict scan: none destructive).` : 'No migration changes.',
