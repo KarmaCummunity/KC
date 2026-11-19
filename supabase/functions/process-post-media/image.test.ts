@@ -18,3 +18,15 @@ Deno.test('invalid bytes and unsupported MIME fail instead of becoming ready', a
   await assertRejects(() => encodePostImage(new Uint8Array([0, 1, 2]), 'image/jpeg'));
   await assertRejects(() => encodePostImage(new Uint8Array([0, 1, 2]), 'image/gif'));
 });
+
+Deno.test('JPEG APP1 EXIF payload is not copied to either output', async () => {
+  const img = new Jimp({ width: 4, height: 4, color: 0xff0000ff });
+  const clean = new Uint8Array(await img.getBuffer('image/jpeg'));
+  const payload = new TextEncoder().encode('Exif\x00\x00GPS-private-fixture');
+  const marker = new Uint8Array([0xff, 0xe1, 0, payload.length + 2, ...payload]);
+  const withExif = new Uint8Array([...clean.slice(0, 2), ...marker, ...clean.slice(2)]);
+  const out = await encodePostImage(withExif, 'image/jpeg');
+  for (const bytes of [out.original, out.thumb]) {
+    assertEquals(new TextDecoder().decode(bytes).includes('GPS-private-fixture'), false);
+  }
+});
