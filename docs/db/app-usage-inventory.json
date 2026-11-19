@@ -20,8 +20,8 @@
    "distinct": 5
   },
   "rpc": {
-   "callSites": 288,
-   "distinct": 264
+   "callSites": 290,
+   "distinct": 266
   },
   "table": {
    "callSites": 193,
