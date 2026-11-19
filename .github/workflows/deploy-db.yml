@@ -298,6 +298,25 @@ jobs:
           psql "$url" -v ON_ERROR_STOP=1 --single-transaction -qAt \
             -c "select set_config('kc.seed_target', 'dev', false)" -f supabase/seed/demo/load.sql
 
+      # The weekly anonymized copy of production (FR-ADMIN-037) lands through a dev-only seed
+      # (supabase/seed/prod-copy) for the same reason, and is installed the same way: on every
+      # dev deploy, after the schema it writes, guarded to kc-dev. load.sql sets the marker that
+      # lets a copy be applied; it copies nothing (the Production copy workflow does, weekly).
+      - name: Production-copy tools (kc-dev only)
+        if: inputs.target == 'dev'
+        env:
+          PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          KC_DEV_REF: enbqriuxvvuontiwslun
+        run: |
+          set -euo pipefail
+          if [ "$SUPABASE_PROJECT_REF" != "$KC_DEV_REF" ]; then
+            echo "::error::the dev target is not kc-dev; refusing to install the production-copy tools."; exit 1
+          fi
+          url="$(cat supabase/.temp/pooler-url)"
+          case "$url" in *"$KC_DEV_REF"*) ;; *) echo "::error::pooler address is not kc-dev's; refusing."; exit 1 ;; esac
+          psql "$url" -v ON_ERROR_STOP=1 --single-transaction -qAt \
+            -c "select set_config('kc.seed_target', 'dev', false)" -f supabase/seed/prod-copy/load.sql
+
       # After a fresh schema the pg_cron launcher was once seen idle on kc-dev (no
       # cron.job_run_details rows for an hour, until a new job was scheduled). Wait up to three
       # minutes for a run; if none, schedule and drop a throwaway job to wake the launcher, then

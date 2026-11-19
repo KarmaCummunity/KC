@@ -7,25 +7,22 @@
 // were mounted or on a hand-maintained field count.
 import { createContext, useCallback, useContext, useId, useMemo, useRef, useState } from 'react';
 import {
-  InteractionManager,
   Keyboard,
   Platform,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
   type ScrollView,
 } from 'react-native';
-import {
-  measureFieldPosition,
-  sortByReadingOrder,
-  type FieldPosition,
-  type FieldView,
-} from '../../lib/platform/formFieldOrder';
+import type { FieldView } from '../../lib/platform/formFieldOrder';
+import { afterLayout, orderedFields } from './formScopeLayout';
 import {
   SCROLL_TOP_PADDING,
   focusForScreenReader,
+  revealFieldAboveKeyboard,
   scrollFieldWithWindow,
   scrollWebFieldIntoView,
 } from '../../lib/platform/scrollIntoView';
+import { useKeyboardTop } from '../../lib/platform/useKeyboardTop';
 
 /** What a field lets the scope do with it. Read lazily: values must reflect the latest render. */
 export interface FormFieldHandle {
@@ -95,42 +92,15 @@ export interface FormScopeController {
   readonly scrollToFirstInvalid: () => void;
 }
 
-interface OrderedField {
-  readonly id: string;
-  readonly handle: FormFieldHandle;
-  readonly position: FieldPosition;
-}
-
 const SCROLL_EVENT_THROTTLE_MS = 16;
 /** An error that appears this soon after its field lost focus is validate-on-blur, not a rejected submit. */
 export const BLUR_VALIDATION_WINDOW_MS = 500;
-
-/** Mounted, measurable fields in reading order. */
-async function orderedFields(
-  fields: ReadonlyMap<string, FormFieldHandle>,
-  onlyFocusable: boolean,
-): Promise<OrderedField[]> {
-  const entries = [...fields].filter(([, handle]) => !onlyFocusable || handle.isFocusable());
-  const measured = await Promise.all(
-    entries.map(async ([id, handle]) => ({ id, handle, position: await measureFieldPosition(handle.view()) })),
-  );
-  return sortByReadingOrder(measured.filter((row): row is OrderedField => row.position !== null));
-}
-
-/** Two frames (plus the interaction queue on Android) so layout settles after the keyboard closes. */
-function afterLayout(run: () => void): void {
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      if (Platform.OS === 'android') InteractionManager.runAfterInteractions(run);
-      else run();
-    });
-  });
-}
 
 export function useFormScopeController(): FormScopeController {
   const accessoryId = `kc-form-keyboard-${useId()}`;
   const scrollRef = useRef<ScrollView>(null);
   const scrollY = useRef(0);
+  const keyboardTop = useKeyboardTop();
   const fields = useRef(new Map<string, FormFieldHandle>());
   const invalidIds = useRef(new Set<string>());
   /** Errors that appeared since the last scheduled jump; filtered when the jump runs. */
@@ -166,9 +136,20 @@ export function useFormScopeController(): FormScopeController {
     // The field was disabled or removed meanwhile: there is no "next" to it, and the top is not it.
     if (index < 0) return;
     const target = ordered[index + delta];
-    if (target) target.handle.focus();
-    else if (delta > 0) Keyboard.dismiss();
-  }, []);
+    if (!target) {
+      if (delta > 0) Keyboard.dismiss();
+      return;
+    }
+    target.handle.focus();
+    // Focus alone does not move the screen: bring the new field fully into view above the keyboard
+    // once the focus change has laid out (the browser already does this on web).
+    if (Platform.OS === 'web') return;
+    afterLayout(() => {
+      const view = target.handle.view();
+      const scroll = scrollRef.current;
+      if (view && scroll) revealFieldAboveKeyboard(scroll, view, scrollY.current, keyboardTop.current);
+    });
+  }, [keyboardTop]);
 
   const jumpNow = useCallback(() => {
     const invalid = new Map([...fields.current].filter(([id]) => invalidIds.current.has(id)));
