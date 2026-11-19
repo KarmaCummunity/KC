@@ -71,5 +71,3 @@ export function serviceRoleRequiredResponse(): Response {
     headers: { 'Content-Type': 'application/json' },
   });
 }
-
-
