@@ -61,7 +61,7 @@ test('an ok check with no alert does nothing', () => {
 test('the alert body carries the report fields and the runbook link', () => {
   const { body, severity } = renderAlert('prod', row('scheduled_jobs_failed', 'alert', { severity: 'critical' }), RUNBOOK);
   assert.equal(severity, 'critical');
-  assert.ok(body.includes('| critical | 3 | 0 | scheduled_jobs_failed detail |'));
+  assert.ok(body.includes('| critical | 3 | 0 | Diagnostic detail withheld; inspect the authenticated health report |'));
   assert.ok(body.includes(RUNBOOK));
 });
 
