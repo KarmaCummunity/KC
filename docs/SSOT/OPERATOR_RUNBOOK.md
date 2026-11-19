@@ -123,6 +123,37 @@ Supabase pauses Free projects with too little database activity over 7 days ([do
 
 ---
 
+## Production copy to kc-dev (FR-ADMIN-037) {#prod-copy}
+
+Once a week `prod-copy-to-dev.yml` adds an anonymized copy of production to kc-dev (spec: `docs/spec/requirements/12_super_admin.md` FR-ADMIN-037, decision D176). Saturday 20:41 UTC (22:41 / 23:41 Israel time), or by hand: Actions → **Production copy to kc-dev** → run workflow, branch `main`. Scheduled workflows run from `main`, so the schedule starts with the release that carries the file.
+
+| Job | Holds | Does |
+| --- | --- | --- |
+| `gate` | nothing | stops the run unless the repository variable `PROD_COPY_ENABLED` is `true` |
+| `export` | `supabase-prod` (read-only monitor in `scripts/check-deploy-isolation.mjs`) | reads kc-prod in a read-only transaction (`scripts/prod-copy-export.sql`), anonymizes in the same step (`scripts/prod-copy-anonymize.mjs`), removes the raw file, uploads the age-encrypted copy (kept 1 day) |
+| `load` | `supabase-dev` | decrypts and adds the copy in one transaction (`kc_private.prod_copy_apply`, `supabase/seed/prod-copy/`), writes the counts to the run summary, deletes the artifact |
+
+### One-time setup (owner)
+
+1. `age-keygen -o prod-copy.key` on your own computer. The file holds the private key (`AGE-SECRET-KEY-1…`) and prints the public key (`age1…`). This pair is for the copy only, not the backup pair.
+2. Repository variable `PROD_COPY_AGE_RECIPIENT` = the public key.
+3. Environment `supabase-dev`, secret `PROD_COPY_AGE_IDENTITY` = the whole `AGE-SECRET-KEY-1…` line. Then delete `prod-copy.key`: kc-dev is the only place that needs it.
+4. Environment `supabase-prod`, secret `PROD_COPY_ID_KEY` = a random value of at least 32 characters (`openssl rand -base64 48`). It keeps the ids of copied rows stable from week to week and untraceable to production. Changing it replaces every copied row once (new ids); losing it costs nothing more.
+5. Confirm the privacy policy covers an anonymized copy of member data kept for testing (#2487).
+6. Repository variable `PROD_COPY_ENABLED` = `true`, then run the workflow once by hand.
+
+**Turn it off:** set `PROD_COPY_ENABLED` to anything else; the next run stops at `gate`. **Remove the copy from kc-dev:** Admin → Demo data → "Delete copied data", or `select kc_private.prod_copy_delete_all();` on kc-dev.
+
+### Safety properties
+
+- Fails closed: a project ref other than the pinned one, a missing or short `PROD_COPY_ID_KEY`, or a missing key pair stops the job before it connects.
+- Production ids, names and text exist only in the `export` step, on the ephemeral runner, and are removed before the step ends, even on failure. What the export does not select (chats, contact details, streets and points, photos, payments, teams, moderation, consents, surveys, audit) never leaves production at all.
+- The repository is public, so the artifact is encrypted (as backups are) and deleted after the load. Logs and the run summary carry counts only.
+- The load is one transaction: a failed run leaves kc-dev as it was. A post kc-dev refuses (a departed ride, an unknown kind) is skipped and counted by reason in the summary.
+- Copied members are `prodcopy-…@seed.kc.test` with no password, device or WhatsApp link: nothing kc-dev does with them reaches a person.
+
+---
+
 ## Owner setup for D-195 CI/CD {#owner-setup-ci}
 
 Repository settings only the owner (admin) can apply. Tracked as `INFRA-CI-OWNER` in [`BACKLOG.md`](./BACKLOG.md); background in [`DECISIONS.md`](./DECISIONS.md) `D-195`, layout in [`ENVIRONMENTS.md`](./ENVIRONMENTS.md). Do the steps **in this order**: each merge assumes the settings before it.
