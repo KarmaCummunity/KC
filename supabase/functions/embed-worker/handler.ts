@@ -76,4 +76,4 @@ export function createEmbedWorkerHandler(deps: EmbedWorkerDeps) {
 
     return json({ ok: true, processed });
   };
-        }
+}
