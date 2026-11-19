@@ -6,6 +6,14 @@ Order within a phase is a KC fill. **Planning baseline (2026-11-08): initial sto
 
 App Store submission of version 1.0, binary 1.9.176 (36), is Rejected: guest access and subscription-model clarification are required. Limited guest browsing (D178, #2511) is development work, not yet a production release. Google Play production is inactive: 2 testers are opted in, against a requirement of at least 12 for at least 14 days (#2305). Apple subscription products remain Prepare for Submission. Full evidence and limits: [store-review checkpoint](./97_store_review_checkpoint.md). The phase table below is a plan, not an implementation-completion report.
 
+## Launch sequence, owner correction 2026-11-19 19:17 Jerusalem
+
+1. Quiet launch as soon as safely possible. No fixed date is approved.
+2. Pilot approximately one week after the quiet launch, depending on readiness and observed state. Quiet launch and pilot are separate steps.
+3. Broad launch is outside the plan until the owner says otherwise; substantial work remains.
+
+The proposed November 26 / December 20 targets and derived November 24 / December 17 checkpoints were not accepted and are not part of the plan. Audience, distribution and the exact distinction between quiet launch and pilot remain to be defined; no group size, invitation or channel is inferred here. This planning direction is not permission to publish, invite, submit a store build or deploy outside the established authority. Mandatory safety and core-function checks still apply. The phase table below is the product roadmap, not a dated broad-launch commitment.
+
 | Phase | Contents |
 |---|---|
 | MVP — now | Launch wedge: items + rides + food with matching (D102); time, knowledge and challenges active; medical, democracy and money portals; housing, animals and employment active on kc-dev and switched per environment from the admin portal (D165). The main feed carries every world's posts. One Post, form per type, feed with basic recommendations, sort & filter, toggle, closing, chat, likes & comments, notifications, karma config, expiry, volunteering & hours, events, reports, phone verification, rating & trust engine, org links, donation to KC via Grow, clean prod environment, WhatsApp message paste (S22). |
