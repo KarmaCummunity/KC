@@ -2053,7 +2053,7 @@ The Demo data screen keeps two failures apart: the RPC itself is missing (`not_i
 
 **Affected.** `.github/workflows/deploy-db.yml`, `supabase/seed/demo/README.md`, `docs/agents/DEPLOY.md`, `DemoData.ts` (`outdated`, `DEMO_DATA_SEED_PHASES`), `demoDataRows.ts`, `(admin)/demo-data`, `FR-ADMIN-031 AC1, AC11, AC12`.
 
-## {{ENG:prod-copy-pipeline}} — The weekly production copy: anonymized in the kc-prod job, applied by a dev-only seed (2026-11-19)
+## D-242 — The weekly production copy: anonymized in the kc-prod job, applied by a dev-only seed (2026-11-19)
 
 **Decision.** `prod-copy-to-dev.yml` (FR-ADMIN-037, D176) has two jobs. `export` holds `supabase-prod` as a listed read-only monitor of `scripts/check-deploy-isolation.mjs`: one read-only transaction (`scripts/prod-copy-export.sql`) selects an allowlist of rows, and `scripts/prod-copy-anonymize.mjs` rewrites them in the same step (keyed HMAC ids, fake names, seed-domain addresses, contact details and ID numbers removed from every free text). Only the age-encrypted result leaves the job. `load` holds `supabase-dev` and applies the document in one transaction with `kc_private.prod_copy_apply`, a dev-only seed (`supabase/seed/prod-copy/`, as `D-239`) that every dev deploy installs (as `D-241`). Copied rows are written through kc-dev's own triggers like any other row; a post they refuse is skipped and counted. A post whose copied fields changed is replaced rather than edited.
 
