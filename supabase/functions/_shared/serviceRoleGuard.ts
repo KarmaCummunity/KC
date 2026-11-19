@@ -10,6 +10,7 @@ export const SERVICE_ROLE_ONLY_FUNCTIONS = [
   'embed-worker',
   'match-rerank',
   'purge-deleted-accounts',
+  'process-post-media',
   'reconcile-storage-orphans',
   'rotate-research-salt',
   'strip-exif',
