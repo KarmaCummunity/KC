@@ -39,6 +39,7 @@ jobs:
           node-version-file: .nvmrc
       - name: Check Supabase secrets
         env:
+          KC_SAFE_VAULT_SYNC: reveal-v1
           TARGET: ${{ inputs.target }}
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}

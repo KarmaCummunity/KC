@@ -57,6 +57,7 @@ jobs:
     timeout-minutes: 30
     environment: supabase-prod
     env:
+      KC_SAFE_VAULT_SYNC: reveal-v1
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
       SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
@@ -155,6 +156,7 @@ jobs:
       applied: ${{ steps.pending.outputs.pending }}
     env:
       TARGET: ${{ inputs.target }}
+      KC_SAFE_VAULT_SYNC: reveal-v1
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
       SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
@@ -199,8 +201,14 @@ jobs:
 
       - uses: ./.github/actions/setup-supabase-cli
 
+      - name: Retrieve and authenticate the exact Vault key before DB changes
+        run: node scripts/deploy-service-key.mjs --prepare "$TARGET"
+
       - name: Link to remote project
         run: supabase link --project-ref "$SUPABASE_PROJECT_REF" --yes
+
+      - name: Preserve the existing Vault caller before any DB mutation
+        run: node scripts/deploy-service-key.mjs --verify-existing "$TARGET"
 
       # db-connect-retry: retries only a failed connect to the pooler (no SQL ran);
       # Deploy 43502416446 / 43505342327 went red on a pooler timeout while kc-dev was healthy.
@@ -252,33 +260,8 @@ jobs:
           echo "── content ──"
           CONTENT_DB_URL="$url" supabase/seed/content/load.sh
 
-      # The database starts Edge Functions from its jobs with two Vault secrets
-      # (kc_project_url, kc_service_role_key). Created when missing, updated otherwise, on every
-      # deploy so a rotated key heals itself. The key is read from the Management API, masked at
-      # once and handed to psql through the environment; only names are printed.
-      - name: Vault secrets for the database jobs
-        env:
-          PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
-        run: |
-          set -euo pipefail
-          url="$(cat supabase/.temp/pooler-url)"
-          case "$url" in *"$SUPABASE_PROJECT_REF"*) ;; *) echo "::error::pooler address is not the target project's; refusing."; exit 1 ;; esac
-          key="$(supabase projects api-keys --project-ref "$SUPABASE_PROJECT_REF" -o json | jq -r '
-            ([.[] | select(.type == "secret") | select(.name == "default" or .id == "default")][0].api_key) //
-            ([.[] | select(.name == "service_role" or .id == "service_role")][0].api_key) // empty')"
-          [ -n "$key" ] || { echo "::error::no service key returned for the target project"; exit 1; }
-          case "$key" in sb_secret_*|eyJ*) ;; *) echo "::error::unexpected key format (not sb_secret_/JWT)"; exit 1 ;; esac
-          echo "::add-mask::$key"
-          export KC_VAULT_URL="https://${SUPABASE_PROJECT_REF}.supabase.co" KC_VAULT_KEY="$key"
-          psql "$url" -v ON_ERROR_STOP=1 -qAt <<'SQL'
-          \getenv vault_url KC_VAULT_URL
-          \getenv vault_key KC_VAULT_KEY
-          select vault.create_secret(:'vault_url', 'kc_project_url') where not exists (select 1 from vault.secrets where name = 'kc_project_url');
-          select vault.update_secret(id, :'vault_url') from vault.secrets where name = 'kc_project_url';
-          select vault.create_secret(:'vault_key', 'kc_service_role_key') where not exists (select 1 from vault.secrets where name = 'kc_service_role_key');
-          select vault.update_secret(id, :'vault_key') from vault.secrets where name = 'kc_service_role_key';
-          SQL
-          psql "$url" -v ON_ERROR_STOP=1 -qAt -c "select 'vault: ' || string_agg(name, ', ' order by name) from vault.secrets where name in ('kc_project_url','kc_service_role_key')"
+      # Vault caller and URL were verified before migrations. Do not rewrite
+      # either value: concurrent rotations must not be overwritten by a deploy.
 
       # The admin portal's Demo data screen (FR-ADMIN-031) calls RPCs of a dev-only seed
       # (supabase/seed/demo) that is not a migration, so nothing else brings it to kc-dev. It is
@@ -343,3 +326,7 @@ jobs:
           psql "$url" -v ON_ERROR_STOP=1 -qAt -c "select cron.unschedule('zz_deploy_wake')" >/dev/null
           [ "$(runs)" -gt 0 ] || { echo "::error::pg_cron still runs nothing after the wake-up job"; exit 1; }
           echo "pg_cron is running ($(runs) runs)"
+
+      - name: Remove temporary verified credential
+        if: always()
+        run: rm -f "$RUNNER_TEMP/kc-verified-service-key"

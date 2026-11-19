@@ -17,6 +17,7 @@
 
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { retrieveServiceKey } from './deploy-service-key.mjs';
 import { checkProdSchemaMode, loadProdSchemaContext } from './check-prod-schema-mode.mjs';
 
 const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -87,9 +88,13 @@ async function main([kind, target]) {
   const errors = kind === 'web' ? checkWebEnv(target, env) : checkSupabaseEnv(target, env);
   if (kind === 'supabase') {
     errors.push(...checkProdSchemaSource(target, env));
+    if (env.KC_SAFE_VAULT_SYNC !== 'reveal-v1') errors.push('workflow lacks verified Vault sync; deploy only from the reviewed pipeline revision');
   }
   if (kind === 'supabase' && errors.length === 0) {
     errors.push(...(await checkProjectActive({ ref: TARGETS[target].ref, token: env.SUPABASE_ACCESS_TOKEN, fetch: globalThis.fetch })));
+  }
+  if (kind === 'supabase' && errors.length === 0) {
+    await retrieveServiceKey({ target, env, fetch: globalThis.fetch });
   }
   for (const e of errors) console.log(`::error title=${kind} preflight (${target})::${e}`);
   if (errors.length) process.exit(1);
@@ -98,7 +103,7 @@ async function main([kind, target]) {
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   main(process.argv.slice(2)).catch((err) => {
-    console.log(`::error::${err.message}`);
+    console.log('::error::Supabase preflight failed before deployment; no response data logged');
     process.exit(1);
   });
 }
