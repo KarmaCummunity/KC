@@ -53,6 +53,7 @@ export const SMOKE_PROBES = {
   'match-rerank': { expect: [405], why: 'method guard (POST only) runs first' },
   'payments-webhook': { expect: [405], why: 'method guard (POST only) runs first' },
   'public-research-submit': { expect: [200], why: 'answers the preflight for the deployed web origin (403 = origin not allowlisted)' },
+  'process-post-media': { expect: [405], why: 'method guard (POST only) runs first' },
   'purge-deleted-accounts': { expect: [405], why: 'method guard (POST only) runs first' },
   'reconcile-storage-orphans': { expect: [405], why: 'method guard (POST only) runs first' },
   'revenuecat-webhook': { expect: [405], why: 'method guard (POST only) runs first' },
@@ -98,4 +99,4 @@ function main([flag, file]) {
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   main(process.argv.slice(2));
-}
+    }
