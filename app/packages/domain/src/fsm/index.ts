@@ -27,6 +27,11 @@ export { postMediaMachine } from './machines/postMedia';
 export { moderationQueueMachine } from './machines/moderationQueue';
 export { rideSeriesMachine } from './machines/rideSeries';
 export { postSeriesMachine } from './machines/postSeries';
+export {
+  KNOWLEDGE_SLOT_SERIES_STATUSES,
+  knowledgeSlotSeriesMachine,
+  type KnowledgeSlotSeriesStatus,
+} from './machines/knowledgeSlotSeries';
 export { challengeMachine } from './machines/challenge';
 export { knowledgeTopicMachine } from './machines/knowledgeTopic';
 export { matchMachine } from './machines/match';

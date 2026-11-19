@@ -1,6 +1,6 @@
 # 2.23 Knowledge world — give & take, free library, courses, agent retrieval
 
-> **Status:** 🟡 In progress — spec v0.1 (2026-11-03, PM scope decision `D119`; details are KC fills pending approval). FR-KNOW-001 shipped 2026-11-04 (`0570`). FR-KNOW-003 / FR-KNOW-004 one-off part shipped with #2034 (`0703`, `0704`): the six exchange post types on the one create form, slots as rows, booking a seat per slot with the giver's approval, session completion with the §7.6 karma; the open parts are listed under each FR. Also in code: four seeded sub-categories (`0535`), hybrid `search_listings` (`0262`) with a placeholder vector lane and a stub `embed-worker` (`TD-269`). **K1** `FR-KNOW-001..012`, **K2** `FR-KNOW-013..020`, **K3** `FR-KNOW-021..024`. Every build follows `world_knowledge_enabled`, which the super admin switches per environment from the admin portal (FR-ADMIN-034; the tester-build override of #1630 is removed). Since migration `0613`, a published knowledge post is listed in the main feed from the moment moderation approves it (`worlds.feed_mirror` is on for knowledge).
+> **Status:** 🟡 In progress — spec v0.1 (2026-11-03, PM scope decision `D119`; details are KC fills pending approval). FR-KNOW-001 shipped 2026-11-04 (`0570`). FR-KNOW-003 / FR-KNOW-004 one-off part shipped with #2034 (`0703`, `0704`): the six exchange post types on the one create form, slots as rows, booking a seat per slot with the giver's approval, session completion with the §7.6 karma. The weekly series of a recurring lesson offer shipped on the server with #2035 (the app side is #2479); the open parts are listed under each FR. Also in code: four seeded sub-categories (`0535`), hybrid `search_listings` (`0262`) with a placeholder vector lane and a stub `embed-worker` (`TD-269`). **K1** `FR-KNOW-001..012`, **K2** `FR-KNOW-013..020`, **K3** `FR-KNOW-021..024`. Every build follows `world_knowledge_enabled`, which the super admin switches per environment from the admin portal (FR-ADMIN-034; the tester-build override of #1630 is removed). Since migration `0613`, a published knowledge post is listed in the main feed from the moment moderation approves it (`worlds.feed_mirror` is on for knowledge).
 
 Prefix: `FR-KNOW-*` · Migration range claimed: `0570–0589` (`docs/agents/MIGRATION_RANGES.md`) · Product spec (binding): [`docs/spec/18_knowledge_world.md`](../18_knowledge_world.md) · Decisions: `D40`, `D100`, `D101`, `D107`, `D119` · Fills: `S63`, `S64`, `S65`, `S66`, `S67`, `S68`, `S69`, `S70`, `S71`, `S72` · Engineering decision: `D-215` (`docs/SSOT/DECISIONS.md`).
 
@@ -95,7 +95,7 @@ Two layers on one world (`docs/spec/18_knowledge_world.md` §18.2): **exchange p
     links keep their ids. A legacy post that was not moved keeps the legacy rules.
   - AC2: every kind also carries `topic` (free text, 2–80) until topics are linked to posts (#2036). A lesson offer and a consulting
     hour hold their times in `details.slots` (`[{starts_at, ends_at}]`, 1–20, 15 min to 8 h each, no overlap, a new one in the
-    future); `recurring` comes with #2035. A request uses `preferred_modality`; a `question` holds its text in the post title and
+    future); `recurring` is a weekly series on the server since #2035 (FR-KNOW-004 AC1 below). A request uses `preferred_modality`; a `question` holds its text in the post title and
     description, with `topic` and `context_url` in `details`.
   - AC4 (the `time` world switch) waits for G51. AC6: the DB test is `supabase/tests/0703_knowledge_post_kinds.sql`.
 
@@ -114,7 +114,7 @@ Two layers on one world (`docs/spec/18_knowledge_world.md` §18.2): **exchange p
     model, ADR-006). `details.slots` is what the giver edits; a trigger keeps the rows in step and refuses to remove, move or
     shrink below its bookings a slot a learner holds (`knowledge_slot_has_booking`, `knowledge_slot_capacity_below_bookings`).
     There is no `booked_count`: places left are counted from the live bookings (reserved, confirmed, held), so no counter can
-    drift; `full` and `done` are read, not stored. `series_key` and the materialize sweep come with #2035.
+    drift; `full` and `done` are read, not stored. The series came with #2035 (below).
   - AC2: the slot entry point is `book_knowledge_seat(p_slot_id)` (it also refuses `account_not_active`, `slot_not_found` and
     `listing_not_available`); bookings are `post_handoffs` rows with `knowledge_slot_id`, and `confirm_by` is the earlier of 24 h
     and the slot start. The giver answers with `confirm_knowledge_booking` / `decline_knowledge_booking`; a booking unanswered at
@@ -129,6 +129,19 @@ Two layers on one world (`docs/spec/18_knowledge_world.md` §18.2): **exchange p
   - A `mentoring_offer` has no join flow yet; it is arranged in chat (#2051).
   - AC6: `supabase/tests/0704_knowledge_slot_bookings.sql` (including two learners on the last place) and
     `supabase/tests/flows/knowledge_lifecycle.sql`.
+
+- **Implementation (#2035, server side; the app side is #2479).** A recurring lesson offer is one post with a weekly series:
+  - AC1: `knowledge_slot_series` (one per lesson offer: weekdays as a bit set, start time in Israel time, session length
+    15 min–8 h, places 1–20, optional last day; states `active` ⇄ `paused` → `ended`, ended is terminal). The series adds
+    `post_knowledge_slots` rows of its own post, one per lesson day (`series_id`, `series_on`), 30 days ahead; the sweep
+    `knowledge_slot_series_materialize` runs every 10 minutes and ends a series past its last day.
+    `start_knowledge_slot_series` makes an offer recurring (lesson offers only, not beside upcoming one-off slots);
+    `set_knowledge_slot_series_status` pauses, resumes or ends it. Pausing and ending remove the upcoming slots nobody booked
+    and keep the booked ones; resuming adds the next 30 days again. A series slot is not moved or removed by a device, and
+    no one-off slot is added beside a running series. The one-off limit of 20 slots counts one-off slots only.
+  - FR-KNOW-003 AC3: a recurring offer has no expiry while its series runs; once ended it expires 30 minutes after its last
+    remaining slot. Relevance reminders (D59) are not built in any world yet.
+  - Tests: `supabase/tests/074_knowledge_slot_series.sql`.
 
 ## FR-KNOW-005 — Question with accepted answer
 

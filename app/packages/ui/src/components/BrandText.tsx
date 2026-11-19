@@ -10,9 +10,12 @@
 // - Nested Text without its own weight inherits its parent's face.
 // - If the brand faces failed to load, `BrandFontProvider available={false}`
 //   leaves styles untouched so the system font keeps its real weights.
+// - A top-level Text starts at the app's reading edge on native (see
+//   `readingStartText.ts`); nested spans inherit their paragraph's alignment.
 
 import React, { createContext, forwardRef, useContext } from 'react';
 import {
+  I18nManager,
   Platform,
   StyleSheet,
   Text as RNText,
@@ -23,6 +26,7 @@ import {
   type TextStyle,
 } from 'react-native';
 import { brandFontFamily } from '../theme/fonts';
+import { readingStartTextStyle } from './readingStartText';
 
 const InsideBrandText = createContext(false);
 // Defaults to true so tests and previews render the brand face without a provider.
@@ -52,9 +56,15 @@ export function brandFontStyle(
 export const Text = forwardRef<RNText, TextProps>(function BrandText({ style, ...props }, ref) {
   const nested = useContext(InsideBrandText);
   const available = useContext(BrandFontAvailable);
+  // Only the outer Text owns the paragraph: a default on a nested span would override
+  // its parent's alignment (e.g. a bold run inside a centered sentence).
+  // `I18nManager.isRTL` is read per render: the RTL switch lands after module load.
+  const paragraphStyle = nested
+    ? style
+    : [readingStartTextStyle(Platform.OS, I18nManager.isRTL), style];
   return (
     <InsideBrandText.Provider value>
-      <RNText ref={ref} style={brandFontStyle(style, nested, available)} {...props} />
+      <RNText ref={ref} style={brandFontStyle(paragraphStyle, nested, available)} {...props} />
     </InsideBrandText.Provider>
   );
 });

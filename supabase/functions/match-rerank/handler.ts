@@ -14,7 +14,7 @@ export interface RerankDeps {
   fetchFn: typeof fetch;
   geminiKey: string;
   model: string;
-  serviceKey: string;
+  serviceKey: string | string[];
   batchSize?: number;
 }
 
