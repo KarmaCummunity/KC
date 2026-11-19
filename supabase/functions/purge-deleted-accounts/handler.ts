@@ -32,7 +32,7 @@ export type PurgeReporter = (error: unknown, tags: { stage: PurgeStage | 'list_d
 export interface PurgeDeps {
   readonly db: PurgeDatabase;
   readonly storage: PurgeStorage;
-  readonly serviceRoleKey: string;
+  readonly serviceRoleKey: string | string[];
   readonly report: PurgeReporter;
   /** Accounts per run; the rest wait for the next run. */
   readonly batchSize?: number;

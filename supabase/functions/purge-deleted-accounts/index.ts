@@ -10,11 +10,11 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 import { reportError, withObservability } from '../_shared/observability/mod.ts';
 import type { StorageListEntry } from '../_shared/storageCleanup.ts';
 import { createPurgeDatabase, createPurgeHandler, type PurgeStorage } from './handler.ts';
+import { currentServiceRoleKeys, primaryServiceRoleKey } from '../_shared/serviceRoleGuard.ts';
 
-const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 // `prepare: false`: the transaction pooler does not keep prepared statements.
 const sql = postgres(Deno.env.get('SUPABASE_DB_URL')!, { prepare: false, max: 2 });
-const admin = createClient(Deno.env.get('SUPABASE_URL')!, SERVICE_KEY, { auth: { persistSession: false } });
+const admin = createClient(Deno.env.get('SUPABASE_URL')!, primaryServiceRoleKey(), { auth: { persistSession: false } });
 
 const storage: PurgeStorage = {
   async buckets() {
@@ -36,7 +36,7 @@ const storage: PurgeStorage = {
 Deno.serve(withObservability('purge-deleted-accounts', createPurgeHandler({
   db: createPurgeDatabase((text, params) => sql.unsafe(text, params as never[])),
   storage,
-  serviceRoleKey: SERVICE_KEY,
+  serviceRoleKey: currentServiceRoleKeys(),
   report: (error, tags) =>
     reportError(error, {
       fn: 'purge-deleted-accounts',
