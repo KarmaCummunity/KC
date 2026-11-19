@@ -17,6 +17,7 @@ import { AdminListEmpty } from '../../../src/components/admin/AdminListEmpty';
 import { AdminScreenGuard } from '../../../src/components/admin/AdminScreenGuard';
 import { DemoDataKpis } from '../../../src/components/admin/demoData/DemoDataKpis';
 import { DemoDataSeedCard } from '../../../src/components/admin/demoData/DemoDataSeedCard';
+import { ProdCopyCard } from '../../../src/components/admin/demoData/ProdCopyCard';
 import { DangerButton } from '../../../src/components/ui';
 import { useLocaleBundle } from '../../../src/i18n/useLocaleBundle';
 import { useAdminScreenTitle } from '../../../src/components/admin/useAdminScreenTitle';
@@ -159,6 +160,9 @@ export default function DemoDataScreen() {
             />
           </>
         ) : null}
+
+        {/* FR-ADMIN-037: the weekly anonymized copy of production; hidden where it does not exist. */}
+        {enabled ? <ProdCopyCard /> : null}
       </ScrollView>
     </AdminScreenGuard>
   );
