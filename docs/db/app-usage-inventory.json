@@ -20,12 +20,12 @@
    "distinct": 4
   },
   "rpc": {
-   "callSites": 286,
-   "distinct": 262
+   "callSites": 288,
+   "distinct": 264
   },
   "table": {
-   "callSites": 192,
-   "distinct": 66
+   "callSites": 193,
+   "distinct": 67
   }
  },
  "entries": [
@@ -1698,6 +1698,36 @@
    "name": "mark_giving_handed_over"
   },
   {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/knowledge/SupabaseKnowledgeSlotSeriesRepository.ts",
+   "line": 47,
+   "area": "knowledge",
+   "symbol": "startKnowledgeSlotSeries",
+   "via": "literal",
+   "name": "start_knowledge_slot_series"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/knowledge/SupabaseKnowledgeSlotSeriesRepository.ts",
+   "line": 70,
+   "area": "knowledge",
+   "symbol": "SupabaseKnowledgeSlotSeriesRepository.getForPost",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "knowledge_slot_series"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/knowledge/SupabaseKnowledgeSlotSeriesRepository.ts",
+   "line": 78,
+   "area": "knowledge",
+   "symbol": "SupabaseKnowledgeSlotSeriesRepository.unwrapCall",
+   "via": "literal",
+   "name": "set_knowledge_slot_series_status"
+  },
+  {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/legal/SupabaseLegalDocumentRepository.ts",
    "line": 72,
@@ -2010,7 +2040,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/marketplace/listingWrites.ts",
-   "line": 55,
+   "line": 57,
    "area": "marketplace",
    "symbol": "recordPhotos",
    "via": "literal",
@@ -2022,7 +2052,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/marketplace/listingWrites.ts",
-   "line": 81,
+   "line": 83,
    "area": "marketplace",
    "symbol": "unwrapCall",
    "via": "literal",
@@ -2031,7 +2061,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/marketplace/listingWrites.ts",
-   "line": 92,
+   "line": 104,
    "area": "marketplace",
    "symbol": "createPlain",
    "via": "literal",
@@ -2044,7 +2074,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/marketplace/listingWrites.ts",
-   "line": 100,
+   "line": 113,
    "area": "marketplace",
    "symbol": "postId",
    "via": "literal",
@@ -2053,7 +2083,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/marketplace/listingWrites.ts",
-   "line": 103,
+   "line": 116,
    "area": "marketplace",
    "symbol": "postId",
    "via": "literal",
@@ -2065,7 +2095,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/marketplace/listingWrites.ts",
-   "line": 132,
+   "line": 145,
    "area": "marketplace",
    "symbol": "createListing",
    "via": "literal",
