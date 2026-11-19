@@ -57,7 +57,7 @@ Index only — the binding wording lives in the linked spec files. All decided b
 | D51 | General emergency — main admin only; org manager/security officer — inside the org | 09 | Approved |
 | D52 | Every challenge interaction earns karma; community > private, large > small | 07.6, 10 | Approved |
 | D53 | Every registered org is verified; can post jobs & recruit; org verification levels | 08 | Approved; job posting superseded by D175 |
-| D54 | WhatsApp import consent — stays open | 13, 92 | Open |
+| D54 | WhatsApp group import consent settled by {{D:whatsapp-group-consent}}; activation requires lawyer signature | 13, 92 | Approved 2026-11-20; activation blocked |
 | D55 | Everything free for orgs for now; parallel tool for orgs | 08, 11 | Approved |
 | D56 | Verified official/state body declares emergency within its permissions | 09 | Approved |
 | D57 | Social venture = org; any registered org (incl. private person) may post jobs | 08 | Approved; job posting superseded by D175 |
@@ -181,3 +181,18 @@ Index only — the binding wording lives in the linked spec files. All decided b
 | D175 | A job offer is published only in the name of an organization allowed to post jobs: the platform organization, or one a platform admin switches on per organization until the verification levels record the legal right to employ; looking for work is open to every member. Supersedes the employment parts of D53 and D57 | 05.11 | Approved (PM 2026-11-16) |
 | D176 | Once a week (Saturday night, Israel time, or by hand) production data is copied into kc-dev, anonymized, and **added** to kc-dev's own data, kept in step with production (new, changed and deleted records follow within a week). Members get fake names and cannot sign in; phone numbers, emails, links and ID numbers are removed from free text; chats, contact details, exact locations, photos and payments are never copied. The Demo data screen shows the copy and can delete it. Off until the owner switches it on | `requirements/12_super_admin.md` FR-ADMIN-037 | Approved (PM 2026-11-18) |
 | D177 | The category row at the top of the create form scrolls in a circle: past the last giving world comes the first again, in both directions | 04 | Approved (PM 2026-11-18) |
+
+## Owner decisions confirmed 2026-11-20
+
+Source: owner approval in WhatsApp at 00:54:29 Asia/Jerusalem, answering the eight-point summary at 00:54:14. These are specification decisions, not proof of implementation, legal clearance, production rollout or store submission authority.
+
+| # | Decision | Lives in | Status |
+|---|---|---|---|
+| {{D:whatsapp-group-consent}} | Group import requires admin approval and prior notice; anonymous publication, attribution after author verification, and deletion after 72 hours. Activation stays blocked until a lawyer signs off. This settles D54/S21, not the separate manual own-post paste/share channel. | 13, 92 | Approved; activation blocked pending lawyer signature |
+| {{D:purge-shared-chat-images}} | Account purge removes the deleted member's shared chat images for both participants; retained counterpart chat text does not preserve the image assets. Existing 30-day restore period remains unchanged. | 07.12, requirements/11_settings.md, 95 Q-8 | Approved |
+| {{D:private-profile-visibility-cap}} | Public is the default. Private profiles are hidden from non-approved followers and require approval for every new follower. Both modes offer per-field everyone / followers / only-me visibility; Private caps even everyone fields at approved followers. Supersedes the follow-approval-only visibility model of D-21; does not silently rewrite per-post visibility. | 07.12, requirements/02_profile_and_privacy.md | Approved |
+| {{D:knowledge-feed-default}} | Knowledge opens on the give-and-take feed. | 18.6, S66, FR-KNOW-008 | Approved |
+| {{D:knowledge-resource-review}} | KC admins and moderators review library resources. Trusted contributors may publish directly with review afterwards. | 18.5.2, S65, FR-KNOW-007 | Approved |
+| {{D:knowledge-v1-no-files}} | Version-one library accepts links and text only, without file uploads. | 18, S71, FR-KNOW-006 | Approved |
+| {{D:knowledge-consult-profile}} | Professional consulting requires a complete profile and profession declaration, not identity verification. Replaces S70's proposed ID gate; complete profile follows D172, not the withdrawn phone-verification level. | 18.9, S70, FR-KNOW-012 | Approved |
+| {{D:knowledge-completion-wording}} | Use the wording "KC community completion record", with a verification code and owner opt-in display on the profile. It is not an accredited qualification. | 18.5.3, S69, FR-KNOW-015/022 | Approved |
