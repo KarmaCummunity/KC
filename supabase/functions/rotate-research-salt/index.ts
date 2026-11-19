@@ -7,12 +7,12 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 import { reportError, withObservability } from '../_shared/observability/mod.ts';
 import { createRotateSaltHandler } from './handler.ts';
+import { currentServiceRoleKeys, primaryServiceRoleKey } from '../_shared/serviceRoleGuard.ts';
 
-const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
-const admin = createClient(Deno.env.get('SUPABASE_URL')!, SERVICE_KEY, { auth: { persistSession: false } });
+const admin = createClient(Deno.env.get('SUPABASE_URL')!, primaryServiceRoleKey(), { auth: { persistSession: false } });
 
 Deno.serve(withObservability('rotate-research-salt', createRotateSaltHandler({
-  serviceRoleKey: SERVICE_KEY,
+  serviceRoleKey: currentServiceRoleKeys(),
   async rotate() {
     const { data, error } = await admin.rpc('rotate_research_salt');
     if (error) throw error;
