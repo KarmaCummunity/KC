@@ -7,7 +7,7 @@ import { isServiceRoleRequest, serviceRoleRequiredResponse } from '../_shared/se
 
 export interface RotateSaltDeps {
   /** The project's service-role key; the only credential the worker accepts. */
-  readonly serviceRoleKey: string;
+  readonly serviceRoleKey: string | string[];
   /** Calls `rotate_research_salt()`; resolves to the rotation time (ISO 8601). */
   readonly rotate: () => Promise<string>;
   /** Receives a failure; the worker never puts its cause in the response. */
