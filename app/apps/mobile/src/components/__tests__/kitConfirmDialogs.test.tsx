@@ -128,7 +128,7 @@ describe('DeleteAccountConfirmModal', () => {
     return { onCancel };
   }
 
-  it('enables the red delete only once the keyword is typed, then confirms', async () => {
+  it('without a display name, enables the red delete only once the keyword is typed, then confirms', async () => {
     const onConfirm = vi.fn(() => Promise.resolve());
     renderDelete(onConfirm);
     const remove = screen.getByRole('button', { name: DELETE });
@@ -137,6 +137,20 @@ describe('DeleteAccountConfirmModal', () => {
     fireEvent.change(screen.getByLabelText('settings.deleteAccountModal.confirmInputLabel'), {
       target: { value: 'settings.deleteAccountModal.confirmKeyword' },
     });
+    fireEvent.click(screen.getByRole('button', { name: DELETE }));
+    await vi.waitFor(() => expect(onConfirm).toHaveBeenCalledTimes(1));
+  });
+
+  // FR-SETTINGS-012 AC1: the second step is typing the member's own display name.
+  it('asks for the display name when the member has one, and the keyword does not unlock it', async () => {
+    const onConfirm = vi.fn(() => Promise.resolve());
+    renderInTheme(
+      <DeleteAccountConfirmModal visible accountStatus="active" displayName="Dana Levi" onConfirm={onConfirm} onCancel={vi.fn()} />,
+    );
+    const input = screen.getByLabelText('settings.deleteAccountModal.confirmNameLabel');
+    fireEvent.change(input, { target: { value: 'settings.deleteAccountModal.confirmKeyword' } });
+    expect(screen.getByRole('button', { name: DELETE }).getAttribute('aria-disabled')).toBe('true');
+    fireEvent.change(input, { target: { value: ' Dana Levi ' } });
     fireEvent.click(screen.getByRole('button', { name: DELETE }));
     await vi.waitFor(() => expect(onConfirm).toHaveBeenCalledTimes(1));
   });

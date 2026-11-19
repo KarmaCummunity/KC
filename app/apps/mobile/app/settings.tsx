@@ -19,6 +19,7 @@ import { DonationSupportCard } from '../src/components/DonationSupportCard';
 import { SettingsAboutCard } from '../src/components/SettingsAboutCard';
 import { SettingsScreenRow } from '../src/components/SettingsScreenRow';
 import { ConfirmActionModal } from '../src/components/post/ConfirmActionModal';
+import { SignOutConfirmModal } from '../src/components/settings/SignOutConfirmModal';
 import { usePrivateProfileToggle } from '../src/hooks/usePrivateProfileToggle';
 import { useActiveStatusSetting } from '../src/hooks/useActiveStatusSetting';
 import { useSettingsScreenStyles } from '../src/screens/settings.styles';
@@ -58,6 +59,9 @@ export default function SettingsScreen() {
     setDeleteModalVisible,
     deleteSuccessVisible,
     handleDeleteConfirm,
+    signOutConfirmVisible,
+    requestSignOut,
+    cancelSignOut,
     handleSignOut,
   } = useSettingsAccountActions();
 
@@ -251,7 +255,7 @@ export default function SettingsScreen() {
           <SettingsScreenRow
             label={signingOut ? t('settings.loggingOut') : t('settings.logout')}
             icon="log-out-outline"
-            onPress={handleSignOut}
+            onPress={requestSignOut}
             disabled={signingOut}
           />
           <SettingsScreenRow
@@ -277,9 +281,16 @@ export default function SettingsScreen() {
         />
       ) : null}
 
+      <SignOutConfirmModal
+        visible={signOutConfirmVisible}
+        signingOut={signingOut}
+        onCancel={cancelSignOut}
+        onConfirm={() => void handleSignOut()}
+      />
       <DeleteAccountConfirmModal
         visible={deleteModalVisible}
         accountStatus={null}
+        displayName={userQuery.data?.displayName ?? null}
         onCancel={() => setDeleteModalVisible(false)}
         onConfirm={handleDeleteConfirm}
       />

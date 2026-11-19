@@ -26,6 +26,8 @@ export type AccountStatusForDelete =
 export interface DeleteAccountConfirmModalProps {
   visible: boolean;
   accountStatus: AccountStatusForDelete;
+  /** The member's display name, typed to confirm (FR-SETTINGS-012 AC1); null falls back to a keyword. */
+  displayName?: string | null;
   onCancel: () => void;
   onConfirm: () => Promise<void>;
 }
@@ -46,10 +48,13 @@ function bulletCopyKey(key: (typeof BULLET_KEYS)[number]) {
 export function DeleteAccountConfirmModal(props: DeleteAccountConfirmModalProps) {
   const { t } = useTranslation();
   const styles = useDeleteAccountConfirmModalStyles();
-  const { visible, accountStatus, onCancel, onConfirm } = props;
+  const { visible, accountStatus, displayName, onCancel, onConfirm } = props;
   const [typed, setTyped] = useState('');
   const [state, setState] = useState<LocalState>({ kind: 'idle' });
-  const keyword = t('settings.deleteAccountModal.confirmKeyword');
+  // The phrase that unlocks deletion: the member's own display name, or the keyword for a
+  // member who has none yet (onboarding not finished).
+  const name = displayName?.trim() || null;
+  const confirmPhrase = name ?? t('settings.deleteAccountModal.confirmKeyword');
 
   // A suspended or banned account cannot ask for deletion (`request_account_deletion` refuses
   // it); an unknown status (null) is left to the server.
@@ -60,7 +65,7 @@ export function DeleteAccountConfirmModal(props: DeleteAccountConfirmModalProps)
     else if (visible) setState((s) => (s.kind === 'blocked' ? { kind: 'idle' } : s));
   }, [visible, isBlocked]);
 
-  const ready = typed.trim() === keyword;
+  const ready = typed.trim() === confirmPhrase;
 
   const handleConfirm = useCallback(async () => {
     if (!ready) return;
@@ -155,10 +160,14 @@ export function DeleteAccountConfirmModal(props: DeleteAccountConfirmModalProps)
           )}
 
           <TextField
-            label={t('settings.deleteAccountModal.confirmInputLabel')}
+            label={
+              name
+                ? t('settings.deleteAccountModal.confirmNameLabel', { name })
+                : t('settings.deleteAccountModal.confirmInputLabel')
+            }
             value={typed}
             onChangeText={setTyped}
-            placeholder={t('settings.deleteAccountModal.confirmInputPlaceholder')}
+            placeholder={name ?? t('settings.deleteAccountModal.confirmInputPlaceholder')}
             editable={!submitting}
             autoCapitalize="none"
             autoCorrect={false}
