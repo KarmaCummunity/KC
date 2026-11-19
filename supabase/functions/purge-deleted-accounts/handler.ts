@@ -110,4 +110,4 @@ export function createPurgeDatabase(query: Query): PurgeDatabase {
       return (await query(PURGE_SQL.finish, [userId]))[0]?.finished === true;
     },
   };
-        }
+}
