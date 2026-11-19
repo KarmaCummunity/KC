@@ -8,12 +8,12 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 import { reportError, withObservability } from '../_shared/observability/mod.ts';
 import { createChargerHandler, type DueCharge } from './handler.ts';
+import { currentServiceRoleKeys, primaryServiceRoleKey } from '../_shared/serviceRoleGuard.ts';
 
-const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
-const admin = createClient(Deno.env.get('SUPABASE_URL')!, SERVICE_KEY, { auth: { persistSession: false } });
+const admin = createClient(Deno.env.get('SUPABASE_URL')!, primaryServiceRoleKey(), { auth: { persistSession: false } });
 
 Deno.serve(withObservability('subscriptions-charger', createChargerHandler({
-  serviceRoleKey: SERVICE_KEY,
+  serviceRoleKey: currentServiceRoleKeys(),
   async openDueCharges(limit) {
     const { data, error } = await admin.rpc('api_standing_orders_charge_due', { p_limit: limit });
     if (error) throw error;
