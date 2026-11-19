@@ -16,12 +16,12 @@
    "distinct": 9
   },
   "edge_function": {
-   "callSites": 5,
-   "distinct": 4
+   "callSites": 6,
+   "distinct": 5
   },
   "rpc": {
-   "callSites": 286,
-   "distinct": 262
+   "callSites": 288,
+   "distinct": 264
   },
   "table": {
    "callSites": 192,
@@ -1558,6 +1558,33 @@
     "select"
    ],
    "name": "posts"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/identityVerification/SupabaseIdentityVerificationService.ts",
+   "line": 50,
+   "area": "identityVerification",
+   "symbol": "SupabaseIdentityVerificationService.getStatus",
+   "via": "literal",
+   "name": "my_identity_verification"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/identityVerification/SupabaseIdentityVerificationService.ts",
+   "line": 64,
+   "area": "identityVerification",
+   "symbol": "SupabaseIdentityVerificationService.unwrapCall",
+   "via": "literal",
+   "name": "accept_identity_verification_consent"
+  },
+  {
+   "kind": "edge_function",
+   "file": "app/packages/infrastructure-supabase/src/identityVerification/SupabaseIdentityVerificationService.ts",
+   "line": 68,
+   "area": "identityVerification",
+   "symbol": "SupabaseIdentityVerificationService.startSession",
+   "via": "const",
+   "name": "identity-verification-session"
   },
   {
    "kind": "edge_function",
