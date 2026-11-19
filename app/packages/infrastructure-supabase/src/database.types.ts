@@ -1207,6 +1207,55 @@ export type Database = {
         }
         Relationships: []
       }
+      knowledge_slot_series: {
+        Row: {
+          capacity: number
+          created_at: string
+          duration_minutes: number
+          ends_on: string | null
+          id: string
+          post_id: string
+          start_time: string
+          starts_on: string
+          status: string
+          updated_at: string
+          weekdays: number
+        }
+        Insert: {
+          capacity?: number
+          created_at?: string
+          duration_minutes: number
+          ends_on?: string | null
+          id?: string
+          post_id: string
+          start_time: string
+          starts_on?: string
+          status?: string
+          updated_at?: string
+          weekdays: number
+        }
+        Update: {
+          capacity?: number
+          created_at?: string
+          duration_minutes?: number
+          ends_on?: string | null
+          id?: string
+          post_id?: string
+          start_time?: string
+          starts_on?: string
+          status?: string
+          updated_at?: string
+          weekdays?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "knowledge_slot_series_post_id_fkey"
+            columns: ["post_id"]
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       knowledge_topic_aliases: {
         Row: {
           alias: string
@@ -2405,6 +2454,8 @@ export type Database = {
           ends_at: string
           id: string
           post_id: string
+          series_id: string | null
+          series_on: string | null
           starts_at: string
         }
         Insert: {
@@ -2413,6 +2464,8 @@ export type Database = {
           ends_at: string
           id?: string
           post_id: string
+          series_id?: string | null
+          series_on?: string | null
           starts_at: string
         }
         Update: {
@@ -2421,6 +2474,8 @@ export type Database = {
           ends_at?: string
           id?: string
           post_id?: string
+          series_id?: string | null
+          series_on?: string | null
           starts_at?: string
         }
         Relationships: [
@@ -2428,6 +2483,12 @@ export type Database = {
             foreignKeyName: "post_knowledge_slots_post_id_fkey"
             columns: ["post_id"]
             referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_knowledge_slots_series_id_fkey"
+            columns: ["series_id"]
+            referencedRelation: "knowledge_slot_series"
             referencedColumns: ["id"]
           },
         ]
@@ -6649,6 +6710,10 @@ export type Database = {
         }
       }
       set_date_of_birth: { Args: { p_date: string }; Returns: undefined }
+      set_knowledge_slot_series_status: {
+        Args: { p_post_id: string; p_status: string }
+        Returns: undefined
+      }
       set_message_reaction: {
         Args: { p_message_id: string; p_reaction_type: string }
         Returns: undefined
@@ -6680,6 +6745,17 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      start_knowledge_slot_series: {
+        Args: {
+          p_capacity?: number
+          p_duration_minutes: number
+          p_ends_on?: string
+          p_post_id: string
+          p_start_time: string
+          p_weekdays: number
+        }
+        Returns: string
       }
       submit_org_application: {
         Args: {
