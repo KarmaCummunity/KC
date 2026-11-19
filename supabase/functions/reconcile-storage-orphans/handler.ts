@@ -116,4 +116,4 @@ export function createOrphanDatabase(query: Query): OrphanDatabase {
       return (await query(ORPHAN_SQL, [bucket, keys])).map((row) => String(row.key));
     },
   };
-  }
+}
