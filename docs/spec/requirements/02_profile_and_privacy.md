@@ -306,6 +306,7 @@ The biography text rejects external URLs to prevent spam.
 **Acceptance Criteria.**
 - AC1. The validator runs both client- and server-side; the server is authoritative.
 - AC2. The pattern flags `http(s)://`, bare domains containing `.`, and well-known shorteners (`bit.ly`, `t.co`, `tinyurl`, etc.).
+  - *Implementation:* a bare domain is a dotted word ending in a top-level domain of a curated list (`BIOGRAPHY_URL_PATTERN_SOURCE` in `@kc/domain`, mirrored in the `users_biography_check` constraint), so ordinary dotted words such as "Node.js" or "Dr.Smith" are allowed (#1721).
 - AC3. Rejection produces an inline error: *"Links are not allowed in the biography."*
 - AC4. Existing biographies that violate the rule due to retroactive policy changes are preserved but flagged for moderation review.
 

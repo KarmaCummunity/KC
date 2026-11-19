@@ -24,7 +24,7 @@ begin
 end;
 $$;
 
-select plan(32);
+select plan(34);
 
 -- Three sign-ups: confirmed email, unconfirmed email, Google.
 insert into auth.users (id, email, email_confirmed_at, raw_app_meta_data, raw_user_meta_data) values
@@ -102,6 +102,13 @@ select throws_ok(
 select throws_ok(
   $$select pg_temp.rows_as('authenticated', '00000000-0000-4000-8000-00000000000a', 'update public.users set biography = ''see www.example.test''')$$,
   '23514', null, 'a biography with a link is rejected');
+-- KC#1721: a dotted word is a link only when it ends in a real top-level domain.
+select is(pg_temp.rows_as('authenticated', '00000000-0000-4000-8000-00000000000a',
+    $$update public.users set biography = 'I write Node.js, Dr.Smith e.g.' where id = '00000000-0000-4000-8000-00000000000a'$$),
+  1::bigint, 'a biography with ordinary dotted words is saved');
+select throws_ok(
+  $$select pg_temp.rows_as('authenticated', '00000000-0000-4000-8000-00000000000a', 'update public.users set biography = ''bit.ly/x''')$$,
+  '23514', null, 'a biography with a shortened link is rejected');
 
 select is(pg_temp.rows_as('authenticated', '00000000-0000-4000-8000-00000000000a',
     $$update public.user_private set profile_street = 'Herzl', profile_street_number = '12' || chr(1488)$$),

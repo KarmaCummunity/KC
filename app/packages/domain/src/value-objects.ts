@@ -191,19 +191,36 @@ export const DONATION_LINK_DESCRIPTION_MAX = 280;
 export const DONATION_LINK_URL_PATTERN = /^https?:\/\//i;
 
 // ── Biography (FR-PROFILE-007 AC3 / FR-PROFILE-014) ───────────────────
-// The same `BIOGRAPHY_URL_PATTERN` source-of-truth is mirrored in the
-// Postgres CHECK constraint `users_biography_no_url_check` (migration
-// 0073). Edit both together — the regex grammar is intentionally PCRE-
-// portable (no JS-only features) so the Postgres-side
-// `biography !~* '...'` enforces identical semantics.
+// `BIOGRAPHY_URL_PATTERN_SOURCE` is mirrored verbatim in the Postgres CHECK constraint
+// `users_biography_check` (migration `biography_url_check_real_tlds`,
+// KC#1721). Edit both together: the grammar uses only what JavaScript and Postgres regular
+// expressions read the same way (no \b, no lookarounds), and both match case-insensitively.
 export const BIOGRAPHY_MAX_LENGTH = 200;
-export const BIOGRAPHY_URL_PATTERN = /(https?:\/\/|www\.|[\w.-]\.[a-z]{2})/i;
+
+/**
+ * Top-level domains that make a dotted word a link. A word followed by `.<suffix>` counts as
+ * a bare domain only when the suffix is one of these, so "Node.js" or "Dr.Smith" pass while
+ * "site.co.il", "bit.ly/x" and "wa.me/…" are flagged. Common generic TLDs, the country TLDs
+ * of the shorteners and messaging links, and the country TLDs of KC's audience.
+ */
+const BIOGRAPHY_LINK_TLDS = [
+  'com', 'net', 'org', 'info', 'biz', 'io', 'co', 'me', 'ly', 'gl', 'gd', 'gy', 'ee', 'app',
+  'dev', 'xyz', 'link', 'site', 'online', 'shop', 'store', 'live', 'tv', 'gg', 'ai',
+  'il', 'uk', 'de', 'fr', 'ru', 'eu', 'ca', 'au',
+] as const;
+
+/** http(s)://, a `www.` prefix, or a bare domain: dotted labels ending in a link TLD. */
+export const BIOGRAPHY_URL_PATTERN_SOURCE =
+  '(https?://|www\\.|(^|[^a-z0-9_-])[a-z0-9-]+(\\.[a-z0-9-]+)*\\.(' +
+  BIOGRAPHY_LINK_TLDS.join('|') +
+  ')([^a-z0-9-]|$))';
+
+export const BIOGRAPHY_URL_PATTERN = new RegExp(BIOGRAPHY_URL_PATTERN_SOURCE, 'i');
 
 /** FR-PROFILE-014 — true when the text contains an http(s) URL, a `www.`
- *  prefix, or a bare token with a TLD-like suffix. Centralised so the
- *  UseCase and any future bio-bearing surface (onboarding, etc.) share
- *  one policy. The server-side CHECK constraint enforces the same
- *  shape on direct inserts. */
+ *  prefix, or a bare domain. Centralised so the UseCase and any future
+ *  bio-bearing surface (onboarding, etc.) share one policy. The server-side
+ *  CHECK constraint enforces the same shape on direct writes. */
 export function containsBiographyUrl(text: string): boolean {
   return BIOGRAPHY_URL_PATTERN.test(text);
 }
