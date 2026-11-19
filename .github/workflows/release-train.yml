@@ -47,6 +47,7 @@ on:
       - .github/workflows/release-train.yml
       - scripts/release-train.mjs
       - scripts/release-train-lib.mjs
+      - scripts/release-preservation.mjs
   workflow_dispatch:
     inputs:
       dry_run:
@@ -84,6 +85,7 @@ jobs:
       # Real only for the schedule and a dispatch with dry_run unticked.
       DRY_RUN: ${{ (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && !inputs.dry_run)) && 'false' || 'true' }}
       GITHUB_TOKEN: ${{ github.token }}
+      GITHUB_WORKFLOW_SHA: ${{ github.workflow_sha }}
       KC_WEEKLY_RELEASE_ENABLED: ${{ vars.KC_WEEKLY_RELEASE_ENABLED }}
       KC_STORE_AUTO_SUBMIT_REVIEW: ${{ vars.KC_STORE_AUTO_SUBMIT_REVIEW }}
       KC_RELEASE_TRAIN_ISSUE: ${{ vars.KC_RELEASE_TRAIN_ISSUE }}
