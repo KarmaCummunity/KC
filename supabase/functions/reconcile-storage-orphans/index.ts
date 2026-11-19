@@ -8,11 +8,11 @@ import postgres from 'npm:postgres@3.4.5';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 import { reportError, withObservability } from '../_shared/observability/mod.ts';
 import { createOrphanDatabase, createOrphanHandler, type ObjectEntry, type OrphanStorage } from './handler.ts';
+import { currentServiceRoleKeys, primaryServiceRoleKey } from '../_shared/serviceRoleGuard.ts';
 
-const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 // `prepare: false`: the transaction pooler does not keep prepared statements.
 const sql = postgres(Deno.env.get('SUPABASE_DB_URL')!, { prepare: false, max: 2 });
-const admin = createClient(Deno.env.get('SUPABASE_URL')!, SERVICE_KEY, { auth: { persistSession: false } });
+const admin = createClient(Deno.env.get('SUPABASE_URL')!, primaryServiceRoleKey(), { auth: { persistSession: false } });
 
 const storage: OrphanStorage = {
   async list(bucket, prefix, offset, limit) {
@@ -30,6 +30,6 @@ Deno.serve(withObservability('reconcile-storage-orphans', createOrphanHandler({
   // The key array is passed as one array parameter.
   db: createOrphanDatabase((text, params) => sql.unsafe(text, params as never[])),
   storage,
-  serviceRoleKey: SERVICE_KEY,
+  serviceRoleKey: currentServiceRoleKeys(),
   report: (error, tags) => reportError(error, { fn: 'reconcile-storage-orphans', tags }),
 })));
