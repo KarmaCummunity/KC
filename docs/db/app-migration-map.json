@@ -1952,6 +1952,33 @@
    ]
   },
   {
+   "old": "identity-verification-session",
+   "kind": "edge_function",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "New function of identity verification (FR-VERIFY-005 AC3): the app invokes it with an empty body; the member comes from the session and only the provider-hosted URL is returned.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "edge",
+     "name": "identity-verification-session"
+    }
+   ],
+   "areas": [
+    "identityVerification"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/identityVerification/SupabaseIdentityVerificationService.ts",
+     "line": 68,
+     "symbol": "SupabaseIdentityVerificationService.startSession",
+     "area": "identityVerification"
+    }
+   ]
+  },
+  {
    "old": "validate-donation-link",
    "kind": "edge_function",
    "status": "same",

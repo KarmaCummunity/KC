@@ -248,3 +248,6 @@ export * from './whatsapp/IWhatsAppLinkRepository';
 export * from './whatsapp/WhatsAppLinkUseCases';
 export * from './challenges';
 export * from './knowledge';
+export * from './ports/IIdentityVerificationService';
+export * from './identityVerification/StartIdentityVerificationUseCase';
+export * from './identityVerification/GetIdentityVerificationStatusUseCase';
