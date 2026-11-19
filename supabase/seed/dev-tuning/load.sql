@@ -36,3 +36,10 @@ update kc_private.scheduled_jobs j
    set schedule = '30 seconds'
  where j.name = 'chat_system_messages'
    and j.schedule is distinct from '30 seconds';
+
+-- Smaller matching scan (#2494): one run looks at the newest 200 opposite posts of a world
+-- instead of production's 500, so a run's worst case stays well inside its time budget
+-- (matching_settings.run_budget_seconds) on kc-dev's small compute.
+update kc_private.matching_settings s
+   set scan_limit = 200
+ where s.scan_limit is distinct from 200;

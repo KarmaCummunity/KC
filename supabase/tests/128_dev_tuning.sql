@@ -1,14 +1,14 @@
--- kc-dev job tuning (supabase/seed/dev-tuning, #2492, #2488): the migrations keep the
--- production values; the dev-only seed shortens the two run-log retention periods and slows
--- the system-message consumer, reaches pg_cron with the same update, leaves every other rule
--- and job alone, and changes nothing when it runs again.
+-- kc-dev job tuning (supabase/seed/dev-tuning, #2492, #2488, #2494): the migrations keep the
+-- production values; the dev-only seed shortens the two run-log retention periods, slows the
+-- system-message consumer and narrows the matching scan, reaches pg_cron with the same
+-- update, leaves every other rule and job alone, and changes nothing when it runs again.
 -- The tuning is a dev-only seed, not a migration, so this test loads it itself.
 begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = extensions, public;
 set local client_min_messages = warning;
 
-select plan(9);
+select plan(11);
 
 -- ── Production values, as the migrations leave them ─────────────────────────
 select is((select r.keep from kc_private.retention_rules r where r.name = 'job_runs'), interval '30 days',
@@ -17,6 +17,8 @@ select is((select r.keep from kc_private.retention_rules r where r.name = 'cron_
   'the migrations keep pg_cron''s run log 7 days (production)');
 select is((select j.schedule from kc_private.scheduled_jobs j where j.name = 'chat_system_messages'), '10 seconds',
   'the migrations run the system-message consumer every 10 seconds (production)');
+select is((select s.scan_limit from kc_private.matching_settings s), 500,
+  'the migrations let one matching run scan 500 posts (production)');
 
 -- Snapshot of everything the tuning must not touch.
 create temp table untouched_before on commit drop as
@@ -41,6 +43,8 @@ select is((select j.schedule from kc_private.scheduled_jobs j where j.name = 'ch
 select ok((select j.alert_after >= interval '90 seconds' from kc_private.scheduled_jobs j
             where j.name = 'chat_system_messages'),
   'its alert period still covers three runs, so jobs_late keeps its meaning');
+select is((select s.scan_limit from kc_private.matching_settings s), 200,
+  'kc-dev lets one matching run scan 200 posts');
 
 select is((select count(*) from (
             select 'rule:' || r.name as item, r.keep::text as value from kc_private.retention_rules r

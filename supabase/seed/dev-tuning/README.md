@@ -10,6 +10,7 @@ unless the session sets `kc.seed_target = 'dev'`.
 | `ops.job_runs` retention (`retention_rules.job_runs`) | 7 days | 30 days | #2492 |
 | pg_cron run log retention (`retention_rules.cron_run_history`) | 1 day | 7 days | #2492 |
 | `chat_system_messages` schedule | 30 seconds | 10 seconds | #2488 |
+| Matching scan per run (`matching_settings.scan_limit`) | 200 posts | 500 posts | #2494 |
 
 ## Run
 
