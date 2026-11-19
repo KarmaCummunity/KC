@@ -320,7 +320,7 @@ async function unfreeze(s) {
       if (p.addLabel) await api('operator', 'DELETE', repoPath(`issues/${p.number}/labels/${encodeURIComponent(FREEZE_LABEL)}`), null, { allow: [404] });
       if (p.armed || p.queued) {
         const pr = await get('workflow', repoPath(`pulls/${p.number}`));
-        if (pr.state === 'open' && !pr.draft && !(pr.labels ?? []).some(l => (l.name ?? l) === 'no-auto-merge' && !p.addLabel)) {
+        if (pr.state === 'open' && !pr.draft && !(pr.labels ?? []).some(l => (l.name ?? l) === 'no-auto-merge')) {
           await gql('operator', 'mutation($id:ID!){enablePullRequestAutoMerge(input:{pullRequestId:$id,mergeMethod:SQUASH}){clientMutationId}}', { id: pr.node_id })
             .catch((e) => { if (!/clean status|already/i.test(e.message)) throw e; });
         }

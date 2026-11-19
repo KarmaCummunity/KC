@@ -26,7 +26,9 @@ next action. The production run must also be a main workflow_run at the exact
 merge SHA. Existing backup, CI, migration, release and deploy gates remain.
 
 A newly Draft PR retains the train-added hold and is never re-armed by unfreeze.
-Pre-existing no-auto-merge labels also prevent re-arming. This patch does not
+Pre-existing or newly manual no-auto-merge labels also prevent re-arming.
+Cleanup requires the exact latest labeling event ID and actor to match the
+train-created event; missing historical ownership evidence keeps the hold. This patch does not
 alter unrelated PRs or their present holds during development.
 
 ## Deployment order and limits
