@@ -75,3 +75,4 @@
 0078_identity_verification.sql
 0079_knowledge_slot_series.sql
 0080_knowledge_slot_series_rpcs.sql
+0081_guest_posts.sql
