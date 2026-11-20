@@ -18,6 +18,7 @@ import { SettingsAboutCard } from '../src/components/SettingsAboutCard';
 import { SettingsScreenRow } from '../src/components/SettingsScreenRow';
 import { ConfirmActionModal } from '../src/components/post/ConfirmActionModal';
 import { SettingsAccountModals } from '../src/components/settings/SettingsAccountModals';
+import { SettingsVersionFooter } from '../src/components/settings/SettingsVersionFooter';
 import { AccountIdentityRows } from '../src/components/settings/AccountIdentityRows';
 import { usePrivateProfileToggle } from '../src/hooks/usePrivateProfileToggle';
 import { useActiveStatusSetting } from '../src/hooks/useActiveStatusSetting';
@@ -256,7 +257,7 @@ export default function SettingsScreen() {
           />
         </View>
 
-        <Text style={styles.version}>{t('settings.version')} v0.1.0</Text>
+        <SettingsVersionFooter style={styles.version} />
       </ScrollView>
 
       {confirmModal ? (
