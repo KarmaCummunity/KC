@@ -89,7 +89,8 @@ Deno.test('happy path: claims a bounded batch, writes this attempt\'s own deriva
   const out = await h.run({ limit: 99 });
   assertEquals(h.calls[0], { fn: 'post_media_processing_claim', args: { p_limit: 1, p_lease_seconds: 300 } });
   const key = derivativeKey(OWNER, MEDIA, 1);
-  assertEquals(key, `${OWNER}/derived/${MEDIA}-a1.jpg`);
+  // The service-only namespace, never inside the member-writable owner folder.
+  assertEquals(key, `derived/${OWNER}/${MEDIA}-a1.jpg`);
   assertEquals(h.uploads, [key, thumbKey(key)]);
   assert(!h.uploads.includes(job().storage_key), 'the original is never written');
   assertEquals(h.downloads, [{ key: job().storage_key, maxBytes: 5000 }]);

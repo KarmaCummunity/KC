@@ -71,6 +71,15 @@ begin
 end;
 $$;
 
+-- What the storage service records for an object at a full key (the worker's copies).
+create function pg_temp.stored_at(p_name text, p_mime text, p_size bigint)
+returns void
+language sql
+as $$
+  insert into storage.objects (bucket_id, name, metadata)
+  values ('post-images', p_name, jsonb_build_object('mimetype', p_mime, 'size', p_size));
+$$;
+
 create function pg_temp.job(p_media uuid) returns kc_private.post_media_processing
 language sql as $$ select * from kc_private.post_media_processing where media_id = p_media; $$;
 
@@ -127,7 +136,7 @@ select is(pg_temp.err(format('select public.post_media_processing_complete(%L, %
 select is(pg_temp.err(format('select public.post_media_processing_complete(%L, %L, %L, 900, 640, 480)',
     (select media_id from c), (select lease_token from c), pg_temp.derivative((select media_id from c), 1))),
   'derivative_not_stored', 'a derivative Storage does not hold is refused (a DB lease is not a storage fence)');
-select pg_temp.stored('derived/' || (select media_id from c) || '-a1.jpg', 'image/jpeg', 901);
+select pg_temp.stored_at(pg_temp.derivative((select media_id from c), 1), 'image/jpeg', 901);
 select is(pg_temp.err(format('select public.post_media_processing_complete(%L, %L, %L, 900, 640, 480)',
     (select media_id from c), (select lease_token from c), pg_temp.derivative((select media_id from c), 1))),
   'derivative_not_stored', 'a stored object of another size is refused');
@@ -160,7 +169,7 @@ create temp table c3 as select * from public.post_media_processing_claim(10, 300
 set local "kc.fsm_role" = 'system';
 update public.posts set status = 'hidden_pending_review' where id = '40000000-0000-4000-8000-000000000003';
 set local "kc.fsm_role" = '';
-select pg_temp.stored('derived/' || (select id from t where name = 'hidden') || '-a1.jpg', 'image/jpeg', 50);
+select pg_temp.stored_at(pg_temp.derivative((select id from t where name = 'hidden'), 1), 'image/jpeg', 50);
 select is(public.post_media_processing_complete((select id from t where name = 'hidden'), (select lease_token from c3),
     pg_temp.derivative((select id from t where name = 'hidden'), 1), 50, 10, 10)
     || '|' || pg_temp.status((select id from t where name = 'hidden'))

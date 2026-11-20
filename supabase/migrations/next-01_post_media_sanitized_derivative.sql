@@ -11,8 +11,11 @@
 --   2. The worker `process-post-media` (service role) claims a few due jobs at a time
 --      (SKIP LOCKED, partial index on the due jobs only), receives a fresh lease token and the
 --      object's stored size and type, and refuses anything over the cap before downloading.
---   3. It re-encodes the image into a NEW object `<owner>/derived/<media_id>-a<attempt>.jpg`
---      (plus its `-thumb`), never touching the original, and calls `..._complete`.
+--   3. It re-encodes the image into a NEW object `derived/<owner>/<media_id>-a<attempt>.jpg`
+--      (plus its `-thumb`), never touching the original, and calls `..._complete`. The `derived/`
+--      namespace is outside every member folder and fenced by restrictive policies below: only the
+--      service role can create, change or remove anything in it, so a `ready` copy's bytes cannot be
+--      swapped by its owner after the fact, and its key cannot be pre-seeded to block processing.
 --   4. `..._complete` is a compare-and-set: it finalizes only when the lease is still the
 --      caller's, the row is unchanged and still `pending`, the post is still in a showable
 --      state, the key is exactly the one this attempt had to write, and Storage really holds
@@ -164,16 +167,45 @@ $$;
 comment on function public.post_media_processing_claim(integer, integer) is
   'process-post-media: claims due photo jobs with a lease. Service role only.';
 
--- The object key attempt n of a job must write. Deterministic, under the owner's folder, and
--- distinct from every other attempt and from the original.
+-- The object key attempt n of a job must write. Deterministic, distinct from every other attempt
+-- and from the original, and inside the service-only `derived/` namespace (never a member folder).
 create function kc_private.post_media_derivative_key(p_owner_id uuid, p_media_id uuid, p_attempt integer)
 returns text
 language sql
 immutable
 set search_path = ''
 as $$
-  select p_owner_id::text || '/derived/' || p_media_id::text || '-a' || p_attempt::text || '.jpg';
+  select 'derived/' || p_owner_id::text || '/' || p_media_id::text || '-a' || p_attempt::text || '.jpg';
 $$;
+
+-- A row may point into `derived/` only as the server's finished copy: a device's new row (always
+-- `pending`) must still name an object in the owner's own folder. The copy's folder is the owner's.
+alter table public.post_media drop constraint post_media_owner_folder_chk;
+alter table public.post_media add constraint post_media_owner_folder_chk check (
+  starts_with(storage_key, owner_id::text || '/')
+  or (processing_status = 'ready' and kind = 'image'
+      and starts_with(storage_key, 'derived/' || owner_id::text || '/')));
+
+-- Storage: no client role may insert, update (rename, overwrite) or delete anything whose name,
+-- read case-insensitively and without leading slashes, starts with `derived/` in `post-images`.
+-- RESTRICTIVE, so no present or future permissive policy can open it; the service role (worker,
+-- orphan reconciliation) bypasses row-level security. Skipped where `storage` does not exist.
+do $$
+begin
+  if to_regclass('storage.objects') is null then
+    return;
+  end if;
+  create policy post_images_derived_no_client_insert on storage.objects
+    as restrictive for insert to anon, authenticated
+    with check (not (bucket_id = 'post-images' and ltrim(lower(name), '/') like 'derived/%'));
+  create policy post_images_derived_no_client_update on storage.objects
+    as restrictive for update to anon, authenticated
+    using (not (bucket_id = 'post-images' and ltrim(lower(name), '/') like 'derived/%'))
+    with check (not (bucket_id = 'post-images' and ltrim(lower(name), '/') like 'derived/%'));
+  create policy post_images_derived_no_client_delete on storage.objects
+    as restrictive for delete to anon, authenticated
+    using (not (bucket_id = 'post-images' and ltrim(lower(name), '/') like 'derived/%'));
+end $$;
 
 -- Worker call 2 of 3. Compare-and-set completion. Answers:
 --   ready     the row now points at the derivative and is `ready`

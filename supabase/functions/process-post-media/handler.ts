@@ -9,8 +9,8 @@
 //   2. download it with a hard byte cap (the recorded size), then inspect the real bytes and cap
 //      the pixel size from the header BEFORE decoding (imageCheck.ts);
 //   3. re-encode a ≤ 2048 px copy and a ≤ 400 px thumb (sanitize.ts) and upload them to this
-//      attempt's own keys, `<owner>/derived/<media>-a<n>.jpg` (+ `-thumb`); never the original,
-//      never overwriting (no upsert);
+//      attempt's own keys, `derived/<owner>/<media>-a<n>.jpg` (+ `-thumb`), in the namespace only
+//      the service role can write; never the original, never overwriting (no upsert);
 //   4. complete with a compare-and-set (post_media_processing_complete): the database checks the
 //      lease, that the row and the post are unchanged and showable, the exact key, and that Storage
 //      holds the object with the reported size. A lost race ('stale' / 'changed') changes nothing;
@@ -72,7 +72,7 @@ function json(body: unknown, status = 200): Response {
 
 /** The key attempt n must write; mirrors kc_private.post_media_derivative_key. */
 export function derivativeKey(ownerId: string, mediaId: string, attempt: number): string {
-  return `${ownerId}/derived/${mediaId}-a${attempt}.jpg`;
+  return `derived/${ownerId}/${mediaId}-a${attempt}.jpg`;
 }
 
 /** `a/b/c.jpg` → `a/b/c-thumb.jpg` (the app's thumb naming). */
