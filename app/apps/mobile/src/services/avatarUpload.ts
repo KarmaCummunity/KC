@@ -14,7 +14,8 @@ import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { getSupabaseClient } from '@kc/infrastructure-supabase';
 import type { PickedImage } from './imageUpload';
-import { base64ToUint8Array } from './mediaEncoding';
+import { encodeJpeg, planMaxEdgeResize, type EncodedJpeg } from './imageEncoding';
+import { uploadErrorMessage, uploadStorageObject } from './storageObjectUpload';
 
 const AVATAR_FULL_EDGE = 512;
 const AVATAR_THUMB_EDGE = 96;
@@ -93,64 +94,58 @@ export async function pickAvatarImage(source: AvatarSource): Promise<PickedImage
   return { uri: a.uri, width: a.width, height: a.height, fileSize: a.fileSize ?? null };
 }
 
-/**
- * Square center-crop the picked image, resize to size×size, JPEG-encode, and
- * return raw bytes (avoids the unreliable `fetch(file://).blob()` path — see
- * `mediaEncoding.ts` for context).
- */
-async function squareCropAndResize(picked: PickedImage, size: number, compress: number): Promise<Uint8Array> {
+/** Square center-crop of the picked image, sized `size`×`size` and JPEG-encoded. */
+async function squareCropAndResize(picked: PickedImage, size: number, compress: number): Promise<EncodedJpeg> {
   const side = Math.min(picked.width, picked.height);
   const originX = Math.max(0, Math.round((picked.width - side) / 2));
   const originY = Math.max(0, Math.round((picked.height - side) / 2));
-  const m = await ImageManipulator.manipulateAsync(
-    picked.uri,
-    [
-      { crop: { originX, originY, width: side, height: side } },
-      { resize: { width: size, height: size } },
-    ],
-    { compress, format: ImageManipulator.SaveFormat.JPEG, base64: true },
-  );
-  if (!m.base64) throw new Error('avatar_resize: manipulator returned no base64 payload');
-  return base64ToUint8Array(m.base64);
+  const actions: ImageManipulator.Action[] = [
+    { crop: { originX, originY, width: side, height: side } },
+    { resize: { width: size, height: size } },
+  ];
+  return encodeJpeg(picked.uri, actions, compress);
+}
+
+/** Stores one avatar object (upsert: the avatar keeps a fixed path per member). */
+function uploadAvatarObject(path: string, bytes: Uint8Array): Promise<void> {
+  return uploadStorageObject({
+    bucket: AVATAR_BUCKET,
+    path,
+    bytes,
+    contentType: 'image/jpeg',
+    cacheControl: IMMUTABLE_CACHE_CONTROL,
+    upsert: true,
+  });
 }
 
 /**
  * FR-AUTH-011 AC2: square center-crop → 512×512 JPEG → upload to
  * `avatars/<userId>/avatar.jpg` (upsert). PERF-4: also writes a 96×96 thumb
- * at `avatars/<userId>/avatar-thumb.jpg`. Returns the full public URL with a
+ * at `avatars/<userId>/avatar-thumb.jpg`, derived from the 512 encode so the
+ * original photo is decoded once. Returns the full public URL with a
  * cache-busting `?v=` param so a replacement avatar isn't served from CDN
  * cache for the same path. The thumb URL is derived from the full URL by the
  * renderer via `deriveThumbUrl`.
  */
 export async function resizeAndUploadAvatar(picked: PickedImage, userId: string): Promise<string> {
   if (!userId) throw new Error('resizeAndUploadAvatar: userId is required');
-  const fullBytes = await squareCropAndResize(picked, AVATAR_FULL_EDGE, COMPRESS);
-  const thumbBytes = await squareCropAndResize(picked, AVATAR_THUMB_EDGE, THUMB_COMPRESS);
-
-  const client = getSupabaseClient();
-  const fullUpload = await client.storage
-    .from(AVATAR_BUCKET)
-    .upload(AVATAR_PATH(userId), fullBytes, {
-      contentType: 'image/jpeg',
-      upsert: true,
-      cacheControl: IMMUTABLE_CACHE_CONTROL,
-    });
-  if (fullUpload.error) throw new Error(`avatar_upload: ${fullUpload.error.message}`);
+  const full = await squareCropAndResize(picked, AVATAR_FULL_EDGE, COMPRESS);
+  const thumb = await encodeJpeg(full.uri, planMaxEdgeResize(full, AVATAR_THUMB_EDGE), THUMB_COMPRESS);
 
   // Thumb upload is best-effort — if it fails the full image still renders
   // (KCImage's `fallbackUri` covers the missing thumb).
-  const thumbUpload = await client.storage
-    .from(AVATAR_BUCKET)
-    .upload(AVATAR_THUMB_PATH(userId), thumbBytes, {
-      contentType: 'image/jpeg',
-      upsert: true,
-      cacheControl: IMMUTABLE_CACHE_CONTROL,
-    });
-  if (thumbUpload.error) {
-    console.warn(`avatar_upload_thumb: ${thumbUpload.error.message}`);
+  const thumbUpload = uploadAvatarObject(AVATAR_THUMB_PATH(userId), thumb.bytes).catch((err: unknown) => {
+    console.warn(`avatar_upload_thumb: ${uploadErrorMessage(err)}`);
+  });
+  try {
+    await uploadAvatarObject(AVATAR_PATH(userId), full.bytes);
+  } catch (err) {
+    throw new Error(`avatar_upload: ${uploadErrorMessage(err)}`);
+  } finally {
+    await thumbUpload;
   }
 
-  const { data } = client.storage.from(AVATAR_BUCKET).getPublicUrl(AVATAR_PATH(userId));
+  const { data } = getSupabaseClient().storage.from(AVATAR_BUCKET).getPublicUrl(AVATAR_PATH(userId));
   return `${data.publicUrl}?v=${Date.now()}`;
 }
 

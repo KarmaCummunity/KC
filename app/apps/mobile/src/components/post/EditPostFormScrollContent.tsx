@@ -28,6 +28,8 @@ export interface EditPostFormScrollContentProps {
   readonly uploads: UploadedAsset[];
   readonly uploadingCount: number;
   readonly onAddPhotos: () => void;
+  /** Stops the photo uploads still in flight. */
+  readonly onCancelUploads?: () => void;
   readonly onRemovePhoto: (path: string) => void;
   readonly title: string;
   readonly onTitleChange: (next: string) => void;
@@ -62,6 +64,7 @@ export function EditPostFormScrollContent({
   uploads,
   uploadingCount,
   onAddPhotos,
+  onCancelUploads,
   onRemovePhoto,
   title,
   onTitleChange,
@@ -109,6 +112,7 @@ export function EditPostFormScrollContent({
           uploadingCount={uploadingCount}
           required={isGive}
           onAdd={onAddPhotos}
+          onCancelUploads={onCancelUploads}
           onRemove={onRemovePhoto}
         />
       </FormSection>

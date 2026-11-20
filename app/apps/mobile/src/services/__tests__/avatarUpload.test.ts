@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-const { picker, manipulator, storageBucket, client, confirm, linking, platform } = vi.hoisted(() => {
+const { picker, encoder, uploader, storageBucket, client, confirm, linking, platform } = vi.hoisted(() => {
   const storageBucket = {
     upload: vi.fn(),
     remove: vi.fn(),
@@ -13,7 +13,8 @@ const { picker, manipulator, storageBucket, client, confirm, linking, platform }
       launchImageLibraryAsync: vi.fn(),
       launchCameraAsync: vi.fn(),
     },
-    manipulator: { manipulateAsync: vi.fn(), SaveFormat: { JPEG: 'jpeg' } },
+    encoder: { encodeJpeg: vi.fn() },
+    uploader: { uploadStorageObject: vi.fn() },
     storageBucket,
     client: { storage: { from: vi.fn(() => storageBucket) } },
     confirm: vi.fn(),
@@ -26,9 +27,17 @@ vi.mock('react-native', () => ({ Linking: linking, Platform: platform }));
 vi.mock('../../i18n', () => ({ default: { t: (key: string) => key } }));
 vi.mock('../platformConfirm', () => ({ confirmAction: confirm }));
 vi.mock('expo-image-picker', () => picker);
-vi.mock('expo-image-manipulator', () => manipulator);
+vi.mock('expo-image-manipulator', () => ({ SaveFormat: { JPEG: 'jpeg' } }));
+vi.mock('expo-file-system', () => ({ File: class {} }));
 vi.mock('@kc/infrastructure-supabase', () => ({ getSupabaseClient: () => client }));
-vi.mock('../mediaEncoding', () => ({ base64ToUint8Array: () => new Uint8Array([1, 2]) }));
+vi.mock('../imageEncoding', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../imageEncoding')>()),
+  encodeJpeg: encoder.encodeJpeg,
+}));
+vi.mock('../storageObjectUpload', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../storageObjectUpload')>()),
+  uploadStorageObject: uploader.uploadStorageObject,
+}));
 
 import { isCameraAvailable, pickAvatarImage, removeUploadedAvatar, resizeAndUploadAvatar } from '../avatarUpload';
 
@@ -92,33 +101,41 @@ describe('resizeAndUploadAvatar', () => {
     await expect(resizeAndUploadAvatar({ ...asset, fileSize: null }, '')).rejects.toThrow('userId is required');
   });
 
-  it('center-crops, uploads the full image and the thumb, and returns a cache-busted URL', async () => {
-    manipulator.manipulateAsync.mockResolvedValue({ base64: 'AAA' });
-    storageBucket.upload.mockResolvedValue({ error: null });
+  const enc = (size: number, uri: string) => ({ uri, width: size, height: size, bytes: new Uint8Array([0xff, 0xd8, 0xff]) });
+
+  it('center-crops once, derives the thumb from the 512 encode, uploads both and returns a cache-busted URL', async () => {
+    encoder.encodeJpeg.mockResolvedValueOnce(enc(512, 'file://full.jpg')).mockResolvedValueOnce(enc(96, 'file://thumb.jpg'));
+    uploader.uploadStorageObject.mockResolvedValue(undefined);
     const url = await resizeAndUploadAvatar({ ...asset, fileSize: null }, 'u1');
     expect(url).toMatch(/^https:\/\/cdn\/avatars\/u1\/avatar\.jpg\?v=\d+$/);
-    expect(manipulator.manipulateAsync).toHaveBeenNthCalledWith(
+    expect(encoder.encodeJpeg).toHaveBeenNthCalledWith(
       1,
       'file://a.jpg',
       [{ crop: { originX: 200, originY: 0, width: 800, height: 800 } }, { resize: { width: 512, height: 512 } }],
-      expect.objectContaining({ compress: 0.85 }),
+      0.85,
     );
-    expect(storageBucket.upload).toHaveBeenNthCalledWith(1, 'u1/avatar.jpg', expect.any(Uint8Array), expect.objectContaining({ upsert: true }));
-    expect(storageBucket.upload).toHaveBeenNthCalledWith(2, 'u1/avatar-thumb.jpg', expect.any(Uint8Array), expect.objectContaining({ upsert: true }));
+    expect(encoder.encodeJpeg).toHaveBeenNthCalledWith(2, 'file://full.jpg', [{ resize: { width: 96 } }], 0.75);
+    const stored = uploader.uploadStorageObject.mock.calls.map((c) => c[0]);
+    expect(stored.map((u) => u.path).sort()).toEqual(['u1/avatar-thumb.jpg', 'u1/avatar.jpg']);
+    expect(stored.every((u) => u.bucket === 'avatars' && u.upsert === true)).toBe(true);
   });
 
-  it('throws on a failed full upload or an empty manipulator payload', async () => {
-    manipulator.manipulateAsync.mockResolvedValue({ base64: 'AAA' });
-    storageBucket.upload.mockResolvedValueOnce({ error: { message: 'denied' } });
+  it('throws on a failed full upload or a failed encode', async () => {
+    encoder.encodeJpeg.mockResolvedValue(enc(512, 'file://full.jpg'));
+    uploader.uploadStorageObject.mockImplementation(async (u: { path: string }) => {
+      if (u.path === 'u1/avatar.jpg') throw { status: 403, message: 'denied' };
+    });
     await expect(resizeAndUploadAvatar({ ...asset, fileSize: null }, 'u1')).rejects.toThrow('avatar_upload: denied');
-    manipulator.manipulateAsync.mockResolvedValue({ base64: undefined });
+    encoder.encodeJpeg.mockRejectedValue(new Error('image_encode: manipulator returned no base64 payload'));
     await expect(resizeAndUploadAvatar({ ...asset, fileSize: null }, 'u1')).rejects.toThrow('no base64 payload');
   });
 
   it('only warns when the thumb upload fails', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    manipulator.manipulateAsync.mockResolvedValue({ base64: 'AAA' });
-    storageBucket.upload.mockResolvedValueOnce({ error: null }).mockResolvedValueOnce({ error: { message: 'thumb' } });
+    encoder.encodeJpeg.mockResolvedValue(enc(512, 'file://full.jpg'));
+    uploader.uploadStorageObject.mockImplementation(async (u: { path: string }) => {
+      if (u.path === 'u1/avatar-thumb.jpg') throw { status: 500, message: 'thumb' };
+    });
     await expect(resizeAndUploadAvatar({ ...asset, fileSize: null }, 'u1')).resolves.toContain('?v=');
     expect(warn).toHaveBeenCalledWith('avatar_upload_thumb: thumb');
     warn.mockRestore();

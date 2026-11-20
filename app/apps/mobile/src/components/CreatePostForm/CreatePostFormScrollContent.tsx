@@ -58,6 +58,8 @@ export interface CreatePostFormScrollContentProps {
   readonly uploads: UploadedAsset[];
   readonly uploadingCount: number;
   readonly onAddPhotos: () => void;
+  /** Stops the photo uploads still in flight. */
+  readonly onCancelUploads?: () => void;
   readonly onRemovePhoto: (path: string) => void;
 }
 
@@ -97,6 +99,7 @@ export function CreatePostFormScrollContent({
   uploads,
   uploadingCount,
   onAddPhotos,
+  onCancelUploads,
   onRemovePhoto,
 }: CreatePostFormScrollContentProps) {
   const { t } = useTranslation();
@@ -118,6 +121,7 @@ export function CreatePostFormScrollContent({
           uploadingCount={uploadingCount}
           required={isGive}
           onAdd={onAddPhotos}
+          onCancelUploads={onCancelUploads}
           onRemove={onRemovePhoto}
         />
       </FormSection>

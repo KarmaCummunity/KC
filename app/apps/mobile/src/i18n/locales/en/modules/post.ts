@@ -22,6 +22,7 @@ export const postEn = {
   photos: 'Photos',
   addPhoto: 'Add photo',
   removePhoto: 'Remove photo',
+  cancelPhotoUploads: 'Cancel photo uploads',
   sendMessageA11y: 'Message the poster',
   address: 'Address',
   cityLabel: 'City',

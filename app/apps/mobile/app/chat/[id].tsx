@@ -138,7 +138,7 @@ export default function ChatScreen() {
     const picked = await pickChatImage();
     if (!picked) return;
     try {
-      await uploadChatImageAndSend(chatId, userId, picked.uri, async (payload) => {
+      await uploadChatImageAndSend(chatId, userId, picked, async (payload) => {
         const server = await container.chatV2Repo.sendMediaMessage(chatId, payload);
         useChatStore.getState().appendOptimistic(chatId, {
           ...server,
