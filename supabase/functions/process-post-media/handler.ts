@@ -13,8 +13,12 @@
 //      the service role can write; never the original, never overwriting (no upsert);
 //   4. complete with a compare-and-set (post_media_processing_complete): the database checks the
 //      lease, that the row and the post are unchanged and showable, the exact key, and that Storage
-//      holds the object with the reported size. A lost race ('stale' / 'changed') changes nothing;
-//      the attempt's objects stay unreferenced and storage reconciliation removes them after a day.
+//      holds the object with the reported size. When it does not answer 'ready' (a lost race, a
+//      job cancelled by the account purge) or anything fails after an upload, the worker removes
+//      the objects this attempt wrote: they are never referenced.
+// Writes are bounded by the lease: no upload starts in its last 30 s, and every upload is aborted
+// at that point. The account purge waits until a cancelled job's lease has run out
+// (kc_private.post_media_purge_hold) before it empties `derived/<owner>/`.
 // Failures are recorded with post_media_processing_fail: a file refused for what it is fails at
 // once; network / storage / database errors retry (at most three attempts in all).
 
@@ -27,8 +31,10 @@ type RpcResult = { data: unknown; error: { message: string } | null };
 export interface MediaStorage {
   /** The object's bytes; rejects when it would exceed `maxBytes` (read is cut off, not finished). */
   download(key: string, maxBytes: number): Promise<Uint8Array>;
-  /** Stores a new object; rejects if it already exists (never overwrites). */
-  upload(key: string, bytes: Uint8Array): Promise<void>;
+  /** Stores a new object; rejects if it already exists (never overwrites) or `signal` aborts. */
+  upload(key: string, bytes: Uint8Array, signal: AbortSignal): Promise<void>;
+  /** Removes objects; best effort (a failure is logged by the caller). */
+  remove(keys: string[]): Promise<void>;
 }
 
 export interface ProcessPostMediaDeps {
@@ -45,6 +51,8 @@ export interface ProcessPostMediaDeps {
 export interface ClaimedMediaJob {
   media_id: string;
   lease_token: string;
+  /** End of this attempt's lease (ISO time); no write may happen after it. */
+  leased_until: string;
   attempt: number;
   owner_id: string;
   post_id: string;
@@ -59,6 +67,8 @@ export type JobOutcome = 'ready' | 'stale' | 'changed' | 'retry' | 'failed';
 
 /** Below the platform's function time limit (25 s on the free tier per OPERATOR_RUNBOOK.md, not re-measured). */
 const DEFAULT_BUDGET_MS = 20_000;
+/** No upload starts within this margin before the lease ends, and every upload is aborted there. */
+export const WRITE_MARGIN_MS = 30_000;
 const SOURCE_TYPES = new Set(['image/jpeg', 'image/png']);
 /** `<owner uuid>/<path>` with plain path characters and no `..` segment. */
 const OWNED_KEY = /^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\/[A-Za-z0-9._\/-]{1,400}$/;
@@ -111,10 +121,33 @@ async function processJob(job: ClaimedMediaJob, deps: ProcessPostMediaDeps): Pro
   }
 
   const key = derivativeKey(job.owner_id, job.media_id, job.attempt);
+  const written: string[] = [];
+  /** Removes what this attempt wrote: it is never referenced once the attempt does not complete. */
+  const removeWritten = async () => {
+    if (written.length === 0) return;
+    await deps.storage.remove(written).catch((err) =>
+      console.error('[process-post-media] cleanup', job.media_id, err instanceof Error ? err.message : err));
+  };
+  const writeDeadline = Date.parse(job.leased_until) - WRITE_MARGIN_MS;
+  const now = deps.now ?? Date.now;
+  const uploadWithinLease = async (objectKey: string, bytes: Uint8Array) => {
+    const remaining = writeDeadline - now();
+    if (!(remaining > 0)) throw new Error('lease_ending');
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), remaining);
+    try {
+      written.push(objectKey); // recorded first: an aborted upload may still have landed
+      await deps.storage.upload(objectKey, bytes, controller.signal);
+    } finally {
+      clearTimeout(timer);
+    }
+  };
+  if (!(writeDeadline - now() > 0)) return 'stale'; // too late to write: the lease runs out, the job comes back
   try {
-    await deps.storage.upload(key, sanitized.derivative.bytes);
-    await deps.storage.upload(thumbKey(key), sanitized.thumb.bytes);
+    await uploadWithinLease(key, sanitized.derivative.bytes);
+    await uploadWithinLease(thumbKey(key), sanitized.thumb.bytes);
   } catch (err) {
+    await removeWritten();
     return fail(`upload: ${err instanceof Error ? err.message : String(err)}`, true);
   }
   const done = await deps.rpc('post_media_processing_complete', {
@@ -125,8 +158,13 @@ async function processJob(job: ClaimedMediaJob, deps: ProcessPostMediaDeps): Pro
     p_width: sanitized.derivative.width,
     p_height: sanitized.derivative.height,
   });
-  if (done.error) return fail(`complete: ${done.error.message}`, true);
-  return done.data === 'ready' ? 'ready' : done.data === 'changed' ? 'changed' : 'stale';
+  if (done.error) {
+    await removeWritten();
+    return fail(`complete: ${done.error.message}`, true);
+  }
+  if (done.data === 'ready') return 'ready';
+  await removeWritten();
+  return done.data === 'changed' ? 'changed' : 'stale';
 }
 
 export function createProcessPostMediaHandler(deps: ProcessPostMediaDeps) {

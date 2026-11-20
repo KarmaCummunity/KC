@@ -3,6 +3,9 @@
 //
 // Per account, in this order (supabase/schemas/95_platform/100_purge_contract.sql):
 //   1. database: deletion tombstone + money records detached   (repeatable)
+//      then the member's photo jobs are stopped (kc_private.post_media_purge_hold); while a stopped
+//      worker's lease is still running the account is DEFERRED to a later run, untouched, so no
+//      worker can write into `derived/<user_id>/` after step 2 empties it
 //   2. storage:  the member's folder `<user_id>/` in every bucket, and the server-made copies of
 //                their photos under `derived/<user_id>/` in post-images (repeatable)
 //   3. database: the auth identity is deleted; every row of the member cascades
@@ -29,6 +32,8 @@ export function memberFolders(bucket: string, userId: string): string[] {
 export interface PurgeDatabase {
   dueAccounts(limit: number): Promise<string[]>;
   prepare(userId: string): Promise<void>;
+  /** Stops the member's photo jobs; true while a stopped worker may still be writing. */
+  holdForMedia(userId: string): Promise<boolean>;
   /** False when the account was already gone. */
   finish(userId: string): Promise<boolean>;
 }
@@ -53,11 +58,17 @@ export interface PurgeDeps {
   readonly batchSize?: number;
 }
 
-/** Purges one account; resolves to the stage that failed, or null when it is gone. */
-export async function purgeAccount(deps: Pick<PurgeDeps, 'db' | 'storage'>, userId: string, buckets: string[]): Promise<{ stage: PurgeStage; error: unknown } | null> {
+export type PurgeOutcome = { stage: PurgeStage; error: unknown } | 'deferred' | null;
+
+/**
+ * Purges one account; resolves to null when it is gone, 'deferred' when a photo worker of the
+ * member may still be writing (it stays due), or the stage that failed.
+ */
+export async function purgeAccount(deps: Pick<PurgeDeps, 'db' | 'storage'>, userId: string, buckets: string[]): Promise<PurgeOutcome> {
   let stage: PurgeStage = 'prepare';
   try {
     await deps.db.prepare(userId);
+    if (await deps.db.holdForMedia(userId)) return 'deferred';
     stage = 'storage';
     for (const bucket of buckets) {
       for (const folder of memberFolders(bucket, userId)) {
@@ -93,16 +104,19 @@ export function createPurgeHandler(deps: PurgeDeps): (req: Request) => Promise<R
 
     let purged = 0;
     let failed = 0;
+    let deferred = 0;
     for (const userId of due) {
-      const failure = await purgeAccount(deps, userId, buckets);
-      if (failure === null) {
+      const outcome = await purgeAccount(deps, userId, buckets);
+      if (outcome === null) {
         purged += 1;
+      } else if (outcome === 'deferred') {
+        deferred += 1; // not an error: the next run purges it once the lease has run out
       } else {
         failed += 1;
-        await deps.report(failure.error, { stage: failure.stage, user_id: userId });
+        await deps.report(outcome.error, { stage: outcome.stage, user_id: userId });
       }
     }
-    return json({ ok: true, purged, failed });
+    return json({ ok: true, purged, failed, deferred });
   };
 }
 
@@ -110,6 +124,7 @@ export function createPurgeHandler(deps: PurgeDeps): (req: Request) => Promise<R
 export const PURGE_SQL = {
   dueAccounts: 'select a.user_id from kc_private.accounts_due_for_purge($1::integer) a',
   prepare: 'select kc_private.account_purge_prepare($1::uuid)',
+  holdForMedia: 'select kc_private.post_media_purge_hold($1::uuid) as held',
   finish: 'select kc_private.account_purge_finish($1::uuid) as finished',
 } as const;
 
@@ -122,6 +137,9 @@ export function createPurgeDatabase(query: Query): PurgeDatabase {
     },
     async prepare(userId) {
       await query(PURGE_SQL.prepare, [userId]);
+    },
+    async holdForMedia(userId) {
+      return (await query(PURGE_SQL.holdForMedia, [userId]))[0]?.held === true;
     },
     async finish(userId) {
       return (await query(PURGE_SQL.finish, [userId]))[0]?.finished === true;

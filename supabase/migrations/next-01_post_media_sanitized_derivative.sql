@@ -31,8 +31,10 @@ create table kc_private.post_media_processing (
   -- The object the member uploaded; kept here (never on a client-readable row) once the row
   -- points at the derivative, so storage reconciliation still treats the original as referenced.
   source_key      text not null check (char_length(source_key) between 1 and 512),
+  -- `cancelled`: claimed, then stopped by the account purge (post_media_purge_hold); keeps its
+  -- lease so the purge knows until when the (stopped) worker might still be running.
   state           text not null default 'queued'
-                    check (state in ('queued', 'processing', 'done', 'failed', 'skipped')),
+                    check (state in ('queued', 'processing', 'cancelled', 'done', 'failed', 'skipped')),
   -- Claims so far; the n-th claim writes `...-a<n>.jpg`, so attempts never share an object.
   attempts        smallint not null default 0 check (attempts between 0 and 3),
   lease_token     uuid,
@@ -42,7 +44,7 @@ create table kc_private.post_media_processing (
   last_error      text,
   created_at      timestamptz not null default now(),
   constraint post_media_processing_lease_chk
-    check ((state = 'processing') = (lease_token is not null and leased_until is not null))
+    check ((state in ('processing', 'cancelled')) = (lease_token is not null and leased_until is not null))
 );
 comment on table kc_private.post_media_processing is
   'Server work queue: sanitized derivative of each new post photo (KC#2316). Service role only.';
@@ -114,7 +116,7 @@ $$;
 -- processable are skipped instead. A job whose lease ran out is handed out again; one that ran
 -- out on its last attempt fails.
 create function public.post_media_processing_claim(p_limit integer default 3, p_lease_seconds integer default 300)
-returns table (media_id uuid, lease_token uuid, attempt smallint, owner_id uuid, post_id uuid,
+returns table (media_id uuid, lease_token uuid, leased_until timestamptz, attempt smallint, owner_id uuid, post_id uuid,
                storage_key text, mime_type text, size_bytes bigint, object_size bigint, object_mimetype text)
 language plpgsql
 security definer
@@ -157,7 +159,7 @@ begin
   end loop;
 
   return query
-  select q.media_id, q.lease_token, q.attempts, m.owner_id, m.post_id, m.storage_key, m.mime_type, m.size_bytes,
+  select q.media_id, q.lease_token, q.leased_until, q.attempts, m.owner_id, m.post_id, m.storage_key, m.mime_type, m.size_bytes,
          case when o.metadata ->> 'size' ~ '^[0-9]{1,12}$' then (o.metadata ->> 'size')::bigint end,
          o.metadata ->> 'mimetype'
     from kc_private.post_media_processing q
@@ -304,6 +306,36 @@ end;
 $$;
 comment on function public.post_media_processing_fail(uuid, uuid, text, boolean) is
   'process-post-media: records a failed photo job attempt. Service role only.';
+
+-- Account purge, before it empties the member's `derived/<owner>/` folder (purge-deleted-accounts):
+-- stops all photo work for the member and answers whether the purge must still wait.
+--   * queued jobs are skipped;
+--   * claimed jobs are `cancelled`: completion and failure are refused from then on and the job is
+--     never handed out again, but its lease is kept;
+--   * the answer is true while any cancelled job's lease is still running. The worker never starts
+--     an upload in the last 30 s of its lease and aborts every upload at that point, so once the
+--     lease has run out no worker of this member can still be writing, and the folder may go.
+-- Repeatable: the purge calls it on every run until it answers false.
+create function kc_private.post_media_purge_hold(p_owner_id uuid)
+returns boolean
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  update kc_private.post_media_processing q
+     set state = case q.state when 'processing' then 'cancelled' else 'skipped' end,
+         lease_token = case q.state when 'processing' then q.lease_token end,
+         leased_until = case q.state when 'processing' then q.leased_until end
+    from public.post_media m
+   where m.id = q.media_id and m.owner_id = p_owner_id and q.state in ('queued', 'processing');
+  return exists (select 1 from kc_private.post_media_processing q
+                   join public.post_media m on m.id = q.media_id
+                  where m.owner_id = p_owner_id and q.state = 'cancelled' and q.leased_until > now());
+end;
+$$;
+comment on function kc_private.post_media_purge_hold(uuid) is
+  'Account purge: stops a member''s photo jobs; true while a stopped worker may still be writing.';
 
 -- Storage reconciliation keeps (does not delete) a post photo that any row still needs: the file
 -- a row points at, the original a processed row was made from, and the `-thumb` sibling of

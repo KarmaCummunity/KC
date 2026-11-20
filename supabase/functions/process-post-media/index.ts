@@ -62,13 +62,25 @@ const storage: MediaStorage = {
       clearTimeout(timer);
     }
   },
-  async upload(key, bytes) {
-    const { error } = await admin.storage.from(BUCKET).upload(key, bytes, {
-      contentType: 'image/jpeg',
-      upsert: false,
-      // storage-js sends `max-age=<value>`, so the value is the number of seconds only.
-      cacheControl: IMMUTABLE_MAX_AGE_SECONDS,
+  // Through fetch, not storage-js: storage-js cannot abort an upload, and the lease bounds writes.
+  async upload(key, bytes, signal) {
+    const path = key.split('/').map(encodeURIComponent).join('/');
+    const response = await fetch(`${SUPABASE_URL}/storage/v1/object/${BUCKET}/${path}`, {
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${primaryServiceRoleKey()}`,
+        apikey: primaryServiceRoleKey(),
+        'content-type': 'image/jpeg',
+        'cache-control': `public, max-age=${IMMUTABLE_MAX_AGE_SECONDS}, immutable`,
+        'x-upsert': 'false',
+      },
+      body: new Uint8Array(bytes), // an ArrayBuffer-backed copy, the body type fetch accepts
+      signal,
     });
+    if (!response.ok) throw new Error(`upload HTTP ${response.status}`);
+  },
+  async remove(keys) {
+    const { error } = await admin.storage.from(BUCKET).remove(keys);
     if (error) throw new Error(error.message);
   },
 };

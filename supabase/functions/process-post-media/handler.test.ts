@@ -7,8 +7,11 @@ const KEY = 'service-key';
 const OWNER = '0a0a0a0a-0000-4000-8000-00000000000a';
 const MEDIA = '1b1b1b1b-0000-4000-8000-000000000001';
 
+/** A lease well in the future unless a test says otherwise. */
+const LEASE_END = new Date(Date.now() + 300_000).toISOString();
+
 const job = (patch: Partial<ClaimedMediaJob> = {}): ClaimedMediaJob => ({
-  media_id: MEDIA, lease_token: 'lease-1', attempt: 1, owner_id: OWNER, post_id: 'p1',
+  media_id: MEDIA, lease_token: 'lease-1', attempt: 1, owner_id: OWNER, post_id: 'p1', leased_until: LEASE_END,
   storage_key: `${OWNER}/batch/0.jpg`, mime_type: 'image/jpeg', size_bytes: 5000,
   object_size: 5000, object_mimetype: 'image/jpeg', ...patch,
 });
@@ -19,6 +22,8 @@ interface Harness {
   calls: { fn: string; args: Record<string, unknown> }[];
   downloads: { key: string; maxBytes: number }[];
   uploads: string[];
+  removed: string[];
+  signals: AbortSignal[];
   run: (body?: unknown) => Promise<Record<string, unknown>>;
 }
 
@@ -33,6 +38,8 @@ function harness(opts: {
   const calls: Harness['calls'] = [];
   const downloads: Harness['downloads'] = [];
   const uploads: string[] = [];
+  const removed: string[] = [];
+  const signals: AbortSignal[] = [];
   const handler = createProcessPostMediaHandler({
     serviceRoleKey: KEY,
     budgetMs: opts.budgetMs,
@@ -52,10 +59,15 @@ function harness(opts: {
         downloads.push({ key, maxBytes });
         return Promise.resolve(opts.bytes ?? new Uint8Array(0));
       }),
-      upload: opts.storage?.upload ?? ((key) => {
+      upload: opts.storage?.upload ?? ((key, _bytes, signal) => {
         uploads.push(key);
+        signals.push(signal);
         return Promise.resolve();
       }),
+      remove: (keys) => {
+        removed.push(...keys);
+        return Promise.resolve();
+      },
     },
   });
   const run = async (body: unknown = {}) => {
@@ -64,7 +76,7 @@ function harness(opts: {
     }));
     return await res.json();
   };
-  return { calls, downloads, uploads, run };
+  return { calls, downloads, uploads, removed, signals, run };
 }
 
 const failCall = (h: Harness) => h.calls.find((c) => c.fn === 'post_media_processing_fail')?.args;
@@ -77,7 +89,7 @@ Deno.test('refuses callers without the service-role key before any work', async 
       claimed = true;
       return Promise.resolve({ data: [], error: null });
     },
-    storage: { download: () => Promise.reject(), upload: () => Promise.reject() },
+    storage: { download: () => Promise.reject(), upload: () => Promise.reject(), remove: () => Promise.resolve() },
   });
   const res = await handler(new Request('https://x', { method: 'POST', headers: { Authorization: 'Bearer anon-key' } }));
   assertEquals(res.status, 401);
@@ -144,6 +156,8 @@ Deno.test('a concurrent attempt that already won: completion answers stale/chang
     const out = await h.run();
     assertEquals(out.outcomes, { [MEDIA]: answer });
     assertEquals(failCall(h), undefined, 'a lost race is not recorded as a failure');
+    // Its objects are never referenced: the worker removes them itself (purge race, KC#2316).
+    assertEquals(h.removed, [derivativeKey(OWNER, MEDIA, 2), thumbKey(derivativeKey(OWNER, MEDIA, 2))]);
     // Attempt 2 wrote only its own keys; attempt 1's objects (if any) are untouched.
     assertEquals(h.uploads, [derivativeKey(OWNER, MEDIA, 2), thumbKey(derivativeKey(OWNER, MEDIA, 2))]);
   }
@@ -171,4 +185,26 @@ Deno.test('claims one job at a time, up to the limit, and stops claiming when th
   // Out of time before the first claim: nothing is claimed, so no attempt is spent.
   assertEquals(slow.calls, []);
   assertEquals(none.claimed, 0);
+});
+
+Deno.test('no upload starts within the last 30 s of the lease, and none outlives it', async () => {
+  const nearEnd = harness({ jobs: [job({ leased_until: new Date(Date.now() + 10_000).toISOString() })], bytes: await realJpeg() });
+  const out = await nearEnd.run();
+  assertEquals(nearEnd.uploads, [], 'a lease about to end writes nothing');
+  assertEquals(out.outcomes, { [MEDIA]: 'stale' });
+  const normal = harness({ jobs: [job()], bytes: await realJpeg() });
+  await normal.run();
+  assertEquals(normal.signals.length, 2);
+  assert(normal.signals.every((s) => s instanceof AbortSignal), 'every upload is abortable at the lease deadline');
+});
+
+Deno.test('a failure after the first upload removes what this attempt wrote', async () => {
+  let n = 0;
+  const h = harness({
+    jobs: [job()], bytes: await realJpeg(),
+    storage: { upload: () => (++n === 2 ? Promise.reject(new Error('thumb failed')) : Promise.resolve()) },
+  });
+  await h.run();
+  assertEquals(h.removed, [derivativeKey(OWNER, MEDIA, 1), thumbKey(derivativeKey(OWNER, MEDIA, 1))]);
+  assertEquals(failCall(h)?.p_retryable, true);
 });
