@@ -37,6 +37,11 @@ export interface ChatStreamCallbacks {
   // only care about messages can omit it.
   onChatChanged?: (change: ChatChange) => void;
   onError: (err: Error) => void;
+  /**
+   * The channel rejoined after a failure. Messages sent while it was down were not delivered
+   * live, so the caller re-reads the latest page (merging, never replacing what it holds).
+   */
+  onResync?: () => void;
 }
 
 export type Unsubscribe = () => void;
