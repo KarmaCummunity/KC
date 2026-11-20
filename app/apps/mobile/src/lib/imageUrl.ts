@@ -2,8 +2,10 @@
 //
 // Default path (PERF-4): the sibling `-thumb` object written at upload time for small surfaces,
 // the original for the detail hero. Both are plain public objects: no per-image cost.
-// `/render/image/` CDN transforms are a paid Storage add-on, so they are OPT-IN: only a build with
-// `EXPO_PUBLIC_USE_STORAGE_TRANSFORM=1` asks for them (width / quality / format then apply).
+// `/render/image/` CDN transforms are a paid Storage add-on ("enabled for Pro Plan and above";
+// $5 per 1,000 origin images beyond the plan quota of 100: supabase.com/docs/guides/storage/serving/
+// image-transformations and .../platform/manage-your-usage/storage-image-transformations), so they
+// are OPT-IN: only a build with `EXPO_PUBLIC_USE_STORAGE_TRANSFORM=1` asks for them.
 
 import { getSupabasePublicEnv } from './supabasePublicConfig';
 

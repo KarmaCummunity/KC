@@ -9,7 +9,6 @@ const { pickPostImages, uploadPostImageBatch } = vi.hoisted(() => ({
   uploadPostImageBatch: vi.fn(),
 }));
 vi.mock('../../services/imageUpload', () => ({ pickPostImages, uploadPostImageBatch }));
-vi.mock('expo-file-system', () => ({ File: class {} }));
 
 import { usePostImageUploads } from '../usePostImageUploads';
 import { UploadCancelledError } from '../../services/uploadControl';

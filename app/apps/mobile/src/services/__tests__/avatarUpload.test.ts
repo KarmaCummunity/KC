@@ -28,7 +28,6 @@ vi.mock('../../i18n', () => ({ default: { t: (key: string) => key } }));
 vi.mock('../platformConfirm', () => ({ confirmAction: confirm }));
 vi.mock('expo-image-picker', () => picker);
 vi.mock('expo-image-manipulator', () => ({ SaveFormat: { JPEG: 'jpeg' } }));
-vi.mock('expo-file-system', () => ({ File: class {} }));
 vi.mock('@kc/infrastructure-supabase', () => ({ getSupabaseClient: () => client }));
 vi.mock('../imageEncoding', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../imageEncoding')>()),

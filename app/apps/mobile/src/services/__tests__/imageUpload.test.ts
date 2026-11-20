@@ -9,7 +9,6 @@ const { picker, encoder, uploader, confirm, linking } = vi.hoisted(() => ({
 }));
 
 vi.mock('react-native', () => ({ Linking: linking, Platform: { OS: 'ios' } }));
-vi.mock('expo-file-system', () => ({ File: class {} }));
 vi.mock('expo-image-manipulator', () => ({ SaveFormat: { JPEG: 'jpeg' } }));
 vi.mock('../../i18n', () => ({ default: { t: (key: string) => key } }));
 vi.mock('../platformConfirm', () => ({ confirmAction: confirm }));

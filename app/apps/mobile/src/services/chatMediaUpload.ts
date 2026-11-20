@@ -52,7 +52,7 @@ export async function uploadChatImageAndSend(
       cacheControl: 'private, max-age=31536000, immutable',
     });
   } catch (err) {
-    throw new Error(`chat_media_upload: ${uploadErrorMessage(err)}`);
+    throw new Error(`chat_media_upload: ${uploadErrorMessage(err)}`, { cause: err });
   }
   await sendRpc({
     type: 'image',

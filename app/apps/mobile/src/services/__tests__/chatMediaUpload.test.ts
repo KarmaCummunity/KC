@@ -22,7 +22,6 @@ vi.mock('../storageObjectUpload', async (importOriginal) => ({
   uploadStorageObject: uploader.uploadStorageObject,
 }));
 vi.mock('expo-image-manipulator', () => ({ SaveFormat: { JPEG: 'jpeg' } }));
-vi.mock('expo-file-system', () => ({ File: class {} }));
 vi.mock('react-native', () => ({ Platform: { OS: 'ios' } }));
 
 import { pickChatImage, uploadChatImageAndSend } from '../chatMediaUpload';

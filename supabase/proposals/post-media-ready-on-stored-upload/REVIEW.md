@@ -42,6 +42,19 @@ feed cards, the post page and the WhatsApp/link share preview still show **no ph
 public-eligibility gap (what makes pending media `ready` and publicly visible, safely) remains
 **OPEN** and is gated on the privacy and lifecycle review below. The workaround does not complete KC#2316.
 
+## Related app change: storage transforms are now opt-in
+
+- **Was on by default (measured from code):** before this branch, `app/apps/mobile/src/lib/imageUrl.ts`
+  (`transformsDisabled` + `wantsTransform`, lines 27-39 at `origin/dev` c3873b02) returned true whenever a width was passed,
+  unless `EXPO_PUBLIC_USE_STORAGE_TRANSFORM=0`. The feed and the post detail always pass a width, and no
+  file in the repo sets the flag.
+- **Paid add-on (Supabase docs, fetched 2026-11-20):** "Image Resizing is currently enabled for Pro Plan
+  and above" (https://supabase.com/docs/guides/storage/serving/image-transformations); "$5 per 1,000
+  origin images. You are only charged for usage exceeding your subscription plan's quota", Pro quota 100
+  (https://supabase.com/docs/guides/platform/manage-your-usage/storage-image-transformations).
+- **Unverified:** which plan kc-dev and kc-prod are on, and what the render endpoint returns on a plan
+  without transforms. The docs do not say, and nothing remote was called from this branch.
+
 ## What would make it safe (owner decisions)
 
 1. A server step that **writes a new sanitized derivative** (never overwrites the original). It checks the

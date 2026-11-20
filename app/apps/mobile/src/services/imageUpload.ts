@@ -179,7 +179,7 @@ export async function resizeAndUploadImage(
     await upload(path, full.bytes);
   } catch (err) {
     if (isUploadCancelled(err)) throw err;
-    throw new Error(`upload[${ordinal}]: ${uploadErrorMessage(err)}`);
+    throw new Error(`upload[${ordinal}]: ${uploadErrorMessage(err)}`, { cause: err });
   } finally {
     await thumbUpload;
   }

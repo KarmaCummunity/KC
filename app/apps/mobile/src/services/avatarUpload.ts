@@ -140,7 +140,7 @@ export async function resizeAndUploadAvatar(picked: PickedImage, userId: string)
   try {
     await uploadAvatarObject(AVATAR_PATH(userId), full.bytes);
   } catch (err) {
-    throw new Error(`avatar_upload: ${uploadErrorMessage(err)}`);
+    throw new Error(`avatar_upload: ${uploadErrorMessage(err)}`, { cause: err });
   } finally {
     await thumbUpload;
   }

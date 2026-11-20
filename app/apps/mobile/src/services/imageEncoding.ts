@@ -10,7 +10,6 @@
 
 import { Platform } from 'react-native';
 import * as ImageManipulator from 'expo-image-manipulator';
-import { File } from 'expo-file-system';
 import { base64ToUint8Array } from './mediaEncoding';
 
 export interface ImageSize {
@@ -48,6 +47,9 @@ async function readEncodedFile(uri: string): Promise<Uint8Array> {
     const response = await fetch(uri);
     return new Uint8Array(await response.arrayBuffer());
   }
+  // Loaded on first use: the native module is only needed on a device, and a static import would
+  // initialise it in every screen and test that merely references the upload pipeline.
+  const { File } = await import('expo-file-system');
   return new File(uri).bytes();
 }
 
