@@ -13,6 +13,7 @@ import { MirroredIcon } from '../../src/components/ui/MirroredIcon';
 import { useChatStore, type OptimisticMessage } from '../../src/store/chatStore';
 import { useAuthStore } from '../../src/store/authStore';
 import { container } from '../../src/lib/container';
+import { reportHandledError } from '../../src/lib/observability/reportHandledError';
 import { markNeedFreshThreadWith } from '../../src/lib/chatNavigationPrefs';
 import { forgetHiddenChat } from '../../src/lib/forgetHiddenChat';
 import { MessageBubble } from '../../src/components/MessageBubble';
@@ -102,7 +103,10 @@ export default function ChatScreen() {
     void (async () => {
       await container.markChatRead.execute({ chatId, userId });
       useChatStore.getState().markChatLocallyRead(chatId);
-    })();
+    })().catch((error: unknown) => {
+      // Keep unread state on failure. No automatic retry loop or false read receipt.
+      reportHandledError(error, 'manual', ['chat', 'mark-read']);
+    });
   }, [unreadIncoming, chatId, userId]);
 
   const counter = input.length;
