@@ -116,3 +116,42 @@ describe('SupabaseChatRealtime — subscribeToInbox', () => {
     expect(rpcCalls).toHaveLength(0);
   });
 });
+
+// #1778: a dropped inbox channel is no longer silent, and the inbox catches up once it is back.
+describe('SupabaseChatRealtime — subscribeToInbox channel status', () => {
+  async function subWithError(client: SupabaseClient) {
+    const cb = { onInboxChanged: vi.fn(), onUnreadTotalChanged: vi.fn(), onError: vi.fn() };
+    new SupabaseChatRealtime(client as never).subscribeToInbox('u_me', cb);
+    await flush();
+    return cb;
+  }
+
+  it('routes CHANNEL_ERROR and TIMED_OUT to onError, and the first SUBSCRIBED is not a change', async () => {
+    const { f, client } = setup();
+    const cb = await subWithError(client);
+    const channel = f.created[0]!;
+    channel.statusCb!('SUBSCRIBED');
+    expect(cb.onInboxChanged).not.toHaveBeenCalled();
+    channel.statusCb!('CHANNEL_ERROR');
+    channel.statusCb!('TIMED_OUT');
+    expect(cb.onError.mock.calls.map(([e]) => (e as Error).message)).toEqual([
+      'inbox channel channel_error',
+      'inbox channel timed_out',
+    ]);
+  });
+
+  it('refreshes the inbox and the unread total once the channel is back after a failure', async () => {
+    const { f, client, rpcCalls } = setup(async () => ({ data: 4, error: null }));
+    const cb = await subWithError(client);
+    const channel = f.created[0]!;
+    channel.statusCb!('SUBSCRIBED');
+    channel.statusCb!('CHANNEL_ERROR');
+    channel.statusCb!('SUBSCRIBED');
+    expect(cb.onInboxChanged).toHaveBeenCalledWith({ chatId: null, lastMessageAt: null });
+    await vi.runAllTimersAsync();
+    expect(rpcCalls).toEqual(['chat_unread_total']);
+    expect(cb.onUnreadTotalChanged).toHaveBeenCalledWith(4);
+    channel.statusCb!('SUBSCRIBED');
+    expect(cb.onInboxChanged).toHaveBeenCalledTimes(1);
+  });
+});

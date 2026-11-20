@@ -153,6 +153,22 @@ describe('runStartInboxSub', () => {
     expect(invalidate).toHaveBeenCalledWith({ queryKey: chatInboxQueryKey('u_me') });
   });
 
+  // #1778: a dropped inbox channel may have missed events, so the cached inbox is marked stale.
+  it('wires onError → invalidates the inbox query', async () => {
+    const qc = new QueryClient();
+    const invalidate = vi.spyOn(qc, 'invalidateQueries');
+    const noopUnsub = vi.fn();
+    let handlers: Record<string, (...args: unknown[]) => void> | null = null;
+    const { api } = makeStoreApi({ inboxSub: noopUnsub });
+    const realtime = makeRealtime({ capture: (h) => { handlers = h; } });
+
+    await runStartInboxSub(api, noopUnsub, 'u_me', makeRepo(), realtime, qc);
+    invalidate.mockClear();
+    handlers!.onError(new Error('inbox channel timed_out'));
+
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: chatInboxQueryKey('u_me') });
+  });
+
   it('wires onUnreadTotalChanged → setState({ unreadTotal }) + cache', async () => {
     const qc = new QueryClient();
     const noopUnsub = vi.fn();
