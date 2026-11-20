@@ -53,6 +53,12 @@ export async function runStartInboxSub(
         if (snap) writeChatInboxSnapshot(qc, userId, { ...snap, unreadTotal: total });
         else void qc.invalidateQueries({ queryKey: chatInboxQueryKey(userId) });
       },
+      // A dropped channel may have missed events: the inbox is refetched on its next read, and the
+      // adapter reports a change once the channel is back (#1778). Transient drops are not errors
+      // worth reporting.
+      onError: () => {
+        void qc.invalidateQueries({ queryKey: chatInboxQueryKey(userId) });
+      },
       onInboxMessageInsert: (message) => {
         const activeRoute = useActiveScreenStore.getState().route;
         const isActiveChat = activeRoute === `/chat/${message.chatId}`;
