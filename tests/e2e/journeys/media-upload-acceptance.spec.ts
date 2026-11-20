@@ -32,7 +32,8 @@ test('deployed post-photo picker stores full and thumb, displays the selection a
   try {
     await page.goto('/');
     await page.evaluate(({ key, value }) => localStorage.setItem(key, JSON.stringify(value)), { key: storageKey, value: session });
-    await page.goto('/create?category=food');
+    // Items uses the immediate post-image uploader. Food is a different engine that uploads on publish.
+    await page.goto('/create?category=items');
     await dismissGates(page);
     const add = page.getByRole('button', { name: 'הוסיפו תמונה' }).first();
     await expect(add).toBeVisible({ timeout: 45_000 });
@@ -56,6 +57,9 @@ test('deployed post-photo picker stores full and thumb, displays the selection a
     }
     await info.attach('acceptance-scope', { body: JSON.stringify({ uploads: uploads.length, storedFullAndThumb: true, published: false, client: 'deployed web', nativeProof: false }), contentType: 'application/json' });
   } finally {
+    if (!page.isClosed()) {
+      await page.screenshot({ path: info.outputPath('media-picker-final.png'), fullPage: true }).catch(() => {});
+    }
     await page.close();
     if (paths.size > 0) {
       const response = await fetch(`${SUPABASE_URL}/storage/v1/object/post-images`, {
