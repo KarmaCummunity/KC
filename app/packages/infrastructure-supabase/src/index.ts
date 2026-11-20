@@ -112,5 +112,5 @@ export * from './admin/SupabaseProdCopyRepository';
 export { SupabaseWhatsAppLinkRepository } from './whatsapp/SupabaseWhatsAppLinkRepository';
 export { SupabaseKnowledgeTopicRepository } from './knowledge/SupabaseKnowledgeTopicRepository';
 export { SupabaseKnowledgeBookingRepository } from './knowledge/SupabaseKnowledgeBookingRepository';
-
 export { SupabaseGuestPostsRepository } from './posts/SupabaseGuestPostsRepository';
+export { SupabaseKnowledgeSlotSeriesRepository } from './knowledge/SupabaseKnowledgeSlotSeriesRepository';

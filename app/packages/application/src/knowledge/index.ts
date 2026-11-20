@@ -22,3 +22,5 @@ export { ListKnowledgeBookingsUseCase } from './ListKnowledgeBookingsUseCase';
 export { ConfirmKnowledgeBookingUseCase } from './ConfirmKnowledgeBookingUseCase';
 export { DeclineKnowledgeBookingUseCase } from './DeclineKnowledgeBookingUseCase';
 export { CompleteKnowledgeSessionUseCase } from './CompleteKnowledgeSessionUseCase';
+export type { IKnowledgeSlotSeriesRepository } from '../ports/IKnowledgeSlotSeriesRepository';
+export { GetKnowledgeSlotSeriesUseCase, SetKnowledgeSlotSeriesStatusUseCase } from './KnowledgeSlotSeriesUseCases';

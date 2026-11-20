@@ -49,6 +49,8 @@ export type ListingFieldSpec =
   | (BaseSpec & { readonly type: 'toggle'; readonly defaultValue?: boolean })
   // Bookable time slots of a knowledge lesson or consulting hour (#2034): `[{starts_at, ends_at}]`.
   | (BaseSpec & { readonly type: 'slotList'; readonly maxSlots: number })
+  // Days of the week, stored as `Date.getDay()` numbers (a recurring lesson, #2479).
+  | (BaseSpec & { readonly type: 'weekdays' })
   // A detail the form sets without a control (no editor for it yet); seeded from `defaultValue`.
   | (BaseSpec & { readonly type: 'fixed'; readonly defaultValue: unknown });
 

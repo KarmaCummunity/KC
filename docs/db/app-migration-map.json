@@ -2,16 +2,16 @@
  "generatedBy": "scripts/app-migration-map.mjs",
  "totals": {
   "rpc": {
-   "objects": 267,
-   "same": 190,
+   "objects": 269,
+   "same": 192,
    "renamed": 22,
    "changed": 55,
    "removed": 0,
    "missing": 0
   },
   "table": {
-   "objects": 66,
-   "same": 49,
+   "objects": 67,
+   "same": 50,
    "renamed": 0,
    "changed": 17,
    "removed": 0,
@@ -52,8 +52,8 @@
    "missing": 0
   },
   "later": {
-   "objects": 166,
-   "same": 116,
+   "objects": 169,
+   "same": 119,
    "renamed": 6,
    "changed": 44,
    "removed": 0,
@@ -273,8 +273,8 @@
    "missing": 0
   },
   "knowledge": {
-   "callSites": 9,
-   "oneToOne": 6,
+   "callSites": 12,
+   "oneToOne": 9,
    "changed": 3,
    "removed": 0,
    "missing": 0
@@ -1072,11 +1072,14 @@
     "rpc:cancel_giving_handoff",
     "table:post_handoffs",
     "rpc:knowledge_slot_seats",
-    "table:post_knowledge_slots"
+    "table:post_knowledge_slots",
+    "table:knowledge_slot_series",
+    "rpc:start_knowledge_slot_series",
+    "rpc:set_knowledge_slot_series_status"
    ],
    "counts": {
-    "objects": 8,
-    "oneToOne": 6,
+    "objects": 11,
+    "oneToOne": 9,
     "changed": 2,
     "removed": 0,
     "missing": 0
@@ -7695,7 +7698,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/listingWrites.ts",
-     "line": 81,
+     "line": 83,
      "symbol": "unwrapCall",
      "area": "marketplace"
     }
@@ -11148,7 +11151,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/listingWrites.ts",
-     "line": 100,
+     "line": 113,
      "symbol": "postId",
      "area": "marketplace"
     },
@@ -12561,6 +12564,37 @@
    ]
   },
   {
+   "old": "set_knowledge_slot_series_status",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "`p_post_id`, `p_status`: active, paused or ended; pausing and ending drop the upcoming unbooked slots and keep booked ones. The giver or a post editor only.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "set_knowledge_slot_series_status",
+     "signature": [
+      "set_knowledge_slot_series_status(p_post_id: string, p_status: string) → undefined"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "knowledge"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/knowledge/SupabaseKnowledgeSlotSeriesRepository.ts",
+     "line": 78,
+     "symbol": "SupabaseKnowledgeSlotSeriesRepository.unwrapCall",
+     "area": "knowledge"
+    }
+   ]
+  },
+  {
    "old": "set_message_reaction",
    "kind": "rpc",
    "status": "same",
@@ -12697,7 +12731,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/listingWrites.ts",
-     "line": 132,
+     "line": 145,
      "symbol": "createListing",
      "area": "marketplace"
     }
@@ -12910,6 +12944,37 @@
      "line": 33,
      "symbol": "SupabaseMarketplaceRepository.similarListings",
      "area": "marketplace"
+    }
+   ]
+  },
+  {
+   "old": "start_knowledge_slot_series",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Makes a lesson offer recurring and adds its slots for the next 30 days; called on the draft before `publish_post`, so a refused schedule leaves no offer.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "start_knowledge_slot_series",
+     "signature": [
+      "start_knowledge_slot_series(p_capacity?: number, p_duration_minutes: number, p_ends_on?: string, p_post_id: string, p_start_time: string, p_weekdays: number) → string"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "knowledge"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/knowledge/SupabaseKnowledgeSlotSeriesRepository.ts",
+     "line": 47,
+     "symbol": "startKnowledgeSlotSeries",
+     "area": "knowledge"
     }
    ]
   },
@@ -14998,6 +15063,50 @@
    ]
   },
   {
+   "old": "knowledge_slot_series",
+   "kind": "table",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "The weekly schedule of a recurring lesson offer, one per post; readable exactly when its offer is, written only by the series RPCs.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "table",
+     "name": "knowledge_slot_series",
+     "columns": [
+      "capacity",
+      "created_at",
+      "duration_minutes",
+      "ends_on",
+      "id",
+      "post_id",
+      "start_time",
+      "starts_on",
+      "status",
+      "updated_at",
+      "weekdays"
+     ],
+     "clientGrants": {}
+    }
+   ],
+   "areas": [
+    "knowledge"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/knowledge/SupabaseKnowledgeSlotSeriesRepository.ts",
+     "line": 70,
+     "symbol": "SupabaseKnowledgeSlotSeriesRepository.getForPost",
+     "area": "knowledge",
+     "ops": [
+      "select"
+     ]
+    }
+   ]
+  },
+  {
    "old": "knowledge_topics",
    "kind": "table",
    "status": "changed",
@@ -16405,7 +16514,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/listingWrites.ts",
-     "line": 55,
+     "line": 57,
      "symbol": "recordPhotos",
      "area": "marketplace",
      "ops": [
@@ -17100,7 +17209,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/listingWrites.ts",
-     "line": 92,
+     "line": 104,
      "symbol": "createPlain",
      "area": "marketplace",
      "ops": [
@@ -17110,7 +17219,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/listingWrites.ts",
-     "line": 103,
+     "line": 116,
      "symbol": "postId",
      "area": "marketplace",
      "ops": [

@@ -136,6 +136,12 @@ export const KINDS_BY_WORLD: Readonly<Record<string, readonly ListingKindOption[
       slots: { type: 'array', minItems: 1, maxItems: 20 },
       availability_note: { type: 'string', maxLength: 280 },
       resource_ids: { type: 'array' },
+      // The weekly schedule of a recurring lesson (#2479); the server keeps it on the series.
+      schedule: { enum: ['one_off', 'weekly'] },
+      series_weekdays: { type: 'array' },
+      series_time: { type: 'string' },
+      series_duration_minutes: { type: 'integer' },
+      series_ends_on: { type: 'string' },
     }, ['modality', 'capacity_per_slot', 'slots'])),
     kind('mentoring_offer', 'give', obj({
       topic: { type: 'string', minLength: 2, maxLength: 80 },
