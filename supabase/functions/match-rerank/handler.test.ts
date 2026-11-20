@@ -30,14 +30,14 @@ function deps(over: Partial<Parameters<typeof createRerankHandler>[0]> = {}) {
 Deno.test('rejects non-service callers and non-POST', async () => {
   const { d } = deps();
   const h = createRerankHandler(d);
-  assertEquals((await h(req())).status, 403);
-  assertEquals((await h(req('garbage'))).status, 403);
+  assertEquals((await h(req())).status, 401);
+  assertEquals((await h(req('garbage'))).status, 401);
   // A well-formed JWT claiming the service role is not the key itself.
   const forged = `${btoa('{"alg":"HS256"}')}.${btoa('{"role":"service_role"}')}.sig`;
-  assertEquals((await h(req(forged))).status, 403);
+  assertEquals((await h(req(forged))).status, 401);
   assertEquals((await h(req('svc', 'GET'))).status, 405);
   // A function without a configured key rejects everyone.
-  assertEquals((await createRerankHandler(deps({ serviceKey: '' }).d)(req(''))).status, 403);
+  assertEquals((await createRerankHandler(deps({ serviceKey: '' }).d)(req(''))).status, 401);
 });
 
 Deno.test('no-ops without a Gemini key (no RPC, no fetch)', async () => {
@@ -77,4 +77,14 @@ Deno.test('counts a pair the database no longer knows (match_not_found) as faile
       : { data: null, error: { message: 'match_not_found' } });
   const body = await (await createRerankHandler(d)(req('svc'))).json();
   assertEquals(body, { ok: false, scored: 0, failed: 1, pending: 1 });
+});
+
+Deno.test('refused rerank callers receive the shared JSON response without RPC or Gemini calls', async () => {
+  const { d, calls, fetched } = deps();
+  const response = await createRerankHandler(d)(req('wrong-key'));
+  assertEquals(response.status, 401);
+  assertEquals(response.headers.get('Content-Type'), 'application/json');
+  assertEquals(await response.json(), { ok: false, error: 'unauthenticated' });
+  assertEquals(calls.length, 0);
+  assertEquals(fetched(), 0);
 });

@@ -201,6 +201,16 @@
             {
               "scheme": "https",
               "host": "karma-community-kc.com",
+              "pathPrefix": "/edit-post/"
+            },
+            {
+              "scheme": "https",
+              "host": "karma-community-kc.com",
+              "pathPrefix": "/edit-listing/"
+            },
+            {
+              "scheme": "https",
+              "host": "karma-community-kc.com",
               "pathPrefix": "/user"
             },
             {

@@ -9,6 +9,8 @@
           "/auth/callback",
           "/auth/callback*",
           "/post/*",
+          "/edit-post/*",
+          "/edit-listing/*",
           "/user/*",
           "/chat/*",
           "/sign-in"

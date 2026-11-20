@@ -50,6 +50,8 @@ export interface ProviderSession {
 }
 
 export interface IdentityProvider {
+  /** Session creation has the required local credentials/configuration. No network health claim. */
+  readonly sessionConfigured: boolean;
   /** Slug stored with every attempt and event (e.g. `didit`). */
   readonly slug: string;
   createSession(input: CreateSessionInput): Promise<ProviderSession>;
