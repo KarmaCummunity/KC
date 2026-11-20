@@ -1,6 +1,6 @@
 # 2.23 Knowledge world — give & take, free library, courses, agent retrieval
 
-> **Status:** 🟡 In progress — spec v0.1 (2026-11-03, PM scope decision `D119`; some details are KC fills pending approval; only the specific review/default-tab/completion-wording/consulting-gate/no-files decisions linked from S65/S66/S69/S70/S71 were confirmed on 2026-11-20; other design details remain pending, and this is not runtime acceptance). FR-KNOW-001 shipped 2026-11-04 (`0570`). FR-KNOW-003 / FR-KNOW-004 one-off part shipped with #2034 (`0703`, `0704`): the six exchange post types on the one create form, slots as rows, booking a seat per slot with the giver's approval, session completion with the §7.6 karma. The weekly series of a recurring lesson offer shipped on the server with #2035 (the app side is #2479); the open parts are listed under each FR. Also in code: four seeded sub-categories (`0535`), hybrid `search_listings` (`0262`) with a placeholder vector lane and a stub `embed-worker` (`TD-269`). **K1** `FR-KNOW-001..012`, **K2** `FR-KNOW-013..020`, **K3** `FR-KNOW-021..024`. Every build follows `world_knowledge_enabled`, which the super admin switches per environment from the admin portal (FR-ADMIN-034; the tester-build override of #1630 is removed). Since migration `0613`, a published knowledge post is listed in the main feed from the moment moderation approves it (`worlds.feed_mirror` is on for knowledge).
+> **Status:** 🟡 In progress — spec v0.1 (2026-11-03, PM scope decision `D119`; some details are KC fills pending approval; only the specific review/default-tab/completion-wording/consulting-gate/no-files decisions linked from S65/S66/S69/S70/S71 were confirmed on 2026-11-20; other design details remain pending, and this is not runtime acceptance). FR-KNOW-001 shipped 2026-11-04 (`0570`). FR-KNOW-003 / FR-KNOW-004 one-off part shipped with #2034 (`0703`, `0704`): the six exchange post types on the one create form, slots as rows, booking a seat per slot with the giver's approval, session completion with the §7.6 karma. The weekly series of a recurring lesson offer shipped on the server with #2035; the app implementation is tracked by #2479 and remains pending deployed acceptance; the open parts are listed under each FR. Also in code: four seeded sub-categories (`0535`), hybrid `search_listings` (`0262`) with a placeholder vector lane and a stub `embed-worker` (`TD-269`). **K1** `FR-KNOW-001..012`, **K2** `FR-KNOW-013..020`, **K3** `FR-KNOW-021..024`. Every build follows `world_knowledge_enabled`, which the super admin switches per environment from the admin portal (FR-ADMIN-034; the tester-build override of #1630 is removed). Since migration `0613`, a published knowledge post is listed in the main feed from the moment moderation approves it (`worlds.feed_mirror` is on for knowledge).
 
 Prefix: `FR-KNOW-*` · Migration range claimed: `0570–0589` (`docs/agents/MIGRATION_RANGES.md`) · Product spec (binding): [`docs/spec/18_knowledge_world.md`](../18_knowledge_world.md) · Decisions: `D40`, `D100`, `D101`, `D107`, `D119` · Fills: `S63`, `S64`, `S65`, `S66`, `S67`, `S68`, `S69`, `S70`, `S71`, `S72` · Engineering decision: `D-215` (`docs/SSOT/DECISIONS.md`).
 
@@ -130,7 +130,7 @@ Two layers on one world (`docs/spec/18_knowledge_world.md` §18.2): **exchange p
   - AC6: `supabase/tests/0704_knowledge_slot_bookings.sql` (including two learners on the last place) and
     `supabase/tests/flows/knowledge_lifecycle.sql`.
 
-- **Implementation (#2035, server side; the app side is #2479).** A recurring lesson offer is one post with a weekly series:
+- **Implementation (#2035 server; #2479 app code, pending deployed acceptance).** A recurring lesson offer is one post with a weekly series:
   - AC1: `knowledge_slot_series` (one per lesson offer: weekdays as a bit set, start time in Israel time, session length
     15 min–8 h, places 1–20, optional last day; states `active` ⇄ `paused` → `ended`, ended is terminal). The series adds
     `post_knowledge_slots` rows of its own post, one per lesson day (`series_id`, `series_on`), 30 days ahead; the sweep
@@ -141,7 +141,19 @@ Two layers on one world (`docs/spec/18_knowledge_world.md` §18.2): **exchange p
     no one-off slot is added beside a running series. The one-off limit of 20 slots counts one-off slots only.
   - FR-KNOW-003 AC3: a recurring offer has no expiry while its series runs; once ended it expires 30 minutes after its last
     remaining slot. Relevance reminders (D59) are not built in any world yet.
-  - Tests: `supabase/tests/074_knowledge_slot_series.sql`.
+  - App (#2479): the lesson form asks "one-off times" or "every week"; every week asks for the weekdays, a start time, a
+    session length and an optional last day, and publishing starts the series on the draft before it goes live (a refused
+    schedule leaves no offer). The detail screen shows the schedule to every member; the giver also sees the series state
+    and pauses, resumes or ends it (ending asks first and says booked sessions stay).
+  - Weekly lesson schedules use `Asia/Jerusalem` wall time. The create input and the displayed series schedule explicitly say Israel time, independent of the device timezone.
+  - Editing a lesson offer (#2479, `lessonEditFields`): the schedule choice and the weekly inputs (weekdays, start time,
+    session length, last day) are create-only. An edit never converts a lesson between one-off times and a weekly series,
+    and never starts, moves or restarts a series; a series is changed only by pause / resume / end on the detail screen.
+    An offer that stores one-off times (`details.slots`) keeps its slot list and places editable; saving syncs them to
+    bookable rows in the same transaction (#2478), and a booked slot is not moved, removed or cut below its bookings. A
+    weekly offer stores no one-off times, so its edit form shows neither the slot list nor the places per session.
+  - Tests: `supabase/tests/074_knowledge_slot_series.sql`; unit tests of the domain rule, the use cases, the adapter and
+    the create path; component tests of the form fields and the series panel.
 
 ## FR-KNOW-005 — Question with accepted answer
 

@@ -40,6 +40,7 @@ import { withJobOfferOrg } from '../lib/unifiedCreate/jobOfferOrg';
 import { useJobOfferOrgChoice } from './useJobOfferOrgChoice';
 import { saveMaskOrWithdraw } from '../lib/unifiedCreate/saveMaskOrWithdraw';
 import { attachPendingImport } from '../lib/attachPendingImport';
+import { lessonEditDetails, lessonEditFields } from '../lib/unifiedCreate/lessonEditFields';
 
 export { rideAutoTitle };
 
@@ -87,11 +88,14 @@ export function useListingCreateForm({
     () => kindForCreate(kindsQuery.data ?? [], direction, eventChoice.isEvent, chosenKindSlug),
     [kindsQuery.data, direction, eventChoice.isEvent, chosenKindSlug],
   );
-  const specs = useMemo(() => (kind ? fieldsForKind(kind) : []), [kind]);
+  const [details, setDetails] = useState<Record<string, unknown>>({});
+  const editingLesson = Boolean(editListingId) && kind?.slug === 'lesson_offer';
+  const createSpecs = useMemo(() => (kind ? fieldsForKind(kind) : []), [kind]);
+  const specs = useMemo(() => editingLesson ? lessonEditFields(createSpecs, details) : createSpecs,
+    [createSpecs, editingLesson, details]);
   // A new job offer names an organization allowed to post jobs (§5.11, #1476); an edit keeps its own.
   const jobOfferOrg = useJobOfferOrgChoice(worldSlug, editListingId ? null : kind?.slug);
 
-  const [details, setDetails] = useState<Record<string, unknown>>({});
   const [city, setCity] = useState<City | null>(null);
   const [photos, setPhotos] = useState<PickedImage[]>([]);
   const [subcategoryId, setSubcategoryId] = useState<string | null>(null);
@@ -181,7 +185,7 @@ export function useListingCreateForm({
         await marketplaceRepository().updateMyListing(editListingId, {
           title: effectiveTitle,
           summary: summary.trim() || null,
-          details: submitted,
+          details: editingLesson ? lessonEditDetails(submitted) : submitted,
           cityId: isRides ? null : city?.id ?? null,
           ...(exposedLevel ? { locationDisplayLevel: exposedLevel } : {}),
           visibility: exposure.visibility,
@@ -212,7 +216,7 @@ export function useListingCreateForm({
           direction,
           title: effectiveTitle,
           summary,
-          details: submitted,
+          details: editingLesson ? lessonEditDetails(submitted) : submitted,
           cityId: city?.id ?? null,
           // The server places the listing at its city when no coordinates are sent (0353).
           lat: null,

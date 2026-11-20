@@ -61,7 +61,8 @@ describe('listing field specs — per kind', () => {
       'stay_purpose', 'check_in_date', 'check_out_date', 'flexible_days', 'adults', 'minors', 'near_trail', 'gear', 'needs',
     ]);
     expect(keysOf('lesson_offer')).toEqual([
-      'topic', 'level', 'modality', 'slots', 'capacity_per_slot', 'language', 'availability_note',
+      'topic', 'level', 'modality', 'schedule', 'slots', 'series_weekdays', 'series_time', 'series_duration_minutes',
+      'series_ends_on', 'capacity_per_slot', 'language', 'availability_note',
     ]);
     expect(keysOf('mentoring_offer')).toEqual([
       'topic', 'audience', 'cadence', 'modality', 'seats', 'language', 'availability_note',
