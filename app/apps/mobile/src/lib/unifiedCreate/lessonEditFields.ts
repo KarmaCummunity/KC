@@ -8,8 +8,11 @@ export function lessonEditFields(
   details: Readonly<Record<string, unknown>>,
 ): readonly ListingFieldSpec[] {
   const createOnly = new Set<string>(KNOWLEDGE_SERIES_DETAIL_KEYS);
+  // Without stored one-off slots, capacity belongs to the series and cannot
+  // be changed by updateMyListing. Keep its stored value, but expose no editor.
+  const hasOneoffSlots = Array.isArray(details.slots);
   return specs.filter((spec) => !createOnly.has(spec.key) &&
-    (spec.key !== 'slots' || Array.isArray(details.slots))).map((spec) => {
+    (!['slots', 'capacity_per_slot'].includes(spec.key) || hasOneoffSlots)).map((spec) => {
     if (spec.key !== 'slots') return spec;
     // Only an existing one-off slot list can be edited here. A weekly post has
     // no details.slots; its materialized/booked slots remain owned by the series.

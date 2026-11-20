@@ -28,6 +28,13 @@ describe('stored lesson owner edit, without recreating its schedule', () => {
     expect(firstMissingRequiredField(edit, { ...details, slots: [] })?.key).toBe('slots');
     expect(detailsForSubmit(edit, details).slots).toEqual(slots);
   });
+  it('keeps series-owned capacity in stored details without offering an unsupported editor', () => {
+    const weekly = { ...base, capacity_per_slot: 3 };
+    const edit = lessonEditFields(specs, weekly);
+    expect(edit.some((s) => s.key === 'capacity_per_slot')).toBe(false);
+    expect(lessonEditDetails(detailsForSubmit(edit, weekly))).toEqual(weekly);
+    expect(lessonEditFields(specs, { ...weekly, slots }).some((s) => s.key === 'capacity_per_slot')).toBe(true);
+  });
   it('strips stale create-only keys without deleting existing slots', () => {
     expect(lessonEditDetails({ ...base, schedule: 'weekly', series_weekdays: [2], slots })).toEqual({ ...base, slots });
   });
