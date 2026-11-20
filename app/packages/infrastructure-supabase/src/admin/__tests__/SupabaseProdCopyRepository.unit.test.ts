@@ -25,11 +25,9 @@ describe('SupabaseProdCopyRepository', () => {
     expect(rpc).toHaveBeenCalledWith('admin_prod_copy_status');
   });
 
-  it('a copy that never ran has no time, and missing counts read as zero', async () => {
+  it('a malformed status is not a successful empty copy', async () => {
     const { repo } = repoWith({ data: { members: 'x' }, error: null });
-    await expect(repo.getStatus()).resolves.toEqual({
-      members: 0, posts: 0, organizations: 0, follows: 0, savedPosts: 0, lastCopiedAt: null,
-    });
+    await expect(repo.getStatus()).rejects.toMatchObject({ name: 'DemoDataError', code: 'unknown' });
   });
 
   it('deletes the copy and maps what was deleted', async () => {

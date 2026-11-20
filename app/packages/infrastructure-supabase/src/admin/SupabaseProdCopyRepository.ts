@@ -5,7 +5,7 @@
 // Refusals map exactly as the demo-data ones (toDemoDataError): `not_installed` on kc-prod.
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { IProdCopyRepository } from '@kc/application';
-import type { ProdCopyDeleteResult, ProdCopyStatus } from '@kc/domain';
+import { DemoDataError, type ProdCopyDeleteResult, type ProdCopyStatus } from '@kc/domain';
 import type { Database } from '../database.types';
 import type { CallResult } from '../rpc/mapRpcError';
 import { toDemoDataError } from './demoDataRows';
@@ -13,10 +13,17 @@ import { toDemoDataError } from './demoDataRows';
 type Row = Record<string, unknown>;
 
 const untyped = (client: SupabaseClient<Database>): SupabaseClient => client as unknown as SupabaseClient;
+function invalidResponse(): never {
+  throw new DemoDataError('unknown', 'Invalid production-copy response');
+}
 const asRow = (data: unknown): Row =>
-  data !== null && typeof data === 'object' && !Array.isArray(data) ? (data as Row) : {};
-/** A missing or malformed count reads as 0, never NaN. */
-const count = (row: Row, key: string): number => Number(row[key] ?? 0) || 0;
+  data !== null && typeof data === 'object' && !Array.isArray(data) ? (data as Row) : invalidResponse();
+/** Only actual nonnegative integer counts are evidence of state or deletion. */
+const count = (row: Row, key: string): number => {
+  const value = row[key];
+  if (typeof value !== 'number' || !Number.isSafeInteger(value) || value < 0) return invalidResponse();
+  return value;
+};
 
 function unwrap(rpc: string, result: CallResult<unknown>): Row {
   if (result.error) throw toDemoDataError(rpc, result.error);
@@ -24,13 +31,19 @@ function unwrap(rpc: string, result: CallResult<unknown>): Row {
 }
 
 export function mapProdCopyStatus(r: Row): ProdCopyStatus {
+  const copiedAt = r.last_copied_at;
+  if (typeof r.is_dev_environment !== 'boolean' ||
+      (copiedAt !== null && (typeof copiedAt !== 'string' ||
+        !/^\d{4}-\d{2}-\d{2}T/.test(copiedAt) || !Number.isFinite(Date.parse(copiedAt))))) {
+    return invalidResponse();
+  }
   return {
     members: count(r, 'members'),
     posts: count(r, 'posts'),
     organizations: count(r, 'organizations'),
     follows: count(r, 'follows'),
     savedPosts: count(r, 'saved_posts'),
-    lastCopiedAt: typeof r.last_copied_at === 'string' ? r.last_copied_at : null,
+    lastCopiedAt: copiedAt,
   };
 }
 
