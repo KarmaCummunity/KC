@@ -1,6 +1,6 @@
 # 2.1 Authentication & Onboarding
 
-> **Status:** 🟡 Partial — Google shipped; guest preview removed (`D166`); email/password via secondary link on welcome. Full `FR-AUTH-002` picker (Phone OTP, tabbed email) deferred — `TD-151`; Apple SSO (`FR-AUTH-004`) implemented natively (`D-58`, 2026-06-04), live flow pends Supabase Apple provider config. Onboarding + sessions + delete: ✅. **Audit 2026-05-29:** `performFullSignOut` + restore expiry sign-out shipped (TD-164). ⚠️ Audit 2026-05-16: ~~🔴 **FR-AUTH-017 AC3** sign-out leaves Expo push token active~~ addressed by TD-164; ~~welcome screen has no email entry per FR-AUTH-001 AC2 (TD-104)~~ ✅ 2026-10-30 — "continue with email" text link restored on every platform (KC#1269, `testID=auth-email-entry`); ~~Forgot Password button dead (FR-AUTH-008 unimplemented)~~ ✅ FR-AUTH-008 implemented 2026-10-30; FR-AUTH-015 soft-gate wired only to post-create (not follow + chat); FR-AUTH-016 30-day re-registration cooldown unimplemented; FR-AUTH-011 AC2 avatar resize 512 vs spec'd 1024; SignInWithEmail short-circuits `invalid_email` distinct from `authentication_failed` (D-22 spirit). See `docs/SSOT/archive/audit/2026-05-16/02_auth_profile.md`.
+> **Status:** 🟡 Partial — Google shipped; basic guest browsing (`D186`, supersedes the no-guest portion of `D166`); email/password via secondary link on welcome. Full `FR-AUTH-002` picker (Phone OTP, tabbed email) deferred — `TD-151`; Apple SSO (`FR-AUTH-004`) implemented natively (`D-58`, 2026-06-04), live flow pends Supabase Apple provider config. Onboarding + sessions + delete: ✅. **Audit 2026-05-29:** `performFullSignOut` + restore expiry sign-out shipped (TD-164). ⚠️ Audit 2026-05-16: ~~🔴 **FR-AUTH-017 AC3** sign-out leaves Expo push token active~~ addressed by TD-164; ~~welcome screen has no email entry per FR-AUTH-001 AC2 (TD-104)~~ ✅ 2026-10-30 — "continue with email" text link restored on every platform (KC#1269, `testID=auth-email-entry`); ~~Forgot Password button dead (FR-AUTH-008 unimplemented)~~ ✅ FR-AUTH-008 implemented 2026-10-30; FR-AUTH-015 soft-gate wired only to post-create (not follow + chat); FR-AUTH-016 30-day re-registration cooldown unimplemented; FR-AUTH-011 AC2 avatar resize 512 vs spec'd 1024; SignInWithEmail short-circuits `invalid_email` distinct from `authentication_failed` (D-22 spirit). See `docs/SSOT/archive/audit/2026-05-16/02_auth_profile.md`.
 
 
 
@@ -39,8 +39,8 @@ Every unauthenticated launch starts on the Splash / Welcome screen showing the v
 **Acceptance Criteria.**
 - AC1. The screen renders within `NFR-PERF-001` (cold-start budget) and exposes both CTAs above the fold on every supported breakpoint.
 - AC2. Tapping "Sign up" or "Log in" navigates to the auth screen (`FR-AUTH-002`).
-- AC3. *Removed (`D166`).* The screen offers no guest entry: the feed is for members only.
-- AC4. The screen is the only screen reachable in the unauthenticated state; any deep link that targets an authenticated screen redirects here first.
+- AC3. A visible "Browse without an account" link opens the basic guest feed (`FR-AUTH-014`, `D186`) without creating a session.
+- AC4. Member routes still redirect here before sign-in. Explicit public routes, including `/browse` and `/browse/post/<uuid>`, remain available without an account; no blanket AuthGate bypass is allowed.
 
 **Edge Cases.**
 - A user who has a valid session token never sees this screen on launch (see `FR-AUTH-013`).
@@ -328,22 +328,39 @@ A user with a valid session token who launches the app skips Splash and Auth and
 
 ---
 
-## FR-AUTH-014 — Guest Preview — **REMOVED**
+## FR-AUTH-014 — Basic guest browsing
 
-**Status.** ⛔ Removed (`D166`).
+**Source.** Owner approval on 2026-11-19, `D186`, following Apple review guideline 5.1.1(v).
+Supersedes the no-guest portion of `D166`; other public-surface decisions stay unchanged.
 
-**Rationale.** Signed-out access is minimal by decision: only the sign-in flow, the published legal
-text, the About pages, the public research form and public nonprofit pages open without an account.
-No post is readable signed out, so there is no guest feed and no signed-out post preview; a shared
-link to a post opens the welcome screen and returns to the post after sign-in (`FR-POST-023 AC6`).
+**Description.** A visitor can browse real open Public posts without registering. The view is
+read-only and deliberately smaller than the member feed/detail. It does not create an anonymous
+Auth account, mount member engagement controls or load private member data.
 
-**What replaced it.**
-- The welcome screen (`FR-AUTH-001`) offers sign-in and sign-up only.
-- A stale link to the former guest route (screen 1.7) is handled like any member route: the
-  visitor lands on the welcome screen.
-- The database grants nothing of the feed or of the post catalog to signed-out callers.
+**Acceptance Criteria.**
+- AC1. The welcome screen links to `/browse`. A card opens `/browse/post/<uuid>` without sign-in.
+  A stale former `(guest)` route is not reopened. The existing member `/post/<uuid>` remains gated.
+- AC2. The server returns only an opaque post id (navigation/pagination), title, description and
+  city names in Hebrew/English. No author id, name, handle, avatar, contact, private location,
+  coordinates, details JSON, media/storage paths, comments or viewer/account state is returned.
+  Title and description remain the author's free text; omitting structured identity fields is
+  not a guarantee of removing personal information from that text.
+- AC3. Feed and detail use the same server-side predicate: open, Public, published, unexpired,
+  active owner, active world and active post kind. Private, followers-only, draft, paused, closed,
+  expired, hidden/removed and inactive-owner posts are absent, including lookup by a guessed id.
+  Missing and unauthorized details have the same unavailable response.
+- AC4. Only the narrow `guest_posts` read RPC is granted to `anon`; existing table RLS/grants and
+  member feed/detail RPC privileges stay unchanged. The definer function fixes an empty
+  search_path, uses no dynamic SQL and returns an explicit projection. Pages cap at 20, using
+  an opaque UUID keyset cursor; this basic view does not claim personalized/newest ranking.
+- AC5. Publishing, comments, reactions, saving, following, messaging/contact and all account
+  actions still require sign-in. The guest detail's sign-in CTA remembers the normal member
+  post route and resumes it after the existing sign-in/onboarding flow.
+- AC6. Guest screens have loading, empty/unavailable and retriable error states. Errors must not
+  be represented as an empty feed. Hebrew/English use the same data boundary and readable
+  small-screen layout. No demo-only content is presented as proof of Apple acceptance.
 
-**Related.** Screens: 1.7 (retired).
+**Related.** `FR-AUTH-001`, `FR-POST-023 AC6`, `docs/db/target-design.md` §12.1.
 
 ---
 

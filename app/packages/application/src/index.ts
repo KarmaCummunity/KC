@@ -251,3 +251,5 @@ export * from './knowledge';
 export * from './ports/IIdentityVerificationService';
 export * from './identityVerification/StartIdentityVerificationUseCase';
 export * from './identityVerification/GetIdentityVerificationStatusUseCase';
+
+export type { GuestPost, IGuestPostsRepository } from './ports/IGuestPostsRepository';
