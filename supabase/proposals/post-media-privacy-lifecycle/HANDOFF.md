@@ -45,12 +45,16 @@ Integrate the parts separately if wanted.
    - A job's operation deadlines add up to about 70 s plus decode, while the 20 s budget only gates
      the next claim.
    - The `dev-experiment-1024` profile exists to sample this. Running it is an activation step.
+   - The experiment is accepted only in kc-dev (project ref from `SUPABASE_URL`). An unknown or
+     misspelled `PROCESS_POST_MEDIA_PROFILE` makes the worker refuse every run (fails closed).
 3. **Originals stay public; copies are not revocable** (public, immutable CDN URLs). Design in `DESIGN.md`.
 4. **Deletion is application-level only.**
    - No commit-time storage authorization for service writes.
    - Aborted uploads may still commit.
    - The cancelled job rows cascade away, so there is no durable deletion intent.
    - No verified re-sweep.
+   - A settle margin cannot prove quiescence; commit-time refusal for service writes needs a
+     vendor-verified check or a guarded private proxy (DESIGN.md §4).
 5. **No server reconciliation for `chat-media` / `avatars`.** The device ledger is best effort:
    swept on the next upload, capped at 200 entries, and its 15-minute settle window is assumed, not
    measured.
