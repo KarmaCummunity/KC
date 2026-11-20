@@ -227,7 +227,7 @@ export function buildMap({ rows, missing, packages, edgeFunctions, notes, launch
         if (!newTypes.tables[name]) problems.push(`${key}: target table '${name}' is not in the baseline`);
         return { type, name, ...(binding ?? {}), columns: newTypes.tables[name]?.columns ?? [], clientGrants: baseline.grants[name] ?? {} };
       }
-      if (type === 'sql' && name.startsWith('supabase/seed/demo/')) {
+      if (type === 'sql' && /^supabase\/seed\/(?:demo|prod-copy)\//.test(name)) {
         const [path, symbol] = name.split('#');
         const sql = sourceFiles[path];
         const expectedArgs = symbol === 'admin_seed_demo_data_step' ? 'p_password text default null' : '';
@@ -307,7 +307,7 @@ async function main() {
   const newTypes = parseTypes(readFileSync(join(TYPES_DIR, 'database.types.ts'), 'utf8'));
   const schemas = join(ROOT, 'supabase/schemas');
   const baseline = parseBaselineSql(walkSql(schemas).map((full) => ({ path: full.slice(schemas.length + 1), sql: readFileSync(full, 'utf8') })));
-  const currentPaths = [...walkSql(join(ROOT, 'supabase/schemas')), ...readdirSync(join(ROOT, 'supabase/migrations')).filter(n => n.endsWith('.sql')).map(n => join(ROOT, 'supabase/migrations', n)), join(ROOT, 'supabase/seed/demo/lib/80_admin_rpcs.sql'), ...['extract-external-post', 'identity-verification-session'].map(n => join(ROOT, 'supabase/functions', n, 'index.ts'))];
+  const currentPaths = [...walkSql(join(ROOT, 'supabase/schemas')), ...readdirSync(join(ROOT, 'supabase/migrations')).filter(n => n.endsWith('.sql')).map(n => join(ROOT, 'supabase/migrations', n)), join(ROOT, 'supabase/seed/demo/lib/80_admin_rpcs.sql'), join(ROOT, 'supabase/seed/prod-copy/lib/60_admin_rpcs.sql'), ...['extract-external-post', 'identity-verification-session'].map(n => join(ROOT, 'supabase/functions', n, 'index.ts'))];
   const sourceFiles = Object.fromEntries(currentPaths.filter(existsSync).map(path => [path.slice(ROOT.length + 1), readFileSync(path, 'utf8')]));
   const { map, problems } = buildMap({ ...authored, sourceFiles }, buildInventory(), oldTypes, newTypes, baseline, loadAppErrorCodes());
   if (problems.length > 0) {

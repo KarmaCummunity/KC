@@ -48,7 +48,7 @@ test('current targets carry explicit SQL or edge sources and structured unknown 
  const b=currentSourceBinding('rpc','test',{'x.sql':'create function public.test() returns jsonb language sql as $$ $$;'});
  assert.equal(b.source,'x.sql');assert.match(b.sqlSignature,/test\(\) → jsonb/);assert.equal(b.errorBinding.status,'unknown');
  const map=JSON.parse(readFileSync(new URL('../docs/db/app-migration-map.json',import.meta.url),'utf8'));
- const additions=rows.filter(r=>r.currentBinding);assert.equal(additions.length,24);
+ const additions=rows.filter(r=>r.currentBinding);assert.equal(additions.length,26);
  for(const r of additions){const out=map.rows.find(x=>x.kind===r.kind&&x.old===r.old);assert.ok(out.targets[0].source);assert.equal(out.targets[0].errorBinding.status,'unknown');}
 });
 
@@ -65,4 +65,22 @@ test('effective source uses sorted migration precedence, not first schema match'
  assert.equal(binding.source,'supabase/migrations/0099_override.sql');assert.match(binding.sqlSignature,/p_latest text/);
  assert.deepEqual(currentSourceBinding('rpc','target',Object.fromEntries(Object.entries(sources).reverse())),binding);
  assert.match(currentSourceBinding('rpc','target',{'supabase/migrations/0099_override.sql':declaration('p_first text')+'\n'+declaration('p_second uuid')}).sqlSignature,/p_second uuid/);
+});
+
+
+test('production-copy targets bind exact seed definitions and deny baseline leakage',async()=>{
+ const {buildMap}=await import('./app-migration-map.mjs');
+ const path='supabase/seed/prod-copy/lib/60_admin_rpcs.sql';
+ const sql=readFileSync(new URL('../'+path,import.meta.url),'utf8');
+ const names=['admin_prod_copy_status','admin_delete_prod_copy'];
+ const selected=rows.filter(r=>names.includes(r.old));
+ const inventory={entries:names.map(name=>({kind:'rpc',name,file:'adapter.ts',line:1,area:'admin'}))};
+ const types={functions:{},tables:{},views:{}};
+ const build=(text,newTypes=types)=>buildMap({rows:selected,missing:[],packages:[{id:'copy',select:()=>true}],edgeFunctions:[],notes:[],sourceFiles:{[path]:text}},inventory,types,newTypes,{functions:{},grants:{}});
+ assert.deepEqual(build(sql).problems,[]);
+ assert.ok(build(null).problems.length>=2);
+ for(const name of names)assert.ok(build(sql.replace('function public.'+name,'function public.changed_'+name)).problems.some(p=>p.includes(name)));
+ assert.ok(build(sql.replaceAll('returns jsonb','returns text')).problems.length>=2);
+ assert.ok(build('/* '+sql+' */').problems.length>=2);
+ assert.ok(build(sql,{...types,functions:{admin_prod_copy_status:[]}}).problems.some(p=>p.includes('unexpectedly present')));
 });

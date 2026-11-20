@@ -1,5 +1,6 @@
 // FR-ADMIN-031 — Hebrew copy of the admin portal's Demo data screen (hide and show the kc-dev
-// demo data; hiding deletes it and showing creates it again). Merged into `admin` by the locale index.
+// demo data; hiding deletes it and showing creates it again), with the FR-ADMIN-037 card of the
+// weekly copy from production (`prodCopy`). Merged into `admin` by the locale index.
 export const adminDemoDataHe = {
   nav: {
     demoData: 'נתוני דמה',
@@ -63,6 +64,27 @@ export const adminDemoDataHe = {
     doneTitle: 'נתוני הדמה הוסתרו',
     done: (users: number, orgs: number) => `נמחקו ${users} משתמשים ו-${orgs} עמותות.`,
     orgsKept: (n: number) => `${n} עמותות דמה נשארו כי יש להן היסטוריית תשלומים.`,
+    prodCopy: {
+      title: 'הועתק מסביבת הייצור',
+      subtitle: 'עותק אנונימי של נתוני סביבת הייצור, שמתווסף לסביבת הפיתוח פעם בשבוע. השמות בדויים, ופרטי קשר, צ׳אטים ותמונות לא מועתקים.',
+      members: 'משתמשים',
+      posts: 'פוסטים',
+      organizations: 'עמותות',
+      follows: 'מעקבים',
+      savedPosts: 'שמירות',
+      lastCopied: (when: string) => `העתקה אחרונה: ${when}`,
+      neverCopied: 'עוד לא בוצעה העתקה.',
+      empty: 'אין כרגע נתונים שהועתקו. ההעתקה השבועית הבאה תוסיף אותם.',
+      deleteButton: 'מחיקת הנתונים שהועתקו',
+      deleting: 'מוחק...',
+      confirmTitle: 'למחוק את הנתונים שהועתקו?',
+      confirmBody: (members: number, posts: number) =>
+        `נמחקים ${members} משתמשים שהועתקו עם ${posts} הפוסטים שלהם, והעמותות שהועתקו. שום דבר אחר לא נפגע, וההעתקה השבועית הבאה תחזיר אותם.`,
+      confirmOk: 'למחוק',
+      confirmCancel: 'ביטול',
+      deleted: (members: number, posts: number, orgs: number) =>
+        `נמחקו ${members} משתמשים, ${posts} פוסטים ו-${orgs} עמותות שהועתקו.`,
+    },
     errors: {
       generic: 'הפעולה נכשלה. נסו שוב או משכו לרענון.',
       forbidden: 'אין הרשאה. רק מנהל-על או מנהל הארגון של קארמה קהילה יכולים לנהל נתוני דמה.',

@@ -200,6 +200,8 @@ export * from './admin/SetOrgSlugUseCase';
 export * from './admin/GetHierarchySnapshotUseCase';
 export * from './admin/IDemoDataRepository';
 export * from './admin/DemoDataUseCases';
+export * from './admin/IProdCopyRepository';
+export * from './admin/ProdCopyUseCases';
 
 // A1 — admin reports inbox & case detail
 export * from './reports/IReportsRepository';

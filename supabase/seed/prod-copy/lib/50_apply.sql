@@ -39,6 +39,8 @@ begin
     raise exception 'prod_copy_bad_format' using errcode = 'P0001';
   end if;
 
+  -- One copy at a time, and never while "Delete copied data" runs (prod_copy_delete_all).
+  perform pg_advisory_xact_lock(hashtext('kc.prod_copy'));
   perform set_config('request.jwt.claims', '{}', true);
   perform set_config('request.jwt.claim.sub', '', true);
   perform set_config('kc.fsm_role', 'system', true);
