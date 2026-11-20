@@ -57,11 +57,11 @@ export const settingsHe = {
       'שיחות שניהלת יישארו אצל האנשים שדיברת איתם. הם יראו את ההודעות שכתבת, אבל לא את שמך, התמונה או הפרופיל — רק "{{deletedUserLabel}}".',
     warning:
       'החשבון יושבת ל-30 יום. אם תיכנס אליו שוב בתקופה הזו תוכל לשחזר אותו במלואו. אחרי 30 יום הכל נמחק לצמיתות.',
-    confirmNameLabel: 'להקליד את השם שלך ({{name}}) כדי לאשר',
-    confirmInputLabel: 'להקליד "מחק" כדי לאשר',
-    confirmInputPlaceholder: 'מחק', // copy-voice-allow: confirm keyword the user types
-    confirmKeyword: 'מחק', // copy-voice-allow: confirm keyword the user types
+    confirmInputLabel: 'לאישור, הקלד את שם התצוגה שלך',
+    confirmInputPlaceholder: 'שם התצוגה שלך',
+    nameUnavailable: 'שם התצוגה שלך לא זמין כרגע. סגור את החלון ונסה שוב אחרי שהפרופיל ייטען.',
     buttons: {
+      continue: 'המשך',
       cancel: 'ביטול',
       delete: 'מחיקת החשבון',
       retry: 'לנסות שוב',

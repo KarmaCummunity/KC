@@ -26,8 +26,7 @@ export type AccountStatusForDelete =
 export interface DeleteAccountConfirmModalProps {
   visible: boolean;
   accountStatus: AccountStatusForDelete;
-  /** The member's display name, typed to confirm (FR-SETTINGS-012 AC1); null falls back to a keyword. */
-  displayName?: string | null;
+  displayName: string | null;
   onCancel: () => void;
   onConfirm: () => Promise<void>;
 }
@@ -51,10 +50,20 @@ export function DeleteAccountConfirmModal(props: DeleteAccountConfirmModalProps)
   const { visible, accountStatus, displayName, onCancel, onConfirm } = props;
   const [typed, setTyped] = useState('');
   const [state, setState] = useState<LocalState>({ kind: 'idle' });
-  // The phrase that unlocks deletion: the member's own display name, or the keyword for a
-  // member who has none yet (onboarding not finished).
-  const name = displayName?.trim() || null;
-  const confirmPhrase = name ?? t('settings.deleteAccountModal.confirmKeyword');
+  const [warningAccepted, setWarningAccepted] = useState(false);
+  const expectedName = displayName?.trim().normalize('NFC') ?? '';
+  const resetContext = React.useRef({ visible, displayName });
+  const operationLocked = state.kind === 'submitting' || (state.kind === 'error' && state.error === 'critical');
+  React.useEffect(() => {
+    const changed = resetContext.current.visible !== visible || resetContext.current.displayName !== displayName;
+    resetContext.current = { visible, displayName };
+    // Profile refreshes and parent visibility changes must never unlock an
+    // in-flight operation or a critical retry-only failure.
+    if (!changed || operationLocked) return;
+    setTyped('');
+    setWarningAccepted(false);
+    setState({ kind: 'idle' });
+  }, [visible, displayName, operationLocked]);
 
   // A suspended or banned account cannot ask for deletion (`request_account_deletion` refuses
   // it); an unknown status (null) is left to the server.
@@ -65,10 +74,10 @@ export function DeleteAccountConfirmModal(props: DeleteAccountConfirmModalProps)
     else if (visible) setState((s) => (s.kind === 'blocked' ? { kind: 'idle' } : s));
   }, [visible, isBlocked]);
 
-  const ready = typed.trim() === confirmPhrase;
+  const ready = warningAccepted && expectedName.length > 0 && typed.trim().normalize('NFC') === expectedName;
 
   const handleConfirm = useCallback(async () => {
-    if (!ready) return;
+    if (!ready && !(state.kind === 'error' && state.error === 'critical')) return;
     setState({ kind: 'submitting' });
     try {
       await onConfirm();
@@ -87,7 +96,7 @@ export function DeleteAccountConfirmModal(props: DeleteAccountConfirmModalProps)
       }
       setState({ kind: 'error', error: 'recoverable' });
     }
-  }, [ready, onConfirm]);
+  }, [ready, onConfirm, state]);
 
   const submitting = state.kind === 'submitting';
   const critical = state.kind === 'error' && state.error === 'critical';
@@ -96,13 +105,18 @@ export function DeleteAccountConfirmModal(props: DeleteAccountConfirmModalProps)
 
   const footer = blocked ? (
     <SecondaryButton label={t('settings.deleteAccountModal.buttons.close')} size="md" fullWidth onPress={onCancel} />
+  ) : !warningAccepted ? (
+    <>
+      <SecondaryButton label={t('settings.deleteAccountModal.buttons.continue')} size="md" fullWidth onPress={() => setWarningAccepted(true)} disabled={!expectedName} />
+      <SecondaryButton label={t('settings.deleteAccountModal.buttons.cancel')} size="md" fullWidth onPress={onCancel} />
+    </>
   ) : (
     <>
       <DangerButton
         label={critical ? t('settings.deleteAccountModal.buttons.retry') : t('settings.deleteAccountModal.buttons.delete')}
         size="md"
         fullWidth
-        disabled={!ready}
+        disabled={!ready && !critical}
         loading={submitting}
         onPress={() => void handleConfirm()}
       />
@@ -159,19 +173,17 @@ export function DeleteAccountConfirmModal(props: DeleteAccountConfirmModalProps)
             </View>
           )}
 
-          <TextField
-            label={
-              name
-                ? t('settings.deleteAccountModal.confirmNameLabel', { name })
-                : t('settings.deleteAccountModal.confirmInputLabel')
-            }
+          {!expectedName && <Text style={styles.body}>{t('settings.deleteAccountModal.nameUnavailable')}</Text>}
+          {warningAccepted && <TextField
+            label={t('settings.deleteAccountModal.confirmInputLabel')}
+            helperText={displayName ?? ''}
             value={typed}
             onChangeText={setTyped}
-            placeholder={name ?? t('settings.deleteAccountModal.confirmInputPlaceholder')}
+            placeholder={t('settings.deleteAccountModal.confirmInputPlaceholder')}
             editable={!submitting}
             autoCapitalize="none"
             autoCorrect={false}
-          />
+          />}
         </FormScrollView>
       )}
     </Modal>
