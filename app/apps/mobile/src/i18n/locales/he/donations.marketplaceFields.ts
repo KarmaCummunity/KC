@@ -73,7 +73,7 @@ export const marketplaceFieldLabels = {
   capacity_per_slot: 'מקומות בכל מועד',
   schedule: 'מתי מתקיים השיעור',
   series_weekdays: 'באילו ימים',
-  series_time: 'שעת התחלה',
+  series_time: 'שעת התחלה (שעון ישראל)',
   series_duration_minutes: 'משך כל מפגש',
   series_ends_on: 'עד תאריך (לא חובה)',
   slots: 'מועדים',

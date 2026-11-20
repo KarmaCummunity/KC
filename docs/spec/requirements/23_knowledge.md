@@ -145,6 +145,7 @@ Two layers on one world (`docs/spec/18_knowledge_world.md` §18.2): **exchange p
     session length and an optional last day, and publishing starts the series on the draft before it goes live (a refused
     schedule leaves no offer). The detail screen shows the schedule to every member; the giver also sees the series state
     and pauses, resumes or ends it (ending asks first and says booked sessions stay).
+  - Weekly lesson schedules use `Asia/Jerusalem` wall time. The create input and the displayed series schedule explicitly say Israel time, independent of the device timezone.
   - Editing a lesson offer (#2479, `lessonEditFields`): the schedule choice and the weekly inputs (weekdays, start time,
     session length, last day) are create-only. An edit never converts a lesson between one-off times and a weekly series,
     and never starts, moves or restarts a series; a series is changed only by pause / resume / end on the detail screen.

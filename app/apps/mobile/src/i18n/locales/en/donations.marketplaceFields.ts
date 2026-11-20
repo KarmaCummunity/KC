@@ -73,7 +73,7 @@ export const marketplaceFieldLabels = {
   capacity_per_slot: 'Places per time',
   schedule: 'When the lesson takes place',
   series_weekdays: 'On which days',
-  series_time: 'Start time',
+  series_time: 'Start time (Israel time)',
   series_duration_minutes: 'Length of each session',
   series_ends_on: 'Until (optional)',
   slots: 'Times',

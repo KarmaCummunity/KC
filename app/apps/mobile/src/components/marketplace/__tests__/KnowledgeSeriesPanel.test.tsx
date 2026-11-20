@@ -71,6 +71,7 @@ describe('KnowledgeSeriesPanel', () => {
     const schedule = await view.findByTestId('knowledge-series-schedule');
     expect(schedule.textContent).toContain('rideSeries.every');
     expect(schedule.textContent).toContain('18:00');
+    expect(schedule.textContent).toContain('knowledgeBooking.series.israelTime');
     expect(schedule.textContent).toContain('knowledgeBooking.slotLength:60');
     expect(view.queryByTestId('knowledge-series-pause')).toBeNull();
   });

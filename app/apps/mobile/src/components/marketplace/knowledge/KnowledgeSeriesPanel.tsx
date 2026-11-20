@@ -38,6 +38,7 @@ function SeriesBox({ series, listingId, cityId, isOwner }: Props & { readonly se
     rideSeriesLabel({ weekdays: series.weekdays, time: series.startTime }, t),
     t('knowledgeBooking.slotLength', { minutes: series.durationMinutes }),
     rideSeriesUntilLabel(series.endsOn, t),
+    t('knowledgeBooking.series.israelTime'),
   ].filter(Boolean).join(' · ');
 
   return (

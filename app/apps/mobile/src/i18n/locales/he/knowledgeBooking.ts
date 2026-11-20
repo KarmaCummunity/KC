@@ -39,6 +39,7 @@ export const knowledgeBooking = {
   addSlot: '+ הוספת מועד',
   removeSlot: 'הסרת המועד',
   series: {
+    israelTime: 'שעון ישראל',
     title: 'שיעור קבוע',
     status: { active: 'המועדים נפתחים כל שבוע', paused: 'מושהה: לא נפתחים מועדים חדשים', ended: 'השיעור הקבוע הסתיים' },
     pause: 'השהיה',
