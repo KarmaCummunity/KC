@@ -19,5 +19,6 @@ test('focused media lane pins DEV and avoids shared setup and broad cleanup', ()
   const categories = read('app/apps/mobile/src/lib/unifiedCreate/createCategories.ts');
   assert.match(categories, /if \(id === 'items'\) return 'post'/);
   assert.match(source, /media-picker-final\.png/);
-  assert.match(source, /exact observed test uploads cleaned/);
+  assert.match(source, /expect\(response\.status, 'exact observed test uploads cleaned'\)/);
+  assert.doesNotMatch(source, /response\.status\(\), 'exact observed test uploads cleaned'/);
 });

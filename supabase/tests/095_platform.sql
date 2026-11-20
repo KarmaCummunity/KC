@@ -68,7 +68,7 @@ begin
 end;
 $$;
 
-select plan(48);
+select plan(50);
 
 insert into auth.users (id, email, raw_app_meta_data)
 select ('00000000-0000-4000-8000-00000000000' || m)::uuid, m || '@example.test', '{"provider":"google"}'
@@ -219,6 +219,14 @@ select is(pg_temp.act('c', 'delete from storage.objects') || (select count(*) fr
 select is(kc_access.storage_path_uuid('a/b/c', 2) is null
   and kc_access.storage_path_uuid('x/00000000-0000-4000-8000-00000000000a/f', 2) = '00000000-0000-4000-8000-00000000000a', true,
   'a path folder is a uuid or nothing');
+
+-- Removal must see the exact metadata rows first; a public CDN bucket does not bypass RLS.
+select is(pg_temp.seen('b', $$select 1 from storage.objects where bucket_id = 'post-images'$$) || '/'
+  || pg_temp.seen('c', $$select 1 from storage.objects where bucket_id = 'post-images'$$), '1/0',
+  'a member sees post-image metadata only inside their own folder');
+select is(pg_temp.act('b', $$delete from storage.objects where bucket_id = 'post-images'$$)
+  || '/' || (select count(*) from storage.objects where bucket_id = 'post-images'), 'ok/0',
+  'owner removal finds and removes the exact post-image row');
 
 -- ── Counter reconciliation ──────────────────────────────────────────────────
 select is(kc_private.user_stats_reconcile() + kc_private.post_stats_reconcile(), 0, 'counters kept by triggers show no drift');
