@@ -5,7 +5,8 @@
 // the provider key never leaves the server.
 //
 // POST → 200 { url } · 401 { error: 'unauthorized' } · 409 { error: <refusal reason> }
-//        · 502 { error: 'provider_unavailable' } · 500 { error: 'internal' }
+//        · 503 { error: 'provider_unavailable' } (not configured, no attempt)
+//        · 502 { error: 'provider_unavailable' } (configured but failed) · 500 { error: 'internal' }
 
 import { corsHeaders, isAllowedOrigin } from '../_shared/cors.ts';
 import { type IdentityProvider, RefusalError } from '../_shared/identity/provider.ts';
@@ -49,6 +50,10 @@ export function createSessionHandler(deps: SessionHandlerDeps): (req: Request) =
 
     const userId = await deps.authenticate(req);
     if (!userId) return json({ error: 'unauthorized' }, 401, headers);
+
+    // Authentication still runs first. Local configuration failure must not consume
+    // one of the member's limited attempts or call the external provider.
+    if (!deps.provider.sessionConfigured) return json({ error: 'provider_unavailable' }, 503, headers);
 
     let attemptId: string;
     try {

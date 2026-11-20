@@ -2,7 +2,7 @@
 
 > **Human source of truth:** the Hebrew page "KC – ספר הפרויקט (מקור אמת)" maintained by the PM (Nave) with the KC assistant. This folder is its English, AI-agent-friendly derivation. If the two disagree, the Hebrew page wins and this folder must be updated in the same week (decision **D35**, **D58**).
 >
-> Reconciliation checkpoint: **2026-11-19**. Decision log extends through **D178**. This date does not mean every chapter or requirement has been reconciled. See [store-review checkpoint](./97_store_review_checkpoint.md) and [reconciliation](./95_reconciliation.md).
+> Reconciliation checkpoint: **2026-11-19**. Decision log includes the dated guest decision and the later **D178–D185** owner decisions; registry numbering follows merge-time assignment. This date does not mean every chapter or requirement has been reconciled. See [store-review checkpoint](./97_store_review_checkpoint.md) and [reconciliation](./95_reconciliation.md).
 
 ## How to read
 

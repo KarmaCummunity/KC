@@ -239,6 +239,8 @@ A decision should be re-opened only when one of the following triggers fires:
 
 ## D-14 — Deleted user → "Deleted user" placeholder in chats
 
+**Clarified by owner approval 2026-11-20.** Retained counterpart conversation text does not preserve the purged member's shared chat image assets. Those images are removed for both sides at final purge (FR-SETTINGS-012, Q-8).
+
 **Decision.** When one party deletes their account, the counterpart retains the conversation; the deleted user appears as "Deleted user" with a generic avatar. Their messages remain visible.
 
 **Rationale.** Hard-deleting messages would erase context the counterpart may need (e.g., coordination history). The placeholder respects privacy without breaking continuity.
@@ -469,6 +471,8 @@ Web Push parity is deferred — only the adapter changes, the pipeline is shared
 ---
 
 ## D-21 — Privacy mode is a follow-approval flag only (2026-05-15)
+
+**Superseded for profile visibility by owner approval 2026-11-20.** Private now hides the profile from non-approved followers and caps per-field visibility. See `docs/spec/07_cross_cutting_systems.md` §7.12 and FR-PROFILE-003. The text below records the old decision, not the current target contract; separate per-post visibility is unchanged.
 
 **Decision.** `User.privacy_mode = Private` means **one thing**: new follow attempts create a `pending` follow request that the target must approve. It has no other effect on visibility — the profile header, biography, counters, post lists (subject to per-post `visibility`), and followers/following lists are visible to all signed-in viewers, exactly as for a `Public` profile. The lock indicator (`FR-PROFILE-011` / `FR-PROFILE-012`) plus the "Send Follow Request" CTA are the only user-facing differences.
 

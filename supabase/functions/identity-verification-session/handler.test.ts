@@ -4,6 +4,7 @@ import { createSessionHandler, type SessionHandlerDeps } from './handler.ts';
 
 const provider = (createSession: IdentityProvider['createSession']): IdentityProvider => ({
   slug: 'didit',
+  sessionConfigured: true,
   createSession,
   verifyWebhook: () => Promise.resolve(false),
   parseWebhook: () => null,
@@ -65,4 +66,19 @@ Deno.test('a provider failure is 502 and is reported', async () => {
 Deno.test('only POST is served', async () => {
   const { deps: d } = deps();
   assertEquals((await createSessionHandler(d)(new Request('http://x', { method: 'GET' }))).status, 405);
+});
+
+Deno.test('an unconfigured provider returns 503 before consuming an attempt', async () => {
+  const { deps: d, calls } = deps();
+  const response = await createSessionHandler({ ...d, provider: { ...d.provider, sessionConfigured: false } })(post());
+  assertEquals(response.status, 503);
+  assertEquals(await response.json(), { error: 'provider_unavailable' });
+  assertEquals(calls, []);
+});
+
+Deno.test('unconfigured provider still requires authentication', async () => {
+  const { deps: d, calls } = deps({ authenticate: () => Promise.resolve(null) });
+  const response = await createSessionHandler({ ...d, provider: { ...d.provider, sessionConfigured: false } })(post());
+  assertEquals(response.status, 401);
+  assertEquals(calls, []);
 });

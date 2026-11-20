@@ -4,7 +4,7 @@ Order within a phase is a KC fill. **Planning baseline (2026-11-08): initial sto
 
 ## Verified store checkpoint, 2026-11-19
 
-App Store submission of version 1.0, binary 1.9.176 (36), is Rejected: guest access and subscription-model clarification are required. Limited guest browsing (D178, #2511) is development work, not yet a production release. Google Play production is inactive: 2 testers are opted in, against a requirement of at least 12 for at least 14 days (#2305). Apple subscription products remain Prepare for Submission. Full evidence and limits: [store-review checkpoint](./97_store_review_checkpoint.md). The phase table below is a plan, not an implementation-completion report.
+App Store submission of version 1.0, binary 1.9.176 (36), is Rejected: guest access and subscription-model clarification are required. Limited guest browsing ({{D:limited-guest-browsing}}, #2511) is development work, not yet a production release. Google Play production is inactive: 2 testers are opted in, against a requirement of at least 12 for at least 14 days (#2305). Apple subscription products remain Prepare for Submission. Full evidence and limits: [store-review checkpoint](./97_store_review_checkpoint.md). The phase table below is a plan, not an implementation-completion report.
 
 ## Launch sequence, owner correction 2026-11-19 19:17 Jerusalem
 

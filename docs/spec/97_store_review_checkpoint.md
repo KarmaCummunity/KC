@@ -6,7 +6,7 @@ This is a dated status and source record, not the full project book, PRD or SRS.
 
 KC has a social purpose. The owner described its commercial model as future work: a full management platform for organizations and a personal WhatsApp bot with a few specific functions for individuals. No price or start date was newly confirmed. Historical D143 and SSOT D-210 price plans are not treated as cancelled, but their original user approval has not been recovered in this review.
 
-The owner approved limited guest browsing as described in D178, tracked in [#2511](https://github.com/KarmaCummunity/KC/issues/2511). This is an audience change from the old member-only policy. It is not permission to publish a store version, send an Apple response or change production.
+The owner approved limited guest browsing as described in {{D:limited-guest-browsing}}, tracked in [#2511](https://github.com/KarmaCummunity/KC/issues/2511). This is an audience change from the old member-only policy. It is not permission to publish a store version, send an Apple response or change production.
 
 ## Apple, verified live
 
@@ -47,7 +47,7 @@ No invitations, tester enrollment, track changes or production-access applicatio
 
 ## Development and release safety
 
-[#2510](https://github.com/KarmaCummunity/KC/pull/2510), fixing routine Vault preservation, is Draft. Draft intentionally skips the full CI gate. Its release is waiting for a separate safe-CI decision; no unchanged rerun is expected to fix this policy result. Other dev PRs are temporarily held as Draft to avoid another unsafe deployment. No label, branch protection, main or production change is authorized by this document.
+This section records the November 19 hold, not a current blanket DEV integration prohibition. By November 20, #2510 and #2514 were ready for CI but separately held for a safe bootstrap. Ordinary authorized serial DEV integration resumed after a current source and configuration audit; it does not authorize production or destructive worker activation. The routine writer remains a release-safety concern. No label, branch protection, main or production change is authorized by this document.
 
 Release-policy statements in `docs/agents/RELEASE.md`, `docs/SSOT/RELEASE_CHECKLIST.md`, `docs/SSOT/ENVIRONMENTS.md` and `docs/release/WEEKLY-RELEASE-TRAIN.md` disagree. Reconcile those statements against original owner decisions and current workflow behavior, rather than treating any document as a fresh grant to deploy.
 
@@ -55,7 +55,7 @@ Release-policy statements in `docs/agents/RELEASE.md`, `docs/SSOT/RELEASE_CHECKL
 
 At 18:43 Jerusalem the owner directly answered the proposal to disable the Sunday production train by approving smart automatic deployment instead. This authorizes the scheduled, gated dev-to-main-to-production path, not an immediate dispatch, skipped tests, bypassed failed checks, direct main pushes, unrelated settings changes, or release of unready PRs. Apple replies, App Store review submission and Play public promotion still require separate approval. Earlier broad statements about mandatory manual approval are qualified only for this scheduled path.
 
-The enabled switch remains unchanged. The next scheduled run is Sunday November 22 at 06:00 Jerusalem. The owner approval settles authority, not implementation safety: #2509 is a known technical blocker. The existing routine deploy workflow can still overwrite the database jobs' Vault configuration. Draft PR holds do not stop release of the existing dev tip. Do not mark the train safe until a fail-closed check or the preservation fix is verified in the workflow copy that will actually execute. #2510 remains Draft pending a safe full-CI route. No main promotion or production run was performed in this checkpoint.
+As last checked on November 20, the enabled switch remains true and the next scheduled run is Sunday November 22 at 06:00 Jerusalem. A persistent pause was proposed to the owner; no approval is inferred here. The owner approval settles authority, not implementation safety: #2509 is a known technical blocker. The existing routine deploy workflow can still overwrite the database jobs' Vault configuration. Draft PR holds do not stop release of the existing dev tip. Do not mark the train safe until a fail-closed check or the preservation fix is verified in the workflow copy that will actually execute. #2510 was subsequently made ready for CI, but merge, safety bootstrap and production rollout remain separately held. No main promotion or production run was performed in this checkpoint.
 
 ## Launch planning correction, 2026-11-19 19:17 Jerusalem
 
