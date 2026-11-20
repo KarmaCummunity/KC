@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
 
 const { state, replace, alert, pickAvatarImage, removeUploadedAvatar, resizeAndUploadAvatar, setAvatar, complete, t, lifecycle } = vi.hoisted(() => ({
-  lifecycle: { retirePreviousAvatar: vi.fn(async () => 'deleted'), discardUnsavedAvatar: vi.fn(async () => 'deleted') },
+  lifecycle: { retirePreviousAvatar: vi.fn(async () => 'delete_queued'), discardUnsavedAvatar: vi.fn(async () => 'delete_queued') },
   state: { session: null as { userId: string; avatarUrl: string | null } | null, onboardingState: 'pending_avatar' as string, setSession: vi.fn(), setOnboardingState: vi.fn() },
   replace: vi.fn(), alert: vi.fn(), pickAvatarImage: vi.fn(), removeUploadedAvatar: vi.fn(), resizeAndUploadAvatar: vi.fn(), setAvatar: vi.fn(), complete: vi.fn(), t: (key: string) => key,
 }));

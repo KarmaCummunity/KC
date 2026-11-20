@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, renderHook } from '@testing-library/react';
 
 const { lifecycle } = vi.hoisted(() => ({
-  lifecycle: { retirePreviousAvatar: vi.fn(async () => 'deleted'), discardUnsavedAvatar: vi.fn(async () => 'deleted') },
+  lifecycle: { retirePreviousAvatar: vi.fn(async () => 'delete_queued'), discardUnsavedAvatar: vi.fn(async () => 'delete_queued') },
 }));
 vi.mock('../../services/avatarLifecycle', () => lifecycle);
 vi.mock('../../services/userComposition', () => ({ getUserRepo: () => ({ findById: async () => ({ avatarUrl: 'saved' }) }) }));

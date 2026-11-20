@@ -17,7 +17,7 @@ beforeEach(() => vi.clearAllMocks());
 describe('retirePreviousAvatar', () => {
   it('deletes the previous generation and its thumb once the profile points at the new one', async () => {
     const outcome = await retirePreviousAvatar({ userId: 'u1', previousUrl: OLD, committedUrl: NEW, readCurrentAvatarUrl: async () => NEW });
-    expect(outcome).toBe('deleted');
+    expect(outcome).toBe('delete_queued');
     expect(ledger.abandonUpload.mock.calls.map((c) => c.slice(0, 2))).toEqual([
       ['avatars', 'u1/avatar-old.jpg'],
       ['avatars', 'u1/avatar-old-thumb.jpg'],
@@ -52,7 +52,7 @@ describe('retirePreviousAvatar', () => {
 
 describe('discardUnsavedAvatar', () => {
   it('deletes an uploaded generation the profile never saved', async () => {
-    expect(await discardUnsavedAvatar({ userId: 'u1', uploadedUrl: NEW, readCurrentAvatarUrl: async () => OLD })).toBe('deleted');
+    expect(await discardUnsavedAvatar({ userId: 'u1', uploadedUrl: NEW, readCurrentAvatarUrl: async () => OLD })).toBe('delete_queued');
     expect(ledger.abandonUpload.mock.calls.map((c) => c[1])).toEqual(['u1/avatar-new.jpg', 'u1/avatar-new-thumb.jpg']);
   });
   it('keeps it when the profile does reference it (saved elsewhere meanwhile) or cannot be read', async () => {

@@ -10,6 +10,7 @@
 //     failed read, means skip). An unsaved upload is discarded only when the row does not point
 //     at it.
 //   * Deletion goes through the abandoned-uploads ledger, so a failed delete is retried later.
+//     The outcome is therefore "queued", never a confirmed removal.
 // Other members may still show the old image from a cache until they refresh; that is the
 // intended effect of a replacement.
 
@@ -19,7 +20,9 @@ import { abandonUpload } from './abandonedUploads';
 const AVATAR_BUCKET = 'avatars';
 
 export type AvatarCleanupOutcome =
-  | 'deleted'
+  /** Deletion requested and recorded on the abandoned-uploads ledger; not a confirmed removal. */
+  | 'delete_queued'
+  /** The deletion could not even be recorded. */
   | 'delete_failed'
   | 'skipped_not_ours'
   | 'skipped_same'
@@ -54,7 +57,7 @@ async function deleteGeneration(path: string): Promise<AvatarCleanupOutcome> {
     // Both objects are finished writes: deletable at once, retried by the ledger if this fails.
     await abandonUpload(AVATAR_BUCKET, path, Date.now(), { settled: true });
     await abandonUpload(AVATAR_BUCKET, deriveThumbPath(path), Date.now(), { settled: true });
-    return 'deleted';
+    return 'delete_queued';
   } catch (err) {
     console.warn('avatar_cleanup:', err instanceof Error ? err.message : err);
     return 'delete_failed';

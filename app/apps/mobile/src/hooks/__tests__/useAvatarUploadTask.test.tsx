@@ -4,7 +4,7 @@ import { act, cleanup, renderHook } from '@testing-library/react';
 
 const { avatar, lifecycle } = vi.hoisted(() => ({
   avatar: { pickAvatarImage: vi.fn(), resizeAndUploadAvatar: vi.fn() },
-  lifecycle: { discardUnsavedAvatar: vi.fn(async () => 'deleted') },
+  lifecycle: { discardUnsavedAvatar: vi.fn(async () => 'delete_queued') },
 }));
 vi.mock('../../services/avatarUpload', () => avatar);
 vi.mock('../../services/avatarLifecycle', () => lifecycle);
