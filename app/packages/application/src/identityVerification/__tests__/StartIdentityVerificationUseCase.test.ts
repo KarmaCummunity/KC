@@ -48,6 +48,7 @@ describe('StartIdentityVerificationUseCase', () => {
     ['already_verified', 'already_verified'],
     ['account_not_active', 'account_not_active'],
     ['something_new', 'unavailable'],
+    ['provider_unavailable', 'unavailable'],
   ])('maps the server refusal %s to %s', async (reason, code) => {
     const service = fakeService({
       startSession: vi.fn().mockRejectedValue(new BackendRuleError(reason, 'edge:identity-verification-session')),

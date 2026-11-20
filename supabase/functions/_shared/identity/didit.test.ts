@@ -118,3 +118,11 @@ Deno.test('createSession throws ProviderError on a failed or unusable answer', a
     fetch: () => Promise.resolve(Response.json({ session_id: 's', url: 'http://plain.test' })) });
   await assertRejects(() => insecure.createSession({ attemptId: 'a', consentVersion: 'v1', consentGivenAt: 'x', language: 'he' }), ProviderError);
 });
+
+Deno.test('sessionConfigured needs nonblank API key and workflow id, not webhook secret', () => {
+  for (const [apiKey, workflowId, expected] of [
+    ['', 'w', false], ['k', '', false], ['  ', 'w', false], ['k', '  ', false], ['k', 'w', true],
+  ] as const) {
+    assertEquals(diditProvider({ apiKey, workflowId, webhookSecret: '' }).sessionConfigured, expected);
+  }
+});
