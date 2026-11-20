@@ -145,6 +145,12 @@ Two layers on one world (`docs/spec/18_knowledge_world.md` §18.2): **exchange p
     session length and an optional last day, and publishing starts the series on the draft before it goes live (a refused
     schedule leaves no offer). The detail screen shows the schedule to every member; the giver also sees the series state
     and pauses, resumes or ends it (ending asks first and says booked sessions stay).
+  - Editing a lesson offer (#2479, `lessonEditFields`): the schedule choice and the weekly inputs (weekdays, start time,
+    session length, last day) are create-only. An edit never converts a lesson between one-off times and a weekly series,
+    and never starts, moves or restarts a series; a series is changed only by pause / resume / end on the detail screen.
+    An offer that stores one-off times (`details.slots`) keeps its slot list and places editable; saving syncs them to
+    bookable rows in the same transaction (#2478), and a booked slot is not moved, removed or cut below its bookings. A
+    weekly offer stores no one-off times, so its edit form shows neither the slot list nor the places per session.
   - Tests: `supabase/tests/074_knowledge_slot_series.sql`; unit tests of the domain rule, the use cases, the adapter and
     the create path; component tests of the form fields and the series panel.
 
