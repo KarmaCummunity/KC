@@ -315,6 +315,7 @@ rpc('api_standing_orders_charge_due', 'same', 'rpc:api_standing_orders_charge_du
 bucket('post-images', 'same', 'bucket:post-images', 'Declared by the baseline (own-folder insert / delete policies); `post_media.storage_bucket` points at it.');
 bucket('avatars', 'same', 'bucket:avatars', 'Declared in `95_platform/090_storage.sql`: public, JPEG, 512 KB, `<user_id>/avatar.jpg` (and the thumb in the same folder) (M23, verified).');
 bucket('chat-media', 'same', 'bucket:chat-media', 'Declared in `95_platform/090_storage.sql`: private, `<user_id>/<chat_id>/<file>`, read through signed URLs by chat members (M23, verified).');
+bucket('<entry.bucket>', 'changed', 'bucket:post-images', 'The device abandoned-upload ledger retries deletion in the original upload bucket: post-images, avatars or chat-media. Uses the current member session and existing own-folder Storage policies; no service-role client or bucket-policy change.', { c: M });
 bucket('<bucket>', 'changed', 'bucket:post-images', '`backfill-image-thumbs` loops over a bucket list passed at run time; after the cut-over the list is `post-images` (plus `avatars` and `chat-media`).', { c: M });
 
 // ───────────────────────────── realtime
@@ -456,7 +457,7 @@ export const packages = [
     degrade: 'Nothing works before this package (no session): it is the first one after P0.',
     risks: 'Owns `users/mapUserRow.ts`, which chat, posts and search read: it lands before P2 and P3 start. Account gate: topic `user:<id>:account` (M24).' },
   { id: 'P2', title: 'Posts, feed, search, closure, translations', launch: 'core', parallelWith: ['P3', 'P4'],
-    select: either(inArea('posts', 'feed', 'search', 'translations', 'stats'), named(/community[-_]stats/)),
+    select: either(inArea('posts', 'feed', 'search', 'translations', 'stats'), named(/community[-_]stats|^<entry\.bucket>$/)),
     files: ['posts/**', 'feed/** (except feed/SupabaseFeedRealtime.ts)', 'search/**', 'translations/**', 'stats/**', 'apps/mobile: feed, post detail, create / edit post, profile tabs, saved posts, image upload, community counter, statistics screen'],
     work: 'Card-based reads (`feed_page`, `profile_posts_page`, `post_detail`, `post_cards`), keyset cursors, column renames, owner actions and closure through RPCs, `post_media`.',
     tests: ['vitest: posts, feed, search, translations suites', 'pgTAP 030, 035, 040, 041, 042, 078'],

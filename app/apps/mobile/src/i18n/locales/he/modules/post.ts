@@ -22,6 +22,7 @@ export const postHe = {
   photos: 'תמונות',
   addPhoto: 'הוסיפו תמונה',
   removePhoto: 'הסירו תמונה',
+  cancelPhotoUploads: 'ביטול העלאת התמונות',
   sendMessageA11y: 'שלחו הודעה למפרסם',
   address: 'כתובת',
   cityLabel: 'עיר',
