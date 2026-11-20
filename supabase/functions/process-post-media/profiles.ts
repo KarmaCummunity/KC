@@ -3,8 +3,11 @@
 // PRODUCTION_CANDIDATE is the default and the only profile meant for real use; its caps are NOT yet
 // qualified on the platform (see OPERATOR_RUNBOOK.md "Post photo derivatives", open blockers).
 //
-// DEV_EXPERIMENT_1024 is a labelled resource experiment for a DEV project only, opted into with
-// PROCESS_POST_MEDIA_PROFILE=dev-experiment-1024. It is NOT a quality decision and must never be
+// DEV_EXPERIMENT_1024 is a labelled resource experiment, opted into with
+// PROCESS_POST_MEDIA_PROFILE=dev-experiment-1024 and accepted ONLY when the function runs in the
+// kc-dev project (its ref, from SUPABASE_URL, must equal DEV_PROJECT_REF). Resolution fails closed:
+// an unknown or misspelled profile, or the experiment anywhere but kc-dev, is an error and the
+// worker refuses every run; nothing falls back silently to another profile. It is NOT a quality decision and must never be
 // the production default: it exists to sample platform time/memory with small inputs. It takes
 // one job per run, accepts sources up to 1024 px and makes copies of at most 1024 px. A larger
 // source is released back to the queue untouched (no attempt spent, no failure recorded), so the
@@ -48,7 +51,40 @@ export const DEV_EXPERIMENT_1024: ProcessingProfile = {
   overCap: 'release',
 };
 
-/** The profile for the env value: the experiment only for its exact name, else the default. */
-export function resolveProfile(value: string | undefined): ProcessingProfile {
-  return value === DEV_EXPERIMENT_1024.name ? DEV_EXPERIMENT_1024 : PRODUCTION_CANDIDATE;
+/** The kc-dev project (AGENTS.md §13, docs/SSOT/ENVIRONMENTS.md): the only place the experiment may run. */
+export const DEV_PROJECT_REF = 'enbqriuxvvuontiwslun';
+
+/** The profile configuration is not acceptable: the worker must not run. */
+export class ProfileConfigError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ProfileConfigError';
+  }
+}
+
+/** `https://<ref>.supabase.co` → `<ref>`; null for anything else. */
+function projectRef(supabaseUrl: string | undefined): string | null {
+  try {
+    const host = new URL(supabaseUrl ?? '').hostname;
+    const match = /^([a-z0-9]{20})\.supabase\.co$/.exec(host);
+    return match ? match[1] : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The profile for `PROCESS_POST_MEDIA_PROFILE` in the project at `supabaseUrl`. Unset or empty:
+ * the production candidate. The exact experiment name in kc-dev: the experiment. Anything else
+ * throws ProfileConfigError.
+ */
+export function resolveProfile(value: string | undefined, supabaseUrl: string | undefined): ProcessingProfile {
+  if (value === undefined || value === '') return PRODUCTION_CANDIDATE;
+  if (value === DEV_EXPERIMENT_1024.name) {
+    if (projectRef(supabaseUrl) !== DEV_PROJECT_REF) {
+      throw new ProfileConfigError('dev-experiment-1024 is bound to the kc-dev project only');
+    }
+    return DEV_EXPERIMENT_1024;
+  }
+  throw new ProfileConfigError(`unknown PROCESS_POST_MEDIA_PROFILE '${value.slice(0, 40)}'`);
 }

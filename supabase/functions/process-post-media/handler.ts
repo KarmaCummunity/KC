@@ -63,6 +63,8 @@ export interface ProcessPostMediaDeps {
   deadlines?: Partial<Deadlines>;
   /** Caps and jobs per run (profiles.ts); the production candidate unless a DEV experiment opts in. */
   profile?: ProcessingProfile;
+  /** Set when the profile configuration was refused (profiles.ts): every run is refused. */
+  profileError?: string;
   storage: MediaStorage;
   decode?: Decoder;
   /** Wall-clock budget of one run: no new job is claimed once it is spent. */
@@ -240,6 +242,8 @@ export function createProcessPostMediaHandler(deps: ProcessPostMediaDeps) {
   return async (req: Request): Promise<Response> => {
     if (req.method !== 'POST') return json({ ok: false, error: 'method_not_allowed' }, 405);
     if (!isServiceRoleRequest(req, deps.serviceRoleKey)) return serviceRoleRequiredResponse();
+    // Fail closed: a refused profile configuration never falls back to another profile.
+    if (deps.profileError) return json({ ok: false, error: `profile_config: ${deps.profileError}` }, 500);
 
     const body = await req.json().catch(() => ({}));
     const profile = deps.profile ?? PRODUCTION_CANDIDATE;

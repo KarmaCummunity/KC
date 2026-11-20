@@ -1,8 +1,8 @@
 // run: deno test --allow-read (from supabase/functions). Mocked I/O only.
-import { assert, assertEquals } from 'https://deno.land/std@0.224.0/assert/mod.ts';
+import { assert, assertEquals, assertThrows } from 'https://deno.land/std@0.224.0/assert/mod.ts';
 import { Jimp } from 'https://esm.sh/jimp@1.6.0';
 import { createProcessPostMediaHandler, derivativeKey, thumbKey, type ClaimedMediaJob, type MediaStorage } from './handler.ts';
-import { DEV_EXPERIMENT_1024, PRODUCTION_CANDIDATE, resolveProfile, type ProcessingProfile } from './profiles.ts';
+import { DEV_EXPERIMENT_1024, PRODUCTION_CANDIDATE, ProfileConfigError, resolveProfile, type ProcessingProfile } from './profiles.ts';
 
 const KEY = 'service-key';
 const OWNER = '0a0a0a0a-0000-4000-8000-00000000000a';
@@ -272,12 +272,34 @@ Deno.test('a completion with no answer is "unknown": nothing is removed and no f
 
 // ── DEV experiment profile (opt-in; not a quality decision, not the production default) ─────
 
-Deno.test('the profile is opt-in: anything but the exact experiment name keeps the production candidate', () => {
-  assertEquals(resolveProfile(undefined), PRODUCTION_CANDIDATE);
-  assertEquals(resolveProfile(''), PRODUCTION_CANDIDATE);
-  assertEquals(resolveProfile('DEV-EXPERIMENT-1024 '), PRODUCTION_CANDIDATE);
-  assertEquals(resolveProfile('dev-experiment-1024'), DEV_EXPERIMENT_1024);
+Deno.test('profile resolution fails closed: unset keeps production; unknown names and non-DEV projects are refused', () => {
+  const dev = 'https://enbqriuxvvuontiwslun.supabase.co';
+  assertEquals(resolveProfile(undefined, dev), PRODUCTION_CANDIDATE);
+  assertEquals(resolveProfile('', 'https://prodref.supabase.co'), PRODUCTION_CANDIDATE);
+  assertEquals(resolveProfile('dev-experiment-1024', dev), DEV_EXPERIMENT_1024);
+  for (const [value, url] of [
+    ['dev-experiment-1O24', dev], // misspelled: never a silent fallback to the heavy default
+    ['DEV-EXPERIMENT-1024', dev],
+    ['production-candidate ', dev],
+    ['dev-experiment-1024', 'https://prodref.supabase.co'], // experiment outside the DEV project
+    ['dev-experiment-1024', 'https://enbqriuxvvuontiwslun.evil.example'],
+    ['dev-experiment-1024', 'not a url'],
+  ]) assertThrows(() => resolveProfile(value, url), ProfileConfigError, undefined, `${value} @ ${url}`);
   assertEquals([PRODUCTION_CANDIDATE.maxSourceEdge, PRODUCTION_CANDIDATE.derivativeMaxEdge], [4096, 2048]);
+});
+
+Deno.test('a worker started with a profile error refuses every run before claiming anything', async () => {
+  let called = false;
+  const handler = createProcessPostMediaHandler({
+    serviceRoleKey: KEY,
+    profileError: 'unknown PROCESS_POST_MEDIA_PROFILE',
+    rpc: (_fn, _args, _signal) => { called = true; return Promise.resolve({ data: [], error: null }); },
+    storage: { download: () => Promise.reject(), upload: () => Promise.reject(), remove: (_k, _s) => Promise.resolve() },
+  });
+  const res = await handler(new Request('https://x', { method: 'POST', headers: { Authorization: `Bearer ${KEY}` } }));
+  assertEquals(res.status, 500);
+  assertEquals(await res.json(), { ok: false, error: 'profile_config: unknown PROCESS_POST_MEDIA_PROFILE' });
+  assertEquals(called, false);
 });
 
 Deno.test('experiment: one job per run, whatever the request asks, and the run names its profile', async () => {
