@@ -5,12 +5,6 @@
       "fontWeightLiteral": 1,
       "radiusLiteral": 1
     },
-    "app/research/thanks.web.tsx": {
-      "fontWeightLiteral": 2,
-      "radiusLiteral": 5,
-      "iconSizeLiteral": 2,
-      "unmirroredDirectionalIcon": 1
-    },
     "src/components/DeleteAccountSuccessOverlay.tsx": {
       "rawModal": 1
     },
