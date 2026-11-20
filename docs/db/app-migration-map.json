@@ -2,8 +2,8 @@
  "generatedBy": "scripts/app-migration-map.mjs",
  "totals": {
   "rpc": {
-   "objects": 264,
-   "same": 187,
+   "objects": 265,
+   "same": 188,
    "renamed": 22,
    "changed": 55,
    "removed": 0,
@@ -44,8 +44,8 @@
  },
  "launchTotals": {
   "core": {
-   "objects": 129,
-   "same": 105,
+   "objects": 130,
+   "same": 106,
    "renamed": 1,
    "changed": 23,
    "removed": 0,
@@ -336,8 +336,8 @@
    "missing": 0
   },
   "posts": {
-   "callSites": 47,
-   "oneToOne": 32,
+   "callSites": 49,
+   "oneToOne": 34,
    "changed": 15,
    "removed": 0,
    "missing": 0
@@ -456,7 +456,7 @@
   "Money: integer agorot (`*_agorot`), never ILS floats or `*_cents` names.",
   "Lists of posts return `post_card` (post, owner, city name, cover, counters, viewer state): no follow-up queries for owners, media or counters.",
   "Status columns are never client-writable; every move is an RPC checked by the FSM kernel.",
-  "Signed-out access: only `legal_documents` and `legal_document_versions`. Every other call needs a session.",
+  "Signed-out access: legal documents and the D186 narrow `guest_posts` projection. Member tables and account actions still need a session.",
   "Workers that need `kc_private` connect over Postgres (as `dispatch-notification` does); only `public` is reachable through the HTTP API."
  ],
  "missing": [],
@@ -656,6 +656,7 @@
     "rpc:search_suggested_queries",
     "table:user_stats",
     "table:users",
+    "rpc:guest_posts",
     "rpc:profile_closed_posts_count",
     "rpc:close_post_with_recipient",
     "rpc:admin_remove_post",
@@ -702,8 +703,8 @@
     "rpc:replace_post_media"
    ],
    "counts": {
-    "objects": 49,
-    "oneToOne": 38,
+    "objects": 50,
+    "oneToOne": 39,
     "changed": 11,
     "removed": 0,
     "missing": 0
@@ -9202,6 +9203,43 @@
      "line": 21,
      "symbol": "getSalt",
      "area": "fn:public-research-submit"
+    }
+   ]
+  },
+  {
+   "old": "guest_posts",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "D186 / FR-AUTH-014, guest_posts forward migration: read-only signed-out projection of open Public posts with active owner/world/kind, published and unexpired. Returns only opaque id, title, description and city names; existing member grants stay closed. Optional post id, before-id cursor and bounded page limit.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "guest_posts",
+     "signature": [
+      "guest_posts(p_before_id?: string, p_limit?: number, p_post_id?: string) → { city_name_en: string city_name_he: string description: string id: string title: string }[]"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "posts"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/posts/SupabaseGuestPostsRepository.ts",
+     "line": 18,
+     "symbol": "SupabaseGuestPostsRepository.list",
+     "area": "posts"
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/posts/SupabaseGuestPostsRepository.ts",
+     "line": 25,
+     "symbol": "SupabaseGuestPostsRepository.get",
+     "area": "posts"
     }
    ]
   },

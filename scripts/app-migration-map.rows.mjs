@@ -59,6 +59,7 @@ table('streets', 'changed', 'table:streets', '`geo` → `location`.');
 table('app_flags', 'same', 'table:app_flags', 'Same `select key, enabled`, for signed-in members only (no `anon` grant): before sign-in the compiled defaults apply. After sign-in the same map is `bootstrap_session().flags`. The rows (`world_<slug>_enabled`) are seed data, not part of the baseline (M09, verified).');
 
 // ───────────────────────────── posts, feed, search
+rpc('guest_posts', 'same', 'rpc:guest_posts', 'D186 / FR-AUTH-014, guest_posts forward migration: read-only signed-out projection of open Public posts with active owner/world/kind, published and unexpired. Returns only opaque id, title, description and city names; existing member grants stay closed. Optional post id, before-id cursor and bounded page limit.');
 rpc('profile_closed_posts_count', 'changed', 'rpc:profile_closed_posts_count', 'One argument, `p_user_id` (the viewer is the caller); counts the closed tab only, so the Hidden tab badge (`p_list_mode = owner_only_me`) is not served: take it from `user_stats.open_posts_only_me` or drop it (M13, built as a count over the same rows as the tab).');
 rpc('close_post_with_recipient', 'changed', 'rpc:close_post_with_recipient', '`p_recipient_user_id` → `p_recipient_id`; returns the handoff row, not the post. The recipient must have a chat with the owner (`closure_recipient_not_in_chat`).');
 rpc('admin_remove_post', 'same', 'rpc:admin_remove_post', 'Status becomes `removed_admin`; the previous status is kept in `status_before_removal`.');
@@ -576,7 +577,7 @@ export const notes = [
   'Money: integer agorot (`*_agorot`), never ILS floats or `*_cents` names.',
   'Lists of posts return `post_card` (post, owner, city name, cover, counters, viewer state): no follow-up queries for owners, media or counters.',
   'Status columns are never client-writable; every move is an RPC checked by the FSM kernel.',
-  'Signed-out access: only `legal_documents` and `legal_document_versions`. Every other call needs a session.',
+  'Signed-out access: legal documents and the D186 narrow `guest_posts` projection. Member tables and account actions still need a session.',
   'Workers that need `kc_private` connect over Postgres (as `dispatch-notification` does); only `public` is reachable through the HTTP API.',
 ];
 
