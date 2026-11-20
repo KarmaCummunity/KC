@@ -16,7 +16,7 @@
 
 export const rows = [];
 const add = (kind) => (old, status, to, note, extra = {}) =>
-  rows.push({ kind, old, status, to: [to].flat().filter(Boolean), note, confidence: extra.c ?? 'high', missing: extra.m });
+  rows.push({ kind, old, status, to: [to].flat().filter(Boolean), note, confidence: extra.c ?? 'high', missing: extra.m, ...(extra.currentBinding ? { currentBinding: true } : {}) });
 const rpc = add('rpc');
 const table = add('table');
 const bucket = add('bucket');
@@ -92,7 +92,6 @@ table('post_media', 'same', 'table:post_media', 'One row per photo, inserted `pe
 table('post_private_locations', 'same', 'table:post_private_locations', 'The exact street and number, readable and writable by the post\'s owner only (also the apartment, floor and entrance of a stay, migration 0033); other members read the part the display level shows from `posts.shown_street` / `shown_street_number` (migration 0029).');
 table('post_stats', 'same', 'table:post_stats', 'Counters of a post (reactions, comments, shares); no row until the first one.');
 table('post_closures', 'same', 'table:post_closures', 'The owner reads `purge_after`: the end of the seven-day reopen window of a post deleted without a recipient.');
-table('challenges', 'same', 'table:challenges', 'Read to find the challenge of a challenge post (`post_id` → `id`).');
 table('item_subcategories', 'same', 'table:item_subcategories', 'Read-only catalog; the items world\'s rows are the app\'s item categories (slug = lower-case category, `baby_gear`).');
 table('post_kinds', 'same', 'table:post_kinds', 'Read-only catalog; a new generic post needs the items world\'s offer / request kind id.');
 
@@ -436,6 +435,11 @@ const both = (a, b) => (row) => a(row) && b(row);
 const either = (a, b) => (row) => a(row) || b(row);
 const named = (pattern) => (row) => pattern.test(row.old);
 export const packages = [
+  { id: 'CURRENT', title: 'Current post-baseline integrations', launch: 'mixed inventory, not a launch commitment', parallelWith: [],
+    select: (row) => ["rpc:admin_set_app_flag","rpc:admin_demo_data_status","rpc:admin_wipe_demo_data_step","rpc:admin_seed_demo_data_step","rpc:admin_set_org_may_post_jobs","rpc:my_identity_verification","rpc:accept_identity_verification_consent","edge_function:identity-verification-session","edge_function:extract-external-post","rpc:api_import_attach_post","rpc:api_import_record_edits","rpc:admin_import_funnel","rpc:admin_import_field_edit_rates","rpc:replace_post_media","rpc:api_resolve_place","table:external_post_imports","rpc:import_similar_open_post","rpc:import_moderation_removals","table:post_extraction_cache","rpc:api_identity_verification_begin","table:identity_verification_consents","rpc:api_identity_verification_set_session","table:identity_verifications","rpc:identity_verification_apply"].includes(row.kind + ':' + row.old),
+    files: ['admin/**', 'imports/**', 'identityVerification/**', 'posts/postMediaWrites.ts', 'supabase/functions/**'],
+    work: 'Inventory existing callers, not runtime completion.', tests: ['node --test scripts/app-migration-map*.test.mjs'],
+    degrade: 'Existing flags and refusals unchanged.', risks: 'Not deployment or provider acceptance. Dev seed RPCs are not baseline contracts.' },
   { id: 'P0', title: 'Contract switch and the degrade rule (first, alone)', launch: 'core', parallelWith: [],
     select: either(inArea('(root)', 'realtime'), named(/^app_flags$/)),
     files: ['infrastructure-supabase/src/database.types.ts (replaced by the baseline types)', 'infrastructure-supabase/src/index.ts', 'infrastructure-supabase/src/client.ts', 'infrastructure-supabase/src/rpc/**', 'infrastructure-supabase/src/lib/**', 'infrastructure-supabase/src/fsm/**', 'infrastructure-supabase/src/realtime/**', 'packages/domain/src (status lists, FSM machines, money value objects)', 'apps/mobile/src/services/featureFlagsComposition.ts', 'scripts/check-rpc-contract.mjs + allowlist'],
@@ -539,6 +543,8 @@ export const packages = [
 // ═════════════════════════════ Edge Functions
 // verdict: keep (no database change) · retarget (same job, renamed objects) · rewrite · obsolete · park · done
 export const edgeFunctions = [
+  { name: 'extract-external-post', verdict: 'done', uses: 'Post-extraction store and place resolver', change: 'Existing implementation; not deployment proof.' },
+  { name: 'identity-verification-session', verdict: 'done', uses: 'Identity verification session RPCs and consent', change: 'Existing implementation; provider setup and live proof remain separate.' },
   { name: 'dispatch-notification', verdict: 'done', uses: 'kc_private.notifications_deliver_batch, notification_push_retry_batch, notification_push_settle (direct Postgres)', change: 'Already rewritten for the baseline.' },
   { name: 'embed-worker', verdict: 'done', uses: 'embedding_jobs_claim, embedding_job_store, embedding_job_fail', change: 'Retargeted: the claimed job carries `post_id`; the caller must present the service-role key itself (a JWT claiming the role is refused).' },
   { name: 'match-rerank', verdict: 'done', uses: 'api_match_llm_pending, api_match_llm_store', change: 'Retargeted: a store of an unknown pair (`match_not_found`) counts as failed; service-role key only.' },
@@ -573,3 +579,29 @@ export const notes = [
   'Signed-out access: only `legal_documents` and `legal_document_versions`. Every other call needs a session.',
   'Workers that need `kc_private` connect over Postgres (as `dispatch-notification` does); only `public` is reachable through the HTTP API.',
 ];
+
+// Current inventory additions (#2421), not runtime acceptance claims.
+rpc('admin_set_app_flag', 'same', 'rpc:admin_set_app_flag', 'Existing current caller: app/packages/infrastructure-supabase/src/admin/SupabaseAppFlagsAdminRepository.ts. Current source declaration is bound; transitive errors remain explicitly unknown, not runtime acceptance.', { c: M, currentBinding: true });
+rpc('admin_demo_data_status', 'same', 'sql:supabase/seed/demo/lib/80_admin_rpcs.sql#admin_demo_data_status', 'Dev-only seed RPC, deliberately absent from production baseline types; adapter refuses not_installed where unavailable.', { c: M, currentBinding: true });
+rpc('admin_wipe_demo_data_step', 'same', 'sql:supabase/seed/demo/lib/80_admin_rpcs.sql#admin_wipe_demo_data_step', 'Dev-only seed RPC, deliberately absent from production baseline types; adapter refuses not_installed where unavailable.', { c: M, currentBinding: true });
+rpc('admin_seed_demo_data_step', 'same', 'sql:supabase/seed/demo/lib/80_admin_rpcs.sql#admin_seed_demo_data_step', 'Dev-only seed RPC, deliberately absent from production baseline types; adapter refuses not_installed where unavailable.', { c: M, currentBinding: true });
+rpc('admin_set_org_may_post_jobs', 'same', 'rpc:admin_set_org_may_post_jobs', 'Existing current caller: app/packages/infrastructure-supabase/src/admin/SupabaseOrgJobPostingAdminRepository.ts. Current source declaration is bound; transitive errors remain explicitly unknown, not runtime acceptance.', { c: M, currentBinding: true });
+rpc('my_identity_verification', 'same', 'rpc:my_identity_verification', 'Existing current caller: app/packages/infrastructure-supabase/src/identityVerification/SupabaseIdentityVerificationService.ts. Current source declaration is bound; transitive errors remain explicitly unknown, not runtime acceptance.', { c: M, currentBinding: true });
+rpc('accept_identity_verification_consent', 'same', 'rpc:accept_identity_verification_consent', 'Existing current caller: app/packages/infrastructure-supabase/src/identityVerification/SupabaseIdentityVerificationService.ts. Current source declaration is bound; transitive errors remain explicitly unknown, not runtime acceptance.', { c: M, currentBinding: true });
+edge('identity-verification-session', 'same', 'edge:identity-verification-session', 'Existing current caller: app/packages/infrastructure-supabase/src/identityVerification/SupabaseIdentityVerificationService.ts. Current source declaration is bound; transitive errors remain explicitly unknown, not runtime acceptance.', { c: M, currentBinding: true });
+edge('extract-external-post', 'same', 'edge:extract-external-post', 'Existing current caller: app/packages/infrastructure-supabase/src/imports/EdgeFnPostExtractionService.ts. Current source declaration is bound; transitive errors remain explicitly unknown, not runtime acceptance.', { c: M, currentBinding: true });
+rpc('api_import_attach_post', 'same', 'rpc:api_import_attach_post', 'Existing current caller: app/packages/infrastructure-supabase/src/imports/EdgeFnPostExtractionService.ts. Current source declaration is bound; transitive errors remain explicitly unknown, not runtime acceptance.', { c: M, currentBinding: true });
+rpc('api_import_record_edits', 'same', 'rpc:api_import_record_edits', 'Existing current caller: app/packages/infrastructure-supabase/src/imports/EdgeFnPostExtractionService.ts. Current source declaration is bound; transitive errors remain explicitly unknown, not runtime acceptance.', { c: M, currentBinding: true });
+rpc('admin_import_funnel', 'same', 'rpc:admin_import_funnel', 'Existing current caller: app/packages/infrastructure-supabase/src/imports/SupabaseImportTelemetryRepository.ts. Current source declaration is bound; transitive errors remain explicitly unknown, not runtime acceptance.', { c: M, currentBinding: true });
+rpc('admin_import_field_edit_rates', 'same', 'rpc:admin_import_field_edit_rates', 'Existing current caller: app/packages/infrastructure-supabase/src/imports/SupabaseImportTelemetryRepository.ts. Current source declaration is bound; transitive errors remain explicitly unknown, not runtime acceptance.', { c: M, currentBinding: true });
+rpc('replace_post_media', 'same', 'rpc:replace_post_media', 'Existing current caller: app/packages/infrastructure-supabase/src/posts/postMediaWrites.ts. Current source declaration is bound; transitive errors remain explicitly unknown, not runtime acceptance.', { c: M, currentBinding: true });
+rpc('api_resolve_place', 'same', 'rpc:api_resolve_place', 'Existing current caller: supabase/functions/_shared/post-extraction/catalog.ts. Current source declaration is bound; transitive errors remain explicitly unknown, not runtime acceptance.', { c: M, currentBinding: true });
+table('external_post_imports', 'same', 'table:external_post_imports', 'Existing current caller: supabase/functions/_shared/post-extraction/store.ts. Current source declaration is bound; transitive errors remain explicitly unknown, not runtime acceptance.', { c: M, currentBinding: true });
+rpc('import_similar_open_post', 'same', 'rpc:import_similar_open_post', 'Existing current caller: supabase/functions/_shared/post-extraction/store.ts. Current source declaration is bound; transitive errors remain explicitly unknown, not runtime acceptance.', { c: M, currentBinding: true });
+rpc('import_moderation_removals', 'same', 'rpc:import_moderation_removals', 'Existing current caller: supabase/functions/_shared/post-extraction/store.ts. Current source declaration is bound; transitive errors remain explicitly unknown, not runtime acceptance.', { c: M, currentBinding: true });
+table('post_extraction_cache', 'same', 'table:post_extraction_cache', 'Existing current caller: supabase/functions/_shared/post-extraction/store.ts. Current source declaration is bound; transitive errors remain explicitly unknown, not runtime acceptance.', { c: M, currentBinding: true });
+rpc('api_identity_verification_begin', 'same', 'rpc:api_identity_verification_begin', 'Existing current caller: supabase/functions/identity-verification-session/index.ts. Current source declaration is bound; transitive errors remain explicitly unknown, not runtime acceptance.', { c: M, currentBinding: true });
+table('identity_verification_consents', 'same', 'table:identity_verification_consents', 'Existing current caller: supabase/functions/identity-verification-session/index.ts. Current source declaration is bound; transitive errors remain explicitly unknown, not runtime acceptance.', { c: M, currentBinding: true });
+rpc('api_identity_verification_set_session', 'same', 'rpc:api_identity_verification_set_session', 'Existing current caller: supabase/functions/identity-verification-session/index.ts. Current source declaration is bound; transitive errors remain explicitly unknown, not runtime acceptance.', { c: M, currentBinding: true });
+table('identity_verifications', 'same', 'table:identity_verifications', 'Existing current caller: supabase/functions/identity-verification-webhook/index.ts. Current source declaration is bound; transitive errors remain explicitly unknown, not runtime acceptance.', { c: M, currentBinding: true });
+rpc('identity_verification_apply', 'same', 'rpc:identity_verification_apply', 'Existing current caller: supabase/functions/identity-verification-webhook/index.ts. Current source declaration is bound; transitive errors remain explicitly unknown, not runtime acceptance.', { c: M, currentBinding: true });

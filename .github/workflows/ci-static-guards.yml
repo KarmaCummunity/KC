@@ -115,6 +115,10 @@ jobs:
           fi
           node scripts/check-dependency-audit.mjs "${args[@]}"
 
+      - name: Application migration map freshness
+        if: ${{ !cancelled() }}
+        run: node scripts/app-migration-map.mjs --check
+
       - name: Script self-tests (scripts/*.test.mjs, scripts/ops/*.test.mjs, app/scripts/*.test.mjs)
         if: ${{ !cancelled() }}
         run: node --test scripts/*.test.mjs scripts/ops/*.test.mjs app/scripts/*.test.mjs

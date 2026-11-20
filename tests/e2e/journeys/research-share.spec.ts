@@ -53,6 +53,7 @@ test('the thank-you page shares the public survey link through the share sheet',
   expect(shared.url).toContain(EXPECTED_PATH);
   // The message body ends with the same attributed link.
   expect(shared.text).toContain(EXPECTED_PATH);
+  await expect(page.getByTestId('research-share-status')).toHaveText('הקישור שותף');
 });
 
 test('without a share sheet the thank-you page copies the survey link to the clipboard', async ({ page }) => {
@@ -64,4 +65,16 @@ test('without a share sheet the thank-you page copies the survey link to the cli
   await expect.poll(async () => (await readProbe(page)).copied.length).toBe(1);
   const [copied] = (await readProbe(page)).copied;
   expect(copied).toContain(EXPECTED_PATH);
+  await expect(page.getByTestId('research-share-status')).toHaveText('הקישור הועתק');
 });
+
+ test('failed clipboard sharing shows safe feedback on the thank-you page', async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'share', { configurable: true, value: undefined });
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async () => { throw new Error('clipboard unavailable'); } } });
+  });
+  await gotoApp(page, '/research/thanks');
+  await page.getByRole('button', { name: SHARE_BUTTON }).click();
+  await expect(page.getByTestId('research-share-status')).toHaveText('לא הצלחנו לשתף, נסה/י שוב');
+  await expect(page.getByTestId('research-share-status')).toBeHidden({ timeout: 5000 });
+ });

@@ -13,7 +13,7 @@
 // `--dry-run` (or OPS_DRY_RUN=true) prints the planned actions and changes nothing.
 
 import { pathToFileURL } from 'node:url';
-import { planAlertActions, unavailableReport } from './health-alerts.mjs';
+import { planAlertActions, unavailableReport, normalizeHealthRow, validateHealthReport } from './health-alerts.mjs';
 import { githubIssueChannel } from './github-issue-channel.mjs';
 
 const REPORT_SQL = 'select * from ops.run_health_checks()';
@@ -36,8 +36,7 @@ export function supabaseManagement({ projectRef, token, fetchImpl = fetch }) {
         body: JSON.stringify({ query: HAS_OPS_SQL }),
       });
       if (!res.ok) {
-        const text = await res.text().catch(() => '');
-        throw new Error(`query HTTP ${res.status}${text ? `: ${text.slice(0, 200)}` : ''}`);
+        throw new Error(`query HTTP ${res.status}`);
       }
       const data = await res.json();
       return Boolean(data[0]?.has_ops);
@@ -49,8 +48,7 @@ export function supabaseManagement({ projectRef, token, fetchImpl = fetch }) {
         body: JSON.stringify({ query: REPORT_SQL }),
       });
       if (!res.ok) {
-        const text = await res.text().catch(() => '');
-        throw new Error(`query HTTP ${res.status}${text ? `: ${text.slice(0, 200)}` : ''}`);
+        throw new Error(`query HTTP ${res.status}`);
       }
       return res.json();
     },
@@ -68,7 +66,7 @@ export async function runMonitor({ env, supabase, channels, runbookUrl, dryRun =
     if (status !== 'ACTIVE_HEALTHY') return { env, skipped: `project status ${status}` };
     const hasOps = await supabase.hasHealthChecks();
     if (!hasOps) return { env, skipped: 'migration 0463 (ops.run_health_checks) not applied' };
-    report = await supabase.healthReport();
+    report = validateHealthReport(await supabase.healthReport());
   } catch (err) {
     report = unavailableReport(err.message);
   }
@@ -80,7 +78,7 @@ export async function runMonitor({ env, supabase, channels, runbookUrl, dryRun =
       results.push(dryRun ? `${channel.name}: would ${action.type} ${action.checkKey}` : `${channel.name}: ${await channel.apply(action)}`);
     }
   }
-  const failing = report.filter((r) => r.status !== 'ok').map((r) => `${r.check_key}=${r.status}`);
+  const failing = report.map(normalizeHealthRow).filter((r) => ['failing', 'alert', 'error'].includes(r.status)).map((r) => `${r.check_key}=${r.status}`);
   return { env, checks: report.length, failing, results };
 }
 

@@ -192,6 +192,7 @@ export const postEn = {
     loadError: 'Could not load comments. Try again.',
     commentPlaceholder: 'Add a comment…',
     replyPlaceholder: 'Write a reply…',
+    commentSendFailed: 'Could not post your comment. Your draft is saved here. Try again.',
     commentSend: 'Post',
     reply: 'Reply',
     replyingTo: 'Replying to {{name}}',

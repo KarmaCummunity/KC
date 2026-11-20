@@ -130,6 +130,11 @@ Avatar, name, city, bio, counters; posts in "Open" / "Closed" tabs (D2, D14) —
 - **Account deletion and restore (D108, PM 2026-11-03):** deleting an account **deactivates** it for 30 days: the profile, posts, listings and chats are hidden from everyone, push stops, follows and blocks are kept. Signing in again within the 30 days offers a full restore. After 30 days a purge job deletes the account and all its data, media included. There is no re-registration cooldown (it replaces the old FR-AUTH-016 rule).
 Tech: · FR-PROFILE-001–006, FR-PROFILE-007 · FR-SETTINGS-012, FR-AUTH-016 · FR-ORG-003 (`20_organizations`) · G6 closed (2026-11-07): the "marketplace" section is removed and the Open tab lists the posts of every giving world (`getMyPostsPage` / `countProfileOpenPosts` filter `feed_hidden = false` instead of `listing_id is null`)
 
+### Profile clarification approved 2026-11-20
+
+Public remains the default. A Private profile is hidden from viewers who are not approved followers; every new follower needs approval. Per-field everyone / approved-followers / only-me controls apply in both profile modes. Private is an upper visibility cap: even an everyone field is visible only to approved followers, and only-me never becomes follower-visible. This supersedes D-21's follow-approval-only profile visibility, not the separate per-post visibility contract. At final account purge, shared chat images uploaded by the deleted member are removed for both sides; retained counterpart chat text does not preserve those images. The 30-day restore window remains unchanged.
+
+
 ## 7.13 Anonymity, privacy, location
 Visibility `Public / FollowersOnly / OnlyMe` and counterpart masking, chosen in the form and changeable **both ways** (D16). The counterpart in a handoff sees the real name. Location: `CityOnly / CityAndStreet` (default) `/ FullAddress`; profile shows city only; housing exact only after approval (D30) — public = city + neighborhood and a fuzzed map circle, the exact address and access instructions open to the confirmed guest from approval until 24 h after the end (`S53`). EXIF stripped. WhatsApp import keeps no identity of non-members (S21). No commercial use of community data.
 Tech: · PRD_V2 rule 7 superseded · both ways on `posts` (0094) and `listings` (0451) · G3 ✅
