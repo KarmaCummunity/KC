@@ -2,14 +2,19 @@
 import {readFileSync} from 'node:fs';
 import {fileURLToPath, URL as NodeURL} from 'node:url';
 import {describe,it,expect,vi} from 'vitest';
-// Execute the actual screen effect, not a copied implementation.
-const source=readFileSync(fileURLToPath(new NodeURL('../../../app/chat/[id].tsx',import.meta.url)),'utf8');
+// Execute the actual hook effect, not a copied implementation.
+const source=readFileSync(fileURLToPath(new NodeURL('../../hooks/useMarkChatRead.ts',import.meta.url)),'utf8');
 const start=source.indexOf('  useEffect(() => {\n    if (!unreadIncoming) return;');
-const end=source.indexOf('\n\n  const counter',start);
+const end=source.indexOf('\n}',start);
 const effect=source.slice(start,end);
 const executeEffect=new Function('useEffect','unreadIncoming','container','chatId','userId','useChatStore','reportHandledError',effect.replace('(error: unknown)', '(error)'));
 const settle=()=>new Promise<void>(resolve=>setImmediate(resolve));
 describe('chat screen mark-read boundary',()=>{
+ it('wires the extracted acknowledgement hook into the screen',()=>{
+ const screen=readFileSync(fileURLToPath(new NodeURL('../../../app/chat/[id].tsx',import.meta.url)),'utf8');
+ expect(screen).toContain("import { useMarkChatRead } from '../../src/hooks/useMarkChatRead';");
+ expect(screen).toContain('useMarkChatRead(messages, chatId, userId);');
+ });
  it('does not mark locally read until the actual write succeeds',async()=>{
  let complete!:()=>void;const write=vi.fn(()=>new Promise<void>(resolve=>{complete=resolve}));const local=vi.fn();const report=vi.fn();
  executeEffect((f:()=>void)=>f(),true,{markChatRead:{execute:write}},'chat1','user1',{getState:()=>({markChatLocallyRead:local})},report);
