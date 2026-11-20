@@ -649,6 +649,16 @@ copy is made for an owner who is not active (deletion grace, suspension).
    server reconciliation (owner: the storage orphan job). Avatar cleanup outcomes are "queued", not
    confirmed deletions.
 
+### DEV resource experiment (opt-in, gated)
+
+`PROCESS_POST_MEDIA_PROFILE=dev-experiment-1024` on a **DEV** project only: one job per run, sources up
+to 1024 px (larger ones are released back untouched for 24 h, no attempt spent), copies ≤ 1024 px.
+It exists to sample platform time and memory with small, synthetic inputs; it is not a quality
+decision and never the production default. Every RPC, download and upload has a finite deadline
+(rpc 5 s, download 15 s, upload 15 s); synchronous decode/encode is bounded only by the cap.
+Running it (secret, deploy, invocation) is itself an activation step and needs approval.
+Privacy and deletion design for the next phases: `supabase/proposals/post-media-privacy-lifecycle/DESIGN.md`.
+
 ### Activation (gated: owner + manager approval for each step)
 
 1. Review and merge through the normal `dev` flow; the **Deploy** workflow then applies the migration and
