@@ -47,8 +47,9 @@ async function readCapped(response: Response, maxBytes: number, abort: () => voi
 }
 
 const storage: MediaStorage = {
-  async download(key, maxBytes) {
+  async download(key, maxBytes, signal) {
     const controller = new AbortController();
+    signal.addEventListener('abort', () => controller.abort(), { once: true });
     const timer = setTimeout(() => controller.abort(), DOWNLOAD_TIMEOUT_MS);
     try {
       const path = key.split('/').map(encodeURIComponent).join('/');
@@ -87,8 +88,9 @@ const storage: MediaStorage = {
 
 serve(withObservability('process-post-media', createProcessPostMediaHandler({
   serviceRoleKey: currentServiceRoleKeys(),
-  rpc: async (fn, args) => {
-    const { data, error } = await admin.rpc(fn, args);
+  rpc: async (fn, args, signal) => {
+    // postgrest-js aborts the HTTP request; a statement already running in the database may still finish.
+    const { data, error } = await admin.rpc(fn, args).abortSignal(signal);
     return { data, error: error ? { message: error.message } : null };
   },
   storage,

@@ -21,6 +21,10 @@
 // (kc_private.post_media_purge_hold) before it empties `derived/<owner>/`.
 // Failures are recorded with post_media_processing_fail: a file refused for what it is fails at
 // once; network / storage / database errors retry (at most three attempts in all).
+// Every database call, download and upload has a finite deadline and is ABORTED at it (the request,
+// not only the wait). Decoding and encoding are synchronous CPU work and cannot be interrupted;
+// they are bounded only by the source caps. A completion call that times out has an unknown
+// outcome: the worker then removes nothing and records nothing (the lease decides what happens).
 
 import { isServiceRoleRequest, serviceRoleRequiredResponse } from '../_shared/serviceRoleGuard.ts';
 import { ImageRejected, MAX_SOURCE_BYTES } from './imageCheck.ts';
@@ -29,17 +33,29 @@ import { jimpDecoder, sanitizeImage, type Decoder } from './sanitize.ts';
 type RpcResult = { data: unknown; error: { message: string } | null };
 
 export interface MediaStorage {
-  /** The object's bytes; rejects when it would exceed `maxBytes` (read is cut off, not finished). */
-  download(key: string, maxBytes: number): Promise<Uint8Array>;
+  /** The object's bytes; rejects when it would exceed `maxBytes` (read is cut off) or `signal` aborts. */
+  download(key: string, maxBytes: number, signal: AbortSignal): Promise<Uint8Array>;
   /** Stores a new object; rejects if it already exists (never overwrites) or `signal` aborts. */
   upload(key: string, bytes: Uint8Array, signal: AbortSignal): Promise<void>;
   /** Removes objects; best effort (a failure is logged by the caller). */
   remove(keys: string[]): Promise<void>;
 }
 
+/** Per-operation deadlines (ms). Every operation is aborted when its deadline passes. */
+export interface Deadlines {
+  readonly rpcMs: number;
+  readonly downloadMs: number;
+  readonly uploadMs: number;
+}
+
+/** Defaults: not measured on the platform; chosen so one job fits well inside a lease. */
+export const DEFAULT_DEADLINES: Deadlines = { rpcMs: 5_000, downloadMs: 15_000, uploadMs: 15_000 };
+
 export interface ProcessPostMediaDeps {
   serviceRoleKey: string | string[];
-  rpc: (fn: string, args: Record<string, unknown>) => Promise<RpcResult>;
+  /** One database function call; must abort its request when `signal` aborts. */
+  rpc: (fn: string, args: Record<string, unknown>, signal: AbortSignal) => Promise<RpcResult>;
+  deadlines?: Partial<Deadlines>;
   storage: MediaStorage;
   decode?: Decoder;
   /** Wall-clock budget of one run: no new job is claimed once it is spent. */
@@ -63,7 +79,34 @@ export interface ClaimedMediaJob {
   object_mimetype: string | null;
 }
 
-export type JobOutcome = 'ready' | 'stale' | 'changed' | 'retry' | 'failed';
+export type JobOutcome = 'ready' | 'stale' | 'changed' | 'retry' | 'failed' | 'unknown';
+
+/** An operation did not finish before its deadline; it was aborted. */
+export class DeadlineExceeded extends Error {
+  constructor(label: string) {
+    super(`deadline_exceeded: ${label}`);
+    this.name = 'DeadlineExceeded';
+  }
+}
+
+/** Runs `op` with an AbortSignal that fires after `ms`; rejects with DeadlineExceeded at that point. */
+export async function withDeadline<T>(ms: number, label: string, op: (signal: AbortSignal) => Promise<T>): Promise<T> {
+  const controller = new AbortController();
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const expired = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      // Settle with the deadline first, then abort: the aborted operation's own rejection must not
+      // win the race and hide that this was a deadline.
+      reject(new DeadlineExceeded(label));
+      controller.abort();
+    }, Math.max(0, ms));
+  });
+  try {
+    return await Promise.race([op(controller.signal), expired]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 /** Below the platform's function time limit (25 s on the free tier per OPERATOR_RUNBOOK.md, not re-measured). */
 const DEFAULT_BUDGET_MS = 20_000;
@@ -101,9 +144,16 @@ export function preflight(job: ClaimedMediaJob): void {
   if (!job.object_mimetype || !SOURCE_TYPES.has(job.object_mimetype)) throw new FinalRefusal('unsupported_type');
 }
 
+/** A database function call with its deadline. */
+function callRpc(deps: ProcessPostMediaDeps, fn: string, args: Record<string, unknown>): Promise<RpcResult> {
+  const ms = deps.deadlines?.rpcMs ?? DEFAULT_DEADLINES.rpcMs;
+  return withDeadline(ms, `rpc ${fn}`, (signal) => deps.rpc(fn, args, signal));
+}
+
 async function processJob(job: ClaimedMediaJob, deps: ProcessPostMediaDeps): Promise<JobOutcome> {
+  const deadlines = { ...DEFAULT_DEADLINES, ...deps.deadlines };
   const fail = async (error: string, retryable: boolean): Promise<JobOutcome> => {
-    const res = await deps.rpc('post_media_processing_fail', {
+    const res = await callRpc(deps, 'post_media_processing_fail', {
       p_media_id: job.media_id, p_lease_token: job.lease_token, p_error: error, p_retryable: retryable,
     });
     if (res.error) throw new Error(`fail_rpc: ${res.error.message}`);
@@ -113,7 +163,8 @@ async function processJob(job: ClaimedMediaJob, deps: ProcessPostMediaDeps): Pro
   let sanitized;
   try {
     preflight(job);
-    const bytes = await deps.storage.download(job.storage_key, job.object_size as number);
+    const bytes = await withDeadline(deadlines.downloadMs, 'download', (signal) =>
+      deps.storage.download(job.storage_key, job.object_size as number, signal));
     sanitized = await sanitizeImage(bytes, deps.decode ?? jimpDecoder);
   } catch (err) {
     if (err instanceof FinalRefusal || err instanceof ImageRejected) return fail(err.message, false);
@@ -133,14 +184,9 @@ async function processJob(job: ClaimedMediaJob, deps: ProcessPostMediaDeps): Pro
   const uploadWithinLease = async (objectKey: string, bytes: Uint8Array) => {
     const remaining = writeDeadline - now();
     if (!(remaining > 0)) throw new Error('lease_ending');
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), remaining);
-    try {
-      written.push(objectKey); // recorded first: an aborted upload may still have landed
-      await deps.storage.upload(objectKey, bytes, controller.signal);
-    } finally {
-      clearTimeout(timer);
-    }
+    written.push(objectKey); // recorded first: an aborted upload may still have landed
+    await withDeadline(Math.min(remaining, deadlines.uploadMs), 'upload', (signal) =>
+      deps.storage.upload(objectKey, bytes, signal));
   };
   if (!(writeDeadline - now() > 0)) return 'stale'; // too late to write: the lease runs out, the job comes back
   try {
@@ -150,14 +196,22 @@ async function processJob(job: ClaimedMediaJob, deps: ProcessPostMediaDeps): Pro
     await removeWritten();
     return fail(`upload: ${err instanceof Error ? err.message : String(err)}`, true);
   }
-  const done = await deps.rpc('post_media_processing_complete', {
-    p_media_id: job.media_id,
-    p_lease_token: job.lease_token,
-    p_derivative_key: key,
-    p_size_bytes: sanitized.derivative.bytes.byteLength,
-    p_width: sanitized.derivative.width,
-    p_height: sanitized.derivative.height,
-  });
+  let done: RpcResult;
+  try {
+    done = await callRpc(deps, 'post_media_processing_complete', {
+      p_media_id: job.media_id,
+      p_lease_token: job.lease_token,
+      p_derivative_key: key,
+      p_size_bytes: sanitized.derivative.bytes.byteLength,
+      p_width: sanitized.derivative.width,
+      p_height: sanitized.derivative.height,
+    });
+  } catch (err) {
+    // No answer: it may have committed. Removing the copy could break a ready row; recording a
+    // failure is pointless (a completed job refuses it). The lease decides; leave everything as is.
+    if (err instanceof DeadlineExceeded) return 'unknown';
+    throw err;
+  }
   if (done.error) {
     await removeWritten();
     return fail(`complete: ${done.error.message}`, true);
@@ -180,7 +234,13 @@ export function createProcessPostMediaHandler(deps: ProcessPostMediaDeps) {
     const outcomes: Record<string, JobOutcome> = {};
     let claimed = 0;
     while (claimed < limit && now() < deadline) {
-      const claim = await deps.rpc('post_media_processing_claim', { p_limit: 1, p_lease_seconds: 300 });
+      let claim: RpcResult;
+      try {
+        claim = await callRpc(deps, 'post_media_processing_claim', { p_limit: 1, p_lease_seconds: 300 });
+      } catch (err) {
+        // A claim that may have succeeded is not lost: its lease runs out and the job comes back.
+        return json({ ok: false, error: err instanceof Error ? err.message : String(err), outcomes }, 500);
+      }
       if (claim.error) return json({ ok: false, error: claim.error.message, outcomes }, 500);
       const [job] = (claim.data ?? []) as ClaimedMediaJob[];
       if (!job) break; // nothing due

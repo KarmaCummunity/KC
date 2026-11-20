@@ -24,10 +24,19 @@ interface Harness {
   uploads: string[];
   removed: string[];
   signals: AbortSignal[];
+  rpcSignals: AbortSignal[];
   run: (body?: unknown) => Promise<Record<string, unknown>>;
 }
 
+/** Never settles on its own; rejects as soon as `signal` aborts (an unresponsive server). */
+function hangUntilAborted<T>(signal: AbortSignal): Promise<T> {
+  return new Promise<T>((_, reject) => signal.addEventListener('abort', () => reject(new Error('aborted'))));
+}
+
 function harness(opts: {
+  /** Operations that never answer: RPC names, 'download' or 'upload'. */
+  hang?: string[];
+  deadlines?: { rpcMs?: number; downloadMs?: number; uploadMs?: number };
   jobs: ClaimedMediaJob[];
   bytes?: Uint8Array;
   complete?: string | { error: string };
@@ -40,12 +49,17 @@ function harness(opts: {
   const uploads: string[] = [];
   const removed: string[] = [];
   const signals: AbortSignal[] = [];
+  const rpcSignals: AbortSignal[] = [];
+  const hang = new Set(opts.hang ?? []);
   const handler = createProcessPostMediaHandler({
     serviceRoleKey: KEY,
     budgetMs: opts.budgetMs,
     now: opts.clock,
-    rpc: (fn, args) => {
+    deadlines: opts.deadlines,
+    rpc: (fn, args, signal) => {
       calls.push({ fn, args });
+      rpcSignals.push(signal);
+      if (hang.has(fn)) return hangUntilAborted(signal);
       // The worker claims one job per call; the queue double hands them out in order.
       if (fn === 'post_media_processing_claim') return Promise.resolve({ data: opts.jobs.splice(0, 1), error: null });
       if (fn === 'post_media_processing_complete') {
@@ -55,13 +69,15 @@ function harness(opts: {
       return Promise.resolve({ data: args.p_retryable ? 'retry' : 'failed', error: null });
     },
     storage: {
-      download: opts.storage?.download ?? ((key, maxBytes) => {
+      download: opts.storage?.download ?? ((key, maxBytes, signal) => {
         downloads.push({ key, maxBytes });
+        if (hang.has('download')) return hangUntilAborted(signal);
         return Promise.resolve(opts.bytes ?? new Uint8Array(0));
       }),
       upload: opts.storage?.upload ?? ((key, _bytes, signal) => {
         uploads.push(key);
         signals.push(signal);
+        if (hang.has('upload')) return hangUntilAborted(signal);
         return Promise.resolve();
       }),
       remove: (keys) => {
@@ -76,7 +92,7 @@ function harness(opts: {
     }));
     return await res.json();
   };
-  return { calls, downloads, uploads, removed, signals, run };
+  return { calls, downloads, uploads, removed, signals, rpcSignals, run };
 }
 
 const failCall = (h: Harness) => h.calls.find((c) => c.fn === 'post_media_processing_fail')?.args;
@@ -85,7 +101,7 @@ Deno.test('refuses callers without the service-role key before any work', async 
   let claimed = false;
   const handler = createProcessPostMediaHandler({
     serviceRoleKey: KEY,
-    rpc: () => {
+    rpc: (_fn, _args, _signal) => {
       claimed = true;
       return Promise.resolve({ data: [], error: null });
     },
@@ -207,4 +223,40 @@ Deno.test('a failure after the first upload removes what this attempt wrote', as
   await h.run();
   assertEquals(h.removed, [derivativeKey(OWNER, MEDIA, 1), thumbKey(derivativeKey(OWNER, MEDIA, 1))]);
   assertEquals(failCall(h)?.p_retryable, true);
+});
+
+// ── Finite deadlines on every database call, download and upload ─────────────────────────────
+
+const FAST = { rpcMs: 30, downloadMs: 30, uploadMs: 30 };
+
+Deno.test('a claim the database never answers is aborted at its deadline and the run ends', async () => {
+  const h = harness({ jobs: [job()], hang: ['post_media_processing_claim'], deadlines: FAST });
+  const out = await h.run();
+  assertEquals(out, { ok: false, error: 'deadline_exceeded: rpc post_media_processing_claim', outcomes: {} });
+  assert(h.rpcSignals[0]?.aborted, 'the request itself is aborted, not only abandoned');
+});
+
+Deno.test('a download that never completes is aborted and the job retries', async () => {
+  const h = harness({ jobs: [job()], hang: ['download'], deadlines: FAST });
+  const out = await h.run();
+  assertEquals(out.outcomes, { [MEDIA]: 'retry' });
+  assertEquals(failCall(h)?.p_error, 'download: deadline_exceeded: download');
+  assertEquals(h.uploads, []);
+});
+
+Deno.test('an upload that never completes is aborted, cleaned up, and the job retries', async () => {
+  const h = harness({ jobs: [job()], bytes: await realJpeg(), hang: ['upload'], deadlines: FAST });
+  const out = await h.run();
+  assertEquals(out.outcomes, { [MEDIA]: 'retry' });
+  assert(h.signals[0]?.aborted, 'the upload request is aborted');
+  assertEquals(h.removed, [derivativeKey(OWNER, MEDIA, 1)]);
+});
+
+Deno.test('a completion with no answer is "unknown": nothing is removed and no failure is recorded', async () => {
+  const h = harness({ jobs: [job()], bytes: await realJpeg(), hang: ['post_media_processing_complete'], deadlines: FAST });
+  const out = await h.run();
+  // It may have committed: deleting the copy could break a ready row. The lease decides.
+  assertEquals(out.outcomes, { [MEDIA]: 'unknown' });
+  assertEquals(h.removed, []);
+  assertEquals(failCall(h), undefined);
 });
