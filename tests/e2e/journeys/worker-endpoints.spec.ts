@@ -34,10 +34,10 @@ function workerNames(source: string): string[] {
 }
 
 /**
- * The statuses a worker refuses with. Most answer the guard's 401; `match-rerank` answers 403.
+ * Every guarded worker uses the shared refused-caller 401 response.
  * Either way the handler returned before it read the request or opened its service-role client.
  */
-const REFUSED: ReadonlySet<number> = new Set([401, 403]);
+const REFUSED: ReadonlySet<number> = new Set([401]);
 
 /** What one worker answered: its HTTP status, or 0 when it never answered. */
 interface Answer {

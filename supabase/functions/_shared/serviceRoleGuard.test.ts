@@ -74,6 +74,7 @@ for (const name of SERVICE_ROLE_ONLY_FUNCTIONS) {
     // The handler's own start: `async (req …` also fits a handler declared apart from `serve(`.
     const start = Math.max(source.search(/async \(req\b/), 0);
     const guard = source.indexOf('isServiceRoleRequest(req', start);
+    assert(/if \(!isServiceRoleRequest\(req[^\n]*\)\) return serviceRoleRequiredResponse\(\);/.test(source.slice(guard - 5)), `${name}/${file} must return the shared refused-caller response`);
     assert(guard > 0, `${name}/${file} must call isServiceRoleRequest(req, …) in its handler`);
     for (const work of ['req.json(', 'createClient(']) {
       const at = source.indexOf(work, start);
