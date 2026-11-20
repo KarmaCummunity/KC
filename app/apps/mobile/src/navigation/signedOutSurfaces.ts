@@ -3,7 +3,9 @@
 //
 // Signed-out access is minimal by decision (docs/db/target-design.md §12.1): the sign-in flow, the
 // published legal text, the About pages, the public research form and public nonprofit pages.
-// There is no guest feed and no signed-out post preview. Pure: no expo-router import.
+// A separate minimal guest browse is allowed by the 2026-11-19 owner decision.
+// Member feed and post detail routes stay gated. Pure: no expo-router import.
+import { isGuestBrowsePath } from './guestBrowsePaths';
 import { isPublicLegalSegment } from './publicLegalPaths';
 import { isPublicOrgPagePath } from './publicOrgPaths';
 import { isPublicResearchPath } from './publicResearchPaths';
@@ -29,6 +31,7 @@ const SIGNED_OUT_ROOT_ROUTES: ReadonlySet<string> = new Set([
 /** True when the route (`segments` of the matched route, `pathname` as shown) needs no session. */
 export function isSignedOutSurface(segments: readonly string[], pathname: string): boolean {
   const [head, child] = segments;
+  if (head === 'browse') return isGuestBrowsePath(pathname);
   if (head === undefined) return false;
   if (SIGNED_OUT_ROOT_ROUTES.has(head)) return true;
   if (head === 'auth') return child !== undefined && SIGNED_OUT_AUTH_ROUTES.has(child);
