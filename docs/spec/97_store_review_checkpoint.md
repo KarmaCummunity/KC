@@ -6,7 +6,7 @@ This is a dated status and source record, not the full project book, PRD or SRS.
 
 KC has a social purpose. The owner described its commercial model as future work: a full management platform for organizations and a personal WhatsApp bot with a few specific functions for individuals. No price or start date was newly confirmed. Historical D143 and SSOT D-210 price plans are not treated as cancelled, but their original user approval has not been recovered in this review.
 
-The owner approved limited guest browsing as described in {{D:limited-guest-browsing}}, tracked in [#2511](https://github.com/KarmaCummunity/KC/issues/2511). This is an audience change from the old member-only policy. It is not permission to publish a store version, send an Apple response or change production.
+The owner approved limited guest browsing as described in D186, tracked in [#2511](https://github.com/KarmaCummunity/KC/issues/2511). This is an audience change from the old member-only policy. It is not permission to publish a store version, send an Apple response or change production.
 
 ## Apple, verified live
 
