@@ -608,9 +608,13 @@ or production, and no schedule is registered.
 claims one job at a time with a lease, refuses (before download) a key outside the owner's folder and
 a missing, > 8 MiB or non-JPEG/PNG object, downloads with a byte cap, refuses (before decoding) a file
 whose bytes are not JPEG/PNG or whose header exceeds 4096 px / 16.8 MP, re-encodes a ≤ 2048 px copy and
-a ≤ 400 px thumb to `<owner>/derived/<media_id>-a<attempt>.jpg` (+ `-thumb`), never touching the
+a ≤ 400 px thumb to `derived/<owner>/<media_id>-a<attempt>.jpg` (+ `-thumb`), never touching the
 original, and completes with a compare-and-set that also checks Storage holds the copy. The row then
 points at the copy, so cards, the post page, the share card and link previews serve only it.
+The `derived/` namespace is outside every member folder and fenced by RESTRICTIVE storage policies:
+no anon/authenticated insert, update or delete there (any case, leading slashes); only the service
+role writes it. The account purge empties `derived/<user_id>/` with the member's own folder, and no
+copy is made for an owner who is not active (deletion grace, suspension).
 
 ### Measured vs assumed
 
@@ -619,9 +623,31 @@ points at the copy, so cards, the post page, the share card and link previews se
 | Queue, claim, lease, CAS, lifecycle skip, retries, cap, grants, reconciliation keep-list | **Measured**: pgTAP `128_post_media_sanitized_derivative.sql`, 29/29 on a local PostgreSQL 16 baseline; full suite 99 files / 2966 ok / 0 not ok with the migration applied |
 | EXIF/GPS dropped, orientation applied, bombs/HTML/SVG refused before decode | **Measured**: deno tests with Jimp 1.6.0 and a real JPEG carrying a synthetic EXIF/GPS block |
 | Storage records `metadata.size` / `metadata.mimetype` exactly as the CAS reads them | **Assumed** (Supabase Storage behaviour; not verifiable without a live project) |
-| Decode memory for a 16.8 MP source fits the Edge runtime | **Assumed**, not measured on Supabase |
-| One 2400 × 1200 re-encode ≈ 1 s | Measured in this container only, not on the Edge runtime |
+| Client write fence on `derived/` | **Measured on the local shim** (pgTAP `129`, 16/16); **not verified** against live Supabase Storage (storage-api's own handling of names and roles) |
+| Purge removes `derived/<user_id>/` | **Measured** with the purge handler's fakes (deno) and pgTAP `128` (owner-active gate); not on live Storage |
+| Sanitize time / memory | **Local only** (4-CPU container, Deno 2.5.6, solid-colour JPEG): 2048² → 1.2 s, peak RSS ≈ 324 MB; 4096² → 3.5 s, peak RSS ≈ 978 MB (a reviewer measured 2.4 s / ≈ 970 MB). **Not measured on Supabase**; see the blockers below |
 | WhatsApp renders the copy as a preview | **Not measured** |
+
+### Open before activation (blockers, not fixed by the candidate)
+
+1. **Worker CPU and memory.** The local peaks above are far above what a small serverless function is
+   likely to allow, and even a 2048² source peaks near 324 MB locally (runtime + Jimp included).
+   The 20 s run budget only stops new claims: it does not interrupt a running decode, encode, upload
+   or RPC, and only the download has its own timeout. Activation needs a measurement on the real
+   platform (and its documented limits), and then either a lower source cap (pixels and bytes) or a
+   different image library / runtime. Do not schedule before that decision.
+2. **Original uploads stay public.** The original object stays in the PUBLIC `post-images` bucket at
+   an unguessable key (kept for orphan safety and the owner's own reads). Hiding its key from other
+   members is not a privacy boundary: anyone holding the URL (the owner, anything it was sent to) can
+   still fetch the unsanitized bytes, EXIF included. Product/privacy decision needed: e.g. move
+   originals to a private bucket, or delete an original once its copy is `ready` (with retention and
+   republish/edit implications). Nothing in this candidate deletes or hides originals.
+3. **Client-side cleanup is best effort.** The app's abandoned-uploads ledger is per device, swept only
+   when that device starts another upload, capped at 200 entries (oldest dropped), and assumes a
+   15-minute settle window for late commits (not measured). A device that never comes back leaves its
+   entries. `post-images` has the server orphan job as backstop; `chat-media` and `avatars` have no
+   server reconciliation (owner: the storage orphan job). Avatar cleanup outcomes are "queued", not
+   confirmed deletions.
 
 ### Activation (gated: owner + manager approval for each step)
 
@@ -640,8 +666,8 @@ points at the copy, so cards, the post page, the share card and link previews se
 
 ### Cost surface (per new photo, approximate)
 
-- **Storage writes**: 2 new objects (copy ≤ ~600 KB, thumb ~30 KB); the original is kept, so a post photo
-  occupies roughly original + copy + thumb.
+- **Storage writes**: 2 new objects under `derived/<owner>/` (copy ≤ ~600 KB, thumb ~30 KB); the original
+  is kept, so a post photo occupies roughly original + copy + thumb.
 - **Egress**: one download of the original (≤ 8 MiB; app uploads are typically 0.3–0.6 MB) from Storage
   to the Edge Function; failed attempts can repeat it (at most 3 attempts).
 - **Function time**: one invocation per minute when scheduled, each ≤ 20 s budget, ≤ 3 photos per run.
