@@ -1,13 +1,18 @@
 // Picks the image a link-preview card shows (og:image) and describes it (type, width, height).
 //
-// The post's cover is uploaded twice by the app: the photo (longer edge ≤ 2048 px, often
-// 300-600 KB) and a `-thumb` sibling (longer edge 400 px, ~30 KB). Crawlers such as WhatsApp
-// silently drop a preview image that is too heavy or slow to fetch (third-party reports put the
-// practical limit near 300 KB; Meta documents none), so the card uses the photo only when it is
-// small enough, else the thumb, else the community logo. Each candidate is probed with one ranged
-// GET of its first 64 KB, never a full download: the probe checks the HTTP answer, the real bytes
-// (a JPEG or PNG signature, whatever the declared type says), the total size, the pixel
-// dimensions, and that the header carries no EXIF block (which can hold GPS coordinates).
+// FAIL CLOSED. A candidate (the cover object, then its `-thumb` sibling) is used only when the
+// probe could check ALL of it: the server declared its size up front (Content-Length), the size
+// is within OG_IMAGE_MAX_BYTES, exactly that many bytes arrived, the bytes really are a JPEG or a
+// PNG, and a walk over every JPEG marker / PNG chunk reached the end marker without meeting a
+// segment that can carry metadata (EXIF and XMP live in APP1, IPTC in APP13, free text in COM;
+// PNG keeps EXIF in eXIf and text in tEXt/zTXt/iTXt). Anything indeterminate (unknown size,
+// partial or truncated answer, unknown segment, malformed structure) rejects the candidate. A
+// client-made thumb is not trusted either: it is checked the same way. With no qualifying
+// candidate the card shows the community logo. A metadata-free file is not proof of a safe image
+// in every other respect; the share card only names files of public posts (post_share_card).
+//
+// Size: crawlers such as WhatsApp silently drop heavy preview images (third-party reports put the
+// practical limit near 300 KB; Meta documents none), so 300 KB is also the download cap here.
 
 import { trimTrailingSlashes } from './config.mjs';
 
@@ -19,9 +24,7 @@ export const FALLBACK_IMAGE = { path: '/pwa-icon-512.png', type: 'image/png', wi
 export const OG_IMAGE_MAX_BYTES = 300 * 1024;
 /** Narrower images get no large preview on most crawlers. */
 export const OG_IMAGE_MIN_WIDTH = 200;
-/** Bytes read per probe: enough for the JPEG header segments up to the frame header. */
-const PROBE_BYTES = 64 * 1024;
-const PROBE_TIMEOUT_MS = 1200;
+const PROBE_TIMEOUT_MS = 1500;
 
 /** @typedef {{ url: string, type: string, width: number | null, height: number | null }} OgImage */
 
@@ -50,100 +53,141 @@ export function coverCandidates({ cover_bucket: bucket, cover_key: key }, { supa
   return [publicObjectUrl(supabaseUrl, key), publicObjectUrl(supabaseUrl, thumbKey(key))];
 }
 
-/** Width and height from a JPEG frame header (SOFn), or null when not within `bytes`. */
-export function jpegSize(bytes) {
+/** JPEG segments a preview may contain: frame/scan/table segments plus JFIF (APP0), ICC (APP2), Adobe (APP14). */
+const JPEG_ALLOWED_APP = new Set([0xe0, 0xe2, 0xee]);
+/** PNG chunks that carry pixels or colour information only; every other chunk rejects the file. */
+const PNG_ALLOWED_CHUNKS = new Set(['IHDR', 'PLTE', 'IDAT', 'IEND', 'tRNS', 'gAMA', 'cHRM', 'sRGB', 'iCCP', 'sBIT', 'bKGD', 'pHYs']);
+
+const isFrameMarker = (m) => m >= 0xc0 && m <= 0xcf && m !== 0xc4 && m !== 0xc8 && m !== 0xcc;
+const isRestartMarker = (m) => m >= 0xd0 && m <= 0xd7;
+
+/** After an SOS header: skips entropy-coded data (stuffed FF00 and restart markers) to the next marker. */
+function skipEntropyData(bytes, from) {
+  let i = from;
+  while (i + 1 < bytes.length) {
+    if (bytes[i] === 0xff && bytes[i + 1] !== 0x00 && !isRestartMarker(bytes[i + 1]) && bytes[i + 1] !== 0xff) return i;
+    i += 1;
+  }
+  return -1;
+}
+
+/**
+ * Walks a whole JPEG from SOI to EOI. Returns its frame size when every segment is allowed and the
+ * structure is complete; null for anything else (metadata segment, malformed, truncated, no frame).
+ */
+export function verifyJpeg(bytes) {
+  if (bytes.length < 4 || bytes[0] !== 0xff || bytes[1] !== 0xd8) return null;
   let i = 2;
-  while (i + 9 < bytes.length) {
+  let size = null;
+  while (i + 1 < bytes.length) {
     if (bytes[i] !== 0xff) return null;
     const marker = bytes[i + 1];
-    if (marker === 0xff) { i += 1; continue; } // fill byte
-    // Standalone markers carry no length.
-    if (marker === 0x01 || (marker >= 0xd0 && marker <= 0xd9)) { i += 2; continue; }
-    const isFrame = marker >= 0xc0 && marker <= 0xcf && marker !== 0xc4 && marker !== 0xc8 && marker !== 0xcc;
-    if (isFrame) {
-      return { height: (bytes[i + 5] << 8) | bytes[i + 6], width: (bytes[i + 7] << 8) | bytes[i + 8] };
-    }
-    i += 2 + ((bytes[i + 2] << 8) | bytes[i + 3]);
-  }
-  return null;
-}
-
-/** True when a JPEG header has an APP1 "Exif\0\0" segment (camera metadata, possibly GPS). */
-export function jpegHasExif(bytes) {
-  let i = 2;
-  while (i + 9 < bytes.length && bytes[i] === 0xff) {
-    const marker = bytes[i + 1];
-    if (marker === 0xda || marker === 0xd9) return false; // image data starts: no more metadata
+    if (marker === 0xff) { i += 1; continue; } // fill byte before a marker
+    if (marker === 0xd9) return size; // EOI: complete
+    if (isRestartMarker(marker) || marker === 0x01) { i += 2; continue; }
+    if (i + 3 >= bytes.length) return null;
     const length = (bytes[i + 2] << 8) | bytes[i + 3];
-    if (marker === 0xe1 && bytes[i + 4] === 0x45 && bytes[i + 5] === 0x78 && bytes[i + 6] === 0x69
-        && bytes[i + 7] === 0x66 && bytes[i + 8] === 0 && bytes[i + 9] === 0) return true;
+    if (length < 2 || i + 2 + length > bytes.length) return null;
+    const isApp = marker >= 0xe0 && marker <= 0xef;
+    if ((isApp && !JPEG_ALLOWED_APP.has(marker)) || marker === 0xfe) return null; // EXIF/XMP/IPTC/comment/unknown
+    if (isFrameMarker(marker)) {
+      if (length < 8) return null;
+      size = { height: (bytes[i + 5] << 8) | bytes[i + 6], width: (bytes[i + 7] << 8) | bytes[i + 8] };
+    }
     i += 2 + length;
+    if (marker === 0xda) {
+      i = skipEntropyData(bytes, i);
+      if (i < 0) return null;
+    }
   }
-  return false;
+  return null; // ran out of bytes before EOI
 }
 
-/** What the first bytes really are, independent of any declared content type. */
-export function sniffImage(bytes) {
-  if (bytes.length > 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) {
-    return { type: 'image/jpeg', size: jpegSize(bytes), exif: jpegHasExif(bytes) };
+const PNG_SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+
+/** Walks every PNG chunk to IEND. Returns the IHDR size when all chunks are allowed; null otherwise. */
+export function verifyPng(bytes) {
+  if (bytes.length < 8 || !PNG_SIGNATURE.every((b, i) => bytes[i] === b)) return null;
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  let i = 8;
+  let size = null;
+  while (i + 8 <= bytes.length) {
+    const length = view.getUint32(i);
+    const type = String.fromCharCode(bytes[i + 4], bytes[i + 5], bytes[i + 6], bytes[i + 7]);
+    const end = i + 12 + length; // length, type, data, CRC
+    if (end > bytes.length || !PNG_ALLOWED_CHUNKS.has(type)) return null;
+    if (type === 'IHDR') {
+      if (length !== 13) return null;
+      size = { width: view.getUint32(i + 8), height: view.getUint32(i + 12) };
+    }
+    if (type === 'IEND') return size;
+    i = end;
   }
-  const png = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
-  if (bytes.length >= 24 && png.every((b, i) => bytes[i] === b)) {
-    const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-    return { type: 'image/png', size: { width: view.getUint32(16), height: view.getUint32(20) }, exif: false };
-  }
+  return null; // no IEND
+}
+
+/** What the complete file is, when it qualifies as a preview image; null otherwise. */
+export function verifyImage(bytes) {
+  const jpeg = verifyJpeg(bytes);
+  if (jpeg) return { type: 'image/jpeg', ...jpeg };
+  const png = verifyPng(bytes);
+  if (png) return { type: 'image/png', ...png };
   return null;
 }
 
-/** Total object size from a 206 `content-range: bytes 0-N/TOTAL` or a 200 `content-length`. */
-function totalBytes(response) {
-  const range = response.headers.get('content-range');
-  const match = range ? /\/(\d+)\s*$/.exec(range) : null;
-  const raw = match ? match[1] : response.headers.get('content-length');
+/** The declared body size, or null when the server did not declare one. */
+function declaredLength(response) {
+  const raw = response.headers.get('content-length');
   const n = raw === null ? Number.NaN : Number(raw);
-  return Number.isFinite(n) && n > 0 ? n : null;
+  return Number.isInteger(n) && n > 0 ? n : null;
 }
 
-/** Reads at most `limit` bytes of a body and abandons the rest. */
-async function readHead(response, limit) {
-  if (!response.body) return new Uint8Array(await response.arrayBuffer()).slice(0, limit);
+/** Reads the whole body, refusing to read past `limit`; null when it overflows. */
+async function readAll(response, limit) {
+  if (!response.body) {
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    return bytes.length > limit ? null : bytes;
+  }
   const reader = response.body.getReader();
   const chunks = [];
   let length = 0;
-  while (length < limit) {
+  for (;;) {
     const { done, value } = await reader.read();
     if (done) break;
-    chunks.push(value);
     length += value.length;
+    if (length > limit) {
+      reader.cancel().catch(() => {});
+      return null;
+    }
+    chunks.push(value);
   }
-  reader.cancel().catch(() => {});
-  const out = new Uint8Array(Math.min(length, limit));
+  const out = new Uint8Array(length);
   let offset = 0;
   for (const chunk of chunks) {
-    const part = chunk.subarray(0, out.length - offset);
-    out.set(part, offset);
-    offset += part.length;
-    if (offset >= out.length) break;
+    out.set(chunk, offset);
+    offset += chunk.length;
   }
   return out;
 }
 
 /**
- * @returns {Promise<OgImage | null>} the image when it is a real JPEG/PNG within the size budget,
- *          wide enough, without EXIF; null otherwise (missing, slow, too heavy, not an image). Never throws.
+ * @returns {Promise<OgImage | null>} the image when it qualifies (see the header); null for
+ *          anything else, including every indeterminate case. Never throws.
  */
 export async function probeImage(url, fetchImpl) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), PROBE_TIMEOUT_MS);
   try {
-    const response = await fetchImpl(url, { headers: { range: `bytes=0-${PROBE_BYTES - 1}` }, signal: controller.signal });
-    if (response.status !== 200 && response.status !== 206) return null;
-    const total = totalBytes(response);
-    if (total === null || total > OG_IMAGE_MAX_BYTES) return null;
-    const sniffed = sniffImage(await readHead(response, PROBE_BYTES));
-    if (!sniffed || sniffed.exif) return null;
-    if (sniffed.size && sniffed.size.width < OG_IMAGE_MIN_WIDTH) return null;
-    return { url, type: sniffed.type, width: sniffed.size?.width ?? null, height: sniffed.size?.height ?? null };
+    const response = await fetchImpl(url, { signal: controller.signal });
+    // Only a complete answer can be checked completely: a 206 range is a partial file.
+    if (response.status !== 200) return null;
+    const declared = declaredLength(response);
+    if (declared === null || declared > OG_IMAGE_MAX_BYTES) return null;
+    const bytes = await readAll(response, declared);
+    if (!bytes || bytes.length !== declared) return null;
+    const image = verifyImage(bytes);
+    if (!image || image.width < OG_IMAGE_MIN_WIDTH || image.height < 1) return null;
+    return { url, type: image.type, width: image.width, height: image.height };
   } catch {
     return null;
   } finally {

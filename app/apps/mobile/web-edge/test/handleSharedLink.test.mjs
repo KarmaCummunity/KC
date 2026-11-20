@@ -31,14 +31,16 @@ describe('handleSharedLink /post', () => {
   });
   it('previews the light 400 px thumb, typed and sized, when the cover photo itself is too heavy', async () => {
     const sof = (w, h) => [0xff, 0xc0, 0x00, 0x11, 0x08, h >> 8, h & 255, w >> 8, w & 255, 3, 1, 0x22, 0, 2, 0x11, 1, 3, 0x11, 1];
-    const jpeg = (w, h) => new Uint8Array([0xff, 0xd8, ...sof(w, h), 0xff, 0xda, 0, 0, 0, 0]);
+    const sos = [0xff, 0xda, 0x00, 0x0c, 3, 1, 0, 2, 0x11, 3, 0x11, 0, 63, 0];
+    const jpeg = (w, h) => new Uint8Array([0xff, 0xd8, ...sof(w, h), ...sos, 1, 2, 3, 0xff, 0xd9]);
     const fetchImpl = async (url) => {
       if (url.endsWith('/rpc/post_share_card')) {
         return new Response(JSON.stringify([{ title: 'Sofa', description: null, direction: 'offer', status: 'open', world_slug: 'items', city_name_he: null, cover_bucket: 'post-images', cover_key: 'u/b/0.jpg' }]));
       }
-      const thumb = url.endsWith('0-thumb.jpg');
-      const body = thumb ? jpeg(400, 300) : jpeg(2048, 1536);
-      return new Response(body, { status: 206, headers: { 'content-range': `bytes 0-${body.length - 1}/${thumb ? 31000 : 540000}` } });
+      // The 2048 px photo declares 540 KB (over the cap, never read); the thumb is complete and clean.
+      if (!url.endsWith('0-thumb.jpg')) return new Response(new Uint8Array(4), { status: 200, headers: { 'content-length': '540000' } });
+      const body = jpeg(400, 300);
+      return new Response(body, { status: 200, headers: { 'content-length': String(body.length) } });
     };
     const res = await handleSharedLink({ kind: 'post', param: POST_ID, request: req(`/post/${POST_ID}`, 'WhatsApp/2.0'), env, next, fetchImpl });
     const html = await res.text();
