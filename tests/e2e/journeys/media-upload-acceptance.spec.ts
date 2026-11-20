@@ -61,12 +61,16 @@ test('deployed post-photo picker stores full and thumb, displays the selection a
       await page.screenshot({ path: info.outputPath('media-picker-final.png'), fullPage: true }).catch(() => {});
     }
     await page.close();
+    await info.attach('observed-fixture-paths', { body: JSON.stringify({ bucket: 'post-images', paths: [...paths] }), contentType: 'application/json' });
     if (paths.size > 0) {
       const response = await fetch(`${SUPABASE_URL}/storage/v1/object/post-images`, {
         method: 'DELETE', headers: { apikey: await anonKey(), Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ prefixes: [...paths] }),
       });
-      expect(response.status(), 'exact observed test uploads cleaned').toBe(200);
+      expect(response.status, 'exact observed test uploads cleaned').toBe(200);
+      const deleted = await response.json() as { name: string }[];
+      await info.attach('cleanup-receipt', { body: JSON.stringify({ status: response.status, deleted }), contentType: 'application/json' });
+      expect(deleted.map(item => item.name).sort(), 'every exact fixture object was removed').toEqual([...paths].sort());
     }
   }
 });
