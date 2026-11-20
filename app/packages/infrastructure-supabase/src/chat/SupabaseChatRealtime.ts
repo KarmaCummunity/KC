@@ -38,6 +38,7 @@ export class SupabaseChatRealtime implements IChatRealtime {
    * of the pinned post. Reactions arrive on the same topic as `reaction` and are not consumed here.
    */
   subscribeToChat(chatId: string, cb: ChatStreamCallbacks): Unsubscribe {
+    let failed = false;
     const managed = openExactTopicChannel(
       this.client,
       `chat:${chatId}:messages`,
@@ -56,7 +57,15 @@ export class SupabaseChatRealtime implements IChatRealtime {
         });
       },
       (status) => {
-        if (isChannelFailure(status)) cb.onError(new Error(`chat channel ${status.toLowerCase()}`));
+        // The client rejoins a failed channel by itself; what was sent meanwhile is lost, so the
+        // first SUBSCRIBED after a failure asks the caller to re-read the thread (#1778).
+        if (isChannelFailure(status)) {
+          failed = true;
+          cb.onError(new Error(`chat channel ${status.toLowerCase()}`));
+        } else if (status === 'SUBSCRIBED' && failed) {
+          failed = false;
+          cb.onResync?.();
+        }
       },
     );
     return () => managed.close();
