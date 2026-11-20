@@ -12,6 +12,7 @@ import { discardUnsavedAvatar, retirePreviousAvatar, type ReadCurrentAvatarUrl }
 export function useAvatarGenerationCleanup(userId: string | null | undefined, initialAvatarUrl: string | null | undefined) {
   /** The upload picked on this screen and not saved yet, if any. */
   const unsaved = useRef<string | null>(null);
+  const mounted = useRef(true);
   const ids = useRef({ userId, initialAvatarUrl });
   ids.current = { userId, initialAvatarUrl };
 
@@ -28,6 +29,11 @@ export function useAvatarGenerationCleanup(userId: string | null | undefined, in
 
   /** The avatar shown on the form changed (a new upload, or removed). */
   const trackPicked = useCallback((url: string | null) => {
+    if (!mounted.current) {
+      // A late upload result after the screen closed: nothing will save it.
+      if (url && url !== ids.current.initialAvatarUrl) discard(url);
+      return;
+    }
     const previous = unsaved.current;
     if (previous && previous !== url) discard(previous);
     unsaved.current = url && url !== ids.current.initialAvatarUrl ? url : null;
@@ -42,8 +48,13 @@ export function useAvatarGenerationCleanup(userId: string | null | undefined, in
   }, [readCurrent]);
 
   // Leaving without saving: the unsaved upload is never referenced.
-  useEffect(() => () => {
-    if (unsaved.current) discard(unsaved.current);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      if (unsaved.current) discard(unsaved.current);
+      unsaved.current = null;
+    };
   }, [discard]);
 
   return useMemo(() => ({ trackPicked, committed }), [trackPicked, committed]);

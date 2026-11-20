@@ -116,14 +116,19 @@ async function squareCropAndResize(picked: PickedImage, size: number, compress: 
 }
 
 /** Stores one avatar object; resolves with the path Storage confirmed. */
-function uploadAvatarObject(pathForAttempt: (attempt: number) => string, bytes: Uint8Array, attempts?: number) {
+function uploadAvatarObject(
+  pathForAttempt: (attempt: number) => string,
+  bytes: Uint8Array,
+  opts: { attempts?: number; signal?: AbortSignal } = {},
+) {
   return uploadStorageObject({
     bucket: AVATAR_BUCKET,
     pathForAttempt,
     bytes,
     contentType: 'image/jpeg',
     cacheControl: IMMUTABLE_CACHE_CONTROL,
-    attempts,
+    attempts: opts.attempts,
+    signal: opts.signal,
   });
 }
 
@@ -133,21 +138,25 @@ function uploadAvatarObject(pathForAttempt: (attempt: number) => string, bytes: 
  * `-thumb` sibling, derived from the 512 encode so the original photo is decoded
  * once. Returns the public URL; being a new path it needs no cache-busting.
  */
-export async function resizeAndUploadAvatar(picked: PickedImage, userId: string): Promise<string> {
+export async function resizeAndUploadAvatar(
+  picked: PickedImage,
+  userId: string,
+  opts: { signal?: AbortSignal } = {},
+): Promise<string> {
   if (!userId) throw new Error('resizeAndUploadAvatar: userId is required');
   const full = await squareCropAndResize(picked, AVATAR_FULL_EDGE, COMPRESS);
   const thumb = await encodeJpeg(full.uri, planMaxEdgeResize(full, AVATAR_THUMB_EDGE), THUMB_COMPRESS);
 
   let path: string;
   try {
-    path = await uploadAvatarObject(() => AVATAR_GENERATION_PATH(userId), full.bytes);
+    path = await uploadAvatarObject(() => AVATAR_GENERATION_PATH(userId), full.bytes, { signal: opts.signal });
   } catch (err) {
     throw new Error(`avatar_upload: ${uploadErrorMessage(err)}`, { cause: err });
   }
   // The thumb's name is fixed by `path`: one attempt, never retried at the same name. If it fails
   // the full image still renders (KCImage's `fallbackUri` covers the missing thumb).
   try {
-    await uploadAvatarObject(() => deriveThumbPath(path), thumb.bytes, 1);
+    await uploadAvatarObject(() => deriveThumbPath(path), thumb.bytes, { attempts: 1, signal: opts.signal });
   } catch (err) {
     console.warn(`avatar_upload_thumb: ${uploadErrorMessage(err)}`);
   }

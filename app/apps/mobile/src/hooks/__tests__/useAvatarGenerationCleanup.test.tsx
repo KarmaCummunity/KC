@@ -47,4 +47,12 @@ describe('useAvatarGenerationCleanup', () => {
     expect(lifecycle.discardUnsavedAvatar).not.toHaveBeenCalled();
     expect(lifecycle.retirePreviousAvatar).not.toHaveBeenCalled();
   });
+
+  it('a pick that arrives after the screen closed is discarded at once (late upload result)', () => {
+    const { result, unmount } = renderHook(() => useAvatarGenerationCleanup('u1', 'initial'));
+    const late = result.current;
+    unmount();
+    act(() => late.trackPicked('gen-late'));
+    expect(uploaded(lifecycle.discardUnsavedAvatar.mock.calls)).toEqual(['gen-late']);
+  });
 });

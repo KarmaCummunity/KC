@@ -140,6 +140,15 @@ describe('resizeAndUploadAvatar', () => {
     expect(new Set(paths).size).toBe(3);
   });
 
+  it('passes the caller\'s abort signal to the photo and thumb uploads', async () => {
+    encoder.encodeJpeg.mockResolvedValue(enc(512, 'file://full.jpg'));
+    uploader.uploadStorageObject.mockImplementation(storedAt(1));
+    const controller = new AbortController();
+    await resizeAndUploadAvatar({ ...asset, fileSize: null }, 'u1', { signal: controller.signal });
+    const signals = uploader.uploadStorageObject.mock.calls.map((c) => (c[0] as { signal?: AbortSignal }).signal);
+    expect(signals).toEqual([controller.signal, controller.signal]);
+  });
+
   it('throws on a failed photo upload or a failed encode', async () => {
     encoder.encodeJpeg.mockResolvedValue(enc(512, 'file://full.jpg'));
     uploader.uploadStorageObject.mockRejectedValueOnce({ status: 403, message: 'denied' });
