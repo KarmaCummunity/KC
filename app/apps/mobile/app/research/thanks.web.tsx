@@ -20,6 +20,7 @@ export default function ResearchThanksScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const [shareFeedback, setShareFeedback] = useState<{ message: string; tone: 'success' | 'error' } | null>(null);
   const [showVisitLink, setShowVisitLink] = useState(false);
 
   useEffect(() => {
@@ -27,15 +28,23 @@ export default function ResearchThanksScreen() {
     return () => clearTimeout(timer);
   }, []);
 
+  useEffect(() => {
+    if (!shareFeedback) return;
+    const timer = setTimeout(() => setShareFeedback(null), 2200);
+    return () => clearTimeout(timer);
+  }, [shareFeedback]);
+
   const handleShare = useCallback(
-    () =>
-      triggerResearchShare(RESEARCH_SHARE_SRC_THANKS, {
+    async () => {
+      setShareFeedback(null);
+      await triggerResearchShare(RESEARCH_SHARE_SRC_THANKS, {
         title: t('research.share.shareTitle'),
         message: t('research.share.shareMessage'),
         toastShared: t('research.share.statusShared'),
         toastCopied: t('research.share.statusCopied'),
         toastFailed: t('research.share.statusFailed'),
-      }),
+      }, (message, tone) => setShareFeedback({ message, tone }));
+    },
     [t],
   );
 
@@ -52,6 +61,11 @@ export default function ResearchThanksScreen() {
             <Ionicons name="share-social-outline" size={20} color={colors.textInverse} />
             <Text style={styles.shareBtnText}>{t('research.share.thanksTitle')}</Text>
           </Pressable>
+          {shareFeedback ? (
+            <Text accessibilityRole="text" accessibilityLiveRegion="polite" testID="research-share-status" style={[styles.shareStatus, shareFeedback.tone === 'error' && { color: colors.error }]}>
+              {shareFeedback.message}
+            </Text>
+          ) : null}
         </View>
 
         {!isAuthenticated ? (
@@ -109,6 +123,7 @@ const useStyles = makeUseStyles(({ colors }) => ({
     lineHeight: 24,
     ...webTextRtl,
   },
+  shareStatus: { ...typography.caption, textAlign: rtlTextAlignStart, color: colors.textSecondary },
   shareBlock: {
     gap: spacing.sm,
     marginTop: spacing.md,
