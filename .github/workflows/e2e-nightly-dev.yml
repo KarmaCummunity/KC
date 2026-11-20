@@ -14,11 +14,12 @@ on:
         type: string
         default: 'refs/heads/dev'
       suite:
-        description: Full QA or the request-only worker refusal journey
+        description: Full QA, request-only worker refusal, or focused media upload
         type: choice
         options:
           - full
           - worker-refusal
+          - media-upload
         default: full
   workflow_call:
     inputs:
@@ -52,8 +53,8 @@ jobs:
     env:
       DEV_WEB_URL: ${{ vars.DEV_WEB_URL || 'https://dev.karma-community.pages.dev' }}
     steps:
-      - name: Restrict the worker check to DEV
-        if: inputs.suite == 'worker-refusal'
+      - name: Restrict focused checks to DEV
+        if: inputs.suite == 'worker-refusal' || inputs.suite == 'media-upload'
         env:
           TEST_REF: ${{ inputs.ref }}
         run: |
@@ -110,6 +111,9 @@ jobs:
             # Existing fixture signs in through Auth only. Normal sign-in creates a session. No browser auth setup,
             # content writes, account creation, seeding, or accepted service caller.
             npx playwright test journeys/worker-endpoints.spec.ts --project=journeys --no-deps
+          elif [ "$TARGET_SUITE" = "media-upload" ]; then
+            # No shared auth setup or broad cleanup; exact fixture uploads only, then remove them.
+            npx playwright test journeys/media-upload-acceptance.spec.ts --project=journeys --no-deps
           elif [ "$P0_ONLY" = "true" ]; then
             npx playwright test 'journeys/[a-z-]+\.(setup|spec)\.ts'
           else
