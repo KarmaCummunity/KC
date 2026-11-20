@@ -19,6 +19,7 @@ export const profileEn = {
   followingActive: 'Following ✓',
   followRequestCta: '+ Send request',
   unfollowConfirmTitle: 'Unfollow?',
+  unfollowConfirmTitleNamed: 'Stop following {{name}}?',
   unfollowConfirmCta: 'Unfollow',
   cancelRequestTitle: 'Cancel the follow request?',
   cancelRequestBody: 'You can send a new request anytime.',

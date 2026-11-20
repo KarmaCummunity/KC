@@ -19,6 +19,7 @@ export const profileHe = {
   followingActive: 'עוקב ✓',
   followRequestCta: '+ לשלוח בקשה',
   unfollowConfirmTitle: 'להפסיק לעקוב?',
+  unfollowConfirmTitleNamed: 'להפסיק לעקוב אחרי {{name}}?',
   unfollowConfirmCta: 'להפסיק לעקוב',
   cancelRequestTitle: 'לבטל את בקשת המעקב?',
   cancelRequestBody: 'אפשר לשלוח בקשה חדשה בכל עת.',
