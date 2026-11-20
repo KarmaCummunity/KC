@@ -57,7 +57,7 @@ Index only — the binding wording lives in the linked spec files. All decided b
 | D51 | General emergency — main admin only; org manager/security officer — inside the org | 09 | Approved |
 | D52 | Every challenge interaction earns karma; community > private, large > small | 07.6, 10 | Approved |
 | D53 | Every registered org is verified; can post jobs & recruit; org verification levels | 08 | Approved; job posting superseded by D175 |
-| D54 | WhatsApp group import consent settled by {{D:whatsapp-group-consent}}; activation requires lawyer signature | 13, 92 | Approved 2026-11-20; activation blocked |
+| D54 | WhatsApp group import consent settled by D178; activation requires lawyer signature | 13, 92 | Approved 2026-11-20; activation blocked |
 | D55 | Everything free for orgs for now; parallel tool for orgs | 08, 11 | Approved |
 | D56 | Verified official/state body declares emergency within its permissions | 09 | Approved |
 | D57 | Social venture = org; any registered org (incl. private person) may post jobs | 08 | Approved; job posting superseded by D175 |
@@ -188,11 +188,11 @@ Source: owner approval in WhatsApp at 00:54:29 Asia/Jerusalem, answering the eig
 
 | # | Decision | Lives in | Status |
 |---|---|---|---|
-| {{D:whatsapp-group-consent}} | Group import requires admin approval and prior notice; anonymous publication, attribution after author verification, and deletion after 72 hours. Activation stays blocked until a lawyer signs off. This settles D54/S21, not the separate manual own-post paste/share channel. | 13, 92 | Approved; activation blocked pending lawyer signature |
-| {{D:purge-shared-chat-images}} | Account purge removes the deleted member's shared chat images for both participants; retained counterpart chat text does not preserve the image assets. Existing 30-day restore period remains unchanged. | 07.12, requirements/11_settings.md, 95 Q-8 | Approved |
-| {{D:private-profile-visibility-cap}} | Public is the default. Private profiles are hidden from non-approved followers and require approval for every new follower. Both modes offer per-field everyone / followers / only-me visibility; Private caps even everyone fields at approved followers. Supersedes the follow-approval-only visibility model of D-21; does not silently rewrite per-post visibility. | 07.12, requirements/02_profile_and_privacy.md | Approved |
-| {{D:knowledge-feed-default}} | Knowledge opens on the give-and-take feed. | 18.6, S66, FR-KNOW-008 | Approved |
-| {{D:knowledge-resource-review}} | KC admins and moderators review library resources. Trusted contributors may publish directly with review afterwards. | 18.5.2, S65, FR-KNOW-007 | Approved |
-| {{D:knowledge-v1-no-files}} | Version-one library accepts links and text only, without file uploads. | 18, S71, FR-KNOW-006 | Approved |
-| {{D:knowledge-consult-profile}} | Professional consulting requires a complete profile and profession declaration, not identity verification. Replaces S70's proposed ID gate; complete profile follows D172, not the withdrawn phone-verification level. | 18.9, S70, FR-KNOW-012 | Approved |
-| {{D:knowledge-completion-wording}} | Use the wording "KC community completion record", with a verification code and owner opt-in display on the profile. It is not an accredited qualification. | 18.5.3, S69, FR-KNOW-015/022 | Approved |
+| D178 | Group import requires admin approval and prior notice; anonymous publication, attribution after author verification, and deletion after 72 hours. Activation stays blocked until a lawyer signs off. This settles D54/S21, not the separate manual own-post paste/share channel. | 13, 92 | Approved; activation blocked pending lawyer signature |
+| D179 | Account purge removes the deleted member's shared chat images for both participants; retained counterpart chat text does not preserve the image assets. Existing 30-day restore period remains unchanged. | 07.12, requirements/11_settings.md, 95 Q-8 | Approved |
+| D180 | Public is the default. Private profiles are hidden from non-approved followers and require approval for every new follower. Both modes offer per-field everyone / followers / only-me visibility; Private caps even everyone fields at approved followers. Supersedes the follow-approval-only visibility model of D-21; does not silently rewrite per-post visibility. | 07.12, requirements/02_profile_and_privacy.md | Approved |
+| D181 | Knowledge opens on the give-and-take feed. | 18.6, S66, FR-KNOW-008 | Approved |
+| D182 | KC admins and moderators review library resources. Trusted contributors may publish directly with review afterwards. | 18.5.2, S65, FR-KNOW-007 | Approved |
+| D183 | Version-one library accepts links and text only, without file uploads. | 18, S71, FR-KNOW-006 | Approved |
+| D184 | Professional consulting requires a complete profile and profession declaration, not identity verification. Replaces S70's proposed ID gate; complete profile follows D172, not the withdrawn phone-verification level. | 18.9, S70, FR-KNOW-012 | Approved |
+| D185 | Use the wording "KC community completion record", with a verification code and owner opt-in display on the profile. It is not an accredited qualification. | 18.5.3, S69, FR-KNOW-015/022 | Approved |
