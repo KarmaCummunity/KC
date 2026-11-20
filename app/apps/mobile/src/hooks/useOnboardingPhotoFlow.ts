@@ -8,7 +8,9 @@ import { useOnboardingReplayStore } from '../store/onboardingReplayStore';
 import {
   getCompleteOnboardingUseCase,
   getSetAvatarUseCase,
+  getUserRepo,
 } from '../services/userComposition';
+import { discardUnsavedAvatar, retirePreviousAvatar } from '../services/avatarLifecycle';
 import {
   pickAvatarImage,
   removeUploadedAvatar,
@@ -47,12 +49,23 @@ export function useOnboardingPhotoFlow() {
         return;
       }
       const url = await resizeAndUploadAvatar(picked, session.userId);
-      await getSetAvatarUseCase().execute({
-        sessionUserId: session.userId,
-        userId: session.userId,
-        avatarUrl: url,
-      });
+      const readCurrent = async () => (await getUserRepo().findById(session.userId))?.avatarUrl ?? null;
+      try {
+        await getSetAvatarUseCase().execute({
+          sessionUserId: session.userId,
+          userId: session.userId,
+          avatarUrl: url,
+        });
+      } catch (err) {
+        // Never referenced: the new public object must not outlive the failed save.
+        void discardUnsavedAvatar({ userId: session.userId, uploadedUrl: url, readCurrentAvatarUrl: readCurrent });
+        throw err;
+      }
       setSession({ ...session, avatarUrl: url });
+      // The replaced generation stays public unless retired (skipped on any doubt).
+      void retirePreviousAvatar({
+        userId: session.userId, previousUrl: session.avatarUrl, committedUrl: url, readCurrentAvatarUrl: readCurrent,
+      });
     } catch (err) {
       const msg = err instanceof Error ? err.message : t('general.unknownError');
       Alert.alert(t('onboarding.uploadFailed'), `${t('onboarding.uploadFailedBody')}\n${msg}`);

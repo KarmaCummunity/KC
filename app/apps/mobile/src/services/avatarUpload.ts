@@ -20,6 +20,9 @@ import { deriveThumbPath } from '../lib/imageUrl';
 import type { PickedImage } from './imageUpload';
 import { encodeJpeg, planMaxEdgeResize, type EncodedJpeg } from './imageEncoding';
 import { uploadErrorMessage, uploadStorageObject } from './storageObjectUpload';
+import { avatarPathFromUrl } from './avatarLifecycle';
+
+export { avatarPathFromUrl };
 
 const AVATAR_FULL_EDGE = 512;
 const AVATAR_THUMB_EDGE = 96;
@@ -150,17 +153,6 @@ export async function resizeAndUploadAvatar(picked: PickedImage, userId: string)
   }
 
   return getSupabaseClient().storage.from(AVATAR_BUCKET).getPublicUrl(path).data.publicUrl;
-}
-
-/** The object path inside the avatars bucket of one of the member's own avatar URLs, or null. */
-export function avatarPathFromUrl(avatarUrl: string | null | undefined, userId: string): string | null {
-  if (!avatarUrl) return null;
-  const marker = `/storage/v1/object/public/${AVATAR_BUCKET}/`;
-  const at = avatarUrl.indexOf(marker);
-  if (at < 0) return null;
-  const path = decodeURIComponent(avatarUrl.slice(at + marker.length).split(/[?#]/)[0] ?? '');
-  // Only an object under the member's own folder, never a path that climbs out of it.
-  return path.startsWith(`${userId}/`) && !path.includes('..') ? path : null;
 }
 
 /**

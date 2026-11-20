@@ -6,6 +6,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as Crypto from 'expo-crypto';
 import { encodeJpeg, planMaxEdgeResize, type ImageSize } from './imageEncoding';
 import { uploadErrorMessage, uploadStorageObject } from './storageObjectUpload';
+import { abandonUpload } from './abandonedUploads';
 
 const BUCKET = 'chat-media';
 const MAX_EDGE = 1600;
@@ -54,10 +55,16 @@ export async function uploadChatImageAndSend(
   } catch (err) {
     throw new Error(`chat_media_upload: ${uploadErrorMessage(err)}`, { cause: err });
   }
-  await sendRpc({
-    type: 'image',
-    path,
-    width: encoded.width,
-    height: encoded.height,
-  });
+  try {
+    await sendRpc({
+      type: 'image',
+      path,
+      width: encoded.width,
+      height: encoded.height,
+    });
+  } catch (err) {
+    // The image is stored but no message references it: it is settled, so it can go now.
+    void abandonUpload(BUCKET, path, Date.now(), { settled: true });
+    throw err;
+  }
 }

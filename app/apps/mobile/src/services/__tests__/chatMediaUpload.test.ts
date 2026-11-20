@@ -1,18 +1,20 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-const { picker, encoder, uploader } = vi.hoisted(() => {
+const { picker, encoder, uploader, ledger } = vi.hoisted(() => {
 const picker = {
   requestMediaLibraryPermissionsAsync: vi.fn(),
   launchImageLibraryAsync: vi.fn(),
 };
 const encoder = { encodeJpeg: vi.fn() };
 const uploader = { uploadStorageObject: vi.fn() };
+const ledger = { abandonUpload: vi.fn(async () => undefined) };
 
-  return { picker, encoder, uploader };
+  return { picker, encoder, uploader, ledger };
 });
 
 vi.mock('expo-image-picker', () => picker);
 vi.mock('expo-crypto', () => ({ randomUUID: () => 'obj-1' }));
+vi.mock('../abandonedUploads', () => ledger);
 vi.mock('../imageEncoding', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../imageEncoding')>()),
   encodeJpeg: encoder.encodeJpeg,
@@ -76,5 +78,13 @@ describe('uploadChatImageAndSend', () => {
     const send = vi.fn();
     await expect(uploadChatImageAndSend('c', 'u', picked, send)).rejects.toThrow('chat_media_upload: quota');
     expect(send).not.toHaveBeenCalled();
+  });
+
+  it('abandons the stored image when the message fails to send, then reports the failure', async () => {
+    encoder.encodeJpeg.mockResolvedValue({ uri: 'f', width: 1, height: 1, bytes: new Uint8Array([1]) });
+    uploader.uploadStorageObject.mockImplementation(async (u: { pathForAttempt: (n: number) => string }) => u.pathForAttempt(1));
+    const send = vi.fn(async () => { throw new Error('rpc down'); });
+    await expect(uploadChatImageAndSend('c', 'u', picked, send)).rejects.toThrow('rpc down');
+    expect(ledger.abandonUpload).toHaveBeenCalledWith('chat-media', 'u/c/obj-1.jpg', expect.any(Number), { settled: true });
   });
 });

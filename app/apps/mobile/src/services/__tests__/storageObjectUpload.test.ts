@@ -1,15 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { remove, client } = vi.hoisted(() => {
-  const remove = vi.fn(async () => ({ error: null }));
-  return {
-    remove,
-    client: {
-      auth: { getSession: vi.fn(async () => ({ data: { session: { access_token: 'member-jwt' } } })) },
-      storage: { from: vi.fn(() => ({ remove })) },
-    },
-  };
-});
+const { abandoned, client } = vi.hoisted(() => ({
+  // Records abandoned paths; the ledger itself is tested in abandonedUploads.test.ts.
+  abandoned: vi.fn(async (_bucket: string, _path: string) => undefined),
+  client: {
+    auth: { getSession: vi.fn(async () => ({ data: { session: { access_token: 'member-jwt' } } })) },
+  },
+}));
+vi.mock('../abandonedUploads', () => ({
+  abandonUpload: (bucket: string, path: string) => abandoned(bucket, path),
+  sweepAbandonedUploads: async () => undefined,
+}));
 
 vi.mock('@kc/infrastructure-supabase', () => ({ getSupabaseClient: () => client }));
 vi.mock('../../lib/supabasePublicConfig', () => ({
@@ -120,8 +121,8 @@ describe('uploadStorageObject', () => {
     // The first request was really cancelled at the transport, not merely ignored.
     expect(first.signal().aborted).toBe(true);
     expect((fetchSpy.mock.calls[1] as [string])[0]).toBe('https://proj.supabase.co/storage/v1/object/post-images/u/b/0-a2.jpg');
-    // The first path is never referenced; the app asks Storage to drop it in case it landed anyway.
-    expect(remove).toHaveBeenCalledWith(['u/b/0.jpg']);
+    // The first path is never referenced; it goes on the abandoned ledger in case it landed anyway.
+    expect(abandoned).toHaveBeenCalledWith('post-images', 'u/b/0.jpg');
     // The server finishing the first write late changes nothing: the caller already holds path 2.
     first.release(ok());
     await vi.runAllTimersAsync();
@@ -138,7 +139,7 @@ describe('uploadStorageObject', () => {
     controller.abort();
     await expect(done).rejects.toBeInstanceOf(UploadCancelledError);
     expect(held.signal().aborted).toBe(true);
-    expect(remove).toHaveBeenCalledWith(['u/b/0.jpg']);
+    expect(abandoned).toHaveBeenCalledWith('post-images', 'u/b/0.jpg');
     expect(fetchSpy).toHaveBeenCalledTimes(1);
   });
 
@@ -146,7 +147,7 @@ describe('uploadStorageObject', () => {
     fetchSpy.mockResolvedValueOnce(fail(503, 'busy')).mockResolvedValueOnce(ok());
     await expect(uploadStorageObject(input())).resolves.toBe('u/b/0-a2.jpg');
     // The server answered: nothing was stored, so nothing is abandoned.
-    expect(remove).not.toHaveBeenCalled();
+    expect(abandoned).not.toHaveBeenCalled();
     fetchSpy.mockResolvedValueOnce(fail(403, 'new row violates row-level security policy'));
     await expect(uploadStorageObject(input())).rejects.toMatchObject({ status: 403 });
     expect(fetchSpy).toHaveBeenCalledTimes(3);
@@ -155,7 +156,7 @@ describe('uploadStorageObject', () => {
   it('abandons the path of a network failure (outcome unknown) and gives up after the attempts', async () => {
     fetchSpy.mockRejectedValue(new TypeError('Network request failed'));
     await expect(uploadStorageObject(input({ attempts: 2 }))).rejects.toThrow('Network request failed');
-    expect(remove.mock.calls).toEqual([[['u/b/0.jpg']], [['u/b/0-a2.jpg']]]);
+    expect(abandoned.mock.calls).toEqual([['post-images', 'u/b/0.jpg'], ['post-images', 'u/b/0-a2.jpg']]);
   });
 
   it('does not start when already cancelled or signed out', async () => {

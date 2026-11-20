@@ -53,8 +53,12 @@ export function coverCandidates({ cover_bucket: bucket, cover_key: key }, { supa
   return [publicObjectUrl(supabaseUrl, key), publicObjectUrl(supabaseUrl, thumbKey(key))];
 }
 
-/** JPEG segments a preview may contain: frame/scan/table segments plus JFIF (APP0), ICC (APP2), Adobe (APP14). */
-const JPEG_ALLOWED_APP = new Set([0xe0, 0xe2, 0xee]);
+/**
+ * JPEG segments a preview may contain, an allow-list: frame headers (SOFn), Huffman / arithmetic /
+ * quantization tables (DHT, DAC, DQT), restart interval and line count (DRI, DNL), the scan (SOS),
+ * and JFIF (APP0), ICC (APP2), Adobe (APP14). Every other marker rejects the file.
+ */
+const JPEG_ALLOWED_SEGMENTS = new Set([0xc4, 0xcc, 0xdb, 0xda, 0xdc, 0xdd, 0xe0, 0xe2, 0xee]);
 /** PNG chunks that carry pixels or colour information only; every other chunk rejects the file. */
 const PNG_ALLOWED_CHUNKS = new Set(['IHDR', 'PLTE', 'IDAT', 'IEND', 'tRNS', 'gAMA', 'cHRM', 'sRGB', 'iCCP', 'sBIT', 'bKGD', 'pHYs']);
 
@@ -72,8 +76,9 @@ function skipEntropyData(bytes, from) {
 }
 
 /**
- * Walks a whole JPEG from SOI to EOI. Returns its frame size when every segment is allowed and the
- * structure is complete; null for anything else (metadata segment, malformed, truncated, no frame).
+ * Walks a whole JPEG from SOI to EOI. Returns its frame size when every segment is allowed, the
+ * structure is complete and EOI is the file's last two bytes; null for anything else (metadata or
+ * unknown segment, malformed, truncated, no frame, bytes after EOI).
  */
 export function verifyJpeg(bytes) {
   if (bytes.length < 4 || bytes[0] !== 0xff || bytes[1] !== 0xd8) return null;
@@ -83,13 +88,12 @@ export function verifyJpeg(bytes) {
     if (bytes[i] !== 0xff) return null;
     const marker = bytes[i + 1];
     if (marker === 0xff) { i += 1; continue; } // fill byte before a marker
-    if (marker === 0xd9) return size; // EOI: complete
+    if (marker === 0xd9) return i + 2 === bytes.length ? size : null; // EOI must be the last bytes
     if (isRestartMarker(marker) || marker === 0x01) { i += 2; continue; }
     if (i + 3 >= bytes.length) return null;
     const length = (bytes[i + 2] << 8) | bytes[i + 3];
     if (length < 2 || i + 2 + length > bytes.length) return null;
-    const isApp = marker >= 0xe0 && marker <= 0xef;
-    if ((isApp && !JPEG_ALLOWED_APP.has(marker)) || marker === 0xfe) return null; // EXIF/XMP/IPTC/comment/unknown
+    if (!isFrameMarker(marker) && !JPEG_ALLOWED_SEGMENTS.has(marker)) return null; // EXIF/XMP/IPTC/comment/unknown
     if (isFrameMarker(marker)) {
       if (length < 8) return null;
       size = { height: (bytes[i + 5] << 8) | bytes[i + 6], width: (bytes[i + 7] << 8) | bytes[i + 8] };
@@ -105,7 +109,10 @@ export function verifyJpeg(bytes) {
 
 const PNG_SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
 
-/** Walks every PNG chunk to IEND. Returns the IHDR size when all chunks are allowed; null otherwise. */
+/**
+ * Walks every PNG chunk to IEND. Returns the IHDR size when all chunks are allowed and an empty
+ * IEND ends the file exactly; null otherwise.
+ */
 export function verifyPng(bytes) {
   if (bytes.length < 8 || !PNG_SIGNATURE.every((b, i) => bytes[i] === b)) return null;
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
@@ -120,7 +127,7 @@ export function verifyPng(bytes) {
       if (length !== 13) return null;
       size = { width: view.getUint32(i + 8), height: view.getUint32(i + 12) };
     }
-    if (type === 'IEND') return size;
+    if (type === 'IEND') return length === 0 && end === bytes.length ? size : null;
     i = end;
   }
   return null; // no IEND

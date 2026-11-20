@@ -12,14 +12,13 @@
 //   * every attempt writes a path no other attempt uses (`pathForAttempt`), so a late write can
 //     never overwrite, or be mistaken for, another attempt's object;
 //   * only the path of the attempt that succeeded is returned and ever referenced;
-//   * the path of an aborted or failed-in-flight attempt is "abandoned": the app asks Storage to
-//     remove it (best effort; the remove can still race a write that lands later). For
-//     `post-images` the server's orphan reconciliation removes unreferenced objects older than a
-//     day; `chat-media` and `avatars` have no server-side reconciliation, so a lost race there
-//     leaves one unreferenced object behind (storage cost only, never shown).
+//   * the path of an aborted or failed-in-flight attempt is "abandoned" (abandonedUploads.ts): it
+//     is deleted now AND kept on a persisted ledger until a delete issued after the settle window
+//     (when no late commit can still land) succeeds. Each upload start sweeps due entries.
 
 import { getSupabaseClient } from '@kc/infrastructure-supabase';
 import { getSupabasePublicEnv } from '../lib/supabasePublicConfig';
+import { abandonUpload, sweepAbandonedUploads } from './abandonedUploads';
 import { retryAsync, throwIfAborted, UploadCancelledError, UploadTimeoutError } from './uploadControl';
 
 /** Fixed part of the per-attempt budget: TLS handshake, auth, server-side write. */
@@ -97,11 +96,6 @@ async function storageHttpError(response: Response): Promise<StorageHttpError> {
   return new StorageHttpError(response.status, message);
 }
 
-/** Best-effort removal of an attempt's object that may or may not have been stored. */
-function abandon(bucket: string, path: string): void {
-  void getSupabaseClient().storage.from(bucket).remove([path]).catch(() => undefined);
-}
-
 interface AttemptContext {
   readonly url: string;
   readonly headers: Record<string, string>;
@@ -133,7 +127,7 @@ async function uploadAttempt(input: StorageObjectUpload, path: string, ctx: Atte
     throw await storageHttpError(response);
   } catch (err) {
     if (err instanceof StorageHttpError) throw err; // the server answered: nothing stored
-    abandon(input.bucket, path); // aborted or lost mid-flight: the write may still land
+    void abandonUpload(input.bucket, path); // aborted or lost mid-flight: the write may still land
     if (controller.signal.aborted) {
       throw timedOut ? new UploadTimeoutError(`${input.bucket}/${path}`, ctx.timeoutMs) : new UploadCancelledError();
     }
@@ -147,6 +141,7 @@ async function uploadAttempt(input: StorageObjectUpload, path: string, ctx: Atte
 /** Uploads the bytes; resolves with the path of the attempt that Storage confirmed. */
 export async function uploadStorageObject(input: StorageObjectUpload): Promise<string> {
   throwIfAborted(input.signal);
+  void sweepAbandonedUploads().catch(() => undefined); // earlier abandoned attempts whose window has passed
   const env = getSupabasePublicEnv();
   if (!env) throw new StorageHttpError(500, 'storage_not_configured');
   const { data } = await getSupabaseClient().auth.getSession();
