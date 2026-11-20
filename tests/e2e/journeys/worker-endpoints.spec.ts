@@ -16,7 +16,8 @@ import { sessionFor } from '../lib/api';
 import { SUPABASE_URL, USER_A, anonKey } from '../lib/env';
 
 // No browser session: every call is a plain HTTP request with the headers the test names.
-test.use({ storageState: { cookies: [], origins: [] } });
+// API requests carry a member bearer token; never retain request/response traces.
+test.use({ storageState: { cookies: [], origins: [] }, trace: 'off' });
 
 const GUARD_FILE = fileURLToPath(new URL('../../../supabase/functions/_shared/serviceRoleGuard.ts', import.meta.url));
 /** Workers the issue names that still exist; the scan must find at least these. */
@@ -43,6 +44,7 @@ const REFUSED: ReadonlySet<number> = new Set([401]);
 interface Answer {
   readonly name: string;
   readonly status: number;
+  readonly body: unknown;
 }
 
 /**
@@ -51,6 +53,7 @@ interface Answer {
  */
 async function callWorker(request: APIRequestContext, name: string, headers: Record<string, string>): Promise<Answer> {
   let status = 0;
+  let body: unknown = null;
   for (let attempt = 0; attempt < ATTEMPTS; attempt += 1) {
     try {
       const response = await request.post(`${SUPABASE_URL}/functions/v1/${name}`, {
@@ -60,13 +63,14 @@ async function callWorker(request: APIRequestContext, name: string, headers: Rec
         timeout: 30_000,
       });
       status = response.status();
+      body = await response.json().catch(() => null);
     } catch {
       // No answer inside the timeout: counted as status 0 and tried again.
       status = 0;
     }
     if (status > 0 && status < 500) break;
   }
-  return { name, status };
+  return { name, status, body };
 }
 
 /** Every worker's answer to the same caller, a batch at a time. */
@@ -104,11 +108,31 @@ test.describe('worker endpoints answer the service role only', () => {
   // The platform lets a member's valid token through to the function, so here the refusal is the
   // worker's own check and not the platform's.
   test('a signed-in member is refused by every worker', async ({ request }) => {
-    const { session } = await sessionFor(USER_A);
-    const answers = await callEveryWorker(request, {
-      apikey: await anonKey(),
-      Authorization: `Bearer ${session.access_token as string}`,
+    const { session } = await sessionFor(USER_A).catch(() => {
+      throw new Error('DEV fixture member authentication failed (details withheld).');
     });
+    const headers = { apikey: await anonKey(), Authorization: `Bearer ${session.access_token as string}` };
+    // Prove a live authenticated member token before testing handler refusal.
+    // Never log the token or the authentication response body.
+    const auth = await request.get(`${SUPABASE_URL}/auth/v1/user`, { headers }).catch(() => {
+      throw new Error('DEV member verification request failed (details withheld).');
+    });
+    expect(auth.status(), 'member token is accepted by DEV Auth').toBe(200);
+    const member = await auth.json().catch(() => {
+      throw new Error('DEV member verification returned invalid JSON (body withheld).');
+    }) as { id: string; role: string };
+    expect(typeof member.id).toBe('string');
+    expect(member.id.length).toBeGreaterThan(0);
+    expect(member.role).toBe('authenticated');
+    const answers = await callEveryWorker(request, headers);
     expect(notRefused(answers), 'workers that did not refuse a signed-in member').toEqual([]);
+    for (const answer of answers) {
+      // Distinguish the shared handler envelope from a gateway JWT rejection.
+      const body = answer.body as { ok?: unknown; error?: unknown } | null;
+      const sharedRefusal = body !== null && typeof body === 'object'
+        && Object.keys(body).length === 2 && body.ok === false && body.error === 'unauthenticated';
+      // Report only a boolean so an unexpected response cannot leak into reports.
+      expect(sharedRefusal, `${answer.name}: shared refused-caller response`).toBe(true);
+    }
   });
 });
