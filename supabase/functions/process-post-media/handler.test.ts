@@ -27,6 +27,7 @@ interface Harness {
   removed: string[];
   signals: AbortSignal[];
   rpcSignals: AbortSignal[];
+  removeSignals: AbortSignal[];
   run: (body?: unknown) => Promise<Record<string, unknown>>;
 }
 
@@ -38,7 +39,7 @@ function hangUntilAborted<T>(signal: AbortSignal): Promise<T> {
 function harness(opts: {
   /** Operations that never answer: RPC names, 'download' or 'upload'. */
   hang?: string[];
-  deadlines?: { rpcMs?: number; downloadMs?: number; uploadMs?: number };
+  deadlines?: { rpcMs?: number; downloadMs?: number; uploadMs?: number; cleanupMs?: number };
   profile?: ProcessingProfile;
   jobs: ClaimedMediaJob[];
   bytes?: Uint8Array;
@@ -53,6 +54,7 @@ function harness(opts: {
   const removed: string[] = [];
   const signals: AbortSignal[] = [];
   const rpcSignals: AbortSignal[] = [];
+  const removeSignals: AbortSignal[] = [];
   const hang = new Set(opts.hang ?? []);
   const handler = createProcessPostMediaHandler({
     serviceRoleKey: KEY,
@@ -85,8 +87,10 @@ function harness(opts: {
         if (hang.has('upload')) return hangUntilAborted(signal);
         return Promise.resolve();
       }),
-      remove: (keys) => {
+      remove: (keys, signal) => {
         removed.push(...keys);
+        removeSignals.push(signal);
+        if (hang.has('remove')) return hangUntilAborted(signal);
         return Promise.resolve();
       },
     },
@@ -97,7 +101,7 @@ function harness(opts: {
     }));
     return await res.json();
   };
-  return { calls, downloads, uploads, removed, signals, rpcSignals, run };
+  return { calls, downloads, uploads, removed, signals, rpcSignals, removeSignals, run };
 }
 
 const failCall = (h: Harness) => h.calls.find((c) => c.fn === 'post_media_processing_fail')?.args;
@@ -110,7 +114,7 @@ Deno.test('refuses callers without the service-role key before any work', async 
       claimed = true;
       return Promise.resolve({ data: [], error: null });
     },
-    storage: { download: () => Promise.reject(), upload: () => Promise.reject(), remove: () => Promise.resolve() },
+    storage: { download: () => Promise.reject(), upload: () => Promise.reject(), remove: (_keys, _signal) => Promise.resolve() },
   });
   const res = await handler(new Request('https://x', { method: 'POST', headers: { Authorization: 'Bearer anon-key' } }));
   assertEquals(res.status, 401);
@@ -232,7 +236,7 @@ Deno.test('a failure after the first upload removes what this attempt wrote', as
 
 // ── Finite deadlines on every database call, download and upload ─────────────────────────────
 
-const FAST = { rpcMs: 30, downloadMs: 30, uploadMs: 30 };
+const FAST = { rpcMs: 30, downloadMs: 30, uploadMs: 30, cleanupMs: 30 };
 
 Deno.test('a claim the database never answers is aborted at its deadline and the run ends', async () => {
   const h = harness({ jobs: [job()], hang: ['post_media_processing_claim'], deadlines: FAST });
@@ -309,4 +313,12 @@ Deno.test('production candidate (default) is unchanged: the same 1600 px source 
   assertEquals(out.profile, 'production-candidate');
   const complete = h.calls.find((c) => c.fn === 'post_media_processing_complete')!.args;
   assertEquals([complete.p_width, complete.p_height], [1600, 1200]);
+});
+
+Deno.test('a cleanup delete that never answers is aborted at its deadline; the job still records its failure', async () => {
+  const h = harness({ jobs: [job()], bytes: await realJpeg(), hang: ['upload', 'remove'], deadlines: FAST });
+  const out = await h.run();
+  assertEquals(out.outcomes, { [MEDIA]: 'retry' });
+  assert(h.removeSignals[0]?.aborted, 'the delete request is aborted, not left hanging');
+  assertEquals(failCall(h)?.p_retryable, true);
 });

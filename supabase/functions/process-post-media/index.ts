@@ -81,9 +81,19 @@ const storage: MediaStorage = {
     });
     if (!response.ok) throw new Error(`upload HTTP ${response.status}`);
   },
-  async remove(keys) {
-    const { error } = await admin.storage.from(BUCKET).remove(keys);
-    if (error) throw new Error(error.message);
+  // Through fetch for the same reason as upload: storage-js cannot abort a request.
+  async remove(keys, signal) {
+    const response = await fetch(`${SUPABASE_URL}/storage/v1/object/${BUCKET}`, {
+      method: 'DELETE',
+      headers: {
+        authorization: `Bearer ${primaryServiceRoleKey()}`,
+        apikey: primaryServiceRoleKey(),
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({ prefixes: keys }),
+      signal,
+    });
+    if (!response.ok) throw new Error(`remove HTTP ${response.status}`);
   },
 };
 

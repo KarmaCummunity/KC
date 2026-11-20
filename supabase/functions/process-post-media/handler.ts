@@ -41,8 +41,8 @@ export interface MediaStorage {
   download(key: string, maxBytes: number, signal: AbortSignal): Promise<Uint8Array>;
   /** Stores a new object; rejects if it already exists (never overwrites) or `signal` aborts. */
   upload(key: string, bytes: Uint8Array, signal: AbortSignal): Promise<void>;
-  /** Removes objects; best effort (a failure is logged by the caller). */
-  remove(keys: string[]): Promise<void>;
+  /** Removes objects; must abort its request when `signal` aborts. Best effort (failures logged). */
+  remove(keys: string[], signal: AbortSignal): Promise<void>;
 }
 
 /** Per-operation deadlines (ms). Every operation is aborted when its deadline passes. */
@@ -50,10 +50,11 @@ export interface Deadlines {
   readonly rpcMs: number;
   readonly downloadMs: number;
   readonly uploadMs: number;
+  readonly cleanupMs: number;
 }
 
 /** Defaults: not measured on the platform; chosen so one job fits well inside a lease. */
-export const DEFAULT_DEADLINES: Deadlines = { rpcMs: 5_000, downloadMs: 15_000, uploadMs: 15_000 };
+export const DEFAULT_DEADLINES: Deadlines = { rpcMs: 5_000, downloadMs: 15_000, uploadMs: 15_000, cleanupMs: 10_000 };
 
 export interface ProcessPostMediaDeps {
   serviceRoleKey: string | string[];
@@ -190,7 +191,7 @@ async function processJob(job: ClaimedMediaJob, deps: ProcessPostMediaDeps): Pro
   /** Removes what this attempt wrote: it is never referenced once the attempt does not complete. */
   const removeWritten = async () => {
     if (written.length === 0) return;
-    await deps.storage.remove(written).catch((err) =>
+    await withDeadline(deadlines.cleanupMs, 'cleanup', (signal) => deps.storage.remove(written, signal)).catch((err) =>
       console.error('[process-post-media] cleanup', job.media_id, err instanceof Error ? err.message : err));
   };
   const writeDeadline = Date.parse(job.leased_until) - WRITE_MARGIN_MS;
