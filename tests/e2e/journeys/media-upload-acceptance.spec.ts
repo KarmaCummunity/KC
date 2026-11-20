@@ -44,7 +44,9 @@ test('deployed post-photo picker stores full and thumb, displays the selection a
     expect([...paths].some(x => x.endsWith('-thumb.jpg'))).toBe(true);
     const remove = page.getByRole('button', { name: 'הסירו תמונה' }).first();
     await expect(remove).toBeVisible();
-    await expect.poll(() => page.locator('img').evaluateAll(images => images.filter(image => (image as HTMLImageElement).complete && (image as HTMLImageElement).naturalWidth > 0).length)).toBeGreaterThan(0);
+    const selectedImage = remove.locator('..').locator('img').first();
+    await expect(selectedImage).toBeVisible();
+    await expect.poll(() => selectedImage.evaluate(image => (image as HTMLImageElement).complete && (image as HTMLImageElement).naturalWidth > 0)).toBe(true);
     await page.screenshot({ path: info.outputPath('media-picker-live.png'), fullPage: true });
     for (const objectPath of paths) {
       const response = await page.request.get(`${SUPABASE_URL}/storage/v1/object/public/post-images/${objectPath}`);

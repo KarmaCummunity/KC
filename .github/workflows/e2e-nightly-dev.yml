@@ -14,7 +14,7 @@ on:
         type: string
         default: 'refs/heads/dev'
       suite:
-        description: Full QA or the request-only worker refusal journey
+        description: Full QA, request-only worker refusal, or focused media upload
         type: choice
         options:
           - full
@@ -53,7 +53,7 @@ jobs:
     env:
       DEV_WEB_URL: ${{ vars.DEV_WEB_URL || 'https://dev.karma-community.pages.dev' }}
     steps:
-      - name: Restrict the worker check to DEV
+      - name: Restrict focused checks to DEV
         if: inputs.suite == 'worker-refusal' || inputs.suite == 'media-upload'
         env:
           TEST_REF: ${{ inputs.ref }}
