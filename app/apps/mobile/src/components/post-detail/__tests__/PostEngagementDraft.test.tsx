@@ -87,3 +87,36 @@ describe('comment draft ownership', () => {
     expect(repo.createComment).toHaveBeenCalledWith('p1', 'hello', null);
   });
 });
+
+// #2239: a refused/offline write must keep the draft and settle without an unhandled rejection.
+it('reports a failed write, keeps the draft and permits retry', async () => {
+ repo.createComment.mockRejectedValueOnce(new Error('private backend detail')).mockResolvedValueOnce(undefined);
+ refresh.mockResolvedValue(undefined);
+ const {getByRole}=renderScreen(vi.fn());
+ const input=getByRole('textbox') as HTMLTextAreaElement;
+ fireEvent.change(input,{target:{value:'  keep this  '}});
+ await act(async()=>{fireEvent.click(getByRole('button',{name:'post.engagement.commentSend'}));});
+ await waitFor(()=>expect(getByRole('alert').textContent).toBe('post.engagement.commentSendFailed'));
+ expect(input.value).toBe('  keep this  ');expect(refresh).not.toHaveBeenCalled();
+ expect(getByRole('button',{name:'post.engagement.commentSend'})).not.toHaveProperty('disabled', true);
+ await act(async()=>{fireEvent.click(getByRole('button',{name:'post.engagement.commentSend'}));});
+ await waitFor(()=>expect(input.value).toBe(''));expect(repo.createComment).toHaveBeenCalledTimes(2);
+});
+
+it('does not turn a stored comment into a retryable failed write when refresh rejects', async()=>{
+ repo.createComment.mockResolvedValue(undefined);refresh.mockRejectedValueOnce(new Error('refresh unavailable'));
+ const {getByRole,queryByRole}=renderScreen(vi.fn());const input=getByRole('textbox') as HTMLTextAreaElement;
+ fireEvent.change(input,{target:{value:'stored'}});await act(async()=>{fireEvent.click(getByRole('button',{name:'post.engagement.commentSend'}));});
+ await waitFor(()=>expect(input.value).toBe(''));expect(queryByRole('alert')).toBeNull();
+ expect(repo.createComment).toHaveBeenCalledTimes(1);
+});
+function ReplyButton(){const engagement=usePostEngagement();return <button onClick={()=>engagement?.onReply({commentId:'c1',authorLabel:'Alex'})}>target reply</button>;}
+it('preserves the reply target after failure and clears the failure on a successful retry',async()=>{
+ repo.createComment.mockRejectedValueOnce(new Error('denied')).mockResolvedValueOnce(undefined);refresh.mockResolvedValue(undefined);
+ const {getByRole,queryByRole}=render(<ThemeProvider mode="light" systemScheme="light" setMode={()=>{}}><PostEngagementProvider postId="p1" viewerId="u1"><ReplyButton/><PostEngagementComposer embedded/></PostEngagementProvider></ThemeProvider>);
+ fireEvent.click(getByRole('button',{name:'target reply'}));const input=getByRole('textbox') as HTMLTextAreaElement;fireEvent.change(input,{target:{value:'reply'}});
+ await act(async()=>{fireEvent.click(getByRole('button',{name:'post.engagement.commentSend'}));});await waitFor(()=>expect(getByRole('alert')).toBeTruthy());
+ expect(getByRole('button',{name:'post.engagement.cancelReply'})).toBeTruthy();
+ await act(async()=>{fireEvent.click(getByRole('button',{name:'post.engagement.commentSend'}));});
+ expect(repo.createComment).toHaveBeenNthCalledWith(2,'p1','reply','c1');expect(queryByRole('alert')).toBeNull();expect(queryByRole('button',{name:'post.engagement.cancelReply'})).toBeNull();
+});
