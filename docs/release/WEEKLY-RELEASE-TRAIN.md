@@ -1,6 +1,12 @@
 # Weekly release train
 
-Once a week, dev goes to main, then production, then TestFlight and Play internal. No human clicks anything. The owner decided this on 16 Nov 2026: "everything automatic, I don't want to approve".
+## Owner authorization and safety checkpoint, 2026-11-19
+
+At 18:43 Jerusalem the owner directly answered the proposal to disable the Sunday production train by approving smart automatic deployment instead. This authorizes the scheduled, gated dev-to-main-to-production path, not an immediate dispatch, skipped tests, bypassed failed checks, direct main pushes, unrelated settings changes, or release of unready PRs. Apple replies, App Store review submission and Play public promotion still require separate approval. Earlier broad statements about mandatory manual approval are qualified only for this scheduled path.
+
+The enabled switch remains unchanged. The next scheduled run is Sunday November 22 at 06:00 Jerusalem. The owner approval settles authority, not implementation safety: #2509 is a known technical blocker. The existing routine deploy workflow can still overwrite the database jobs' Vault configuration. Draft PR holds do not stop release of the existing dev tip. Do not mark the train safe until a fail-closed check or the preservation fix is verified in the workflow copy that will actually execute. #2510 was subsequently made ready for CI, but merge, safety bootstrap and production rollout remain separately held. No main promotion or production run was performed in this checkpoint.
+
+Once a week the intended path is dev to main, production, then TestFlight and Play internal, under the approval and technical holds above. The previous Nov16 approval attribution in this file has not been recovered from its original channel and is not relied on.
 
 If a gate fails, the train **stops and reports**. It never waits for an approval. A release that the train refuses can still go out by hand with the manual procedure (`scripts/release-merge.mjs` and the Deploy approval).
 
