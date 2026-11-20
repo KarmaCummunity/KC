@@ -9,6 +9,7 @@ import { decideSharedLinkAction } from './sharedLinkPolicy.mjs';
 import { buildGenericCard, buildPostCard, buildProfileCard } from './ogCard.mjs';
 import { renderOgHtml } from './ogHtml.mjs';
 import { fetchSharedPost } from './postRepository.mjs';
+import { selectOgImage } from './ogImage.mjs';
 
 /** Share handles are short slugs; anything else is not a profile link we should echo. */
 const HANDLE = /^[A-Za-z0-9._-]{1,64}$/;
@@ -31,7 +32,7 @@ const OG_HEADERS = {
 async function cardFor(kind, param, config, fetchImpl) {
   if (kind === 'post') {
     const row = await fetchSharedPost(param, config, fetchImpl);
-    return row ? buildPostCard(row, config) : buildGenericCard(config);
+    return row ? buildPostCard(row, config, await selectOgImage(row, config, fetchImpl)) : buildGenericCard(config);
   }
   return HANDLE.test(param) ? buildProfileCard(config) : buildGenericCard(config);
 }

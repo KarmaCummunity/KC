@@ -10,6 +10,7 @@ import type { Database, Json } from '../database.types';
 import { unwrapCall } from '../rpc/mapRpcError';
 import { mapCardToPostWithOwner, type PostCardRow } from './mapPostRow';
 import { loadCardExtras } from './postCardExtras';
+import { withOwnPendingCovers } from './ownPendingCovers';
 import { loadPostCatalog } from './postCatalog';
 import { decodePageCursor, encodePageCursor } from './pageCursor';
 
@@ -42,8 +43,12 @@ export async function cardsToPosts(
   distancesM: readonly (number | null | undefined)[] = [],
 ): Promise<PostWithOwner[]> {
   if (cards.length === 0) return [];
-  const [catalog, extras] = await Promise.all([loadPostCatalog(client), loadCardExtras(client, cards)]);
-  return cards.flatMap((card, index) =>
+  const [catalog, extras, covered] = await Promise.all([
+    loadPostCatalog(client),
+    loadCardExtras(client, cards),
+    withOwnPendingCovers(client, cards),
+  ]);
+  return covered.flatMap((card, index) =>
     card.id === null
       ? []
       : [mapCardToPostWithOwner(card, { catalog, extras: extras.get(card.id), distanceM: distancesM[index] })],

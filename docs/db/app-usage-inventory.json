@@ -8,8 +8,8 @@
  ],
  "summary": {
   "bucket": {
-   "callSites": 21,
-   "distinct": 4
+   "callSites": 17,
+   "distinct": 5
   },
   "channel": {
    "callSites": 9,
@@ -24,20 +24,11 @@
    "distinct": 265
   },
   "table": {
-   "callSites": 192,
+   "callSites": 193,
    "distinct": 66
   }
  },
  "entries": [
-  {
-   "kind": "bucket",
-   "file": "app/apps/mobile/app/edit-post/[id].tsx",
-   "line": 47,
-   "area": "mobile",
-   "symbol": "assetUrl",
-   "via": "const",
-   "name": "post-images"
-  },
   {
    "kind": "rpc",
    "file": "app/apps/mobile/app/pro.tsx",
@@ -88,6 +79,15 @@
   },
   {
    "kind": "bucket",
+   "file": "app/apps/mobile/src/services/abandonedUploads.ts",
+   "line": 70,
+   "area": "mobile",
+   "symbol": "tryRemove",
+   "via": "unresolved",
+   "name": "<entry.bucket>"
+  },
+  {
+   "kind": "bucket",
    "file": "app/apps/mobile/src/services/avatarUpload.ts",
    "line": 132,
    "area": "mobile",
@@ -124,15 +124,6 @@
   },
   {
    "kind": "bucket",
-   "file": "app/apps/mobile/src/services/chatMediaUpload.ts",
-   "line": 44,
-   "area": "mobile",
-   "symbol": "uploadChatImageAndSend",
-   "via": "const",
-   "name": "chat-media"
-  },
-  {
-   "kind": "bucket",
    "file": "app/apps/mobile/src/services/chatMediaUrl.ts",
    "line": 17,
    "area": "mobile",
@@ -154,35 +145,8 @@
   },
   {
    "kind": "bucket",
-   "file": "app/apps/mobile/src/services/imageUpload.ts",
-   "line": 182,
-   "area": "mobile",
-   "symbol": "resizeAndUploadImage",
-   "via": "const",
-   "name": "post-images"
-  },
-  {
-   "kind": "bucket",
-   "file": "app/apps/mobile/src/services/imageUpload.ts",
-   "line": 194,
-   "area": "mobile",
-   "symbol": "resizeAndUploadImage",
-   "via": "const",
-   "name": "post-images"
-  },
-  {
-   "kind": "bucket",
    "file": "app/apps/mobile/src/services/listingImageUpload.ts",
-   "line": 42,
-   "area": "mobile",
-   "symbol": "uploadListingImages",
-   "via": "const",
-   "name": "post-images"
-  },
-  {
-   "kind": "bucket",
-   "file": "app/apps/mobile/src/services/listingImageUpload.ts",
-   "line": 56,
+   "line": 36,
    "area": "mobile",
    "symbol": "listingImagePublicUrl",
    "via": "const",
@@ -2785,6 +2749,18 @@
   },
   {
    "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/posts/ownPendingCovers.ts",
+   "line": 30,
+   "area": "posts",
+   "symbol": "withOwnPendingCovers",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "post_media"
+  },
+  {
+   "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/posts/postActorIdentityMethods.ts",
    "line": 27,
    "area": "posts",
@@ -2843,7 +2819,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/posts/postCardPages.ts",
-   "line": 68,
+   "line": 73,
    "area": "posts",
    "symbol": "fetchPostsByIds",
    "via": "literal",
@@ -2852,7 +2828,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/posts/postCardPages.ts",
-   "line": 86,
+   "line": 91,
    "area": "posts",
    "symbol": "fetchFeedPage",
    "via": "literal",
@@ -2861,7 +2837,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/posts/postCardPages.ts",
-   "line": 105,
+   "line": 110,
    "area": "posts",
    "symbol": "fetchSearchPage",
    "via": "literal",
@@ -2870,7 +2846,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/posts/postCardPages.ts",
-   "line": 125,
+   "line": 130,
    "area": "posts",
    "symbol": "fetchProfileTabPage",
    "via": "literal",

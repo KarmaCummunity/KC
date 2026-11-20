@@ -1,7 +1,7 @@
 // FR-POST-008, FR-POST-009, FR-POST-015 AC1, FR-ADMIN-006. Edit form for open posts (owner or super-admin).
 // FR-POST-005 — images: same picker + upload pipeline as create.
 // Closes TD-130.
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -14,7 +14,6 @@ import {
   type Category, type ItemCondition, type LocationDisplayLevel, type PostVisibility,
 } from '@kc/domain';
 import { isPostError } from '@kc/application';
-import { getSupabaseClient } from '@kc/infrastructure-supabase';
 import { useAuthStore } from '../../src/store/authStore';
 import { useIsSuperAdmin } from '../../src/hooks/useIsSuperAdmin';
 import {
@@ -23,12 +22,10 @@ import {
   getUpdatePostUseCase,
 } from '../../src/services/postsComposition';
 import { ExpiredRepublishView } from '../../src/components/post/ExpiredRepublishView';
-import {
-  newUploadBatchId,
-  pickPostImages,
-  resizeAndUploadImage,
-  type UploadedAsset,
-} from '../../src/services/imageUpload';
+import type { UploadedAsset } from '../../src/services/imageUpload';
+import { usePostImageUploads, type PostImageUploadSummary } from '../../src/hooks/usePostImageUploads';
+import { uploadErrorMessage } from '../../src/services/storageObjectUpload';
+import { getSupabaseImageThumbUrl, getSupabasePublicImageUrl } from '../../src/lib/imageUrl';
 import { useAddressStateWithCityReset } from '../../src/hooks/useAddressStateWithCityReset';
 import { useEditPostValidation } from '../../src/hooks/useEditPostValidation';
 import { EmptyState } from '../../src/components/EmptyState';
@@ -43,8 +40,13 @@ import { TAB_INLINE_FORM_HEADER_HEIGHT } from '../../src/lib/platform/formChrome
 import { resolveKeyboardAvoidingBehavior } from '../../src/lib/platform/keyboardVerticalOffset';
 
 const POST_IMAGES_BUCKET = 'post-images';
-function assetUrl(path: string): string {
-  return getSupabaseClient().storage.from(POST_IMAGES_BUCKET).getPublicUrl(path).data.publicUrl;
+/** The 96 px gallery tile needs the 400 px thumb, never the 2048 px original. */
+function assetPreviewUrl(path: string): string {
+  return getSupabaseImageThumbUrl({ bucket: POST_IMAGES_BUCKET, path });
+}
+/** Photos stored before thumbs existed only have the original. */
+function assetOriginalUrl(path: string): string {
+  return getSupabasePublicImageUrl({ bucket: POST_IMAGES_BUCKET, path });
 }
 
 export default function EditPostScreen() {
@@ -85,8 +87,6 @@ export default function EditPostScreen() {
   const [visibility, setVisibility] = useState<PostVisibility>('Public');
   const [hideFromCounterparty, setHideFromCounterparty] = useState(false);
   const [uploads, setUploads] = useState<UploadedAsset[]>([]);
-  const [uploadingCount, setUploadingCount] = useState(0);
-  const [batchId] = useState(() => newUploadBatchId());
   const [notify, setNotify] = useState<{ title: string; message: string } | null>(null);
 
   const post = query.data?.post;
@@ -134,7 +134,8 @@ export default function EditPostScreen() {
         path: a.path,
         mimeType: a.mimeType,
         sizeBytes: a.sizeBytes,
-        previewUri: assetUrl(a.path),
+        previewUri: assetPreviewUrl(a.path),
+        previewFallbackUri: assetOriginalUrl(a.path),
       })),
     );
     setSeeded(true);
@@ -146,27 +147,21 @@ export default function EditPostScreen() {
     setHideFromCounterparty(myIdentity?.hideFromCounterparty ?? false);
   }, [identityQuery.data, viewerId]);
 
-  const handlePickImages = async () => {
-    if (!viewerId) {
-      setNotify({ title: t('post.editPost.notifyErrorTitle'), message: t('post.editPost.needReauthBody') });
-      return;
-    }
-    const picked = await pickPostImages(uploads.length + uploadingCount);
-    if (picked.length === 0) return;
-
-    setUploadingCount((n) => n + picked.length);
-    try {
-      const startOrdinal = uploads.length;
-      const results = await Promise.all(
-        picked.map((p, i) => resizeAndUploadImage(p, viewerId, batchId, startOrdinal + i)),
-      );
-      setUploads((prev) => [...prev, ...results]);
-    } catch (err) {
-      setNotify({ title: t('post.editPost.uploadFailedTitle'), message: err instanceof Error ? err.message : t('post.editPost.uploadFailedFallback') });
-    } finally {
-      setUploadingCount((n) => Math.max(0, n - picked.length));
-    }
-  };
+  // FR-POST-005 AC5: photos that did upload stay in the gallery; only the failed ones need a retry.
+  const onUploadFailures = useCallback(({ ok, total, firstError }: PostImageUploadSummary) => {
+    const message = ok > 0 ? t('post.uploadPartial', { ok, total }) : uploadErrorMessage(firstError) || t('post.editPost.uploadFailedFallback');
+    setNotify({ title: t('post.editPost.uploadFailedTitle'), message });
+  }, [t]);
+  const onMissingOwner = useCallback(() => {
+    setNotify({ title: t('post.editPost.notifyErrorTitle'), message: t('post.editPost.needReauthBody') });
+  }, [t]);
+  const { uploadingCount, pickAndUpload: handlePickImages, cancelUploads } = usePostImageUploads({
+    ownerId: viewerId,
+    galleryCount: uploads.length,
+    setUploads,
+    onMissingOwner,
+    onFailures: onUploadFailures,
+  });
 
   const handleRemoveImage = (path: string) =>
     setUploads((prev) => prev.filter((u) => u.path !== path));
@@ -336,6 +331,7 @@ export default function EditPostScreen() {
           uploads={uploads}
           uploadingCount={uploadingCount}
           onAddPhotos={handlePickImages}
+          onCancelUploads={cancelUploads}
           onRemovePhoto={handleRemoveImage}
           title={title}
           onTitleChange={setTitle}
