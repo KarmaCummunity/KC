@@ -16,16 +16,16 @@
    "distinct": 9
   },
   "edge_function": {
-   "callSites": 5,
-   "distinct": 4
+   "callSites": 6,
+   "distinct": 5
   },
   "rpc": {
-   "callSites": 283,
-   "distinct": 259
+   "callSites": 288,
+   "distinct": 264
   },
   "table": {
-   "callSites": 190,
-   "distinct": 64
+   "callSites": 192,
+   "distinct": 66
   }
  },
  "entries": [
@@ -1558,6 +1558,33 @@
     "select"
    ],
    "name": "posts"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/identityVerification/SupabaseIdentityVerificationService.ts",
+   "line": 50,
+   "area": "identityVerification",
+   "symbol": "SupabaseIdentityVerificationService.getStatus",
+   "via": "literal",
+   "name": "my_identity_verification"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/identityVerification/SupabaseIdentityVerificationService.ts",
+   "line": 64,
+   "area": "identityVerification",
+   "symbol": "SupabaseIdentityVerificationService.unwrapCall",
+   "via": "literal",
+   "name": "accept_identity_verification_consent"
+  },
+  {
+   "kind": "edge_function",
+   "file": "app/packages/infrastructure-supabase/src/identityVerification/SupabaseIdentityVerificationService.ts",
+   "line": 68,
+   "area": "identityVerification",
+   "symbol": "SupabaseIdentityVerificationService.startSession",
+   "via": "const",
+   "name": "identity-verification-session"
   },
   {
    "kind": "edge_function",
@@ -4854,6 +4881,57 @@
     "select"
    ],
    "name": "app_flags"
+  },
+  {
+   "kind": "rpc",
+   "file": "supabase/functions/identity-verification-session/index.ts",
+   "line": 34,
+   "area": "fn:identity-verification-session",
+   "symbol": "begin",
+   "via": "literal",
+   "name": "api_identity_verification_begin"
+  },
+  {
+   "kind": "table",
+   "file": "supabase/functions/identity-verification-session/index.ts",
+   "line": 39,
+   "area": "fn:identity-verification-session",
+   "symbol": "latestConsent",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "identity_verification_consents"
+  },
+  {
+   "kind": "rpc",
+   "file": "supabase/functions/identity-verification-session/index.ts",
+   "line": 47,
+   "area": "fn:identity-verification-session",
+   "symbol": "setSession",
+   "via": "literal",
+   "name": "api_identity_verification_set_session"
+  },
+  {
+   "kind": "table",
+   "file": "supabase/functions/identity-verification-webhook/index.ts",
+   "line": 24,
+   "area": "fn:identity-verification-webhook",
+   "symbol": "profileNameForAttempt",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "identity_verifications"
+  },
+  {
+   "kind": "rpc",
+   "file": "supabase/functions/identity-verification-webhook/index.ts",
+   "line": 30,
+   "area": "fn:identity-verification-webhook",
+   "symbol": "apply",
+   "via": "literal",
+   "name": "identity_verification_apply"
   },
   {
    "kind": "rpc",

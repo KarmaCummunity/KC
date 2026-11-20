@@ -27,10 +27,10 @@ import { serve } from 'https://deno.land/std@0.224.0/http/server.ts';
 import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 import { Jimp } from 'https://esm.sh/jimp@1.6.0';
 import { reportError, withObservability } from '../_shared/observability/mod.ts';
-import { isServiceRoleRequest, serviceRoleRequiredResponse } from '../_shared/serviceRoleGuard.ts';
+import { currentServiceRoleKeys, isServiceRoleRequest, primaryServiceRoleKey, serviceRoleRequiredResponse } from '../_shared/serviceRoleGuard.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const SERVICE_KEYS = currentServiceRoleKeys();
 const LIST_PAGE = 100;
 
 const IMMUTABLE_CACHE_CONTROL = 'public, max-age=31536000, immutable';
@@ -213,7 +213,7 @@ serve(withObservability('backfill-image-thumbs', async (req: Request) => {
   if (req.method !== 'POST') return json({ ok: false, error: 'method_not_allowed' }, 405);
 
   // Only the service-role key itself; a JWT that merely claims the role is not accepted.
-  if (!isServiceRoleRequest(req, SERVICE_KEY)) return serviceRoleRequiredResponse();
+  if (!isServiceRoleRequest(req, SERVICE_KEYS)) return serviceRoleRequiredResponse();
 
   let body: {
     bucket?: 'post-images' | 'avatars' | 'both';
@@ -235,7 +235,7 @@ serve(withObservability('backfill-image-thumbs', async (req: Request) => {
   const dryRun = body.dryRun === true;
 
   try {
-    const admin = createClient(SUPABASE_URL, SERVICE_KEY, {
+    const admin = createClient(SUPABASE_URL, primaryServiceRoleKey(), {
       auth: { persistSession: false },
     });
 

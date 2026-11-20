@@ -1,13 +1,13 @@
 // dispatch-notification — HTTP handler: service-role callers only; runs the worker until
 // the queues are empty or the time budget is used. Logic in dispatch.ts.
-import { isServiceRoleRequest } from '../_shared/serviceRoleGuard.ts';
+import { isServiceRoleRequest, serviceRoleRequiredResponse } from '../_shared/serviceRoleGuard.ts';
 import { type DispatchOptions, type DispatchSummary, runDispatch } from './dispatch.ts';
 import type { PushDatabase, PushTransport } from './types.ts';
 
 export interface HandlerDeps {
   readonly db: PushDatabase;
   readonly transport: PushTransport;
-  readonly serviceRoleKey: string;
+  readonly serviceRoleKey: string | string[];
   readonly options?: Partial<DispatchOptions>;
   /** Stop starting new rounds after this many milliseconds. */
   readonly budgetMs?: number;
@@ -22,7 +22,7 @@ function add(total: DispatchSummary, round: DispatchSummary): void {
 export function createDispatchHandler(deps: HandlerDeps): (req: Request) => Promise<Response> {
   const now = deps.now ?? Date.now;
   return async (req) => {
-    if (!isServiceRoleRequest(req, deps.serviceRoleKey)) return new Response('Unauthorized', { status: 401 });
+    if (!isServiceRoleRequest(req, deps.serviceRoleKey)) return serviceRoleRequiredResponse();
     const started = now();
     const total: DispatchSummary = {
       events: 0, retries: 0, sent: 0, deferred: 0, failed: 0, gaveUp: 0, devicesForgotten: 0, unsendable: 0, receiptsChecked: 0,

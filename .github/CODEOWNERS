@@ -31,6 +31,7 @@
 /scripts/check-*                            @navesarussi
 /scripts/deploy-*                           @navesarussi
 /scripts/db-backup-*                          @navesarussi
+/scripts/prod-copy-*                          @navesarussi
 /scripts/smoke-*                            @navesarussi
 /scripts/*-guard*                           @navesarussi
 /scripts/mobile-*                           @navesarussi
@@ -110,6 +111,12 @@ playwright.config.*                         @navesarussi
 # profiles the store pipelines ship.
 /supabase/config.toml                       @navesarussi
 /app/apps/mobile/eas.json                   @navesarussi
+
+# Migration-map CI guard and transitive inputs.
+/scripts/app-migration-map.mjs              @navesarussi
+/scripts/app-migration-map.render.mjs       @navesarussi
+/scripts/app-migration-map.rows.mjs         @navesarussi
+/scripts/db-usage-inventory.mjs             @navesarussi
 
 # Exceptions — script self-tests stay unowned so agents may add tests freely.
 # Deleting a test or removing assertions is caught by the test-integrity guard

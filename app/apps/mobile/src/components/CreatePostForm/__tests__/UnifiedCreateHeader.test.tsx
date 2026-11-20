@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// Mapped to spec: FR-POST-001 AC6 — the category picker is one scrolling row of chips (every
+// Mapped to spec: FR-POST-001 AC1 / AC6 — the category picker is one looping row of chips (every
 // giving world one tap away; the kit Chip, announced with its checked state), the direction toggle sits under it and is hidden for link worlds.
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import React from 'react';

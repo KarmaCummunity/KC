@@ -123,6 +123,37 @@ Supabase pauses Free projects with too little database activity over 7 days ([do
 
 ---
 
+## Production copy to kc-dev (FR-ADMIN-037) {#prod-copy}
+
+Once a week `prod-copy-to-dev.yml` adds an anonymized copy of production to kc-dev (spec: `docs/spec/requirements/12_super_admin.md` FR-ADMIN-037, decision D176). Saturday 20:41 UTC (22:41 / 23:41 Israel time), or by hand: Actions → **Production copy to kc-dev** → run workflow, branch `main`. Scheduled workflows run from `main`, so the schedule starts with the release that carries the file.
+
+| Job | Holds | Does |
+| --- | --- | --- |
+| `gate` | nothing | stops the run unless the repository variable `PROD_COPY_ENABLED` is `true` |
+| `export` | `supabase-prod` (read-only monitor in `scripts/check-deploy-isolation.mjs`) | reads kc-prod in a read-only transaction (`scripts/prod-copy-export.sql`), anonymizes in the same step (`scripts/prod-copy-anonymize.mjs`), removes the raw file, uploads the age-encrypted copy (kept 1 day) |
+| `load` | `supabase-dev` | decrypts and adds the copy in one transaction (`kc_private.prod_copy_apply`, `supabase/seed/prod-copy/`), writes the counts to the run summary, deletes the artifact |
+
+### One-time setup (owner)
+
+1. `age-keygen -o prod-copy.key` on your own computer. The file holds the private key (`AGE-SECRET-KEY-1…`) and prints the public key (`age1…`). This pair is for the copy only, not the backup pair.
+2. Repository variable `PROD_COPY_AGE_RECIPIENT` = the public key.
+3. Environment `supabase-dev`, secret `PROD_COPY_AGE_IDENTITY` = the whole `AGE-SECRET-KEY-1…` line. Then delete `prod-copy.key`: kc-dev is the only place that needs it.
+4. Environment `supabase-prod`, secret `PROD_COPY_ID_KEY` = a random value of at least 32 characters (`openssl rand -base64 48`). It keeps the ids of copied rows stable from week to week and untraceable to production. Changing it replaces every copied row once (new ids); losing it costs nothing more.
+5. Confirm the privacy policy covers an anonymized copy of member data kept for testing (#2487).
+6. Repository variable `PROD_COPY_ENABLED` = `true`, then run the workflow once by hand.
+
+**Turn it off:** set `PROD_COPY_ENABLED` to anything else; the next run stops at `gate`. **Remove the copy from kc-dev:** Admin → Demo data → "Delete copied data", or `select kc_private.prod_copy_delete_all();` on kc-dev.
+
+### Safety properties
+
+- Fails closed: a project ref other than the pinned one, a missing or short `PROD_COPY_ID_KEY`, or a missing key pair stops the job before it connects.
+- Production ids, names and text exist only in the `export` step, on the ephemeral runner, and are removed before the step ends, even on failure. What the export does not select (chats, contact details, streets and points, photos, payments, teams, moderation, consents, surveys, audit) never leaves production at all.
+- The repository is public, so the artifact is encrypted (as backups are) and deleted after the load. Logs and the run summary carry counts only.
+- The load is one transaction: a failed run leaves kc-dev as it was. A post kc-dev refuses (a departed ride, an unknown kind) is skipped and counted by reason in the summary.
+- Copied members are `prodcopy-…@seed.kc.test` with no password, device or WhatsApp link: nothing kc-dev does with them reaches a person.
+
+---
+
 ## Owner setup for D-195 CI/CD {#owner-setup-ci}
 
 Repository settings only the owner (admin) can apply. Tracked as `INFRA-CI-OWNER` in [`BACKLOG.md`](./BACKLOG.md); background in [`DECISIONS.md`](./DECISIONS.md) `D-195`, layout in [`ENVIRONMENTS.md`](./ENVIRONMENTS.md). Do the steps **in this order**: each merge assumes the settings before it.
@@ -615,7 +646,9 @@ The in-app verified-nonprofit donation flow (#850) is sandbox-only and hidden by
 
 The hourly **Ops health monitor** (`.github/workflows/ops-health.yml`, G42) reads `ops.run_health_checks()` (migration `0463`) on dev and prod and keeps one GitHub issue per failing check, labelled `ops-alert` + `ops:<env>` + `ops:<severity>` and assigned to the PM (GitHub emails the assignee). The issue updates when the value changes and **closes itself** once the check is ok again. Issues are public: they carry counts and job names only, never user data.
 
-**Tune, don't patch:** thresholds, severity and on/off live in `ops.health_checks` rows. Change them with a migration (e.g. `update ops.health_checks set threshold = 5 where check_key = '…'`). To try the monitor without opening issues: run the workflow manually with **dry_run**.
+**Report contract:** `ops.run_health_checks()` returns `check_name`, `status` (`ok`, `failing`, `skipped`), `measured`, `max_allowed`, `detail` and `failure_means`. The monitor names failures and includes the measured value, limit and a fixed, reviewed check-specific impact summary (unknown checks are explicitly marked as unmapped). Dynamic SQL diagnostic detail and configured failure prose are withheld from issue payloads and fingerprints; inspect them only in the authenticated health report. Legacy alert severity changes update the issue body, but the existing GitHub channel does not relabel an open issue on update; current SQL checks always use warning, so this does not affect their severity. Integer strings from large PostgreSQL bigint values are kept exact; imprecise JSON numbers fail closed. Current database rows have no severity field, so their alerts use the existing warning channel; an unreadable or malformed report raises the existing critical `health_report_unavailable` alert without closing other incidents. A skipped check neither opens nor closes an incident.
+
+**Tune, don't patch:** limits live in `ops.health_checks.max_allowed`. Change them with a migration (for example, `update ops.health_checks set max_allowed = 5 where name = '…'`), not in the monitor. To try the monitor without opening issues: run the workflow manually with **dry_run**. A dry run plans issue changes but does not apply them.
 
 | Check | Means | First step |
 | --- | --- | --- |

@@ -263,8 +263,11 @@ jobs:
           set -euo pipefail
           url="$(cat supabase/.temp/pooler-url)"
           case "$url" in *"$SUPABASE_PROJECT_REF"*) ;; *) echo "::error::pooler address is not the target project's; refusing."; exit 1 ;; esac
-          key="$(supabase projects api-keys --project-ref "$SUPABASE_PROJECT_REF" -o json | jq -r '[.[] | select(.name == "service_role" or .id == "service_role")][0].api_key // empty')"
-          [ -n "$key" ] || { echo "::error::no service_role key returned for the target project"; exit 1; }
+          key="$(supabase projects api-keys --project-ref "$SUPABASE_PROJECT_REF" -o json | jq -r '
+            ([.[] | select(.type == "secret") | select(.name == "default" or .id == "default")][0].api_key) //
+            ([.[] | select(.name == "service_role" or .id == "service_role")][0].api_key) // empty')"
+          [ -n "$key" ] || { echo "::error::no service key returned for the target project"; exit 1; }
+          case "$key" in sb_secret_*|eyJ*) ;; *) echo "::error::unexpected key format (not sb_secret_/JWT)"; exit 1 ;; esac
           echo "::add-mask::$key"
           export KC_VAULT_URL="https://${SUPABASE_PROJECT_REF}.supabase.co" KC_VAULT_KEY="$key"
           psql "$url" -v ON_ERROR_STOP=1 -qAt <<'SQL'
@@ -297,6 +300,25 @@ jobs:
           case "$url" in *"$KC_DEV_REF"*) ;; *) echo "::error::pooler address is not kc-dev's; refusing."; exit 1 ;; esac
           psql "$url" -v ON_ERROR_STOP=1 --single-transaction -qAt \
             -c "select set_config('kc.seed_target', 'dev', false)" -f supabase/seed/demo/load.sql
+
+      # The weekly anonymized copy of production (FR-ADMIN-037) lands through a dev-only seed
+      # (supabase/seed/prod-copy) for the same reason, and is installed the same way: on every
+      # dev deploy, after the schema it writes, guarded to kc-dev. load.sql sets the marker that
+      # lets a copy be applied; it copies nothing (the Production copy workflow does, weekly).
+      - name: Production-copy tools (kc-dev only)
+        if: inputs.target == 'dev'
+        env:
+          PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          KC_DEV_REF: enbqriuxvvuontiwslun
+        run: |
+          set -euo pipefail
+          if [ "$SUPABASE_PROJECT_REF" != "$KC_DEV_REF" ]; then
+            echo "::error::the dev target is not kc-dev; refusing to install the production-copy tools."; exit 1
+          fi
+          url="$(cat supabase/.temp/pooler-url)"
+          case "$url" in *"$KC_DEV_REF"*) ;; *) echo "::error::pooler address is not kc-dev's; refusing."; exit 1 ;; esac
+          psql "$url" -v ON_ERROR_STOP=1 --single-transaction -qAt \
+            -c "select set_config('kc.seed_target', 'dev', false)" -f supabase/seed/prod-copy/load.sql
 
       # After a fresh schema the pg_cron launcher was once seen idle on kc-dev (no
       # cron.job_run_details rows for an hour, until a new job was scheduled). Wait up to three

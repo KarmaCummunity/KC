@@ -75,6 +75,7 @@ Schedules are UTC. Every job is cancelled at its `timeout` and recorded as faile
 | `housing_not_completed` | every 30 min | stays nobody closed |
 | `food_expiry_alert` | hourly :05 | food about to expire |
 | `ride_series_materialize` | 02:00 | occurrences of recurring rides, 30 days ahead |
+| `knowledge_slot_series_materialize` | every 10 min | slots of recurring lesson offers, 30 days ahead |
 | `lift_expired_suspensions` | every 15 min | suspensions whose period ended |
 | `posts_purge` | 04:00 | hard delete of deleted posts past the 7-day grace period |
 | `partitions_ensure` | 03:05 | this and next month's partitions |

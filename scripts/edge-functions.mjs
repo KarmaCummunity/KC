@@ -48,6 +48,8 @@ export const SMOKE_PROBES = {
   'dispatch-notification': { expect: [401], why: 'service-role bearer check runs before the body is read' },
   'embed-worker': { expect: [401], why: 'service-role bearer check runs first' },
   'extract-external-post': { expect: [200], why: 'answers the preflight for the deployed web origin (403 = origin not allowlisted)' },
+  'identity-verification-session': { expect: [200], why: 'answers the preflight for the deployed web origin (403 = origin not allowlisted)' },
+  'identity-verification-webhook': { expect: [405], why: 'method guard (POST only) runs first; no JWT at the gateway' },
   'match-rerank': { expect: [405], why: 'method guard (POST only) runs first' },
   'payments-webhook': { expect: [405], why: 'method guard (POST only) runs first' },
   'public-research-submit': { expect: [200], why: 'answers the preflight for the deployed web origin (403 = origin not allowlisted)' },

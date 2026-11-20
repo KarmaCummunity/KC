@@ -15,6 +15,7 @@ export * from './donations';
 export * from './value-objects';
 export * from './dateOfBirth';
 export * from './verificationLevel';
+export * from './identityVerification';
 export * from './invariants';
 export * from './searchTypes';
 export * from './geo';

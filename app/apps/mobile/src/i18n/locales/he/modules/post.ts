@@ -192,6 +192,7 @@ export const postHe = {
     loadError: 'לא הצלחנו לטעון את התגובות. נסו שוב.',
     commentPlaceholder: 'הוסיפו תגובה…',
     replyPlaceholder: 'כתבו תשובה…',
+    commentSendFailed: 'לא הצלחנו לפרסם את התגובה. הטיוטה נשמרה כאן, אפשר לנסות שוב.',
     commentSend: 'פרסום',
     reply: 'השיבו',
     replyingTo: 'תשובה ל{{name}}',

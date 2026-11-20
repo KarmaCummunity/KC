@@ -11,7 +11,7 @@ type RpcResult = { data: unknown; error: { message: string } | null };
 
 export interface EmbedWorkerDeps {
   /** The project's service-role key; the only credential the worker accepts. */
-  serviceRoleKey: string;
+  serviceRoleKey: string | string[];
   rpc: (fn: string, args: Record<string, unknown>) => Promise<RpcResult>;
 }
 

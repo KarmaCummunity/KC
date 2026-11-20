@@ -239,6 +239,8 @@ A decision should be re-opened only when one of the following triggers fires:
 
 ## D-14 — Deleted user → "Deleted user" placeholder in chats
 
+**Clarified by owner approval 2026-11-20.** Retained counterpart conversation text does not preserve the purged member's shared chat image assets. Those images are removed for both sides at final purge (FR-SETTINGS-012, Q-8).
+
 **Decision.** When one party deletes their account, the counterpart retains the conversation; the deleted user appears as "Deleted user" with a generic avatar. Their messages remain visible.
 
 **Rationale.** Hard-deleting messages would erase context the counterpart may need (e.g., coordination history). The placeholder respects privacy without breaking continuity.
@@ -469,6 +471,8 @@ Web Push parity is deferred — only the adapter changes, the pipeline is shared
 ---
 
 ## D-21 — Privacy mode is a follow-approval flag only (2026-05-15)
+
+**Superseded for profile visibility by owner approval 2026-11-20.** Private now hides the profile from non-approved followers and caps per-field visibility. See `docs/spec/07_cross_cutting_systems.md` §7.12 and FR-PROFILE-003. The text below records the old decision, not the current target contract; separate per-post visibility is unchanged.
 
 **Decision.** `User.privacy_mode = Private` means **one thing**: new follow attempts create a `pending` follow request that the target must approve. It has no other effect on visibility — the profile header, biography, counters, post lists (subject to per-post `visibility`), and followers/following lists are visible to all signed-in viewers, exactly as for a `Public` profile. The lock indicator (`FR-PROFILE-011` / `FR-PROFILE-012`) plus the "Send Follow Request" CTA are the only user-facing differences.
 
@@ -2052,3 +2056,11 @@ The Demo data screen keeps two failures apart: the RPC itself is missing (`not_i
 **Why.** The tools are a seed, not a migration (`D-239`), so nothing brought a change to kc-dev except a manual workflow run. On 2026-11-17 kc-dev ran a copy two merges old (no `worlds` phase, no org staff in every role), and the screen answered "not installed" for every missing-object error, so a production-wired build, an old copy and a broken copy all looked the same (#2434).
 
 **Affected.** `.github/workflows/deploy-db.yml`, `supabase/seed/demo/README.md`, `docs/agents/DEPLOY.md`, `DemoData.ts` (`outdated`, `DEMO_DATA_SEED_PHASES`), `demoDataRows.ts`, `(admin)/demo-data`, `FR-ADMIN-031 AC1, AC11, AC12`.
+
+## D-242 — The weekly production copy: anonymized in the kc-prod job, applied by a dev-only seed (2026-11-19)
+
+**Decision.** `prod-copy-to-dev.yml` (FR-ADMIN-037, D176) has two jobs. `export` holds `supabase-prod` as a listed read-only monitor of `scripts/check-deploy-isolation.mjs`: one read-only transaction (`scripts/prod-copy-export.sql`) selects an allowlist of rows, and `scripts/prod-copy-anonymize.mjs` rewrites them in the same step (keyed HMAC ids, fake names, seed-domain addresses, contact details and ID numbers removed from every free text). Only the age-encrypted result leaves the job. `load` holds `supabase-dev` and applies the document in one transaction with `kc_private.prod_copy_apply`, a dev-only seed (`supabase/seed/prod-copy/`, as `D-239`) that every dev deploy installs (as `D-241`). Copied rows are written through kc-dev's own triggers like any other row; a post they refuse is skipped and counted. A post whose copied fields changed is replaced rather than edited.
+
+**Why.** Anonymizing before the data leaves the job that may read production keeps real names, text and ids off the artifact, the logs and kc-dev, and two allowlists (the export and the anonymizer) must both fail before anything private moves. A seed rather than a migration keeps every copy object off kc-prod. Going through kc-dev's triggers keeps counters, karma, search and matching consistent, which a trigger-free bulk load would break. The post status machine does not allow every move a production post makes, so replacing a changed post is the only path that always works.
+
+**Affected.** `.github/workflows/prod-copy-to-dev.yml`, `scripts/prod-copy-export.sql`, `scripts/prod-copy-anonymize.mjs`, `scripts/check-deploy-isolation.mjs` (`MONITORS`, another holder of prod secrets outside `deploy.yml`, tracked with TD-232), `supabase/seed/prod-copy/`, `.github/workflows/deploy-db.yml`, `docs/SSOT/OPERATOR_RUNBOOK.md` "Production copy to kc-dev".
