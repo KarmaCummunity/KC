@@ -2,8 +2,8 @@
  "generatedBy": "scripts/app-migration-map.mjs",
  "totals": {
   "rpc": {
-   "objects": 265,
-   "same": 188,
+   "objects": 267,
+   "same": 190,
    "renamed": 22,
    "changed": 55,
    "removed": 0,
@@ -44,8 +44,8 @@
  },
  "launchTotals": {
   "core": {
-   "objects": 131,
-   "same": 107,
+   "objects": 133,
+   "same": 109,
    "renamed": 1,
    "changed": 23,
    "removed": 0,
@@ -77,8 +77,8 @@
    "missing": 0
   },
   "admin": {
-   "callSites": 72,
-   "oneToOne": 43,
+   "callSites": 74,
+   "oneToOne": 45,
    "changed": 29,
    "removed": 0,
    "missing": 0
@@ -823,11 +823,13 @@
     "rpc:admin_demo_data_status",
     "rpc:admin_wipe_demo_data_step",
     "rpc:admin_seed_demo_data_step",
-    "rpc:admin_set_org_may_post_jobs"
+    "rpc:admin_set_org_may_post_jobs",
+    "rpc:admin_prod_copy_status",
+    "rpc:admin_delete_prod_copy"
    ],
    "counts": {
-    "objects": 38,
-    "oneToOne": 28,
+    "objects": 40,
+    "oneToOne": 30,
     "changed": 10,
     "removed": 0,
     "missing": 0
@@ -2704,6 +2706,39 @@
    ]
   },
   {
+   "old": "admin_delete_prod_copy",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "core",
+   "confidence": "medium",
+   "missing": null,
+   "note": "DEV-only confirmed deletion of previously copied data, with manager authorization and counts-only audit. Definition is not execution approval.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "sql",
+     "name": "supabase/seed/prod-copy/lib/60_admin_rpcs.sql#admin_delete_prod_copy",
+     "signature": "admin_delete_prod_copy() → jsonb",
+     "source": "supabase/seed/prod-copy/lib/60_admin_rpcs.sql",
+     "errorBinding": {
+      "status": "unknown",
+      "reason": "transitive seed helper errors require separate review"
+     }
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseProdCopyRepository.ts",
+     "line": 68,
+     "symbol": "SupabaseProdCopyRepository.deleteAll",
+     "area": "admin"
+    }
+   ]
+  },
+  {
    "old": "admin_demo_data_status",
    "kind": "rpc",
    "status": "same",
@@ -3307,6 +3342,39 @@
      "line": 198,
      "symbol": "SupabaseSurveyAdminRepository.getPmfReport",
      "area": "survey"
+    }
+   ]
+  },
+  {
+   "old": "admin_prod_copy_status",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "core",
+   "confidence": "medium",
+   "missing": null,
+   "note": "DEV-only status RPC with demo-manager authorization. Absent from production baseline; no copy operation is invoked.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "sql",
+     "name": "supabase/seed/prod-copy/lib/60_admin_rpcs.sql#admin_prod_copy_status",
+     "signature": "admin_prod_copy_status() → jsonb",
+     "source": "supabase/seed/prod-copy/lib/60_admin_rpcs.sql",
+     "errorBinding": {
+      "status": "unknown",
+      "reason": "transitive seed helper errors require separate review"
+     }
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseProdCopyRepository.ts",
+     "line": 62,
+     "symbol": "SupabaseProdCopyRepository.getStatus",
+     "area": "admin"
     }
    ]
   },

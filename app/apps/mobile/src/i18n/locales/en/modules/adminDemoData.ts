@@ -1,5 +1,6 @@
 // FR-ADMIN-031 — English copy of the admin portal's Demo data screen (delete and restore the
-// kc-dev demo data). Merged into `admin` by the locale index.
+// kc-dev demo data), with the FR-ADMIN-037 card of the weekly copy from production (`prodCopy`).
+// Merged into `admin` by the locale index.
 export const adminDemoDataEn = {
   nav: {
     demoData: 'Demo data',
@@ -63,6 +64,27 @@ export const adminDemoDataEn = {
     doneTitle: 'Demo data hidden',
     done: (users: number, orgs: number) => `Deleted ${users} members and ${orgs} nonprofits.`,
     orgsKept: (n: number) => `${n} demo nonprofits were kept because they have payment history.`,
+    prodCopy: {
+      title: 'Copied from production',
+      subtitle: 'Copied data for development testing, separate from demo data. The counts below show what is stored now.',
+      members: 'Members',
+      posts: 'Posts',
+      organizations: 'Nonprofits',
+      follows: 'Follows',
+      savedPosts: 'Saved posts',
+      lastCopied: (when: string) => `Last copy: ${when}`,
+      neverCopied: 'No copy has run yet.',
+      empty: 'No copied data is stored right now.',
+      deleteButton: 'Delete copied data',
+      deleting: 'Deleting...',
+      confirmTitle: 'Delete the copied data?',
+      confirmBody: (members: number, posts: number) =>
+        `Deletes ${members} copied members with their ${posts} posts, and the copied nonprofits. Other data is not deleted.`,
+      confirmOk: 'Delete',
+      confirmCancel: 'Cancel',
+      deleted: (members: number, posts: number, orgs: number) =>
+        `Deleted ${members} members, ${posts} posts and ${orgs} nonprofits that were copied.`,
+    },
     errors: {
       generic: 'The action failed. Try again or pull to refresh.',
       forbidden: 'Not allowed. Only the super admin or the Karma Community organization admin can manage demo data.',

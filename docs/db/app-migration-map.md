@@ -8,12 +8,12 @@ The application (`app/packages/infrastructure-supabase`, `app/apps/mobile`) and 
 
 | Kind | Objects used | 1:1 | 1:1 (renamed) | CHANGED | REMOVED | MISSING |
 | --- | --- | --- | --- | --- | --- | --- |
-| RPCs | 265 | 188 | 22 | 55 | 0 | 0 |
+| RPCs | 267 | 190 | 22 | 55 | 0 | 0 |
 | Tables and views | 66 | 49 | 0 | 17 | 0 | 0 |
 | Storage buckets | 5 | 4 | 0 | 1 | 0 | 0 |
 | Realtime channels | 9 | 9 | 0 | 0 | 0 | 0 |
 | Edge Function invokes | 5 | 5 | 0 | 0 | 0 | 0 |
-| **Total** | 350 | 255 | 22 | 73 | 0 | 0 |
+| **Total** | 352 | 257 | 22 | 73 | 0 | 0 |
 
 ### Launch scope
 
@@ -21,10 +21,10 @@ Every row carries `launch` (spec D102, `docs/spec/96_launch_and_first_group_plan
 
 | Launch tier | Objects used | 1:1 | 1:1 (renamed) | CHANGED | REMOVED | MISSING |
 | --- | --- | --- | --- | --- | --- | --- |
-| core | 131 | 107 | 1 | 23 | 0 | 0 |
+| core | 133 | 109 | 1 | 23 | 0 | 0 |
 | wedge | 53 | 32 | 15 | 6 | 0 | 0 |
 | later | 166 | 116 | 6 | 44 | 0 | 0 |
-| **Launch-critical (core + wedge)** | 184 | 139 | 16 | 29 | 0 | 0 |
+| **Launch-critical (core + wedge)** | 186 | 141 | 16 | 29 | 0 | 0 |
 
 Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename of the function or its arguments · **CHANGED** the caller's logic changes · **REMOVED** no replacement by design · **MISSING** the baseline has no equivalent although the code needs one (§4). Confidence: **high** read in the baseline source, **medium** inferred from names and generated types.
 
@@ -45,7 +45,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | Module | Call sites | 1:1 | Logic changes | Removed | MISSING |
 | --- | --- | --- | --- | --- | --- |
 | `infrastructure-supabase/src/about/` | 1 | 1 | 0 | 0 | 0 |
-| `infrastructure-supabase/src/admin/` | 72 | 43 | 29 | 0 | 0 |
+| `infrastructure-supabase/src/admin/` | 74 | 45 | 29 | 0 | 0 |
 | `infrastructure-supabase/src/auth/` | 2 | 2 | 0 | 0 | 0 |
 | `infrastructure-supabase/src/blocks/` | 4 | 4 | 0 | 0 | 0 |
 | `infrastructure-supabase/src/challenges/` | 9 | 6 | 3 | 0 | 0 |
@@ -109,12 +109,13 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 
 ### `infrastructure-supabase/src/admin/`
 
-72 call sites: 43 map 1:1, 29 need logic changes, 0 removed, 0 MISSING.
+74 call sites: 45 map 1:1, 29 need logic changes, 0 removed, 0 MISSING.
 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `admin_audit_search` | core | CHANGED | `admin_audit_search(p_action?: string, p_actor_id?: string, p_before_id?: number, p_before_occurred_at?: string, p_from?: string, p_limit?: number, p_target_id?: string, p_to?: string) → { action: string actor_id: string id: number metadata: Json occurred_at: string target_id: string target_type: string }[]` | Offset → keyset (`p_before_occurred_at`, `p_before_id`); `p_target_user_id` → `p_target_id`; no display names and no `total_count` (join `users` on the device). | `forbidden`, `unauthenticated` | high | auditSearchCall.ts:20 |
 | `admin_change_role` | core | 1:1 | `admin_change_role(p_grant_id: string, p_new_role: string) → string` | Signature unchanged. | `account_not_active`, `forbidden_grant`, `forbidden_revoke`, `grant_already_revoked`, `grant_not_found`, `invalid_role`, `invalid_scope`, `role_already_active`, `unauthenticated` | high | SupabaseAdminRoleRepository.ts:125 |
+| `admin_delete_prod_copy` | core | 1:1 | sql `supabase/seed/prod-copy/lib/60_admin_rpcs.sql#admin_delete_prod_copy` | DEV-only confirmed deletion of previously copied data, with manager authorization and counts-only audit. Definition is not execution approval. | Error binding unknown (not an assertion of no errors) | medium | SupabaseProdCopyRepository.ts:68 |
 | `admin_demo_data_status` | later | 1:1 | sql `supabase/seed/demo/lib/80_admin_rpcs.sql#admin_demo_data_status` | Dev-only seed RPC, deliberately absent from production baseline types; adapter refuses not_installed where unavailable. | Error binding unknown (not an assertion of no errors) | medium | SupabaseDemoDataRepository.ts:31 |
 | `admin_grant_role` | core | 1:1 | `admin_grant_role(p_role: string, p_scope_org_id?: string, p_target_user_id: string) → string` | Signature unchanged. | `account_not_active`, `forbidden_grant`, `invalid_role`, `invalid_scope`, `role_already_active`, `target_not_active`, `target_not_found`, `unauthenticated` | high | SupabaseAdminRoleRepository.ts:107 |
 | `admin_hierarchy_census` | later | 1:1 | `admin_hierarchy_census() → Json` | Restored by migration 0013: community and role-holder totals and, per visible organization, its slug, verification and affiliates (`user_profile_fields.affiliated_org_id`) without a role. |  | high | SupabaseOrgHierarchyRepository.ts:123 |
@@ -122,6 +123,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `admin_org_application_approve` | later | CHANGED | `admin_org_application_approve(p_application_id: string, p_note?: string, p_slug?: string) → string` | New required `p_slug`; returns the organization id. | `application_already_decided`, `application_not_found`, `forbidden`, `unauthenticated` | high | SupabaseOrgApplicationsRepository.ts:96 |
 | `admin_org_application_reject` | later | 1:1 | `admin_org_application_reject(p_application_id: string, p_note?: string) → undefined` | Signature unchanged. | `application_already_decided`, `application_not_found`, `forbidden`, `unauthenticated` | high | SupabaseOrgApplicationsRepository.ts:103 |
 | `admin_org_tree` | later | 1:1 | `admin_org_tree(p_org_id?: string) → { avatar_url: string display_name: string effective_org_id: string grant_id: string is_platform: boolean last_seen_at: string manager_grant_id: string org_name: string role: string scope_org_id: string user_id: string...` | Restored by migration 0012: active grants with `effective_org_id`, organization name, manager edge and `last_seen_at`; same visibility as `admin_list_admins`. |  | high | SupabaseOrgHierarchyRepository.ts:104 |
+| `admin_prod_copy_status` | core | 1:1 | sql `supabase/seed/prod-copy/lib/60_admin_rpcs.sql#admin_prod_copy_status` | DEV-only status RPC with demo-manager authorization. Absent from production baseline; no copy operation is invoked. | Error binding unknown (not an assertion of no errors) | medium | SupabaseProdCopyRepository.ts:62 |
 | `admin_revoke_role` | core | 1:1 | `admin_revoke_role(p_grant_id: string) → undefined` | Signature unchanged. | `account_not_active`, `forbidden_revoke`, `grant_already_revoked`, `grant_not_found`, `unauthenticated` | high | SupabaseAdminRoleRepository.ts:120 |
 | `admin_seed_demo_data_step` | later | 1:1 | sql `supabase/seed/demo/lib/80_admin_rpcs.sql#admin_seed_demo_data_step` | Dev-only seed RPC, deliberately absent from production baseline types; adapter refuses not_installed where unavailable. | Error binding unknown (not an assertion of no errors) | medium | SupabaseDemoDataRepository.ts:43 |
 | `admin_set_app_flag` | core | 1:1 | `admin_set_app_flag(p_description?: string, p_enabled: boolean, p_key: string) → app_flags row` | Existing current caller: app/packages/infrastructure-supabase/src/admin/SupabaseAppFlagsAdminRepository.ts. Current source declaration is bound; transitive errors remain explicitly unknown, not runtime acceptance. | `forbidden`, `invalid_flag_key` †, `unauthenticated`; Error binding unknown (not an assertion of no errors) | medium | SupabaseAppFlagsAdminRepository.ts:13 |
@@ -914,7 +916,7 @@ In launch order: after package *n* the app is shippable with everything up to *n
 | P1 — Identity: session start, profile, privacy, follow, block, legal, account deletion, devices | core | 37 | 33 | 4 | 0 | 0 | — |
 | P2 — Posts, feed, search, closure, translations | core | 51 | 40 | 11 | 0 | 0 | P3, P4 |
 | P3 — Chat and realtime | core | 19 | 17 | 2 | 0 | 0 | P2, P4 |
-| P4 — Reports, moderation and admin basics | core | 38 | 28 | 10 | 0 | 0 | P2, P3 |
+| P4 — Reports, moderation and admin basics | core | 40 | 30 | 10 | 0 | 0 | P2, P3 |
 | P5 — Launch worlds: items, food, rides, time (events), matching, donation links | wedge | 81 | 68 | 13 | 0 | 0 | P6 |
 | P6 — Edge Functions of the launch | core | 14 | 10 | 4 | 0 | 0 | P5 |
 | L1 — Housing world | later | 15 | 11 | 4 | 0 | 0 | L2, L3, L4, L5, L6, L7 |

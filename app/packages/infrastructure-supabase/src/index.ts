@@ -108,6 +108,7 @@ export { SupabaseOrganizationsRepository } from './organizations/SupabaseOrganiz
 export { SupabaseChallengeRepository } from './challenges/SupabaseChallengeRepository';
 export * from './admin/SupabaseWhatsAppAdminRepository';
 export * from './admin/SupabaseDemoDataRepository';
+export * from './admin/SupabaseProdCopyRepository';
 export { SupabaseWhatsAppLinkRepository } from './whatsapp/SupabaseWhatsAppLinkRepository';
 export { SupabaseKnowledgeTopicRepository } from './knowledge/SupabaseKnowledgeTopicRepository';
 export { SupabaseKnowledgeBookingRepository } from './knowledge/SupabaseKnowledgeBookingRepository';
