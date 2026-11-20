@@ -57,11 +57,11 @@ export const settingsEn = {
       'Chats you had will remain with the people you talked to. They will see the messages you wrote, but not your name, photo, or profile — only "{{deletedUserLabel}}".',
     warning:
       'Your account is deactivated for 30 days. If you sign in again during that time you can restore it completely. After 30 days everything is deleted for good.',
-    confirmNameLabel: 'Type your name ({{name}}) to confirm',
-    confirmInputLabel: 'Type "delete" to confirm',
-    confirmInputPlaceholder: 'delete',
-    confirmKeyword: 'delete',
+    confirmInputLabel: 'Type your display name to confirm',
+    confirmInputPlaceholder: 'Your display name',
+    nameUnavailable: 'Your display name is unavailable. Close this dialog and try again after your profile loads.',
     buttons: {
+      continue: 'Continue',
       cancel: 'Cancel',
       delete: 'Delete the account',
       retry: 'Try again',
