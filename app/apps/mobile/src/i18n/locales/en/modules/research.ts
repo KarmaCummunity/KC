@@ -95,7 +95,7 @@ export const researchEn = {
     // Web-platform OS share-sheet title
     shareTitle: 'Karma Community market research',
 
-    // Body of the share message — identical to in-app variant
+    // Body of the share message — the one copy for every placement (web pages and in-app settings)
     shareMessage:
       "We're building an Israeli app for free giving, without the mess of the groups. " +
       'A short anonymous questionnaire, no sign-up — your answers shape how it will actually look.',

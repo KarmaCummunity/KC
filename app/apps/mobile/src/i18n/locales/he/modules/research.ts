@@ -95,7 +95,7 @@ export const researchHe = {
     // Web-platform OS share-sheet title
     shareTitle: 'מחקר שוק קהילת קארמה',
 
-    // Body of the share message — identical to in-app variant
+    // Body of the share message — the one copy for every placement (web pages and in-app settings)
     shareMessage:
       'אנחנו בונים אפליקציה ישראלית לנתינה בחינם, בלי הבלגן של הקבוצות. ' +
       'שאלון אנונימי קצר, בלי הרשמה — התשובות שלך משנות איך זה ייראה בפועל.',
