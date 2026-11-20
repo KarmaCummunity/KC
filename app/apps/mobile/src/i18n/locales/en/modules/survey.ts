@@ -60,10 +60,6 @@ export const surveyEn = {
     rowTitle: 'Share the market research with friends',
     rowSubtitle: 'Help us understand what people not on the app need — anonymous, no sign-up',
     cardShareA11y: 'Share the market research',
-    shareTitle: 'Karma Community market research',
-    shareMessage:
-      "We're building an Israeli app for free giving, without the mess of the groups. " +
-      'A short anonymous questionnaire, no sign-up — your answers shape how it will actually look.',
     toastShared: 'Link shared',
     toastCopied: 'Link copied',
     toastFailed: "Couldn't share, please try again",

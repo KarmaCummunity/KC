@@ -38,6 +38,7 @@ export class SupabaseChatRealtime implements IChatRealtime {
    * of the pinned post. Reactions arrive on the same topic as `reaction` and are not consumed here.
    */
   subscribeToChat(chatId: string, cb: ChatStreamCallbacks): Unsubscribe {
+    let failed = false;
     const managed = openExactTopicChannel(
       this.client,
       `chat:${chatId}:messages`,
@@ -56,7 +57,15 @@ export class SupabaseChatRealtime implements IChatRealtime {
         });
       },
       (status) => {
-        if (isChannelFailure(status)) cb.onError(new Error(`chat channel ${status.toLowerCase()}`));
+        // The client rejoins a failed channel by itself; what was sent meanwhile is lost, so the
+        // first SUBSCRIBED after a failure asks the caller to re-read the thread (#1778).
+        if (isChannelFailure(status)) {
+          failed = true;
+          cb.onError(new Error(`chat channel ${status.toLowerCase()}`));
+        } else if (status === 'SUBSCRIBED' && failed) {
+          failed = false;
+          cb.onResync?.();
+        }
       },
     );
     return () => managed.close();
@@ -69,6 +78,7 @@ export class SupabaseChatRealtime implements IChatRealtime {
    */
   subscribeToInbox(userId: string, cb: InboxStreamCallbacks, options?: SubscribeInboxOptions): Unsubscribe {
     let unreadTimer: ReturnType<typeof setTimeout> | null = null;
+    let failed = false;
     const fireUnreadDebounced = () => {
       if (unreadTimer) clearTimeout(unreadTimer);
       unreadTimer = setTimeout(() => void this.readUnreadTotal(cb, options), UNREAD_DEBOUNCE_MS);
@@ -84,6 +94,18 @@ export class SupabaseChatRealtime implements IChatRealtime {
           cb.onInboxChanged({ chatId: asString(payload['chat_id']), lastMessageAt: asString(payload['last_message_at']) });
           fireUnreadDebounced();
         });
+      },
+      (status) => {
+        // A failed channel is reported (#1778); the client rejoins by itself, and events sent while
+        // it was down are lost, so the first SUBSCRIBED after a failure refreshes the inbox.
+        if (isChannelFailure(status)) {
+          failed = true;
+          cb.onError?.(new Error(`inbox channel ${status.toLowerCase()}`));
+        } else if (status === 'SUBSCRIBED' && failed) {
+          failed = false;
+          cb.onInboxChanged({ chatId: null, lastMessageAt: null });
+          fireUnreadDebounced();
+        }
       },
     );
 

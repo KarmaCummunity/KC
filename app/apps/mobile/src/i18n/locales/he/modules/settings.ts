@@ -21,6 +21,28 @@ export const settingsHe = {
   },
   logout: 'התנתקות',
   loggingOut: 'מתנתק...',
+  accountIdentity: {
+    noName: 'עדיין לא נקבע שם',
+    nameCaption: 'שם',
+    emailCaption: 'אימייל',
+    phoneCaption: 'טלפון',
+    methodCaption: 'התחברות',
+    method: {
+      google: 'ההתחברות שלך מנוהלת על ידי Google',
+      apple: 'ההתחברות שלך מנוהלת על ידי Apple',
+      email: 'התחברות עם אימייל וסיסמה',
+      phone: 'התחברות עם מספר טלפון',
+    },
+  },
+  contactChange: {
+    title: 'צריך לשנות את הטלפון או האימייל?',
+    message: 'שינוי כזה נעשה דרך התמיכה. נשמח לעזור.',
+    cta: 'פנייה לתמיכה',
+  },
+  signOutConfirm: {
+    title: 'להתנתק מקהילת קארמה?',
+    message: 'אפשר להתחבר שוב בכל רגע.',
+  },
   deleteAccount: 'מחיקת חשבון',
   deleteAccountModal: {
     title: 'מחיקת חשבון',
@@ -35,6 +57,7 @@ export const settingsHe = {
       'שיחות שניהלת יישארו אצל האנשים שדיברת איתם. הם יראו את ההודעות שכתבת, אבל לא את שמך, התמונה או הפרופיל — רק "{{deletedUserLabel}}".',
     warning:
       'החשבון יושבת ל-30 יום. אם תיכנס אליו שוב בתקופה הזו תוכל לשחזר אותו במלואו. אחרי 30 יום הכל נמחק לצמיתות.',
+    confirmNameLabel: 'להקליד את השם שלך ({{name}}) כדי לאשר',
     confirmInputLabel: 'להקליד "מחק" כדי לאשר',
     confirmInputPlaceholder: 'מחק', // copy-voice-allow: confirm keyword the user types
     confirmKeyword: 'מחק', // copy-voice-allow: confirm keyword the user types

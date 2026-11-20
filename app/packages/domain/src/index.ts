@@ -11,6 +11,7 @@ export * from './audit';
 export * from './posts';
 export * from './postActions';
 export * from './accountActions';
+export * from './accountContact';
 export * from './donations';
 export * from './value-objects';
 export * from './dateOfBirth';

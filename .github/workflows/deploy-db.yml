@@ -320,6 +320,26 @@ jobs:
           psql "$url" -v ON_ERROR_STOP=1 --single-transaction -qAt \
             -c "select set_config('kc.seed_target', 'dev', false)" -f supabase/seed/prod-copy/load.sql
 
+      # kc-dev runs on the smallest compute tier, where the job fleet's log writes drain the
+      # host's IO budget (#2492) and the busiest job runs more often than testers need (#2488).
+      # The migrations keep production's values; a dev-only seed (supabase/seed/dev-tuning)
+      # shortens the run-log retention and slows that job. It runs on every dev deploy, after
+      # the migrations, so a migration that resets a value is tuned again on the same deploy.
+      - name: Job tuning (kc-dev only)
+        if: inputs.target == 'dev'
+        env:
+          PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          KC_DEV_REF: enbqriuxvvuontiwslun
+        run: |
+          set -euo pipefail
+          if [ "$SUPABASE_PROJECT_REF" != "$KC_DEV_REF" ]; then
+            echo "::error::the dev target is not kc-dev; refusing to tune its jobs."; exit 1
+          fi
+          url="$(cat supabase/.temp/pooler-url)"
+          case "$url" in *"$KC_DEV_REF"*) ;; *) echo "::error::pooler address is not kc-dev's; refusing."; exit 1 ;; esac
+          psql "$url" -v ON_ERROR_STOP=1 --single-transaction -qAt \
+            -c "select set_config('kc.seed_target', 'dev', false)" -f supabase/seed/dev-tuning/load.sql
+
       # After a fresh schema the pg_cron launcher was once seen idle on kc-dev (no
       # cron.job_run_details rows for an hour, until a new job was scheduled). Wait up to three
       # minutes for a run; if none, schedule and drop a throwaway job to wake the launcher, then

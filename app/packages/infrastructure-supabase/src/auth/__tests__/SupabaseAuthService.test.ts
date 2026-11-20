@@ -52,6 +52,21 @@ describe('SupabaseAuthService — signUpWithEmail', () => {
     expect(out?.accountCreatedAt).toBe('2026-05-16T11:59:00.000Z');
   });
 
+  // FR-SETTINGS-002 AC1: Settings shows how the member signs in and the contact it is tied to.
+  it('maps the sign-in method and the phone, and leaves them null when Supabase has none', async () => {
+    const withProvider = sbSession({
+      user: { ...sbSession().user, phone: '972501234567', app_metadata: { provider: 'google' } },
+    });
+    const client = makeAuthClient({ signUpResult: { data: { session: withProvider }, error: null } });
+    const out = await new SupabaseAuthService(client).signUpWithEmail('a@b.test', 'pw');
+    expect(out).toMatchObject({ signInProvider: 'google', phone: '972501234567' });
+
+    const bare = sbSession({ user: { ...sbSession().user, phone: '', app_metadata: { provider: 'github' } } });
+    const bareClient = makeAuthClient({ signUpResult: { data: { session: bare }, error: null } });
+    const plain = await new SupabaseAuthService(bareClient).signUpWithEmail('a@b.test', 'pw');
+    expect(plain).toMatchObject({ signInProvider: null, phone: null });
+  });
+
   it('returns null when the sign-up succeeds without a session (email-verification flow)', async () => {
     const client = makeAuthClient({ signUpResult: { data: { session: null }, error: null } });
     expect(await new SupabaseAuthService(client).signUpWithEmail('a@b.test', 'pw')).toBeNull();

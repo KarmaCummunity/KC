@@ -83,6 +83,18 @@ describe('SupabaseChatRealtime — subscribeToChat', () => {
     expect(cb.onError.mock.calls[1]?.[0]?.message).toBe('chat channel timed_out');
   });
 
+  // #1778: the messages sent while the channel was down are re-read once it rejoins.
+  it('asks for a resync when the channel rejoins after a failure, and only then', async () => {
+    const onResync = vi.fn();
+    const { topic } = await sub({ onResync });
+    topic.statusCb!('SUBSCRIBED');
+    expect(onResync).not.toHaveBeenCalled();
+    topic.statusCb!('TIMED_OUT');
+    topic.statusCb!('SUBSCRIBED');
+    topic.statusCb!('SUBSCRIBED');
+    expect(onResync).toHaveBeenCalledTimes(1);
+  });
+
   it('unsubscribe removes the channel it opened', async () => {
     const { f, unsub } = await sub();
     expect(f.live).toHaveLength(1);

@@ -172,6 +172,14 @@ export const useChatStore = create<ChatState>((set, get) => ({
         onReadMarker: (marker) => get().applyReadMarker(chatId, marker),
         onChatChanged,
         onError: () => { /* deferred: surface via ChatChannelStatus hook */ },
+        // The channel rejoined after a failure (#1778): merge the latest page so messages sent
+        // while it was down appear, without dropping pending sends or older loaded pages.
+        onResync: () => {
+          void repo
+            .getMessages(chatId, 50)
+            .then((latest) => latest.forEach((m) => get().applyIncomingMessage(chatId, m)))
+            .catch(() => undefined);
+        },
       });
       set((s) => ({ threadSubs: { ...s.threadSubs, [chatId]: unsub } }));
     } catch (err) {

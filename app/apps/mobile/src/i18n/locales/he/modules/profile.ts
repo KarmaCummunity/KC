@@ -19,6 +19,7 @@ export const profileHe = {
   followingActive: 'עוקב ✓',
   followRequestCta: '+ לשלוח בקשה',
   unfollowConfirmTitle: 'להפסיק לעקוב?',
+  unfollowConfirmTitleNamed: 'להפסיק לעקוב אחרי {{name}}?',
   unfollowConfirmCta: 'להפסיק לעקוב',
   cancelRequestTitle: 'לבטל את בקשת המעקב?',
   cancelRequestBody: 'אפשר לשלוח בקשה חדשה בכל עת.',
@@ -130,6 +131,11 @@ export const profileHe = {
 
   // Edit Profile screen (FR-PROFILE-007)
   editScreen: {
+    signIn: {
+      emailLabel: 'אימייל להתחברות',
+      phoneLabel: 'טלפון להתחברות',
+      note: 'את פרטי ההתחברות אי אפשר לשנות כאן. לשינוי, יש לפנות לתמיכה.',
+    },
     loadFailedTitle: 'טעינה נכשלה',
     saveFailedTitle: 'שמירה נכשלה',
     unknownError: 'שגיאה לא ידועה',
