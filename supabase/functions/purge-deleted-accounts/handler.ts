@@ -3,12 +3,27 @@
 //
 // Per account, in this order (supabase/schemas/95_platform/100_purge_contract.sql):
 //   1. database: deletion tombstone + money records detached   (repeatable)
-//   2. storage:  the member's folder `<user_id>/` in every bucket (repeatable)
+//   2. storage:  the member's folder `<user_id>/` in every bucket, and the server-made copies of
+//                their photos under `derived/<user_id>/` in post-images (repeatable)
 //   3. database: the auth identity is deleted; every row of the member cascades
 // An account stays due until step 3 succeeded, so a failed account is retried by the next
 // run and never blocks the others.
 import { isServiceRoleRequest, serviceRoleRequiredResponse } from '../_shared/serviceRoleGuard.ts';
 import { chunkPaths, collectObjectPaths, type StorageListEntry } from '../_shared/storageCleanup.ts';
+
+/**
+ * Folders of a member that server code writes on their behalf, outside their own `<user_id>/`
+ * folder, per bucket. `post-images`: the sanitized photo copies of process-post-media
+ * (kc_private.post_media_derivative_key: `derived/<owner>/<media>-a<n>.jpg`).
+ */
+export const SERVICE_FOLDERS: Readonly<Record<string, (userId: string) => string[]>> = {
+  'post-images': (userId) => [`derived/${userId}`],
+};
+
+/** Every folder of the member in `bucket` the purge must empty. */
+export function memberFolders(bucket: string, userId: string): string[] {
+  return [userId, ...(SERVICE_FOLDERS[bucket]?.(userId) ?? [])];
+}
 
 /** Database port; each method is one statement calling one database function. */
 export interface PurgeDatabase {
@@ -45,8 +60,10 @@ export async function purgeAccount(deps: Pick<PurgeDeps, 'db' | 'storage'>, user
     await deps.db.prepare(userId);
     stage = 'storage';
     for (const bucket of buckets) {
-      const paths = await collectObjectPaths((prefix, offset, limit) => deps.storage.list(bucket, prefix, offset, limit), userId);
-      for (const chunk of chunkPaths(paths)) await deps.storage.remove(bucket, chunk);
+      for (const folder of memberFolders(bucket, userId)) {
+        const paths = await collectObjectPaths((prefix, offset, limit) => deps.storage.list(bucket, prefix, offset, limit), folder);
+        for (const chunk of chunkPaths(paths)) await deps.storage.remove(bucket, chunk);
+      }
     }
     stage = 'finish';
     await deps.db.finish(userId);

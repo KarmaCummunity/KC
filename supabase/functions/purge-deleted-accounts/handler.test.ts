@@ -110,6 +110,20 @@ Deno.test('a failing account is reported, keeps its identity and does not block 
   assertEquals(Object.values(storage.files).map((s) => s.size), [0, 0, 0]);
 });
 
+Deno.test('the server-made photo copies under derived/<user_id>/ go with the member\'s own folder, before the identity', async () => {
+  const db = new FakeDatabase(['u2']);
+  const storage = new FakeStorage({
+    'post-images': new Set(['u2/batch/1.jpg', 'derived/u2/m1-a1.jpg', 'derived/u2/m1-a1-thumb.jpg', 'derived/u3/m9-a1.jpg', 'derived/u22/m5-a1.jpg']),
+    avatars: new Set(['derived/u2/not-a-copy.jpg']),
+  }, db.log);
+  const handler = createPurgeHandler({ db, storage, serviceRoleKey: KEY, report: () => Promise.resolve() });
+  assertEquals(await (await handler(post())).json(), { ok: true, purged: 1, failed: 0 });
+  assertEquals([...storage.files['post-images']].sort(), ['derived/u22/m5-a1.jpg', 'derived/u3/m9-a1.jpg'],
+    'every copy of u2 is gone; other members\' copies (even with a u2 prefix in their id) stay');
+  assertEquals([...storage.files.avatars], ['derived/u2/not-a-copy.jpg'], 'the copy namespace exists in post-images only');
+  assertEquals(db.log, ['prepare:u2', 'remove:post-images:1', 'remove:post-images:2', 'finish:u2']);
+});
+
 Deno.test('a failure to list the due accounts is a 500 and is reported', async () => {
   const { db, reports, handler } = setup([]);
   db.dueAccounts = () => Promise.reject(new Error('db down'));

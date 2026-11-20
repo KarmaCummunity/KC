@@ -56,8 +56,10 @@ create index post_media_processing_source_key_idx on kc_private.post_media_proce
 alter table kc_private.post_media_processing enable row level security;
 alter table kc_private.post_media_processing force row level security;
 
--- Post states whose photos are processed; any other state (deleted, expired, under review,
--- removed) stops the work, and a job that meets one is `skipped`.
+-- Whether a post's photos may still get copies: the post is in a showable state (not deleted,
+-- expired, under review or removed) and its owner is active. An owner in their deletion grace
+-- period or suspended gets no new copies, so nothing is written under `derived/<owner>/` after the
+-- account purge emptied it. A job that meets either condition is `skipped`.
 create function kc_private.post_media_processable(p_post_id uuid)
 returns boolean
 language sql
@@ -66,6 +68,7 @@ security definer
 set search_path = ''
 as $$
   select exists (select 1 from public.posts p
+                   join public.users u on u.id = p.owner_id and u.is_active
                   where p.id = p_post_id and p.status in ('draft', 'open', 'paused', 'closed_delivered'));
 $$;
 

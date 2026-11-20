@@ -90,7 +90,7 @@ language sql as $$ select processing_status from public.post_media where id = p_
 create function pg_temp.derivative(p_media uuid, p_attempt integer) returns text
 language sql as $$ select kc_private.post_media_derivative_key('00000000-0000-4000-8000-00000000000a', p_media, p_attempt); $$;
 
-select plan(29);
+select plan(31);
 
 insert into auth.users (id, email, raw_app_meta_data)
 select ('00000000-0000-4000-8000-00000000000' || x)::uuid, x || '@example.test', '{"provider":"google"}'
@@ -244,6 +244,21 @@ select is((select coalesce(string_agg(k, ',' order by k), '') from kc_private.st
     '00000000-0000-4000-8000-00000000000a/stray/9.jpg']) k),
   '00000000-0000-4000-8000-00000000000a/stray/9.jpg',
   'originals, derivatives and their thumbs are kept; only an unreferenced object is an orphan');
+
+-- ── An owner who is no longer active (deletion grace, suspension) gets no copies ─────────────
+-- The account purge empties `derived/<owner>/` before the identity goes; no copy may be written
+-- for that owner afterwards, so the worker stops at claim and at completion.
+insert into t values ('x_claimed', pg_temp.attach('40000000-0000-4000-8000-000000000001', 'b9/0.jpg', 2));
+insert into t values ('y_waiting', pg_temp.attach('40000000-0000-4000-8000-000000000001', 'b9/1.jpg', 3));
+create temp table cx as select * from public.post_media_processing_claim(1, 300);
+update public.user_account set status = 'suspended_admin' where user_id = '00000000-0000-4000-8000-00000000000a';
+select is((select count(*)::text from public.post_media_processing_claim(10, 300))
+    || '|' || (pg_temp.job((select id from t where name = 'y_waiting'))).state,
+  '0|skipped', 'a job of an inactive owner is skipped at claim time');
+select pg_temp.stored_at(pg_temp.derivative((select media_id from cx), 1), 'image/jpeg', 70);
+select is(public.post_media_processing_complete((select media_id from cx), (select lease_token from cx),
+    pg_temp.derivative((select media_id from cx), 1), 70, 10, 10),
+  'changed', 'a copy finished after its owner became inactive is not attached');
 
 select * from finish();
 rollback;
