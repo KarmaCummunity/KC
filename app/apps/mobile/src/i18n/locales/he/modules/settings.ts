@@ -21,6 +21,24 @@ export const settingsHe = {
   },
   logout: 'התנתקות',
   loggingOut: 'מתנתק...',
+  accountIdentity: {
+    noName: 'עדיין לא נקבע שם',
+    nameCaption: 'שם',
+    emailCaption: 'אימייל',
+    phoneCaption: 'טלפון',
+    methodCaption: 'התחברות',
+    method: {
+      google: 'ההתחברות שלך מנוהלת על ידי Google',
+      apple: 'ההתחברות שלך מנוהלת על ידי Apple',
+      email: 'התחברות עם אימייל וסיסמה',
+      phone: 'התחברות עם מספר טלפון',
+    },
+  },
+  contactChange: {
+    title: 'צריך לשנות את הטלפון או האימייל?',
+    message: 'שינוי כזה נעשה דרך התמיכה. נשמח לעזור.',
+    cta: 'פנייה לתמיכה',
+  },
   signOutConfirm: {
     title: 'להתנתק מקהילת קארמה?',
     message: 'אפשר להתחבר שוב בכל רגע.',

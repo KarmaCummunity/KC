@@ -13,6 +13,7 @@ import {
   type AuthSession,
   type IAuthService,
 } from '@kc/application';
+import { parseAuthProvider } from '@kc/domain';
 import { mapAuthError } from './mapAuthError';
 
 export class SupabaseAuthService implements IAuthService {
@@ -223,6 +224,9 @@ function toSession(s: SbSession): AuthSession {
     displayName: pickString(meta, ['full_name', 'name']),
     avatarUrl: pickString(meta, ['avatar_url', 'picture']),
     accountCreatedAt: s.user.created_at ?? null,
+    signInProvider: parseAuthProvider(s.user.app_metadata?.provider),
+    // Supabase reports "no phone" as an empty string.
+    phone: s.user.phone ? s.user.phone : null,
   };
 }
 

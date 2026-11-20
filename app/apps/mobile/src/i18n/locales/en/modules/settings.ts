@@ -21,6 +21,24 @@ export const settingsEn = {
   },
   logout: 'Log out',
   loggingOut: 'Logging out...',
+  accountIdentity: {
+    noName: 'No name set yet',
+    nameCaption: 'Name',
+    emailCaption: 'Email',
+    phoneCaption: 'Phone',
+    methodCaption: 'Sign-in',
+    method: {
+      google: 'Your sign-in is managed by Google',
+      apple: 'Your sign-in is managed by Apple',
+      email: 'Signed in with email and password',
+      phone: 'Signed in with a phone number',
+    },
+  },
+  contactChange: {
+    title: 'Need to change your phone or email?',
+    message: 'Please contact Support.',
+    cta: 'Contact Support',
+  },
   signOutConfirm: {
     title: 'Sign out of Karma Community?',
     message: 'You can sign in again at any time.',
