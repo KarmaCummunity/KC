@@ -19,9 +19,9 @@
   },
   "bucket": {
    "objects": 5,
-   "same": 3,
+   "same": 4,
    "renamed": 0,
-   "changed": 2,
+   "changed": 1,
    "removed": 0,
    "missing": 0
   },
@@ -45,9 +45,9 @@
  "launchTotals": {
   "core": {
    "objects": 131,
-   "same": 106,
+   "same": 107,
    "renamed": 1,
-   "changed": 24,
+   "changed": 23,
    "removed": 0,
    "missing": 0
   },
@@ -302,8 +302,8 @@
   },
   "mobile": {
    "callSites": 13,
-   "oneToOne": 11,
-   "changed": 2,
+   "oneToOne": 12,
+   "changed": 1,
    "removed": 0,
    "missing": 0
   },
@@ -705,8 +705,8 @@
    ],
    "counts": {
     "objects": 51,
-    "oneToOne": 39,
-    "changed": 12,
+    "oneToOne": 40,
+    "changed": 11,
     "removed": 0,
     "missing": 0
    }
@@ -1548,11 +1548,11 @@
   {
    "old": "<entry.bucket>",
    "kind": "bucket",
-   "status": "changed",
+   "status": "same",
    "launch": "core",
    "confidence": "medium",
    "missing": null,
-   "note": "The device abandoned-upload ledger retries deletion in the original upload bucket: post-images, avatars or chat-media. Uses the current member session and existing own-folder Storage policies; no service-role client or bucket-policy change.",
+   "note": "The device abandoned-upload ledger retries deletion only in its runtime-allowlisted existing buckets: post-images, avatars or chat-media. Uses the current member session and existing own-folder Storage policies; no service-role client or bucket-policy change.",
    "oldObject": {},
    "targets": [
     {
@@ -1566,7 +1566,7 @@
    "callSites": [
     {
      "file": "app/apps/mobile/src/services/abandonedUploads.ts",
-     "line": 65,
+     "line": 70,
      "symbol": "tryRemove",
      "area": "mobile"
     }

@@ -23,6 +23,11 @@ const STORAGE_KEY = 'kc.media.abandonedUploads.v1';
 export const ABANDON_SETTLE_MS = 15 * 60_000;
 /** Bound on the ledger, so a device that can never delete (offline for good) does not grow forever. */
 const MAX_ENTRIES = 200;
+/** Only existing media buckets, never an arbitrary persisted destination. */
+const MEDIA_BUCKETS = new Set(['post-images', 'chat-media', 'avatars']);
+const validEntry = (entry: AbandonedUpload): boolean =>
+  MEDIA_BUCKETS.has(entry?.bucket) && typeof entry.path === 'string' &&
+  MEMBER_PATH.test(entry.path) && !entry.path.split('/').includes('..') && Number.isFinite(entry.settleAfter);
 /** A member's object path: `<uuid-like id>/<plain path>`, never climbing out of the folder. */
 const MEMBER_PATH = /^[A-Za-z0-9-]{1,64}\/[A-Za-z0-9._/-]{1,400}$/;
 
@@ -45,7 +50,7 @@ async function readLedger(): Promise<AbandonedUpload[]> {
   try {
     const raw = await AsyncStorage.getItem(STORAGE_KEY);
     const parsed: unknown = raw ? JSON.parse(raw) : [];
-    return Array.isArray(parsed) ? (parsed as AbandonedUpload[]) : [];
+    return Array.isArray(parsed) ? (parsed as AbandonedUpload[]).filter(validEntry) : [];
   } catch {
     return [];
   }
@@ -75,7 +80,7 @@ async function tryRemove(entry: AbandonedUpload): Promise<boolean> {
  * successful delete is final at once.
  */
 export function abandonUpload(bucket: string, path: string, now = Date.now(), opts: { settled?: boolean } = {}): Promise<void> {
-  if (!MEMBER_PATH.test(path) || path.split('/').includes('..')) return Promise.resolve();
+  if (!MEDIA_BUCKETS.has(bucket) || !MEMBER_PATH.test(path) || path.split('/').includes('..')) return Promise.resolve();
   const entry: AbandonedUpload = { bucket, path, settleAfter: opts.settled ? now : now + ABANDON_SETTLE_MS };
   return serialized(async () => {
     const ledger = await readLedger();
