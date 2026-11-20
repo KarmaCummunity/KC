@@ -154,6 +154,10 @@ table('handoff_booking_details', 'same', 'table:handoff_booking_details', 'Dates
 rpc('housing_completed_stays', 'same', 'rpc:housing_completed_stays', 'Completed stays (as host or guest) of the listed members whose profile the caller can read: the trust block of the host panel (S16, FR-HOUSING-036).');
 rpc('knowledge_slot_seats', 'same', 'rpc:knowledge_slot_seats', 'The slots of a knowledge offer with their places held and left, for every reader of the offer (FR-KNOW-004); the caller\'s booking per slot is matched on `slot_starts_at`.');
 table('post_knowledge_slots', 'same', 'table:post_knowledge_slots', 'The giver\'s view maps each booking to its slot by its start.');
+// The weekly series of a recurring lesson offer (FR-KNOW-004 AC1, #2035 server, #2479 app).
+table('knowledge_slot_series', 'same', 'table:knowledge_slot_series', 'The weekly schedule of a recurring lesson offer, one per post; readable exactly when its offer is, written only by the series RPCs.');
+rpc('start_knowledge_slot_series', 'same', 'rpc:start_knowledge_slot_series', 'Makes a lesson offer recurring and adds its slots for the next 30 days; called on the draft before `publish_post`, so a refused schedule leaves no offer.');
+rpc('set_knowledge_slot_series_status', 'same', 'rpc:set_knowledge_slot_series_status', '`p_post_id`, `p_status`: active, paused or ended; pausing and ending drop the upcoming unbooked slots and keep booked ones. The giver or a post editor only.');
 
 // ───────────────────────────── challenges, matching, karma, stats, surveys
 rpc('create_challenge', 'same', 'rpc:create_challenge', 'New optional `p_city_id` (required for a community challenge: `city_required`).');
