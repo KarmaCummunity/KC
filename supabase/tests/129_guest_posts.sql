@@ -2,6 +2,10 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = extensions, public;
+-- The baseline revokes default function EXECUTE before this extension may exist.
+-- Keep assertion-helper access inside this rolled-back test transaction only.
+grant usage on schema extensions to anon;
+grant execute on all functions in schema extensions to anon;
 select plan(16);
 insert into auth.users (id, email, raw_app_meta_data) values
  ('00000000-0000-4000-8000-00000000000a', 'guest-owner@example.test', '{"provider":"google"}');
