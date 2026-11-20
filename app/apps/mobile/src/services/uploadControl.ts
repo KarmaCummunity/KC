@@ -1,7 +1,7 @@
-// Generic control flow for media uploads: cancellation, per-attempt timeouts, retries with
-// back-off and bounded parallelism. Pure (no React, no Supabase), so every upload pipeline
-// (post photos, listing photos, chat media, avatars) shares one tested implementation and a
-// stuck network request can never leave a screen spinning forever.
+// Generic control flow for media uploads: cancellation errors, retries with back-off and bounded
+// parallelism. Pure (no React, no Supabase), so every upload pipeline (post photos, listing
+// photos, chat media, avatars) shares one tested implementation. Per-attempt deadlines and the
+// actual abort of a request live in `storageObjectUpload.ts`, next to the transport they abort.
 
 /** Thrown when the caller aborted the work (screen closed, user tapped cancel). */
 export class UploadCancelledError extends Error {
@@ -25,36 +25,6 @@ export function isUploadCancelled(err: unknown): boolean {
 
 export function throwIfAborted(signal?: AbortSignal): void {
   if (signal?.aborted) throw new UploadCancelledError();
-}
-
-/**
- * Settles with `promise`, or rejects with `UploadTimeoutError` after `ms`, or with
- * `UploadCancelledError` as soon as `signal` aborts — whichever comes first.
- * The underlying request is not interrupted (storage-js exposes no abort hook); the caller
- * is released, and a late success is harmless because every object path is unique.
- */
-export function withTimeout<T>(promise: Promise<T>, ms: number, label: string, signal?: AbortSignal): Promise<T> {
-  return new Promise<T>((resolve, reject) => {
-    if (signal?.aborted) {
-      reject(new UploadCancelledError());
-      return;
-    }
-    const onAbort = () => finish(() => reject(new UploadCancelledError()));
-    const timer = setTimeout(() => finish(() => reject(new UploadTimeoutError(label, ms))), ms);
-    let settled = false;
-    function finish(settle: () => void) {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timer);
-      signal?.removeEventListener('abort', onAbort);
-      settle();
-    }
-    signal?.addEventListener('abort', onAbort);
-    promise.then(
-      (value) => finish(() => resolve(value)),
-      (err: unknown) => finish(() => reject(err)),
-    );
-  });
 }
 
 /** Resolves after `ms`, or rejects early with `UploadCancelledError` when `signal` aborts. */

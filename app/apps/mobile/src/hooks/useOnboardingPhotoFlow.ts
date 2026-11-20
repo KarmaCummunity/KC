@@ -69,7 +69,7 @@ export function useOnboardingPhotoFlow() {
     }
     setUploading(true);
     try {
-      await removeUploadedAvatar(session.userId); // TD-108: delete Storage object first.
+      await removeUploadedAvatar(session.userId, session.avatarUrl); // TD-108: delete Storage object first.
       await getSetAvatarUseCase().execute({
         sessionUserId: session.userId,
         userId: session.userId,

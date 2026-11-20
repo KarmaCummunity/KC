@@ -148,7 +148,7 @@ export function useEditProfileController(
       }
       const includeBasicInfo = nameChanged || cityChanged;
       const profileAddress = addrChanged ? { street: nextStreet, streetNumber: nextNum } : undefined;
-      if (avatarChanged && avatarUrl === null && initial.avatarUrl) await removeUploadedAvatar(session.userId);
+      if (avatarChanged && avatarUrl === null && initial.avatarUrl) await removeUploadedAvatar(session.userId, initial.avatarUrl);
       await getUpdateProfileUseCase().execute({
         sessionUserId: session.userId,
         userId: session.userId,

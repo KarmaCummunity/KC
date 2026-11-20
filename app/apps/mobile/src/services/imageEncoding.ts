@@ -1,8 +1,9 @@
 // Resize + JPEG re-encode of a picked image, returning the encoded bytes ready for upload.
 //
 // The re-encode is what strips EXIF on the device (FR-POST-005 AC4 is completed server-side).
-// Bytes are read natively from the encoded file (`expo-file-system` File.bytes()), so the JPEG
-// never travels through the bridge as a base64 string and is never decoded in a JS loop.
+// Bytes are read natively from the encoded file (`expo-file-system` File.bytes()), so reading the
+// JPEG needs no base64 string and no JS decode loop. (The upload request itself is still
+// base64-encoded by React Native's networking layer; see `storageObjectUpload.ts`.)
 // `fetch(file://).blob()` is NOT used: on iOS (RN 0.81 / SDK 54) it intermittently yields an
 // empty Blob, so Storage stores a 0-byte object (see `mediaEncoding.ts`). If the native read
 // fails or returns something that is not a JPEG, we fall back to the proven path: encode with

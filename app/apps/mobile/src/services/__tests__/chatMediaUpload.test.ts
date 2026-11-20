@@ -51,13 +51,13 @@ describe('uploadChatImageAndSend', () => {
 
   it('encodes with the longer edge bounded at 1600, uploads to chat-media and sends the media payload', async () => {
     encoder.encodeJpeg.mockResolvedValue({ uri: 'file://e.jpg', width: 1600, height: 1200, bytes: new Uint8Array([1]) });
-    uploader.uploadStorageObject.mockResolvedValue(undefined);
+    // Storage confirms the object of the attempt it received (a fresh object id per attempt).
+    uploader.uploadStorageObject.mockImplementation(async (u: { pathForAttempt: (n: number) => string }) => u.pathForAttempt(1));
     const send = vi.fn(async () => undefined);
     await uploadChatImageAndSend('c1', 'u1', picked, send);
     expect(encoder.encodeJpeg).toHaveBeenCalledWith('file://a', [{ resize: { width: 1600 } }], 0.85);
     expect(uploader.uploadStorageObject).toHaveBeenCalledWith(expect.objectContaining({
       bucket: 'chat-media',
-      path: 'u1/c1/obj-1.jpg',
       contentType: 'image/jpeg',
       // The bucket is private (#1064): only a private cache header, never a public URL.
       cacheControl: 'private, max-age=31536000, immutable',

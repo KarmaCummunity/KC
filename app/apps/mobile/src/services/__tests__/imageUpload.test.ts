@@ -28,9 +28,9 @@ vi.mock('../../lib/imageUrl', () => ({
 
 import {
   buildPostImagePath,
-  buildPostImageThumbPath,
   newUploadBatchId,
   pickPostImages,
+  buildAttemptPath,
   resizeAndUploadImage,
   uploadPostImageBatch,
 } from '../imageUpload';
@@ -82,7 +82,6 @@ describe('pickPostImages', () => {
 describe('buildPostImagePath', () => {
   it('builds <user>/<batch>/<ordinal>.jpg and its thumb sibling', () => {
     expect(buildPostImagePath('u1', 'b1', 0)).toBe('u1/b1/0.jpg');
-    expect(buildPostImageThumbPath('u1', 'b1', 4)).toBe('u1/b1/4-thumb.jpg');
   });
 
   it.each([
@@ -101,12 +100,24 @@ const encoded = (size: number, width = 2048, height = 1536, uri = `file://enc-${
   uri, width, height, bytes: new Uint8Array(size),
 });
 
+/** The uploader double: Storage confirms attempt 1 unless a test says otherwise. */
+type UploadCall = { pathForAttempt: (n: number) => string; attempts?: number; signal?: AbortSignal; bucket: string; contentType: string; cacheControl: string };
+const storedAt = (attempt: number) => async (u: UploadCall) => u.pathForAttempt(attempt);
+
+describe('buildAttemptPath', () => {
+  it('keeps the first attempt\'s name and gives every retry its own', () => {
+    expect(buildAttemptPath('u/b/0.jpg', 1)).toBe('u/b/0.jpg');
+    expect(buildAttemptPath('u/b/0.jpg', 2)).toBe('u/b/0-a2.jpg');
+    expect(buildAttemptPath('u/b.x/0', 3)).toBe('u/b.x/0-a3');
+  });
+});
+
 describe('resizeAndUploadImage', () => {
   beforeEach(() => {
-    uploader.uploadStorageObject.mockResolvedValue(undefined);
+    uploader.uploadStorageObject.mockImplementation(storedAt(1));
   });
 
-  it('decodes the original once and derives the thumb from the 2048 encode', async () => {
+  it('decodes the original once, derives the thumb from the 2048 encode, stores the photo then its thumb', async () => {
     encoder.encodeJpeg.mockResolvedValueOnce(encoded(100, 2048, 1536, 'file://full.jpg')).mockResolvedValueOnce(encoded(10, 400, 300));
     const asset = await resizeAndUploadImage(picked, 'u1', 'b1', 2);
     expect(asset).toEqual({ path: 'u1/b1/2.jpg', mimeType: 'image/jpeg', sizeBytes: 100, previewUri: 'file://p.jpg' });
@@ -114,12 +125,22 @@ describe('resizeAndUploadImage', () => {
     expect(encoder.encodeJpeg).toHaveBeenNthCalledWith(1, 'file://p.jpg', [{ resize: { width: 2048 } }], 0.85);
     // The thumb is resized from the already-small full encode, not from the original.
     expect(encoder.encodeJpeg).toHaveBeenNthCalledWith(2, 'file://full.jpg', [{ resize: { width: 400 } }], 0.75);
-    const stored = uploader.uploadStorageObject.mock.calls.map((c) => c[0]);
-    expect(stored.map((u) => u.path).sort()).toEqual(['u1/b1/2-thumb.jpg', 'u1/b1/2.jpg']);
-    for (const u of stored) {
+    const [photo, thumb] = uploader.uploadStorageObject.mock.calls.map((c) => c[0] as UploadCall);
+    expect(photo?.pathForAttempt(1)).toBe('u1/b1/2.jpg');
+    expect(thumb?.pathForAttempt(1)).toBe('u1/b1/2-thumb.jpg');
+    // The thumb's name is fixed by the stored photo: it is tried once, never rewritten.
+    expect(thumb?.attempts).toBe(1);
+    for (const u of [photo, thumb]) {
       expect(u).toMatchObject({ bucket: 'post-images', contentType: 'image/jpeg', cacheControl: 'public, max-age=31536000, immutable' });
-      expect(u.upsert).toBeUndefined();
     }
+  });
+
+  it('records the path of the attempt that Storage confirmed, and puts the thumb beside it', async () => {
+    encoder.encodeJpeg.mockResolvedValue(encoded(10));
+    uploader.uploadStorageObject.mockImplementationOnce(storedAt(2)).mockImplementationOnce(storedAt(1));
+    const asset = await resizeAndUploadImage(picked, 'u1', 'b1', 0);
+    expect(asset.path).toBe('u1/b1/0-a2.jpg');
+    expect((uploader.uploadStorageObject.mock.calls[1]?.[0] as UploadCall).pathForAttempt(1)).toBe('u1/b1/0-a2-thumb.jpg');
   });
 
   it('bounds a portrait photo by its height and never upscales a small one', async () => {
@@ -149,36 +170,36 @@ describe('resizeAndUploadImage', () => {
     expect(uploader.uploadStorageObject).not.toHaveBeenCalled();
   });
 
-  it('throws on a failed full upload but tolerates a failed thumb upload', async () => {
+  it('throws on a failed photo upload (without uploading a thumb) but tolerates a failed thumb', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     encoder.encodeJpeg.mockResolvedValue(encoded(10));
-    const failOn = (suffix: string, message: string) =>
-      uploader.uploadStorageObject.mockImplementation(async (u: { path: string }) => {
-        if (u.path.endsWith(suffix)) throw { status: 413, message };
-      });
-    failOn('1.jpg', 'quota');
+    uploader.uploadStorageObject.mockRejectedValueOnce({ status: 413, message: 'quota' });
     await expect(resizeAndUploadImage(picked, 'u1', 'b1', 1)).rejects.toThrow('upload[1]: quota');
-    failOn('-thumb.jpg', 'thumb');
+    expect(uploader.uploadStorageObject).toHaveBeenCalledTimes(1);
+    uploader.uploadStorageObject.mockImplementationOnce(storedAt(1)).mockRejectedValueOnce({ status: 500, message: 'thumb' });
     await expect(resizeAndUploadImage(picked, 'u1', 'b1', 1)).resolves.toMatchObject({ path: 'u1/b1/1.jpg' });
     expect(warn).toHaveBeenCalledWith('upload-thumb[1]: thumb');
     warn.mockRestore();
   });
 
-  it('stops before encoding when cancelled, and passes the signal to every upload', async () => {
+  it('stops before encoding when cancelled, propagates a cancel, and passes the signal to every upload', async () => {
     const controller = new AbortController();
     controller.abort();
     await expect(resizeAndUploadImage(picked, 'u1', 'b1', 0, { signal: controller.signal })).rejects.toBeInstanceOf(UploadCancelledError);
     expect(encoder.encodeJpeg).not.toHaveBeenCalled();
-    const live = new AbortController();
     encoder.encodeJpeg.mockResolvedValue(encoded(10));
+    uploader.uploadStorageObject.mockRejectedValueOnce(new UploadCancelledError());
+    await expect(resizeAndUploadImage(picked, 'u1', 'b1', 0)).rejects.toBeInstanceOf(UploadCancelledError);
+    const live = new AbortController();
+    uploader.uploadStorageObject.mockClear();
     await resizeAndUploadImage(picked, 'u1', 'b1', 0, { signal: live.signal });
-    expect(uploader.uploadStorageObject.mock.calls.every((c) => c[0].signal === live.signal)).toBe(true);
+    expect(uploader.uploadStorageObject.mock.calls.every((c) => (c[0] as UploadCall).signal === live.signal)).toBe(true);
   });
 });
 
 describe('uploadPostImageBatch', () => {
   beforeEach(() => {
-    uploader.uploadStorageObject.mockResolvedValue(undefined);
+    uploader.uploadStorageObject.mockImplementation(storedAt(1));
   });
 
   it('uploads a pick under one fresh batch, ordinals from 0, each image settling on its own', async () => {

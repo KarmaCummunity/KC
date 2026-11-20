@@ -48,7 +48,7 @@ describe('useOnboardingPhotoFlow', () => {
     complete.mockResolvedValueOnce(undefined).mockRejectedValueOnce(new Error('save'));
     const { result, rerender } = renderHook(() => useOnboardingPhotoFlow());
     await act(async () => { await result.current.remove(); });
-    expect(removeUploadedAvatar).toHaveBeenCalledWith('u1');
+    expect(removeUploadedAvatar).toHaveBeenCalledWith('u1', null);
     expect(setAvatar).toHaveBeenCalledWith({ sessionUserId: 'u1', userId: 'u1', avatarUrl: null });
     await act(async () => { await result.current.finalize(); });
     expect(complete).toHaveBeenCalledWith({ userId: 'u1' });

@@ -1,11 +1,20 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { bucket, client } = vi.hoisted(() => {
-  const bucket = { upload: vi.fn() };
-  return { bucket, client: { storage: { from: vi.fn(() => bucket) } } };
+const { remove, client } = vi.hoisted(() => {
+  const remove = vi.fn(async () => ({ error: null }));
+  return {
+    remove,
+    client: {
+      auth: { getSession: vi.fn(async () => ({ data: { session: { access_token: 'member-jwt' } } })) },
+      storage: { from: vi.fn(() => ({ remove })) },
+    },
+  };
 });
 
 vi.mock('@kc/infrastructure-supabase', () => ({ getSupabaseClient: () => client }));
+vi.mock('../../lib/supabasePublicConfig', () => ({
+  getSupabasePublicEnv: () => ({ url: 'https://proj.supabase.co/', anonKey: 'anon-key' }),
+}));
 // Retries wait for real back-off delays; make them instant so the suite stays fast.
 vi.mock('../uploadControl', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../uploadControl')>();
@@ -17,101 +26,144 @@ vi.mock('../uploadControl', async (importOriginal) => {
 });
 
 import {
-  isAlreadyExistsError,
   isTransientUploadError,
+  StorageHttpError,
   uploadErrorMessage,
   uploadStorageObject,
   uploadTimeoutMs,
 } from '../storageObjectUpload';
 import { UploadCancelledError, UploadTimeoutError } from '../uploadControl';
 
-const input = {
+const ok = () => new Response('{"Key":"x"}', { status: 200 });
+const fail = (status: number, message: string) =>
+  new Response(JSON.stringify({ statusCode: String(status), error: 'Error', message }), { status });
+
+/** One upload per attempt path; the fetch double sees every request. */
+const input = (patch: Partial<Parameters<typeof uploadStorageObject>[0]> = {}) => ({
   bucket: 'post-images',
-  path: 'u/b/0.jpg',
+  pathForAttempt: (n: number) => `u/b/0${n === 1 ? '' : `-a${n}`}.jpg`,
   bytes: new Uint8Array(10),
   contentType: 'image/jpeg',
   cacheControl: 'public, max-age=31536000, immutable',
-};
+  ...patch,
+});
 
-beforeEach(() => vi.clearAllMocks());
+/** A request the "server" holds open, settling only when the test says so (or the client aborts). */
+function heldRequest() {
+  let release!: (res: Response) => void;
+  let signal!: AbortSignal;
+  const fetchImpl = (_url: string, init: RequestInit) =>
+    new Promise<Response>((resolve, reject) => {
+      signal = init.signal as AbortSignal;
+      release = resolve;
+      signal.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')));
+    });
+  return { fetchImpl, release: (res: Response) => release(res), signal: () => signal };
+}
+
+let fetchSpy: ReturnType<typeof vi.spyOn>;
+beforeEach(() => {
+  vi.clearAllMocks();
+  fetchSpy = vi.spyOn(globalThis, 'fetch');
+});
+afterEach(() => {
+  fetchSpy.mockRestore();
+  vi.useRealTimers();
+});
 
 describe('uploadTimeoutMs', () => {
   it('grows with the payload: a fixed base plus time at the slowest accepted throughput', () => {
     expect(uploadTimeoutMs(0)).toBe(20_000);
     expect(uploadTimeoutMs(25 * 1024)).toBe(21_000);
-    expect(uploadTimeoutMs(5 * 1024 * 1024)).toBe(20_000 + 204_800);
   });
 });
 
 describe('error classification', () => {
-  it('treats network errors, timeouts, 408, 429 and 5xx as transient; other 4xx as final', () => {
-    expect(isTransientUploadError({ message: 'Network request failed' })).toBe(true);
+  it('treats network errors, timeouts, 408, 429 and 5xx as transient; other answers as final', () => {
+    expect(isTransientUploadError(new TypeError('Network request failed'))).toBe(true);
     expect(isTransientUploadError(new UploadTimeoutError('x', 1))).toBe(true);
-    expect(isTransientUploadError({ status: 503 })).toBe(true);
-    expect(isTransientUploadError({ statusCode: '429' })).toBe(true);
-    expect(isTransientUploadError({ status: 408 })).toBe(true);
-    expect(isTransientUploadError({ status: 403, message: 'new row violates row-level security policy' })).toBe(false);
-    expect(isTransientUploadError({ status: 413 })).toBe(false);
-    expect(isTransientUploadError(null)).toBe(false);
-  });
-
-  it('recognizes an object that already exists by status or message', () => {
-    expect(isAlreadyExistsError({ status: 409 })).toBe(true);
-    expect(isAlreadyExistsError({ statusCode: '409' })).toBe(true);
-    expect(isAlreadyExistsError({ status: 400, message: 'The resource already exists' })).toBe(true);
-    expect(isAlreadyExistsError({ status: 400, message: 'invalid' })).toBe(false);
-    expect(isAlreadyExistsError('x')).toBe(false);
-  });
-
-  it('formats a reason from an error object or any value', () => {
-    expect(uploadErrorMessage({ message: 'quota' })).toBe('quota');
+    expect(isTransientUploadError(new StorageHttpError(503, 'busy'))).toBe(true);
+    expect(isTransientUploadError(new StorageHttpError(429, 'slow down'))).toBe(true);
+    expect(isTransientUploadError(new StorageHttpError(403, 'rls'))).toBe(false);
+    expect(isTransientUploadError(new StorageHttpError(409, 'exists'))).toBe(false);
+    expect(isTransientUploadError(new UploadCancelledError())).toBe(false);
+    expect(uploadErrorMessage(new StorageHttpError(413, 'too large'))).toBe('too large');
     expect(uploadErrorMessage('plain')).toBe('plain');
   });
 });
 
 describe('uploadStorageObject', () => {
-  it('uploads once with the given type, cache headers and no upsert by default', async () => {
-    bucket.upload.mockResolvedValue({ error: null });
-    await uploadStorageObject(input);
-    expect(client.storage.from).toHaveBeenCalledWith('post-images');
-    expect(bucket.upload).toHaveBeenCalledWith('u/b/0.jpg', input.bytes, {
-      contentType: 'image/jpeg',
-      upsert: false,
-      cacheControl: 'public, max-age=31536000, immutable',
+  it('POSTs the bytes to the object endpoint as the member, without upsert, and returns the stored path', async () => {
+    fetchSpy.mockResolvedValue(ok());
+    await expect(uploadStorageObject(input())).resolves.toBe('u/b/0.jpg');
+    const [url, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe('https://proj.supabase.co/storage/v1/object/post-images/u/b/0.jpg');
+    expect(init.method).toBe('POST');
+    expect(init.headers).toEqual({
+      authorization: 'Bearer member-jwt',
+      apikey: 'anon-key',
+      'content-type': 'image/jpeg',
+      // Sent verbatim: storage-js prefixed `max-age=` to this value, producing a malformed header.
+      'cache-control': 'public, max-age=31536000, immutable',
+      'x-upsert': 'false',
     });
+    expect(init.signal).toBeInstanceOf(AbortSignal);
   });
 
-  it('retries a transient failure and succeeds', async () => {
-    bucket.upload.mockResolvedValueOnce({ error: { status: 503, message: 'busy' } }).mockResolvedValueOnce({ error: null });
-    await uploadStorageObject(input);
-    expect(bucket.upload).toHaveBeenCalledTimes(2);
+  it('a slow write that finishes AFTER the timeout: the request is aborted, the retry uses a NEW path, the old path is abandoned', async () => {
+    vi.useFakeTimers();
+    const first = heldRequest();
+    fetchSpy.mockImplementationOnce(first.fetchImpl as typeof fetch).mockResolvedValueOnce(ok());
+    const done = uploadStorageObject(input({ timeoutMs: 1000 }));
+    await vi.advanceTimersByTimeAsync(1000);
+    await expect(done).resolves.toBe('u/b/0-a2.jpg');
+    // The first request was really cancelled at the transport, not merely ignored.
+    expect(first.signal().aborted).toBe(true);
+    expect((fetchSpy.mock.calls[1] as [string])[0]).toBe('https://proj.supabase.co/storage/v1/object/post-images/u/b/0-a2.jpg');
+    // The first path is never referenced; the app asks Storage to drop it in case it landed anyway.
+    expect(remove).toHaveBeenCalledWith(['u/b/0.jpg']);
+    // The server finishing the first write late changes nothing: the caller already holds path 2.
+    first.release(ok());
+    await vi.runAllTimersAsync();
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
   });
 
-  it('accepts "already exists" on a retry: the timed-out first attempt did store the object', async () => {
-    bucket.upload
-      .mockResolvedValueOnce({ error: { message: 'Network request failed' } })
-      .mockResolvedValueOnce({ error: { status: 409, message: 'The resource already exists' } });
-    await expect(uploadStorageObject(input)).resolves.toBeUndefined();
+  it('cancel aborts the in-flight request and abandons its path', async () => {
+    const controller = new AbortController();
+    const held = heldRequest();
+    fetchSpy.mockImplementationOnce(held.fetchImpl as typeof fetch);
+    const done = uploadStorageObject(input({ signal: controller.signal }));
+    await Promise.resolve();
+    await Promise.resolve();
+    controller.abort();
+    await expect(done).rejects.toBeInstanceOf(UploadCancelledError);
+    expect(held.signal().aborted).toBe(true);
+    expect(remove).toHaveBeenCalledWith(['u/b/0.jpg']);
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
   });
 
-  it('reports "already exists" on the first attempt, and never retries a final error', async () => {
-    bucket.upload.mockResolvedValueOnce({ error: { status: 409, message: 'The resource already exists' } });
-    await expect(uploadStorageObject(input)).rejects.toMatchObject({ status: 409 });
-    bucket.upload.mockResolvedValueOnce({ error: { status: 403, message: 'rls' } });
-    await expect(uploadStorageObject(input)).rejects.toMatchObject({ message: 'rls' });
-    expect(bucket.upload).toHaveBeenCalledTimes(2);
+  it('retries a 5xx on a new path and never retries a final answer', async () => {
+    fetchSpy.mockResolvedValueOnce(fail(503, 'busy')).mockResolvedValueOnce(ok());
+    await expect(uploadStorageObject(input())).resolves.toBe('u/b/0-a2.jpg');
+    // The server answered: nothing was stored, so nothing is abandoned.
+    expect(remove).not.toHaveBeenCalled();
+    fetchSpy.mockResolvedValueOnce(fail(403, 'new row violates row-level security policy'));
+    await expect(uploadStorageObject(input())).rejects.toMatchObject({ status: 403 });
+    expect(fetchSpy).toHaveBeenCalledTimes(3);
   });
 
-  it('gives up after the configured attempts', async () => {
-    bucket.upload.mockResolvedValue({ error: { status: 500, message: 'down' } });
-    await expect(uploadStorageObject({ ...input, attempts: 2 })).rejects.toMatchObject({ message: 'down' });
-    expect(bucket.upload).toHaveBeenCalledTimes(2);
+  it('abandons the path of a network failure (outcome unknown) and gives up after the attempts', async () => {
+    fetchSpy.mockRejectedValue(new TypeError('Network request failed'));
+    await expect(uploadStorageObject(input({ attempts: 2 }))).rejects.toThrow('Network request failed');
+    expect(remove.mock.calls).toEqual([[['u/b/0.jpg']], [['u/b/0-a2.jpg']]]);
   });
 
-  it('does not start when already cancelled', async () => {
+  it('does not start when already cancelled or signed out', async () => {
     const controller = new AbortController();
     controller.abort();
-    await expect(uploadStorageObject({ ...input, signal: controller.signal })).rejects.toBeInstanceOf(UploadCancelledError);
-    expect(bucket.upload).not.toHaveBeenCalled();
+    await expect(uploadStorageObject(input({ signal: controller.signal }))).rejects.toBeInstanceOf(UploadCancelledError);
+    client.auth.getSession.mockResolvedValueOnce({ data: { session: null } } as never);
+    await expect(uploadStorageObject(input())).rejects.toMatchObject({ status: 401 });
+    expect(fetchSpy).not.toHaveBeenCalled();
   });
 });

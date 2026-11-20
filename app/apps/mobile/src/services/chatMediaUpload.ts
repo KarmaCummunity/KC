@@ -40,13 +40,13 @@ export async function uploadChatImageAndSend(
   sendRpc: (payload: Record<string, unknown>, caption?: string | null) => Promise<void>,
 ): Promise<void> {
   const encoded = await encodeJpeg(picked.uri, planMaxEdgeResize(picked, MAX_EDGE), COMPRESS);
-  const objectId = Crypto.randomUUID();
   // userId first — matches storage RLS on (storage.foldername(name))[1] like other buckets.
-  const path = `${userId}/${chatId}/${objectId}.jpg`;
+  // A fresh object id per attempt: an aborted attempt that lands late is never the one we send.
+  let path: string;
   try {
-    await uploadStorageObject({
+    path = await uploadStorageObject({
       bucket: BUCKET,
-      path,
+      pathForAttempt: () => `${userId}/${chatId}/${Crypto.randomUUID()}.jpg`,
       bytes: encoded.bytes,
       contentType: 'image/jpeg',
       cacheControl: 'private, max-age=31536000, immutable',

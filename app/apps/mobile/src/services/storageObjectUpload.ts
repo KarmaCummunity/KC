@@ -1,9 +1,26 @@
-// One Supabase Storage upload with a bounded time budget and retries for transient failures.
-// Every media pipeline goes through here so a dead connection ends in a clear error the screen
-// can show (and retry), never in a spinner that turns forever.
+// One Supabase Storage upload that can really be cancelled, with a bounded time budget and
+// retries for transient failures. Every media pipeline goes through here.
+//
+// Why not `client.storage.from(b).upload()`: storage-js (2.119) passes no abort signal to its
+// fetch, so a cancel or a timeout could only stop *waiting*, never the write itself. This module
+// sends the same request (POST /storage/v1/object/<bucket>/<path>, as the signed-in member,
+// without upsert) through `fetch` with an AbortController, so cancel and timeout abort the
+// transport.
+//
+// What an abort can NOT guarantee: a server that already received the whole body may still
+// commit the object. Hence the contract:
+//   * every attempt writes a path no other attempt uses (`pathForAttempt`), so a late write can
+//     never overwrite, or be mistaken for, another attempt's object;
+//   * only the path of the attempt that succeeded is returned and ever referenced;
+//   * the path of an aborted or failed-in-flight attempt is "abandoned": the app asks Storage to
+//     remove it (best effort; the remove can still race a write that lands later). For
+//     `post-images` the server's orphan reconciliation removes unreferenced objects older than a
+//     day; `chat-media` and `avatars` have no server-side reconciliation, so a lost race there
+//     leaves one unreferenced object behind (storage cost only, never shown).
 
 import { getSupabaseClient } from '@kc/infrastructure-supabase';
-import { retryAsync, UploadTimeoutError, withTimeout } from './uploadControl';
+import { getSupabasePublicEnv } from '../lib/supabasePublicConfig';
+import { retryAsync, throwIfAborted, UploadCancelledError, UploadTimeoutError } from './uploadControl';
 
 /** Fixed part of the per-attempt budget: TLS handshake, auth, server-side write. */
 const BASE_TIMEOUT_MS = 20_000;
@@ -17,21 +34,27 @@ const RETRY_BASE_DELAY_MS = 800;
 
 export interface StorageObjectUpload {
   readonly bucket: string;
-  readonly path: string;
+  /**
+   * The object path of attempt `n` (1-based). Each attempt MUST name a path no other attempt
+   * uses: an aborted request may still land later.
+   */
+  readonly pathForAttempt: (attempt: number) => string;
   readonly bytes: Uint8Array;
   readonly contentType: string;
+  /** The full Cache-Control value stored with the object, e.g. `public, max-age=31536000, immutable`. */
   readonly cacheControl: string;
-  /** Only buckets with SELECT + UPDATE policies accept an upsert (avatars); post-images does not. */
-  readonly upsert?: boolean;
   readonly signal?: AbortSignal;
   readonly attempts?: number;
+  /** Per-attempt budget; defaults to `uploadTimeoutMs(bytes.byteLength)`. */
+  readonly timeoutMs?: number;
 }
 
-/** The error shape storage-js returns (`StorageApiError` / `StorageUnknownError`). */
-interface StorageErrorLike {
-  readonly message?: string;
-  readonly status?: number | string;
-  readonly statusCode?: number | string;
+/** Storage answered with an error status: the attempt stored nothing. */
+export class StorageHttpError extends Error {
+  constructor(readonly status: number, message: string) {
+    super(message);
+    this.name = 'StorageHttpError';
+  }
 }
 
 /** Per-attempt time budget, proportional to the payload size. */
@@ -39,66 +62,111 @@ export function uploadTimeoutMs(byteLength: number): number {
   return BASE_TIMEOUT_MS + Math.ceil((byteLength / MIN_THROUGHPUT_BYTES_PER_SEC) * 1000);
 }
 
-function httpStatus(err: StorageErrorLike): number | null {
-  const raw = err.status ?? err.statusCode;
-  const n = typeof raw === 'string' ? Number.parseInt(raw, 10) : raw;
-  return typeof n === 'number' && Number.isFinite(n) ? n : null;
-}
-
-/** The object already exists at that path (HTTP 409 / "resource already exists"). */
-export function isAlreadyExistsError(err: unknown): boolean {
-  if (!err || typeof err !== 'object') return false;
-  const e = err as StorageErrorLike;
-  return httpStatus(e) === 409 || /already exists/i.test(e.message ?? '');
-}
-
 /**
- * Network failures (no HTTP status), timeouts, 408, 429 and 5xx may succeed on a later try.
- * Any other 4xx (RLS refusal, too large, wrong type) is final.
+ * Network failures, timeouts, 408, 429 and 5xx may succeed on a later try (on a new path).
+ * Any other answer (RLS refusal, too large, wrong type) and a cancellation are final.
  */
 export function isTransientUploadError(err: unknown): boolean {
   if (err instanceof UploadTimeoutError) return true;
-  if (!err || typeof err !== 'object') return false;
-  const status = httpStatus(err as StorageErrorLike);
-  if (status === null) return true;
-  return status === 408 || status === 429 || status >= 500;
-}
-
-/** Uploads one object; resolves once Storage confirms it, rejects with the last error otherwise. */
-export async function uploadStorageObject(input: StorageObjectUpload): Promise<void> {
-  const client = getSupabaseClient();
-  const timeoutMs = uploadTimeoutMs(input.bytes.byteLength);
-  await retryAsync(
-    async (attempt) => {
-      const { error } = await withTimeout(
-        client.storage.from(input.bucket).upload(input.path, input.bytes, {
-          contentType: input.contentType,
-          upsert: input.upsert ?? false,
-          cacheControl: input.cacheControl,
-        }),
-        timeoutMs,
-        `${input.bucket}/${input.path}`,
-        input.signal,
-      );
-      if (!error) return;
-      // A retry after a timed-out attempt may find the first attempt's object already stored.
-      // The path is unique to this upload, so that object is ours and the upload succeeded.
-      if (attempt > 1 && !input.upsert && isAlreadyExistsError(error)) return;
-      throw error;
-    },
-    {
-      attempts: input.attempts ?? DEFAULT_ATTEMPTS,
-      baseDelayMs: RETRY_BASE_DELAY_MS,
-      isRetryable: isTransientUploadError,
-      signal: input.signal,
-    },
-  );
+  if (err instanceof UploadCancelledError) return false;
+  if (err instanceof StorageHttpError) return err.status === 408 || err.status === 429 || err.status >= 500;
+  return err instanceof TypeError; // fetch rejects with TypeError when the network fails
 }
 
 /** Human-readable reason of an upload failure, for logs and the retry notice. */
 export function uploadErrorMessage(err: unknown): string {
-  if (err && typeof err === 'object' && typeof (err as StorageErrorLike).message === 'string') {
-    return (err as StorageErrorLike).message as string;
+  if (err && typeof err === 'object' && typeof (err as { message?: unknown }).message === 'string') {
+    return (err as { message: string }).message;
   }
   return String(err);
+}
+
+function objectUrl(baseUrl: string, bucket: string, path: string): string {
+  const encoded = path.split('/').map(encodeURIComponent).join('/');
+  return `${baseUrl.replace(/\/+$/, '')}/storage/v1/object/${encodeURIComponent(bucket)}/${encoded}`;
+}
+
+async function storageHttpError(response: Response): Promise<StorageHttpError> {
+  let message = `HTTP ${response.status}`;
+  try {
+    const body = (await response.json()) as { message?: unknown };
+    if (typeof body.message === 'string') message = body.message;
+  } catch {
+    // Not JSON: keep the status line.
+  }
+  return new StorageHttpError(response.status, message);
+}
+
+/** Best-effort removal of an attempt's object that may or may not have been stored. */
+function abandon(bucket: string, path: string): void {
+  void getSupabaseClient().storage.from(bucket).remove([path]).catch(() => undefined);
+}
+
+interface AttemptContext {
+  readonly url: string;
+  readonly headers: Record<string, string>;
+  readonly timeoutMs: number;
+}
+
+/** One POST of the bytes to `path`, aborted by the caller's signal or by its own deadline. */
+async function uploadAttempt(input: StorageObjectUpload, path: string, ctx: AttemptContext): Promise<string> {
+  throwIfAborted(input.signal);
+  const controller = new AbortController();
+  let timedOut = false;
+  const onCallerAbort = () => controller.abort();
+  input.signal?.addEventListener('abort', onCallerAbort, { once: true });
+  const timer = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, ctx.timeoutMs);
+  try {
+    const response = await fetch(objectUrl(ctx.url, input.bucket, path), {
+      method: 'POST',
+      headers: ctx.headers,
+      // React Native's fetch accepts typed arrays (its typings omit them); like storage-js before,
+      // RN's networking layer base64-encodes a binary body in JS before handing it to native
+      // (Libraries/Network/convertRequestBody.js). The DOM fetch on web sends the bytes as is.
+      body: input.bytes as unknown as BodyInit,
+      signal: controller.signal,
+    });
+    if (response.ok) return path;
+    throw await storageHttpError(response);
+  } catch (err) {
+    if (err instanceof StorageHttpError) throw err; // the server answered: nothing stored
+    abandon(input.bucket, path); // aborted or lost mid-flight: the write may still land
+    if (controller.signal.aborted) {
+      throw timedOut ? new UploadTimeoutError(`${input.bucket}/${path}`, ctx.timeoutMs) : new UploadCancelledError();
+    }
+    throw err;
+  } finally {
+    clearTimeout(timer);
+    input.signal?.removeEventListener('abort', onCallerAbort);
+  }
+}
+
+/** Uploads the bytes; resolves with the path of the attempt that Storage confirmed. */
+export async function uploadStorageObject(input: StorageObjectUpload): Promise<string> {
+  throwIfAborted(input.signal);
+  const env = getSupabasePublicEnv();
+  if (!env) throw new StorageHttpError(500, 'storage_not_configured');
+  const { data } = await getSupabaseClient().auth.getSession();
+  const token = data.session?.access_token;
+  if (!token) throw new StorageHttpError(401, 'not_authenticated');
+  const ctx: AttemptContext = {
+    url: env.url,
+    timeoutMs: input.timeoutMs ?? uploadTimeoutMs(input.bytes.byteLength),
+    headers: {
+      authorization: `Bearer ${token}`,
+      apikey: env.anonKey,
+      'content-type': input.contentType,
+      'cache-control': input.cacheControl,
+      'x-upsert': 'false',
+    },
+  };
+  return retryAsync((attempt) => uploadAttempt(input, input.pathForAttempt(attempt), ctx), {
+    attempts: input.attempts ?? DEFAULT_ATTEMPTS,
+    baseDelayMs: RETRY_BASE_DELAY_MS,
+    isRetryable: isTransientUploadError,
+    signal: input.signal,
+  });
 }

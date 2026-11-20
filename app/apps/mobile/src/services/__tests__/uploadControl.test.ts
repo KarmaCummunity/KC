@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   abortableDelay,
   createOrderedCommitter,
@@ -7,8 +7,6 @@ import {
   retryAsync,
   throwIfAborted,
   UploadCancelledError,
-  UploadTimeoutError,
-  withTimeout,
 } from '../uploadControl';
 
 /** A promise plus the handles to settle it from the test. */
@@ -21,39 +19,6 @@ function deferred<T>() {
   });
   return { promise, resolve, reject };
 }
-
-describe('withTimeout', () => {
-  beforeEach(() => vi.useFakeTimers());
-  afterEach(() => vi.useRealTimers());
-
-  it('resolves and rejects with the wrapped promise when it settles in time', async () => {
-    await expect(withTimeout(Promise.resolve(7), 100, 'x')).resolves.toBe(7);
-    await expect(withTimeout(Promise.reject(new Error('boom')), 100, 'x')).rejects.toThrow('boom');
-  });
-
-  it('rejects with UploadTimeoutError when the promise never settles', async () => {
-    const pending = withTimeout(new Promise(() => undefined), 1000, 'post-images/a.jpg');
-    vi.advanceTimersByTime(1000);
-    await expect(pending).rejects.toBeInstanceOf(UploadTimeoutError);
-    await expect(pending).rejects.toThrow('post-images/a.jpg after 1000ms');
-  });
-
-  it('rejects with UploadCancelledError on abort, immediately or before starting', async () => {
-    const controller = new AbortController();
-    const pending = withTimeout(new Promise(() => undefined), 60_000, 'x', controller.signal);
-    controller.abort();
-    await expect(pending).rejects.toBeInstanceOf(UploadCancelledError);
-    await expect(withTimeout(Promise.resolve(1), 10, 'x', controller.signal)).rejects.toBeInstanceOf(UploadCancelledError);
-  });
-
-  it('ignores a late settle after the timeout fired', async () => {
-    const d = deferred<number>();
-    const pending = withTimeout(d.promise, 10, 'x');
-    vi.advanceTimersByTime(10);
-    d.resolve(1);
-    await expect(pending).rejects.toBeInstanceOf(UploadTimeoutError);
-  });
-});
 
 describe('abortableDelay / throwIfAborted', () => {
   it('waits, and is cut short by an abort', async () => {
