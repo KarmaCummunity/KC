@@ -53,7 +53,9 @@ export function ProdCopyCard() {
   // kc-prod (no tools) and an admin the server refuses: nothing to show here; the screen guard
   // already explains a refusal.
   if (status.isError && ['notInstalled', 'forbidden'].includes(demoDataErrorKey(status.error))) return null;
-  const data = status.data;
+  // After a failed refresh React Query still holds the previous answer. It is no longer proven
+  // current, so the card shows the error alone: no old counts, no old time, no delete.
+  const data = status.isError ? undefined : status.data;
 
   const onDelete = async (s: ProdCopyStatus) => {
     const ok = await confirmAction(t.confirmTitle, t.confirmBody(s.members, s.posts), {

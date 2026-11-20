@@ -5,7 +5,7 @@
 // Refusals map exactly as the demo-data ones (toDemoDataError): `not_installed` on kc-prod.
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { IProdCopyRepository } from '@kc/application';
-import type { ProdCopyDeleteResult, ProdCopyStatus } from '@kc/domain';
+import { DemoDataError, type ProdCopyDeleteResult, type ProdCopyStatus } from '@kc/domain';
 import type { Database } from '../database.types';
 import type { CallResult } from '../rpc/mapRpcError';
 import { toDemoDataError } from './demoDataRows';
@@ -15,22 +15,43 @@ type Row = Record<string, unknown>;
 const untyped = (client: SupabaseClient<Database>): SupabaseClient => client as unknown as SupabaseClient;
 const asRow = (data: unknown): Row =>
   data !== null && typeof data === 'object' && !Array.isArray(data) ? (data as Row) : {};
-/** A missing or malformed count reads as 0, never NaN. */
-const count = (row: Row, key: string): number => Number(row[key] ?? 0) || 0;
+
+/**
+ * Unlike the demo-data mapping, nothing here defaults: the card says what the copy holds and when
+ * it last succeeded, so an answer that does not prove it (an empty or partial body, a count that
+ * is not a whole number) is `outdated` (the installed seed does not match this build), never an
+ * empty copy or "deleted 0".
+ */
+function requireCount(rpc: string, row: Row, key: string): number {
+  const value = row[key];
+  if (typeof value !== 'number' || !Number.isInteger(value) || value < 0) {
+    throw new DemoDataError('outdated', `${rpc}: no valid ${key}`);
+  }
+  return value;
+}
 
 function unwrap(rpc: string, result: CallResult<unknown>): Row {
   if (result.error) throw toDemoDataError(rpc, result.error);
   return asRow(result.data);
 }
 
+/**
+ * The status as the server proves it. `last_copied_at` must be present: a time (only a committed,
+ * successful copy writes it) or null (no copy has succeeded yet).
+ */
 export function mapProdCopyStatus(r: Row): ProdCopyStatus {
+  const at = r.last_copied_at;
+  if (!(at === null || (typeof at === 'string' && !Number.isNaN(Date.parse(at))))) {
+    throw new DemoDataError('outdated', 'admin_prod_copy_status: no valid last_copied_at');
+  }
+  const need = (key: string) => requireCount('admin_prod_copy_status', r, key);
   return {
-    members: count(r, 'members'),
-    posts: count(r, 'posts'),
-    organizations: count(r, 'organizations'),
-    follows: count(r, 'follows'),
-    savedPosts: count(r, 'saved_posts'),
-    lastCopiedAt: typeof r.last_copied_at === 'string' ? r.last_copied_at : null,
+    members: need('members'),
+    posts: need('posts'),
+    organizations: need('organizations'),
+    follows: need('follows'),
+    savedPosts: need('saved_posts'),
+    lastCopiedAt: at,
   };
 }
 
@@ -43,7 +64,9 @@ export class SupabaseProdCopyRepository implements IProdCopyRepository {
   }
 
   async deleteAll(): Promise<ProdCopyDeleteResult> {
+    // RPC names stay literal at each call: scripts/db-usage-inventory.mjs reads them from the call.
     const r = unwrap('admin_delete_prod_copy', await untyped(this.client).rpc('admin_delete_prod_copy'));
-    return { members: count(r, 'members'), posts: count(r, 'posts'), organizations: count(r, 'organizations') };
+    const need = (key: string) => requireCount('admin_delete_prod_copy', r, key);
+    return { members: need('members'), posts: need('posts'), organizations: need('organizations') };
   }
 }

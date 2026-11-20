@@ -25,8 +25,10 @@ describe('SupabaseProdCopyRepository', () => {
     expect(rpc).toHaveBeenCalledWith('admin_prod_copy_status');
   });
 
-  it('a copy that never ran has no time, and missing counts read as zero', async () => {
-    const { repo } = repoWith({ data: { members: 'x' }, error: null });
+  it('a copy that never ran answers zero counts and a null time', async () => {
+    const { repo } = repoWith({
+      data: { members: 0, posts: 0, organizations: 0, follows: 0, saved_posts: 0, last_copied_at: null }, error: null,
+    });
     await expect(repo.getStatus()).resolves.toEqual({
       members: 0, posts: 0, organizations: 0, follows: 0, savedPosts: 0, lastCopiedAt: null,
     });
@@ -46,6 +48,24 @@ describe('SupabaseProdCopyRepository', () => {
       error: { code: 'PGRST202', message: 'Could not find the function public.admin_prod_copy_status without parameters' },
     });
     await expect(repo.getStatus()).rejects.toMatchObject({ name: 'DemoDataError', code: 'not_installed' });
+  });
+
+  // A 200 answer that proves nothing (an empty or partial body, e.g. from an older installed seed)
+  // is not "nothing copied": the card must not claim an empty copy from it.
+  it.each([
+    ['no body', null],
+    ['an empty object', {}],
+    ['a count that is not a number', { members: 'x', posts: 1, organizations: 0, follows: 0, saved_posts: 0, last_copied_at: null }],
+    ['no last-copy field', { members: 1, posts: 1, organizations: 0, follows: 0, saved_posts: 0 }],
+    ['a last copy that is not a time', { members: 1, posts: 1, organizations: 0, follows: 0, saved_posts: 0, last_copied_at: 5 }],
+  ])('a status answer with %s is refused as outdated, never read as an empty copy', async (_label, data) => {
+    const { repo } = repoWith({ data, error: null });
+    await expect(repo.getStatus()).rejects.toMatchObject({ name: 'DemoDataError', code: 'outdated' });
+  });
+
+  it('a delete answer without its counts is refused as outdated, never reported as "deleted 0"', async () => {
+    const { repo } = repoWith({ data: { members: 2 }, error: null });
+    await expect(repo.deleteAll()).rejects.toMatchObject({ name: 'DemoDataError', code: 'outdated' });
   });
 
   it('a member without the role is refused as forbidden', async () => {

@@ -665,7 +665,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/admin/SupabaseProdCopyRepository.ts",
-   "line": 41,
+   "line": 62,
    "area": "admin",
    "symbol": "SupabaseProdCopyRepository.getStatus",
    "via": "literal",
@@ -674,7 +674,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/admin/SupabaseProdCopyRepository.ts",
-   "line": 46,
+   "line": 68,
    "area": "admin",
    "symbol": "SupabaseProdCopyRepository.deleteAll",
    "via": "literal",

@@ -38,7 +38,7 @@ vi.mock('../../../../i18n/useLocaleBundle', () => ({
   useLocaleBundle: () => ({
     admin: {
       demoData: {
-        errors: { generic: 'ERR', forbidden: 'FORBIDDEN', notInstalled: 'NOT-INSTALLED' },
+        errors: { generic: 'ERR', forbidden: 'FORBIDDEN', notInstalled: 'NOT-INSTALLED', timeout: 'TIMEOUT', outdated: 'OUTDATED' },
         prodCopy: {
           title: 'TITLE', subtitle: 'SUB', members: 'M', posts: 'P', organizations: 'O', follows: 'F', savedPosts: 'S',
           lastCopied: (when: string) => `LAST ${when}`, neverCopied: 'NEVER', empty: 'EMPTY',
@@ -97,6 +97,32 @@ describe('ProdCopyCard (FR-ADMIN-037 AC13)', () => {
     expect(await screen.findByText('EMPTY')).toBeTruthy();
     expect(screen.getByTestId('admin-prod-copy-last').textContent).toBe('NEVER');
     expect(screen.queryByTestId('admin-prod-copy-delete')).toBeNull();
+  });
+
+  it('a failed refresh hides the counts, the last-copy time and the delete it showed before', async () => {
+    getStatus.mockResolvedValueOnce(STATUS).mockRejectedValue(new DemoDataError('timeout'));
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <ThemeProvider mode="light" systemScheme="light" setMode={() => {}}>
+          <ProdCopyCard />
+        </ThemeProvider>
+      </QueryClientProvider>,
+    );
+    expect(await screen.findByText('685')).toBeTruthy();
+    await client.refetchQueries();
+    expect(await screen.findByText('TIMEOUT')).toBeTruthy();
+    expect(screen.queryByText('685')).toBeNull();
+    expect(screen.queryByTestId('admin-prod-copy-last')).toBeNull();
+    expect(screen.queryByTestId('admin-prod-copy-delete')).toBeNull();
+  });
+
+  it('an answer the adapter could not trust shows the error, not an empty copy', async () => {
+    getStatus.mockRejectedValue(new DemoDataError('outdated'));
+    renderCard();
+    expect(await screen.findByText('OUTDATED')).toBeTruthy();
+    expect(screen.queryByText('NEVER')).toBeNull();
+    expect(screen.queryByText('EMPTY')).toBeNull();
   });
 
   it('deletes only after the confirmation, and reports what was deleted', async () => {
