@@ -12,6 +12,7 @@ import { NotifyModal } from '../src/components/NotifyModal';
 import { useAuthStore } from '../src/store/authStore';
 import { EditProfileDateOfBirthBlock } from '../src/components/profile/EditProfileDateOfBirthBlock';
 import { EditProfileCompletenessCard } from '../src/components/profile/EditProfileCompletenessCard';
+import { EditProfileSignInBlock } from '../src/components/profile/EditProfileSignInBlock';
 import { useUnsavedChangesGuard } from '../src/hooks/useUnsavedChangesGuard';
 import { useEditProfileStyles } from '../src/screens/edit-profile.styles';
 import { useEditProfileController } from '../src/hooks/useEditProfileController';
@@ -119,6 +120,7 @@ export default function EditProfileScreen() {
           />
           <Text style={styles.helper}>{t('profile.editScreen.contactPhoneHelper')}</Text>
         </View>
+        <EditProfileSignInBlock />
         <View style={styles.field}>
           <TextField
             label={t('profile.editScreen.biographyLabel')}

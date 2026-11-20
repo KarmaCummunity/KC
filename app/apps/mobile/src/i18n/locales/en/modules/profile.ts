@@ -131,6 +131,11 @@ export const profileEn = {
 
   // Edit Profile screen (FR-PROFILE-007)
   editScreen: {
+    signIn: {
+      emailLabel: 'Sign-in email',
+      phoneLabel: 'Sign-in phone',
+      note: "Your sign-in details can't be changed here. To change them, contact Support.",
+    },
     loadFailedTitle: 'Loading failed',
     saveFailedTitle: 'Saving failed',
     unknownError: 'Unknown error',
