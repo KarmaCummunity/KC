@@ -17,6 +17,29 @@ supabase gen types typescript --project-id <ref> \
 
 ---
 
+## DEV post-merge workflow recovery
+
+A successful merge queue check is not a deployed DEV result. A squash message that includes an
+ancestral CI-skip token can suppress the push-triggered CI, migration numbering and version bump.
+The 2026-11-20 guest merge (#2513, `1556e508`) exposed this case: the queue passed, but the
+post-merge workflows did not start and `next-01_guest_posts.sql` remained provisional.
+
+Before continuing the integration queue:
+
+1. Check the exact DEV commit, its commit message, push-event CI runs and the deployed version.
+   Do not treat a PR or merge-group result as push certification.
+2. Keep the guest migration provisional. The normal post-merge workflow assigns its number and
+   manifest entry; do not number it by hand or apply it directly to a shared database.
+3. Use a small, reviewed follow-up through the normal CI and merge queue, with a clean commit
+   message that does not carry historical CI-skip tokens. Do not force-push DEV, edit protections,
+   fabricate checks or relax the deploy resolver to accept a different event.
+4. Verify automatic numbering, the numbered tree's push CI, the actual DEV database/web deployment,
+   then signed-out guest RPC and screen behavior. Until these checks pass, the guest issue remains
+   open and the feature is not reported as delivered.
+
+This recovery changes neither main nor production and does not authorize a store build or a new
+TestFlight audience.
+
 ## Migration application rules (READ FIRST) {#application-rules}
 
 The repo uses **sequential** migration files (`supabase/migrations/NNNN_snake.sql`, e.g. `0243_listings_legacy_sync.sql`). The `schema_migrations` ledger on each Supabase project must match those file versions exactly.
