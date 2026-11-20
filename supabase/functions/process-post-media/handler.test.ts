@@ -39,7 +39,8 @@ function harness(opts: {
     now: opts.clock,
     rpc: (fn, args) => {
       calls.push({ fn, args });
-      if (fn === 'post_media_processing_claim') return Promise.resolve({ data: opts.jobs, error: null });
+      // The worker claims one job per call; the queue double hands them out in order.
+      if (fn === 'post_media_processing_claim') return Promise.resolve({ data: opts.jobs.splice(0, 1), error: null });
       if (fn === 'post_media_processing_complete') {
         const c = opts.complete ?? 'ready';
         return Promise.resolve(typeof c === 'string' ? { data: c, error: null } : { data: null, error: { message: c.error } });
@@ -86,7 +87,7 @@ Deno.test('refuses callers without the service-role key before any work', async 
 Deno.test('happy path: claims a bounded batch, writes this attempt\'s own derivative + thumb, completes with the exact key', async () => {
   const h = harness({ jobs: [job()], bytes: await realJpeg() });
   const out = await h.run({ limit: 99 });
-  assertEquals(h.calls[0], { fn: 'post_media_processing_claim', args: { p_limit: 5, p_lease_seconds: 300 } });
+  assertEquals(h.calls[0], { fn: 'post_media_processing_claim', args: { p_limit: 1, p_lease_seconds: 300 } });
   const key = derivativeKey(OWNER, MEDIA, 1);
   assertEquals(key, `${OWNER}/derived/${MEDIA}-a1.jpg`);
   assertEquals(h.uploads, [key, thumbKey(key)]);
@@ -157,10 +158,16 @@ Deno.test('a refused completion (e.g. object not in Storage yet) retries, and an
   assertEquals(failCall(upload)?.p_error, 'upload: The resource already exists');
 });
 
-Deno.test('the run budget hands jobs back instead of holding their leases', async () => {
+Deno.test('claims one job at a time, up to the limit, and stops claiming when the budget is spent', async () => {
+  const bytes = await realJpeg();
+  const many = harness({ jobs: [job(), job({ media_id: 'm2' }), job({ media_id: 'm3' })], bytes });
+  const out = await many.run({ limit: 2 });
+  assertEquals(many.calls.filter((c) => c.fn === 'post_media_processing_claim').length, 2);
+  assertEquals(Object.keys(out.outcomes as object), [MEDIA, 'm2']);
   let t = 0;
-  const h = harness({ jobs: [job(), job({ media_id: 'second', lease_token: 'lease-2' })], bytes: await realJpeg(), budgetMs: 10, clock: () => (t += 20) });
-  const out = await h.run();
-  assertEquals(out.outcomes, { [MEDIA]: 'deferred', second: 'deferred' });
-  assertEquals(h.downloads, []);
+  const slow = harness({ jobs: [job(), job({ media_id: 'm2' })], bytes, budgetMs: 10, clock: () => (t += 20) });
+  const none = await slow.run();
+  // Out of time before the first claim: nothing is claimed, so no attempt is spent.
+  assertEquals(slow.calls, []);
+  assertEquals(none.claimed, 0);
 });

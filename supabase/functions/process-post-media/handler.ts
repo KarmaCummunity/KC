@@ -1,8 +1,9 @@
 // process-post-media — makes the sanitized copy of each new post photo (KC#2316).
 // Service role only. NOT scheduled by this change: activation is a separate, gated step.
 //
-// One run: claim up to `limit` (1..5, default 3) due jobs with a lease (post_media_processing_claim),
-// and for each, in turn:
+// One run: up to `limit` (1..5, default 3) jobs, claimed ONE at a time with a lease
+// (post_media_processing_claim) and only while the run's time budget lasts, so no claimed job
+// ever waits on another and no attempt is spent on a job the run had no time for. For each:
 //   1. refuse a key outside the owner's folder, and an object Storage recorded as missing, over
 //      8 MiB or not JPEG/PNG — all BEFORE downloading it;
 //   2. download it with a hard byte cap (the recorded size), then inspect the real bytes and cap
@@ -35,7 +36,7 @@ export interface ProcessPostMediaDeps {
   rpc: (fn: string, args: Record<string, unknown>) => Promise<RpcResult>;
   storage: MediaStorage;
   decode?: Decoder;
-  /** Wall-clock budget of one run; jobs not started in time are released for a later run. */
+  /** Wall-clock budget of one run: no new job is claimed once it is spent. */
   budgetMs?: number;
   now?: () => number;
 }
@@ -54,9 +55,10 @@ export interface ClaimedMediaJob {
   object_mimetype: string | null;
 }
 
-export type JobOutcome = 'ready' | 'stale' | 'changed' | 'retry' | 'failed' | 'deferred';
+export type JobOutcome = 'ready' | 'stale' | 'changed' | 'retry' | 'failed';
 
-const DEFAULT_BUDGET_MS = 60_000;
+/** Below the platform's function time limit (25 s on the free tier per OPERATOR_RUNBOOK.md, not re-measured). */
+const DEFAULT_BUDGET_MS = 20_000;
 const SOURCE_TYPES = new Set(['image/jpeg', 'image/png']);
 /** `<owner uuid>/<path>` with plain path characters and no `..` segment. */
 const OWNED_KEY = /^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\/[A-Za-z0-9._\/-]{1,400}$/;
@@ -137,26 +139,21 @@ export function createProcessPostMediaHandler(deps: ProcessPostMediaDeps) {
     const now = deps.now ?? Date.now;
     const deadline = now() + (deps.budgetMs ?? DEFAULT_BUDGET_MS);
 
-    const claim = await deps.rpc('post_media_processing_claim', { p_limit: limit, p_lease_seconds: 300 });
-    if (claim.error) return json({ ok: false, error: claim.error.message }, 500);
-    const jobs = (claim.data ?? []) as ClaimedMediaJob[];
     const outcomes: Record<string, JobOutcome> = {};
-    for (const job of jobs) {
-      if (now() >= deadline) {
-        // Out of time: hand the job back now rather than holding its lease.
-        await deps.rpc('post_media_processing_fail', {
-          p_media_id: job.media_id, p_lease_token: job.lease_token, p_error: 'run_budget_exhausted', p_retryable: true,
-        });
-        outcomes[job.media_id] = 'deferred';
-        continue;
-      }
+    let claimed = 0;
+    while (claimed < limit && now() < deadline) {
+      const claim = await deps.rpc('post_media_processing_claim', { p_limit: 1, p_lease_seconds: 300 });
+      if (claim.error) return json({ ok: false, error: claim.error.message, outcomes }, 500);
+      const [job] = (claim.data ?? []) as ClaimedMediaJob[];
+      if (!job) break; // nothing due
+      claimed += 1;
       try {
         outcomes[job.media_id] = await processJob(job, deps);
       } catch (err) {
         console.error('[process-post-media]', job.media_id, err instanceof Error ? err.message : err);
-        outcomes[job.media_id] = 'stale'; // the lease expires and the claim hands the job out again
+        outcomes[job.media_id] = 'stale'; // the lease expires and a later claim hands the job out again
       }
     }
-    return json({ ok: true, claimed: jobs.length, outcomes });
+    return json({ ok: true, claimed, outcomes });
   };
 }
