@@ -4,8 +4,11 @@
 // Per account, in this order (supabase/schemas/95_platform/100_purge_contract.sql):
 //   1. database: deletion tombstone + money records detached   (repeatable)
 //      then the member's photo jobs are stopped (kc_private.post_media_purge_hold); while a stopped
-//      worker's lease is still running the account is DEFERRED to a later run, untouched, so no
-//      worker can write into `derived/<user_id>/` after step 2 empties it
+//      worker's lease is still running the account is DEFERRED (this run removes none of its files)
+//      so step 2 runs only once the workers have stopped writing at the application level. This is
+//      not a storage fence: Storage may still commit an upload a worker aborted, after step 2.
+//      The cancelled job rows are deleted by the cascade of step 3, so they are not a durable
+//      tombstone; a later re-sweep of `derived/<user_id>/` would need its own deletion intent.
 //   2. storage:  the member's folder `<user_id>/` in every bucket, and the server-made copies of
 //                their photos under `derived/<user_id>/` in post-images (repeatable)
 //   3. database: the auth identity is deleted; every row of the member cascades
@@ -61,8 +64,8 @@ export interface PurgeDeps {
 export type PurgeOutcome = { stage: PurgeStage; error: unknown } | 'deferred' | null;
 
 /**
- * Purges one account; resolves to null when it is gone, 'deferred' when a photo worker of the
- * member may still be writing (it stays due), or the stage that failed.
+ * Purges one account; resolves to null when it is gone, 'deferred' when a photo job of the member
+ * still holds a lease (the account stays due; nothing is removed this run), or the stage that failed.
  */
 export async function purgeAccount(deps: Pick<PurgeDeps, 'db' | 'storage'>, userId: string, buckets: string[]): Promise<PurgeOutcome> {
   let stage: PurgeStage = 'prepare';

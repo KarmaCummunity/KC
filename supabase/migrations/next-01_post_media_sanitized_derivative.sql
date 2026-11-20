@@ -312,9 +312,12 @@ comment on function public.post_media_processing_fail(uuid, uuid, text, boolean)
 --   * queued jobs are skipped;
 --   * claimed jobs are `cancelled`: completion and failure are refused from then on and the job is
 --     never handed out again, but its lease is kept;
---   * the answer is true while any cancelled job's lease is still running. The worker never starts
---     an upload in the last 30 s of its lease and aborts every upload at that point, so once the
---     lease has run out no worker of this member can still be writing, and the folder may go.
+--   * the answer is true while any cancelled job's lease is still running. The worker starts no
+--     upload in the last 30 s of its lease and aborts every upload at that point, so once the lease
+--     has run out the worker no longer writes for this member at the application level.
+-- Limits (not closed here): this is not a storage fence (Storage may still commit an upload a
+-- worker aborted, and nothing checks a tombstone at commit time), and the cancelled rows are
+-- removed by the cascade when the identity is deleted, so they are no durable deletion record.
 -- Repeatable: the purge calls it on every run until it answers false.
 create function kc_private.post_media_purge_hold(p_owner_id uuid)
 returns boolean

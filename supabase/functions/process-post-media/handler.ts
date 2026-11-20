@@ -16,9 +16,12 @@
 //      holds the object with the reported size. When it does not answer 'ready' (a lost race, a
 //      job cancelled by the account purge) or anything fails after an upload, the worker removes
 //      the objects this attempt wrote: they are never referenced.
-// Writes are bounded by the lease: no upload starts in its last 30 s, and every upload is aborted
-// at that point. The account purge waits until a cancelled job's lease has run out
-// (kc_private.post_media_purge_hold) before it empties `derived/<owner>/`.
+// The worker's own writes are bounded by the lease: it starts no upload in the lease's last 30 s
+// and aborts every upload at that point. That is an application-level limit, NOT a storage fence:
+// an aborted request may still be committed by Storage afterwards, and nothing checks the owner or
+// a deletion tombstone at storage-commit time. The account purge waits until a cancelled job's
+// lease has run out (kc_private.post_media_purge_hold) before it empties `derived/<owner>/`, which
+// narrows, but does not close, the window for a late object there.
 // Failures are recorded with post_media_processing_fail: a file refused for what it is fails at
 // once; network / storage / database errors retry (at most three attempts in all).
 // Every database call, download and upload has a finite deadline and is ABORTED at it (the request,
@@ -67,7 +70,7 @@ export interface ProcessPostMediaDeps {
 export interface ClaimedMediaJob {
   media_id: string;
   lease_token: string;
-  /** End of this attempt's lease (ISO time); no write may happen after it. */
+  /** End of this attempt's lease (ISO time); the worker starts no write after it (application-level only). */
   leased_until: string;
   attempt: number;
   owner_id: string;
