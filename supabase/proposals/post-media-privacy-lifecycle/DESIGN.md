@@ -69,8 +69,9 @@ public `post-images/derived/`.
 - Pros: meets R3 "immediate" for every object.
 - Cons: per-request cost and latency on the feed; CDN caching needs care; largest change.
 
-Recommendation: **A** for originals. Copies stay public, with revocation documented as
-"eventual (cache lifetime)". **C** only for object classes where immediate revocation is required.
+**Design default: A.** It is the baseline, not an open architecture question.
+- Copies stay public; their revocation is "eventual (cache lifetime)".
+- **C** applies only to object classes that need immediate revocation; that list is a product decision (§8).
 
 ## 4. Deletion lifecycle (R2, R4)
 
@@ -90,9 +91,15 @@ prefix_or_key, reason, created_at, not_before, attempts, last_listing_at, verifi
 2. delete them;
 3. **list again**.
 
-An intent completes only when `now() >= not_before` and the second listing is empty. `not_before` =
-event time + max worker lease + max upload deadline + a settle margin for late commits; that margin
-must be measured on the platform.
+An intent completes only when `now() >= not_before` and the second listing is empty.
+`not_before` = event time + max worker lease + max upload deadline + a settle margin.
+- A finite settle margin **cannot prove** that no write will still commit. An empty listing only
+  shows that nothing has committed *yet*.
+- Calling an intent "verified absent" therefore also needs storage commit-bound evidence: either a
+  vendor-documented, enforced maximum request lifetime after which an upload can no longer commit,
+  or the commit-time refusal below.
+- Without that evidence, completion means "absent at the last sweep". The reconciler keeps
+  re-sweeping open prefixes on a schedule, and the guarantee is stated as eventual, not proven.
 - Otherwise it retries with back-off and alerts after N attempts.
 - This replaces "the orphan job will catch it" as the deletion guarantee. The orphan job stays as a
   general safety net.
@@ -106,9 +113,18 @@ must be measured on the platform.
   2. route service writes through a database-authorized step: e.g. the worker first records the key
      it will write, and the reconciler deletes any `derived/` object without such a record or with a
      cancelled one;
-  3. use signed upload URLs issued by a database function that refuses them under an open intent.
+  3. signed upload URLs issued by a database function that refuses to issue them under an open intent.
 
-  Option 3 gives commit-time refusal for the worker too, at the cost of one more round trip per upload.
+  **Option 3 is unproven as a commit-time refusal.** A check at issuance is not revocation: a URL
+  issued before the intent stays usable until it expires, unless the vendor documents and enforces
+  revocation or re-authorization at commit. R4 for service writes therefore needs one of:
+  - **(a)** a vendor-verified commit-time check, documented by the vendor and tested against live
+    storage-api on DEV; or
+  - **(b)** a **guarded private proxy**: only a server component holds write credentials to the
+    origin; it re-checks the open intents in the same database transaction that records the write,
+    immediately before forwarding each write, and is the only writer.
+
+  Until one of these is in place, service writes stay "eventual" under §4's re-sweep.
 
 ## 5. Durable chat-media and avatars cleanup
 
@@ -141,9 +157,11 @@ device ledger) and a client write fence on `derived/`. It does **not** provide R
 immediate or R4 for service writes. None of its behaviour is measured against live Supabase Storage,
 and no platform resource measurement exists.
 
-## 8. Open questions for the owner
+## 8. Product questions for later (retention and cost only)
 
-- Required revocation latency per class (originals, copies, avatars, chat).
-- Retention of originals after processing (keep for edit/republish vs delete).
-- Whether a one-time migration of existing public originals is wanted, and its cost.
-- Settle margin for late Storage commits: who measures it on DEV, and how.
+- Which object classes need immediate revocation (the access-gate cost of §3 C).
+- How long originals are retained after processing (edit/republish needs vs storage cost).
+- Whether existing public originals are migrated into the private bucket, given its one-time cost.
+
+Engineering items are not owner questions: they are verified on DEV and reviewed. They include the
+private upload bucket default, commit-time evidence or the guarded proxy, and the reconciler cadence.
