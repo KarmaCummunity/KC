@@ -199,4 +199,6 @@ Source: owner approval in WhatsApp at 00:54:29 Asia/Jerusalem, answering the eig
 
 ## Limited guest browsing approved 2026-11-19
 
+| # | Decision | Lives in | Status |
+|---|---|---|---|
 | {{D:limited-guest-browsing}} | Basic guest browsing: signed-out visitors may browse open Public posts and read title, description and city only. No poster identity, handle, avatar, contact, exact location, details, time window, media or comments. Minimal technical IDs support navigation. Posting, commenting, contact and account actions require sign-in. Supersedes the no-guest-feed/no-post-preview part of D166; D152 community counters and D155 public nonprofit pages remain. Free-text title/description may contain information the author entered; removing identity fields does not promise automatic PII removal. Implementation tracked in #2511. | `requirements/01_auth_and_onboarding.md`, `docs/db/target-design.md` section 12.1 | Owner approved the limited proposal and clarified yes on 2026-11-19. Development is authorized; main/production and store submission are not implied. |

@@ -70,7 +70,6 @@ Also added to [93](./93_implementation_gaps.md).
 |  | ✅ **Q-7 answered by evidence (2026-10-30):** the deployed dev web bundle calls `enbqriuxvvuontiwslun`, matching `ENVIRONMENTS.md` (prod `kdqtbdbzwvlugkhonexg`). `roeefqpdbftlndzsvhfj` (MVP-2) and `slxijdfvinbjmrsfgbzx` (MVP-PROD) are **paused** projects in the older "KC" Supabase org. `DEPLOY_WEB.md` is corrected; `CLAUDE.md` §13 and `.mcp.json` / `app/.mcp.json` now point at kc-dev (PM-approved 2026-10-30). | |
 | Q-8 | **Account deletion and shared chats:** deleting an account now removes the user's chat images. The counterpart keeps the (anonymized) chat, so those images disappear for them too. Confirm that right-to-be-forgotten wins over the counterpart's copy (current behavior), or keep them until the counterpart deletes the chat. | Answered 2026-11-20: purge removes the deleted member's shared chat images for both sides; retained chat text does not retain those assets. Existing 30-day restore period unchanged. |
 
-
 ## 5. SSOT hygiene notes
 
 - **Tech-debt ID reuse.** Legacy spec headers cite `TD-69`, `TD-75` and `TD-79` for 2026-05-16 audit items, but the `tech-debt` issues now use those IDs for unrelated rows (migration-drift guard, translation provider, translate tests). When reading a legacy header, treat its TD reference as **historical** and use the `tech-debt` issues as the live register. New IDs must never reuse a number.
