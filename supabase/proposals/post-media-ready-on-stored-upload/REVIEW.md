@@ -1,6 +1,9 @@
 # Proposal: mark a member's stored post photo `ready` on insert (KC#2316)
 
-Status: **proposal only, needs privacy and lifecycle review.** Not in `supabase/migrations/`, not applied
+Status: **superseded — not to be applied.** The server-side candidate (sanitized derivative made by
+`process-post-media`, migration `next-01_post_media_sanitized_derivative.sql`, runbook section "Post photo
+derivatives") replaces this ready-on-insert idea, which could not strip EXIF or check the bytes.
+Original status: **proposal only, needs privacy and lifecycle review.** Not in `supabase/migrations/`, not applied
 anywhere except a throwaway local PostgreSQL used to run `test.sql`.
 
 ## What it does

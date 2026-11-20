@@ -598,6 +598,62 @@ Same flow, swap `SUPABASE_REF` and use the prod service-role bearer. The functio
 
 ---
 
+## Post photo derivatives — sanitized copies (KC#2316, CANDIDATE, not active)
+
+**Status:** dev-review candidate. The migration `next-01_post_media_sanitized_derivative.sql` and the
+Edge Function `process-post-media` exist on a branch only. Nothing below has been run against kc-dev
+or production, and no schedule is registered.
+
+**What it does.** Every NEW `post_media` image row in `post-images` is queued (no backfill). The worker
+claims one job at a time with a lease, refuses (before download) a key outside the owner's folder and
+a missing, > 8 MiB or non-JPEG/PNG object, downloads with a byte cap, refuses (before decoding) a file
+whose bytes are not JPEG/PNG or whose header exceeds 4096 px / 16.8 MP, re-encodes a ≤ 2048 px copy and
+a ≤ 400 px thumb to `<owner>/derived/<media_id>-a<attempt>.jpg` (+ `-thumb`), never touching the
+original, and completes with a compare-and-set that also checks Storage holds the copy. The row then
+points at the copy, so cards, the post page, the share card and link previews serve only it.
+
+### Measured vs assumed
+
+| Claim | Basis |
+| --- | --- |
+| Queue, claim, lease, CAS, lifecycle skip, retries, cap, grants, reconciliation keep-list | **Measured**: pgTAP `128_post_media_sanitized_derivative.sql`, 29/29 on a local PostgreSQL 16 baseline; full suite 99 files / 2966 ok / 0 not ok with the migration applied |
+| EXIF/GPS dropped, orientation applied, bombs/HTML/SVG refused before decode | **Measured**: deno tests with Jimp 1.6.0 and a real JPEG carrying a synthetic EXIF/GPS block |
+| Storage records `metadata.size` / `metadata.mimetype` exactly as the CAS reads them | **Assumed** (Supabase Storage behaviour; not verifiable without a live project) |
+| Decode memory for a 16.8 MP source fits the Edge runtime | **Assumed**, not measured on Supabase |
+| One 2400 × 1200 re-encode ≈ 1 s | Measured in this container only, not on the Edge runtime |
+| WhatsApp renders the copy as a preview | **Not measured** |
+
+### Activation (gated: owner + manager approval for each step)
+
+1. Review and merge through the normal `dev` flow; the **Deploy** workflow then applies the migration and
+   deploys the function (unscheduled). From then on new photos queue as `pending`; nothing is processed.
+2. Smoke on kc-dev with a test account only: upload one photo, then invoke once with the service-role key:
+   `curl -X POST "https://<ref>.supabase.co/functions/v1/process-post-media" -H "Authorization: Bearer $SR" -d '{"limit":1}'`.
+   Expect `{"ok":true,"claimed":1,"outcomes":{"<id>":"ready"}}` and the photo on another account's feed.
+3. Schedule it with a separate migration (never ad hoc SQL):
+   ```sql
+   insert into kc_private.scheduled_jobs (name, schedule, command, timeout, alert_after, description) values
+     ('post_media_process', '* * * * *', $$select kc_private.invoke_edge_function('process-post-media')$$,
+      interval '20 seconds', interval '15 minutes', 'Starts process-post-media: sanitized copies of new post photos.');
+   ```
+4. Existing `pending` rows are NOT covered. Any backfill is a separate decision (cost and privacy review).
+
+### Cost surface (per new photo, approximate)
+
+- **Storage writes**: 2 new objects (copy ≤ ~600 KB, thumb ~30 KB); the original is kept, so a post photo
+  occupies roughly original + copy + thumb.
+- **Egress**: one download of the original (≤ 8 MiB; app uploads are typically 0.3–0.6 MB) from Storage
+  to the Edge Function; failed attempts can repeat it (at most 3 attempts).
+- **Function time**: one invocation per minute when scheduled, each ≤ 20 s budget, ≤ 3 photos per run.
+- **Database**: one queue row per photo (kept after completion; it records the original key).
+
+### Rollback
+
+Unschedule (delete the `scheduled_jobs` row through a migration). Rows already `ready` keep pointing at
+their copies; queued rows stay `pending` (not shown to others), as before this change.
+
+---
+
 ## KC support channels — donations to KC (FR-DONATE-011, migration `0447`)
 
 The Money hub's *Support KC directly* card reads its payment links from `public.kc_support_channels`. Changing a row changes the app immediately — **no release**. Only super admins can write (RLS); the URL must be `https://` with no credentials (CHECK).
