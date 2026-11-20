@@ -41,6 +41,14 @@ describe('knowledgeSeriesInputFromDetails', () => {
 });
 
 describe('withoutKnowledgeSeriesKeys', () => {
+  it('drops stale one-off times only for a weekly draft without mutating form state', () => {
+    const slots = [{ starts_at: '2030-06-01T10:00:00Z', ends_at: '2030-06-01T11:00:00Z' }];
+    const switched = { ...WEEKLY, slots };
+    expect(withoutKnowledgeSeriesKeys(switched)).toEqual({ capacity_per_slot: 3, topic: 'algebra' });
+    expect(switched.slots).toBe(slots);
+    expect(withoutKnowledgeSeriesKeys({ ...switched, schedule: 'one_off' })).toEqual({ capacity_per_slot: 3, topic: 'algebra', slots });
+    expect(withoutKnowledgeSeriesKeys({ slots, topic: 'algebra' })).toEqual({ slots, topic: 'algebra' });
+  });
   it('keeps the offer details and drops the schedule inputs', () => {
     const kept = withoutKnowledgeSeriesKeys(WEEKLY);
     expect(kept).toEqual({ capacity_per_slot: 3, topic: 'algebra' });

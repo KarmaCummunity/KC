@@ -21,6 +21,7 @@ vi.mock('../../services/listingImageUpload', () => ({ uploadListingImages: uploa
 vi.mock('../../lib/analyticsCoreLoop', () => ({ trackCoreLoop: track, trackActivationIfFirst: activation }));
 vi.mock('../../lib/rides/rideStartDetails', () => ({ rememberRideRoute: remember }));
 vi.mock('../../services/rideSeriesComposition', () => ({ rideSeriesUseCases: { create: () => ({ execute: vi.fn() }) } }));
+vi.mock('../../services/postSeriesComposition', () => ({ postSeriesUseCases: {} }));
 import { useListingCreateForm } from '../useListingCreateForm';
 function wrapper({ children }: PropsWithChildren) { const client = new QueryClient({ defaultOptions: { queries: { retry: false } } }); return <QueryClientProvider client={client}>{children}</QueryClientProvider>; }
 const kind = { kindId: 'k1', slug: 'food_offer', direction: 'give', detailSchema: { properties: { food_type: {}, expires_at: {} } } } as unknown as ListingKindOption;
@@ -232,4 +233,26 @@ describe('leave now for rides (#1411)', () => {
 
     expect(repo.createListing.mock.calls[0]![0].details.departs_at).toBe('2026-11-05T07:00:00.000Z');
   });
+});
+
+
+describe('stored lesson edit preserves schedule ownership', () => {
+  const lessonKind = { kindId: 'lesson-k', slug: 'lesson_offer', direction: 'give', detailSchema: { type: 'object' } } as unknown as ListingKindOption;
+  for (const weekly of [false, true]) {
+    it(`saves an unchanged ${weekly ? 'weekly' : 'one-off'} lesson without inventing schedule inputs`, async () => {
+      vi.clearAllMocks(); auth.current = 'u1';
+      const slots = [{ starts_at: '2030-12-01T18:00:00Z', ends_at: '2030-12-01T19:00:00Z' }];
+      const details = { modality: 'video', capacity_per_slot: 1, topic: 'Maths', ...(weekly ? {} : { slots }) };
+      repo.listKindsForWorld.mockResolvedValue([lessonKind]);
+      repo.getListingDetail.mockResolvedValue({ listingId: 'lesson-1', ownerId: 'u1', worldSlug: 'knowledge', kindSlug: 'lesson_offer', direction: 'give', cityId: 'city-1', details, media: [] });
+      const saved = vi.fn();
+      const { result } = renderHook(() => useListingCreateForm({ worldSlug: 'knowledge', direction: 'give', title: 'Maths', summary: '', onPublished: vi.fn(), editListingId: 'lesson-1', onSaved: saved }), { wrapper });
+      await waitFor(() => expect(result.current.details.modality).toBe('video'));
+      await act(() => result.current.publish());
+      expect(result.current.error).toBeNull();
+      expect(repo.updateMyListing).toHaveBeenCalledWith('lesson-1', expect.objectContaining({ details }));
+      expect(repo.createListing).not.toHaveBeenCalled();
+      expect(saved).toHaveBeenCalledOnce();
+    });
+  }
 });
