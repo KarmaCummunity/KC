@@ -307,6 +307,28 @@ $$;
 comment on function public.post_media_processing_fail(uuid, uuid, text, boolean) is
   'process-post-media: records a failed photo job attempt. Service role only.';
 
+-- DEV resource experiment only (process-post-media profile `dev-experiment-1024`): hands a job the
+-- experiment does not process (source over its cap) back to the queue untouched. Nothing was
+-- written for it, so the attempt is not counted, and it is not offered again for a day, so the
+-- experiment does not keep downloading it. Answers 'released', or 'stale' when the caller no
+-- longer holds the lease. The production profile never calls it.
+create function public.post_media_processing_release(p_media_id uuid, p_lease_token uuid, p_reason text)
+returns text
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  update kc_private.post_media_processing
+     set state = 'queued', attempts = greatest(attempts - 1, 0), lease_token = null, leased_until = null,
+         next_attempt_at = now() + interval '24 hours', last_error = left(p_reason, 500)
+   where media_id = p_media_id and state = 'processing' and lease_token = p_lease_token;
+  return case when found then 'released' else 'stale' end;
+end;
+$$;
+comment on function public.post_media_processing_release(uuid, uuid, text) is
+  'process-post-media DEV experiment: returns an unprocessed job to the queue without spending an attempt. Service role only.';
+
 -- Account purge, before it empties the member's `derived/<owner>/` folder (purge-deleted-accounts):
 -- stops all photo work for the member and answers whether the purge must still wait.
 --   * queued jobs are skipped;

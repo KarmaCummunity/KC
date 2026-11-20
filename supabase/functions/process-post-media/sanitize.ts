@@ -8,11 +8,8 @@
 
 import { Jimp } from 'https://esm.sh/jimp@1.6.0';
 import { ImageRejected, inspectImage, jpegHeaderIsClean, type ImageInfo } from './imageCheck.ts';
+import { PRODUCTION_CANDIDATE, type ProcessingProfile } from './profiles.ts';
 
-/** Longest edge of the copy a post page shows (FR-POST-005 AC3: client side resize to 2048). */
-export const DERIVATIVE_MAX_EDGE = 2048;
-/** Longest edge of the feed-card copy (the app's `-thumb` convention). */
-export const THUMB_MAX_EDGE = 400;
 const DERIVATIVE_QUALITY = 85;
 const THUMB_QUALITY = 75;
 
@@ -59,8 +56,12 @@ async function encodeWithin(image: DecodedImage, maxEdge: number, quality: numbe
  * Inspects, decodes and re-encodes one upload. Throws ImageRejected for a file that is not an
  * acceptable image (final), or any other error for a decode or encode failure.
  */
-export async function sanitizeImage(bytes: Uint8Array, decode: Decoder = jimpDecoder): Promise<SanitizedImage> {
-  const source = inspectImage(bytes);
+export async function sanitizeImage(
+  bytes: Uint8Array,
+  decode: Decoder = jimpDecoder,
+  profile: ProcessingProfile = PRODUCTION_CANDIDATE,
+): Promise<SanitizedImage> {
+  const source = inspectImage(bytes, profile);
   let image: DecodedImage;
   try {
     image = await decode(bytes);
@@ -71,7 +72,7 @@ export async function sanitizeImage(bytes: Uint8Array, decode: Decoder = jimpDec
   if (image.width * image.height > source.width * source.height) throw new ImageRejected('too_many_pixels');
   return {
     source,
-    derivative: await encodeWithin(image, DERIVATIVE_MAX_EDGE, DERIVATIVE_QUALITY),
-    thumb: await encodeWithin(image, THUMB_MAX_EDGE, THUMB_QUALITY),
+    derivative: await encodeWithin(image, profile.derivativeMaxEdge, DERIVATIVE_QUALITY),
+    thumb: await encodeWithin(image, profile.thumbMaxEdge, THUMB_QUALITY),
   };
 }

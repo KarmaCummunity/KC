@@ -32,6 +32,7 @@
 import { isServiceRoleRequest, serviceRoleRequiredResponse } from '../_shared/serviceRoleGuard.ts';
 import { ImageRejected, MAX_SOURCE_BYTES } from './imageCheck.ts';
 import { jimpDecoder, sanitizeImage, type Decoder } from './sanitize.ts';
+import { PRODUCTION_CANDIDATE, type ProcessingProfile } from './profiles.ts';
 
 type RpcResult = { data: unknown; error: { message: string } | null };
 
@@ -59,6 +60,8 @@ export interface ProcessPostMediaDeps {
   /** One database function call; must abort its request when `signal` aborts. */
   rpc: (fn: string, args: Record<string, unknown>, signal: AbortSignal) => Promise<RpcResult>;
   deadlines?: Partial<Deadlines>;
+  /** Caps and jobs per run (profiles.ts); the production candidate unless a DEV experiment opts in. */
+  profile?: ProcessingProfile;
   storage: MediaStorage;
   decode?: Decoder;
   /** Wall-clock budget of one run: no new job is claimed once it is spent. */
@@ -82,7 +85,7 @@ export interface ClaimedMediaJob {
   object_mimetype: string | null;
 }
 
-export type JobOutcome = 'ready' | 'stale' | 'changed' | 'retry' | 'failed' | 'unknown';
+export type JobOutcome = 'ready' | 'stale' | 'changed' | 'retry' | 'failed' | 'unknown' | 'released';
 
 /** An operation did not finish before its deadline; it was aborted. */
 export class DeadlineExceeded extends Error {
@@ -163,13 +166,21 @@ async function processJob(job: ClaimedMediaJob, deps: ProcessPostMediaDeps): Pro
     return res.data === 'retry' ? 'retry' : res.data === 'failed' ? 'failed' : 'stale';
   };
 
+  const profile = deps.profile ?? PRODUCTION_CANDIDATE;
   let sanitized;
   try {
     preflight(job);
     const bytes = await withDeadline(deadlines.downloadMs, 'download', (signal) =>
       deps.storage.download(job.storage_key, job.object_size as number, signal));
-    sanitized = await sanitizeImage(bytes, deps.decode ?? jimpDecoder);
+    sanitized = await sanitizeImage(bytes, deps.decode ?? jimpDecoder, profile);
   } catch (err) {
+    if (err instanceof ImageRejected && err.code === 'too_many_pixels' && profile.overCap === 'release') {
+      // Experiment only: not this profile's to process; hand it back without spending an attempt.
+      const res = await callRpc(deps, 'post_media_processing_release', {
+        p_media_id: job.media_id, p_lease_token: job.lease_token, p_reason: 'experiment_source_over_cap',
+      });
+      return res.data === 'released' ? 'released' : 'stale';
+    }
     if (err instanceof FinalRefusal || err instanceof ImageRejected) return fail(err.message, false);
     return fail(`download: ${err instanceof Error ? err.message : String(err)}`, true);
   }
@@ -230,7 +241,8 @@ export function createProcessPostMediaHandler(deps: ProcessPostMediaDeps) {
     if (!isServiceRoleRequest(req, deps.serviceRoleKey)) return serviceRoleRequiredResponse();
 
     const body = await req.json().catch(() => ({}));
-    const limit = Math.min(Math.max(Math.trunc(Number(body?.limit)) || 3, 1), 5);
+    const profile = deps.profile ?? PRODUCTION_CANDIDATE;
+    const limit = Math.min(Math.max(Math.trunc(Number(body?.limit)) || profile.defaultJobsPerRun, 1), profile.maxJobsPerRun);
     const now = deps.now ?? Date.now;
     const deadline = now() + (deps.budgetMs ?? DEFAULT_BUDGET_MS);
 
@@ -255,6 +267,6 @@ export function createProcessPostMediaHandler(deps: ProcessPostMediaDeps) {
         outcomes[job.media_id] = 'stale'; // the lease expires and a later claim hands the job out again
       }
     }
-    return json({ ok: true, claimed, outcomes });
+    return json({ ok: true, profile: profile.name, claimed, outcomes });
   };
 }

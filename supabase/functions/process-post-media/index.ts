@@ -8,6 +8,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 import { withObservability } from '../_shared/observability/mod.ts';
 import { currentServiceRoleKeys, primaryServiceRoleKey } from '../_shared/serviceRoleGuard.ts';
 import { createProcessPostMediaHandler, type MediaStorage } from './handler.ts';
+import { resolveProfile } from './profiles.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const BUCKET = 'post-images';
@@ -86,8 +87,12 @@ const storage: MediaStorage = {
   },
 };
 
+// The production candidate unless a DEV project opts into the labelled resource experiment.
+const profile = resolveProfile(Deno.env.get('PROCESS_POST_MEDIA_PROFILE'));
+
 serve(withObservability('process-post-media', createProcessPostMediaHandler({
   serviceRoleKey: currentServiceRoleKeys(),
+  profile,
   rpc: async (fn, args, signal) => {
     // postgrest-js aborts the HTTP request; a statement already running in the database may still finish.
     const { data, error } = await admin.rpc(fn, args).abortSignal(signal);

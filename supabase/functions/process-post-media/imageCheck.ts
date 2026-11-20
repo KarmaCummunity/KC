@@ -69,14 +69,23 @@ export function pngHeaderSize(bytes: Uint8Array): { width: number; height: numbe
   return { width: view.getUint32(16), height: view.getUint32(20) };
 }
 
+/** Pixel caps of a profile (profiles.ts); defaults are the production candidate's. */
+export interface SourceCaps {
+  readonly maxSourceEdge: number;
+  readonly maxSourcePixels: number;
+}
+
 /** Accepts a JPEG or PNG within the byte and pixel caps; throws ImageRejected otherwise. */
-export function inspectImage(bytes: Uint8Array): ImageInfo {
+export function inspectImage(
+  bytes: Uint8Array,
+  caps: SourceCaps = { maxSourceEdge: MAX_SOURCE_EDGE, maxSourcePixels: MAX_SOURCE_PIXELS },
+): ImageInfo {
   if (bytes.length > MAX_SOURCE_BYTES) throw new ImageRejected('too_large');
   const type = sniffType(bytes);
   if (!type) throw new ImageRejected('not_an_image');
   const size = type === 'image/jpeg' ? jpegFrameSize(bytes) : pngHeaderSize(bytes);
   if (!size || size.width < 1 || size.height < 1) throw new ImageRejected('no_dimensions');
-  if (size.width > MAX_SOURCE_EDGE || size.height > MAX_SOURCE_EDGE || size.width * size.height > MAX_SOURCE_PIXELS) {
+  if (size.width > caps.maxSourceEdge || size.height > caps.maxSourceEdge || size.width * size.height > caps.maxSourcePixels) {
     throw new ImageRejected('too_many_pixels');
   }
   return { type, ...size };

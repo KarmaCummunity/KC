@@ -3,6 +3,7 @@ import { assert, assertEquals, assertRejects, assertThrows } from 'https://deno.
 import { Jimp } from 'https://esm.sh/jimp@1.6.0';
 import { ImageRejected, inspectImage, jpegFrameSize, jpegHeaderIsClean, MAX_SOURCE_BYTES } from './imageCheck.ts';
 import { sanitizeImage, type Decoder } from './sanitize.ts';
+import { DEV_EXPERIMENT_1024 } from './profiles.ts';
 
 const latin1 = (bytes: Uint8Array) => new TextDecoder('latin1').decode(bytes);
 const segment = (marker: number, body: number[]) => [0xff, marker, (body.length + 2) >> 8, (body.length + 2) & 255, ...body];
@@ -91,4 +92,15 @@ Deno.test('jpegHeaderIsClean fails closed', () => {
   assertEquals(jpegHeaderIsClean(new Uint8Array([0xff, 0xd8, ...segment(0xfe, [1]), 0xff, 0xda])), false);
   assertEquals(jpegHeaderIsClean(new Uint8Array([0xff, 0xd8, 0x00, 0x00])), false); // broken walk
   assertEquals(jpegHeaderIsClean(new Uint8Array([0xff, 0xd8, ...segment(0xe0, [1]), 0xff, 0xda, 0, 2])), true);
+});
+
+Deno.test('experiment caps: a 1025 px source is refused from its header before decoding; 1024 px copies', async () => {
+  let decoded = false;
+  const spy: Decoder = () => { decoded = true; throw new Error('must not decode'); };
+  const wide = await realJpeg(1025, 10);
+  const err = await assertRejects(() => sanitizeImage(wide, spy, DEV_EXPERIMENT_1024), ImageRejected);
+  assertEquals((err as ImageRejected).code, 'too_many_pixels');
+  assertEquals(decoded, false);
+  const out = await sanitizeImage(await realJpeg(1000, 1000), undefined, DEV_EXPERIMENT_1024);
+  assertEquals([out.derivative.width, out.thumb.width], [1000, 400]);
 });

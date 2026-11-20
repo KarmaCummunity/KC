@@ -2,6 +2,7 @@
 import { assert, assertEquals } from 'https://deno.land/std@0.224.0/assert/mod.ts';
 import { Jimp } from 'https://esm.sh/jimp@1.6.0';
 import { createProcessPostMediaHandler, derivativeKey, thumbKey, type ClaimedMediaJob, type MediaStorage } from './handler.ts';
+import { DEV_EXPERIMENT_1024, PRODUCTION_CANDIDATE, resolveProfile, type ProcessingProfile } from './profiles.ts';
 
 const KEY = 'service-key';
 const OWNER = '0a0a0a0a-0000-4000-8000-00000000000a';
@@ -16,7 +17,8 @@ const job = (patch: Partial<ClaimedMediaJob> = {}): ClaimedMediaJob => ({
   object_size: 5000, object_mimetype: 'image/jpeg', ...patch,
 });
 
-const realJpeg = async () => new Uint8Array(await new Jimp({ width: 64, height: 48, color: 0x112233ff }).getBuffer('image/jpeg', { quality: 90 }));
+const realJpeg = async (width = 64, height = 48) =>
+  new Uint8Array(await new Jimp({ width, height, color: 0x112233ff }).getBuffer('image/jpeg', { quality: 90 }));
 
 interface Harness {
   calls: { fn: string; args: Record<string, unknown> }[];
@@ -37,6 +39,7 @@ function harness(opts: {
   /** Operations that never answer: RPC names, 'download' or 'upload'. */
   hang?: string[];
   deadlines?: { rpcMs?: number; downloadMs?: number; uploadMs?: number };
+  profile?: ProcessingProfile;
   jobs: ClaimedMediaJob[];
   bytes?: Uint8Array;
   complete?: string | { error: string };
@@ -56,6 +59,7 @@ function harness(opts: {
     budgetMs: opts.budgetMs,
     now: opts.clock,
     deadlines: opts.deadlines,
+    profile: opts.profile,
     rpc: (fn, args, signal) => {
       calls.push({ fn, args });
       rpcSignals.push(signal);
@@ -66,6 +70,7 @@ function harness(opts: {
         const c = opts.complete ?? 'ready';
         return Promise.resolve(typeof c === 'string' ? { data: c, error: null } : { data: null, error: { message: c.error } });
       }
+      if (fn === 'post_media_processing_release') return Promise.resolve({ data: 'released', error: null });
       return Promise.resolve({ data: args.p_retryable ? 'retry' : 'failed', error: null });
     },
     storage: {
@@ -259,4 +264,49 @@ Deno.test('a completion with no answer is "unknown": nothing is removed and no f
   assertEquals(out.outcomes, { [MEDIA]: 'unknown' });
   assertEquals(h.removed, []);
   assertEquals(failCall(h), undefined);
+});
+
+// ── DEV experiment profile (opt-in; not a quality decision, not the production default) ─────
+
+Deno.test('the profile is opt-in: anything but the exact experiment name keeps the production candidate', () => {
+  assertEquals(resolveProfile(undefined), PRODUCTION_CANDIDATE);
+  assertEquals(resolveProfile(''), PRODUCTION_CANDIDATE);
+  assertEquals(resolveProfile('DEV-EXPERIMENT-1024 '), PRODUCTION_CANDIDATE);
+  assertEquals(resolveProfile('dev-experiment-1024'), DEV_EXPERIMENT_1024);
+  assertEquals([PRODUCTION_CANDIDATE.maxSourceEdge, PRODUCTION_CANDIDATE.derivativeMaxEdge], [4096, 2048]);
+});
+
+Deno.test('experiment: one job per run, whatever the request asks, and the run names its profile', async () => {
+  const h = harness({ jobs: [job(), job({ media_id: 'm2' }), job({ media_id: 'm3' })], bytes: await realJpeg(), profile: DEV_EXPERIMENT_1024 });
+  const out = await h.run({ limit: 5 });
+  assertEquals(h.calls.filter((c) => c.fn === 'post_media_processing_claim').length, 1);
+  assertEquals(out.claimed, 1);
+  assertEquals(out.profile, 'dev-experiment-1024');
+});
+
+Deno.test('experiment: a source over 1024 px is released back untouched (no attempt spent, no failure, nothing written)', async () => {
+  const h = harness({ jobs: [job()], bytes: await realJpeg(1600, 1200), profile: DEV_EXPERIMENT_1024 });
+  const out = await h.run();
+  assertEquals(out.outcomes, { [MEDIA]: 'released' });
+  assertEquals(h.calls.find((c) => c.fn === 'post_media_processing_release')?.args,
+    { p_media_id: MEDIA, p_lease_token: 'lease-1', p_reason: 'experiment_source_over_cap' });
+  assertEquals(failCall(h), undefined);
+  assertEquals(h.uploads, []);
+});
+
+Deno.test('experiment: a source within 1024 px gets copies of at most 1024 px', async () => {
+  const h = harness({ jobs: [job()], bytes: await realJpeg(1024, 768), profile: DEV_EXPERIMENT_1024 });
+  const out = await h.run();
+  assertEquals(out.outcomes, { [MEDIA]: 'ready' });
+  const complete = h.calls.find((c) => c.fn === 'post_media_processing_complete')!.args;
+  assertEquals([complete.p_width, complete.p_height], [1024, 768]);
+});
+
+Deno.test('production candidate (default) is unchanged: the same 1600 px source is processed at full size', async () => {
+  const h = harness({ jobs: [job()], bytes: await realJpeg(1600, 1200) });
+  const out = await h.run();
+  assertEquals(out.outcomes, { [MEDIA]: 'ready' });
+  assertEquals(out.profile, 'production-candidate');
+  const complete = h.calls.find((c) => c.fn === 'post_media_processing_complete')!.args;
+  assertEquals([complete.p_width, complete.p_height], [1600, 1200]);
 });
