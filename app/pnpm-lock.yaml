@@ -170,6 +170,9 @@ importers:
       '@kc/domain':
         specifier: workspace:*
         version: link:../../packages/domain
+      '@kc/infrastructure-api':
+        specifier: workspace:*
+        version: link:../../packages/infrastructure-api
       '@kc/infrastructure-supabase':
         specifier: workspace:*
         version: link:../../packages/infrastructure-supabase

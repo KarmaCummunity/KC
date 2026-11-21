@@ -19,8 +19,10 @@ export interface PortRouter {
    * @param name Wire name of the port in the shared catalog.
    * @param fallback The adapter in place today. It keeps serving every method
    *   the API does not list, and every method while the API cannot be reached.
+   *   The result has the adapter's own type, so a composition root that holds
+   *   the concrete class needs no other change.
    */
-  port<Name extends PortName>(name: Name, fallback: PortCatalog[Name]): PortCatalog[Name];
+  port<Name extends PortName, Adapter extends PortCatalog[Name]>(name: Name, fallback: Adapter): Adapter;
 }
 
 const DEFAULT_MANIFEST_TTL_MS = 5 * 60_000;
@@ -76,7 +78,7 @@ export function createPortRouter(options: PortRouterOptions): PortRouter {
   }
 
   return {
-    port(name, fallback) {
+    port<Name extends PortName, Adapter extends PortCatalog[Name]>(name: Name, fallback: Adapter): Adapter {
       const handlers = new Map<string, (...args: unknown[]) => Promise<unknown>>();
       const local = fallback as unknown as Record<string, unknown>;
 
@@ -96,7 +98,7 @@ export function createPortRouter(options: PortRouterOptions): PortRouter {
           }
           return handler;
         },
-      }) as PortCatalog[typeof name];
+      }) as Adapter;
     },
   };
 }

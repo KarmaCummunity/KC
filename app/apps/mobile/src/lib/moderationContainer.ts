@@ -17,12 +17,13 @@ import {
   RemoveCommentUseCase,
   ResolveQueueEntryUseCase,
 } from '@kc/application';
+import { viaApi } from '../services/backend/apiBackend';
 
 export function createModerationStaffUseCases(supabase: SupabaseClient<Database>) {
-  const supportInbox = new SupabaseSupportInboxRepository(supabase);
-  const moderationQueue = new SupabaseModerationQueueRepository(supabase);
+  const supportInbox = viaApi('supportInbox', new SupabaseSupportInboxRepository(supabase));
+  const moderationQueue = viaApi('moderationQueue', new SupabaseModerationQueueRepository(supabase));
   return {
-    removeComment: new RemoveCommentUseCase(new SupabaseModerationAdminRepository(supabase)),
+    removeComment: new RemoveCommentUseCase(viaApi('moderationAdmin', new SupabaseModerationAdminRepository(supabase))),
     listSupportThreads: new ListSupportThreadsUseCase(supportInbox),
     joinSupportThread: new JoinSupportThreadUseCase(supportInbox),
     openMemberSupportThread: new OpenMemberSupportThreadUseCase(supportInbox),

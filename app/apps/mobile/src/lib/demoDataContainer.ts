@@ -10,11 +10,12 @@ import {
   RestoreDemoDataUseCase,
   WipeDemoDataUseCase,
 } from '@kc/application';
+import { viaApi } from '../services/backend/apiBackend';
 
 /** Read the status, delete all demo data, restore it; read and delete the production copy. */
 export function createDemoDataUseCases(supabase: SupabaseClient<Database>) {
-  const repo = new SupabaseDemoDataRepository(supabase);
-  const prodCopy = new SupabaseProdCopyRepository(supabase);
+  const repo = viaApi('demoData', new SupabaseDemoDataRepository(supabase));
+  const prodCopy = viaApi('prodCopy', new SupabaseProdCopyRepository(supabase));
   return {
     getDemoDataStatus: new GetDemoDataStatusUseCase(repo),
     wipeDemoData: new WipeDemoDataUseCase(repo),

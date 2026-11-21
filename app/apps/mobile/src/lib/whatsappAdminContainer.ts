@@ -28,10 +28,11 @@ import {
   SetWhatsAppTemplateStatusUseCase,
   UnlinkWhatsAppUseCase,
 } from '@kc/application';
+import { viaApi } from '../services/backend/apiBackend';
 
 /** The WhatsApp console's use cases (api_whatsapp_admin_*). */
 export function createWhatsAppAdminUseCases(supabase: SupabaseClient<Database>) {
-  const repo = new SupabaseWhatsAppAdminRepository(supabase);
+  const repo = viaApi('whatsAppAdmin', new SupabaseWhatsAppAdminRepository(supabase));
   return {
     getWhatsAppAdminOverview: new GetWhatsAppAdminOverviewUseCase(repo),
     getWhatsAppChannel: new GetWhatsAppChannelUseCase(repo),
@@ -54,7 +55,7 @@ export function createWhatsAppAdminUseCases(supabase: SupabaseClient<Database>) 
 
 /** The member's WhatsApp link use cases (Settings → WhatsApp). */
 export function createWhatsAppLinkUseCases(supabase: SupabaseClient<Database>) {
-  const repo = new SupabaseWhatsAppLinkRepository(supabase);
+  const repo = viaApi('whatsAppLink', new SupabaseWhatsAppLinkRepository(supabase));
   return {
     getWhatsAppLinkStatus: new GetWhatsAppLinkStatusUseCase(repo),
     createWhatsAppLinkCode: new CreateWhatsAppLinkCodeUseCase(repo),

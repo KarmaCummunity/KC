@@ -12,6 +12,9 @@
       "@kc/infrastructure-supabase": [
         "../../packages/infrastructure-supabase/src/index.ts"
       ],
+      "@kc/infrastructure-api": [
+        "../../packages/infrastructure-api/src/index.ts"
+      ],
       "@kc/ui": [
         "../../packages/ui/src/index.ts"
       ],

@@ -19,12 +19,13 @@ import {
   UpsertFinanceAccountUseCase,
   UpsertFinanceEntryUseCase,
 } from '@kc/application';
+import { viaApi } from '../services/backend/apiBackend';
 
 export function createFinanceUseCases(supabase: SupabaseClient<Database>) {
-  const ledger = new SupabaseFinanceLedgerRepository(supabase);
-  const accounts = new SupabaseFinanceAccountsRepository(supabase);
-  const donors = new SupabaseFinanceDonorsRepository(supabase);
-  const transparencySettings = new SupabaseTransparencySettingsRepository(supabase);
+  const ledger = viaApi('financeLedger', new SupabaseFinanceLedgerRepository(supabase));
+  const accounts = viaApi('financeAccounts', new SupabaseFinanceAccountsRepository(supabase));
+  const donors = viaApi('financeDonors', new SupabaseFinanceDonorsRepository(supabase));
+  const transparencySettings = viaApi('transparencySettings', new SupabaseTransparencySettingsRepository(supabase));
   return {
     listFinanceLedger: new ListFinanceLedgerUseCase(ledger),
     getFinanceSummary: new GetFinanceSummaryUseCase(ledger),

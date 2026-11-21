@@ -36,6 +36,7 @@
     "@expo/vector-icons": "^15.1.1",
     "@kc/application": "workspace:*",
     "@kc/domain": "workspace:*",
+    "@kc/infrastructure-api": "workspace:*",
     "@kc/infrastructure-supabase": "workspace:*",
     "@kc/ui": "workspace:*",
     "@react-native-async-storage/async-storage": "2.2.0",

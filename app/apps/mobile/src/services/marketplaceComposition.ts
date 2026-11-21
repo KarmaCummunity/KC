@@ -1,6 +1,7 @@
 import { getSupabaseClient, SupabaseMarketplaceRepository } from '@kc/infrastructure-supabase';
 import type { IMarketplaceRepository } from '@kc/application';
 import { pickAuthStorage } from './authSecureStorage';
+import { viaApi } from './backend/apiBackend';
 
 let _repo: IMarketplaceRepository | null = null;
 
@@ -10,6 +11,6 @@ export function getMarketplaceSupabaseClient() {
 }
 
 export function marketplaceRepository(): IMarketplaceRepository {
-  _repo ??= new SupabaseMarketplaceRepository(getMarketplaceSupabaseClient());
+  _repo ??= viaApi('marketplace', new SupabaseMarketplaceRepository(getMarketplaceSupabaseClient()));
   return _repo;
 }

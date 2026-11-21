@@ -113,40 +113,41 @@ import { createFinanceUseCases } from './financeContainer';
 import { createModerationStaffUseCases } from './moderationContainer';
 import { isSupabaseConfigured } from './supabasePublicConfig';
 import { bindSupabaseClient } from './bindSupabaseClient';
+import { viaApi } from '../services/backend/apiBackend';
 
 // The one Supabase connection of the app, typed against the production baseline schema.
 export const supabase = bindSupabaseClient(isSupabaseConfigured(), () =>
   getSupabaseClient({ storage: pickAuthStorage() }),
 );
 
-const userRepo = new SupabaseUserRepository(supabase);
-const chatRepo = new SupabaseChatRepository(supabase);
+const userRepo = viaApi('user', new SupabaseUserRepository(supabase));
+const chatRepo = viaApi('chat', new SupabaseChatRepository(supabase));
 const chatRealtime = new SupabaseChatRealtime(supabase);
-const reportRepo = new SupabaseReportRepository(supabase);
-const blockRepo = new SupabaseBlockRepository(supabase);
-const donationLinksRepo = new SupabaseDonationLinksRepository(supabase);
-const postRepo = new SupabasePostRepository(supabase);
+const reportRepo = viaApi('report', new SupabaseReportRepository(supabase));
+const blockRepo = viaApi('block', new SupabaseBlockRepository(supabase));
+const donationLinksRepo = viaApi('donationLinks', new SupabaseDonationLinksRepository(supabase));
+const postRepo = viaApi('post', new SupabasePostRepository(supabase));
 const postEngagementRepo = new SupabasePostEngagementRepository(supabase);
-const notificationInboxRepo = new SupabaseNotificationInboxRepository(supabase);
+const notificationInboxRepo = viaApi('notificationInbox', new SupabaseNotificationInboxRepository(supabase));
 const chatV2Realtime = new SupabaseChatV2Realtime(supabase);
 const onlinePresence = new SupabaseOnlinePresence(supabase);
 const activeStatus = new SupabaseActiveStatusRepository(supabase);
 const chatV2Repo = new SupabaseChatV2Repository(supabase);
 const socialFeedRepo = new SupabaseSocialFeedRepository(supabase);
 const followSuggestionsRepo = new SupabaseFollowSuggestionsRepository(supabase);
-const moderationAdminRepo = new SupabaseModerationAdminRepository(supabase);
-const accountGateRepo = new SupabaseAccountGateRepository(supabase);
-const deviceRepo = new SupabaseDeviceRepository(supabase);
-const adminRoleRepo = new SupabaseAdminRoleRepository(supabase);
-const adminTaskRepo = new SupabaseAdminTaskRepository(supabase);
-const orgHierarchyRepo = new SupabaseOrgHierarchyRepository(supabase);
-const adminContentRepo = new SupabaseAdminContentRepository(supabase);
-const orgApplicationsRepo = new SupabaseOrgApplicationsRepository(supabase);
-const reportsRepo = new SupabaseReportsRepository(supabase);
-const surveyRepo = new SupabaseSurveyRepository(supabase);
-const surveyAdminRepo = new SupabaseSurveyAdminRepository(supabase);
-const userActivityRepo = new SupabaseUserActivityRepository(supabase);
-const publicResearchRepo = new SupabasePublicResearchRepository(supabase);
+const moderationAdminRepo = viaApi('moderationAdmin', new SupabaseModerationAdminRepository(supabase));
+const accountGateRepo = viaApi('accountGate', new SupabaseAccountGateRepository(supabase));
+const deviceRepo = viaApi('device', new SupabaseDeviceRepository(supabase));
+const adminRoleRepo = viaApi('adminRole', new SupabaseAdminRoleRepository(supabase));
+const adminTaskRepo = viaApi('adminTask', new SupabaseAdminTaskRepository(supabase));
+const orgHierarchyRepo = viaApi('orgHierarchy', new SupabaseOrgHierarchyRepository(supabase));
+const adminContentRepo = viaApi('adminContent', new SupabaseAdminContentRepository(supabase));
+const orgApplicationsRepo = viaApi('orgApplications', new SupabaseOrgApplicationsRepository(supabase));
+const reportsRepo = viaApi('reports', new SupabaseReportsRepository(supabase));
+const surveyRepo = viaApi('survey', new SupabaseSurveyRepository(supabase));
+const surveyAdminRepo = viaApi('surveyAdmin', new SupabaseSurveyAdminRepository(supabase));
+const userActivityRepo = viaApi('userActivity', new SupabaseUserActivityRepository(supabase));
+const publicResearchRepo = viaApi('publicResearch', new SupabasePublicResearchRepository(supabase));
 
 const hideChatFromInbox = new HideChatFromInboxUseCase(chatRepo);
 const getMyAdminRoles = new GetMyAdminRolesUseCase(adminRoleRepo);

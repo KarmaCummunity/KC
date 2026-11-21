@@ -7,11 +7,12 @@ import {
 } from '@kc/application';
 import { SupabaseRideSavedRoutesRepository } from '@kc/infrastructure-supabase';
 import { getMarketplaceSupabaseClient } from './marketplaceComposition';
+import { viaApi } from './backend/apiBackend';
 
 let repo: IRideSavedRoutesRepository | null = null;
 
 function repository(): IRideSavedRoutesRepository {
-  repo ??= new SupabaseRideSavedRoutesRepository(getMarketplaceSupabaseClient());
+  repo ??= viaApi('rideSavedRoutes', new SupabaseRideSavedRoutesRepository(getMarketplaceSupabaseClient()));
   return repo;
 }
 

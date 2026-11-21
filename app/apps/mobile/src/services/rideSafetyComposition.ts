@@ -2,11 +2,12 @@
 import { RaiseRideEmergencyUseCase, type IRideSafetyRepository } from '@kc/application';
 import { SupabaseRideSafetyRepository } from '@kc/infrastructure-supabase';
 import { getMarketplaceSupabaseClient } from './marketplaceComposition';
+import { viaApi } from './backend/apiBackend';
 
 let repo: IRideSafetyRepository | null = null;
 
 function repository(): IRideSafetyRepository {
-  repo ??= new SupabaseRideSafetyRepository(getMarketplaceSupabaseClient());
+  repo ??= viaApi('rideSafety', new SupabaseRideSafetyRepository(getMarketplaceSupabaseClient()));
   return repo;
 }
 
