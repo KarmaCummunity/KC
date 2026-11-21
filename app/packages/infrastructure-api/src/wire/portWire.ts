@@ -26,6 +26,19 @@ export interface PortCallResponse {
   readonly result?: unknown;
 }
 
+/**
+ * Body of `GET /v1/ports`: the methods the API serves right now, per port.
+ * The app routes a call to the API only when its method is listed, and to its
+ * own adapter otherwise, so what is served is decided on the server and can
+ * change without a new app build.
+ */
+export interface PortManifest {
+  readonly ports: Readonly<Record<string, readonly string[]>>;
+}
+
+/** Path of the manifest, relative to the API base URL. */
+export const PORT_MANIFEST_PATH = '/v1/ports';
+
 /** A typed error crossing the wire: which class, its message and its own data fields. */
 export interface PortErrorWire {
   /** Registry key of the error class (its export name), not `error.name`. */

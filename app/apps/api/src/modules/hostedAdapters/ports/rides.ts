@@ -1,15 +1,3 @@
-import type {
-  ICityRepository,
-  IDriverDeclarationRepository,
-  IRideBookingRepository,
-  IRideHouseNumberRepository,
-  IRidePlaceRepository,
-  IRideSafetyRepository,
-  IRideSavedRoutesRepository,
-  IRideSeriesRepository,
-  IRidesFeedRepository,
-  IStreetRepository,
-} from '@kc/application';
 import {
   SupabaseCityRepository,
   SupabaseDriverDeclarationRepository,
@@ -22,19 +10,18 @@ import {
   SupabaseRidesFeedRepository,
   SupabaseStreetRepository,
 } from '@kc/infrastructure-supabase';
-import { definePort, type PortDefinition } from '../../../platform/ports/portDefinition';
+import type { PortDefinition } from '../../../platform/ports/portDefinition';
 import { adapterClient } from '../adapterClient';
+import { hostedPort } from '../hostedPort';
 
-const city = definePort<ICityRepository>({
-  name: 'city',
+const city = hostedPort('city', {
   create: (client) => new SupabaseCityRepository(adapterClient<typeof SupabaseCityRepository>(client)),
   methods: {
     listAll: 'member',
   },
 });
 
-const driverDeclaration = definePort<IDriverDeclarationRepository>({
-  name: 'driverDeclaration',
+const driverDeclaration = hostedPort('driverDeclaration', {
   create: (client) => new SupabaseDriverDeclarationRepository(adapterClient<typeof SupabaseDriverDeclarationRepository>(client)),
   methods: {
     getMine: 'member',
@@ -42,8 +29,7 @@ const driverDeclaration = definePort<IDriverDeclarationRepository>({
   },
 });
 
-const rideBooking = definePort<IRideBookingRepository>({
-  name: 'rideBooking',
+const rideBooking = hostedPort('rideBooking', {
   create: (client) => new SupabaseRideBookingRepository(adapterClient<typeof SupabaseRideBookingRepository>(client)),
   methods: {
     bookSeat: 'member',
@@ -57,8 +43,7 @@ const rideBooking = definePort<IRideBookingRepository>({
   },
 });
 
-const rideHouseNumber = definePort<IRideHouseNumberRepository>({
-  name: 'rideHouseNumber',
+const rideHouseNumber = hostedPort('rideHouseNumber', {
   create: (client) => new SupabaseRideHouseNumberRepository(adapterClient<typeof SupabaseRideHouseNumberRepository>(client)),
   methods: {
     save: 'member',
@@ -66,24 +51,21 @@ const rideHouseNumber = definePort<IRideHouseNumberRepository>({
   },
 });
 
-const ridePlace = definePort<IRidePlaceRepository>({
-  name: 'ridePlace',
+const ridePlace = hostedPort('ridePlace', {
   create: (client) => new SupabaseRidePlaceRepository(adapterClient<typeof SupabaseRidePlaceRepository>(client)),
   methods: {
     listPlaces: 'member',
   },
 });
 
-const rideSafety = definePort<IRideSafetyRepository>({
-  name: 'rideSafety',
+const rideSafety = hostedPort('rideSafety', {
   create: (client) => new SupabaseRideSafetyRepository(adapterClient<typeof SupabaseRideSafetyRepository>(client)),
   methods: {
     raiseEmergency: 'member',
   },
 });
 
-const rideSavedRoutes = definePort<IRideSavedRoutesRepository>({
-  name: 'rideSavedRoutes',
+const rideSavedRoutes = hostedPort('rideSavedRoutes', {
   create: (client) => new SupabaseRideSavedRoutesRepository(adapterClient<typeof SupabaseRideSavedRoutesRepository>(client)),
   methods: {
     listMine: 'member',
@@ -92,8 +74,7 @@ const rideSavedRoutes = definePort<IRideSavedRoutesRepository>({
   },
 });
 
-const rideSeries = definePort<IRideSeriesRepository>({
-  name: 'rideSeries',
+const rideSeries = hostedPort('rideSeries', {
   create: (client) => new SupabaseRideSeriesRepository(adapterClient<typeof SupabaseRideSeriesRepository>(client)),
   methods: {
     listMine: 'member',
@@ -104,16 +85,14 @@ const rideSeries = definePort<IRideSeriesRepository>({
   },
 });
 
-const ridesFeed = definePort<IRidesFeedRepository>({
-  name: 'ridesFeed',
+const ridesFeed = hostedPort('ridesFeed', {
   create: (client) => new SupabaseRidesFeedRepository(adapterClient<typeof SupabaseRidesFeedRepository>(client)),
   methods: {
     list: 'member',
   },
 });
 
-const street = definePort<IStreetRepository>({
-  name: 'street',
+const street = hostedPort('street', {
   create: (client) => new SupabaseStreetRepository(adapterClient<typeof SupabaseStreetRepository>(client)),
   methods: {
     listByCity: 'member',

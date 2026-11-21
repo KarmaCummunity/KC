@@ -1,11 +1,3 @@
-import type {
-  IAboutRepository,
-  IDonationLinksRepository,
-  IKcSupportChannelsRepository,
-  IOrganizationsRepository,
-  IPaymentsRepository,
-  IStatsRepository,
-} from '@kc/application';
 import {
   SupabaseAboutRepository,
   SupabaseDonationLinksRepository,
@@ -14,19 +6,18 @@ import {
   SupabasePaymentsRepository,
   SupabaseStatsRepository,
 } from '@kc/infrastructure-supabase';
-import { definePort, type PortDefinition } from '../../../platform/ports/portDefinition';
+import type { PortDefinition } from '../../../platform/ports/portDefinition';
 import { adapterClient } from '../adapterClient';
+import { hostedPort } from '../hostedPort';
 
-const about = definePort<IAboutRepository>({
-  name: 'about',
+const about = hostedPort('about', {
   create: (client) => new SupabaseAboutRepository(adapterClient<typeof SupabaseAboutRepository>(client)),
   methods: {
     listTeamMembers: 'member',
   },
 });
 
-const donationLinks = definePort<IDonationLinksRepository>({
-  name: 'donationLinks',
+const donationLinks = hostedPort('donationLinks', {
   create: (client) => new SupabaseDonationLinksRepository(adapterClient<typeof SupabaseDonationLinksRepository>(client)),
   methods: {
     listByCategory: 'member',
@@ -39,16 +30,14 @@ const donationLinks = definePort<IDonationLinksRepository>({
   },
 });
 
-const kcSupportChannels = definePort<IKcSupportChannelsRepository>({
-  name: 'kcSupportChannels',
+const kcSupportChannels = hostedPort('kcSupportChannels', {
   create: (client) => new SupabaseKcSupportChannelsRepository(adapterClient<typeof SupabaseKcSupportChannelsRepository>(client)),
   methods: {
     listActiveChannels: 'public',
   },
 });
 
-const organizations = definePort<IOrganizationsRepository>({
-  name: 'organizations',
+const organizations = hostedPort('organizations', {
   create: (client) => new SupabaseOrganizationsRepository(adapterClient<typeof SupabaseOrganizationsRepository>(client)),
   methods: {
     submitApplication: 'member',
@@ -60,8 +49,7 @@ const organizations = definePort<IOrganizationsRepository>({
   },
 });
 
-const payments = definePort<IPaymentsRepository>({
-  name: 'payments',
+const payments = hostedPort('payments', {
   create: (client) => new SupabasePaymentsRepository(adapterClient<typeof SupabasePaymentsRepository>(client)),
   methods: {
     listVerifiedNonprofits: 'public',
@@ -77,8 +65,7 @@ const payments = definePort<IPaymentsRepository>({
   },
 });
 
-const stats = definePort<IStatsRepository>({
-  name: 'stats',
+const stats = hostedPort('stats', {
   create: (client) => new SupabaseStatsRepository(adapterClient<typeof SupabaseStatsRepository>(client)),
   methods: {
     getActivePublicPostsCount: 'public',

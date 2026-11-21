@@ -1,21 +1,3 @@
-import type {
-  IChatRepository,
-  IDeviceRepository,
-  IImportTelemetryRepository,
-  IModerationAdminRepository,
-  IModerationQueueRepository,
-  INotificationInboxRepository,
-  IPostTranslationReader,
-  IPublicResearchRepository,
-  IReportRepository,
-  IReportsRepository,
-  ISupportInboxRepository,
-  ISurveyAdminRepository,
-  ISurveyRepository,
-  ITranslationCacheRepository,
-  IUserActivityRepository,
-  IWhatsAppLinkRepository,
-} from '@kc/application';
 import {
   SupabaseChatRepository,
   SupabaseDeviceRepository,
@@ -34,11 +16,11 @@ import {
   SupabaseUserActivityRepository,
   SupabaseWhatsAppLinkRepository,
 } from '@kc/infrastructure-supabase';
-import { definePort, type PortDefinition } from '../../../platform/ports/portDefinition';
+import type { PortDefinition } from '../../../platform/ports/portDefinition';
 import { adapterClient } from '../adapterClient';
+import { hostedPort } from '../hostedPort';
 
-const chat = definePort<IChatRepository>({
-  name: 'chat',
+const chat = hostedPort('chat', {
   create: (client) => new SupabaseChatRepository(adapterClient<typeof SupabaseChatRepository>(client)),
   methods: {
     getMyChats: 'member',
@@ -56,8 +38,7 @@ const chat = definePort<IChatRepository>({
   },
 });
 
-const device = definePort<IDeviceRepository>({
-  name: 'device',
+const device = hostedPort('device', {
   create: (client) => new SupabaseDeviceRepository(adapterClient<typeof SupabaseDeviceRepository>(client)),
   methods: {
     upsert: 'member',
@@ -66,8 +47,7 @@ const device = definePort<IDeviceRepository>({
   },
 });
 
-const importTelemetry = definePort<IImportTelemetryRepository>({
-  name: 'importTelemetry',
+const importTelemetry = hostedPort('importTelemetry', {
   create: (client) => new SupabaseImportTelemetryRepository(adapterClient<typeof SupabaseImportTelemetryRepository>(client)),
   methods: {
     getFunnel: 'member',
@@ -75,8 +55,7 @@ const importTelemetry = definePort<IImportTelemetryRepository>({
   },
 });
 
-const moderationAdmin = definePort<IModerationAdminRepository>({
-  name: 'moderationAdmin',
+const moderationAdmin = hostedPort('moderationAdmin', {
   create: (client) => new SupabaseModerationAdminRepository(adapterClient<typeof SupabaseModerationAdminRepository>(client)),
   methods: {
     getMyRoles: 'member',
@@ -91,8 +70,7 @@ const moderationAdmin = definePort<IModerationAdminRepository>({
   },
 });
 
-const moderationQueue = definePort<IModerationQueueRepository>({
-  name: 'moderationQueue',
+const moderationQueue = hostedPort('moderationQueue', {
   create: (client) => new SupabaseModerationQueueRepository(adapterClient<typeof SupabaseModerationQueueRepository>(client)),
   methods: {
     listOpen: 'member',
@@ -101,8 +79,7 @@ const moderationQueue = definePort<IModerationQueueRepository>({
   },
 });
 
-const notificationInbox = definePort<INotificationInboxRepository>({
-  name: 'notificationInbox',
+const notificationInbox = hostedPort('notificationInbox', {
   create: (client) => new SupabaseNotificationInboxRepository(adapterClient<typeof SupabaseNotificationInboxRepository>(client)),
   methods: {
     page: 'member',
@@ -112,16 +89,14 @@ const notificationInbox = definePort<INotificationInboxRepository>({
   },
 });
 
-const postTranslationReader = definePort<IPostTranslationReader>({
-  name: 'postTranslationReader',
+const postTranslationReader = hostedPort('postTranslationReader', {
   create: (client) => new SupabasePostTranslationReader(adapterClient<typeof SupabasePostTranslationReader>(client)),
   methods: {
     getForPosts: 'member',
   },
 });
 
-const publicResearch = definePort<IPublicResearchRepository>({
-  name: 'publicResearch',
+const publicResearch = hostedPort('publicResearch', {
   create: (client) => new SupabasePublicResearchRepository(adapterClient<typeof SupabasePublicResearchRepository>(client)),
   methods: {
     loadBundle: 'public',
@@ -129,16 +104,14 @@ const publicResearch = definePort<IPublicResearchRepository>({
   },
 });
 
-const report = definePort<IReportRepository>({
-  name: 'report',
+const report = hostedPort('report', {
   create: (client) => new SupabaseReportRepository(adapterClient<typeof SupabaseReportRepository>(client)),
   methods: {
     submit: 'member',
   },
 });
 
-const reports = definePort<IReportsRepository>({
-  name: 'reports',
+const reports = hostedPort('reports', {
   create: (client) => new SupabaseReportsRepository(adapterClient<typeof SupabaseReportsRepository>(client)),
   methods: {
     listOpenInbox: 'member',
@@ -146,8 +119,7 @@ const reports = definePort<IReportsRepository>({
   },
 });
 
-const supportInbox = definePort<ISupportInboxRepository>({
-  name: 'supportInbox',
+const supportInbox = hostedPort('supportInbox', {
   create: (client) => new SupabaseSupportInboxRepository(adapterClient<typeof SupabaseSupportInboxRepository>(client)),
   methods: {
     listThreads: 'member',
@@ -156,8 +128,7 @@ const supportInbox = definePort<ISupportInboxRepository>({
   },
 });
 
-const survey = definePort<ISurveyRepository>({
-  name: 'survey',
+const survey = hostedPort('survey', {
   create: (client) => new SupabaseSurveyRepository(adapterClient<typeof SupabaseSurveyRepository>(client)),
   methods: {
     listActive: 'member',
@@ -168,8 +139,7 @@ const survey = definePort<ISurveyRepository>({
   },
 });
 
-const surveyAdmin = definePort<ISurveyAdminRepository>({
-  name: 'surveyAdmin',
+const surveyAdmin = hostedPort('surveyAdmin', {
   create: (client) => new SupabaseSurveyAdminRepository(adapterClient<typeof SupabaseSurveyAdminRepository>(client)),
   methods: {
     listOverview: 'member',
@@ -179,8 +149,7 @@ const surveyAdmin = definePort<ISurveyAdminRepository>({
   },
 });
 
-const translationCache = definePort<ITranslationCacheRepository>({
-  name: 'translationCache',
+const translationCache = hostedPort('translationCache', {
   create: (client) => new SupabaseTranslationCacheRepository(adapterClient<typeof SupabaseTranslationCacheRepository>(client)),
   methods: {
     get: 'member',
@@ -189,16 +158,14 @@ const translationCache = definePort<ITranslationCacheRepository>({
   },
 });
 
-const userActivity = definePort<IUserActivityRepository>({
-  name: 'userActivity',
+const userActivity = hostedPort('userActivity', {
   create: (client) => new SupabaseUserActivityRepository(adapterClient<typeof SupabaseUserActivityRepository>(client)),
   methods: {
     recordActiveDay: 'member',
   },
 });
 
-const whatsAppLink = definePort<IWhatsAppLinkRepository>({
-  name: 'whatsAppLink',
+const whatsAppLink = hostedPort('whatsAppLink', {
   create: (client) => new SupabaseWhatsAppLinkRepository(adapterClient<typeof SupabaseWhatsAppLinkRepository>(client)),
   methods: {
     getMyStatus: 'member',

@@ -1,22 +1,3 @@
-import type {
-  IAdminContentRepository,
-  IAdminRoleRepository,
-  IAdminTaskRepository,
-  IAppFlagsAdminRepository,
-  ICrmContactsRepository,
-  IDemoDataRepository,
-  IFinanceAccountsRepository,
-  IFinanceDonorsRepository,
-  IFinanceLedgerRepository,
-  IOrgApplicationsRepository,
-  IOrgHierarchyRepository,
-  IOrgJobPostingAdminRepository,
-  IOrgTransparencyRepository,
-  IProdCopyRepository,
-  ITimesheetsRepository,
-  ITransparencySettingsRepository,
-  IWhatsAppAdminRepository,
-} from '@kc/application';
 import {
   SupabaseAdminContentRepository,
   SupabaseAdminRoleRepository,
@@ -36,11 +17,11 @@ import {
   SupabaseTransparencySettingsRepository,
   SupabaseWhatsAppAdminRepository,
 } from '@kc/infrastructure-supabase';
-import { definePort, type PortDefinition } from '../../../platform/ports/portDefinition';
+import type { PortDefinition } from '../../../platform/ports/portDefinition';
 import { adapterClient } from '../adapterClient';
+import { hostedPort } from '../hostedPort';
 
-const adminContent = definePort<IAdminContentRepository>({
-  name: 'adminContent',
+const adminContent = hostedPort('adminContent', {
   create: (client) => new SupabaseAdminContentRepository(adapterClient<typeof SupabaseAdminContentRepository>(client)),
   methods: {
     findActiveMembers: 'member',
@@ -50,8 +31,7 @@ const adminContent = definePort<IAdminContentRepository>({
   },
 });
 
-const adminRole = definePort<IAdminRoleRepository>({
-  name: 'adminRole',
+const adminRole = hostedPort('adminRole', {
   create: (client) => new SupabaseAdminRoleRepository(adapterClient<typeof SupabaseAdminRoleRepository>(client)),
   methods: {
     getMyRoles: 'member',
@@ -62,8 +42,7 @@ const adminRole = definePort<IAdminRoleRepository>({
   },
 });
 
-const adminTask = definePort<IAdminTaskRepository>({
-  name: 'adminTask',
+const adminTask = hostedPort('adminTask', {
   create: (client) => new SupabaseAdminTaskRepository(adapterClient<typeof SupabaseAdminTaskRepository>(client)),
   methods: {
     list: 'member',
@@ -78,16 +57,14 @@ const adminTask = definePort<IAdminTaskRepository>({
   },
 });
 
-const appFlagsAdmin = definePort<IAppFlagsAdminRepository>({
-  name: 'appFlagsAdmin',
+const appFlagsAdmin = hostedPort('appFlagsAdmin', {
   create: (client) => new SupabaseAppFlagsAdminRepository(adapterClient<typeof SupabaseAppFlagsAdminRepository>(client)),
   methods: {
     setFlag: 'member',
   },
 });
 
-const crmContacts = definePort<ICrmContactsRepository>({
-  name: 'crmContacts',
+const crmContacts = hostedPort('crmContacts', {
   create: (client) => new SupabaseCrmContactsRepository(adapterClient<typeof SupabaseCrmContactsRepository>(client)),
   methods: {
     listOrgs: 'member',
@@ -98,8 +75,7 @@ const crmContacts = definePort<ICrmContactsRepository>({
   },
 });
 
-const demoData = definePort<IDemoDataRepository>({
-  name: 'demoData',
+const demoData = hostedPort('demoData', {
   create: (client) => new SupabaseDemoDataRepository(adapterClient<typeof SupabaseDemoDataRepository>(client)),
   methods: {
     getStatus: 'member',
@@ -108,8 +84,7 @@ const demoData = definePort<IDemoDataRepository>({
   },
 });
 
-const financeAccounts = definePort<IFinanceAccountsRepository>({
-  name: 'financeAccounts',
+const financeAccounts = hostedPort('financeAccounts', {
   create: (client) => new SupabaseFinanceAccountsRepository(adapterClient<typeof SupabaseFinanceAccountsRepository>(client)),
   methods: {
     list: 'member',
@@ -117,16 +92,14 @@ const financeAccounts = definePort<IFinanceAccountsRepository>({
   },
 });
 
-const financeDonors = definePort<IFinanceDonorsRepository>({
-  name: 'financeDonors',
+const financeDonors = hostedPort('financeDonors', {
   create: (client) => new SupabaseFinanceDonorsRepository(adapterClient<typeof SupabaseFinanceDonorsRepository>(client)),
   methods: {
     summary: 'member',
   },
 });
 
-const financeLedger = definePort<IFinanceLedgerRepository>({
-  name: 'financeLedger',
+const financeLedger = hostedPort('financeLedger', {
   create: (client) => new SupabaseFinanceLedgerRepository(adapterClient<typeof SupabaseFinanceLedgerRepository>(client)),
   methods: {
     list: 'member',
@@ -136,8 +109,7 @@ const financeLedger = definePort<IFinanceLedgerRepository>({
   },
 });
 
-const orgApplications = definePort<IOrgApplicationsRepository>({
-  name: 'orgApplications',
+const orgApplications = hostedPort('orgApplications', {
   create: (client) => new SupabaseOrgApplicationsRepository(adapterClient<typeof SupabaseOrgApplicationsRepository>(client)),
   methods: {
     list: 'member',
@@ -146,8 +118,7 @@ const orgApplications = definePort<IOrgApplicationsRepository>({
   },
 });
 
-const orgHierarchy = definePort<IOrgHierarchyRepository>({
-  name: 'orgHierarchy',
+const orgHierarchy = hostedPort('orgHierarchy', {
   create: (client) => new SupabaseOrgHierarchyRepository(adapterClient<typeof SupabaseOrgHierarchyRepository>(client)),
   methods: {
     getOrgTree: 'member',
@@ -157,8 +128,7 @@ const orgHierarchy = definePort<IOrgHierarchyRepository>({
   },
 });
 
-const orgJobPostingAdmin = definePort<IOrgJobPostingAdminRepository>({
-  name: 'orgJobPostingAdmin',
+const orgJobPostingAdmin = hostedPort('orgJobPostingAdmin', {
   create: (client) => new SupabaseOrgJobPostingAdminRepository(adapterClient<typeof SupabaseOrgJobPostingAdminRepository>(client)),
   methods: {
     listOrganizations: 'member',
@@ -166,16 +136,14 @@ const orgJobPostingAdmin = definePort<IOrgJobPostingAdminRepository>({
   },
 });
 
-const orgTransparency = definePort<IOrgTransparencyRepository>({
-  name: 'orgTransparency',
+const orgTransparency = hostedPort('orgTransparency', {
   create: (client) => new SupabaseOrgTransparencyRepository(adapterClient<typeof SupabaseOrgTransparencyRepository>(client)),
   methods: {
     getPublic: 'public',
   },
 });
 
-const prodCopy = definePort<IProdCopyRepository>({
-  name: 'prodCopy',
+const prodCopy = hostedPort('prodCopy', {
   create: (client) => new SupabaseProdCopyRepository(adapterClient<typeof SupabaseProdCopyRepository>(client)),
   methods: {
     getStatus: 'member',
@@ -183,8 +151,7 @@ const prodCopy = definePort<IProdCopyRepository>({
   },
 });
 
-const timesheets = definePort<ITimesheetsRepository>({
-  name: 'timesheets',
+const timesheets = hostedPort('timesheets', {
   create: (client) => new SupabaseTimesheetsRepository(adapterClient<typeof SupabaseTimesheetsRepository>(client)),
   methods: {
     list: 'member',
@@ -196,8 +163,7 @@ const timesheets = definePort<ITimesheetsRepository>({
   },
 });
 
-const transparencySettings = definePort<ITransparencySettingsRepository>({
-  name: 'transparencySettings',
+const transparencySettings = hostedPort('transparencySettings', {
   create: (client) => new SupabaseTransparencySettingsRepository(adapterClient<typeof SupabaseTransparencySettingsRepository>(client)),
   methods: {
     get: 'member',
@@ -205,8 +171,7 @@ const transparencySettings = definePort<ITransparencySettingsRepository>({
   },
 });
 
-const whatsAppAdmin = definePort<IWhatsAppAdminRepository>({
-  name: 'whatsAppAdmin',
+const whatsAppAdmin = hostedPort('whatsAppAdmin', {
   create: (client) => new SupabaseWhatsAppAdminRepository(adapterClient<typeof SupabaseWhatsAppAdminRepository>(client)),
   methods: {
     getChannel: 'member',

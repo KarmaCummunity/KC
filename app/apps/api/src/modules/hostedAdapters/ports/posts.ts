@@ -1,19 +1,3 @@
-import type {
-  IChallengeRepository,
-  IGuestPostsRepository,
-  IHousingRepository,
-  IKnowledgeBookingRepository,
-  IKnowledgeSlotSeriesRepository,
-  IKnowledgeTopicRepository,
-  IListingStreetAddressRepository,
-  IMarketplaceRepository,
-  IPostRepository,
-  IPostSeriesRepository,
-  ISavedPostsRepository,
-  ISearchRepository,
-  IVolunteerRepository,
-  IWorldContentRepository,
-} from '@kc/application';
 import {
   SupabaseChallengeRepository,
   SupabaseGuestPostsRepository,
@@ -30,11 +14,11 @@ import {
   SupabaseVolunteerRepository,
   SupabaseWorldContentRepository,
 } from '@kc/infrastructure-supabase';
-import { definePort, type PortDefinition } from '../../../platform/ports/portDefinition';
+import type { PortDefinition } from '../../../platform/ports/portDefinition';
 import { adapterClient } from '../adapterClient';
+import { hostedPort } from '../hostedPort';
 
-const challenge = definePort<IChallengeRepository>({
-  name: 'challenge',
+const challenge = hostedPort('challenge', {
   create: (client) => new SupabaseChallengeRepository(adapterClient<typeof SupabaseChallengeRepository>(client)),
   methods: {
     createChallenge: 'member',
@@ -49,8 +33,7 @@ const challenge = definePort<IChallengeRepository>({
   },
 });
 
-const guestPosts = definePort<IGuestPostsRepository>({
-  name: 'guestPosts',
+const guestPosts = hostedPort('guestPosts', {
   create: (client) => new SupabaseGuestPostsRepository(adapterClient<typeof SupabaseGuestPostsRepository>(client)),
   methods: {
     list: 'public',
@@ -58,8 +41,7 @@ const guestPosts = definePort<IGuestPostsRepository>({
   },
 });
 
-const housing = definePort<IHousingRepository>({
-  name: 'housing',
+const housing = hostedPort('housing', {
   create: (client) => new SupabaseHousingRepository(adapterClient<typeof SupabaseHousingRepository>(client)),
   methods: {
     currentConductVersion: 'member',
@@ -77,8 +59,7 @@ const housing = definePort<IHousingRepository>({
   },
 });
 
-const knowledgeBooking = definePort<IKnowledgeBookingRepository>({
-  name: 'knowledgeBooking',
+const knowledgeBooking = hostedPort('knowledgeBooking', {
   create: (client) => new SupabaseKnowledgeBookingRepository(adapterClient<typeof SupabaseKnowledgeBookingRepository>(client)),
   methods: {
     listSlots: 'member',
@@ -90,8 +71,7 @@ const knowledgeBooking = definePort<IKnowledgeBookingRepository>({
   },
 });
 
-const knowledgeSlotSeries = definePort<IKnowledgeSlotSeriesRepository>({
-  name: 'knowledgeSlotSeries',
+const knowledgeSlotSeries = hostedPort('knowledgeSlotSeries', {
   create: (client) => new SupabaseKnowledgeSlotSeriesRepository(adapterClient<typeof SupabaseKnowledgeSlotSeriesRepository>(client)),
   methods: {
     getForPost: 'member',
@@ -99,8 +79,7 @@ const knowledgeSlotSeries = definePort<IKnowledgeSlotSeriesRepository>({
   },
 });
 
-const knowledgeTopic = definePort<IKnowledgeTopicRepository>({
-  name: 'knowledgeTopic',
+const knowledgeTopic = hostedPort('knowledgeTopic', {
   create: () => new SupabaseKnowledgeTopicRepository(),
   methods: {
     listTopics: 'member',
@@ -113,8 +92,7 @@ const knowledgeTopic = definePort<IKnowledgeTopicRepository>({
   },
 });
 
-const listingStreetAddress = definePort<IListingStreetAddressRepository>({
-  name: 'listingStreetAddress',
+const listingStreetAddress = hostedPort('listingStreetAddress', {
   create: (client) => new SupabaseListingStreetAddressRepository(adapterClient<typeof SupabaseListingStreetAddressRepository>(client)),
   methods: {
     save: 'member',
@@ -122,8 +100,7 @@ const listingStreetAddress = definePort<IListingStreetAddressRepository>({
   },
 });
 
-const marketplace = definePort<IMarketplaceRepository>({
-  name: 'marketplace',
+const marketplace = hostedPort('marketplace', {
   create: (client) => new SupabaseMarketplaceRepository(adapterClient<typeof SupabaseMarketplaceRepository>(client)),
   methods: {
     getListingDetail: 'member',
@@ -160,8 +137,7 @@ const marketplace = definePort<IMarketplaceRepository>({
   },
 });
 
-const post = definePort<IPostRepository>({
-  name: 'post',
+const post = hostedPort('post', {
   create: (client) => new SupabasePostRepository(adapterClient<typeof SupabasePostRepository>(client)),
   methods: {
     getFeed: 'member',
@@ -187,8 +163,7 @@ const post = definePort<IPostRepository>({
   },
 });
 
-const postSeries = definePort<IPostSeriesRepository>({
-  name: 'postSeries',
+const postSeries = hostedPort('postSeries', {
   create: (client) => new SupabasePostSeriesRepository(adapterClient<typeof SupabasePostSeriesRepository>(client)),
   methods: {
     listMine: 'member',
@@ -200,8 +175,7 @@ const postSeries = definePort<IPostSeriesRepository>({
   },
 });
 
-const savedPosts = definePort<ISavedPostsRepository>({
-  name: 'savedPosts',
+const savedPosts = hostedPort('savedPosts', {
   create: (client) => new SupabaseSavedPostsRepository(adapterClient<typeof SupabaseSavedPostsRepository>(client)),
   methods: {
     savePost: 'member',
@@ -211,16 +185,14 @@ const savedPosts = definePort<ISavedPostsRepository>({
   },
 });
 
-const search = definePort<ISearchRepository>({
-  name: 'search',
+const search = hostedPort('search', {
   create: (client) => new SupabaseSearchRepository(adapterClient<typeof SupabaseSearchRepository>(client)),
   methods: {
     search: 'member',
   },
 });
 
-const volunteer = definePort<IVolunteerRepository>({
-  name: 'volunteer',
+const volunteer = hostedPort('volunteer', {
   create: (client) => new SupabaseVolunteerRepository(adapterClient<typeof SupabaseVolunteerRepository>(client)),
   methods: {
     listOpportunities: 'member',
@@ -235,8 +207,7 @@ const volunteer = definePort<IVolunteerRepository>({
   },
 });
 
-const worldContent = definePort<IWorldContentRepository>({
-  name: 'worldContent',
+const worldContent = hostedPort('worldContent', {
   create: (client) => new SupabaseWorldContentRepository(adapterClient<typeof SupabaseWorldContentRepository>(client)),
   methods: {
     getWorldContent: 'public',

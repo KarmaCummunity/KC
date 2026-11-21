@@ -1,5 +1,12 @@
-import { Body, Controller, HttpCode, Inject, Param, Post, Req } from '@nestjs/common';
-import { decodeArgs, MAX_PORT_ARGS, PORT_ERROR_CODE, type PortCallResponse, serializePortError } from '@kc/infrastructure-api';
+import { Body, Controller, Get, HttpCode, Inject, Param, Post, Req } from '@nestjs/common';
+import {
+  decodeArgs,
+  MAX_PORT_ARGS,
+  PORT_ERROR_CODE,
+  type PortCallResponse,
+  type PortManifest,
+  serializePortError,
+} from '@kc/infrastructure-api';
 import type { FastifyRequest } from 'fastify';
 import { ApiError } from '../errors/ApiError';
 import { ACCESS_TOKEN_VERIFIER, type AccessTokenVerifier } from '../identity/accessTokenVerifier';
@@ -31,6 +38,19 @@ export class PortGatewayController {
     @Inject(ACCESS_TOKEN_VERIFIER) private readonly verifier: AccessTokenVerifier,
     @Inject(PortClients) private readonly clients: PortClients,
   ) {}
+
+  /**
+   * What this API serves, for the app's router. Listing is not access: a
+   * `member` method still needs a token when it is called.
+   */
+  @Get()
+  manifest(): PortManifest {
+    const ports: Record<string, string[]> = {};
+    for (const [name, port] of this.ports) {
+      ports[name] = Object.keys(port.methods).filter((method) => port.methods[method] !== 'not_served');
+    }
+    return { ports };
+  }
 
   @Post(':port/:method')
   @HttpCode(200)

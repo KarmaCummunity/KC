@@ -187,3 +187,34 @@ describe('port gateway over HTTP', () => {
     expect(indexPorts([shelf]).get('shelf')).toBe(shelf);
   });
 });
+
+describe('port manifest', () => {
+  it('lists what a definition serves and leaves out what it does not', async () => {
+    const issuer = await createTestIssuer();
+
+    @Global()
+    @Module({
+      providers: [
+        { provide: ACCESS_TOKEN_VERIFIER, useValue: issuer.verifier },
+        { provide: DATABASE_POOL, useValue: {} },
+        { provide: IdentityDatabase, useValue: {} },
+      ],
+      exports: [ACCESS_TOKEN_VERIFIER, DATABASE_POOL, IdentityDatabase],
+    })
+    class FakePlatformModule {}
+
+    @Module({ imports: [ApiConfigModule.forRoot(testConfig()), FakePlatformModule, PortGatewayModule.forRoot([shelf])] })
+    class TestModule {}
+
+    const app = await createApp(TestModule, testConfig());
+    try {
+      // No token: the manifest is public, listing is not access.
+      const response = await app.inject({ method: 'GET', url: '/v1/ports' });
+
+      expect(response.statusCode).toBe(200);
+      expect(response.json()).toEqual({ ports: { shelf: ['echo', 'whoAmI', 'nothing', 'refuse', 'crash', 'needsStorage'] } });
+    } finally {
+      await app.close();
+    }
+  });
+});

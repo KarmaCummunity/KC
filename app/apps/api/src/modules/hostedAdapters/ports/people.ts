@@ -1,18 +1,13 @@
-import type {
-  IAccountGateRepository,
-  IBlockRepository,
-  IUserRepository,
-} from '@kc/application';
 import {
   SupabaseAccountGateRepository,
   SupabaseBlockRepository,
   SupabaseUserRepository,
 } from '@kc/infrastructure-supabase';
-import { definePort, type PortDefinition } from '../../../platform/ports/portDefinition';
+import type { PortDefinition } from '../../../platform/ports/portDefinition';
 import { adapterClient } from '../adapterClient';
+import { hostedPort } from '../hostedPort';
 
-const accountGate = definePort<IAccountGateRepository>({
-  name: 'accountGate',
+const accountGate = hostedPort('accountGate', {
   create: (client) => new SupabaseAccountGateRepository(adapterClient<typeof SupabaseAccountGateRepository>(client)),
   methods: {
     checkAccountGate: 'member',
@@ -20,8 +15,7 @@ const accountGate = definePort<IAccountGateRepository>({
   },
 });
 
-const block = definePort<IBlockRepository>({
-  name: 'block',
+const block = hostedPort('block', {
   create: (client) => new SupabaseBlockRepository(adapterClient<typeof SupabaseBlockRepository>(client)),
   methods: {
     isBlocking: 'member',
@@ -31,8 +25,7 @@ const block = definePort<IBlockRepository>({
   },
 });
 
-const user = definePort<IUserRepository>({
-  name: 'user',
+const user = hostedPort('user', {
   create: (client) => new SupabaseUserRepository(adapterClient<typeof SupabaseUserRepository>(client)),
   methods: {
     findById: 'member',
