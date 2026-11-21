@@ -5,6 +5,7 @@
 // Mapped to: FR-POST-001..006 (FR-POST-001 AC6 categories + remembered choice) (incl. FR-POST-003 visibility + FR-POST-006 followers publish confirm), FR-POST-021 (D-31 partner-surface mask + collapsible exposure settings), FR-POST-007 (local draft autosave + resume), FR-POST-010 (delete) lives elsewhere.
 // FR-AUTH-015 soft-gate preserved from #12 — Publish wraps publish.mutate() with requestSoftGate.
 // FR-NOTIF-015 AC1: push pre-prompt fires after first post published.
+import { nativeCaptureMarkers, safeNativeCreate } from '../src/lib/nativeCaptureSafety';
 import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -50,6 +51,7 @@ export default function CreatePostScreen() {
   const { presentPrePrompt } = pushGate;
 
   const {
+    capturePrefillReady,
     city,
     street,
     streetNumber,
@@ -186,7 +188,14 @@ export default function CreatePostScreen() {
 
   return (
     <Screen blobs="off" testID="create-post-screen">
-      <View style={styles.header}>
+      <View
+        style={styles.header}
+        {...(safeNativeCreate(
+          form, city, street, streetNumber,
+          capturePrefillReady && ready && !republish.loading && userQuery.isSuccess,
+          draftHydration.status.phase, activeCategory.engine, session,
+        ) ? nativeCaptureMarkers.create : {})}
+      >
         <TouchableOpacity onPress={() => closeCreateForm(router)} style={styles.headerClose}>
           <Ionicons name="close" size={iconSize['2xl']} color={colors.textPrimary} />
         </TouchableOpacity>
