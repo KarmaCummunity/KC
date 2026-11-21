@@ -4,7 +4,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { matchMachine } from '@kc/domain';
-import type { IMatchRepository, MatchRole, MatchStatus, MatchResponse, MatchSuggestion, MatchRespondResult, MatchQualityByWorld } from '@kc/application';
+import type { IMatchRepository, MatchQualityByWorld, MatchRespondResult, MatchResponse, MatchStatus, MatchSuggestion } from '@kc/application';
 import type { Database } from '../database.types';
 import { unwrapCall } from '../rpc/mapRpcError';
 
