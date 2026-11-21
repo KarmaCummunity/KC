@@ -66,6 +66,11 @@ export interface Post {
   readonly listingId: string | null;
   /** Giving world of that listing (`rides`, `housing`…), set exactly when `listingId` is (FR-FEED-020). */
   readonly listingWorldSlug: string | null;
+  /**
+   * Free `posts.details` of a listing-world card (employment requirements / salary, …). Absent or
+   * null when the card has none; feed cards use it for world-specific detail lines (#2537).
+   */
+  readonly details?: Record<string, unknown> | null;
   /** Set when this post is a challenge (docs/spec/10). Opens the challenge, not the generic post. */
   readonly challengeId?: string | null;
   /** Approximate map position (~100 m): the post's own point, else its city's centre; null = unknown. */
