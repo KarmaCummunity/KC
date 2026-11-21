@@ -2124,7 +2124,7 @@
    "launch": "core",
    "confidence": "high",
    "missing": null,
-   "note": "Service role only, unscheduled: the post photo worker claims a leased job, completes it with a compare-and-set, records a failure, or (DEV experiment) releases its lease.",
+   "note": "Service role only: the post photo worker (started by the database) claims a leased job, completes it with a compare-and-set, or records a failure.",
    "oldObject": {},
    "targets": [
     {
@@ -2150,14 +2150,6 @@
       "post_media_processing_fail(p_error: string, p_lease_token: string, p_media_id: string, p_retryable: boolean) → string"
      ],
      "errors": []
-    },
-    {
-     "type": "rpc",
-     "name": "post_media_processing_release",
-     "signature": [
-      "post_media_processing_release(p_lease_token: string, p_media_id: string, p_reason: string) → string"
-     ],
-     "errors": []
     }
    ],
    "areas": [
@@ -2166,7 +2158,7 @@
    "callSites": [
     {
      "file": "supabase/functions/process-post-media/handler.ts",
-     "line": 159,
+     "line": 165,
      "symbol": "callRpc",
      "area": "fn:process-post-media"
     }

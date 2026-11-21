@@ -315,7 +315,7 @@ rpc('get_research_salt', 'same', 'rpc:get_research_salt', 'Service role only: th
 rpc('rotate_research_salt', 'same', 'rpc:rotate_research_salt', 'Service role only: replaces the salt and returns the rotation time.');
 rpc('api_standing_orders_charge_due', 'same', 'rpc:api_standing_orders_charge_due', 'Service role only: opens the due charges of active standing orders (amounts in agorot) and returns them for the provider.');
 // `process-post-media` sends every call through one deadline wrapper (`callRpc(deps, fn, …)`), so the scan sees the parameter, not the names.
-rpc('<fn>', 'same', ['rpc:post_media_processing_claim', 'rpc:post_media_processing_complete', 'rpc:post_media_processing_fail', 'rpc:post_media_processing_release'], 'Service role only, unscheduled: the post photo worker claims a leased job, completes it with a compare-and-set, records a failure, or (DEV experiment) releases its lease.');
+rpc('<fn>', 'same', ['rpc:post_media_processing_claim', 'rpc:post_media_processing_complete', 'rpc:post_media_processing_fail'], 'Service role only: the post photo worker (started by the database) claims a leased job, completes it with a compare-and-set, or records a failure.');
 
 // ───────────────────────────── storage buckets
 bucket('post-images', 'same', 'bucket:post-images', 'Declared by the baseline (own-folder insert / delete policies); `post_media.storage_bucket` points at it.');
