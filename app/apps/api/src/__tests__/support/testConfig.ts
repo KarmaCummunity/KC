@@ -20,6 +20,9 @@ export function testConfig(overrides: Partial<ApiConfig> = {}): ApiConfig {
     databaseUrl: UNREACHABLE_DATABASE_URL,
     redisUrl: UNREACHABLE_REDIS_URL,
     authIssuer: TEST_AUTH_ISSUER,
+    allowedOrigins: [],
+    trustedProxyHops: 0,
+    rateLimitPerMinute: 0,
     ...overrides,
   };
 }

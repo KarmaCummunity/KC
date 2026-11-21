@@ -4,9 +4,7 @@ import type { ApiConfig } from '../config/apiConfig';
 import { API_CONFIG } from '../config/apiConfig.module';
 import type { DependencyProbe } from '../health/dependencyProbe';
 import { APP_LOGGER, type AppLogger, appLoggerProvider } from '../logging/appLogger';
-
-/** Injection token of the process-wide Redis client. */
-export const REDIS_CLIENT = Symbol('REDIS_CLIENT');
+import { REDIS_CLIENT } from './redis.tokens';
 
 /** Builds the client. `lazyConnect` defers the connection to the first command. */
 function createRedis(config: ApiConfig, logger: AppLogger): Redis {

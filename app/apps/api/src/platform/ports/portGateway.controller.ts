@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, Inject, Param, Post, Req } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Inject, Param, Post, Req, Res } from '@nestjs/common';
 import {
   decodeArgs,
   MAX_PORT_ARGS,
@@ -7,11 +7,12 @@ import {
   type PortManifest,
   serializePortError,
 } from '@kc/infrastructure-api';
-import type { FastifyRequest } from 'fastify';
+import type { FastifyReply, FastifyRequest } from 'fastify';
 import { ApiError } from '../errors/ApiError';
 import { ACCESS_TOKEN_VERIFIER, type AccessTokenVerifier } from '../identity/accessTokenVerifier';
 import { resolveCaller } from '../identity/resolveCaller';
 import { UnsupportedSupabaseServiceError } from '../postgrest/sqlBackedClient';
+import { RateLimiter } from '../rateLimit/rateLimiter';
 import { PortClients } from './portClients';
 import type { PortAccess, PortDefinition } from './portDefinition';
 
@@ -37,6 +38,7 @@ export class PortGatewayController {
     @Inject(PORT_DEFINITIONS) private readonly ports: ReadonlyMap<string, PortDefinition>,
     @Inject(ACCESS_TOKEN_VERIFIER) private readonly verifier: AccessTokenVerifier,
     @Inject(PortClients) private readonly clients: PortClients,
+    @Inject(RateLimiter) private readonly rateLimiter: RateLimiter,
   ) {}
 
   /**
@@ -59,6 +61,7 @@ export class PortGatewayController {
     @Param('method') method: string,
     @Body() body: unknown,
     @Req() request: FastifyRequest,
+    @Res({ passthrough: true }) reply: FastifyReply,
   ): Promise<PortCallResponse> {
     const port = this.ports.get(portName);
     const access = port ? this.accessOf(port, method) : undefined;
@@ -67,6 +70,13 @@ export class PortGatewayController {
 
     const caller = await resolveCaller(request, this.verifier);
     if (access === 'member' && !caller) throw new ApiError('unauthorized', 401, 'no bearer token');
+
+    // A member is counted wherever they call from; a visitor by address.
+    const limit = await this.rateLimiter.check(caller ? `user:${caller.userId}` : `ip:${request.ip}`);
+    if (!limit.allowed) {
+      reply.header('retry-after', limit.retryAfterSeconds);
+      throw new ApiError('too_many_requests', 429, `${portName}.${method}`);
+    }
     const args = readArgs(body);
 
     const implementation = port.create(this.clients.clientFor(caller)) as Record<string, unknown>;

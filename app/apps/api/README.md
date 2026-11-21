@@ -38,6 +38,9 @@ Without the variable those suites are skipped and the unit tests still run.
 | `DATABASE_URL` | required | Postgres connection string (`postgres://` or `postgresql://`) |
 | `REDIS_URL` | required | Redis connection string (`redis://` or `rediss://`) |
 | `KC_AUTH_ISSUER` | required | Issuer of accepted access tokens, exactly as in the token's `iss`; keys are read from `<issuer>/.well-known/jwks.json` |
+| `KC_API_ALLOWED_ORIGINS` | none | Comma-separated web origins that may call the API from a browser (CORS), e.g. `https://app.example.org`. The native apps need no entry |
+| `KC_API_TRUSTED_PROXY_HOPS` | `0` | Reverse proxies in front of the API whose `X-Forwarded-For` entry is trusted for the client address |
+| `KC_API_RATE_LIMIT_PER_MINUTE` | `600` | Port calls one caller may make per minute (a member by user id, a visitor by address), counted in Redis. `0` switches the limit off |
 
 An invalid value stops the process at start with an error that names the variable and never prints the value. The process starts even when a dependency is unreachable; readiness reports it.
 
@@ -59,5 +62,6 @@ An invalid value stops the process at start with an error that names the variabl
 - **Database work for a request.** Use `IdentityDatabase.runAs(caller, work)` (or `runAnonymous`): one transaction with the caller's role and claims, so `auth.uid()`, RLS and the existing SQL functions behave as they do through PostgREST. The database user in `DATABASE_URL` must be allowed to switch to the `authenticated` and `anon` roles.
 - **Connections.** Inject `DATABASE_POOL` (`pg` pool) and `REDIS_CLIENT` (`ioredis`); never open a connection of your own. Both are closed on shutdown.
 - **Logging outside a request.** Inject `APP_LOGGER`; inside a handler use `request.log`, which carries the request id.
+- **Limits.** The gateway counts every port call that reaches a method against the caller's allowance and answers `429` with `retry-after` beyond it. When Redis is down the limiter lets calls through and logs a warning.
 - **Request ids.** Every response carries `x-request-id`; the same id is on the request's log lines.
 - **Dependency injection in tests.** Vitest transforms with SWC (see `vitest.config.ts`) so decorator metadata exists, as in the production build.

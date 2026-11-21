@@ -30,6 +30,7 @@ import { ApiConfigModule } from '../../platform/config/apiConfig.module';
 import { DatabaseModule } from '../../platform/database/database.module';
 import { ACCESS_TOKEN_VERIFIER, type AccessTokenVerifier } from '../../platform/identity/accessTokenVerifier';
 import { PortGatewayModule } from '../../platform/ports/portGateway.module';
+import { RateLimiter } from '../../platform/rateLimit/rateLimiter';
 import { KC_DATABASE_URL, KcTestDatabase, type TestMember } from '../support/kcDatabase';
 import { testConfig } from '../support/testConfig';
 import { createTestIssuer, type TestIssuer } from '../support/testTokens';
@@ -51,7 +52,13 @@ describe.skipIf(!KC_DATABASE_URL)('Port contracts through the API gateway', () =
     const verifier: AccessTokenVerifier = { verify: (token) => issuer.verifier.verify(token) };
 
     @Global()
-    @Module({ providers: [{ provide: ACCESS_TOKEN_VERIFIER, useValue: verifier }], exports: [ACCESS_TOKEN_VERIFIER] })
+    @Module({
+      providers: [
+        { provide: ACCESS_TOKEN_VERIFIER, useValue: verifier },
+        { provide: RateLimiter, useValue: { check: () => Promise.resolve({ allowed: true, retryAfterSeconds: 0 }) } },
+      ],
+      exports: [ACCESS_TOKEN_VERIFIER, RateLimiter],
+    })
     class LocalIdentityModule {}
 
     const config = testConfig({ databaseUrl: KC_DATABASE_URL ?? '' });

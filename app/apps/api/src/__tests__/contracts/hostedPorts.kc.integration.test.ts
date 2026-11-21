@@ -12,6 +12,7 @@ import { DatabaseModule } from '../../platform/database/database.module';
 import { ACCESS_TOKEN_VERIFIER } from '../../platform/identity/accessTokenVerifier';
 import { loadSchemaCache, type SchemaCache } from '../../platform/postgrest/schemaCache';
 import { PortGatewayModule } from '../../platform/ports/portGateway.module';
+import { RateLimiter } from '../../platform/rateLimit/rateLimiter';
 import { KC_DATABASE_URL, KcTestDatabase } from '../support/kcDatabase';
 import { testConfig } from '../support/testConfig';
 import { createTestIssuer } from '../support/testTokens';
@@ -61,7 +62,13 @@ describe.skipIf(!KC_DATABASE_URL)('Hosted ports on the KC schema', () => {
     const issuer = await createTestIssuer();
 
     @Global()
-    @Module({ providers: [{ provide: ACCESS_TOKEN_VERIFIER, useValue: issuer.verifier }], exports: [ACCESS_TOKEN_VERIFIER] })
+    @Module({
+      providers: [
+        { provide: ACCESS_TOKEN_VERIFIER, useValue: issuer.verifier },
+        { provide: RateLimiter, useValue: { check: () => Promise.resolve({ allowed: true, retryAfterSeconds: 0 }) } },
+      ],
+      exports: [ACCESS_TOKEN_VERIFIER, RateLimiter],
+    })
     class LocalIdentityModule {}
 
     const config = testConfig({ databaseUrl: KC_DATABASE_URL ?? '' });

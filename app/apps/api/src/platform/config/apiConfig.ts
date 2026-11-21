@@ -19,6 +19,18 @@ export interface ApiConfig {
    * `iss` claim. Its signing keys are read from `<issuer>/.well-known/jwks.json`.
    */
   readonly authIssuer: string;
+  /**
+   * Web origins allowed to call the API from a browser (CORS). Empty: no
+   * browser may; the native apps are not subject to CORS and need no entry.
+   */
+  readonly allowedOrigins: readonly string[];
+  /**
+   * Reverse proxies in front of the API whose `X-Forwarded-For` entry is
+   * trusted when working out the client address. 0: use the socket address.
+   */
+  readonly trustedProxyHops: number;
+  /** Port calls one caller (a member, or an address when signed out) may make per minute. 0: no limit. */
+  readonly rateLimitPerMinute: number;
 }
 
 /**
@@ -37,6 +49,8 @@ export class ApiConfigError extends Error {
 }
 
 const DEFAULT_PORT = 8080;
+/** Ten calls a second, sustained: far above what a screen needs, far below a scraper. */
+const DEFAULT_RATE_LIMIT_PER_MINUTE = 600;
 const MAX_PORT = 65535;
 
 /** Reads a variable; blank counts as unset, so `PORT=` falls back to the default. */
@@ -62,6 +76,32 @@ function parsePort(value: string | undefined): number {
     throw new ApiConfigError('PORT', `must be an integer between 1 and ${MAX_PORT}`);
   }
   return port;
+}
+
+/** Reads an optional whole number within a range. */
+function parseInteger(variable: string, value: string | undefined, fallback: number, min: number, max: number): number {
+  if (value === undefined) return fallback;
+  const parsed = /^\d+$/.test(value) ? Number(value) : Number.NaN;
+  if (!Number.isInteger(parsed) || parsed < min || parsed > max) {
+    throw new ApiConfigError(variable, `must be an integer between ${min} and ${max}`);
+  }
+  return parsed;
+}
+
+/**
+ * Reads a comma-separated list of web origins. Each must be exactly an origin
+ * (`https://app.example.org`): a path, a trailing slash or a wildcard would
+ * make the CORS rule match more, or less, than its author meant.
+ */
+function parseOrigins(variable: string, value: string | undefined): string[] {
+  if (value === undefined) return [];
+  return value.split(',').map((entry) => {
+    const origin = entry.trim();
+    if (!URL.canParse(origin) || new URL(origin).origin !== origin) {
+      throw new ApiConfigError(variable, 'must be a comma-separated list of origins such as https://app.example.org');
+    }
+    return origin;
+  });
 }
 
 /**
@@ -93,5 +133,14 @@ export function loadApiConfig(env: Readonly<Record<string, string | undefined>>)
     databaseUrl: parseServiceUrl('DATABASE_URL', readVariable(env, 'DATABASE_URL'), ['postgres', 'postgresql']),
     redisUrl: parseServiceUrl('REDIS_URL', readVariable(env, 'REDIS_URL'), ['redis', 'rediss']),
     authIssuer: parseServiceUrl('KC_AUTH_ISSUER', readVariable(env, 'KC_AUTH_ISSUER'), ['https', 'http']),
+    allowedOrigins: parseOrigins('KC_API_ALLOWED_ORIGINS', readVariable(env, 'KC_API_ALLOWED_ORIGINS')),
+    trustedProxyHops: parseInteger('KC_API_TRUSTED_PROXY_HOPS', readVariable(env, 'KC_API_TRUSTED_PROXY_HOPS'), 0, 0, 10),
+    rateLimitPerMinute: parseInteger(
+      'KC_API_RATE_LIMIT_PER_MINUTE',
+      readVariable(env, 'KC_API_RATE_LIMIT_PER_MINUTE'),
+      DEFAULT_RATE_LIMIT_PER_MINUTE,
+      0,
+      100_000,
+    ),
   };
 }

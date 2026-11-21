@@ -11,6 +11,7 @@ import { DATABASE_POOL } from '../../database/database.tokens';
 import { IdentityDatabase } from '../../database/identityDatabase';
 import { ACCESS_TOKEN_VERIFIER } from '../../identity/accessTokenVerifier';
 import { type SqlBackedClient } from '../../postgrest/sqlBackedClient';
+import { RateLimiter } from '../../rateLimit/rateLimiter';
 import { definePort } from '../portDefinition';
 import { DuplicatePortError, indexPorts, PortGatewayModule } from '../portGateway.module';
 
@@ -60,6 +61,16 @@ const shelf = definePort<Shelf>({
   methods: { echo: 'member', whoAmI: 'public', nothing: 'member', refuse: 'member', crash: 'member', needsStorage: 'member', upload: 'not_served' },
 });
 
+/** Stand-in for the Redis limiter: allows everything until a test sets `blocked`, and records who was counted. */
+const limiter = {
+  blocked: false,
+  subjects: [] as string[],
+  check(subject: string) {
+    this.subjects.push(subject);
+    return Promise.resolve(this.blocked ? { allowed: false, retryAfterSeconds: 42 } : { allowed: true, retryAfterSeconds: 0 });
+  },
+};
+
 describe('port gateway over HTTP', () => {
   let app: NestFastifyApplication;
   let issuer: TestIssuer;
@@ -75,8 +86,9 @@ describe('port gateway over HTTP', () => {
         { provide: ACCESS_TOKEN_VERIFIER, useValue: issuer.verifier },
         { provide: DATABASE_POOL, useValue: {} },
         { provide: IdentityDatabase, useValue: {} },
+        { provide: RateLimiter, useValue: limiter },
       ],
-      exports: [ACCESS_TOKEN_VERIFIER, DATABASE_POOL, IdentityDatabase],
+      exports: [ACCESS_TOKEN_VERIFIER, DATABASE_POOL, IdentityDatabase, RateLimiter],
     })
     class FakePlatformModule {}
 
@@ -88,6 +100,8 @@ describe('port gateway over HTTP', () => {
 
   beforeEach(async () => {
     token = await issuer.sign(USER_A);
+    limiter.blocked = false;
+    limiter.subjects = [];
   });
 
   afterAll(async () => {
@@ -163,6 +177,30 @@ describe('port gateway over HTTP', () => {
     expect(response.statusCode).toBe(400);
   });
 
+  it('counts a member by user id and a visitor by address', async () => {
+    await call('shelf/whoAmI', []);
+    await call('shelf/whoAmI', [], null);
+
+    expect(limiter.subjects).toEqual([`user:${USER_A}`, 'ip:127.0.0.1']);
+  });
+
+  it('answers 429 with the time to wait when the caller is over the limit, without running the method', async () => {
+    limiter.blocked = true;
+
+    const response = await call('shelf/crash', []);
+
+    expect(response.statusCode).toBe(429);
+    expect(response.json().error.code).toBe('too_many_requests');
+    expect(response.headers['retry-after']).toBe('42');
+  });
+
+  it('does not count a call that was refused before it reached a method', async () => {
+    await call('shelf/echo', ['a'], null);
+    await call('shelf/nope', []);
+
+    expect(limiter.subjects).toEqual([]);
+  });
+
   it('sends a typed port error to the app as itself, without its cause', async () => {
     const response = await call('shelf/refuse', []);
 
@@ -198,8 +236,9 @@ describe('port manifest', () => {
         { provide: ACCESS_TOKEN_VERIFIER, useValue: issuer.verifier },
         { provide: DATABASE_POOL, useValue: {} },
         { provide: IdentityDatabase, useValue: {} },
+        { provide: RateLimiter, useValue: limiter },
       ],
-      exports: [ACCESS_TOKEN_VERIFIER, DATABASE_POOL, IdentityDatabase],
+      exports: [ACCESS_TOKEN_VERIFIER, DATABASE_POOL, IdentityDatabase, RateLimiter],
     })
     class FakePlatformModule {}
 

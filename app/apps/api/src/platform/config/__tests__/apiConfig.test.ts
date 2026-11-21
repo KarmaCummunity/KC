@@ -37,6 +37,9 @@ describe('loadApiConfig', () => {
       databaseUrl: REQUIRED.DATABASE_URL,
       redisUrl: REQUIRED.REDIS_URL,
       authIssuer: REQUIRED.KC_AUTH_ISSUER,
+      allowedOrigins: [],
+      trustedProxyHops: 0,
+      rateLimitPerMinute: 600,
     });
   });
 
@@ -101,6 +104,33 @@ describe('loadApiConfig', () => {
 
     expect(config.databaseUrl).toBe('postgres://db.internal/kc');
     expect(config.redisUrl).toBe('redis://cache.internal');
+  });
+
+  it('reads the browser origins, proxy hops and rate limit', () => {
+    const config = loadApiConfig({
+      ...REQUIRED,
+      KC_API_ALLOWED_ORIGINS: 'https://app.kc.test, http://localhost:8081',
+      KC_API_TRUSTED_PROXY_HOPS: '1',
+      KC_API_RATE_LIMIT_PER_MINUTE: '0',
+    });
+
+    expect(config).toMatchObject({
+      allowedOrigins: ['https://app.kc.test', 'http://localhost:8081'],
+      trustedProxyHops: 1,
+      rateLimitPerMinute: 0,
+    });
+  });
+
+  it.each([
+    ['KC_API_ALLOWED_ORIGINS', 'https://app.kc.test/'],
+    ['KC_API_ALLOWED_ORIGINS', 'https://app.kc.test/path'],
+    ['KC_API_ALLOWED_ORIGINS', '*'],
+    ['KC_API_ALLOWED_ORIGINS', 'app.kc.test'],
+    ['KC_API_TRUSTED_PROXY_HOPS', '11'],
+    ['KC_API_TRUSTED_PROXY_HOPS', '-1'],
+    ['KC_API_RATE_LIMIT_PER_MINUTE', 'many'],
+  ])('rejects %s=%s', (variable, value) => {
+    expect(configErrorOf({ [variable]: value }).variable).toBe(variable);
   });
 
   it('names the variable but never prints its value', () => {
