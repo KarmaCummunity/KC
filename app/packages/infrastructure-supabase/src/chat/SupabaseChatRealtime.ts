@@ -8,6 +8,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { IChatRealtime, InboxStreamCallbacks, SubscribeInboxOptions, ChatStreamCallbacks, Unsubscribe } from '@kc/application';
+import { isMessageReactionType } from '@kc/domain';
 import type { Database } from '../database.types';
 import { rowToMessage, type MessageRowSlice } from './rowMappers';
 import { isChannelFailure, openExactTopicChannel } from '../realtime/exactTopicChannel';
@@ -34,8 +35,8 @@ export class SupabaseChatRealtime implements IChatRealtime {
   constructor(private readonly client: SupabaseClient<Database>) {}
 
   /**
-   * Listens to one chat: new messages, the other member's read marker (the receipt) and a change
-   * of the pinned post. Reactions arrive on the same topic as `reaction` and are not consumed here.
+   * Listens to one chat: new messages, the other member's read marker (the receipt), a change
+   * of the pinned post and every member's reaction changes (`reaction`, #2568).
    */
   subscribeToChat(chatId: string, cb: ChatStreamCallbacks): Unsubscribe {
     let failed = false;
@@ -51,6 +52,13 @@ export class SupabaseChatRealtime implements IChatRealtime {
         channel.on('broadcast', { event: 'read' }, (msg) => {
           const { user_id: userId, last_read_at: lastReadAt } = payloadOf(msg);
           if (typeof userId === 'string' && typeof lastReadAt === 'string') cb.onReadMarker({ userId, lastReadAt });
+        });
+        channel.on('broadcast', { event: 'reaction' }, (msg) => {
+          const { message_id: messageId, user_id: userId, reaction_type: type } = payloadOf(msg);
+          if (typeof messageId !== 'string' || typeof userId !== 'string') return;
+          // A null type is a cleared reaction; an unknown one (a newer server) is ignored.
+          if (type !== null && !isMessageReactionType(type)) return;
+          cb.onReaction?.({ messageId, userId, reactionType: type });
         });
         channel.on('broadcast', { event: 'chat_updated' }, (msg) => {
           cb.onChatChanged?.({ chatId, anchorPostId: asString(payloadOf(msg)['anchor_post_id']) });

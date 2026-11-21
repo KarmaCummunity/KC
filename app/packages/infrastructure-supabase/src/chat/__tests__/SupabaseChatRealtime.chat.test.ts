@@ -31,6 +31,7 @@ describe('SupabaseChatRealtime — subscribeToChat', () => {
     expect(topic.bindings.map((b) => [b.type, b.filter.event])).toEqual([
       ['broadcast', 'INSERT'],
       ['broadcast', 'read'],
+      ['broadcast', 'reaction'],
       ['broadcast', 'chat_updated'],
     ]);
     expect(f.created).toHaveLength(1);
@@ -64,6 +65,25 @@ describe('SupabaseChatRealtime — subscribeToChat', () => {
     topic.emit('broadcast', 'chat_updated', { payload: { chat_id: 'c_1', anchor_post_id: null } });
     expect(onChatChanged).toHaveBeenNthCalledWith(1, { chatId: 'c_1', anchorPostId: 'p_9' });
     expect(onChatChanged).toHaveBeenNthCalledWith(2, { chatId: 'c_1', anchorPostId: null });
+  });
+
+  it('reaction broadcast → onReaction for a set and a cleared reaction (#2568)', async () => {
+    const onReaction = vi.fn();
+    const { topic } = await sub({ onReaction });
+    topic.emit('broadcast', 'reaction', { payload: { message_id: 'm_1', user_id: 'u_2', reaction_type: 'love' } });
+    topic.emit('broadcast', 'reaction', { payload: { message_id: 'm_1', user_id: 'u_2', reaction_type: null } });
+    expect(onReaction).toHaveBeenNthCalledWith(1, { messageId: 'm_1', userId: 'u_2', reactionType: 'love' });
+    expect(onReaction).toHaveBeenNthCalledWith(2, { messageId: 'm_1', userId: 'u_2', reactionType: null });
+  });
+
+  it('ignores a reaction broadcast with missing ids or an unknown type', async () => {
+    const onReaction = vi.fn();
+    const { topic } = await sub({ onReaction });
+    topic.emit('broadcast', 'reaction', { payload: { user_id: 'u_2', reaction_type: 'like' } });
+    topic.emit('broadcast', 'reaction', { payload: { message_id: 'm_1', reaction_type: 'like' } });
+    topic.emit('broadcast', 'reaction', { payload: { message_id: 'm_1', user_id: 'u_2', reaction_type: 'angry' } });
+    topic.emit('broadcast', 'reaction', {});
+    expect(onReaction).not.toHaveBeenCalled();
   });
 
   it('ignores an INSERT broadcast without a record', async () => {
