@@ -224,9 +224,9 @@
    "missing": 0
   },
   "fn:translate": {
-   "callSites": 3,
+   "callSites": 4,
    "oneToOne": 0,
-   "changed": 3,
+   "changed": 4,
    "removed": 0,
    "missing": 0
   },
@@ -1748,7 +1748,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRealtime.ts",
-     "line": 41,
+     "line": 42,
      "symbol": "SupabaseChatRealtime.subscribeToChat",
      "area": "chat"
     }
@@ -1802,7 +1802,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRealtime.ts",
-     "line": 77,
+     "line": 86,
      "symbol": "SupabaseChatRealtime.subscribeToInbox",
      "area": "chat"
     }
@@ -6935,7 +6935,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRealtime.ts",
-     "line": 101,
+     "line": 110,
      "symbol": "SupabaseChatRealtime.readUnreadTotal",
      "area": "chat"
     },
@@ -14120,7 +14120,16 @@
     },
     {
      "file": "supabase/functions/translate/cache.ts",
-     "line": 38,
+     "line": 55,
+     "symbol": "getCachedMany",
+     "area": "fn:translate",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "supabase/functions/translate/cache.ts",
+     "line": 71,
      "symbol": "putIfAbsent",
      "area": "fn:translate",
      "ops": [
@@ -14129,7 +14138,7 @@
     },
     {
      "file": "supabase/functions/translate/cache.ts",
-     "line": 56,
+     "line": 89,
      "symbol": "deleteCached",
      "area": "fn:translate",
      "ops": [

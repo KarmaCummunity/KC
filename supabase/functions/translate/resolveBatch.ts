@@ -5,7 +5,7 @@ import { isTranslatable, needsTranslation, sameLanguageSkip } from '../_shared/t
 import { selectProvider } from '../_shared/translation/provider.ts';
 import { translateMany } from '../_shared/translation/batch.ts';
 import { resolveField, SOURCE } from '../_shared/translation/kcSource.ts';
-import { deleteCached, getCached, putIfAbsent, type CacheRow } from './cache.ts';
+import { cacheKeyOf, deleteCached, getCached, getCachedMany, putIfAbsent, type CacheRow } from './cache.ts';
 
 const MAX_INPUT = 5000;
 const PROVIDER_CONCURRENCY = 2;
@@ -106,37 +106,36 @@ export async function resolveBatch(
   const rows = await readSources(readClient, items.filter(isAllowed));
   const results = new Array<TranslateResult>(items.length);
   const misses: { i: number; it: TranslateItem; text: string }[] = [];
+  const texts = items.map((it) => (isAllowed(it) ? sourceTextFor(it, rows) : null));
+
+  // One cache round-trip for every item that has a source text (#1798). A failed read is not
+  // fatal: every item is then treated as a miss and translated.
+  let cache = new Map<string, CacheRow>();
+  try {
+    cache = await getCachedMany(writeClient, target, items.filter((_, i) => texts[i] !== null));
+  } catch (e) {
+    console.warn('[translate] cache read failed', { items: items.length, detail: errMsg(e) });
+  }
 
   for (let i = 0; i < items.length; i++) {
     const it = items[i];
-    const text = isAllowed(it) ? sourceTextFor(it, rows) : null;
+    const text = texts[i];
     if (text === null) {
       results[i] = skipped(it);
       continue;
-    }
-    const key = {
-      contentType: it.contentType,
-      contentId: it.contentId,
-      field: it.field,
-      targetLanguage: target,
-    };
-    let cached: CacheRow | null = null;
-    try {
-      cached = await getCached(writeClient, key);
-    } catch (e) {
-      console.warn('[translate] cache read failed', { field: it.field, detail: errMsg(e) });
     }
     if (sameLanguageSkip(text, target)) {
       results[i] = skipped(it);
       continue;
     }
+    const cached = cache.get(cacheKeyOf(it)) ?? null;
     if (cached) {
       if (isUsableCache(text, target, cached)) {
         results[i] = hit(it, 'cached', cached);
         continue;
       }
       try {
-        await deleteCached(writeClient, key);
+        await deleteCached(writeClient, { ...it, targetLanguage: target });
       } catch (e) {
         console.warn('[translate] cache delete failed', { field: it.field, detail: errMsg(e) });
       }
