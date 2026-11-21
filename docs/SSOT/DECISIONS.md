@@ -2072,3 +2072,13 @@ The Demo data screen keeps two failures apart: the RPC itself is missing (`not_i
 **Why.** kc-dev runs on the smallest compute tier, where the job fleet's standing log writes drain the host's IO budget and the 10-second consumer runs far more often than a handful of testers need. A migration cannot tell the environments apart, and the dev marker of `D-239` is set only after the migrations of a fresh database; a seed run after every dev deploy re-applies the tuning even when a later migration resets a value.
 
 **Affected.** `supabase/seed/dev-tuning/`, `supabase/tests/128_dev_tuning.sql`, `.github/workflows/deploy-db.yml`, `docs/agents/DEPLOY.md`.
+
+## {{ENG:post-photo-structural-sanitize}} — Post photos are sanitized by a structural rewrite, not a re-encode (2026-11-21)
+
+**Decision.** `process-post-media` (KC#2316) makes the copy other members see by parsing the upload fail-closed and rebuilding it from the parts an image needs: for JPEG the tables, the one 8-bit frame, the scans and EOI, plus the ICC profile and Adobe's colour flag; for PNG the image and rendering chunks with their CRCs checked. Every metadata segment is dropped; the EXIF orientation is carried over as a single tag. A file with unknown parts, a second frame, an unsupported coding or bytes after its end is refused. The copy keeps the upload's type and pixel size within the worker's caps (4096 px per edge, 16.8 MP). The worker starts from the database: a debounced kick when a photo is queued, and a minute job as the safety net.
+
+**Why.** A pixel decode and re-encode in the Edge runtime (Jimp) measured ≈ 1.7 s of CPU for a 2048 × 1536 upload, too close to the per-request CPU limit for a production path; the structural rewrite takes milliseconds and about twice the file in memory. The app already re-encodes on the device, so the server's job is that what others receive is exactly an image with no metadata (`FR-POST-005` AC4, `NFR-PRIV-002`). Rejected: a re-encode with a lower pixel cap (still CPU-bound, and it would fail ordinary photos); paid Storage image transformations (cost, and they do not strip the stored original).
+
+**Trade-off.** The entropy-coded image data is passed through as uploaded, not regenerated; viewers' decoders see the uploader's encoding. Resized server derivatives (`FR-POST-005` AC3) are a separate gap.
+
+**Affected.** `supabase/functions/process-post-media/`, migration `*_post_media_processing_activation.sql`, `supabase/tests/132_post_media_processing_activation.sql`, `docs/SSOT/OPERATOR_RUNBOOK.md` "Post photo derivatives".

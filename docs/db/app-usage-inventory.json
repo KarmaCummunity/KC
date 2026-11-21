@@ -4987,7 +4987,7 @@
   {
    "kind": "rpc",
    "file": "supabase/functions/process-post-media/handler.ts",
-   "line": 159,
+   "line": 165,
    "area": "fn:process-post-media",
    "symbol": "callRpc",
    "via": "unresolved",

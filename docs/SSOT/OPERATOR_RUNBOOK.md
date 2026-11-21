@@ -621,95 +621,79 @@ Same flow, swap `SUPABASE_REF` and use the prod service-role bearer. The functio
 
 ---
 
-## Post photo derivatives — sanitized copies (KC#2316, CANDIDATE, not active)
+## Post photo derivatives — sanitized copies (KC#2316)
 
-**Status:** dev-review candidate. The migration `next-01_post_media_sanitized_derivative.sql` and the
-Edge Function `process-post-media` exist on a branch only. Nothing below has been run against kc-dev
-or production, and no schedule is registered.
+**Status:** active on every environment the migration reaches (kc-dev on merge to `dev`; production with
+the next approved release). Migrations `0084_post_media_sanitized_derivative.sql` (queue, worker
+contract, `derived/` fence, purge integration) and the activation migration (`*_post_media_processing_activation.sql`:
+schedule, immediate start, backlog, type-aware completion). Edge Function `process-post-media`.
 
-**What it does.** Every NEW `post_media` image row in `post-images` is queued (no backfill). The worker
-claims one job at a time with a lease, refuses (before download) a key outside the owner's folder and
-a missing, > 8 MiB or non-JPEG/PNG object, downloads with a byte cap, refuses (before decoding) a file
-whose bytes are not JPEG/PNG or whose header exceeds 4096 px / 16.8 MP, re-encodes a ≤ 2048 px copy and
-a ≤ 400 px thumb to `derived/<owner>/<media_id>-a<attempt>.jpg` (+ `-thumb`), never touching the
-original, and completes with a compare-and-set that also checks Storage holds the copy. The row then
-points at the copy, so cards, the post page, the share card and link previews serve only it.
-The `derived/` namespace is outside every member folder and fenced by RESTRICTIVE storage policies:
-no anon/authenticated insert, update or delete there (any case, leading slashes); only the service
-role writes it. The account purge empties `derived/<user_id>/` with the member's own folder, and no
-copy is made for an owner who is not active (deletion grace, suspension).
+**What it does.** Every new `post_media` image row in `post-images` is queued. The insert starts the
+worker at once (debounced kick, one call per 2 s); the job `post_media_process` (every minute) is the
+safety net for retries and for starts that could not be sent. The worker claims one job at a time
+with a lease and refuses, before downloading, a key outside the owner's folder and a missing,
+> 8 MiB or non-JPEG/PNG object. It then validates the file structure fail-closed and rewrites it
+without metadata (no pixel decode, `supabase/functions/process-post-media/sanitize.ts`): EXIF, XMP,
+IPTC, comments and PNG text chunks are dropped, the EXIF orientation is kept as a single tag, ICC
+colour profiles are kept, and a file with unknown parts, a second frame or bytes after its end is
+refused. The copy keeps the upload's type and pixel size (caps 4096 px per edge, 16.8 MP). The
+uploader's `-thumb` sibling gets the same treatment when it exists (a missing or invalid thumb only
+costs the thumb; readers fall back to the copy). Copies go to `derived/<owner>/<media_id>-a<attempt>.<jpg|png>`
+(+ `-thumb`), never over the original; completion is a compare-and-set that also checks Storage holds
+the copy with the key's type and the reported size. The row then points at the copy, so cards, the
+post page, the share card and link previews serve only it. The `derived/` namespace is fenced by
+RESTRICTIVE storage policies (only the service role writes it); the account purge empties
+`derived/<user_id>/`; no copy is made for an owner who is not active.
+
+**Why no re-encode.** A Jimp decode and re-encode of a 2048 × 1536 upload measured ≈ 1.7 s of CPU
+(≈ 1 s at 1600 × 1200) in a 4-CPU container, too close to the Edge Function per-request CPU limit. The
+app already re-encodes on the device; the server's job is that what others receive is exactly an image
+with no metadata, which the structural rewrite does in milliseconds and with memory of about twice the file.
+
+### Operate
+
+- **Queue state:** `select state, count(*) from kc_private.post_media_processing group by 1;`
+  (`failed` rows keep `last_error`; `processing` rows whose lease ran out are handed out again).
+- **Backlog again** (rows that missed the queue): `select kc_private.post_media_processing_backfill();`
+  — idempotent, queues only pending photos of showable posts.
+- **Health:** the job is in `jobs_late` like every scheduled job; a worker that cannot be reached shows in
+  `ops.warnings` (`edge_invocation_*`).
+- **Manual run** (kc-dev, service-role key): `POST /functions/v1/process-post-media` with `{"limit":1}`
+  → `{"ok":true,"claimed":1,"outcomes":{"<media_id>":"ready"}}`.
 
 ### Measured vs assumed
 
 | Claim | Basis |
 | --- | --- |
-| Queue, claim, lease, CAS, lifecycle skip, retries, cap, grants, reconciliation keep-list | **Measured**: pgTAP `128_post_media_sanitized_derivative.sql`, 29/29 on a local PostgreSQL 16 baseline; full suite 99 files / 2966 ok / 0 not ok with the migration applied |
-| EXIF/GPS dropped, orientation applied, bombs/HTML/SVG refused before decode | **Measured**: deno tests with Jimp 1.6.0 and a real JPEG carrying a synthetic EXIF/GPS block |
-| Storage records `metadata.size` / `metadata.mimetype` exactly as the CAS reads them | **Assumed** (Supabase Storage behaviour; not verifiable without a live project) |
-| Client write fence on `derived/` | **Measured on the local shim** (pgTAP `129`, 16/16); **not verified** against live Supabase Storage (storage-api's own handling of names and roles) |
-| Purge removes `derived/<user_id>/` | **Measured** with the purge handler's fakes (deno) and pgTAP `128` (owner-active gate); not on live Storage |
-| Sanitize time / memory | **Local only** (4-CPU container, Deno 2.5.6, solid-colour JPEG): 2048² → 1.2 s, peak RSS ≈ 324 MB; 4096² → 3.5 s, peak RSS ≈ 978 MB (a reviewer measured 2.4 s / ≈ 970 MB). **Not measured on Supabase**; see the blockers below |
+| Queue, claim, lease, CAS, lifecycle skip, retries, caps, grants, reconciliation keep-list | **Measured**: pgTAP `128`, `129`, `130`, `132` on a local PostgreSQL 16 baseline |
+| EXIF/GPS, XMP, IPTC, comments and PNG text removed; orientation kept; pixels unchanged; polyglots, bombs, HTML/SVG refused | **Measured**: deno tests (`sanitize.test.ts`, `handler.test.ts`) with real Jimp-made JPEG/PNG files |
+| Storage records `metadata.size` / `metadata.mimetype` exactly as the CAS reads them | **Assumed** until the kc-dev end-to-end proof runs |
+| Client write fence on `derived/` | **Measured on the local shim** (pgTAP `129`); not verified against live storage-api |
 | WhatsApp renders the copy as a preview | **Not measured** |
 
-### Open before activation (blockers, not fixed by the candidate)
+### Open (not closed by this pipeline)
 
-1. **Worker CPU and memory.** The local peaks above are far above what a small serverless function is
-   likely to allow, and even a 2048² source peaks near 324 MB locally (runtime + Jimp included).
-   The 20 s run budget only stops new claims: it does not interrupt a running decode, encode, upload
-   or RPC, and only the download has its own timeout. Activation needs a measurement on the real
-   platform (and its documented limits), and then either a lower source cap (pixels and bytes) or a
-   different image library / runtime. Do not schedule before that decision.
-2. **Original uploads stay public.** The original object stays in the PUBLIC `post-images` bucket at
-   an unguessable key (kept for orphan safety and the owner's own reads). Hiding its key from other
-   members is not a privacy boundary: anyone holding the URL (the owner, anything it was sent to) can
-   still fetch the unsanitized bytes, EXIF included. Product/privacy decision needed: e.g. move
-   originals to a private bucket, or delete an original once its copy is `ready` (with retention and
-   republish/edit implications). Nothing in this candidate deletes or hides originals.
-3. **Client-side cleanup is best effort.** The app's abandoned-uploads ledger is per device, swept only
-   when that device starts another upload, capped at 200 entries (oldest dropped), and assumes a
-   15-minute settle window for late commits (not measured). A device that never comes back leaves its
-   entries. `post-images` has the server orphan job as backstop; `chat-media` and `avatars` have no
-   server reconciliation (owner: the storage orphan job). Avatar cleanup outcomes are "queued", not
-   confirmed deletions.
-
-### DEV resource experiment (opt-in, gated)
-
-`PROCESS_POST_MEDIA_PROFILE=dev-experiment-1024` on a **DEV** project only: one job per run, sources up
-to 1024 px (larger ones are released back untouched for 24 h, no attempt spent), copies ≤ 1024 px.
-It exists to sample platform time and memory with small, synthetic inputs; it is not a quality
-decision and never the production default. Every RPC, download and upload has a finite deadline
-(rpc 5 s, download 15 s, upload 15 s); synchronous decode/encode is bounded only by the cap.
-Running it (secret, deploy, invocation) is itself an activation step and needs approval.
-Privacy and deletion design for the next phases: `supabase/proposals/post-media-privacy-lifecycle/DESIGN.md`.
-
-### Activation (gated: owner + manager approval for each step)
-
-1. Review and merge through the normal `dev` flow; the **Deploy** workflow then applies the migration and
-   deploys the function (unscheduled). From then on new photos queue as `pending`; nothing is processed.
-2. Smoke on kc-dev with a test account only: upload one photo, then invoke once with the service-role key:
-   `curl -X POST "https://<ref>.supabase.co/functions/v1/process-post-media" -H "Authorization: Bearer $SR" -d '{"limit":1}'`.
-   Expect `{"ok":true,"claimed":1,"outcomes":{"<id>":"ready"}}` and the photo on another account's feed.
-3. Schedule it with a separate migration (never ad hoc SQL):
-   ```sql
-   insert into kc_private.scheduled_jobs (name, schedule, command, timeout, alert_after, description) values
-     ('post_media_process', '* * * * *', $$select kc_private.invoke_edge_function('process-post-media')$$,
-      interval '20 seconds', interval '15 minutes', 'Starts process-post-media: sanitized copies of new post photos.');
-   ```
-4. Existing `pending` rows are NOT covered. Any backfill is a separate decision (cost and privacy review).
+1. **Original uploads stay public.** The original object stays in the PUBLIC `post-images` bucket at an
+   unguessable key; anyone holding that URL can fetch the unsanitized bytes. Design for private staging:
+   `supabase/proposals/post-media-privacy-lifecycle/DESIGN.md`.
+2. **Server-side resized derivatives** (`FR-POST-005` AC3: 640 px feed / 1280 px detail) are not made;
+   the app's 2048 px upload and 400 px thumb are what readers get.
+3. **Client-side cleanup is best effort.** The app's abandoned-uploads ledger is per device; `post-images`
+   has the server orphan job as backstop, `chat-media` and `avatars` have none.
 
 ### Cost surface (per new photo, approximate)
 
-- **Storage writes**: 2 new objects under `derived/<owner>/` (copy ≤ ~600 KB, thumb ~30 KB); the original
-  is kept, so a post photo occupies roughly original + copy + thumb.
-- **Egress**: one download of the original (≤ 8 MiB; app uploads are typically 0.3–0.6 MB) from Storage
-  to the Edge Function; failed attempts can repeat it (at most 3 attempts).
-- **Function time**: one invocation per minute when scheduled, each ≤ 20 s budget, ≤ 3 photos per run.
-- **Database**: one queue row per photo (kept after completion; it records the original key).
+- **Storage writes:** the copy (same size as the upload, minus metadata) and the thumb copy; the original
+  is kept, so a post photo occupies roughly twice its upload.
+- **Egress:** one download of the original and its thumb to the Edge Function per attempt (≤ 3 attempts).
+- **Function time:** one short invocation per new post (debounced) plus at most one a minute while jobs
+  are due; ≤ 3 photos per run, each a few RPCs, two downloads and two uploads.
 
 ### Rollback
 
-Unschedule (delete the `scheduled_jobs` row through a migration). Rows already `ready` keep pointing at
-their copies; queued rows stay `pending` (not shown to others), as before this change.
+Disable the job through a migration (`update kc_private.scheduled_jobs set enabled = false where name =
+'post_media_process'`) and delete the `process-post-media` row of `kc_private.edge_function_kicks`. Rows
+already `ready` keep pointing at their copies; queued rows stay `pending` (shown to their owner only).
 
 ---
 
