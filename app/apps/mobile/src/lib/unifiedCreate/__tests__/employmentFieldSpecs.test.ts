@@ -11,9 +11,17 @@ function kind(slug: string, direction: ListingKindOption['direction']): ListingK
 }
 
 describe('employment create form (#2278)', () => {
-  it('asks a job offer for the role, the scope and where, the role and scope required', () => {
+  it('asks a job offer for the role, the scope, where, requirements and estimated salary', () => {
     const specs = fieldsForKind(kind('job_offer', 'give'));
-    expect(specs.map((s) => s.key)).toEqual(['role', 'job_scope', 'work_mode']);
+    expect(specs.map((s) => s.key)).toEqual([
+      'role',
+      'job_scope',
+      'work_mode',
+      'job_requirements',
+      'estimated_salary_min',
+      'estimated_salary_max',
+      'salary_pay_period',
+    ]);
     expect(specs.filter((s) => s.required).map((s) => s.key)).toEqual(['role', 'job_scope']);
   });
 

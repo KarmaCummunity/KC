@@ -12,6 +12,7 @@ import { KnowledgeBookingActions } from './knowledge/KnowledgeBookingActions';
 import { HousingStayActions } from './housing/HousingStayActions';
 import { EventDetailsCard } from './events/EventDetailsCard';
 import { EventRegistrationActions } from './events/EventRegistrationActions';
+import { EmploymentDetailsCard } from './employment/EmploymentDetailsCard';
 import { RideRouteCard } from './RideRouteCard';
 import { RidePublishAgainButton } from './RidePublishAgainButton';
 import { RideSeriesManageLink } from './RideSeriesManageLink';
@@ -116,6 +117,7 @@ export function MarketplaceListingDetailView({ detail, bottomInset, footer, mode
           {detail.kindSlug === ORG_EVENT_KIND_SLUG ? (
             <PostSeriesOccurrences listingId={detail.listingId} details={detail.details} isOwner={viewerId === detail.ownerId} />
           ) : null}
+          {detail.worldSlug === 'employment' ? <EmploymentDetailsCard details={detail.details} /> : null}
           {detail.summary ? <Text style={detailStyles.description}>{detail.summary}</Text> : null}
           <Text style={styles.summary}>{kindLabel}</Text>
           {detail.owner ? (

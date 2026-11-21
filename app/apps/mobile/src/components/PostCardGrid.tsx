@@ -22,6 +22,7 @@ import { cleanDisplayTitle } from '../lib/displayTitle';
 import { feedCardCategory } from '../lib/feedCardCategory';
 import { postLocationText } from '../lib/postLocationText';
 import { provenanceLabelKey } from '../lib/importProvenance';
+import { employmentCardDetails } from '../lib/employment/employmentCardDetails';
 
 // The menu sits on the image scrim, which is dark in both themes, so the icon is always white.
 const OVERLAY_ICON = avatarPalette.foreground;
@@ -131,6 +132,10 @@ function PostCardGridInner({
   const provenanceKey = provenanceLabelKey(post.importedFrom);
   let roleBadgeLabel: string | null = null;
   if (economicRole) roleBadgeLabel = economicRole === 'giver' ? t('feed.giverBadge') : t('feed.receiverBadge');
+  const cardDetails = [
+    ...(provenanceKey ? [{ icon: 'share-social-outline' as const, text: t(provenanceKey) }] : []),
+    ...employmentCardDetails(post.listingWorldSlug, post.details ?? null, t),
+  ];
 
   return (
     <KcCard
@@ -160,7 +165,7 @@ function PostCardGridInner({
         />
       }
       chip={t(cardCategory.chipKey)}
-      details={provenanceKey ? [{ icon: 'share-social-outline', text: t(provenanceKey) }] : undefined}
+      details={cardDetails.length > 0 ? cardDetails : undefined}
       location={locationText}
       timeAgo={timeAgo}
       closed={post.status !== 'open'}
