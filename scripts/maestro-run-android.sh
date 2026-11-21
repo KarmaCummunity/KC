@@ -57,7 +57,9 @@ run_flow() {
     sleep 2
     adb pull "$DEVICE_VIDEO" "$OUT_DIR/videos/$label.mp4" || echo "::warning::no video for $label"
   fi
-  node "$(dirname "$0")/maestro-native-capture-media.mjs" "$OUT_DIR" "$label"
+  if ! node "$(dirname "$0")/maestro-native-capture-media.mjs" "$OUT_DIR" "$label" "$capture_safe"; then
+    status=1
+  fi
   return "$status"
 }
 
@@ -76,6 +78,12 @@ run_flow() {
 # The flows not run are listed. The gate still fails; nothing is skipped silently.
 max_consecutive="${KC_MAESTRO_MAX_CONSECUTIVE_FAILS:-3}"
 flows=(.maestro/flows/*.yaml)
+# Recovery reuses the already-built APK and the same positive in-app safety markers.
+# No CI lane is silently narrowed: this is an explicit manual capture-only runner option.
+if [[ "${KC_MAESTRO_CAPTURE_ONLY:-false}" == true ]]; then
+  [[ "$capture_safe" == true ]] || { echo "::error::capture-only requires the synthetic default identity"; exit 1; }
+  flows=(.maestro/flows/07-create-post-form.yaml .maestro/flows/19-edit-profile-keyboard-toolbar.yaml)
+fi
 failed=()
 retried=()
 consecutive=0

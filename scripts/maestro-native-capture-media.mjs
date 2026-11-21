@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Scoped to flows07/19: never retain automatic failure pixels from possibly stale fixtures.
-import { readdirSync, existsSync, unlinkSync } from 'node:fs';
+import { readdirSync, existsSync, unlinkSync, readFileSync } from 'node:fs';
 import { join, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 const allowed = {
@@ -33,8 +33,32 @@ export function cleanCaptureMedia(root,label){
  }
  return {removed,retained};
 }
+
+// Explicitly safe runs must produce each named PNG. Missing proof is a failed capture, not a pass.
+export function requireCaptureOutputs(root, label, safe) {
+ if(safe !== 'true')return;
+ const expected=allowed[label.replace(/-retry$/,'')];
+ if(!expected)return;
+ const found=new Map();
+ const walk=path=>{
+  if(!existsSync(path))return;
+  for(const e of readdirSync(path,{withFileTypes:true})){
+   const child=join(path,e.name);
+   if(e.isDirectory())walk(child);
+   else if(expected.has(e.name)){
+    const bytes=readFileSync(child);
+    if(bytes.length<24 || !bytes.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10])) ||
+      bytes.readUInt32BE(16)===0 || bytes.readUInt32BE(20)===0)throw new Error('Invalid safe capture PNG');
+    found.set(e.name,(found.get(e.name)||0)+1);
+   }
+  }
+ };
+ walk(join(root,'captures',label));
+ for(const name of expected)if(found.get(name)!==1)throw new Error('Required safe capture missing or duplicated: '+name);
+}
 if(process.argv[1]===fileURLToPath(import.meta.url)){
- const [root,label]=process.argv.slice(2);
+ const [root,label,safe]=process.argv.slice(2);
  if(!root||!label)throw new Error('output root and attempt label required');
  console.log('Scoped native capture media cleanup',cleanCaptureMedia(root,label));
+ requireCaptureOutputs(root,label,safe);
 }

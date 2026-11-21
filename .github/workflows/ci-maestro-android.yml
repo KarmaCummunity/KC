@@ -48,8 +48,11 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Unit-test the E2E helpers and the flow ↔ testID contract
-        run: node --test scripts/maestro-dev-env.test.mjs scripts/maestro-flows.test.mjs
+      - name: Install pinned guard-script dependencies
+        run: npm ci --prefix scripts --ignore-scripts --no-audit --no-fund
+
+      - name: Unit-test the E2E helpers, native captures and flow ↔ testID contract
+        run: node --test scripts/maestro-dev-env.test.mjs scripts/maestro-flows.test.mjs scripts/native-capture-safety.test.mjs scripts/native-success-captures.test.mjs scripts/native-capture-media.test.mjs scripts/native-capture-precedence.test.mjs
 
       - name: Resolve kc-dev environment (public anon key + seed password)
         env:
