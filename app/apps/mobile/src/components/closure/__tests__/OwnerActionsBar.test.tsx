@@ -6,6 +6,8 @@ import { act, cleanup, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { Post } from '@kc/domain';
 
+// The closure store reports its funnel to analytics (#1759); the provider is not loaded here.
+vi.mock('../../../lib/analytics', () => ({ track: vi.fn() }));
 vi.mock('react-native-reanimated', async () => (await import('../../ui/__tests__/kitDialogTestKit')).reanimatedDouble);
 vi.mock('expo-haptics', async () => (await import('../../ui/__tests__/kitDialogTestKit')).hapticsDouble);
 vi.mock('@expo/vector-icons', async () => (await import('../../ui/__tests__/kitDialogTestKit')).iconsDouble);

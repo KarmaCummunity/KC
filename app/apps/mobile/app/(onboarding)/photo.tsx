@@ -1,21 +1,12 @@
 // Onboarding step 3 — FR-AUTH-011 (camera+gallery, resize+upload, skip→silhouette).
 import React, { useState } from 'react';
-import { View, ActivityIndicator, Platform, type ViewStyle } from 'react-native';
+import { View, ActivityIndicator } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { makeUseStyles, typography, spacing, radius, iconSize, useTheme, Text } from '@kc/ui';
-import { isLayoutRtl } from '../../src/lib/rtlLayout';
+import { absoluteCornerEnd } from '../../src/lib/rtlLayout';
 
-/**
- * Pin the camera badge to the avatar's reading-end bottom corner.
- * Native auto-mirrors `end`; RN-Web ignores `start`/`end` for absolute
- * positioning, so on web we resolve RTL live and emit a physical key.
- */
-function cameraBadgeCornerEnd(): Pick<ViewStyle, 'left' | 'right' | 'end'> {
-  if (Platform.OS !== 'web') return { end: spacing.md };
-  return isLayoutRtl() ? { left: spacing.md } : { right: spacing.md };
-}
 import { AvatarInitials } from '../../src/components/AvatarInitials';
 import { OnboardingStepHeader } from '../../src/components/OnboardingStepHeader';
 import { PhotoSourceSheet } from '../../src/components/PhotoSourceSheet';
@@ -148,7 +139,7 @@ const useStyles = makeUseStyles(({ colors }) => ({
   cameraBadge: {
     position: 'absolute',
     bottom: spacing.md,
-    ...cameraBadgeCornerEnd(),
+    ...absoluteCornerEnd(spacing.md),
     width: 36, height: 36, borderRadius: radius.full,
     backgroundColor: colors.primary,
     alignItems: 'center', justifyContent: 'center',
