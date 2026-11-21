@@ -16,4 +16,6 @@ export const marketplaceWorldLabels = {
   app_design: 'עיצוב אפליקציות',
   romantic_matchmaking: 'שידוכים',
   challenges: 'אתגרים',
+  democracy: 'דמוקרטיה',
+  employment: 'תעסוקה',
 } as const;

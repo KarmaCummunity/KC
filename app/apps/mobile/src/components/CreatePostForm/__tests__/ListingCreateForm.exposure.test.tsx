@@ -18,6 +18,8 @@ const RIDE_FILL = vi.hoisted(() => ({
 vi.mock('../../../services/postsComposition', async () => (await import('../../../lib/unifiedCreate/__tests__/listingExposureDoubles')).postsCompositionDouble);
 vi.mock('../../../services/userComposition', async () => (await import('../../../lib/unifiedCreate/__tests__/listingExposureDoubles')).userCompositionDouble);
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k: string) => k, i18n: { language: 'he' } }) }));
+// The photo tiles render through KCImage (expo-image), a native module.
+vi.mock('expo-image', () => ({ Image: () => null }));
 vi.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
 vi.mock('expo-router', () => ({ useRouter: () => ({ push: vi.fn() }) }));
 vi.mock('@react-native-community/datetimepicker', () => ({ default: () => null, DateTimePickerAndroid: { open: vi.fn() } }));

@@ -1,8 +1,11 @@
 // Supabase Storage public + transform URLs (#897).
 //
-// Default path (PERF-4): sibling `-thumb` objects at upload time.
-// When `width` / `quality` / `format` are passed, uses `/render/image/` CDN transforms
-// unless `EXPO_PUBLIC_USE_STORAGE_TRANSFORM=0`.
+// Default path (PERF-4): the sibling `-thumb` object written at upload time for small surfaces,
+// the original for the detail hero. Both are plain public objects: no per-image cost.
+// `/render/image/` CDN transforms are a paid Storage add-on ("enabled for Pro Plan and above";
+// $5 per 1,000 origin images beyond the plan quota of 100: supabase.com/docs/guides/storage/serving/
+// image-transformations and .../platform/manage-your-usage/storage-image-transformations), so they
+// are OPT-IN: only a build with `EXPO_PUBLIC_USE_STORAGE_TRANSFORM=1` asks for them.
 
 import { getSupabasePublicEnv } from './supabasePublicConfig';
 
@@ -24,13 +27,13 @@ function getSupabaseBaseUrl(): string | null {
   return env.url.replace(/\/$/, '');
 }
 
-function transformsDisabled(): boolean {
-  return process.env.EXPO_PUBLIC_USE_STORAGE_TRANSFORM === '0';
+/** Transforms are billed per origin image, so a build must opt in explicitly. */
+function transformsEnabled(): boolean {
+  return process.env.EXPO_PUBLIC_USE_STORAGE_TRANSFORM === '1';
 }
 
 function wantsTransform(args: Pick<Args, 'width' | 'quality' | 'format'>): boolean {
-  if (transformsDisabled()) return false;
-  if (process.env.EXPO_PUBLIC_USE_STORAGE_TRANSFORM === '1') return true;
+  if (!transformsEnabled()) return false;
   return (
     typeof args.width === 'number' ||
     typeof args.quality === 'number' ||
@@ -90,7 +93,7 @@ export function getSupabaseImageThumbUrl({ bucket, path, width, format }: ThumbA
   return getSupabasePublicImageUrl({ bucket, path: deriveThumbPath(path) });
 }
 
-/** Feed/grid surface: prefer transform at display width, else `-thumb` sibling. */
+/** Feed/grid surface: the 400 px `-thumb` sibling (or, when opted in, a transform at display width). */
 export function getSupabaseFeedImageUrl(
   bucket: string,
   path: string,

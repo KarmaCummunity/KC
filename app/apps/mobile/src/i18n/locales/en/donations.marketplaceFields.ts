@@ -71,6 +71,11 @@ export const marketplaceFieldLabels = {
   address: 'Address',
   // Knowledge exchange kinds (#2034, migration 0703).
   capacity_per_slot: 'Places per time',
+  schedule: 'When the lesson takes place',
+  series_weekdays: 'On which days',
+  series_time: 'Start time (Israel time)',
+  series_duration_minutes: 'Length of each session',
+  series_ends_on: 'Until (optional)',
   slots: 'Times',
   audience: 'Who it suits',
   cadence: 'How often',
@@ -137,6 +142,7 @@ export const marketplaceOptionLabels = {
   manual: 'Organizer approves',
   verified_only: 'Verified members only',
   // Knowledge exchange kinds (#2034, migration 0703).
+  one_off: 'One-off times',
   weekly: 'Weekly',
   biweekly: 'Every two weeks',
   flexible: 'Flexible',

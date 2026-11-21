@@ -18,6 +18,17 @@ import { useOnboardingReplayStore } from '../../store/onboardingReplayStore';
 beforeEach(() => { vi.clearAllMocks(); state.session = { userId: 'u1', avatarUrl: null }; state.onboardingState = 'pending_avatar'; });
 
 describe('useOnboardingPhotoFlow', () => {
+  it('does not delete an uploaded avatar after an ambiguous profile save failure', async () => {
+    pickAvatarImage.mockResolvedValueOnce({ uri: 'local' });
+    resizeAndUploadAvatar.mockResolvedValueOnce('remote-new');
+    setAvatar.mockRejectedValueOnce(new Error('response lost after commit'));
+    const { result } = renderHook(() => useOnboardingPhotoFlow());
+    await act(async () => { await result.current.pick('gallery'); });
+    expect(removeUploadedAvatar).not.toHaveBeenCalled();
+    expect(state.setSession).not.toHaveBeenCalled();
+    expect(alert).toHaveBeenCalled();
+  });
+
   it('picks and stores an avatar; a cancelled picker leaves it unset', async () => {
     pickAvatarImage.mockResolvedValueOnce({ uri: 'local' }).mockResolvedValueOnce(null);
     resizeAndUploadAvatar.mockResolvedValue('remote'); setAvatar.mockResolvedValue(undefined);

@@ -66,7 +66,7 @@ export const adminDemoDataEn = {
     orgsKept: (n: number) => `${n} demo nonprofits were kept because they have payment history.`,
     prodCopy: {
       title: 'Copied from production',
-      subtitle: 'An anonymized copy of production data, added to the development environment once a week. Names are made up; contact details, chats and photos are never copied.',
+      subtitle: 'Copied data for development testing, separate from demo data. The counts below show what is stored now.',
       members: 'Members',
       posts: 'Posts',
       organizations: 'Nonprofits',
@@ -74,12 +74,12 @@ export const adminDemoDataEn = {
       savedPosts: 'Saved posts',
       lastCopied: (when: string) => `Last copy: ${when}`,
       neverCopied: 'No copy has run yet.',
-      empty: 'Nothing copied right now. The next weekly copy adds it.',
+      empty: 'No copied data is stored right now.',
       deleteButton: 'Delete copied data',
       deleting: 'Deleting...',
       confirmTitle: 'Delete the copied data?',
       confirmBody: (members: number, posts: number) =>
-        `Deletes ${members} copied members with their ${posts} posts, and the copied nonprofits. Nothing else is touched, and the next weekly copy brings them back.`,
+        `Deletes ${members} copied members with their ${posts} posts, and the copied nonprofits. Other data is not deleted.`,
       confirmOk: 'Delete',
       confirmCancel: 'Cancel',
       deleted: (members: number, posts: number, orgs: number) =>

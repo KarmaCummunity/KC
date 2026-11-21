@@ -66,7 +66,7 @@ export const adminDemoDataHe = {
     orgsKept: (n: number) => `${n} עמותות דמה נשארו כי יש להן היסטוריית תשלומים.`,
     prodCopy: {
       title: 'הועתק מסביבת הייצור',
-      subtitle: 'עותק אנונימי של נתוני סביבת הייצור, שמתווסף לסביבת הפיתוח פעם בשבוע. השמות בדויים, ופרטי קשר, צ׳אטים ותמונות לא מועתקים.',
+      subtitle: 'נתונים שהועתקו לבדיקות בסביבת הפיתוח, בנפרד מנתוני הדמה. המספרים למטה מציגים מה שמור כרגע.',
       members: 'משתמשים',
       posts: 'פוסטים',
       organizations: 'עמותות',
@@ -74,12 +74,12 @@ export const adminDemoDataHe = {
       savedPosts: 'שמירות',
       lastCopied: (when: string) => `העתקה אחרונה: ${when}`,
       neverCopied: 'עוד לא בוצעה העתקה.',
-      empty: 'אין כרגע נתונים שהועתקו. ההעתקה השבועית הבאה תוסיף אותם.',
+      empty: 'אין כרגע נתונים שהועתקו.',
       deleteButton: 'מחיקת הנתונים שהועתקו',
       deleting: 'מוחק...',
       confirmTitle: 'למחוק את הנתונים שהועתקו?',
       confirmBody: (members: number, posts: number) =>
-        `נמחקים ${members} משתמשים שהועתקו עם ${posts} הפוסטים שלהם, והעמותות שהועתקו. שום דבר אחר לא נפגע, וההעתקה השבועית הבאה תחזיר אותם.`,
+        `נמחקים ${members} משתמשים שהועתקו עם ${posts} הפוסטים שלהם, והעמותות שהועתקו. נתונים אחרים לא נמחקים.`,
       confirmOk: 'למחוק',
       confirmCancel: 'ביטול',
       deleted: (members: number, posts: number, orgs: number) =>

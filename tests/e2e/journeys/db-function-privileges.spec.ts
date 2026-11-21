@@ -26,6 +26,7 @@ const ANON_CALLABLE: ReadonlySet<string> = new Set([
   'community_stats',
   'get_nonprofit_public_page',
   'get_public_research_questions',
+  'guest_posts',
   'list_kc_support_channels',
   'list_verified_nonprofits',
   'post_share_card',

@@ -28,6 +28,8 @@ vi.mock('react-i18next', () => ({
     i18n: { language: 'he' },
   }),
 }));
+// The photo tiles render through KCImage (expo-image), a native module.
+vi.mock('expo-image', () => ({ Image: () => null }));
 vi.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
 // The organization membership hint (FR-ORG-002) opens My organizations.
 vi.mock('expo-router', () => ({ useRouter: () => ({ push: vi.fn() }) }));
