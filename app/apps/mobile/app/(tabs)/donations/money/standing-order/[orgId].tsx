@@ -4,8 +4,9 @@ import { useTranslation } from 'react-i18next';
 import { AmountCheckoutScreen } from '../../../../../src/components/money/AmountCheckoutForm';
 import { newIdempotencyKey, paymentsUseCases } from '../../../../../src/services/paymentsComposition';
 import { toAgorot } from '../../../../../src/components/money/moneyAmount';
+import { InAppOrgPaymentsGate } from '../../../../../src/components/money/InAppOrgPaymentsGate';
 
-export default function StandingOrderScreen() {
+function StandingOrderScreen() {
   const { orgId } = useLocalSearchParams<{ orgId: string }>();
   const { t } = useTranslation();
   const router = useRouter();
@@ -29,5 +30,14 @@ export default function StandingOrderScreen() {
       submitLabel={t('moneyPayments.createStanding')}
       onSubmit={createStandingOrder}
     />
+  );
+}
+
+/** The screen behind the sandbox flag (FR-DONATE-003 AC7): a direct link with it off lands on the hub. */
+export default function StandingOrderScreenRoute() {
+  return (
+    <InAppOrgPaymentsGate>
+      <StandingOrderScreen />
+    </InAppOrgPaymentsGate>
   );
 }

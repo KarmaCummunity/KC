@@ -13,12 +13,13 @@ import { useLaunchSurface } from '../src/hooks/useLaunchSurface';
 import { useSettingsAccountActions } from '../src/hooks/useSettingsAccountActions';
 import { useSimulateHardRefresh } from '../src/hooks/useSimulateHardRefresh';
 import { useAuthStore } from '../src/store/authStore';
-import { DeleteAccountConfirmModal } from '../src/components/DeleteAccountConfirmModal';
-import { DeleteAccountSuccessOverlay } from '../src/components/DeleteAccountSuccessOverlay';
 import { DonationSupportCard } from '../src/components/DonationSupportCard';
 import { SettingsAboutCard } from '../src/components/SettingsAboutCard';
 import { SettingsScreenRow } from '../src/components/SettingsScreenRow';
 import { ConfirmActionModal } from '../src/components/post/ConfirmActionModal';
+import { SettingsAccountModals } from '../src/components/settings/SettingsAccountModals';
+import { SettingsVersionFooter } from '../src/components/settings/SettingsVersionFooter';
+import { AccountIdentityRows } from '../src/components/settings/AccountIdentityRows';
 import { usePrivateProfileToggle } from '../src/hooks/usePrivateProfileToggle';
 import { useActiveStatusSetting } from '../src/hooks/useActiveStatusSetting';
 import { useSettingsScreenStyles } from '../src/screens/settings.styles';
@@ -52,14 +53,7 @@ export default function SettingsScreen() {
   const isSuperAdmin = useIsSuperAdmin();
   const { roles: adminRoles } = useAdminRoles();
   const { hardRefreshing, simulateHardRefresh: handleSimulateHardRefresh } = useSimulateHardRefresh(userId);
-  const {
-    signingOut,
-    deleteModalVisible,
-    setDeleteModalVisible,
-    deleteSuccessVisible,
-    handleDeleteConfirm,
-    handleSignOut,
-  } = useSettingsAccountActions();
+  const accountActions = useSettingsAccountActions();
 
   return (
     <View style={styles.container}>
@@ -81,6 +75,7 @@ export default function SettingsScreen() {
 
         <Text style={styles.sectionTitle}>{t('settings.account')}</Text>
         <View style={styles.section}>
+          <AccountIdentityRows displayName={userQuery.data?.displayName ?? null} />
           <SettingsScreenRow
             label={t('settings.accountDetails')}
             icon="person-outline"
@@ -249,20 +244,20 @@ export default function SettingsScreen() {
 
         <View style={[styles.section, { marginTop: spacing.sm }]}>
           <SettingsScreenRow
-            label={signingOut ? t('settings.loggingOut') : t('settings.logout')}
+            label={accountActions.signingOut ? t('settings.loggingOut') : t('settings.logout')}
             icon="log-out-outline"
-            onPress={handleSignOut}
-            disabled={signingOut}
+            onPress={accountActions.requestSignOut}
+            disabled={accountActions.signingOut}
           />
           <SettingsScreenRow
             label={t('settings.deleteAccount')}
             icon="trash-outline"
             destructive
-            onPress={() => setDeleteModalVisible(true)}
+            onPress={() => accountActions.setDeleteModalVisible(true)}
           />
         </View>
 
-        <Text style={styles.version}>{t('settings.version')} v0.1.0</Text>
+        <SettingsVersionFooter style={styles.version} />
       </ScrollView>
 
       {confirmModal ? (
@@ -277,13 +272,7 @@ export default function SettingsScreen() {
         />
       ) : null}
 
-      <DeleteAccountConfirmModal
-        visible={deleteModalVisible}
-        accountStatus={null}
-        onCancel={() => setDeleteModalVisible(false)}
-        onConfirm={handleDeleteConfirm}
-      />
-      <DeleteAccountSuccessOverlay visible={deleteSuccessVisible} />
+      <SettingsAccountModals actions={accountActions} displayName={userQuery.data?.displayName ?? null} />
     </View>
   );
 }
