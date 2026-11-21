@@ -25,6 +25,7 @@ import { cleanDisplayTitle } from '../../lib/displayTitle';
 import { MirroredIcon } from '../../components/ui/MirroredIcon';
 import { postShowsEngagementSection } from '../../lib/postEngagementVisible';
 import { provenanceLabelKey } from '../../lib/importProvenance';
+import { worldClosedStatusKey, worldPlaceholderIcon } from '../../lib/worldDetailCopy';
 
 export type PostDetailScrollContentProps = Readonly<{
   post: PostWithOwner;
@@ -80,11 +81,11 @@ export function PostDetailScrollContent({
         closed={isClosed}
         isGive={isGive}
         typeLabel={isGive ? t('post.detail.typeGiveLabel') : t('post.detail.typeRequestLabel')}
-        badge={<PostDetailStatusBadge status={post.status} />}
+        badge={<PostDetailStatusBadge status={post.status} closedLabelKey={worldClosedStatusKey(post.listingWorldSlug)} />}
       >
         <PostImageCarousel
           mediaAssets={post.mediaAssets}
-          fallbackIcon={isGive ? 'gift-outline' : 'search-outline'}
+          fallbackIcon={worldPlaceholderIcon(post.listingWorldSlug, post.type)}
         />
       </DetailHeroCard>
 

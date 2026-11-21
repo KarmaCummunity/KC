@@ -22,7 +22,8 @@ import { KcRowCard } from '../cards/KcRowCard';
 import { cleanDisplayTitle } from '../../lib/displayTitle';
 import { getSupabaseImageThumbUrl, getSupabasePublicImageUrl } from '../../lib/imageUrl';
 import { rowDirectionStart } from '../../lib/rtlLayout';
-import { listingClosureOptions, listingOwnerMarkCtaKey } from '../../lib/listingOwnerClosure';
+import { listingClosureOptions } from '../../lib/listingOwnerClosure';
+import { worldOwnerMarkCtaKey } from '../../lib/worldDetailCopy';
 
 interface Props {
   chatId: string;
@@ -122,7 +123,7 @@ export function AnchoredPostCard({ chatId, anchorPostId, viewerId, counterpartId
   const isGive = post?.type === 'Give';
   const ctaText = !post
     ? ''
-    : t(post.type === 'Request' ? 'closure.markRequestCta' : listingOwnerMarkCtaKey(post.listingWorldSlug));
+    : t(worldOwnerMarkCtaKey(post.listingWorldSlug, post.type));
 
   const path0 = post?.mediaAssets[0]?.path;
   const thumbUri = path0 ? getSupabaseImageThumbUrl({ bucket: 'post-images', path: path0 }) : null;

@@ -9,6 +9,7 @@ export const SERVICE_ROLE_ONLY_FUNCTIONS = [
   'dispatch-notification',
   'embed-worker',
   'match-rerank',
+  'process-post-media',
   'purge-deleted-accounts',
   'reconcile-storage-orphans',
   'rotate-research-salt',
