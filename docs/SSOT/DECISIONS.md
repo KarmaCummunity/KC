@@ -2067,6 +2067,14 @@ The Demo data screen keeps two failures apart: the RPC itself is missing (`not_i
 
 **Affected.** `.github/workflows/prod-copy-to-dev.yml`, `scripts/prod-copy-export.sql`, `scripts/prod-copy-anonymize.mjs`, `scripts/check-deploy-isolation.mjs` (`MONITORS`, another holder of prod secrets outside `deploy.yml`, tracked with TD-232), `supabase/seed/prod-copy/`, `.github/workflows/deploy-db.yml`, `docs/SSOT/OPERATOR_RUNBOOK.md` "Production copy to kc-dev".
 
+## D-243 — kc-dev tunes its job cadence and log retention through a dev-only seed (2026-11-19)
+
+**Decision.** The migrations carry production's job schedules and retention periods. Values that only kc-dev needs differently live in `supabase/seed/dev-tuning/load.sql`, which `deploy-db.yml` runs after the migrations on every dev deploy (step **Job tuning (kc-dev only)**, guarded to kc-dev's project ref like the other dev-only seeds of `D-241`). It updates rows of `kc_private.retention_rules`, `kc_private.scheduled_jobs` and `kc_private.matching_settings`; the `scheduled_jobs_sync` trigger reconciles pg_cron in the same transaction. First values: `ops.job_runs` kept 7 days and pg_cron's run log 1 day (#2492; production 30 and 7 days), `chat_system_messages` every 30 seconds (#2488; production 10 seconds), and a matching run scans 200 posts (#2494; production 500).
+
+**Why.** kc-dev runs on the smallest compute tier, where the job fleet's standing log writes drain the host's IO budget and the 10-second consumer runs far more often than a handful of testers need. A migration cannot tell the environments apart, and the dev marker of `D-239` is set only after the migrations of a fresh database; a seed run after every dev deploy re-applies the tuning even when a later migration resets a value.
+
+**Affected.** `supabase/seed/dev-tuning/`, `supabase/tests/128_dev_tuning.sql`, `.github/workflows/deploy-db.yml`, `docs/agents/DEPLOY.md`.
+
 ## {{ENG:backend-platform-off-supabase}} — KC leaves Supabase for an owned NestJS API on Google Cloud, in phases (2026-11-21)
 
 **Decision.** KC's backend becomes a modular monolith KC owns: one NestJS application (`app/apps/api`, one module per bounded context) on Cloud Run, Cloud SQL for PostgreSQL, Redis, Cloud Storage with a CDN and a video pipeline, queue workers in place of Edge Functions, and its own identity module. Final region `me-west1`. The move is a strangler: the API is added in front of the existing database and runs each request under the caller's identity, so RLS and the existing SQL functions keep working unchanged; the app switches from the Supabase adapter to a new `@kc/infrastructure-api` adapter one port at a time, behind a flag, when the port's contract suite (`D-204`) passes on both; the database itself moves last, in one rehearsed step. Eleven phases, each with an automated exit criterion, in [ADR-009](../architecture/adr/ADR-009-backend-platform.md). Supersedes `D-2`.

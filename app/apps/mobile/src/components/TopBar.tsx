@@ -8,7 +8,7 @@
 // The Admin Portal shortcut renders on every top bar, for admins only (FR-ADMIN-011 AC6).
 // Stack screens pass `title` (shown instead of the logo) and a back button in `startIcon`.
 import React from 'react';
-import { Image, Platform, TouchableOpacity, View, type ViewStyle } from 'react-native';
+import { Image, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -16,18 +16,8 @@ import { makeUseStyles, radius, spacing, typography, useTheme, Text, iconSize } 
 import { useChatStore } from '../store/chatStore';
 import { useAuthStore } from '../store/authStore';
 import { useNotificationInboxBadge } from '../hooks/useNotificationInboxBadge';
-import { isLayoutRtl } from '../lib/rtlLayout';
+import { absoluteCornerEnd } from '../lib/rtlLayout';
 import { AdminPortalIcon } from './AdminPortalIcon';
-
-/**
- * Pin the notification badge to the icon's reading-end corner.
- * Native auto-mirrors `end`; RN-Web ignores `start`/`end` for absolute
- * positioning, so on web we resolve RTL live and emit a physical key.
- */
-function badgeCornerEnd(): Pick<ViewStyle, 'left' | 'right' | 'end'> {
-  if (Platform.OS !== 'web') return { end: 0 };
-  return isLayoutRtl() ? { left: 0 } : { right: 0 };
-}
 
 interface TopBarProps {
   /** Optional icon rendered between the logo and the settings icon. */
@@ -126,7 +116,7 @@ const useTopBarStyles = makeUseStyles(({ colors }) => ({
   badge: {
     position: 'absolute' as const,
     top: 0,
-    ...badgeCornerEnd(),
+    ...absoluteCornerEnd(0),
     backgroundColor: colors.primary,
     borderRadius: radius.full,
     minWidth: 18,

@@ -9,6 +9,7 @@ import { Screen } from '../../../../src/components/ui/Screen';
 import { paymentsUseCases } from '../../../../src/services/paymentsComposition';
 import { shekelsText } from '../../../../src/components/money/moneyAmount';
 import { listOrEmpty } from '../../../../src/lib/backendAvailability';
+import { InAppOrgPaymentsGate } from '../../../../src/components/money/InAppOrgPaymentsGate';
 
 const useStyles = makeUseStyles(({ colors }) => ({
   row: { padding: spacing.lg, gap: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border },
@@ -19,7 +20,7 @@ const useStyles = makeUseStyles(({ colors }) => ({
   btnText: { ...typography.caption, ...typography.semiBold, color: colors.textPrimary },
 }));
 
-export default function MyStandingOrdersScreen() {
+function MyStandingOrdersScreen() {
   const { t } = useTranslation();
   const styles = useStyles();
   const qc = useQueryClient();
@@ -98,5 +99,14 @@ export default function MyStandingOrdersScreen() {
         }}
       />
     </Screen>
+  );
+}
+
+/** The screen behind the sandbox flag (FR-DONATE-003 AC7): a direct link with it off lands on the hub. */
+export default function MyStandingOrdersScreenRoute() {
+  return (
+    <InAppOrgPaymentsGate>
+      <MyStandingOrdersScreen />
+    </InAppOrgPaymentsGate>
   );
 }

@@ -109,3 +109,19 @@ export const rowDirectionStart: FlexStyle['flexDirection'] =
 /** Counterpart of {@link rowDirectionStart} for rows that should run end-to-start. */
 export const rowDirectionEnd: FlexStyle['flexDirection'] =
   Platform.OS === 'web' ? (isLayoutRtl() ? 'row' : 'row-reverse') : 'row-reverse';
+
+/**
+ * Reading-start corner inset of an absolutely positioned view. Native mirrors `start` by itself;
+ * React Native Web ignores `start`/`end` on absolute positioning, so web resolves the direction
+ * live and emits the physical edge.
+ */
+export function absoluteCornerStart(inset: number): Pick<ViewStyle, 'left' | 'right' | 'start'> {
+  if (Platform.OS !== 'web') return { start: inset };
+  return isLayoutRtl() ? { right: inset } : { left: inset };
+}
+
+/** Reading-end counterpart of `absoluteCornerStart` (badges, close buttons, floating actions). */
+export function absoluteCornerEnd(inset: number): Pick<ViewStyle, 'left' | 'right' | 'end'> {
+  if (Platform.OS !== 'web') return { end: inset };
+  return isLayoutRtl() ? { left: inset } : { right: inset };
+}
