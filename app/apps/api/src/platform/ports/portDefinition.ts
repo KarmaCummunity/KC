@@ -20,6 +20,13 @@ export interface PortDefinition {
   /** Builds the implementation for one call, acting as that call's caller. */
   readonly create: (client: SqlBackedClient) => object;
   readonly methods: Readonly<Record<string, PortAccess>>;
+  /**
+   * Seconds a `public` method's result may be reused for signed-out visitors.
+   * Every visitor runs as the same database role, so they all get the same
+   * answer; a member's call is never cached, because what a member sees
+   * depends on who they are.
+   */
+  readonly visitorCacheSeconds?: Readonly<Record<string, number | undefined>>;
 }
 
 /**
@@ -33,6 +40,7 @@ export function definePort<Port extends object>(definition: {
   name: string;
   create: (client: SqlBackedClient) => Port;
   methods: Readonly<Record<MethodName<Port>, PortAccess>>;
+  visitorCacheSeconds?: Readonly<Partial<Record<MethodName<Port>, number>>>;
 }): PortDefinition {
   return definition;
 }

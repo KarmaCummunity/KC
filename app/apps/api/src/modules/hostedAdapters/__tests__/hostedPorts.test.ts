@@ -48,6 +48,16 @@ describe('hosted ports', () => {
     ]);
   });
 
+  it('cache for visitors only methods that are public, each with a lifetime of at most five minutes', () => {
+    for (const port of HOSTED_PORTS) {
+      for (const [method, seconds] of Object.entries(port.visitorCacheSeconds ?? {})) {
+        expect(port.methods[method], `${port.name}.${method}`).toBe('public');
+        expect(seconds, `${port.name}.${method}`).toBeGreaterThan(0);
+        expect(seconds, `${port.name}.${method}`).toBeLessThanOrEqual(300);
+      }
+    }
+  });
+
   it('do not serve the methods that need Storage or an Edge Function', () => {
     const notServed = HOSTED_PORTS.flatMap((port) =>
       Object.entries(port.methods)

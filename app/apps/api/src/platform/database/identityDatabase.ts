@@ -7,16 +7,28 @@ import { DATABASE_POOL } from './database.tokens';
 export type DatabaseSession = Pick<PoolClient, 'query'>;
 
 /**
- * Sets the caller for the current transaction. `true` scopes each setting to
- * the transaction: when it ends, the pooled connection carries no trace of the
- * caller for its next user. The search path is the one PostgREST uses on the
- * Supabase stack (`supabase/config.toml`, `extra_search_path`).
+ * Opens a transaction and sets the caller for it, in one round trip.
+ *
+ * `true` scopes each setting to the transaction: when it ends, the pooled
+ * connection carries no trace of the caller for its next user. The search
+ * path is the one PostgREST uses on the Supabase stack
+ * (`supabase/config.toml`, `extra_search_path`).
+ *
+ * Two statements can share a round trip only in the simple query protocol,
+ * which has no bound parameters, so the two values are written as literals:
+ * the role comes from a closed set in this file, and the claims go through
+ * the driver's own literal escaping.
  */
-export const IDENTITY_SQL =
-  "select set_config('role', $1, true), set_config('request.jwt.claims', $2, true), set_config('search_path', 'public, extensions', true)";
+export function beginAsSql(role: RequestRole, escapedClaims: string): string {
+  return (
+    `begin; select set_config('role', '${role}', true), ` +
+    `set_config('request.jwt.claims', ${escapedClaims}, true), ` +
+    "set_config('search_path', 'public, extensions', true)"
+  );
+}
 
 /** Database roles a request can run as. Never taken from client input. */
-type RequestRole = 'authenticated' | 'anon';
+export type RequestRole = 'authenticated' | 'anon';
 
 /**
  * Runs database work as the caller, the way PostgREST does: one transaction
@@ -45,8 +57,7 @@ export class IdentityDatabase {
   ): Promise<T> {
     const client = await this.pool.connect();
     try {
-      await client.query('begin');
-      await client.query(IDENTITY_SQL, [role, JSON.stringify(claims)]);
+      await client.query(beginAsSql(role, client.escapeLiteral(JSON.stringify(claims))));
       const result = await work(client);
       await client.query('commit');
       client.release();

@@ -7,6 +7,7 @@ import { DatabaseModule, DatabaseProbe } from './platform/database/database.modu
 import { HealthModule } from './platform/health/health.module';
 import { IdentityModule } from './platform/identity/identity.module';
 import { PortGatewayModule } from './platform/ports/portGateway.module';
+import { VisitorCacheModule } from './platform/ports/visitorCache';
 import { RateLimitModule } from './platform/rateLimit/rateLimiter';
 import { RedisModule, RedisProbe } from './platform/redis/redis.module';
 
@@ -25,6 +26,7 @@ export class AppModule {
         RedisModule,
         IdentityModule,
         RateLimitModule,
+        VisitorCacheModule,
         HealthModule.withProbes([DatabaseProbe, RedisProbe]),
         SessionModule,
         PortGatewayModule.forRoot(HOSTED_PORTS),

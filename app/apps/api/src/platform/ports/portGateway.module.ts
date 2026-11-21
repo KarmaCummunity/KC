@@ -11,11 +11,25 @@ export class DuplicatePortError extends Error {
   }
 }
 
-/** Indexes the definitions by wire name; a duplicate is a start-up error, not a silent override. */
+/** A visitor cache is declared for a method visitors cannot call, which could only ever leak a member's answer. */
+export class VisitorCacheOnPrivateMethodError extends Error {
+  constructor(port: string, method: string) {
+    super(`${port}.${method} has a visitor cache but is not a public method`);
+    this.name = 'VisitorCacheOnPrivateMethodError';
+  }
+}
+
+/**
+ * Indexes the definitions by wire name. A duplicate name, or a visitor cache
+ * on a method that is not `public`, is a start-up error, not a silent mistake.
+ */
 export function indexPorts(definitions: readonly PortDefinition[]): ReadonlyMap<string, PortDefinition> {
   const ports = new Map<string, PortDefinition>();
   for (const definition of definitions) {
     if (ports.has(definition.name)) throw new DuplicatePortError(definition.name);
+    for (const method of Object.keys(definition.visitorCacheSeconds ?? {})) {
+      if (definition.methods[method] !== 'public') throw new VisitorCacheOnPrivateMethodError(definition.name, method);
+    }
     ports.set(definition.name, definition);
   }
   return ports;

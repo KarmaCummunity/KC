@@ -141,6 +141,8 @@ const orgTransparency = hostedPort('orgTransparency', {
   methods: {
     getPublic: 'public',
   },
+  // Published figures, recomputed when the books change.
+  visitorCacheSeconds: { getPublic: 300 },
 });
 
 const prodCopy = hostedPort('prodCopy', {

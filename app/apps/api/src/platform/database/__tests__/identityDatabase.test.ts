@@ -1,7 +1,7 @@
 import type { Pool } from 'pg';
 import { describe, expect, it } from 'vitest';
 import { USER_A } from '../../../__tests__/support/testTokens';
-import { IDENTITY_SQL, IdentityDatabase } from '../identityDatabase';
+import { beginAsSql, IdentityDatabase } from '../identityDatabase';
 
 /** A pooled connection that records what was sent and how it was released. */
 class RecordingClient {
@@ -18,6 +18,11 @@ class RecordingClient {
 
   release(destroy?: boolean): void {
     this.released = destroy ? 'destroyed' : 'returned';
+  }
+
+  /** The driver's literal escaping, close enough for these tests: quote and double the quotes. */
+  escapeLiteral(text: string): string {
+    return `'${text.replace(/'/g, "''")}'`;
   }
 }
 
@@ -39,8 +44,9 @@ describe('IdentityDatabase', () => {
     });
 
     expect(result).toBe('done');
-    expect(client.statements).toEqual(['begin', expect.stringContaining('set_config'), 'select 1', 'commit']);
-    expect(client.parameters[1]).toEqual(['authenticated', JSON.stringify(caller.claims)]);
+    expect(client.statements).toEqual([expect.stringMatching(/^begin; select set_config/), 'select 1', 'commit']);
+    expect(client.statements[0]).toContain("set_config('role', 'authenticated', true)");
+    expect(client.statements[0]).toContain(`set_config('request.jwt.claims', '${JSON.stringify(caller.claims)}', true)`);
     expect(client.released).toBe('returned');
   });
 
@@ -50,10 +56,10 @@ describe('IdentityDatabase', () => {
     await database.runAs(caller, () => Promise.resolve());
 
     // The third argument `true` is what stops the identity outliving the transaction.
-    expect(client.statements[1]).toBe(IDENTITY_SQL);
-    expect(IDENTITY_SQL.match(/set_config\(/g)).toHaveLength(3);
-    expect(IDENTITY_SQL.match(/, true\)/g)).toHaveLength(3);
-    expect(IDENTITY_SQL).not.toContain('false');
+    const opening = client.statements[0] ?? '';
+    expect(opening.match(/set_config\(/g)).toHaveLength(3);
+    expect(opening.match(/, true\)/g)).toHaveLength(3);
+    expect(opening).not.toContain('false');
   });
 
   it('runs a signed-out visitor as the anon role with no user', async () => {
@@ -61,7 +67,18 @@ describe('IdentityDatabase', () => {
 
     await database.runAnonymous(() => Promise.resolve());
 
-    expect(client.parameters[1]).toEqual(['anon', JSON.stringify({ role: 'anon' })]);
+    expect(client.statements[0]).toBe(beginAsSql('anon', `'${JSON.stringify({ role: 'anon' })}'`));
+  });
+
+  it('escapes the claims, so a value from a token cannot end the literal', async () => {
+    const { client, database } = setup();
+    const hostile = { userId: USER_A, claims: { sub: USER_A, email: "x'; drop table users; --" } };
+
+    await database.runAs(hostile, () => Promise.resolve());
+
+    // The quote is doubled: the text stays inside one literal.
+    expect(client.statements[0]).toContain("x''; drop table users; --");
+    expect(client.statements[0]).not.toMatch(/[^']'; drop table/);
   });
 
   it('rolls back, returns the connection and rethrows when the work fails', async () => {

@@ -15,6 +15,7 @@ import { UnsupportedSupabaseServiceError } from '../postgrest/sqlBackedClient';
 import { RateLimiter } from '../rateLimit/rateLimiter';
 import { PortClients } from './portClients';
 import type { PortAccess, PortDefinition } from './portDefinition';
+import { VisitorCache } from './visitorCache';
 
 /** Injection token of the served ports, by wire name. */
 export const PORT_DEFINITIONS = Symbol('PORT_DEFINITIONS');
@@ -39,6 +40,7 @@ export class PortGatewayController {
     @Inject(ACCESS_TOKEN_VERIFIER) private readonly verifier: AccessTokenVerifier,
     @Inject(PortClients) private readonly clients: PortClients,
     @Inject(RateLimiter) private readonly rateLimiter: RateLimiter,
+    @Inject(VisitorCache) private readonly visitorCache: VisitorCache,
   ) {}
 
   /**
@@ -79,12 +81,20 @@ export class PortGatewayController {
     }
     const args = readArgs(body);
 
+    // Only a signed-out visitor's call may be answered from the cache: see `visitorCacheSeconds`.
+    const cacheSeconds = caller ? undefined : port.visitorCacheSeconds?.[method];
+    if (cacheSeconds) {
+      const cached = await this.visitorCache.read(portName, method, args);
+      if (cached.found) return cached.value === undefined ? {} : { result: cached.value };
+    }
+
     const implementation = port.create(this.clients.clientFor(caller)) as Record<string, unknown>;
     const handler = implementation[method];
     if (typeof handler !== 'function') throw new Error(`port ${portName} lists ${method} but its implementation has no such method`);
 
     try {
       const result: unknown = await handler.apply(implementation, args);
+      if (cacheSeconds) await this.visitorCache.write(portName, method, args, result, cacheSeconds);
       return result === undefined ? {} : { result };
     } catch (error) {
       throw this.toApiError(error) ?? error;

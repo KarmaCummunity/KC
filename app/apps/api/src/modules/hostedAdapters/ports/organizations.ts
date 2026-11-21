@@ -35,6 +35,8 @@ const kcSupportChannels = hostedPort('kcSupportChannels', {
   methods: {
     listActiveChannels: 'public',
   },
+  // A short list the super admin edits by hand.
+  visitorCacheSeconds: { listActiveChannels: 300 },
 });
 
 const organizations = hostedPort('organizations', {
@@ -63,6 +65,8 @@ const payments = hostedPort('payments', {
     listDonationHistory: 'member',
     getDonationReceipt: 'member',
   },
+  // The nonprofit directory and a nonprofit's public page.
+  visitorCacheSeconds: { listVerifiedNonprofits: 300, getNonprofitPublicPage: 60 },
 });
 
 const stats = hostedPort('stats', {
@@ -74,6 +78,8 @@ const stats = hostedPort('stats', {
     getWorldFlowFunnel: 'member',
     listMyWorldGivings: 'member',
   },
+  // Community totals: a minute-old number is still the number.
+  visitorCacheSeconds: { getCommunityStatsSnapshot: 60, getActivePublicPostsCount: 60 },
 });
 
 export const ORGANIZATIONS_PORTS: readonly PortDefinition[] = [about, donationLinks, kcSupportChannels, organizations, payments, stats];

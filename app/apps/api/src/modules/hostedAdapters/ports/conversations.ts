@@ -102,6 +102,8 @@ const publicResearch = hostedPort('publicResearch', {
     loadBundle: 'public',
     submit: 'not_served',
   },
+  // The questions of a published survey.
+  visitorCacheSeconds: { loadBundle: 300 },
 });
 
 const report = hostedPort('report', {

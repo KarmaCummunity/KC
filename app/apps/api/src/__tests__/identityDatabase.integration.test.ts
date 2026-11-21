@@ -65,6 +65,19 @@ describe.skipIf(!DATABASE_URL || KC_API_TEST_DISPOSABLE_DATABASE !== '1')('Ident
     expect(resolved).toBe(USER_A);
   });
 
+  it('hands the claims to the database unchanged, whatever characters they hold', async () => {
+    const email = `o'neil\\"quoted" $1 \n; drop table x; -- é`;
+    const caller = { userId: USER_A, claims: { sub: USER_A, role: 'authenticated', email } };
+
+    const seen = await database.runAs(caller, (session) =>
+      session
+        .query<{ email: string }>("select current_setting('request.jwt.claims')::jsonb ->> 'email' as email")
+        .then((r) => r.rows[0]?.email),
+    );
+
+    expect(seen).toBe(email);
+  });
+
   it('shows each caller only their own rows', async () => {
     expect(await database.runAs(callerOf(USER_A), notesSeenBy)).toEqual(['a-1', 'a-2']);
     expect(await database.runAs(callerOf(USER_B), notesSeenBy)).toEqual(['b-1']);

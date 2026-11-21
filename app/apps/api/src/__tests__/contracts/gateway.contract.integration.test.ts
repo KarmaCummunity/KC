@@ -30,6 +30,7 @@ import { ApiConfigModule } from '../../platform/config/apiConfig.module';
 import { DatabaseModule } from '../../platform/database/database.module';
 import { ACCESS_TOKEN_VERIFIER, type AccessTokenVerifier } from '../../platform/identity/accessTokenVerifier';
 import { PortGatewayModule } from '../../platform/ports/portGateway.module';
+import { VisitorCache } from '../../platform/ports/visitorCache';
 import { RateLimiter } from '../../platform/rateLimit/rateLimiter';
 import { KC_DATABASE_URL, KcTestDatabase, type TestMember } from '../support/kcDatabase';
 import { testConfig } from '../support/testConfig';
@@ -56,8 +57,10 @@ describe.skipIf(!KC_DATABASE_URL)('Port contracts through the API gateway', () =
       providers: [
         { provide: ACCESS_TOKEN_VERIFIER, useValue: verifier },
         { provide: RateLimiter, useValue: { check: () => Promise.resolve({ allowed: true, retryAfterSeconds: 0 }) } },
+        // Always a miss: these suites check what the database answers, not the cache.
+        { provide: VisitorCache, useValue: { read: () => Promise.resolve({ found: false }), write: () => Promise.resolve() } },
       ],
-      exports: [ACCESS_TOKEN_VERIFIER, RateLimiter],
+      exports: [ACCESS_TOKEN_VERIFIER, RateLimiter, VisitorCache],
     })
     class LocalIdentityModule {}
 

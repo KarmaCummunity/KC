@@ -39,6 +39,8 @@ const guestPosts = hostedPort('guestPosts', {
     list: 'public',
     get: 'public',
   },
+  // The visitor feed and a shared post: fresh within seconds is fresh enough for a visitor.
+  visitorCacheSeconds: { list: 15, get: 15 },
 });
 
 const housing = hostedPort('housing', {
@@ -212,6 +214,8 @@ const worldContent = hostedPort('worldContent', {
   methods: {
     getWorldContent: 'public',
   },
+  // Curated links and bodies, edited by admins a few times a month.
+  visitorCacheSeconds: { getWorldContent: 300 },
 });
 
 export const POSTS_PORTS: readonly PortDefinition[] = [challenge, guestPosts, housing, knowledgeBooking, knowledgeSlotSeries, knowledgeTopic, listingStreetAddress, marketplace, post, postSeries, savedPosts, search, volunteer, worldContent];

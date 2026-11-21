@@ -68,9 +68,18 @@ Proven so far (2026-11-21): `users`, `posts`, `savedPosts`, `chat`, `reports` â€
 
 - **Arguments are not yet validated against the port's types.** Postgres validates what reaches SQL (types, RLS, constraints), so this is a robustness gap, not a privilege one: a malformed argument can end as a `500` instead of a `400`. Follow-up: generate validators from the port interfaces and check them in the gateway.
 - **One port call can be several transactions**, as today. Atomicity improves only when an adapter is rewritten natively.
-- **Three round trips of overhead per adapter request** (`begin`, set identity, `commit`). Acceptable while the API sits next to the database; a pipelined identity statement is the first optimization if a load test asks for it.
+- **Two round trips of overhead per adapter request**: one opens the transaction and sets the caller, one commits. They cost little while the API sits next to the database and grow with the distance between them, which is why the API runs in the database's region.
 - **Values are JSON.** A port with a `Date`, a binary value or a callback needs a codec extension or its own route. Today that is the realtime and auth ports (phases 6 and 9) and one `Date` in the legal-documents port.
 - **The engine implements the dialect the adapters use, not all of PostgREST** (no casts, JSON paths, aggregates, full-text operators, estimated counts, GET function calls). An adapter that starts using one fails loudly with `PGRST100`.
+
+## Scaling levers already in place
+
+- **Stateless API.** No session or cache lives in an instance, so instances are added and removed freely.
+- **Bounded pool, short transactions.** Each instance holds at most ten database connections, and every transaction is one request of an adapter, which also makes the API safe behind a transaction-mode connection pooler.
+- **Visitor cache.** A `public` method can declare how long its answer may be reused for signed-out visitors (`visitorCacheSeconds`). All visitors share one database role, so one answer serves them all; a member's call is never cached. A cache on a method that is not `public` stops the API at start-up.
+- **Rate limit.** Every call that reaches a method is counted per caller in Redis, across instances; beyond the allowance the gateway answers `429` without running the method. Redis being down turns the limit and the cache off, never the API.
+
+Measured on one machine (API process, PostgreSQL and the load generator sharing it; 50 connections; 2026-11-21), so the numbers show ratios, not capacity: a visitor's port call ran at about 1 150 requests a second with a 40 ms median when every call reached the database, and at about 10 500 a second with a 4 ms median from the visitor cache. With the limiter at its default, a client that sent 57 000 calls in five seconds got exactly 600 answers and `429` for the rest. Real capacity is measured with the repo's k6 suite once the API runs in the cloud (ADR-009, phase 10).
 
 ## Alternatives rejected
 

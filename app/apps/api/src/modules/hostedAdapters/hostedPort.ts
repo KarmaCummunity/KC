@@ -16,6 +16,7 @@ export function hostedPort<Name extends PortName>(
   spec: {
     create: (client: SqlBackedClient) => PortCatalog[Name];
     methods: Readonly<Record<MethodName<PortCatalog[Name]>, PortAccess>>;
+    visitorCacheSeconds?: Readonly<Partial<Record<MethodName<PortCatalog[Name]>, number>>>;
   },
 ): PortDefinition {
   return definePort<PortCatalog[Name]>({ name, ...spec });
