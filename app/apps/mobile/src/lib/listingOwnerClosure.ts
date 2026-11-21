@@ -1,15 +1,12 @@
 /** World-specific owner close copy (FR-CLOSURE-011). */
 
+import { worldOwnerMarkCtaKey } from './worldDetailCopy';
+
 const CLOSE_WITHOUT_WORLDS = new Set(['items', 'animals']);
 
-/** i18n key for the owner's primary close action on an open give offer. */
+/** i18n key for the owner's primary close action on an open give offer (see worldDetailCopy). */
 export function listingOwnerMarkCtaKey(worldSlug: string | null): string {
-  if (worldSlug === 'animals') return 'closure.markAnimalsCta';
-  if (worldSlug === 'housing') return 'closure.markHousingCta';
-  if (worldSlug === 'rides') return 'closure.markRidesCta';
-  // #2078: volunteering takes place; it is not delivered.
-  if (worldSlug === 'time') return 'closure.markTimeCta';
-  return 'closure.markGiveCta';
+  return worldOwnerMarkCtaKey(worldSlug, 'Give');
 }
 
 /**
