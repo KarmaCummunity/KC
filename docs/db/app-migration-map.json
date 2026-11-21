@@ -1802,7 +1802,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRealtime.ts",
-     "line": 86,
+     "line": 89,
      "symbol": "SupabaseChatRealtime.subscribeToInbox",
      "area": "chat"
     }
@@ -6935,7 +6935,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRealtime.ts",
-     "line": 110,
+     "line": 128,
      "symbol": "SupabaseChatRealtime.readUnreadTotal",
      "area": "chat"
     },

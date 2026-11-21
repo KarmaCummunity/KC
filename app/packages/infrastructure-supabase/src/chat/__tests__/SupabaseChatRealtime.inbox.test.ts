@@ -106,6 +106,33 @@ describe('SupabaseChatRealtime — subscribeToInbox', () => {
     expect(cb.onUnreadTotalChanged).not.toHaveBeenCalled();
   });
 
+  it('drops a reconnect unread result that completes after unsubscribe', async () => {
+    let finish!: (value: RpcResult) => void;
+    const { f, client } = setup(() => new Promise((resolve) => { finish = resolve; }));
+    const { cb, unsub } = await sub(client);
+    const channel = f.created[0]!;
+    channel.statusCb!('CHANNEL_ERROR');
+    channel.statusCb!('SUBSCRIBED');
+    await vi.advanceTimersByTimeAsync(200);
+    unsub();
+    finish({ data: 19, error: null });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(cb.onUnreadTotalChanged).not.toHaveBeenCalled();
+  });
+
+  it('ignores late reconnect status and events after unsubscribe', async () => {
+    const { f, client, rpcCalls } = setup();
+    const { cb, unsub } = await sub(client);
+    const channel = f.created[0]!;
+    channel.statusCb!('CHANNEL_ERROR');
+    unsub();
+    channel.statusCb!('SUBSCRIBED');
+    ping(channel);
+    await vi.advanceTimersByTimeAsync(500);
+    expect(cb.onInboxChanged).not.toHaveBeenCalled();
+    expect(rpcCalls).toHaveLength(0);
+  });
+
   it('unsubscribe removes the channel and clears a pending debounce timer', async () => {
     const { f, client, rpcCalls } = setup();
     const { unsub } = await sub(client);
