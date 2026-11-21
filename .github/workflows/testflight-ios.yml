@@ -352,6 +352,7 @@ jobs:
       - name: Resolve public DEV backend config without account credentials
         run: node scripts/mobile-simulator-dev-env.mjs >> "$GITHUB_ENV"
       - name: Build and install unsigned simulator app
+        timeout-minutes: 45
         working-directory: app/apps/mobile
         env:
           NODE_ENV: production
@@ -364,7 +365,7 @@ jobs:
             -sdk iphonesimulator -destination "platform=iOS Simulator,id=$SIMULATOR_UDID" \
             -derivedDataPath "$RUNNER_TEMP/kc-simulator-build" \
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build \
-            > "$RUNNER_TEMP/ios-simulator/build.log" 2>&1 || {
+            2>&1 | tee "$RUNNER_TEMP/ios-simulator/build.log" || {
               tail -n 100 "$RUNNER_TEMP/ios-simulator/build.log"
               exit 1
             }

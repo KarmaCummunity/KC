@@ -24,3 +24,10 @@ test('boot has its own timeout and simulator transport opt-in cannot change a st
   assert.match(config, /EXPO_PUBLIC_ENVIRONMENT === 'development'/);
   assert.match(config, /EXPO_PUBLIC_STORE_BUILD !== 'true'/);
 });
+
+test('unsigned build has bounded runtime and streams forward progress while preserving failure status', () => {
+  const job = workflow.split('  ios-simulator:')[1];
+  assert.match(job, /Build and install unsigned simulator app\n        timeout-minutes: 45/);
+  assert.match(job, /set -euo pipefail/);
+  assert.match(job, /2>&1 \| tee "\$RUNNER_TEMP\/ios-simulator\/build.log"/);
+});
