@@ -7,7 +7,8 @@
 //   1. File-size cap: ≤300 lines per .ts/.tsx file. Pre-existing violations live
 //      in FILE_SIZE_ALLOWLIST with a TD-N pointer; the list shrinks over time.
 //   2. Layer boundaries: a layer never imports from a layer below it
-//      (domain ⇏ application/infra; application ⇏ infra; ui ⇏ domain/app/infra).
+//      (domain ⇏ application/infra; application ⇏ infra; ui ⇏ domain/app/infra;
+//      api ⇏ infrastructure-supabase/ui).
 //   3. Domain typed-error rule: `packages/domain/src/**` may not `throw new Error(...)` —
 //      must throw a domain-specific error class. Pre-existing exemptions are listed.
 
@@ -59,6 +60,13 @@ const LAYER_RULES = [
       /^@kc\/application/,
       /^@kc\/domain/,
     ],
+  },
+  // The server is its own composition root (ADR-009): it shares the domain and
+  // application packages with the app, never the Supabase adapters or the UI kit.
+  {
+    label: 'api',
+    fromPattern: /^apps\/api\/src\//,
+    forbidden: [/^@kc\/infrastructure-supabase/, /^@supabase\//, /^@kc\/ui/],
   },
 ];
 
@@ -189,7 +197,7 @@ function checkRouteFile(absPath, violations) {
   }
 }
 
-const targets = [join(ROOT, 'packages'), join(ROOT, 'apps', 'mobile')];
+const targets = [join(ROOT, 'packages'), join(ROOT, 'apps', 'mobile'), join(ROOT, 'apps', 'api')];
 const files = targets.flatMap((t) => walk(t));
 const violations = [];
 checkNotificationKindsGenerated(violations);
