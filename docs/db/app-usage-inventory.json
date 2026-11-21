@@ -1028,7 +1028,7 @@
   {
    "kind": "channel",
    "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRealtime.ts",
-   "line": 86,
+   "line": 89,
    "area": "chat",
    "symbol": "SupabaseChatRealtime.subscribeToInbox",
    "via": "expression",
@@ -1037,7 +1037,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRealtime.ts",
-   "line": 110,
+   "line": 128,
    "area": "chat",
    "symbol": "SupabaseChatRealtime.readUnreadTotal",
    "via": "literal",

@@ -12,6 +12,11 @@ export interface InboxStreamCallbacks {
   onUnreadTotalChanged: (total: number) => void;
   /** A new message in a listed chat — bump its row's unread before the debounced total read. */
   onInboxMessageInsert?: (message: Message) => void;
+  /**
+   * The inbox channel failed (error or timeout). The client rejoins on its own; once it is back,
+   * `onInboxChanged` fires so the inbox and the unread total catch up on what was missed.
+   */
+  onError?: (err: Error) => void;
 }
 
 /** Optional tuning for inbox realtime (FR-CHAT-012 race with mark-read). */
