@@ -14,7 +14,8 @@ OUT_DIR="${2:-maestro-artifacts}"
 DEVICE_VIDEO=/sdcard/kc-e2e.mp4
 : "${KC_E2E_PASSWORD:?KC_E2E_PASSWORD is required (scripts/maestro-dev-env.mjs)}"
 
-mkdir -p "$OUT_DIR/reports" "$OUT_DIR/videos" "$OUT_DIR/debug"
+mkdir -p "$OUT_DIR/reports" "$OUT_DIR/videos" "$OUT_DIR/debug" "$OUT_DIR/captures"
+OUT_DIR="$(cd "$OUT_DIR" && pwd)"
 
 # A cold-booted CI emulator often shows "Pixel Launcher isn't responding" (a system ANR
 # dialog) on top of every app, which hides the app's elements from Maestro. Suppress system
@@ -25,6 +26,10 @@ adb install -r "$APK"
 
 env_args=(-e "KC_E2E_PASSWORD=$KC_E2E_PASSWORD")
 [[ -n "${KC_E2E_EMAIL:-}" ]] && env_args+=(-e "KC_E2E_EMAIL=$KC_E2E_EMAIL")
+# Explicit success images only for the known synthetic default identity, never an override.
+capture_safe=false
+[[ "${KC_E2E_EMAIL:-user1@seed.kc.test}" == 'user1@seed.kc.test' ]] && capture_safe=true
+env_args+=(-e "KC_NATIVE_CAPTURE_SAFE=$capture_safe")
 
 # Runs one flow and screen-records it. $1 flow file, $2 artifact label (the flow name, or `<name>-retry`).
 # The video is kept only when the flow fails. Returns Maestro's exit status.
@@ -38,6 +43,7 @@ run_flow() {
 
   maestro test "$flow" "${env_args[@]}" \
       --format junit --output "$OUT_DIR/reports/$label.xml" \
+      --test-output-dir "$OUT_DIR/captures/$label" \
       --debug-output "$OUT_DIR/debug/$label" || status=$?
 
   # Maestro writes the -e variables, the password included, into commands.json and maestro.log.
@@ -51,6 +57,7 @@ run_flow() {
     sleep 2
     adb pull "$DEVICE_VIDEO" "$OUT_DIR/videos/$label.mp4" || echo "::warning::no video for $label"
   fi
+  node "$(dirname "$0")/native-capture-media.mjs" "$OUT_DIR" "$label"
   return "$status"
 }
 

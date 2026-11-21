@@ -3,6 +3,8 @@
 appId: org.karmacommunity.app
 name: Posts — composer opens
 tags: [posts]
+env:
+  KC_NATIVE_CAPTURE_SAFE: "false"
 ---
 - runFlow: ../subflows/sign-in.yaml
 - tapOn:
@@ -13,3 +15,15 @@ tags: [posts]
     timeout: 15000
 - assertVisible:
     id: create-post-screen
+
+# Retained on success too; requires pixel inspection, not a visual verdict.
+- runFlow:
+    when:
+      true: ${KC_NATIVE_CAPTURE_SAFE === 'true'}
+    commands:
+      - runFlow:
+          when:
+            visible:
+              id: native-create-capture-safe
+          commands:
+            - takeScreenshot: 861-create-form
