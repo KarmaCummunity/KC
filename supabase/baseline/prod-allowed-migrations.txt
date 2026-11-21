@@ -84,3 +84,4 @@
 0087_biography_url_check_real_tlds.sql
 0088_outbox_claim_exact_limit.sql
 0089_identity_hash_reservation.sql
+0090_feed_has_image_filter.sql
