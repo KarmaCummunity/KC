@@ -2086,3 +2086,16 @@ The Demo data screen keeps two failures apart: the RPC itself is missing (`not_i
 **Rules while in flight.** A context not yet moved follows ADR-002. A moved context gets new capabilities as endpoint + adapter method + contract case. No new Edge Function, Realtime channel or Storage bucket once the phase that replaces it has started. Migrations stay in `supabase/migrations/` until the database move.
 
 **Affected.** `docs/architecture/adr/ADR-009-backend-platform.md`, `docs/architecture/target.md` §4; later `app/apps/api`, `app/packages/infrastructure-api`, `infra/gcp/`, the **Deploy** workflow, and in the end `supabase/**` and `app/packages/infrastructure-supabase`.
+
+## {{ENG:port-gateway-compat-engine}} — The API serves application ports through one gateway and hosts the Supabase adapters on a SQL engine (2026-11-21)
+
+**Decision.** The app's data access goes through one route, `POST /v1/ports/<port>/<method>`: the app calls a method of an application port and the API runs it as the caller. On the app, `createRemotePort<Port>()` of the new `@kc/infrastructure-api` is the one generic adapter for every port; a typed domain or application error crosses the wire and is rebuilt as an instance of its class. On the API, `definePort<Port>()` requires an access decision (`member`, `public`, `not_served`) for every method of the interface at compile time. A port is served by running its existing Supabase adapter on the server: `platform/postgrest` answers the PostgREST requests the adapters build with SQL, each request in its own transaction as the caller, so grants and row-level security decide as before. Details and limits in [ADR-010](../architecture/adr/ADR-010-port-gateway.md); it refines phase 5 of `{{ENG:backend-platform-off-supabase}}`.
+
+**Why.** 54 ports with about 275 methods sit on 184 adapter files (about 15 000 lines) that use a small PostgREST vocabulary. An endpoint and client adapter per method, or a rewrite of the adapters, is months of work that drifts from the tested originals. The ports are already the typed contract and six have shared contract suites (`D-204`); on 2026-11-21 all six (57 cases) pass end to end through the gateway on the real schema, built locally on plain PostgreSQL by `apps/api/scripts/kc-test-db.sh`.
+
+**Rejected.** An endpoint per method; rewriting adapters first; running PostgREST as a sidecar behind the API (one more service and pool, and the schema stays exposable); tRPC or GraphQL (a second schema next to the port interfaces).
+
+**Open.** Arguments are not validated against the port's types yet (Postgres validates what reaches SQL; follow-up: generated validators). Signed-out access is decided per method when the app's visitor surface is wired.
+
+**Affected.** `app/apps/api/src/platform/{ports,postgrest}`, `app/apps/api/src/modules/hostedAdapters`, `app/packages/infrastructure-api`, `app/scripts/check-architecture.mjs`, `docs/architecture/adr/ADR-009-backend-platform.md`.
+

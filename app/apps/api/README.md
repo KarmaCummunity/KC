@@ -2,7 +2,7 @@
 
 KC's own server: a NestJS application (Fastify) that takes over the app's data access from Supabase one port at a time. Plan and phases: [`docs/architecture/adr/ADR-009-backend-platform.md`](../../../docs/architecture/adr/ADR-009-backend-platform.md).
 
-Today it is a foundation: it starts, connects to Postgres and Redis, reports liveness and readiness, verifies access tokens and runs database work as the caller. It has one business route, `GET /v1/session`. It is not deployed and the mobile app does not call it yet.
+Today it serves five application ports (`users`, `posts`, `savedPosts`, `chat`, `reports`) through one gateway route, by running the existing Supabase data adapters on the server ([ADR-010](../../../docs/architecture/adr/ADR-010-port-gateway.md)). It is not deployed, and the mobile app does not call it yet.
 
 ## Run
 
@@ -11,9 +11,21 @@ export DATABASE_URL=postgres://user:password@localhost:5432/kc REDIS_URL=redis:/
 export KC_AUTH_ISSUER=https://<project>.supabase.co/auth/v1
 pnpm --filter @kc/api build && pnpm --filter @kc/api start   # http://localhost:8080/health
 pnpm --filter @kc/api test                                    # unit and in-process HTTP tests
-KC_API_TEST_DISPOSABLE_DATABASE=1 pnpm --filter @kc/api test  # also the integration tests; they create roles and a schema, so only on a throwaway database
+KC_API_TEST_DISPOSABLE_DATABASE=1 pnpm --filter @kc/api test  # also the platform integration tests; they create roles and a schema, so only on a throwaway database
 docker build -f apps/api/Dockerfile -t kc-api .               # from app/
 ```
+
+### Tests on the real KC schema (no Docker)
+
+The port contract suites and the engine suite run against a throwaway database that holds the whole KC schema. It needs a local PostgreSQL 17 with PostGIS, pgvector and pgTAP:
+
+```bash
+DB_URL=postgres://postgres@127.0.0.1:5432/postgres apps/api/scripts/kc-test-db.sh   # prints the line to export
+export KC_API_TEST_KC_DATABASE_URL=postgres://postgres@127.0.0.1:5432/kc_api_test
+pnpm --filter @kc/api test
+```
+
+Without the variable those suites are skipped and the unit tests still run.
 
 ## Configuration (environment variables)
 
@@ -38,8 +50,10 @@ An invalid value stops the process at start with an error that names the variabl
 
 ## Conventions
 
-- **Layout.** `src/platform/` holds what every route shares (config, errors, request ids, logging, database, Redis, health). A bounded context is a module under `src/modules/<context>/` and is imported in `src/app.module.ts`.
+- **Layout.** `src/platform/` holds what every route shares (config, errors, request ids, logging, database, Redis, health, identity, the port gateway and the PostgREST-compatible engine). `src/modules/hostedAdapters/` lists the ports served by hosted Supabase adapters. A bounded context is a module under `src/modules/<context>/` and is imported in `src/app.module.ts`.
 - **Routes.** Business routes are served under `/v1`. `/health` is unversioned.
+- **Serving a port.** Declare it with `definePort<Port>()` in `src/modules/hostedAdapters/hostedPorts.ts`: the compiler asks for an access decision for every method (`member`, `public` or `not_served`). Then add its contract suite to `src/__tests__/contracts/gateway.contract.integration.test.ts` and run it on the KC test database. The app calls it with `createRemotePort` from `@kc/infrastructure-api`.
+- **The engine is not PostgREST.** It implements the dialect the adapters use and refuses the rest with `PGRST100`. If an adapter needs more, extend `src/platform/postgrest` with a unit test and a case on the KC schema; never loosen identifier or value handling.
 - **Errors.** Throw `ApiError(code, httpStatus)`; never format an error response in a handler. Every error body is `{ "error": { "code", "requestId" } }`, and an unexpected failure is always `500 internal_error`.
 - **Who is calling.** Put `@UseGuards(AuthenticatedGuard)` on a signed-in route and take the caller with `@Caller()`. Every rejected token is the same `401 unauthorized`.
 - **Database work for a request.** Use `IdentityDatabase.runAs(caller, work)` (or `runAnonymous`): one transaction with the caller's role and claims, so `auth.uid()`, RLS and the existing SQL functions behave as they do through PostgREST. The database user in `DATABASE_URL` must be allowed to switch to the `authenticated` and `anon` roles.

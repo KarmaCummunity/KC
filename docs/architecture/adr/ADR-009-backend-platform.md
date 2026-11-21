@@ -38,7 +38,7 @@ KC moves to a backend it owns, in phases, with the app working at every step.
 
 | Concern | Today | Target |
 |---|---|---|
-| API | PostgREST, called by the app | NestJS (`app/apps/api`) on Cloud Run: stateless, autoscaled, REST with a generated OpenAPI document, versioned under `/v1` |
+| API | PostgREST, called by the app | NestJS (`app/apps/api`) on Cloud Run: stateless, autoscaled, versioned under `/v1`. The app's data access is one gateway route that serves the application ports ([ADR-010](./ADR-010-port-gateway.md)); webhooks and health are ordinary REST |
 | Database | Supabase Postgres 17 | Cloud SQL for PostgreSQL 17 with the same extensions (`postgis`, `vector`, `pg_trgm`, `btree_gin`, `btree_gist`, `pg_cron`). `pg_net` and `supabase_vault` are not carried over: the API's workers and Secret Manager replace them |
 | Identity | Supabase Auth | An `identity` module: Google and Apple ID-token sign-in, email and password, short-lived access tokens, rotating refresh tokens stored hashed |
 | Authorization | RLS + `SECURITY DEFINER` RPCs | RLS stays the authority until the database move and stays as defense in depth after it; API guards are added on top |
@@ -50,19 +50,20 @@ KC moves to a backend it owns, in phases, with the app working at every step.
 | Infrastructure | dashboard settings | Terraform under `infra/gcp/`, one variable file per environment |
 | Observability | Sentry + `ops` health registry | The same, plus structured request logs, traces and Cloud Monitoring alerts |
 
-Default libraries (a phase's issue may replace one with evidence): Fastify adapter, `pg` + Kysely (typed SQL; most data access starts as calls to existing SQL functions), BullMQ, `@nestjs/swagger` with a generated typed client.
+Default libraries (a phase's issue may replace one with evidence): Fastify adapter, `pg` (a typed query builder joins when native modules replace hosted adapters), BullMQ. The typed contract between the app and the API is the port interfaces of `@kc/application`, not a generated client (ADR-010).
 
 ### Placement in the monorepo
 
 ```
 app/apps/api/                       second composition root (server); imports @kc/domain and @kc/application
-  src/modules/<context>/            controller → use case → repository, one folder per bounded context
-  src/platform/                     config, logging, errors, database, redis, health
-app/packages/infrastructure-api/    client adapters: the same ports as @kc/infrastructure-supabase, over HTTP and WebSocket
+  src/modules/<context>/            native modules: use case → repository, one folder per bounded context
+  src/modules/hostedAdapters/       the Supabase adapters served through the gateway until a native module replaces them
+  src/platform/                     config, logging, errors, database, redis, health, identity, ports (gateway), postgrest (engine)
+app/packages/infrastructure-api/    the wire format and the generic remote port the app uses for every port
 infra/gcp/                          Terraform
 ```
 
-`@kc/domain` and `@kc/application` keep their rules (`AGENTS.md` §5). The API never imports `@kc/infrastructure-supabase`; the mobile app never imports `apps/api`.
+`@kc/domain` and `@kc/application` keep their rules (`AGENTS.md` §5). While the move is in flight the API hosts the adapters of `@kc/infrastructure-supabase` on its own SQL-backed client (ADR-010); it never opens a network client to Supabase. The mobile app never imports `apps/api`.
 
 ### How the move works: one database, two doors, then one
 
@@ -70,7 +71,7 @@ The alternative to a strangler is a second environment that only becomes usable 
 
 1. The API connects to the current Postgres with its own role and runs every request in a transaction under the caller's identity (`set local role` plus the request claims), so `auth.uid()`, every RLS policy and every existing function behave exactly as they do through PostgREST. No SQL is rewritten to move a port.
 2. Until KC has its own identity module, the API accepts the access token Supabase Auth issues, verified against the project's signing keys.
-3. The app's composition root picks the adapter per port from a flag. A port moves when its contract suite passes on both adapters; switching it back is a flag change.
+3. The app's composition root picks the adapter per port from a flag. A port moves when its contract suite passes through the API; switching it back is a flag change. The API serves a port by running its existing adapter on the server ([ADR-010](./ADR-010-port-gateway.md)), so moving a port needs no rewrite.
 4. When no port, channel, bucket, function or sign-in uses Supabase, the project is only a Postgres host. The database then moves to Cloud SQL in one rehearsed step that clients do not see, because they only know the API.
 
 During phases 1–9 the API runs in the Google Cloud region nearest to the Supabase project, to keep query latency low; it moves to `me-west1` together with the database.
@@ -84,21 +85,21 @@ Each phase is one or more child issues of KC#1496, opened when its turn comes. A
 | 1 | **API foundation.** `app/apps/api`: health and readiness, validated config, structured logs, typed error mapping, OpenAPI, tests; local Postgres + Redis with Docker Compose; container image; CI lane | The CI lane is green; the image answers `/health` against the local stack |
 | 2 | **Google Cloud dev environment.** Terraform: Artifact Registry, Cloud Run, Secret Manager, Workload Identity Federation, budget alert; a deploy stage in **Deploy** | A merge to `dev` deploys the API and the deploy smoke test reads its health URL |
 | 3 | **Identity bridge and data access.** Token verification, per-request identity in the transaction, connection pooling | An integration test reads an RLS-protected resource through the API and through PostgREST as two different users and gets the same rows |
-| 4 | **Database portability guard.** CI applies the whole migration chain to plain PostgreSQL 17 plus a small compatibility script (roles, `auth` helper functions) and runs the DB tests there | The guard is a required lane; a migration that needs a Supabase-only feature fails it |
-| 5 | **The API becomes the only door**, context by context: profile and follow → posts, feed and search → handoffs and rides → chat → notifications → organizations and finance → admin. Each context: endpoints, `@kc/infrastructure-api` adapter, contract suite on both adapters, flag flip | A static check finds no table or RPC call from the app; the Supabase data adapters are deleted |
+| 4 | **Database portability guard.** Already in the repo: `scripts/run-baseline-tests.sh` applies the whole migration chain to plain PostgreSQL 17 through `supabase/baseline/local/supabase_shim.sql` and runs the DB suites. Left: confirm it is a required lane, and replace the three platform extensions (`pg_cron`, `pg_net`, Vault) in phases 8 and 10 | A migration that needs a Supabase-only feature fails the lane |
+| 5 | **The API becomes the only door**, port by port (ADR-010): declare the port for the gateway with an access decision per method, pass its contract suite through the gateway (write the suite first if it has none), switch the app's composition root to the remote port behind the flag. Order: profile and follow → posts, feed and search → handoffs and rides → chat → notifications → organizations and finance → admin | A static check finds no table or RPC call from the app; `@kc/infrastructure-supabase` is imported only by the API |
 | 6 | **Realtime.** Gateway, Redis fan-out, the ADR-003 topics, reconnect and fallback behavior kept | No Supabase Realtime channel is opened; the realtime tests pass on the new adapter |
 | 7 | **Media.** Buckets, CDN, signed uploads, image variants, video pipeline; existing objects copied and verified by checksum | No Supabase Storage call; a k6 media scenario meets its budget |
 | 8 | **Background work and webhooks.** The 20 Edge Functions become API modules, queue workers or scheduled jobs; `pg_net` and Vault use removed | No Edge Function is deployed; the health registry covers the queues |
 | 9 | **Own identity.** Sign-in, refresh, revocation, account deletion; users moved with their password hashes, so nobody resets a password | The auth contract suite and the two-user E2E journeys pass with KC-issued tokens only |
 | 10 | **Database move and cut-over.** Cloud SQL at launch sizing (high availability, point-in-time recovery, read replica), rehearsed twice on dev, then production in a maintenance window; API moves to `me-west1` | Row counts and checksums match per table; the E2E journeys and the k6 suite pass on the new stack; client access to the Supabase projects is switched off |
-| 11 | **Logic moves from SQL to TypeScript** (continuous). When a context changes, its functions become use cases with unit tests; new logic for a moved context is not written as a new SQL function | Tracked per context; no deadline |
+| 11 | **Hosted adapters and SQL logic become native modules** (continuous). When a context changes or a load test points at it, its hosted adapter is rewritten as a use case with SQL, and its SQL functions as tested TypeScript; new logic for a moved context is not written as a new SQL function | Tracked per context; the compatibility engine is deleted with the last hosted adapter |
 
 Phases 4, 6, 7 and 8 do not depend on each other and can run in parallel with phase 5.
 
 ### Rules while the move is in flight
 
 - A context that has not moved follows ADR-002 as today.
-- Once a context is behind the API, a new capability for it ships as an endpoint plus an adapter method plus a contract case, in one PR.
+- Once a port is behind the API, a new capability for it ships as a port method with its access decision in the gateway and a contract case, in one PR.
 - No new Edge Function after phase 8 starts; no new Realtime channel after phase 6 starts; no new Storage bucket after phase 7 starts.
 - Schema changes stay in `supabase/migrations/` with the same numbering rules until phase 10 replaces the runner. The directory name changes last.
 
