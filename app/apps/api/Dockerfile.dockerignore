@@ -5,3 +5,4 @@
 **/.turbo
 **/.expo
 apps/mobile
+packages/ui

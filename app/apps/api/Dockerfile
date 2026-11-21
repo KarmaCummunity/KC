@@ -12,13 +12,23 @@ WORKDIR /workspace
 RUN corepack enable
 
 # Manifests first: the dependency layer is rebuilt only when they change.
+# The API bundles these workspace packages (they ship as TypeScript source).
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/api/package.json apps/api/
+COPY packages/domain/package.json packages/domain/
+COPY packages/application/package.json packages/application/
+COPY packages/infrastructure-api/package.json packages/infrastructure-api/
+COPY packages/infrastructure-supabase/package.json packages/infrastructure-supabase/
 RUN pnpm install --frozen-lockfile --filter "@kc/api..."
 
+COPY packages/domain/ packages/domain/
+COPY packages/application/ packages/application/
+COPY packages/infrastructure-api/ packages/infrastructure-api/
+COPY packages/infrastructure-supabase/ packages/infrastructure-supabase/
 COPY apps/api/ apps/api/
 # `deploy --prod` writes a standalone copy of the package with production
-# dependencies only (no workspace symlinks), which the runtime stage takes.
+# dependencies only, which the runtime stage takes. The workspace packages are
+# dev dependencies on purpose: they are inside the bundle, not in node_modules.
 RUN pnpm --filter @kc/api build \
  && pnpm --filter @kc/api deploy --prod /out \
  && cp -r apps/api/dist /out/dist

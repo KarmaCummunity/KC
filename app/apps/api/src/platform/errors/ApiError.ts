@@ -10,6 +10,8 @@ export class ApiError extends Error {
     readonly httpStatus: number,
     /** For server logs only; never sent to the client. */
     message?: string,
+    /** Structured data the client needs to act on the failure; sent as `error.detail`. */
+    readonly detail?: Readonly<Record<string, unknown>>,
   ) {
     super(message ?? code);
     this.name = 'ApiError';

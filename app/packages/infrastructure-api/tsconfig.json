@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "lib": ["ES2022", "DOM"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "declaration": true,
+    "skipLibCheck": true,
+    "paths": {
+      "@kc/domain": ["../domain/src/index.ts"],
+      "@kc/application": ["../application/src/index.ts"]
+    }
+  },
+  "include": ["src"]
+}

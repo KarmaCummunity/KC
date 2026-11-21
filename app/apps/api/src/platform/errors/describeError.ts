@@ -5,6 +5,8 @@ import { ApiError } from './ApiError';
 export interface ErrorDescription {
   readonly status: number;
   readonly code: string;
+  /** Only an `ApiError` can carry detail: it is written for the client on purpose. */
+  readonly detail?: Readonly<Record<string, unknown>>;
 }
 
 const INTERNAL_ERROR: ErrorDescription = { status: 500, code: 'internal_error' };
@@ -26,7 +28,7 @@ const HTTP_STATUS_CODES: Readonly<Record<number, string>> = {
  */
 export function describeError(exception: unknown): ErrorDescription {
   if (exception instanceof ApiError) {
-    return { status: exception.httpStatus, code: exception.code };
+    return { status: exception.httpStatus, code: exception.code, ...(exception.detail ? { detail: exception.detail } : {}) };
   }
   if (exception instanceof HttpException) {
     const status = exception.getStatus();
