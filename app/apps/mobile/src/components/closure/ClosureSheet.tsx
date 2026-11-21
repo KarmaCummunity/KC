@@ -16,8 +16,7 @@ import { BottomSheet } from '../ui/BottomSheet';
 import { GhostButton, PrimaryButton } from '../ui/Buttons';
 import { ClosureStep2 } from './ClosureStep2';
 import { ClosureErrorPane } from './ClosureErrorPane';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
-
+import { rtlTextAlignStart } from '../../lib/rtlLayout';
 type Translate = (key: string) => string;
 
 /** Sheet heading for the visible step. The world (or a request) picks the words. */

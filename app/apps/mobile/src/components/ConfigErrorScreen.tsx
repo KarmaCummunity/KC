@@ -2,8 +2,7 @@ import { ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { makeUseStyles, typography, spacing, Text } from '@kc/ui';
-import { rtlTextAlignStart } from '../lib/rtlTextAlignStart';
-
+import { rtlTextAlignStart } from '../lib/rtlLayout';
 export function ConfigErrorScreen() {
   const { t } = useTranslation();
   const styles = useStyles();

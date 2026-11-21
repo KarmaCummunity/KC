@@ -10,8 +10,8 @@ import { buildKnowledgeTopicTree, localizedWorldLabel, type WorldContent } from 
 import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
 import { givingWorldHref } from '../../navigation/donationsHubTiles';
 import { openExternalUrl } from '../../utils/openExternalUrl';
-import { rowDirectionStart } from '../../lib/rtlLayout';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { rowDirectionStart, rtlTextAlignStart } from '../../lib/rtlLayout';
+
 import { Chip } from '../ui/Chip';
 import { WorldContentRow } from './WorldContentRow';
 

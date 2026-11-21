@@ -10,7 +10,7 @@ import { Card } from '../ui/Card';
 import { IconTile } from '../ui/IconTile';
 import { Chip } from '../ui/Chip';
 import { MotionEntry, ENTRY_DELAY } from '../ui/MotionEntry';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { rtlTextAlignStart } from '../../lib/rtlLayout';
 import type { DonationHubTile } from '../../navigation/donationsHubTiles';
 
 /** A hub tile plus whether its world is still a portal (no feed / in-app flow yet). */

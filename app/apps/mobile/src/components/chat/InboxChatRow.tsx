@@ -9,8 +9,8 @@ import { AvatarInitials } from '../AvatarInitials';
 import { OnlineDot } from './OnlineDot';
 import { formatRelativeChatTime } from '../../lib/formatRelativeChatTime';
 import { formatInboxPreview, inboxMediaIcon } from '../../lib/formatInboxPreview';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
-import { rowDirectionStart } from '../../lib/rtlLayout';
+
+import { rowDirectionStart, rtlTextAlignStart } from '../../lib/rtlLayout';
 import { VerificationBadge } from '../VerificationBadge';
 interface Props {
   readonly item: ChatWithPreview;

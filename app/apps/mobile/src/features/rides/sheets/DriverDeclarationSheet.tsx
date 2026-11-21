@@ -13,8 +13,8 @@ import { iconSize, makeUseStyles, spacing, typography, useTheme, Text } from '@k
 
 import { BottomSheet } from '../../../components/ui/BottomSheet';
 import { PrimaryButton } from '../../../components/ui/Buttons';
-import { rtlTextAlignStart } from '../../../lib/rtlTextAlignStart';
-import { rowDirectionStart } from '../../../lib/rtlLayout';
+
+import { rowDirectionStart, rtlTextAlignStart } from '../../../lib/rtlLayout';
 import { getAcceptDriverDeclarationUseCase } from '../composition/ridesComposition';
 
 interface Props {

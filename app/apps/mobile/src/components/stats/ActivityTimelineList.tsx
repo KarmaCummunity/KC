@@ -7,8 +7,7 @@ import { he as dateFnsHe } from 'date-fns/locale/he';
 import { Ionicons } from '@expo/vector-icons';
 import type { PersonalActivityItem, PersonalActivityKind } from '@kc/domain';
 import { iconSize, makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
-
+import { rtlTextAlignStart } from '../../lib/rtlLayout';
 const KIND_ICONS: Record<PersonalActivityKind, keyof typeof Ionicons.glyphMap> = {
   post_created: 'add-circle-outline',
   post_closed_delivered: 'gift-outline',

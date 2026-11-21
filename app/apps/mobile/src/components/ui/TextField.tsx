@@ -29,8 +29,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { makeUseStyles, radius, spacing, typography, useTheme, Text, TextInput, type ColorPalette } from '@kc/ui';
-import { emptyInputDirectionStyle } from '../../lib/rtlLayout';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { emptyInputDirectionStyle, rtlTextAlignStart } from '../../lib/rtlLayout';
+
 import { formInputKindProps, type FormInputKind } from '../../lib/platform/formTextInputHints';
 import { useFormScopeField } from './useFormScopeField';
 import { FieldMessage } from './FieldMessage';

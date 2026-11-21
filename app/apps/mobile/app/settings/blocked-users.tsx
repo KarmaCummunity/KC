@@ -15,7 +15,7 @@ import { useShellStackScreenOptions } from '../../src/navigation/shellStackScree
 import { AvatarInitials } from '../../src/components/AvatarInitials';
 import { KcFlashList } from '../../src/components/lists/KcFlashList';
 import { useBlockedUsers } from '../../src/hooks/useBlockedUsers';
-import { rtlTextAlignStart } from '../../src/lib/rtlTextAlignStart';
+import { rtlTextAlignStart } from '../../src/lib/rtlLayout';
 import { webTextRtl, webViewRtl } from '../../src/lib/webRtlStyle';
 import { listUnavailableMessage } from '../../src/lib/backendAvailability';
 export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';

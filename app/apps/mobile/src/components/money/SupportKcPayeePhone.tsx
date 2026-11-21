@@ -8,7 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { formatPayeePhone } from '@kc/domain';
 import { makeUseStyles, spacing, typography, useTheme, Text, iconSize } from '@kc/ui';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { rtlTextAlignStart } from '../../lib/rtlLayout';
 import { copyOrShareText } from '../../lib/copyOrShareText';
 
 const useStyles = makeUseStyles(({ colors }) => ({

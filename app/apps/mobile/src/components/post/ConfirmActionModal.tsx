@@ -2,7 +2,7 @@
 // (delete-owner, admin-remove, block). Built on the kit `Modal` (spec 17 §4.1).
 import { useTranslation } from 'react-i18next';
 import { makeUseStyles, typography, Text } from '@kc/ui';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { rtlTextAlignStart } from '../../lib/rtlLayout';
 import { DangerButton, PrimaryButton, SecondaryButton } from '../ui/Buttons';
 import { Modal } from '../ui/Modal';
 

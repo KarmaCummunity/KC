@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { makeUseStyles, radius, typography, useTheme, Text } from '@kc/ui';
 import { webTextRtl } from '../../lib/webRtlStyle';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { rtlTextAlignStart } from '../../lib/rtlLayout';
 import { GhostButton, PrimaryButton } from '../ui/Buttons';
 import { Modal } from '../ui/Modal';
 

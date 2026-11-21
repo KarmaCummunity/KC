@@ -1,7 +1,6 @@
 import { makeUseStyles, radius, shadow, spacing, typography } from '@kc/ui';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
-import { absoluteCornerEnd } from '../../lib/rtlLayout';
 
+import { absoluteCornerEnd, rtlTextAlignStart } from '../../lib/rtlLayout';
 // Welcome / sign-in entry styles — theme-aware so the warm cream/white surfaces
 // flip to warm-dark counterparts in dark mode.
 export const useWelcomeScreenStyles = makeUseStyles(({ colors, isDark }) => ({

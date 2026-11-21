@@ -13,7 +13,7 @@ import { LaunchSurfaceGate } from '../../src/components/LaunchSurfaceGate';
 import { ParkedFeatureNotice } from '../../src/components/ParkedFeatureNotice';
 import { NotificationToggleRow } from '../../src/components/NotificationToggleRow';
 import { WHATSAPP_BOT_AVAILABLE } from '../../src/lib/parkedFeatures';
-import { rtlTextAlignStart } from '../../src/lib/rtlTextAlignStart';
+import { rtlTextAlignStart } from '../../src/lib/rtlLayout';
 import { webTextRtl, webViewRtl } from '../../src/lib/webRtlStyle';
 import { confirmAction } from '../../src/services/platformConfirm';
 import { useWhatsAppLink, whatsappLinkErrorKey } from '../../src/hooks/useWhatsAppLink';

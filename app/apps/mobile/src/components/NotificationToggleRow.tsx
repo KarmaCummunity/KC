@@ -1,6 +1,6 @@
 import { Platform, View } from 'react-native';
 import { makeUseStyles, PlatformSwitch, spacing, typography, Text } from '@kc/ui';
-import { rtlTextAlignStart } from '../lib/rtlTextAlignStart';
+import { rtlTextAlignStart } from '../lib/rtlLayout';
 import { webTextRtl, webViewRtl } from '../lib/webRtlStyle';
 
 interface Props {

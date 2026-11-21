@@ -7,7 +7,7 @@ import { MirroredIcon } from '../../src/components/ui/MirroredIcon';
 import { Ionicons } from '@expo/vector-icons';
 import { makeUseStyles, spacing, typography, radius, iconSize, useTheme, Text } from '@kc/ui';
 import { webTextRtl, webViewRtl } from '../../src/lib/webRtlStyle';
-import { rtlTextAlignStart } from '../../src/lib/rtlTextAlignStart';
+import { rtlTextAlignStart } from '../../src/lib/rtlLayout';
 import { RESEARCH_SHARE_SRC_THANKS } from '../../src/lib/shareResearchSurvey';
 import { triggerResearchShare } from '../../src/lib/triggerResearchShare';
 import { useAuthStore } from '../../src/store/authStore';

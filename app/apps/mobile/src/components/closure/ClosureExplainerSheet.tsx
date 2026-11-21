@@ -8,8 +8,8 @@ import { useClosureStore } from '../../store/closureStore';
 import { closureCopyKeys } from '../../lib/closureCopy';
 import { useAuthStore } from '../../store/authStore';
 import { getUserRepo } from '../../services/userComposition';
-import { rowDirectionStart } from '../../lib/rtlLayout';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { rowDirectionStart, rtlTextAlignStart } from '../../lib/rtlLayout';
+
 import { PrimaryButton } from '../ui/Buttons';
 import { MIN_TAP_TARGET } from '../ui/kitMetrics';
 import { Modal } from '../ui/Modal';

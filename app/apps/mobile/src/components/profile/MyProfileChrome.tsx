@@ -36,8 +36,7 @@ import { IdentityVerificationProfileCard } from './IdentityVerificationProfileCa
 import { effectiveVerificationLevel } from '@kc/domain';
 import { KarmaBadge } from './KarmaBadge';
 import { formatUserLocationLine } from '../../lib/formatUserLocationLine';
-import { rowDirectionStart } from '../../lib/rtlLayout';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { rowDirectionStart, rtlTextAlignStart } from '../../lib/rtlLayout';
 
 /**
  * RN-Web: absolute `start` ignores RTL like native. `I18nManager.isRTL` is also false at

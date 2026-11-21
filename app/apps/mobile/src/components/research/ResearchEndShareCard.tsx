@@ -3,9 +3,9 @@ import React, { useCallback, useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
-import { makeUseStyles, spacing, typography, useTheme, Text } from '@kc/ui';
+import { iconSize, makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
 import { webTextRtl, webViewRtl } from '../../lib/webRtlStyle';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { rtlTextAlignStart } from '../../lib/rtlLayout';
 import {
   shareResearchSurvey,
   RESEARCH_SHARE_SRC_DURING_SURVEY,
@@ -47,7 +47,7 @@ export function ResearchEndShareCard(): React.JSX.Element {
   return (
     <View style={[styles.card, webViewRtl]}>
       <View style={styles.iconRow}>
-        <Ionicons name="people-outline" size={22} color={colors.primary} />
+        <Ionicons name="people-outline" size={iconSize.xl} color={colors.primary} />
         <Text style={styles.eyebrow}>{t('research.share.endSurveyEyebrow')}</Text>
       </View>
       <Text style={styles.title}>{t('research.share.endSurveyTitle')}</Text>
@@ -58,7 +58,7 @@ export function ResearchEndShareCard(): React.JSX.Element {
         accessibilityRole="button"
         accessibilityLabel={t('research.share.endSurveyTitle')}
       >
-        <Ionicons name="share-social-outline" size={18} color={colors.textInverse} />
+        <Ionicons name="share-social-outline" size={iconSize.md} color={colors.textInverse} />
         <Text style={styles.shareBtnText}>{t('research.share.endSurveyCta')}</Text>
       </Pressable>
       {shareStatus ? (
@@ -81,7 +81,7 @@ const useStyles = makeUseStyles(({ colors }) => ({
   card: {
     gap: spacing.sm,
     padding: spacing.base,
-    borderRadius: 14,
+    borderRadius: 14, // brand-guard-allow: 14px card radius sits between radius.md and radius.lg
     backgroundColor: colors.primarySurface,
     borderWidth: 1,
     borderColor: colors.primary,
@@ -94,7 +94,7 @@ const useStyles = makeUseStyles(({ colors }) => ({
   eyebrow: {
     ...typography.caption,
     color: colors.primary,
-    fontWeight: '700',
+    ...typography.bold,
     ...webTextRtl,
   },
   title: {
@@ -117,7 +117,7 @@ const useStyles = makeUseStyles(({ colors }) => ({
     gap: spacing.sm,
     marginTop: spacing.xs,
     backgroundColor: colors.primary,
-    borderRadius: 12,
+    borderRadius: radius.md,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
   },
@@ -125,7 +125,7 @@ const useStyles = makeUseStyles(({ colors }) => ({
   shareBtnText: {
     ...typography.button,
     color: colors.textInverse,
-    fontWeight: '700',
+    ...typography.bold,
     ...webTextRtl,
   },
   statusLine: {

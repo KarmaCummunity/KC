@@ -2,9 +2,8 @@
 // architecture file-size budget. The search bar and filter button use shared filterKit.
 import { StyleSheet } from 'react-native';
 import { makeUseStyles, radius, spacing, typography } from '@kc/ui';
-import { rtlTextAlignEnd, rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
-import { layoutDirectionStyle, rowDirectionStart } from '../../lib/rtlLayout';
 
+import { layoutDirectionStyle, rowDirectionStart, rtlTextAlignEnd, rtlTextAlignStart } from '../../lib/rtlLayout';
 export const useSearchScreenStyles = makeUseStyles(({ colors }) => ({
   container: { flex: 1, backgroundColor: colors.surfaceCream },
 

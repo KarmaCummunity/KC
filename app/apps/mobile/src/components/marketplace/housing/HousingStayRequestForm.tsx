@@ -17,8 +17,7 @@ import { DateTimeField } from '../../ui/DateTimeField';
 import { TextField } from '../../ui/TextField';
 import { CountStepper } from '../../CreatePostForm/CountStepper';
 import { HandoffActionButton } from '../HandoffActionButton';
-import { rtlTextAlignStart } from '../../../lib/rtlTextAlignStart';
-
+import { rtlTextAlignStart } from '../../../lib/rtlLayout';
 interface Props {
   readonly listingId: string;
   readonly terms: HousingOfferTerms;

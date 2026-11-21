@@ -9,7 +9,7 @@ import { Screen } from '../../../../src/components/ui/Screen';
 import { Card } from '../../../../src/components/ui/Card';
 import { TextField } from '../../../../src/components/ui/TextField';
 import { PrimaryButton } from '../../../../src/components/ui/Buttons';
-import { rtlTextAlignStart } from '../../../../src/lib/rtlTextAlignStart';
+import { rtlTextAlignStart } from '../../../../src/lib/rtlLayout';
 import { TimeWorldSubScreenChrome } from '../../../../src/components/giving/TimeWorldSubScreenChrome';
 import { FormScrollView } from '../../../../src/components/ui/FormScrollView';
 

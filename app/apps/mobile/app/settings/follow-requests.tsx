@@ -19,7 +19,7 @@ import {
   getAcceptFollowRequestUseCase,
   getRejectFollowRequestUseCase,
 } from '../../src/services/followComposition';
-import { rtlTextAlignStart } from '../../src/lib/rtlTextAlignStart';
+import { rtlTextAlignStart } from '../../src/lib/rtlLayout';
 import { webTextRtl, webViewRtl } from '../../src/lib/webRtlStyle';
 import { KcFlashList } from '../../src/components/lists/KcFlashList';
 

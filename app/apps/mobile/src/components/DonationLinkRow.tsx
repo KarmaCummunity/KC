@@ -6,9 +6,8 @@ import { useTranslation } from 'react-i18next';
 import type { DonationLink } from '@kc/domain';
 import { makeUseStyles, radius, shadow, spacing, typography, iconSize, useTheme, Text } from '@kc/ui';
 import { openExternalUrl } from '../utils/openExternalUrl';
-import { rtlTextAlignStart } from '../lib/rtlTextAlignStart';
-import { rowDirectionStart } from '../lib/rtlLayout';
 
+import { rowDirectionStart, rtlTextAlignStart } from '../lib/rtlLayout';
 interface Props {
   link: DonationLink;
   canRemove: boolean;

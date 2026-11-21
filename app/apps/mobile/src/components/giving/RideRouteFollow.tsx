@@ -6,7 +6,7 @@ import { Pressable, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import { makeUseStyles, radius, spacing, typography, Text } from '@kc/ui';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { rtlTextAlignStart } from '../../lib/rtlLayout';
 import { RIDE_TIME_WINDOWS, type RidePlace, type RideRouteWants, type RideTimeWindow } from '@kc/domain';
 import { MY_RIDE_ROUTES_QUERY_KEY, rideSavedRoutesUseCases } from '../../services/rideSavedRoutesComposition';
 import { handoffErrorKey } from '../../lib/marketplaceCreateErrors';

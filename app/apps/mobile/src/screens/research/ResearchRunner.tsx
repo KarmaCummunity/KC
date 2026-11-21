@@ -16,7 +16,7 @@ import {
   SurveyFloatingNav,
 } from '../../components/survey/SurveyFloatingNav';
 import { webTextRtl, webViewRtl } from '../../lib/webRtlStyle';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { rtlTextAlignStart } from '../../lib/rtlLayout';
 import { ResearchEndShareCard } from '../../components/research/ResearchEndShareCard';
 import { ResearchQuestionPanel } from './ResearchQuestionPanel';
 import { SurveyIntroBlock } from './SurveyIntroBlock';

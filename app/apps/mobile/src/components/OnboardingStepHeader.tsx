@@ -5,8 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { iconSize, makeUseStyles, spacing, typography, useTheme, Text } from '@kc/ui';
 import { MirroredIcon, useDirectionalBackIcon } from './ui/MirroredIcon';
 import { OnboardingProgressBar } from './animations/OnboardingProgressBar';
-import { rtlTextAlignStart } from '../lib/rtlTextAlignStart';
-
+import { rtlTextAlignStart } from '../lib/rtlLayout';
 export interface OnboardingStepHeaderProps {
   readonly step: 1 | 2 | 3 | 4;
   readonly onSkip: () => void;

@@ -87,7 +87,7 @@ describe('RideRouteFields', () => {
   // Regression for #1741: these texts sat on the physical left in Hebrew while the labels above
   // them sat on the right; they must follow the reading-start edge in both languages.
   it('aligns the section title, add link and remove link to the reading-start edge', async () => {
-    const { rtlTextAlignStart } = await import('../../../lib/rtlTextAlignStart');
+    const { rtlTextAlignStart } = await import('../../../lib/rtlLayout');
     const view = render(<Harness onOriginCity={vi.fn()} />);
     fireEvent.click(view.getByTestId('ride-meeting-point-add'));
     fireEvent.click(view.getByTestId('pick:ridePlaces.meetingPointLabel'));

@@ -6,8 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { missingCompleteProfileFields, type CompleteProfileField } from '@kc/domain';
 import { iconSize, makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
 import { Card } from '../ui/Card';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
-
+import { rtlTextAlignStart } from '../../lib/rtlLayout';
 const FIELD_I18N: Record<CompleteProfileField, string> = {
   displayName: 'profile.editScreen.completeField.displayName',
   city: 'profile.editScreen.completeField.city',
