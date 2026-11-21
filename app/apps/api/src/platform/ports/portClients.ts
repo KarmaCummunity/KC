@@ -3,11 +3,31 @@ import type { Pool } from 'pg';
 import { DATABASE_POOL } from '../database/database.tokens';
 import { type DatabaseSession, IdentityDatabase } from '../database/identityDatabase';
 import type { CallerIdentity } from '../identity/callerIdentity';
-import type { SchemaCacheSource, StatementRunner } from '../postgrest/engine';
+import { APP_LOGGER, type AppLogger } from '../logging/appLogger';
+import type { CompatResponse, SchemaCacheSource, StatementRunner } from '../postgrest/engine';
+import type { CompatRequest } from '../postgrest/requestPlan';
 import type { CatalogQuery } from '../postgrest/schemaCache';
 import { createSchemaCacheSource } from '../postgrest/schemaCacheSource';
 import { createSqlBackedClient, type SqlBackedClient } from '../postgrest/sqlBackedClient';
 import type { ResultRow } from '../postgrest/sqlStatements';
+
+/**
+ * Error codes that mean the engine itself could not serve a request an
+ * adapter built: a part of the PostgREST dialect it does not implement
+ * (`PGRST100`) or SQL it generated wrongly (`42601`, a syntax error). Unlike a
+ * refusal by the database, these are faults of this server and must be seen.
+ */
+const ENGINE_FAULT_CODES = new Set(['PGRST100', '42601']);
+
+/** The error code of an engine answer, or null for a success. */
+export function errorCodeOf(response: CompatResponse): string | null {
+  if (response.status < 400 || response.body === null) return null;
+  try {
+    return (JSON.parse(response.body) as { code?: string }).code ?? null;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Hands out the database client a hosted adapter uses for one call. Every
@@ -22,6 +42,7 @@ export class PortClients {
   constructor(
     @Inject(DATABASE_POOL) pool: Pool,
     @Inject(IdentityDatabase) private readonly database: IdentityDatabase,
+    @Inject(APP_LOGGER) private readonly logger: AppLogger,
   ) {
     const catalog: CatalogQuery = (text) => pool.query(text) as never;
     this.schema = createSchemaCacheSource(catalog);
@@ -33,6 +54,14 @@ export class PortClients {
         session.query<ResultRow>(statement.text, [...statement.values]).then((result) => result.rows[0]);
       return caller ? this.database.runAs(caller, work) : this.database.runAnonymous(work);
     };
-    return createSqlBackedClient(caller, this.schema, run);
+    return createSqlBackedClient(caller, this.schema, run, (request, response) => this.reportEngineFault(request, response));
+  }
+
+  /** Logs an engine fault with the request's path (table or function) only: query values can be personal data. */
+  private reportEngineFault(request: CompatRequest, response: CompatResponse): void {
+    const code = errorCodeOf(response);
+    if (!code || !ENGINE_FAULT_CODES.has(code)) return;
+    const { message } = JSON.parse(response.body ?? '{}') as { message?: string };
+    this.logger.error({ code, method: request.method, path: new URL(request.url).pathname, reason: message }, 'compatibility engine could not serve a request');
   }
 }

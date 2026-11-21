@@ -1,7 +1,7 @@
 import { PostgrestClient } from '@supabase/postgrest-js';
 import type { CallerIdentity } from '../identity/callerIdentity';
 import type { CompatRequest } from './requestPlan';
-import { handleCompatRequest, type SchemaCacheSource, type StatementRunner } from './engine';
+import { type CompatResponse, handleCompatRequest, type SchemaCacheSource, type StatementRunner } from './engine';
 
 /** A Supabase service the gateway does not carry yet was called. */
 export class UnsupportedSupabaseServiceError extends Error {
@@ -46,8 +46,14 @@ function unsupportedService(service: string): never {
  * compatibility engine instead of the network.
  * @param run Executes one statement as `caller` (a transaction of its own,
  *   like one PostgREST request).
+ * @param observe Sees every request with its answer, for logging; it must not throw.
  */
-export function createSqlBackedClient(caller: CallerIdentity | null, schema: SchemaCacheSource, run: StatementRunner): SqlBackedClient {
+export function createSqlBackedClient(
+  caller: CallerIdentity | null,
+  schema: SchemaCacheSource,
+  run: StatementRunner,
+  observe?: (request: CompatRequest, response: CompatResponse) => void,
+): SqlBackedClient {
   const fetchInProcess: typeof fetch = async (input, init) => {
     const request: CompatRequest = {
       method: init?.method ?? 'GET',
@@ -56,6 +62,7 @@ export function createSqlBackedClient(caller: CallerIdentity | null, schema: Sch
       body: typeof init?.body === 'string' ? init.body : null,
     };
     const response = await handleCompatRequest(request, schema, run);
+    observe?.(request, response);
     return new Response(response.body, { status: response.status, headers: response.headers });
   };
 

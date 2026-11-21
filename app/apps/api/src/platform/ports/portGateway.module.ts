@@ -1,4 +1,5 @@
 import { type DynamicModule, Module } from '@nestjs/common';
+import { appLoggerProvider } from '../logging/appLogger';
 import { PortClients } from './portClients';
 import type { PortDefinition } from './portDefinition';
 import { PORT_DEFINITIONS, PortGatewayController } from './portGateway.controller';
@@ -42,7 +43,7 @@ export class PortGatewayModule {
     return {
       module: PortGatewayModule,
       controllers: [PortGatewayController],
-      providers: [PortClients, { provide: PORT_DEFINITIONS, useValue: indexPorts(definitions) }],
+      providers: [appLoggerProvider, PortClients, { provide: PORT_DEFINITIONS, useValue: indexPorts(definitions) }],
     };
   }
 }

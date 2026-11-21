@@ -47,14 +47,15 @@ export class KcTestDatabase {
   /**
    * A client acting as `caller`; every request is its own transaction, as with PostgREST.
    * `Client` is the adapter's own client type (inferred from its constructor).
+   * @param observe Sees every request the adapter makes with the engine's answer.
    */
-  clientFor<Client>(caller: CallerIdentity | null): Client {
+  clientFor<Client>(caller: CallerIdentity | null, observe?: Parameters<typeof createSqlBackedClient>[3]): Client {
     const run = (statement: { text: string; values: readonly unknown[] }) => {
       const work = (session: { query: Pool['query'] }) =>
         session.query<ResultRow>(statement.text, [...statement.values]).then((result) => result.rows[0]);
       return caller ? this.database.runAs(caller, work) : this.database.runAnonymous(work);
     };
-    return createSqlBackedClient(caller, this.schema, run) as unknown as Client;
+    return createSqlBackedClient(caller, this.schema, run, observe) as unknown as Client;
   }
 
   /** Removes the members this instance created (their rows cascade) and closes the pool. */
