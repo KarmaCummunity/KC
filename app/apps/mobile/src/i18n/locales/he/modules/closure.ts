@@ -11,6 +11,17 @@ export const closureHe = {
   markRidesCta: 'שיבוץ נוסע',
   // #2078, D141 — volunteering is not "delivered"; it takes place.
   markTimeCta: 'ההתנדבות התקיימה ✓',
+  // #2539 — world-specific close wording (worldDetailCopy.ts); stored status stays closed_delivered.
+  markEmploymentCta: 'המשרה אוישה ✓',
+  markKnowledgeCta: 'השיעור התקיים ✓',
+  markFoodCta: 'האוכל נמסר ✓',
+  markMoneyCta: 'התרומה הושלמה ✓',
+  markMedicalCta: 'סומן כהושלם ✓',
+  markChallengesCta: 'האתגר הסתיים ✓',
+  markCompletedCta: 'לסמן כהושלם ✓',
+  markEmploymentRequestCta: 'מצאתי עבודה ✓',
+  notCompletedCta: 'זה לא הושלם בסוף',
+  notCompletedA11y: 'זה לא הושלם בסוף, לפתוח מחדש',
   assignUserCta: 'שבץ למשתמש',
   assignSuccessToast: 'המשתמש שובץ.',
   markRequestCta: 'לסמן שקיבלתי ✓',

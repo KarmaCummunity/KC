@@ -18,6 +18,7 @@ import { RideSeriesManageLink } from './RideSeriesManageLink';
 import { RideSeriesOccurrences } from './RideSeriesOccurrences';
 import { PostSeriesOccurrences } from '../series/PostSeriesOccurrences';
 import { isTestListingTitle } from '../../lib/displayTitle';
+import { worldPlaceholderIcon } from '../../lib/worldDetailCopy';
 import { PostDetailHeader } from '../cards/PostDetailHeader';
 import { SimilarListingCard } from '../cards/SimilarListingCard';
 import { useAuthStore } from '../../store/authStore';
@@ -62,10 +63,9 @@ interface Props {
   moderationInHeader?: boolean;
 }
 
-/** Placeholder icon for listings without photos; rides get a car like their cards. */
+/** Placeholder icon for listings without photos: the world's icon, like its cards. */
 function fallbackIconFor(detail: MarketplaceListingDetail) {
-  if (detail.worldSlug === 'rides') return 'car-outline' as const;
-  return detail.direction === 'give' ? ('gift-outline' as const) : ('search-outline' as const);
+  return worldPlaceholderIcon(detail.worldSlug, detail.direction === 'give' ? 'Give' : 'Request');
 }
 
 export function MarketplaceListingDetailView({ detail, bottomInset, footer, moderationInHeader = false }: Props) {

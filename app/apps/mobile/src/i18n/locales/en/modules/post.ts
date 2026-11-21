@@ -165,6 +165,16 @@ export const postEn = {
     statusOpen: 'Active',
     statusOpenHint: 'The post is open and looking for a match',
     statusClosed: 'Completed',
+    // #2539 — per-world screen title and closed pill (worldDetailCopy.ts).
+    worldTitle: {
+      employment: 'Job details', items: 'Item details', knowledge: 'Lesson details', time: 'Volunteering details',
+      food: 'Food details', housing: 'Housing details', animals: 'Animal details', money: 'Donation details',
+      medical: 'Blood & medical details', challenges: 'Challenge details',
+    },
+    worldClosed: {
+      employment: 'Filled', knowledge: 'Completed', food: 'Delivered', money: 'Completed',
+      medical: 'Fulfilled', challenges: 'Ended',
+    },
     statusPendingDelete: 'Temporarily closed',
     statusExpired: 'Expired',
     statusRemovedAdmin: 'Removed',
