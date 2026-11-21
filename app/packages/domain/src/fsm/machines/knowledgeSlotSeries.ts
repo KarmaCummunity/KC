@@ -13,7 +13,7 @@ export type KnowledgeSlotSeriesStatus = (typeof KNOWLEDGE_SLOT_SERIES_STATUSES)[
  * - Ending, from either state, is final; booked slots stay. The scheduler also ends a series
  *   whose last day has passed.
  *
- * SQL copy: `supabase/migrations/next-01_knowledge_slot_series.sql` (`kc_private.fsm_state` /
+ * SQL copy: `supabase/migrations/0079_knowledge_slot_series.sql` (`kc_private.fsm_state` /
  * `fsm_edge` seeds).
  */
 export const knowledgeSlotSeriesMachine = defineMachine({

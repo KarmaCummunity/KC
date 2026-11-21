@@ -2,8 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
 
-const { state, replace, alert, pickAvatarImage, removeUploadedAvatar, resizeAndUploadAvatar, setAvatar, complete, t, lifecycle } = vi.hoisted(() => ({
-  lifecycle: { retirePreviousAvatar: vi.fn(async () => 'delete_queued'), discardUnsavedAvatar: vi.fn(async () => 'delete_queued') },
+const { state, replace, alert, pickAvatarImage, removeUploadedAvatar, resizeAndUploadAvatar, setAvatar, complete, t } = vi.hoisted(() => ({
   state: { session: null as { userId: string; avatarUrl: string | null } | null, onboardingState: 'pending_avatar' as string, setSession: vi.fn(), setOnboardingState: vi.fn() },
   replace: vi.fn(), alert: vi.fn(), pickAvatarImage: vi.fn(), removeUploadedAvatar: vi.fn(), resizeAndUploadAvatar: vi.fn(), setAvatar: vi.fn(), complete: vi.fn(), t: (key: string) => key,
 }));
@@ -11,8 +10,7 @@ vi.mock('expo-router', () => ({ useRouter: () => ({ replace }) }));
 vi.mock('react-native', () => ({ Alert: { alert } }));
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t }) }));
 vi.mock('../../store/authStore', () => ({ useAuthStore: (selector: (s: typeof state) => unknown) => selector(state) }));
-vi.mock('../../services/userComposition', () => ({ getSetAvatarUseCase: () => ({ execute: setAvatar }), getCompleteOnboardingUseCase: () => ({ execute: complete }), getUserRepo: () => ({ findById: async () => ({ avatarUrl: 'remote' }) }) }));
-vi.mock('../../services/avatarLifecycle', () => lifecycle);
+vi.mock('../../services/userComposition', () => ({ getSetAvatarUseCase: () => ({ execute: setAvatar }), getCompleteOnboardingUseCase: () => ({ execute: complete }) }));
 vi.mock('../../services/avatarUpload', () => ({ pickAvatarImage, removeUploadedAvatar, resizeAndUploadAvatar }));
 import { useOnboardingPhotoFlow } from '../useOnboardingPhotoFlow';
 import { useOnboardingReplayStore } from '../../store/onboardingReplayStore';
@@ -20,16 +18,17 @@ import { useOnboardingReplayStore } from '../../store/onboardingReplayStore';
 beforeEach(() => { vi.clearAllMocks(); state.session = { userId: 'u1', avatarUrl: null }; state.onboardingState = 'pending_avatar'; });
 
 describe('useOnboardingPhotoFlow', () => {
-  it('discards the new upload when saving it to the profile fails, and retires nothing', async () => {
-    state.session = { userId: 'u1', avatarUrl: 'https://p/storage/v1/object/public/avatars/u1/avatar-old.jpg' };
+  it('does not delete an uploaded avatar after an ambiguous profile save failure', async () => {
     pickAvatarImage.mockResolvedValueOnce({ uri: 'local' });
-    resizeAndUploadAvatar.mockResolvedValue('remote-new'); setAvatar.mockRejectedValueOnce(new Error('save failed'));
+    resizeAndUploadAvatar.mockResolvedValueOnce('remote-new');
+    setAvatar.mockRejectedValueOnce(new Error('response lost after commit'));
     const { result } = renderHook(() => useOnboardingPhotoFlow());
     await act(async () => { await result.current.pick('gallery'); });
-    expect(lifecycle.discardUnsavedAvatar).toHaveBeenCalledWith(expect.objectContaining({ userId: 'u1', uploadedUrl: 'remote-new' }));
-    expect(lifecycle.retirePreviousAvatar).not.toHaveBeenCalled();
-    expect(alert).toHaveBeenCalledWith('onboarding.uploadFailed', 'onboarding.uploadFailedBody\nsave failed');
+    expect(removeUploadedAvatar).not.toHaveBeenCalled();
+    expect(state.setSession).not.toHaveBeenCalled();
+    expect(alert).toHaveBeenCalled();
   });
+
   it('picks and stores an avatar; a cancelled picker leaves it unset', async () => {
     pickAvatarImage.mockResolvedValueOnce({ uri: 'local' }).mockResolvedValueOnce(null);
     resizeAndUploadAvatar.mockResolvedValue('remote'); setAvatar.mockResolvedValue(undefined);
@@ -39,8 +38,6 @@ describe('useOnboardingPhotoFlow', () => {
     expect(resizeAndUploadAvatar).toHaveBeenCalledWith({ uri: 'local' }, 'u1');
     expect(setAvatar).toHaveBeenCalledWith({ sessionUserId: 'u1', userId: 'u1', avatarUrl: 'remote' });
     expect(state.setSession).toHaveBeenCalledWith({ userId: 'u1', avatarUrl: 'remote' });
-    // The replaced generation is retired against a fresh read of the profile.
-    expect(lifecycle.retirePreviousAvatar).toHaveBeenCalledWith(expect.objectContaining({ userId: 'u1', previousUrl: null, committedUrl: 'remote' }));
     await act(async () => { await result.current.pick('camera'); });
     expect(resizeAndUploadAvatar).toHaveBeenCalledTimes(1);
     expect(result.current.busy).toBe(false);
@@ -62,6 +59,7 @@ describe('useOnboardingPhotoFlow', () => {
     complete.mockResolvedValueOnce(undefined).mockRejectedValueOnce(new Error('save'));
     const { result, rerender } = renderHook(() => useOnboardingPhotoFlow());
     await act(async () => { await result.current.remove(); });
+    // Avatars live at a new path per upload: removal needs the current URL, not only the legacy fixed path.
     expect(removeUploadedAvatar).toHaveBeenCalledWith('u1', null);
     expect(setAvatar).toHaveBeenCalledWith({ sessionUserId: 'u1', userId: 'u1', avatarUrl: null });
     await act(async () => { await result.current.finalize(); });

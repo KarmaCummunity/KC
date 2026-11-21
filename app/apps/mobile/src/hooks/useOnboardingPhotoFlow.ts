@@ -10,7 +10,7 @@ import {
   getSetAvatarUseCase,
   getUserRepo,
 } from '../services/userComposition';
-import { discardUnsavedAvatar, retirePreviousAvatar } from '../services/avatarLifecycle';
+import { retirePreviousAvatar } from '../services/avatarLifecycle';
 import {
   pickAvatarImage,
   removeUploadedAvatar,
@@ -49,19 +49,15 @@ export function useOnboardingPhotoFlow() {
         return;
       }
       const url = await resizeAndUploadAvatar(picked, session.userId);
-      const readCurrent = async () => (await getUserRepo().findById(session.userId))?.avatarUrl ?? null;
-      try {
-        await getSetAvatarUseCase().execute({
-          sessionUserId: session.userId,
-          userId: session.userId,
-          avatarUrl: url,
-        });
-      } catch (err) {
-        // Never referenced: the new public object must not outlive the failed save.
-        void discardUnsavedAvatar({ userId: session.userId, uploadedUrl: url, readCurrentAvatarUrl: readCurrent });
-        throw err;
-      }
+      // A rejected save does not prove the profile was not updated (a lost response can follow a
+      // commit), so nothing is deleted on failure here.
+      await getSetAvatarUseCase().execute({
+        sessionUserId: session.userId,
+        userId: session.userId,
+        avatarUrl: url,
+      });
       setSession({ ...session, avatarUrl: url });
+      const readCurrent = async () => (await getUserRepo().findById(session.userId))?.avatarUrl ?? null;
       // The replaced generation stays public unless retired (skipped on any doubt).
       void retirePreviousAvatar({
         userId: session.userId, previousUrl: session.avatarUrl, committedUrl: url, readCurrentAvatarUrl: readCurrent,

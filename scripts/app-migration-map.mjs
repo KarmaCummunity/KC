@@ -29,7 +29,7 @@ const ONE_TO_ONE = new Set(['same', 'renamed']);
 
 /** The value that starts at `text[start]`: a balanced `{…}` (with `[]`), or a bare type. */
 function readValue(text, start) {
-  if (text[start] !== '{') return /^[^;}]*?(?=\s*(?:;|\}|SetofOptions:|$))/.exec(text.slice(start))[0].trim();
+  if (text[start] !== '{') return /^[^;}]*?(?=\s*(?:;|\}|SetofOptions:|Returns:|$))/.exec(text.slice(start))[0].trim();
   let depth = 0;
   for (let i = start; i < text.length; i += 1) {
     if (text[i] === '{') depth += 1;
@@ -157,8 +157,36 @@ function loadAppErrorCodes() {
   return (code) => new RegExp(`['"\`.]${code}['"\`:]`).test(all) || new RegExp(`\\b${code}\\b`).test(all);
 }
 
+/** SQL declaration text without comments; used only for explicit current inventory bindings. */
+export function stripSqlComments(sql) {
+  return sql.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/--[^\n]*/g, ' ');
+}
+
+/** Bind a declared object to a real source without claiming transitive error completeness. */
+export function currentSourceBinding(kind, name, sourceFiles) {
+  if (kind === 'edge_function') {
+    const path = `supabase/functions/${name}/index.ts`;
+    return sourceFiles[path] ? { source: path, errorBinding: { status: 'unknown', reason: 'handler and provider errors not exhaustively bound' } } : null;
+  }
+  // Explicit precedence: forward migrations override schemas; later numbered files
+  // and later declarations in one file override earlier declarations. Seed stays scoped.
+  const priority = path => path.startsWith('supabase/seed/') ? 2 : path.startsWith('supabase/migrations/') ? 1 : 0;
+  const sources = Object.entries(sourceFiles).sort(([a], [b]) => priority(a) - priority(b) || a.localeCompare(b));
+  for (const [path, text] of sources.reverse()) {
+    if (!text || !path.endsWith('.sql')) continue;
+    const sql = stripSqlComments(text);
+    const pattern = kind === 'rpc'
+      ? new RegExp('create\\s+(?:or\\s+replace\\s+)?function\\s+public\\.' + name + '\\s*\\(([\\s\\S]*?)\\)\\s*returns\\s+([^;]*?)(?=\\blanguage\\b)', 'i')
+      : new RegExp('create\\s+table\\s+public\\.' + name + '\\s*\\(', 'i');
+    const matches = [...sql.matchAll(new RegExp(pattern.source, pattern.flags + 'g'))];
+    const match = matches.at(-1);
+    if (match) return { source: path, ...(kind === 'rpc' ? { sqlSignature: `${name}(${match[1].trim()}) → ${match[2].trim()}` } : {}), errorBinding: { status: 'unknown', reason: 'transitive SQL helpers and constraints not exhaustively bound' } };
+  }
+  return null;
+}
+
 /** Joins the authored rows with everything derived and validates the result. */
-export function buildMap({ rows, missing, packages, edgeFunctions, notes, launchTier = () => 'core' }, inventory, oldTypes, newTypes, baseline, knowsCode = () => true) {
+export function buildMap({ rows, missing, packages, edgeFunctions, notes, launchTier = () => 'core', sourceFiles = {} }, inventory, oldTypes, newTypes, baseline, knowsCode = () => true) {
   const problems = [];
   const used = new Map();
   for (const entry of inventory.entries) {
@@ -182,23 +210,36 @@ export function buildMap({ rows, missing, packages, edgeFunctions, notes, launch
     if (row.status === 'missing' && !missingIds.has(row.missing)) problems.push(`${key}: missing id '${row.missing}' is not in the MISSING list`);
     const needsTarget = !['removed', 'missing'].includes(row.status);
     if (needsTarget !== row.to.length > 0) problems.push(`${key}: status '${row.status}' and targets [${row.to.join(', ')}] disagree`);
+    const binding = row.currentBinding ? currentSourceBinding(row.kind, row.old, sourceFiles) : null;
+    if (row.currentBinding && !binding) problems.push(`${key}: current source declaration missing`);
     const targets = row.to.map((target) => {
       const [type, name] = [target.slice(0, target.indexOf(':')), target.slice(target.indexOf(':') + 1)];
       if (type === 'rpc') {
         if (!newTypes.functions[name]) problems.push(`${key}: target function '${name}' is not in the baseline`);
         const info = baseline.functions[name] ?? { errors: [] };
         return {
-          type, name, source: info.source,
+          type, name, source: binding?.source ?? info.source, ...(binding ?? {}),
           signature: signature(name, newTypes.functions[name] ?? [], newTypes.tables),
           errors: info.errors.map((code) => ({ code, knownToApp: knowsCode(code) })),
         };
       }
       if (type === 'table') {
         if (!newTypes.tables[name]) problems.push(`${key}: target table '${name}' is not in the baseline`);
-        return { type, name, columns: newTypes.tables[name]?.columns ?? [], clientGrants: baseline.grants[name] ?? {} };
+        return { type, name, ...(binding ?? {}), columns: newTypes.tables[name]?.columns ?? [], clientGrants: baseline.grants[name] ?? {} };
+      }
+      if (type === 'sql' && /^supabase\/seed\/(?:demo|prod-copy)\//.test(name)) {
+        const [path, symbol] = name.split('#');
+        const sql = sourceFiles[path];
+        const expectedArgs = symbol === 'admin_seed_demo_data_step' ? 'p_password text default null' : '';
+        const declaration = 'function public.' + symbol + '(' + expectedArgs + ')';
+        const clean = sql ? stripSqlComments(sql).replace(/\s+/g, ' ').toLowerCase() : '';
+        const fullDeclaration = declaration + ' returns jsonb language';
+        if (!sql || !symbol || !clean.includes('create or replace ' + fullDeclaration) && !clean.includes('create ' + fullDeclaration)) problems.push(`${key}: missing or changed dev-seed definition '${name}'`);
+        if (newTypes.functions[symbol]) problems.push(`${key}: dev-seed-only RPC unexpectedly present in baseline types`);
+        return { type, name, signature: `${symbol}(${expectedArgs}) → jsonb`, source: path, errorBinding: { status: 'unknown', reason: 'transitive seed helper errors require separate review' } };
       }
       if (!['topic', 'bucket', 'edge', 'client', 'sql'].includes(type)) problems.push(`${key}: unknown target type '${type}'`);
-      return { type, name };
+      return { type, name, ...(binding ?? {}) };
     });
     const oldObject = oldTypes.functions[row.old] && row.kind === 'rpc'
       ? { signature: signature(row.old, oldTypes.functions[row.old], oldTypes.tables) }
@@ -266,7 +307,9 @@ async function main() {
   const newTypes = parseTypes(readFileSync(join(TYPES_DIR, 'database.types.ts'), 'utf8'));
   const schemas = join(ROOT, 'supabase/schemas');
   const baseline = parseBaselineSql(walkSql(schemas).map((full) => ({ path: full.slice(schemas.length + 1), sql: readFileSync(full, 'utf8') })));
-  const { map, problems } = buildMap(authored, buildInventory(), oldTypes, newTypes, baseline, loadAppErrorCodes());
+  const currentPaths = [...walkSql(join(ROOT, 'supabase/schemas')), ...readdirSync(join(ROOT, 'supabase/migrations')).filter(n => n.endsWith('.sql')).map(n => join(ROOT, 'supabase/migrations', n)), join(ROOT, 'supabase/seed/demo/lib/80_admin_rpcs.sql'), join(ROOT, 'supabase/seed/prod-copy/lib/60_admin_rpcs.sql'), ...['extract-external-post', 'identity-verification-session'].map(n => join(ROOT, 'supabase/functions', n, 'index.ts'))];
+  const sourceFiles = Object.fromEntries(currentPaths.filter(existsSync).map(path => [path.slice(ROOT.length + 1), readFileSync(path, 'utf8')]));
+  const { map, problems } = buildMap({ ...authored, sourceFiles }, buildInventory(), oldTypes, newTypes, baseline, loadAppErrorCodes());
   if (problems.length > 0) {
     console.error(`app-migration-map: ${problems.length} problem(s):\n- ${problems.join('\n- ')}`);
     process.exitCode = 1;

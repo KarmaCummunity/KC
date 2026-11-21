@@ -58,6 +58,9 @@ vi.mock('../../../services/knowledgeBookingComposition', () => {
     knowledgeBookingUseCases: { listSlots: () => ({ execute: async () => [slot('slot-1', 1), slot('slot-2', 8)] }) },
     knowledgeSlotsQueryKey: (id: string) => ['knowledge-slots', id],
     knowledgeBookingsQueryKey: (id: string) => ['knowledge-bookings', id],
+    // A lesson with one-off times: no weekly series panel (#2479).
+    knowledgeSeriesQueryKey: (id: string) => ['knowledge-series', id],
+    knowledgeSeriesUseCases: { get: () => ({ execute: async () => null }) },
   };
 });
 vi.mock('../../../services/rideSafetyComposition', () => ({ raiseRideEmergency: vi.fn() }));

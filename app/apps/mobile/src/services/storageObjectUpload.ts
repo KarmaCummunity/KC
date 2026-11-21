@@ -13,8 +13,9 @@
 //     never overwrite, or be mistaken for, another attempt's object;
 //   * only the path of the attempt that succeeded is returned and ever referenced;
 //   * the path of an aborted or failed-in-flight attempt is "abandoned" (abandonedUploads.ts): it
-//     is deleted now AND kept on a persisted ledger until a delete issued after the settle window
-//     (when no late commit can still land) succeeds. Each upload start sweeps due entries.
+//     is deleted now AND kept on a persisted ledger until a later successful delete after a
+//     best-effort delay. That delay does not prove server quiescence. Each upload start sweeps
+//     due entries; later commits and devices that never reopen remain possible gaps.
 
 import { getSupabaseClient } from '@kc/infrastructure-supabase';
 import { getSupabasePublicEnv } from '../lib/supabasePublicConfig';

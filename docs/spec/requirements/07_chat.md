@@ -266,6 +266,8 @@ When one party deletes their account, the other party retains the thread with a 
 - Constraints: `R-MVP-Privacy-6`.
 
 **Acceptance Criteria.**
+- Owner clarification 2026-11-20: at final account purge, the deleted member's shared chat images are removed for both participants. Retained counterpart conversation text does not preserve those image assets. The existing 30-day restore period is unchanged (FR-SETTINGS-012).
+
 - AC1. When a `User` is hard-deleted, the messages they sent are kept in the thread for the counterpart but their identity is replaced with a `Deleted user` placeholder (with a generic avatar).
 - AC2. The deleted user's own messages cannot be edited, replied to, or quoted; the thread is read-only from the counterpart's side **except** that they can still send messages — those messages are accepted and persisted but never delivered (no recipient).
 - AC3. After 90 days of read-only state, the thread is auto-archived (hidden from Inbox unless the user opens the Archived view in V1.5+; not part of MVP, so the thread stays visible but stale).

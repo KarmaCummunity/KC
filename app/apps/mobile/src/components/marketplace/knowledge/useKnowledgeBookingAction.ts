@@ -8,7 +8,11 @@ import { trackCoreLoop } from '../../../lib/analyticsCoreLoop';
 import { hapticSuccess } from '../../../lib/haptics';
 import { handoffErrorKey } from '../../../lib/marketplaceCreateErrors';
 import { isBackendUnavailable, notAvailableMessage } from '../../../lib/backendAvailability';
-import { knowledgeBookingsQueryKey, knowledgeSlotsQueryKey } from '../../../services/knowledgeBookingComposition';
+import {
+  knowledgeBookingsQueryKey,
+  knowledgeSeriesQueryKey,
+  knowledgeSlotsQueryKey,
+} from '../../../services/knowledgeBookingComposition';
 
 /** Core-loop events a booking action can complete. */
 export type KnowledgeBookingAnalytics = 'match_made' | 'handover_completed';
@@ -29,6 +33,8 @@ export function useKnowledgeBookingAction(listingId: string, cityId: string | nu
       await Promise.all([
         qc.invalidateQueries({ queryKey: knowledgeSlotsQueryKey(listingId) }),
         qc.invalidateQueries({ queryKey: knowledgeBookingsQueryKey(listingId) }),
+        // A series move adds or removes slots (#2479).
+        qc.invalidateQueries({ queryKey: knowledgeSeriesQueryKey(listingId) }),
         qc.invalidateQueries({ queryKey: ['marketplace-detail', listingId] }),
         qc.invalidateQueries({ queryKey: ['giving-handoffs'] }),
       ]);

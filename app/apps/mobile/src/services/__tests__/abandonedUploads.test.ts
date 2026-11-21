@@ -43,7 +43,14 @@ beforeEach(() => {
 });
 
 describe('abandoned uploads ledger', () => {
-  it('a delete that runs BEFORE a late commit lands does not let the late object survive', async () => {
+  it('rejects unknown buckets both at record time and in persisted entries', async () => {
+    await abandonUpload('other-bucket', 'u1/x.jpg', T0);
+    kv.set('kc.media.abandonedUploads.v1', JSON.stringify([{ bucket: 'other-bucket', path: 'u1/x.jpg', settleAfter: T0 }]));
+    await sweepAbandonedUploads(T0 + ABANDON_SETTLE_MS);
+    expect(removeCalls).toEqual([]);
+    expect(await pendingAbandoned()).toEqual([]);
+  });
+  it('retries a late commit that arrives before the best-effort sweep', async () => {
     // The attempt is aborted; the app deletes at once, while the server has not committed yet.
     await abandonUpload('post-images', 'u1/b/0.jpg', T0);
     expect(removeCalls).toEqual([['post-images/u1/b/0.jpg']]);
@@ -53,7 +60,7 @@ describe('abandoned uploads ledger', () => {
     await sweepAbandonedUploads(T0 + ABANDON_SETTLE_MS - 1);
     expect(objects.has('post-images/u1/b/0.jpg')).toBe(true);
     expect(await pendingAbandoned()).toHaveLength(1);
-    // After the window no late write can still arrive: the sweep deletes it and forgets the entry.
+    // This simulated write arrived before the retry. Later writes remain an acknowledged gap.
     await sweepAbandonedUploads(T0 + ABANDON_SETTLE_MS);
     expect(objects.has('post-images/u1/b/0.jpg')).toBe(false);
     expect(await pendingAbandoned()).toEqual([]);

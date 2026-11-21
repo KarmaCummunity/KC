@@ -17,6 +17,29 @@ supabase gen types typescript --project-id <ref> \
 
 ---
 
+## DEV post-merge workflow recovery
+
+A successful merge queue check is not a deployed DEV result. A squash message that includes an
+ancestral CI-skip token can suppress the push-triggered CI, migration numbering and version bump.
+The 2026-11-20 guest merge (#2513, `1556e508`) exposed this case: the queue passed, but the
+post-merge workflows did not start and `next-01_guest_posts.sql` remained provisional.
+
+Before continuing the integration queue:
+
+1. Check the exact DEV commit, its commit message, push-event CI runs and the deployed version.
+   Do not treat a PR or merge-group result as push certification.
+2. Keep the guest migration provisional. The normal post-merge workflow assigns its number and
+   manifest entry; do not number it by hand or apply it directly to a shared database.
+3. Use a small, reviewed follow-up through the normal CI and merge queue, with a clean commit
+   message that does not carry historical CI-skip tokens. Do not force-push DEV, edit protections,
+   fabricate checks or relax the deploy resolver to accept a different event.
+4. Verify automatic numbering, the numbered tree's push CI, the actual DEV database/web deployment,
+   then signed-out guest RPC and screen behavior. Until these checks pass, the guest issue remains
+   open and the feature is not reported as delivered.
+
+This recovery changes neither main nor production and does not authorize a store build or a new
+TestFlight audience.
+
 ## Migration application rules (READ FIRST) {#application-rules}
 
 The repo uses **sequential** migration files (`supabase/migrations/NNNN_snake.sql`, e.g. `0243_listings_legacy_sync.sql`). The `schema_migrations` ledger on each Supabase project must match those file versions exactly.
@@ -738,7 +761,9 @@ The in-app verified-nonprofit donation flow (#850) is sandbox-only and hidden by
 
 The hourly **Ops health monitor** (`.github/workflows/ops-health.yml`, G42) reads `ops.run_health_checks()` (migration `0463`) on dev and prod and keeps one GitHub issue per failing check, labelled `ops-alert` + `ops:<env>` + `ops:<severity>` and assigned to the PM (GitHub emails the assignee). The issue updates when the value changes and **closes itself** once the check is ok again. Issues are public: they carry counts and job names only, never user data.
 
-**Tune, don't patch:** thresholds, severity and on/off live in `ops.health_checks` rows. Change them with a migration (e.g. `update ops.health_checks set threshold = 5 where check_key = '…'`). To try the monitor without opening issues: run the workflow manually with **dry_run**.
+**Report contract:** `ops.run_health_checks()` returns `check_name`, `status` (`ok`, `failing`, `skipped`), `measured`, `max_allowed`, `detail` and `failure_means`. The monitor names failures and includes the measured value, limit and a fixed, reviewed check-specific impact summary (unknown checks are explicitly marked as unmapped). Dynamic SQL diagnostic detail and configured failure prose are withheld from issue payloads and fingerprints; inspect them only in the authenticated health report. Legacy alert severity changes update the issue body, but the existing GitHub channel does not relabel an open issue on update; current SQL checks always use warning, so this does not affect their severity. Integer strings from large PostgreSQL bigint values are kept exact; imprecise JSON numbers fail closed. Current database rows have no severity field, so their alerts use the existing warning channel; an unreadable or malformed report raises the existing critical `health_report_unavailable` alert without closing other incidents. A skipped check neither opens nor closes an incident.
+
+**Tune, don't patch:** limits live in `ops.health_checks.max_allowed`. Change them with a migration (for example, `update ops.health_checks set max_allowed = 5 where name = '…'`), not in the monitor. To try the monitor without opening issues: run the workflow manually with **dry_run**. A dry run plans issue changes but does not apply them.
 
 | Check | Means | First step |
 | --- | --- | --- |

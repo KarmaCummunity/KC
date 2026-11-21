@@ -10,9 +10,13 @@ The biggest risk is critical mass, and the solution already exists: a huge marke
 3. **Live bot (phase 2)** — only in groups whose admin added it, and only via an interface permitted by WhatsApp's terms.
 4. **Bridge & migration (S23)** — each group gets a parallel community in the app; bot posts summaries with links to the group; when most activity moved, the admin locks the group.
 
-## Privacy & consent (S21) — consent of non-members is an OPEN question (D54)
-Working assumption: only in groups whose admin approved and announced to members; no phone numbers, names or private chats imported; imported post shown as "from group X" without identity until its author claims it via phone verification; unclaimed → deleted after 72h; anyone may request removal.
+## Privacy & consent (S21) — approved model, activation blocked (D54)
+Approved by the owner on 2026-11-20: only in groups whose admin approved and announced to members; no phone numbers, names or private chats imported; imported post shown as "from group X" without identity until its author is verified; deleted after 72h. The summary does not waive the existing S90 phone-verification claim requirement. Earlier working details, including removal on request, remain recorded as pending design, not rejected by this approval.
 
 Other channels: partner orgs bringing volunteers (D37), challenges inviting friends (D43), emergencies bringing waves of users (D42).
 
 Model: `ExternalGroupImport`, `ImportedPostCandidate`, `GroupBridge`. Gap: G27.
+
+### Group-import activation gate (owner approval 2026-11-20)
+
+The group-import model requires group-admin approval and prior notice to the group, anonymous publication, attribution to the author only after verification, and deletion after 72 hours. Activation is blocked until an actual lawyer signature covering this model is verified. The product approval is not that signature. This decision does not change the separate manual own-post paste/share channel or authorize its activation.

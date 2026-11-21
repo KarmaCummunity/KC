@@ -8,8 +8,8 @@
  ],
  "summary": {
   "bucket": {
-   "callSites": 21,
-   "distinct": 4
+   "callSites": 17,
+   "distinct": 5
   },
   "channel": {
    "callSites": 9,
@@ -20,24 +20,15 @@
    "distinct": 5
   },
   "rpc": {
-   "callSites": 288,
-   "distinct": 264
+   "callSites": 294,
+   "distinct": 269
   },
   "table": {
-   "callSites": 192,
-   "distinct": 66
+   "callSites": 195,
+   "distinct": 67
   }
  },
  "entries": [
-  {
-   "kind": "bucket",
-   "file": "app/apps/mobile/app/edit-post/[id].tsx",
-   "line": 47,
-   "area": "mobile",
-   "symbol": "assetUrl",
-   "via": "const",
-   "name": "post-images"
-  },
   {
    "kind": "rpc",
    "file": "app/apps/mobile/app/pro.tsx",
@@ -88,6 +79,15 @@
   },
   {
    "kind": "bucket",
+   "file": "app/apps/mobile/src/services/abandonedUploads.ts",
+   "line": 70,
+   "area": "mobile",
+   "symbol": "tryRemove",
+   "via": "unresolved",
+   "name": "<entry.bucket>"
+  },
+  {
+   "kind": "bucket",
    "file": "app/apps/mobile/src/services/avatarUpload.ts",
    "line": 132,
    "area": "mobile",
@@ -124,15 +124,6 @@
   },
   {
    "kind": "bucket",
-   "file": "app/apps/mobile/src/services/chatMediaUpload.ts",
-   "line": 44,
-   "area": "mobile",
-   "symbol": "uploadChatImageAndSend",
-   "via": "const",
-   "name": "chat-media"
-  },
-  {
-   "kind": "bucket",
    "file": "app/apps/mobile/src/services/chatMediaUrl.ts",
    "line": 17,
    "area": "mobile",
@@ -154,35 +145,8 @@
   },
   {
    "kind": "bucket",
-   "file": "app/apps/mobile/src/services/imageUpload.ts",
-   "line": 182,
-   "area": "mobile",
-   "symbol": "resizeAndUploadImage",
-   "via": "const",
-   "name": "post-images"
-  },
-  {
-   "kind": "bucket",
-   "file": "app/apps/mobile/src/services/imageUpload.ts",
-   "line": 194,
-   "area": "mobile",
-   "symbol": "resizeAndUploadImage",
-   "via": "const",
-   "name": "post-images"
-  },
-  {
-   "kind": "bucket",
    "file": "app/apps/mobile/src/services/listingImageUpload.ts",
-   "line": 42,
-   "area": "mobile",
-   "symbol": "uploadListingImages",
-   "via": "const",
-   "name": "post-images"
-  },
-  {
-   "kind": "bucket",
-   "file": "app/apps/mobile/src/services/listingImageUpload.ts",
-   "line": 56,
+   "line": 36,
    "area": "mobile",
    "symbol": "listingImagePublicUrl",
    "via": "const",
@@ -664,6 +628,24 @@
   },
   {
    "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseProdCopyRepository.ts",
+   "line": 62,
+   "area": "admin",
+   "symbol": "SupabaseProdCopyRepository.getStatus",
+   "via": "literal",
+   "name": "admin_prod_copy_status"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseProdCopyRepository.ts",
+   "line": 68,
+   "area": "admin",
+   "symbol": "SupabaseProdCopyRepository.deleteAll",
+   "via": "literal",
+   "name": "admin_delete_prod_copy"
+  },
+  {
+   "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/admin/SupabaseTimesheetsRepository.ts",
    "line": 88,
    "area": "admin",
@@ -1037,7 +1019,7 @@
   {
    "kind": "channel",
    "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRealtime.ts",
-   "line": 41,
+   "line": 42,
    "area": "chat",
    "symbol": "SupabaseChatRealtime.subscribeToChat",
    "via": "expression",
@@ -1046,7 +1028,7 @@
   {
    "kind": "channel",
    "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRealtime.ts",
-   "line": 77,
+   "line": 89,
    "area": "chat",
    "symbol": "SupabaseChatRealtime.subscribeToInbox",
    "via": "expression",
@@ -1055,7 +1037,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRealtime.ts",
-   "line": 101,
+   "line": 128,
    "area": "chat",
    "symbol": "SupabaseChatRealtime.readUnreadTotal",
    "via": "literal",
@@ -1725,6 +1707,36 @@
    "name": "mark_giving_handed_over"
   },
   {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/knowledge/SupabaseKnowledgeSlotSeriesRepository.ts",
+   "line": 47,
+   "area": "knowledge",
+   "symbol": "startKnowledgeSlotSeries",
+   "via": "literal",
+   "name": "start_knowledge_slot_series"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/knowledge/SupabaseKnowledgeSlotSeriesRepository.ts",
+   "line": 70,
+   "area": "knowledge",
+   "symbol": "SupabaseKnowledgeSlotSeriesRepository.getForPost",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "knowledge_slot_series"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/knowledge/SupabaseKnowledgeSlotSeriesRepository.ts",
+   "line": 78,
+   "area": "knowledge",
+   "symbol": "SupabaseKnowledgeSlotSeriesRepository.unwrapCall",
+   "via": "literal",
+   "name": "set_knowledge_slot_series_status"
+  },
+  {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/legal/SupabaseLegalDocumentRepository.ts",
    "line": 72,
@@ -2037,7 +2049,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/marketplace/listingWrites.ts",
-   "line": 55,
+   "line": 57,
    "area": "marketplace",
    "symbol": "recordPhotos",
    "via": "literal",
@@ -2049,7 +2061,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/marketplace/listingWrites.ts",
-   "line": 81,
+   "line": 83,
    "area": "marketplace",
    "symbol": "unwrapCall",
    "via": "literal",
@@ -2058,7 +2070,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/marketplace/listingWrites.ts",
-   "line": 92,
+   "line": 104,
    "area": "marketplace",
    "symbol": "createPlain",
    "via": "literal",
@@ -2071,7 +2083,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/marketplace/listingWrites.ts",
-   "line": 100,
+   "line": 113,
    "area": "marketplace",
    "symbol": "postId",
    "via": "literal",
@@ -2080,7 +2092,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/marketplace/listingWrites.ts",
-   "line": 103,
+   "line": 116,
    "area": "marketplace",
    "symbol": "postId",
    "via": "literal",
@@ -2092,7 +2104,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/marketplace/listingWrites.ts",
-   "line": 132,
+   "line": 145,
    "area": "marketplace",
    "symbol": "createListing",
    "via": "literal",
@@ -2785,6 +2797,18 @@
   },
   {
    "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/posts/ownPendingCovers.ts",
+   "line": 30,
+   "area": "posts",
+   "symbol": "withOwnPendingCovers",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "post_media"
+  },
+  {
+   "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/posts/postActorIdentityMethods.ts",
    "line": 27,
    "area": "posts",
@@ -2843,7 +2867,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/posts/postCardPages.ts",
-   "line": 68,
+   "line": 73,
    "area": "posts",
    "symbol": "fetchPostsByIds",
    "via": "literal",
@@ -2852,7 +2876,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/posts/postCardPages.ts",
-   "line": 86,
+   "line": 91,
    "area": "posts",
    "symbol": "fetchFeedPage",
    "via": "literal",
@@ -2861,7 +2885,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/posts/postCardPages.ts",
-   "line": 105,
+   "line": 110,
    "area": "posts",
    "symbol": "fetchSearchPage",
    "via": "literal",
@@ -2870,7 +2894,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/posts/postCardPages.ts",
-   "line": 125,
+   "line": 130,
    "area": "posts",
    "symbol": "fetchProfileTabPage",
    "via": "literal",
@@ -3120,6 +3144,24 @@
     "select"
    ],
    "name": "saved_posts"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/posts/SupabaseGuestPostsRepository.ts",
+   "line": 18,
+   "area": "posts",
+   "symbol": "SupabaseGuestPostsRepository.list",
+   "via": "literal",
+   "name": "guest_posts"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/posts/SupabaseGuestPostsRepository.ts",
+   "line": 25,
+   "area": "posts",
+   "symbol": "SupabaseGuestPostsRepository.get",
+   "via": "literal",
+   "name": "guest_posts"
   },
   {
    "kind": "table",
@@ -5056,7 +5098,19 @@
   {
    "kind": "table",
    "file": "supabase/functions/translate/cache.ts",
-   "line": 38,
+   "line": 55,
+   "area": "fn:translate",
+   "symbol": "getCachedMany",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "content_translations"
+  },
+  {
+   "kind": "table",
+   "file": "supabase/functions/translate/cache.ts",
+   "line": 71,
    "area": "fn:translate",
    "symbol": "putIfAbsent",
    "via": "literal",
@@ -5068,7 +5122,7 @@
   {
    "kind": "table",
    "file": "supabase/functions/translate/cache.ts",
-   "line": 56,
+   "line": 89,
    "area": "fn:translate",
    "symbol": "deleteCached",
    "via": "literal",

@@ -6,7 +6,6 @@ import * as ImagePicker from 'expo-image-picker';
 import * as Crypto from 'expo-crypto';
 import { encodeJpeg, planMaxEdgeResize, type ImageSize } from './imageEncoding';
 import { uploadErrorMessage, uploadStorageObject } from './storageObjectUpload';
-import { abandonUpload } from './abandonedUploads';
 
 const BUCKET = 'chat-media';
 const MAX_EDGE = 1600;
@@ -55,16 +54,14 @@ export async function uploadChatImageAndSend(
   } catch (err) {
     throw new Error(`chat_media_upload: ${uploadErrorMessage(err)}`, { cause: err });
   }
-  try {
-    await sendRpc({
-      type: 'image',
-      path,
-      width: encoded.width,
-      height: encoded.height,
-    });
-  } catch (err) {
-    // The image is stored but no message references it: it is settled, so it can go now.
-    void abandonUpload(BUCKET, path, Date.now(), { settled: true });
-    throw err;
-  }
+  // A rejected RPC promise does not prove that the message was not committed. A lost response
+  // can follow a successful send, so never delete this object just because sendRpc throws.
+  // A definite refusal can leave a private orphan; reference-aware server reconciliation is
+  // required to clean it safely. Propagate the original error without retrying the send here.
+  await sendRpc({
+    type: 'image',
+    path,
+    width: encoded.width,
+    height: encoded.height,
+  });
 }

@@ -80,11 +80,16 @@ describe('uploadChatImageAndSend', () => {
     expect(send).not.toHaveBeenCalled();
   });
 
-  it('abandons the stored image when the message fails to send, then reports the failure', async () => {
+  it('retains the stored image when a committed message loses its RPC response, then reports the failure', async () => {
     encoder.encodeJpeg.mockResolvedValue({ uri: 'f', width: 1, height: 1, bytes: new Uint8Array([1]) });
     uploader.uploadStorageObject.mockImplementation(async (u: { pathForAttempt: (n: number) => string }) => u.pathForAttempt(1));
-    const send = vi.fn(async () => { throw new Error('rpc down'); });
-    await expect(uploadChatImageAndSend('c', 'u', picked, send)).rejects.toThrow('rpc down');
-    expect(ledger.abandonUpload).toHaveBeenCalledWith('chat-media', 'u/c/obj-1.jpg', expect.any(Number), { settled: true });
+    const committedPaths: string[] = [];
+    const send = vi.fn(async (payload: Record<string, unknown>) => {
+      committedPaths.push(String(payload.path));
+      throw new TypeError('rpc response lost');
+    });
+    await expect(uploadChatImageAndSend('c', 'u', picked, send)).rejects.toThrow('rpc response lost');
+    expect(committedPaths).toEqual(['u/c/obj-1.jpg']);
+    expect(ledger.abandonUpload).not.toHaveBeenCalled();
   });
 });
