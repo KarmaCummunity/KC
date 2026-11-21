@@ -12,6 +12,9 @@ void initSentry().then(() => {
   flushPendingMarks();
 });
 void initPosthog();
+import { startSimulatorSecureStorageProbe } from '../src/services/simulatorSecureStorageProbe';
+// #856: DEV/E2E-only diagnostic; a no-op everywhere else.
+void startSimulatorSecureStorageProbe();
 import i18n from '../src/i18n';
 import React, { useEffect } from 'react';
 import { RevenueCatSync } from '../src/services/purchases/RevenueCatSync';

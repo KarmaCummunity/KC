@@ -327,6 +327,7 @@ jobs:
       contents: read
     env:
       KC_E2E_BUILD: '1'
+      KC_SECURE_STORAGE_PROBE: '1'
       EXPO_PUBLIC_ENVIRONMENT: development
       SENTRY_DISABLE_AUTO_UPLOAD: 'true'
       EXPO_PUBLIC_SUPABASE_URL: https://enbqriuxvvuontiwslun.supabase.co
@@ -373,10 +374,34 @@ jobs:
       - name: Capture native launch evidence
         run: |
           set -euo pipefail
+          echo "SIM_LAUNCH_TIME=$(date -u +'%Y-%m-%d %H:%M:%S+0000')" >> "$GITHUB_ENV"
           xcrun simctl launch "$SIMULATOR_UDID" org.karmacommunity.app
           sleep 15
           xcrun simctl io "$SIMULATOR_UDID" screenshot "$RUNNER_TEMP/ios-simulator/native-launch.png"
           printf 'Native simulator launch only. No remote push, account login or logout proof.\n' > "$RUNNER_TEMP/ios-simulator/scope.txt"
+      - name: Capture secure-storage probe evidence
+        timeout-minutes: 3
+        run: |
+          set -euo pipefail
+          LOG_FILE="$RUNNER_TEMP/ios-simulator/secure-storage-probe.log"
+          : > "$LOG_FILE"
+          # #856: hypothesis check — if the unsigned simulator binary lacks
+          # keychain entitlements, the DEV probe's non-credential sentinel
+          # surfaces it. Each capture is hard-bounded by the tested helper
+          # (SIGKILL after the cap, <=30s and never past the remaining 90s
+          # soft poll budget); the step has a 3-minute backstop. Logs are
+          # anchored to the launch recorded in UTC. Tested parser decides.
+          deadline=$((SECONDS + 90))
+          while [ $SECONDS -lt $deadline ]; do
+            cap=$((deadline - SECONDS)); [ $cap -gt 30 ] && cap=30
+            node scripts/simulator-probe-capture.mjs "$LOG_FILE" "$SIMULATOR_UDID" "$SIM_LAUNCH_TIME" "$cap" || true
+            outcome=$(node scripts/simulator-probe-outcome.mjs "$LOG_FILE" | tail -1 | awk '{print $NF}' || true)
+            [ "$outcome" = 'missing' ] || break
+            sleep 5
+          done
+          codesign -d --entitlements :- "$RUNNER_TEMP/kc-simulator-build/Build/Products/Release-iphonesimulator/KC.app" \
+            > "$RUNNER_TEMP/ios-simulator/entitlements.txt" 2>&1 || true
+          node scripts/simulator-probe-outcome.mjs "$LOG_FILE"
       - name: Upload iPhone simulator evidence
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9

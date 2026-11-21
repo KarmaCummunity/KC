@@ -31,3 +31,29 @@ test('unsigned build has bounded runtime and streams forward progress while pres
   assert.match(job, /set -euo pipefail/);
   assert.match(job, /2>&1 \| tee "\$RUNNER_TEMP\/ios-simulator\/build.log"/);
 });
+
+test('secure-storage probe is DEV/E2E/non-store-gated and bounded, with entitlement evidence', () => {
+  const job = workflow.split('  ios-simulator:')[1];
+  assert.match(job, /KC_SECURE_STORAGE_PROBE: '1'/);
+  assert.match(job, /secure-storage-probe.log/);
+  assert.match(job, /entitlements.txt/);
+  assert.doesNotMatch(job, /AsyncStorage/);
+  const config = readFileSync(new URL('../app/apps/mobile/app.config.ts', import.meta.url), 'utf8');
+  assert.match(config, /secureStorageProbeEnabled: isE2eBuild\(\) &&/);
+  assert.match(config, /KC_SECURE_STORAGE_PROBE === '1'/);
+});
+
+test('probe qualification: launch-anchored bounded capture, tested parser decides, fail-closed', () => {
+  const job = workflow.split('  ios-simulator:')[1];
+  assert.match(job, /SIM_LAUNCH_TIME=\$\(date -u /);
+  assert.match(job, /\+0000/);
+  assert.match(job, /node scripts\/simulator-probe-capture\.mjs "\$LOG_FILE" "\$SIMULATOR_UDID" "\$SIM_LAUNCH_TIME" "\$cap"/);
+  assert.match(job, /timeout-minutes: 3/);
+  const probeStep = job.split('Capture secure-storage probe evidence')[1] ?? '';
+  assert.doesNotMatch(probeStep, /python3/, 'probe capture uses the tested helper, not inline python in YAML');
+  assert.match(job, /deadline=\$\(\(SECONDS \+ 90\)\)/);
+  assert.match(job, /node scripts\/simulator-probe-outcome\.mjs "\$LOG_FILE"/);
+  assert.doesNotMatch(job, /\| grep -q/);
+  assert.match(job, /secure-storage-probe.log/);
+  assert.match(job, /entitlements.txt/);
+});

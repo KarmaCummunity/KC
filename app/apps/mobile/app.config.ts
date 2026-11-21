@@ -135,6 +135,12 @@ export default function expoAppConfig({ config }: ConfigContext): ExpoConfig {
         process.env.EXPO_PUBLIC_ENVIRONMENT === 'development' &&
         process.env.EXPO_PUBLIC_STORE_BUILD !== 'true',
 
+      // #856: same DEV/E2E/non-store boundary for the secure-storage probe.
+      secureStorageProbeEnabled: isE2eBuild() &&
+        process.env.KC_SECURE_STORAGE_PROBE === '1' &&
+        process.env.EXPO_PUBLIC_ENVIRONMENT === 'development' &&
+        process.env.EXPO_PUBLIC_STORE_BUILD !== 'true',
+
       supabaseConfigured: Boolean(
         process.env.EXPO_PUBLIC_SUPABASE_URL?.trim() &&
           process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY?.trim(),
