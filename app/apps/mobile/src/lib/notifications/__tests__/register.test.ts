@@ -5,6 +5,7 @@ import type { DeviceRegistration } from '@kc/domain';
 
 const deviceIsDevice = { current: true };
 const permStatus = { current: 'granted' as 'granted' | 'denied' };
+const simulatorEnabled = { current: false };
 const expoProjectId = { current: 'project-123' as string | null };
 const pushToken = { current: 'ExponentPushToken[xyz]' };
 
@@ -27,7 +28,7 @@ vi.mock('expo-notifications', () => ({
 
 vi.mock('expo-constants', () => ({
   default: {
-    get expoConfig() { return { extra: { eas: { projectId: expoProjectId.current } } }; },
+    get expoConfig() { return { extra: { pushSimulatorEnabled: simulatorEnabled.current, eas: { projectId: expoProjectId.current } } }; },
   },
 }));
 
@@ -60,6 +61,7 @@ function makeDeviceRepo(): {
 
 beforeEach(() => {
   deviceIsDevice.current = true;
+  simulatorEnabled.current = false;
   permStatus.current = 'granted';
   expoProjectId.current = 'project-123';
   pushToken.current = 'ExponentPushToken[xyz]';
@@ -85,6 +87,13 @@ describe('registerCurrentDeviceIfPermitted', () => {
     expect(registered).toEqual([]);
   });
 
+  it('registers only an explicitly enabled DEV simulator diagnostic binary', async () => {
+    deviceIsDevice.current = false; simulatorEnabled.current = true;
+    const { repo, registered } = makeDeviceRepo();
+    await registerCurrentDeviceIfPermitted('u_dev_test', { deviceRepo: repo });
+    expect(registered).toHaveLength(1);
+  });
+
   it('is a no-op when notification permission is not granted', async () => {
     permStatus.current = 'denied';
     const { repo, registered } = makeDeviceRepo();
@@ -105,6 +114,13 @@ describe('registerCurrentDeviceIfPermitted', () => {
 
 describe('deactivateCurrentDevice', () => {
   it('happy path: looks up the current Expo push token and deactivates it', async () => {
+    const { repo, deactivated } = makeDeviceRepo();
+    await deactivateCurrentDevice({ deviceRepo: repo });
+    expect(deactivated).toEqual(['ExponentPushToken[xyz]']);
+  });
+
+  it('deactivates an explicitly enabled DEV simulator on logout', async () => {
+    deviceIsDevice.current = false; simulatorEnabled.current = true;
     const { repo, deactivated } = makeDeviceRepo();
     await deactivateCurrentDevice({ deviceRepo: repo });
     expect(deactivated).toEqual(['ExponentPushToken[xyz]']);
@@ -136,6 +152,7 @@ describe('deactivateCurrentDevice', () => {
 describe('watchPushTokenRefresh', () => {
   beforeEach(() => {
     deviceIsDevice.current = true;
+  simulatorEnabled.current = false;
     permStatus.current = 'granted';
     expoProjectId.current = 'project-123';
   });

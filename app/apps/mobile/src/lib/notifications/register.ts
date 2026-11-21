@@ -6,11 +6,16 @@ import { RegisterDeviceUseCase, DeactivateDeviceUseCase } from '@kc/application'
 import type { IDeviceRepository } from '@kc/application';
 import { ensureNotificationChannels } from './channels';
 
+/** Simulator transport is opt-in in dedicated DEV test binaries, never in store builds. */
+export function canUseDevicePush(): boolean {
+  return Device.isDevice || Constants.expoConfig?.extra?.pushSimulatorEnabled === true;
+}
+
 export async function registerCurrentDeviceIfPermitted(
   userId: string,
   deps: { deviceRepo: IDeviceRepository },
 ): Promise<void> {
-  if (!Device.isDevice) return;
+  if (!canUseDevicePush()) return;
   await ensureNotificationChannels();
   const perm = await Notifications.getPermissionsAsync();
   if (perm.status !== 'granted') return;
@@ -29,7 +34,7 @@ export async function registerCurrentDeviceIfPermitted(
 export async function deactivateCurrentDevice(
   deps: { deviceRepo: IDeviceRepository },
 ): Promise<void> {
-  if (!Device.isDevice) return;
+  if (!canUseDevicePush()) return;
   const projectId = Constants.expoConfig?.extra?.eas?.projectId as string | undefined;
   if (!projectId) return;
   try {
@@ -49,7 +54,7 @@ export function watchPushTokenRefresh(
   userId: string,
   deps: { deviceRepo: IDeviceRepository },
 ): () => void {
-  if (!Device.isDevice) return () => undefined;
+  if (!canUseDevicePush()) return () => undefined;
   const subscription = Notifications.addPushTokenListener(() => {
     registerCurrentDeviceIfPermitted(userId, deps).catch(() => undefined);
   });

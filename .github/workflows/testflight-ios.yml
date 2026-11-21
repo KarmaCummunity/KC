@@ -65,6 +65,10 @@ on:
         value: ${{ jobs.testflight.outputs.build_number }}
   workflow_dispatch:
     inputs:
+      simulator_only:
+        description: Boot and build unsigned iPhone simulator only, no TestFlight upload
+        type: boolean
+        default: false
       ref:
         description: Commit SHA to build (must have a successful CI push run on dev); default resolves the newest green dev commit
         type: string
@@ -81,6 +85,7 @@ env:
 
 jobs:
   testflight:
+    if: inputs.simulator_only != true
     name: Build & upload to TestFlight
     runs-on: macos-latest
     timeout-minutes: 150
@@ -310,3 +315,98 @@ jobs:
         if: always()
         working-directory: .
         run: rm -rf "$RUNNER_TEMP/asc-api-key.p8" "$RUNNER_TEMP/sign" app/apps/mobile/credentials.json
+
+  # Manual capacity and native-launch proof only. Existing required Android CI is unchanged.
+  # This does not claim APNs receipt or TestFlight distribution entitlements.
+  ios-simulator:
+    name: iPhone simulator native launch (manual)
+    if: github.event_name == 'workflow_dispatch' && inputs.simulator_only == true && github.ref != 'refs/heads/main'
+    runs-on: macos-latest
+    timeout-minutes: 90
+    permissions:
+      contents: read
+    env:
+      KC_E2E_BUILD: '1'
+      KC_SECURE_STORAGE_PROBE: '1'
+      EXPO_PUBLIC_ENVIRONMENT: development
+      SENTRY_DISABLE_AUTO_UPLOAD: 'true'
+      EXPO_PUBLIC_SUPABASE_URL: https://enbqriuxvvuontiwslun.supabase.co
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Boot an available iPhone simulator
+        timeout-minutes: 10
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/ios-simulator"
+          xcrun simctl list devices available --json > "$RUNNER_TEMP/ios-simulator/devices.json"
+          udid=$(python3 -c 'import json,os; d=json.load(open(os.environ["RUNNER_TEMP"]+"/ios-simulator/devices.json")); print(next(v["udid"] for k,vs in sorted(d["devices"].items(),reverse=True) if "iOS" in k for v in vs if v["name"].startswith("iPhone")))')
+          echo "SIMULATOR_UDID=$udid" >> "$GITHUB_ENV"
+          if ! xcrun simctl boot "$udid"; then xcrun simctl bootstatus "$udid" -b; fi
+          xcrun simctl bootstatus "$udid" -b
+          xcrun simctl io "$udid" screenshot "$RUNNER_TEMP/ios-simulator/booted.png"
+      - uses: ./.github/actions/setup-pnpm-turbo
+      - name: Install frozen dependencies
+        working-directory: app
+        run: pnpm install --frozen-lockfile
+      - name: Resolve public DEV backend config without account credentials
+        run: node scripts/mobile-simulator-dev-env.mjs >> "$GITHUB_ENV"
+      - name: Build and install unsigned simulator app
+        timeout-minutes: 45
+        working-directory: app/apps/mobile
+        env:
+          NODE_ENV: production
+        run: |
+          set -euo pipefail
+          npx expo prebuild --platform ios --no-install --clean
+          cd ios
+          pod install
+          xcodebuild -workspace KC.xcworkspace -scheme KC -configuration Release \
+            -sdk iphonesimulator -destination "platform=iOS Simulator,id=$SIMULATOR_UDID" \
+            -derivedDataPath "$RUNNER_TEMP/kc-simulator-build" \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build \
+            2>&1 | tee "$RUNNER_TEMP/ios-simulator/build.log" || {
+              tail -n 100 "$RUNNER_TEMP/ios-simulator/build.log"
+              exit 1
+            }
+          xcrun simctl install "$SIMULATOR_UDID" "$RUNNER_TEMP/kc-simulator-build/Build/Products/Release-iphonesimulator/KC.app"
+      - name: Capture native launch evidence
+        run: |
+          set -euo pipefail
+          echo "SIM_LAUNCH_TIME=$(date -u +'%Y-%m-%d %H:%M:%S+0000')" >> "$GITHUB_ENV"
+          xcrun simctl launch "$SIMULATOR_UDID" org.karmacommunity.app
+          sleep 15
+          xcrun simctl io "$SIMULATOR_UDID" screenshot "$RUNNER_TEMP/ios-simulator/native-launch.png"
+          printf 'Native simulator launch only. No remote push, account login or logout proof.\n' > "$RUNNER_TEMP/ios-simulator/scope.txt"
+      - name: Capture secure-storage probe evidence
+        timeout-minutes: 3
+        run: |
+          set -euo pipefail
+          LOG_FILE="$RUNNER_TEMP/ios-simulator/secure-storage-probe.log"
+          : > "$LOG_FILE"
+          # #856: hypothesis check — if the unsigned simulator binary lacks
+          # keychain entitlements, the DEV probe's non-credential sentinel
+          # surfaces it. Each capture is hard-bounded by the tested helper
+          # (SIGKILL after the cap, <=30s and never past the remaining 90s
+          # soft poll budget); the step has a 3-minute backstop. Logs are
+          # anchored to the launch recorded in UTC. Tested parser decides.
+          deadline=$((SECONDS + 90))
+          while [ $SECONDS -lt $deadline ]; do
+            cap=$((deadline - SECONDS)); [ $cap -gt 30 ] && cap=30
+            node scripts/simulator-probe-capture.mjs "$LOG_FILE" "$SIMULATOR_UDID" "$SIM_LAUNCH_TIME" "$cap" || true
+            outcome=$(node scripts/simulator-probe-outcome.mjs "$LOG_FILE" | tail -1 | awk '{print $NF}' || true)
+            [ "$outcome" = 'missing' ] || break
+            sleep 5
+          done
+          codesign -d --entitlements :- "$RUNNER_TEMP/kc-simulator-build/Build/Products/Release-iphonesimulator/KC.app" \
+            > "$RUNNER_TEMP/ios-simulator/entitlements.txt" 2>&1 || true
+          node scripts/simulator-probe-outcome.mjs "$LOG_FILE"
+      - name: Upload iPhone simulator evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: iphone-simulator-native-launch
+          path: ${{ runner.temp }}/ios-simulator
+          if-no-files-found: error
+          retention-days: 7
