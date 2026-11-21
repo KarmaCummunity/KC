@@ -1,0 +1,140 @@
+# ADR-009 — Backend platform: an owned NestJS API on Google Cloud, off Supabase in phases
+
+- **Status:** Accepted (PM, chat, 2026-11-21) · engineering decision `{{ENG:backend-platform-off-supabase}}` · supersedes `D-2`
+- **Issue:** epic KC#1496 · this document KC#2575
+- **Related:** [ADR-002](./ADR-002-data-layer.md) (data layer, stays in force for every context not yet moved), [ADR-003](./ADR-003-realtime.md) (realtime topics and auth), `D-204` (port contract suites), [`target.md`](../target.md) §4
+
+## Context
+
+KC runs entirely on Supabase (`D-2`): hosted Postgres, Auth, Storage, Realtime and Edge Functions. The app calls the database directly through PostgREST. Counted on `dev` on 2026-11-21:
+
+| Surface | Size |
+|---|---|
+| Tables / SQL functions / RLS policies / triggers | 159 / 731 / 201 / 200 |
+| Distinct RPC calls from the app | 229 |
+| Edge Functions (Deno) | 20 |
+| Application ports implemented by `@kc/infrastructure-supabase` | 54 |
+
+The PM's goal is a backend KC owns, able to carry a social network with photos and video for many concurrent users without slowing down. Four properties of the current shape work against that:
+
+1. **The database schema is the public API.** Every installed app build calls tables and functions by name. A store build cannot be changed after release, so every schema change must stay compatible with every build still in use. A versioned API removes that coupling.
+2. **Business logic runs inside the primary database.** 731 functions execute on the one machine that is hardest to scale. A stateless API tier scales horizontally and leaves the database to store and query.
+3. **Server code cannot share the domain packages.** Edge Functions run on Deno and mirror `@kc/domain` code instead of importing it (see ADR-008). A Node server imports `@kc/domain` and `@kc/application` directly.
+4. **Media has no pipeline.** Storage serves the uploaded file; video (gap `G53`) needs transcoding, adaptive streaming and a CDN.
+
+What makes the move feasible: the app reaches Supabase only through the ports of `@kc/application`, and shared contract suites already run against a fake and the Supabase adapter (`D-204`). A second adapter is the designed extension point.
+
+## Decision
+
+KC moves to a backend it owns, in phases, with the app working at every step.
+
+| Choice | Decision (PM, 2026-11-21) |
+|---|---|
+| Cloud | **Google Cloud.** Final region `me-west1` (Tel Aviv), close to the users |
+| Shape | **Modular monolith**: one NestJS application, one module per bounded context, one PostgreSQL primary |
+| Budget | Smallest sizes while in development; launch sizing before the public launch. Sizes are configuration, not code |
+
+### Components
+
+| Concern | Today | Target |
+|---|---|---|
+| API | PostgREST, called by the app | NestJS (`app/apps/api`) on Cloud Run: stateless, autoscaled, REST with a generated OpenAPI document, versioned under `/v1` |
+| Database | Supabase Postgres 17 | Cloud SQL for PostgreSQL 17 with the same extensions (`postgis`, `vector`, `pg_trgm`, `btree_gin`, `btree_gist`, `pg_cron`). `pg_net` and `supabase_vault` are not carried over: the API's workers and Secret Manager replace them |
+| Identity | Supabase Auth | An `identity` module: Google and Apple ID-token sign-in, email and password, short-lived access tokens, rotating refresh tokens stored hashed |
+| Authorization | RLS + `SECURITY DEFINER` RPCs | RLS stays the authority until the database move and stays as defense in depth after it; API guards are added on top |
+| Realtime | Supabase Realtime | WebSocket gateway in the API, fanned out through Redis, same topics and audience rules as ADR-003 |
+| Media | Supabase Storage | Cloud Storage + Cloud CDN, uploads go straight to the bucket with signed URLs, image variants and EXIF stripping in a worker, video transcoded to adaptive streams (`G53`) |
+| Background work | Edge Functions + `pg_cron` + `pg_net` | A worker process of the same NestJS codebase with Redis-backed queues; Cloud Scheduler for timed jobs; `pg_cron` only for pure-SQL maintenance |
+| Cache and limits | none | Redis: hot reads (feed, counters), rate limits, idempotency keys, queues, realtime fan-out |
+| Secrets | Supabase dashboard + Vault | Secret Manager; CI authenticates with Workload Identity Federation, no long-lived keys |
+| Infrastructure | dashboard settings | Terraform under `infra/gcp/`, one variable file per environment |
+| Observability | Sentry + `ops` health registry | The same, plus structured request logs, traces and Cloud Monitoring alerts |
+
+Default libraries (a phase's issue may replace one with evidence): Fastify adapter, `pg` + Kysely (typed SQL; most data access starts as calls to existing SQL functions), BullMQ, `@nestjs/swagger` with a generated typed client.
+
+### Placement in the monorepo
+
+```
+app/apps/api/                       second composition root (server); imports @kc/domain and @kc/application
+  src/modules/<context>/            controller → use case → repository, one folder per bounded context
+  src/platform/                     config, logging, errors, database, redis, health
+app/packages/infrastructure-api/    client adapters: the same ports as @kc/infrastructure-supabase, over HTTP and WebSocket
+infra/gcp/                          Terraform
+```
+
+`@kc/domain` and `@kc/application` keep their rules (`AGENTS.md` §5). The API never imports `@kc/infrastructure-supabase`; the mobile app never imports `apps/api`.
+
+### How the move works: one database, two doors, then one
+
+The alternative to a strangler is a second environment that only becomes usable when everything is ported; it would chase a codebase that changes many times a day. Instead the API is added **in front of the existing database** and takes over one port at a time:
+
+1. The API connects to the current Postgres with its own role and runs every request in a transaction under the caller's identity (`set local role` plus the request claims), so `auth.uid()`, every RLS policy and every existing function behave exactly as they do through PostgREST. No SQL is rewritten to move a port.
+2. Until KC has its own identity module, the API accepts the access token Supabase Auth issues, verified against the project's signing keys.
+3. The app's composition root picks the adapter per port from a flag. A port moves when its contract suite passes on both adapters; switching it back is a flag change.
+4. When no port, channel, bucket, function or sign-in uses Supabase, the project is only a Postgres host. The database then moves to Cloud SQL in one rehearsed step that clients do not see, because they only know the API.
+
+During phases 1–9 the API runs in the Google Cloud region nearest to the Supabase project, to keep query latency low; it moves to `me-west1` together with the database.
+
+## Phases
+
+Each phase is one or more child issues of KC#1496, opened when its turn comes. A phase is done only when its exit criterion is proven by an automated check.
+
+| # | Phase | Exit criterion |
+|---|---|---|
+| 1 | **API foundation.** `app/apps/api`: health and readiness, validated config, structured logs, typed error mapping, OpenAPI, tests; local Postgres + Redis with Docker Compose; container image; CI lane | The CI lane is green; the image answers `/health` against the local stack |
+| 2 | **Google Cloud dev environment.** Terraform: Artifact Registry, Cloud Run, Secret Manager, Workload Identity Federation, budget alert; a deploy stage in **Deploy** | A merge to `dev` deploys the API and the deploy smoke test reads its health URL |
+| 3 | **Identity bridge and data access.** Token verification, per-request identity in the transaction, connection pooling | An integration test reads an RLS-protected resource through the API and through PostgREST as two different users and gets the same rows |
+| 4 | **Database portability guard.** CI applies the whole migration chain to plain PostgreSQL 17 plus a small compatibility script (roles, `auth` helper functions) and runs the DB tests there | The guard is a required lane; a migration that needs a Supabase-only feature fails it |
+| 5 | **The API becomes the only door**, context by context: profile and follow → posts, feed and search → handoffs and rides → chat → notifications → organizations and finance → admin. Each context: endpoints, `@kc/infrastructure-api` adapter, contract suite on both adapters, flag flip | A static check finds no table or RPC call from the app; the Supabase data adapters are deleted |
+| 6 | **Realtime.** Gateway, Redis fan-out, the ADR-003 topics, reconnect and fallback behavior kept | No Supabase Realtime channel is opened; the realtime tests pass on the new adapter |
+| 7 | **Media.** Buckets, CDN, signed uploads, image variants, video pipeline; existing objects copied and verified by checksum | No Supabase Storage call; a k6 media scenario meets its budget |
+| 8 | **Background work and webhooks.** The 20 Edge Functions become API modules, queue workers or scheduled jobs; `pg_net` and Vault use removed | No Edge Function is deployed; the health registry covers the queues |
+| 9 | **Own identity.** Sign-in, refresh, revocation, account deletion; users moved with their password hashes, so nobody resets a password | The auth contract suite and the two-user E2E journeys pass with KC-issued tokens only |
+| 10 | **Database move and cut-over.** Cloud SQL at launch sizing (high availability, point-in-time recovery, read replica), rehearsed twice on dev, then production in a maintenance window; API moves to `me-west1` | Row counts and checksums match per table; the E2E journeys and the k6 suite pass on the new stack; client access to the Supabase projects is switched off |
+| 11 | **Logic moves from SQL to TypeScript** (continuous). When a context changes, its functions become use cases with unit tests; new logic for a moved context is not written as a new SQL function | Tracked per context; no deadline |
+
+Phases 4, 6, 7 and 8 do not depend on each other and can run in parallel with phase 5.
+
+### Rules while the move is in flight
+
+- A context that has not moved follows ADR-002 as today.
+- Once a context is behind the API, a new capability for it ships as an endpoint plus an adapter method plus a contract case, in one PR.
+- No new Edge Function after phase 8 starts; no new Realtime channel after phase 6 starts; no new Storage bucket after phase 7 starts.
+- Schema changes stay in `supabase/migrations/` with the same numbering rules until phase 10 replaces the runner. The directory name changes last.
+
+## Rollback
+
+- **Phases 1–9:** every switch is a per-port flag with the Supabase adapter still in place, so rollback is a flag change and a web deploy. Nothing is deleted from Supabase before its replacement has run on `dev` for a full release cycle.
+- **Phase 10:** the production database is backed up before the copy; the go / no-go checks run inside the maintenance window, before traffic is reopened, because a rollback after new writes would lose them. The Supabase projects are kept for 30 days with client access switched off, then deleted.
+- **Installed builds:** a build that still calls Supabase directly stops working at phase 10. Before that phase, every such build must be below the minimum supported version, so it is asked to update. Whether the app already has that gate is checked in phase 5's first issue; if not, it is built there.
+
+## Cost posture
+
+Development runs on the smallest sizes: the API scales to zero, Redis and Cloud SQL are the smallest tiers and are created only by the phase that first needs them (Redis in phase 3 at the earliest, Cloud SQL in phase 10 rehearsals), and a budget alert exists from phase 2. During phases 1–9 Supabase is still paid for, so the two bills overlap; that overlap is the price of never having a broken app. Launch sizing (replicas, high availability, minimum instances) is set from k6 results in phase 10, not guessed now.
+
+## Alternatives rejected
+
+- **Stay on Supabase and add NestJS beside it** (the original scope of KC#1496). Keeps the schema as the public API and keeps Auth, Storage and Realtime as they are; the PM wants every component owned.
+- **Self-host Supabase's open-source stack.** Removes the vendor but keeps the shape: direct database access from clients and logic in SQL.
+- **A service and a database per bounded context from day one** (the PM's first idea, withdrawn in the same chat). Distributed transactions, cross-service joins and many times the operations work, for one team and no measured need. Modules with enforced boundaries can be split out later, one at a time, when a load test shows the need.
+- **Railway.** No region near Israel and weaker database availability tooling; KC already left it once for web hosting (`D-38`, TD-234).
+- **AWS.** Equivalent capability, also has a Tel Aviv region; the PM chose Google Cloud.
+- **A second environment built in parallel and switched at the end.** One large cut-over with no partial delivery, chasing a moving codebase.
+
+## Risks
+
+| Risk | Mitigation |
+|---|---|
+| The move takes months while features keep shipping on the old path | The strangler order: each port ships alone; the rules above stop new Supabase-only surface from being added behind the move |
+| Behavior drifts between the two adapters | One contract suite per port on both adapters (`D-204`); two-user E2E journeys on each flag state |
+| A migration starts to depend on a Supabase-only feature | Phase 4's guard fails the PR |
+| Cross-cloud latency between the API and the database during phases 3–9 | The API runs in the region nearest to the database; pooled connections; one transaction per request |
+| A managed service is not offered in `me-west1` | Checked when each service is provisioned; that service runs in the nearest EU region and the choice is recorded in `infra/gcp/` |
+| Data loss at cut-over | Two rehearsals on dev, backup, per-table counts and checksums, go / no-go inside the window, the old projects kept for 30 days |
+| Cost surprise | Budget alert from phase 2; resources created only when a phase needs them |
+
+## Needs a person
+
+- A Google Cloud project with billing, and permission for CI to deploy to it (before phase 2).
+- Apple and Google sign-in configuration for the new identity module (before phase 9).
+- The production maintenance window and the go / no-go at phase 10 (owner approval, as for every production deploy, `D-195`).

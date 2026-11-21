@@ -38,6 +38,8 @@ A decision should be re-opened only when one of the following triggers fires:
 
 ## D-2 — Supabase as the unified backend
 
+> **Superseded (2026-11-21)** by `{{ENG:backend-platform-off-supabase}}`: KC moves to an owned NestJS API on Google Cloud, in phases. This entry describes the backend until each phase of that plan lands.
+
 **Decision.** Use Supabase (Postgres, Auth, Storage, Realtime, Edge Functions) as the only backend.
 
 **Rationale.** Single integrated platform, mature RLS for the SRS's authorization model, native Realtime for our chat/feed UX, EU residency available, generous free tier for MVP.
@@ -2064,3 +2066,15 @@ The Demo data screen keeps two failures apart: the RPC itself is missing (`not_i
 **Why.** Anonymizing before the data leaves the job that may read production keeps real names, text and ids off the artifact, the logs and kc-dev, and two allowlists (the export and the anonymizer) must both fail before anything private moves. A seed rather than a migration keeps every copy object off kc-prod. Going through kc-dev's triggers keeps counters, karma, search and matching consistent, which a trigger-free bulk load would break. The post status machine does not allow every move a production post makes, so replacing a changed post is the only path that always works.
 
 **Affected.** `.github/workflows/prod-copy-to-dev.yml`, `scripts/prod-copy-export.sql`, `scripts/prod-copy-anonymize.mjs`, `scripts/check-deploy-isolation.mjs` (`MONITORS`, another holder of prod secrets outside `deploy.yml`, tracked with TD-232), `supabase/seed/prod-copy/`, `.github/workflows/deploy-db.yml`, `docs/SSOT/OPERATOR_RUNBOOK.md` "Production copy to kc-dev".
+
+## {{ENG:backend-platform-off-supabase}} — KC leaves Supabase for an owned NestJS API on Google Cloud, in phases (2026-11-21)
+
+**Decision.** KC's backend becomes a modular monolith KC owns: one NestJS application (`app/apps/api`, one module per bounded context) on Cloud Run, Cloud SQL for PostgreSQL, Redis, Cloud Storage with a CDN and a video pipeline, queue workers in place of Edge Functions, and its own identity module. Final region `me-west1`. The move is a strangler: the API is added in front of the existing database and runs each request under the caller's identity, so RLS and the existing SQL functions keep working unchanged; the app switches from the Supabase adapter to a new `@kc/infrastructure-api` adapter one port at a time, behind a flag, when the port's contract suite (`D-204`) passes on both; the database itself moves last, in one rehearsed step. Eleven phases, each with an automated exit criterion, in [ADR-009](../architecture/adr/ADR-009-backend-platform.md). Supersedes `D-2`.
+
+**Why.** The PM wants a backend that carries a social network with photos and video for many concurrent users (PM, chat, 2026-11-21; cloud, shape and budget posture chosen there). Today the database schema is the public API of every installed build, 731 SQL functions run on the one machine that is hardest to scale, server code on Deno cannot import the domain packages, and media has no transcoding or CDN pipeline (`G53`).
+
+**Rejected.** Adding NestJS beside Supabase (keeps the schema as the public API); self-hosting Supabase's stack (same shape); a service and a database per context from day one (operations cost with no measured need; modules can be split out later); Railway (no region near Israel); AWS (equivalent, the PM chose Google Cloud); a parallel environment switched at the end (one large cut-over against a moving codebase).
+
+**Rules while in flight.** A context not yet moved follows ADR-002. A moved context gets new capabilities as endpoint + adapter method + contract case. No new Edge Function, Realtime channel or Storage bucket once the phase that replaces it has started. Migrations stay in `supabase/migrations/` until the database move.
+
+**Affected.** `docs/architecture/adr/ADR-009-backend-platform.md`, `docs/architecture/target.md` §4; later `app/apps/api`, `app/packages/infrastructure-api`, `infra/gcp/`, the **Deploy** workflow, and in the end `supabase/**` and `app/packages/infrastructure-supabase`.
