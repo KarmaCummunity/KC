@@ -73,6 +73,7 @@ export * from './marketplace/validateListingDetails';
 export * from './marketplace/marketplaceWorldRules';
 export * from './marketplace/externalBodies';
 export * from './marketplace/eventPost';
+export * from './marketplace/employmentJobOffer';
 export * from './marketplace/listingStreetAddress';
 export * from './organizations/Organization';
 export * from './marketplace/mapPins';
