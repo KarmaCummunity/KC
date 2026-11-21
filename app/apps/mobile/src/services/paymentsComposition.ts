@@ -20,11 +20,12 @@ import {
 } from '@kc/application';
 import * as Crypto from 'expo-crypto';
 import { pickAuthStorage } from './authSecureStorage';
+import { viaApi } from './backend/apiBackend';
 
 let _repo: SupabasePaymentsRepository | null = null;
 
 function repo() {
-  _repo ??= new SupabasePaymentsRepository(getSupabaseClient({ storage: pickAuthStorage() }));
+  _repo ??= viaApi('payments', new SupabasePaymentsRepository(getSupabaseClient({ storage: pickAuthStorage() })));
   return _repo;
 }
 
@@ -41,7 +42,7 @@ export const paymentsUseCases = {
   getReceipt: () => new GetDonationReceiptUseCase(repo()),
   /** FR-DONATE-011 — direct support for KC; channels are server config only (D20, D64). */
   kcSupportOptions: () => new GetKcSupportOptionsUseCase(
-    new SupabaseKcSupportChannelsRepository(getSupabaseClient({ storage: pickAuthStorage() })),
+    viaApi('kcSupportChannels', new SupabaseKcSupportChannelsRepository(getSupabaseClient({ storage: pickAuthStorage() }))),
   ),
 };
 

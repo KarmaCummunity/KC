@@ -3,13 +3,14 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Message } from '@kc/domain';
+import type { IChatV2Repository, MessageReactionType } from '@kc/application';
 import type { Database, Json } from '../database.types';
 import { rowToMessage } from './rowMappers';
 import { chatCall, requireRow } from './mapChatError';
 
-export type MessageReactionType = 'like' | 'love' | 'laugh' | 'sad';
+export type { MessageReactionType } from '@kc/application';
 
-export class SupabaseChatV2Repository {
+export class SupabaseChatV2Repository implements IChatV2Repository {
   constructor(private readonly client: SupabaseClient<Database>) {}
 
   /** Sets, changes or (with null) clears the caller's reaction; the change arrives as a `reaction` broadcast. */

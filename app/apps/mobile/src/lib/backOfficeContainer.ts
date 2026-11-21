@@ -20,10 +20,11 @@ import {
   UpsertCrmContactUseCase,
   UpsertTimesheetUseCase,
 } from '@kc/application';
+import { viaApi } from '../services/backend/apiBackend';
 
 export function createBackOfficeUseCases(supabase: SupabaseClient<Database>) {
-  const timesheets = new SupabaseTimesheetsRepository(supabase);
-  const crmContacts = new SupabaseCrmContactsRepository(supabase);
+  const timesheets = viaApi('timesheets', new SupabaseTimesheetsRepository(supabase));
+  const crmContacts = viaApi('crmContacts', new SupabaseCrmContactsRepository(supabase));
   return {
     // FR-ADMIN-033
     listTimesheets: new ListTimesheetsUseCase(timesheets),

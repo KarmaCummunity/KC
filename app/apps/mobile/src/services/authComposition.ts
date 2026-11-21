@@ -39,6 +39,7 @@ import { webBaseUrl } from '../config/featureFlags';
 import { resolveGoogleNativeSignInConfig } from '../lib/auth/googleNativeSignInConfig';
 import { createGoogleIdTokenRequester } from './googleNativeSignIn';
 import { reportUnexpectedSignOut } from '../lib/observability/reportAuthEvent';
+import { viaApi } from './backend/apiBackend';
 
 let _authService: IAuthService | null = null;
 let _signUp: SignUpWithEmailUseCase | null = null;
@@ -189,7 +190,7 @@ export function getRestoreSessionUseCase(): RestoreSessionUseCase {
     // TD-68: cold-start restore consults the same server-side gate the 60s
     // in-session poll uses, so a suspended/banned user is signed out before
     // any session-scoped query runs.
-    const gate = new SupabaseAccountGateRepository(getSupabaseClient({ storage: pickAuthStorage() }));
+    const gate = viaApi('accountGate', new SupabaseAccountGateRepository(getSupabaseClient({ storage: pickAuthStorage() })));
     _restore = new RestoreSessionUseCase(getAuthService(), gate);
   }
   return _restore;

@@ -4,29 +4,14 @@
 // caller's own only.
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { toVerificationLevel, type VerificationLevel } from '@kc/domain';
+import { toVerificationLevel } from '@kc/domain';
+import type { IFollowSuggestionsRepository, FollowSuggestionRow, ProfileCompleteness } from '@kc/application';
 import type { Database } from '../database.types';
 import { unwrapCall } from '../rpc/mapRpcError';
 
-export interface FollowSuggestionRow {
-  userId: string;
-  displayName: string | null;
-  shareHandle: string;
-  avatarUrl: string | null;
-  cityName: string | null;
-  followersCount: number;
-  reason: string;
-  verificationLevel: VerificationLevel;
-}
+export type { FollowSuggestionRow, ProfileCompleteness } from '@kc/application';
 
-export interface ProfileCompleteness {
-  score: number;
-  missing: string[];
-  verified: boolean;
-  showVerifiedBadge: boolean;
-}
-
-export class SupabaseFollowSuggestionsRepository {
+export class SupabaseFollowSuggestionsRepository implements IFollowSuggestionsRepository {
   constructor(private readonly client: SupabaseClient<Database>) {}
 
   async listSuggestions(limit = 15): Promise<FollowSuggestionRow[]> {

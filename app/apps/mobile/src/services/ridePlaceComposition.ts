@@ -3,11 +3,12 @@ import { ListRidePlacesUseCase, type IRidePlaceRepository } from '@kc/applicatio
 import { SupabaseRidePlaceRepository } from '@kc/infrastructure-supabase';
 import type { RidePlace } from '@kc/domain';
 import { getMarketplaceSupabaseClient } from './marketplaceComposition';
+import { viaApi } from './backend/apiBackend';
 
 let repo: IRidePlaceRepository | null = null;
 
 function repository(): IRidePlaceRepository {
-  repo ??= new SupabaseRidePlaceRepository(getMarketplaceSupabaseClient());
+  repo ??= viaApi('ridePlace', new SupabaseRidePlaceRepository(getMarketplaceSupabaseClient()));
   return repo;
 }
 

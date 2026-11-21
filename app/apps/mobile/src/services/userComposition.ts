@@ -29,6 +29,7 @@ import type { City, Street } from '@kc/domain';
 import { getAuthService } from './authComposition';
 import { CachedCityRepository, CachedStreetRepository } from './cityStreetCache';
 import { pickAuthStorage } from './authSecureStorage';
+import { viaApi } from './backend/apiBackend';
 
 let _userRepo: IUserRepository | null = null;
 let _cityRepo: ICityRepository | null = null;
@@ -46,7 +47,7 @@ let _reconcileAuthProfile: ReconcileAuthProfileMetadataUseCase | null = null;
 
 export function getUserRepo(): IUserRepository {
   if (_userRepo) return _userRepo;
-  _userRepo = new SupabaseUserRepository(getSupabaseClient({ storage: pickAuthStorage() }));
+  _userRepo = viaApi('user', new SupabaseUserRepository(getSupabaseClient({ storage: pickAuthStorage() })));
   return _userRepo;
 }
 
@@ -55,7 +56,7 @@ function getCityRepo(): ICityRepository {
   // PERF-6: AsyncStorage-backed cache layer; cuts onboarding city-picker
   // open-to-first-row from 600-1500ms cold to <100ms on warm cache.
   _cityRepo = new CachedCityRepository(
-    new SupabaseCityRepository(getSupabaseClient({ storage: pickAuthStorage() })),
+    viaApi('city', new SupabaseCityRepository(getSupabaseClient({ storage: pickAuthStorage() }))),
   );
   return _cityRepo;
 }
@@ -63,7 +64,7 @@ function getCityRepo(): ICityRepository {
 function getStreetRepo(): IStreetRepository {
   if (_streetRepo) return _streetRepo;
   _streetRepo = new CachedStreetRepository(
-    new SupabaseStreetRepository(getSupabaseClient({ storage: pickAuthStorage() })),
+    viaApi('street', new SupabaseStreetRepository(getSupabaseClient({ storage: pickAuthStorage() }))),
   );
   return _streetRepo;
 }

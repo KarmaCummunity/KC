@@ -10,11 +10,12 @@ import {
 } from '@kc/application';
 import { SupabasePostSeriesRepository } from '@kc/infrastructure-supabase';
 import { getMarketplaceSupabaseClient } from './marketplaceComposition';
+import { viaApi } from './backend/apiBackend';
 
 let repo: IPostSeriesRepository | null = null;
 
 function repository(): IPostSeriesRepository {
-  repo ??= new SupabasePostSeriesRepository(getMarketplaceSupabaseClient());
+  repo ??= viaApi('postSeries', new SupabasePostSeriesRepository(getMarketplaceSupabaseClient()));
   return repo;
 }
 

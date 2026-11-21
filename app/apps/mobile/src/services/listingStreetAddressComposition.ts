@@ -6,11 +6,12 @@ import {
 } from '@kc/application';
 import { SupabaseListingStreetAddressRepository } from '@kc/infrastructure-supabase';
 import { getMarketplaceSupabaseClient } from './marketplaceComposition';
+import { viaApi } from './backend/apiBackend';
 
 let repo: IListingStreetAddressRepository | null = null;
 
 function repository(): IListingStreetAddressRepository {
-  repo ??= new SupabaseListingStreetAddressRepository(getMarketplaceSupabaseClient());
+  repo ??= viaApi('listingStreetAddress', new SupabaseListingStreetAddressRepository(getMarketplaceSupabaseClient()));
   return repo;
 }
 

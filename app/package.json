@@ -7,7 +7,7 @@
     "dev": "turbo run dev",
     "build": "turbo run build",
     "lint": "pnpm lint:arch && pnpm lint:i18n && turbo run lint",
-    "lint:arch": "node scripts/check-architecture.mjs && node scripts/check-ssot-links.mjs && node ../scripts/spec-ids.mjs check",
+    "lint:arch": "node scripts/check-architecture.mjs && node scripts/check-api-door.mjs && node scripts/check-ssot-links.mjs && node ../scripts/spec-ids.mjs check",
     "lint:i18n": "node ../scripts/extract-hebrew-text.mjs --check",
     "lint:hebrew-register": "pnpm --filter @kc/mobile exec vitest run src/__tests__/copyVoiceRules.test.ts src/__tests__/copyVoiceGuard.test.ts",
     "typecheck": "turbo run typecheck",

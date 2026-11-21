@@ -12,13 +12,14 @@ import {
   type ISearchRepository,
 } from '@kc/application';
 import { pickAuthStorage } from './authSecureStorage';
+import { viaApi } from './backend/apiBackend';
 
 let _repo: ISearchRepository | null = null;
 let _search: UniversalSearchUseCase | null = null;
 
 function getRepo(): ISearchRepository {
   if (_repo) return _repo;
-  _repo = new SupabaseSearchRepository(getSupabaseClient({ storage: pickAuthStorage() }));
+  _repo = viaApi('search', new SupabaseSearchRepository(getSupabaseClient({ storage: pickAuthStorage() })));
   return _repo;
 }
 

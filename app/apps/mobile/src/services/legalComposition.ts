@@ -3,8 +3,9 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
+  CachedLegalDocumentRepository,
   getSupabaseClient,
-  SupabaseLegalDocumentRepository,
+  SupabaseLegalDocumentSource,
   LegalDocumentCache,
   type AsyncKVStorage,
 } from '@kc/infrastructure-supabase';
@@ -15,6 +16,7 @@ import {
   type ILegalDocumentRepository,
 } from '@kc/application';
 import { pickAuthStorage } from './authSecureStorage';
+import { viaApi } from './backend/apiBackend';
 
 let _repo: ILegalDocumentRepository | null = null;
 let _load: LoadLegalDocumentUseCase | null = null;
@@ -28,10 +30,9 @@ const legalCacheStorage: AsyncKVStorage = AsyncStorage;
 function getRepo(): ILegalDocumentRepository {
   if (_repo) return _repo;
   const cache = new LegalDocumentCache(legalCacheStorage);
-  _repo = new SupabaseLegalDocumentRepository(
-    getSupabaseClient({ storage: pickAuthStorage() }),
-    cache,
-  );
+  // The offline copy wraps whichever source answers: the API when it serves the port, else Supabase.
+  const source = viaApi('legalDocument', new SupabaseLegalDocumentSource(getSupabaseClient({ storage: pickAuthStorage() })));
+  _repo = new CachedLegalDocumentRepository(source, cache);
   return _repo;
 }
 

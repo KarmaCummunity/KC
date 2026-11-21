@@ -1,35 +1,27 @@
 // FR-KARMA-007 — self karma ledger (RLS: karma_ledger_select_own), newest first.
 import { useQuery } from '@tanstack/react-query';
-import { getSupabaseClient, unwrapCall } from '@kc/infrastructure-supabase';
+import type { IKarmaHistoryRepository, KarmaHistoryEntry } from '@kc/application';
+import { getSupabaseClient, SupabaseKarmaHistoryRepository } from '@kc/infrastructure-supabase';
+import { viaApi } from '../services/backend/apiBackend';
 
-export interface KarmaHistoryRow {
-  readonly id: number;
-  readonly eventType: string;
-  readonly delta: number;
-  readonly createdAt: string;
-}
+/** One row of the history screen. */
+export type KarmaHistoryRow = KarmaHistoryEntry;
 
 /** Rows the history screen shows at most. */
 const HISTORY_LIMIT = 300;
+
+let repository: IKarmaHistoryRepository | null = null;
+function karmaHistoryRepository(): IKarmaHistoryRepository {
+  repository ??= viaApi('karmaHistory', new SupabaseKarmaHistoryRepository(getSupabaseClient()));
+  return repository;
+}
 
 export function useKarmaHistory(userId: string | undefined) {
   return useQuery({
     queryKey: ['karma-history', userId],
     enabled: Boolean(userId),
     staleTime: 60_000,
-    queryFn: async (): Promise<KarmaHistoryRow[]> => {
-      const rows = unwrapCall(
-        'table:karma_ledger',
-        await getSupabaseClient()
-          .from('karma_ledger')
-          .select('id, event_type, points, created_at')
-          .eq('user_id', userId!)
-          .order('created_at', { ascending: false })
-          .order('id', { ascending: false })
-          .limit(HISTORY_LIMIT),
-      );
-      return (rows ?? []).map((r) => ({ id: r.id, eventType: r.event_type, delta: r.points, createdAt: r.created_at }));
-    },
+    queryFn: (): Promise<KarmaHistoryRow[]> => karmaHistoryRepository().listHistory(userId!, HISTORY_LIMIT),
   });
 }
 

@@ -1,0 +1,8942 @@
+{
+ "ports": {
+  "about": {
+   "listTeamMembers": []
+  },
+  "accountGate": {
+   "checkAccountGate": [
+    {
+     "name": "userId",
+     "shape": "string"
+    }
+   ],
+   "restoreAccount": []
+  },
+  "activeStatus": {
+   "get": [],
+   "set": [
+    {
+     "name": "enabled",
+     "shape": "boolean"
+    }
+   ]
+  },
+  "adminContent": {
+   "findActiveMembers": [
+    {
+     "name": "text",
+     "shape": "string"
+    },
+    {
+     "name": "limit",
+     "shape": "number"
+    }
+   ],
+   "searchUsers": [
+    {
+     "name": "filters",
+     "shape": {
+      "ref": "AdminUserSearchFilters"
+     }
+    }
+   ],
+   "searchPosts": [
+    {
+     "name": "filters",
+     "shape": {
+      "ref": "AdminPostSearchFilters"
+     }
+    }
+   ],
+   "searchAudit": [
+    {
+     "name": "filters",
+     "shape": {
+      "ref": "AdminAuditSearchFilters"
+     }
+    }
+   ]
+  },
+  "adminRole": {
+   "getMyRoles": [],
+   "listAdmins": [
+    {
+     "name": "includeRevoked",
+     "shape": "boolean"
+    }
+   ],
+   "grantRole": [
+    {
+     "name": "targetUserId",
+     "shape": "string"
+    },
+    {
+     "name": "role",
+     "shape": {
+      "union": [
+       {
+        "literal": "admin"
+       },
+       {
+        "literal": "moderator"
+       },
+       {
+        "literal": "support"
+       },
+       {
+        "literal": "operator"
+       },
+       {
+        "literal": "operators_manager"
+       },
+       {
+        "literal": "org_admin"
+       },
+       {
+        "literal": "org_manager"
+       },
+       {
+        "literal": "org_employee"
+       },
+       {
+        "literal": "org_treasurer"
+       },
+       {
+        "literal": "org_accountant"
+       },
+       {
+        "literal": "volunteer_manager"
+       },
+       {
+        "literal": "org_volunteer"
+       }
+      ]
+     }
+    },
+    {
+     "name": "scopeOrgId",
+     "shape": {
+      "union": [
+       "null",
+       "string"
+      ]
+     }
+    }
+   ],
+   "revokeRole": [
+    {
+     "name": "grantId",
+     "shape": "string"
+    }
+   ],
+   "changeRole": [
+    {
+     "name": "grantId",
+     "shape": "string"
+    },
+    {
+     "name": "newRole",
+     "shape": {
+      "union": [
+       {
+        "literal": "admin"
+       },
+       {
+        "literal": "moderator"
+       },
+       {
+        "literal": "support"
+       },
+       {
+        "literal": "operator"
+       },
+       {
+        "literal": "operators_manager"
+       },
+       {
+        "literal": "org_admin"
+       },
+       {
+        "literal": "org_manager"
+       },
+       {
+        "literal": "org_employee"
+       },
+       {
+        "literal": "org_treasurer"
+       },
+       {
+        "literal": "org_accountant"
+       },
+       {
+        "literal": "volunteer_manager"
+       },
+       {
+        "literal": "org_volunteer"
+       }
+      ]
+     }
+    }
+   ]
+  },
+  "adminTask": {
+   "list": [
+    {
+     "name": "filters",
+     "shape": {
+      "ref": "AdminTaskListFilters"
+     }
+    }
+   ],
+   "openCount": [],
+   "getDetail": [
+    {
+     "name": "taskId",
+     "shape": "string"
+    }
+   ],
+   "create": [
+    {
+     "name": "input",
+     "shape": {
+      "ref": "CreateAdminTaskInput"
+     }
+    }
+   ],
+   "update": [
+    {
+     "name": "taskId",
+     "shape": "string"
+    },
+    {
+     "name": "patch",
+     "shape": {
+      "ref": "UpdateAdminTaskInput"
+     }
+    }
+   ],
+   "setStatus": [
+    {
+     "name": "taskId",
+     "shape": "string"
+    },
+    {
+     "name": "newStatus",
+     "shape": {
+      "union": [
+       {
+        "literal": "open"
+       },
+       {
+        "literal": "in_progress"
+       },
+       {
+        "literal": "blocked"
+       },
+       {
+        "literal": "done"
+       },
+       {
+        "literal": "archived"
+       }
+      ]
+     }
+    }
+   ],
+   "assign": [
+    {
+     "name": "taskId",
+     "shape": "string"
+    },
+    {
+     "name": "newAssigneeId",
+     "shape": {
+      "union": [
+       "null",
+       "string"
+      ]
+     }
+    }
+   ],
+   "addComment": [
+    {
+     "name": "taskId",
+     "shape": "string"
+    },
+    {
+     "name": "body",
+     "shape": "string"
+    }
+   ],
+   "delete": [
+    {
+     "name": "taskId",
+     "shape": "string"
+    }
+   ]
+  },
+  "appFlagsAdmin": {
+   "setFlag": [
+    {
+     "name": "key",
+     "shape": "string"
+    },
+    {
+     "name": "enabled",
+     "shape": "boolean"
+    }
+   ]
+  },
+  "block": {
+   "isBlocking": [
+    {
+     "name": "blockerId",
+     "shape": "string"
+    },
+    {
+     "name": "blockedId",
+     "shape": "string"
+    }
+   ],
+   "block": [
+    {
+     "name": "blockerId",
+     "shape": "string"
+    },
+    {
+     "name": "blockedId",
+     "shape": "string"
+    }
+   ],
+   "unblock": [
+    {
+     "name": "blockerId",
+     "shape": "string"
+    },
+    {
+     "name": "blockedId",
+     "shape": "string"
+    }
+   ],
+   "listMyBlockedUsers": []
+  },
+  "challenge": {
+   "createChallenge": [
+    {
+     "name": "draft",
+     "shape": {
+      "ref": "ChallengeDraft"
+     }
+    }
+   ],
+   "listChallenges": [
+    {
+     "name": "view",
+     "shape": {
+      "union": [
+       {
+        "literal": "discover"
+       },
+       {
+        "literal": "joined"
+       },
+       {
+        "literal": "created"
+       }
+      ]
+     }
+    },
+    {
+     "name": "cursor",
+     "shape": {
+      "union": [
+       "undefined",
+       "null",
+       "string"
+      ]
+     },
+     "optional": true
+    },
+    {
+     "name": "limit",
+     "shape": {
+      "union": [
+       "undefined",
+       "number"
+      ]
+     },
+     "optional": true
+    }
+   ],
+   "getChallenge": [
+    {
+     "name": "challengeId",
+     "shape": "string"
+    }
+   ],
+   "joinChallenge": [
+    {
+     "name": "challengeId",
+     "shape": "string"
+    }
+   ],
+   "leaveChallenge": [
+    {
+     "name": "challengeId",
+     "shape": "string"
+    }
+   ],
+   "endChallenge": [
+    {
+     "name": "challengeId",
+     "shape": "string"
+    }
+   ],
+   "reportProgress": [
+    {
+     "name": "challengeId",
+     "shape": "string"
+    },
+    {
+     "name": "value",
+     "shape": "number"
+    },
+    {
+     "name": "note",
+     "shape": {
+      "union": [
+       "null",
+       "string"
+      ]
+     }
+    },
+    {
+     "name": "reportDate",
+     "shape": {
+      "union": [
+       "null",
+       "string"
+      ]
+     }
+    }
+   ],
+   "listMyEntries": [
+    {
+     "name": "challengeId",
+     "shape": "string"
+    },
+    {
+     "name": "limit",
+     "shape": {
+      "union": [
+       "undefined",
+       "number"
+      ]
+     },
+     "optional": true
+    }
+   ],
+   "listLeaderboard": [
+    {
+     "name": "challengeId",
+     "shape": "string"
+    },
+    {
+     "name": "limit",
+     "shape": {
+      "union": [
+       "undefined",
+       "number"
+      ]
+     },
+     "optional": true
+    }
+   ]
+  },
+  "chat": {
+   "getMyChats": [
+    {
+     "name": "userId",
+     "shape": "string"
+    }
+   ],
+   "findOrCreateChat": [
+    {
+     "name": "userId",
+     "shape": "string"
+    },
+    {
+     "name": "otherUserId",
+     "shape": "string"
+    },
+    {
+     "name": "anchor",
+     "shape": {
+      "union": [
+       "undefined",
+       {
+        "object": {
+         "postId": {
+          "union": [
+           "undefined",
+           "string"
+          ]
+         }
+        },
+        "optional": [
+         "postId"
+        ]
+       }
+      ]
+     },
+     "optional": true
+    },
+    {
+     "name": "options",
+     "shape": {
+      "union": [
+       "undefined",
+       {
+        "object": {
+         "preferNewThread": {
+          "union": [
+           "undefined",
+           "boolean"
+          ]
+         }
+        },
+        "optional": [
+         "preferNewThread"
+        ]
+       }
+      ]
+     },
+     "optional": true
+    }
+   ],
+   "hideChatFromInbox": [
+    {
+     "name": "chatId",
+     "shape": "string"
+    }
+   ],
+   "findById": [
+    {
+     "name": "chatId",
+     "shape": "string"
+    }
+   ],
+   "getMessages": [
+    {
+     "name": "chatId",
+     "shape": "string"
+    },
+    {
+     "name": "limit",
+     "shape": "number"
+    },
+    {
+     "name": "beforeCreatedAt",
+     "shape": {
+      "union": [
+       "undefined",
+       "string"
+      ]
+     },
+     "optional": true
+    }
+   ],
+   "sendMessage": [
+    {
+     "name": "chatId",
+     "shape": "string"
+    },
+    {
+     "name": "senderId",
+     "shape": "string"
+    },
+    {
+     "name": "body",
+     "shape": "string"
+    },
+    {
+     "name": "messageId",
+     "shape": {
+      "union": [
+       "undefined",
+       "string"
+      ]
+     },
+     "optional": true
+    }
+   ],
+   "markRead": [
+    {
+     "name": "chatId",
+     "shape": "string"
+    },
+    {
+     "name": "userId",
+     "shape": "string"
+    }
+   ],
+   "getUnreadTotal": [
+    {
+     "name": "userId",
+     "shape": "string"
+    }
+   ],
+   "getCounterpart": [
+    {
+     "name": "chat",
+     "shape": {
+      "ref": "Chat"
+     }
+    },
+    {
+     "name": "viewerId",
+     "shape": "string"
+    }
+   ],
+   "getOrCreateSupportThread": [
+    {
+     "name": "userId",
+     "shape": "string"
+    }
+   ],
+   "submitSupportIssue": [
+    {
+     "name": "category",
+     "shape": {
+      "union": [
+       "null",
+       "string"
+      ]
+     }
+    },
+    {
+     "name": "description",
+     "shape": "string"
+    }
+   ],
+   "hasSentAnyMessage": [
+    {
+     "name": "userId",
+     "shape": "string"
+    }
+   ]
+  },
+  "chatV2": {
+   "setMessageReaction": [
+    {
+     "name": "messageId",
+     "shape": "string"
+    },
+    {
+     "name": "reactionType",
+     "shape": {
+      "union": [
+       "null",
+       {
+        "literal": "like"
+       },
+       {
+        "literal": "love"
+       },
+       {
+        "literal": "laugh"
+       },
+       {
+        "literal": "sad"
+       }
+      ]
+     }
+    }
+   ],
+   "sendMediaMessage": [
+    {
+     "name": "chatId",
+     "shape": "string"
+    },
+    {
+     "name": "mediaPayload",
+     "shape": {
+      "ref": "Record<string, unknown>"
+     }
+    },
+    {
+     "name": "body",
+     "shape": {
+      "union": [
+       "undefined",
+       "null",
+       "string"
+      ]
+     },
+     "optional": true
+    },
+    {
+     "name": "messageId",
+     "shape": {
+      "union": [
+       "undefined",
+       "string"
+      ]
+     },
+     "optional": true
+    }
+   ],
+   "listMessageReactions": [
+    {
+     "name": "messageIds",
+     "shape": {
+      "array": "string"
+     }
+    }
+   ]
+  },
+  "city": {
+   "listAll": []
+  },
+  "crmContacts": {
+   "listOrgs": [],
+   "list": [
+    {
+     "name": "filters",
+     "shape": {
+      "ref": "CrmContactListFilters"
+     }
+    }
+   ],
+   "upsert": [
+    {
+     "name": "input",
+     "shape": {
+      "ref": "CrmContactUpsertInput"
+     }
+    }
+   ],
+   "delete": [
+    {
+     "name": "contactId",
+     "shape": "string"
+    }
+   ],
+   "markContacted": [
+    {
+     "name": "contactId",
+     "shape": "string"
+    }
+   ]
+  },
+  "demoData": {
+   "getStatus": [],
+   "wipeStep": [],
+   "seedStep": [
+    {
+     "name": "password",
+     "shape": {
+      "union": [
+       "undefined",
+       "string"
+      ]
+     },
+     "optional": true
+    }
+   ]
+  },
+  "device": {
+   "upsert": [
+    {
+     "name": "input",
+     "shape": {
+      "ref": "DeviceRegistration"
+     }
+    }
+   ],
+   "deactivate": [
+    {
+     "name": "pushToken",
+     "shape": "string"
+    }
+   ],
+   "listForUser": [
+    {
+     "name": "userId",
+     "shape": "string"
+    }
+   ]
+  },
+  "donationLinks": {
+   "listByCategory": [
+    {
+     "name": "slug",
+     "shape": {
+      "union": [
+       {
+        "literal": "time"
+       },
+       {
+        "literal": "money"
+       },
+       {
+        "literal": "food"
+       },
+       {
+        "literal": "housing"
+       },
+       {
+        "literal": "transport"
+       },
+       {
+        "literal": "knowledge"
+       },
+       {
+        "literal": "animals"
+       },
+       {
+        "literal": "medical"
+       },
+       {
+        "literal": "democracy"
+       },
+       {
+        "literal": "employment"
+       },
+       {
+        "literal": "challenges"
+       }
+      ]
+     }
+    }
+   ],
+   "addViaEdgeFunction": [
+    {
+     "name": "input",
+     "shape": {
+      "ref": "AddDonationLinkInput"
+     }
+    }
+   ],
+   "updateViaEdgeFunction": [
+    {
+     "name": "input",
+     "shape": {
+      "ref": "UpdateDonationLinkInput"
+     }
+    }
+   ],
+   "deleteById": [
+    {
+     "name": "linkId",
+     "shape": "string"
+    }
+   ],
+   "report": [
+    {
+     "name": "linkId",
+     "shape": "string"
+    }
+   ],
+   "listForReview": [
+    {
+     "name": "status",
+     "shape": {
+      "union": [
+       {
+        "literal": "pending"
+       },
+       {
+        "literal": "approved"
+       },
+       {
+        "literal": "rejected"
+       }
+      ]
+     }
+    }
+   ],
+   "review": [
+    {
+     "name": "linkId",
+     "shape": "string"
+    },
+    {
+     "name": "approve",
+     "shape": "boolean"
+    },
+    {
+     "name": "note",
+     "shape": {
+      "union": [
+       "undefined",
+       "null",
+       "string"
+      ]
+     },
+     "optional": true
+    }
+   ]
+  },
+  "driverDeclaration": {
+   "getMine": [],
+   "accept": []
+  },
+  "featureFlags": {
+   "listFlags": []
+  },
+  "financeAccounts": {
+   "list": [],
+   "upsert": [
+    {
+     "name": "input",
+     "shape": {
+      "ref": "FinanceAccountUpsertInput"
+     }
+    }
+   ]
+  },
+  "financeDonors": {
+   "summary": [
+    {
+     "name": "limit",
+     "shape": {
+      "union": [
+       "undefined",
+       "number"
+      ]
+     },
+     "optional": true
+    }
+   ]
+  },
+  "financeLedger": {
+   "list": [
+    {
+     "name": "filters",
+     "shape": {
+      "ref": "FinanceLedgerListFilters"
+     }
+    }
+   ],
+   "summary": [
+    {
+     "name": "fromDate",
+     "shape": "unknown",
+     "optional": true
+    },
+    {
+     "name": "toDate",
+     "shape": "unknown",
+     "optional": true
+    }
+   ],
+   "upsert": [
+    {
+     "name": "input",
+     "shape": {
+      "ref": "FinanceLedgerUpsertInput"
+     }
+    }
+   ],
+   "delete": [
+    {
+     "name": "entryId",
+     "shape": "string"
+    },
+    {
+     "name": "reason",
+     "shape": "string"
+    }
+   ]
+  },
+  "followSuggestions": {
+   "listSuggestions": [
+    {
+     "name": "limit",
+     "shape": {
+      "union": [
+       "undefined",
+       "number"
+      ]
+     },
+     "optional": true
+    }
+   ],
+   "getProfileCompleteness": []
+  },
+  "guestPosts": {
+   "list": [
+    {
+     "name": "beforeId",
+     "shape": {
+      "union": [
+       "undefined",
+       "string"
+      ]
+     },
+     "optional": true
+    }
+   ],
+   "get": [
+    {
+     "name": "id",
+     "shape": "string"
+    }
+   ]
+  },
+  "housing": {
+   "currentConductVersion": [],
+   "hasAcceptedConduct": [],
+   "acceptConduct": [
+    {
+     "name": "version",
+     "shape": "number"
+    }
+   ],
+   "requestStay": [
+    {
+     "name": "input",
+     "shape": {
+      "ref": "HousingStayRequestInput"
+     }
+    }
+   ],
+   "decide": [
+    {
+     "name": "handoffId",
+     "shape": "string"
+    },
+    {
+     "name": "approve",
+     "shape": "boolean"
+    },
+    {
+     "name": "note",
+     "shape": {
+      "union": [
+       "null",
+       "string"
+      ]
+     }
+    }
+   ],
+   "cancel": [
+    {
+     "name": "handoffId",
+     "shape": "string"
+    },
+    {
+     "name": "note",
+     "shape": {
+      "union": [
+       "null",
+       "string"
+      ]
+     }
+    }
+   ],
+   "complete": [
+    {
+     "name": "handoffId",
+     "shape": "string"
+    }
+   ],
+   "markNoShow": [
+    {
+     "name": "handoffId",
+     "shape": "string"
+    }
+   ],
+   "listForOffer": [
+    {
+     "name": "listingId",
+     "shape": "string"
+    }
+   ],
+   "listMyStays": [
+    {
+     "name": "limit",
+     "shape": {
+      "union": [
+       "undefined",
+       "number"
+      ]
+     },
+     "optional": true
+    }
+   ],
+   "getPrivateDetails": [
+    {
+     "name": "listingId",
+     "shape": "string"
+    }
+   ],
+   "setPrivateDetails": [
+    {
+     "name": "input",
+     "shape": {
+      "ref": "HousingPrivateDetailsInput"
+     }
+    }
+   ]
+  },
+  "importTelemetry": {
+   "getFunnel": [
+    {
+     "name": "days",
+     "shape": "number"
+    }
+   ],
+   "getFieldEditRates": [
+    {
+     "name": "days",
+     "shape": "number"
+    }
+   ]
+  },
+  "karmaHistory": {
+   "listHistory": [
+    {
+     "name": "userId",
+     "shape": "string"
+    },
+    {
+     "name": "limit",
+     "shape": "number"
+    }
+   ]
+  },
+  "kcSupportChannels": {
+   "listActiveChannels": []
+  },
+  "knowledgeBooking": {
+   "listSlots": [
+    {
+     "name": "postId",
+     "shape": "string"
+    }
+   ],
+   "bookSeat": [
+    {
+     "name": "slotId",
+     "shape": "string"
+    }
+   ],
+   "listBookings": [
+    {
+     "name": "postId",
+     "shape": "string"
+    }
+   ],
+   "confirm": [
+    {
+     "name": "handoffId",
+     "shape": "string"
+    }
+   ],
+   "decline": [
+    {
+     "name": "handoffId",
+     "shape": "string"
+    }
+   ],
+   "completeSession": [
+    {
+     "name": "handoffId",
+     "shape": "string"
+    }
+   ]
+  },
+  "knowledgeSlotSeries": {
+   "getForPost": [
+    {
+     "name": "postId",
+     "shape": "string"
+    }
+   ],
+   "setStatus": [
+    {
+     "name": "postId",
+     "shape": "string"
+    },
+    {
+     "name": "status",
+     "shape": {
+      "union": [
+       {
+        "literal": "active"
+       },
+       {
+        "literal": "ended"
+       },
+       {
+        "literal": "paused"
+       }
+      ]
+     }
+    }
+   ]
+  },
+  "knowledgeTopic": {
+   "listTopics": [],
+   "resolveTopics": [
+    {
+     "name": "text",
+     "shape": "string"
+    }
+   ],
+   "proposeTopic": [
+    {
+     "name": "input",
+     "shape": {
+      "ref": "ProposeKnowledgeTopicInput"
+     }
+    }
+   ],
+   "updateMyProposal": [
+    {
+     "name": "topicId",
+     "shape": "string"
+    },
+    {
+     "name": "labels",
+     "shape": {
+      "ref": "KnowledgeTopicLabels"
+     }
+    }
+   ],
+   "reviewTopic": [
+    {
+     "name": "input",
+     "shape": {
+      "ref": "ReviewKnowledgeTopicInput"
+     }
+    }
+   ],
+   "listFollowedTopicIds": [],
+   "setTopicFollowed": [
+    {
+     "name": "topicId",
+     "shape": "string"
+    },
+    {
+     "name": "followed",
+     "shape": "boolean"
+    }
+   ]
+  },
+  "legalDocument": {
+   "getCurrentContent": [
+    {
+     "name": "docType",
+     "shape": {
+      "union": [
+       {
+        "literal": "terms"
+       },
+       {
+        "literal": "privacy"
+       }
+      ]
+     }
+    }
+   ],
+   "getPendingForCurrentUser": [],
+   "acceptVersion": [
+    {
+     "name": "input",
+     "shape": {
+      "ref": "AcceptLegalDocumentInput"
+     }
+    }
+   ]
+  },
+  "listingStreetAddress": {
+   "save": [
+    {
+     "name": "listingId",
+     "shape": "string"
+    },
+    {
+     "name": "address",
+     "shape": {
+      "ref": "ListingStreetAddress"
+     }
+    }
+   ],
+   "getOwn": [
+    {
+     "name": "listingId",
+     "shape": "string"
+    }
+   ]
+  },
+  "marketplace": {
+   "getListingDetail": [
+    {
+     "name": "listingId",
+     "shape": "string"
+    }
+   ],
+   "similarListings": [
+    {
+     "name": "listingId",
+     "shape": "string"
+    },
+    {
+     "name": "limit",
+     "shape": {
+      "union": [
+       "undefined",
+       "number"
+      ]
+     },
+     "optional": true
+    }
+   ],
+   "listKindsForWorld": [
+    {
+     "name": "worldSlug",
+     "shape": "string"
+    }
+   ],
+   "listWorldSubcategories": [
+    {
+     "name": "worldSlug",
+     "shape": "string"
+    }
+   ],
+   "searchExternalBodies": [
+    {
+     "name": "worldSlug",
+     "shape": "string"
+    },
+    {
+     "name": "query",
+     "shape": {
+      "union": [
+       "undefined",
+       "null",
+       "string"
+      ]
+     },
+     "optional": true
+    },
+    {
+     "name": "limit",
+     "shape": {
+      "union": [
+       "undefined",
+       "number"
+      ]
+     },
+     "optional": true
+    }
+   ],
+   "createListing": [
+    {
+     "name": "input",
+     "shape": {
+      "object": {
+       "kindId": "string",
+       "title": "string",
+       "summary": {
+        "union": [
+         "undefined",
+         "null",
+         "string"
+        ]
+       },
+       "details": {
+        "union": [
+         "undefined",
+         {
+          "ref": "Record<string, unknown>"
+         }
+        ]
+       },
+       "direction": {
+        "union": [
+         "undefined",
+         "null",
+         {
+          "literal": "give"
+         },
+         {
+          "literal": "request"
+         }
+        ]
+       },
+       "cityId": {
+        "union": [
+         "undefined",
+         "null",
+         "string"
+        ]
+       },
+       "lat": {
+        "union": [
+         "undefined",
+         "null",
+         "number"
+        ]
+       },
+       "lng": {
+        "union": [
+         "undefined",
+         "null",
+         "number"
+        ]
+       },
+       "maxRadiusKm": {
+        "union": [
+         "undefined",
+         "null",
+         "number"
+        ]
+       },
+       "media": {
+        "union": [
+         "undefined",
+         {
+          "array": {
+           "ref": "MediaAssetInput"
+          }
+         }
+        ]
+       },
+       "externalBodyId": {
+        "union": [
+         "undefined",
+         "null",
+         "string"
+        ]
+       },
+       "categoryId": {
+        "union": [
+         "undefined",
+         "null",
+         "string"
+        ]
+       },
+       "urgencyLevel": {
+        "union": [
+         "undefined",
+         "number"
+        ]
+       },
+       "availabilityStatus": {
+        "union": [
+         "undefined",
+         "string"
+        ]
+       },
+       "additionalWorldSlugs": {
+        "union": [
+         "undefined",
+         "null",
+         {
+          "array": "string"
+         }
+        ]
+       },
+       "visibility": {
+        "union": [
+         "undefined",
+         {
+          "literal": "Public"
+         },
+         {
+          "literal": "FollowersOnly"
+         },
+         {
+          "literal": "OnlyMe"
+         }
+        ]
+       },
+       "locationDisplayLevel": {
+        "union": [
+         "undefined",
+         {
+          "literal": "CityOnly"
+         },
+         {
+          "literal": "CityAndStreet"
+         },
+         {
+          "literal": "FullAddress"
+         }
+        ]
+       }
+      },
+      "optional": [
+       "summary",
+       "details",
+       "direction",
+       "cityId",
+       "lat",
+       "lng",
+       "maxRadiusKm",
+       "media",
+       "externalBodyId",
+       "categoryId",
+       "urgencyLevel",
+       "availabilityStatus",
+       "additionalWorldSlugs",
+       "visibility",
+       "locationDisplayLevel"
+      ]
+     }
+    }
+   ],
+   "startChat": [
+    {
+     "name": "listingId",
+     "shape": "string"
+    },
+    {
+     "name": "openingMessage",
+     "shape": {
+      "union": [
+       "undefined",
+       "null",
+       "string"
+      ]
+     },
+     "optional": true
+    }
+   ],
+   "listMyListingsPage": [
+    {
+     "name": "limit",
+     "shape": "number"
+    },
+    {
+     "name": "cursor",
+     "shape": {
+      "union": [
+       "undefined",
+       "null",
+       "string"
+      ]
+     },
+     "optional": true
+    }
+   ],
+   "listProfileListings": [
+    {
+     "name": "ownerId",
+     "shape": "string"
+    },
+    {
+     "name": "limit",
+     "shape": {
+      "union": [
+       "undefined",
+       "number"
+      ]
+     },
+     "optional": true
+    }
+   ],
+   "updateMyListing": [
+    {
+     "name": "listingId",
+     "shape": "string"
+    },
+    {
+     "name": "patch",
+     "shape": {
+      "object": {
+       "title": {
+        "union": [
+         "undefined",
+         "string"
+        ]
+       },
+       "summary": {
+        "union": [
+         "undefined",
+         "null",
+         "string"
+        ]
+       },
+       "details": {
+        "union": [
+         "undefined",
+         {
+          "ref": "Record<string, unknown>"
+         }
+        ]
+       },
+       "cityId": {
+        "union": [
+         "undefined",
+         "null",
+         "string"
+        ]
+       },
+       "maxRadiusKm": {
+        "union": [
+         "undefined",
+         "null",
+         "number"
+        ]
+       },
+       "urgencyLevel": {
+        "union": [
+         "undefined",
+         "number"
+        ]
+       },
+       "availabilityStatus": {
+        "union": [
+         "undefined",
+         "string"
+        ]
+       },
+       "locationDisplayLevel": {
+        "union": [
+         "undefined",
+         {
+          "literal": "CityOnly"
+         },
+         {
+          "literal": "CityAndStreet"
+         },
+         {
+          "literal": "FullAddress"
+         }
+        ]
+       },
+       "visibility": {
+        "union": [
+         "undefined",
+         {
+          "literal": "Public"
+         },
+         {
+          "literal": "FollowersOnly"
+         },
+         {
+          "literal": "OnlyMe"
+         }
+        ]
+       }
+      },
+      "optional": [
+       "title",
+       "summary",
+       "details",
+       "cityId",
+       "maxRadiusKm",
+       "urgencyLevel",
+       "availabilityStatus",
+       "locationDisplayLevel",
+       "visibility"
+      ]
+     }
+    }
+   ],
+   "pauseMyListing": [
+    {
+     "name": "listingId",
+     "shape": "string"
+    }
+   ],
+   "resumeMyListing": [
+    {
+     "name": "listingId",
+     "shape": "string"
+    }
+   ],
+   "fulfillMyListing": [
+    {
+     "name": "listingId",
+     "shape": "string"
+    }
+   ],
+   "deleteMyListing": [
+    {
+     "name": "listingId",
+     "shape": "string"
+    }
+   ],
+   "addMyListingMedia": [
+    {
+     "name": "listingId",
+     "shape": "string"
+    },
+    {
+     "name": "media",
+     "shape": {
+      "array": {
+       "ref": "MediaAssetInput"
+      }
+     }
+    }
+   ],
+   "getListingHandoff": [
+    {
+     "name": "listingId",
+     "shape": "string"
+    }
+   ],
+   "listMyGivingHandoffs": [
+    {
+     "name": "limit",
+     "shape": {
+      "union": [
+       "undefined",
+       "number"
+      ]
+     },
+     "optional": true
+    }
+   ],
+   "reserveItemGiving": [
+    {
+     "name": "listingId",
+     "shape": "string"
+    },
+    {
+     "name": "pickupMode",
+     "shape": {
+      "union": [
+       "undefined",
+       {
+        "literal": "pickup"
+       },
+       {
+        "literal": "delivery"
+       }
+      ]
+     },
+     "optional": true
+    },
+    {
+     "name": "pickupWindowStart",
+     "shape": {
+      "union": [
+       "undefined",
+       "null",
+       "string"
+      ]
+     },
+     "optional": true
+    },
+    {
+     "name": "pickupWindowEnd",
+     "shape": {
+      "union": [
+       "undefined",
+       "null",
+       "string"
+      ]
+     },
+     "optional": true
+    }
+   ],
+   "confirmItemHandoff": [
+    {
+     "name": "handoffId",
+     "shape": "string"
+    }
+   ],
+   "claimFoodGiving": [
+    {
+     "name": "listingId",
+     "shape": "string"
+    },
+    {
+     "name": "pickupWindowStart",
+     "shape": {
+      "union": [
+       "undefined",
+       "null",
+       "string"
+      ]
+     },
+     "optional": true
+    },
+    {
+     "name": "pickupWindowEnd",
+     "shape": {
+      "union": [
+       "undefined",
+       "null",
+       "string"
+      ]
+     },
+     "optional": true
+    }
+   ],
+   "cancelGivingHandoff": [
+    {
+     "name": "handoffId",
+     "shape": "string"
+    }
+   ],
+   "markGivingHandedOver": [
+    {
+     "name": "handoffId",
+     "shape": "string"
+    }
+   ],
+   "rateGivingHandoff": [
+    {
+     "name": "handoffId",
+     "shape": "string"
+    },
+    {
+     "name": "rating",
+     "shape": "number"
+    },
+    {
+     "name": "comment",
+     "shape": {
+      "union": [
+       "undefined",
+       "null",
+       "string"
+      ]
+     },
+     "optional": true
+    }
+   ],
+   "registerForEvent": [
+    {
+     "name": "target",
+     "shape": "string"
+    }
+   ],
+   "decideEventRegistration": [
+    {
+     "name": "handoffId",
+     "shape": "string"
+    },
+    {
+     "name": "approve",
+     "shape": "boolean"
+    }
+   ],
+   "cancelEventRegistration": [
+    {
+     "name": "handoffId",
+     "shape": "string"
+    }
+   ],
+   "listEventRegistrations": [
+    {
+     "name": "target",
+     "shape": "string"
+    }
+   ],
+   "markEventAttendance": [
+    {
+     "name": "handoffId",
+     "shape": "string"
+    },
+    {
+     "name": "attended",
+     "shape": "boolean"
+    }
+   ],
+   "getMyEventRegistration": [
+    {
+     "name": "postId",
+     "shape": "string"
+    }
+   ],
+   "listMyOrganizations": [],
+   "messageEventRegistrants": [
+    {
+     "name": "postId",
+     "shape": "string"
+    },
+    {
+     "name": "body",
+     "shape": "string"
+    }
+   ]
+  },
+  "match": {
+   "listMine": [
+    {
+     "name": "limit",
+     "shape": {
+      "union": [
+       "undefined",
+       "number"
+      ]
+     },
+     "optional": true
+    }
+   ],
+   "respond": [
+    {
+     "name": "candidateId",
+     "shape": "string"
+    },
+    {
+     "name": "response",
+     "shape": {
+      "union": [
+       {
+        "literal": "accept"
+       },
+       {
+        "literal": "decline"
+       }
+      ]
+     }
+    }
+   ],
+   "qualityByWorld": [
+    {
+     "name": "days",
+     "shape": {
+      "union": [
+       "undefined",
+       "number"
+      ]
+     },
+     "optional": true
+    }
+   ]
+  },
+  "moderationAdmin": {
+   "getMyRoles": [],
+   "restoreTarget": [
+    {
+     "name": "targetType",
+     "shape": {
+      "union": [
+       {
+        "literal": "user"
+       },
+       {
+        "literal": "post"
+       },
+       {
+        "literal": "chat"
+       },
+       {
+        "literal": "comment"
+       }
+      ]
+     }
+    },
+    {
+     "name": "targetId",
+     "shape": "string"
+    }
+   ],
+   "dismissReport": [
+    {
+     "name": "reportId",
+     "shape": "string"
+    }
+   ],
+   "confirmReport": [
+    {
+     "name": "reportId",
+     "shape": "string"
+    }
+   ],
+   "banUser": [
+    {
+     "name": "userId",
+     "shape": "string"
+    },
+    {
+     "name": "reason",
+     "shape": {
+      "union": [
+       {
+        "literal": "other"
+       },
+       {
+        "literal": "spam"
+       },
+       {
+        "literal": "harassment"
+       },
+       {
+        "literal": "policy_violation"
+       }
+      ]
+     }
+    },
+    {
+     "name": "note",
+     "shape": "string"
+    }
+   ],
+   "deleteMessage": [
+    {
+     "name": "messageId",
+     "shape": "string"
+    }
+   ],
+   "removeComment": [
+    {
+     "name": "commentId",
+     "shape": "string"
+    }
+   ],
+   "auditLookup": [
+    {
+     "name": "userId",
+     "shape": "string"
+    },
+    {
+     "name": "limit",
+     "shape": {
+      "union": [
+       "undefined",
+       "number"
+      ]
+     },
+     "optional": true
+    }
+   ],
+   "isPlatformStaff": [
+    {
+     "name": "userId",
+     "shape": "string"
+    }
+   ]
+  },
+  "moderationQueue": {
+   "listOpen": [
+    {
+     "name": "cursor",
+     "shape": {
+      "union": [
+       "null",
+       {
+        "ref": "ModerationQueueCursor"
+       }
+      ]
+     }
+    },
+    {
+     "name": "limit",
+     "shape": "number"
+    }
+   ],
+   "assign": [
+    {
+     "name": "entryId",
+     "shape": "string"
+    },
+    {
+     "name": "assigneeId",
+     "shape": {
+      "union": [
+       "undefined",
+       "string"
+      ]
+     },
+     "optional": true
+    }
+   ],
+   "resolve": [
+    {
+     "name": "entryId",
+     "shape": "string"
+    }
+   ]
+  },
+  "notificationInbox": {
+   "page": [
+    {
+     "name": "request",
+     "shape": {
+      "union": [
+       "undefined",
+       {
+        "ref": "NotificationInboxPageRequest"
+       }
+      ]
+     },
+     "optional": true
+    }
+   ],
+   "unreadCount": [],
+   "markRead": [
+    {
+     "name": "ids",
+     "shape": {
+      "array": "string"
+     }
+    }
+   ],
+   "markAllRead": []
+  },
+  "orgApplications": {
+   "list": [
+    {
+     "name": "filters",
+     "shape": {
+      "ref": "OrgApplicationListFilters"
+     }
+    }
+   ],
+   "approve": [
+    {
+     "name": "applicationId",
+     "shape": "string"
+    },
+    {
+     "name": "slug",
+     "shape": "string"
+    },
+    {
+     "name": "note",
+     "shape": {
+      "union": [
+       "undefined",
+       "null",
+       "string"
+      ]
+     },
+     "optional": true
+    }
+   ],
+   "reject": [
+    {
+     "name": "applicationId",
+     "shape": "string"
+    },
+    {
+     "name": "note",
+     "shape": {
+      "union": [
+       "undefined",
+       "null",
+       "string"
+      ]
+     },
+     "optional": true
+    }
+   ]
+  },
+  "orgHierarchy": {
+   "getOrgTree": [
+    {
+     "name": "orgId",
+     "shape": {
+      "union": [
+       "null",
+       "string"
+      ]
+     }
+    }
+   ],
+   "setManager": [
+    {
+     "name": "grantId",
+     "shape": "string"
+    },
+    {
+     "name": "managerGrantId",
+     "shape": {
+      "union": [
+       "null",
+       "string"
+      ]
+     }
+    }
+   ],
+   "getHierarchyCensus": [],
+   "setOrgSlug": [
+    {
+     "name": "orgId",
+     "shape": "string"
+    },
+    {
+     "name": "slug",
+     "shape": "string"
+    }
+   ]
+  },
+  "orgJobPostingAdmin": {
+   "listOrganizations": [],
+   "setMayPostJobs": [
+    {
+     "name": "orgId",
+     "shape": "string"
+    },
+    {
+     "name": "enabled",
+     "shape": "boolean"
+    }
+   ]
+  },
+  "orgTransparency": {
+   "getPublic": [
+    {
+     "name": "slug",
+     "shape": {
+      "union": [
+       "undefined",
+       "string"
+      ]
+     },
+     "optional": true
+    }
+   ]
+  },
+  "organizations": {
+   "submitApplication": [
+    {
+     "name": "input",
+     "shape": {
+      "ref": "SubmitOrgApplicationInput"
+     }
+    }
+   ],
+   "getMyLatestApplication": [],
+   "listMyOrganizations": [],
+   "listMembers": [
+    {
+     "name": "orgId",
+     "shape": "string"
+    }
+   ],
+   "addMember": [
+    {
+     "name": "orgId",
+     "shape": "string"
+    },
+    {
+     "name": "shareHandle",
+     "shape": "string"
+    },
+    {
+     "name": "role",
+     "shape": {
+      "union": [
+       {
+        "literal": "org_admin"
+       },
+       {
+        "literal": "org_manager"
+       },
+       {
+        "literal": "org_employee"
+       },
+       {
+        "literal": "org_volunteer"
+       }
+      ]
+     }
+    }
+   ],
+   "removeMember": [
+    {
+     "name": "orgId",
+     "shape": "string"
+    },
+    {
+     "name": "userId",
+     "shape": "string"
+    }
+   ]
+  },
+  "payments": {
+   "listVerifiedNonprofits": [
+    {
+     "name": "limit",
+     "shape": {
+      "union": [
+       "undefined",
+       "number"
+      ]
+     },
+     "optional": true
+    }
+   ],
+   "getNonprofitPublicPage": [
+    {
+     "name": "orgSlug",
+     "shape": "string"
+    }
+   ],
+   "createDonationIntent": [
+    {
+     "name": "orgId",
+     "shape": "string"
+    },
+    {
+     "name": "amountAgorot",
+     "shape": "number"
+    },
+    {
+     "name": "idempotencyKey",
+     "shape": "string"
+    },
+    {
+     "name": "postId",
+     "shape": {
+      "union": [
+       "undefined",
+       "null",
+       "string"
+      ]
+     },
+     "optional": true
+    }
+   ],
+   "createStandingOrder": [
+    {
+     "name": "orgId",
+     "shape": "string"
+    },
+    {
+     "name": "amountAgorot",
+     "shape": "number"
+    },
+    {
+     "name": "idempotencyKey",
+     "shape": "string"
+    }
+   ],
+   "listMyStandingOrders": [],
+   "cancelStandingOrder": [
+    {
+     "name": "orderId",
+     "shape": "string"
+    }
+   ],
+   "pauseStandingOrder": [
+    {
+     "name": "orderId",
+     "shape": "string"
+    }
+   ],
+   "resumeStandingOrder": [
+    {
+     "name": "orderId",
+     "shape": "string"
+    }
+   ],
+   "listDonationHistory": [
+    {
+     "name": "limit",
+     "shape": {
+      "union": [
+       "undefined",
+       "number"
+      ]
+     },
+     "optional": true
+    }
+   ],
+   "getDonationReceipt": [
+    {
+     "name": "paymentId",
+     "shape": "string"
+    }
+   ]
+  },
+  "post": {
+   "getFeed": [
+    {
+     "name": "viewerId",
+     "shape": {
+      "union": [
+       "null",
+       "string"
+      ]
+     }
+    },
+    {
+     "name": "filter",
+     "shape": {
+      "ref": "PostFeedFilter"
+     }
+    },
+    {
+     "name": "limit",
+     "shape": "number"
+    },
+    {
+     "name": "cursor",
+     "shape": {
+      "union": [
+       "undefined",
+       "string"
+      ]
+     },
+     "optional": true
+    }
+   ],
+   "findById": [
+    {
+     "name": "postId",
+     "shape": "string"
+    },
+    {
+     "name": "viewerId",
+     "shape": {
+      "union": [
+       "null",
+       "string"
+      ]
+     }
+    },
+    {
+     "name": "opts",
+     "shape": {
+      "union": [
+       "undefined",
+       {
+        "object": {
+         "identityListingHostUserId": {
+          "union": [
+           "undefined",
+           "null",
+           "string"
+          ]
+         }
+        },
+        "optional": [
+         "identityListingHostUserId"
+        ]
+       }
+      ]
+     },
+     "optional": true
+    }
+   ],
+   "create": [
+    {
+     "name": "input",
+     "shape": {
+      "ref": "CreatePostInput"
+     }
+    }
+   ],
+   "update": [
+    {
+     "name": "postId",
+     "shape": "string"
+    },
+    {
+     "name": "patch",
+     "shape": {
+      "ref": "UpdatePostInput"
+     }
+    }
+   ],
+   "delete": [
+    {
+     "name": "postId",
+     "shape": "string"
+    }
+   ],
+   "adminRemove": [
+    {
+     "name": "postId",
+     "shape": "string"
+    }
+   ],
+   "close": [
+    {
+     "name": "postId",
+     "shape": "string"
+    },
+    {
+     "name": "recipientUserId",
+     "shape": {
+      "union": [
+       "null",
+       "string"
+      ]
+     }
+    }
+   ],
+   "ownerCompleteOffer": [
+    {
+     "name": "targetId",
+     "shape": "string"
+    },
+    {
+     "name": "recipientUserId",
+     "shape": {
+      "union": [
+       "null",
+       "string"
+      ]
+     }
+    },
+    {
+     "name": "mode",
+     "shape": {
+      "union": [
+       {
+        "literal": "assign"
+       },
+       {
+        "literal": "close_without"
+       }
+      ]
+     }
+    }
+   ],
+   "reopen": [
+    {
+     "name": "postId",
+     "shape": "string"
+    }
+   ],
+   "republish": [
+    {
+     "name": "postId",
+     "shape": "string"
+    }
+   ],
+   "unmrkRecipientSelf": [
+    {
+     "name": "postId",
+     "shape": "string"
+    }
+   ],
+   "getClosureCandidates": [
+    {
+     "name": "postId",
+     "shape": "string"
+    }
+   ],
+   "getMyPosts": [
+    {
+     "name": "userId",
+     "shape": "string"
+    },
+    {
+     "name": "status",
+     "shape": {
+      "array": {
+       "union": [
+        {
+         "literal": "open"
+        },
+        {
+         "literal": "expired"
+        },
+        {
+         "literal": "paused"
+        },
+        {
+         "literal": "draft"
+        },
+        {
+         "literal": "closed_delivered"
+        },
+        {
+         "literal": "deleted_no_recipient"
+        },
+        {
+         "literal": "removed_admin"
+        },
+        {
+         "literal": "hidden_pending_review"
+        }
+       ]
+      }
+     }
+    },
+    {
+     "name": "limit",
+     "shape": "number"
+    },
+    {
+     "name": "cursor",
+     "shape": {
+      "union": [
+       "undefined",
+       "string"
+      ]
+     },
+     "optional": true
+    },
+    {
+     "name": "visibility",
+     "shape": {
+      "union": [
+       "undefined",
+       {
+        "literal": "Public"
+       },
+       {
+        "literal": "FollowersOnly"
+       },
+       {
+        "literal": "OnlyMe"
+       }
+      ]
+     },
+     "optional": true
+    },
+    {
+     "name": "excludeVisibility",
+     "shape": {
+      "union": [
+       "undefined",
+       {
+        "literal": "Public"
+       },
+       {
+        "literal": "FollowersOnly"
+       },
+       {
+        "literal": "OnlyMe"
+       }
+      ]
+     },
+     "optional": true
+    }
+   ],
+   "getProfileClosedPosts": [
+    {
+     "name": "profileUserId",
+     "shape": "string"
+    },
+    {
+     "name": "viewerUserId",
+     "shape": {
+      "union": [
+       "null",
+       "string"
+      ]
+     }
+    },
+    {
+     "name": "limit",
+     "shape": "number"
+    },
+    {
+     "name": "cursor",
+     "shape": {
+      "union": [
+       "undefined",
+       "string"
+      ]
+     },
+     "optional": true
+    },
+    {
+     "name": "listMode",
+     "shape": {
+      "union": [
+       "undefined",
+       {
+        "literal": "standard"
+       },
+       {
+        "literal": "owner_only_me"
+       }
+      ]
+     },
+     "optional": true
+    }
+   ],
+   "listPostActorIdentities": [
+    {
+     "name": "postId",
+     "shape": "string"
+    }
+   ],
+   "upsertPostActorIdentity": [
+    {
+     "name": "input",
+     "shape": {
+      "ref": "UpsertPostActorIdentityInput"
+     }
+    }
+   ],
+   "countOpenByUser": [
+    {
+     "name": "userId",
+     "shape": "string"
+    }
+   ],
+   "countProfilePostsForViewer": [
+    {
+     "name": "ownerId",
+     "shape": "string"
+    },
+    {
+     "name": "viewerId",
+     "shape": {
+      "union": [
+       "null",
+       "string"
+      ]
+     }
+    }
+   ],
+   "countProfileOpenPosts": [
+    {
+     "name": "ownerId",
+     "shape": "string"
+    },
+    {
+     "name": "options",
+     "shape": {
+      "union": [
+       "undefined",
+       {
+        "object": {
+         "excludeOnlyMe": {
+          "union": [
+           "undefined",
+           "boolean"
+          ]
+         }
+        },
+        "optional": [
+         "excludeOnlyMe"
+        ]
+       }
+      ]
+     },
+     "optional": true
+    }
+   ],
+   "countProfileClosedPosts": [
+    {
+     "name": "profileUserId",
+     "shape": "string"
+    },
+    {
+     "name": "viewerUserId",
+     "shape": {
+      "union": [
+       "null",
+       "string"
+      ]
+     }
+    },
+    {
+     "name": "listMode",
+     "shape": {
+      "union": [
+       "undefined",
+       {
+        "literal": "standard"
+       },
+       {
+        "literal": "owner_only_me"
+       }
+      ]
+     },
+     "optional": true
+    }
+   ]
+  },
+  "postEngagement": {
+   "getStats": [
+    {
+     "name": "postId",
+     "shape": "string"
+    }
+   ],
+   "getViewerReaction": [
+    {
+     "name": "postId",
+     "shape": "string"
+    },
+    {
+     "name": "viewerId",
+     "shape": "string"
+    }
+   ],
+   "setReaction": [
+    {
+     "name": "postId",
+     "shape": "string"
+    },
+    {
+     "name": "reactionType",
+     "shape": {
+      "union": [
+       "null",
+       {
+        "literal": "support"
+       },
+       {
+        "literal": "like"
+       },
+       {
+        "literal": "thanks"
+       }
+      ]
+     }
+    }
+   ],
+   "createComment": [
+    {
+     "name": "postId",
+     "shape": "string"
+    },
+    {
+     "name": "body",
+     "shape": "string"
+    },
+    {
+     "name": "parentCommentId",
+     "shape": {
+      "union": [
+       "undefined",
+       "null",
+       "string"
+      ]
+     },
+     "optional": true
+    }
+   ],
+   "setCommentLike": [
+    {
+     "name": "commentId",
+     "shape": "string"
+    },
+    {
+     "name": "liked",
+     "shape": "boolean"
+    }
+   ],
+   "listCommentsWithAuthors": [
+    {
+     "name": "postId",
+     "shape": "string"
+    },
+    {
+     "name": "limit",
+     "shape": {
+      "union": [
+       "undefined",
+       "number"
+      ]
+     },
+     "optional": true
+    }
+   ]
+  },
+  "postSeries": {
+   "listMine": [],
+   "create": [
+    {
+     "name": "input",
+     "shape": {
+      "ref": "CreatePostSeriesInput"
+     }
+    }
+   ],
+   "update": [
+    {
+     "name": "seriesId",
+     "shape": "string"
+    },
+    {
+     "name": "input",
+     "shape": {
+      "ref": "UpdatePostSeriesInput"
+     }
+    }
+   ],
+   "setStatus": [
+    {
+     "name": "seriesId",
+     "shape": "string"
+    },
+    {
+     "name": "status",
+     "shape": {
+      "union": [
+       {
+        "literal": "active"
+       },
+       {
+        "literal": "ended"
+       },
+       {
+        "literal": "paused"
+       }
+      ]
+     }
+    }
+   ],
+   "cancelOccurrence": [
+    {
+     "name": "postId",
+     "shape": "string"
+    }
+   ],
+   "listOccurrences": [
+    {
+     "name": "seriesId",
+     "shape": "string"
+    }
+   ]
+  },
+  "postTranslationReader": {
+   "getForPosts": [
+    {
+     "name": "postIds",
+     "shape": {
+      "array": "string"
+     }
+    },
+    {
+     "name": "targetLanguage",
+     "shape": "string"
+    }
+   ]
+  },
+  "proEntitlement": {
+   "isPro": []
+  },
+  "prodCopy": {
+   "getStatus": [],
+   "deleteAll": []
+  },
+  "publicResearch": {
+   "loadBundle": [
+    {
+     "name": "slug",
+     "shape": "string"
+    }
+   ],
+   "submit": [
+    {
+     "name": "payload",
+     "shape": {
+      "ref": "PublicResearchSubmission"
+     }
+    }
+   ]
+  },
+  "report": {
+   "submit": [
+    {
+     "name": "reporterId",
+     "shape": "string"
+    },
+    {
+     "name": "input",
+     "shape": {
+      "ref": "ReportSubmission"
+     }
+    }
+   ]
+  },
+  "reports": {
+   "listOpenInbox": [
+    {
+     "name": "filters",
+     "shape": {
+      "ref": "ListOpenReportsFilters"
+     }
+    },
+    {
+     "name": "cursor",
+     "shape": {
+      "union": [
+       "null",
+       {
+        "ref": "ReportInboxCursor"
+       }
+      ]
+     }
+    },
+    {
+     "name": "limit",
+     "shape": "number"
+    }
+   ],
+   "getCaseDetail": [
+    {
+     "name": "targetType",
+     "shape": {
+      "union": [
+       {
+        "literal": "user"
+       },
+       {
+        "literal": "post"
+       },
+       {
+        "literal": "chat"
+       },
+       {
+        "literal": "comment"
+       }
+      ]
+     }
+    },
+    {
+     "name": "targetId",
+     "shape": "string"
+    }
+   ]
+  },
+  "rideBooking": {
+   "bookSeat": [
+    {
+     "name": "listingId",
+     "shape": "string"
+    },
+    {
+     "name": "seats",
+     "shape": "number"
+    },
+    {
+     "name": "requestedMeetingPoint",
+     "shape": {
+      "union": [
+       "undefined",
+       "null",
+       {
+        "ref": "Record<string, unknown>"
+       }
+      ]
+     },
+     "optional": true
+    }
+   ],
+   "listForRide": [
+    {
+     "name": "listingId",
+     "shape": "string"
+    }
+   ],
+   "approve": [
+    {
+     "name": "handoffId",
+     "shape": "string"
+    }
+   ],
+   "decline": [
+    {
+     "name": "handoffId",
+     "shape": "string"
+    }
+   ],
+   "cancel": [
+    {
+     "name": "handoffId",
+     "shape": "string"
+    }
+   ],
+   "complete": [
+    {
+     "name": "handoffId",
+     "shape": "string"
+    }
+   ],
+   "completeRide": [
+    {
+     "name": "listingId",
+     "shape": "string"
+    }
+   ],
+   "reinstate": [
+    {
+     "name": "handoffId",
+     "shape": "string"
+    }
+   ]
+  },
+  "rideHouseNumber": {
+   "save": [
+    {
+     "name": "listingId",
+     "shape": "string"
+    },
+    {
+     "name": "numbers",
+     "shape": {
+      "ref": "Readonly<Partial<Record<RideHouseNumberEnd, string>>>"
+     }
+    }
+   ],
+   "get": [
+    {
+     "name": "listingId",
+     "shape": "string"
+    }
+   ]
+  },
+  "ridePlace": {
+   "listPlaces": []
+  },
+  "rideSafety": {
+   "raiseEmergency": [
+    {
+     "name": "listingId",
+     "shape": "string"
+    },
+    {
+     "name": "note",
+     "shape": {
+      "union": [
+       "null",
+       "string"
+      ]
+     }
+    }
+   ]
+  },
+  "rideSavedRoutes": {
+   "listMine": [],
+   "save": [
+    {
+     "name": "input",
+     "shape": {
+      "ref": "SaveRideRouteInput"
+     }
+    }
+   ],
+   "remove": [
+    {
+     "name": "routeId",
+     "shape": "string"
+    }
+   ]
+  },
+  "rideSeries": {
+   "listMine": [],
+   "create": [
+    {
+     "name": "input",
+     "shape": {
+      "ref": "CreateRideSeriesInput"
+     }
+    }
+   ],
+   "setStatus": [
+    {
+     "name": "seriesId",
+     "shape": "string"
+    },
+    {
+     "name": "status",
+     "shape": {
+      "union": [
+       {
+        "literal": "active"
+       },
+       {
+        "literal": "cancelled"
+       },
+       {
+        "literal": "paused"
+       }
+      ]
+     }
+    }
+   ],
+   "updateSchedule": [
+    {
+     "name": "seriesId",
+     "shape": "string"
+    },
+    {
+     "name": "schedule",
+     "shape": {
+      "ref": "RideSeriesSchedule"
+     }
+    },
+    {
+     "name": "durationMinutes",
+     "shape": {
+      "union": [
+       "null",
+       "number"
+      ]
+     }
+    }
+   ],
+   "listOccurrences": [
+    {
+     "name": "seriesId",
+     "shape": "string"
+    }
+   ]
+  },
+  "ridesFeed": {
+   "list": [
+    {
+     "name": "limit",
+     "shape": "number"
+    },
+    {
+     "name": "route",
+     "shape": {
+      "union": [
+       "undefined",
+       {
+        "ref": "RideFeedRoute"
+       }
+      ]
+     },
+     "optional": true
+    }
+   ]
+  },
+  "savedPosts": {
+   "savePost": [
+    {
+     "name": "postId",
+     "shape": "string"
+    }
+   ],
+   "unsavePost": [
+    {
+     "name": "postId",
+     "shape": "string"
+    }
+   ],
+   "isPostSaved": [
+    {
+     "name": "postId",
+     "shape": "string"
+    }
+   ],
+   "listSavedPosts": [
+    {
+     "name": "limit",
+     "shape": "number"
+    },
+    {
+     "name": "cursor",
+     "shape": {
+      "union": [
+       "undefined",
+       "string"
+      ]
+     },
+     "optional": true
+    }
+   ]
+  },
+  "search": {
+   "search": [
+    {
+     "name": "query",
+     "shape": "string"
+    },
+    {
+     "name": "filters",
+     "shape": {
+      "ref": "SearchFilters"
+     }
+    },
+    {
+     "name": "viewerId",
+     "shape": {
+      "union": [
+       "null",
+       "string"
+      ]
+     }
+    },
+    {
+     "name": "limits",
+     "shape": {
+      "object": {
+       "posts": "number",
+       "users": "number",
+       "links": "number"
+      }
+     }
+    }
+   ]
+  },
+  "socialFeed": {
+   "hidePost": [
+    {
+     "name": "postId",
+     "shape": "string"
+    }
+   ],
+   "logImpressions": [
+    {
+     "name": "postIds",
+     "shape": {
+      "array": "string"
+     }
+    }
+   ],
+   "listMuteFilters": [],
+   "addMuteFilter": [
+    {
+     "name": "kind",
+     "shape": {
+      "union": [
+       {
+        "literal": "user"
+       },
+       {
+        "literal": "keyword"
+       },
+       {
+        "literal": "world"
+       }
+      ]
+     }
+    },
+    {
+     "name": "value",
+     "shape": "string"
+    }
+   ],
+   "removeMuteFilter": [
+    {
+     "name": "filterId",
+     "shape": "string"
+    }
+   ]
+  },
+  "stats": {
+   "getActivePublicPostsCount": [],
+   "getCommunityStatsSnapshot": [],
+   "listMyActivityTimeline": [
+    {
+     "name": "limit",
+     "shape": "number"
+    }
+   ],
+   "getWorldFlowFunnel": [
+    {
+     "name": "days",
+     "shape": "number"
+    }
+   ],
+   "listMyWorldGivings": []
+  },
+  "street": {
+   "listByCity": [
+    {
+     "name": "cityId",
+     "shape": "string"
+    }
+   ]
+  },
+  "supportInbox": {
+   "listThreads": [
+    {
+     "name": "cursor",
+     "shape": {
+      "union": [
+       "null",
+       {
+        "ref": "SupportThreadCursor"
+       }
+      ]
+     }
+    },
+    {
+     "name": "limit",
+     "shape": "number"
+    }
+   ],
+   "joinThread": [
+    {
+     "name": "chatId",
+     "shape": "string"
+    }
+   ],
+   "openMemberThread": [
+    {
+     "name": "userId",
+     "shape": "string"
+    }
+   ]
+  },
+  "survey": {
+   "listActive": [],
+   "getBundle": [
+    {
+     "name": "slug",
+     "shape": "string"
+    }
+   ],
+   "upsertAnswers": [
+    {
+     "name": "slug",
+     "shape": "string"
+    },
+    {
+     "name": "answers",
+     "shape": {
+      "array": {
+       "ref": "SurveyAnswerDraft"
+      }
+     }
+    }
+   ],
+   "checkPromptEligibility": [
+    {
+     "name": "slug",
+     "shape": "string"
+    },
+    {
+     "name": "clientSessionCount",
+     "shape": "number"
+    }
+   ],
+   "submitFreeFeedback": [
+    {
+     "name": "input",
+     "shape": {
+      "object": {
+       "rating": {
+        "union": [
+         "null",
+         "number"
+        ]
+       },
+       "body": "string"
+      }
+     }
+    }
+   ]
+  },
+  "surveyAdmin": {
+   "listOverview": [],
+   "getResults": [
+    {
+     "name": "slug",
+     "shape": "string"
+    }
+   ],
+   "getPmfReport": [
+    {
+     "name": "slug",
+     "shape": "string"
+    }
+   ],
+   "listFeedback": [
+    {
+     "name": "limit",
+     "shape": "number"
+    },
+    {
+     "name": "after",
+     "shape": {
+      "union": [
+       "null",
+       {
+        "ref": "Pick<AdminFeedbackEntry, \"id\" | \"createdAt\">"
+       }
+      ]
+     }
+    }
+   ]
+  },
+  "timesheets": {
+   "list": [
+    {
+     "name": "filters",
+     "shape": {
+      "ref": "TimesheetListFilters"
+     }
+    }
+   ],
+   "upsert": [
+    {
+     "name": "input",
+     "shape": {
+      "ref": "TimesheetUpsertInput"
+     }
+    }
+   ],
+   "submit": [
+    {
+     "name": "entryId",
+     "shape": "string"
+    }
+   ],
+   "approve": [
+    {
+     "name": "entryId",
+     "shape": "string"
+    },
+    {
+     "name": "note",
+     "shape": {
+      "union": [
+       "undefined",
+       "null",
+       "string"
+      ]
+     },
+     "optional": true
+    }
+   ],
+   "reject": [
+    {
+     "name": "entryId",
+     "shape": "string"
+    },
+    {
+     "name": "note",
+     "shape": {
+      "union": [
+       "undefined",
+       "null",
+       "string"
+      ]
+     },
+     "optional": true
+    }
+   ],
+   "delete": [
+    {
+     "name": "entryId",
+     "shape": "string"
+    }
+   ]
+  },
+  "translationCache": {
+   "get": [
+    {
+     "name": "key",
+     "shape": {
+      "ref": "TranslationCacheKey"
+     }
+    }
+   ],
+   "putIfAbsent": [
+    {
+     "name": "row",
+     "shape": {
+      "ref": "CachedTranslation"
+     }
+    }
+   ],
+   "deleteForContent": [
+    {
+     "name": "contentType",
+     "shape": {
+      "union": [
+       {
+        "literal": "user"
+       },
+       {
+        "literal": "post"
+       },
+       {
+        "literal": "comment"
+       },
+       {
+        "literal": "message"
+       }
+      ]
+     }
+    },
+    {
+     "name": "contentId",
+     "shape": "string"
+    }
+   ]
+  },
+  "transparencySettings": {
+   "get": [],
+   "set": [
+    {
+     "name": "patch",
+     "shape": {
+      "object": {
+       "show_totals": {
+        "union": [
+         "undefined",
+         "boolean"
+        ]
+       },
+       "show_program_ratio": {
+        "union": [
+         "undefined",
+         "boolean"
+        ]
+       },
+       "show_category_breakdown": {
+        "union": [
+         "undefined",
+         "boolean"
+        ]
+       },
+       "show_monthly_trend": {
+        "union": [
+         "undefined",
+         "boolean"
+        ]
+       },
+       "show_donations_count": {
+        "union": [
+         "undefined",
+         "boolean"
+        ]
+       }
+      },
+      "optional": [
+       "show_totals",
+       "show_program_ratio",
+       "show_category_breakdown",
+       "show_monthly_trend",
+       "show_donations_count"
+      ]
+     }
+    }
+   ]
+  },
+  "user": {
+   "findById": [
+    {
+     "name": "userId",
+     "shape": "string"
+    }
+   ],
+   "findByHandle": [
+    {
+     "name": "handle",
+     "shape": "string"
+    }
+   ],
+   "getChatCounterpartyContact": [
+    {
+     "name": "chatId",
+     "shape": "string"
+    }
+   ],
+   "create": [
+    {
+     "name": "user",
+     "shape": {
+      "ref": "Omit<User, \"createdAt\" | \"updatedAt\">"
+     }
+    }
+   ],
+   "update": [
+    {
+     "name": "userId",
+     "shape": "string"
+    },
+    {
+     "name": "patch",
+     "shape": {
+      "ref": "Partial<User>"
+     }
+    }
+   ],
+   "delete": [
+    {
+     "name": "userId",
+     "shape": "string"
+    }
+   ],
+   "requestAccountDeletion": [],
+   "getOnboardingBootstrap": [
+    {
+     "name": "userId",
+     "shape": "string"
+    }
+   ],
+   "markBasicInfoSkipped": [
+    {
+     "name": "userId",
+     "shape": "string"
+    }
+   ],
+   "clearBasicInfoSkipped": [
+    {
+     "name": "userId",
+     "shape": "string"
+    }
+   ],
+   "setBasicInfo": [
+    {
+     "name": "userId",
+     "shape": "string"
+    },
+    {
+     "name": "params",
+     "shape": {
+      "object": {
+       "displayName": "string",
+       "city": "string"
+      }
+     }
+    }
+   ],
+   "setOnboardingState": [
+    {
+     "name": "state",
+     "shape": {
+      "union": [
+       {
+        "literal": "completed"
+       },
+       {
+        "literal": "pending_basic_info"
+       },
+       {
+        "literal": "pending_avatar"
+       }
+      ]
+     }
+    }
+   ],
+   "setAvatar": [
+    {
+     "name": "userId",
+     "shape": "string"
+    },
+    {
+     "name": "avatarUrl",
+     "shape": {
+      "union": [
+       "null",
+       "string"
+      ]
+     }
+    }
+   ],
+   "setBiography": [
+    {
+     "name": "userId",
+     "shape": "string"
+    },
+    {
+     "name": "biography",
+     "shape": {
+      "union": [
+       "null",
+       "string"
+      ]
+     }
+    }
+   ],
+   "setPrivacyMode": [
+    {
+     "name": "userId",
+     "shape": "string"
+    },
+    {
+     "name": "mode",
+     "shape": {
+      "union": [
+       {
+        "literal": "Public"
+       },
+       {
+        "literal": "Private"
+       }
+      ]
+     }
+    }
+   ],
+   "getEditableProfile": [
+    {
+     "name": "userId",
+     "shape": "string"
+    }
+   ],
+   "setProfileAddressLines": [
+    {
+     "name": "userId",
+     "shape": "string"
+    },
+    {
+     "name": "street",
+     "shape": {
+      "union": [
+       "null",
+       "string"
+      ]
+     }
+    },
+    {
+     "name": "streetNumber",
+     "shape": {
+      "union": [
+       "null",
+       "string"
+      ]
+     }
+    }
+   ],
+   "setContactPhone": [
+    {
+     "name": "userId",
+     "shape": "string"
+    },
+    {
+     "name": "contactPhone",
+     "shape": {
+      "union": [
+       "null",
+       "string"
+      ]
+     }
+    }
+   ],
+   "setDateOfBirth": [
+    {
+     "name": "isoDate",
+     "shape": "string"
+    }
+   ],
+   "updateEditableProfile": [
+    {
+     "name": "userId",
+     "shape": "string"
+    },
+    {
+     "name": "patch",
+     "shape": {
+      "object": {
+       "displayName": {
+        "union": [
+         "undefined",
+         "string"
+        ]
+       },
+       "city": {
+        "union": [
+         "undefined",
+         "string"
+        ]
+       },
+       "profileStreet": {
+        "union": [
+         "undefined",
+         "null",
+         "string"
+        ]
+       },
+       "profileStreetNumber": {
+        "union": [
+         "undefined",
+         "null",
+         "string"
+        ]
+       },
+       "contactPhone": {
+        "union": [
+         "undefined",
+         "null",
+         "string"
+        ]
+       },
+       "biography": {
+        "union": [
+         "undefined",
+         "null",
+         "string"
+        ]
+       },
+       "avatarUrl": {
+        "union": [
+         "undefined",
+         "null",
+         "string"
+        ]
+       }
+      },
+      "optional": [
+       "displayName",
+       "city",
+       "profileStreet",
+       "profileStreetNumber",
+       "contactPhone",
+       "biography",
+       "avatarUrl"
+      ]
+     }
+    }
+   ],
+   "dismissClosureExplainer": [
+    {
+     "name": "userId",
+     "shape": "string"
+    }
+   ],
+   "dismissFirstPostNudge": [
+    {
+     "name": "userId",
+     "shape": "string"
+    }
+   ],
+   "searchUsers": [
+    {
+     "name": "query",
+     "shape": "string"
+    },
+    {
+     "name": "opts",
+     "shape": {
+      "object": {
+       "excludeUserId": "string",
+       "limit": "number"
+      }
+     }
+    }
+   ],
+   "follow": [
+    {
+     "name": "followerId",
+     "shape": "string"
+    },
+    {
+     "name": "followedId",
+     "shape": "string"
+    }
+   ],
+   "unfollow": [
+    {
+     "name": "followerId",
+     "shape": "string"
+    },
+    {
+     "name": "followedId",
+     "shape": "string"
+    }
+   ],
+   "isFollowing": [
+    {
+     "name": "followerId",
+     "shape": "string"
+    },
+    {
+     "name": "followedId",
+     "shape": "string"
+    }
+   ],
+   "getFollowers": [
+    {
+     "name": "userId",
+     "shape": "string"
+    },
+    {
+     "name": "limit",
+     "shape": "number"
+    },
+    {
+     "name": "cursor",
+     "shape": {
+      "union": [
+       "undefined",
+       "string"
+      ]
+     },
+     "optional": true
+    }
+   ],
+   "getFollowing": [
+    {
+     "name": "userId",
+     "shape": "string"
+    },
+    {
+     "name": "limit",
+     "shape": "number"
+    },
+    {
+     "name": "cursor",
+     "shape": {
+      "union": [
+       "undefined",
+       "string"
+      ]
+     },
+     "optional": true
+    }
+   ],
+   "sendFollowRequest": [
+    {
+     "name": "requesterId",
+     "shape": "string"
+    },
+    {
+     "name": "targetId",
+     "shape": "string"
+    }
+   ],
+   "acceptFollowRequest": [
+    {
+     "name": "requesterId",
+     "shape": "string"
+    },
+    {
+     "name": "targetId",
+     "shape": "string"
+    }
+   ],
+   "rejectFollowRequest": [
+    {
+     "name": "requesterId",
+     "shape": "string"
+    },
+    {
+     "name": "targetId",
+     "shape": "string"
+    }
+   ],
+   "cancelFollowRequest": [
+    {
+     "name": "requesterId",
+     "shape": "string"
+    },
+    {
+     "name": "targetId",
+     "shape": "string"
+    }
+   ],
+   "getPendingFollowRequests": [
+    {
+     "name": "userId",
+     "shape": "string"
+    }
+   ],
+   "getPendingFollowRequestsWithUsers": [
+    {
+     "name": "userId",
+     "shape": "string"
+    },
+    {
+     "name": "limit",
+     "shape": "number"
+    },
+    {
+     "name": "cursor",
+     "shape": {
+      "union": [
+       "undefined",
+       "string"
+      ]
+     },
+     "optional": true
+    }
+   ],
+   "getFollowStateRaw": [
+    {
+     "name": "viewerId",
+     "shape": "string"
+    },
+    {
+     "name": "targetUserId",
+     "shape": "string"
+    }
+   ],
+   "updateNotificationPreferences": [
+    {
+     "name": "userId",
+     "shape": "string"
+    },
+    {
+     "name": "partial",
+     "shape": {
+      "object": {
+       "critical": {
+        "union": [
+         "undefined",
+         "boolean"
+        ]
+       },
+       "social": {
+        "union": [
+         "undefined",
+         "boolean"
+        ]
+       },
+       "quietHours": {
+        "union": [
+         "undefined",
+         {
+          "ref": "QuietHoursPreferences"
+         }
+        ]
+       },
+       "kinds": {
+        "union": [
+         "undefined",
+         {
+          "object": {
+           "post_expired": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "chat_message": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "support_message": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "system_message": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "message_undeliverable": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "post_expiring": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "follow_request": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "follow_started": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "follow_approved": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "mark_recipient": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "unmark_recipient": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "auto_removed": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "account_suspended": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "match_suggested": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "giving_handoff_requested": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "giving_handoff_claimed": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "giving_handoff_confirmed": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "giving_handoff_declined": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "giving_handoff_cancelled": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "giving_handoff_expired": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "giving_handoff_completed": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "giving_handoff_no_show": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "giving_handoff_waitlist_promoted": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "giving_handoff_reinstated": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "ride_booking_requested": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "ride_booking_claimed": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "ride_booking_confirmed": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "ride_booking_declined": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "ride_booking_cancelled": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "ride_booking_expired": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "ride_booking_lapsed": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "ride_booking_completed": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "ride_booking_no_show": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "ride_booking_waitlist_promoted": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "ride_booking_reinstated": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "housing_booking_requested": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "housing_booking_claimed": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "housing_booking_confirmed": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "housing_booking_declined": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "housing_booking_cancelled": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "housing_booking_expired": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "housing_booking_completed": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "housing_booking_no_show": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "housing_booking_waitlist_promoted": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "housing_booking_reinstated": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "event_registration_requested": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "event_registration_claimed": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "event_registration_confirmed": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "event_registration_declined": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "event_registration_cancelled": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "event_registration_expired": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "event_registration_completed": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "event_registration_no_show": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "event_registration_waitlist_promoted": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "event_registration_reinstated": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "post_reaction": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "post_comment": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "post_comment_reply": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "post_mention": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "post_hidden_for_review": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "post_removed": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "post_restored": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "moderation_review_needed": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "ride_route_match": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "post_emergency": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "event_organizer_message": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "event_reminder": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "event_mark_attendance": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "match_interest": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "match_accepted": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "org_application_decided": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "org_member_added": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "donation_receipt_ready": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "donation_succeeded": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "donation_refunded": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "standing_order_charge_failed": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "support_issue_received": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "report_sla_warning": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "food_expiring": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "food_expired": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "chat_auto_removed": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "knowledge_booking_requested": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "knowledge_booking_claimed": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "knowledge_booking_confirmed": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "knowledge_booking_declined": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "knowledge_booking_cancelled": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "knowledge_booking_expired": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "knowledge_booking_completed": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "knowledge_booking_no_show": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "knowledge_booking_waitlist_promoted": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "knowledge_booking_reinstated": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
+           "task_assigned": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           }
+          },
+          "optional": [
+           "post_expired",
+           "chat_message",
+           "support_message",
+           "system_message",
+           "message_undeliverable",
+           "post_expiring",
+           "follow_request",
+           "follow_started",
+           "follow_approved",
+           "mark_recipient",
+           "unmark_recipient",
+           "auto_removed",
+           "account_suspended",
+           "match_suggested",
+           "giving_handoff_requested",
+           "giving_handoff_claimed",
+           "giving_handoff_confirmed",
+           "giving_handoff_declined",
+           "giving_handoff_cancelled",
+           "giving_handoff_expired",
+           "giving_handoff_completed",
+           "giving_handoff_no_show",
+           "giving_handoff_waitlist_promoted",
+           "giving_handoff_reinstated",
+           "ride_booking_requested",
+           "ride_booking_claimed",
+           "ride_booking_confirmed",
+           "ride_booking_declined",
+           "ride_booking_cancelled",
+           "ride_booking_expired",
+           "ride_booking_lapsed",
+           "ride_booking_completed",
+           "ride_booking_no_show",
+           "ride_booking_waitlist_promoted",
+           "ride_booking_reinstated",
+           "housing_booking_requested",
+           "housing_booking_claimed",
+           "housing_booking_confirmed",
+           "housing_booking_declined",
+           "housing_booking_cancelled",
+           "housing_booking_expired",
+           "housing_booking_completed",
+           "housing_booking_no_show",
+           "housing_booking_waitlist_promoted",
+           "housing_booking_reinstated",
+           "event_registration_requested",
+           "event_registration_claimed",
+           "event_registration_confirmed",
+           "event_registration_declined",
+           "event_registration_cancelled",
+           "event_registration_expired",
+           "event_registration_completed",
+           "event_registration_no_show",
+           "event_registration_waitlist_promoted",
+           "event_registration_reinstated",
+           "post_reaction",
+           "post_comment",
+           "post_comment_reply",
+           "post_mention",
+           "post_hidden_for_review",
+           "post_removed",
+           "post_restored",
+           "moderation_review_needed",
+           "ride_route_match",
+           "post_emergency",
+           "event_organizer_message",
+           "event_reminder",
+           "event_mark_attendance",
+           "match_interest",
+           "match_accepted",
+           "org_application_decided",
+           "org_member_added",
+           "donation_receipt_ready",
+           "donation_succeeded",
+           "donation_refunded",
+           "standing_order_charge_failed",
+           "support_issue_received",
+           "report_sla_warning",
+           "food_expiring",
+           "food_expired",
+           "chat_auto_removed",
+           "knowledge_booking_requested",
+           "knowledge_booking_claimed",
+           "knowledge_booking_confirmed",
+           "knowledge_booking_declined",
+           "knowledge_booking_cancelled",
+           "knowledge_booking_expired",
+           "knowledge_booking_completed",
+           "knowledge_booking_no_show",
+           "knowledge_booking_waitlist_promoted",
+           "knowledge_booking_reinstated",
+           "task_assigned"
+          ]
+         }
+        ]
+       }
+      },
+      "optional": [
+       "critical",
+       "social",
+       "quietHours",
+       "kinds"
+      ]
+     }
+    }
+   ],
+   "findByAuthIdentity": [
+    {
+     "name": "provider",
+     "shape": "string"
+    },
+    {
+     "name": "subject",
+     "shape": "string"
+    }
+   ],
+   "createAuthIdentity": [
+    {
+     "name": "identity",
+     "shape": {
+      "ref": "Omit<AuthIdentity, \"createdAt\">"
+     }
+    }
+   ]
+  },
+  "userActivity": {
+   "recordActiveDay": []
+  },
+  "volunteer": {
+   "listOpportunities": [
+    {
+     "name": "limit",
+     "shape": {
+      "union": [
+       "undefined",
+       "number"
+      ]
+     },
+     "optional": true
+    }
+   ],
+   "getOpportunityDetail": [
+    {
+     "name": "opportunityId",
+     "shape": "string"
+    }
+   ],
+   "signUpForShift": [
+    {
+     "name": "shiftId",
+     "shape": "string"
+    }
+   ],
+   "cancelSignup": [
+    {
+     "name": "signupId",
+     "shape": "string"
+    }
+   ],
+   "listMySignups": [
+    {
+     "name": "limit",
+     "shape": {
+      "union": [
+       "undefined",
+       "number"
+      ]
+     },
+     "optional": true
+    }
+   ],
+   "closeOpportunity": [
+    {
+     "name": "opportunityId",
+     "shape": "string"
+    }
+   ],
+   "listMyOrganizerOpportunities": [
+    {
+     "name": "limit",
+     "shape": {
+      "union": [
+       "undefined",
+       "number"
+      ]
+     },
+     "optional": true
+    }
+   ],
+   "listShiftVolunteers": [
+    {
+     "name": "shiftId",
+     "shape": "string"
+    }
+   ],
+   "messageShiftVolunteers": [
+    {
+     "name": "shiftId",
+     "shape": "string"
+    },
+    {
+     "name": "message",
+     "shape": "string"
+    }
+   ]
+  },
+  "whatsAppAdmin": {
+   "getChannel": [],
+   "setChannelEnabled": [
+    {
+     "name": "enabled",
+     "shape": "boolean"
+    }
+   ],
+   "overview": [],
+   "listConsent": [
+    {
+     "name": "query",
+     "shape": {
+      "ref": "WhatsAppPageQuery"
+     }
+    }
+   ],
+   "listOutbound": [
+    {
+     "name": "filters",
+     "shape": {
+      "ref": "WhatsAppOutboundListFilters"
+     }
+    }
+   ],
+   "listRateHits": [
+    {
+     "name": "limit",
+     "shape": {
+      "union": [
+       "undefined",
+       "number"
+      ]
+     },
+     "optional": true
+    }
+   ],
+   "listRecentMatches": [
+    {
+     "name": "limit",
+     "shape": {
+      "union": [
+       "undefined",
+       "number"
+      ]
+     },
+     "optional": true
+    }
+   ],
+   "listConversations": [
+    {
+     "name": "limit",
+     "shape": {
+      "union": [
+       "undefined",
+       "number"
+      ]
+     },
+     "optional": true
+    }
+   ],
+   "resend": [
+    {
+     "name": "outboundId",
+     "shape": "string"
+    }
+   ],
+   "blockUser": [
+    {
+     "name": "userId",
+     "shape": "string"
+    }
+   ],
+   "listReviews": [
+    {
+     "name": "filters",
+     "shape": {
+      "ref": "WhatsAppReviewListFilters"
+     }
+    }
+   ],
+   "resolveReview": [
+    {
+     "name": "reviewId",
+     "shape": "string"
+    },
+    {
+     "name": "decision",
+     "shape": {
+      "union": [
+       {
+        "literal": "approved"
+       },
+       {
+        "literal": "rejected"
+       }
+      ]
+     }
+    }
+   ],
+   "listTemplates": [],
+   "getSendLimits": [],
+   "setSendLimits": [
+    {
+     "name": "patch",
+     "shape": {
+      "object": {
+       "perUserHour": {
+        "union": [
+         "undefined",
+         "number"
+        ]
+       },
+       "perUserDay": {
+        "union": [
+         "undefined",
+         "number"
+        ]
+       },
+       "replyPerPhoneHour": {
+        "union": [
+         "undefined",
+         "number"
+        ]
+       },
+       "globalPerMinute": {
+        "union": [
+         "undefined",
+         "number"
+        ]
+       },
+       "globalTemplateRecipientsDay": {
+        "union": [
+         "undefined",
+         "number"
+        ]
+       },
+       "inboundPerPhoneMinute": {
+        "union": [
+         "undefined",
+         "number"
+        ]
+       },
+       "llmPerPhoneDay": {
+        "union": [
+         "undefined",
+         "number"
+        ]
+       },
+       "llmGlobalDay": {
+        "union": [
+         "undefined",
+         "number"
+        ]
+       },
+       "maxAttempts": {
+        "union": [
+         "undefined",
+         "number"
+        ]
+       },
+       "backoffBaseSeconds": {
+        "union": [
+         "undefined",
+         "number"
+        ]
+       }
+      },
+      "optional": [
+       "perUserHour",
+       "perUserDay",
+       "replyPerPhoneHour",
+       "globalPerMinute",
+       "globalTemplateRecipientsDay",
+       "inboundPerPhoneMinute",
+       "llmPerPhoneDay",
+       "llmGlobalDay",
+       "maxAttempts",
+       "backoffBaseSeconds"
+      ]
+     }
+    }
+   ],
+   "setTemplateStatus": [
+    {
+     "name": "input",
+     "shape": {
+      "ref": "SetWhatsAppTemplateStatusInput"
+     }
+    }
+   ]
+  },
+  "whatsAppLink": {
+   "getMyStatus": [],
+   "createLinkCode": [],
+   "unlink": [],
+   "setMatchConsent": [
+    {
+     "name": "optedIn",
+     "shape": "boolean"
+    }
+   ]
+  },
+  "worldContent": {
+   "getWorldContent": [
+    {
+     "name": "worldSlug",
+     "shape": "string"
+    }
+   ]
+  }
+ },
+ "types": {
+  "AcceptLegalDocumentInput": {
+   "object": {
+    "docType": {
+     "union": [
+      {
+       "literal": "terms"
+      },
+      {
+       "literal": "privacy"
+      }
+     ]
+    },
+    "version": "number",
+    "locale": "string",
+    "userAgent": "string"
+   }
+  },
+  "AddDonationLinkInput": {
+   "object": {
+    "categorySlug": {
+     "union": [
+      {
+       "literal": "time"
+      },
+      {
+       "literal": "money"
+      },
+      {
+       "literal": "food"
+      },
+      {
+       "literal": "housing"
+      },
+      {
+       "literal": "transport"
+      },
+      {
+       "literal": "knowledge"
+      },
+      {
+       "literal": "animals"
+      },
+      {
+       "literal": "medical"
+      },
+      {
+       "literal": "democracy"
+      },
+      {
+       "literal": "employment"
+      },
+      {
+       "literal": "challenges"
+      }
+     ]
+    },
+    "url": "string",
+    "displayName": "string",
+    "description": {
+     "union": [
+      "undefined",
+      "null",
+      "string"
+     ]
+    }
+   },
+   "optional": [
+    "description"
+   ]
+  },
+  "Address": {
+   "object": {
+    "city": "string",
+    "cityName": "string",
+    "street": "string",
+    "streetNumber": "string"
+   }
+  },
+  "AdminAuditSearchFilters": {
+   "object": {
+    "targetUserId": {
+     "union": [
+      "undefined",
+      "string"
+     ]
+    },
+    "actorId": {
+     "union": [
+      "undefined",
+      "string"
+     ]
+    },
+    "action": {
+     "union": [
+      "undefined",
+      "string"
+     ]
+    },
+    "fromDate": "unknown",
+    "toDate": "unknown",
+    "limit": {
+     "union": [
+      "undefined",
+      "number"
+     ]
+    },
+    "cursor": {
+     "union": [
+      "undefined",
+      "null",
+      {
+       "ref": "Readonly<Record<string, unknown>>"
+      }
+     ]
+    }
+   },
+   "optional": [
+    "targetUserId",
+    "actorId",
+    "action",
+    "fromDate",
+    "toDate",
+    "limit",
+    "cursor"
+   ]
+  },
+  "AdminPostSearchFilters": {
+   "object": {
+    "query": {
+     "union": [
+      "undefined",
+      "string"
+     ]
+    },
+    "status": {
+     "union": [
+      "undefined",
+      "string"
+     ]
+    },
+    "limit": {
+     "union": [
+      "undefined",
+      "number"
+     ]
+    },
+    "cursor": {
+     "union": [
+      "undefined",
+      "null",
+      {
+       "ref": "Readonly<Record<string, unknown>>"
+      }
+     ]
+    }
+   },
+   "optional": [
+    "query",
+    "status",
+    "limit",
+    "cursor"
+   ]
+  },
+  "AdminTaskListFilters": {
+   "object": {
+    "status": {
+     "union": [
+      "undefined",
+      {
+       "literal": "open"
+      },
+      {
+       "literal": "in_progress"
+      },
+      {
+       "literal": "blocked"
+      },
+      {
+       "literal": "done"
+      },
+      {
+       "literal": "archived"
+      }
+     ]
+    },
+    "assigneeId": {
+     "union": [
+      "undefined",
+      "string"
+     ]
+    },
+    "unassignedOnly": {
+     "union": [
+      "undefined",
+      "boolean"
+     ]
+    },
+    "onlyMine": {
+     "union": [
+      "undefined",
+      "boolean"
+     ]
+    },
+    "overdue": {
+     "union": [
+      "undefined",
+      "boolean"
+     ]
+    },
+    "priority": {
+     "union": [
+      "undefined",
+      {
+       "literal": "low"
+      },
+      {
+       "literal": "medium"
+      },
+      {
+       "literal": "high"
+      },
+      {
+       "literal": "urgent"
+      }
+     ]
+    },
+    "category": {
+     "union": [
+      "undefined",
+      {
+       "literal": "support"
+      },
+      {
+       "literal": "moderation"
+      },
+      {
+       "literal": "engineering"
+      },
+      {
+       "literal": "product"
+      },
+      {
+       "literal": "operations"
+      },
+      {
+       "literal": "marketing"
+      },
+      {
+       "literal": "finance"
+      },
+      {
+       "literal": "other"
+      }
+     ]
+    },
+    "label": {
+     "union": [
+      "undefined",
+      "string"
+     ]
+    },
+    "dueFrom": "unknown",
+    "dueTo": "unknown",
+    "limit": {
+     "union": [
+      "undefined",
+      "number"
+     ]
+    },
+    "cursor": {
+     "union": [
+      "undefined",
+      "string"
+     ]
+    }
+   },
+   "optional": [
+    "status",
+    "assigneeId",
+    "unassignedOnly",
+    "onlyMine",
+    "overdue",
+    "priority",
+    "category",
+    "label",
+    "dueFrom",
+    "dueTo",
+    "limit",
+    "cursor"
+   ]
+  },
+  "AdminUserSearchFilters": {
+   "object": {
+    "query": {
+     "union": [
+      "undefined",
+      "string"
+     ]
+    },
+    "status": {
+     "union": [
+      "undefined",
+      "string"
+     ]
+    },
+    "limit": {
+     "union": [
+      "undefined",
+      "number"
+     ]
+    },
+    "cursor": {
+     "union": [
+      "undefined",
+      "null",
+      {
+       "ref": "Readonly<Record<string, unknown>>"
+      }
+     ]
+    }
+   },
+   "optional": [
+    "query",
+    "status",
+    "limit",
+    "cursor"
+   ]
+  },
+  "CachedTranslation": {
+   "object": {
+    "contentType": {
+     "union": [
+      {
+       "literal": "user"
+      },
+      {
+       "literal": "post"
+      },
+      {
+       "literal": "comment"
+      },
+      {
+       "literal": "message"
+      }
+     ]
+    },
+    "contentId": "string",
+    "field": {
+     "union": [
+      {
+       "literal": "title"
+      },
+      {
+       "literal": "description"
+      },
+      {
+       "literal": "body"
+      },
+      {
+       "literal": "biography"
+      }
+     ]
+    },
+    "targetLanguage": "string",
+    "sourceLanguage": {
+     "union": [
+      "null",
+      "string"
+     ]
+    },
+    "translatedText": "string",
+    "model": {
+     "union": [
+      "null",
+      "string"
+     ]
+    },
+    "confidence": {
+     "union": [
+      "null",
+      "number"
+     ]
+    }
+   }
+  },
+  "ChallengeDraft": {
+   "object": {
+    "title": "string",
+    "description": {
+     "union": [
+      "null",
+      "string"
+     ]
+    },
+    "scope": {
+     "union": [
+      {
+       "literal": "personal"
+      },
+      {
+       "literal": "community"
+      }
+     ]
+    },
+    "measurement": {
+     "union": [
+      {
+       "literal": "yes_no"
+      },
+      {
+       "literal": "count"
+      },
+      {
+       "literal": "duration_minutes"
+      }
+     ]
+    },
+    "cadence": {
+     "union": [
+      {
+       "literal": "daily"
+      },
+      {
+       "literal": "weekly"
+      },
+      {
+       "literal": "flexible"
+      }
+     ]
+    },
+    "goalValue": {
+     "union": [
+      "null",
+      "number"
+     ]
+    },
+    "goalDirection": {
+     "union": [
+      "null",
+      {
+       "literal": "at_least"
+      },
+      {
+       "literal": "at_most"
+      }
+     ]
+    },
+    "difficulty": {
+     "union": [
+      "null",
+      {
+       "literal": "medium"
+      },
+      {
+       "literal": "easy"
+      },
+      {
+       "literal": "hard"
+      },
+      {
+       "literal": "expert"
+      }
+     ]
+    },
+    "topicLabel": {
+     "union": [
+      "null",
+      "string"
+     ]
+    },
+    "endsAt": {
+     "union": [
+      "null",
+      "string"
+     ]
+    },
+    "targetCycles": {
+     "union": [
+      "null",
+      "number"
+     ]
+    }
+   }
+  },
+  "Chat": {
+   "object": {
+    "chatId": "string",
+    "participantIds": {
+     "tuple": [
+      {
+       "union": [
+        "null",
+        "string"
+       ]
+      },
+      {
+       "union": [
+        "null",
+        "string"
+       ]
+      }
+     ]
+    },
+    "anchorPostId": {
+     "union": [
+      "null",
+      "string"
+     ]
+    },
+    "isSupportThread": "boolean",
+    "lastMessageAt": {
+     "union": [
+      "null",
+      "string"
+     ]
+    },
+    "createdAt": "string"
+   }
+  },
+  "CreateAdminTaskInput": {
+   "object": {
+    "title": "string",
+    "description": {
+     "union": [
+      "undefined",
+      "null",
+      "string"
+     ]
+    },
+    "priority": {
+     "union": [
+      "undefined",
+      {
+       "literal": "low"
+      },
+      {
+       "literal": "medium"
+      },
+      {
+       "literal": "high"
+      },
+      {
+       "literal": "urgent"
+      }
+     ]
+    },
+    "category": {
+     "union": [
+      "undefined",
+      {
+       "literal": "support"
+      },
+      {
+       "literal": "moderation"
+      },
+      {
+       "literal": "engineering"
+      },
+      {
+       "literal": "product"
+      },
+      {
+       "literal": "operations"
+      },
+      {
+       "literal": "marketing"
+      },
+      {
+       "literal": "finance"
+      },
+      {
+       "literal": "other"
+      }
+     ]
+    },
+    "assigneeId": {
+     "union": [
+      "undefined",
+      "null",
+      "string"
+     ]
+    },
+    "dueAt": "unknown",
+    "labels": {
+     "union": [
+      "undefined",
+      {
+       "array": "string"
+      }
+     ]
+    }
+   },
+   "optional": [
+    "description",
+    "priority",
+    "category",
+    "assigneeId",
+    "dueAt",
+    "labels"
+   ]
+  },
+  "CreatePostInput": {
+   "object": {
+    "ownerId": "string",
+    "type": {
+     "union": [
+      {
+       "literal": "Give"
+      },
+      {
+       "literal": "Request"
+      }
+     ]
+    },
+    "visibility": {
+     "union": [
+      {
+       "literal": "Public"
+      },
+      {
+       "literal": "FollowersOnly"
+      },
+      {
+       "literal": "OnlyMe"
+      }
+     ]
+    },
+    "title": "string",
+    "description": {
+     "union": [
+      "null",
+      "string"
+     ]
+    },
+    "category": {
+     "union": [
+      {
+       "literal": "Furniture"
+      },
+      {
+       "literal": "Clothing"
+      },
+      {
+       "literal": "Books"
+      },
+      {
+       "literal": "Toys"
+      },
+      {
+       "literal": "BabyGear"
+      },
+      {
+       "literal": "Kitchen"
+      },
+      {
+       "literal": "Sports"
+      },
+      {
+       "literal": "Electronics"
+      },
+      {
+       "literal": "Tools"
+      },
+      {
+       "literal": "Other"
+      }
+     ]
+    },
+    "address": {
+     "ref": "Address"
+    },
+    "locationDisplayLevel": {
+     "union": [
+      {
+       "literal": "CityOnly"
+      },
+      {
+       "literal": "CityAndStreet"
+      },
+      {
+       "literal": "FullAddress"
+      }
+     ]
+    },
+    "itemCondition": {
+     "union": [
+      "null",
+      {
+       "literal": "New"
+      },
+      {
+       "literal": "LikeNew"
+      },
+      {
+       "literal": "Good"
+      },
+      {
+       "literal": "Fair"
+      },
+      {
+       "literal": "Damaged"
+      }
+     ]
+    },
+    "urgency": {
+     "union": [
+      "null",
+      "string"
+     ]
+    },
+    "estimatedValue": {
+     "union": [
+      "undefined",
+      "null",
+      "number"
+     ]
+    },
+    "mediaAssets": {
+     "array": {
+      "ref": "MediaAssetInput"
+     }
+    },
+    "hideFromCounterparty": {
+     "union": [
+      "undefined",
+      "boolean"
+     ]
+    }
+   },
+   "optional": [
+    "estimatedValue",
+    "hideFromCounterparty"
+   ]
+  },
+  "CreatePostSeriesInput": {
+   "object": {
+    "kindId": "string",
+    "title": "string",
+    "summary": {
+     "union": [
+      "null",
+      "string"
+     ]
+    },
+    "details": {
+     "ref": "Record<string, unknown>"
+    },
+    "cityId": "string",
+    "schedule": {
+     "ref": "PostSeriesSchedule"
+    },
+    "timeZone": "string",
+    "orgId": {
+     "union": [
+      "null",
+      "string"
+     ]
+    }
+   }
+  },
+  "CreateRideSeriesInput": {
+   "object": {
+    "kindId": "string",
+    "direction": {
+     "union": [
+      {
+       "literal": "give"
+      },
+      {
+       "literal": "request"
+      }
+     ]
+    },
+    "title": "string",
+    "summary": {
+     "union": [
+      "null",
+      "string"
+     ]
+    },
+    "details": {
+     "ref": "Record<string, unknown>"
+    },
+    "schedule": {
+     "ref": "RideSeriesSchedule"
+    },
+    "durationMinutes": {
+     "union": [
+      "null",
+      "number"
+     ]
+    }
+   }
+  },
+  "CrmContactListFilters": {
+   "object": {
+    "orgId": "string",
+    "status": {
+     "union": [
+      "undefined",
+      {
+       "literal": "active"
+      },
+      {
+       "literal": "cold"
+      },
+      {
+       "literal": "warm"
+      },
+      {
+       "literal": "inactive"
+      }
+     ]
+    },
+    "query": {
+     "union": [
+      "undefined",
+      "string"
+     ]
+    },
+    "tag": {
+     "union": [
+      "undefined",
+      "string"
+     ]
+    },
+    "limit": {
+     "union": [
+      "undefined",
+      "number"
+     ]
+    },
+    "cursor": {
+     "union": [
+      "undefined",
+      "string"
+     ]
+    }
+   },
+   "optional": [
+    "status",
+    "query",
+    "tag",
+    "limit",
+    "cursor"
+   ]
+  },
+  "CrmContactUpsertInput": {
+   "object": {
+    "orgId": "string",
+    "contactId": {
+     "union": [
+      "undefined",
+      "null",
+      "string"
+     ]
+    },
+    "name": {
+     "union": [
+      "undefined",
+      "string"
+     ]
+    },
+    "organization": {
+     "union": [
+      "undefined",
+      "null",
+      "string"
+     ]
+    },
+    "email": {
+     "union": [
+      "undefined",
+      "null",
+      "string"
+     ]
+    },
+    "phone": {
+     "union": [
+      "undefined",
+      "null",
+      "string"
+     ]
+    },
+    "roleTitle": {
+     "union": [
+      "undefined",
+      "null",
+      "string"
+     ]
+    },
+    "notes": {
+     "union": [
+      "undefined",
+      "null",
+      "string"
+     ]
+    },
+    "tags": {
+     "union": [
+      "undefined",
+      "null",
+      {
+       "array": "string"
+      }
+     ]
+    },
+    "status": {
+     "union": [
+      "undefined",
+      {
+       "literal": "active"
+      },
+      {
+       "literal": "cold"
+      },
+      {
+       "literal": "warm"
+      },
+      {
+       "literal": "inactive"
+      }
+     ]
+    }
+   },
+   "optional": [
+    "contactId",
+    "name",
+    "organization",
+    "email",
+    "phone",
+    "roleTitle",
+    "notes",
+    "tags",
+    "status"
+   ]
+  },
+  "DeviceRegistration": {
+   "object": {
+    "userId": "string",
+    "pushToken": "string",
+    "platform": {
+     "union": [
+      {
+       "literal": "ios"
+      },
+      {
+       "literal": "android"
+      },
+      {
+       "literal": "web"
+      }
+     ]
+    }
+   }
+  },
+  "FinanceAccountUpsertInput": {
+   "object": {
+    "accountId": {
+     "union": [
+      "undefined",
+      "null",
+      "string"
+     ]
+    },
+    "name": {
+     "union": [
+      "undefined",
+      "string"
+     ]
+    },
+    "kind": {
+     "union": [
+      "undefined",
+      {
+       "literal": "other"
+      },
+      {
+       "literal": "bank"
+      },
+      {
+       "literal": "cash"
+      },
+      {
+       "literal": "bit"
+      },
+      {
+       "literal": "paybox"
+      },
+      {
+       "literal": "payment_provider"
+      }
+     ]
+    },
+    "last4": {
+     "union": [
+      "undefined",
+      "string"
+     ]
+    },
+    "openingBalanceCents": {
+     "union": [
+      "undefined",
+      "number"
+     ]
+    },
+    "openingBalanceAt": "unknown",
+    "isActive": {
+     "union": [
+      "undefined",
+      "boolean"
+     ]
+    },
+    "sortOrder": {
+     "union": [
+      "undefined",
+      "number"
+     ]
+    }
+   },
+   "optional": [
+    "accountId",
+    "name",
+    "kind",
+    "last4",
+    "openingBalanceCents",
+    "openingBalanceAt",
+    "isActive",
+    "sortOrder"
+   ]
+  },
+  "FinanceLedgerCursor": {
+   "object": {
+    "occurredAt": "unknown",
+    "entryId": "string"
+   }
+  },
+  "FinanceLedgerListFilters": {
+   "object": {
+    "direction": {
+     "union": [
+      "undefined",
+      {
+       "literal": "in"
+      },
+      {
+       "literal": "out"
+      }
+     ]
+    },
+    "status": {
+     "union": [
+      "undefined",
+      {
+       "literal": "pending"
+      },
+      {
+       "literal": "cleared"
+      },
+      {
+       "literal": "cancelled"
+      }
+     ]
+    },
+    "fromDate": "unknown",
+    "toDate": "unknown",
+    "limit": {
+     "union": [
+      "undefined",
+      "number"
+     ]
+    },
+    "after": {
+     "union": [
+      "undefined",
+      {
+       "ref": "FinanceLedgerCursor"
+      }
+     ]
+    }
+   },
+   "optional": [
+    "direction",
+    "status",
+    "fromDate",
+    "toDate",
+    "limit",
+    "after"
+   ]
+  },
+  "FinanceLedgerUpsertInput": {
+   "object": {
+    "entryId": {
+     "union": [
+      "undefined",
+      "null",
+      "string"
+     ]
+    },
+    "kind": {
+     "union": [
+      "undefined",
+      {
+       "literal": "donation_in"
+      },
+      {
+       "literal": "grant_in"
+      },
+      {
+       "literal": "expense"
+      },
+      {
+       "literal": "refund_out"
+      },
+      {
+       "literal": "transfer"
+      }
+     ]
+    },
+    "amountCents": {
+     "union": [
+      "undefined",
+      "number"
+     ]
+    },
+    "occurredAt": "unknown",
+    "counterparty": {
+     "union": [
+      "undefined",
+      "null",
+      "string"
+     ]
+    },
+    "category": {
+     "union": [
+      "undefined",
+      "null",
+      "string"
+     ]
+    },
+    "description": {
+     "union": [
+      "undefined",
+      "null",
+      "string"
+     ]
+    },
+    "status": {
+     "union": [
+      "undefined",
+      {
+       "literal": "pending"
+      },
+      {
+       "literal": "cleared"
+      },
+      {
+       "literal": "cancelled"
+      }
+     ]
+    },
+    "accountId": {
+     "union": [
+      "undefined",
+      "string"
+     ]
+    },
+    "isPublic": {
+     "union": [
+      "undefined",
+      "boolean"
+     ]
+    }
+   },
+   "optional": [
+    "entryId",
+    "kind",
+    "amountCents",
+    "occurredAt",
+    "counterparty",
+    "category",
+    "description",
+    "status",
+    "accountId",
+    "isPublic"
+   ]
+  },
+  "HousingPrivateDetailsInput": {
+   "object": {
+    "listingId": "string",
+    "streetId": "number",
+    "houseNumber": "string",
+    "apartment": {
+     "union": [
+      "undefined",
+      "null",
+      "string"
+     ]
+    },
+    "floor": {
+     "union": [
+      "undefined",
+      "null",
+      "string"
+     ]
+    },
+    "entranceNotes": {
+     "union": [
+      "undefined",
+      "null",
+      "string"
+     ]
+    },
+    "accessInstructions": {
+     "union": [
+      "undefined",
+      "null",
+      "string"
+     ]
+    },
+    "lat": {
+     "union": [
+      "undefined",
+      "null",
+      "number"
+     ]
+    },
+    "lng": {
+     "union": [
+      "undefined",
+      "null",
+      "number"
+     ]
+    }
+   },
+   "optional": [
+    "apartment",
+    "floor",
+    "entranceNotes",
+    "accessInstructions",
+    "lat",
+    "lng"
+   ]
+  },
+  "HousingStayRequestInput": {
+   "object": {
+    "listingId": "string",
+    "checkInDate": "string",
+    "checkOutDate": "string",
+    "adults": "number",
+    "minors": "number",
+    "message": "string",
+    "minorsGuardianAck": "boolean"
+   }
+  },
+  "KnowledgeTopicLabels": {
+   "object": {
+    "labelHe": "string",
+    "labelEn": "string",
+    "descriptionHe": {
+     "union": [
+      "undefined",
+      "null",
+      "string"
+     ]
+    }
+   },
+   "optional": [
+    "descriptionHe"
+   ]
+  },
+  "ListingStreetAddress": {
+   "object": {
+    "street": "string",
+    "streetNumber": "string"
+   }
+  },
+  "ListOpenReportsFilters": {
+   "object": {
+    "targetType": {
+     "union": [
+      "undefined",
+      "null",
+      {
+       "literal": "user"
+      },
+      {
+       "literal": "post"
+      },
+      {
+       "literal": "chat"
+      },
+      {
+       "literal": "comment"
+      }
+     ]
+    },
+    "maxAgeDays": {
+     "union": [
+      "undefined",
+      "null",
+      "number"
+     ]
+    },
+    "reporterId": {
+     "union": [
+      "undefined",
+      "null",
+      "string"
+     ]
+    },
+    "search": {
+     "union": [
+      "undefined",
+      "null",
+      "string"
+     ]
+    }
+   },
+   "optional": [
+    "targetType",
+    "maxAgeDays",
+    "reporterId",
+    "search"
+   ]
+  },
+  "LocationFilter": {
+   "object": {
+    "centerCity": "string",
+    "centerCityName": "string",
+    "radiusKm": "number"
+   }
+  },
+  "MediaAssetInput": {
+   "object": {
+    "path": "string",
+    "mimeType": "string",
+    "sizeBytes": "number"
+   }
+  },
+  "ModerationQueueCursor": {
+   "object": {
+    "createdAt": "string",
+    "entryId": "string"
+   }
+  },
+  "NotificationInboxPageRequest": {
+   "object": {
+    "limit": {
+     "union": [
+      "undefined",
+      "number"
+     ]
+    },
+    "before": {
+     "union": [
+      "undefined",
+      "null",
+      {
+       "ref": "Pick<InboxNotification, \"id\" | \"createdAt\">"
+      }
+     ]
+    },
+    "category": {
+     "union": [
+      "undefined",
+      "null",
+      {
+       "literal": "critical"
+      },
+      {
+       "literal": "social"
+      }
+     ]
+    }
+   },
+   "optional": [
+    "limit",
+    "before",
+    "category"
+   ]
+  },
+  "NotificationPreferences": {
+   "object": {
+    "critical": "boolean",
+    "social": "boolean",
+    "quietHours": {
+     "union": [
+      "undefined",
+      {
+       "ref": "QuietHoursPreferences"
+      }
+     ]
+    },
+    "kinds": {
+     "union": [
+      "undefined",
+      {
+       "object": {
+        "post_expired": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "chat_message": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "support_message": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "system_message": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "message_undeliverable": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "post_expiring": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "follow_request": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "follow_started": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "follow_approved": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "mark_recipient": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "unmark_recipient": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "auto_removed": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "account_suspended": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "match_suggested": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "giving_handoff_requested": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "giving_handoff_claimed": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "giving_handoff_confirmed": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "giving_handoff_declined": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "giving_handoff_cancelled": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "giving_handoff_expired": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "giving_handoff_completed": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "giving_handoff_no_show": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "giving_handoff_waitlist_promoted": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "giving_handoff_reinstated": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "ride_booking_requested": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "ride_booking_claimed": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "ride_booking_confirmed": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "ride_booking_declined": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "ride_booking_cancelled": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "ride_booking_expired": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "ride_booking_lapsed": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "ride_booking_completed": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "ride_booking_no_show": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "ride_booking_waitlist_promoted": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "ride_booking_reinstated": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "housing_booking_requested": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "housing_booking_claimed": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "housing_booking_confirmed": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "housing_booking_declined": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "housing_booking_cancelled": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "housing_booking_expired": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "housing_booking_completed": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "housing_booking_no_show": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "housing_booking_waitlist_promoted": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "housing_booking_reinstated": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "event_registration_requested": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "event_registration_claimed": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "event_registration_confirmed": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "event_registration_declined": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "event_registration_cancelled": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "event_registration_expired": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "event_registration_completed": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "event_registration_no_show": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "event_registration_waitlist_promoted": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "event_registration_reinstated": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "post_reaction": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "post_comment": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "post_comment_reply": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "post_mention": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "post_hidden_for_review": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "post_removed": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "post_restored": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "moderation_review_needed": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "ride_route_match": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "post_emergency": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "event_organizer_message": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "event_reminder": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "event_mark_attendance": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "match_interest": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "match_accepted": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "org_application_decided": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "org_member_added": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "donation_receipt_ready": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "donation_succeeded": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "donation_refunded": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "standing_order_charge_failed": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "support_issue_received": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "report_sla_warning": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "food_expiring": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "food_expired": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "chat_auto_removed": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "knowledge_booking_requested": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "knowledge_booking_claimed": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "knowledge_booking_confirmed": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "knowledge_booking_declined": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "knowledge_booking_cancelled": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "knowledge_booking_expired": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "knowledge_booking_completed": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "knowledge_booking_no_show": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "knowledge_booking_waitlist_promoted": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "knowledge_booking_reinstated": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
+        "task_assigned": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        }
+       },
+       "optional": [
+        "post_expired",
+        "chat_message",
+        "support_message",
+        "system_message",
+        "message_undeliverable",
+        "post_expiring",
+        "follow_request",
+        "follow_started",
+        "follow_approved",
+        "mark_recipient",
+        "unmark_recipient",
+        "auto_removed",
+        "account_suspended",
+        "match_suggested",
+        "giving_handoff_requested",
+        "giving_handoff_claimed",
+        "giving_handoff_confirmed",
+        "giving_handoff_declined",
+        "giving_handoff_cancelled",
+        "giving_handoff_expired",
+        "giving_handoff_completed",
+        "giving_handoff_no_show",
+        "giving_handoff_waitlist_promoted",
+        "giving_handoff_reinstated",
+        "ride_booking_requested",
+        "ride_booking_claimed",
+        "ride_booking_confirmed",
+        "ride_booking_declined",
+        "ride_booking_cancelled",
+        "ride_booking_expired",
+        "ride_booking_lapsed",
+        "ride_booking_completed",
+        "ride_booking_no_show",
+        "ride_booking_waitlist_promoted",
+        "ride_booking_reinstated",
+        "housing_booking_requested",
+        "housing_booking_claimed",
+        "housing_booking_confirmed",
+        "housing_booking_declined",
+        "housing_booking_cancelled",
+        "housing_booking_expired",
+        "housing_booking_completed",
+        "housing_booking_no_show",
+        "housing_booking_waitlist_promoted",
+        "housing_booking_reinstated",
+        "event_registration_requested",
+        "event_registration_claimed",
+        "event_registration_confirmed",
+        "event_registration_declined",
+        "event_registration_cancelled",
+        "event_registration_expired",
+        "event_registration_completed",
+        "event_registration_no_show",
+        "event_registration_waitlist_promoted",
+        "event_registration_reinstated",
+        "post_reaction",
+        "post_comment",
+        "post_comment_reply",
+        "post_mention",
+        "post_hidden_for_review",
+        "post_removed",
+        "post_restored",
+        "moderation_review_needed",
+        "ride_route_match",
+        "post_emergency",
+        "event_organizer_message",
+        "event_reminder",
+        "event_mark_attendance",
+        "match_interest",
+        "match_accepted",
+        "org_application_decided",
+        "org_member_added",
+        "donation_receipt_ready",
+        "donation_succeeded",
+        "donation_refunded",
+        "standing_order_charge_failed",
+        "support_issue_received",
+        "report_sla_warning",
+        "food_expiring",
+        "food_expired",
+        "chat_auto_removed",
+        "knowledge_booking_requested",
+        "knowledge_booking_claimed",
+        "knowledge_booking_confirmed",
+        "knowledge_booking_declined",
+        "knowledge_booking_cancelled",
+        "knowledge_booking_expired",
+        "knowledge_booking_completed",
+        "knowledge_booking_no_show",
+        "knowledge_booking_waitlist_promoted",
+        "knowledge_booking_reinstated",
+        "task_assigned"
+       ]
+      }
+     ]
+    }
+   },
+   "optional": [
+    "quietHours",
+    "kinds"
+   ]
+  },
+  "Omit<AuthIdentity, \"createdAt\">": {
+   "object": {
+    "userId": "string",
+    "authIdentityId": "string",
+    "provider": {
+     "union": [
+      {
+       "literal": "google"
+      },
+      {
+       "literal": "apple"
+      },
+      {
+       "literal": "phone"
+      },
+      {
+       "literal": "email"
+      }
+     ]
+    },
+    "providerSubject": "string"
+   }
+  },
+  "Omit<User, \"createdAt\" | \"updatedAt\">": {
+   "object": {
+    "biography": {
+     "union": [
+      "null",
+      "string"
+     ]
+    },
+    "city": {
+     "union": [
+      "null",
+      "string"
+     ]
+    },
+    "userId": "string",
+    "shareHandle": "string",
+    "displayName": {
+     "union": [
+      "null",
+      "string"
+     ]
+    },
+    "cityName": {
+     "union": [
+      "null",
+      "string"
+     ]
+    },
+    "profileStreet": {
+     "union": [
+      "null",
+      "string"
+     ]
+    },
+    "profileStreetNumber": {
+     "union": [
+      "null",
+      "string"
+     ]
+    },
+    "contactPhone": {
+     "union": [
+      "null",
+      "string"
+     ]
+    },
+    "dateOfBirth": {
+     "union": [
+      "null",
+      "string"
+     ]
+    },
+    "avatarUrl": {
+     "union": [
+      "null",
+      "string"
+     ]
+    },
+    "privacyMode": {
+     "union": [
+      {
+       "literal": "Public"
+      },
+      {
+       "literal": "Private"
+      }
+     ]
+    },
+    "privacyChangedAt": {
+     "union": [
+      "null",
+      "string"
+     ]
+    },
+    "accountStatus": {
+     "union": [
+      {
+       "literal": "pending_verification"
+      },
+      {
+       "literal": "banned"
+      },
+      {
+       "literal": "suspended_admin"
+      },
+      {
+       "literal": "suspended_for_false_reports"
+      },
+      {
+       "literal": "pending_deletion"
+      },
+      {
+       "literal": "active"
+      }
+     ]
+    },
+    "onboardingState": {
+     "union": [
+      {
+       "literal": "completed"
+      },
+      {
+       "literal": "pending_basic_info"
+      },
+      {
+       "literal": "pending_avatar"
+      }
+     ]
+    },
+    "notificationPreferences": {
+     "ref": "NotificationPreferences"
+    },
+    "isSuperAdmin": "boolean",
+    "closureExplainerDismissed": "boolean",
+    "firstPostNudgeDismissed": "boolean",
+    "itemsGivenCount": "number",
+    "itemsReceivedCount": "number",
+    "activePostsCountInternal": "number",
+    "followersCount": "number",
+    "followingCount": "number",
+    "karmaPoints": "number",
+    "verificationLevel": {
+     "union": [
+      {
+       "literal": 0
+      },
+      {
+       "literal": 2
+      },
+      {
+       "literal": 3
+      },
+      {
+       "literal": 1
+      }
+     ]
+    },
+    "preferredLanguage": {
+     "union": [
+      "null",
+      "string"
+     ]
+    }
+   }
+  },
+  "OrgApplicationListFilters": {
+   "object": {
+    "status": {
+     "union": [
+      "undefined",
+      {
+       "literal": "pending"
+      },
+      {
+       "literal": "approved"
+      },
+      {
+       "literal": "rejected"
+      }
+     ]
+    },
+    "limit": {
+     "union": [
+      "undefined",
+      "number"
+     ]
+    }
+   },
+   "optional": [
+    "status",
+    "limit"
+   ]
+  },
+  "Partial<User>": {
+   "object": {
+    "userId": {
+     "union": [
+      "undefined",
+      "string"
+     ]
+    },
+    "shareHandle": {
+     "union": [
+      "undefined",
+      "string"
+     ]
+    },
+    "displayName": {
+     "union": [
+      "undefined",
+      "null",
+      "string"
+     ]
+    },
+    "city": {
+     "union": [
+      "undefined",
+      "null",
+      "string"
+     ]
+    },
+    "cityName": {
+     "union": [
+      "undefined",
+      "null",
+      "string"
+     ]
+    },
+    "profileStreet": {
+     "union": [
+      "undefined",
+      "null",
+      "string"
+     ]
+    },
+    "profileStreetNumber": {
+     "union": [
+      "undefined",
+      "null",
+      "string"
+     ]
+    },
+    "contactPhone": {
+     "union": [
+      "undefined",
+      "null",
+      "string"
+     ]
+    },
+    "dateOfBirth": {
+     "union": [
+      "undefined",
+      "null",
+      "string"
+     ]
+    },
+    "biography": {
+     "union": [
+      "undefined",
+      "null",
+      "string"
+     ]
+    },
+    "avatarUrl": {
+     "union": [
+      "undefined",
+      "null",
+      "string"
+     ]
+    },
+    "privacyMode": {
+     "union": [
+      "undefined",
+      {
+       "literal": "Public"
+      },
+      {
+       "literal": "Private"
+      }
+     ]
+    },
+    "privacyChangedAt": {
+     "union": [
+      "undefined",
+      "null",
+      "string"
+     ]
+    },
+    "accountStatus": {
+     "union": [
+      "undefined",
+      {
+       "literal": "pending_verification"
+      },
+      {
+       "literal": "banned"
+      },
+      {
+       "literal": "suspended_admin"
+      },
+      {
+       "literal": "suspended_for_false_reports"
+      },
+      {
+       "literal": "pending_deletion"
+      },
+      {
+       "literal": "active"
+      }
+     ]
+    },
+    "onboardingState": {
+     "union": [
+      "undefined",
+      {
+       "literal": "completed"
+      },
+      {
+       "literal": "pending_basic_info"
+      },
+      {
+       "literal": "pending_avatar"
+      }
+     ]
+    },
+    "notificationPreferences": {
+     "union": [
+      "undefined",
+      {
+       "ref": "NotificationPreferences"
+      }
+     ]
+    },
+    "isSuperAdmin": {
+     "union": [
+      "undefined",
+      "boolean"
+     ]
+    },
+    "closureExplainerDismissed": {
+     "union": [
+      "undefined",
+      "boolean"
+     ]
+    },
+    "firstPostNudgeDismissed": {
+     "union": [
+      "undefined",
+      "boolean"
+     ]
+    },
+    "itemsGivenCount": {
+     "union": [
+      "undefined",
+      "number"
+     ]
+    },
+    "itemsReceivedCount": {
+     "union": [
+      "undefined",
+      "number"
+     ]
+    },
+    "activePostsCountInternal": {
+     "union": [
+      "undefined",
+      "number"
+     ]
+    },
+    "followersCount": {
+     "union": [
+      "undefined",
+      "number"
+     ]
+    },
+    "followingCount": {
+     "union": [
+      "undefined",
+      "number"
+     ]
+    },
+    "karmaPoints": {
+     "union": [
+      "undefined",
+      "number"
+     ]
+    },
+    "verificationLevel": {
+     "union": [
+      "undefined",
+      {
+       "literal": 0
+      },
+      {
+       "literal": 2
+      },
+      {
+       "literal": 3
+      },
+      {
+       "literal": 1
+      }
+     ]
+    },
+    "createdAt": {
+     "union": [
+      "undefined",
+      "string"
+     ]
+    },
+    "updatedAt": {
+     "union": [
+      "undefined",
+      "string"
+     ]
+    },
+    "preferredLanguage": {
+     "union": [
+      "undefined",
+      "null",
+      "string"
+     ]
+    }
+   },
+   "optional": [
+    "userId",
+    "shareHandle",
+    "displayName",
+    "city",
+    "cityName",
+    "profileStreet",
+    "profileStreetNumber",
+    "contactPhone",
+    "dateOfBirth",
+    "biography",
+    "avatarUrl",
+    "privacyMode",
+    "privacyChangedAt",
+    "accountStatus",
+    "onboardingState",
+    "notificationPreferences",
+    "isSuperAdmin",
+    "closureExplainerDismissed",
+    "firstPostNudgeDismissed",
+    "itemsGivenCount",
+    "itemsReceivedCount",
+    "activePostsCountInternal",
+    "followersCount",
+    "followingCount",
+    "karmaPoints",
+    "verificationLevel",
+    "createdAt",
+    "updatedAt",
+    "preferredLanguage"
+   ]
+  },
+  "Pick<AdminFeedbackEntry, \"id\" | \"createdAt\">": {
+   "object": {
+    "id": "string",
+    "createdAt": "string"
+   }
+  },
+  "Pick<InboxNotification, \"id\" | \"createdAt\">": {
+   "object": {
+    "id": "string",
+    "createdAt": "string"
+   }
+  },
+  "PostFeedFilter": {
+   "object": {
+    "type": {
+     "union": [
+      "undefined",
+      {
+       "literal": "Give"
+      },
+      {
+       "literal": "Request"
+      }
+     ]
+    },
+    "categories": {
+     "union": [
+      "undefined",
+      {
+       "array": {
+        "union": [
+         {
+          "literal": "Furniture"
+         },
+         {
+          "literal": "Clothing"
+         },
+         {
+          "literal": "Books"
+         },
+         {
+          "literal": "Toys"
+         },
+         {
+          "literal": "BabyGear"
+         },
+         {
+          "literal": "Kitchen"
+         },
+         {
+          "literal": "Sports"
+         },
+         {
+          "literal": "Electronics"
+         },
+         {
+          "literal": "Tools"
+         },
+         {
+          "literal": "Other"
+         }
+        ]
+       }
+      }
+     ]
+    },
+    "worlds": {
+     "union": [
+      "undefined",
+      {
+       "array": "string"
+      }
+     ]
+    },
+    "subcategories": {
+     "union": [
+      "undefined",
+      {
+       "array": "string"
+      }
+     ]
+    },
+    "itemConditions": {
+     "union": [
+      "undefined",
+      {
+       "array": {
+        "union": [
+         {
+          "literal": "New"
+         },
+         {
+          "literal": "LikeNew"
+         },
+         {
+          "literal": "Good"
+         },
+         {
+          "literal": "Fair"
+         },
+         {
+          "literal": "Damaged"
+         }
+        ]
+       }
+      }
+     ]
+    },
+    "locationFilter": {
+     "union": [
+      "undefined",
+      {
+       "ref": "LocationFilter"
+      }
+     ]
+    },
+    "statusFilter": {
+     "union": [
+      "undefined",
+      {
+       "literal": "open"
+      },
+      {
+       "literal": "closed"
+      },
+      {
+       "literal": "all"
+      }
+     ]
+    },
+    "sortOrder": {
+     "union": [
+      "undefined",
+      {
+       "literal": "newest"
+      },
+      {
+       "literal": "oldest"
+      },
+      {
+       "literal": "distance"
+      },
+      {
+       "literal": "personalized"
+      }
+     ]
+    },
+    "proximitySortCity": {
+     "union": [
+      "undefined",
+      "string"
+     ]
+    },
+    "followersOnly": {
+     "union": [
+      "undefined",
+      "boolean"
+     ]
+    },
+    "searchQuery": {
+     "union": [
+      "undefined",
+      "string"
+     ]
+    }
+   },
+   "optional": [
+    "type",
+    "categories",
+    "worlds",
+    "subcategories",
+    "itemConditions",
+    "locationFilter",
+    "statusFilter",
+    "sortOrder",
+    "proximitySortCity",
+    "followersOnly",
+    "searchQuery"
+   ]
+  },
+  "PostSeriesSchedule": {
+   "object": {
+    "weekdays": {
+     "array": {
+      "union": [
+       {
+        "literal": 0
+       },
+       {
+        "literal": 5
+       },
+       {
+        "literal": 4
+       },
+       {
+        "literal": 2
+       },
+       {
+        "literal": 3
+       },
+       {
+        "literal": 1
+       },
+       {
+        "literal": 6
+       }
+      ]
+     }
+    },
+    "startTime": "string",
+    "durationMinutes": "number",
+    "endsOn": {
+     "union": [
+      "null",
+      "string"
+     ]
+    }
+   }
+  },
+  "ProposeKnowledgeTopicInput": {
+   "object": {
+    "slug": "string",
+    "labelHe": "string",
+    "labelEn": "string",
+    "parentSlug": {
+     "union": [
+      "undefined",
+      "null",
+      "string"
+     ]
+    },
+    "descriptionHe": {
+     "union": [
+      "undefined",
+      "null",
+      "string"
+     ]
+    }
+   },
+   "optional": [
+    "parentSlug",
+    "descriptionHe"
+   ]
+  },
+  "PublicResearchAnswerDraft": {
+   "object": {
+    "questionId": "string",
+    "rating": "number",
+    "answerText": {
+     "union": [
+      "null",
+      "string"
+     ]
+    }
+   }
+  },
+  "PublicResearchSubmission": {
+   "object": {
+    "slug": "string",
+    "version": "number",
+    "source": "string",
+    "answers": {
+     "array": {
+      "ref": "PublicResearchAnswerDraft"
+     }
+    },
+    "contactEmail": {
+     "union": [
+      "null",
+      "string"
+     ]
+    },
+    "contactWindowHe": {
+     "union": [
+      "null",
+      "string"
+     ]
+    },
+    "honeypot": {
+     "union": [
+      "null",
+      "string"
+     ]
+    }
+   }
+  },
+  "QuietHoursPreferences": {
+   "object": {
+    "enabled": "boolean",
+    "start": "string",
+    "end": "string",
+    "timezone": "string"
+   }
+  },
+  "Readonly<Partial<Record<RideHouseNumberEnd, string>>>": {
+   "object": {
+    "origin": {
+     "union": [
+      "undefined",
+      "string"
+     ]
+    },
+    "dest": {
+     "union": [
+      "undefined",
+      "string"
+     ]
+    }
+   },
+   "optional": [
+    "origin",
+    "dest"
+   ]
+  },
+  "Readonly<Record<string, unknown>>": {
+   "record": "unknown"
+  },
+  "Record<string, unknown>": {
+   "record": "unknown"
+  },
+  "ReportInboxCursor": {
+   "object": {
+    "oldestAt": "string",
+    "targetType": {
+     "union": [
+      {
+       "literal": "user"
+      },
+      {
+       "literal": "post"
+      },
+      {
+       "literal": "chat"
+      },
+      {
+       "literal": "comment"
+      }
+     ]
+    },
+    "targetId": "string"
+   }
+  },
+  "ReportSubmission": {
+   "object": {
+    "targetType": {
+     "union": [
+      {
+       "literal": "user"
+      },
+      {
+       "literal": "post"
+      },
+      {
+       "literal": "chat"
+      },
+      {
+       "literal": "comment"
+      },
+      {
+       "literal": "listing"
+      }
+     ]
+    },
+    "targetId": "string",
+    "reason": {
+     "union": [
+      {
+       "literal": "Other"
+      },
+      {
+       "literal": "Spam"
+      },
+      {
+       "literal": "Offensive"
+      },
+      {
+       "literal": "Misleading"
+      },
+      {
+       "literal": "Illegal"
+      }
+     ]
+    },
+    "note": {
+     "union": [
+      "undefined",
+      "string"
+     ]
+    }
+   },
+   "optional": [
+    "note"
+   ]
+  },
+  "ReviewKnowledgeTopicInput": {
+   "object": {
+    "topicId": "string",
+    "action": {
+     "union": [
+      {
+       "literal": "approve"
+      },
+      {
+       "literal": "reject"
+      },
+      {
+       "literal": "rename"
+      },
+      {
+       "literal": "merge"
+      }
+     ]
+    },
+    "mergeIntoId": {
+     "union": [
+      "undefined",
+      "null",
+      "string"
+     ]
+    },
+    "labelHe": {
+     "union": [
+      "undefined",
+      "null",
+      "string"
+     ]
+    },
+    "labelEn": {
+     "union": [
+      "undefined",
+      "null",
+      "string"
+     ]
+    }
+   },
+   "optional": [
+    "mergeIntoId",
+    "labelHe",
+    "labelEn"
+   ]
+  },
+  "RideFeedRoute": {
+   "object": {
+    "origin": {
+     "ref": "RidePlace"
+    },
+    "dest": {
+     "ref": "RidePlace"
+    },
+    "radiusKm": "number"
+   }
+  },
+  "RidePlace": {
+   "object": {
+    "kind": {
+     "union": [
+      {
+       "literal": "city"
+      },
+      {
+       "literal": "street"
+      },
+      {
+       "literal": "junction"
+      }
+     ]
+    },
+    "id": "string",
+    "label": "string",
+    "lat": "number",
+    "lng": "number",
+    "cityId": {
+     "union": [
+      "null",
+      "string"
+     ]
+    }
+   }
+  },
+  "RideSeriesSchedule": {
+   "object": {
+    "weekdays": {
+     "array": {
+      "union": [
+       {
+        "literal": 0
+       },
+       {
+        "literal": 5
+       },
+       {
+        "literal": 4
+       },
+       {
+        "literal": 2
+       },
+       {
+        "literal": 3
+       },
+       {
+        "literal": 1
+       },
+       {
+        "literal": 6
+       }
+      ]
+     }
+    },
+    "time": "string",
+    "endsOn": {
+     "union": [
+      "null",
+      "string"
+     ]
+    }
+   }
+  },
+  "SaveRideRouteInput": {
+   "object": {
+    "wants": {
+     "union": [
+      {
+       "literal": "offers"
+      },
+      {
+       "literal": "requests"
+      }
+     ]
+    },
+    "origin": {
+     "ref": "RidePlace"
+    },
+    "dest": {
+     "ref": "RidePlace"
+    },
+    "weekdays": {
+     "union": [
+      "null",
+      {
+       "array": "number"
+      }
+     ]
+    },
+    "timeWindow": {
+     "union": [
+      "null",
+      {
+       "literal": "morning"
+      },
+      {
+       "literal": "midday"
+      },
+      {
+       "literal": "evening"
+      }
+     ]
+    }
+   }
+  },
+  "SearchFilters": {
+   "object": {
+    "resultType": {
+     "union": [
+      "undefined",
+      "null",
+      {
+       "literal": "user"
+      },
+      {
+       "literal": "post"
+      },
+      {
+       "literal": "link"
+      },
+      {
+       "literal": "org"
+      },
+      {
+       "literal": "hashtag"
+      }
+     ]
+    },
+    "postType": {
+     "union": [
+      "undefined",
+      "null",
+      {
+       "literal": "Give"
+      },
+      {
+       "literal": "Request"
+      }
+     ]
+    },
+    "category": {
+     "union": [
+      "undefined",
+      "null",
+      {
+       "literal": "Furniture"
+      },
+      {
+       "literal": "Clothing"
+      },
+      {
+       "literal": "Books"
+      },
+      {
+       "literal": "Toys"
+      },
+      {
+       "literal": "BabyGear"
+      },
+      {
+       "literal": "Kitchen"
+      },
+      {
+       "literal": "Sports"
+      },
+      {
+       "literal": "Electronics"
+      },
+      {
+       "literal": "Tools"
+      },
+      {
+       "literal": "Other"
+      }
+     ]
+    },
+    "donationCategory": {
+     "union": [
+      "undefined",
+      "null",
+      {
+       "literal": "time"
+      },
+      {
+       "literal": "money"
+      },
+      {
+       "literal": "food"
+      },
+      {
+       "literal": "housing"
+      },
+      {
+       "literal": "transport"
+      },
+      {
+       "literal": "knowledge"
+      },
+      {
+       "literal": "animals"
+      },
+      {
+       "literal": "medical"
+      },
+      {
+       "literal": "democracy"
+      },
+      {
+       "literal": "employment"
+      },
+      {
+       "literal": "challenges"
+      }
+     ]
+    },
+    "city": {
+     "union": [
+      "undefined",
+      "null",
+      "string"
+     ]
+    },
+    "radiusKm": {
+     "union": [
+      "undefined",
+      "null",
+      "number"
+     ]
+    },
+    "sortBy": {
+     "union": [
+      "undefined",
+      {
+       "literal": "newest"
+      },
+      {
+       "literal": "relevance"
+      },
+      {
+       "literal": "followers"
+      }
+     ]
+    },
+    "minFollowers": {
+     "union": [
+      "undefined",
+      "null",
+      "number"
+     ]
+    }
+   },
+   "optional": [
+    "resultType",
+    "postType",
+    "category",
+    "donationCategory",
+    "city",
+    "radiusKm",
+    "sortBy",
+    "minFollowers"
+   ]
+  },
+  "SetWhatsAppTemplateStatusInput": {
+   "object": {
+    "templateName": "string",
+    "languageCode": "string",
+    "metaStatus": {
+     "union": [
+      {
+       "literal": "approved"
+      },
+      {
+       "literal": "rejected"
+      },
+      {
+       "literal": "paused"
+      },
+      {
+       "literal": "draft"
+      },
+      {
+       "literal": "submitted"
+      },
+      {
+       "literal": "deprecated"
+      }
+     ]
+    },
+    "metaTemplateId": {
+     "union": [
+      "undefined",
+      "string"
+     ]
+    }
+   },
+   "optional": [
+    "metaTemplateId"
+   ]
+  },
+  "SubmitOrgApplicationInput": {
+   "object": {
+    "orgName": "string",
+    "orgDescription": "string",
+    "contactEmail": "string",
+    "contactPhone": {
+     "union": [
+      "null",
+      "string"
+     ]
+    },
+    "websiteUrl": {
+     "union": [
+      "null",
+      "string"
+     ]
+    },
+    "declaredNonprofit": "boolean"
+   }
+  },
+  "SupportThreadCursor": {
+   "object": {
+    "lastMessageAt": "string",
+    "chatId": "string"
+   }
+  },
+  "SurveyAnswerDraft": {
+   "object": {
+    "questionId": "string",
+    "rating": {
+     "union": [
+      "null",
+      "number"
+     ]
+    },
+    "choiceKey": {
+     "union": [
+      "null",
+      "string"
+     ]
+    },
+    "answerText": {
+     "union": [
+      "null",
+      "string"
+     ]
+    }
+   }
+  },
+  "TimesheetListFilters": {
+   "object": {
+    "scope": {
+     "union": [
+      "undefined",
+      {
+       "literal": "all"
+      },
+      {
+       "literal": "mine"
+      },
+      {
+       "literal": "to_decide"
+      }
+     ]
+    },
+    "userId": {
+     "union": [
+      "undefined",
+      "string"
+     ]
+    },
+    "status": {
+     "union": [
+      "undefined",
+      {
+       "literal": "approved"
+      },
+      {
+       "literal": "rejected"
+      },
+      {
+       "literal": "draft"
+      },
+      {
+       "literal": "submitted"
+      }
+     ]
+    },
+    "fromDate": {
+     "union": [
+      "undefined",
+      "string"
+     ]
+    },
+    "toDate": {
+     "union": [
+      "undefined",
+      "string"
+     ]
+    },
+    "limit": {
+     "union": [
+      "undefined",
+      "number"
+     ]
+    },
+    "cursor": {
+     "union": [
+      "undefined",
+      "string"
+     ]
+    }
+   },
+   "optional": [
+    "scope",
+    "userId",
+    "status",
+    "fromDate",
+    "toDate",
+    "limit",
+    "cursor"
+   ]
+  },
+  "TimesheetUpsertInput": {
+   "object": {
+    "entryId": {
+     "union": [
+      "undefined",
+      "null",
+      "string"
+     ]
+    },
+    "workDate": {
+     "union": [
+      "undefined",
+      "string"
+     ]
+    },
+    "hoursX100": {
+     "union": [
+      "undefined",
+      "number"
+     ]
+    },
+    "project": {
+     "union": [
+      "undefined",
+      "null",
+      "string"
+     ]
+    },
+    "description": {
+     "union": [
+      "undefined",
+      "null",
+      "string"
+     ]
+    }
+   },
+   "optional": [
+    "entryId",
+    "workDate",
+    "hoursX100",
+    "project",
+    "description"
+   ]
+  },
+  "TranslationCacheKey": {
+   "object": {
+    "contentType": {
+     "union": [
+      {
+       "literal": "user"
+      },
+      {
+       "literal": "post"
+      },
+      {
+       "literal": "comment"
+      },
+      {
+       "literal": "message"
+      }
+     ]
+    },
+    "contentId": "string",
+    "field": {
+     "union": [
+      {
+       "literal": "title"
+      },
+      {
+       "literal": "description"
+      },
+      {
+       "literal": "body"
+      },
+      {
+       "literal": "biography"
+      }
+     ]
+    },
+    "targetLanguage": "string"
+   }
+  },
+  "UpdateAdminTaskInput": {
+   "object": {
+    "title": {
+     "union": [
+      "undefined",
+      "string"
+     ]
+    },
+    "description": {
+     "union": [
+      "undefined",
+      "null",
+      "string"
+     ]
+    },
+    "priority": {
+     "union": [
+      "undefined",
+      {
+       "literal": "low"
+      },
+      {
+       "literal": "medium"
+      },
+      {
+       "literal": "high"
+      },
+      {
+       "literal": "urgent"
+      }
+     ]
+    },
+    "category": {
+     "union": [
+      "undefined",
+      {
+       "literal": "support"
+      },
+      {
+       "literal": "moderation"
+      },
+      {
+       "literal": "engineering"
+      },
+      {
+       "literal": "product"
+      },
+      {
+       "literal": "operations"
+      },
+      {
+       "literal": "marketing"
+      },
+      {
+       "literal": "finance"
+      },
+      {
+       "literal": "other"
+      }
+     ]
+    },
+    "dueAt": "unknown",
+    "clearDue": {
+     "union": [
+      "undefined",
+      "boolean"
+     ]
+    },
+    "labels": {
+     "union": [
+      "undefined",
+      {
+       "array": "string"
+      }
+     ]
+    }
+   },
+   "optional": [
+    "title",
+    "description",
+    "priority",
+    "category",
+    "dueAt",
+    "clearDue",
+    "labels"
+   ]
+  },
+  "UpdateDonationLinkInput": {
+   "object": {
+    "linkId": "string",
+    "categorySlug": {
+     "union": [
+      {
+       "literal": "time"
+      },
+      {
+       "literal": "money"
+      },
+      {
+       "literal": "food"
+      },
+      {
+       "literal": "housing"
+      },
+      {
+       "literal": "transport"
+      },
+      {
+       "literal": "knowledge"
+      },
+      {
+       "literal": "animals"
+      },
+      {
+       "literal": "medical"
+      },
+      {
+       "literal": "democracy"
+      },
+      {
+       "literal": "employment"
+      },
+      {
+       "literal": "challenges"
+      }
+     ]
+    },
+    "url": "string",
+    "displayName": "string",
+    "description": {
+     "union": [
+      "undefined",
+      "null",
+      "string"
+     ]
+    }
+   },
+   "optional": [
+    "description"
+   ]
+  },
+  "UpdatePostInput": {
+   "object": {
+    "title": {
+     "union": [
+      "undefined",
+      "string"
+     ]
+    },
+    "description": {
+     "union": [
+      "undefined",
+      "null",
+      "string"
+     ]
+    },
+    "category": {
+     "union": [
+      "undefined",
+      {
+       "literal": "Furniture"
+      },
+      {
+       "literal": "Clothing"
+      },
+      {
+       "literal": "Books"
+      },
+      {
+       "literal": "Toys"
+      },
+      {
+       "literal": "BabyGear"
+      },
+      {
+       "literal": "Kitchen"
+      },
+      {
+       "literal": "Sports"
+      },
+      {
+       "literal": "Electronics"
+      },
+      {
+       "literal": "Tools"
+      },
+      {
+       "literal": "Other"
+      }
+     ]
+    },
+    "address": {
+     "union": [
+      "undefined",
+      {
+       "ref": "Address"
+      }
+     ]
+    },
+    "locationDisplayLevel": {
+     "union": [
+      "undefined",
+      {
+       "literal": "CityOnly"
+      },
+      {
+       "literal": "CityAndStreet"
+      },
+      {
+       "literal": "FullAddress"
+      }
+     ]
+    },
+    "itemCondition": {
+     "union": [
+      "undefined",
+      "null",
+      {
+       "literal": "New"
+      },
+      {
+       "literal": "LikeNew"
+      },
+      {
+       "literal": "Good"
+      },
+      {
+       "literal": "Fair"
+      },
+      {
+       "literal": "Damaged"
+      }
+     ]
+    },
+    "urgency": {
+     "union": [
+      "undefined",
+      "null",
+      "string"
+     ]
+    },
+    "visibility": {
+     "union": [
+      "undefined",
+      {
+       "literal": "Public"
+      },
+      {
+       "literal": "FollowersOnly"
+      },
+      {
+       "literal": "OnlyMe"
+      }
+     ]
+    },
+    "mediaAssets": {
+     "union": [
+      "undefined",
+      {
+       "array": {
+        "ref": "MediaAssetInput"
+       }
+      }
+     ]
+    }
+   },
+   "optional": [
+    "title",
+    "description",
+    "category",
+    "address",
+    "locationDisplayLevel",
+    "itemCondition",
+    "urgency",
+    "visibility",
+    "mediaAssets"
+   ]
+  },
+  "UpdatePostSeriesInput": {
+   "object": {
+    "schedule": {
+     "ref": "PostSeriesSchedule"
+    }
+   }
+  },
+  "UpsertPostActorIdentityInput": {
+   "object": {
+    "postId": "string",
+    "userId": "string",
+    "surfaceVisibility": {
+     "union": [
+      {
+       "literal": "Public"
+      },
+      {
+       "literal": "FollowersOnly"
+      },
+      {
+       "literal": "OnlyMe"
+      }
+     ]
+    },
+    "hideFromCounterparty": "boolean"
+   }
+  },
+  "WhatsAppOutboundListFilters": {
+   "object": {
+    "cursor": {
+     "union": [
+      "undefined",
+      "string"
+     ]
+    },
+    "limit": {
+     "union": [
+      "undefined",
+      "number"
+     ]
+    },
+    "status": {
+     "union": [
+      "undefined",
+      "string"
+     ]
+    }
+   },
+   "optional": [
+    "cursor",
+    "limit",
+    "status"
+   ]
+  },
+  "WhatsAppPageQuery": {
+   "object": {
+    "cursor": {
+     "union": [
+      "undefined",
+      "string"
+     ]
+    },
+    "limit": {
+     "union": [
+      "undefined",
+      "number"
+     ]
+    }
+   },
+   "optional": [
+    "cursor",
+    "limit"
+   ]
+  },
+  "WhatsAppReviewListFilters": {
+   "object": {
+    "cursor": {
+     "union": [
+      "undefined",
+      "string"
+     ]
+    },
+    "limit": {
+     "union": [
+      "undefined",
+      "number"
+     ]
+    },
+    "status": {
+     "union": [
+      "undefined",
+      {
+       "literal": "pending"
+      },
+      {
+       "literal": "approved"
+      },
+      {
+       "literal": "rejected"
+      }
+     ]
+    }
+   },
+   "optional": [
+    "cursor",
+    "limit",
+    "status"
+   ]
+  }
+ },
+ "typedMethods": [
+  "adminContent.searchAudit",
+  "adminContent.searchPosts",
+  "adminContent.searchUsers",
+  "adminRole.listAdmins",
+  "adminTask.create",
+  "adminTask.getDetail",
+  "adminTask.list",
+  "adminTask.update",
+  "crmContacts.list",
+  "financeAccounts.list",
+  "financeAccounts.upsert",
+  "financeDonors.summary",
+  "financeLedger.list",
+  "financeLedger.summary",
+  "financeLedger.upsert",
+  "legalDocument.acceptVersion",
+  "legalDocument.getCurrentContent",
+  "legalDocument.getPendingForCurrentUser",
+  "orgApplications.list",
+  "orgHierarchy.getOrgTree",
+  "orgTransparency.getPublic",
+  "timesheets.list",
+  "whatsAppAdmin.getChannel",
+  "whatsAppAdmin.getSendLimits",
+  "whatsAppAdmin.listConsent",
+  "whatsAppAdmin.listConversations",
+  "whatsAppAdmin.listOutbound",
+  "whatsAppAdmin.listRateHits",
+  "whatsAppAdmin.listRecentMatches",
+  "whatsAppAdmin.listReviews",
+  "whatsAppAdmin.listTemplates",
+  "whatsAppAdmin.overview",
+  "whatsAppAdmin.setChannelEnabled",
+  "whatsAppAdmin.setSendLimits",
+  "whatsAppLink.createLinkCode"
+ ]
+}

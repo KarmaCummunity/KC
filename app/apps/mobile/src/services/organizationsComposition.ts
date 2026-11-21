@@ -11,11 +11,12 @@ import {
   type IOrganizationsRepository,
 } from '@kc/application';
 import { pickAuthStorage } from './authSecureStorage';
+import { viaApi } from './backend/apiBackend';
 
 let repo: IOrganizationsRepository | null = null;
 
 function organizationsRepository(): IOrganizationsRepository {
-  repo ??= new SupabaseOrganizationsRepository(getSupabaseClient({ storage: pickAuthStorage() }));
+  repo ??= viaApi('organizations', new SupabaseOrganizationsRepository(getSupabaseClient({ storage: pickAuthStorage() })));
   return repo;
 }
 

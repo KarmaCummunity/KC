@@ -11,6 +11,7 @@ import {
   type IPostExtractionService,
 } from '@kc/application';
 import { pickAuthStorage } from './authSecureStorage';
+import { viaApi } from './backend/apiBackend';
 
 let _service: IPostExtractionService | undefined;
 let _extractExternalPost: ExtractExternalPostUseCase | undefined;
@@ -39,7 +40,7 @@ export function attachImportedPostUseCase(): AttachImportedPostUseCase {
 /** FR-IMPORT-010 AC4 — the import funnel and the per-field edit rate (admin statistics). */
 export function getImportTelemetryUseCase(): GetImportTelemetryUseCase {
   _importTelemetry ??= new GetImportTelemetryUseCase(
-    new SupabaseImportTelemetryRepository(getSupabaseClient({ storage: pickAuthStorage() })),
+    viaApi('importTelemetry', new SupabaseImportTelemetryRepository(getSupabaseClient({ storage: pickAuthStorage() }))),
   );
   return _importTelemetry;
 }

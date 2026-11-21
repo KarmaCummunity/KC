@@ -11,6 +11,8 @@
 | [adr/ADR-005-library-evaluation-matrix.md](./adr/ADR-005-library-evaluation-matrix.md) | Library evaluation matrix: navigation, forms, maps, media, animation, i18n, lists, dependabot groups (#1024) |
 | [adr/ADR-006-one-post-model.md](./adr/ADR-006-one-post-model.md) | One Post model: six-step plan from `listings` to `posts` + `ride_post_details` + `post_handoffs` (G1, D2 / D19; `D-214`) |
 | [adr/ADR-007-event-group-audience.md](./adr/ADR-007-event-group-audience.md) | Audience of an event ride group: fail-closed membership (`OnlyMe` + membership clause), reader inventory test, per-group realtime (Proposed, `G62`) |
+| [adr/ADR-009-backend-platform.md](./adr/ADR-009-backend-platform.md) | Backend platform: an owned NestJS API on Google Cloud (modular monolith, Cloud SQL, Redis, media pipeline), the phased move off Supabase with exit criteria and rollback (Accepted, KC#1496; `{{ENG:backend-platform-off-supabase}}`) |
+| [adr/ADR-010-port-gateway.md](./adr/ADR-010-port-gateway.md) | How the app reaches the API: one gateway route that serves the application ports, a generic remote port on the app, typed errors across the wire, and the SQL engine that lets the existing Supabase adapters run on the server unchanged (Accepted, KC#1496; `{{ENG:port-gateway-compat-engine}}`) |
 | [state-machines.md](./state-machines.md) | Every status lifecycle: states, copies, divergences, and the wave order onto the FSM kernel (`fsm_state` / `fsm_edge` / `fsm_assert_transition`; gap `G61`) |
 
 Environment details (branches, hosting, env vars by name): [`../SSOT/ENVIRONMENTS.md`](../SSOT/ENVIRONMENTS.md). Operational runbooks: [`../SSOT/OPERATOR_RUNBOOK.md`](../SSOT/OPERATOR_RUNBOOK.md). Secrets are referenced **by name only**.

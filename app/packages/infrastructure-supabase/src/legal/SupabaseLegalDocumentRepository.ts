@@ -16,7 +16,8 @@ import { fetchBootstrapSession, type BootstrapLegalDocument } from '../auth/boot
 import type { Database } from '../database.types';
 import { unwrapCall } from '../rpc/mapRpcError';
 import { mapRuleErrors } from '../auth/ruleErrors';
-import { LegalDocumentCache } from './legalCache';
+import { CachedLegalDocumentRepository } from './CachedLegalDocumentRepository';
+import type { LegalDocumentCache } from './legalCache';
 
 type VersionRow = Pick<
   Database['public']['Tables']['legal_document_versions']['Row'],
@@ -60,47 +61,38 @@ function mapPendingDocument(doc: BootstrapLegalDocument): LegalPendingItem {
   };
 }
 
-export class SupabaseLegalDocumentRepository implements ILegalDocumentRepository {
-  constructor(
-    private readonly client: SupabaseClient<Database>,
-    private readonly cache: LegalDocumentCache,
-  ) {}
+/**
+ * The legal documents as the database holds them, with no cache: the part of
+ * the port the API can serve. `getCurrentContent` throws when the document
+ * cannot be read; the device wraps this source in `CachedLegalDocumentRepository`
+ * for the offline copy.
+ */
+export class SupabaseLegalDocumentSource implements ILegalDocumentRepository {
+  constructor(private readonly client: SupabaseClient<Database>) {}
 
   async getCurrentContent(docType: LegalDocType): Promise<LegalDocumentContent> {
+    const failed = (reason: string) => new Error(`legal:getCurrentContent failed for ${docType}: ${reason}`);
     try {
-      const ptr = await this.client
-        .from('legal_documents')
-        .select('current_version')
-        .eq('doc_type', docType)
-        .single();
-
-      if (ptr.error || !ptr.data) {
-        return await this.fallbackToCacheOrThrow(docType, ptr.error?.message ?? 'no pointer row');
-      }
-
-      const versionQ = await this.client
-        .from('legal_document_versions')
-        .select('doc_type, version, effective_date, body_md, content_hash, severity, change_summary, published_at')
-        .eq('doc_type', docType)
-        .eq('version', ptr.data.current_version)
-        .single();
-
-      if (versionQ.error || !versionQ.data) {
-        return await this.fallbackToCacheOrThrow(docType, versionQ.error?.message ?? 'no version row');
-      }
-
-      const fresh = mapVersionRow(versionQ.data);
-      await this.cache.write(fresh);
-      return fresh;
-    } catch (err) {
-      return this.fallbackToCacheOrThrow(docType, (err as Error).message);
+      return await this.readCurrent(docType, failed);
+    } catch (error) {
+      // A thrown request (no network) reads the same as a refused one.
+      throw error instanceof Error && error.message.startsWith('legal:') ? error : failed((error as Error).message);
     }
   }
 
-  private async fallbackToCacheOrThrow(docType: LegalDocType, reason: string): Promise<LegalDocumentContent> {
-    const cached = await this.cache.readPointer(docType);
-    if (cached) return cached;
-    throw new Error(`legal:getCurrentContent failed for ${docType}: ${reason}`);
+  private async readCurrent(docType: LegalDocType, failed: (reason: string) => Error): Promise<LegalDocumentContent> {
+    const ptr = await this.client.from('legal_documents').select('current_version').eq('doc_type', docType).single();
+    if (ptr.error || !ptr.data) throw failed(ptr.error?.message ?? 'no pointer row');
+
+    const versionQ = await this.client
+      .from('legal_document_versions')
+      .select('doc_type, version, effective_date, body_md, content_hash, severity, change_summary, published_at')
+      .eq('doc_type', docType)
+      .eq('version', ptr.data.current_version)
+      .single();
+    if (versionQ.error || !versionQ.data) throw failed(versionQ.error?.message ?? 'no version row');
+
+    return mapVersionRow(versionQ.data);
   }
 
   /** The documents in force the caller has not accepted: `legal.documents` of `bootstrap_session()`. */
@@ -131,5 +123,15 @@ export class SupabaseLegalDocumentRepository implements ILegalDocumentRepository
       acceptanceId: row.acceptance_id,
       acceptedAt: new Date(row.accepted_at),
     };
+  }
+}
+
+/**
+ * The device's legal documents repository when it talks to Supabase directly:
+ * the database source behind the offline cache.
+ */
+export class SupabaseLegalDocumentRepository extends CachedLegalDocumentRepository {
+  constructor(client: SupabaseClient<Database>, cache: LegalDocumentCache) {
+    super(new SupabaseLegalDocumentSource(client), cache);
   }
 }
