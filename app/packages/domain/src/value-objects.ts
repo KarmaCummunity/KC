@@ -81,6 +81,17 @@ export type MessageKind = 'user' | 'system' | 'media';
 
 export type MessageStatus = 'pending' | 'delivered' | 'read';
 
+/** A member's reaction to a chat message (KC#873); one per member per message. */
+export type MessageReactionType = 'like' | 'love' | 'laugh' | 'sad';
+
+/** Every reaction type, in the order the reaction picker shows them. */
+export const MESSAGE_REACTION_TYPES: readonly MessageReactionType[] = ['like', 'love', 'laugh', 'sad'];
+
+/** Narrows an untrusted value (a broadcast payload, a DB row) to a known reaction type. */
+export function isMessageReactionType(value: unknown): value is MessageReactionType {
+  return typeof value === 'string' && (MESSAGE_REACTION_TYPES as readonly string[]).includes(value);
+}
+
 // ── Follow ────────────────────────────────────
 
 export type FollowRequestStatus = 'pending' | 'accepted' | 'rejected' | 'cancelled';
