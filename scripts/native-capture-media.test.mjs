@@ -4,7 +4,7 @@ import { mkdtempSync,mkdirSync,writeFileSync,existsSync,rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { readFileSync } from 'node:fs';
-import { cleanCaptureMedia } from './native-capture-media.mjs';
+import { cleanCaptureMedia } from './maestro-native-capture-media.mjs';
 test('07/19 only preserve exact explicit safe PNG names, never failure/retry pixels or video',()=>{
  const root=mkdtempSync(join(tmpdir(),'native-capture-'));
  const put=p=>{const path=join(root,p);mkdirSync(path.slice(0,path.lastIndexOf('/')),{recursive:true});writeFileSync(path,'fixture');};

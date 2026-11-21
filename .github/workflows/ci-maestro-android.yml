@@ -166,7 +166,7 @@ jobs:
         if: always()
         run: |
           for label in 07-create-post-form 07-create-post-form-retry 19-edit-profile-keyboard-toolbar 19-edit-profile-keyboard-toolbar-retry; do
-            node scripts/native-capture-media.mjs "$RUNNER_TEMP/maestro" "$label"
+            node scripts/maestro-native-capture-media.mjs "$RUNNER_TEMP/maestro" "$label"
           done
 
       - name: Upload Maestro reports, screenshots and failure videos

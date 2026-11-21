@@ -57,7 +57,7 @@ run_flow() {
     sleep 2
     adb pull "$DEVICE_VIDEO" "$OUT_DIR/videos/$label.mp4" || echo "::warning::no video for $label"
   fi
-  node "$(dirname "$0")/native-capture-media.mjs" "$OUT_DIR" "$label"
+  node "$(dirname "$0")/maestro-native-capture-media.mjs" "$OUT_DIR" "$label"
   return "$status"
 }
 
