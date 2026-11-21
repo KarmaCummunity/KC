@@ -87,3 +87,4 @@
 0090_feed_has_image_filter.sql
 0091_post_media_processing_activation.sql
 0092_employment_job_offer_fields.sql
+0093_user_devices_prune.sql
