@@ -6424,12 +6424,6 @@ begin
     for insert to authenticated
     with check (bucket_id = 'post-images' and (storage.foldername(name))[1] = (select auth.uid())::text);
 
-  -- Storage removal selects the matching objects before deleting them. Public CDN reads do
-  -- not grant metadata SELECT: members may list only their own folder, never another member's.
-  create policy post_images_select_own_folder on storage.objects
-    for select to authenticated
-    using (bucket_id = 'post-images' and (storage.foldername(name))[1] = (select auth.uid())::text);
-
   -- A member removes their own files (the account purge and the orphan job use the service role).
   create policy post_images_delete_own_folder on storage.objects
     for delete to authenticated
