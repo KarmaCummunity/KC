@@ -37,6 +37,7 @@ import { useKeyboardVerticalOffset } from '../../lib/platform/useKeyboardVertica
 import { postShowsEngagementSection } from '../../lib/postEngagementVisible';
 import { useSeededFeedPost } from '../../hooks/useSeededFeedPost';
 import { postLocationText } from '../../lib/postLocationText';
+import { worldDetailTitleKey } from '../../lib/worldDetailCopy';
 import { resolveKeyboardAvoidingBehavior } from '../../lib/platform/keyboardVerticalOffset';
 
 function normalizeRoutePostId(raw: string | string[] | undefined): string | undefined {
@@ -232,6 +233,8 @@ export function PostDetailScreen() {
     >
       <Stack.Screen
         options={{
+          // #2539: the title follows the loaded post's world (a job reads "Job details").
+          headerTitle: t(worldDetailTitleKey(post.listingWorldSlug)),
           // Under forceRTL=true, the inner row visually flips so the *first*
           // child lands at the screen's right edge (= the corner). Share is
           // first so it sits in the corner, with the ⋮ menu to its left.

@@ -34,7 +34,7 @@ import { OwnerActionsBar } from '../OwnerActionsBar';
 import { useClosureStore } from '../../../store/closureStore';
 import { renderInTheme } from '../../ui/__tests__/kitDialogTestKit';
 
-const OPEN_GIVE = { postId: 'p_1', type: 'Give', status: 'open', deleteAfter: null } as unknown as Post;
+const OPEN_GIVE = { postId: 'p_1', type: 'Give', status: 'open', deleteAfter: null, listingWorldSlug: null } as unknown as Post;
 
 function renderBar(post: Post) {
   return renderInTheme(
@@ -60,8 +60,14 @@ describe('OwnerActionsBar', () => {
       initiator: 'post-detail',
       offerAssign: false,
       allowCloseWithout: true,
-      worldSlug: undefined,
+      worldSlug: null,
     });
+  });
+
+  it('words the close action of a job as filled, not delivered (#2539)', () => {
+    const { getByRole, queryByRole } = renderBar({ ...OPEN_GIVE, listingWorldSlug: 'employment' } as Post);
+    expect(getByRole('button', { name: 'closure.markEmploymentCta' })).toBeTruthy();
+    expect(queryByRole('button', { name: 'closure.markGiveCta' })).toBeNull();
   });
 
   it('holds the closure action while a closure is already running', () => {
