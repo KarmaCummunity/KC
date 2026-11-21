@@ -2,8 +2,8 @@
  "generatedBy": "scripts/app-migration-map.mjs",
  "totals": {
   "rpc": {
-   "objects": 269,
-   "same": 192,
+   "objects": 270,
+   "same": 193,
    "renamed": 22,
    "changed": 55,
    "removed": 0,
@@ -44,8 +44,8 @@
  },
  "launchTotals": {
   "core": {
-   "objects": 133,
-   "same": 109,
+   "objects": 134,
+   "same": 110,
    "renamed": 1,
    "changed": 23,
    "removed": 0,
@@ -188,6 +188,13 @@
    "removed": 0,
    "missing": 0
   },
+  "fn:process-post-media": {
+   "callSites": 1,
+   "oneToOne": 1,
+   "changed": 0,
+   "removed": 0,
+   "missing": 0
+  },
   "fn:public-research-submit": {
    "callSites": 2,
    "oneToOne": 2,
@@ -301,8 +308,8 @@
    "missing": 0
   },
   "mobile": {
-   "callSites": 13,
-   "oneToOne": 12,
+   "callSites": 11,
+   "oneToOne": 10,
    "changed": 1,
    "removed": 0,
    "missing": 0
@@ -981,13 +988,14 @@
     "rpc:embedding_job_fail",
     "rpc:api_match_llm_pending",
     "rpc:api_match_llm_store",
+    "rpc:<fn>",
     "bucket:post-images",
     "bucket:<bucket>",
     "table:worlds"
    ],
    "counts": {
-    "objects": 14,
-    "oneToOne": 10,
+    "objects": 15,
+    "oneToOne": 11,
     "changed": 4,
     "removed": 0,
     "missing": 0
@@ -1598,25 +1606,13 @@
    "callSites": [
     {
      "file": "app/apps/mobile/src/services/avatarUpload.ts",
-     "line": 132,
+     "line": 164,
      "symbol": "resizeAndUploadAvatar",
      "area": "mobile"
     },
     {
      "file": "app/apps/mobile/src/services/avatarUpload.ts",
-     "line": 143,
-     "symbol": "resizeAndUploadAvatar",
-     "area": "mobile"
-    },
-    {
-     "file": "app/apps/mobile/src/services/avatarUpload.ts",
-     "line": 153,
-     "symbol": "resizeAndUploadAvatar",
-     "area": "mobile"
-    },
-    {
-     "file": "app/apps/mobile/src/services/avatarUpload.ts",
-     "line": 167,
+     "line": 177,
      "symbol": "removeUploadedAvatar",
      "area": "mobile"
     }
@@ -2118,6 +2114,61 @@
      "line": 90,
      "symbol": "SupabaseDonationLinksRepository.invoke",
      "area": "donations"
+    }
+   ]
+  },
+  {
+   "old": "<fn>",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "Service role only, unscheduled: the post photo worker claims a leased job, completes it with a compare-and-set, records a failure, or (DEV experiment) releases its lease.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "post_media_processing_claim",
+     "signature": [
+      "post_media_processing_claim(p_lease_seconds?: number, p_limit?: number) → { attempt: number lease_token: string leased_until: string media_id: string mime_type: string object_mimetype: string object_size: number owner_id: string post_id: string size_bytes: number storage_key: string }[]"
+     ],
+     "errors": []
+    },
+    {
+     "type": "rpc",
+     "name": "post_media_processing_complete",
+     "signature": [
+      "post_media_processing_complete(p_derivative_key: string, p_height: number, p_lease_token: string, p_media_id: string, p_size_bytes: number, p_width: number) → string"
+     ],
+     "errors": []
+    },
+    {
+     "type": "rpc",
+     "name": "post_media_processing_fail",
+     "signature": [
+      "post_media_processing_fail(p_error: string, p_lease_token: string, p_media_id: string, p_retryable: boolean) → string"
+     ],
+     "errors": []
+    },
+    {
+     "type": "rpc",
+     "name": "post_media_processing_release",
+     "signature": [
+      "post_media_processing_release(p_lease_token: string, p_media_id: string, p_reason: string) → string"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "fn:process-post-media"
+   ],
+   "callSites": [
+    {
+     "file": "supabase/functions/process-post-media/handler.ts",
+     "line": 159,
+     "symbol": "callRpc",
+     "area": "fn:process-post-media"
     }
    ]
   },
