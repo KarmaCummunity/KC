@@ -20,6 +20,8 @@
 // the back of the line, so a PR that was updated while it waited could wait 120 min more, again and
 // again (#1619: from 19 to 21 Nov 34 waiting jobs were cancelled after a median 64 min in the queue,
 // 30.7 h in all; #2578 had been queued since 15:12Z when its third run was cancelled at 17:38Z).
+// The periodic "Merge branch 'dev'" updates of PRs are wanted (Nave, 21 Nov), so a PR keeps its
+// first-enqueue place across them: up to 8 superseded runs back, within 6 h.
 // To keep the API cost low (the repository's GITHUB_TOKEN budget is shared by every waiter), it polls
 // every KC_DEV_SLOT_POLL_MS (default 60 s) and reads the jobs only of runs whose workflow can hold a
 // slot (slotWorkflows: the workflows that run this script, and those that call them).
@@ -81,8 +83,8 @@ export function backoffMs(err, pollMs, capMs) {
   return Math.min(Math.max(asked, pollMs), capMs);
 }
 
-export const INHERIT_LOOKBACK_MS = 3 * 60 * 60_000;
-export const INHERIT_MAX_LINKS = 4;
+export const INHERIT_LOOKBACK_MS = 6 * 60 * 60_000; // dev-merge sweeps came every ~1.5 h on 21 Nov
+export const INHERIT_MAX_LINKS = 8;
 
 /**
  * Pure. The queue place a waiting job inherits from the runs it replaces, or null.
@@ -173,7 +175,7 @@ async function predecessors(repo, token, run, jobName) {
     if (job?.conclusion !== 'cancelled') return out;
   }
   if (!run.workflow_id || !run.head_branch) return out;
-  const q = `branch=${encodeURIComponent(run.head_branch)}&event=${encodeURIComponent(run.event)}&per_page=10`;
+  const q = `branch=${encodeURIComponent(run.head_branch)}&event=${encodeURIComponent(run.event)}&per_page=20`;
   const list = await gh(`/repos/${repo}/actions/workflows/${run.workflow_id}/runs?${q}`, token);
   const earlier = (list.workflow_runs ?? [])
     .filter((r) => r.id !== run.id && Date.parse(r.created_at) < Date.parse(run.created_at) && Date.parse(r.created_at) >= floor)

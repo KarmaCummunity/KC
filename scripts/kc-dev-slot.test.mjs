@@ -128,9 +128,10 @@ test('a run cancelled before it queued passes nothing on', () => {
 });
 
 test('the inherited place is bounded by the lookback and the number of links', () => {
-  assert.equal(inheritedStart(created, [p('cancelled', 'cancelled', '2026-11-21T14:00:00Z')]), null);
-  const long = Array.from({ length: INHERIT_MAX_LINKS + 1 }, (_, i) => p('cancelled', 'cancelled', `2026-11-21T17:${String(30 - i * 5).padStart(2, '0')}:00Z`));
-  assert.equal(inheritedStart(created, long), `2026-11-21T17:${String(30 - (INHERIT_MAX_LINKS - 1) * 5).padStart(2, '0')}:00Z`);
+  assert.equal(inheritedStart(created, [p('cancelled', 'cancelled', '2026-11-21T11:00:00Z')]), null);
+  assert.equal(inheritedStart(created, [p('cancelled', 'cancelled', '2026-11-21T12:00:00Z')]), '2026-11-21T12:00:00Z');
+  const long = Array.from({ length: INHERIT_MAX_LINKS + 1 }, (_, i) => p('cancelled', 'cancelled', `2026-11-21T17:${String(45 - i * 5).padStart(2, '0')}:00Z`));
+  assert.equal(inheritedStart(created, long), `2026-11-21T17:${String(45 - (INHERIT_MAX_LINKS - 1) * 5).padStart(2, '0')}:00Z`);
   assert.equal(inheritedStart(created, []), null);
 });
 
