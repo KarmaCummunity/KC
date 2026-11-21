@@ -111,13 +111,35 @@ describe('port gateway over HTTP', () => {
     expect(indexPorts([shelf]).get('shelf')).toBe(shelf);
   });
 
+  it('runs a catalog method whose arguments match its port interface', async () => {
+    expect((await call('savedPosts/savePost', ['p1'])).json()).toEqual({ result: 'saved p1' });
+    expect((await call('savedPosts/listSavedPosts', [20])).json()).toEqual({ result: { limit: 20, cursor: null } });
+    expect((await call('savedPosts/listSavedPosts', [20, 'c1'])).json()).toEqual({ result: { limit: 20, cursor: 'c1' } });
+  });
+
+  it.each([
+    ['a number where the interface says string', 'savedPosts/savePost', [5], 'postId: expected string'],
+    ['an object where the interface says string', 'savedPosts/savePost', [{ $ne: null }], 'postId: expected string'],
+    ['a missing required argument', 'savedPosts/savePost', [], 'postId: required'],
+    ['a string where the interface says number', 'savedPosts/listSavedPosts', ['20'], 'limit: expected number'],
+    ['more arguments than the method takes', 'savedPosts/savePost', ['p1', 'extra'], 'expected at most 1 arguments, got 2'],
+  ])('answers 400 to %s, without running the method', async (_case, path, args, problem) => {
+    const response = await call(path, args);
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json().error).toMatchObject({ code: 'invalid_arguments', detail: { problem } });
+  });
+
   it('lists what a definition serves in the manifest and leaves out what it does not', async () => {
     // No token: the manifest is public, listing is not access.
     const response = await app.inject({ method: 'GET', url: '/v1/ports' });
 
     expect(response.statusCode).toBe(200);
     expect(response.json()).toEqual({
-      ports: { shelf: ['echo', 'whoAmI', 'nothing', 'refuse', 'crash', 'needsStorage', 'counted', 'countedNothing', 'countedRefusal'] },
+      ports: {
+        shelf: ['echo', 'whoAmI', 'nothing', 'refuse', 'crash', 'needsStorage', 'counted', 'countedNothing', 'countedRefusal'],
+        savedPosts: ['savePost', 'listSavedPosts'],
+      },
     });
   });
 });

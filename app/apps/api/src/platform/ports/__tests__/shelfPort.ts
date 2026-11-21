@@ -120,6 +120,19 @@ export const limiter = {
   },
 };
 
+/**
+ * A double under a real catalog name, so the gateway checks its arguments
+ * against the shapes generated from `ISavedPostsRepository`.
+ */
+export const savedPostsDouble = definePort<{ savePost(postId: string): Promise<string>; listSavedPosts(limit: number, cursor?: string): Promise<unknown> }>({
+  name: 'savedPosts',
+  create: () => ({
+    savePost: (postId) => Promise.resolve(`saved ${postId}`),
+    listSavedPosts: (limit, cursor) => Promise.resolve({ limit, cursor: cursor ?? null }),
+  }),
+  methods: { savePost: 'member', listSavedPosts: 'member' },
+});
+
 /** Puts the fakes back to their initial state; call before each test. */
 export function resetShelf(): void {
   limiter.blocked = false;
@@ -146,7 +159,7 @@ export async function createShelfApp(): Promise<{ app: NestFastifyApplication; i
   })
   class FakePlatformModule {}
 
-  @Module({ imports: [ApiConfigModule.forRoot(testConfig()), FakePlatformModule, PortGatewayModule.forRoot([shelf])] })
+  @Module({ imports: [ApiConfigModule.forRoot(testConfig()), FakePlatformModule, PortGatewayModule.forRoot([shelf, savedPostsDouble])] })
   class TestModule {}
 
   return { app: await createApp(TestModule, testConfig()), issuer };

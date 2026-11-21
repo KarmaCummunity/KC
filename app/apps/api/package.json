@@ -6,6 +6,7 @@
   "scripts": {
     "build": "tsup",
     "start": "node dist/main.js",
+    "generate:port-args": "node scripts/generate-port-args.mjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",

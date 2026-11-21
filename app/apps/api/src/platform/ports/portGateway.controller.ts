@@ -13,9 +13,14 @@ import { ACCESS_TOKEN_VERIFIER, type AccessTokenVerifier } from '../identity/acc
 import { resolveCaller } from '../identity/resolveCaller';
 import { UnsupportedSupabaseServiceError } from '../postgrest/sqlBackedClient';
 import { RateLimiter } from '../rateLimit/rateLimiter';
+import { findArgsProblem, type PortArgShapes } from './argShapes';
+import generatedArgShapes from './portArgShapes.generated.json';
 import { PortClients } from './portClients';
 import type { PortAccess, PortDefinition } from './portDefinition';
 import { VisitorCache } from './visitorCache';
+
+/** Argument shapes of every catalog port method, generated from the port interfaces. */
+const ARG_SHAPES = generatedArgShapes as unknown as PortArgShapes;
 
 /** Injection token of the served ports, by wire name. */
 export const PORT_DEFINITIONS = Symbol('PORT_DEFINITIONS');
@@ -80,6 +85,10 @@ export class PortGatewayController {
       throw new ApiError('too_many_requests', 429, `${portName}.${method}`);
     }
     const args = readArgs(body);
+    // A port outside the catalog (a test double) has no generated shapes and is not checked.
+    const parameters = ARG_SHAPES.ports[portName]?.[method];
+    const problem = parameters ? findArgsProblem(args, parameters, ARG_SHAPES.types) : null;
+    if (problem) throw new ApiError('invalid_arguments', 400, `${portName}.${method}: ${problem}`, { problem });
 
     // Only a signed-out visitor's call may be answered from the cache: see `visitorCacheSeconds`.
     const cacheSeconds = caller ? undefined : port.visitorCacheSeconds?.[method];

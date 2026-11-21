@@ -66,7 +66,7 @@ Proven so far (2026-11-21): `users`, `posts`, `savedPosts`, `chat`, `reports` â€
 
 ## Consequences and limits
 
-- **Arguments are not yet validated against the port's types.** Postgres validates what reaches SQL (types, RLS, constraints), so this is a robustness gap, not a privilege one: a malformed argument can end as a `500` instead of a `400`. Follow-up: generate validators from the port interfaces and check them in the gateway.
+- **Arguments are checked against the port's types.** `scripts/generate-port-args.mjs` reads every catalog port with the TypeScript checker and writes each method's parameter shapes to `portArgShapes.generated.json`; the gateway refuses a call that does not match with `400 invalid_arguments` before any adapter code runs. The shapes are never stricter than the types: what cannot be described is accepted, and an object may carry fields the server does not know. A test fails when a port interface changes without the file (`pnpm --filter @kc/api generate:port-args`). Postgres still validates what reaches SQL.
 - **One port call can be several transactions**, as today. Atomicity improves only when an adapter is rewritten natively.
 - **Two round trips of overhead per adapter request**: one opens the transaction and sets the caller, one commits. They cost little while the API sits next to the database and grow with the distance between them, which is why the API runs in the database's region.
 - **Values are JSON.** A port with a `Date`, a binary value or a callback needs a codec extension or its own route. Today that is the realtime and auth ports (phases 6 and 9) and one `Date` in the legal-documents port.
