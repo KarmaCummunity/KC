@@ -1,3 +1,5 @@
+import { useRouter } from 'expo-router';
+import { closeCreateForm } from '../../navigation/closeCreateForm';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { PostVisibility } from '@kc/domain';
@@ -43,6 +45,7 @@ export function CreatePostScreenOverlays({
   runPublishAfterGate,
 }: Props) {
   const { t } = useTranslation();
+  const router = useRouter();
   const { modalState, handleAccept, handleDecline } = pushGate;
 
   return (
@@ -56,12 +59,18 @@ export function CreatePostScreenOverlays({
         visible={modalState.visible}
         trigger={modalState.trigger}
         onAccept={async () => {
-          const status = await handleAccept();
-          if (status === 'granted' && ownerId) {
-            await registerCurrentDeviceIfPermitted(ownerId, { deviceRepo: container.deviceRepo });
+          try {
+            const status = await handleAccept();
+            if (status === 'granted' && ownerId) {
+              await registerCurrentDeviceIfPermitted(ownerId, { deviceRepo: container.deviceRepo });
+            }
+          } finally {
+            closeCreateForm(router);
           }
         }}
-        onDecline={handleDecline}
+        onDecline={async () => {
+          try { await handleDecline(); } finally { closeCreateForm(router); }
+        }}
       />
       <NotifyModal
         visible={notify !== null}
