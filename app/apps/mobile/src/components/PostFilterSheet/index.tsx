@@ -39,6 +39,8 @@ export interface PostFilterValue {
   proximitySortCity: string | null;
   proximitySortCityName: string | null;
   followersOnly: boolean;
+  /** Only posts with a ready photo (#2540). Optional: older saved filters and map params lack it. */
+  hasPhotoOnly?: boolean;
   searchQuery: string;
 }
 
@@ -114,6 +116,7 @@ export function PostFilterSheet({
         itemConditions={value.itemConditions}
         statusFilter={value.statusFilter}
         followersOnly={value.followersOnly}
+        hasPhotoOnly={value.hasPhotoOnly ?? false}
         onTypeChange={(type) => onPatch({ type })}
         onWorldsChange={(worlds) => onPatch({ worlds })}
         onSubcategoriesChange={(subcategories) => onPatch({ subcategories })}
@@ -121,6 +124,7 @@ export function PostFilterSheet({
         onItemConditionsChange={(itemConditions) => onPatch({ itemConditions })}
         onStatusFilterChange={(statusFilter) => onPatch({ statusFilter })}
         onFollowersOnlyChange={(followersOnly) => onPatch({ followersOnly })}
+        onHasPhotoOnlyChange={(hasPhotoOnly) => onPatch({ hasPhotoOnly })}
         hideWorldPicker={lockedWorld}
       />
       <LocationFilterSection

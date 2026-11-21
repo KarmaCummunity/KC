@@ -18,6 +18,7 @@ export const filtersHe = {
   sectionCondition: 'מצב המוצר',
   sectionStatus: 'סטטוס פוסט',
   sectionSource: 'מקור הפוסטים',
+  sectionPhoto: 'תמונה',
   sectionSort: 'מיון',
   sectionLocation: 'מיקום',
 
@@ -40,6 +41,10 @@ export const filtersHe = {
 
   // Source filter
   followersOnly: '👥 רק ממי שאני עוקב',
+
+  // Photo filter (#2540)
+  withPhotoOnly: 'רק עם תמונה',
+  withPhotoOnlyA11y: 'הצג רק פוסטים עם תמונה',
 
   // Sort
   sortNewest: '🆕 חדש קודם',

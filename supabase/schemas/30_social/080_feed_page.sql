@@ -12,6 +12,7 @@
 --   item_subcategory_ids  array of item subcategory ids
 --   status                'open' (default) | 'closed' | 'all'
 --   audience              'everyone' (default) | 'following' (D34, S6)
+--   has_image             true: only posts with a ready image (#2540); absent / false: all
 --   city_id, radius_km    posts of that city, or of every city whose centre lies within the
 --                         radius of that city's centre (FR-FEED-004 AC1)
 --   near_city_id          centre of the 'nearest' sort and of the distance signal;
