@@ -35,8 +35,6 @@ export const KNOWN = new Map([
   ['apps/mobile/src/services/postsComposition.ts: new EdgeFnTranslationService', 'phase 8'],
   // Sign-in: phase 9.
   ['apps/mobile/src/services/authComposition.ts: new SupabaseAuthService', 'phase 9'],
-  // A device cache around public reads, with Date values (phase 5: needs a JSON-safe port).
-  ['apps/mobile/src/services/legalComposition.ts: new SupabaseLegalDocumentRepository', 'phase 5: needs a JSON-safe port'],
 ]);
 
 const ADAPTER = /new ((?:Supabase|EdgeFn)\w+)\(/g;

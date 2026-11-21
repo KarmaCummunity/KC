@@ -20,10 +20,14 @@ export const MAX_PORT_ARGS = 16;
 
 export interface PortCallRequest {
   readonly args: readonly unknown[];
+  /** True when `args` carries dates in marked form (see `markDates`). */
+  readonly typed?: boolean;
 }
 
 export interface PortCallResponse {
   readonly result?: unknown;
+  /** True when `result` carries dates in marked form (see `markDates`). */
+  readonly typed?: boolean;
 }
 
 /**
@@ -85,4 +89,46 @@ export function encodeArgs(args: readonly unknown[]): unknown[] {
 /** Reverses `encodeArgs` on the server. */
 export function decodeArgs(args: readonly unknown[]): unknown[] {
   return args.map((arg) => (isUndefinedMarker(arg) ? undefined : arg));
+}
+
+/** How a `Date` travels: JSON has no date type, and a bare ISO string would arrive as a string. */
+interface DateMarker {
+  readonly $date: string | null;
+}
+
+function isDateMarker(value: unknown): value is DateMarker {
+  return typeof value === 'object' && value !== null && '$date' in value && Object.keys(value).length === 1;
+}
+
+/**
+ * Replaces every `Date` in a value with a marker, so the receiver can turn it
+ * back into a `Date`. Returns the same value, untouched, when it holds none.
+ * Only a few ports carry dates; the gateway and the transport call this for
+ * those alone (the generated `typedMethods` list), never for every result.
+ */
+export function markDates(value: unknown): { readonly value: unknown; readonly typed: boolean } {
+  let typed = false;
+  const walk = (node: unknown): unknown => {
+    if (node instanceof Date) {
+      typed = true;
+      return { $date: Number.isNaN(node.getTime()) ? null : node.toISOString() };
+    }
+    if (Array.isArray(node)) return node.map(walk);
+    if (typeof node === 'object' && node !== null) {
+      return Object.fromEntries(Object.entries(node).map(([key, member]) => [key, walk(member)]));
+    }
+    return node;
+  };
+  const marked = walk(value);
+  return typed ? { value: marked, typed } : { value, typed };
+}
+
+/** Reverses `markDates`: every marker becomes a `Date` again (an invalid date stays invalid). */
+export function reviveDates(value: unknown): unknown {
+  if (isDateMarker(value)) return new Date(value.$date ?? Number.NaN);
+  if (Array.isArray(value)) return value.map(reviveDates);
+  if (typeof value === 'object' && value !== null) {
+    return Object.fromEntries(Object.entries(value).map(([key, member]) => [key, reviveDates(member)]));
+  }
+  return value;
 }

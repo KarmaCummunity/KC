@@ -133,6 +133,24 @@ export const savedPostsDouble = definePort<{ savePost(postId: string): Promise<s
   methods: { savePost: 'member', listSavedPosts: 'member' },
 });
 
+/**
+ * A double under the catalog name of a port that carries dates
+ * (`ILegalDocumentRepository`), to observe the gateway's date handling.
+ */
+export const legalDocumentDouble = definePort<{
+  getCurrentContent(docType: string): Promise<unknown>;
+  acceptVersion(input: Record<string, unknown>): Promise<unknown>;
+}>({
+  name: 'legalDocument',
+  create: () => ({
+    getCurrentContent: (docType) => Promise.resolve({ docType, effectiveDate: new Date('2026-01-01T00:00:00.000Z') }),
+    // Reports what it received, so a test can see whether a marked date arrived as a Date.
+    acceptVersion: (input) => Promise.resolve({ acceptedAt: new Date('2026-11-21T10:00:00.000Z'), sawDate: input.at instanceof Date }),
+  }),
+  methods: { getCurrentContent: 'public', acceptVersion: 'member' },
+  visitorCacheSeconds: { getCurrentContent: 30 },
+});
+
 /** Puts the fakes back to their initial state; call before each test. */
 export function resetShelf(): void {
   limiter.blocked = false;
@@ -159,7 +177,7 @@ export async function createShelfApp(): Promise<{ app: NestFastifyApplication; i
   })
   class FakePlatformModule {}
 
-  @Module({ imports: [ApiConfigModule.forRoot(testConfig()), FakePlatformModule, PortGatewayModule.forRoot([shelf, savedPostsDouble])] })
+  @Module({ imports: [ApiConfigModule.forRoot(testConfig()), FakePlatformModule, PortGatewayModule.forRoot([shelf, savedPostsDouble, legalDocumentDouble])] })
   class TestModule {}
 
   return { app: await createApp(TestModule, testConfig()), issuer };

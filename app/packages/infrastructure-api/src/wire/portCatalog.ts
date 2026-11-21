@@ -29,6 +29,7 @@ import type {
   IKnowledgeBookingRepository,
   IKnowledgeSlotSeriesRepository,
   IKnowledgeTopicRepository,
+  ILegalDocumentRepository,
   IListingStreetAddressRepository,
   IMarketplaceRepository,
   IMatchRepository,
@@ -118,6 +119,7 @@ export interface PortCatalog {
   knowledgeBooking: IKnowledgeBookingRepository;
   knowledgeSlotSeries: IKnowledgeSlotSeriesRepository;
   knowledgeTopic: IKnowledgeTopicRepository;
+  legalDocument: ILegalDocumentRepository;
   listingStreetAddress: IListingStreetAddressRepository;
   marketplace: IMarketplaceRepository;
   match: IMatchRepository;

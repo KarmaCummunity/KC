@@ -32,6 +32,8 @@ export interface PortArgShapes {
   readonly ports: Readonly<Record<string, Readonly<Record<string, readonly ParameterShape[]>>>>;
   /** Named shapes that `ref` points to. */
   readonly types: Readonly<Record<string, Shape>>;
+  /** `<port>.<method>` of the methods whose arguments or result hold a `Date`. */
+  readonly typedMethods: readonly string[];
 }
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {

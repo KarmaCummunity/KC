@@ -38,6 +38,7 @@ describe('hosted ports', () => {
       'guestPosts.get',
       'guestPosts.list',
       'kcSupportChannels.listActiveChannels',
+      'legalDocument.getCurrentContent',
       'orgTransparency.getPublic',
       'payments.getNonprofitPublicPage',
       'payments.listVerifiedNonprofits',

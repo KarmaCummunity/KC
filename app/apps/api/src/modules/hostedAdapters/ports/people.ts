@@ -4,6 +4,7 @@ import {
   SupabaseBlockRepository,
   SupabaseFollowSuggestionsRepository,
   SupabaseKarmaHistoryRepository,
+  SupabaseLegalDocumentSource,
   SupabaseUserRepository,
 } from '@kc/infrastructure-supabase';
 import type { PortDefinition } from '../../../platform/ports/portDefinition';
@@ -95,4 +96,17 @@ const karmaHistory = hostedPort('karmaHistory', {
   },
 });
 
-export const PEOPLE_PORTS: readonly PortDefinition[] = [accountGate, activeStatus, block, followSuggestions, karmaHistory, user];
+const legalDocument = hostedPort('legalDocument', {
+  // The database source only: the offline copy of each document lives on the device.
+  create: (client) => new SupabaseLegalDocumentSource(adapterClient<typeof SupabaseLegalDocumentSource>(client)),
+  methods: {
+    // The terms are read before sign-up; the database lets the anon role read both tables.
+    getCurrentContent: 'public',
+    getPendingForCurrentUser: 'member',
+    acceptVersion: 'member',
+  },
+  // A document changes when a new version is published, a few times a year.
+  visitorCacheSeconds: { getCurrentContent: 300 },
+});
+
+export const PEOPLE_PORTS: readonly PortDefinition[] = [accountGate, activeStatus, block, followSuggestions, karmaHistory, legalDocument, user];

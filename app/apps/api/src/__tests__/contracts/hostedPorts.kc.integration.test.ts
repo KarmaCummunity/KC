@@ -3,6 +3,9 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Global, Module } from '@nestjs/common';
+import type { AddressInfo } from 'node:net';
+import type { ILegalDocumentRepository } from '@kc/application';
+import { createPortTransport, createRemotePort } from '@kc/infrastructure-api';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createApp } from '../../createApp';
@@ -61,6 +64,15 @@ describe.skipIf(!KC_DATABASE_URL)('Hosted ports on the KC schema', () => {
 
   beforeAll(async () => {
     cache = await loadSchemaCache(((text: string) => database.admin.query(text)) as never);
+    // A published legal document, as the admin tool would leave it.
+    await database.admin.query(`
+      insert into public.legal_documents (doc_type, current_version, current_effective_date)
+      values ('terms', 1, '2026-01-01T00:00:00Z')
+      on conflict (doc_type) do update set current_version = 1, current_effective_date = excluded.current_effective_date`);
+    await database.admin.query(`
+      insert into public.legal_document_versions (doc_type, version, language, effective_date, body_md, content_hash, severity, change_summary, published_at)
+      values ('terms', 1, 'he', '2026-01-01T00:00:00Z', 'The terms.', 'hash-1', 'standard', 'First version', '2025-12-25T08:00:00Z')
+      on conflict (doc_type, version) do nothing`);
     issuer = await createTestIssuer();
 
     @Global()
@@ -137,6 +149,7 @@ describe.skipIf(!KC_DATABASE_URL)('Hosted ports on the KC schema', () => {
     ['orgTransparency/getPublic', []],
     ['worldContent/getWorldContent', ['food']],
     ['publicResearch/loadBundle', ['no-such-survey']],
+    ['legalDocument/getCurrentContent', ['terms']],
   ];
 
   it.each(publicCalls)('a signed-out visitor may call %s: the database lets the anon role in', async (path, args) => {
@@ -180,6 +193,22 @@ describe.skipIf(!KC_DATABASE_URL)('Hosted ports on the KC schema', () => {
 
     expect(response.statusCode).toBe(200);
     expect(response.json()).toEqual({ result: [] });
+  });
+
+  it('carries dates end to end: a visitor reads the terms through the remote port and gets real dates', async () => {
+    await app.listen(0, '127.0.0.1');
+    const baseUrl = `http://127.0.0.1:${(app.getHttpServer().address() as AddressInfo).port}`;
+    const asVisitor = createPortTransport({ baseUrl, getAccessToken: () => Promise.resolve(null) });
+    const legal = createRemotePort<ILegalDocumentRepository>(asVisitor, 'legalDocument');
+
+    const terms = await legal.getCurrentContent('terms');
+
+    expect(terms).toMatchObject({ docType: 'terms', version: 1, bodyMd: 'The terms.', severity: 'standard' });
+    expect(terms.effectiveDate).toBeInstanceOf(Date);
+    expect(terms.effectiveDate.toISOString()).toBe('2026-01-01T00:00:00.000Z');
+    expect(terms.publishedAt.toISOString()).toBe('2025-12-25T08:00:00.000Z');
+    // A member-only method of the same port is still closed to the visitor.
+    await expect(legal.getPendingForCurrentUser()).rejects.toMatchObject({ reason: 'unauthenticated' });
   });
 
   it('a signed-out visitor is turned away from every member method before the database is touched', async () => {

@@ -1,6 +1,14 @@
 import { BackendRuleError } from '@kc/domain';
 import { revivePortError, type PortErrorRegistry, PORT_ERRORS } from '../wire/portErrors';
-import { type ApiErrorBody, encodeArgs, PORT_ERROR_CODE, type PortCallResponse, portCallPath } from '../wire/portWire';
+import {
+  type ApiErrorBody,
+  encodeArgs,
+  markDates,
+  PORT_ERROR_CODE,
+  type PortCallResponse,
+  portCallPath,
+  reviveDates,
+} from '../wire/portWire';
 
 /** Default time a port call may take before it is aborted. */
 export const DEFAULT_PORT_TIMEOUT_MS = 25_000;
@@ -84,14 +92,19 @@ export function createPortTransport(options: PortTransportOptions): PortTranspor
     async call(port, method, args) {
       const call = `${port}.${method}`;
       const path = portCallPath(port, method);
-      const body = JSON.stringify({ args: encodeArgs(args) });
+      // Arguments are small, so looking for dates in them costs nothing worth saving.
+      const marked = markDates(encodeArgs(args));
+      const body = JSON.stringify(marked.typed ? { args: marked.value, typed: true } : { args: marked.value });
 
       let response = await send(path, body, call, false);
       // An expired token is the common 401: refresh once and repeat the call.
       if (response.status === 401) response = await send(path, body, call, true);
 
       const payload = await readJson(response);
-      if (response.ok) return (payload as PortCallResponse).result;
+      if (response.ok) {
+        const { result, typed } = payload as PortCallResponse;
+        return typed ? reviveDates(result) : result;
+      }
 
       const failure = (payload as Partial<ApiErrorBody>).error;
       const portError = failure?.code === PORT_ERROR_CODE ? failure.detail?.port : undefined;

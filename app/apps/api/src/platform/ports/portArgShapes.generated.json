@@ -1168,10 +1168,10 @@
         "literal": "active"
        },
        {
-        "literal": "paused"
+        "literal": "ended"
        },
        {
-        "literal": "ended"
+        "literal": "paused"
        }
       ]
      }
@@ -1223,6 +1223,32 @@
     {
      "name": "followed",
      "shape": "boolean"
+    }
+   ]
+  },
+  "legalDocument": {
+   "getCurrentContent": [
+    {
+     "name": "docType",
+     "shape": {
+      "union": [
+       {
+        "literal": "terms"
+       },
+       {
+        "literal": "privacy"
+       }
+      ]
+     }
+    }
+   ],
+   "getPendingForCurrentUser": [],
+   "acceptVersion": [
+    {
+     "name": "input",
+     "shape": {
+      "ref": "AcceptLegalDocumentInput"
+     }
     }
    ]
   },
@@ -1888,10 +1914,10 @@
      "shape": {
       "union": [
        {
-        "literal": "post"
+        "literal": "user"
        },
        {
-        "literal": "user"
+        "literal": "post"
        },
        {
         "literal": "chat"
@@ -2500,6 +2526,9 @@
          "literal": "open"
         },
         {
+         "literal": "expired"
+        },
+        {
          "literal": "paused"
         },
         {
@@ -2510,9 +2539,6 @@
         },
         {
          "literal": "deleted_no_recipient"
-        },
-        {
-         "literal": "expired"
         },
         {
          "literal": "removed_admin"
@@ -2836,10 +2862,10 @@
         "literal": "active"
        },
        {
-        "literal": "paused"
+        "literal": "ended"
        },
        {
-        "literal": "ended"
+        "literal": "paused"
        }
       ]
      }
@@ -2939,10 +2965,10 @@
      "shape": {
       "union": [
        {
-        "literal": "post"
+        "literal": "user"
        },
        {
-        "literal": "user"
+        "literal": "post"
        },
        {
         "literal": "chat"
@@ -3501,10 +3527,10 @@
      "shape": {
       "union": [
        {
-        "literal": "post"
+        "literal": "user"
        },
        {
-        "literal": "user"
+        "literal": "post"
        },
        {
         "literal": "comment"
@@ -3655,13 +3681,13 @@
      "shape": {
       "union": [
        {
+        "literal": "completed"
+       },
+       {
         "literal": "pending_basic_info"
        },
        {
         "literal": "pending_avatar"
-       },
-       {
-        "literal": "completed"
        }
       ]
      }
@@ -4043,6 +4069,12 @@
          "undefined",
          {
           "object": {
+           "post_expired": {
+            "union": [
+             "undefined",
+             "boolean"
+            ]
+           },
            "chat_message": {
             "union": [
              "undefined",
@@ -4433,12 +4465,6 @@
              "boolean"
             ]
            },
-           "post_expired": {
-            "union": [
-             "undefined",
-             "boolean"
-            ]
-           },
            "event_reminder": {
             "union": [
              "undefined",
@@ -4597,6 +4623,7 @@
            }
           },
           "optional": [
+           "post_expired",
            "chat_message",
            "support_message",
            "system_message",
@@ -4662,7 +4689,6 @@
            "ride_route_match",
            "post_emergency",
            "event_organizer_message",
-           "post_expired",
            "event_reminder",
            "event_mark_attendance",
            "match_interest",
@@ -5016,6 +5042,23 @@
   }
  },
  "types": {
+  "AcceptLegalDocumentInput": {
+   "object": {
+    "docType": {
+     "union": [
+      {
+       "literal": "terms"
+      },
+      {
+       "literal": "privacy"
+      }
+     ]
+    },
+    "version": "number",
+    "locale": "string",
+    "userAgent": "string"
+   }
+  },
   "AddDonationLinkInput": {
    "object": {
     "categorySlug": {
@@ -5332,10 +5375,10 @@
     "contentType": {
      "union": [
       {
-       "literal": "post"
+       "literal": "user"
       },
       {
-       "literal": "user"
+       "literal": "post"
       },
       {
        "literal": "comment"
@@ -5800,13 +5843,13 @@
      "union": [
       "undefined",
       {
+       "literal": "active"
+      },
+      {
        "literal": "cold"
       },
       {
        "literal": "warm"
-      },
-      {
-       "literal": "active"
       },
       {
        "literal": "inactive"
@@ -5910,13 +5953,13 @@
      "union": [
       "undefined",
       {
+       "literal": "active"
+      },
+      {
        "literal": "cold"
       },
       {
        "literal": "warm"
-      },
-      {
-       "literal": "active"
       },
       {
        "literal": "inactive"
@@ -6283,10 +6326,10 @@
       "undefined",
       "null",
       {
-       "literal": "post"
+       "literal": "user"
       },
       {
-       "literal": "user"
+       "literal": "post"
       },
       {
        "literal": "chat"
@@ -6398,6 +6441,12 @@
       "undefined",
       {
        "object": {
+        "post_expired": {
+         "union": [
+          "undefined",
+          "boolean"
+         ]
+        },
         "chat_message": {
          "union": [
           "undefined",
@@ -6788,12 +6837,6 @@
           "boolean"
          ]
         },
-        "post_expired": {
-         "union": [
-          "undefined",
-          "boolean"
-         ]
-        },
         "event_reminder": {
          "union": [
           "undefined",
@@ -6952,6 +6995,7 @@
         }
        },
        "optional": [
+        "post_expired",
         "chat_message",
         "support_message",
         "system_message",
@@ -7017,7 +7061,6 @@
         "ride_route_match",
         "post_emergency",
         "event_organizer_message",
-        "post_expired",
         "event_reminder",
         "event_mark_attendance",
         "match_interest",
@@ -7079,13 +7122,13 @@
   },
   "Omit<User, \"createdAt\" | \"updatedAt\">": {
    "object": {
-    "city": {
+    "biography": {
      "union": [
       "null",
       "string"
      ]
     },
-    "biography": {
+    "city": {
      "union": [
       "null",
       "string"
@@ -7154,35 +7197,35 @@
     "accountStatus": {
      "union": [
       {
-       "literal": "active"
-      },
-      {
        "literal": "pending_verification"
-      },
-      {
-       "literal": "suspended_for_false_reports"
-      },
-      {
-       "literal": "suspended_admin"
       },
       {
        "literal": "banned"
       },
       {
+       "literal": "suspended_admin"
+      },
+      {
+       "literal": "suspended_for_false_reports"
+      },
+      {
        "literal": "pending_deletion"
+      },
+      {
+       "literal": "active"
       }
      ]
     },
     "onboardingState": {
      "union": [
       {
+       "literal": "completed"
+      },
+      {
        "literal": "pending_basic_info"
       },
       {
        "literal": "pending_avatar"
-      },
-      {
-       "literal": "completed"
       }
      ]
     },
@@ -7349,22 +7392,22 @@
      "union": [
       "undefined",
       {
-       "literal": "active"
-      },
-      {
        "literal": "pending_verification"
-      },
-      {
-       "literal": "suspended_for_false_reports"
-      },
-      {
-       "literal": "suspended_admin"
       },
       {
        "literal": "banned"
       },
       {
+       "literal": "suspended_admin"
+      },
+      {
+       "literal": "suspended_for_false_reports"
+      },
+      {
        "literal": "pending_deletion"
+      },
+      {
+       "literal": "active"
       }
      ]
     },
@@ -7372,13 +7415,13 @@
      "union": [
       "undefined",
       {
+       "literal": "completed"
+      },
+      {
        "literal": "pending_basic_info"
       },
       {
        "literal": "pending_avatar"
-      },
-      {
-       "literal": "completed"
       }
      ]
     },
@@ -7714,10 +7757,10 @@
         "literal": 3
        },
        {
-        "literal": 6
+        "literal": 1
        },
        {
-        "literal": 1
+        "literal": 6
        }
       ]
      }
@@ -7839,10 +7882,10 @@
     "targetType": {
      "union": [
       {
-       "literal": "post"
+       "literal": "user"
       },
       {
-       "literal": "user"
+       "literal": "post"
       },
       {
        "literal": "chat"
@@ -7860,10 +7903,10 @@
     "targetType": {
      "union": [
       {
-       "literal": "post"
+       "literal": "user"
       },
       {
-       "literal": "user"
+       "literal": "post"
       },
       {
        "literal": "chat"
@@ -8013,10 +8056,10 @@
         "literal": 3
        },
        {
-        "literal": 6
+        "literal": 1
        },
        {
-        "literal": 1
+        "literal": 6
        }
       ]
      }
@@ -8079,10 +8122,10 @@
       "undefined",
       "null",
       {
-       "literal": "post"
+       "literal": "user"
       },
       {
-       "literal": "user"
+       "literal": "post"
       },
       {
        "literal": "link"
@@ -8438,10 +8481,10 @@
     "contentType": {
      "union": [
       {
-       "literal": "post"
+       "literal": "user"
       },
       {
-       "literal": "user"
+       "literal": "post"
       },
       {
        "literal": "comment"
@@ -8858,5 +8901,42 @@
     "status"
    ]
   }
- }
+ },
+ "typedMethods": [
+  "adminContent.searchAudit",
+  "adminContent.searchPosts",
+  "adminContent.searchUsers",
+  "adminRole.listAdmins",
+  "adminTask.create",
+  "adminTask.getDetail",
+  "adminTask.list",
+  "adminTask.update",
+  "crmContacts.list",
+  "financeAccounts.list",
+  "financeAccounts.upsert",
+  "financeDonors.summary",
+  "financeLedger.list",
+  "financeLedger.summary",
+  "financeLedger.upsert",
+  "legalDocument.acceptVersion",
+  "legalDocument.getCurrentContent",
+  "legalDocument.getPendingForCurrentUser",
+  "orgApplications.list",
+  "orgHierarchy.getOrgTree",
+  "orgTransparency.getPublic",
+  "timesheets.list",
+  "whatsAppAdmin.getChannel",
+  "whatsAppAdmin.getSendLimits",
+  "whatsAppAdmin.listConsent",
+  "whatsAppAdmin.listConversations",
+  "whatsAppAdmin.listOutbound",
+  "whatsAppAdmin.listRateHits",
+  "whatsAppAdmin.listRecentMatches",
+  "whatsAppAdmin.listReviews",
+  "whatsAppAdmin.listTemplates",
+  "whatsAppAdmin.overview",
+  "whatsAppAdmin.setChannelEnabled",
+  "whatsAppAdmin.setSendLimits",
+  "whatsAppLink.createLinkCode"
+ ]
 }

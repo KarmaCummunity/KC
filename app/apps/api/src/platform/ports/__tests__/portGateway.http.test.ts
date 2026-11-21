@@ -139,6 +139,7 @@ describe('port gateway over HTTP', () => {
       ports: {
         shelf: ['echo', 'whoAmI', 'nothing', 'refuse', 'crash', 'needsStorage', 'counted', 'countedNothing', 'countedRefusal'],
         savedPosts: ['savePost', 'listSavedPosts'],
+        legalDocument: ['getCurrentContent', 'acceptVersion'],
       },
     });
   });

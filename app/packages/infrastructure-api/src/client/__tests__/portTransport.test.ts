@@ -122,3 +122,34 @@ describe('port transport', () => {
     await expect(transport.call('users', 'follow', [])).rejects.toBe(offline);
   });
 });
+
+describe('port transport: dates', () => {
+  const when = new Date('2026-11-21T10:00:00.000Z');
+
+  it('sends a Date argument marked and flags the request', async () => {
+    const { fetchImpl, requests } = fakeFetch(json(200, {}));
+    const { transport } = transportWith(fetchImpl);
+
+    await transport.call('legalDocument', 'record', [{ at: when }, 'plain']);
+
+    expect(requests[0]?.body).toEqual({ args: [{ at: { $date: '2026-11-21T10:00:00.000Z' } }, 'plain'], typed: true });
+  });
+
+  it('does not flag a request that carries no date', async () => {
+    const { fetchImpl, requests } = fakeFetch(json(200, {}));
+    const { transport } = transportWith(fetchImpl);
+
+    await transport.call('user', 'follow', ['a', 'b']);
+
+    expect(requests[0]?.body).toEqual({ args: ['a', 'b'] });
+  });
+
+  it('turns marked dates in a flagged result back into Dates, and leaves an unflagged result alone', async () => {
+    const marked = { acceptedAt: { $date: '2026-11-21T10:00:00.000Z' } };
+    const { fetchImpl } = fakeFetch(json(200, { result: marked, typed: true }), json(200, { result: marked }));
+    const { transport } = transportWith(fetchImpl);
+
+    expect(await transport.call('legalDocument', 'acceptVersion', [])).toEqual({ acceptedAt: when });
+    expect(await transport.call('legalDocument', 'acceptVersion', [])).toEqual(marked);
+  });
+});

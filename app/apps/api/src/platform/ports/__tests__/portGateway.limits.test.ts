@@ -94,6 +94,37 @@ describe('port gateway: rate limit and visitor cache', () => {
     expect(limiter.subjects).toEqual(['ip:127.0.0.1', 'ip:127.0.0.1']);
   });
 
+  const accept = { docType: 'terms', version: 1, locale: 'he', userAgent: 'test' };
+
+  it('sends a date in a result marked, and tells the app so', async () => {
+    const response = await call('legalDocument/acceptVersion', [accept]);
+
+    expect(response.json()).toEqual({ result: { acceptedAt: { $date: '2026-11-21T10:00:00.000Z' }, sawDate: false }, typed: true });
+  });
+
+  it('turns a marked date in the arguments back into a date, only when the request says it carries dates', async () => {
+    const marked = { ...accept, at: { $date: '2026-11-21T10:00:00.000Z' } };
+    const withFlag = await app.inject({
+      method: 'POST',
+      url: '/v1/ports/legalDocument/acceptVersion',
+      payload: { args: [marked], typed: true },
+      headers: { authorization: `Bearer ${token}` },
+    });
+    const withoutFlag = await call('legalDocument/acceptVersion', [marked]);
+
+    expect(withFlag.json().result.sawDate).toBe(true);
+    expect(withoutFlag.json().result.sawDate).toBe(false);
+  });
+
+  it('caches a visitor\u2019s dated answer in its marked form, so a cached answer is the same answer', async () => {
+    const first = await call('legalDocument/getCurrentContent', ['terms'], null);
+    const second = await call('legalDocument/getCurrentContent', ['terms'], null);
+
+    expect(first.json()).toEqual({ result: { docType: 'terms', effectiveDate: { $date: '2026-01-01T00:00:00.000Z' } }, typed: true });
+    expect(second.json()).toEqual(first.json());
+    expect(visitorCache.entries.size).toBe(1);
+  });
+
   it('refuses at start-up a visitor cache on a method visitors cannot call', () => {
     const leaky = { ...shelf, name: 'leaky', visitorCacheSeconds: { echo: 30 } };
 

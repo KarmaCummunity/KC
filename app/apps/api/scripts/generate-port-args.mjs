@@ -121,6 +121,19 @@ function shapeOf(type, depth = 0) {
   return { ref };
 }
 
+/** True when `type` contains a `Date` anywhere (unwrapping promises, lists, unions and object fields). */
+function containsDate(type, depth = 0, seen = new Set()) {
+  if (depth > MAX_DEPTH || seen.has(type)) return false;
+  seen.add(type);
+  if (type.symbol?.name === 'Date') return true;
+  if (type.isUnion() || type.isIntersection()) return type.types.some((member) => containsDate(member, depth, seen));
+  if (!(type.flags & ts.TypeFlags.Object)) return false;
+  const typeArguments = checker.getTypeArguments(type);
+  if (typeArguments.some((member) => containsDate(member, depth + 1, seen))) return true;
+  if (type.getCallSignatures().length > 0) return false;
+  return checker.getPropertiesOfType(type).some((property) => containsDate(checker.getTypeOfSymbol(property), depth + 1, seen));
+}
+
 function parameterShape(parameter, declaration) {
   const node = parameter.valueDeclaration;
   const type = checker.getTypeOfSymbolAtLocation(parameter, declaration);
@@ -136,6 +149,8 @@ function generate() {
   if (!catalog) throw new Error('PortCatalog interface not found');
 
   const ports = {};
+  /** `<port>.<method>` of every method whose arguments or result hold a Date: only these pay for date handling. */
+  const typedMethods = [];
   for (const member of catalog.members) {
     const portName = member.name.getText(source);
     const portType = checker.getTypeAtLocation(member.type);
@@ -144,12 +159,15 @@ function generate() {
       const signatures = checker.getTypeOfSymbolAtLocation(property, member).getCallSignatures();
       // An overloaded method has no single parameter list to check against.
       if (signatures.length !== 1) continue;
-      methods[property.name] = signatures[0].getParameters().map((parameter) => parameterShape(parameter, member));
+      const signature = signatures[0];
+      methods[property.name] = signature.getParameters().map((parameter) => parameterShape(parameter, member));
+      const values = [signature.getReturnType(), ...signature.getParameters().map((parameter) => checker.getTypeOfSymbolAtLocation(parameter, member))];
+      if (values.some((type) => containsDate(type))) typedMethods.push(`${portName}.${property.name}`);
     }
     ports[portName] = methods;
   }
   const sortedTypes = Object.fromEntries(Object.entries(types).sort(([a], [b]) => a.localeCompare(b)));
-  return `${JSON.stringify({ ports, types: sortedTypes }, null, 1)}\n`;
+  return `${JSON.stringify({ ports, types: sortedTypes, typedMethods: typedMethods.sort() }, null, 1)}\n`;
 }
 
 const generated = generate();

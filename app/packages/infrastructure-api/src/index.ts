@@ -15,6 +15,7 @@ export {
   type ApiErrorBody,
   decodeArgs,
   encodeArgs,
+  markDates,
   MAX_PORT_ARGS,
   PORT_ERROR_CODE,
   PORT_MANIFEST_PATH,
@@ -23,4 +24,5 @@ export {
   type PortErrorWire,
   type PortManifest,
   portCallPath,
+  reviveDates,
 } from './wire/portWire';
