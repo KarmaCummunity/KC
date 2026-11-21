@@ -1730,7 +1730,7 @@
    "launch": "core",
    "confidence": "high",
    "missing": null,
-   "note": "Private topic of the chat; broadcast events `INSERT` (the message row), `read` (a member's marker), `reaction` and `chat_updated` (the pinned post). The app consumes `INSERT`, `read` and `chat_updated`; reactions are re-read on demand.",
+   "note": "Private topic of the chat; broadcast events `INSERT` (the message row), `read` (a member's marker), `reaction` and `chat_updated` (the pinned post). The app consumes all four; a `reaction` updates the reactions of the open chat in place (#2568), which are read once per open.",
    "oldObject": {},
    "targets": [
     {
@@ -1744,7 +1744,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRealtime.ts",
-     "line": 42,
+     "line": 43,
      "symbol": "SupabaseChatRealtime.subscribeToChat",
      "area": "chat"
     }
@@ -1798,7 +1798,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRealtime.ts",
-     "line": 89,
+     "line": 97,
      "symbol": "SupabaseChatRealtime.subscribeToInbox",
      "area": "chat"
     }
@@ -6986,7 +6986,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRealtime.ts",
-     "line": 128,
+     "line": 136,
      "symbol": "SupabaseChatRealtime.readUnreadTotal",
      "area": "chat"
     },
@@ -12553,7 +12553,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatV2Repository.ts",
-     "line": 36,
+     "line": 37,
      "symbol": "SupabaseChatV2Repository.sendMediaMessage",
      "area": "chat"
     },
@@ -12688,7 +12688,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatV2Repository.ts",
-     "line": 20,
+     "line": 21,
      "symbol": "SupabaseChatV2Repository.setMessageReaction",
      "area": "chat"
     }
@@ -15383,7 +15383,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatV2Repository.ts",
-     "line": 52,
+     "line": 53,
      "symbol": "SupabaseChatV2Repository.listMessageReactions",
      "area": "chat",
      "ops": [

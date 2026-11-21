@@ -325,7 +325,7 @@ bucket('<entry.bucket>', 'same', 'bucket:post-images', 'The device abandoned-upl
 bucket('<bucket>', 'changed', 'bucket:post-images', '`backfill-image-thumbs` loops over a bucket list passed at run time; after the cut-over the list is `post-images` (plus `avatars` and `chat-media`).', { c: M });
 
 // ───────────────────────────── realtime
-channel('`chat:${chatId}:messages`', 'same', 'topic:chat:<chat id>:messages', 'Private topic of the chat; broadcast events `INSERT` (the message row), `read` (a member\'s marker), `reaction` and `chat_updated` (the pinned post). The app consumes `INSERT`, `read` and `chat_updated`; reactions are re-read on demand.');
+channel('`chat:${chatId}:messages`', 'same', 'topic:chat:<chat id>:messages', 'Private topic of the chat; broadcast events `INSERT` (the message row), `read` (a member\'s marker), `reaction` and `chat_updated` (the pinned post). The app consumes all four; a `reaction` updates the reactions of the open chat in place (#2568), which are read once per open.');
 channel('`user:${userId}:chats`', 'same', 'topic:user:<user id>:chats', 'Private topic of the member; event `chat_updated` carries ids only, so the inbox refreshes and the unread total is re-read.');
 channel('`chat:${chatId}:typing`', 'same', 'topic:chat:<chat id>:typing', 'Members may send on `chat:%:typing` and `chat:%:presence`.');
 channel('topic = `user:${userId}:notifications`', 'same', 'topic:user:<user id>:notifications', 'Already on the baseline contract (event `badge`).');
