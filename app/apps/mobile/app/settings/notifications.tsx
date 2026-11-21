@@ -1,15 +1,12 @@
 // Settings → notifications screen — FR-NOTIF-014, FR-NOTIF-017, FR-SETTINGS-005.
-import { useState, useEffect } from 'react';
 import {
   View,
   ScrollView,
-  Linking,
   Pressable,
   Platform,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { isNotificationKindEnabled } from '@kc/domain';
-import * as Notifications from 'expo-notifications';
 import { Stack } from 'expo-router';
 import { makeUseStyles, typography, spacing, radius, Text } from '@kc/ui';
 import { useShellStackScreenOptions } from '../../src/navigation/shellStackScreenOptions';
@@ -18,6 +15,10 @@ import { webTextRtl, webViewRtl } from '../../src/lib/webRtlStyle';
 import { NotificationToggleRow } from '../../src/components/NotificationToggleRow';
 import { QuietHoursSection } from '../../src/components/settings/QuietHoursSection';
 import { useNotificationPreferences } from '../../src/hooks/useNotificationPreferences';
+import { useDevicePushPermission } from '../../src/lib/notifications/useDevicePushPermission';
+import { registerCurrentDeviceIfPermitted } from '../../src/lib/notifications/register';
+import { useAuthStore } from '../../src/store/authStore';
+import { container } from '../../src/lib/container';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
 
@@ -36,6 +37,7 @@ const useStyles = makeUseStyles(({ colors }) => ({
     flexDirection: 'row',
     alignItems: 'center',
     padding: spacing.base,
+    gap: spacing.sm,
     justifyContent: 'space-between',
     ...webViewRtl,
   },
@@ -55,20 +57,18 @@ const useStyles = makeUseStyles(({ colors }) => ({
   buttonText: { ...typography.body, color: colors.textInverse },
 }));
 
-type PermStatus = 'granted' | 'denied' | 'undetermined';
-
 export default function NotificationSettingsScreen() {
   const shellStackScreenOptions = useShellStackScreenOptions();
   const styles = useStyles();
   const { t } = useTranslation();
-  const [permStatus, setPermStatus] = useState<PermStatus>('undetermined');
-
-  useEffect(() => {
-    if (Platform.OS === 'web') return; // TD-65: Web Push parity post-MVP
-    void Notifications.getPermissionsAsync()
-      .then((p) => setPermStatus(p.status as PermStatus))
-      .catch(() => {});
-  }, []);
+  const userId = useAuthStore((state) => state.session?.userId ?? null);
+  const permission = useDevicePushPermission(async () => {
+    if (userId) await registerCurrentDeviceIfPermitted(userId, { deviceRepo: container.deviceRepo });
+  }, userId);
+  const permissionKey = {
+    loading: 'permissionLoading', granted: 'permissionGranted', askable: 'permissionNotRequested',
+    blocked: 'permissionDenied', error: 'permissionError',
+  } as const;
 
   const { prefs, update } = useNotificationPreferences();
 
@@ -110,17 +110,18 @@ export default function NotificationSettingsScreen() {
             </Text>
             <View style={styles.statusRow}>
               <Text style={styles.statusText}>
-                {permStatus === 'granted'
-                  ? t('notifications.permissionGranted')
-                  : t('notifications.permissionDenied')}
+                {t(`notifications.${permissionKey[permission.status]}`)}
               </Text>
-              {permStatus === 'denied' && (
+              {permission.status !== 'loading' && permission.status !== 'granted' && (
                 <Pressable
-                  onPress={() => void Linking.openSettings()}
+                  testID="notification-permission-action"
+                  accessibilityRole="button"
+                  disabled={permission.busy}
+                  onPress={() => void permission.enable()}
                   style={styles.button}
                 >
                   <Text style={styles.buttonText}>
-                    {t('notifications.openOsSettings')}
+                    {t(permission.status === 'blocked' ? 'notifications.openOsSettings' : permission.status === 'error' ? 'notifications.permissionRetry' : 'notifications.permissionEnable')}
                   </Text>
                 </Pressable>
               )}
