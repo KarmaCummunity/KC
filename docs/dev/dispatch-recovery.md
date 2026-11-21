@@ -24,6 +24,16 @@ This change installs a new, separate per-device native Expo queue. Installation 
 - `DeviceNotRegistered` removes a registration only when its current token fingerprint still matches the token used for that job. A replacement registration is not deleted by an old receipt.
 - Terminal metadata uses the existing seven-day processed-outbox retention pass. Unresolved/unknown jobs remain held like unprocessed outbox work. Recipient account deletion cascades even held jobs.
 
+## Source and migration convention
+
+The frozen `supabase/schemas` tree and released `0001_baseline.sql` stay unchanged.
+Authoritative dispatch modules live in `supabase/migration-sources/dispatch-recovery`.
+Their exact concatenation is `supabase/migrations/next-01_edge_invocation_apikey.sql`;
+the existing CI/merge numbering route assigns its number and inventory entry. This does
+not change production schema mode. Fresh reset and upgrade from current DEV are separate
+local DB qualification paths. Run `node scripts/migration-ids.mjs assign` before local
+baseline tests in a disposable checkout, then `restore` before committing source changes.
+
 ## Tests
 
 - `scripts/run-baseline-tests.sh`: complete baseline, every forward migration, pgTAP suites and seed loaders against a disposable local PostgreSQL 16 database.
