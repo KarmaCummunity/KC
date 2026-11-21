@@ -8,7 +8,7 @@
 //      in FILE_SIZE_ALLOWLIST with a TD-N pointer; the list shrinks over time.
 //   2. Layer boundaries: a layer never imports from a layer below it
 //      (domain ⇏ application/infra; application ⇏ infra; ui ⇏ domain/app/infra;
-//      api ⇏ infrastructure-supabase/ui).
+//      api ⇏ supabase-js/ui).
 //   3. Domain typed-error rule: `packages/domain/src/**` may not `throw new Error(...)` —
 //      must throw a domain-specific error class. Pre-existing exemptions are listed.
 
@@ -61,12 +61,14 @@ const LAYER_RULES = [
       /^@kc\/domain/,
     ],
   },
-  // The server is its own composition root (ADR-009): it shares the domain and
-  // application packages with the app, never the Supabase adapters or the UI kit.
+  // The server is its own composition root (ADR-009). While the move is in
+  // flight it hosts the Supabase data adapters on its own SQL-backed client
+  // (ADR-010), so it may import them and the PostgREST request builder; it
+  // never opens a network client to Supabase and never touches the UI kit.
   {
     label: 'api',
     fromPattern: /^apps\/api\/src\//,
-    forbidden: [/^@kc\/infrastructure-supabase/, /^@supabase\//, /^@kc\/ui/],
+    forbidden: [/^@supabase\/supabase-js/, /^@kc\/ui/],
   },
 ];
 

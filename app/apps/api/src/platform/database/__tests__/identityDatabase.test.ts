@@ -1,7 +1,7 @@
 import type { Pool } from 'pg';
 import { describe, expect, it } from 'vitest';
 import { USER_A } from '../../../__tests__/support/testTokens';
-import { IdentityDatabase } from '../identityDatabase';
+import { IDENTITY_SQL, IdentityDatabase } from '../identityDatabase';
 
 /** A pooled connection that records what was sent and how it was released. */
 class RecordingClient {
@@ -50,9 +50,10 @@ describe('IdentityDatabase', () => {
     await database.runAs(caller, () => Promise.resolve());
 
     // The third argument `true` is what stops the identity outliving the transaction.
-    expect(client.statements[1]).toBe(
-      "select set_config('role', $1, true), set_config('request.jwt.claims', $2, true)",
-    );
+    expect(client.statements[1]).toBe(IDENTITY_SQL);
+    expect(IDENTITY_SQL.match(/set_config\(/g)).toHaveLength(3);
+    expect(IDENTITY_SQL.match(/, true\)/g)).toHaveLength(3);
+    expect(IDENTITY_SQL).not.toContain('false');
   });
 
   it('runs a signed-out visitor as the anon role with no user', async () => {

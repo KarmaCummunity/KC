@@ -82,6 +82,15 @@ importers:
 
   apps/api:
     dependencies:
+      '@kc/application':
+        specifier: workspace:^
+        version: link:../../packages/application
+      '@kc/domain':
+        specifier: workspace:^
+        version: link:../../packages/domain
+      '@kc/infrastructure-supabase':
+        specifier: workspace:^
+        version: link:../../packages/infrastructure-supabase
       '@nestjs/common':
         specifier: ^12.6.0
         version: 12.6.0(reflect-metadata@0.2.2)(rxjs@7.8.2)
@@ -91,6 +100,9 @@ importers:
       '@nestjs/platform-fastify':
         specifier: ^12.6.0
         version: 12.6.0(@nestjs/common@12.6.0(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@12.6.0(@nestjs/common@12.6.0(reflect-metadata@0.2.2)(rxjs@7.8.2))(reflect-metadata@0.2.2)(rxjs@7.8.2))(rxjs@7.8.2)
+      '@supabase/postgrest-js':
+        specifier: ^2.119.0
+        version: 2.119.0
       fastify:
         specifier: ^5.12.8
         version: 5.12.8

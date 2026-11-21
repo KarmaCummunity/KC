@@ -6,6 +6,15 @@ import { DATABASE_POOL } from './database.tokens';
 /** What request code may do with its transaction: run queries, nothing else. */
 export type DatabaseSession = Pick<PoolClient, 'query'>;
 
+/**
+ * Sets the caller for the current transaction. `true` scopes each setting to
+ * the transaction: when it ends, the pooled connection carries no trace of the
+ * caller for its next user. The search path is the one PostgREST uses on the
+ * Supabase stack (`supabase/config.toml`, `extra_search_path`).
+ */
+export const IDENTITY_SQL =
+  "select set_config('role', $1, true), set_config('request.jwt.claims', $2, true), set_config('search_path', 'public, extensions', true)";
+
 /** Database roles a request can run as. Never taken from client input. */
 type RequestRole = 'authenticated' | 'anon';
 
@@ -37,12 +46,7 @@ export class IdentityDatabase {
     const client = await this.pool.connect();
     try {
       await client.query('begin');
-      // `true` scopes both settings to this transaction: when it ends, the
-      // pooled connection carries no trace of the caller for its next user.
-      await client.query("select set_config('role', $1, true), set_config('request.jwt.claims', $2, true)", [
-        role,
-        JSON.stringify(claims),
-      ]);
+      await client.query(IDENTITY_SQL, [role, JSON.stringify(claims)]);
       const result = await work(client);
       await client.query('commit');
       client.release();
