@@ -35,7 +35,7 @@ export function PostEngagementComposer({ embedded = false, bottomOverlayInset = 
   const [draft, setDraft] = useState('');
   if (!engagement) return null;
 
-  const { replyTo, clearReply, onSubmitComment, busy } = engagement;
+  const { replyTo, clearReply, onSubmitComment, busy, commentSendFailed } = engagement;
   const canSend = draft.trim().length > 0 && !busy;
   const padBottom = embedded
     ? 0
@@ -58,6 +58,11 @@ export function PostEngagementComposer({ embedded = false, bottomOverlayInset = 
             <MirroredIcon name="close" size={iconSize.md} color={colors.textSecondary} />
           </Pressable>
         </View>
+      ) : null}
+      {commentSendFailed ? (
+        <Text accessibilityRole="alert" style={styles.sendError}>
+          {t('post.engagement.commentSendFailed')}
+        </Text>
       ) : null}
       <View style={styles.row}>
         <View style={styles.fieldWrap}>
@@ -120,6 +125,7 @@ const useStyles = makeUseStyles(({ colors, isDark }) => ({
     backgroundColor: isDark ? colors.surfaceRaised : colors.background,
   },
   replyBannerText: { ...typography.caption, color: colors.textSecondary, flex: 1, textAlign: rtlTextAlignStart },
+  sendError: { ...typography.caption, color: colors.error, textAlign: rtlTextAlignStart, marginBottom: spacing.xs },
   row: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.xs },
   fieldWrap: {
     flex: 1,

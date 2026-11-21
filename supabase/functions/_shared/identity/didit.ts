@@ -134,6 +134,7 @@ export function diditProvider(config: DiditConfig): IdentityProvider {
   const doFetch = config.fetch ?? fetch;
   return {
     slug: DIDIT_SLUG,
+    sessionConfigured: Boolean(config.apiKey.trim() && config.workflowId.trim()),
 
     async createSession(input: CreateSessionInput): Promise<ProviderSession> {
       const response = await doFetch(DIDIT_SESSION_URL, {

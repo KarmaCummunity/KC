@@ -19,7 +19,7 @@ const PLACEHOLDER_ICON_SIZE = 72;
 
 interface Props {
   readonly mediaAssets: readonly MediaAsset[];
-  readonly fallbackIcon: 'gift-outline' | 'search-outline';
+  readonly fallbackIcon: React.ComponentProps<typeof Ionicons>['name'];
 }
 
 const useStyles = makeUseStyles(({ colors }) => ({

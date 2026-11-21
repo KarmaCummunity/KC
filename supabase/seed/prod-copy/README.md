@@ -17,6 +17,8 @@ Nothing here reads production, and nothing here sees a real name, address or con
 | `lib/30_posts.sql` | Posts with their ride, event, food or housing row: added, replaced when changed, removed when gone; a post kc-dev refuses is skipped and counted |
 | `lib/40_social.sql` | Organizations (public fields), follows and saved posts between copied rows |
 | `lib/50_apply.sql` | `kc_private.prod_copy_apply(jsonb)`, the one entry point, and the document format number |
+| `lib/60_admin_rpcs.sql` | `admin_prod_copy_status`, `admin_delete_prod_copy`: the Demo data screen's "Copied from production" card (AC13). They admit the demo-data managers (`kc_private.require_demo_data_manager` of `supabase/seed/demo`, installed first by every dev deploy) |
+| `anonymizer-words.json` | The Hebrew words of `scripts/prod-copy-anonymize.mjs` (removal mark, fake names) |
 
 ## What is copied
 
@@ -36,4 +38,4 @@ psql "$DB_URL" -v ON_ERROR_STOP=1 --single-transaction \
   -c "select set_config('kc.seed_target', 'dev', false)" -f supabase/seed/prod-copy/load.sql
 ```
 
-Tests: `supabase/tests/127_prod_copy.sql`.
+Tests: `supabase/tests/127_prod_copy.sql`, `supabase/tests/128_prod_copy_admin.sql`.

@@ -5934,6 +5934,16 @@ export type Database = {
       }
       get_public_research_questions: { Args: { p_slug: string }; Returns: Json }
       get_research_salt: { Args: never; Returns: string }
+      guest_posts: {
+        Args: { p_before_id?: string; p_limit?: number; p_post_id?: string }
+        Returns: {
+          city_name_en: string
+          city_name_he: string
+          description: string
+          id: string
+          title: string
+        }[]
+      }
       hide_chat: { Args: { p_chat_id: string }; Returns: undefined }
       housing_completed_stays: {
         Args: { p_user_ids: string[] }

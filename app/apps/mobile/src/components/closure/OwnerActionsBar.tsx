@@ -21,6 +21,7 @@ import { ClosureSheet } from './ClosureSheet';
 import { ClosureExplainerSheet } from './ClosureExplainerSheet';
 import { ReopenConfirmModal } from './ReopenConfirmModal';
 import { hapticSuccess } from '../../lib/haptics';
+import { worldOwnerMarkCtaKey, worldReopenCtaKeys } from '../../lib/worldDetailCopy';
 import { trackSocialHandoverCompleted } from '../../lib/trackSocialHandoverCompleted';
 import { PrimaryButton, SecondaryButton } from '../ui/Buttons';
 
@@ -122,7 +123,9 @@ export function OwnerActionsBar(props: Readonly<Props>) {
   }
 
   // Direction flips by post.type — see RecipientCallout for the same convention.
-  const markCtaText = t(markCtaKey ?? (post.type === 'Give' ? 'closure.markGiveCta' : 'closure.markRequestCta'));
+  const markCtaText = t(markCtaKey ?? worldOwnerMarkCtaKey(post.listingWorldSlug, post.type));
+
+  const reopenKeys = worldReopenCtaKeys(post.listingWorldSlug);
 
   async function handleReopen() {
     setIsReopening(true);
@@ -167,8 +170,8 @@ export function OwnerActionsBar(props: Readonly<Props>) {
           />
         ) : (
           <SecondaryButton
-            label={t('closure.itemNotDeliveredCta')}
-            accessibilityLabel={t('closure.itemNotDeliveredA11y')}
+            label={t(reopenKeys.label)}
+            accessibilityLabel={t(reopenKeys.a11y)}
             size="md"
             fullWidth
             disabled={isReopening || reopenOpen}

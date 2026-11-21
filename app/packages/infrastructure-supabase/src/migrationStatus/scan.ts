@@ -31,15 +31,18 @@ const LEGACY_VIEW_DEFINITIONS: ReadonlySet<string> = new Set([
   'packages/infrastructure-supabase/src/migrationStatus/scan.ts',
 ]);
 /**
- * RPCs of the dev-only demo-data tools (FR-ADMIN-031, `supabase/seed/demo`). They are installed on
- * kc-dev by the Seed KC dev workflow and never by a migration, so the baseline types do not list
- * them by design and no package will ever migrate them. The adapter reports `not_installed` where
- * they are absent. `baselineCompatibility.test.ts` checks that each one is declared in the seed.
+ * RPCs of the dev-only seed tools the Demo data screen calls: the demo data (FR-ADMIN-031,
+ * `supabase/seed/demo`) and the weekly production copy (FR-ADMIN-037, `supabase/seed/prod-copy`).
+ * Every dev deploy installs them on kc-dev and no migration ever does, so the baseline types do not
+ * list them by design and no package will ever migrate them. The adapters report `not_installed`
+ * where they are absent. `baselineCompatibility.test.ts` checks that each one is declared in a seed.
  */
 export const DEV_SEED_RPCS: ReadonlySet<string> = new Set([
   'admin_demo_data_status',
   'admin_wipe_demo_data_step',
   'admin_seed_demo_data_step',
+  'admin_prod_copy_status',
+  'admin_delete_prod_copy',
 ]);
 /** Test files of the migration machinery itself. */
 const MACHINERY_TESTS = /(baselineCompatibility|degradeRule)\.test\.ts$/;

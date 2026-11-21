@@ -120,4 +120,15 @@ describe('useCreatePostPublish', () => {
     expect(result.current.photoInlineMessage).toBeNull();
     expect(result.current.failedSubmitCount).toBe(0);
   });
+  it('keeps the successful first-post screen mounted while its permission preprompt is visible', async () => {
+    countOpenByUser.mockResolvedValue(0);
+    const args = baseArgs();
+    args.presentPrePrompt = vi.fn().mockResolvedValue(true);
+    const { result } = renderHook(() => useCreatePostPublish(args), { wrapper });
+    act(() => result.current.tryPublish());
+    await waitFor(() => expect(args.presentPrePrompt).toHaveBeenCalledWith('first-post-published'));
+    await waitFor(() => expect(result.current.isPublishing).toBe(false));
+    expect(back).not.toHaveBeenCalled();
+  });
+
 });

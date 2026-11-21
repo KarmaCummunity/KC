@@ -20,9 +20,7 @@ import { useCreatePostAddressPrefill } from '../src/hooks/useCreatePostAddressPr
 import { useCreatePostFormState } from '../src/hooks/useCreatePostFormState';
 import { usePostDraftAutosave } from '../src/hooks/usePostDraftAutosave';
 import { usePostDraftHydration } from '../src/hooks/usePostDraftHydration';
-import {
-  newUploadBatchId, pickPostImages, resizeAndUploadImage,
-} from '../src/services/imageUpload';
+import { usePostImageUploads, type PostImageUploadSummary } from '../src/hooks/usePostImageUploads';
 import { getUserRepo } from '../src/services/userComposition';
 import { useCreatePostStyles } from '../src/screens/tabs/create.styles';
 import { useCreatePostPublish } from '../src/hooks/useCreatePostPublish';
@@ -113,8 +111,6 @@ export default function CreatePostScreen() {
   }, [profilePrivacy, form]);
 
   const [publishFollowersOpen, setPublishFollowersOpen] = useState(false);
-  const [uploadingCount, setUploadingCount] = useState(0);
-  const [batchId] = useState(() => newUploadBatchId());
   const [notify, setNotify] = useState<{ title: string; message: string } | null>(null);
   const [missingDraftImagesNotified, setMissingDraftImagesNotified] = useState(false);
   const [listingPublishAction, setListingPublishAction] = useState<(() => void) | null>(null);
@@ -126,31 +122,21 @@ export default function CreatePostScreen() {
 
   const isGive = form.type === 'Give';
 
-  const handlePick = async () => {
-    if (!ownerId) {
-      setNotify({ title: t('general.errorTitle'), message: t('post.reauthRequired') });
-      return;
-    }
-    const picked = await pickPostImages(form.uploads.length + uploadingCount);
-    if (picked.length === 0) return;
-
-    setUploadingCount((n) => n + picked.length);
-    try {
-      const startOrdinal = form.uploads.length;
-      const r = await Promise.allSettled(
-        picked.map((p, i) => resizeAndUploadImage(p, ownerId, batchId, startOrdinal + i)),
-      );
-      const ok = r.flatMap((x) => (x.status === 'fulfilled' ? [x.value] : []));
-      if (ok.length > 0) form.setUploads((prev) => [...prev, ...ok]);
-      if (ok.length < r.length) {
-        const msg =
-          ok.length === 0 ? t('post.uploadRetry') : t('post.uploadPartial', { ok: ok.length, total: r.length });
-        setNotify({ title: t('post.uploadFailedTitle'), message: msg });
-      }
-    } finally {
-      setUploadingCount((n) => Math.max(0, n - picked.length));
-    }
-  };
+  // FR-POST-005 AC5: a partial failure keeps the stored photos and asks to retry only the rest.
+  const onUploadFailures = useCallback(({ ok, total }: PostImageUploadSummary) => {
+    const message = ok === 0 ? t('post.uploadRetry') : t('post.uploadPartial', { ok, total });
+    setNotify({ title: t('post.uploadFailedTitle'), message });
+  }, [t]);
+  const onMissingOwner = useCallback(() => {
+    setNotify({ title: t('general.errorTitle'), message: t('post.reauthRequired') });
+  }, [t]);
+  const { uploadingCount, pickAndUpload: handlePick, cancelUploads } = usePostImageUploads({
+    ownerId,
+    galleryCount: form.uploads.length,
+    setUploads: form.setUploads,
+    onMissingOwner,
+    onFailures: onUploadFailures,
+  });
 
   const handleRemove = (path: string) =>
     form.setUploads((prev) => prev.filter((u) => u.path !== path));
@@ -274,6 +260,7 @@ export default function CreatePostScreen() {
         uploads={form.uploads}
         uploadingCount={uploadingCount}
         onAddPhotos={handlePick}
+        onCancelUploads={cancelUploads}
         onRemovePhoto={handleRemove}
         />
       </KeyboardAvoidingView>

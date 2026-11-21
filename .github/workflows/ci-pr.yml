@@ -42,6 +42,25 @@ jobs:
             The PR title subject must start with a lowercase letter
             (Conventional Commits style).
 
+      # GitHub's squash default includes commit messages. Historical version-bump
+      # messages imported by a merge can silently suppress post-merge push CI.
+      # Refuse before queue entry; do not bypass certification or rewrite dev history.
+      - name: Refuse CI-skipping squash messages on dev
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            // Release/main uses its separate approval flow; this guard changes only dev hygiene.
+            if (pr.base.ref !== 'dev') return;
+            const commits = await github.paginate(github.rest.pulls.listCommits, {
+              ...context.repo, pull_number: pr.number, per_page: 100,
+            });
+            const inputs = [pr.title || '', pr.body || '', ...commits.map(c => c.commit.message)];
+            const marker = /\[(?:skip ci|ci skip|no ci|skip actions|actions skip)\]|^\s*skip-checks:\s*true\s*$/im;
+            if (inputs.some(text => marker.test(text))) {
+              core.setFailed('CI-skipping marker in a possible DEV squash message. Rebuild the reviewed diff on a clean branch without historical skip markers before queueing. Do not bypass post-merge CI.');
+            }
+
       # Bot-authored PRs (dependabot dependency bumps) have no spec mapping and
       # never will — requiring it permanently wedges every dependency-update PR.
       # Skip the body check for them; the Conventional Commits title rule above

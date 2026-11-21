@@ -49,9 +49,10 @@ export function usePushPermissionGate() {
     return true;
   }, []);
 
-  const presentPrePrompt = useCallback(async (trigger: PrePromptTrigger): Promise<void> => {
-    if (!(await shouldPrompt())) return;
+  const presentPrePrompt = useCallback(async (trigger: PrePromptTrigger): Promise<boolean> => {
+    if (!(await shouldPrompt())) return false;
     setModalState({ visible: true, trigger });
+    return true;
   }, [shouldPrompt]);
 
   const handleAccept = useCallback(async (): Promise<'granted' | 'denied'> => {

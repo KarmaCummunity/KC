@@ -38,6 +38,7 @@ export class SupabaseChatRealtime implements IChatRealtime {
    * of the pinned post. Reactions arrive on the same topic as `reaction` and are not consumed here.
    */
   subscribeToChat(chatId: string, cb: ChatStreamCallbacks): Unsubscribe {
+    let failed = false;
     const managed = openExactTopicChannel(
       this.client,
       `chat:${chatId}:messages`,
@@ -56,7 +57,15 @@ export class SupabaseChatRealtime implements IChatRealtime {
         });
       },
       (status) => {
-        if (isChannelFailure(status)) cb.onError(new Error(`chat channel ${status.toLowerCase()}`));
+        // The client rejoins a failed channel by itself; what was sent meanwhile is lost, so the
+        // first SUBSCRIBED after a failure asks the caller to re-read the thread (#1778).
+        if (isChannelFailure(status)) {
+          failed = true;
+          cb.onError(new Error(`chat channel ${status.toLowerCase()}`));
+        } else if (status === 'SUBSCRIBED' && failed) {
+          failed = false;
+          cb.onResync?.();
+        }
       },
     );
     return () => managed.close();
@@ -68,11 +77,13 @@ export class SupabaseChatRealtime implements IChatRealtime {
    * snapshot epoch moved meanwhile, FR-CHAT-012 race with mark-read).
    */
   subscribeToInbox(userId: string, cb: InboxStreamCallbacks, options?: SubscribeInboxOptions): Unsubscribe {
+    let active = true;
     let unreadTimer: ReturnType<typeof setTimeout> | null = null;
     let failed = false;
     const fireUnreadDebounced = () => {
+      if (!active) return;
       if (unreadTimer) clearTimeout(unreadTimer);
-      unreadTimer = setTimeout(() => void this.readUnreadTotal(cb, options), UNREAD_DEBOUNCE_MS);
+      unreadTimer = setTimeout(() => void this.readUnreadTotal(cb, options, () => active), UNREAD_DEBOUNCE_MS);
     };
 
     const managed = openExactTopicChannel(
@@ -81,12 +92,14 @@ export class SupabaseChatRealtime implements IChatRealtime {
       { private: true },
       (channel) => {
         channel.on('broadcast', { event: 'chat_updated' }, (msg) => {
+          if (!active) return;
           const payload = payloadOf(msg);
           cb.onInboxChanged({ chatId: asString(payload['chat_id']), lastMessageAt: asString(payload['last_message_at']) });
           fireUnreadDebounced();
         });
       },
       (status) => {
+        if (!active) return;
         // A failed channel is reported (#1778); the client rejoins by itself, and events sent while
         // it was down are lost, so the first SUBSCRIBED after a failure refreshes the inbox.
         if (isChannelFailure(status)) {
@@ -101,18 +114,19 @@ export class SupabaseChatRealtime implements IChatRealtime {
     );
 
     return () => {
+      active = false;
       if (unreadTimer) clearTimeout(unreadTimer);
       managed.close();
     };
   }
 
   /** Reads `chat_unread_total` and reports it unless the snapshot epoch moved or the call failed. */
-  private async readUnreadTotal(cb: InboxStreamCallbacks, options?: SubscribeInboxOptions): Promise<void> {
+  private async readUnreadTotal(cb: InboxStreamCallbacks, options?: SubscribeInboxOptions, isActive = () => true): Promise<void> {
     const epoch = options?.getSnapshotEpoch;
     const before = epoch?.() ?? 0;
     try {
       const total = unwrapCall('rpc:chat_unread_total', await this.client.rpc('chat_unread_total'));
-      if (epoch && epoch() !== before) return;
+      if (!isActive() || (epoch && epoch() !== before)) return;
       cb.onUnreadTotalChanged(Number(total ?? 0));
     } catch {
       // The badge is refreshed again on the next event or on focus; a failed read changes nothing.

@@ -1,0 +1,24 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8');
+test('focused media lane pins DEV and avoids shared setup and broad cleanup', () => {
+  const workflow = read('.github/workflows/e2e-nightly-dev.yml');
+  assert.match(workflow, /inputs\.suite == 'worker-refusal' \|\| inputs\.suite == 'media-upload'/);
+  assert.match(workflow, /test "\$TEST_REF" = 'refs\/heads\/dev'/);
+  assert.match(workflow, /playwright test journeys\/media-upload-acceptance\.spec\.ts --project=journeys --no-deps/);
+  const source = read('tests/e2e/journeys/media-upload-acceptance.spec.ts');
+  assert.match(source, /trace: 'off', video: 'off'/);
+  assert.match(source, /storageState: \{ cookies: \[\], origins: \[\] \}/);
+  assert.match(source, /objectPath\.startsWith\(`\$\{userId\}\//);
+  assert.match(source, /prefixes: \[\.\.\.paths\]/);
+  assert.doesNotMatch(source, /cleanupE2eContent|publishPostAs|create_post_with_details|open_direct_chat|admin\.deleteUser/);
+  assert.match(source, /finally \{/);
+  assert.match(source, /create\?category=items/);
+  assert.doesNotMatch(source, /create\?category=food/);
+  const categories = read('app/apps/mobile/src/lib/unifiedCreate/createCategories.ts');
+  assert.match(categories, /if \(id === 'items'\) return 'post'/);
+  assert.match(source, /media-picker-final\.png/);
+  assert.match(source, /expect\(response\.status, 'exact observed test uploads cleaned'\)/);
+  assert.doesNotMatch(source, /response\.status\(\), 'exact observed test uploads cleaned'/);
+});

@@ -3,7 +3,7 @@
 // `listing_kinds.slug`. `fieldsForKind` drops any key the kind's schema does not list, so a field
 // here can never reach the server unknown. Legacy kinds (course, private_lesson, mentorship_request)
 // are no longer offered and have no form.
-import { KNOWLEDGE_SLOTS_MAX } from '@kc/domain';
+import { KNOWLEDGE_SCHEDULE_MODES, KNOWLEDGE_SLOTS_MAX } from '@kc/domain';
 import type { ListingFieldSpec } from './listingFieldSpecs';
 
 const LEVELS = ['beginner', 'intermediate', 'advanced'] as const;
@@ -28,12 +28,25 @@ const NOTE: ListingFieldSpec = { key: 'availability_note', type: 'text', multili
 const LANGUAGE: ListingFieldSpec = { key: 'language', type: 'multiChoice', options: LANGUAGES };
 const SLOTS: ListingFieldSpec = { key: 'slots', type: 'slotList', required: true, maxSlots: KNOWLEDGE_SLOTS_MAX };
 
+// A lesson runs one-off times or every week (FR-KNOW-003 AC2, #2479). Weekly inputs are kept on the
+// lesson's series, not in its details (`withoutKnowledgeSeriesKeys`); the session length is a slot's
+// 15 minutes to 8 hours, offered as the common lengths.
+const WEEKLY = { key: 'schedule', equals: 'weekly' } as const;
+const LESSON_SCHEDULE: readonly ListingFieldSpec[] = [
+  { key: 'schedule', type: 'choice', required: true, options: KNOWLEDGE_SCHEDULE_MODES, defaultValue: 'one_off' },
+  { ...SLOTS, visibleWhen: { key: 'schedule', equals: 'one_off' } },
+  { key: 'series_weekdays', type: 'weekdays', required: true, visibleWhen: WEEKLY },
+  { key: 'series_time', type: 'time', required: true, defaultValue: '18:00', visibleWhen: WEEKLY },
+  { key: 'series_duration_minutes', type: 'duration', options: [30, 60, 120, 180, 240], defaultValue: 60, visibleWhen: WEEKLY },
+  { key: 'series_ends_on', type: 'date', visibleWhen: WEEKLY },
+];
+
 export const KNOWLEDGE_FIELD_SPECS: Readonly<Record<string, readonly ListingFieldSpec[]>> = {
   lesson_offer: [
     TOPIC,
     { key: 'level', type: 'choice', options: LEVELS },
     { key: 'modality', type: 'choice', required: true, options: MODALITIES, defaultValue: 'in_person' },
-    SLOTS,
+    ...LESSON_SCHEDULE,
     { key: 'capacity_per_slot', type: 'count', required: true, min: 1, max: 20, defaultValue: 1 },
     LANGUAGE,
     NOTE,

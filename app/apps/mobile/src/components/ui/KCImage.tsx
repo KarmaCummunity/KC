@@ -46,22 +46,20 @@ export function KCImage({
   onLoad,
   onError,
 }: Props) {
-  const [currentUri, setCurrentUri] = React.useState<string | null | undefined>(uri);
-  const [didFallback, setDidFallback] = React.useState(false);
-
-  React.useEffect(() => {
-    setCurrentUri(uri);
-    setDidFallback(false);
-  }, [uri]);
+  // The fallback is remembered per primary URI, not copied into state: when a recycled list cell
+  // receives a new `uri`, the very same render already shows it (never one frame of the old row).
+  const [failedUri, setFailedUri] = React.useState<string | null>(null);
+  const canFallBack = Boolean(fallbackUri) && fallbackUri !== uri;
+  const usingFallback = canFallBack && failedUri === uri;
+  const currentUri = usingFallback ? fallbackUri : uri;
 
   const handleError = React.useCallback(() => {
-    if (!didFallback && fallbackUri && fallbackUri !== uri) {
-      setCurrentUri(fallbackUri);
-      setDidFallback(true);
+    if (canFallBack && !usingFallback && uri) {
+      setFailedUri(uri);
       return;
     }
     onError?.();
-  }, [didFallback, fallbackUri, uri, onError]);
+  }, [canFallBack, usingFallback, uri, onError]);
 
   if (!currentUri) return null;
   return (
