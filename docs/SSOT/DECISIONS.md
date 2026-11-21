@@ -2073,7 +2073,7 @@ The Demo data screen keeps two failures apart: the RPC itself is missing (`not_i
 
 **Affected.** `supabase/seed/dev-tuning/`, `supabase/tests/128_dev_tuning.sql`, `.github/workflows/deploy-db.yml`, `docs/agents/DEPLOY.md`.
 
-## {{ENG:post-photo-structural-sanitize}} — Post photos are sanitized by a structural rewrite, not a re-encode (2026-11-21)
+## D-244 — Post photos are sanitized by a structural rewrite, not a re-encode (2026-11-21)
 
 **Decision.** `process-post-media` (KC#2316) makes the copy other members see by parsing the upload fail-closed and rebuilding it from the parts an image needs: for JPEG the tables, the one 8-bit frame, the scans and EOI, plus the ICC profile and Adobe's colour flag; for PNG the image and rendering chunks with their CRCs checked. Every metadata segment is dropped; the EXIF orientation is carried over as a single tag. A file with unknown parts, a second frame, an unsupported coding or bytes after its end is refused. The copy keeps the upload's type and pixel size within the worker's caps (4096 px per edge, 16.8 MP). The worker starts from the database: a debounced kick when a photo is queued, and a minute job as the safety net.
 
