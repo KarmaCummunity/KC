@@ -2,9 +2,9 @@
 //
 // Kept apart from the component so each file stays small. Every value is a
 // token from @kc/ui except the button heights, which are layout sizes.
-import { Platform, StyleSheet, type ViewStyle } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { iconSize, makeUseStyles, radius, shadow, spacing, typography } from '@kc/ui';
-import { isLayoutRtl } from '../../lib/rtlLayout';
+import { absoluteCornerEnd } from '../../lib/rtlLayout';
 import { DISABLED_OPACITY, MIN_TAP_TARGET } from './kitMetrics';
 
 /**
@@ -23,16 +23,6 @@ export const BUTTON_ICON_SIZE: Readonly<Record<ButtonSize, number>> = {
   md: iconSize.md,
   sm: iconSize.sm,
 };
-
-/**
- * Trailing-edge inset for the absolutely-positioned `lg` icon.
- * Native auto-mirrors `end`; RN-Web ignores `start`/`end` for absolute
- * positioning, so on web we resolve RTL live and emit a physical key.
- */
-function iconSlotCornerEnd(): Pick<ViewStyle, 'left' | 'right' | 'end'> {
-  if (Platform.OS !== 'web') return { end: spacing.lg };
-  return isLayoutRtl() ? { left: spacing.lg } : { right: spacing.lg };
-}
 
 export const useButtonStyles = makeUseStyles(({ colors, isDark }) => ({
   base: {
@@ -80,7 +70,7 @@ export const useButtonStyles = makeUseStyles(({ colors, isDark }) => ({
   spinner: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center' },
   iconSlot: {
     position: 'absolute',
-    ...iconSlotCornerEnd(),
+    ...absoluteCornerEnd(spacing.lg),
     width: iconSize['2xl'],
     height: iconSize['2xl'],
     alignItems: 'center',

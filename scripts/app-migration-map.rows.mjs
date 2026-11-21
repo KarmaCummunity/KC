@@ -314,6 +314,8 @@ rpc('submit_public_research_response', 'same', 'rpc:submit_public_research_respo
 rpc('get_research_salt', 'same', 'rpc:get_research_salt', 'Service role only: the current hashing salt of the public research form (the `research_secrets` table is private).');
 rpc('rotate_research_salt', 'same', 'rpc:rotate_research_salt', 'Service role only: replaces the salt and returns the rotation time.');
 rpc('api_standing_orders_charge_due', 'same', 'rpc:api_standing_orders_charge_due', 'Service role only: opens the due charges of active standing orders (amounts in agorot) and returns them for the provider.');
+// `process-post-media` sends every call through one deadline wrapper (`callRpc(deps, fn, …)`), so the scan sees the parameter, not the names.
+rpc('<fn>', 'same', ['rpc:post_media_processing_claim', 'rpc:post_media_processing_complete', 'rpc:post_media_processing_fail', 'rpc:post_media_processing_release'], 'Service role only, unscheduled: the post photo worker claims a leased job, completes it with a compare-and-set, records a failure, or (DEV experiment) releases its lease.');
 
 // ───────────────────────────── storage buckets
 bucket('post-images', 'same', 'bucket:post-images', 'Declared by the baseline (own-folder insert / delete policies); `post_media.storage_bucket` points at it.');
@@ -411,7 +413,7 @@ const AREA_TIER = {
   marketplace: 'wedge', rides: 'wedge', volunteering: 'wedge', matching: 'wedge', donations: 'wedge',
   housing: 'later', knowledge: 'later', challenges: 'later', payments: 'later', research: 'later', stats: 'later', survey: 'later',
   'fn:purge-deleted-accounts': 'core', 'fn:translate': 'core', 'fn:strip-exif': 'core',
-  'fn:reconcile-storage-orphans': 'core', 'fn:backfill-image-thumbs': 'core',
+  'fn:reconcile-storage-orphans': 'core', 'fn:backfill-image-thumbs': 'core', 'fn:process-post-media': 'core',
   'fn:embed-worker': 'wedge', 'fn:match-rerank': 'wedge', 'fn:validate-donation-link': 'wedge',
 };
 const NAME_TIER = [

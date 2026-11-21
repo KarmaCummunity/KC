@@ -1,6 +1,7 @@
 -- Section 46(a) status of an organization (FR-FIN-007 AC2–AC3): the record moves only along
 -- the `org_sec46` machine, `expired` is never recorded by hand, an approval recorded as active
--- is valid today, a renewal keeps the status, and the nightly job expires what has lapsed.
+-- is valid today, a renewal keeps the status, the nightly job expires what has lapsed, and
+-- every change of the record is audited as a Section 46(a) write (FR-FIN-005 AC4, #1695).
 begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = extensions, public;
@@ -41,7 +42,17 @@ as $$
     from public.organizations o where o.slug = 'aid';
 $$;
 
-select plan(16);
+-- The audit actions recorded for `aid` after audit row p_after, oldest first.
+create function pg_temp.audited_since(p_after bigint)
+returns text
+language sql
+as $$
+  select coalesce(string_agg(e.action, ',' order by e.id), '-')
+    from audit.events e
+   where e.target_id = (select o.id from public.organizations o where o.slug = 'aid') and e.id > p_after;
+$$;
+
+select plan(18);
 
 -- f is the treasurer of `aid`; d is a member with no role there.
 insert into auth.users (id, email, raw_app_meta_data)
@@ -61,8 +72,11 @@ select is(pg_temp.record('f', $$'active', '580012345', current_date - 400, curre
 select is(pg_temp.record('f', $$'active', '580012345', current_date - 10, current_date + 300$$) || '|' || pg_temp.sec46(),
   'ok|active|580012345|300', 'the approval is recorded as active');
 select is(pg_temp.record('f', $$'expired'$$), 'forbidden_role', 'an active approval is never marked expired by hand');
+select set_config('test.audit_mark', (select coalesce(max(id), 0)::text from audit.events), true);
 select is(pg_temp.record('f', $$'active', '580012345', current_date - 10, current_date + 700$$) || '|' || pg_temp.sec46(),
   'ok|active|580012345|700', 'recording active again with new dates is a renewal');
+select is(pg_temp.audited_since(current_setting('test.audit_mark')::bigint), 'finance_sec46_set',
+  'a renewal is audited as a Section 46(a) write, once');
 
 -- ── Expiry ──────────────────────────────────────────────────────────────────
 select is(kc_private.org_tax_approval_expire() || '|' || pg_temp.sec46(), '0|active|580012345|700', 'a valid approval is left alone by the nightly job');
@@ -81,6 +95,10 @@ select is(pg_temp.record('f', $$'active', '580099999', current_date, current_dat
 -- ── Revoking and clearing ───────────────────────────────────────────────────
 select is(pg_temp.record('f', $$'revoked'$$) || '|' || pg_temp.sec46(), 'ok|revoked|580099999|365',
   'a revoked approval keeps what was recorded');
+select set_config('test.audit_mark', (select coalesce(max(id), 0)::text from audit.events), true);
+select is(pg_temp.record('f', $$'revoked', '580011111'$$) || '|' || pg_temp.sec46() || '|'
+          || pg_temp.audited_since(current_setting('test.audit_mark')::bigint),
+  'ok|revoked|580011111|365|finance_sec46_set', 'a corrected approval number alone is audited too');
 select is(pg_temp.record('f', $$'none'$$) || '|' || pg_temp.sec46(), 'ok|none|-|-', 'clearing the record removes the number and the dates');
 
 select * from finish();
