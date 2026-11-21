@@ -68,6 +68,8 @@
 /scripts/bump-app-version.mjs               @navesarussi
 /scripts/close-linked-issues.mjs            @navesarussi
 /scripts/run-baseline-tests.sh              @navesarussi
+/scripts/test-identity-provider-concurrency.py @navesarussi
+/scripts/requirements-identity-provider.txt @navesarussi
 /scripts/gen-baseline-types.mjs               @navesarussi
 /scripts/db-explain-dev.sh                  @navesarussi
 /scripts/strip-partition-types.mjs          @navesarussi
