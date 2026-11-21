@@ -65,6 +65,7 @@
 /scripts/release-merge.mjs @navesarussi
 /scripts/release-train.mjs @navesarussi
 /scripts/release-train-lib.mjs @navesarussi
+/scripts/release-preservation.mjs @navesarussi
 /scripts/bump-app-version.mjs               @navesarussi
 /scripts/close-linked-issues.mjs            @navesarussi
 /scripts/run-baseline-tests.sh              @navesarussi

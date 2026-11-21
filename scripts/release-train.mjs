@@ -25,6 +25,7 @@ import {
   FREEZE_LABEL, TRAIN_LABELS, deployVerdict, freezePlan, isCiSkipped, judgeChecks,
   migrationChanges, nextPatch, renderSummary, scanMigrationSql, skipDecision,
 } from './release-train-lib.mjs';
+import { preservationPreflight } from './release-preservation.mjs';
 import { RELEASE_SUBJECT, releasePrProblems, releaseSquashMessage } from './release-merge.mjs';
 
 const REPO = process.env.GITHUB_REPOSITORY || 'KarmaCummunity/KC';
@@ -117,6 +118,23 @@ function abort(s, name, reason) {
 }
 const git = (...args) => execFileSync('git', args, { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 }).trim();
 
+// Reads pinned Git objects only. Fetch failures, missing blobs and API/ref drift
+// abort before the next write. A saved state file is never a substitute for this.
+async function preservation(s, target, { main = s.main_sha, dev = target } = {}) {
+  const caller = process.env.GITHUB_WORKFLOW_SHA;
+  const [currentMain, currentDev] = await Promise.all([
+    get('workflow', repoPath('commits/main')), get('workflow', repoPath('commits/dev')),
+  ]);
+  if (currentMain.sha !== main || currentDev.sha !== dev) throw new Error('preservation: main/dev moved; re-plan required');
+  for (const sha of new Set([caller, main, target])) {
+    if (!/^[0-9a-f]{40}$/.test(sha ?? '')) throw new Error('preservation: immutable SHA unavailable');
+    git('fetch', '--no-tags', 'origin', sha);
+  }
+  s.preservation = preservationPreflight({ caller, target });
+  save(s);
+  step(s, 'Vault preservation', 'success', `caller ${caller}; target ${target}`);
+}
+
 // ---------------------------------------------------------------------------
 // plan — every read-only check; the whole of a dry run
 // ---------------------------------------------------------------------------
@@ -134,11 +152,12 @@ async function plan(s) {
   step(s, 'kill switch', enabled ? 'success' : 'skipped', `KC_WEEKLY_RELEASE_ENABLED=${process.env.KC_WEEKLY_RELEASE_ENABLED || '(unset)'}`);
 
   // 1. Anything to release?
-  const compare = await get('workflow', repoPath('compare/main...dev'));
-  const decision = skipDecision(compare);
-  s.ahead_by = compare.ahead_by;
   s.dev_sha = (await get('workflow', repoPath('commits/dev'))).sha;
   s.main_sha = (await get('workflow', repoPath('commits/main'))).sha;
+  await preservation(s, s.dev_sha);
+  const compare = await get('workflow', repoPath(`compare/${s.main_sha}...${s.dev_sha}`));
+  const decision = skipDecision(compare);
+  s.ahead_by = compare.ahead_by;
   if (decision.skip) {
     s.outcome = 'skipped';
     s.reason = `Nothing to release: ${decision.reason}.`;
@@ -154,9 +173,9 @@ async function plan(s) {
 
   // 3. Migrations: strict scan of main...dev (ignores migration-safety: allow).
   // The workflow's checkout (fetch-depth 0) brings origin/main and origin/dev.
-  const { added, problems } = migrationChanges(git('diff', '--name-status', '--no-renames', 'origin/main...origin/dev', '--', 'supabase/migrations'));
+  const { added, problems } = migrationChanges(git('diff', '--name-status', '--no-renames', `${s.main_sha}...${s.dev_sha}`, '--', 'supabase/migrations'));
   const findings = [...problems];
-  for (const file of added) findings.push(...scanMigrationSql(file, git('show', `origin/dev:${file}`)));
+  for (const file of added) findings.push(...scanMigrationSql(file, git('show', `${s.dev_sha}:${file}`)));
   s.migrations = added;
   s.findings = findings;
   if (findings.length) blockers.push(['migration safety', `${findings.length} destructive or irreversible change(s) in ${[...new Set(findings.map((f) => f.file))].join(', ')}`]);
@@ -172,7 +191,7 @@ async function plan(s) {
 
   // 5. Release head: dev's tip must be a commit real CI ran on.
   const tip = await get('workflow', repoPath(`commits/${s.dev_sha}`));
-  const current = git('show', 'origin/dev:app/VERSION');
+  const current = git('show', `${s.dev_sha}:app/VERSION`);
   s.needs_version_pr = isCiSkipped(tip.commit.message);
   s.version = s.needs_version_pr ? nextPatch(current) : current.trim();
   step(s, 'release head', 'success', s.needs_version_pr
@@ -264,7 +283,12 @@ async function freezeNew(s) {
   for (const p of fp) {
     if (p.queued) await gql('operator', 'mutation($id:ID!){dequeuePullRequest(input:{id:$id}){clientMutationId}}', { id: ids[p.number] });
     if (p.armed) await gql('operator', 'mutation($id:ID!){disablePullRequestAutoMerge(input:{pullRequestId:$id}){clientMutationId}}', { id: ids[p.number] });
-    if (p.addLabel) await api('operator', 'POST', repoPath(`issues/${p.number}/labels`), { labels: [FREEZE_LABEL] });
+    if (p.addLabel) {
+      await api('operator', 'POST', repoPath(`issues/${p.number}/labels`), { labels: [FREEZE_LABEL] });
+      const events = await list('workflow', repoPath(`issues/${p.number}/events`));
+      const last = events.filter(e => ['labeled', 'unlabeled'].includes(e.event) && e.label?.name === FREEZE_LABEL).at(-1);
+      if (last?.event === 'labeled' && last.actor?.login === s.operator) p.hold_event_id = last.id;
+    }
     const prev = s.freeze.find((x) => x.number === p.number);
     if (prev) Object.assign(prev, { armed: prev.armed || p.armed, queued: prev.queued || p.queued, addLabel: prev.addLabel || p.addLabel });
     else { s.freeze.push(p); s.frozen.push(p.number); }
@@ -274,6 +298,7 @@ async function freezeNew(s) {
 }
 
 async function freeze(s) {
+  await preservation(s, s.dev_sha);
   const fp = await freezeNew(s);
   step(s, 'freeze dev', 'success', fp.length ? `froze ${fp.map((p) => `#${p.number}`).join(' ')}` : 'no PR had auto-merge armed or sat in the queue');
 }
@@ -283,10 +308,19 @@ async function unfreeze(s) {
   const errors = [];
   for (const p of fp) {
     try {
+      const current = await get('workflow', repoPath(`pulls/${p.number}`));
+      if (current.draft || current.state !== 'open') continue;
+      // A train-created label can have been removed and added again by a human.
+      // Only our exact label event remains ours; unknown/legacy state stays held.
+      if (p.addLabel) {
+        const events = await list('workflow', repoPath(`issues/${p.number}/events`));
+        const last = events.filter(e => ['labeled', 'unlabeled'].includes(e.event) && e.label?.name === FREEZE_LABEL).at(-1);
+        if (!p.hold_event_id || last?.id !== p.hold_event_id || last.actor?.login !== s.operator || last.event !== 'labeled') continue;
+      }
       if (p.addLabel) await api('operator', 'DELETE', repoPath(`issues/${p.number}/labels/${encodeURIComponent(FREEZE_LABEL)}`), null, { allow: [404] });
       if (p.armed || p.queued) {
         const pr = await get('workflow', repoPath(`pulls/${p.number}`));
-        if (pr.state === 'open') {
+        if (pr.state === 'open' && !pr.draft && !(pr.labels ?? []).some(l => (l.name ?? l) === 'no-auto-merge')) {
           await gql('operator', 'mutation($id:ID!){enablePullRequestAutoMerge(input:{pullRequestId:$id,mergeMethod:SQUASH}){clientMutationId}}', { id: pr.node_id })
             .catch((e) => { if (!/clean status|already/i.test(e.message)) throw e; });
         }
@@ -369,11 +403,12 @@ async function head(s) {
 // open-pr / wait / merge
 // ---------------------------------------------------------------------------
 async function openPr(s) {
+  await preservation(s, s.head_sha);
   const title = `${RELEASE_SUBJECT} (v${s.version})`;
-  const commits = await get('workflow', repoPath('compare/main...dev'));
+  const commits = await get('workflow', repoPath(`compare/${s.main_sha}...${s.head_sha}`));
   const body = [
     'Opened by: agent:kc-bot', '',
-    `Weekly release train ${RUN_URL}: v${s.version}, dev head \`${s.head_sha}\`. No human approval (owner decision 16 Nov 2026); the train stops on any failing check, a destructive migration, a missing backup, or a failed deploy.`,
+    `Weekly release train ${RUN_URL}: v${s.version}, dev head \`${s.head_sha}\`. Release preparation scope recorded 19 Nov 2026; release execution remains subject to the applicable owner approval. The train stops on any failing check, a destructive migration, a missing backup, or a failed deploy.`,
     '', '## Summary',
     `${commits.ahead_by} commit(s), ${commits.files?.length ?? '?'} file(s) on top of main \`${s.main_sha.slice(0, 8)}\`.`,
     s.migrations?.length ? `Migrations: ${s.migrations.map((m) => `\`${m}\``).join(', ')} (strict scan: none destructive).` : 'No migration changes.',
@@ -431,6 +466,7 @@ async function wait(s) {
 }
 
 async function merge(s) {
+  await preservation(s, s.head_sha);
   const pr = await get('workflow', repoPath(`pulls/${s.release_pr}`));
   const problems = releasePrProblems(pr, s.head_sha);
   if (problems.length) abort(s, 'merge to main', problems.join('; '));
@@ -459,6 +495,7 @@ async function merge(s) {
 // deploy — approve production, then verify backup, smoke, tag, live version
 // ---------------------------------------------------------------------------
 async function deploy(s) {
+  await preservation(s, s.merge_sha, { main: s.merge_sha, dev: s.head_sha });
   const deadline = Date.now() + minutes('KC_RELEASE_TRAIN_DEPLOY_START_MINUTES', 90) * MIN;
   let run = null;
   let pending = null;
@@ -466,7 +503,7 @@ async function deploy(s) {
     await sleep(MIN);
     const runs = await get('workflow', repoPath(`actions/workflows/deploy.yml/runs?head_sha=${s.merge_sha}&per_page=20`));
     for (const r of (runs.workflow_runs ?? []).sort((a, b) => a.id - b.id)) {
-      if (r.status !== 'waiting') continue;
+      if (r.status !== 'waiting' || r.head_sha !== s.merge_sha || r.head_branch !== 'main' || r.event !== 'workflow_run') continue;
       const p = await get('approver', repoPath(`actions/runs/${r.id}/pending_deployments`));
       const prod = p.find((d) => d.environment?.name === 'production');
       if (prod) { run = r; pending = prod; break; }
@@ -483,6 +520,7 @@ async function deploy(s) {
   // Gates right before the click: main still at the release, backup still fresh.
   const mainSha = (await get('workflow', repoPath('commits/main'))).sha;
   if (mainSha !== s.merge_sha) abort(s, 'deploy', `main moved to ${mainSha.slice(0, 8)}`);
+  await preservation(s, s.merge_sha, { main: s.merge_sha, dev: s.head_sha });
   const backups = await get('workflow', repoPath('actions/workflows/db-backup-prod.yml/runs?branch=main&status=success&per_page=1'));
   const ageH = backups.workflow_runs?.[0] ? (Date.now() - Date.parse(backups.workflow_runs[0].updated_at)) / 3.6e6 : Infinity;
   if (ageH > minutes('KC_RELEASE_TRAIN_BACKUP_MAX_AGE_HOURS', 30) + 8) abort(s, 'deploy', `prod backup is ${ageH.toFixed(1)} h old`);
