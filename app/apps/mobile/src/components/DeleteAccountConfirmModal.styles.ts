@@ -1,8 +1,7 @@
 // Body styles of the delete-account dialog (FR-SETTINGS-012). The surface,
 // title and actions come from the kit `Modal` and buttons (spec 17 §4.1).
 import { makeUseStyles, radius, spacing, typography } from '@kc/ui';
-import { rtlTextAlignStart } from '../lib/rtlTextAlignStart';
-
+import { rtlTextAlignStart } from '../lib/rtlLayout';
 export const useDeleteAccountConfirmModalStyles = makeUseStyles(({ colors }) => ({
   // Shrink inside the dialog's height cap so the footer stays on screen.
   scroll: { flexGrow: 0, flexShrink: 1 },

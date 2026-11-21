@@ -6,7 +6,7 @@ import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
 import { FilterChipRow } from '../filterKit/FilterChipRow';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { rtlTextAlignStart } from '../../lib/rtlLayout';
 import type { WorldFeedDirection } from '../../lib/worldFeed';
 
 const useStyles = makeUseStyles(({ colors }) => ({

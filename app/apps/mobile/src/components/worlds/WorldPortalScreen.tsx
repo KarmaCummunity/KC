@@ -15,7 +15,7 @@ import { DonationLinksList } from '../DonationLinksList';
 import { WorldCuratedContent } from '../giving/WorldCuratedContent';
 import { SupportKcCard } from '../money/SupportKcCard';
 import { PartnerNonprofitsCard } from '../money/PartnerNonprofitsCard';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { rtlTextAlignStart } from '../../lib/rtlLayout';
 import { useShellTabBarScrollInset } from '../../navigation/useShellTabBarVisibility';
 
 const useStyles = makeUseStyles(({ colors }) => ({

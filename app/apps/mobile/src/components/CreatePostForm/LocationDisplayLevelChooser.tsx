@@ -5,8 +5,7 @@ import { TouchableOpacity, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { makeUseStyles, radius, spacing, typography, Text } from '@kc/ui';
 import type { LocationDisplayLevel } from '@kc/domain';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
-
+import { rtlTextAlignStart } from '../../lib/rtlLayout';
 interface Props {
   readonly value: LocationDisplayLevel;
   readonly onChange: (next: LocationDisplayLevel) => void;

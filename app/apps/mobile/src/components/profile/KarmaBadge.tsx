@@ -5,8 +5,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useRouter } from 'expo-router';
 import { iconSize, makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
-import { rowDirectionStart, selfAlignStart } from '../../lib/rtlLayout';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { rowDirectionStart, selfAlignStart, rtlTextAlignStart } from '../../lib/rtlLayout';
+
 import { GhostButton } from '../ui/Buttons';
 import { Modal } from '../ui/Modal';
 

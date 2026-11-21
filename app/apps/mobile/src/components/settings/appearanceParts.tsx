@@ -15,7 +15,7 @@ import {
   type ThemeMode,
   Text,
 } from '@kc/ui';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { rtlTextAlignStart } from '../../lib/rtlLayout';
 import { webTextRtl, webViewRtl } from '../../lib/webRtlStyle';
 
 export interface ModeOption {

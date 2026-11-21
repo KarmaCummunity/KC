@@ -8,8 +8,8 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { makeUseStyles, spacing, radius, typography, shadow, useTheme, TextInput, Text, type TextInput as UiTextInput } from '@kc/ui';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
-import { inputTextAlignStart } from '../../lib/rtlLayout';
+
+import { inputTextAlignStart, rtlTextAlignStart } from '../../lib/rtlLayout';
 import { useFormScopeField } from '../ui/useFormScopeField';
 import { formInputKindProps, type FormInputKind } from '../../lib/platform/formTextInputHints';
 import { FieldMessage } from '../ui/FieldMessage';

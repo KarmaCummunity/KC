@@ -14,8 +14,7 @@ import { useAuthStore } from '../../../src/store/authStore';
 import { getMyPostsUseCase } from '../../../src/services/postsComposition';
 import { useProfileClosedPosts } from '../../../src/hooks/useProfileClosedPosts';
 import { useMyProfilePostOwner } from '../../../src/hooks/useProfilePostOwner';
-import { rowDirectionStart } from '../../../src/lib/rtlLayout';
-import { rtlTextAlignStart } from '../../../src/lib/rtlTextAlignStart';
+import { rowDirectionStart, rtlTextAlignStart } from '../../../src/lib/rtlLayout';
 
 export default function MyProfileHiddenScreen() {
   const styles = useStyles();

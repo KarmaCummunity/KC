@@ -1,10 +1,6 @@
 {
   "$comment": "Frozen brand-guard findings per file (spec 17 §6, TD-199). Counts may only go down.",
   "files": {
-    "app/research/[slug].web.tsx": {
-      "fontWeightLiteral": 1,
-      "radiusLiteral": 1
-    },
     "src/components/DeleteAccountSuccessOverlay.tsx": {
       "rawModal": 1
     },
@@ -24,33 +20,10 @@
       "rawModal": 1,
       "iconSizeLiteral": 1
     },
-    "src/components/aside/RecentSearchesAside.tsx": {
-      "iconSizeLiteral": 1
-    },
     "src/components/chat/ChatReactionChips.tsx": {
       "radiusLiteral": 1,
       "spacingLiteral": 1,
       "adHocChip": 1
-    },
-    "src/components/map/MapExplorer.styles.ts": {
-      "colorLiteral": 3,
-      "fontWeightLiteral": 4,
-      "radiusLiteral": 10,
-      "spacingLiteral": 16,
-      "physicalSide": 2,
-      "shadowLiteral": 12,
-      "adHocChip": 1
-    },
-    "src/components/research/ResearchEndShareCard.tsx": {
-      "fontWeightLiteral": 2,
-      "radiusLiteral": 2,
-      "iconSizeLiteral": 2
-    },
-    "src/components/research/ResearchGuestInviteBanner.tsx": {
-      "fontWeightLiteral": 2,
-      "radiusLiteral": 2,
-      "iconSizeLiteral": 1,
-      "unmirroredDirectionalIcon": 1
     },
     "src/components/search/LinkResultCard.tsx": {
       "iconSizeLiteral": 2
@@ -65,33 +38,15 @@
     "src/components/search/SearchSocialSections.tsx": {
       "iconSizeLiteral": 1
     },
-    "src/components/search/searchResultCard.styles.ts": {
-      "fontSizeLiteral": 4,
-      "fontWeightLiteral": 3,
-      "radiusLiteral": 2,
-      "spacingLiteral": 8
-    },
     "src/features/about-landing/AboutHero.tsx": {
       "colorLiteral": 5,
       "fontWeightLiteral": 1,
       "radiusLiteral": 2
     },
-    "src/features/about-landing/AboutNavDrawer.tsx": {
-      "physicalSide": 2,
-      "rawModal": 1,
-      "iconSizeLiteral": 3,
-      "unmirroredDirectionalIcon": 1
-    },
     "src/features/about-landing/AboutValuesGrid.tsx": {
       "fontWeightLiteral": 1,
       "shadowLiteral": 4,
       "adHocChip": 1,
-      "iconSizeLiteral": 1
-    },
-    "src/screens/research/SurveyIntroBlock.tsx": {
-      "fontWeightLiteral": 1,
-      "radiusLiteral": 2,
-      "spacingLiteral": 2,
       "iconSizeLiteral": 1
     }
   }

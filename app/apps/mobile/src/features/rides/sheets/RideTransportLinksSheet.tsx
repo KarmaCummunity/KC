@@ -5,8 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { makeUseStyles, typography, Text } from '@kc/ui';
 import { DonationLinksList } from '../../../components/DonationLinksList';
 import { BottomSheet } from '../../../components/ui/BottomSheet';
-import { rtlTextAlignStart } from '../../../lib/rtlTextAlignStart';
-
+import { rtlTextAlignStart } from '../../../lib/rtlLayout';
 const useStyles = makeUseStyles(({ colors }) => ({
   subtitle: {
     ...typography.caption,

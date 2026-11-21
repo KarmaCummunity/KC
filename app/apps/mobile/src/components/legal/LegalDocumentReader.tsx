@@ -7,9 +7,8 @@ import { typography, spacing, radius, useTheme, Text } from '@kc/ui';
 import { getLoadLegalDocumentUseCase } from '../../services/legalComposition';
 import { makeLegalMarkdownStyles } from './LegalMarkdownStyles';
 import { makeLegalMarkdownRules } from './legalMarkdownRules';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
-import { layoutWritingDirectionStyle, selfAlignStart } from '../../lib/rtlLayout';
 
+import { layoutWritingDirectionStyle, selfAlignStart, rtlTextAlignStart } from '../../lib/rtlLayout';
 function formatHebrewDate(d: Date): string {
   // DD.MM.YYYY per spec §7.1
   const dd = String(d.getDate()).padStart(2, '0');

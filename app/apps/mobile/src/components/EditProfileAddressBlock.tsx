@@ -13,8 +13,7 @@ import { CityPicker } from './CityPicker';
 import { StreetPicker } from './StreetPicker';
 import { applyAddressResetOnCityChange } from '../lib/addressResetOnCityChange';
 import { FormSection } from './ui/FormSection';
-import { rtlTextAlignStart } from '../lib/rtlTextAlignStart';
-
+import { rtlTextAlignStart } from '../lib/rtlLayout';
 export interface EditProfileAddressBlockProps {
   readonly city: { id: string; name: string } | null;
   readonly onCityChange: (v: { id: string; name: string } | null) => void;

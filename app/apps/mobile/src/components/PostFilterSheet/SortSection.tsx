@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import type { FeedSortOrder } from '@kc/domain';
 import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
 import { CityPicker } from '../CityPicker';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { rtlTextAlignStart } from '../../lib/rtlLayout';
 import { SortSection as KitSortSection } from '../filterKit/SortSection';
 
 interface SortSectionProps {

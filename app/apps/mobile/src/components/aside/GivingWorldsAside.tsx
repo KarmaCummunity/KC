@@ -5,8 +5,8 @@ import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { iconSize, makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
-import { rowDirectionStart } from '../../lib/rtlLayout';
+
+import { rowDirectionStart, rtlTextAlignStart } from '../../lib/rtlLayout';
 import { AsideCard } from './AsideCard';
 import { DONATIONS_HUB_TILES } from '../../navigation/donationsHubTiles';
 

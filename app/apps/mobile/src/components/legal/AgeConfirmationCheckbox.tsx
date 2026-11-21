@@ -1,8 +1,7 @@
 import { View, Pressable } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { typography, spacing, radius, useTheme, Text } from '@kc/ui';
-import { layoutWritingDirectionStyle, rowDirectionStart } from '../../lib/rtlLayout';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { layoutWritingDirectionStyle, rowDirectionStart, rtlTextAlignStart } from '../../lib/rtlLayout';
 
 interface AgeConfirmationCheckboxProps {
   readonly checked: boolean;

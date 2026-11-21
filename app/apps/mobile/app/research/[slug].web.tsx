@@ -4,10 +4,10 @@ import { ActivityIndicator, Pressable, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, spacing, typography, useTheme, Text } from '@kc/ui';
+import { makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
 import { container } from '../../src/lib/container';
 import { webTextRtl } from '../../src/lib/webRtlStyle';
-import { rtlTextAlignStart } from '../../src/lib/rtlTextAlignStart';
+import { rtlTextAlignStart } from '../../src/lib/rtlLayout';
 import {
   clearSurveyDraft,
   loadSurveyDraft,
@@ -248,7 +248,7 @@ const useScreenStyles = makeUseStyles(({ colors }) => ({
     marginHorizontal: spacing.base,
     marginBottom: spacing.sm,
     padding: spacing.md,
-    borderRadius: 10,
+    borderRadius: radius.md,
     backgroundColor: colors.errorLight,
     borderWidth: 1,
     borderColor: colors.error,
@@ -263,7 +263,7 @@ const useScreenStyles = makeUseStyles(({ colors }) => ({
   stickyErrorDismiss: {
     ...typography.caption,
     color: colors.textSecondary,
-    fontWeight: '600',
+    ...typography.semiBold,
     textAlign: rtlTextAlignStart,
     ...webTextRtl,
   },

@@ -4,9 +4,8 @@ import { useTranslation } from 'react-i18next';
 import type { LegalDocumentContent, LegalPendingItem } from '@kc/domain';
 import { typography, spacing, radius, useTheme, Text } from '@kc/ui';
 import { getLoadLegalDocumentUseCase } from '../../services/legalComposition';
-import { layoutWritingDirectionStyle, rowDirectionStart } from '../../lib/rtlLayout';
+import { layoutWritingDirectionStyle, rowDirectionStart, rtlTextAlignStart } from '../../lib/rtlLayout';
 import { hebrewContentTextStyle } from '../../lib/hebrewContentDirection';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 
 interface LegalConsentCardProps {
   readonly item: LegalPendingItem;

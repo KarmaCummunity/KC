@@ -8,7 +8,7 @@ import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
 import { TextField } from '../ui/TextField';
 import type { NotificationPreferences } from '@kc/domain';
 import { NotificationToggleRow } from '../NotificationToggleRow';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { rtlTextAlignStart } from '../../lib/rtlLayout';
 import { webTextRtl, webViewRtl } from '../../lib/webRtlStyle';
 import { normalizeQuietTime } from '../../lib/feedMuteFilters';
 import { hapticLightTap } from '../../lib/haptics';

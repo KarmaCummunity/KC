@@ -10,8 +10,8 @@ import { iconSize, makeUseStyles, radius, spacing, typography, useTheme, Text } 
 import { useShellStackScreenOptions } from '../../src/navigation/shellStackScreenOptions';
 import { useAuthStore } from '../../src/store/authStore';
 import { container } from '../../src/lib/container';
-import { rtlTextAlignStart } from '../../src/lib/rtlTextAlignStart';
-import { rowDirectionStart } from '../../src/lib/rtlLayout';
+
+import { rowDirectionStart, rtlTextAlignStart } from '../../src/lib/rtlLayout';
 import { formatRelativeChatTime } from '../../src/lib/formatRelativeChatTime';
 import { groupInboxByDay } from '../../src/lib/notificationInboxView';
 import { resolveNotificationRoute } from '../../src/lib/notifications/notificationRoutes';
@@ -20,7 +20,6 @@ import { NotificationInboxRow } from '../../src/components/notifications/Notific
 import { EmptyState } from '../../src/components/EmptyState';
 import { KcFlashList } from '../../src/components/lists/KcFlashList';
 import { SimpleRowListSkeleton } from '../../src/components/skeletons/SimpleRowListSkeleton';
-
 
 const notificationKeyExtractor = (entry: { key: string }) => entry.key;
 

@@ -7,8 +7,7 @@ import { Card } from '../ui/Card';
 import { TextField } from '../ui/TextField';
 import { PrimaryButton, SecondaryButton } from '../ui/Buttons';
 import { parseOptionalNumber } from '../../lib/challenges/challengeDraftFromForm';
-import { rowDirectionStart } from '../../lib/rtlLayout';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { rowDirectionStart, rtlTextAlignStart } from '../../lib/rtlLayout';
 
 interface ChallengeReportCardProps {
   readonly challenge: ChallengeSummary;

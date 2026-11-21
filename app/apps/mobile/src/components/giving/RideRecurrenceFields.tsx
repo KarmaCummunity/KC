@@ -5,7 +5,7 @@ import React from 'react';
 import { Switch, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { makeUseStyles, spacing, typography, useTheme, Text } from '@kc/ui';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { rtlTextAlignStart } from '../../lib/rtlLayout';
 import { localTimeHHmm, type RideWeekday } from '@kc/domain';
 import { RideWeekdayPicker } from './RideWeekdayPicker';
 import { RideEndDateField } from './RideEndDateField';

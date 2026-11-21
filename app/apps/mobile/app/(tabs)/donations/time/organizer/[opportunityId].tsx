@@ -9,7 +9,7 @@ import { TimeWorldSubScreenChrome } from '../../../../../src/components/giving/T
 import { TextField } from '../../../../../src/components/ui/TextField';
 import { DangerButton, GhostButton, PrimaryButton } from '../../../../../src/components/ui/Buttons';
 import { volunteerUseCases } from '../../../../../src/services/volunteerComposition';
-import { rtlTextAlignStart } from '../../../../../src/lib/rtlTextAlignStart';
+import { rtlTextAlignStart } from '../../../../../src/lib/rtlLayout';
 import { FormScrollView } from '../../../../../src/components/ui/FormScrollView';
 
 const useStyles = makeUseStyles(({ colors }) => ({

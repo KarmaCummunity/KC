@@ -7,8 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
 import { Modal } from '../../ui/Modal';
 import { GhostButton, PrimaryButton } from '../../ui/Buttons';
-import { rtlTextAlignStart } from '../../../lib/rtlTextAlignStart';
-
+import { rtlTextAlignStart } from '../../../lib/rtlLayout';
 interface Props {
   readonly visible: boolean;
   readonly busy: boolean;

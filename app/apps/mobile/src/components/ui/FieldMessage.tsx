@@ -5,8 +5,7 @@ import React from 'react';
 import { View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { makeUseStyles, spacing, typography, useTheme, Text } from '@kc/ui';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
-
+import { rtlTextAlignStart } from '../../lib/rtlLayout';
 /** Ionicons glyph size next to the error message. */
 const MESSAGE_ICON_SIZE = 14;
 

@@ -19,8 +19,7 @@ import { Screen } from '../../../../src/components/ui/Screen';
 import { IconTile } from '../../../../src/components/ui/IconTile';
 import { MotionEntry, ENTRY_DELAY } from '../../../../src/components/ui/MotionEntry';
 import { useShellTabBarScrollInset } from '../../../../src/navigation/useShellTabBarVisibility';
-import { rtlTextAlignStart } from '../../../../src/lib/rtlTextAlignStart';
-
+import { rtlTextAlignStart } from '../../../../src/lib/rtlLayout';
 export { RouteErrorBoundary as ErrorBoundary } from '../../../../src/components/RouteErrorBoundary';
 
 const ICON_BY_SLUG: Record<DonationCategorySlug, keyof typeof Ionicons.glyphMap> = {

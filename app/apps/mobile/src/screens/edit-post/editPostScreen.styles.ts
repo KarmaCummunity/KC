@@ -1,6 +1,5 @@
 import { makeUseStyles, radius, spacing, typography } from '@kc/ui';
-import { rtlTextAlignEnd, rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
-
+import { rtlTextAlignEnd, rtlTextAlignStart } from '../../lib/rtlLayout';
 export const useEditPostScreenStyles = makeUseStyles(({ colors }) => ({
   container: { flex: 1, backgroundColor: colors.background },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: spacing.base },

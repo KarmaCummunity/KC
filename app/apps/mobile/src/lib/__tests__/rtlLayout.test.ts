@@ -1,3 +1,6 @@
+import { existsSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it, vi, afterEach } from 'vitest';
 import {
   absoluteCornerEnd,
@@ -77,13 +80,11 @@ describe('rtl helpers share one implementation (issue #1289)', () => {
     expect(ltr.rtlTextAlignEnd).toBe('right');
   });
 
-  it('the legacy modules re-export the same values', async () => {
+  it('has a single RTL helper module; the overlapping rtlTextAlignStart path is gone', async () => {
     vi.stubGlobal('document', { documentElement: { getAttribute: () => 'ltr' } });
     const rtl = await import('../rtlLayout');
-    const legacy = await import('../rtlTextAlignStart');
     const web = await import('../webRtlStyle');
-    expect(legacy.rtlTextAlignStart).toBe(rtl.rtlTextAlignStart);
-    expect(legacy.rtlTextAlignEnd).toBe(rtl.rtlTextAlignEnd);
+    expect(existsSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '../rtlTextAlignStart.ts'))).toBe(false);
     expect(web.webTextRtl).toEqual(rtl.layoutWritingDirectionStyle());
   });
 

@@ -10,9 +10,8 @@ import { makeUseStyles, radius, spacing, typography, Text } from '@kc/ui';
 import type { MyWorldGivings } from '@kc/application';
 import { getListMyWorldGivingsUseCase } from '../../services/statsComposition';
 import { valueOrNull } from '../../lib/backendAvailability';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
-import { rowDirectionStart } from '../../lib/rtlLayout';
 
+import { rowDirectionStart, rtlTextAlignStart } from '../../lib/rtlLayout';
 export function MyWorldGivingsPanel({ userId }: { userId: string | undefined }) {
   const { t, i18n } = useTranslation();
   const styles = useStyles();

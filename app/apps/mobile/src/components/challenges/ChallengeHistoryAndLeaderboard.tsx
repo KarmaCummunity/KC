@@ -4,8 +4,7 @@ import { useTranslation } from 'react-i18next';
 import type { ChallengeEntry, ChallengeLeaderboardRow } from '@kc/domain';
 import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
 import { Card } from '../ui/Card';
-import { rowDirectionStart } from '../../lib/rtlLayout';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { rowDirectionStart, rtlTextAlignStart } from '../../lib/rtlLayout';
 
 const useStyles = makeUseStyles(({ colors }) => ({
   heading: { ...typography.h3, color: colors.textPrimary, textAlign: rtlTextAlignStart },

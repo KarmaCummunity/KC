@@ -8,9 +8,8 @@ import { PostCardGrid } from '../PostCardGrid';
 import { PrimaryButton } from '../ui/Buttons';
 import { useWorldInfoPosts } from '../../hooks/useWorldInfoPosts';
 import { filterAndSortInfoPosts, type WorldLinksSort } from '../../lib/worldLinksCatalog';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
-import { rowDirectionStart } from '../../lib/rtlLayout';
 
+import { rowDirectionStart, rtlTextAlignStart } from '../../lib/rtlLayout';
 const useStyles = makeUseStyles(({ colors }) => ({
   section: { marginTop: spacing.lg, gap: spacing.sm },
   title: { ...typography.h3, color: colors.textPrimary, textAlign: rtlTextAlignStart },

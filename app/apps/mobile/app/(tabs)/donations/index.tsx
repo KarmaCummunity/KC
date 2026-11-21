@@ -20,7 +20,7 @@ import { MotionEntry, ENTRY_DELAY } from '../../../src/components/ui/MotionEntry
 import { useShellTabBarScrollInset } from '../../../src/navigation/useShellTabBarVisibility';
 import { useScreenAside } from '../../../src/components/aside/useScreenAside';
 import { CommunityStatsAside } from '../../../src/components/aside/CommunityStatsAside';
-import { rtlTextAlignStart } from '../../../src/lib/rtlTextAlignStart';
+import { rtlTextAlignStart } from '../../../src/lib/rtlLayout';
 import { MatchesForYouCard } from '../../../src/components/matching/MatchesForYouCard';
 import { useRemoteAppFlags } from '../../../src/hooks/useLaunchWorldFlags';
 import { HubTileGrid } from '../../../src/components/donations/HubTileGrid';

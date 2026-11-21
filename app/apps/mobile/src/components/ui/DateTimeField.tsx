@@ -14,7 +14,7 @@ import { format } from 'date-fns';
 import { he as dateFnsHe } from 'date-fns/locale/he';
 import { useTranslation } from 'react-i18next';
 import { iconSize, makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { rtlTextAlignStart } from '../../lib/rtlLayout';
 import { SearchChip } from '../search/SearchChip';
 
 export interface DateTimeShortcut {

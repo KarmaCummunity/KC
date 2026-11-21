@@ -10,8 +10,8 @@ import { iconSize, makeUseStyles, radius, spacing, typography, useTheme, Text } 
 import { Card } from '../ui/Card';
 import { Chip } from '../ui/Chip';
 import { AvatarInitials } from '../AvatarInitials';
-import { rowDirectionStart } from '../../lib/rtlLayout';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { rowDirectionStart, rtlTextAlignStart } from '../../lib/rtlLayout';
+
 import { cleanDisplayTitle } from '../../lib/displayTitle';
 import { matchStateOf, scorePercent } from '../../lib/matching';
 

@@ -6,8 +6,7 @@ import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { makeUseStyles, radius, spacing, typography, Text } from '@kc/ui';
 import { Card } from '../ui/Card';
-import { rowDirectionStart } from '../../lib/rtlLayout';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { rowDirectionStart, rtlTextAlignStart } from '../../lib/rtlLayout';
 
 interface SurveyPromptBannerProps {
   readonly slug: string;

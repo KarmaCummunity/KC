@@ -5,7 +5,7 @@
 import React, { useRef, type ReactNode } from 'react';
 import { View, type StyleProp, type ViewStyle } from 'react-native';
 import { makeUseStyles, radius, spacing, typography, Text } from '@kc/ui';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { rtlTextAlignStart } from '../../lib/rtlLayout';
 import { useFormScopeAnchor } from './useFormScopeField';
 
 export interface FormSectionProps {

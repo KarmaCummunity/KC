@@ -33,8 +33,8 @@ import {
   toProductionAnswers,
   toProductionQuestions,
 } from '../../src/components/survey-demo/surveyDemoAdapter';
-import { inputTextAlignStart } from '../../src/lib/rtlLayout';
-import { rtlTextAlignStart } from '../../src/lib/rtlTextAlignStart';
+import { inputTextAlignStart, rtlTextAlignStart } from '../../src/lib/rtlLayout';
+
 import { webTextRtl, webViewRtl } from '../../src/lib/webRtlStyle';
 import { useKeyboardVerticalOffset } from '../../src/lib/platform/useKeyboardVerticalOffset';
 import { resolveKeyboardAvoidingBehavior } from '../../src/lib/platform/keyboardVerticalOffset';

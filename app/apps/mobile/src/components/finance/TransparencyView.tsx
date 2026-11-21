@@ -7,8 +7,8 @@ import { useTranslation } from 'react-i18next';
 import type { OrgTransparency } from '@kc/domain';
 import { makeUseStyles, radius, spacing, Text, typography } from '@kc/ui';
 import { formatMoney } from '../../lib/formatMoney';
-import { rowDirectionStart } from '../../lib/rtlLayout';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { rowDirectionStart, rtlTextAlignStart } from '../../lib/rtlLayout';
+
 import { MonthlyBars, ShareBar } from './TransparencyBars';
 
 /** True when at least one block has something to show (an enabled toggle can still be empty). */
