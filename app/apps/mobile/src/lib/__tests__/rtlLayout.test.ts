@@ -1,5 +1,7 @@
 import { describe, expect, it, vi, afterEach } from 'vitest';
 import {
+  absoluteCornerEnd,
+  absoluteCornerStart,
   crossAxisAlignStart,
   emptyInputDirectionStyle,
   inputTextAlignStart,
@@ -83,5 +85,16 @@ describe('rtl helpers share one implementation (issue #1289)', () => {
     expect(legacy.rtlTextAlignStart).toBe(rtl.rtlTextAlignStart);
     expect(legacy.rtlTextAlignEnd).toBe(rtl.rtlTextAlignEnd);
     expect(web.webTextRtl).toEqual(rtl.layoutWritingDirectionStyle());
+  });
+
+  // #1770: one helper for the reading-start / reading-end corner of an absolutely positioned view.
+  it('absoluteCornerStart / absoluteCornerEnd emit the physical web edge for the layout direction', () => {
+    vi.stubGlobal('document', { documentElement: { getAttribute: () => 'rtl' } });
+    expect(absoluteCornerStart(8)).toEqual({ right: 8 });
+    expect(absoluteCornerEnd(8)).toEqual({ left: 8 });
+
+    vi.stubGlobal('document', { documentElement: { getAttribute: () => 'ltr' } });
+    expect(absoluteCornerStart(0)).toEqual({ left: 0 });
+    expect(absoluteCornerEnd(0)).toEqual({ right: 0 });
   });
 });

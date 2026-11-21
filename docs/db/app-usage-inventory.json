@@ -8,7 +8,7 @@
  ],
  "summary": {
   "bucket": {
-   "callSites": 17,
+   "callSites": 15,
    "distinct": 5
   },
   "channel": {
@@ -20,8 +20,8 @@
    "distinct": 5
   },
   "rpc": {
-   "callSites": 294,
-   "distinct": 269
+   "callSites": 295,
+   "distinct": 270
   },
   "table": {
    "callSites": 195,
@@ -89,7 +89,7 @@
   {
    "kind": "bucket",
    "file": "app/apps/mobile/src/services/avatarUpload.ts",
-   "line": 132,
+   "line": 164,
    "area": "mobile",
    "symbol": "resizeAndUploadAvatar",
    "via": "const",
@@ -98,25 +98,7 @@
   {
    "kind": "bucket",
    "file": "app/apps/mobile/src/services/avatarUpload.ts",
-   "line": 143,
-   "area": "mobile",
-   "symbol": "resizeAndUploadAvatar",
-   "via": "const",
-   "name": "avatars"
-  },
-  {
-   "kind": "bucket",
-   "file": "app/apps/mobile/src/services/avatarUpload.ts",
-   "line": 153,
-   "area": "mobile",
-   "symbol": "resizeAndUploadAvatar",
-   "via": "const",
-   "name": "avatars"
-  },
-  {
-   "kind": "bucket",
-   "file": "app/apps/mobile/src/services/avatarUpload.ts",
-   "line": 167,
+   "line": 177,
    "area": "mobile",
    "symbol": "removeUploadedAvatar",
    "via": "const",
@@ -5001,6 +4983,15 @@
    "symbol": "apply",
    "via": "literal",
    "name": "provider_webhook_apply"
+  },
+  {
+   "kind": "rpc",
+   "file": "supabase/functions/process-post-media/handler.ts",
+   "line": 159,
+   "area": "fn:process-post-media",
+   "symbol": "callRpc",
+   "via": "unresolved",
+   "name": "<fn>"
   },
   {
    "kind": "rpc",

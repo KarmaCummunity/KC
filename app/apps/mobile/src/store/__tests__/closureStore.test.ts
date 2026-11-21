@@ -19,10 +19,14 @@ vi.mock('../../services/userComposition', () => ({
   getSearchUsersForClosureUseCase: () => ({ execute: () => searchUsersImpl() }),
 }));
 
+const track = vi.fn();
+vi.mock('../../lib/analytics', () => ({ track: (...args: unknown[]) => track(...args) }));
+
 import { PostError } from '@kc/application';
 import { useClosureStore } from '../closureStore';
 
 beforeEach(() => {
+  track.mockClear();
   useClosureStore.getState().reset();
   candidatesImpl = () => Promise.resolve([]);
   markDeliveredImpl = () => Promise.resolve();
@@ -230,5 +234,26 @@ describe('closureStore — setSearchQuery', () => {
 
     expect(useClosureStore.getState().searchResults).toEqual([]);
     expect(useClosureStore.getState().isSearching).toBe(false);
+  });
+});
+
+// FR-CLOSURE-002 AC3 (#1759): the closure funnel reports its steps, with no personal data.
+describe('closureStore — telemetry', () => {
+  it('reports closure_step1_completed when the owner confirms the handoff', () => {
+    useClosureStore.setState({ postId: 'p_1', step: 'confirm' });
+    useClosureStore.getState().confirmStep1();
+    expect(track).toHaveBeenCalledWith('closure_step1_completed');
+  });
+
+  it('reports closure_completed with whether a recipient was named, and nothing on failure', async () => {
+    useClosureStore.setState({ postId: 'p_1', step: 'pick' });
+    await useClosureStore.getState().closeWith('u_2', 'u_1');
+    expect(track).toHaveBeenCalledWith('closure_completed', { with_recipient: true });
+
+    track.mockClear();
+    markDeliveredImpl = () => Promise.reject(new Error('offline'));
+    useClosureStore.setState({ postId: 'p_1', step: 'pick' });
+    await useClosureStore.getState().closeWith(null, 'u_1');
+    expect(track).not.toHaveBeenCalled();
   });
 });

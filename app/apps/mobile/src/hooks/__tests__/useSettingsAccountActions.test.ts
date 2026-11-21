@@ -55,6 +55,26 @@ describe('useSettingsAccountActions', () => {
     expect(mocks.replace).toHaveBeenLastCalledWith('/(auth)');
   });
 
+  // FR-SETTINGS-011 AC1: signing out is a single tap followed by a confirmation modal.
+  it('asks for confirmation before signing out, and a cancel keeps the member signed in', async () => {
+    const { result } = renderHook(() => useSettingsAccountActions());
+    expect(result.current.signOutConfirmVisible).toBe(false);
+
+    act(() => result.current.requestSignOut());
+    expect(result.current.signOutConfirmVisible).toBe(true);
+    expect(mocks.signOut).not.toHaveBeenCalled();
+
+    act(() => result.current.cancelSignOut());
+    expect(result.current.signOutConfirmVisible).toBe(false);
+    expect(mocks.signOut).not.toHaveBeenCalled();
+
+    act(() => result.current.requestSignOut());
+    await act(async () => result.current.handleSignOut());
+    expect(mocks.signOut).toHaveBeenCalledTimes(1);
+    expect(result.current.signOutConfirmVisible).toBe(false);
+    expect(mocks.replace).toHaveBeenCalledWith('/(auth)');
+  });
+
   it('keeps the member signed in and the success overlay hidden when the deletion request is refused', async () => {
     mocks.deleteExecute.mockRejectedValueOnce(new Error('suspended'));
     const { result } = renderHook(() => useSettingsAccountActions());

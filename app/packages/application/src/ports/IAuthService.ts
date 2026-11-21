@@ -6,6 +6,8 @@
 // docs/spec/requirements/01_auth_and_onboarding.md
 // ─────────────────────────────────────────────
 
+import type { AuthProvider } from '@kc/domain';
+
 export interface AuthSession {
   readonly userId: string;
   readonly email: string | null;
@@ -30,6 +32,13 @@ export interface AuthSession {
    * (dev ghost session, fakes) may omit it.
    */
   readonly accountCreatedAt?: string | null;
+  /**
+   * How the member signs in (FR-SETTINGS-002 AC1), from Supabase `user.app_metadata.provider`;
+   * null for a method the app does not know. Optional for the same reason as above.
+   */
+  readonly signInProvider?: AuthProvider | null;
+  /** The phone number the account is tied to, from Supabase `user.phone`; null when none. */
+  readonly phone?: string | null;
 }
 
 /** Patch for `IAuthService.syncProfileMetadata` — mirrors `public.users` display fields. */
