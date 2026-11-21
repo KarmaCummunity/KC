@@ -1,0 +1,15 @@
+{
+  "provenance": {
+    "kind": "official-source-derived, not a live KC dry-run receipt",
+    "source": "https://raw.githubusercontent.com/supabase/cli/v2.99.0/apps/cli-go/internal/db/push/push.go",
+    "official_test": "https://raw.githubusercontent.com/supabase/cli/v2.99.0/apps/cli-go/internal/db/push/push_test.go",
+    "lines": "Run dryRun banner23, pending branch58-65, stdout115, confirmPushAll119-124; official TestMigrationPush dry run32-46",
+    "note": "Official test executes dry-run with in-memory migrations and mock Postgres. Text fixture uses the exact formatter with example migration names, not a production transcript."
+  },
+  "success": {
+    "stdout": "Finished supabase db push.\n",
+    "stderr": "DRY RUN: migrations will *not* be pushed to the database.\nConnecting to remote database...\nWould push these migrations:\n • 0070_example.sql\n • 0071_example.sql\n"
+  },
+  "noop": {"stdout": "Remote database is up to date.\n", "stderr": "DRY RUN: migrations will *not* be pushed to the database.\n"},
+  "error": {"stdout": "", "stderr": "DRY RUN: migrations will *not* be pushed to the database.\nERROR: migration history mismatch\n"}
+}
