@@ -44,7 +44,7 @@ export const filtersHe = {
 
   // Photo filter (#2540)
   withPhotoOnly: 'רק עם תמונה',
-  withPhotoOnlyA11y: 'הצג רק פוסטים עם תמונה',
+  withPhotoOnlyA11y: 'להציג רק פוסטים עם תמונה',
 
   // Sort
   sortNewest: '🆕 חדש קודם',
