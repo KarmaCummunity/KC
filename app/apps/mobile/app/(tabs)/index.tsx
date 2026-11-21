@@ -76,6 +76,7 @@ export default function HomeFeedScreen() {
       proximitySortCity: s.proximitySortCity,
       proximitySortCityName: s.proximitySortCityName,
       followersOnly: s.followersOnly,
+      hasPhotoOnly: s.hasPhotoOnly,
       searchQuery: s.searchQuery,
       clearAll: s.clearAll,
     })),
@@ -102,6 +103,7 @@ export default function HomeFeedScreen() {
       sortOrder: filter.sortOrder,
       proximitySortCity: filter.proximitySortCity ?? undefined,
       followersOnly: filter.followersOnly,
+      hasPhotoOnly: filter.hasPhotoOnly ? true : undefined,
       searchQuery:
         filter.searchQuery.trim().length >= 2 ? filter.searchQuery.trim() : undefined,
     }),
@@ -116,6 +118,7 @@ export default function HomeFeedScreen() {
       filter.sortOrder,
       filter.proximitySortCity,
       filter.followersOnly,
+      filter.hasPhotoOnly,
       filter.searchQuery,
     ],
   );
@@ -203,6 +206,7 @@ export default function HomeFeedScreen() {
     proximitySortCity: filter.proximitySortCity,
     proximitySortCityName: filter.proximitySortCityName,
     followersOnly: filter.followersOnly,
+    hasPhotoOnly: filter.hasPhotoOnly,
     searchQuery: filter.searchQuery,
   };
 

@@ -46,6 +46,13 @@ describe('buildFeedFilters', () => {
     });
   });
 
+  it('sends has_image only when the photo filter is on (#2540)', async () => {
+    const cat = await catalog();
+    expect(buildFeedFilters({ hasPhotoOnly: true }, cat)).toMatchObject({ has_image: true });
+    expect(buildFeedFilters({ hasPhotoOnly: false }, cat)).not.toHaveProperty('has_image');
+    expect(buildFeedFilters({}, cat)).not.toHaveProperty('has_image');
+  });
+
   it('maps the other sorts, a request and ignores a one-character query', async () => {
     const cat = await catalog();
     expect(buildFeedFilters({ sortOrder: 'oldest' }, cat)).toMatchObject({ sort: 'oldest' });

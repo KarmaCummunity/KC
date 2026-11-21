@@ -19,6 +19,13 @@ describe('worldPostFeed', () => {
     expect(countWorldPostFilters(v)).toBe(3);
   });
 
+  it('counts the photo filter as one refinement and sends it to the query (#2540)', () => {
+    const on = { ...worldPostFilterDefaults('food'), hasPhotoOnly: true };
+    expect(countWorldPostFilters(on)).toBe(1);
+    expect(worldFeedFilter('food', on).hasPhotoOnly).toBe(true);
+    expect(worldFeedFilter('food', worldPostFilterDefaults('food')).hasPhotoOnly).toBeUndefined();
+  });
+
   it('locks the world in the query whatever the value holds', () => {
     const v = { ...worldPostFilterDefaults('food'), worlds: ['items'] };
     expect(worldFeedFilter('food', v).worlds).toEqual(['food']);

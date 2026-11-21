@@ -19,5 +19,6 @@ export function applyFilterPatch(patch: Partial<PostFilterValue>): void {
     s.setProximitySortCity(patch.proximitySortCity ?? null, patch.proximitySortCityName ?? null);
   }
   if ('followersOnly' in patch) s.setFollowersOnly(patch.followersOnly ?? false);
+  if ('hasPhotoOnly' in patch) s.setHasPhotoOnly(patch.hasPhotoOnly ?? false);
   if ('searchQuery' in patch) s.setSearchQuery(patch.searchQuery ?? '');
 }

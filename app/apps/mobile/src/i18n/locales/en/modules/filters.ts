@@ -18,6 +18,7 @@ export const filtersEn = {
   sectionCondition: 'Item condition',
   sectionStatus: 'Post status',
   sectionSource: 'Post source',
+  sectionPhoto: 'Photo',
   sectionSort: 'Sort',
   sectionLocation: 'Location',
 
@@ -40,6 +41,10 @@ export const filtersEn = {
 
   // Source filter
   followersOnly: '👥 Only people I follow',
+
+  // Photo filter (#2540)
+  withPhotoOnly: 'With photo only',
+  withPhotoOnlyA11y: 'Show only posts with a photo',
 
   // Sort
   sortNewest: '🆕 Newest first',
