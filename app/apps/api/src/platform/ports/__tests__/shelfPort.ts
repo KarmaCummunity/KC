@@ -1,0 +1,163 @@
+import { FollowError } from '@kc/application';
+import { Global, Module } from '@nestjs/common';
+import type { NestFastifyApplication } from '@nestjs/platform-fastify';
+import { testConfig } from '../../../__tests__/support/testConfig';
+import { createTestIssuer, type TestIssuer } from '../../../__tests__/support/testTokens';
+import { createApp } from '../../../createApp';
+import { ApiConfigModule } from '../../config/apiConfig.module';
+import { DATABASE_POOL } from '../../database/database.tokens';
+import { IdentityDatabase } from '../../database/identityDatabase';
+import { ACCESS_TOKEN_VERIFIER } from '../../identity/accessTokenVerifier';
+import type { SqlBackedClient } from '../../postgrest/sqlBackedClient';
+import { RateLimiter } from '../../rateLimit/rateLimiter';
+import { definePort } from '../portDefinition';
+import { PortGatewayModule } from '../portGateway.module';
+import { type CachedResult, VisitorCache } from '../visitorCache';
+
+// Fixture of the gateway's HTTP tests: one port with a method of each kind the
+// gateway must handle, in-memory stand-ins for the Redis services, and an app
+// that serves them with a local token issuer.
+
+/** A port with one method of each kind the gateway must handle. */
+export interface Shelf {
+  echo(first: string, second?: number, third?: string): Promise<unknown>;
+  whoAmI(): Promise<string | null>;
+  nothing(): Promise<void>;
+  refuse(): Promise<never>;
+  crash(): Promise<never>;
+  needsStorage(): Promise<unknown>;
+  upload(): Promise<void>;
+  /** Counts how often it really ran, to observe the visitor cache. */
+  counted(key: string): Promise<number>;
+  countedNothing(): Promise<void>;
+  countedRefusal(): Promise<never>;
+}
+
+/** How many times each counted method ran; reset per test. */
+export const runs = { counted: 0, countedNothing: 0, countedRefusal: 0 };
+
+class ShelfImplementation implements Shelf {
+  /** A helper the port interface does not have; it must never be callable. */
+  secret = () => 'internal';
+
+  constructor(private readonly client: SqlBackedClient) {}
+
+  echo(first: string, second?: number, third?: string) {
+    return Promise.resolve({ first, second: second === undefined ? 'undefined' : second, third: third ?? 'default' });
+  }
+  async whoAmI() {
+    return (await this.client.auth.getUser()).data.user?.id ?? null;
+  }
+  nothing() {
+    return Promise.resolve();
+  }
+  refuse(): Promise<never> {
+    return Promise.reject(new FollowError('cooldown_active', 'wait', { cooldownUntil: '2026-12-01T00:00:00Z', cause: new Error('pg detail') }));
+  }
+  crash(): Promise<never> {
+    return Promise.reject(new Error('password=hunter2'));
+  }
+  needsStorage() {
+    return Promise.resolve((this.client as unknown as { storage: unknown }).storage);
+  }
+  upload() {
+    return Promise.resolve();
+  }
+  counted() {
+    runs.counted += 1;
+    return Promise.resolve(runs.counted);
+  }
+  countedNothing() {
+    runs.countedNothing += 1;
+    return Promise.resolve();
+  }
+  countedRefusal(): Promise<never> {
+    runs.countedRefusal += 1;
+    return Promise.reject(new FollowError('cooldown_active', 'wait'));
+  }
+}
+
+export const shelf = definePort<Shelf>({
+  name: 'shelf',
+  create: (client) => new ShelfImplementation(client),
+  methods: {
+    echo: 'member',
+    whoAmI: 'public',
+    nothing: 'member',
+    refuse: 'member',
+    crash: 'member',
+    needsStorage: 'member',
+    upload: 'not_served',
+    counted: 'public',
+    countedNothing: 'public',
+    countedRefusal: 'public',
+  },
+  visitorCacheSeconds: { counted: 30, countedNothing: 30, countedRefusal: 30 },
+});
+
+/** An in-memory visitor cache with the same contract as the Redis one. */
+export const visitorCache = {
+  entries: new Map<string, unknown>(),
+  lifetimes: [] as number[],
+  read(port: string, method: string, args: readonly unknown[]): Promise<CachedResult> {
+    const key = `${port}.${method}:${JSON.stringify(args)}`;
+    return Promise.resolve(this.entries.has(key) ? { found: true, value: this.entries.get(key) } : { found: false });
+  },
+  write(port: string, method: string, args: readonly unknown[], value: unknown, seconds: number): Promise<void> {
+    this.entries.set(`${port}.${method}:${JSON.stringify(args)}`, value);
+    this.lifetimes.push(seconds);
+    return Promise.resolve();
+  },
+};
+
+/** Stand-in for the Redis limiter: allows everything until a test sets `blocked`, and records who was counted. */
+export const limiter = {
+  blocked: false,
+  subjects: [] as string[],
+  check(subject: string) {
+    this.subjects.push(subject);
+    return Promise.resolve(this.blocked ? { allowed: false, retryAfterSeconds: 42 } : { allowed: true, retryAfterSeconds: 0 });
+  },
+};
+
+/** Puts the fakes back to their initial state; call before each test. */
+export function resetShelf(): void {
+  limiter.blocked = false;
+  limiter.subjects = [];
+  visitorCache.entries.clear();
+  visitorCache.lifetimes = [];
+  runs.counted = runs.countedNothing = runs.countedRefusal = 0;
+}
+
+/** An app that serves the shelf port. The shelf never queries, so the database behind it is inert. */
+export async function createShelfApp(): Promise<{ app: NestFastifyApplication; issuer: TestIssuer }> {
+  const issuer = await createTestIssuer();
+
+  @Global()
+  @Module({
+    providers: [
+      { provide: ACCESS_TOKEN_VERIFIER, useValue: issuer.verifier },
+      { provide: DATABASE_POOL, useValue: {} },
+      { provide: IdentityDatabase, useValue: {} },
+      { provide: RateLimiter, useValue: limiter },
+      { provide: VisitorCache, useValue: visitorCache },
+    ],
+    exports: [ACCESS_TOKEN_VERIFIER, DATABASE_POOL, IdentityDatabase, RateLimiter, VisitorCache],
+  })
+  class FakePlatformModule {}
+
+  @Module({ imports: [ApiConfigModule.forRoot(testConfig()), FakePlatformModule, PortGatewayModule.forRoot([shelf])] })
+  class TestModule {}
+
+  return { app: await createApp(TestModule, testConfig()), issuer };
+}
+
+/** Calls a shelf method over HTTP; `authorization: null` is a signed-out visitor. */
+export function callShelf(app: NestFastifyApplication, path: string, args: unknown, authorization: string | null) {
+  return app.inject({
+    method: 'POST',
+    url: `/v1/ports/${path}`,
+    payload: { args },
+    headers: authorization ? { authorization } : {},
+  });
+}
