@@ -31,16 +31,33 @@ function timingSafeEqual(a: string, b: string): boolean {
 
 /**
  * Every key the runtime currently treats as service-role: the injected
- * SUPABASE_SERVICE_ROLE_KEY plus any comma-separated SUPABASE_SECRET_KEYS
- * (the JWT Signing Keys migration can change either). Empties dropped, deduped.
+ * SUPABASE_SERVICE_ROLE_KEY plus SUPABASE_SECRET_KEYS. The runtime exposes the
+ * secret keys as a JSON map of name to key (the new API keys); a comma-separated
+ * list is accepted too, so a rotation cannot lock the workers out either way.
+ * Empties dropped, deduped.
  */
 export function currentServiceRoleKeys(env: { get(name: string): string | undefined } = Deno.env): string[] {
   const keys: string[] = [];
-  const primary = env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
-  if (primary) keys.push(primary);
-  for (const raw of (env.get('SUPABASE_SECRET_KEYS') ?? '').split(',')) {
-    const k = raw.trim();
-    if (k && !keys.includes(k)) keys.push(k);
+  const add = (k: string) => {
+    const v = k.trim();
+    if (v && !keys.includes(v)) keys.push(v);
+  };
+  add(env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
+  const extras = (env.get('SUPABASE_SECRET_KEYS') ?? '').trim();
+  if (extras.startsWith('{') || extras.startsWith('[')) {
+    // The runtime's JSON map form: a plain object of name to key. Anything else
+    // (malformed JSON, an array, nested or non-string values) yields NO extras;
+    // it never falls back to splitting JSON text on commas.
+    try {
+      const parsed: unknown = JSON.parse(extras);
+      if (parsed !== null && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        for (const v of Object.values(parsed)) {
+          if (typeof v === 'string') add(v);
+        }
+      }
+    } catch { /* malformed JSON: no extras */ }
+  } else {
+    for (const raw of extras.split(',')) add(raw);
   }
   return keys;
 }
@@ -51,17 +68,21 @@ export function primaryServiceRoleKey(env: { get(name: string): string | undefin
 }
 
 /**
- * True only for `Authorization: Bearer <key>` where key is one of the configured
- * service-role keys. A function without a configured key rejects every caller,
+ * True only when the caller presented one of the configured service-role keys,
+ * as `Authorization: Bearer <key>` (legacy JWT callers) or as the `apikey`
+ * header (pg_net with a new sb_secret key, which is not a JWT and cannot ride
+ * the bearer header). A function without a configured key rejects every caller,
  * so a missing secret never opens the endpoint.
  */
 export function isServiceRoleRequest(req: Request, serviceKey: string | string[]): boolean {
   const keys = (Array.isArray(serviceKey) ? serviceKey : [serviceKey]).filter((k) => k);
   if (keys.length === 0) return false;
   const header = req.headers.get('Authorization') ?? '';
-  if (!header.startsWith('Bearer ')) return false;
-  const bearer = header.slice('Bearer '.length);
-  return keys.some((key) => timingSafeEqual(bearer, key));
+  if (header.startsWith('Bearer ') && keys.some((key) => timingSafeEqual(header.slice('Bearer '.length), key))) {
+    return true;
+  }
+  const apikey = req.headers.get('apikey') ?? '';
+  return apikey !== '' && keys.some((key) => timingSafeEqual(apikey, key));
 }
 
 /** The 401 body every guarded worker answers with. */

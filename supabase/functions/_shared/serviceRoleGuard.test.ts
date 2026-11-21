@@ -37,6 +37,20 @@ Deno.test('accepts an array of keys on any element and rejects a non-member', ()
   assertFalse(isServiceRoleRequest(req(), keys));
 });
 
+Deno.test('accepts a configured key on the apikey header (pg_net with sb_secret)', () => {
+  const keys = ['sb_secret_new_default'];
+  const withApikey = (apikey?: string) =>
+    new Request('https://x/functions/v1/worker', {
+      method: 'POST',
+      headers: apikey === undefined ? {} : { apikey },
+    });
+  assert(isServiceRoleRequest(withApikey('sb_secret_new_default'), keys));
+  assertFalse(isServiceRoleRequest(withApikey('wrong-key'), keys));
+  assertFalse(isServiceRoleRequest(withApikey(''), keys));
+  // An Authorization header that is not a bearer token does not pass either.
+  assertFalse(isServiceRoleRequest(req('apikey sb_secret_new_default'), keys));
+});
+
 Deno.test('currentServiceRoleKeys collects the injected key and comma-separated extras', () => {
   const env = (vars: Record<string, string>) => ({ get: (name: string) => vars[name] });
   assertEquals(
@@ -50,8 +64,39 @@ Deno.test('currentServiceRoleKeys collects the injected key and comma-separated 
     currentServiceRoleKeys(env({ SUPABASE_SERVICE_ROLE_KEY: 'same', SUPABASE_SECRET_KEYS: 'same, , other ,' })),
     ['same', 'other'],
   );
+  assertEquals(
+    currentServiceRoleKeys(env({ SUPABASE_SECRET_KEYS: '{"default":"sb_secret_a","billing":"sb_secret_b"}' })),
+    ['sb_secret_a', 'sb_secret_b'],
+  );
+  assertEquals(
+    currentServiceRoleKeys(env({ SUPABASE_SERVICE_ROLE_KEY: 'legacy', SUPABASE_SECRET_KEYS: '{"default":"sb_secret_a"}' })),
+    ['legacy', 'sb_secret_a'],
+  );
   assertEquals(primaryServiceRoleKey(env({ SUPABASE_SERVICE_ROLE_KEY: 'legacy', SUPABASE_SECRET_KEYS: 'sb_secret_a' })), 'legacy');
   assertEquals(primaryServiceRoleKey(env({})), '');
+});
+
+Deno.test('SUPABASE_SECRET_KEYS accepts only a plain object of non-empty string keys', () => {
+  const env = (vars: Record<string, string>) => ({ get: (name: string) => vars[name] });
+  // Malformed JSON yields NO extras; it never falls back to comma-splitting JSON text.
+  assertEquals(currentServiceRoleKeys(env({ SUPABASE_SECRET_KEYS: '{"default":"sb_secret_a' })), []);
+  // Arrays and scalars are not the map form.
+  assertEquals(currentServiceRoleKeys(env({ SUPABASE_SECRET_KEYS: '["sb_secret_a"]' })), []);
+  // Non-string values (null, numbers, nested objects) and empty strings are dropped.
+  assertEquals(
+    currentServiceRoleKeys(env({ SUPABASE_SECRET_KEYS: '{"a":null,"b":42,"c":{"x":1},"d":"sb_secret_d","e":""}' })),
+    ['sb_secret_d'],
+  );
+});
+
+Deno.test('a wrong or anon-looking key never authenticates on either header', () => {
+  const keys = ['sb_secret_new_default'];
+  const anonApikey = new Request('https://x/functions/v1/worker', {
+    method: 'POST',
+    headers: { apikey: 'sb_publishable_anon' },
+  });
+  assertFalse(isServiceRoleRequest(anonApikey, keys));
+  assertFalse(isServiceRoleRequest(req('Bearer sb_publishable_anon'), keys));
 });
 
 /** The file holding a function's request handler: `handler.ts` when it has one, else `index.ts`. */

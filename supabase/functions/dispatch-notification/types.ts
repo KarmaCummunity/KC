@@ -115,7 +115,7 @@ export interface Ticket {
 
 /** A request the provider did not take as a whole. */
 export class TransportError extends Error {
-  constructor(message: string, readonly retryable: boolean) {
+  constructor(message: string, readonly retryable: boolean, readonly ambiguous = false) {
     super(message);
     this.name = 'TransportError';
   }

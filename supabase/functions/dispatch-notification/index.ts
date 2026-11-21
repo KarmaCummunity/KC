@@ -4,14 +4,14 @@ import postgres from 'npm:postgres@3.4.5';
 import { withObservability } from '../_shared/observability/mod.ts';
 import { createExpoTransport } from './expoTransport.ts';
 import { createDispatchHandler } from './handler.ts';
-import { createPostgresDatabase } from './postgresDatabase.ts';
+import { createScopedDatabase } from './scopedDatabase.ts';
 import { currentServiceRoleKeys } from '../_shared/serviceRoleGuard.ts';
 
 // `prepare: false`: the transaction pooler does not keep prepared statements.
 const sql = postgres(Deno.env.get('SUPABASE_DB_URL')!, { prepare: false, max: 2 });
 
 Deno.serve(withObservability('dispatch-notification', createDispatchHandler({
-  db: createPostgresDatabase((text, params) => sql.unsafe(text, params as never[])),
+  db: createScopedDatabase((text, params) => sql.unsafe(text, params as never[])),
   transport: createExpoTransport(Deno.env.get('EXPO_ACCESS_TOKEN')),
   serviceRoleKey: currentServiceRoleKeys(),
 })));
