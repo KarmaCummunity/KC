@@ -2,8 +2,12 @@
  * Publishing a post as a seeded member, the way the app does it (production baseline, D-228):
  * a plain post is a draft, its photo and `publish_post` (an offer needs a photo); a food offer is
  * `create_post_with_details` with its detail row. Used by the journeys that need a post to exist.
+ *
+ * When the member's hourly `post_create` window is spent, the server answers `rate_limited`.
+ * That is rewritten here so a spent E2E quota is never read as a product regression (#2444).
  */
 import { rest, sessionFor, uploadPostPhoto } from './api';
+import { exhaustedBudgetMessage, isRateLimitedError } from './postCreateBudget.mjs';
 
 type Credentials = { email: string; password: string };
 
@@ -19,8 +23,25 @@ export interface PostToPublish {
   readonly details: () => Record<string, unknown>;
 }
 
+/** Re-throws a spent `post_create` window with a message that names the hourly limit. */
+function rethrowRateLimited(email: string, err: unknown): never {
+  if (isRateLimitedError(err)) throw new Error(exhaustedBudgetMessage({ email }), { cause: err });
+  throw err;
+}
+
 /** Publishes as `user`; returns the post id and its title. */
 export async function publishPostAs(user: Credentials, journey: PostToPublish): Promise<{ id: string; title: string }> {
+  try {
+    return await publishPostAsUnchecked(user, journey);
+  } catch (err) {
+    rethrowRateLimited(user.email, err);
+  }
+}
+
+async function publishPostAsUnchecked(
+  user: Credentials,
+  journey: PostToPublish,
+): Promise<{ id: string; title: string }> {
   const { session } = await sessionFor(user);
   const token = session.access_token as string;
   const userId = (session.user as { id: string }).id;
