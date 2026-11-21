@@ -86,7 +86,7 @@ describe.skipIf(!KC_DATABASE_URL)('Port contracts through the API gateway', () =
       if (privacyMode !== 'Public') {
         await database.admin.query('update public.users set privacy_mode = $2 where id = $1', [member.userId, privacyMode]);
       }
-      return { userId: member.userId, users: createRemotePort<IUserRepository>(transport, 'users') };
+      return { userId: member.userId, users: createRemotePort<IUserRepository>(transport, 'user') };
     },
   };
   for (const contractCase of followGraphContract()) {
@@ -100,7 +100,7 @@ describe.skipIf(!KC_DATABASE_URL)('Port contracts through the API gateway', () =
     ],
     newActor: async () => {
       const { member, transport } = await newMember();
-      return { userId: member.userId, users: createRemotePort<IUserRepository>(transport, 'users') };
+      return { userId: member.userId, users: createRemotePort<IUserRepository>(transport, 'user') };
     },
   };
   for (const contractCase of profileEditingContract()) {
@@ -113,7 +113,7 @@ describe.skipIf(!KC_DATABASE_URL)('Port contracts through the API gateway', () =
     deleteKeepsPostForReopen: true,
     newActor: async () => {
       const { member, transport } = await newMember();
-      return { userId: member.userId, repo: createRemotePort<IPostRepository>(transport, 'posts') };
+      return { userId: member.userId, repo: createRemotePort<IPostRepository>(transport, 'post') };
     },
   };
   for (const contractCase of postRepositoryContract()) {
@@ -127,7 +127,7 @@ describe.skipIf(!KC_DATABASE_URL)('Port contracts through the API gateway', () =
       const { member, transport } = await newMember();
       return {
         userId: member.userId,
-        posts: createRemotePort<IPostRepository>(transport, 'posts'),
+        posts: createRemotePort<IPostRepository>(transport, 'post'),
         saved: createRemotePort<ISavedPostsRepository>(transport, 'savedPosts'),
       };
     },
@@ -150,7 +150,7 @@ describe.skipIf(!KC_DATABASE_URL)('Port contracts through the API gateway', () =
   const reports: ReportContractContext = {
     newActor: async () => {
       const { member, transport } = await newMember();
-      return { userId: member.userId, reports: createRemotePort<IReportRepository>(transport, 'reports') };
+      return { userId: member.userId, reports: createRemotePort<IReportRepository>(transport, 'report') };
     },
   };
   for (const contractCase of reportRepositoryContract()) {
