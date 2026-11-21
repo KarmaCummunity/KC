@@ -34,29 +34,70 @@ export const MIN_KEY_LENGTH = 32;
 
 
 // Free-text patterns removed by AC6. Order matters: links and addresses first, so the digits
-// inside them are not left half-removed.
-const TEXT_PATTERNS = [
-  // http(s) links and bare www. links.
-  /\b(?:https?:\/\/|www\.)\S+/giu,
-  // Email addresses (ASCII, so Hebrew text touching the address is kept).
-  /[a-z0-9][a-z0-9._%+-]*@[a-z0-9.-]+\.[a-z]{2,}/giu,
-  // Bare domains people paste (wa.me/…, t.me/…, example.co.il).
-  /\b[a-z0-9-]+(?:\.[a-z0-9-]+)*\.(?:com|net|org|il|me|ly|io|co)(?:\/\S*)?/giu,
-  // Israeli phone numbers: 0 or 972 first, then 8 or 9 more digits, with the spaces, dashes and
-  // brackets people type (050-123 4567, (03) 1234567, +972-50-1234567). Dots are not taken as
-  // separators, so a date such as 05.11.2026 stays.
-  /(?:\+?972|\b0)(?:[\s()-]*\d){8,9}(?!\d)/gu,
-  // International numbers written with a plus.
-  /\+\d(?:[\s()-]*\d){7,}/gu,
-  // ID numbers, account numbers and any other number of 7 or more digits in a row.
-  /\d{7,}/gu,
-];
+// inside them are not left half-removed; obfuscated emails run before bare domains so the
+// local part is not left behind.
+
+// TLDs recognized in bare domains and obfuscated emails: broad but listed, so an ordinary
+// word after a dot (a sentence boundary, a version number) is not eaten. (?![a-z]) stops a
+// listed TLD matching as a prefix of a longer word.
+const TLD_LIST = 'com|net|org|il|me|ly|io|co|info|biz|app|dev|pro|shop|site|online|club|cc|tv|ai|xyz|link|live|chat|page|store|tech|today|world|city|fund|give|care|help|life|fit|blog|news|media|network|services|digital|community|support|agency|center|social|one|group';
+const TLD_SET = new Set(TLD_LIST.split('|'));
+
+// Phone separators people type: brackets, dots, dashes including the Hebrew maqaf and other
+// unicode dash variants; \s covers non-breaking and unicode spaces.
+const SEP = '[\\s().\\-\u05BE\u2010-\u2015\u2212\uFE58\uFE63\uFF0D]*';
+const ISRAELI_PHONE = new RegExp(`(?:\\+?972|\\b0)(?:${SEP}\\d){8,9}(?!\\d)`, 'gu');
+const INTL_PHONE = new RegExp(`\\+\\d(?:${SEP}\\d){7,}`, 'gu');
+// "someone (at) gmail dot com" and friends; only removed when the last dot word is a TLD.
+const AT_PAREN = '(?:\\([ \\t]*at[ \\t]*\\)|\\[[ \\t]*at[ \\t]*\\])';
+const DOT_FORM = '(?:\\.|\\([ \\t]*dot[ \\t]*\\)|\\[[ \\t]*dot[ \\t]*\\]|[ \\t]+dot[ \\t]+)';
+const DOMAIN_PART = `[a-z0-9-]{1,64}(?:[ \\t]*${DOT_FORM}[ \\t]*[a-z0-9-]{1,64})+`;
+// Parenthesized/bracketed "at" is a strong obfuscation signal (any local part); a bare
+// " at " needs a 3+ char local part so a short ordinary word next to it is not eaten.
+const OBFUSCATED_EMAIL = new RegExp(
+  `(?<![a-z0-9])(?:[a-z0-9][a-z0-9._%+-]*[ \\t]*${AT_PAREN}[ \\t]*${DOMAIN_PART}|[a-z0-9][a-z0-9._%+-]{2,}[ \\t]+at[ \\t]+${DOMAIN_PART})`, 'giu');
+
+/** The longest leading dd.mm.yyyy span of a candidate that is a real calendar date, else null. */
+function validDateSpan(text) {
+  const m = /^(\d{1,2})\.(\d{1,2})\.(\d{4})/.exec(text);
+  if (!m) return null;
+  const day = +m[1], month = +m[2], year = +m[3];
+  if (year < 1900 || year > 2099 || month < 1 || month > 12) return null;
+  const d = new Date(Date.UTC(year, month - 1, day));
+  if (d.getUTCFullYear() !== year || d.getUTCMonth() !== month - 1 || d.getUTCDate() !== day) return null;
+  return m[0];
+}
+
+/** Only an exact valid date span is protected; any digits glued to it are still removed. */
+function removePhone(match) {
+  const span = validDateSpan(match);
+  if (!span) return REMOVED;
+  return /\d/.test(match.slice(span.length)) ? span + REMOVED : match;
+}
+
+/** An obfuscated email only counts when its last dot word is a listed TLD. */
+function removeObfuscatedEmail(match) {
+  const last = /([a-z]{2,})[^a-z]*$/i.exec(match);
+  return last && TLD_SET.has(last[1].toLowerCase()) ? REMOVED : match;
+}
 
 /** Replaces contact details and ID numbers in one text with the removal mark (AC6). */
 export function cleanText(text) {
   if (typeof text !== 'string') return text ?? null;
-  let out = text;
-  for (const pattern of TEXT_PATTERNS) out = out.replace(pattern, REMOVED);
+  const out = text
+    // http(s) links and bare www. links.
+    .replace(/\b(?:https?:\/\/|www\.)\S+/giu, REMOVED)
+    // Email addresses (ASCII, so Hebrew text touching the address is kept).
+    .replace(/[a-z0-9][a-z0-9._%+-]*@[a-z0-9.-]+\.[a-z]{2,}/giu, REMOVED)
+    .replace(OBFUSCATED_EMAIL, removeObfuscatedEmail)
+    // Bare domains people paste (wa.me/…, t.me/…, example.co.il, mypage.shop).
+    .replace(new RegExp(`\\b[a-z0-9-]+(?:\\.[a-z0-9-]+)*\\.(?:${TLD_LIST})(?![a-z])(?:\\/\\S*)?`, 'giu'), REMOVED)
+    // Israeli numbers (050-123 4567, (03) 1234567, +972-50-1234567, 050.123.4567), then
+    // international numbers written with a plus; a leading dd.mm.yyyy date stays.
+    .replace(ISRAELI_PHONE, removePhone)
+    .replace(INTL_PHONE, removePhone)
+    // ID numbers, account numbers and any other number of 7+ digits in a row.
+    .replace(/\d{7,}/gu, REMOVED);
   // "050-1234567 / 052-7654321" leaves two marks and a slash: keep one mark.
   return out.replace(new RegExp(`${escapeRegExp(REMOVED)}(?:[\\s/,;|-]*${escapeRegExp(REMOVED)})+`, 'gu'), REMOVED);
 }
@@ -64,9 +105,31 @@ export function cleanText(text) {
 /** cleanText applied to every string inside a JSON value (the free-form `details` object). */
 export function cleanDeep(value) {
   if (typeof value === 'string') return cleanText(value);
+  if (typeof value === 'number') {
+    // Same policy as free text: an integer of 7+ digits is an ID/account/phone even typed
+    // as a number; smaller counts, sizes and prices stay.
+    return Number.isInteger(value) && Math.abs(value) >= 1e6 ? REMOVED : value;
+  }
   if (Array.isArray(value)) return value.map(cleanDeep);
   if (value && typeof value === 'object') {
-    return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, cleanDeep(v)]));
+    // Keys are free text too and carry contact data; scrub them as well. defineProperty keeps
+    // special own keys (__proto__, constructor, prototype) as real own properties instead of
+    // mutating the prototype or dropping the field. Two keys can scrub to the same name (two
+    // different phones, or a key already named like the mark): qualify the later one
+    // deterministically instead of blindly overwriting the earlier value.
+    const out = {};
+    const used = new Set();
+    for (const [k, v] of Object.entries(value)) {
+      let nk = cleanText(k);
+      if (used.has(nk)) {
+        let n = 2;
+        while (used.has(`${nk} (${n})`)) n += 1;
+        nk = `${nk} (${n})`;
+      }
+      used.add(nk);
+      Object.defineProperty(out, nk, { value: cleanDeep(v), enumerable: true, writable: true, configurable: true });
+    }
+    return out;
   }
   return value;
 }

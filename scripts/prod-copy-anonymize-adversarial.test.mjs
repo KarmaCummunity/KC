@@ -3,10 +3,13 @@
 // ADDITIVE to scripts/prod-copy-anonymize.test.mjs — that suite's coverage is untouched.
 //
 //   • GUARDS — patterns AC6 says are removed must actually be removed (exact expected
-//     output asserted, not merely absence of the original string).
-//   • RESIDUALS — measurements of what the current patterns keep, documented not endorsed.
-//     Tightening them is a technical hardening change handled separately; the
-//     real-text/precise-time/relationship retention tradeoff is an owner/spec decision.
+//     output asserted, not merely absence of the original string), including the hardened
+//     forms: dot-separated phones, unicode separator variants, broader TLDs, obfuscated
+//     emails, details keys, and numeric-typed details values, with date/price false-positive
+//     guards and deterministic key-collision qualification.
+//   • RESIDUALS — measurements of what the hardened patterns still keep, documented not
+//     endorsed. The real-text/precise-time/relationship retention tradeoff is an owner/spec
+//     decision.
 // All fixtures are synthetic. No production data.
 
 import { test } from 'node:test';
@@ -53,30 +56,67 @@ test('GUARD: output drops non-format fields (defense against export column drift
   assert.ok(!has(m.email, 'real@x.com'));
 });
 
-test('RESIDUAL: dot-separated phone numbers survive (pattern excludes dot separators)', () => {
-  assert.ok(has(cleanText('call me on 050.123.4567 anytime'), '050.123.4567'));
+test('GUARD: dot phones removed; only exact valid date spans protected, attached digits redacted', () => {
+  assert.equal(cleanText('call me on 050.123.4567 anytime'), `call me on ${REMOVED} anytime`);
+  assert.equal(cleanText('פנוי מ-05.11.2026'), 'פנוי מ-05.11.2026');
+  // A time glued to a real date is not part of the date span: the remainder is redacted.
+  assert.equal(cleanText('מ-05.11.2026 14.30'), `מ-05.11.2026${REMOVED}.30`);
+  // A phone after a real date is caught on its own, not sheltered by the date prefix.
+  assert.equal(cleanText('x 05.11.2026 0501234567'), `x 05.11.2026 ${REMOVED}`);
+  // Impossible calendar dates are not protected (and too short to match anyway).
+  assert.equal(cleanText('date 05.13.2026 end'), 'date 05.13.2026 end');
+  assert.equal(cleanText('date 31.02.2026 end'), 'date 31.02.2026 end');
+});
+
+test('GUARD: unicode separator variants (maqaf, en-dash, nbsp) are removed as phones', () => {
+  assert.equal(cleanText('call 050־123־4567 now'), `call ${REMOVED} now`);
+  assert.equal(cleanText('call 050–123–4567 now'), `call ${REMOVED} now`);
+  assert.equal(cleanText('call 050 123 4567 now'), `call ${REMOVED} now`);
 });
 
 test('RESIDUAL: phone numbers written in Hebrew words survive (lexical scrub)', () => {
   assert.ok(has(cleanText('הטלפון שלי הוא אפס חמש אפס אחת שתיים שלוש ארבע חמש שש שבע'), 'אפס חמש אפס'));
 });
 
-test('RESIDUAL: bare domains outside the listed TLDs survive (.app/.dev/.shop)', () => {
-  const cleaned = cleanText('find me on mypage.app or mypage.dev or mypage.shop');
-  assert.ok(has(cleaned, 'mypage.app') && has(cleaned, 'mypage.dev') && has(cleaned, 'mypage.shop'));
+test('GUARD: bare domains beyond the original TLD shortlist are removed', () => {
+  assert.equal(cleanText('find me on mypage.app or mypage.dev or mypage.shop'),
+    `find me on ${REMOVED} or ${REMOVED} or ${REMOVED}`);
+  assert.equal(cleanText('a listed TLD must not eat a longer word: mypage.apples'),
+    'a listed TLD must not eat a longer word: mypage.apples');
 });
 
-test('RESIDUAL: obfuscated email local parts survive when only the domain is scrubbed', () => {
-  assert.ok(has(cleanText('mail me at someone (at) gmail.com'), 'someone (at)'));
+test('GUARD: obfuscated emails - zero-width, parenthesized, adjacency, bounded TLD', () => {
+  assert.equal(cleanText('someone(at)gmail.com'), REMOVED);
+  assert.equal(cleanText('mail someone (at) gmail [dot] com now'), `mail ${REMOVED} now`);
+  assert.equal(cleanText('mail me at someone (at) gmail.com'), `mail me at ${REMOVED}`);
+  assert.equal(cleanText('mail someone at gmail dot com please'), `mail ${REMOVED} please`);
+  assert.equal(cleanText('meet at noon for coffee'), 'meet at noon for coffee');
+  // A bare " at " with a 1-2 char local part is treated as ordinary words, not an email.
+  assert.equal(cleanText('me at gmail dot com'), 'me at gmail dot com');
+  // An unlisted final dot word is a known residual: bounded TLD coverage, not universal.
+  assert.ok(has(cleanText('mail someone at gmail dot xyzzy ok'), 'xyzzy'));
 });
 
-test('RESIDUAL: contact data inside details KEYS survives (only values are scrubbed)', () => {
-  assert.ok(has(JSON.stringify(cleanDeep({ 'contact_0501234567': 'ok' })), '0501234567'));
+test('GUARD: details keys scrubbed; special own keys and pre-qualified names preserve every value', () => {
+  assert.ok(!has(JSON.stringify(cleanDeep({ 'contact_0501234567': 'ok' })), '0501234567'));
+  assert.deepEqual(cleanDeep({ '050-1234567': 'a', '052-7654321': 'b' }),
+    { [REMOVED]: 'a', [`${REMOVED} (2)`]: 'b' });
+  // JSON.parse fixtures: __proto__/constructor stay real own properties (no prototype
+  // mutation, no dropped field); a key already named like the mark qualifies further.
+  const raw = JSON.parse('{"__proto__": {"polluted": false}, "constructor": 1, "050-1234567": "a", "052-7654321": "b", "[הוסר]": "pre"}');
+  const out = cleanDeep(raw);
+  assert.ok(Object.prototype.hasOwnProperty.call(out, '__proto__'));
+  assert.equal(({}).polluted, undefined);
+  assert.deepEqual(Object.keys(out), ['__proto__', 'constructor', REMOVED, `${REMOVED} (2)`, `${REMOVED} (3)`]);
+  assert.deepEqual(Object.values(out), [{ polluted: false }, 1, 'a', 'b', 'pre']);
 });
 
-test('RESIDUAL: numeric-typed contact values inside details survive (only strings are scrubbed)', () => {
-  const cleaned = cleanDeep({ contact: 501234567 });
-  assert.equal(cleaned.contact, 501234567);
+test('GUARD: typed integers of 7+ digits removed like text; smaller numbers stay, no currency exemption', () => {
+  assert.deepEqual(cleanDeep({ contact: 501234567, count: 42, code: 123456, price: 1234567.89 }),
+    { contact: REMOVED, count: 42, code: 123456, price: 1234567.89 });
+  assert.equal(cleanText('₪1000000 deal'), `₪${REMOVED} deal`);
+  assert.equal(cleanText('cost 1000000 ש"ח total'), `cost ${REMOVED} ש"ח total`);
+  assert.equal(cleanText('id 1234567 end'), `id ${REMOVED} end`);
 });
 
 test('RESIDUAL: short numeric identifiers (under 7 digits) survive', () => {
