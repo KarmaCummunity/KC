@@ -87,7 +87,7 @@ begin
 end;
 $$;
 
-select plan(27);
+select plan(32);
 
 -- s super admin · a org admin of the platform · o org admin of another org · g org manager of
 -- the platform · m moderator · x member · e an e2e member on the seed domain.
@@ -164,8 +164,9 @@ select is(pg_temp.run('s', $$select public.admin_seed_demo_data_step('short')$$)
 select is(
   pg_temp.steps('s', $$select public.admin_seed_demo_data_step('SeedPass-2026')$$,
                 'select public.admin_seed_demo_data_step(null)') -> 'result',
-  -- 610 = 600 item posts + 10 world posts (the test catalog has 5 plan rows, two posts each).
-  '{"demo_users": 200, "demo_organizations": 3, "demo_item_posts": 610, "demo_ride_posts": 120,
+  -- 618 = 600 item posts + 10 world posts (the test catalog has 5 plan rows, two posts each)
+  -- + 8 coverage posts; 202 = 200 members + the two coverage fixture members.
+  '{"demo_users": 202, "demo_organizations": 3, "demo_item_posts": 618, "demo_ride_posts": 120,
     "demo_follows": 1600, "demo_chats": 150, "demo_org_memberships": 24}'::jsonb,
   'the stepped restore creates members, item posts, rides, follows, chats and the demo nonprofits (AC7)');
 select is((select count(distinct g.role)::int from public.admin_role_grants g
@@ -183,11 +184,11 @@ select ok((select password_hash like '$2%' and password_hash <> 'SeedPass-2026' 
   'only the bcrypt hash of the password is kept (AC9)');
 select is((select count(*)::int from auth.users u
             where u.id = any (kc_private.demo_member_ids())
-              and u.encrypted_password = extensions.crypt('SeedPass-2026', u.encrypted_password)), 200,
+              and u.encrypted_password = extensions.crypt('SeedPass-2026', u.encrypted_password)), 202,
   'every demo member signs in with that password');
 select is((select count(*)::int from public.users u join public.user_account a on a.user_id = u.id
             where u.id = any (kc_private.demo_member_ids()) and u.is_active and a.onboarding_state = 'completed'
-              and u.display_name is not null and u.city_id is not null), 200,
+              and u.display_name is not null and u.city_id is not null), 202,
   'demo members are active, onboarded, named and placed in a city');
 select is((select count(*)::int from public.posts p join public.post_ride_details d on d.post_id = p.id
             where p.owner_id = any (kc_private.demo_member_ids()) and d.departs_at > now()), 120,
@@ -201,8 +202,26 @@ select is(pg_temp.audit('admin_seed_demo_data'),
   'the restore is audited with its counts only, never the password (AC9)');
 select is(
   pg_temp.steps('a', 'select public.admin_seed_demo_data_step(null)', 'select public.admin_seed_demo_data_step(null)')
-    -> 'result' -> 'demo_users', '200'::jsonb,
+    -> 'result' -> 'demo_users', '202'::jsonb,
   'a later restore reuses the saved password and replaces the demo data instead of doubling it');
+
+-- ── Coverage of the lifecycle machines (wave 1) ─────────────────────────────
+select is(pg_temp.run('a', 'select public.admin_demo_coverage_report()')::jsonb,
+  '{"wave": 1, "complete": true, "gaps": [],
+    "machines": {"post": {"expected": 8, "covered": 8}, "admin_task": {"expected": 5, "covered": 5},
+                 "report": {"expected": 3, "covered": 3}}}'::jsonb,
+  'after a restore every state of the post, admin task and report machines has a fixture');
+select is(pg_temp.run('x', 'select public.admin_demo_coverage_report()'), '42501',
+  'a plain member cannot read the coverage report');
+select is((select count(*)::int from public.posts p
+            where p.owner_id = any (kc_private.demo_member_ids()) and p.title like '[DCC] Post S1 — %'
+              and p.status = 'closed_delivered'
+              and exists (select 1 from public.post_handoffs h where h.post_id = p.id and h.status = 'handed_over')), 1,
+  'the delivered fixture post has its recipient');
+delete from kc_private.admin_tasks where status = 'blocked' and kc_private.demo_coverage_label() = any (labels);
+select is(pg_temp.run('a', 'select public.admin_demo_coverage_report()')::jsonb -> 'gaps',
+  '[{"machine": "admin_task", "state": "blocked"}]'::jsonb,
+  'a state without a fixture is reported as a gap');
 
 -- ── The lock, and wiping oneself ────────────────────────────────────────────
 select is(pg_temp.run('s', 'select public.admin_wipe_demo_data_step()')::jsonb ->> 'progress_key', 'wipe_accounts',
@@ -218,7 +237,7 @@ select is(pg_temp.run_id((kc_private.demo_member_ids())[1], 'select public.admin
 -- One demo nonprofit has a finance account: billing keeps it from being deleted (AC4).
 insert into billing.org_finance_accounts (org_id, name, kind) values ('00000000-0000-4000-8000-00000000d001', 'cash', 'cash');
 select is(pg_temp.steps('s', 'select public.admin_wipe_demo_data_step()', 'select public.admin_wipe_demo_data_step()') -> 'result',
-  '{"posts_deleted": 730, "chats_deleted": 150, "users_deleted": 200, "organizations_deleted": 2, "organizations_kept": 1}'::jsonb,
+  '{"posts_deleted": 738, "chats_deleted": 150, "users_deleted": 202, "organizations_deleted": 2, "organizations_kept": 1}'::jsonb,
   'the wipe finishes: every demo member goes, and a nonprofit with payment history is kept and reported (AC2, AC4)');
 select is(pg_temp.run('s', 'select public.admin_demo_data_status()')::jsonb - 'can_seed' - 'has_saved_password',
   '{"demo_users": 0, "demo_organizations": 1, "demo_item_posts": 0, "demo_ride_posts": 0, "demo_follows": 0,
@@ -226,6 +245,9 @@ select is(pg_temp.run('s', 'select public.admin_demo_data_status()')::jsonb - 'c
   'nothing of the demo members is left (the kept nonprofit keeps its real admin); the lock is released');
 select is((select count(*)::int from auth.users), 7,
   'real members and the e2e member on the seed domain are never touched (AC3)');
+select is((select count(*)::int from public.reports where note like 'demo-coverage:%')
+          + (select count(*)::int from kc_private.admin_tasks where kc_private.demo_coverage_label() = any (labels)), 0,
+  'the wipe also removes the coverage reports and tasks, which no member owns');
 select is(pg_temp.audit('admin_wipe_demo_data'),
   '1|' || pg_temp.uid('s') || '|chats_deleted,organizations_deleted,organizations_kept,posts_deleted,users_deleted',
   'the completed wipe is audited with its counts');
