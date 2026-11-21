@@ -23,8 +23,8 @@ const donationLinks = hostedPort('donationLinks', {
   create: (client) => new SupabaseDonationLinksRepository(adapterClient<typeof SupabaseDonationLinksRepository>(client)),
   methods: {
     listByCategory: 'member',
-    addViaEdgeFunction: 'not_served',
-    updateViaEdgeFunction: 'not_served',
+    addViaEdgeFunction: 'member',
+    updateViaEdgeFunction: 'member',
     deleteById: 'member',
     report: 'member',
     listForReview: 'member',

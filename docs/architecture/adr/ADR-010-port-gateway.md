@@ -56,6 +56,12 @@ Only server code builds engine requests. The app can reach a table or function o
 - **Phase 11 is where adapters are replaced.** A hosted adapter is rewritten as a native module (use case + SQL) when its context changes or a load test points at it. The engine shrinks as they go and is deleted with the last one.
 - The API may import `@kc/infrastructure-supabase` and `@supabase/postgrest-js`; it may not import the Supabase network client or the UI kit (`check-architecture.mjs`).
 
+### 4. Edge Functions an adapter calls
+
+Some adapter methods call an Edge Function instead of the database (`client.functions.invoke(name, { body })`). Once a function is ported to the API as a native module (ADR-009 phase 8), the SQL-backed client answers that call in process, in the shape the Supabase functions client uses (`data` for a 2xx answer, otherwise an error that carries the response). The adapter needs no change and its methods become served. A function that is not ported yet is refused by name, and its methods stay `not_served`.
+
+A ported function may need to write as the service role, as it did with the service key. `IdentityDatabase.runAsService` and `PortClients.serviceClient()` are that path: for server modules only, after the module has checked the caller itself, and never handed to a hosted adapter.
+
 ## How a port moves
 
 1. Declare it in `hostedPorts.ts` with an access decision per method.

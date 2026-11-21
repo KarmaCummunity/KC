@@ -58,11 +58,42 @@ describe('createSqlBackedClient', () => {
     expect((await signedOut.auth.getUser()).data.user).toBeNull();
   });
 
-  it('names a Supabase service it does not carry instead of failing obscurely', () => {
-    const client = setup(null, 0).client as unknown as { functions: unknown; storage: unknown; channel(name: string): unknown };
+  it('names a Supabase service it does not carry instead of failing obscurely', async () => {
+    const client = setup(null, 0).client as unknown as { storage: unknown; channel(name: string): unknown };
 
-    expect(() => client.functions).toThrow(UnsupportedSupabaseServiceError);
     expect(() => client.storage).toThrow(UnsupportedSupabaseServiceError);
     expect(() => client.channel('x')).toThrow(UnsupportedSupabaseServiceError);
+    await expect(setup(null, 0).client.functions.invoke('not-ported-yet')).rejects.toBeInstanceOf(UnsupportedSupabaseServiceError);
+  });
+
+  it('answers a function this server has taken over the way the functions client would', async () => {
+    const run: StatementRunner = () => Promise.resolve(undefined);
+    const received: unknown[] = [];
+    const client = createSqlBackedClient(caller, cacheSource(), run, undefined, {
+      'validate-donation-link': (body) => {
+        received.push(body);
+        return Promise.resolve({ status: 200, body: { ok: true } });
+      },
+      'always-refuses': () => Promise.resolve({ status: 403, body: { code: 'forbidden' } }),
+    });
+
+    const ok = await client.functions.invoke('validate-donation-link', { body: { url: 'https://example.org' } });
+    const refused = await client.functions.invoke('always-refuses');
+
+    expect(ok).toEqual({ data: { ok: true }, error: null });
+    expect(received).toEqual([{ url: 'https://example.org' }]);
+    expect(refused.data).toBeNull();
+    // The adapters read a refusal from the response the error carries.
+    const context = (refused.error as { name: string; context: Response }).context;
+    expect((refused.error as { name: string }).name).toBe('FunctionsHttpError');
+    expect(context.status).toBe(403);
+    expect(await context.json()).toEqual({ code: 'forbidden' });
+  });
+
+  it('cannot be tricked into calling something that is not a registered function', async () => {
+    const client = createSqlBackedClient(caller, cacheSource(), () => Promise.resolve(undefined), undefined, {});
+
+    await expect(client.functions.invoke('constructor')).rejects.toBeInstanceOf(UnsupportedSupabaseServiceError);
+    await expect(client.functions.invoke('toString')).rejects.toBeInstanceOf(UnsupportedSupabaseServiceError);
   });
 });

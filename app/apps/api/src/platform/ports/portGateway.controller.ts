@@ -17,6 +17,7 @@ import { UnsupportedSupabaseServiceError } from '../postgrest/sqlBackedClient';
 import { RateLimiter } from '../rateLimit/rateLimiter';
 import { findArgsProblem, type PortArgShapes } from './argShapes';
 import generatedArgShapes from './portArgShapes.generated.json';
+import { HostedFunctions } from './hostedFunctions';
 import { PortClients } from './portClients';
 import type { PortAccess, PortDefinition } from './portDefinition';
 import { VisitorCache } from './visitorCache';
@@ -62,6 +63,7 @@ export class PortGatewayController {
     @Inject(PortClients) private readonly clients: PortClients,
     @Inject(RateLimiter) private readonly rateLimiter: RateLimiter,
     @Inject(VisitorCache) private readonly visitorCache: VisitorCache,
+    @Inject(HostedFunctions) private readonly functions: HostedFunctions,
   ) {}
 
   /**
@@ -114,7 +116,7 @@ export class PortGatewayController {
       if (cached.found) return answer(cached.value, typed);
     }
 
-    const implementation = port.create(this.clients.clientFor(caller)) as Record<string, unknown>;
+    const implementation = port.create(this.clients.clientFor(caller, this.functions.forCaller(caller))) as Record<string, unknown>;
     const handler = implementation[method];
     if (typeof handler !== 'function') throw new Error(`port ${portName} lists ${method} but its implementation has no such method`);
 

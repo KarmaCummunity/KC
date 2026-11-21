@@ -28,7 +28,7 @@ export function beginAsSql(role: RequestRole, escapedClaims: string): string {
 }
 
 /** Database roles a request can run as. Never taken from client input. */
-export type RequestRole = 'authenticated' | 'anon';
+export type RequestRole = 'authenticated' | 'anon' | 'service_role';
 
 /**
  * Runs database work as the caller, the way PostgREST does: one transaction
@@ -48,6 +48,17 @@ export class IdentityDatabase {
   /** Runs `work` as a signed-out visitor: only what the `anon` role may see. */
   runAnonymous<T>(work: (session: DatabaseSession) => Promise<T>): Promise<T> {
     return this.runWithRole('anon', { role: 'anon' }, work);
+  }
+
+  /**
+   * Runs `work` as the service role, which row-level security does not bind.
+   * For server modules that write on a member's behalf after checking the
+   * member themselves (what an Edge Function does with the service key).
+   * Never reachable with a request a client composed: only code in this
+   * server builds what runs here.
+   */
+  runAsService<T>(work: (session: DatabaseSession) => Promise<T>): Promise<T> {
+    return this.runWithRole('service_role', { role: 'service_role' }, work);
   }
 
   private async runWithRole<T>(

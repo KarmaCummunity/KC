@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Global, Module } from '@nestjs/common';
 import type { AddressInfo } from 'node:net';
-import type { ILegalDocumentRepository } from '@kc/application';
+import { DonationLinkError, type IDonationLinksRepository, type ILegalDocumentRepository } from '@kc/application';
 import { createPortTransport, createRemotePort } from '@kc/infrastructure-api';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -61,6 +61,9 @@ describe.skipIf(!KC_DATABASE_URL)('Hosted ports on the KC schema', () => {
   let cache: SchemaCache;
   let app: NestFastifyApplication;
   let issuer: TestIssuer;
+  /** Stands in for the outbound reachability check: no test reaches the network. */
+  const reachableHosts = new Set(['give.example.org']);
+  const checkReachable = (url: URL) => Promise.resolve(reachableHosts.has(url.hostname));
 
   beforeAll(async () => {
     cache = await loadSchemaCache(((text: string) => database.admin.query(text)) as never);
@@ -88,7 +91,7 @@ describe.skipIf(!KC_DATABASE_URL)('Hosted ports on the KC schema', () => {
     class LocalIdentityModule {}
 
     const config = testConfig({ databaseUrl: KC_DATABASE_URL ?? '' });
-    @Module({ imports: [ApiConfigModule.forRoot(config), DatabaseModule, LocalIdentityModule, PortGatewayModule.forRoot(HOSTED_PORTS)] })
+    @Module({ imports: [ApiConfigModule.forRoot(config), DatabaseModule, LocalIdentityModule, PortGatewayModule.forRoot(HOSTED_PORTS, { checkReachable })] })
     class GatewayModule {}
     app = await createApp(GatewayModule, config);
   });
@@ -209,6 +212,45 @@ describe.skipIf(!KC_DATABASE_URL)('Hosted ports on the KC schema', () => {
     expect(terms.publishedAt.toISOString()).toBe('2025-12-25T08:00:00.000Z');
     // A member-only method of the same port is still closed to the visitor.
     await expect(legal.getPendingForCurrentUser()).rejects.toMatchObject({ reason: 'unauthenticated' });
+  });
+
+  it('a member adds and edits a donation link through the ported function; the rules hold end to end', async () => {
+    await database.admin.query(
+      "insert into public.donation_link_categories (slug, icon_name, sort_order) values ('food', 'restaurant', 1) on conflict do nothing",
+    );
+    const alice = await database.newMember();
+    const bob = await database.newMember();
+    const address = app.getHttpServer().address() as AddressInfo | null;
+    if (!address) await app.listen(0, '127.0.0.1');
+    const baseUrl = `http://127.0.0.1:${(app.getHttpServer().address() as AddressInfo).port}`;
+    const linksOf = (userId: string) =>
+      createRemotePort<IDonationLinksRepository>(createPortTransport({ baseUrl, getAccessToken: () => issuer.sign(userId) }), 'donationLinks');
+    const input = { categorySlug: 'food' as const, url: 'https://give.example.org/donate', displayName: 'Food Bank' };
+
+    const added = await linksOf(alice.userId).addViaEdgeFunction(input);
+    const edited = await linksOf(alice.userId).updateViaEdgeFunction({ ...input, linkId: added.id, displayName: 'Food Bank TLV' });
+    const stored = await database.admin.query<{ display_name: string; submitted_by: string; review_status: string }>(
+      'select display_name, submitted_by, review_status from public.donation_links where id = $1',
+      [added.id],
+    );
+
+    expect(added).toMatchObject({ categorySlug: 'food', url: 'https://give.example.org/donate', displayName: 'Food Bank' });
+    expect(edited.displayName).toBe('Food Bank TLV');
+    // Written by the server as the service role, attributed to the member, and sent to review.
+    expect(stored.rows[0]).toEqual({ display_name: 'Food Bank TLV', submitted_by: alice.userId, review_status: 'pending' });
+
+    // Another member may not edit it; a private address and an unreachable one are refused; so is an unknown world.
+    const refusal = (attempt: Promise<unknown>) => attempt.then(() => 'accepted', (error: unknown) => (error instanceof DonationLinkError ? error.code : error));
+    expect(await refusal(linksOf(bob.userId).updateViaEdgeFunction({ ...input, linkId: added.id }))).toBe('forbidden');
+    expect(await refusal(linksOf(alice.userId).addViaEdgeFunction({ ...input, url: 'http://169.254.169.254/latest/meta-data/' }))).toBe('invalid_url');
+    expect(await refusal(linksOf(alice.userId).addViaEdgeFunction({ ...input, url: 'https://down.example.org/' }))).toBe('unreachable');
+    // A real giving world with no links category: the table's foreign key refuses it.
+    expect(await refusal(linksOf(alice.userId).addViaEdgeFunction({ ...input, categorySlug: 'housing' }))).toBe('invalid_input');
+    // A value that is not a giving world at all never reaches the function: the gateway's argument check stops it.
+    expect(await refusal(linksOf(alice.userId).addViaEdgeFunction({ ...input, categorySlug: 'no-such-world' as never }))).toMatchObject({
+      code: 'invalid_arguments',
+      status: 400,
+    });
   });
 
   it('a signed-out visitor is turned away from every member method before the database is touched', async () => {

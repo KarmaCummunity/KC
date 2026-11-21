@@ -1,5 +1,7 @@
 import { type DynamicModule, Module } from '@nestjs/common';
+import { checkReachable } from '../../modules/donationLinks/reachability';
 import { appLoggerProvider } from '../logging/appLogger';
+import { HostedFunctions, LINK_REACHABILITY_CHECK } from './hostedFunctions';
 import { PortClients } from './portClients';
 import type { PortDefinition } from './portDefinition';
 import { PORT_DEFINITIONS, PortGatewayController } from './portGateway.controller';
@@ -38,12 +40,21 @@ export function indexPorts(definitions: readonly PortDefinition[]): ReadonlyMap<
 
 @Module({})
 export class PortGatewayModule {
-  /** @param definitions Every port the API serves. Needs the database and identity modules (both global). */
-  static forRoot(definitions: readonly PortDefinition[]): DynamicModule {
+  /**
+   * @param definitions Every port the API serves. Needs the database and identity modules (both global).
+   * @param overrides Outbound checks a test replaces, so no test reaches the network.
+   */
+  static forRoot(definitions: readonly PortDefinition[], overrides: { checkReachable?: (url: URL) => Promise<boolean> } = {}): DynamicModule {
     return {
       module: PortGatewayModule,
       controllers: [PortGatewayController],
-      providers: [appLoggerProvider, PortClients, { provide: PORT_DEFINITIONS, useValue: indexPorts(definitions) }],
+      providers: [
+        appLoggerProvider,
+        PortClients,
+        HostedFunctions,
+        { provide: LINK_REACHABILITY_CHECK, useValue: overrides.checkReachable ?? ((url: URL) => checkReachable(url)) },
+        { provide: PORT_DEFINITIONS, useValue: indexPorts(definitions) },
+      ],
     };
   }
 }

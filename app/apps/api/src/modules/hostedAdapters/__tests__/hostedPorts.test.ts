@@ -66,11 +66,6 @@ describe('hosted ports', () => {
         .map(([method]) => `${port.name}.${method}`),
     ).sort();
 
-    expect(notServed).toEqual([
-      'donationLinks.addViaEdgeFunction',
-      'donationLinks.updateViaEdgeFunction',
-      'post.republish',
-      'publicResearch.submit',
-    ]);
+    expect(notServed).toEqual(['post.republish', 'publicResearch.submit']);
   });
 });

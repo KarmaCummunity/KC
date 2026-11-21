@@ -19,11 +19,23 @@ export class UnsupportedSupabaseServiceError extends Error {
 export interface SqlBackedClient {
   readonly from: PostgrestClient['from'];
   readonly rpc: PostgrestClient['rpc'];
+  readonly functions: {
+    invoke(name: string, options?: { body?: unknown }): Promise<{ data: unknown; error: unknown }>;
+  };
   readonly auth: {
     getSession(): Promise<{ data: { session: { user: { id: string } } | null }; error: null }>;
     getUser(): Promise<{ data: { user: { id: string } | null }; error: null }>;
   };
 }
+
+/**
+ * What stands in for an Edge Function: server code that takes the request
+ * body and answers with a status and a JSON body, as the function would.
+ */
+export type InProcessFunction = (body: unknown) => Promise<{ readonly status: number; readonly body: unknown }>;
+
+/** The functions a client may invoke, by the Edge Function name the adapters use. */
+export type InProcessFunctions = Readonly<Record<string, InProcessFunction>>;
 
 // Never requested: the engine answers in process. It only gives the builder a base to form URLs on.
 const BASE_URL = 'http://kc-api.internal/rest/v1';
@@ -47,12 +59,14 @@ function unsupportedService(service: string): never {
  * @param run Executes one statement as `caller` (a transaction of its own,
  *   like one PostgREST request).
  * @param observe Sees every request with its answer, for logging; it must not throw.
+ * @param functions The Edge Functions this server has taken over, by name.
  */
 export function createSqlBackedClient(
   caller: CallerIdentity | null,
   schema: SchemaCacheSource,
   run: StatementRunner,
   observe?: (request: CompatRequest, response: CompatResponse) => void,
+  functions: InProcessFunctions = {},
 ): SqlBackedClient {
   const fetchInProcess: typeof fetch = async (input, init) => {
     const request: CompatRequest = {
@@ -75,10 +89,22 @@ export function createSqlBackedClient(
       getSession: () => Promise.resolve({ data: { session: user ? { user } : null }, error: null }),
       getUser: () => Promise.resolve({ data: { user }, error: null }),
     },
-    // Edge Functions, Storage and Realtime move in their own phases (ADR-009 phases 6–8).
-    get functions() {
-      return unsupportedService('functions');
+    functions: {
+      /**
+       * Answers like the Supabase functions client: `data` for a 2xx answer,
+       * otherwise an error that carries the response, which is how the
+       * adapters read a function's refusal.
+       */
+      async invoke(name: string, options: { body?: unknown } = {}) {
+        // A function this server has not taken over yet (ADR-009 phase 8).
+        if (!Object.hasOwn(functions, name)) return unsupportedService(`functions:${name}`);
+        const answer = await (functions[name] as InProcessFunction)(options.body);
+        if (answer.status >= 200 && answer.status < 300) return { data: answer.body, error: null };
+        const context = new Response(JSON.stringify(answer.body), { status: answer.status, headers: { 'content-type': 'application/json' } });
+        return { data: null, error: { name: 'FunctionsHttpError', message: 'Edge Function returned a non-2xx status code', context } };
+      },
     },
+    // Storage and Realtime move in their own phases (ADR-009 phases 6 and 7).
     get storage() {
       return unsupportedService('storage');
     },

@@ -8,7 +8,7 @@ import type { CompatResponse, SchemaCacheSource, StatementRunner } from '../post
 import type { CompatRequest } from '../postgrest/requestPlan';
 import type { CatalogQuery } from '../postgrest/schemaCache';
 import { createSchemaCacheSource } from '../postgrest/schemaCacheSource';
-import { createSqlBackedClient, type SqlBackedClient } from '../postgrest/sqlBackedClient';
+import { createSqlBackedClient, type InProcessFunctions, type SqlBackedClient } from '../postgrest/sqlBackedClient';
 import type { ResultRow } from '../postgrest/sqlStatements';
 
 /**
@@ -48,13 +48,26 @@ export class PortClients {
     this.schema = createSchemaCacheSource(catalog);
   }
 
-  clientFor(caller: CallerIdentity | null): SqlBackedClient {
+  /** @param functions The Edge Functions this server answers for this caller (see `HostedFunctions`). */
+  clientFor(caller: CallerIdentity | null, functions?: InProcessFunctions): SqlBackedClient {
     const run: StatementRunner = (statement) => {
-      const work = (session: DatabaseSession) =>
-        session.query<ResultRow>(statement.text, [...statement.values]).then((result) => result.rows[0]);
+      const work = this.statementWork(statement);
       return caller ? this.database.runAs(caller, work) : this.database.runAnonymous(work);
     };
-    return createSqlBackedClient(caller, this.schema, run, (request, response) => this.reportEngineFault(request, response));
+    return createSqlBackedClient(caller, this.schema, run, (request, response) => this.reportEngineFault(request, response), functions);
+  }
+
+  /**
+   * A client that acts as the service role, for server modules only (see
+   * `IdentityDatabase.runAsService`). It is never handed to a hosted adapter.
+   */
+  serviceClient(): SqlBackedClient {
+    const run: StatementRunner = (statement) => this.database.runAsService(this.statementWork(statement));
+    return createSqlBackedClient(null, this.schema, run, (request, response) => this.reportEngineFault(request, response));
+  }
+
+  private statementWork(statement: Parameters<StatementRunner>[0]) {
+    return (session: DatabaseSession) => session.query<ResultRow>(statement.text, [...statement.values]).then((result) => result.rows[0]);
   }
 
   /** Logs an engine fault with the request's path (table or function) only: query values can be personal data. */
