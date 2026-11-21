@@ -6,6 +6,11 @@ export const useChatConversationStyles = makeUseStyles(({ colors }) => ({
   container: { flex: 1, backgroundColor: colors.background },
   headerTitle: { ...typography.h3, color: colors.textPrimary },
   messageList: { padding: spacing.base, gap: spacing.sm },
+  // Centered over the thread while its first page loads; touches pass through to the composer.
+  threadLoading: {
+    position: 'absolute', top: 0, bottom: 0, start: 0, end: 0,
+    alignItems: 'center', justifyContent: 'center',
+  },
   inputBar: {
     // Reading-direction row (web needs an explicit reverse in RTL; native mirrors `row`).
     flexDirection: rowDirectionStart, alignItems: 'flex-end',
