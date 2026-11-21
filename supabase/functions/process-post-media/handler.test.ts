@@ -121,6 +121,22 @@ Deno.test('refuses callers without the service-role key before any work', async 
   assertEquals(claimed, false);
 });
 
+// The deploy smoke (scripts/edge-functions.mjs SMOKE_PROBES) sends an OPTIONS request and expects 405.
+Deno.test('answers a non-POST request with 405 before the key check or any work', async () => {
+  let called = false;
+  const handler = createProcessPostMediaHandler({
+    serviceRoleKey: KEY,
+    rpc: (_fn, _args, _signal) => {
+      called = true;
+      return Promise.resolve({ data: [], error: null });
+    },
+    storage: { download: () => Promise.reject(), upload: () => Promise.reject(), remove: (_keys, _signal) => Promise.resolve() },
+  });
+  const res = await handler(new Request('https://x', { method: 'OPTIONS' }));
+  assertEquals(res.status, 405);
+  assertEquals(called, false);
+});
+
 Deno.test('happy path: claims a bounded batch, writes this attempt\'s own derivative + thumb, completes with the exact key', async () => {
   const h = harness({ jobs: [job()], bytes: await realJpeg() });
   const out = await h.run({ limit: 99 });
