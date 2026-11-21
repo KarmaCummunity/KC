@@ -216,6 +216,44 @@ describe('useChatStore — subscriptions lifecycle', () => {
     );
   });
 
+  it.each(['stop', 'signout', 'replace'] as const)(
+    'ignores a late resync result after %s',
+    async (action) => {
+      auth.userId = 'u_me';
+      let finish!: (messages: unknown[]) => void;
+      const repo = { getMessages: vi.fn().mockResolvedValueOnce([MSG]).mockImplementationOnce(
+        () => new Promise((resolve) => { finish = resolve; }),
+      ) };
+      let handlers: Record<string, (x?: unknown) => void> = {};
+      const realtime = { subscribeToChat: vi.fn((_id: string, h: Record<string, (x?: unknown) => void>) => {
+        handlers = h;
+        return vi.fn();
+      }) };
+      await useChatStore.getState().startThreadSub('c1', repo as never, realtime as never, vi.fn());
+      const oldResync = handlers.onResync;
+      oldResync?.();
+      if (action === 'signout') {
+        useChatStore.getState().resetOnSignOut();
+        auth.userId = null;
+      } else {
+        useChatStore.getState().stopThreadSub('c1');
+        if (action === 'replace') {
+          await useChatStore.getState().startThreadSub('c1', {
+            getMessages: vi.fn().mockResolvedValue([]),
+          } as never, realtime as never, vi.fn());
+        }
+      }
+      const before = useChatStore.getState().threads;
+      finish([{ ...(MSG as object), messageId: 'late-private-message' }]);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      expect(useChatStore.getState().threads).toBe(before);
+      const calls = repo.getMessages.mock.calls.length;
+      oldResync?.();
+      expect(repo.getMessages).toHaveBeenCalledTimes(calls);
+      auth.userId = 'u_me';
+    },
+  );
+
   it('startThreadSub removes the placeholder when loading fails', async () => {
     const repo = { getMessages: vi.fn(async () => { throw new Error('net'); }) };
     await expect(

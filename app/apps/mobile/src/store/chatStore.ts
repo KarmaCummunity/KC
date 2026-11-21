@@ -167,7 +167,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
       const msgs = await repo.getMessages(chatId, 50);
       if (get().threadSubs[chatId] !== noopUnsub) return;
       get().setThreadMessages(chatId, msgs);
-      const unsub = realtime.subscribeToChat(chatId, {
+      const userId = inboxUserId();
+      let unsub = noopUnsub;
+      unsub = realtime.subscribeToChat(chatId, {
         onMessage: (m) => get().applyIncomingMessage(chatId, m),
         onReadMarker: (marker) => get().applyReadMarker(chatId, marker),
         onChatChanged,
@@ -175,9 +177,13 @@ export const useChatStore = create<ChatState>((set, get) => ({
         // The channel rejoined after a failure (#1778): merge the latest page so messages sent
         // while it was down appear, without dropping pending sends or older loaded pages.
         onResync: () => {
+          const isCurrent = () => get().threadSubs[chatId] === unsub && inboxUserId() === userId;
+          if (!isCurrent()) return;
           void repo
             .getMessages(chatId, 50)
-            .then((latest) => latest.forEach((m) => get().applyIncomingMessage(chatId, m)))
+            .then((latest) => {
+              if (isCurrent()) latest.forEach((m) => get().applyIncomingMessage(chatId, m));
+            })
             .catch(() => undefined);
         },
       });
