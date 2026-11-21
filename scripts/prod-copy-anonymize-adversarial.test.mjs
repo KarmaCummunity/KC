@@ -59,8 +59,11 @@ test('GUARD: output drops non-format fields (defense against export column drift
 test('GUARD: dot phones removed; only exact valid date spans protected, attached digits redacted', () => {
   assert.equal(cleanText('call me on 050.123.4567 anytime'), `call me on ${REMOVED} anytime`);
   assert.equal(cleanText('פנוי מ-05.11.2026'), 'פנוי מ-05.11.2026');
-  // A time glued to a real date is not part of the date span: the remainder is redacted.
-  assert.equal(cleanText('מ-05.11.2026 14.30'), `מ-05.11.2026${REMOVED}.30`);
+  // A time next to a real date is part of the protected span: both survive whole.
+  assert.equal(cleanText('מ-05.11.2026 14.30'), 'מ-05.11.2026 14.30');
+  assert.equal(cleanText('ביום חמישי 05.11.2026 14:30'), 'ביום חמישי 05.11.2026 14:30');
+  // A slash date is 8 digits, below the phone patterns, so it stays.
+  assert.equal(cleanText('תאריך 05/11/2026 עד'), 'תאריך 05/11/2026 עד');
   // A phone after a real date is caught on its own, not sheltered by the date prefix.
   assert.equal(cleanText('x 05.11.2026 0501234567'), `x 05.11.2026 ${REMOVED}`);
   // Impossible calendar dates are not protected (and too short to match anyway).
@@ -149,4 +152,92 @@ test('RESIDUAL: precise timestamps, city and social linkage are retained by form
   assert.equal(copy.posts[0].city_id, 'tel-aviv');
   assert.equal(copy.follows[0].created_at, '2026-01-03T00:00:00Z');
   assert.equal(copy.members[0].id, anonymizeCopy(raw, KEY).members[0].id);
+});
+
+test('GUARD: slash-separated phones are removed', () => {
+  assert.equal(cleanText('call 050/123/4567 now'), `call ${REMOVED} now`);
+  assert.equal(cleanText('נייד 050/1234/567'), `נייד ${REMOVED}`);
+});
+
+test('GUARD: comma-grouped numbers follow the same 7+ digit policy', () => {
+  assert.equal(cleanText('send 1,234,567 shekels'), `send ${REMOVED} shekels`);
+  assert.equal(cleanText('x 050,123,4567 y'), `x ${REMOVED} y`);
+  assert.equal(cleanText('year 2,026 end'), 'year 2,026 end');
+});
+
+test('GUARD: zero-width obfuscation is removed whole', () => {
+  assert.equal(cleanText('someone\u200B(at)\u200Bgmail.com'), REMOVED);
+  assert.equal(cleanText('mail someone (at)\u200C gmail \uFEFF[dot] com now'), `mail ${REMOVED} now`);
+});
+
+test('GUARD: a sentence boundary before a TLD word keeps its text; every domain casing goes', () => {
+  // The one ambiguous shape: single lowercase word, period, Capitalized word.
+  assert.equal(cleanText('see you.Today at five'), 'see you.Today at five');
+  assert.equal(cleanText('need help.Help me'), 'need help.Help me');
+  // Every other casing is still a domain: all-caps, brand-case, uppercase TLD, multi-label.
+  assert.equal(cleanText('visit MYPAGE.APP now'), `visit ${REMOVED} now`);
+  assert.equal(cleanText('see MyPage.App later'), `see ${REMOVED} later`);
+  assert.equal(cleanText('go to mypage.APP'), `go to ${REMOVED}`);
+  assert.equal(cleanText('check sub.mypage.App'), `check ${REMOVED}`);
+  assert.equal(cleanText('find me on mypage.app'), `find me on ${REMOVED}`);
+  // Scheme and www contexts are caught case-insensitively before the bare-domain rule.
+  assert.equal(cleanText('open https://MYPAGE.APP/x ok'), `open ${REMOVED} ok`);
+  assert.equal(cleanText('see www.MYPAGE.APP now'), `see ${REMOVED} now`);
+});
+
+test('RESIDUAL: a lowercase-typed domain with a Capitalized TLD still looks like a sentence', () => {
+  // The single ambiguous shape the sentence guard keeps; every other casing is removed.
+  assert.ok(has(cleanText('ambiguous mypage.App shape'), 'mypage.App'));
+});
+
+test('GUARD: date protection validates the time; an invalid time is not sheltered', () => {
+  assert.equal(cleanText('ביום חמישי 05.11.2026 14:30'), 'ביום חמישי 05.11.2026 14:30');
+  assert.equal(cleanText('מ-05.11.2026 14.30'), 'מ-05.11.2026 14.30');
+  // 25:99 is not a time: the date is still protected, the rest faces the number patterns.
+  assert.equal(cleanText('x 05.11.2026 25:99 y'), 'x 05.11.2026 25:99 y');
+  // A phone right after a date is caught on its own.
+  assert.equal(cleanText('פגישה 05.11.2026 050.123.4567'), `פגישה 05.11.2026 ${REMOVED}`);
+});
+
+test('GUARD: a match with a path is a link, never a sentence boundary', () => {
+  assert.equal(cleanText('see you.Today/x now'), `see ${REMOVED} now`);
+  assert.equal(cleanText('contact mypage.App/invite'), `contact ${REMOVED}`);
+});
+
+test('GUARD: the sentence exception needs an alphabetic word; digits or hyphens are domains', () => {
+  assert.equal(cleanText('check 4you.Today end'), `check ${REMOVED} end`);
+  // Accepted narrowing: a hyphenated word before a TLD word goes too (over-redaction).
+  assert.equal(cleanText('well-being.Today we go'), `${REMOVED} we go`);
+});
+
+test('GUARD: zero-width-separated phone digits and digit runs are removed', () => {
+  assert.equal(cleanText('call 050\u200B123\u200B4567 now'), `call ${REMOVED} now`);
+  assert.equal(cleanText('id 123\u200B456789 x'), `id ${REMOVED} x`);
+});
+
+test('GUARD: zero-width email obfuscation is removed whole, local identity included', () => {
+  assert.equal(cleanText('mail someone\u200B@gmail.com ok'), `mail ${REMOVED} ok`);
+  assert.equal(cleanText('mail som\u200Beone@gmail.com ok'), `mail ${REMOVED} ok`);
+  assert.equal(cleanText('mail someone@gmail\u200B.com ok'), `mail ${REMOVED} ok`);
+});
+
+test('GUARD: query- or fragment-bearing domains are explicit URL shapes, always removed', () => {
+  assert.equal(cleanText('see you.Today?x=1 now'), `see ${REMOVED} now`);
+  assert.equal(cleanText('open mypage.App#ref ok'), `open ${REMOVED} ok`);
+  // The whole token goes, including a query that carries a phone number.
+  assert.equal(cleanText('go mypage.App?q=0501234567 end'), `go ${REMOVED} end`);
+  // A lone "?" followed by a space is sentence punctuation, not a query.
+  assert.equal(cleanText('see you.Today? sure'), 'see you.Today? sure');
+});
+
+test('GUARD: root slash, port, path, query and fragment are explicit URL shapes', () => {
+  // A bare root "/" alone already makes it a link, no content needed after it.
+  assert.equal(cleanText('see you.Today/ now'), `see ${REMOVED} now`);
+  assert.equal(cleanText('go mypage.app/ ok'), `go ${REMOVED} ok`);
+  // A numeric port, with or without a path, is a URL shape.
+  assert.equal(cleanText('open mypage.App:8080/x end'), `open ${REMOVED} end`);
+  assert.equal(cleanText('check mypage.App:8080 end'), `check ${REMOVED} end`);
+  // Lone "?", "#" or ":" followed by a space stay sentence punctuation.
+  assert.equal(cleanText('see you.Today? sure'), 'see you.Today? sure');
+  assert.equal(cleanText('see you.Today: sure'), 'see you.Today: sure');
 });
