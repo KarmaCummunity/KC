@@ -20,8 +20,8 @@
    "distinct": 3
   },
   "rpc": {
-   "callSites": 276,
-   "distinct": 252
+   "callSites": 278,
+   "distinct": 253
   },
   "table": {
    "callSites": 189,
@@ -3027,6 +3027,24 @@
     "select"
    ],
    "name": "saved_posts"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/posts/SupabaseGuestPostsRepository.ts",
+   "line": 18,
+   "area": "posts",
+   "symbol": "SupabaseGuestPostsRepository.list",
+   "via": "literal",
+   "name": "guest_posts"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/posts/SupabaseGuestPostsRepository.ts",
+   "line": 25,
+   "area": "posts",
+   "symbol": "SupabaseGuestPostsRepository.get",
+   "via": "literal",
+   "name": "guest_posts"
   },
   {
    "kind": "table",

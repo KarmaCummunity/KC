@@ -59,6 +59,7 @@ table('streets', 'changed', 'table:streets', '`geo` → `location`.');
 table('app_flags', 'same', 'table:app_flags', 'Same `select key, enabled`, for signed-in members only (no `anon` grant): before sign-in the compiled defaults apply. After sign-in the same map is `bootstrap_session().flags`. The rows (`world_<slug>_enabled`) are seed data, not part of the baseline (M09, verified).');
 
 // ───────────────────────────── posts, feed, search
+rpc('guest_posts', 'same', 'rpc:guest_posts', 'D186 / FR-AUTH-014, guest_posts forward migration: read-only signed-out projection of open Public posts with active owner/world/kind, published and unexpired. Returns only opaque id, title, description and city names; existing member grants stay closed. Optional post id, before-id cursor and bounded page limit.');
 rpc('profile_closed_posts_count', 'changed', 'rpc:profile_closed_posts_count', 'One argument, `p_user_id` (the viewer is the caller); counts the closed tab only, so the Hidden tab badge (`p_list_mode = owner_only_me`) is not served: take it from `user_stats.open_posts_only_me` or drop it (M13, built as a count over the same rows as the tab).');
 rpc('close_post_with_recipient', 'changed', 'rpc:close_post_with_recipient', '`p_recipient_user_id` → `p_recipient_id`; returns the handoff row, not the post. The recipient must have a chat with the owner (`closure_recipient_not_in_chat`).');
 rpc('admin_remove_post', 'same', 'rpc:admin_remove_post', 'Status becomes `removed_admin`; the previous status is kept in `status_before_removal`.');
@@ -92,7 +93,6 @@ table('post_media', 'same', 'table:post_media', 'One row per photo, inserted `pe
 table('post_private_locations', 'same', 'table:post_private_locations', 'The exact street and number, readable and writable by the post\'s owner only (also the apartment, floor and entrance of a stay, migration 0033); other members read the part the display level shows from `posts.shown_street` / `shown_street_number` (migration 0029).');
 table('post_stats', 'same', 'table:post_stats', 'Counters of a post (reactions, comments, shares); no row until the first one.');
 table('post_closures', 'same', 'table:post_closures', 'The owner reads `purge_after`: the end of the seven-day reopen window of a post deleted without a recipient.');
-table('challenges', 'same', 'table:challenges', 'Read to find the challenge of a challenge post (`post_id` → `id`).');
 table('item_subcategories', 'same', 'table:item_subcategories', 'Read-only catalog; the items world\'s rows are the app\'s item categories (slug = lower-case category, `baby_gear`).');
 table('post_kinds', 'same', 'table:post_kinds', 'Read-only catalog; a new generic post needs the items world\'s offer / request kind id.');
 
@@ -437,7 +437,7 @@ const either = (a, b) => (row) => a(row) || b(row);
 const named = (pattern) => (row) => pattern.test(row.old);
 export const packages = [
   { id: 'P0', title: 'Contract switch and the degrade rule (first, alone)', launch: 'core', parallelWith: [],
-    select: either(inArea('(root)', 'realtime'), named(/^app_flags$/)),
+    select: either(inArea('(root)', 'realtime'), named(/^(app_flags|admin_set_app_flag|admin_demo_data_status|admin_wipe_demo_data_step|admin_seed_demo_data_step|replace_post_media|api_resolve_place|external_post_imports|post_extraction_cache)$/)),
     files: ['infrastructure-supabase/src/database.types.ts (replaced by the baseline types)', 'infrastructure-supabase/src/index.ts', 'infrastructure-supabase/src/client.ts', 'infrastructure-supabase/src/rpc/**', 'infrastructure-supabase/src/lib/**', 'infrastructure-supabase/src/fsm/**', 'infrastructure-supabase/src/realtime/**', 'packages/domain/src (status lists, FSM machines, money value objects)', 'apps/mobile/src/services/featureFlagsComposition.ts', 'scripts/check-rpc-contract.mjs + allowlist'],
     work: 'Done in P0 (see docs/db/app-migration-playbook.md): `database.types.ts` is the generated baseline types and `database.legacy.types.ts` a frozen copy of the old ones, imported only by the files listed in `infrastructure-supabase/src/migrationStatus/<package>.ts` (the client factory is generic: `getSupabaseClient()` is baseline-typed, `getLegacySupabaseClient()` / `legacySupabase` are the same connection typed against the old schema). `FSM_MACHINES` equals the baseline seeds (`catalogMatchesSql.test.ts` reads `supabase/schemas`); the machines without a baseline seed sat in `LEGACY_FSM_MACHINES` until their modules moved (the list is gone since L6 seeded the last two in `0034` and `0036`). `rpc/backendUnavailable.ts` holds `isBackendObjectMissing` and `rpc/mapRpcError.ts` the P0001 mapper and `unwrapCall`; `BackendUnavailableError` and `BackendRuleError` are domain errors. UI helpers: `apps/mobile/src/lib/backendAvailability.ts` and the `backend.*` locale keys. `src/__tests__/baselineCompatibility.test.ts` fails when an unlisted file still needs the old schema or a listed file no longer does.',
     tests: ['pnpm typecheck, pnpm test, pnpm lint from app/', 'src/fsm/__tests__/catalogMatchesSql.test.ts against supabase/schemas', 'src/__tests__/baselineCompatibility.test.ts', 'src/rpc/__tests__/degradeRule.test.ts', 'node --test scripts/*.test.mjs', 'node scripts/gen-baseline-types.mjs --check'],
@@ -570,6 +570,15 @@ export const notes = [
   'Money: integer agorot (`*_agorot`), never ILS floats or `*_cents` names.',
   'Lists of posts return `post_card` (post, owner, city name, cover, counters, viewer state): no follow-up queries for owners, media or counters.',
   'Status columns are never client-writable; every move is an RPC checked by the FSM kernel.',
-  'Signed-out access: only `legal_documents` and `legal_document_versions`. Every other call needs a session.',
+  'Signed-out access: legal documents and the narrow `guest_posts` projection. Member tables and account actions still need a session.',
   'Workers that need `kc_private` connect over Postgres (as `dispatch-notification` does); only `public` is reachable through the HTTP API.',
 ];
+
+rpc('admin_set_app_flag', 'same', 'rpc:admin_set_app_flag', 'Existing MAIN caller, recorded to reconcile the baseline inventory. Source binding does not establish deployment or runtime acceptance.', { c: M });
+rpc('admin_demo_data_status', 'same', 'sql:supabase/seed/demo/lib/80_admin_rpcs.sql#admin_demo_data_status', 'Existing MAIN caller, recorded to reconcile the baseline inventory. Source binding does not establish deployment or runtime acceptance.', { c: M });
+rpc('admin_wipe_demo_data_step', 'same', 'sql:supabase/seed/demo/lib/80_admin_rpcs.sql#admin_wipe_demo_data_step', 'Existing MAIN caller, recorded to reconcile the baseline inventory. Source binding does not establish deployment or runtime acceptance.', { c: M });
+rpc('admin_seed_demo_data_step', 'same', 'sql:supabase/seed/demo/lib/80_admin_rpcs.sql#admin_seed_demo_data_step', 'Existing MAIN caller, recorded to reconcile the baseline inventory. Source binding does not establish deployment or runtime acceptance.', { c: M });
+rpc('replace_post_media', 'same', 'rpc:replace_post_media', 'Existing MAIN caller, recorded to reconcile the baseline inventory. Source binding does not establish deployment or runtime acceptance.', { c: M });
+rpc('api_resolve_place', 'same', 'rpc:api_resolve_place', 'Existing MAIN caller, recorded to reconcile the baseline inventory. Source binding does not establish deployment or runtime acceptance.', { c: M });
+table('external_post_imports', 'same', 'table:external_post_imports', 'Existing MAIN caller, recorded to reconcile the baseline inventory. Source binding does not establish deployment or runtime acceptance.', { c: M });
+table('post_extraction_cache', 'same', 'table:post_extraction_cache', 'Existing MAIN caller, recorded to reconcile the baseline inventory. Source binding does not establish deployment or runtime acceptance.', { c: M });

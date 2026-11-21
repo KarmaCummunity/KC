@@ -194,6 +194,15 @@ export default function WelcomeScreen() {
         </Animated.View>
 
 
+        <TouchableOpacity
+          testID="auth-guest-entry"
+          style={styles.textLinkBtn}
+          onPress={() => router.push('/browse')}
+          accessibilityRole="link"
+        >
+          <Text style={styles.emailEntryText}>{t('auth.guestEntry')}</Text>
+        </TouchableOpacity>
+
         {/* Auth buttons */}
         <Animated.View style={[styles.buttons, buttonsStyle]}>
           {Platform.OS === 'ios' && (

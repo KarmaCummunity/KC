@@ -242,3 +242,5 @@ export * from './whatsapp/IWhatsAppLinkRepository';
 export * from './whatsapp/WhatsAppLinkUseCases';
 export * from './challenges';
 export * from './knowledge';
+
+export type { GuestPost, IGuestPostsRepository } from './ports/IGuestPostsRepository';

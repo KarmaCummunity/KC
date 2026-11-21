@@ -1,3 +1,4 @@
+import { guestBrowseEn } from './modules/guestBrowse';
 // ─────────────────────────────────────────────
 // English (en) translation bundle — Karma Community
 // Mapped to: FR-SETTINGS-018 (opt-in English UI locale). Machine-translated from
@@ -77,7 +78,7 @@ const en = {
   config: configEn,
 
   // Auth (FR-AUTH-001..014) — see modules/auth.ts
-  auth: { ...authEn, ...authVerificationHintEn },
+  auth: { ...guestBrowseEn, ...authEn, ...authVerificationHintEn },
   offlineSync: offlineSyncEn,
 
   // Onboarding (FR-AUTH-010..012, FR-AUTH-018) — see modules/onboarding.ts

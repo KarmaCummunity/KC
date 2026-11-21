@@ -104,3 +104,5 @@ export * from './admin/SupabaseDemoDataRepository';
 export { SupabaseWhatsAppLinkRepository } from './whatsapp/SupabaseWhatsAppLinkRepository';
 export { SupabaseKnowledgeTopicRepository } from './knowledge/SupabaseKnowledgeTopicRepository';
 export { SupabaseKnowledgeBookingRepository } from './knowledge/SupabaseKnowledgeBookingRepository';
+
+export { SupabaseGuestPostsRepository } from './posts/SupabaseGuestPostsRepository';

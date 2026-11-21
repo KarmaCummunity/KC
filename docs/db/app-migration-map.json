@@ -2,16 +2,16 @@
  "generatedBy": "scripts/app-migration-map.mjs",
  "totals": {
   "rpc": {
-   "objects": 246,
-   "same": 169,
+   "objects": 253,
+   "same": 176,
    "renamed": 22,
    "changed": 55,
    "removed": 0,
    "missing": 0
   },
   "table": {
-   "objects": 63,
-   "same": 46,
+   "objects": 64,
+   "same": 47,
    "renamed": 0,
    "changed": 17,
    "removed": 0,
@@ -44,16 +44,16 @@
  },
  "launchTotals": {
   "core": {
-   "objects": 127,
-   "same": 103,
+   "objects": 129,
+   "same": 105,
    "renamed": 1,
    "changed": 23,
    "removed": 0,
    "missing": 0
   },
   "later": {
-   "objects": 145,
-   "same": 95,
+   "objects": 151,
+   "same": 101,
    "renamed": 6,
    "changed": 44,
    "removed": 0,
@@ -77,8 +77,8 @@
    "missing": 0
   },
   "admin": {
-   "callSites": 66,
-   "oneToOne": 37,
+   "callSites": 70,
+   "oneToOne": 41,
    "changed": 29,
    "removed": 0,
    "missing": 0
@@ -133,8 +133,8 @@
    "missing": 0
   },
   "fn:_shared": {
-   "callSites": 13,
-   "oneToOne": 9,
+   "callSites": 19,
+   "oneToOne": 15,
    "changed": 4,
    "removed": 0,
    "missing": 0
@@ -149,6 +149,13 @@
   "fn:embed-worker": {
    "callSites": 3,
    "oneToOne": 3,
+   "changed": 0,
+   "removed": 0,
+   "missing": 0
+  },
+  "fn:extract-external-post": {
+   "callSites": 1,
+   "oneToOne": 1,
    "changed": 0,
    "removed": 0,
    "missing": 0
@@ -252,8 +259,8 @@
    "missing": 0
   },
   "marketplace": {
-   "callSites": 48,
-   "oneToOne": 35,
+   "callSites": 50,
+   "oneToOne": 37,
    "changed": 13,
    "removed": 0,
    "missing": 0
@@ -266,8 +273,8 @@
    "missing": 0
   },
   "mobile": {
-   "callSites": 18,
-   "oneToOne": 17,
+   "callSites": 17,
+   "oneToOne": 16,
    "changed": 1,
    "removed": 0,
    "missing": 0
@@ -301,9 +308,9 @@
    "missing": 0
   },
   "posts": {
-   "callSites": 51,
-   "oneToOne": 35,
-   "changed": 16,
+   "callSites": 49,
+   "oneToOne": 34,
+   "changed": 15,
    "removed": 0,
    "missing": 0
   },
@@ -421,7 +428,7 @@
   "Money: integer agorot (`*_agorot`), never ILS floats or `*_cents` names.",
   "Lists of posts return `post_card` (post, owner, city name, cover, counters, viewer state): no follow-up queries for owners, media or counters.",
   "Status columns are never client-writable; every move is an RPC checked by the FSM kernel.",
-  "Signed-out access: only `legal_documents` and `legal_document_versions`. Every other call needs a session.",
+  "Signed-out access: legal documents and the narrow `guest_posts` projection. Member tables and account actions still need a session.",
   "Workers that need `kc_private` connect over Postgres (as `dispatch-notification` does); only `public` is reachable through the HTTP API."
  ],
  "missing": [],
@@ -457,11 +464,19 @@
    "rows": [
     "table:app_flags",
     "channel:ONLINE_PRESENCE_TOPIC = 'presence:online'",
-    "channel:topic"
+    "channel:topic",
+    "rpc:admin_set_app_flag",
+    "rpc:admin_demo_data_status",
+    "rpc:admin_wipe_demo_data_step",
+    "rpc:admin_seed_demo_data_step",
+    "rpc:replace_post_media",
+    "rpc:api_resolve_place",
+    "table:external_post_imports",
+    "table:post_extraction_cache"
    ],
    "counts": {
-    "objects": 3,
-    "oneToOne": 3,
+    "objects": 11,
+    "oneToOne": 11,
     "changed": 0,
     "removed": 0,
     "missing": 0
@@ -569,6 +584,7 @@
     "rpc:search_suggested_queries",
     "table:user_stats",
     "table:users",
+    "rpc:guest_posts",
     "rpc:profile_closed_posts_count",
     "rpc:close_post_with_recipient",
     "rpc:admin_remove_post",
@@ -600,7 +616,6 @@
     "table:post_private_locations",
     "table:post_stats",
     "table:post_closures",
-    "table:challenges",
     "table:item_subcategories",
     "table:post_kinds",
     "table:chats",
@@ -612,11 +627,12 @@
     "channel:FEED_PUBLIC_TOPIC = 'feed:public'",
     "edge_function:translate",
     "rpc:admin_world_flow_funnel",
-    "rpc:my_world_givings"
+    "rpc:my_world_givings",
+    "rpc:replace_post_media"
    ],
    "counts": {
-    "objects": 49,
-    "oneToOne": 38,
+    "objects": 50,
+    "oneToOne": 39,
     "changed": 11,
     "removed": 0,
     "missing": 0
@@ -729,11 +745,15 @@
     "table:moderation_queue",
     "rpc:admin_assign_queue_entry",
     "rpc:admin_resolve_queue_entry",
-    "table:organizations"
+    "table:organizations",
+    "rpc:admin_set_app_flag",
+    "rpc:admin_demo_data_status",
+    "rpc:admin_wipe_demo_data_step",
+    "rpc:admin_seed_demo_data_step"
    ],
    "counts": {
-    "objects": 33,
-    "oneToOne": 23,
+    "objects": 37,
+    "oneToOne": 27,
     "changed": 10,
     "removed": 0,
     "missing": 0
@@ -874,6 +894,9 @@
    "degrade": "Workers fail closed: a worker that cannot reach its function logs and exits; the app is unaffected (no embedding → no matches yet; no purge → accounts stay deactivated).",
    "risks": "No file shared with the app packages. **Launch line: after P6 the app is shippable on the new database.**",
    "rows": [
+    "table:app_flags",
+    "table:item_subcategories",
+    "table:post_kinds",
     "rpc:get_my_admin_roles",
     "table:donation_links",
     "table:content_translations",
@@ -883,11 +906,12 @@
     "rpc:api_match_llm_pending",
     "rpc:api_match_llm_store",
     "bucket:post-images",
-    "bucket:<bucket>"
+    "bucket:<bucket>",
+    "table:worlds"
    ],
    "counts": {
-    "objects": 10,
-    "oneToOne": 6,
+    "objects": 14,
+    "oneToOne": 10,
     "changed": 4,
     "removed": 0,
     "missing": 0
@@ -1542,14 +1566,8 @@
      "area": "mobile"
     },
     {
-     "file": "app/apps/mobile/src/components/PostImageCarousel.tsx",
-     "line": 72,
-     "symbol": "PostImageCarousel",
-     "area": "mobile"
-    },
-    {
      "file": "app/apps/mobile/src/hooks/usePostShare.ts",
-     "line": 64,
+     "line": 69,
      "symbol": "recipientNavigable",
      "area": "mobile"
     },
@@ -2502,6 +2520,37 @@
    ]
   },
   {
+   "old": "admin_demo_data_status",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "medium",
+   "missing": null,
+   "note": "Existing MAIN caller, recorded to reconcile the baseline inventory. Source binding does not establish deployment or runtime acceptance.",
+   "oldObject": {
+    "signature": [
+     "admin_demo_data_status() → Json"
+    ]
+   },
+   "targets": [
+    {
+     "type": "sql",
+     "name": "supabase/seed/demo/lib/80_admin_rpcs.sql#admin_demo_data_status"
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseDemoDataRepository.ts",
+     "line": 31,
+     "symbol": "SupabaseDemoDataRepository.getStatus",
+     "area": "admin"
+    }
+   ]
+  },
+  {
    "old": "admin_dismiss_report",
    "kind": "rpc",
    "status": "same",
@@ -3044,7 +3093,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/posts/postWriteMethods.ts",
-     "line": 180,
+     "line": 175,
      "symbol": "adminRemovePost",
      "area": "posts"
     }
@@ -3415,6 +3464,82 @@
      "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminRoleRepository.ts",
      "line": 120,
      "symbol": "SupabaseAdminRoleRepository.revokeRole",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "admin_seed_demo_data_step",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "medium",
+   "missing": null,
+   "note": "Existing MAIN caller, recorded to reconcile the baseline inventory. Source binding does not establish deployment or runtime acceptance.",
+   "oldObject": {
+    "signature": [
+     "admin_seed_demo_data_step(p_password?: string) → Json"
+    ]
+   },
+   "targets": [
+    {
+     "type": "sql",
+     "name": "supabase/seed/demo/lib/80_admin_rpcs.sql#admin_seed_demo_data_step"
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseDemoDataRepository.ts",
+     "line": 43,
+     "symbol": "SupabaseDemoDataRepository.seedStep",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "admin_set_app_flag",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "core",
+   "confidence": "medium",
+   "missing": null,
+   "note": "Existing MAIN caller, recorded to reconcile the baseline inventory. Source binding does not establish deployment or runtime acceptance.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "admin_set_app_flag",
+     "source": "95_platform/030_app_flags.sql:50",
+     "signature": [
+      "admin_set_app_flag(p_description?: string, p_enabled: boolean, p_key: string) → app_flags row"
+     ],
+     "errors": [
+      {
+       "code": "forbidden",
+       "knownToApp": true
+      },
+      {
+       "code": "invalid_flag_key",
+       "knownToApp": false
+      },
+      {
+       "code": "unauthenticated",
+       "knownToApp": true
+      }
+     ]
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAppFlagsAdminRepository.ts",
+     "line": 13,
+     "symbol": "SupabaseAppFlagsAdminRepository.setFlag",
      "area": "admin"
     }
    ]
@@ -3928,6 +4053,37 @@
    ]
   },
   {
+   "old": "admin_wipe_demo_data_step",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "medium",
+   "missing": null,
+   "note": "Existing MAIN caller, recorded to reconcile the baseline inventory. Source binding does not establish deployment or runtime acceptance.",
+   "oldObject": {
+    "signature": [
+     "admin_wipe_demo_data_step() → Json"
+    ]
+   },
+   "targets": [
+    {
+     "type": "sql",
+     "name": "supabase/seed/demo/lib/80_admin_rpcs.sql#admin_wipe_demo_data_step"
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseDemoDataRepository.ts",
+     "line": 36,
+     "symbol": "SupabaseDemoDataRepository.wipeStep",
+     "area": "admin"
+    }
+   ]
+  },
+  {
    "old": "admin_world_flow_funnel",
    "kind": "rpc",
    "status": "same",
@@ -4336,6 +4492,37 @@
      "line": 38,
      "symbol": "ProPaywallScreen",
      "area": "mobile"
+    }
+   ]
+  },
+  {
+   "old": "api_resolve_place",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "medium",
+   "missing": null,
+   "note": "Existing MAIN caller, recorded to reconcile the baseline inventory. Source binding does not establish deployment or runtime acceptance.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_resolve_place",
+     "signature": [
+      "api_resolve_place(p_city_id?: string, p_level: string, p_limit?: number, p_text: string) → { city_id: string margin: number name_he: string place_id: string score: number }[]"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "fn:_shared"
+   ],
+   "callSites": [
+    {
+     "file": "supabase/functions/_shared/post-extraction/catalog.ts",
+     "line": 20,
+     "symbol": "rpcPlaceResolver",
+     "area": "fn:_shared"
     }
    ]
   },
@@ -6968,7 +7155,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/listingWrites.ts",
-     "line": 78,
+     "line": 81,
      "symbol": "unwrapCall",
      "area": "marketplace"
     }
@@ -7482,7 +7669,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/posts/postWriteMethods.ts",
-     "line": 170,
+     "line": 165,
      "symbol": "deletePost",
      "area": "posts"
     }
@@ -8542,6 +8729,43 @@
      "line": 21,
      "symbol": "getSalt",
      "area": "fn:public-research-submit"
+    }
+   ]
+  },
+  {
+   "old": "guest_posts",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "D186 / FR-AUTH-014, guest_posts forward migration: read-only signed-out projection of open Public posts with active owner/world/kind, published and unexpired. Returns only opaque id, title, description and city names; existing member grants stay closed. Optional post id, before-id cursor and bounded page limit.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "guest_posts",
+     "signature": [
+      "guest_posts(p_before_id?: string, p_limit?: number, p_post_id?: string) → { city_name_en: string city_name_he: string description: string id: string title: string }[]"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "posts"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/posts/SupabaseGuestPostsRepository.ts",
+     "line": 18,
+     "symbol": "SupabaseGuestPostsRepository.list",
+     "area": "posts"
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/posts/SupabaseGuestPostsRepository.ts",
+     "line": 25,
+     "symbol": "SupabaseGuestPostsRepository.get",
+     "area": "posts"
     }
    ]
   },
@@ -9936,7 +10160,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/posts/postRepoQueries.ts",
-     "line": 41,
+     "line": 46,
      "symbol": "fetchPostDetail",
      "area": "posts"
     }
@@ -10000,7 +10224,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-     "line": 108,
+     "line": 122,
      "symbol": "fetchListingDetail",
      "area": "marketplace"
     }
@@ -10067,7 +10291,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/posts/postRepoQueries.ts",
-     "line": 106,
+     "line": 115,
      "symbol": "countProfileClosedPosts",
      "area": "posts"
     }
@@ -10236,13 +10460,13 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/listingWrites.ts",
-     "line": 97,
+     "line": 100,
      "symbol": "postId",
      "area": "marketplace"
     },
     {
      "file": "app/packages/infrastructure-supabase/src/posts/postWriteMethods.ts",
-     "line": 94,
+     "line": 93,
      "symbol": "completeDraft",
      "area": "posts"
     }
@@ -10578,6 +10802,37 @@
      "file": "app/packages/infrastructure-supabase/src/posts/closureMethods.ts",
      "line": 62,
      "symbol": "reopenPost",
+     "area": "posts"
+    }
+   ]
+  },
+  {
+   "old": "replace_post_media",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "core",
+   "confidence": "medium",
+   "missing": null,
+   "note": "Existing MAIN caller, recorded to reconcile the baseline inventory. Source binding does not establish deployment or runtime acceptance.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "replace_post_media",
+     "signature": [
+      "replace_post_media(p_media: Json, p_post_id: string) → undefined"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "posts"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/posts/postMediaWrites.ts",
+     "line": 57,
+     "symbol": "unwrapCall",
      "area": "posts"
     }
    ]
@@ -11124,7 +11379,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-     "line": 70,
+     "line": 71,
      "symbol": "seriesMarker",
      "area": "marketplace"
     }
@@ -11748,7 +12003,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/listingWrites.ts",
-     "line": 129,
+     "line": 132,
      "symbol": "createListing",
      "area": "marketplace"
     }
@@ -12669,6 +12924,7 @@
     }
    ],
    "areas": [
+    "fn:extract-external-post",
     "mobile"
    ],
    "callSites": [
@@ -12677,6 +12933,15 @@
      "line": 12,
      "symbol": "fetchRemoteFeatureFlags",
      "area": "mobile",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "supabase/functions/extract-external-post/index.ts",
+     "line": 28,
+     "symbol": "<module>",
+     "area": "fn:extract-external-post",
      "ops": [
       "select"
      ]
@@ -12803,79 +13068,6 @@
    ]
   },
   {
-   "old": "challenges",
-   "kind": "table",
-   "status": "same",
-   "launch": "core",
-   "confidence": "high",
-   "missing": null,
-   "note": "Read to find the challenge of a challenge post (`post_id` → `id`).",
-   "oldObject": {
-    "columns": [
-     "cadence",
-     "challenge_id",
-     "created_at",
-     "creator_id",
-     "description",
-     "difficulty",
-     "ends_at",
-     "goal_direction",
-     "goal_value",
-     "measurement",
-     "participants_count",
-     "post_id",
-     "scope",
-     "status",
-     "target_cycles",
-     "title",
-     "topic_label",
-     "updated_at"
-    ],
-    "isView": false
-   },
-   "targets": [
-    {
-     "type": "table",
-     "name": "challenges",
-     "columns": [
-      "cadence",
-      "created_at",
-      "creator_id",
-      "difficulty",
-      "ends_at",
-      "goal_direction",
-      "goal_value",
-      "id",
-      "measurement",
-      "participants_count",
-      "post_id",
-      "scope",
-      "status",
-      "target_cycles",
-      "topic_label",
-      "updated_at"
-     ],
-     "clientGrants": {
-      "select": true
-     }
-    }
-   ],
-   "areas": [
-    "posts"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/posts/postCardExtras.ts",
-     "line": 36,
-     "symbol": "loadChallengeIds",
-     "area": "posts",
-     "ops": [
-      "select"
-     ]
-    }
-   ]
-  },
-  {
    "old": "chat_members",
    "kind": "table",
    "status": "same",
@@ -12994,7 +13186,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/reports/reportTargetPreviews.ts",
-     "line": 89,
+     "line": 91,
      "symbol": "chatPreviews",
      "area": "reports",
      "ops": [
@@ -13391,6 +13583,52 @@
      "ops": [
       "select"
      ]
+    }
+   ]
+  },
+  {
+   "old": "external_post_imports",
+   "kind": "table",
+   "status": "same",
+   "launch": "later",
+   "confidence": "medium",
+   "missing": null,
+   "note": "Existing MAIN caller, recorded to reconcile the baseline inventory. Source binding does not establish deployment or runtime acceptance.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "table",
+     "name": "external_post_imports",
+     "columns": [
+      "channel",
+      "confidence",
+      "created_at",
+      "extraction",
+      "extraction_version",
+      "id",
+      "model",
+      "post_id",
+      "provider_called",
+      "reason",
+      "routing",
+      "source_platform",
+      "status",
+      "text_fingerprint",
+      "user_id"
+     ],
+     "clientGrants": {}
+    }
+   ],
+   "areas": [
+    "fn:_shared"
+   ],
+   "callSites": [
+    {
+     "file": "supabase/functions/_shared/post-extraction/store.ts",
+     "line": 43,
+     "symbol": "supabaseImportStore",
+     "area": "fn:_shared",
+     "ops": []
     }
    ]
   },
@@ -13880,6 +14118,7 @@
     }
    ],
    "areas": [
+    "fn:_shared",
     "marketplace",
     "posts"
    ],
@@ -13898,6 +14137,15 @@
      "line": 54,
      "symbol": "readCatalog",
      "area": "posts",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "supabase/functions/_shared/post-extraction/lists.ts",
+     "line": 30,
+     "symbol": "rows",
+     "area": "fn:_shared",
      "ops": [
       "select"
      ]
@@ -14626,7 +14874,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/posts/postCardExtras.ts",
-     "line": 44,
+     "line": 29,
      "symbol": "loadPurgeDeadlines",
      "area": "posts",
      "ops": [
@@ -14790,7 +15038,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/reports/reportTargetPreviews.ts",
-     "line": 71,
+     "line": 73,
      "symbol": "commentPreviews",
      "area": "reports",
      "ops": [
@@ -14846,7 +15094,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-     "line": 78,
+     "line": 79,
      "symbol": "loadEventDetails",
      "area": "marketplace",
      "ops": [
@@ -14870,6 +15118,41 @@
      "ops": [
       "select"
      ]
+    }
+   ]
+  },
+  {
+   "old": "post_extraction_cache",
+   "kind": "table",
+   "status": "same",
+   "launch": "later",
+   "confidence": "medium",
+   "missing": null,
+   "note": "Existing MAIN caller, recorded to reconcile the baseline inventory. Source binding does not establish deployment or runtime acceptance.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "table",
+     "name": "post_extraction_cache",
+     "columns": [
+      "created_at",
+      "extraction_version",
+      "fingerprint",
+      "result"
+     ],
+     "clientGrants": {}
+    }
+   ],
+   "areas": [
+    "fn:_shared"
+   ],
+   "callSites": [
+    {
+     "file": "supabase/functions/_shared/post-extraction/store.ts",
+     "line": 58,
+     "symbol": "supabaseExtractionCache",
+     "area": "fn:_shared",
+     "ops": []
     }
    ]
   },
@@ -14924,7 +15207,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-     "line": 99,
+     "line": 100,
      "symbol": "loadFoodDetails",
      "area": "marketplace",
      "ops": [
@@ -15082,7 +15365,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/posts/postCardExtras.ts",
-     "line": 56,
+     "line": 41,
      "symbol": "loadRecipients",
      "area": "posts",
      "ops": [
@@ -15159,6 +15442,7 @@
     }
    ],
    "areas": [
+    "fn:_shared",
     "marketplace",
     "posts"
    ],
@@ -15177,6 +15461,15 @@
      "line": 56,
      "symbol": "readCatalog",
      "area": "posts",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "supabase/functions/_shared/post-extraction/lists.ts",
+     "line": 32,
+     "symbol": "rows",
+     "area": "fn:_shared",
      "ops": [
       "select"
      ]
@@ -15294,7 +15587,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/listingOwnerActions.ts",
-     "line": 89,
+     "line": 97,
      "symbol": "addMyListingMedia",
      "area": "marketplace",
      "ops": [
@@ -15312,35 +15605,8 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/posts/postMediaWrites.ts",
-     "line": 40,
+     "line": 41,
      "symbol": "unwrapCall",
-     "area": "posts",
-     "ops": [
-      "insert"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/posts/postMediaWrites.ts",
-     "line": 54,
-     "symbol": "unwrapCall",
-     "area": "posts",
-     "ops": [
-      "select"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/posts/postMediaWrites.ts",
-     "line": 65,
-     "symbol": "replacePostMedia",
-     "area": "posts",
-     "ops": [
-      "delete"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/posts/postMediaWrites.ts",
-     "line": 70,
-     "symbol": "replacePostMedia",
      "area": "posts",
      "ops": [
       "insert"
@@ -15348,7 +15614,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/posts/postRepoQueries.ts",
-     "line": 23,
+     "line": 24,
      "symbol": "loadGallery",
      "area": "posts",
      "ops": [
@@ -15405,6 +15671,7 @@
    ],
    "areas": [
     "housing",
+    "marketplace",
     "posts",
     "rides"
    ],
@@ -15419,8 +15686,26 @@
      ]
     },
     {
+     "file": "app/packages/infrastructure-supabase/src/marketplace/SupabaseListingStreetAddressRepository.ts",
+     "line": 22,
+     "symbol": "SupabaseListingStreetAddressRepository.unwrapCall",
+     "area": "marketplace",
+     "ops": [
+      "upsert"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/marketplace/SupabaseListingStreetAddressRepository.ts",
+     "line": 35,
+     "symbol": "SupabaseListingStreetAddressRepository.getOwn",
+     "area": "marketplace",
+     "ops": [
+      "select"
+     ]
+    },
+    {
      "file": "app/packages/infrastructure-supabase/src/posts/postRepoQueries.ts",
-     "line": 34,
+     "line": 35,
      "symbol": "loadOwnStreet",
      "area": "posts",
      "ops": [
@@ -15429,7 +15714,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/posts/postWriteMethods.ts",
-     "line": 47,
+     "line": 46,
      "symbol": "unwrapCall",
      "area": "posts",
      "ops": [
@@ -15629,7 +15914,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-     "line": 38,
+     "line": 39,
      "symbol": "loadRideDetails",
      "area": "marketplace",
      "ops": [
@@ -15986,7 +16271,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/listingOwnerActions.ts",
-     "line": 71,
+     "line": 79,
      "symbol": "updateMyListing",
      "area": "marketplace",
      "ops": [
@@ -15996,7 +16281,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/listingWrites.ts",
-     "line": 89,
+     "line": 92,
      "symbol": "createPlain",
      "area": "marketplace",
      "ops": [
@@ -16006,7 +16291,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/listingWrites.ts",
-     "line": 100,
+     "line": 103,
      "symbol": "postId",
      "area": "marketplace",
      "ops": [
@@ -16015,7 +16300,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-     "line": 79,
+     "line": 80,
      "symbol": "loadEventDetails",
      "area": "marketplace",
      "ops": [
@@ -16024,7 +16309,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-     "line": 116,
+     "line": 125,
      "symbol": "fetchListingDetail",
      "area": "marketplace",
      "ops": [
@@ -16050,17 +16335,8 @@
      ]
     },
     {
-     "file": "app/packages/infrastructure-supabase/src/posts/postCardExtras.ts",
-     "line": 27,
-     "symbol": "loadPostColumns",
-     "area": "posts",
-     "ops": [
-      "select"
-     ]
-    },
-    {
      "file": "app/packages/infrastructure-supabase/src/posts/postRepoQueries.ts",
-     "line": 64,
+     "line": 73,
      "symbol": "baseCount",
      "area": "posts",
      "ops": [
@@ -16069,7 +16345,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/posts/postWriteMethods.ts",
-     "line": 60,
+     "line": 59,
      "symbol": "insertDraft",
      "area": "posts",
      "ops": [
@@ -16079,7 +16355,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/posts/postWriteMethods.ts",
-     "line": 105,
+     "line": 104,
      "symbol": "createPost",
      "area": "posts",
      "ops": [
@@ -16088,7 +16364,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/posts/postWriteMethods.ts",
-     "line": 127,
+     "line": 126,
      "symbol": "mergedDetails",
      "area": "posts",
      "ops": [
@@ -16097,7 +16373,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/posts/postWriteMethods.ts",
-     "line": 150,
+     "line": 149,
      "symbol": "updatePost",
      "area": "posts",
      "ops": [
@@ -16107,7 +16383,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/reports/reportTargetPreviews.ts",
-     "line": 33,
+     "line": 35,
      "symbol": "postPreviews",
      "area": "reports",
      "ops": [
@@ -16819,7 +17095,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/reports/reportTargetPreviews.ts",
-     "line": 54,
+     "line": 56,
      "symbol": "userPreviews",
      "area": "reports",
      "ops": [
@@ -17427,7 +17703,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/posts/postCardExtras.ts",
-     "line": 65,
+     "line": 50,
      "symbol": "loadRecipients",
      "area": "posts",
      "ops": [
@@ -17436,7 +17712,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/reports/reportTargetPreviews.ts",
-     "line": 50,
+     "line": 52,
      "symbol": "userPreviews",
      "area": "reports",
      "ops": [
@@ -17445,7 +17721,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/reports/reportTargetPreviews.ts",
-     "line": 121,
+     "line": 123,
      "symbol": "loadDisplayNames",
      "area": "reports",
      "ops": [
@@ -17665,14 +17941,24 @@
     }
    ],
    "areas": [
+    "fn:_shared",
     "marketplace"
    ],
    "callSites": [
     {
-     "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-     "line": 115,
-     "symbol": "fetchListingDetail",
+     "file": "app/packages/infrastructure-supabase/src/marketplace/worldCatalog.ts",
+     "line": 21,
+     "symbol": "readWorlds",
      "area": "marketplace",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "supabase/functions/_shared/post-extraction/lists.ts",
+     "line": 28,
+     "symbol": "loadExtractionLists",
+     "area": "fn:_shared",
      "ops": [
       "select"
      ]
