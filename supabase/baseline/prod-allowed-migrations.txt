@@ -83,3 +83,4 @@
 0086_org_sec46_audit_every_change.sql
 0087_biography_url_check_real_tlds.sql
 0088_outbox_claim_exact_limit.sql
+0089_identity_hash_reservation.sql
