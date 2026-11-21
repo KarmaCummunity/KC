@@ -12,13 +12,15 @@
 // Nothing here logs a token, a title or a body; the summary holds counts only.
 import { buildMessages, type BuiltMessage, PayloadError, previewMessageId } from './messages.ts';
 import {
-  MAX_MESSAGES_PER_REQUEST, MAX_RECEIPTS_PER_REQUEST, type Outcome, type Push, type PushDatabase,
-  type PushTransport, type Ticket, type TicketRef, TransportError,
+  MAX_MESSAGES_PER_REQUEST, MAX_RECEIPTS_PER_REQUEST, type DispatchScope, type Outcome, type Push,
+  type PushDatabase, type PushTransport, type Ticket, type TicketRef, TransportError,
 } from './types.ts';
 
 export interface DispatchOptions {
   /** Events per claim. */
   readonly batchSize: number;
+  /** Restricts every queue claim to the listed events / notification / recipient / device. */
+  readonly scope?: DispatchScope;
   /** Provider requests in flight at once. */
   readonly concurrency: number;
   /** Claims of a retry event before it is given up. */
@@ -109,7 +111,7 @@ async function sendChunk(transport: PushTransport, units: readonly Unit[]): Prom
 async function checkReceipts(
   db: PushDatabase, transport: PushTransport, options: DispatchOptions, outcome: Outcome, summary: DispatchSummary,
 ): Promise<void> {
-  for (const event of await db.claimReceipts(options.batchSize)) {
+  for (const event of await db.claimReceipts(options.batchSize, options.scope)) {
     try {
       for (const ids of chunk(event.tickets, MAX_RECEIPTS_PER_REQUEST)) {
         const receipts = await transport.getReceipts(ids.map((t) => t.id));
@@ -129,13 +131,13 @@ async function checkReceipts(
 /** Step 2: the pushes of this run, first attempts and retries alike. */
 async function collectJobs(db: PushDatabase, options: DispatchOptions, summary: DispatchSummary): Promise<Job[]> {
   const jobs: Job[] = [];
-  for (const result of await db.deliverBatch(options.batchSize)) {
+  for (const result of await db.deliverBatch(options.batchSize, options.scope)) {
     summary.events += 1;
     if (result.status === 'delivered' && result.push && result.notification_id) {
       jobs.push({ notificationId: result.notification_id, push: result.push });
     }
   }
-  for (const result of await db.retryBatch(options.batchSize)) {
+  for (const result of await db.retryBatch(options.batchSize, options.scope)) {
     summary.retries += 1;
     if (result.status === 'retry' && result.push && result.notification_id) {
       jobs.push({

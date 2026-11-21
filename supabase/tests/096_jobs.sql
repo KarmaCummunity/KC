@@ -24,7 +24,7 @@ begin
 end;
 $$;
 
-select plan(37);
+select plan(42);
 
 -- A scheduler may be running these jobs in the background on this database: every
 -- assertion below looks only at what this transaction did (job names `zz_…`, return values).
@@ -186,5 +186,19 @@ end;
 $$;
 select * from pg_temp.edge_tests();
 
+
+-- ── Scoped dispatch activation (#856): restricted to dispatch only ──────────
+select has_function('kc_private', 'invoke_dispatch_scoped', array['text', 'jsonb'],
+  'a dispatch-only scoped invoker exists');
+select has_function('kc_private', 'outbox_claim_scoped', array['text', 'bigint[]', 'text', 'uuid', 'uuid', 'integer'],
+  'a scoped claim exists');
+select has_function('kc_private', 'notifications_deliver_batch_scoped', array['bigint[]', 'uuid', 'integer'],
+  'a scoped deliver batch exists');
+select throws_ok($$select kc_private.outbox_claim_scoped('notification_push', null, null, null, null, 1)$$,
+  'P0001', 'outbox_claim_scoped: at least one filter is required',
+  'a scoped claim refuses to run without any filter');
+select is(kc_private.invoke_dispatch_scoped('dispatch-notification', '{}'::jsonb)
+  and kc_private.invoke_dispatch_scoped('dispatch-notification', '{"scope":{}}'::jsonb), null,
+  'a scope without any filter never invokes');
 select * from finish();
 rollback;
