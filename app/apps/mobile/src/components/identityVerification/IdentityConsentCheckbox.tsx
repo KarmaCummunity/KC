@@ -17,6 +17,7 @@ export function IdentityConsentCheckbox({ checked, label, onToggle }: IdentityCo
       testID="identity-consent-checkbox"
       accessibilityRole="checkbox"
       accessibilityState={{ checked }}
+      aria-checked={checked}
       accessibilityLabel={label}
       onPress={() => onToggle(!checked)}
       style={{
