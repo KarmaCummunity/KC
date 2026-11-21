@@ -1,13 +1,42 @@
 import 'reflect-metadata';
-import { Controller, Get, Module } from '@nestjs/common';
+import { Controller, Get, Global, Injectable, Module } from '@nestjs/common';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { AppModule } from '../app.module';
 import { createApp } from '../createApp';
-import type { ApiConfig } from '../platform/config/apiConfig';
+import { ApiConfigModule } from '../platform/config/apiConfig.module';
 import { ApiError } from '../platform/errors/ApiError';
+import type { DependencyProbe } from '../platform/health/dependencyProbe';
+import { HealthModule } from '../platform/health/health.module';
+import { testConfig } from './support/testConfig';
 
-const config: ApiConfig = { environment: 'test', host: '127.0.0.1', port: 0, version: '9.9.9' };
+const config = testConfig();
+
+/** Stand-in for the database probe; a test flips `healthy` to simulate an outage. */
+@Injectable()
+class SwitchableDatabaseProbe implements DependencyProbe {
+  readonly name = 'database';
+  healthy = true;
+
+  ping(): Promise<void> {
+    return this.healthy ? Promise.resolve() : Promise.reject(new Error('host db.internal refused the connection'));
+  }
+}
+
+@Injectable()
+class HealthyRedisProbe implements DependencyProbe {
+  readonly name = 'redis';
+
+  ping(): Promise<void> {
+    return Promise.resolve();
+  }
+}
+
+@Global()
+@Module({
+  providers: [SwitchableDatabaseProbe, HealthyRedisProbe],
+  exports: [SwitchableDatabaseProbe, HealthyRedisProbe],
+})
+class FakeDependenciesModule {}
 
 /** Routes that fail on purpose, to observe the error contract from outside. */
 @Controller('probe')
@@ -23,7 +52,14 @@ class FailingProbeController {
   }
 }
 
-@Module({ imports: [AppModule.forRoot(config)], controllers: [FailingProbeController] })
+@Module({
+  imports: [
+    ApiConfigModule.forRoot(config),
+    FakeDependenciesModule,
+    HealthModule.withProbes([SwitchableDatabaseProbe, HealthyRedisProbe]),
+  ],
+  controllers: [FailingProbeController],
+})
 class ProbeModule {}
 
 describe('API over HTTP', () => {
@@ -44,10 +80,36 @@ describe('API over HTTP', () => {
     expect(response.json()).toEqual({ status: 'ok', version: '9.9.9', environment: 'test' });
   });
 
-  it('keeps the health check out of the versioned prefix', async () => {
-    const response = await app.inject({ method: 'GET', url: '/v1/health' });
+  it('keeps the health checks out of the versioned prefix', async () => {
+    const liveness = await app.inject({ method: 'GET', url: '/v1/health' });
+    const readiness = await app.inject({ method: 'GET', url: '/v1/health/ready' });
 
-    expect(response.statusCode).toBe(404);
+    expect(liveness.statusCode).toBe(404);
+    expect(readiness.statusCode).toBe(404);
+  });
+
+  it('reports ready when every dependency answers', async () => {
+    const response = await app.inject({ method: 'GET', url: '/health/ready' });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual({ status: 'ready', checks: { database: 'up', redis: 'up' } });
+  });
+
+  it('reports not ready, names the dependency and hides the cause', async () => {
+    const database = app.get(SwitchableDatabaseProbe);
+    database.healthy = false;
+    try {
+      const readiness = await app.inject({ method: 'GET', url: '/health/ready' });
+      const liveness = await app.inject({ method: 'GET', url: '/health' });
+
+      expect(readiness.statusCode).toBe(503);
+      expect(readiness.json()).toEqual({ status: 'not_ready', checks: { database: 'down', redis: 'up' } });
+      expect(readiness.body).not.toContain('db.internal');
+      // Liveness must not follow readiness, or an outage would restart every instance.
+      expect(liveness.statusCode).toBe(200);
+    } finally {
+      database.healthy = true;
+    }
   });
 
   it('serves business routes under /v1 only', async () => {

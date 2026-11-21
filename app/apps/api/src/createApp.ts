@@ -29,7 +29,7 @@ export async function createApp(rootModule: Type<unknown> | DynamicModule, confi
     // Fastify's logger is the one log stream; Nest's own logger would add a second format.
     logger: false,
   });
-  app.setGlobalPrefix(API_VERSION_PREFIX, { exclude: ['health'] });
+  app.setGlobalPrefix(API_VERSION_PREFIX, { exclude: ['health', 'health/ready'] });
   app.useGlobalFilters(new ApiErrorFilter());
   // Close open connections on SIGTERM, which is how the platform stops an instance.
   app.enableShutdownHooks();

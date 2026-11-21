@@ -10,6 +10,10 @@ export interface ApiConfig {
   readonly port: number;
   /** App version reported by the health endpoint (`app/VERSION` at build time). */
   readonly version: string;
+  /** Postgres connection string. A secret: never logged, never in an error. */
+  readonly databaseUrl: string;
+  /** Redis connection string. A secret, like `databaseUrl`. */
+  readonly redisUrl: string;
 }
 
 /**
@@ -56,6 +60,20 @@ function parsePort(value: string | undefined): number {
 }
 
 /**
+ * Reads a required connection string and checks its shape only (it is a URL
+ * with one of the expected schemes). Whether the service answers is the
+ * readiness endpoint's job, not start-up's.
+ */
+function parseServiceUrl(variable: string, value: string | undefined, schemes: readonly string[]): string {
+  const expectation = `must be a URL starting with ${schemes.map((scheme) => `${scheme}://`).join(' or ')}`;
+  if (value === undefined) throw new ApiConfigError(variable, `is required and ${expectation}`);
+  if (!URL.canParse(value) || !schemes.includes(new URL(value).protocol.slice(0, -1))) {
+    throw new ApiConfigError(variable, expectation);
+  }
+  return value;
+}
+
+/**
  * Builds the API configuration from environment variables.
  * `PORT` is the name Cloud Run injects; the others are KC's own.
  * @throws ApiConfigError on the first invalid variable, so a misconfigured
@@ -67,5 +85,7 @@ export function loadApiConfig(env: Readonly<Record<string, string | undefined>>)
     host: readVariable(env, 'KC_API_HOST') ?? '0.0.0.0',
     port: parsePort(readVariable(env, 'PORT')),
     version: readVariable(env, 'KC_APP_VERSION') ?? '0.0.0-dev',
+    databaseUrl: parseServiceUrl('DATABASE_URL', readVariable(env, 'DATABASE_URL'), ['postgres', 'postgresql']),
+    redisUrl: parseServiceUrl('REDIS_URL', readVariable(env, 'REDIS_URL'), ['redis', 'rediss']),
   };
 }
