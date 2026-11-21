@@ -36,7 +36,7 @@ export const authHe = {
   // PR5a — UI sweep additions for (auth)/* and auth/* screens.
   welcomeAppName: 'קהילת קארמה',
   welcomeValueProp1: 'לפרסם חפצים שאינך צריך',
-  welcomeValueProp2: 'מצא מה שמחפשים',
+  welcomeValueProp2: 'למצוא מה שמחפשים',
   welcomeValueProp3: 'תאם מסירה ישירות',
   welcomeAboutLearnMore: 'קראו עוד עלינו',
   legalConsentShort: 'בהרשמה מסכימים לתנאי השימוש ומדיניות הפרטיות.',
