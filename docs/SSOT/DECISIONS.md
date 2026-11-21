@@ -2065,7 +2065,7 @@ The Demo data screen keeps two failures apart: the RPC itself is missing (`not_i
 
 **Affected.** `.github/workflows/prod-copy-to-dev.yml`, `scripts/prod-copy-export.sql`, `scripts/prod-copy-anonymize.mjs`, `scripts/check-deploy-isolation.mjs` (`MONITORS`, another holder of prod secrets outside `deploy.yml`, tracked with TD-232), `supabase/seed/prod-copy/`, `.github/workflows/deploy-db.yml`, `docs/SSOT/OPERATOR_RUNBOOK.md` "Production copy to kc-dev".
 
-## {{ENG:dev-only-job-tuning}} — kc-dev tunes its job cadence and log retention through a dev-only seed (2026-11-19)
+## D-243 — kc-dev tunes its job cadence and log retention through a dev-only seed (2026-11-19)
 
 **Decision.** The migrations carry production's job schedules and retention periods. Values that only kc-dev needs differently live in `supabase/seed/dev-tuning/load.sql`, which `deploy-db.yml` runs after the migrations on every dev deploy (step **Job tuning (kc-dev only)**, guarded to kc-dev's project ref like the other dev-only seeds of `D-241`). It updates rows of `kc_private.retention_rules`, `kc_private.scheduled_jobs` and `kc_private.matching_settings`; the `scheduled_jobs_sync` trigger reconciles pg_cron in the same transaction. First values: `ops.job_runs` kept 7 days and pg_cron's run log 1 day (#2492; production 30 and 7 days), `chat_system_messages` every 30 seconds (#2488; production 10 seconds), and a matching run scans 200 posts (#2494; production 500).
 

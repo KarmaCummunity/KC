@@ -2,7 +2,7 @@
 
 kc-dev runs on the smallest compute tier. The migrations carry production's job schedules and
 retention periods; `load.sql` overrides the ones kc-dev needs lighter (decision
-`{{ENG:dev-only-job-tuning}}` in `docs/SSOT/DECISIONS.md`). **DEV ONLY**: it refuses to run
+`D-243` in `docs/SSOT/DECISIONS.md`). **DEV ONLY**: it refuses to run
 unless the session sets `kc.seed_target = 'dev'`.
 
 | What | kc-dev | Production (migrations) | Issue |
