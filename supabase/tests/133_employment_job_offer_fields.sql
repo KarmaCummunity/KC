@@ -1,8 +1,18 @@
 -- Employment job offer: detail_schema declares requirements and estimated salary (#2537).
+-- Catalog rows are seed-only (D-228) and seeds load after these tests, so this file
+-- inserts the employment kinds and re-applies the migration-owned schema patch.
 begin;
 create extension if not exists pgtap with schema extensions;
 
 select plan(4);
+
+insert into public.worlds (slug, label_he, label_en)
+values ('employment', 'employment', 'Employment');
+insert into public.post_kinds (world_slug, slug, label_he, label_en, direction) values
+  ('employment', 'job_offer', 'jo', 'Job offer', 'offer'),
+  ('employment', 'job_request', 'jr', 'Job request', 'request');
+
+select kc_private.apply_employment_job_offer_detail_schema();
 
 select ok(
   exists (
