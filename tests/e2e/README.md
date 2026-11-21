@@ -5,7 +5,7 @@ User journeys against the deployed dev web app (`DEV_WEB_URL`, default
 
 - **Users:** the e2e members of kc-dev (`user1@seed.kc.test` … `user4@seed.kc.test`, loaded by the **Seed KC dev** workflow, action `e2e-users`, from `supabase/seed/e2e/load.sql`; 
   password from the `E2E_SEED_PASSWORD` env / Actions secret, required). Override with `E2E_USER_A_EMAIL` / `E2E_USER_A_PASSWORD`,
-  `E2E_USER_B_*`, `E2E_USER_C_*` (user3, the member outside what A and B share) and `E2E_USER_D_*` (user4, signed in only by the rate-limit journey, so its quota is its own).
+  `E2E_USER_B_*`, `E2E_USER_C_*` (user3, the member outside what A and B share) and `E2E_USER_D_*` (user4: account-deletion restore journey, write-rate-limits, and media acceptance; the suite is single-worker and deletion restores before it ends).
 - **Anon key:** read from the deployed bundle (it is the public publishable key), or set
   `E2E_SUPABASE_ANON_KEY`.
 - **Guard:** `lib/env.ts` refuses to run against the prod project or prod domain.
@@ -24,14 +24,14 @@ User journeys against the deployed dev web app (`DEV_WEB_URL`, default
 | `journeys/db-function-privileges.spec.ts` | **database function privileges (SEC-1063):** as a signed-out visitor, calls every database function the API exposes (names and arguments from the generated types) and expects `42501` for all but the reviewed public list; no browser, read-only |
 | `journeys/chat-media-privacy.spec.ts` | **chat images are private (SEC-1064):** member A uploads an image into the chat with B (`chat-media`, `<sender>/<chat>/<file>`); B gets a signed URL and the URL serves the image; a member outside the chat (user3), the public key, a call without credentials and the public URL are all refused, even with the exact path; no browser, and the image is removed after the run |
 | `journeys/worker-endpoints.spec.ts` | **worker endpoints (SEC-1067):** calls every Edge Function on the service-role-only list (read from `supabase/functions/_shared/serviceRoleGuard.ts`) without credentials, with the public key and as a signed-in member, and expects each to refuse (`401` or `403`); no browser, and a refused call runs nothing |
-| `journeys/write-rate-limits.spec.ts` | **write rate limits (SEC-WRITE-RATE-LIMITS):** as user4, one insert of 21 drafts (one more than the 20 new posts a member may create an hour) is refused whole with `rate_limited` and creates nothing, then a single draft is accepted and removed; no browser. Handoff requests and follows use the same limiter and stay with `supabase/tests/095_platform.sql` |
+| `journeys/write-rate-limits.spec.ts` | **write rate limits (SEC-WRITE-RATE-LIMITS):** as user4 (shared with account-deletion; suite is single-worker), one insert of 21 drafts (one more than the 20 new posts a member may create an hour) is refused whole with `rate_limited` and creates nothing, then a single draft is accepted and removed; no browser. Handoff requests and follows use the same limiter and stay with `supabase/tests/095_platform.sql` |
 | `journeys/qa/auth.spec.ts` | email login with the seeded user, wrong password, sign-up form |
 | `journeys/qa/feed.spec.ts` | feed renders without failed API calls, create a post, like, comment |
 | `journeys/qa/marketplace.spec.ts` | browse, search, listing detail, create item with/without photo on the unified create screen (`/create?category=items`), reserve by a second user |
 | `journeys/qa/social.spec.ts` | chat between two users, notifications inbox, donations hub, money world (active hub or portal per `world_money_enabled`), he/en + RTL |
 | `journeys/qa/block-user.spec.ts` | block then unblock `user3@seed.kc.test` from the profile ⋮ menu (Apple 1.2) |
 | `journeys/qa/report-issue.spec.ts` | report a problem from Settings (FR-MOD-002): Send disabled while too short, then the report opens the support thread and is stored there once (leaves one tagged report in user A's support thread) |
-| `journeys/qa/account-deletion.spec.ts` | **opt-in, destructive**: delete account from Settings (set `E2E_DELETE_ACCOUNT_EMAIL` to a spare seed user) |
+| `journeys/qa/account-deletion.spec.ts` | **account deletion restore (FR-SETTINGS-012 / FR-AUTH-016, D108):** as user4, publish a keep-post → delete from Settings (type display name) → password grant still works → sign-in lands on `/restore-account` with the purge date → restore → feed and the keep-post are visible again; ends restored so nightly can repeat it |
 | `journeys/*.spec.ts` | P0 smoke journeys + the world journeys above (`lib/worldJourney.ts` holds the shared shape; a world is a fixture) |
 
 ## CI
