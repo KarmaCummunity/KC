@@ -1,11 +1,5 @@
 import React from 'react';
-import {
-  ActivityIndicator,
-  Platform,
-  TouchableOpacity,
-  View,
-  type ViewStyle,
-} from 'react-native';
+import { ActivityIndicator, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { iconSize, makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
@@ -13,17 +7,7 @@ import { MAX_MEDIA_ASSETS } from '@kc/domain';
 import type { UploadedAsset } from '../../services/imageUpload';
 import { KCImage } from '../ui/KCImage';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
-import { isLayoutRtl } from '../../lib/rtlLayout';
-
-/**
- * Pin the remove (X) button to the thumbnail's reading-end corner.
- * Native auto-mirrors `end`; RN-Web ignores `start`/`end` for absolute
- * positioning, so on web we resolve RTL live and emit a physical key.
- */
-function removeBtnCornerEnd(): Pick<ViewStyle, 'left' | 'right' | 'end'> {
-  if (Platform.OS !== 'web') return { end: 4 };
-  return isLayoutRtl() ? { left: 4 } : { right: 4 };
-}
+import { absoluteCornerEnd } from '../../lib/rtlLayout';
 
 /** What a thumbnail needs: a stable id (`path`, also the remove key) and a preview URI. */
 export type PhotoPickerItem = Pick<UploadedAsset, 'path' | 'previewUri' | 'previewFallbackUri'>;
@@ -70,7 +54,7 @@ const usePhotoPickerStyles = makeUseStyles(({ colors, isDark }) => ({
   removeBtn: {
     position: 'absolute' as const,
     top: 4,
-    ...removeBtnCornerEnd(),
+    ...absoluteCornerEnd(4),
     width: 22,
     height: 22,
     borderRadius: radius.full,

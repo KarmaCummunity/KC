@@ -6,6 +6,8 @@ import React from 'react';
 import { act, cleanup, fireEvent, render } from '@testing-library/react';
 import { ThemeProvider } from '@kc/ui';
 
+// The closure store reports its funnel to analytics (#1759); the provider is not loaded here.
+vi.mock('../../../lib/analytics', () => ({ track: vi.fn() }));
 vi.mock('react-native-reanimated', async () => {
   const { View } = await vi.importActual<typeof import('react-native')>('react-native');
   return {

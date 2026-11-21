@@ -6,6 +6,7 @@ import { useActiveScreenStore } from '../lib/notifications/useActiveScreenStore'
 import { installForegroundHandler } from '../lib/notifications/foregroundHandler';
 import { useNotificationTapRouting } from '../lib/notifications/tapHandler';
 import { registerCurrentDeviceIfPermitted, watchPushTokenRefresh } from '../lib/notifications/register';
+import { watchDailyDeviceRefresh } from '../lib/notifications/deviceRefresh';
 import { ensureNotificationChannels } from '../lib/notifications/channels';
 import { syncAppBadge } from '../lib/notifications/badge';
 import { useUnreadNotificationCount } from '../hooks/useNotificationInboxBadge';
@@ -30,7 +31,13 @@ export function NotificationsBridge(): null {
     if (!userId) return undefined;
     const deps = { deviceRepo: container.deviceRepo };
     registerCurrentDeviceIfPermitted(userId, deps).catch(console.error);
-    return watchPushTokenRefresh(userId, deps);
+    // Token rotation and long-running sessions both re-register, so last_seen_at stays fresh.
+    const stopTokenWatch = watchPushTokenRefresh(userId, deps);
+    const stopDailyRefresh = watchDailyDeviceRefresh(userId, deps);
+    return () => {
+      stopTokenWatch();
+      stopDailyRefresh();
+    };
   }, [userId]);
 
   // The app icon shows the same unread count as the bell; signed out it is cleared.
