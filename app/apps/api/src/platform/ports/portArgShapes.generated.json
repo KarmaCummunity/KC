@@ -12,6 +12,15 @@
    ],
    "restoreAccount": []
   },
+  "activeStatus": {
+   "get": [],
+   "set": [
+    {
+     "name": "enabled",
+     "shape": "boolean"
+    }
+   ]
+  },
   "adminContent": {
    "findActiveMembers": [
     {
@@ -617,6 +626,75 @@
     }
    ]
   },
+  "chatV2": {
+   "setMessageReaction": [
+    {
+     "name": "messageId",
+     "shape": "string"
+    },
+    {
+     "name": "reactionType",
+     "shape": {
+      "union": [
+       "null",
+       {
+        "literal": "like"
+       },
+       {
+        "literal": "love"
+       },
+       {
+        "literal": "laugh"
+       },
+       {
+        "literal": "sad"
+       }
+      ]
+     }
+    }
+   ],
+   "sendMediaMessage": [
+    {
+     "name": "chatId",
+     "shape": "string"
+    },
+    {
+     "name": "mediaPayload",
+     "shape": {
+      "ref": "Record<string, unknown>"
+     }
+    },
+    {
+     "name": "body",
+     "shape": {
+      "union": [
+       "undefined",
+       "null",
+       "string"
+      ]
+     },
+     "optional": true
+    },
+    {
+     "name": "messageId",
+     "shape": {
+      "union": [
+       "undefined",
+       "string"
+      ]
+     },
+     "optional": true
+    }
+   ],
+   "listMessageReactions": [
+    {
+     "name": "messageIds",
+     "shape": {
+      "array": "string"
+     }
+    }
+   ]
+  },
   "city": {
    "listAll": []
   },
@@ -868,6 +946,21 @@
      "shape": "string"
     }
    ]
+  },
+  "followSuggestions": {
+   "listSuggestions": [
+    {
+     "name": "limit",
+     "shape": {
+      "union": [
+       "undefined",
+       "number"
+      ]
+     },
+     "optional": true
+    }
+   ],
+   "getProfileCompleteness": []
   },
   "guestPosts": {
    "list": [
@@ -1727,6 +1820,51 @@
     }
    ]
   },
+  "match": {
+   "listMine": [
+    {
+     "name": "limit",
+     "shape": {
+      "union": [
+       "undefined",
+       "number"
+      ]
+     },
+     "optional": true
+    }
+   ],
+   "respond": [
+    {
+     "name": "candidateId",
+     "shape": "string"
+    },
+    {
+     "name": "response",
+     "shape": {
+      "union": [
+       {
+        "literal": "accept"
+       },
+       {
+        "literal": "decline"
+       }
+      ]
+     }
+    }
+   ],
+   "qualityByWorld": [
+    {
+     "name": "days",
+     "shape": {
+      "union": [
+       "undefined",
+       "number"
+      ]
+     },
+     "optional": true
+    }
+   ]
+  },
   "moderationAdmin": {
    "getMyRoles": [],
    "restoreTarget": [
@@ -1897,63 +2035,6 @@
    ],
    "markAllRead": []
   },
-  "organizations": {
-   "submitApplication": [
-    {
-     "name": "input",
-     "shape": {
-      "ref": "SubmitOrgApplicationInput"
-     }
-    }
-   ],
-   "getMyLatestApplication": [],
-   "listMyOrganizations": [],
-   "listMembers": [
-    {
-     "name": "orgId",
-     "shape": "string"
-    }
-   ],
-   "addMember": [
-    {
-     "name": "orgId",
-     "shape": "string"
-    },
-    {
-     "name": "shareHandle",
-     "shape": "string"
-    },
-    {
-     "name": "role",
-     "shape": {
-      "union": [
-       {
-        "literal": "org_admin"
-       },
-       {
-        "literal": "org_manager"
-       },
-       {
-        "literal": "org_employee"
-       },
-       {
-        "literal": "org_volunteer"
-       }
-      ]
-     }
-    }
-   ],
-   "removeMember": [
-    {
-     "name": "orgId",
-     "shape": "string"
-    },
-    {
-     "name": "userId",
-     "shape": "string"
-    }
-   ]
-  },
   "orgApplications": {
    "list": [
     {
@@ -2065,6 +2146,63 @@
       ]
      },
      "optional": true
+    }
+   ]
+  },
+  "organizations": {
+   "submitApplication": [
+    {
+     "name": "input",
+     "shape": {
+      "ref": "SubmitOrgApplicationInput"
+     }
+    }
+   ],
+   "getMyLatestApplication": [],
+   "listMyOrganizations": [],
+   "listMembers": [
+    {
+     "name": "orgId",
+     "shape": "string"
+    }
+   ],
+   "addMember": [
+    {
+     "name": "orgId",
+     "shape": "string"
+    },
+    {
+     "name": "shareHandle",
+     "shape": "string"
+    },
+    {
+     "name": "role",
+     "shape": {
+      "union": [
+       {
+        "literal": "org_admin"
+       },
+       {
+        "literal": "org_manager"
+       },
+       {
+        "literal": "org_employee"
+       },
+       {
+        "literal": "org_volunteer"
+       }
+      ]
+     }
+    }
+   ],
+   "removeMember": [
+    {
+     "name": "orgId",
+     "shape": "string"
+    },
+    {
+     "name": "userId",
+     "shape": "string"
     }
    ]
   },
@@ -2560,6 +2698,94 @@
     }
    ]
   },
+  "postEngagement": {
+   "getStats": [
+    {
+     "name": "postId",
+     "shape": "string"
+    }
+   ],
+   "getViewerReaction": [
+    {
+     "name": "postId",
+     "shape": "string"
+    },
+    {
+     "name": "viewerId",
+     "shape": "string"
+    }
+   ],
+   "setReaction": [
+    {
+     "name": "postId",
+     "shape": "string"
+    },
+    {
+     "name": "reactionType",
+     "shape": {
+      "union": [
+       "null",
+       {
+        "literal": "support"
+       },
+       {
+        "literal": "like"
+       },
+       {
+        "literal": "thanks"
+       }
+      ]
+     }
+    }
+   ],
+   "createComment": [
+    {
+     "name": "postId",
+     "shape": "string"
+    },
+    {
+     "name": "body",
+     "shape": "string"
+    },
+    {
+     "name": "parentCommentId",
+     "shape": {
+      "union": [
+       "undefined",
+       "null",
+       "string"
+      ]
+     },
+     "optional": true
+    }
+   ],
+   "setCommentLike": [
+    {
+     "name": "commentId",
+     "shape": "string"
+    },
+    {
+     "name": "liked",
+     "shape": "boolean"
+    }
+   ],
+   "listCommentsWithAuthors": [
+    {
+     "name": "postId",
+     "shape": "string"
+    },
+    {
+     "name": "limit",
+     "shape": {
+      "union": [
+       "undefined",
+       "number"
+      ]
+     },
+     "optional": true
+    }
+   ]
+  },
   "postSeries": {
    "listMine": [],
    "create": [
@@ -2985,6 +3211,51 @@
        "links": "number"
       }
      }
+    }
+   ]
+  },
+  "socialFeed": {
+   "hidePost": [
+    {
+     "name": "postId",
+     "shape": "string"
+    }
+   ],
+   "logImpressions": [
+    {
+     "name": "postIds",
+     "shape": {
+      "array": "string"
+     }
+    }
+   ],
+   "listMuteFilters": [],
+   "addMuteFilter": [
+    {
+     "name": "kind",
+     "shape": {
+      "union": [
+       {
+        "literal": "user"
+       },
+       {
+        "literal": "keyword"
+       },
+       {
+        "literal": "world"
+       }
+      ]
+     }
+    },
+    {
+     "name": "value",
+     "shape": "string"
+    }
+   ],
+   "removeMuteFilter": [
+    {
+     "name": "filterId",
+     "shape": "string"
     }
    ]
   },

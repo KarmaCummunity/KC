@@ -7,10 +7,13 @@ import {
   SupabaseKnowledgeTopicRepository,
   SupabaseListingStreetAddressRepository,
   SupabaseMarketplaceRepository,
+  SupabaseMatchRepository,
+  SupabasePostEngagementRepository,
   SupabasePostRepository,
   SupabasePostSeriesRepository,
   SupabaseSavedPostsRepository,
   SupabaseSearchRepository,
+  SupabaseSocialFeedRepository,
   SupabaseVolunteerRepository,
   SupabaseWorldContentRepository,
 } from '@kc/infrastructure-supabase';
@@ -218,4 +221,36 @@ const worldContent = hostedPort('worldContent', {
   visitorCacheSeconds: { getWorldContent: 300 },
 });
 
-export const POSTS_PORTS: readonly PortDefinition[] = [challenge, guestPosts, housing, knowledgeBooking, knowledgeSlotSeries, knowledgeTopic, listingStreetAddress, marketplace, post, postSeries, savedPosts, search, volunteer, worldContent];
+const match = hostedPort('match', {
+  create: (client) => new SupabaseMatchRepository(adapterClient<typeof SupabaseMatchRepository>(client)),
+  methods: {
+    listMine: 'member',
+    respond: 'member',
+    qualityByWorld: 'member',
+  },
+});
+
+const postEngagement = hostedPort('postEngagement', {
+  create: (client) => new SupabasePostEngagementRepository(adapterClient<typeof SupabasePostEngagementRepository>(client)),
+  methods: {
+    getStats: 'member',
+    getViewerReaction: 'member',
+    setReaction: 'member',
+    createComment: 'member',
+    setCommentLike: 'member',
+    listCommentsWithAuthors: 'member',
+  },
+});
+
+const socialFeed = hostedPort('socialFeed', {
+  create: (client) => new SupabaseSocialFeedRepository(adapterClient<typeof SupabaseSocialFeedRepository>(client)),
+  methods: {
+    hidePost: 'member',
+    logImpressions: 'member',
+    listMuteFilters: 'member',
+    addMuteFilter: 'member',
+    removeMuteFilter: 'member',
+  },
+});
+
+export const POSTS_PORTS: readonly PortDefinition[] = [challenge, guestPosts, housing, knowledgeBooking, knowledgeSlotSeries, knowledgeTopic, listingStreetAddress, marketplace, match, post, postEngagement, postSeries, savedPosts, search, socialFeed, volunteer, worldContent];

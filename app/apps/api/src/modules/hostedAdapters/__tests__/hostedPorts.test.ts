@@ -9,7 +9,7 @@ const inertClient = {} as SqlBackedClient;
 describe('hosted ports', () => {
   it('have unique wire names', () => {
     expect(indexPorts(HOSTED_PORTS).size).toBe(HOSTED_PORTS.length);
-    expect(HOSTED_PORTS.length).toBeGreaterThanOrEqual(66);
+    expect(HOSTED_PORTS.length).toBeGreaterThanOrEqual(72);
   });
 
   it('follow the naming rule: a lower-camel-case port name without the Repository or Service suffix', () => {

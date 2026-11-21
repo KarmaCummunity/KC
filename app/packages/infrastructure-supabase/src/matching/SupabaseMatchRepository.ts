@@ -4,62 +4,9 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { matchMachine } from '@kc/domain';
+import type { IMatchRepository, MatchRole, MatchStatus, MatchResponse, MatchSuggestion, MatchRespondResult, MatchQualityByWorld } from '@kc/application';
 import type { Database } from '../database.types';
 import { unwrapCall } from '../rpc/mapRpcError';
-
-export type MatchRole = 'offer' | 'request';
-/** The status of a pair: the states of the `match` machine. */
-export type MatchStatus = (typeof matchMachine.states)[number];
-export type MatchResponse = 'accepted' | 'declined';
-
-export interface MatchSuggestion {
-  readonly candidateId: string;
-  readonly status: MatchStatus;
-  /** 0..1 (LLM-blended when the re-rank flag is on). */
-  readonly score: number;
-  readonly distanceKm: number | null;
-  readonly worldSlug: string;
-  readonly myRole: MatchRole;
-  readonly myListingId: string;
-  readonly myListingTitle: string;
-  readonly otherListingId: string;
-  readonly otherListingTitle: string;
-  readonly otherListingSummary: string | null;
-  /** The other member; the ids are empty and the names null while the poster is masked (FR-POST-021). */
-  readonly otherOwner: {
-    readonly userId: string;
-    readonly displayName: string | null;
-    readonly avatarUrl: string | null;
-    readonly shareHandle: string | null;
-  };
-  readonly myResponse: MatchResponse | null;
-  readonly otherResponse: MatchResponse | null;
-  readonly reason: string | null;
-  readonly createdAt: string;
-}
-
-export interface MatchRespondResult {
-  readonly status: string;
-  readonly mutual: boolean;
-}
-
-/** KC#1122 / FR-ADMIN-029 — one world's match quality over the requested window. */
-export interface MatchQualityByWorld {
-  readonly worldSlug: string;
-  readonly worldLabelHe: string;
-  readonly worldLabelEn: string;
-  readonly notifiedPairs: number;
-  readonly responses: number;
-  readonly accepted: number;
-  /** accepted / responses; null when nobody answered yet. */
-  readonly precisionProxy: number | null;
-  readonly chatPairs: number;
-  /** chat pairs / notified pairs; null when nothing was notified. */
-  readonly chatRate: number | null;
-  /** null for worlds that do not hand off through handoffs. */
-  readonly completedPairs: number | null;
-  readonly completionRate: number | null;
-}
 
 type Row = Database['public']['Functions']['my_matches']['Returns'][number];
 type QualityRow = Database['public']['Functions']['admin_match_quality']['Returns'][number];
@@ -123,7 +70,9 @@ export function mapMatchRow(r: Row): MatchSuggestion {
   };
 }
 
-export class SupabaseMatchRepository {
+export type { MatchRole, MatchStatus, MatchResponse, MatchSuggestion, MatchRespondResult, MatchQualityByWorld } from '@kc/application';
+
+export class SupabaseMatchRepository implements IMatchRepository {
   constructor(private readonly client: SupabaseClient<Database>) {}
 
   async listMine(limit = 20): Promise<MatchSuggestion[]> {

@@ -1,6 +1,7 @@
 import type {
   IAboutRepository,
   IAccountGateRepository,
+  IActiveStatusRepository,
   IAdminContentRepository,
   IAdminRoleRepository,
   IAdminTaskRepository,
@@ -8,6 +9,7 @@ import type {
   IBlockRepository,
   IChallengeRepository,
   IChatRepository,
+  IChatV2Repository,
   ICityRepository,
   ICrmContactsRepository,
   IDemoDataRepository,
@@ -17,6 +19,7 @@ import type {
   IFinanceAccountsRepository,
   IFinanceDonorsRepository,
   IFinanceLedgerRepository,
+  IFollowSuggestionsRepository,
   IGuestPostsRepository,
   IHousingRepository,
   IImportTelemetryRepository,
@@ -26,6 +29,7 @@ import type {
   IKnowledgeTopicRepository,
   IListingStreetAddressRepository,
   IMarketplaceRepository,
+  IMatchRepository,
   IModerationAdminRepository,
   IModerationQueueRepository,
   INotificationInboxRepository,
@@ -35,6 +39,7 @@ import type {
   IOrgTransparencyRepository,
   IOrganizationsRepository,
   IPaymentsRepository,
+  IPostEngagementRepository,
   IPostRepository,
   IPostSeriesRepository,
   IPostTranslationReader,
@@ -51,6 +56,7 @@ import type {
   IRidesFeedRepository,
   ISavedPostsRepository,
   ISearchRepository,
+  ISocialFeedRepository,
   IStatsRepository,
   IStreetRepository,
   ISupportInboxRepository,
@@ -81,6 +87,7 @@ import type {
 export interface PortCatalog {
   about: IAboutRepository;
   accountGate: IAccountGateRepository;
+  activeStatus: IActiveStatusRepository;
   adminContent: IAdminContentRepository;
   adminRole: IAdminRoleRepository;
   adminTask: IAdminTaskRepository;
@@ -88,6 +95,7 @@ export interface PortCatalog {
   block: IBlockRepository;
   challenge: IChallengeRepository;
   chat: IChatRepository;
+  chatV2: IChatV2Repository;
   city: ICityRepository;
   crmContacts: ICrmContactsRepository;
   demoData: IDemoDataRepository;
@@ -97,6 +105,7 @@ export interface PortCatalog {
   financeAccounts: IFinanceAccountsRepository;
   financeDonors: IFinanceDonorsRepository;
   financeLedger: IFinanceLedgerRepository;
+  followSuggestions: IFollowSuggestionsRepository;
   guestPosts: IGuestPostsRepository;
   housing: IHousingRepository;
   importTelemetry: IImportTelemetryRepository;
@@ -106,16 +115,18 @@ export interface PortCatalog {
   knowledgeTopic: IKnowledgeTopicRepository;
   listingStreetAddress: IListingStreetAddressRepository;
   marketplace: IMarketplaceRepository;
+  match: IMatchRepository;
   moderationAdmin: IModerationAdminRepository;
   moderationQueue: IModerationQueueRepository;
   notificationInbox: INotificationInboxRepository;
-  organizations: IOrganizationsRepository;
   orgApplications: IOrgApplicationsRepository;
   orgHierarchy: IOrgHierarchyRepository;
   orgJobPostingAdmin: IOrgJobPostingAdminRepository;
   orgTransparency: IOrgTransparencyRepository;
+  organizations: IOrganizationsRepository;
   payments: IPaymentsRepository;
   post: IPostRepository;
+  postEngagement: IPostEngagementRepository;
   postSeries: IPostSeriesRepository;
   postTranslationReader: IPostTranslationReader;
   prodCopy: IProdCopyRepository;
@@ -131,6 +142,7 @@ export interface PortCatalog {
   ridesFeed: IRidesFeedRepository;
   savedPosts: ISavedPostsRepository;
   search: ISearchRepository;
+  socialFeed: ISocialFeedRepository;
   stats: IStatsRepository;
   street: IStreetRepository;
   supportInbox: ISupportInboxRepository;

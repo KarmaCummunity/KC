@@ -2095,7 +2095,7 @@ The Demo data screen keeps two failures apart: the RPC itself is missing (`not_i
 
 **Rejected.** An endpoint per method; rewriting adapters first; running PostgREST as a sidecar behind the API (one more service and pool, and the schema stays exposable); tRPC or GraphQL (a second schema next to the port interfaces).
 
-**Open.** Realtime, auth, legal documents and six adapters without a port interface are not behind the gateway yet. Arguments are checked against shapes generated from the port interfaces; signed-out access is exactly what the database grants the `anon` role.
+**Open.** Realtime, auth, the Edge Function services, the legal documents cache and three direct reads are not behind the gateway yet (`app/scripts/check-api-door.mjs` lists them). Arguments are checked against shapes generated from the port interfaces; signed-out access is exactly what the database grants the `anon` role.
 
 **Affected.** `app/apps/api/src/platform/{ports,postgrest}`, `app/apps/api/src/modules/hostedAdapters`, `app/packages/infrastructure-api`, `app/scripts/check-architecture.mjs`, `docs/architecture/adr/ADR-009-backend-platform.md`.
 

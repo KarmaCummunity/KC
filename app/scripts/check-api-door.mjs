@@ -35,13 +35,6 @@ export const KNOWN = new Map([
   ['apps/mobile/src/services/postsComposition.ts: new EdgeFnTranslationService', 'phase 8'],
   // Sign-in: phase 9.
   ['apps/mobile/src/services/authComposition.ts: new SupabaseAuthService', 'phase 9'],
-  // Data adapters that implement no application port yet; each needs a port and a catalog entry (phase 5).
-  ['apps/mobile/src/lib/container.ts: new SupabaseActiveStatusRepository', 'phase 5: needs a port'],
-  ['apps/mobile/src/lib/container.ts: new SupabaseChatV2Repository', 'phase 5: needs a port'],
-  ['apps/mobile/src/lib/container.ts: new SupabaseFollowSuggestionsRepository', 'phase 5: needs a port'],
-  ['apps/mobile/src/lib/container.ts: new SupabasePostEngagementRepository', 'phase 5: needs a port'],
-  ['apps/mobile/src/lib/container.ts: new SupabaseSocialFeedRepository', 'phase 5: needs a port'],
-  ['apps/mobile/src/services/matchingComposition.ts: new SupabaseMatchRepository', 'phase 5: needs a port'],
   // A device cache around public reads, with Date values (phase 5: needs a JSON-safe port).
   ['apps/mobile/src/services/legalComposition.ts: new SupabaseLegalDocumentRepository', 'phase 5: needs a JSON-safe port'],
   // Direct reads outside any adapter (phase 5: move behind a port).
@@ -52,7 +45,7 @@ export const KNOWN = new Map([
 
 const ADAPTER = /new ((?:Supabase|EdgeFn)\w+)\(/g;
 const DIRECT_CALL = /\.(from|rpc)\(\s*'([a-z_0-9]+)'/g;
-const WRAPPED = /viaApi\(\s*'[A-Za-z]+',\s*$/;
+const WRAPPED = /viaApi\(\s*'[A-Za-z0-9]+',\s*$/;
 
 /** The findings in one source file, as `<finding>` strings. */
 export function findingsIn(source) {

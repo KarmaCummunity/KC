@@ -50,3 +50,7 @@ test('compare reports new bypasses and entries whose code is gone', () => {
   });
   assert.deepEqual(compare(['a.ts: new SupabaseX', 'b.ts: new SupabaseY'], known), { unexpected: [], stale: [] });
 });
+
+test('a wire name with a digit still counts as wrapped', () => {
+  assert.deepEqual(findingsIn("const repo = viaApi('chatV2', new SupabaseChatV2Repository(client));"), []);
+});

@@ -255,3 +255,11 @@ export * from './identityVerification/StartIdentityVerificationUseCase';
 export * from './identityVerification/GetIdentityVerificationStatusUseCase';
 
 export type { GuestPost, IGuestPostsRepository } from './ports/IGuestPostsRepository';
+
+// Ports of the adapters that had none (ADR-010): each is served through the API gateway.
+export * from './ports/IActiveStatusRepository';
+export * from './ports/IChatV2Repository';
+export * from './ports/IFollowSuggestionsRepository';
+export * from './ports/IPostEngagementRepository';
+export * from './ports/ISocialFeedRepository';
+export * from './ports/IMatchRepository';

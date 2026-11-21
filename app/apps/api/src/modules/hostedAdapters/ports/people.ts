@@ -1,6 +1,8 @@
 import {
   SupabaseAccountGateRepository,
+  SupabaseActiveStatusRepository,
   SupabaseBlockRepository,
+  SupabaseFollowSuggestionsRepository,
   SupabaseUserRepository,
 } from '@kc/infrastructure-supabase';
 import type { PortDefinition } from '../../../platform/ports/portDefinition';
@@ -69,4 +71,20 @@ const user = hostedPort('user', {
   },
 });
 
-export const PEOPLE_PORTS: readonly PortDefinition[] = [accountGate, block, user];
+const activeStatus = hostedPort('activeStatus', {
+  create: (client) => new SupabaseActiveStatusRepository(adapterClient<typeof SupabaseActiveStatusRepository>(client)),
+  methods: {
+    get: 'member',
+    set: 'member',
+  },
+});
+
+const followSuggestions = hostedPort('followSuggestions', {
+  create: (client) => new SupabaseFollowSuggestionsRepository(adapterClient<typeof SupabaseFollowSuggestionsRepository>(client)),
+  methods: {
+    listSuggestions: 'member',
+    getProfileCompleteness: 'member',
+  },
+});
+
+export const PEOPLE_PORTS: readonly PortDefinition[] = [accountGate, activeStatus, block, followSuggestions, user];

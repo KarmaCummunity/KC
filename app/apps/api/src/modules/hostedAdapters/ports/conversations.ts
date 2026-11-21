@@ -1,5 +1,6 @@
 import {
   SupabaseChatRepository,
+  SupabaseChatV2Repository,
   SupabaseDeviceRepository,
   SupabaseImportTelemetryRepository,
   SupabaseModerationAdminRepository,
@@ -177,4 +178,13 @@ const whatsAppLink = hostedPort('whatsAppLink', {
   },
 });
 
-export const CONVERSATIONS_PORTS: readonly PortDefinition[] = [chat, device, importTelemetry, moderationAdmin, moderationQueue, notificationInbox, postTranslationReader, publicResearch, report, reports, supportInbox, survey, surveyAdmin, translationCache, userActivity, whatsAppLink];
+const chatV2 = hostedPort('chatV2', {
+  create: (client) => new SupabaseChatV2Repository(adapterClient<typeof SupabaseChatV2Repository>(client)),
+  methods: {
+    setMessageReaction: 'member',
+    sendMediaMessage: 'member',
+    listMessageReactions: 'member',
+  },
+});
+
+export const CONVERSATIONS_PORTS: readonly PortDefinition[] = [chat, chatV2, device, importTelemetry, moderationAdmin, moderationQueue, notificationInbox, postTranslationReader, publicResearch, report, reports, supportInbox, survey, surveyAdmin, translationCache, userActivity, whatsAppLink];
