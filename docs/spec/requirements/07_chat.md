@@ -64,6 +64,7 @@ The list of all of my conversations, sorted by latest activity.
 - AC3. Composer: single-line auto-growing text input + send button. **No** attachment buttons (`R-MVP-Chat-2`).
 - AC4. Read receipt: a `✓✓` indicator is shown next to a sent message once the counterpart's client confirms reading. Read receipts cannot be turned off in MVP (`R-MVP-Chat-5`).
 - AC5. Maximum message length: 2,000 characters. Inputs longer are blocked with an inline counter.
+- AC6. (#2566) **Opening is fast.** A conversation already in my inbox shows its header (counterpart name, verification badge) on the first frame, from the inbox data the app already holds; the chat row, the counterpart and the newest messages then load in parallel, never one after another. A conversation not in the inbox loads its messages in parallel with the chat row. A loading indicator shows until the first page of messages arrives. Entering sends the read acknowledgement (`FR-CHAT-012`) at most once, and not at all when nothing is unread; the counterpart's contact phone (`FR-CHAT-014` AC7) is requested only for a chat with an anchored post.
 
 **Related.** Screens: 4.2 · Domain: `Chat`, `Message`.
 
