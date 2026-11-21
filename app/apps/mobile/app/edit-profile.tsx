@@ -1,5 +1,6 @@
 // FR-PROFILE-007 — Edit Profile (getEditableProfile + UpdateProfileUseCase).
 // FR-VERIFY-012 — all fields required for verification level 1 are editable here.
+import { nativeCaptureMarkers, safeNativeProfile } from '../src/lib/nativeCaptureSafety';
 import React, { useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -108,7 +109,7 @@ export default function EditProfileScreen() {
           disabled={form.saving}
           error={form.fieldErrors.address}
         />
-        <View style={styles.field}>
+        <View style={styles.field} {...(safeNativeProfile(form, session) ? nativeCaptureMarkers.profile : {})}>
           <TextField
             testID="edit-profile-phone"
             label={t('profile.editScreen.contactPhoneLabel')}
