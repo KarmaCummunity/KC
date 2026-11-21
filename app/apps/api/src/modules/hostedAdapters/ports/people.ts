@@ -3,6 +3,7 @@ import {
   SupabaseActiveStatusRepository,
   SupabaseBlockRepository,
   SupabaseFollowSuggestionsRepository,
+  SupabaseKarmaHistoryRepository,
   SupabaseUserRepository,
 } from '@kc/infrastructure-supabase';
 import type { PortDefinition } from '../../../platform/ports/portDefinition';
@@ -87,4 +88,11 @@ const followSuggestions = hostedPort('followSuggestions', {
   },
 });
 
-export const PEOPLE_PORTS: readonly PortDefinition[] = [accountGate, activeStatus, block, followSuggestions, user];
+const karmaHistory = hostedPort('karmaHistory', {
+  create: (client) => new SupabaseKarmaHistoryRepository(adapterClient<typeof SupabaseKarmaHistoryRepository>(client)),
+  methods: {
+    listHistory: 'member',
+  },
+});
+
+export const PEOPLE_PORTS: readonly PortDefinition[] = [accountGate, activeStatus, block, followSuggestions, karmaHistory, user];

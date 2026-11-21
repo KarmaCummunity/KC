@@ -62,7 +62,7 @@ Only server code builds engine requests. The app can reach a table or function o
 2. Run its contract suite through the gateway on the KC test database (`src/__tests__/contracts/gateway.contract.integration.test.ts`); write the suite first if the port has none.
 3. In the app's composition root, wrap the port with `createRemotePort`, behind the backend flag.
 
-Proven so far (2026-11-21): `users`, `posts`, `savedPosts`, `chat`, `reports` — 57 contract cases pass end to end (remote port → HTTP → gateway → adapter → engine → the real schema, as the calling member), and the same cases pass on the engine alone.
+State on 2026-11-21: 75 ports (364 methods) are declared and wrapped in the app. Six of them have shared contract suites (`user`, `post`, `savedPosts`, `chat`, `report`: 57 cases), which pass end to end (remote port → HTTP → gateway → adapter → engine → the real schema, as the calling member) and on the engine alone. The other ports are covered by the schema audit (every function and table they name exists in a shape the engine serves) and by the access checks, not yet by a contract of their own.
 
 ## Consequences and limits
 

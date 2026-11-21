@@ -16,6 +16,7 @@ import type {
   IDeviceRepository,
   IDonationLinksRepository,
   IDriverDeclarationRepository,
+  IFeatureFlagsRepository,
   IFinanceAccountsRepository,
   IFinanceDonorsRepository,
   IFinanceLedgerRepository,
@@ -23,6 +24,7 @@ import type {
   IGuestPostsRepository,
   IHousingRepository,
   IImportTelemetryRepository,
+  IKarmaHistoryRepository,
   IKcSupportChannelsRepository,
   IKnowledgeBookingRepository,
   IKnowledgeSlotSeriesRepository,
@@ -43,6 +45,7 @@ import type {
   IPostRepository,
   IPostSeriesRepository,
   IPostTranslationReader,
+  IProEntitlementRepository,
   IProdCopyRepository,
   IPublicResearchRepository,
   IReportRepository,
@@ -102,6 +105,7 @@ export interface PortCatalog {
   device: IDeviceRepository;
   donationLinks: IDonationLinksRepository;
   driverDeclaration: IDriverDeclarationRepository;
+  featureFlags: IFeatureFlagsRepository;
   financeAccounts: IFinanceAccountsRepository;
   financeDonors: IFinanceDonorsRepository;
   financeLedger: IFinanceLedgerRepository;
@@ -109,6 +113,7 @@ export interface PortCatalog {
   guestPosts: IGuestPostsRepository;
   housing: IHousingRepository;
   importTelemetry: IImportTelemetryRepository;
+  karmaHistory: IKarmaHistoryRepository;
   kcSupportChannels: IKcSupportChannelsRepository;
   knowledgeBooking: IKnowledgeBookingRepository;
   knowledgeSlotSeries: IKnowledgeSlotSeriesRepository;
@@ -129,6 +134,7 @@ export interface PortCatalog {
   postEngagement: IPostEngagementRepository;
   postSeries: IPostSeriesRepository;
   postTranslationReader: IPostTranslationReader;
+  proEntitlement: IProEntitlementRepository;
   prodCopy: IProdCopyRepository;
   publicResearch: IPublicResearchRepository;
   report: IReportRepository;

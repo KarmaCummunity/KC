@@ -1,9 +1,11 @@
 import {
   SupabaseAboutRepository,
   SupabaseDonationLinksRepository,
+  SupabaseFeatureFlagsRepository,
   SupabaseKcSupportChannelsRepository,
   SupabaseOrganizationsRepository,
   SupabasePaymentsRepository,
+  SupabaseProEntitlementRepository,
   SupabaseStatsRepository,
 } from '@kc/infrastructure-supabase';
 import type { PortDefinition } from '../../../platform/ports/portDefinition';
@@ -82,4 +84,18 @@ const stats = hostedPort('stats', {
   visitorCacheSeconds: { getCommunityStatsSnapshot: 60, getActivePublicPostsCount: 60 },
 });
 
-export const ORGANIZATIONS_PORTS: readonly PortDefinition[] = [about, donationLinks, kcSupportChannels, organizations, payments, stats];
+const featureFlags = hostedPort('featureFlags', {
+  create: (client) => new SupabaseFeatureFlagsRepository(adapterClient<typeof SupabaseFeatureFlagsRepository>(client)),
+  methods: {
+    listFlags: 'member',
+  },
+});
+
+const proEntitlement = hostedPort('proEntitlement', {
+  create: (client) => new SupabaseProEntitlementRepository(adapterClient<typeof SupabaseProEntitlementRepository>(client)),
+  methods: {
+    isPro: 'member',
+  },
+});
+
+export const ORGANIZATIONS_PORTS: readonly PortDefinition[] = [about, donationLinks, featureFlags, kcSupportChannels, organizations, payments, proEntitlement, stats];

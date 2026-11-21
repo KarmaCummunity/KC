@@ -13,16 +13,10 @@ const { from, select, eq, order, limit } = vi.hoisted(() => {
   chain.limit.mockReturnValue(chain);
   return { ...chain, from: vi.fn(() => chain) };
 });
+// The real adapter over a stubbed client: the hook's behavior includes the adapter's query and mapping.
 vi.mock('@kc/infrastructure-supabase', async () => {
-  const { BackendUnavailableError: Unavailable } = await import('@kc/domain');
-  return {
-    getSupabaseClient: () => ({ from }),
-    unwrapCall: (object: string, result: { data: unknown; error: { code?: string } | null }) => {
-      if (result.error?.code === 'PGRST205') throw new Unavailable(object, 'relation');
-      if (result.error) throw result.error;
-      return result.data;
-    },
-  };
+  const actual = await vi.importActual<typeof import('@kc/infrastructure-supabase')>('@kc/infrastructure-supabase');
+  return { ...actual, getSupabaseClient: () => ({ from }) };
 });
 
 import { useKarmaHistory, karmaReasonKey } from '../useKarmaHistory';
@@ -62,7 +56,8 @@ describe('useKarmaHistory', () => {
     const failure = { message: 'offline' };
     limit.mockResolvedValue({ data: null, error: failure });
     const { result } = renderHook(() => useKarmaHistory('u3'), { wrapper });
-    await waitFor(() => expect(result.current.error).toBe(failure));
+    // The adapter's shared error mapper wraps a backend failure in an Error and keeps it as the cause.
+    await waitFor(() => expect(result.current.error).toMatchObject({ message: 'offline', cause: failure }));
     limit.mockResolvedValue({ data: null, error: { code: 'PGRST205' } });
     const missing = renderHook(() => useKarmaHistory('u4'), { wrapper });
     await waitFor(() => expect(missing.result.current.error).toBeInstanceOf(BackendUnavailableError));

@@ -1,9 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { select } = vi.hoisted(() => ({ select: vi.fn() }));
-vi.mock('@kc/infrastructure-supabase', () => ({
-  getSupabaseClient: () => ({ from: () => ({ select }) }),
-}));
+// The real adapter over a stubbed client.
+vi.mock('@kc/infrastructure-supabase', async () => {
+  const actual = await vi.importActual<typeof import('@kc/infrastructure-supabase')>('@kc/infrastructure-supabase');
+  return { ...actual, getSupabaseClient: () => ({ from: () => ({ select }) }) };
+});
 vi.mock('../authSecureStorage', () => ({ pickAuthStorage: () => undefined }));
 
 import { fetchRemoteFeatureFlags } from '../featureFlagsComposition';

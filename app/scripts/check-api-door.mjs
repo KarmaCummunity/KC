@@ -37,10 +37,6 @@ export const KNOWN = new Map([
   ['apps/mobile/src/services/authComposition.ts: new SupabaseAuthService', 'phase 9'],
   // A device cache around public reads, with Date values (phase 5: needs a JSON-safe port).
   ['apps/mobile/src/services/legalComposition.ts: new SupabaseLegalDocumentRepository', 'phase 5: needs a JSON-safe port'],
-  // Direct reads outside any adapter (phase 5: move behind a port).
-  ["apps/mobile/src/hooks/useKarmaHistory.ts: .from('karma_ledger')", 'phase 5: needs a port'],
-  ["apps/mobile/src/services/featureFlagsComposition.ts: .from('app_flags')", 'phase 5: needs a port'],
-  ["apps/mobile/app/pro.tsx: .rpc('api_my_pro_status')", 'phase 5: needs a port'],
 ]);
 
 const ADAPTER = /new ((?:Supabase|EdgeFn)\w+)\(/g;

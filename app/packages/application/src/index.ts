@@ -263,3 +263,7 @@ export * from './ports/IFollowSuggestionsRepository';
 export * from './ports/IPostEngagementRepository';
 export * from './ports/ISocialFeedRepository';
 export * from './ports/IMatchRepository';
+
+export * from './ports/IKarmaHistoryRepository';
+export * from './ports/IFeatureFlagsRepository';
+export * from './ports/IProEntitlementRepository';

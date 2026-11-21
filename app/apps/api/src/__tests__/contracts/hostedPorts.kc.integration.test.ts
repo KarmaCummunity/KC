@@ -16,7 +16,7 @@ import { VisitorCache } from '../../platform/ports/visitorCache';
 import { RateLimiter } from '../../platform/rateLimit/rateLimiter';
 import { KC_DATABASE_URL, KcTestDatabase } from '../support/kcDatabase';
 import { testConfig } from '../support/testConfig';
-import { createTestIssuer } from '../support/testTokens';
+import { createTestIssuer, type TestIssuer } from '../support/testTokens';
 
 const ADAPTERS_DIR = fileURLToPath(new URL('../../../../../packages/infrastructure-supabase/src', import.meta.url));
 
@@ -57,10 +57,11 @@ describe.skipIf(!KC_DATABASE_URL)('Hosted ports on the KC schema', () => {
   const sources = adapterSources();
   let cache: SchemaCache;
   let app: NestFastifyApplication;
+  let issuer: TestIssuer;
 
   beforeAll(async () => {
     cache = await loadSchemaCache(((text: string) => database.admin.query(text)) as never);
-    const issuer = await createTestIssuer();
+    issuer = await createTestIssuer();
 
     @Global()
     @Module({
@@ -144,6 +145,41 @@ describe.skipIf(!KC_DATABASE_URL)('Hosted ports on the KC schema', () => {
     // 200 with data, or a typed refusal such as "not found": never a permission or server error.
     expect([200, 422]).toContain(response.statusCode);
     if (response.statusCode === 422) expect(JSON.stringify(response.json())).not.toMatch(/permission denied|unauthenticated/);
+  });
+
+  it('serves the ports that replaced direct reads in the app: feature flags, karma history, Pro status', async () => {
+    const member = await database.newMember();
+    const authorization = `Bearer ${await issuer.sign(member.userId)}`;
+    const call = (path: string, args: unknown[]) =>
+      app.inject({ method: 'POST', url: `/v1/ports/${path}`, payload: { args }, headers: { authorization } });
+
+    const flags = await call('featureFlags/listFlags', []);
+    const history = await call('karmaHistory/listHistory', [member.userId, 10]);
+    const pro = await call('proEntitlement/isPro', []);
+
+    expect(flags.statusCode).toBe(200);
+    // The reference seed sets the launch flags.
+    expect(Object.keys(flags.json().result).length).toBeGreaterThan(5);
+    expect(history.statusCode).toBe(200);
+    expect(Array.isArray(history.json().result)).toBe(true);
+    expect(pro.json()).toEqual({ result: false });
+  });
+
+  it("does not show a member another member's karma history: row-level security filters it", async () => {
+    const alice = await database.newMember();
+    const bob = await database.newMember();
+    await database.admin.query("insert into public.karma_ledger (user_id, event_type, points) values ($1, 'registration', 5)", [alice.userId]).catch(() => undefined);
+    const asBob = `Bearer ${await issuer.sign(bob.userId)}`;
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/v1/ports/karmaHistory/listHistory',
+      payload: { args: [alice.userId, 10] },
+      headers: { authorization: asBob },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual({ result: [] });
   });
 
   it('a signed-out visitor is turned away from every member method before the database is touched', async () => {

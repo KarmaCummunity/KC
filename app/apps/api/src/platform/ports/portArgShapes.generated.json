@@ -882,6 +882,9 @@
    "getMine": [],
    "accept": []
   },
+  "featureFlags": {
+   "listFlags": []
+  },
   "financeAccounts": {
    "list": [],
    "upsert": [
@@ -1088,6 +1091,18 @@
    "getFieldEditRates": [
     {
      "name": "days",
+     "shape": "number"
+    }
+   ]
+  },
+  "karmaHistory": {
+   "listHistory": [
+    {
+     "name": "userId",
+     "shape": "string"
+    },
+    {
+     "name": "limit",
      "shape": "number"
     }
    ]
@@ -2856,6 +2871,9 @@
      "shape": "string"
     }
    ]
+  },
+  "proEntitlement": {
+   "isPro": []
   },
   "prodCopy": {
    "getStatus": [],

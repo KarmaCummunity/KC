@@ -114,3 +114,7 @@ export { SupabaseKnowledgeTopicRepository } from './knowledge/SupabaseKnowledgeT
 export { SupabaseKnowledgeBookingRepository } from './knowledge/SupabaseKnowledgeBookingRepository';
 export { SupabaseGuestPostsRepository } from './posts/SupabaseGuestPostsRepository';
 export { SupabaseKnowledgeSlotSeriesRepository } from './knowledge/SupabaseKnowledgeSlotSeriesRepository';
+
+export { SupabaseKarmaHistoryRepository } from './karma/SupabaseKarmaHistoryRepository';
+export { SupabaseFeatureFlagsRepository } from './featureFlags/SupabaseFeatureFlagsRepository';
+export { SupabaseProEntitlementRepository } from './payments/SupabaseProEntitlementRepository';
