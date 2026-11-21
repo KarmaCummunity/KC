@@ -28,9 +28,11 @@ export function NotificationsBridge(): null {
 
   useEffect(() => {
     if (!userId) return undefined;
-    const deps = { deviceRepo: container.deviceRepo };
+    let active = true;
+    const deps = { deviceRepo: container.deviceRepo, isCurrent: () => active };
     registerCurrentDeviceIfPermitted(userId, deps).catch(console.error);
-    return watchPushTokenRefresh(userId, deps);
+    const stop = watchPushTokenRefresh(userId, deps);
+    return () => { active = false; stop(); };
   }, [userId]);
 
   // The app icon shows the same unread count as the bell; signed out it is cleared.
