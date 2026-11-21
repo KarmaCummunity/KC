@@ -96,6 +96,24 @@ Each phase is one or more child issues of KC#1496, opened when its turn comes. A
 
 Phases 4, 6, 7 and 8 do not depend on each other and can run in parallel with phase 5.
 
+### Status (2026-11-21)
+
+Everything below is on the long-lived branch (PR KC#2576), verified locally on the real schema, and not deployed.
+
+| # | State | What exists | What is left |
+|---|---|---|---|
+| 1 | Done, image unbuilt | `app/apps/api`: config, errors, request ids, health and readiness, pool and Redis, image definition | Build the image once (needs Docker or CI) |
+| 2 | Blocked on a person | — | A Google Cloud project with billing (KC#2584); then Terraform, the deploy stage, the database login for the API |
+| 3 | Done | Token verification against the issuer's key set; every request's database work as the caller | Compare with PostgREST on the Supabase stack in CI |
+| 4 | Done in the repo | The baseline harness on plain PostgreSQL; `apps/api/scripts/kc-test-db.sh` | Replace `pg_cron`, `pg_net` and Vault (phases 8 and 10) |
+| 5 | Code done, not switched on | Gateway, compatibility engine, 75 ports (364 methods) declared and wrapped in the app, argument checks, rate limit, visitor cache, CORS | The legal documents cache; contract suites for the 69 ports that have none; turning `EXPO_PUBLIC_KC_API_URL` on for dev once phase 2 exists |
+| 6 | Not started | — | Realtime gateway; needs the database's broadcast path, so it lands with phase 10 or just before |
+| 7 | Not started | — | Needs the cloud project (buckets, CDN) |
+| 8 | Not started | The Edge Function handlers are already written for dependency injection | Host each handler in the API with a service-role client; webhooks as routes; schedules |
+| 9 | Not started | — | Own identity; needs the email provider and sign-in configuration (KC#2584) |
+| 10 | Not started | — | After 2 and 5–9 |
+| 11 | Not started | — | Continuous, after a port is behind the API |
+
 ### Rules while the move is in flight
 
 - A context that has not moved follows ADR-002 as today.
