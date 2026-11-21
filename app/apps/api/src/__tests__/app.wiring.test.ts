@@ -4,7 +4,7 @@ import type { Pool } from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { AppModule } from '../app.module';
 import { createApp } from '../createApp';
-import { DATABASE_POOL } from '../platform/database/database.module';
+import { DATABASE_POOL } from '../platform/database/database.tokens';
 import { testConfig } from './support/testConfig';
 
 /**

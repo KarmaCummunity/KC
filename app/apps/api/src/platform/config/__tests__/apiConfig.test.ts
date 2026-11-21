@@ -5,6 +5,7 @@ import { ApiConfigError, loadApiConfig } from '../apiConfig';
 const REQUIRED = {
   DATABASE_URL: 'postgresql://user:pass@db.internal:5432/kc',
   REDIS_URL: 'rediss://cache.internal:6379',
+  KC_AUTH_ISSUER: 'https://auth.internal/auth/v1',
 };
 
 /** Runs the loader and returns the configuration error it must throw. */
@@ -35,6 +36,7 @@ describe('loadApiConfig', () => {
       version: '1.9.260',
       databaseUrl: REQUIRED.DATABASE_URL,
       redisUrl: REQUIRED.REDIS_URL,
+      authIssuer: REQUIRED.KC_AUTH_ISSUER,
     });
   });
 
@@ -70,7 +72,7 @@ describe('loadApiConfig', () => {
     expect(error.message).toContain('development, production, test');
   });
 
-  it.each(['DATABASE_URL', 'REDIS_URL'])('requires %s', (variable) => {
+  it.each(['DATABASE_URL', 'REDIS_URL', 'KC_AUTH_ISSUER'])('requires %s', (variable) => {
     const error = configErrorOf({ [variable]: '' });
 
     expect(error.variable).toBe(variable);
@@ -82,6 +84,7 @@ describe('loadApiConfig', () => {
     ['DATABASE_URL', 'db.internal:5432/kc'],
     ['REDIS_URL', 'http://cache.internal:6379'],
     ['REDIS_URL', 'not a url'],
+    ['KC_AUTH_ISSUER', 'ftp://auth.internal/auth/v1'],
   ])('rejects a malformed %s without printing it', (variable, value) => {
     const error = configErrorOf({ [variable]: value });
 
@@ -90,7 +93,11 @@ describe('loadApiConfig', () => {
   });
 
   it('accepts both spellings of each scheme', () => {
-    const config = loadApiConfig({ DATABASE_URL: 'postgres://db.internal/kc', REDIS_URL: 'redis://cache.internal' });
+    const config = loadApiConfig({
+      ...REQUIRED,
+      DATABASE_URL: 'postgres://db.internal/kc',
+      REDIS_URL: 'redis://cache.internal',
+    });
 
     expect(config.databaseUrl).toBe('postgres://db.internal/kc');
     expect(config.redisUrl).toBe('redis://cache.internal');

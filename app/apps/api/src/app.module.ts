@@ -1,8 +1,10 @@
 import { type DynamicModule, Module } from '@nestjs/common';
+import { SessionModule } from './modules/session/session.module';
 import type { ApiConfig } from './platform/config/apiConfig';
 import { ApiConfigModule } from './platform/config/apiConfig.module';
 import { DatabaseModule, DatabaseProbe } from './platform/database/database.module';
 import { HealthModule } from './platform/health/health.module';
+import { IdentityModule } from './platform/identity/identity.module';
 import { RedisModule, RedisProbe } from './platform/redis/redis.module';
 
 /**
@@ -18,7 +20,9 @@ export class AppModule {
         ApiConfigModule.forRoot(config),
         DatabaseModule,
         RedisModule,
+        IdentityModule,
         HealthModule.withProbes([DatabaseProbe, RedisProbe]),
+        SessionModule,
       ],
     };
   }

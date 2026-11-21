@@ -4,9 +4,8 @@ import type { ApiConfig } from '../config/apiConfig';
 import { API_CONFIG } from '../config/apiConfig.module';
 import type { DependencyProbe } from '../health/dependencyProbe';
 import { APP_LOGGER, type AppLogger, appLoggerProvider } from '../logging/appLogger';
-
-/** Injection token of the process-wide Postgres connection pool. */
-export const DATABASE_POOL = Symbol('DATABASE_POOL');
+import { DATABASE_POOL } from './database.tokens';
+import { IdentityDatabase } from './identityDatabase';
 
 /**
  * Upper bound of connections one API instance opens. The database's own
@@ -58,7 +57,8 @@ class DatabaseShutdown implements OnApplicationShutdown {
     { provide: DATABASE_POOL, inject: [API_CONFIG, APP_LOGGER], useFactory: createPool },
     DatabaseProbe,
     DatabaseShutdown,
+    IdentityDatabase,
   ],
-  exports: [DATABASE_POOL, DatabaseProbe],
+  exports: [DATABASE_POOL, DatabaseProbe, IdentityDatabase],
 })
 export class DatabaseModule {}

@@ -14,6 +14,11 @@ export interface ApiConfig {
   readonly databaseUrl: string;
   /** Redis connection string. A secret, like `databaseUrl`. */
   readonly redisUrl: string;
+  /**
+   * Issuer of the access tokens the API accepts, exactly as in the token's
+   * `iss` claim. Its signing keys are read from `<issuer>/.well-known/jwks.json`.
+   */
+  readonly authIssuer: string;
 }
 
 /**
@@ -87,5 +92,6 @@ export function loadApiConfig(env: Readonly<Record<string, string | undefined>>)
     version: readVariable(env, 'KC_APP_VERSION') ?? '0.0.0-dev',
     databaseUrl: parseServiceUrl('DATABASE_URL', readVariable(env, 'DATABASE_URL'), ['postgres', 'postgresql']),
     redisUrl: parseServiceUrl('REDIS_URL', readVariable(env, 'REDIS_URL'), ['redis', 'rediss']),
+    authIssuer: parseServiceUrl('KC_AUTH_ISSUER', readVariable(env, 'KC_AUTH_ISSUER'), ['https', 'http']),
   };
 }

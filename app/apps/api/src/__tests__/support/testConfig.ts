@@ -7,6 +7,9 @@ import type { ApiConfig } from '../../platform/config/apiConfig';
 export const UNREACHABLE_DATABASE_URL = 'postgres://kc:kc@127.0.0.1:1/kc';
 export const UNREACHABLE_REDIS_URL = 'redis://127.0.0.1:1';
 
+/** Issuer of the tokens the tests sign; no request is ever sent to it. */
+export const TEST_AUTH_ISSUER = 'https://auth.kc.test/auth/v1';
+
 /** A valid test configuration; pass only the fields a test cares about. */
 export function testConfig(overrides: Partial<ApiConfig> = {}): ApiConfig {
   return {
@@ -16,6 +19,7 @@ export function testConfig(overrides: Partial<ApiConfig> = {}): ApiConfig {
     version: '9.9.9',
     databaseUrl: UNREACHABLE_DATABASE_URL,
     redisUrl: UNREACHABLE_REDIS_URL,
+    authIssuer: TEST_AUTH_ISSUER,
     ...overrides,
   };
 }

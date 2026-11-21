@@ -17,6 +17,7 @@
     "@nestjs/platform-fastify": "^12.6.0",
     "fastify": "^5.12.8",
     "ioredis": "^6.0.0",
+    "jose": "^6.2.18",
     "pg": "^8.23.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2"
