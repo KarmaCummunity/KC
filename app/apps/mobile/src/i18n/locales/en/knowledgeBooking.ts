@@ -38,4 +38,15 @@ export const knowledgeBooking = {
   slotLength: '{{minutes}} min',
   addSlot: '+ Add a time',
   removeSlot: 'Remove this time',
+  series: {
+    israelTime: 'Israel time',
+    title: 'Weekly lesson',
+    status: { active: 'New times open every week', paused: 'Paused: no new times open', ended: 'The weekly lesson has ended' },
+    pause: 'Pause',
+    resume: 'Resume',
+    end: 'End the weekly lesson',
+    endConfirm: 'End the weekly lesson? Times nobody booked are removed; booked sessions stay.',
+    endYes: 'Yes, end it',
+    keep: 'Keep it',
+  },
 };

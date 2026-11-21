@@ -76,7 +76,7 @@ Every resource has the same envelope, plus kind-specific detail validated by a J
 - **Quiz:** single choice, multiple choice, true/false, short answer with accepted answers; explanations per answer; pass threshold (default 70%); unlimited attempts; the best score counts. Questions are versioned; an attempt stores the question version it answered.
 - **Progress:** enrollment (self-paced) → per-lesson done → quiz attempts → completion. Progress is **private** to the learner (D110 default "only me"); the author sees counts only. "Continue learning" on the hub and on the profile.
 - **External courses, tracked:** an external course (Campus IL, an open university course, a YouTube playlist) may carry a KC outline (its syllabus as modules/lessons without bodies) so a learner tracks it in KC and takes a KC quiz the contributor wrote. "We track your progress even on courses that are not ours."
-- **Completion record (S69):** a non-official completion certificate with a verifiable id, course title, hours and date; shown on the profile only if the owner chooses (D110). Not a credential; the wording says so.
+- **Completion record (S69):** a "KC community completion record" with a verification code, course title, hours and date; shown on the profile only if the owner chooses (D110). Not a credential; the wording says so.
 - **Cohorts (K3):** a course run with a start date and capacity is the course plus a time-world post (D101); group chat follows the chat rule for a project/challenge/event (7.8).
 
 ### 18.5.4 Q&A and community answers
@@ -84,7 +84,7 @@ A question post (18.4) with an accepted answer is indexed as a **community answe
 
 ## 18.6 Display — hub, library, players (S66)
 
-The knowledge hub is the world hub template (D36) with three **tabs** under one search-first header. Per D107 the give & take feed comes first; the PM may flip the default once usage shows which tab people open (open question, [92](./92_open_questions.md)).
+The knowledge hub is the world hub template (D36) with three **tabs** under one search-first header. The owner confirmed the give & take feed as the default on 2026-11-20 (S66).
 
 1. **Header:** world accent and illustration (17); one search box "מה תרצה ללמוד?" with suggestions as you type: topics, resources, teachers, questions (hybrid search, 18.7). In emergency, the emergency block sits on top (D42).
 2. **Tab "לתת ולקבל" (default):** the world feed of exchange posts (7.3 controls; filters add shelf, topic, format, modality, level, language). Under the feed: the community links list (D107).
@@ -116,8 +116,8 @@ Pipeline: contribute → link enrichment (metadata, kind guess, duplicate check)
 
 ## 18.8 Trust, roles and moderation
 
-- **Who may do what:** every member may ask, request, offer lessons and mentoring, contribute links and articles, enroll, take quizzes. A **consulting hour** requires ID verification and a declared profession shown on the post (S70; an exception to "verification is not blocking", D23, in the spirit of the housing and medical exceptions of D30). Courses: any member may build a course; a course in rights & legal aid or health-adjacent topics is reviewed with a stricter checklist. Organizations publish in their name (D88) and their resources get `authority_tier = verified organization`.
-- **Review before publish (S65):** KC admins and moderators review; a **knowledge curator** community role (phase K3, a governance role per 11) may review within their shelf. Reviewer checklist per shelf: free, legal to share, accurate source, no sales funnel, shelf rules (06: no missionary content; no divisive heritage content; a source per heritage item; no binding legal or medical advice, D40).
+- **Who may do what:** every member may ask, request, offer lessons and mentoring, contribute links and articles, enroll, take quizzes. A **consulting hour** requires a complete profile (D172) and a declared profession, without identity verification (S70, owner approval 2026-11-20). Courses: any member may build a course; a course in rights & legal aid or health-adjacent topics is reviewed with a stricter checklist. Organizations publish in their name (D88) and their resources get `authority_tier = verified organization`.
+- **Review before publish (S65):** KC admins and moderators review; trusted contributors may publish directly with review afterwards (owner confirmation 2026-11-20). A **knowledge curator** community role (phase K3, a governance role per 11) may review within their shelf. Reviewer checklist per shelf: free, legal to share, accurate source, no sales funnel, shelf rules (06: no missionary content; no divisive heritage content; a source per heritage item; no binding legal or medical advice, D40).
 - **Copyright:** no uploaded copies of books or paid courses (K1 has no file uploads, S71); a book is a reference plus a free legal way to read it. A copyright report hides the resource at once and counts against the contributor (7.15).
 - **Reports:** resources, posts, comments and answers are reportable (7.15); three reports hide a resource until review.
 - **Quality:** "helped me" votes and completions rank; reports and broken links demote; a contributor whose resources are repeatedly rejected loses the fast path.

@@ -9,6 +9,7 @@ import { he as dateFnsHe } from 'date-fns/locale/he';
 import type { MarketplaceBrowseRow } from '@kc/domain';
 import { cleanDisplayTitle } from '../../lib/displayTitle';
 import { worldChipKey } from '../../lib/feedCardCategory';
+import { worldPlaceholderIcon } from '../../lib/worldDetailCopy';
 import { resolveDateFnsLocale } from '../../lib/resolveDateFnsLocale';
 import { usePostGridCardWidth } from '../../hooks/useShellContentWidth';
 import { KcCard } from './KcCard';
@@ -16,20 +17,9 @@ import { listingCardDetails, listingCardRoute, type ListingCardDetail } from './
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
 
-const WORLD_ICON: Record<string, IconName> = {
-  rides: 'car-outline',
-  food: 'restaurant-outline',
-  items: 'gift-outline',
-  housing: 'home-outline',
-  knowledge: 'school-outline',
-  time: 'time-outline',
-  animals: 'paw-outline',
-  employment: 'briefcase-outline',
-  money: 'cash-outline',
-};
-
+/** Placeholder icon of a world (shared with the post detail chrome, worldDetailCopy.ts). */
 export function listingWorldIcon(worldSlug: string): IconName {
-  return WORLD_ICON[worldSlug] ?? 'pricetag-outline';
+  return worldPlaceholderIcon(worldSlug);
 }
 
 export function formatRideTime(iso: string | null | undefined, locale: Locale = dateFnsHe): string | null {

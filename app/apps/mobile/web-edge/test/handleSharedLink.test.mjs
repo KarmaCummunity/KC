@@ -29,6 +29,25 @@ describe('handleSharedLink /post', () => {
     assert.equal(call.init.method, 'POST');
     assert.deepEqual(JSON.parse(call.init.body), { p_post_id: POST_ID });
   });
+  it('previews the light 400 px thumb, typed and sized, when the cover photo itself is too heavy', async () => {
+    const sof = (w, h) => [0xff, 0xc0, 0x00, 0x11, 0x08, h >> 8, h & 255, w >> 8, w & 255, 3, 1, 0x22, 0, 2, 0x11, 1, 3, 0x11, 1];
+    const sos = [0xff, 0xda, 0x00, 0x0c, 3, 1, 0, 2, 0x11, 3, 0x11, 0, 63, 0];
+    const jpeg = (w, h) => new Uint8Array([0xff, 0xd8, ...sof(w, h), ...sos, 1, 2, 3, 0xff, 0xd9]);
+    const fetchImpl = async (url) => {
+      if (url.endsWith('/rpc/post_share_card')) {
+        return new Response(JSON.stringify([{ title: 'Sofa', description: null, direction: 'offer', status: 'open', world_slug: 'items', city_name_he: null, cover_bucket: 'post-images', cover_key: 'u/b/0.jpg' }]));
+      }
+      // The 2048 px photo declares 540 KB (over the cap, never read); the thumb is complete and clean.
+      if (!url.endsWith('0-thumb.jpg')) return new Response(new Uint8Array(4), { status: 200, headers: { 'content-length': '540000' } });
+      const body = jpeg(400, 300);
+      return new Response(body, { status: 200, headers: { 'content-length': String(body.length) } });
+    };
+    const res = await handleSharedLink({ kind: 'post', param: POST_ID, request: req(`/post/${POST_ID}`, 'WhatsApp/2.0'), env, next, fetchImpl });
+    const html = await res.text();
+    assert.ok(html.includes('og:image" content="https://proj.supabase.co/storage/v1/object/public/post-images/u/b/0-thumb.jpg"'));
+    assert.ok(html.includes('og:image:type" content="image/jpeg"'));
+    assert.ok(html.includes('og:image:width" content="400"') && html.includes('og:image:height" content="300"'));
+  });
   it('serves the generic card when the post is unreadable, malformed or the backend fails', async () => {
     for (const [param, fetchImpl] of [[POST_ID, rows([])], ['not-a-uuid', rows([{ title: 'x' }])], [POST_ID, async () => { throw new Error('boom'); }], [POST_ID, async () => new Response('{}', { status: 500 })]]) {
       const res = await handleSharedLink({ kind: 'post', param, request: req(`/post/${param}`, 'WhatsApp/2.0'), env, next, fetchImpl });

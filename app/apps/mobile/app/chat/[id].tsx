@@ -1,6 +1,6 @@
 // Chat conversation screen — FR-CHAT-002, 003, 004, 005, 010, 011, 013, 016.
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View, TouchableOpacity, KeyboardAvoidingView, Platform, type ListRenderItem } from 'react-native';
+import { View, TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator, type ListRenderItem } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -13,6 +13,7 @@ import { MirroredIcon } from '../../src/components/ui/MirroredIcon';
 import { useChatStore, type OptimisticMessage } from '../../src/store/chatStore';
 import { useAuthStore } from '../../src/store/authStore';
 import { container } from '../../src/lib/container';
+import { useMarkChatRead } from '../../src/hooks/useMarkChatRead';
 import { markNeedFreshThreadWith } from '../../src/lib/chatNavigationPrefs';
 import { forgetHiddenChat } from '../../src/lib/forgetHiddenChat';
 import { MessageBubble } from '../../src/components/MessageBubble';
@@ -59,7 +60,9 @@ export default function ChatScreen() {
   });
 
   const messages = useChatStore((s) => s.threads[chatId] ?? EMPTY_MESSAGES);
-  const { chat, counterpart, status: chatStatus } = useChatInit(chatId, userId);
+  // A thread with no entry yet has never loaded its first page (an empty chat loads as []).
+  const threadLoading = useChatStore((s) => s.threads[chatId] === undefined);
+  const { chat, counterpart, status: chatStatus, initiallyUnread } = useChatInit(chatId, userId);
   const prefillText = firstParam(prefill);
   const [input, setInput] = useState(() => prefillText ?? '');
   const autoPrefillDedupeRef = useRef<string | undefined>(prefillText);
@@ -93,17 +96,7 @@ export default function ChatScreen() {
     [],
   );
 
-  const unreadIncoming = useMemo(
-    () => messages.some((m) => m.senderId !== userId && m.status !== 'read'),
-    [messages, userId],
-  );
-  useEffect(() => {
-    if (!unreadIncoming) return;
-    void (async () => {
-      await container.markChatRead.execute({ chatId, userId });
-      useChatStore.getState().markChatLocallyRead(chatId);
-    })();
-  }, [unreadIncoming, chatId, userId]);
+  useMarkChatRead(messages, chatId, userId, initiallyUnread);
 
   const counter = input.length;
   const showCounter = counter >= 1900;
@@ -138,7 +131,7 @@ export default function ChatScreen() {
     const picked = await pickChatImage();
     if (!picked) return;
     try {
-      await uploadChatImageAndSend(chatId, userId, picked.uri, async (payload) => {
+      await uploadChatImageAndSend(chatId, userId, picked, async (payload) => {
         const server = await container.chatV2Repo.sendMediaMessage(chatId, payload);
         useChatStore.getState().appendOptimistic(chatId, {
           ...server,
@@ -227,6 +220,11 @@ export default function ChatScreen() {
           contentContainerStyle={styles.messageList}
           renderItem={renderItem}
         />
+        {threadLoading ? (
+          <View style={styles.threadLoading} pointerEvents="none">
+            <ActivityIndicator color={colors.primary} testID="chat-thread-loading" />
+          </View>
+        ) : null}
 
         {peerTyping ? (
           <Text style={styles.typingHint}>{t('chat.typingIndicator')}</Text>

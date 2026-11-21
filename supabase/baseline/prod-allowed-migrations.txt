@@ -75,3 +75,11 @@
 0078_identity_verification.sql
 0079_knowledge_slot_series.sql
 0080_knowledge_slot_series_rpcs.sql
+0081_guest_posts.sql
+0082_post_image_owner_metadata.sql
+0083_oneoff_knowledge_slots.sql
+0084_post_media_sanitized_derivative.sql
+0085_match_process_time_budget.sql
+0086_org_sec46_audit_every_change.sql
+0087_biography_url_check_real_tlds.sql
+0088_outbox_claim_exact_limit.sql

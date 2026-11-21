@@ -239,6 +239,8 @@ A decision should be re-opened only when one of the following triggers fires:
 
 ## D-14 — Deleted user → "Deleted user" placeholder in chats
 
+**Clarified by owner approval 2026-11-20.** Retained counterpart conversation text does not preserve the purged member's shared chat image assets. Those images are removed for both sides at final purge (FR-SETTINGS-012, Q-8).
+
 **Decision.** When one party deletes their account, the counterpart retains the conversation; the deleted user appears as "Deleted user" with a generic avatar. Their messages remain visible.
 
 **Rationale.** Hard-deleting messages would erase context the counterpart may need (e.g., coordination history). The placeholder respects privacy without breaking continuity.
@@ -469,6 +471,8 @@ Web Push parity is deferred — only the adapter changes, the pipeline is shared
 ---
 
 ## D-21 — Privacy mode is a follow-approval flag only (2026-05-15)
+
+**Superseded for profile visibility by owner approval 2026-11-20.** Private now hides the profile from non-approved followers and caps per-field visibility. See `docs/spec/07_cross_cutting_systems.md` §7.12 and FR-PROFILE-003. The text below records the old decision, not the current target contract; separate per-post visibility is unchanged.
 
 **Decision.** `User.privacy_mode = Private` means **one thing**: new follow attempts create a `pending` follow request that the target must approve. It has no other effect on visibility — the profile header, biography, counters, post lists (subject to per-post `visibility`), and followers/following lists are visible to all signed-in viewers, exactly as for a `Public` profile. The lock indicator (`FR-PROFILE-011` / `FR-PROFILE-012`) plus the "Send Follow Request" CTA are the only user-facing differences.
 
@@ -2060,3 +2064,11 @@ The Demo data screen keeps two failures apart: the RPC itself is missing (`not_i
 **Why.** Anonymizing before the data leaves the job that may read production keeps real names, text and ids off the artifact, the logs and kc-dev, and two allowlists (the export and the anonymizer) must both fail before anything private moves. A seed rather than a migration keeps every copy object off kc-prod. Going through kc-dev's triggers keeps counters, karma, search and matching consistent, which a trigger-free bulk load would break. The post status machine does not allow every move a production post makes, so replacing a changed post is the only path that always works.
 
 **Affected.** `.github/workflows/prod-copy-to-dev.yml`, `scripts/prod-copy-export.sql`, `scripts/prod-copy-anonymize.mjs`, `scripts/check-deploy-isolation.mjs` (`MONITORS`, another holder of prod secrets outside `deploy.yml`, tracked with TD-232), `supabase/seed/prod-copy/`, `.github/workflows/deploy-db.yml`, `docs/SSOT/OPERATOR_RUNBOOK.md` "Production copy to kc-dev".
+
+## D-243 — kc-dev tunes its job cadence and log retention through a dev-only seed (2026-11-19)
+
+**Decision.** The migrations carry production's job schedules and retention periods. Values that only kc-dev needs differently live in `supabase/seed/dev-tuning/load.sql`, which `deploy-db.yml` runs after the migrations on every dev deploy (step **Job tuning (kc-dev only)**, guarded to kc-dev's project ref like the other dev-only seeds of `D-241`). It updates rows of `kc_private.retention_rules`, `kc_private.scheduled_jobs` and `kc_private.matching_settings`; the `scheduled_jobs_sync` trigger reconciles pg_cron in the same transaction. First values: `ops.job_runs` kept 7 days and pg_cron's run log 1 day (#2492; production 30 and 7 days), `chat_system_messages` every 30 seconds (#2488; production 10 seconds), and a matching run scans 200 posts (#2494; production 500).
+
+**Why.** kc-dev runs on the smallest compute tier, where the job fleet's standing log writes drain the host's IO budget and the 10-second consumer runs far more often than a handful of testers need. A migration cannot tell the environments apart, and the dev marker of `D-239` is set only after the migrations of a fresh database; a seed run after every dev deploy re-applies the tuning even when a later migration resets a value.
+
+**Affected.** `supabase/seed/dev-tuning/`, `supabase/tests/128_dev_tuning.sql`, `.github/workflows/deploy-db.yml`, `docs/agents/DEPLOY.md`.

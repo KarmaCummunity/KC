@@ -22,6 +22,7 @@ export const postHe = {
   photos: 'תמונות',
   addPhoto: 'הוסיפו תמונה',
   removePhoto: 'הסירו תמונה',
+  cancelPhotoUploads: 'ביטול העלאת התמונות',
   sendMessageA11y: 'שלחו הודעה למפרסם',
   address: 'כתובת',
   cityLabel: 'עיר',
@@ -112,7 +113,7 @@ export const postHe = {
   // PR5d (UI sweep, Pattern #1) — header titles + create-screen literals
   // not covered by the existing keys above. Add a new key only when no
   // sibling already covers the exact Hebrew string.
-  detailTitle: 'פרטי פוסט',
+  detailTitle: 'פרטי הפוסט',
   streetNumberShort: 'מס׳',
   // FR-KARMA-004 — compact estimated-value hint shown on the feed post card (Give posts).
   estimatedValueBadge: 'שווי משוער ₪{{value}}',
@@ -164,6 +165,16 @@ export const postHe = {
     statusOpen: 'פעיל',
     statusOpenHint: 'הפוסט פתוח ומחפש התאמה',
     statusClosed: 'הושלם',
+    // #2539 — per-world screen title and closed pill (worldDetailCopy.ts).
+    worldTitle: {
+      employment: 'פרטי המשרה', items: 'פרטי החפץ', knowledge: 'פרטי השיעור', time: 'פרטי ההתנדבות',
+      food: 'פרטי המזון', housing: 'פרטי הדיור', animals: 'פרטי החיה', money: 'פרטי התרומה',
+      medical: 'פרטי הדם והרפואה', challenges: 'פרטי האתגר',
+    },
+    worldClosed: {
+      employment: 'אוישה', knowledge: 'התקיים', food: 'נמסר', money: 'הושלמה',
+      medical: 'הושלם', challenges: 'הסתיים',
+    },
     statusPendingDelete: 'נסגר זמנית',
     statusExpired: 'פג תוקף',
     statusRemovedAdmin: 'הוסר',
@@ -192,6 +203,7 @@ export const postHe = {
     loadError: 'לא הצלחנו לטעון את התגובות. נסו שוב.',
     commentPlaceholder: 'הוסיפו תגובה…',
     replyPlaceholder: 'כתבו תשובה…',
+    commentSendFailed: 'לא הצלחנו לפרסם את התגובה. הטיוטה נשמרה כאן, אפשר לנסות שוב.',
     commentSend: 'פרסום',
     reply: 'השיבו',
     replyingTo: 'תשובה ל{{name}}',

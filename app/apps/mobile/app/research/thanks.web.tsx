@@ -3,8 +3,9 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Linking, Pressable, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
+import { MirroredIcon } from '../../src/components/ui/MirroredIcon';
 import { Ionicons } from '@expo/vector-icons';
-import { makeUseStyles, spacing, typography, useTheme, Text } from '@kc/ui';
+import { makeUseStyles, spacing, typography, radius, iconSize, useTheme, Text } from '@kc/ui';
 import { webTextRtl, webViewRtl } from '../../src/lib/webRtlStyle';
 import { rtlTextAlignStart } from '../../src/lib/rtlTextAlignStart';
 import { RESEARCH_SHARE_SRC_THANKS } from '../../src/lib/shareResearchSurvey';
@@ -20,6 +21,7 @@ export default function ResearchThanksScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const [shareFeedback, setShareFeedback] = useState<{ message: string; tone: 'success' | 'error' } | null>(null);
   const [showVisitLink, setShowVisitLink] = useState(false);
 
   useEffect(() => {
@@ -27,15 +29,23 @@ export default function ResearchThanksScreen() {
     return () => clearTimeout(timer);
   }, []);
 
+  useEffect(() => {
+    if (!shareFeedback) return;
+    const timer = setTimeout(() => setShareFeedback(null), 2200);
+    return () => clearTimeout(timer);
+  }, [shareFeedback]);
+
   const handleShare = useCallback(
-    () =>
-      triggerResearchShare(RESEARCH_SHARE_SRC_THANKS, {
+    async () => {
+      setShareFeedback(null);
+      await triggerResearchShare(RESEARCH_SHARE_SRC_THANKS, {
         title: t('research.share.shareTitle'),
         message: t('research.share.shareMessage'),
         toastShared: t('research.share.statusShared'),
         toastCopied: t('research.share.statusCopied'),
         toastFailed: t('research.share.statusFailed'),
-      }),
+      }, (message, tone) => setShareFeedback({ message, tone }));
+    },
     [t],
   );
 
@@ -49,9 +59,14 @@ export default function ResearchThanksScreen() {
           <Text style={styles.shareBlockTitle}>{t('research.share.thanksBlockTitle')}</Text>
           <Text style={styles.shareBlockBody}>{t('research.share.thanksBlockBody')}</Text>
           <Pressable style={styles.shareBtn} onPress={handleShare} accessibilityRole="button">
-            <Ionicons name="share-social-outline" size={20} color={colors.textInverse} />
+            <Ionicons name="share-social-outline" size={iconSize.lg} color={colors.textInverse} />
             <Text style={styles.shareBtnText}>{t('research.share.thanksTitle')}</Text>
           </Pressable>
+          {shareFeedback ? (
+            <Text accessibilityRole="text" accessibilityLiveRegion="polite" testID="research-share-status" style={[styles.shareStatus, shareFeedback.tone === 'error' && { color: colors.error }]}>
+              {shareFeedback.message}
+            </Text>
+          ) : null}
         </View>
 
         {!isAuthenticated ? (
@@ -63,7 +78,7 @@ export default function ResearchThanksScreen() {
               accessibilityRole="button"
             >
               <Text style={styles.signUpBtnText}>{t('research.guestInvite.signUpCta')}</Text>
-              <Ionicons name="arrow-back" size={18} color={colors.primary} />
+              <MirroredIcon name="arrow-forward" size={iconSize.md} color={colors.primary} />
             </Pressable>
           </View>
         ) : null}
@@ -89,7 +104,7 @@ const useStyles = makeUseStyles(({ colors }) => ({
   card: {
     width: '100%',
     maxWidth: 480,
-    borderRadius: 16,
+    borderRadius: radius.lg,
     padding: spacing.xl,
     gap: spacing.md,
     borderWidth: 1,
@@ -109,11 +124,12 @@ const useStyles = makeUseStyles(({ colors }) => ({
     lineHeight: 24,
     ...webTextRtl,
   },
+  shareStatus: { ...typography.caption, textAlign: rtlTextAlignStart, color: colors.textSecondary },
   shareBlock: {
     gap: spacing.sm,
     marginTop: spacing.md,
     padding: spacing.base,
-    borderRadius: 14,
+    borderRadius: radius.lg,
     backgroundColor: colors.primarySurface,
     borderWidth: 1,
     borderColor: colors.primary,
@@ -138,14 +154,14 @@ const useStyles = makeUseStyles(({ colors }) => ({
     justifyContent: 'center',
     gap: spacing.sm,
     backgroundColor: colors.primary,
-    borderRadius: 12,
+    borderRadius: radius.md,
     paddingVertical: spacing.md,
     marginTop: spacing.sm,
   },
   shareBtnText: {
     ...typography.button,
     color: colors.textInverse,
-    fontWeight: '700',
+    ...typography.bold,
     ...webTextRtl,
   },
   signUpBlock: {
@@ -167,7 +183,7 @@ const useStyles = makeUseStyles(({ colors }) => ({
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.xs,
-    borderRadius: 12,
+    borderRadius: radius.md,
     paddingVertical: spacing.md,
     borderWidth: 1,
     borderColor: colors.primary,
@@ -176,13 +192,13 @@ const useStyles = makeUseStyles(({ colors }) => ({
   signUpBtnText: {
     ...typography.button,
     color: colors.primary,
-    fontWeight: '700',
+    ...typography.bold,
     ...webTextRtl,
   },
   visitBtn: {
     marginTop: spacing.sm,
     backgroundColor: colors.primary,
-    borderRadius: 12,
+    borderRadius: radius.md,
     paddingVertical: spacing.md,
     alignItems: 'center',
   },

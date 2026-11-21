@@ -54,7 +54,7 @@ export function useCreatePostPublish(args: {
   setPublishFollowersOpen: (open: boolean) => void;
   requestSoftGate: (fn: () => void) => void;
   uploadingCount: number;
-  presentPrePrompt: (trigger: PrePromptTrigger) => void | Promise<void>;
+  presentPrePrompt: (trigger: PrePromptTrigger) => void | Promise<void | boolean>;
 }) {
   const { t } = useTranslation();
   const router = useRouter();
@@ -113,7 +113,7 @@ export function useCreatePostPublish(args: {
         }),
       );
     },
-    onSuccess: ({ post }) => {
+    onSuccess: async ({ post }) => {
       const { ownerId, city, street, streetNumber } = args;
       // FR-IMPORT-007 AC3 — a post seeded from an import is recorded as imported (never blocks).
       void attachPendingImport(post.postId, {
@@ -148,7 +148,12 @@ export function useCreatePostPublish(args: {
       if (!checkedFirstPostRef.current && ownerId) {
         checkedFirstPostRef.current = true;
         if (prePublishOpenCountRef.current === 0) {
-          void args.presentPrePrompt('first-post-published');
+          // The modal belongs to this screen. Do not unmount it before a decision.
+          try {
+            if (await args.presentPrePrompt('first-post-published')) return;
+          } catch {
+            // Permission preparation must not turn a successful post into a failure.
+          }
         }
       }
       closeCreateForm(router);

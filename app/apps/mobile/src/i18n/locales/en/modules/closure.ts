@@ -11,6 +11,17 @@ export const closureEn = {
   markRidesCta: 'Assign a passenger',
   // #2078, D141 — volunteering is not "delivered"; it takes place.
   markTimeCta: 'Volunteering took place ✓',
+  // #2539 — world-specific close wording (worldDetailCopy.ts); stored status stays closed_delivered.
+  markEmploymentCta: 'Position filled ✓',
+  markKnowledgeCta: 'Lesson completed ✓',
+  markFoodCta: 'Mark food as delivered ✓',
+  markMoneyCta: 'Donation completed ✓',
+  markMedicalCta: 'Mark as fulfilled ✓',
+  markChallengesCta: 'Challenge ended ✓',
+  markCompletedCta: 'Mark as completed ✓',
+  markEmploymentRequestCta: 'I found a job ✓',
+  notCompletedCta: 'It wasn\'t completed after all',
+  notCompletedA11y: 'It wasn\'t completed after all, reopen',
   assignUserCta: 'Assign to a user',
   assignSuccessToast: 'That member is assigned.',
   markRequestCta: 'Mark as received ✓',

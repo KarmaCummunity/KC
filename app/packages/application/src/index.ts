@@ -200,6 +200,8 @@ export * from './admin/SetOrgSlugUseCase';
 export * from './admin/GetHierarchySnapshotUseCase';
 export * from './admin/IDemoDataRepository';
 export * from './admin/DemoDataUseCases';
+export * from './admin/IProdCopyRepository';
+export * from './admin/ProdCopyUseCases';
 
 // A1 — admin reports inbox & case detail
 export * from './reports/IReportsRepository';
@@ -251,3 +253,5 @@ export * from './knowledge';
 export * from './ports/IIdentityVerificationService';
 export * from './identityVerification/StartIdentityVerificationUseCase';
 export * from './identityVerification/GetIdentityVerificationStatusUseCase';
+
+export type { GuestPost, IGuestPostsRepository } from './ports/IGuestPostsRepository';

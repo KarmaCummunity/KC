@@ -15,6 +15,7 @@ import { getGetClosureCandidatesUseCase } from '../services/postsComposition';
 import { completeOwnerClosure, type ClosureOutcome } from './completeOwnerClosure';
 import { isPostError } from '@kc/application';
 import { mapPostErrorToHebrew } from '../services/postMessages';
+import { track } from '../lib/analytics';
 
 /** Text for the closure error pane: Hebrew copy for a typed post error, never its raw backend code (#2360). */
 function closureErrorText(e: unknown): string {
@@ -171,6 +172,8 @@ export const useClosureStore = create<ClosureState & ClosureActions>((set, get) 
   },
 
   confirmStep1() {
+    // FR-CLOSURE-002 AC3: the owner confirmed the physical handoff.
+    track('closure_step1_completed');
     set({ step: 'pick' });
   },
 
@@ -185,6 +188,8 @@ export const useClosureStore = create<ClosureState & ClosureActions>((set, get) 
         recipientUserId,
         offerAssign: get().offerAssign,
       });
+      // An assignment that leaves the post open is not a closure (the offer goes on to be handed over).
+      if (lastOutcome === 'closed') track('closure_completed', { with_recipient: recipientUserId !== null });
       set({ step: 'explainer', isBusy: false, lastOutcome });
     } catch (e) {
       set({ step: 'error', isBusy: false, errorMessage: closureErrorText(e) });

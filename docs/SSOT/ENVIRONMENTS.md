@@ -23,7 +23,7 @@
 2. **`dev` is the integration branch.** After a merge passes CI, **Deploy** ships it to kc-dev and `https://dev.karma-community.pages.dev/`.
 3. **`dev` must contain `main`'s history.** Every push to `main` triggers `.github/workflows/sync-main-to-dev.yml`, which opens a zero-diff PR into `dev` (an `-s ours` merge of `main`) so the next release PR does not conflict. That PR must land as a **merge commit**, which the squash-only `dev` merge queue cannot do, so the owner merges it with the admin bypass (`TD-182`).
 4. **`main` is fast-forward only from `dev`.** KC production releases happen by opening a PR from `dev` → `main` and squash-merging.
-5. **Direct pushes to `main` are reserved for trivial doc/CI hotfixes** (see `CLAUDE.md` §6 "Change classes"). The sync PR records them in `dev`'s history, but its `-s ours` merge keeps `dev`'s tree, so the change itself must also reach `dev` by its own PR.
+5. **Direct pushes to `main` are not authorized by the smart-release grant.** The owner approved the scheduled gated train on 2026-11-19, not a general doc/CI hotfix exception. Any separate manual main action still needs its own approval. See [release-train authority and current technical hold](../release/WEEKLY-RELEASE-TRAIN.md#owner-authorization-and-safety-checkpoint-2026-11-19).
 6. **Never force-push to `main`, `dev`, or `staging`.** Never delete any of them. Branch-protection rules in GitHub enforce all three.
 
 ## Required environment variables

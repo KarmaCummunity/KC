@@ -54,3 +54,10 @@ describe('reportHandledError', () => {
     expect(() => reportHandledError(new Error('x'), 'manual')).not.toThrow();
   });
 });
+
+ it('reports a database statement timeout but still drops network timeouts', () => {
+    const error = new Error('canceling statement due to statement timeout');
+    reportHandledError(error, 'manual', ['chat', 'mark-read']);
+    expect(captureException).toHaveBeenCalledWith(error, expect.objectContaining({tags:{boundary:'handled',source:'manual'}}));
+    expect(isReportableError(new Error('request timeout'))).toBe(false);
+  });

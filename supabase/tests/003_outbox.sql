@@ -4,7 +4,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = extensions, public;
 
-select plan(10);
+select plan(12);
 
 select lives_ok(
   $$select kc_private.outbox_enqueue('notification', '{"kind":"probe","n":1}')$$,
@@ -45,6 +45,28 @@ select ok(
 select ok(
   has_function_privilege('service_role', 'kc_private.outbox_claim(text, integer, interval)', 'execute'),
   'the service role can claim events');
+
+-- A claim never takes more than its limit, whatever plan the server picks (#2494). With the
+-- subquery re-run on the inner side of a nested loop, the row the statement had just claimed was
+-- skipped as locked and the next one returned, so every due event was claimed.
+delete from kc_private.outbox_events where topic = 'zz_limit';
+select count(*) from (
+  select kc_private.outbox_enqueue('zz_limit', jsonb_build_object('n', n)) from generate_series(1, 5) n) q;
+set local enable_hashagg = off;
+set local enable_sort = off;
+set local enable_material = off;
+set local enable_hashjoin = off;
+set local enable_mergejoin = off;
+select is((select count(*) from kc_private.outbox_claim('zz_limit', 1)), 1::bigint,
+  'a claim of one takes exactly one event under a nested-loop plan');
+select is((select count(*) from kc_private.outbox_events
+            where topic = 'zz_limit' and claimed_at is null and attempts = 0), 4::bigint,
+  'the events past the limit stay unclaimed, with their attempts untouched');
+reset enable_hashagg;
+reset enable_sort;
+reset enable_material;
+reset enable_hashjoin;
+reset enable_mergejoin;
 
 select * from finish();
 rollback;

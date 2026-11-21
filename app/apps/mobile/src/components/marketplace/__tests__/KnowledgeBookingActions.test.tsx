@@ -41,6 +41,9 @@ vi.mock('../../../store/authStore', () => ({
 vi.mock('../../../services/knowledgeBookingComposition', () => ({
   knowledgeSlotsQueryKey: (id: string) => ['knowledge-slots', id],
   knowledgeBookingsQueryKey: (id: string) => ['knowledge-bookings', id],
+  // One-off lessons here: the weekly series panel (#2479) has its own test.
+  knowledgeSeriesQueryKey: (id: string) => ['knowledge-series', id],
+  knowledgeSeriesUseCases: { get: () => ({ execute: async () => null }), setStatus: () => ({ execute: vi.fn() }) },
   openKnowledgeLearnerChat: (...args: unknown[]) => openKnowledgeLearnerChat(...args),
   knowledgeBookingUseCases: {
     listSlots: () => ({ execute: listSlots }),

@@ -100,8 +100,11 @@ security definer
 set search_path = ''
 as $$
 declare
-  v_before constant jsonb := kc_private.prod_copy_counts();
+  v_before jsonb;
 begin
+  -- Waits for a copy being applied (the same lock as prod_copy_apply), so the two never mix.
+  perform pg_advisory_xact_lock(hashtext('kc.prod_copy'));
+  v_before := kc_private.prod_copy_counts();
   delete from public.posts p where p.owner_id = any (kc_private.prod_copy_member_ids());
   delete from auth.users u where u.id = any (kc_private.prod_copy_member_ids());
   delete from public.organizations o

@@ -5934,6 +5934,16 @@ export type Database = {
       }
       get_public_research_questions: { Args: { p_slug: string }; Returns: Json }
       get_research_salt: { Args: never; Returns: string }
+      guest_posts: {
+        Args: { p_before_id?: string; p_limit?: number; p_post_id?: string }
+        Returns: {
+          city_name_en: string
+          city_name_he: string
+          description: string
+          id: string
+          title: string
+        }[]
+      }
       hide_chat: { Args: { p_chat_id: string }; Returns: undefined }
       housing_completed_stays: {
         Args: { p_user_ids: string[] }
@@ -6320,6 +6330,46 @@ export type Database = {
         }[]
       }
       post_detail: { Args: { p_post_id: string }; Returns: Json }
+      post_media_processing_claim: {
+        Args: { p_lease_seconds?: number; p_limit?: number }
+        Returns: {
+          attempt: number
+          lease_token: string
+          leased_until: string
+          media_id: string
+          mime_type: string
+          object_mimetype: string
+          object_size: number
+          owner_id: string
+          post_id: string
+          size_bytes: number
+          storage_key: string
+        }[]
+      }
+      post_media_processing_complete: {
+        Args: {
+          p_derivative_key: string
+          p_height: number
+          p_lease_token: string
+          p_media_id: string
+          p_size_bytes: number
+          p_width: number
+        }
+        Returns: string
+      }
+      post_media_processing_fail: {
+        Args: {
+          p_error: string
+          p_lease_token: string
+          p_media_id: string
+          p_retryable: boolean
+        }
+        Returns: string
+      }
+      post_media_processing_release: {
+        Args: { p_lease_token: string; p_media_id: string; p_reason: string }
+        Returns: string
+      }
       post_seat_counts: {
         Args: { p_post_ids: string[] }
         Returns: {

@@ -18,6 +18,17 @@ import { useOnboardingReplayStore } from '../../store/onboardingReplayStore';
 beforeEach(() => { vi.clearAllMocks(); state.session = { userId: 'u1', avatarUrl: null }; state.onboardingState = 'pending_avatar'; });
 
 describe('useOnboardingPhotoFlow', () => {
+  it('does not delete an uploaded avatar after an ambiguous profile save failure', async () => {
+    pickAvatarImage.mockResolvedValueOnce({ uri: 'local' });
+    resizeAndUploadAvatar.mockResolvedValueOnce('remote-new');
+    setAvatar.mockRejectedValueOnce(new Error('response lost after commit'));
+    const { result } = renderHook(() => useOnboardingPhotoFlow());
+    await act(async () => { await result.current.pick('gallery'); });
+    expect(removeUploadedAvatar).not.toHaveBeenCalled();
+    expect(state.setSession).not.toHaveBeenCalled();
+    expect(alert).toHaveBeenCalled();
+  });
+
   it('picks and stores an avatar; a cancelled picker leaves it unset', async () => {
     pickAvatarImage.mockResolvedValueOnce({ uri: 'local' }).mockResolvedValueOnce(null);
     resizeAndUploadAvatar.mockResolvedValue('remote'); setAvatar.mockResolvedValue(undefined);
@@ -48,7 +59,8 @@ describe('useOnboardingPhotoFlow', () => {
     complete.mockResolvedValueOnce(undefined).mockRejectedValueOnce(new Error('save'));
     const { result, rerender } = renderHook(() => useOnboardingPhotoFlow());
     await act(async () => { await result.current.remove(); });
-    expect(removeUploadedAvatar).toHaveBeenCalledWith('u1');
+    // Avatars live at a new path per upload: removal needs the current URL, not only the legacy fixed path.
+    expect(removeUploadedAvatar).toHaveBeenCalledWith('u1', null);
     expect(setAvatar).toHaveBeenCalledWith({ sessionUserId: 'u1', userId: 'u1', avatarUrl: null });
     await act(async () => { await result.current.finalize(); });
     expect(complete).toHaveBeenCalledWith({ userId: 'u1' });

@@ -8,12 +8,12 @@ The application (`app/packages/infrastructure-supabase`, `app/apps/mobile`) and 
 
 | Kind | Objects used | 1:1 | 1:1 (renamed) | CHANGED | REMOVED | MISSING |
 | --- | --- | --- | --- | --- | --- | --- |
-| RPCs | 246 | 169 | 22 | 55 | 0 | 0 |
-| Tables and views | 63 | 46 | 0 | 17 | 0 | 0 |
-| Storage buckets | 4 | 3 | 0 | 1 | 0 | 0 |
+| RPCs | 270 | 193 | 22 | 55 | 0 | 0 |
+| Tables and views | 67 | 50 | 0 | 17 | 0 | 0 |
+| Storage buckets | 5 | 4 | 0 | 1 | 0 | 0 |
 | Realtime channels | 9 | 9 | 0 | 0 | 0 | 0 |
-| Edge Function invokes | 3 | 3 | 0 | 0 | 0 | 0 |
-| **Total** | 325 | 230 | 22 | 73 | 0 | 0 |
+| Edge Function invokes | 5 | 5 | 0 | 0 | 0 | 0 |
+| **Total** | 356 | 261 | 22 | 73 | 0 | 0 |
 
 ### Launch scope
 
@@ -21,10 +21,10 @@ Every row carries `launch` (spec D102, `docs/spec/96_launch_and_first_group_plan
 
 | Launch tier | Objects used | 1:1 | 1:1 (renamed) | CHANGED | REMOVED | MISSING |
 | --- | --- | --- | --- | --- | --- | --- |
-| core | 127 | 103 | 1 | 23 | 0 | 0 |
+| core | 134 | 110 | 1 | 23 | 0 | 0 |
 | wedge | 53 | 32 | 15 | 6 | 0 | 0 |
-| later | 145 | 95 | 6 | 44 | 0 | 0 |
-| **Launch-critical (core + wedge)** | 180 | 135 | 16 | 29 | 0 | 0 |
+| later | 169 | 119 | 6 | 44 | 0 | 0 |
+| **Launch-critical (core + wedge)** | 187 | 142 | 16 | 29 | 0 | 0 |
 
 Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename of the function or its arguments · **CHANGED** the caller's logic changes · **REMOVED** no replacement by design · **MISSING** the baseline has no equivalent although the code needs one (§4). Confidence: **high** read in the baseline source, **medium** inferred from names and generated types.
 
@@ -37,7 +37,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 - Money: integer agorot (`*_agorot`), never ILS floats or `*_cents` names.
 - Lists of posts return `post_card` (post, owner, city name, cover, counters, viewer state): no follow-up queries for owners, media or counters.
 - Status columns are never client-writable; every move is an RPC checked by the FSM kernel.
-- Signed-out access: only `legal_documents` and `legal_document_versions`. Every other call needs a session.
+- Signed-out access: legal documents and the D186 narrow `guest_posts` projection. Member tables and account actions still need a session.
 - Workers that need `kc_private` connect over Postgres (as `dispatch-notification` does); only `public` is reachable through the HTTP API.
 
 ## 3. Map by application module
@@ -45,7 +45,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | Module | Call sites | 1:1 | Logic changes | Removed | MISSING |
 | --- | --- | --- | --- | --- | --- |
 | `infrastructure-supabase/src/about/` | 1 | 1 | 0 | 0 | 0 |
-| `infrastructure-supabase/src/admin/` | 66 | 37 | 29 | 0 | 0 |
+| `infrastructure-supabase/src/admin/` | 74 | 45 | 29 | 0 | 0 |
 | `infrastructure-supabase/src/auth/` | 2 | 2 | 0 | 0 | 0 |
 | `infrastructure-supabase/src/blocks/` | 4 | 4 | 0 | 0 | 0 |
 | `infrastructure-supabase/src/challenges/` | 9 | 6 | 3 | 0 | 0 |
@@ -54,15 +54,17 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `infrastructure-supabase/src/donations/` | 7 | 3 | 4 | 0 | 0 |
 | `infrastructure-supabase/src/feed/` | 6 | 6 | 0 | 0 | 0 |
 | `infrastructure-supabase/src/housing/` | 18 | 11 | 7 | 0 | 0 |
-| `infrastructure-supabase/src/knowledge/` | 9 | 6 | 3 | 0 | 0 |
+| `infrastructure-supabase/src/identityVerification/` | 3 | 3 | 0 | 0 | 0 |
+| `infrastructure-supabase/src/imports/` | 5 | 5 | 0 | 0 | 0 |
+| `infrastructure-supabase/src/knowledge/` | 12 | 9 | 3 | 0 | 0 |
 | `infrastructure-supabase/src/legal/` | 3 | 3 | 0 | 0 | 0 |
-| `infrastructure-supabase/src/marketplace/` | 48 | 35 | 13 | 0 | 0 |
+| `infrastructure-supabase/src/marketplace/` | 50 | 37 | 13 | 0 | 0 |
 | `infrastructure-supabase/src/matching/` | 3 | 3 | 0 | 0 | 0 |
 | `infrastructure-supabase/src/moderation/` | 17 | 14 | 3 | 0 | 0 |
 | `infrastructure-supabase/src/notifications/` | 7 | 7 | 0 | 0 | 0 |
 | `infrastructure-supabase/src/organizations/` | 6 | 5 | 1 | 0 | 0 |
 | `infrastructure-supabase/src/payments/` | 11 | 3 | 8 | 0 | 0 |
-| `infrastructure-supabase/src/posts/` | 51 | 35 | 16 | 0 | 0 |
+| `infrastructure-supabase/src/posts/` | 50 | 35 | 15 | 0 | 0 |
 | `infrastructure-supabase/src/realtime/` | 2 | 2 | 0 | 0 | 0 |
 | `infrastructure-supabase/src/reports/` | 10 | 4 | 6 | 0 | 0 |
 | `infrastructure-supabase/src/research/` | 2 | 2 | 0 | 0 | 0 |
@@ -78,18 +80,22 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `infrastructure-supabase/src/volunteering/` | 9 | 3 | 6 | 0 | 0 |
 | `infrastructure-supabase/src/whatsapp/` | 4 | 2 | 2 | 0 | 0 |
 | `infrastructure-supabase/src/worlds/` | 3 | 1 | 2 | 0 | 0 |
-| `apps/mobile` (direct calls outside the adapters) | 18 | 17 | 1 | 0 | 0 |
-| Edge Function `_shared` | 13 | 9 | 4 | 0 | 0 |
+| `apps/mobile` (direct calls outside the adapters) | 11 | 10 | 1 | 0 | 0 |
+| Edge Function `_shared` | 21 | 17 | 4 | 0 | 0 |
 | Edge Function `backfill-image-thumbs` | 2 | 0 | 2 | 0 | 0 |
 | Edge Function `embed-worker` | 3 | 3 | 0 | 0 | 0 |
+| Edge Function `extract-external-post` | 1 | 1 | 0 | 0 | 0 |
+| Edge Function `identity-verification-session` | 3 | 3 | 0 | 0 | 0 |
+| Edge Function `identity-verification-webhook` | 2 | 2 | 0 | 0 | 0 |
 | Edge Function `match-rerank` | 2 | 1 | 1 | 0 | 0 |
 | Edge Function `payments-webhook` | 1 | 1 | 0 | 0 | 0 |
+| Edge Function `process-post-media` | 1 | 1 | 0 | 0 | 0 |
 | Edge Function `public-research-submit` | 2 | 2 | 0 | 0 | 0 |
 | Edge Function `revenuecat-webhook` | 2 | 2 | 0 | 0 | 0 |
 | Edge Function `rotate-research-salt` | 1 | 1 | 0 | 0 | 0 |
 | Edge Function `strip-exif` | 3 | 3 | 0 | 0 | 0 |
 | Edge Function `subscriptions-charger` | 1 | 1 | 0 | 0 | 0 |
-| Edge Function `translate` | 3 | 0 | 3 | 0 | 0 |
+| Edge Function `translate` | 4 | 0 | 4 | 0 | 0 |
 | Edge Function `validate-donation-link` | 5 | 1 | 4 | 0 | 0 |
 | Edge Function `whatsapp-sender` | 1 | 0 | 1 | 0 | 0 |
 | Edge Function `whatsapp-webhook` | 12 | 12 | 0 | 0 | 0 |
@@ -100,24 +106,30 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `about_team_profiles` | later | 1:1 | `about_team_profiles(avatar_url: string, display_name: string, role_key: string, share_handle: string, sort_order: number) → { avatar_url: string display_name: string role_key: string share_handle: string sort_order: number }[]` | The About roster: role key and the linked active member's public fields, from the service-role table `about_team_members` (migration 0031, M08 built). |  | high | SupabaseAboutRepository.ts:17 |
+| `about_team_profiles` | later | 1:1 | `about_team_profiles() → { avatar_url: string display_name: string role_key: string share_handle: string sort_order: number }[]` | The About roster: role key and the linked active member's public fields, from the service-role table `about_team_members` (migration 0031, M08 built). |  | high | SupabaseAboutRepository.ts:17 |
 
 ### `infrastructure-supabase/src/admin/`
 
-66 call sites: 37 map 1:1, 29 need logic changes, 0 removed, 0 MISSING.
+74 call sites: 45 map 1:1, 29 need logic changes, 0 removed, 0 MISSING.
 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `admin_audit_search` | core | CHANGED | `admin_audit_search(p_action?: string, p_actor_id?: string, p_before_id?: number, p_before_occurred_at?: string, p_from?: string, p_limit?: number, p_target_id?: string, p_to?: string) → { action: string actor_id: string id: number metadata: Json occurred_at: string target_id: string target_type: string }[]` | Offset → keyset (`p_before_occurred_at`, `p_before_id`); `p_target_user_id` → `p_target_id`; no display names and no `total_count` (join `users` on the device). | `forbidden`, `unauthenticated` | high | auditSearchCall.ts:20 |
 | `admin_change_role` | core | 1:1 | `admin_change_role(p_grant_id: string, p_new_role: string) → string` | Signature unchanged. | `account_not_active`, `forbidden_grant`, `forbidden_revoke`, `grant_already_revoked`, `grant_not_found`, `invalid_role`, `invalid_scope`, `role_already_active`, `unauthenticated` | high | SupabaseAdminRoleRepository.ts:125 |
+| `admin_delete_prod_copy` | core | 1:1 | sql `supabase/seed/prod-copy/lib/60_admin_rpcs.sql#admin_delete_prod_copy` | DEV-only confirmed deletion of previously copied data, with manager authorization and counts-only audit. Definition is not execution approval. | Error binding unknown (not an assertion of no errors) | medium | SupabaseProdCopyRepository.ts:68 |
+| `admin_demo_data_status` | later | 1:1 | sql `supabase/seed/demo/lib/80_admin_rpcs.sql#admin_demo_data_status` | Dev-only seed RPC, deliberately absent from production baseline types; adapter refuses not_installed where unavailable. | Error binding unknown (not an assertion of no errors) | medium | SupabaseDemoDataRepository.ts:31 |
 | `admin_grant_role` | core | 1:1 | `admin_grant_role(p_role: string, p_scope_org_id?: string, p_target_user_id: string) → string` | Signature unchanged. | `account_not_active`, `forbidden_grant`, `invalid_role`, `invalid_scope`, `role_already_active`, `target_not_active`, `target_not_found`, `unauthenticated` | high | SupabaseAdminRoleRepository.ts:107 |
 | `admin_hierarchy_census` | later | 1:1 | `admin_hierarchy_census() → Json` | Restored by migration 0013: community and role-holder totals and, per visible organization, its slug, verification and affiliates (`user_profile_fields.affiliated_org_id`) without a role. |  | high | SupabaseOrgHierarchyRepository.ts:123 |
 | `admin_list_admins` | core | 1:1 | `admin_list_admins(p_include_revoked?: boolean) → { avatar_url: string display_name: string grant_id: string granted_at: string granted_by: string granted_by_display_name: string last_seen_at: string manager_grant_id: string revoked_at: string revoked_by: string role...` | Restored by migration 0012: the roster the caller may read (platform admins all, others the organizations their grants reach) with names, manager edge and `last_seen_at`. |  | high | SupabaseAdminRoleRepository.ts:94 |
 | `admin_org_application_approve` | later | CHANGED | `admin_org_application_approve(p_application_id: string, p_note?: string, p_slug?: string) → string` | New required `p_slug`; returns the organization id. | `application_already_decided`, `application_not_found`, `forbidden`, `unauthenticated` | high | SupabaseOrgApplicationsRepository.ts:96 |
 | `admin_org_application_reject` | later | 1:1 | `admin_org_application_reject(p_application_id: string, p_note?: string) → undefined` | Signature unchanged. | `application_already_decided`, `application_not_found`, `forbidden`, `unauthenticated` | high | SupabaseOrgApplicationsRepository.ts:103 |
 | `admin_org_tree` | later | 1:1 | `admin_org_tree(p_org_id?: string) → { avatar_url: string display_name: string effective_org_id: string grant_id: string is_platform: boolean last_seen_at: string manager_grant_id: string org_name: string role: string scope_org_id: string user_id: string...` | Restored by migration 0012: active grants with `effective_org_id`, organization name, manager edge and `last_seen_at`; same visibility as `admin_list_admins`. |  | high | SupabaseOrgHierarchyRepository.ts:104 |
+| `admin_prod_copy_status` | core | 1:1 | sql `supabase/seed/prod-copy/lib/60_admin_rpcs.sql#admin_prod_copy_status` | DEV-only status RPC with demo-manager authorization. Absent from production baseline; no copy operation is invoked. | Error binding unknown (not an assertion of no errors) | medium | SupabaseProdCopyRepository.ts:62 |
 | `admin_revoke_role` | core | 1:1 | `admin_revoke_role(p_grant_id: string) → undefined` | Signature unchanged. | `account_not_active`, `forbidden_revoke`, `grant_already_revoked`, `grant_not_found`, `unauthenticated` | high | SupabaseAdminRoleRepository.ts:120 |
+| `admin_seed_demo_data_step` | later | 1:1 | sql `supabase/seed/demo/lib/80_admin_rpcs.sql#admin_seed_demo_data_step` | Dev-only seed RPC, deliberately absent from production baseline types; adapter refuses not_installed where unavailable. | Error binding unknown (not an assertion of no errors) | medium | SupabaseDemoDataRepository.ts:43 |
+| `admin_set_app_flag` | core | 1:1 | `admin_set_app_flag(p_description?: string, p_enabled: boolean, p_key: string) → app_flags row` | Existing current caller: app/packages/infrastructure-supabase/src/admin/SupabaseAppFlagsAdminRepository.ts. Current source declaration is bound; transitive errors remain explicitly unknown, not runtime acceptance. | `forbidden`, `invalid_flag_key` †, `unauthenticated`; Error binding unknown (not an assertion of no errors) | medium | SupabaseAppFlagsAdminRepository.ts:13 |
 | `admin_set_manager` | later | 1:1 | `admin_set_manager(p_grant_id: string, p_manager_grant_id?: string) → undefined` | Signature unchanged: `p_manager_grant_id` optional again; only the super admin detaches (no manager) or skips the seniority rule; errors `forbidden_manage`, `manager_not_found`, `manager_revoked`, `manager_other_org`, `manager_cycle`, `manager_rank` (migration 0011). | `account_not_active`, `forbidden_revoke`, `grant_already_revoked`, `grant_not_found`, `invalid_manager`, `unauthenticated` | high | SupabaseOrgHierarchyRepository.ts:116 |
+| `admin_set_org_may_post_jobs` | core | 1:1 | `admin_set_org_may_post_jobs(p_enabled: boolean, p_org_id: string) → undefined` | Existing current caller: app/packages/infrastructure-supabase/src/admin/SupabaseOrgJobPostingAdminRepository.ts. Current source declaration is bound; transitive errors remain explicitly unknown, not runtime acceptance. | Error binding unknown (not an assertion of no errors) | medium | SupabaseOrgJobPostingAdminRepository.ts:42 |
 | `admin_set_org_slug` | core | CHANGED | `admin_set_org_slug(p_org_id: string, p_slug: string) → string` | New in migration 0014 (no old object): the super admin changes an organization page slug (`invalid_slug`, `slug_taken`, `org_not_found`). |  | high | SupabaseOrgHierarchyRepository.ts:127 |
 | `admin_task_add_comment` | later | 1:1 | `admin_task_add_comment(p_body: string, p_task_id: string) → string` | Same arguments; refusals are P0001 with the old codes (`invalid_transition`, `assignee_not_admin`, …), `forbidden` is 42501. |  | high | SupabaseAdminTaskRepository.ts:112 |
 | `admin_task_assign` | later | 1:1 | `admin_task_assign(p_new_assignee: string, p_task_id: string) → undefined` | Same arguments; refusals are P0001 with the old codes (`invalid_transition`, `assignee_not_admin`, …), `forbidden` is 42501. |  | high | SupabaseAdminTaskRepository.ts:104 |
@@ -128,6 +140,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `admin_task_open_count` | later | 1:1 | `admin_task_open_count() → number` | New: open and in-progress tasks for the dashboard card. |  | high | SupabaseAdminTaskRepository.ts:59 |
 | `admin_task_set_status` | later | 1:1 | `admin_task_set_status(p_new_status: string, p_task_id: string) → undefined` | Same arguments; refusals are P0001 with the old codes (`invalid_transition`, `assignee_not_admin`, …), `forbidden` is 42501. |  | high | SupabaseAdminTaskRepository.ts:98 |
 | `admin_task_update` | later | 1:1 | `admin_task_update(p_category?: string, p_clear_due?: boolean, p_description?: string, p_due_at?: string, p_labels?: string[], p_priority?: string, p_task_id: string, p_title?: string) → undefined` | Same arguments; refusals are P0001 with the old codes (`invalid_transition`, `assignee_not_admin`, …), `forbidden` is 42501. |  | high | SupabaseAdminTaskRepository.ts:84 |
+| `admin_wipe_demo_data_step` | later | 1:1 | sql `supabase/seed/demo/lib/80_admin_rpcs.sql#admin_wipe_demo_data_step` | Dev-only seed RPC, deliberately absent from production baseline types; adapter refuses not_installed where unavailable. | Error binding unknown (not an assertion of no errors) | medium | SupabaseDemoDataRepository.ts:36 |
 | `api_whatsapp_admin_block_user` | later | 1:1 | `api_whatsapp_admin_block_user(p_user_id: string) → undefined` | Same shape; audited. |  | high | SupabaseWhatsAppAdminRepository.ts:140 |
 | `api_whatsapp_admin_get_channel` | later | 1:1 | `api_whatsapp_admin_get_channel() → Json` | Same shape plus `updated_by`; the switch is audited (`whatsapp_channel_toggle`). |  | high | SupabaseWhatsAppAdminRepository.ts:59 |
 | `api_whatsapp_admin_get_send_limits` | later | CHANGED | `api_whatsapp_admin_get_send_limits() → Json` | New, moderator and above: the current send limits for the console panel. |  | high | SupabaseWhatsAppAdminRepository.ts:168 |
@@ -136,7 +149,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `api_whatsapp_admin_list_outbound` | later | CHANGED | `api_whatsapp_admin_list_outbound(p_cursor?: Json, p_limit?: number, p_status?: string) → { attempts: number created_at: string cursor: Json kind: string language: string last_error: string next_attempt_at: string outbound_id: string sent_at: string status: string template_name: string user_id: string wa_i...` | `p_offset` → `p_cursor` (keyset) with `p_status`; no `total_count`; rows add `cursor`; `invalid_status` for an unknown status. |  | high | SupabaseWhatsAppAdminRepository.ts:83 |
 | `api_whatsapp_admin_list_rate_hits` | later | 1:1 | `api_whatsapp_admin_list_rate_hits(p_limit?: number) → { bucket: string expires_at: string hits: number window_start: string }[]` | Same arguments; rows add `expires_at`; the number inside a bucket key is masked. |  | high | SupabaseWhatsAppAdminRepository.ts:93 |
 | `api_whatsapp_admin_list_recent_matches` | later | 1:1 | `api_whatsapp_admin_list_recent_matches(p_limit?: number) → { created_at: string language: string outbound_id: string payload: Json sent_at: string status: string template_name: string user_id: string wa_id_masked: string }[]` | Same shape; `match_found_v1` and `confirm_handoff_v1` of the last 7 days. |  | high | SupabaseWhatsAppAdminRepository.ts:104 |
-| `api_whatsapp_admin_list_templates` | later | CHANGED | `api_whatsapp_admin_list_templates(body_preview: string, category: string, is_approved: boolean, language_code: string, meta_status: string, meta_template_id: string, params: Json, registry_version: number, template_name: string, updated_at: string) → { body_preview: string category: string is_approved: boolean language_code: string meta_status: string meta_template_id: string params: Json registry_version: number template_name: string updated_at: string }[]` | New: the templates and their Meta state. |  | high | SupabaseWhatsAppAdminRepository.ts:162 |
+| `api_whatsapp_admin_list_templates` | later | CHANGED | `api_whatsapp_admin_list_templates() → { body_preview: string category: string is_approved: boolean language_code: string meta_status: string meta_template_id: string params: Json registry_version: number template_name: string updated_at: string }[]` | New: the templates and their Meta state. |  | high | SupabaseWhatsAppAdminRepository.ts:162 |
 | `api_whatsapp_admin_overview` | later | CHANGED | `api_whatsapp_admin_overview() → Json` | Adds `review_pending`; rate hits read `kc_private.rate_limit_counters`. |  | high | SupabaseWhatsAppAdminRepository.ts:69 |
 | `api_whatsapp_admin_resend` | later | 1:1 | `api_whatsapp_admin_resend(p_outbound_id: string) → string` | Same shape (`outbound_not_found`, `not_resendable`); audited. |  | high | SupabaseWhatsAppAdminRepository.ts:135 |
 | `api_whatsapp_admin_review_list` | later | CHANGED | `api_whatsapp_admin_review_list(p_cursor?: Json, p_limit?: number, p_status?: string) → { confidence: number created_at: string cursor: Json owner_id: string post_id: string post_status: string post_title: string reason: string resolved_at: string review_id: string reviewer_id: string session_id: string ...` | New: the review queue of bot posts, keyset-paged (`p_status`, `p_cursor`, `p_limit`). |  | high | SupabaseWhatsAppAdminRepository.ts:145 |
@@ -149,7 +162,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `crm_contact_list` | later | CHANGED | `crm_contact_list(p_cursor?: Json, p_limit?: number, p_org_id: string, p_query?: string, p_status?: string, p_tag?: string) → { contact: Json cursor: Json }[]` | New `p_org_id`; rows are `(contact jsonb, cursor jsonb)`; the total moves to `crm_contact_count`. |  | high | SupabaseCrmContactsRepository.ts:90 |
 | `crm_contact_mark_contacted` | later | 1:1 | `crm_contact_mark_contacted(p_contact_id: string) → undefined` | Same arguments; the caller must manage the contact's organization. |  | high | SupabaseCrmContactsRepository.ts:119 |
 | `crm_contact_upsert` | later | CHANGED | `crm_contact_upsert(p_contact_id?: string, p_email?: string, p_name?: string, p_notes?: string, p_org_id: string, p_organization?: string, p_phone?: string, p_role_title?: string, p_status?: string, p_tags?: string[]) → string` | New `p_org_id`; new refusals `invalid_email`, `invalid_phone`, `invalid_input`. |  | high | SupabaseCrmContactsRepository.ts:98 |
-| `crm_my_orgs` | later | 1:1 | `crm_my_orgs(is_platform: boolean, name: string, org_id: string) → { is_platform: boolean name: string org_id: string }[]` | New: the organizations whose contact book the caller manages (FR-ADMIN-032). |  | high | SupabaseCrmContactsRepository.ts:77 |
+| `crm_my_orgs` | later | 1:1 | `crm_my_orgs() → { is_platform: boolean name: string org_id: string }[]` | New: the organizations whose contact book the caller manages (FR-ADMIN-032). |  | high | SupabaseCrmContactsRepository.ts:77 |
 | `finance_account_upsert` | later | CHANGED | `finance_account_upsert(p_account_id?: string, p_is_active?: boolean, p_kind?: string, p_last4?: string, p_name?: string, p_opening_balance_agorot?: number, p_opening_balance_at?: string, p_org_id: string) → string` | New required `p_org_id`; `p_opening_balance_cents` → `_agorot`; `p_sort_order` is gone. | `account_not_active`, `account_not_found`, `forbidden`, `unauthenticated` | high | SupabaseFinanceAccountsRepository.ts:53 |
 | `finance_accounts_list` | later | CHANGED | `finance_accounts_list(p_org_id: string) → { balance_agorot: number id: string is_active: boolean kind: string last4: string name: string opening_balance_agorot: number opening_balance_at: string sort_order: number }[]` | New required `p_org_id`; `*_cents` → `*_agorot`; `account_id` → `id`; no `entry_count`. | `account_not_active`, `forbidden`, `unauthenticated` | high | SupabaseFinanceAccountsRepository.ts:44 |
 | `finance_donors_summary` | later | CHANGED | `finance_donors_summary(p_limit?: number, p_org_id: string) → { donations_count: number donor_name: string first_at: string last_at: string total_agorot: number }[]` | New required `p_org_id`; `total_cents` → `total_agorot`; in-app donations grouped by member, typed ones by party name; organization admins only (M21, built in `85_billing/140`). |  | high | SupabaseFinanceDonorsRepository.ts:30 |
@@ -168,7 +181,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `timesheet_submit` | later | 1:1 | `timesheet_submit(p_entry_id: string) → undefined` | Same arguments; a decision is the reporter's direct manager's or a super admin's, never the reporter's own. |  | high | SupabaseTimesheetsRepository.ts:108 |
 | `timesheet_upsert` | later | 1:1 | `timesheet_upsert(p_description?: string, p_entry_id?: string, p_hours_x100?: number, p_project?: string, p_work_date?: string) → string` | Same arguments; a decision is the reporter's direct manager's or a super admin's, never the reporter's own. |  | high | SupabaseTimesheetsRepository.ts:96 |
 | `org_applications` (table) | later | 1:1 | table `org_applications` | Read-only: the applicant reads their own rows, and platform admins read the review queue directly (policy `org_applications_select_reviewers`) with an exact count; written through `submit_org_application`. |  | high | SupabaseOrgApplicationsRepository.ts:75 |
-| `organizations` (table) | core | 1:1 | table `organizations` | The routed worlds' body picker (organizations by name). |  | high | financeOrg.ts:20, SupabaseOrgTransparencyRepository.ts:91 |
+| `organizations` (table) | core | 1:1 | table `organizations` | The routed worlds' body picker (organizations by name). |  | high | financeOrg.ts:20, SupabaseOrgJobPostingAdminRepository.ts:34, SupabaseOrgTransparencyRepository.ts:91 |
 | `posts` (table) | core | CHANGED | table `posts`<br>`post_cards(p_post_ids: string[]) → post_card[]`<br>`post_detail(p_post_id: string) → Json`<br>`create_post_with_details(p_details: Json, p_post: Json) → string`<br>`delete_post(p_post_id: string) → undefined` | Columns: `post_id` → `id`, `type` → `direction`, `category` / `category_id` → `item_subcategory_id`, `city` → `city_id`, `urgency` → `urgency_level`, `street` / `street_number` → `post_private_locations`, `availability_status` / `moderation_status` / `feed_hidden` → `status`, `status_before_admin_removal` → `status_before_removal`; `delete_after` / `reopen_count` → `post_closures`; `estimated_value`, `item_condition`, `external_body_id`, listing columns: gone. Reads of lists should use the card RPCs (`post_cards`, `feed_page`, `profile_posts_page`, `post_detail`). Insert is direct (column grants; status `draft` or `open`), rides / stays / events / food go through `create_post_with_details`. Update is direct for content columns only; status never (owner RPCs). Delete: direct only for a draft, otherwise `delete_post`. | `account_not_active`, `post_details_not_supported`, `unauthenticated`, `listing_wrong_status`, `post_not_found` | high | SupabaseAdminContentRepository.ts:147 |
 | `users` (table) | core | CHANGED | table `users`<br>table `user_private`<br>table `user_account`<br>table `user_stats` | Split in four. Public profile stays in `users` (`user_id` → `id`, `city` → `city_id`, `city_name` gone: join `cities`). Contact phone, date of birth, address lines, notification preferences, dismiss flags, `basic_info_skipped` → `user_private` (own row). Account status, onboarding state, deletion dates, verification → `user_account` (read-only; moves through RPCs). Counters → `user_stats` (read-only). `is_super_admin` → `get_my_admin_roles()`. Client updates on `users` are limited to display_name, biography, avatar_url, city_id, preferred_language; `privacy_mode` moves through `set_privacy_mode`. mock-login's upsert goes away with the function. |  | high | SupabaseAdminContentRepository.ts:98, SupabaseAdminContentRepository.ts:114, SupabaseOrgApplicationsRepository.ts:84 |
 
@@ -212,16 +225,16 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `'chat:${chatId}:messages'` (channel) | core | 1:1 | topic `chat:<chat id>:messages` | Private topic of the chat; broadcast events `INSERT` (the message row), `read` (a member's marker), `reaction` and `chat_updated` (the pinned post). The app consumes `INSERT`, `read` and `chat_updated`; reactions are re-read on demand. |  | high | SupabaseChatRealtime.ts:41 |
+| `'chat:${chatId}:messages'` (channel) | core | 1:1 | topic `chat:<chat id>:messages` | Private topic of the chat; broadcast events `INSERT` (the message row), `read` (a member's marker), `reaction` and `chat_updated` (the pinned post). The app consumes `INSERT`, `read` and `chat_updated`; reactions are re-read on demand. |  | high | SupabaseChatRealtime.ts:42 |
 | `'chat:${chatId}:typing'` (channel) | core | 1:1 | topic `chat:<chat id>:typing` | Members may send on `chat:%:typing` and `chat:%:presence`. |  | high | SupabaseChatV2Realtime.ts:30 |
-| `'user:${userId}:chats'` (channel) | core | 1:1 | topic `user:<user id>:chats` | Private topic of the member; event `chat_updated` carries ids only, so the inbox refreshes and the unread total is re-read. |  | high | SupabaseChatRealtime.ts:77 |
+| `'user:${userId}:chats'` (channel) | core | 1:1 | topic `user:<user id>:chats` | Private topic of the member; event `chat_updated` carries ids only, so the inbox refreshes and the unread total is re-read. |  | high | SupabaseChatRealtime.ts:89 |
 | `chat_inbox_page` | core | 1:1 | `chat_inbox_page(p_before_chat_id?: string, p_before_last_message_at?: string, p_limit?: number, p_search?: string) → { anchor_post_id: string chat_id: string counterpart_avatar_url: string counterpart_display_name: string counterpart_id: string counterpart_last_read_at: string counterpart_share_handle: string counterpart_verificatio...` | `p_limit`, `p_before_last_message_at`, `p_before_chat_id`, `p_search`; one row per visible chat with the counterpart, a 140-character preview of the newest message and the unread count. The app reads one page of 50; each row also carries the counterpart's verification level, the media type of a media message and the system payload of a system message, for the inbox badge and previews. | `unauthenticated` | high | getMyChats.ts:75 |
 | `chat_messages_page` | core | 1:1 | `chat_messages_page(p_after?: string, p_before?: string, p_chat_id: string, p_limit?: number) → messages row[]` | `p_chat_id`, `p_limit`, `p_before`, `p_after`; the `messages` rows, newest first when paging backwards. Refusal `chat_not_found`. | `chat_not_found`, `unauthenticated` | high | SupabaseChatRepository.ts:62 |
-| `chat_unread_total` | core | 1:1 | `chat_unread_total() → number` | The badge; also delivered in `bootstrap_session().unread.chats`. | `unauthenticated` | high | SupabaseChatRealtime.ts:101, SupabaseChatRepository.ts:98 |
+| `chat_unread_total` | core | 1:1 | `chat_unread_total() → number` | The badge; also delivered in `bootstrap_session().unread.chats`. | `unauthenticated` | high | SupabaseChatRealtime.ts:128, SupabaseChatRepository.ts:98 |
 | `hide_chat` | core | 1:1 | `hide_chat(p_chat_id: string) → undefined` | `p_chat_id`; a support thread cannot be hidden (`support_thread_not_hideable`). | `chat_not_found`, `support_thread_not_hideable`, `unauthenticated` | high | supabaseDmChat.ts:46 |
 | `mark_chat_read` | core | 1:1 | `mark_chat_read(p_chat_id: string) → undefined` | `p_chat_id`; advances the caller's `chat_members.last_read_at`, which is the read receipt other members see. | `chat_not_found`, `unauthenticated` | high | SupabaseChatRepository.ts:94 |
 | `open_direct_chat` | core | 1:1 | `open_direct_chat(p_anchor_post_id?: string, p_user_id: string) → chats row` | `p_user_id`, `p_anchor_post_id`; the caller's one chat with the member (created when missing, un-hidden when hidden), re-pinned when an anchor is given. A ride is a post, so a ride anchor is a post anchor; the old "second chat after a personal hide" no longer exists. Refusals `account_not_active`, `blocked_relationship`, `cannot_chat_self`, `post_unavailable` †, `user_unavailable`. | `account_not_active`, `blocked_relationship`, `cannot_chat_self`, `post_unavailable`, `unauthenticated`, `user_unavailable` | high | supabaseDmChat.ts:30 |
-| `open_support_thread` | core | 1:1 | `open_support_thread(anchor_post_id: string \| null, created_at: string, direct_user_a: string \| null, direct_user_b: string \| null, id: string, kind: string, last_message_at: string \| null, moderation_hidden_at: string \| null, support_user_id: string \| null) → chats row` | No arguments; the caller's support thread (`kind = 'support'`, `support_user_id`), created on first use. A support issue is this call plus `send_message`: the category is the first line of the body (there is no category column). | `unauthenticated` | high | supabaseDmChat.ts:40 |
+| `open_support_thread` | core | 1:1 | `open_support_thread() → chats row` | No arguments; the caller's support thread (`kind = 'support'`, `support_user_id`), created on first use. A support issue is this call plus `send_message`: the category is the first line of the body (there is no category column). | `unauthenticated` | high | supabaseDmChat.ts:40 |
 | `send_message` | core | 1:1 | `send_message(p_body: string, p_chat_id: string, p_media_payload?: Json, p_message_id?: string) → messages row` | `p_chat_id`, `p_body`, `p_media_payload`, `p_message_id` (the optimistic message id, so a retry returns the first copy); also carries media messages and the support issue. Refusals `account_not_active`, `blocked_relationship`, `chat_not_found`, `invalid_media_payload` †, `invalid_rate_limit_args` †, `message_body_invalid` †, `rate_limited`. | `account_not_active`, `blocked_relationship`, `chat_not_found`, `invalid_media_payload`, `invalid_rate_limit_args`, `message_body_invalid`, `rate_limited`, `unauthenticated` | high | SupabaseChatRepository.ts:80, SupabaseChatV2Repository.ts:36 |
 | `set_message_reaction` | core | 1:1 | `set_message_reaction(p_message_id: string, p_reaction_type: string) → undefined` | `p_message_id`, `p_reaction_type` (null clears); returns nothing, the change arrives as a `reaction` broadcast on the chat topic. Refusals `account_not_active`, `invalid_reaction_type` †, `message_not_found`. | `account_not_active`, `invalid_reaction_type`, `message_not_found`, `unauthenticated` | high | SupabaseChatV2Repository.ts:20 |
 | `submit_support_issue` | core | CHANGED | `submit_support_issue(p_category: string, p_description: string, p_issue_id?: string) → chats row` | Was `rpc_submit_support_issue`. `(p_category, p_description, p_issue_id)` writes a `support_issue` system message (`issue_id`, `category`, `description`) and returns the thread; refusals `description_too_short`, `description_too_long` (500), `invalid_support_category`; `0015`. |  | high | submitSupportIssue.ts:22 |
@@ -284,9 +297,31 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `streets` (table) | core | CHANGED | table `streets` | `geo` → `location`. |  | high | SupabaseHousingRepository.ts:144 |
 | `users` (table) | core | CHANGED | see `infrastructure-supabase/src/admin/` |  |  |  | housingReads.ts:76, housingReads.ts:112 |
 
+### `infrastructure-supabase/src/identityVerification/`
+
+3 call sites: 3 map 1:1, 0 need logic changes, 0 removed, 0 MISSING.
+
+| Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `identity-verification-session` (edge function) | later | 1:1 | edge `identity-verification-session` | Existing current caller: app/packages/infrastructure-supabase/src/identityVerification/SupabaseIdentityVerificationService.ts. Current source declaration is bound; transitive errors remain explicitly unknown, not runtime acceptance. | Error binding unknown (not an assertion of no errors) | medium | SupabaseIdentityVerificationService.ts:68 |
+| `accept_identity_verification_consent` | later | 1:1 | `accept_identity_verification_consent(p_version: string) → undefined` | Existing current caller: app/packages/infrastructure-supabase/src/identityVerification/SupabaseIdentityVerificationService.ts. Current source declaration is bound; transitive errors remain explicitly unknown, not runtime acceptance. | Error binding unknown (not an assertion of no errors) | medium | SupabaseIdentityVerificationService.ts:64 |
+| `my_identity_verification` | later | 1:1 | `my_identity_verification() → { decided_at: string expires_at: string reason_code: string status: string verified_at: string }[]` | Existing current caller: app/packages/infrastructure-supabase/src/identityVerification/SupabaseIdentityVerificationService.ts. Current source declaration is bound; transitive errors remain explicitly unknown, not runtime acceptance. | Error binding unknown (not an assertion of no errors) | medium | SupabaseIdentityVerificationService.ts:50 |
+
+### `infrastructure-supabase/src/imports/`
+
+5 call sites: 5 map 1:1, 0 need logic changes, 0 removed, 0 MISSING.
+
+| Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `extract-external-post` (edge function) | later | 1:1 | edge `extract-external-post` | Existing current caller: app/packages/infrastructure-supabase/src/imports/EdgeFnPostExtractionService.ts. Current source declaration is bound; transitive errors remain explicitly unknown, not runtime acceptance. | Error binding unknown (not an assertion of no errors) | medium | EdgeFnPostExtractionService.ts:15 |
+| `admin_import_field_edit_rates` | later | 1:1 | `admin_import_field_edit_rates(p_days?: number) → { edit_rate: number edited: number field: string reported: number }[]` | Existing current caller: app/packages/infrastructure-supabase/src/imports/SupabaseImportTelemetryRepository.ts. Current source declaration is bound; transitive errors remain explicitly unknown, not runtime acceptance. | Error binding unknown (not an assertion of no errors) | medium | SupabaseImportTelemetryRepository.ts:31 |
+| `admin_import_funnel` | later | 1:1 | `admin_import_funnel(p_days?: number) → { attempts: number discarded: number drafted: number manual: number provider_calls: number published: number }[]` | Existing current caller: app/packages/infrastructure-supabase/src/imports/SupabaseImportTelemetryRepository.ts. Current source declaration is bound; transitive errors remain explicitly unknown, not runtime acceptance. | Error binding unknown (not an assertion of no errors) | medium | SupabaseImportTelemetryRepository.ts:16 |
+| `api_import_attach_post` | later | 1:1 | `api_import_attach_post(p_import_id: string, p_post_id: string) → undefined` | Existing current caller: app/packages/infrastructure-supabase/src/imports/EdgeFnPostExtractionService.ts. Current source declaration is bound; transitive errors remain explicitly unknown, not runtime acceptance. | Error binding unknown (not an assertion of no errors) | medium | EdgeFnPostExtractionService.ts:24 |
+| `api_import_record_edits` | later | 1:1 | `api_import_record_edits(p_edited_fields: string[], p_import_id: string) → undefined` | Existing current caller: app/packages/infrastructure-supabase/src/imports/EdgeFnPostExtractionService.ts. Current source declaration is bound; transitive errors remain explicitly unknown, not runtime acceptance. | Error binding unknown (not an assertion of no errors) | medium | EdgeFnPostExtractionService.ts:29 |
+
 ### `infrastructure-supabase/src/knowledge/`
 
-9 call sites: 6 map 1:1, 3 need logic changes, 0 removed, 0 MISSING.
+12 call sites: 9 map 1:1, 3 need logic changes, 0 removed, 0 MISSING.
 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -295,6 +330,9 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `confirm_item_handoff` | wedge | 1:1 (renamed) | `confirm_item_handoff(p_handoff_id: string) → post_handoffs row` | Same argument. Returned row: `handoff_id` → `id`, `listing_id` → `post_id`, `reserved_at` → `created_at`, `knowledge_slot_id` → `slot_starts_at` / `slot_ends_at`, new `machine_id`. | `account_not_active`, `handoff_not_found`, `unauthenticated` | high | SupabaseKnowledgeBookingRepository.ts:92 |
 | `knowledge_slot_seats` | later | 1:1 | `knowledge_slot_seats(p_post_id: string) → { capacity: number ends_at: string id: string seats_left: number seats_taken: number starts_at: string }[]` | The slots of a knowledge offer with their places held and left, for every reader of the offer (FR-KNOW-004); the caller's booking per slot is matched on `slot_starts_at`. |  | high | SupabaseKnowledgeBookingRepository.ts:31 |
 | `mark_giving_handed_over` | wedge | 1:1 (renamed) | `mark_giving_handed_over(p_handoff_id: string) → post_handoffs row` | Same argument. Returned row: `handoff_id` → `id`, `listing_id` → `post_id`, `reserved_at` → `created_at`, `knowledge_slot_id` → `slot_starts_at` / `slot_ends_at`, new `machine_id`. | `account_not_active`, `handoff_not_confirmed`, `handoff_not_found`, `handoff_world_not_supported`, `unauthenticated` | high | SupabaseKnowledgeBookingRepository.ts:92 |
+| `set_knowledge_slot_series_status` | later | 1:1 | `set_knowledge_slot_series_status(p_post_id: string, p_status: string) → undefined` | `p_post_id`, `p_status`: active, paused or ended; pausing and ending drop the upcoming unbooked slots and keep booked ones. The giver or a post editor only. |  | high | SupabaseKnowledgeSlotSeriesRepository.ts:78 |
+| `start_knowledge_slot_series` | later | 1:1 | `start_knowledge_slot_series(p_capacity?: number, p_duration_minutes: number, p_ends_on?: string, p_post_id: string, p_start_time: string, p_weekdays: number) → string` | Makes a lesson offer recurring and adds its slots for the next 30 days; called on the draft before `publish_post`, so a refused schedule leaves no offer. |  | high | SupabaseKnowledgeSlotSeriesRepository.ts:47 |
+| `knowledge_slot_series` (table) | later | 1:1 | table `knowledge_slot_series` | The weekly schedule of a recurring lesson offer, one per post; readable exactly when its offer is, written only by the series RPCs. |  | high | SupabaseKnowledgeSlotSeriesRepository.ts:70 |
 | `post_handoffs` (table) | core | CHANGED | see `infrastructure-supabase/src/housing/` |  |  |  | SupabaseKnowledgeBookingRepository.ts:49, SupabaseKnowledgeBookingRepository.ts:82 |
 | `post_knowledge_slots` (table) | later | 1:1 | table `post_knowledge_slots` | The giver's view maps each booking to its slot by its start. |  | high | SupabaseKnowledgeBookingRepository.ts:53 |
 | `users` (table) | core | CHANGED | see `infrastructure-supabase/src/admin/` |  |  |  | SupabaseKnowledgeBookingRepository.ts:54 |
@@ -311,47 +349,48 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 
 ### `infrastructure-supabase/src/marketplace/`
 
-48 call sites: 35 map 1:1, 13 need logic changes, 0 removed, 0 MISSING.
+50 call sites: 37 map 1:1, 13 need logic changes, 0 removed, 0 MISSING.
 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `cancel_event_registration` | wedge | 1:1 (renamed) | `cancel_event_registration(p_handoff_id: string) → post_handoffs row` | Same argument. Returned row: `handoff_id` → `id`, `listing_id` → `post_id`, `reserved_at` → `created_at`, `knowledge_slot_id` → `slot_starts_at` / `slot_ends_at`, new `machine_id`. | `account_not_active`, `handoff_not_found`, `invalid_status`, `unauthenticated` | high | eventRegistrations.ts:84 |
+| `cancel_event_registration` | wedge | 1:1 (renamed) | `cancel_event_registration(p_handoff_id: string) → post_handoffs row` | Same argument. Returned row: `handoff_id` → `id`, `listing_id` → `post_id`, `reserved_at` → `created_at`, `knowledge_slot_id` → `slot_starts_at` / `slot_ends_at`, new `machine_id`. | `account_not_active`, `handoff_not_found`, `invalid_status`, `unauthenticated` | high | eventRegistrations.ts:94 |
 | `cancel_giving_handoff` | wedge | 1:1 (renamed) | see `infrastructure-supabase/src/knowledge/` |  |  |  | givingHandoffs.ts:155 |
 | `claim_food_giving` | wedge | 1:1 (renamed) | `claim_food_giving(p_pickup_window_end?: string, p_pickup_window_start?: string, p_post_id: string) → post_handoffs row` | `p_listing_id` → `p_post_id`. Returned row: `handoff_id` → `id`, `listing_id` → `post_id`, `reserved_at` → `created_at`, `knowledge_slot_id` → `slot_starts_at` / `slot_ends_at`, new `machine_id`. | `account_not_active`, `invalid_pickup_mode`, `invalid_rate_limit_args`, `item_already_reserved`, `listing_not_available`, `own_listing`, `rate_limited`, `unauthenticated` | high | givingHandoffs.ts:144 |
 | `close_post_without_recipient` | core | 1:1 | `close_post_without_recipient(p_post_id: string) → undefined` | Closes an open post as delivered to nobody (`closure_wrong_status`, `listing_has_active_handoff`); seven days to reopen. | `account_not_active`, `closure_wrong_status`, `listing_has_active_handoff`, `post_not_found`, `unauthenticated` | high | listingOwnerActions.ts:35 |
 | `confirm_item_handoff` | wedge | 1:1 (renamed) | see `infrastructure-supabase/src/knowledge/` |  |  |  | givingHandoffs.ts:128 |
-| `create_post_with_details` | wedge | 1:1 | `create_post_with_details(p_details: Json, p_post: Json) → string` | `p_post` (world, kind, direction, title, city, ...) and `p_details` (the columns of the detail table). The adapter turns the forms' legacy `details` document into the ride, event or food columns; refusals `declaration_required`, `ride_place_invalid`, `ride_time_invalid`, `food_expiry_required`, `event_time_invalid`, `post_limit_exceeded`. | `account_not_active`, `post_details_not_supported`, `unauthenticated` | high | listingWrites.ts:78 |
-| `decide_event_registration` | wedge | 1:1 (renamed) | `decide_event_registration(p_approve: boolean, p_handoff_id: string) → post_handoffs row` | Same arguments. Returned row: `handoff_id` → `id`, `listing_id` → `post_id`, `reserved_at` → `created_at`, `knowledge_slot_id` → `slot_starts_at` / `slot_ends_at`, new `machine_id`. | `account_not_active`, `handoff_not_found`, `invalid_status`, `unauthenticated` | high | eventRegistrations.ts:78 |
+| `create_post_with_details` | wedge | 1:1 | `create_post_with_details(p_details: Json, p_post: Json) → string` | `p_post` (world, kind, direction, title, city, ...) and `p_details` (the columns of the detail table). The adapter turns the forms' legacy `details` document into the ride, event or food columns; refusals `declaration_required`, `ride_place_invalid`, `ride_time_invalid`, `food_expiry_required`, `event_time_invalid`, `post_limit_exceeded`. | `account_not_active`, `post_details_not_supported`, `unauthenticated` | high | listingWrites.ts:83 |
+| `decide_event_registration` | wedge | 1:1 (renamed) | `decide_event_registration(p_approve: boolean, p_handoff_id: string) → post_handoffs row` | Same arguments. Returned row: `handoff_id` → `id`, `listing_id` → `post_id`, `reserved_at` → `created_at`, `knowledge_slot_id` → `slot_starts_at` / `slot_ends_at`, new `machine_id`. | `account_not_active`, `handoff_not_found`, `invalid_status`, `unauthenticated` | high | eventRegistrations.ts:88 |
 | `delete_post` | core | 1:1 | `delete_post(p_post_id: string) → undefined` | Deletes a post in any status the owner may delete (`listing_wrong_status` for a removed or already deleted post); a published post stays seven days for a reopen. | `account_not_active`, `listing_wrong_status`, `post_not_found`, `unauthenticated` | high | listingOwnerActions.ts:38 |
-| `mark_event_attendance` | wedge | 1:1 (renamed) | `mark_event_attendance(p_attended: boolean, p_handoff_id: string) → post_handoffs row` | Same arguments; allowed once the event started (`event_not_started`). Returned row: `handoff_id` → `id`, `listing_id` → `post_id`, `reserved_at` → `created_at`, `knowledge_slot_id` → `slot_starts_at` / `slot_ends_at`, new `machine_id`. | `account_not_active`, `event_not_started`, `handoff_not_found`, `invalid_status`, `unauthenticated` | high | eventRegistrations.ts:91 |
+| `mark_event_attendance` | wedge | 1:1 (renamed) | `mark_event_attendance(p_attended: boolean, p_handoff_id: string) → post_handoffs row` | Same arguments; allowed once the event started (`event_not_started`). Returned row: `handoff_id` → `id`, `listing_id` → `post_id`, `reserved_at` → `created_at`, `knowledge_slot_id` → `slot_starts_at` / `slot_ends_at`, new `machine_id`. | `account_not_active`, `event_not_started`, `handoff_not_found`, `invalid_status`, `unauthenticated` | high | eventRegistrations.ts:101 |
 | `mark_giving_handed_over` | wedge | 1:1 (renamed) | see `infrastructure-supabase/src/knowledge/` |  |  |  | givingHandoffs.ts:163 |
-| `message_event_registrants` | wedge | 1:1 | `message_event_registrants(p_body: string, p_post_id: string) → number` | The organizer's message to everyone registered for an event; answers how many were told (`event_message_invalid`). | `account_not_active`, `event_message_invalid`, `post_not_found`, `unauthenticated` | high | eventRegistrations.ts:100 |
+| `message_event_registrants` | wedge | 1:1 | `message_event_registrants(p_body: string, p_post_id: string) → number` | The organizer's message to everyone registered for an event; answers how many were told (`event_message_invalid`). | `account_not_active`, `event_message_invalid`, `post_not_found`, `unauthenticated` | high | eventRegistrations.ts:110 |
 | `pause_post` | wedge | 1:1 | `pause_post(p_post_id: string) → undefined` | Pauses the owner's open post (`listing_wrong_status`, `listing_has_active_handoff`). | `account_not_active`, `listing_has_active_handoff`, `listing_wrong_status`, `post_not_found`, `unauthenticated` | high | listingOwnerActions.ts:29 |
 | `post_cards` | core | 1:1 | `post_cards(p_post_ids: string[]) → post_card[]` | Cards of up to 100 post ids the caller can read, in no particular order: the adapter restores the order of the ids (saved posts, a member's posts by status, one post). |  | high | listingMapping.ts:76 |
-| `post_detail` | wedge | 1:1 | `post_detail(p_post_id: string) → Json` | Card, gallery and first comments as one JSON; the adapter adds the world detail row and the world labels to build the listing detail. |  | high | mapListingDetail.ts:108 |
+| `post_detail` | wedge | 1:1 | `post_detail(p_post_id: string) → Json` | Card, gallery and first comments as one JSON; the adapter adds the world detail row and the world labels to build the listing detail. |  | high | mapListingDetail.ts:122 |
 | `post_seat_counts` | wedge | 1:1 | `post_seat_counts(p_post_ids: string[]) → { capacity: number post_id: string seats_left: number seats_taken: number waitlisted: number }[]` | Places held, waiting registrations and seats left of event and ride posts the caller can read (`p_post_ids`, at most 100); the volunteering shifts and the occurrences of a ride series read their free places here. |  | high | postSeatCounts.ts:22 |
 | `profile_posts_page` | core | 1:1 | `profile_posts_page(p_cursor?: Json, p_limit?: number, p_statuses?: string[], p_tab?: string, p_user_id: string) → { card: post_card next_cursor: Json }[]` | `p_tab` open \| closed \| hidden \| mine, keyset `p_cursor`; the closed tab of a profile. `mine` is the owner's own posts in every status and audience, narrowed by `p_statuses` (`forbidden` on another member's profile): "my listings" reads it. The owner's delivered or deleted "only me" posts still come from `posts` ids completed by `post_cards`. | `invalid_input` | high | SupabaseMarketplaceRepository.ts:68, SupabaseMarketplaceRepository.ts:89 |
-| `publish_post` | core | 1:1 | `publish_post(p_post_id: string) → undefined` | Publishes the draft the adapter wrote (draft → open); a failed create deletes the draft, which a device may delete. Refusals: `listing_wrong_status`, `post_limit_exceeded`. | `account_not_active`, `listing_wrong_status`, `offer_photo_required`, `post_not_found`, `unauthenticated` | high | listingWrites.ts:97 |
+| `publish_post` | core | 1:1 | `publish_post(p_post_id: string) → undefined` | Publishes the draft the adapter wrote (draft → open); a failed create deletes the draft, which a device may delete. Refusals: `listing_wrong_status`, `post_limit_exceeded`. | `account_not_active`, `listing_wrong_status`, `offer_photo_required`, `post_not_found`, `unauthenticated` | high | listingWrites.ts:113 |
 | `rate_handoff` | wedge | 1:1 | `rate_handoff(p_comment?: string, p_handoff_id: string, p_stars: number) → undefined` | One rating RPC for every world (`p_stars`, optional `p_comment`); refusals `invalid_rating`, `handoff_not_found`, `not_participant`, `handoff_already_rated`. | `account_not_active`, `handoff_already_rated`, `handoff_not_found`, `invalid_rating`, `not_participant`, `unauthenticated` | high | givingHandoffs.ts:177 |
-| `register_for_event` | wedge | 1:1 (renamed) | `register_for_event(p_post_id: string) → post_handoffs row` | `p_target` → `p_post_id`. Returned row: `handoff_id` → `id`, `listing_id` → `post_id`, `reserved_at` → `created_at`, `knowledge_slot_id` → `slot_starts_at` / `slot_ends_at`, new `machine_id`. | `account_not_active`, `invalid_rate_limit_args`, `item_already_reserved`, `listing_not_available`, `own_listing`, `rate_limited`, `slot_started`, `unauthenticated`, `verification_required` | high | eventRegistrations.ts:66 |
+| `register_for_event` | wedge | 1:1 (renamed) | `register_for_event(p_post_id: string) → post_handoffs row` | `p_target` → `p_post_id`. Returned row: `handoff_id` → `id`, `listing_id` → `post_id`, `reserved_at` → `created_at`, `knowledge_slot_id` → `slot_starts_at` / `slot_ends_at`, new `machine_id`. | `account_not_active`, `invalid_rate_limit_args`, `item_already_reserved`, `listing_not_available`, `own_listing`, `rate_limited`, `slot_started`, `unauthenticated`, `verification_required` | high | eventRegistrations.ts:76 |
 | `reserve_item_giving` | wedge | 1:1 (renamed) | `reserve_item_giving(p_pickup_mode?: string, p_pickup_window_end?: string, p_pickup_window_start?: string, p_post_id: string) → post_handoffs row` | `p_listing_id` → `p_post_id`. Returned row: `handoff_id` → `id`, `listing_id` → `post_id`, `reserved_at` → `created_at`, `knowledge_slot_id` → `slot_starts_at` / `slot_ends_at`, new `machine_id`. | `account_not_active`, `invalid_pickup_mode`, `invalid_rate_limit_args`, `item_already_reserved`, `listing_not_available`, `own_listing`, `rate_limited`, `unauthenticated` | high | givingHandoffs.ts:115 |
 | `resume_post` | wedge | 1:1 | `resume_post(p_post_id: string) → undefined` | Reopens a paused post. | `account_not_active`, `listing_wrong_status`, `post_not_found`, `unauthenticated` | high | listingOwnerActions.ts:32 |
-| `ride_occurrence_schedules` | wedge | 1:1 | `ride_occurrence_schedules(p_post_ids: string[]) → { depart_time: string ends_on: string post_id: string series_id: string series_on: string weekdays: number }[]` | The series day, weekdays, departure time and last day of ride occurrences the caller can read (`p_post_ids`); the ride detail builds its series marker from it, since `ride_series` is its owner's alone. |  | high | mapListingDetail.ts:70 |
+| `ride_occurrence_schedules` | wedge | 1:1 | `ride_occurrence_schedules(p_post_ids: string[]) → { depart_time: string ends_on: string post_id: string series_id: string series_on: string weekdays: number }[]` | The series day, weekdays, departure time and last day of ride occurrences the caller can read (`p_post_ids`); the ride detail builds its series marker from it, since `ride_series` is its owner's alone. |  | high | mapListingDetail.ts:71 |
 | `send_message` | core | 1:1 | see `infrastructure-supabase/src/chat/` |  |  |  | SupabaseMarketplaceRepository.ts:54 |
-| `set_post_organization` | wedge | 1:1 | `set_post_organization(p_org_id: string, p_post_id: string) → undefined` | Attaches a new organization event to the organization the member publishes for (`forbidden` when the member may not act for it). | `account_not_active`, `post_not_found`, `unauthenticated` | high | listingWrites.ts:129 |
+| `set_post_organization` | wedge | 1:1 | `set_post_organization(p_org_id: string, p_post_id: string) → undefined` | Attaches a new organization event to the organization the member publishes for (`forbidden` when the member may not act for it). | `account_not_active`, `post_not_found`, `unauthenticated` | high | listingWrites.ts:145 |
 | `similar_posts` | wedge | 1:1 | `similar_posts(p_limit?: number, p_post_id: string) → post_card[]` | "More like this" as cards. |  | high | SupabaseMarketplaceRepository.ts:33 |
 | `item_subcategories` (table) | core | 1:1 | table `item_subcategories` | Read-only catalog; the items world's rows are the app's item categories (slug = lower-case category, `baby_gear`). |  | high | listWorldSubcategories.ts:33 |
-| `org_memberships` (table) | wedge | CHANGED | table `org_memberships` | `role` → `roles` (array), `membership_id` gone (key is org + user), new `can_post`. |  | high | eventRegistrations.ts:154 |
+| `org_memberships` (table) | wedge | CHANGED | table `org_memberships` | `role` → `roles` (array), `membership_id` gone (key is org + user), new `can_post`. |  | high | eventRegistrations.ts:164 |
 | `organizations` (table) | core | 1:1 | see `infrastructure-supabase/src/admin/` |  |  |  | mapExternalBody.ts:38 |
-| `post_event_details` (table) | wedge | 1:1 | table `post_event_details` | Read for an event's window, capacity and policy; the organizer edits it through the adapter. |  | high | mapListingDetail.ts:78 |
-| `post_food_details` (table) | wedge | 1:1 | table `post_food_details` | Read for a food offer's expiry and contents; the giver edits it through the adapter. |  | high | mapListingDetail.ts:99 |
-| `post_handoffs` (table) | core | CHANGED | see `infrastructure-supabase/src/housing/` |  |  |  | eventRegistrations.ts:114, eventRegistrations.ts:136, givingHandoffs.ts:61, givingHandoffs.ts:79 |
+| `post_event_details` (table) | wedge | 1:1 | table `post_event_details` | Read for an event's window, capacity and policy; the organizer edits it through the adapter. |  | high | mapListingDetail.ts:79 |
+| `post_food_details` (table) | wedge | 1:1 | table `post_food_details` | Read for a food offer's expiry and contents; the giver edits it through the adapter. |  | high | mapListingDetail.ts:100 |
+| `post_handoffs` (table) | core | CHANGED | see `infrastructure-supabase/src/housing/` |  |  |  | eventRegistrations.ts:124, eventRegistrations.ts:146, givingHandoffs.ts:61, givingHandoffs.ts:79 |
 | `post_kinds` (table) | core | 1:1 | table `post_kinds` | Read-only catalog; a new generic post needs the items world's offer / request kind id. |  | high | kindCatalog.ts:31 |
-| `post_media` (table) | core | 1:1 | table `post_media` | One row per photo, inserted `pending` by the owner after the upload to `post-images`; delete by the owner. An edit keeps the rows whose file and position are unchanged (no update grant). Every row records the real `mime_type` and `size_bytes` of the uploaded file (JPEG or PNG, at most 8 MB); `post_detail` returns both, so a republish attaches the same files again. |  | high | listingOwnerActions.ts:89, listingWrites.ts:55 |
-| `post_ride_details` (table) | wedge | 1:1 | table `post_ride_details` | Read for the route, time and seats of a ride and for the occurrences of a series; the owner edits it through the adapter. |  | high | mapListingDetail.ts:38 |
-| `posts` (table) | core | CHANGED | see `infrastructure-supabase/src/admin/` |  |  |  | givingHandoffs.ts:25, listingOwnerActions.ts:46, listingOwnerActions.ts:71, listingWrites.ts:89, listingWrites.ts:100, mapListingDetail.ts:79, mapListingDetail.ts:116 |
-| `users` (table) | core | CHANGED | see `infrastructure-supabase/src/admin/` |  |  |  | eventRegistrations.ts:120 |
-| `worlds` (table) | wedge | 1:1 | table `worlds` | The world labels shown on a listing detail. |  | high | mapListingDetail.ts:115 |
+| `post_media` (table) | core | 1:1 | table `post_media` | One row per photo, inserted `pending` by the owner after the upload to `post-images`; delete by the owner. An edit keeps the rows whose file and position are unchanged (no update grant). Every row records the real `mime_type` and `size_bytes` of the uploaded file (JPEG or PNG, at most 8 MB); `post_detail` returns both, so a republish attaches the same files again. |  | high | listingOwnerActions.ts:98, listingWrites.ts:57 |
+| `post_private_locations` (table) | core | 1:1 | see `infrastructure-supabase/src/housing/` |  |  |  | SupabaseListingStreetAddressRepository.ts:22, SupabaseListingStreetAddressRepository.ts:35 |
+| `post_ride_details` (table) | wedge | 1:1 | table `post_ride_details` | Read for the route, time and seats of a ride and for the occurrences of a series; the owner edits it through the adapter. |  | high | mapListingDetail.ts:39 |
+| `posts` (table) | core | CHANGED | see `infrastructure-supabase/src/admin/` |  |  |  | givingHandoffs.ts:25, listingOwnerActions.ts:46, listingOwnerActions.ts:80, listingWrites.ts:104, listingWrites.ts:116, mapListingDetail.ts:80, mapListingDetail.ts:125 |
+| `users` (table) | core | CHANGED | see `infrastructure-supabase/src/admin/` |  |  |  | eventRegistrations.ts:130 |
+| `worlds` (table) | wedge | 1:1 | table `worlds` | The world labels shown on a listing detail. |  | high | worldCatalog.ts:21 |
 
 ### `infrastructure-supabase/src/matching/`
 
@@ -423,7 +462,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `create_standing_order` | later | CHANGED | `create_standing_order(p_amount_agorot: number, p_cadence?: string, p_idempotency_key: string, p_org_id: string) → Json` | `p_amount_ils` → `p_amount_agorot`; returns JSON. | `account_not_active`, `cadence_not_supported` †, `idempotency_key_conflict` †, `money_min_amount`, `payments_unavailable`, `unauthenticated`, `verified_org_required` | high | SupabasePaymentsRepository.ts:75 |
 | `get_donation_receipt` | later | 1:1 | `get_donation_receipt(p_payment_id: string) → Json` | Signature unchanged; amounts in the JSON are agorot. |  | medium | SupabasePaymentsRepository.ts:129 |
 | `get_nonprofit_public_page` | later | 1:1 | `get_nonprofit_public_page(p_org_slug: string) → Json` | Signature unchanged; totals in agorot. |  | medium | SupabasePaymentsRepository.ts:48 |
-| `list_kc_support_channels` | later | 1:1 | `list_kc_support_channels(channel: string, payee_phone: string, provider_label: string, url: string) → { channel: string payee_phone: string provider_label: string url: string }[]` | Active KC support channels; the payee phone only for signed-in callers; the table is edited by the super admin; `0019` (M20, built). |  | high | SupabaseKcSupportChannelsRepository.ts:34 |
+| `list_kc_support_channels` | later | 1:1 | `list_kc_support_channels() → { channel: string payee_phone: string provider_label: string url: string }[]` | Active KC support channels; the payee phone only for signed-in callers; the table is edited by the super admin; `0019` (M20, built). |  | high | SupabaseKcSupportChannelsRepository.ts:34 |
 | `list_my_donation_history` | later | CHANGED | `list_my_donation_history(p_after_id?: string, p_after_paid_at?: string, p_limit?: number) → { amount_agorot: number currency: string org_id: string org_name: string paid_at: string payment_id: string receipt_serial: number refunded_agorot: number sec46_eligible: boolean standing_order_id: string status: stri...` | Keyset (`p_after_paid_at`, `p_after_id`); `amount_ils` → `amount_agorot`, plus refunded_agorot, status, `receipt_serial`, `sec46_eligible`. |  | high | SupabasePaymentsRepository.ts:109 |
 | `list_my_standing_orders` | later | CHANGED | `list_my_standing_orders() → Json[]` | No `p_limit`; rows are JSON with `amount_agorot`. |  | high | SupabasePaymentsRepository.ts:87 |
 | `list_verified_nonprofits` | later | CHANGED | `list_verified_nonprofits(p_after_id?: string, p_after_name?: string, p_limit?: number) → { id: string name: string slug: string tagline_en: string tagline_he: string verification_level: number }[]` | Keyset (`p_after_name`, `p_after_id`); `org_id` → `id`; `verification_level` replaces `is_verified_nonprofit`. |  | high | SupabasePaymentsRepository.ts:33 |
@@ -432,42 +471,43 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 
 ### `infrastructure-supabase/src/posts/`
 
-51 call sites: 35 map 1:1, 16 need logic changes, 0 removed, 0 MISSING.
+50 call sites: 35 map 1:1, 15 need logic changes, 0 removed, 0 MISSING.
 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `post-images` (bucket) | core | 1:1 | bucket `post-images` | Declared by the baseline (own-folder insert / delete policies); `post_media.storage_bucket` points at it. |  | high | postMediaCopy.ts:33 |
-| `admin_remove_post` | core | 1:1 | `admin_remove_post(p_post_id: string) → undefined` | Status becomes `removed_admin`; the previous status is kept in `status_before_removal`. | `forbidden`, `invalid_target_state`, `target_not_found`, `unauthenticated` | high | postWriteMethods.ts:180 |
+| `admin_remove_post` | core | 1:1 | `admin_remove_post(p_post_id: string) → undefined` | Status becomes `removed_admin`; the previous status is kept in `status_before_removal`. | `forbidden`, `invalid_target_state`, `target_not_found`, `unauthenticated` | high | postWriteMethods.ts:175 |
 | `close_post_with_recipient` | core | CHANGED | `close_post_with_recipient(p_post_id: string, p_recipient_id: string) → post_handoffs row` | `p_recipient_user_id` → `p_recipient_id`; returns the handoff row, not the post. The recipient must have a chat with the owner (`closure_recipient_not_in_chat`). | `account_not_active`, `closure_recipient_not_in_chat`, `closure_wrong_status`, `post_not_found`, `unauthenticated`, `world_not_assignable` | high | closureMethods.ts:31 |
 | `close_post_without_recipient` | core | 1:1 | see `infrastructure-supabase/src/marketplace/` |  |  |  | closureMethods.ts:36 |
-| `delete_post` | core | 1:1 | see `infrastructure-supabase/src/marketplace/` |  |  |  | postWriteMethods.ts:170 |
-| `feed_page` | core | 1:1 | `feed_page(p_cursor?: Json, p_filters?: Json, p_limit?: number) → { card: post_card distance_m: number next_cursor: Json }[]` | `p_cursor`, `p_limit` (at most 50), `p_filters` (sort, world, direction, item_subcategory_ids, status, audience, city_id + radius_km, near_city_id, q, scope); rows of `card`, `next_cursor`, `distance_m`. Several worlds or an item condition are narrowed on the returned page. | `invalid_input`, `unauthenticated` | high | postCardPages.ts:86 |
-| `post_cards` | core | 1:1 | see `infrastructure-supabase/src/marketplace/` |  |  |  | postCardPages.ts:68, postRepoQueries.ts:41 |
+| `delete_post` | core | 1:1 | see `infrastructure-supabase/src/marketplace/` |  |  |  | postWriteMethods.ts:165 |
+| `feed_page` | core | 1:1 | `feed_page(p_cursor?: Json, p_filters?: Json, p_limit?: number) → { card: post_card distance_m: number next_cursor: Json }[]` | `p_cursor`, `p_limit` (at most 50), `p_filters` (sort, world, direction, item_subcategory_ids, status, audience, city_id + radius_km, near_city_id, q, scope); rows of `card`, `next_cursor`, `distance_m`. Several worlds or an item condition are narrowed on the returned page. | `invalid_input`, `unauthenticated` | high | postCardPages.ts:91 |
+| `guest_posts` | core | 1:1 | `guest_posts(p_before_id?: string, p_limit?: number, p_post_id?: string) → { city_name_en: string city_name_he: string description: string id: string title: string }[]` | D186 / FR-AUTH-014, guest_posts forward migration: read-only signed-out projection of open Public posts with active owner/world/kind, published and unexpired. Returns only opaque id, title, description and city names; existing member grants stay closed. Optional post id, before-id cursor and bounded page limit. |  | high | SupabaseGuestPostsRepository.ts:18, SupabaseGuestPostsRepository.ts:25 |
+| `post_cards` | core | 1:1 | see `infrastructure-supabase/src/marketplace/` |  |  |  | postCardPages.ts:73, postRepoQueries.ts:46 |
 | `post_comments_page` | core | 1:1 | `post_comments_page(p_cursor?: Json, p_limit?: number, p_parent_comment_id?: string, p_post_id: string) → { author_avatar_url: string author_display_name: string author_id: string author_identity_masked: boolean author_share_handle: string body: string created_at: string edited_at: string id: string mention_user_ids: stri...` | Root comments (`p_parent_comment_id` null) or the replies of one, oldest first, with the author already masked when the poster asked to stay anonymous; the screen reads the roots and then the replies of each root that has any. |  | high | SupabasePostEngagementRepository.ts:161 |
-| `profile_closed_posts_count` | core | CHANGED | `profile_closed_posts_count(p_user_id: string) → number` | One argument, `p_user_id` (the viewer is the caller); counts the closed tab only, so the Hidden tab badge (`p_list_mode = owner_only_me`) is not served: take it from `user_stats.open_posts_only_me` or drop it (M13, built as a count over the same rows as the tab). |  | high | postRepoQueries.ts:106 |
-| `profile_posts_page` | core | 1:1 | see `infrastructure-supabase/src/marketplace/` |  |  |  | postCardPages.ts:125 |
-| `publish_post` | core | 1:1 | see `infrastructure-supabase/src/marketplace/` |  |  |  | postWriteMethods.ts:94 |
+| `profile_closed_posts_count` | core | CHANGED | `profile_closed_posts_count(p_user_id: string) → number` | One argument, `p_user_id` (the viewer is the caller); counts the closed tab only, so the Hidden tab badge (`p_list_mode = owner_only_me`) is not served: take it from `user_stats.open_posts_only_me` or drop it (M13, built as a count over the same rows as the tab). |  | high | postRepoQueries.ts:115 |
+| `profile_posts_page` | core | 1:1 | see `infrastructure-supabase/src/marketplace/` |  |  |  | postCardPages.ts:130 |
+| `publish_post` | core | 1:1 | see `infrastructure-supabase/src/marketplace/` |  |  |  | postWriteMethods.ts:93 |
 | `recipient_unmark_self` | core | 1:1 | `recipient_unmark_self(p_post_id: string) → undefined` | The recipient removes their mark (`not_recipient_or_wrong_status`). | `account_not_active`, `not_recipient_or_wrong_status`, `unauthenticated` | high | closureMethods.ts:72 |
 | `reopen_post` | core | 1:1 | `reopen_post(p_post_id: string) → undefined` | Reopens a delivered post, or a deleted one inside its window (`closure_wrong_status`, `reopen_window_expired`); returns nothing, the adapter reads the post again. | `account_not_active`, `closure_wrong_status`, `post_not_found`, `reopen_window_expired`, `unauthenticated` | high | closureMethods.ts:62 |
-| `search_posts_page` | core | CHANGED | `search_posts_page(p_cursor?: Json, p_filters?: Json, p_limit?: number, p_query: string) → { card: post_card distance_m: number next_cursor: Json }[]` | Returns cards with `next_cursor` (was ids); category / city / type move into `p_filters` (same keys as `feed_page`). | `invalid_input`, `unauthenticated` | high | postCardPages.ts:105 |
+| `replace_post_media` | core | 1:1 | `replace_post_media(p_media: Json, p_post_id: string) → undefined` | Existing current caller: app/packages/infrastructure-supabase/src/posts/postMediaWrites.ts. Current source declaration is bound; transitive errors remain explicitly unknown, not runtime acceptance. | Error binding unknown (not an assertion of no errors) | medium | postMediaWrites.ts:57 |
+| `search_posts_page` | core | CHANGED | `search_posts_page(p_cursor?: Json, p_filters?: Json, p_limit?: number, p_query: string) → { card: post_card distance_m: number next_cursor: Json }[]` | Returns cards with `next_cursor` (was ids); category / city / type move into `p_filters` (same keys as `feed_page`). | `invalid_input`, `unauthenticated` | high | postCardPages.ts:110 |
 | `set_post_reaction` | core | 1:1 | `set_post_reaction(p_post_id: string, p_reaction_type: string) → string` | `p_reaction_type` like \| support \| thanks; a reaction is removed by deleting the caller's `post_reactions` row. | `account_not_active`, `invalid_reaction_type`, `post_not_found`, `unauthenticated` | high | SupabasePostEngagementRepository.ts:106 |
-| `upsert_post_actor_identity` | core | 1:1 | `upsert_post_actor_identity(p_hide_from_counterparty: boolean, p_identity_visibility?: string, p_post_id: string, p_surface_visibility: string) → undefined` | Same three arguments plus an optional `p_identity_visibility`; errors are P0001 codes (`not_participant`, `followers_only_requires_public_profile`). The owner of a delivered post also moves `posts.visibility` (M02, built). | `account_not_active`, `followers_only_requires_public_profile`, `invalid_identity_visibility`, `invalid_surface_visibility`, `not_participant`, `post_not_found`, `unauthenticated` | high | postActorIdentityMethods.ts:47 |
-| `challenges` (table) | core | 1:1 | table `challenges` | Read to find the challenge of a challenge post (`post_id` → `id`). |  | high | postCardExtras.ts:36 |
+| `upsert_post_actor_identity` | core | 1:1 | `upsert_post_actor_identity(p_hide_from_counterparty: boolean, p_identity_visibility?: string, p_post_id: string, p_surface_visibility: string) → undefined` | Same three arguments plus an optional `p_identity_visibility`; errors are P0001 codes (`not_participant`, `followers_only_requires_public_profile`). The owner of a delivered post also moves `posts.visibility` (M02, built). | `account_not_active`, `followers_only_requires_public_profile` †, `invalid_identity_visibility`, `invalid_surface_visibility`, `not_participant`, `post_not_found`, `unauthenticated` | high | postActorIdentityMethods.ts:47 |
 | `chats` (table) | core | 1:1 | see `infrastructure-supabase/src/chat/` |  |  |  | closureMethods.ts:110 |
 | `item_subcategories` (table) | core | 1:1 | see `infrastructure-supabase/src/marketplace/` |  |  |  | postCatalog.ts:54 |
 | `post_actor_identity` (table) | core | CHANGED | table `post_actor_identity` | A member reads only their own row. The projection `projectActorIdentityForViewer` is no longer run on the device: the server masks the owner in `post_card` and the author in `post_comments_page` (M02, built). |  | high | postActorIdentityMethods.ts:27 |
-| `post_closures` (table) | core | 1:1 | table `post_closures` | The owner reads `purge_after`: the end of the seven-day reopen window of a post deleted without a recipient. |  | high | postCardExtras.ts:44 |
+| `post_closures` (table) | core | 1:1 | table `post_closures` | The owner reads `purge_after`: the end of the seven-day reopen window of a post deleted without a recipient. |  | high | postCardExtras.ts:29 |
 | `post_comment_reactions` (table) | core | 1:1 | table `post_comment_reactions` | Same shape. |  | high | SupabasePostEngagementRepository.ts:146, SupabasePostEngagementRepository.ts:153 |
 | `post_comments` (table) | core | CHANGED | table `post_comments`<br>`post_comments_page(p_cursor?: Json, p_limit?: number, p_parent_comment_id?: string, p_post_id: string) → { author_avatar_url: string author_display_name: string author_id: string author_identity_masked: boolean author_share_handle: string body: string created_at: string edited_at: string id: string mention_user_ids: stri...`<br>`delete_post_comment(p_comment_id: string) → undefined` | `comment_id` → `id`. Lists should use `post_comments_page` (keyset, author fields and viewer reaction included). Delete → `delete_post_comment`. | `comment_not_found`, `unauthenticated` | high | SupabasePostEngagementRepository.ts:120 |
-| `post_handoffs` (table) | core | CHANGED | see `infrastructure-supabase/src/housing/` |  |  |  | postCardExtras.ts:56 |
+| `post_handoffs` (table) | core | CHANGED | see `infrastructure-supabase/src/housing/` |  |  |  | postCardExtras.ts:41 |
 | `post_kinds` (table) | core | 1:1 | see `infrastructure-supabase/src/marketplace/` |  |  |  | postCatalog.ts:56 |
-| `post_media` (table) | core | 1:1 | see `infrastructure-supabase/src/marketplace/` |  |  |  | postMediaWrites.ts:40, postMediaWrites.ts:54, postMediaWrites.ts:65, postMediaWrites.ts:70, postRepoQueries.ts:23 |
-| `post_private_locations` (table) | core | 1:1 | see `infrastructure-supabase/src/housing/` |  |  |  | postRepoQueries.ts:34, postWriteMethods.ts:47 |
+| `post_media` (table) | core | 1:1 | see `infrastructure-supabase/src/marketplace/` |  |  |  | ownPendingCovers.ts:30, postMediaWrites.ts:41, postRepoQueries.ts:24 |
+| `post_private_locations` (table) | core | 1:1 | see `infrastructure-supabase/src/housing/` |  |  |  | postRepoQueries.ts:35, postWriteMethods.ts:46 |
 | `post_reactions` (table) | core | 1:1 | table `post_reactions` | `reaction_id` is gone (key is post + user). |  | high | SupabasePostEngagementRepository.ts:88, SupabasePostEngagementRepository.ts:101 |
 | `post_stats` (table) | core | 1:1 | table `post_stats` | Counters of a post (reactions, comments, shares); no row until the first one. |  | high | SupabasePostEngagementRepository.ts:71 |
-| `posts` (table) | core | CHANGED | see `infrastructure-supabase/src/admin/` |  |  |  | closureMethods.ts:130, getMyPostsPage.ts:34, postCardExtras.ts:27, postRepoQueries.ts:64, postWriteMethods.ts:60, postWriteMethods.ts:105, postWriteMethods.ts:127, postWriteMethods.ts:150 |
+| `posts` (table) | core | CHANGED | see `infrastructure-supabase/src/admin/` |  |  |  | closureMethods.ts:130, getMyPostsPage.ts:34, postRepoQueries.ts:73, postWriteMethods.ts:59, postWriteMethods.ts:104, postWriteMethods.ts:126, postWriteMethods.ts:149 |
 | `saved_posts` (table) | core | 1:1 | table `saved_posts` | Same columns. The upsert becomes insert-ignore-duplicate (no update grant). The saved-posts page hydrates ids with `post_cards`. |  | high | savedPostsMethods.ts:26, savedPostsMethods.ts:32, savedPostsMethods.ts:38, savedPostsMethods.ts:55 |
-| `users` (table) | core | CHANGED | see `infrastructure-supabase/src/admin/` |  |  |  | closureMethods.ts:137, postCardExtras.ts:65 |
+| `users` (table) | core | CHANGED | see `infrastructure-supabase/src/admin/` |  |  |  | closureMethods.ts:137, postCardExtras.ts:50 |
 
 ### `infrastructure-supabase/src/realtime/`
 
@@ -486,12 +526,12 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `admin_report_case_timeline` | core | CHANGED | `admin_report_case_timeline(p_limit?: number, p_target_id: string, p_target_type: string) → { action: string actor_id: string id: number metadata: Json occurred_at: string target_id: string target_type: string }[]` | Was the timeline of `reports_case_detail` (reporters come from `reports`): the whole audit history of the target and its reports from `admin_report_case_timeline` (every staff role); `0016`. |  | high | SupabaseReportsRepository.ts:112 |
 | `admin_reports_inbox` | core | CHANGED | `admin_reports_inbox(p_after_oldest_at?: string, p_after_target_id?: string, p_after_target_type?: string, p_limit?: number, p_max_age_days?: number, p_reporter_id?: string, p_search?: string, p_target_type?: string) → { latest_at: string latest_reporter_id: string oldest_at: string report_count: number reporter_count: number target_hidden_at: string target_id: string target_type: string }[]` | Was `reports_open_inbox`. Server-grouped open cases, oldest first, keyset (`p_after_oldest_at`, `p_after_target_type`, `p_after_target_id`), filters and `p_search` (target id or reporter name); `0016`. |  | high | SupabaseReportsRepository.ts:40 |
-| `chats` (table) | core | 1:1 | see `infrastructure-supabase/src/chat/` |  |  |  | reportTargetPreviews.ts:89 |
-| `post_comments` (table) | core | CHANGED | see `infrastructure-supabase/src/posts/` |  |  |  | reportTargetPreviews.ts:71 |
-| `posts` (table) | core | CHANGED | see `infrastructure-supabase/src/admin/` |  |  |  | reportTargetPreviews.ts:33 |
+| `chats` (table) | core | 1:1 | see `infrastructure-supabase/src/chat/` |  |  |  | reportTargetPreviews.ts:91 |
+| `post_comments` (table) | core | CHANGED | see `infrastructure-supabase/src/posts/` |  |  |  | reportTargetPreviews.ts:73 |
+| `posts` (table) | core | CHANGED | see `infrastructure-supabase/src/admin/` |  |  |  | reportTargetPreviews.ts:35 |
 | `reports` (table) | core | 1:1 | table `reports` | Direct insert of (reporter_id, target_type, target_id, reason, note); `report_id` → `id`. |  | high | SupabaseReportRepository.ts:39, SupabaseReportsRepository.ts:77 |
-| `user_account` (table) | core | 1:1 | table `user_account` | Staff read the account row of every member (`user_account_select_staff`): status, sanction state. |  | high | reportTargetPreviews.ts:54 |
-| `users` (table) | core | CHANGED | see `infrastructure-supabase/src/admin/` |  |  |  | reportTargetPreviews.ts:50, reportTargetPreviews.ts:121 |
+| `user_account` (table) | core | 1:1 | table `user_account` | Staff read the account row of every member (`user_account_select_staff`): status, sanction state. |  | high | reportTargetPreviews.ts:56 |
+| `users` (table) | core | CHANGED | see `infrastructure-supabase/src/admin/` |  |  |  | reportTargetPreviews.ts:52, reportTargetPreviews.ts:123 |
 
 ### `infrastructure-supabase/src/research/`
 
@@ -577,9 +617,9 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `admin_world_flow_funnel` | later | 1:1 | `admin_world_flow_funnel(p_days?: number) → { booked: number cancelled: number closed: number completed: number confirmed: number direction: string median_hours_to_booking: number median_hours_to_completion: number published: number world_label_en: string world...` | `p_days` (1..365); per world and direction (`give` / `request`) the posts published in the window through their handoffs; money has no handoff stages. Moderators and above; `0018` (M14, built). |  | high | SupabaseStatsRepository.ts:68 |
-| `community_stats` | core | 1:1 | `community_stats(delivered_posts: number, open_public_posts: number, refreshed_at: string, registered_users: number) → { delivered_posts: number open_public_posts: number refreshed_at: string registered_users: number }[]` | One row of registered_users, open_public_posts, delivered_posts, refreshed_at; the About screen reads it again every 60 seconds (there is no change feed). | `unauthenticated` | high | SupabaseStatsRepository.ts:35 |
+| `community_stats` | core | 1:1 | `community_stats() → { delivered_posts: number open_public_posts: number refreshed_at: string registered_users: number }[]` | One row of registered_users, open_public_posts, delivered_posts, refreshed_at; the About screen reads it again every 60 seconds (there is no change feed). | `unauthenticated` | high | SupabaseStatsRepository.ts:35 |
 | `my_activity_timeline` | later | 1:1 | `my_activity_timeline(p_limit?: number) → { actor_display_name: string actor_id: string kind: string occurred_at: string post_id: string post_title: string world_slug: string }[]` | `p_limit`; rows of occurred_at, kind, post_id, post_title, actor_id, actor_display_name. |  | high | SupabaseStatsRepository.ts:52 |
-| `my_world_givings` | later | 1:1 | `my_world_givings(closed: number, given: number, received: number, world_label_en: string, world_label_he: string, world_slug: string) → { closed: number given: number received: number world_label_en: string world_label_he: string world_slug: string }[]` | The caller's handed-over givings (given / received) and closed posts per world; `0018` (M15, built). |  | high | SupabaseStatsRepository.ts:88 |
+| `my_world_givings` | later | 1:1 | `my_world_givings() → { closed: number given: number received: number world_label_en: string world_label_he: string world_slug: string }[]` | The caller's handed-over givings (given / received) and closed posts per world; `0018` (M15, built). |  | high | SupabaseStatsRepository.ts:88 |
 
 ### `infrastructure-supabase/src/streets/`
 
@@ -677,13 +717,14 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 
 ### `apps/mobile` (direct calls outside the adapters)
 
-18 call sites: 17 map 1:1, 1 need logic changes, 0 removed, 0 MISSING.
+11 call sites: 10 map 1:1, 1 need logic changes, 0 removed, 0 MISSING.
 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `avatars` (bucket) | core | 1:1 | bucket `avatars` | Declared in `95_platform/090_storage.sql`: public, JPEG, 512 KB, `<user_id>/avatar.jpg` (and the thumb in the same folder) (M23, verified). |  | high | avatarUpload.ts:132, avatarUpload.ts:143, avatarUpload.ts:153, avatarUpload.ts:167 |
-| `chat-media` (bucket) | core | 1:1 | bucket `chat-media` | Declared in `95_platform/090_storage.sql`: private, `<user_id>/<chat_id>/<file>`, read through signed URLs by chat members (M23, verified). |  | high | chatMediaUpload.ts:44, chatMediaUrl.ts:17 |
-| `post-images` (bucket) | core | 1:1 | see `infrastructure-supabase/src/posts/` |  |  |  | [id].tsx:46, PostImageCarousel.tsx:72, usePostShare.ts:64, probeDraftImageAvailability.ts:30, imageUpload.ts:182, imageUpload.ts:194, listingImageUpload.ts:42, listingImageUpload.ts:56 |
+| `<entry.bucket>` (bucket) | core | 1:1 | bucket `post-images` | The device abandoned-upload ledger retries deletion only in its runtime-allowlisted existing buckets: post-images, avatars or chat-media. Uses the current member session and existing own-folder Storage policies; no service-role client or bucket-policy change. |  | medium | abandonedUploads.ts:70 |
+| `avatars` (bucket) | core | 1:1 | bucket `avatars` | Declared in `95_platform/090_storage.sql`: public, JPEG, 512 KB, `<user_id>/avatar.jpg` (and the thumb in the same folder) (M23, verified). |  | high | avatarUpload.ts:164, avatarUpload.ts:177 |
+| `chat-media` (bucket) | core | 1:1 | bucket `chat-media` | Declared in `95_platform/090_storage.sql`: private, `<user_id>/<chat_id>/<file>`, read through signed URLs by chat members (M23, verified). |  | high | chatMediaUrl.ts:17 |
+| `post-images` (bucket) | core | 1:1 | see `infrastructure-supabase/src/posts/` |  |  |  | usePostShare.ts:69, probeDraftImageAvailability.ts:30, listingImageUpload.ts:36 |
 | `topic = 'user:${userId}:notifications'` (channel) | core | 1:1 | topic `user:<user id>:notifications` | Already on the baseline contract (event `badge`). |  | high | useNotificationInboxBadge.ts:30 |
 | `api_my_pro_status` | core | 1:1 | `api_my_pro_status() → Json` | The caller's Pro status (`is_pro`); the Pro screen reads it. |  | high | pro.tsx:38 |
 | `app_flags` (table) | core | 1:1 | table `app_flags` | Same `select key, enabled`, for signed-in members only (no `anon` grant): before sign-in the compiled defaults apply. After sign-in the same map is `bootstrap_session().flags`. The rows (`world_<slug>_enabled`) are seed data, not part of the baseline (M09, verified). |  | high | featureFlagsComposition.ts:12 |
@@ -691,7 +732,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 
 ### Edge Function `_shared`
 
-13 call sites: 9 map 1:1, 4 need logic changes, 0 removed, 0 MISSING.
+21 call sites: 17 map 1:1, 4 need logic changes, 0 removed, 0 MISSING.
 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -703,10 +744,18 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `api_bot_pending_photo_draft` | later | CHANGED | `api_bot_pending_photo_draft(p_owner_id: string, p_wa_id: string) → Json` | New (migration `whatsapp_bot_post_photos`, D158): `(p_wa_id, p_owner_id)` → `{session_id, post_id, world_slug, direction, photos}` of the member's bot draft of the last 24 hours, or null; `owner_mismatch` (42501) unless the number is linked to that member. |  | high | photo.ts:104 |
 | `api_bot_publish_post` | later | CHANGED | `api_bot_publish_post(p_owner_id: string, p_session_id: string) → Json` | Was `api_bot_publish_listing` (returned the listing id): returns `{post_id, status, review, photo_required}`, a draft when confidence is below 0.85 (review item) or when an offer in a photo world needs its photo (D132); a food offer needs `details.expires_at`. |  | high | tools.ts:94 |
 | `api_bot_search_posts` | later | CHANGED | `api_bot_search_posts(p_limit?: number, p_query: string, p_user_id: string, p_world_slug?: string) → { city_id: string description: string direction: string post_id: string published_at: string title: string world_slug: string }[]` | Was `api_bot_search_listings(p_owner_id, …)` + `api_bot_listing_cards`: `(p_user_id, p_query, p_world_slug, p_limit ≤ 8)` returns the post cards themselves (`post_id`, `world_slug`, `direction`, `title`, `description`, `city_id`, `published_at`) visible to that member. |  | high | tools.ts:118 |
+| `api_resolve_place` | later | 1:1 | `api_resolve_place(p_city_id?: string, p_level: string, p_limit?: number, p_text: string) → { city_id: string margin: number name_he: string place_id: string score: number }[]` | Existing current caller: supabase/functions/_shared/post-extraction/catalog.ts. Current source declaration is bound; transitive errors remain explicitly unknown, not runtime acceptance. | Error binding unknown (not an assertion of no errors) | medium | catalog.ts:20 |
 | `api_whatsapp_llm_budget_take` | later | 1:1 | `api_whatsapp_llm_budget_take(p_wa_id: string) → boolean` | Same name, arguments and return shape; tables live in `integrations` (service role only). |  | high | run.ts:57 |
 | `api_whatsapp_outbound_claim` | later | 1:1 | `api_whatsapp_outbound_claim(p_batch?: number, p_visibility_seconds?: number) → { attempts: number body: string kind: string language: string outbound_id: string payload: Json template_name: string to_wa_id: string user_id: string }[]` | Same name, arguments and return shape; tables live in `integrations` (service role only). |  | high | sender.ts:47 |
 | `api_whatsapp_outbound_result` | later | 1:1 | `api_whatsapp_outbound_result(p_error?: string, p_ok: boolean, p_outbound_id: string, p_retryable?: boolean, p_wa_message_id?: string) → string` | Same name, arguments and return shape; tables live in `integrations` (service role only). |  | high | sender.ts:60 |
 | `api_whatsapp_queue_reply` | later | 1:1 | `api_whatsapp_queue_reply(p_body: string, p_reply_kind?: string, p_wa_id: string) → string` | Same name, arguments and return shape; tables live in `integrations` (service role only). |  | high | run.ts:80, photo.ts:72 |
+| `import_moderation_removals` | later | 1:1 | `import_moderation_removals(p_since: string, p_user_id: string) → string[]` | Existing current caller: supabase/functions/_shared/post-extraction/store.ts. Current source declaration is bound; transitive errors remain explicitly unknown, not runtime acceptance. | Error binding unknown (not an assertion of no errors) | medium | store.ts:65 |
+| `import_similar_open_post` | later | 1:1 | `import_similar_open_post(p_min?: number, p_text: string, p_user_id: string) → { post_id: string similarity: number }[]` | Existing current caller: supabase/functions/_shared/post-extraction/store.ts. Current source declaration is bound; transitive errors remain explicitly unknown, not runtime acceptance. | Error binding unknown (not an assertion of no errors) | medium | store.ts:59 |
+| `external_post_imports` (table) | later | 1:1 | table `external_post_imports` | Existing current caller: supabase/functions/_shared/post-extraction/store.ts. Current source declaration is bound; transitive errors remain explicitly unknown, not runtime acceptance. | Error binding unknown (not an assertion of no errors) | medium | store.ts:52 |
+| `item_subcategories` (table) | core | 1:1 | see `infrastructure-supabase/src/marketplace/` |  |  |  | lists.ts:30 |
+| `post_extraction_cache` (table) | later | 1:1 | table `post_extraction_cache` | Existing current caller: supabase/functions/_shared/post-extraction/store.ts. Current source declaration is bound; transitive errors remain explicitly unknown, not runtime acceptance. | Error binding unknown (not an assertion of no errors) | medium | store.ts:79 |
+| `post_kinds` (table) | core | 1:1 | see `infrastructure-supabase/src/marketplace/` |  |  |  | lists.ts:32 |
+| `worlds` (table) | wedge | 1:1 | see `infrastructure-supabase/src/marketplace/` |  |  |  | lists.ts:28 |
 
 ### Edge Function `backfill-image-thumbs`
 
@@ -726,6 +775,33 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `embedding_job_store` | wedge | 1:1 | `embedding_job_store(p_embedding: string, p_job_id: string, p_model: string) → boolean` | Signature unchanged. | `embedding_job_not_found` † | high | handler.ts:65 |
 | `embedding_jobs_claim` | wedge | 1:1 (renamed) | `embedding_jobs_claim(p_limit?: number) → { details: Json job_id: string model: string post_id: string summary: string title: string }[]` | Returned `listing_id` → `post_id`. |  | high | handler.ts:57 |
 
+### Edge Function `extract-external-post`
+
+1 call sites: 1 map 1:1, 0 need logic changes, 0 removed, 0 MISSING.
+
+| Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `app_flags` (table) | core | 1:1 | see `apps/mobile` (direct calls outside the adapters) |  |  |  | index.ts:28 |
+
+### Edge Function `identity-verification-session`
+
+3 call sites: 3 map 1:1, 0 need logic changes, 0 removed, 0 MISSING.
+
+| Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `api_identity_verification_begin` | later | 1:1 | `api_identity_verification_begin(p_provider: string, p_user_id: string) → string` | Existing current caller: supabase/functions/identity-verification-session/index.ts. Current source declaration is bound; transitive errors remain explicitly unknown, not runtime acceptance. | Error binding unknown (not an assertion of no errors) | medium | index.ts:34 |
+| `api_identity_verification_set_session` | later | 1:1 | `api_identity_verification_set_session(p_attempt_id: string, p_provider_session_id: string) → undefined` | Existing current caller: supabase/functions/identity-verification-session/index.ts. Current source declaration is bound; transitive errors remain explicitly unknown, not runtime acceptance. | Error binding unknown (not an assertion of no errors) | medium | index.ts:47 |
+| `identity_verification_consents` (table) | later | 1:1 | table `identity_verification_consents` | Existing current caller: supabase/functions/identity-verification-session/index.ts. Current source declaration is bound; transitive errors remain explicitly unknown, not runtime acceptance. | Error binding unknown (not an assertion of no errors) | medium | index.ts:39 |
+
+### Edge Function `identity-verification-webhook`
+
+2 call sites: 2 map 1:1, 0 need logic changes, 0 removed, 0 MISSING.
+
+| Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `identity_verification_apply` | later | 1:1 | `identity_verification_apply(p_event_id: string, p_payload: Json, p_provider_slug: string) → { event_error_code: string event_status: string webhook_event_id: string }[]` | Existing current caller: supabase/functions/identity-verification-webhook/index.ts. Current source declaration is bound; transitive errors remain explicitly unknown, not runtime acceptance. | Error binding unknown (not an assertion of no errors) | medium | index.ts:30 |
+| `identity_verifications` (table) | later | 1:1 | table `identity_verifications` | Existing current caller: supabase/functions/identity-verification-webhook/index.ts. Current source declaration is bound; transitive errors remain explicitly unknown, not runtime acceptance. | Error binding unknown (not an assertion of no errors) | medium | index.ts:24 |
+
 ### Edge Function `match-rerank`
 
 2 call sites: 1 map 1:1, 1 need logic changes, 0 removed, 0 MISSING.
@@ -742,6 +818,14 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `provider_webhook_apply` | later | 1:1 | `provider_webhook_apply(p_event_id: string, p_payload: Json, p_provider_slug: string) → { event_error_code: string event_status: string webhook_event_id: string }[]` | Signature unchanged; errors are stable snake_case messages. | `amount_mismatch` †, `intent_not_found` †, `intent_not_payable` †, `payment_not_found` †, `payout_not_found` †, `refund_not_found` †, `unknown_event_type` † | high | index.ts:23 |
+
+### Edge Function `process-post-media`
+
+1 call sites: 1 map 1:1, 0 need logic changes, 0 removed, 0 MISSING.
+
+| Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `<fn>` | core | 1:1 | `post_media_processing_claim(p_lease_seconds?: number, p_limit?: number) → { attempt: number lease_token: string leased_until: string media_id: string mime_type: string object_mimetype: string object_size: number owner_id: string post_id: string size_bytes: number storage_key: string }[]`<br>`post_media_processing_complete(p_derivative_key: string, p_height: number, p_lease_token: string, p_media_id: string, p_size_bytes: number, p_width: number) → string`<br>`post_media_processing_fail(p_error: string, p_lease_token: string, p_media_id: string, p_retryable: boolean) → string`<br>`post_media_processing_release(p_lease_token: string, p_media_id: string, p_reason: string) → string` | Service role only, unscheduled: the post photo worker claims a leased job, completes it with a compare-and-set, records a failure, or (DEV experiment) releases its lease. |  | high | handler.ts:159 |
 
 ### Edge Function `public-research-submit`
 
@@ -787,11 +871,11 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 
 ### Edge Function `translate`
 
-3 call sites: 0 map 1:1, 3 need logic changes, 0 removed, 0 MISSING.
+4 call sites: 0 map 1:1, 4 need logic changes, 0 removed, 0 MISSING.
 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `content_translations` (table) | core | CHANGED | see `infrastructure-supabase/src/translations/` |  |  |  | cache.ts:25, cache.ts:38, cache.ts:56 |
+| `content_translations` (table) | core | CHANGED | see `infrastructure-supabase/src/translations/` |  |  |  | cache.ts:25, cache.ts:55, cache.ts:71, cache.ts:89 |
 
 ### Edge Function `validate-donation-link`
 
@@ -839,20 +923,29 @@ In launch order: after package *n* the app is shippable with everything up to *n
 
 | Package | Launch | Objects | 1:1 | Changed | Removed | MISSING | May run in parallel with |
 | --- | --- | --- | --- | --- | --- | --- | --- |
+| CURRENT — Current post-baseline integrations | mixed inventory, not a launch commitment | 24 | 24 | 0 | 0 | 0 | — |
 | P0 — Contract switch and the degrade rule (first, alone) | core | 3 | 3 | 0 | 0 | 0 | — |
 | P1 — Identity: session start, profile, privacy, follow, block, legal, account deletion, devices | core | 37 | 33 | 4 | 0 | 0 | — |
-| P2 — Posts, feed, search, closure, translations | core | 49 | 38 | 11 | 0 | 0 | P3, P4 |
+| P2 — Posts, feed, search, closure, translations | core | 51 | 40 | 11 | 0 | 0 | P3, P4 |
 | P3 — Chat and realtime | core | 19 | 17 | 2 | 0 | 0 | P2, P4 |
-| P4 — Reports, moderation and admin basics | core | 33 | 23 | 10 | 0 | 0 | P2, P3 |
+| P4 — Reports, moderation and admin basics | core | 40 | 30 | 10 | 0 | 0 | P2, P3 |
 | P5 — Launch worlds: items, food, rides, time (events), matching, donation links | wedge | 81 | 68 | 13 | 0 | 0 | P6 |
-| P6 — Edge Functions of the launch | core | 10 | 6 | 4 | 0 | 0 | P5 |
+| P6 — Edge Functions of the launch | core | 15 | 11 | 4 | 0 | 0 | P5 |
 | L1 — Housing world | later | 15 | 11 | 4 | 0 | 0 | L2, L3, L4, L5, L6, L7 |
-| L2 — Knowledge world | later | 8 | 6 | 2 | 0 | 0 | L1, L3, L4, L5, L6, L7 |
+| L2 — Knowledge world | later | 11 | 9 | 2 | 0 | 0 | L1, L3, L4, L5, L6, L7 |
 | L3 — Challenges | later | 9 | 6 | 3 | 0 | 0 | L1, L2, L4, L5, L6, L7 |
 | L4 — Money: donations to organizations, standing orders, org finance, org onboarding | later | 30 | 14 | 16 | 0 | 0 | L1, L2, L3, L5, L6, L7 |
 | L5 — Surveys, feedback, public research | later | 15 | 14 | 1 | 0 | 0 | L1, L2, L3, L4, L6, L7 |
 | L6 — Back-office tools: tasks, CRM, timesheets | later | 22 | 17 | 5 | 0 | 0 | L1, L2, L3, L4, L5, L7 |
 | L7 — WhatsApp bot, linking, admin console | later | 40 | 23 | 17 | 0 | 0 | L1, L2, L3, L4, L5, L6 |
+
+### CURRENT — Current post-baseline integrations
+
+- **Owns:** `admin/**`, `imports/**`, `identityVerification/**`, `posts/postMediaWrites.ts`, `supabase/functions/**`
+- **Work:** Inventory existing callers, not runtime completion.
+- **Must pass:** node --test scripts/app-migration-map*.test.mjs
+- **If reached before it is migrated:** Existing flags and refusals unchanged.
+- **Risks:** Not deployment or provider acceptance. Dev seed RPCs are not baseline contracts.
 
 ### P0 — Contract switch and the degrade rule (first, alone)
 
@@ -972,6 +1065,8 @@ In launch order: after package *n* the app is shippable with everything up to *n
 
 | Function | Verdict | Uses today | What changes |
 | --- | --- | --- | --- |
+| `extract-external-post` | done | Post-extraction store and place resolver | Existing implementation; not deployment proof. |
+| `identity-verification-session` | done | Identity verification session RPCs and consent | Existing implementation; provider setup and live proof remain separate. |
 | `dispatch-notification` | done | kc_private.notifications_deliver_batch, notification_push_retry_batch, notification_push_settle (direct Postgres) | Already rewritten for the baseline. |
 | `embed-worker` | done | embedding_jobs_claim, embedding_job_store, embedding_job_fail | Retargeted: the claimed job carries `post_id`; the caller must present the service-role key itself (a JWT claiming the role is refused). |
 | `match-rerank` | done | api_match_llm_pending, api_match_llm_store | Retargeted: a store of an unknown pair (`match_not_found`) counts as failed; service-role key only. |

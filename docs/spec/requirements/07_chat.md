@@ -64,6 +64,7 @@ The list of all of my conversations, sorted by latest activity.
 - AC3. Composer: single-line auto-growing text input + send button. **No** attachment buttons (`R-MVP-Chat-2`).
 - AC4. Read receipt: a `✓✓` indicator is shown next to a sent message once the counterpart's client confirms reading. Read receipts cannot be turned off in MVP (`R-MVP-Chat-5`).
 - AC5. Maximum message length: 2,000 characters. Inputs longer are blocked with an inline counter.
+- AC6. (#2566) **Opening is fast.** A conversation already in my inbox shows its header (counterpart name, verification badge) on the first frame, from the inbox data the app already holds; the chat row, the counterpart and the newest messages then load in parallel, never one after another. A conversation not in the inbox loads its messages in parallel with the chat row. A loading indicator shows until the first page of messages arrives. Entering sends the read acknowledgement (`FR-CHAT-012`) at most once, and not at all when nothing is unread; the counterpart's contact phone (`FR-CHAT-014` AC7) is requested only for a chat with an anchored post.
 
 **Related.** Screens: 4.2 · Domain: `Chat`, `Message`.
 
@@ -266,6 +267,8 @@ When one party deletes their account, the other party retains the thread with a 
 - Constraints: `R-MVP-Privacy-6`.
 
 **Acceptance Criteria.**
+- Owner clarification 2026-11-20: at final account purge, the deleted member's shared chat images are removed for both participants. Retained counterpart conversation text does not preserve those image assets. The existing 30-day restore period is unchanged (FR-SETTINGS-012).
+
 - AC1. When a `User` is hard-deleted, the messages they sent are kept in the thread for the counterpart but their identity is replaced with a `Deleted user` placeholder (with a generic avatar).
 - AC2. The deleted user's own messages cannot be edited, replied to, or quoted; the thread is read-only from the counterpart's side **except** that they can still send messages — those messages are accepted and persisted but never delivered (no recipient).
 - AC3. After 90 days of read-only state, the thread is auto-archived (hidden from Inbox unless the user opens the Archived view in V1.5+; not part of MVP, so the thread stays visible but stale).

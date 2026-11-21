@@ -10,3 +10,6 @@
 \ir lib/30_posts.sql
 \ir lib/40_social.sql
 \ir lib/50_apply.sql
+-- The portal RPCs call kc_private.require_demo_data_manager (supabase/seed/demo): install the
+-- demo-data tools as well where the card is used (every dev deploy installs both).
+\ir lib/60_admin_rpcs.sql
