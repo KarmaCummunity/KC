@@ -79,7 +79,7 @@ Schedules are UTC. Every job is cancelled at its `timeout` and recorded as faile
 | `lift_expired_suspensions` | every 15 min | suspensions whose period ended |
 | `posts_purge` | 04:00 | hard delete of deleted posts past the 7-day grace period |
 | `partitions_ensure` | 03:05 | this and next month's partitions |
-| `retention_*` (7 jobs) | hourly / daily | §4 |
+| `retention_*` (incl. `retention_user_devices`) | hourly / daily | §4 |
 | `user_stats_reconcile`, `post_stats_reconcile` | 01:15, 01:45 | recompute counters, record drift |
 
 Add a job: one row in `supabase/schemas/95_platform/900_job_registry.sql` (a migration after
@@ -117,6 +117,7 @@ asks `kc_access.flag_enabled('<key>')` (a missing flag is off).
 | `job_runs`, `ops_warnings`, `counter_drift` | 30 / 30 / 90 days | job `retention_ops` |
 | `rate_limit_counters` | 1 hour after expiry | job `retention_rate_limits` |
 | `cron_run_history` | 7 days | job `retention_cron_history` |
+| `user_devices` | 90 days after `last_seen_at` | job `retention_user_devices` (FR-NOTIF-015 AC4 / `bg-job-token-prune`) |
 | `posts_deleted` | 7 days | deadline stamped at delete; job `posts_purge` |
 | `accounts_pending_deletion` | 30 days | deadline stamped at request; Edge Function `purge-deleted-accounts` |
 | `billing_after_account_deletion` | undecided | nothing is purged (design §12 Q5) |
