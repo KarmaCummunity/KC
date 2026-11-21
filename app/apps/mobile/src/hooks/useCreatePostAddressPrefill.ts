@@ -23,6 +23,7 @@ function initialAddressSlice(): AddressSlice {
  * until the user edits any address field.
  */
 export function useCreatePostAddressPrefill(ownerId: string | undefined) {
+  const [captureLoadedOwner, setCaptureLoadedOwner] = useState<string | null>(null);
   const [addr, setAddr] = useState<AddressSlice>(initialAddressSlice);
 
   const addressDirtyRef = useRef(false);
@@ -95,6 +96,7 @@ export function useCreatePostAddressPrefill(ownerId: string | undefined) {
             useLastAddressStore.getState(),
           ),
         );
+        setCaptureLoadedOwner(ownerId);
       } catch {
         // Prefill is best-effort; publish still validates required address.
       }
@@ -113,6 +115,7 @@ export function useCreatePostAddressPrefill(ownerId: string | undefined) {
   }, [applyMerged]);
 
   return {
+    capturePrefillReady: Boolean(ownerId && captureLoadedOwner === ownerId),
     city: addr.city,
     street: addr.street,
     streetNumber: addr.streetNumber,
