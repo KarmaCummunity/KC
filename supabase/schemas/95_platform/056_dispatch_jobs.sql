@@ -61,9 +61,11 @@ begin
       and kc_private.dispatch_matches(p_scope,x.origin_event_id,x.notification_id,x.recipient_id,x.device_id);
   get diagnostics v_expired = row_count;
   if v_expired>0 then perform kc_private.ops_warn('dispatch_unknown','expired sending lease held; no payload logged'); end if;
+  -- Select by immutable job lineage, even if the device disappeared or changed owner.
+  -- Explicit foreign scopes were rejected by preflight; eligible origin/automatic scopes
+  -- must reach the terminal no_longer_pushable path instead of stranding pending jobs.
   for j in select x.* from kc_private.dispatch_jobs x
-    left join public.user_devices d on d.id = x.device_id and d.user_id = x.recipient_id
-    where x.phase = p_phase and (p_phase='receipt' or d.id is not null) and x.available_at <= now()
+    where x.phase = p_phase and x.available_at <= now()
       and (x.lease_until is null or x.lease_until <= now())
       and kc_private.dispatch_matches(p_scope,x.origin_event_id,x.notification_id,x.recipient_id,x.device_id)
     order by x.available_at,x.id limit least(greatest(p_limit,1),100)
