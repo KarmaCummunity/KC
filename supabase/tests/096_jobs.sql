@@ -24,7 +24,7 @@ begin
 end;
 $$;
 
-select plan(42);
+select plan(41);
 
 -- A scheduler may be running these jobs in the background on this database: every
 -- assertion below looks only at what this transaction did (job names `zz_…`, return values).
@@ -125,7 +125,7 @@ select is((select string_agg(w.key, ',' order by w.key) from ops.warnings w),
   'and leaves a warning');
 select lives_ok($$select kc_private.outbox_enqueue('notification', '{"kind":"zz"}')$$,
   'a notification event is enqueued where nothing can be called');
-select is(kc_private.push_dispatch_tick(), not pg_temp.platform_absent(), 'the scheduled start is a no-op there');
+select is(kc_private.push_dispatch_tick(), false, 'the scheduled start is closed without an activation gate');
 
 -- ── With a stand-in for pg_net and Vault ────────────────────────────────────
 create function pg_temp.edge_tests()
@@ -134,7 +134,7 @@ language plpgsql
 as $$
 begin
   if not pg_temp.platform_absent() then
-    return query select skip('pg_net / Vault are installed: the stand-in is not used', 10);
+    return query select skip('pg_net / Vault are installed: the stand-in is not used', 14);
     return;
   end if;
   create schema net;
@@ -160,7 +160,11 @@ begin
                  'https://project.example/functions/v1/strip-exif Bearer test-key {"lookbackHours": 2}',
                  'to the function''s URL, with the service key as bearer and the body');
 
+  return next is((select bool_or(c.headers ? 'apikey') from net.calls c),false,
+                 'the original shared invoker still uses its exact prior headers');
+
   delete from net.calls;
+  perform kc_private.dispatch_activate('pgTAP synthetic gate only');
   insert into kc_private.outbox_events (topic, payload)
   select 'notification', '{"kind":"zz"}' from generate_series(1, 50);
   perform kc_private.outbox_enqueue('notification', '{"kind":"zz"}');
@@ -176,29 +180,29 @@ begin
   return next is(kc_private.push_dispatch_tick(), true, 'the scheduled start runs while events are due');
   return next is((select count(*) from net.calls), 3::bigint, 'and calls the dispatcher');
 
+  delete from net.calls;
+  update vault.decrypted_secrets set decrypted_secret='sb_secret_synthetic' where name='kc_service_role_key';
+  perform kc_private.invoke_dispatch_scoped('{"automatic":true}');
+  return next is((select c.headers ->> 'apikey' || ':' || (c.headers ? 'Authorization')::text from net.calls c),
+    'sb_secret_synthetic:false','modern dispatch key is apikey only');
+  delete from net.calls;
+  update vault.decrypted_secrets set decrypted_secret='eyJ.synthetic' where name='kc_service_role_key';
+  perform kc_private.invoke_dispatch_scoped('{"automatic":true}');
+  return next is((select c.headers ->> 'apikey' || ':' || (c.headers ->> 'Authorization') from net.calls c),
+    'eyJ.synthetic:Bearer eyJ.synthetic','legacy dispatch key keeps Bearer plus apikey');
+  delete from net.calls;
+  perform kc_private.invoke_dispatch_scoped('{"event_ids":[1,null]}');
+  return next is((select count(*) from net.calls),0::bigint,'malformed scope queues no HTTP request');
+
   perform set_config('test.net_fails', 'on', true);
   update kc_private.edge_function_kicks set last_kick_at = '-infinity';
   return next lives_ok($q$select kc_private.outbox_enqueue('notification', '{"kind":"zz"}')$q$,
                        'a failing HTTP call does not fail the insert');
-  return next is((select w.detail from ops.warnings w where w.key = 'edge_invocation_failed:dispatch-notification'),
+  return next is((select w.detail from ops.warnings w where w.key = 'dispatch_invocation_failed'),
                  'sqlstate P0001', 'it is recorded as a warning, without the error text');
 end;
 $$;
 select * from pg_temp.edge_tests();
 
-
--- ── Scoped dispatch activation (#856): restricted to dispatch only ──────────
-select has_function('kc_private', 'invoke_dispatch_scoped', array['text', 'jsonb'],
-  'a dispatch-only scoped invoker exists');
-select has_function('kc_private', 'outbox_claim_scoped', array['text', 'bigint[]', 'text', 'uuid', 'uuid', 'integer'],
-  'a scoped claim exists');
-select has_function('kc_private', 'notifications_deliver_batch_scoped', array['bigint[]', 'uuid', 'integer'],
-  'a scoped deliver batch exists');
-select throws_ok($$select kc_private.outbox_claim_scoped('notification_push', null, null, null, null, 1)$$,
-  'P0001', 'outbox_claim_scoped: at least one filter is required',
-  'a scoped claim refuses to run without any filter');
-select is(kc_private.invoke_dispatch_scoped('dispatch-notification', '{}'::jsonb)
-  and kc_private.invoke_dispatch_scoped('dispatch-notification', '{"scope":{}}'::jsonb), null,
-  'a scope without any filter never invokes');
 select * from finish();
 rollback;

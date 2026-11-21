@@ -33,9 +33,9 @@ export function createExpoTransport(accessToken: string | undefined, fetchFn: Fe
     if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
     let response: Response;
     try {
-      response = await fetchFn(url, { method: 'POST', headers, body: JSON.stringify(body) });
+      response = await fetchFn(url, { method: 'POST', headers, body: JSON.stringify(body), signal: AbortSignal.timeout(15_000) });
     } catch {
-      throw new TransportError('expo_unreachable', true);
+      throw new TransportError('expo_unreachable', false, true);
     }
     if (!response.ok) {
       await response.body?.cancel();
@@ -45,7 +45,7 @@ export function createExpoTransport(accessToken: string | undefined, fetchFn: Fe
     try {
       return await response.json();
     } catch {
-      throw new TransportError('expo_bad_response', true);
+      throw new TransportError('expo_bad_response', false, true);
     }
   };
 
@@ -54,7 +54,7 @@ export function createExpoTransport(accessToken: string | undefined, fetchFn: Fe
       const json = await post(SEND_URL, messages.map(toExpoMessage));
       const tickets = Array.isArray(json.data) ? (json.data as ExpoTicket[]) : [];
       // One ticket per message, in order; anything else cannot be matched to devices.
-      if (tickets.length !== messages.length) throw new TransportError('expo_ticket_mismatch', true);
+      if (tickets.length !== messages.length) throw new TransportError('expo_ticket_mismatch', false, true);
       return tickets.map(toTicket);
     },
     async getReceipts(ticketIds) {

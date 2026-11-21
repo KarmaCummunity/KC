@@ -67,17 +67,10 @@ export interface Outcome {
 }
 
 /** Database port. Each method is one round trip. */
-export interface DispatchScope {
-  readonly eventIds?: number[];
-  readonly notificationId?: string;
-  readonly recipientId?: string;
-  readonly deviceId?: string;
-}
-
 export interface PushDatabase {
-  deliverBatch(limit: number, scope?: DispatchScope): Promise<DeliveryResult[]>;
-  retryBatch(limit: number, scope?: DispatchScope): Promise<RetryResult[]>;
-  claimReceipts(limit: number, scope?: DispatchScope): Promise<ReceiptEvent[]>;
+  deliverBatch(limit: number): Promise<DeliveryResult[]>;
+  retryBatch(limit: number): Promise<RetryResult[]>;
+  claimReceipts(limit: number): Promise<ReceiptEvent[]>;
   /** Preview text by message id; null for a message without text. */
   messagePreviews(messageIds: string[]): Promise<Map<string, string | null>>;
   settle(outcome: Outcome): Promise<void>;
@@ -122,7 +115,7 @@ export interface Ticket {
 
 /** A request the provider did not take as a whole. */
 export class TransportError extends Error {
-  constructor(message: string, readonly retryable: boolean) {
+  constructor(message: string, readonly retryable: boolean, readonly ambiguous = false) {
     super(message);
     this.name = 'TransportError';
   }
