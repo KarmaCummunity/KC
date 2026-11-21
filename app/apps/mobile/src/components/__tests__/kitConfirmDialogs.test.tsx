@@ -5,7 +5,7 @@
 import type { ComponentProps } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, screen } from '@testing-library/react';
-import { lightColors } from '@kc/ui';
+import { lightColors, ThemeProvider } from '@kc/ui';
 import { DeleteAccountError } from '@kc/application';
 
 vi.mock('react-native-reanimated', async () => (await import('../ui/__tests__/kitDialogTestKit')).reanimatedDouble);
@@ -123,29 +123,105 @@ describe('DeleteAccountConfirmModal', () => {
   function renderDelete(onConfirm: () => Promise<void>, accountStatus: 'active' | 'banned' = 'active') {
     const onCancel = vi.fn();
     renderInTheme(
-      <DeleteAccountConfirmModal visible accountStatus={accountStatus} onConfirm={onConfirm} onCancel={onCancel} />,
+      <DeleteAccountConfirmModal visible displayName="נועה לוי" accountStatus={accountStatus} onConfirm={onConfirm} onCancel={onCancel} />,
     );
     return { onCancel };
   }
 
-  it('enables the red delete only once the keyword is typed, then confirms', async () => {
+  it('requires warning acceptance followed by the display name, then confirms', async () => {
     const onConfirm = vi.fn(() => Promise.resolve());
     renderDelete(onConfirm);
+    expect(screen.queryByLabelText('settings.deleteAccountModal.confirmInputLabel')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'settings.deleteAccountModal.buttons.continue' }));
     const remove = screen.getByRole('button', { name: DELETE });
     expect(background(remove)).toBe(rgb(lightColors.error));
     expect(remove.getAttribute('aria-disabled')).toBe('true');
     fireEvent.change(screen.getByLabelText('settings.deleteAccountModal.confirmInputLabel'), {
-      target: { value: 'settings.deleteAccountModal.confirmKeyword' },
+      target: { value: 'נועה לוי' },
     });
     fireEvent.click(screen.getByRole('button', { name: DELETE }));
     await vi.waitFor(() => expect(onConfirm).toHaveBeenCalledTimes(1));
   });
 
+  it('rejects a keyword and another name; trimmed Unicode-equivalent own name matches', async () => {
+    const onConfirm = vi.fn(() => Promise.resolve());
+    renderDelete(onConfirm);
+    fireEvent.click(screen.getByRole('button', { name: 'settings.deleteAccountModal.buttons.continue' }));
+    const input = screen.getByLabelText('settings.deleteAccountModal.confirmInputLabel');
+    for (const value of ['', 'מחק', 'delete', 'דניאל לוי']) {
+      fireEvent.change(input, { target: { value } });
+      expect(screen.getByRole('button', { name: DELETE }).getAttribute('aria-disabled')).toBe('true');
+      fireEvent.click(screen.getByRole('button', { name: DELETE }));
+      expect(onConfirm).not.toHaveBeenCalled();
+    }
+    fireEvent.change(input, { target: { value: '  נועה לוי  ' } });
+    fireEvent.click(screen.getByRole('button', { name: DELETE }));
+    await vi.waitFor(() => expect(onConfirm).toHaveBeenCalledTimes(1));
+  });
+
+  it('matches canonically equivalent names without ignoring case', async () => {
+    const onConfirm = vi.fn(() => Promise.resolve());
+    renderInTheme(<DeleteAccountConfirmModal visible displayName="José" accountStatus="active" onCancel={vi.fn()} onConfirm={onConfirm} />);
+    fireEvent.click(screen.getByRole('button', { name: 'settings.deleteAccountModal.buttons.continue' }));
+    const input = screen.getByLabelText('settings.deleteAccountModal.confirmInputLabel');
+    fireEvent.change(input, { target: { value: 'josé' } });
+    expect(screen.getByRole('button', { name: DELETE }).getAttribute('aria-disabled')).toBe('true');
+    fireEvent.change(input, { target: { value: 'Jose\u0301' } });
+    fireEvent.click(screen.getByRole('button', { name: DELETE }));
+    await vi.waitFor(() => expect(onConfirm).toHaveBeenCalledTimes(1));
+  });
+
+  it('fails closed when the profile has no nonempty display name', () => {
+    const onConfirm = vi.fn();
+    renderInTheme(<DeleteAccountConfirmModal visible displayName={null} accountStatus="active" onCancel={vi.fn()} onConfirm={onConfirm} />);
+    expect(screen.getByText('settings.deleteAccountModal.nameUnavailable')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'settings.deleteAccountModal.buttons.continue' }).getAttribute('aria-disabled')).toBe('true');
+    expect(screen.queryByRole('button', { name: DELETE })).toBeNull();
+  });
+
+  it('resets warning acceptance and typed text when closed and reopened', () => {
+    const onConfirm = vi.fn();
+    const view = renderInTheme(<DeleteAccountConfirmModal visible displayName="נועה לוי" accountStatus="active" onCancel={vi.fn()} onConfirm={onConfirm} />);
+    fireEvent.click(screen.getByRole('button', { name: 'settings.deleteAccountModal.buttons.continue' }));
+    fireEvent.change(screen.getByLabelText('settings.deleteAccountModal.confirmInputLabel'), { target: { value: 'נועה לוי' } });
+    view.rerender(<ThemeProvider mode="light" systemScheme="light" setMode={() => {}}><DeleteAccountConfirmModal visible={false} displayName="נועה לוי" accountStatus="active" onCancel={vi.fn()} onConfirm={onConfirm} /></ThemeProvider>);
+    view.rerender(<ThemeProvider mode="light" systemScheme="light" setMode={() => {}}><DeleteAccountConfirmModal visible displayName="נועה לוי" accountStatus="active" onCancel={vi.fn()} onConfirm={onConfirm} /></ThemeProvider>);
+    expect(screen.queryByLabelText('settings.deleteAccountModal.confirmInputLabel')).toBeNull();
+    expect(onConfirm).not.toHaveBeenCalled();
+  });
+
+  it.each(['pending', 'critical'] as const)('profile refresh cannot unlock a %s operation', async (mode) => {
+    const onCancel = vi.fn();
+    const onConfirm = mode === 'pending'
+      ? vi.fn(() => new Promise<void>(() => {}))
+      : vi.fn(() => Promise.reject(new DeleteAccountError('auth_delete_failed', 'fixture critical')));
+    const renderModal = (name: string) => <ThemeProvider mode="light" systemScheme="light" setMode={() => {}}><DeleteAccountConfirmModal visible displayName={name} accountStatus="active" onCancel={onCancel} onConfirm={onConfirm} /></ThemeProvider>;
+    const view = renderInTheme(<DeleteAccountConfirmModal visible displayName="נועה לוי" accountStatus="active" onCancel={onCancel} onConfirm={onConfirm} />);
+    fireEvent.click(screen.getByRole('button', { name: 'settings.deleteAccountModal.buttons.continue' }));
+    fireEvent.change(screen.getByLabelText('settings.deleteAccountModal.confirmInputLabel'), { target: { value: 'נועה לוי' } });
+    fireEvent.click(screen.getByRole('button', { name: DELETE }));
+    if (mode === 'critical') await screen.findByRole('button', { name: 'settings.deleteAccountModal.buttons.retry' });
+    view.rerender(renderModal('נועה כהן'));
+    expect(screen.queryByRole('button', { name: 'general.close' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'settings.deleteAccountModal.buttons.continue' })).toBeNull();
+    fireEvent.keyUp(document, { key: 'Escape' });
+    expect(onCancel).not.toHaveBeenCalled();
+    if (mode === 'critical') {
+      expect(screen.queryByRole('button', { name: 'settings.deleteAccountModal.buttons.cancel' })).toBeNull();
+      fireEvent.click(screen.getByRole('button', { name: 'settings.deleteAccountModal.buttons.retry' }));
+      await vi.waitFor(() => expect(onConfirm).toHaveBeenCalledTimes(2));
+    } else {
+      expect(screen.getByRole('button', { name: DELETE }).getAttribute('aria-busy')).toBe('true');
+      expect(onConfirm).toHaveBeenCalledTimes(1);
+    }
+  });
+
   it('becomes blocking after a critical failure: retry only, no cancel, no ✕', async () => {
     const onConfirm = vi.fn(() => Promise.reject(new DeleteAccountError('auth_delete_failed', 'auth delete failed')));
     const { onCancel } = renderDelete(onConfirm);
+    fireEvent.click(screen.getByRole('button', { name: 'settings.deleteAccountModal.buttons.continue' }));
     fireEvent.change(screen.getByLabelText('settings.deleteAccountModal.confirmInputLabel'), {
-      target: { value: 'settings.deleteAccountModal.confirmKeyword' },
+      target: { value: 'נועה לוי' },
     });
     fireEvent.click(screen.getByRole('button', { name: DELETE }));
     await screen.findByRole('button', { name: 'settings.deleteAccountModal.buttons.retry' });

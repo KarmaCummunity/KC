@@ -9,6 +9,7 @@ import { Screen } from '../../../../src/components/ui/Screen';
 import { paymentsUseCases } from '../../../../src/services/paymentsComposition';
 import { shekelsText } from '../../../../src/components/money/moneyAmount';
 import { listOrEmpty } from '../../../../src/lib/backendAvailability';
+import { InAppOrgPaymentsGate } from '../../../../src/components/money/InAppOrgPaymentsGate';
 
 const useStyles = makeUseStyles(({ colors }) => ({
   row: { padding: spacing.lg, borderBottomWidth: 1, borderBottomColor: colors.border },
@@ -16,7 +17,7 @@ const useStyles = makeUseStyles(({ colors }) => ({
   meta: { ...typography.caption, color: colors.textSecondary, marginTop: spacing.xs },
 }));
 
-export default function DonationHistoryScreen() {
+function DonationHistoryScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const styles = useStyles();
@@ -56,5 +57,14 @@ export default function DonationHistoryScreen() {
         )}
       />
     </Screen>
+  );
+}
+
+/** The screen behind the sandbox flag (FR-DONATE-003 AC7): a direct link with it off lands on the hub. */
+export default function DonationHistoryScreenRoute() {
+  return (
+    <InAppOrgPaymentsGate>
+      <DonationHistoryScreen />
+    </InAppOrgPaymentsGate>
   );
 }

@@ -16,6 +16,8 @@ export function useSettingsAccountActions() {
   const queryClient = useQueryClient();
   const signOutLocal = useAuthStore((s) => s.signOut);
   const [signingOut, setSigningOut] = useState(false);
+  // FR-SETTINGS-011 AC1: the logout row opens a confirmation; only its confirm signs out.
+  const [signOutConfirmVisible, setSignOutConfirmVisible] = useState(false);
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [deleteSuccessVisible, setDeleteSuccessVisible] = useState(false);
 
@@ -37,6 +39,10 @@ export function useSettingsAccountActions() {
     }, 1500);
   }, [queryClient, router, signOutLocal]);
 
+  const requestSignOut = useCallback(() => setSignOutConfirmVisible(true), []);
+  const cancelSignOut = useCallback(() => setSignOutConfirmVisible(false), []);
+
+  /** The confirmed sign-out: signs the device out and routes to the auth flow (AC2). */
   const handleSignOut = useCallback(async () => {
     if (signingOut) return;
     setSigningOut(true);
@@ -52,6 +58,7 @@ export function useSettingsAccountActions() {
       Alert.alert(t('general.error'), t('settings.signOutFailed'));
     } finally {
       setSigningOut(false);
+      setSignOutConfirmVisible(false);
     }
   }, [queryClient, router, signOutLocal, signingOut, t]);
 
@@ -61,6 +68,9 @@ export function useSettingsAccountActions() {
     setDeleteModalVisible,
     deleteSuccessVisible,
     handleDeleteConfirm,
+    signOutConfirmVisible,
+    requestSignOut,
+    cancelSignOut,
     handleSignOut,
   };
 }

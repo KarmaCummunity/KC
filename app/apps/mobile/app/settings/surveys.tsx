@@ -122,8 +122,9 @@ export default function SurveysHubScreen() {
     void triggerResearchShare(
       RESEARCH_SHARE_SRC_SETTINGS,
       {
-        title: t('survey.shareResearch.shareTitle'),
-        message: t('survey.shareResearch.shareMessage'),
+        // One share copy for every placement of the research link (FR-RESEARCH-004, #1790).
+        title: t('research.share.shareTitle'),
+        message: t('research.share.shareMessage'),
         toastShared: t('survey.shareResearch.toastShared'),
         toastCopied: t('survey.shareResearch.toastCopied'),
         toastFailed: t('survey.shareResearch.toastFailed'),
