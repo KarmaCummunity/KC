@@ -355,7 +355,20 @@ jobs:
         working-directory: app/apps/mobile
         env:
           NODE_ENV: production
-        run: npx expo run:ios --device "$SIMULATOR_UDID" --configuration Release --no-bundler
+        run: |
+          set -euo pipefail
+          npx expo prebuild --platform ios --no-install --clean
+          cd ios
+          pod install
+          xcodebuild -workspace KC.xcworkspace -scheme KC -configuration Release \
+            -sdk iphonesimulator -destination "platform=iOS Simulator,id=$SIMULATOR_UDID" \
+            -derivedDataPath "$RUNNER_TEMP/kc-simulator-build" \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build \
+            > "$RUNNER_TEMP/ios-simulator/build.log" 2>&1 || {
+              tail -n 100 "$RUNNER_TEMP/ios-simulator/build.log"
+              exit 1
+            }
+          xcrun simctl install "$SIMULATOR_UDID" "$RUNNER_TEMP/kc-simulator-build/Build/Products/Release-iphonesimulator/KC.app"
       - name: Capture native launch evidence
         run: |
           set -euo pipefail

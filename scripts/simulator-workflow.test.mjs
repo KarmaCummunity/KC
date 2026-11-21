@@ -10,7 +10,9 @@ test('simulator mode is explicit and cannot upload a store build', () => {
   assert.match(job, /runs-on: macos-latest/);
   assert.doesNotMatch(job, /secrets\.|eas submit|mobile-store|backend: prod/);
   assert.match(job, /simctl bootstatus/);
-  assert.match(job, /expo run:ios.*--configuration Release --no-bundler/);
+  assert.match(job, /-sdk iphonesimulator -destination/);
+  assert.match(job, /CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build/);
+  assert.match(job, /simctl install/);
   assert.match(job, /native-launch.png/);
   assert.match(job, /No remote push, account login or logout proof/);
 });
