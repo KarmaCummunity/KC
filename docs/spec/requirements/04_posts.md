@@ -131,7 +131,7 @@ Constraints on uploaded images (both types).
 - AC1. Allowed formats: JPEG, PNG, HEIC (HEIC is converted to JPEG client-side on iOS).
 - AC2. Max 5 images per post; max 8 MB per image post-resize.
 - AC3. Client-side resize to a max edge of 2048px before upload; further server-side derivatives produced for `feed_thumb` (640px), `detail_main` (1280px), and `original`.
-- AC4. EXIF metadata is stripped server-side to prevent location leakage (`NFR-PRIV-002`).
+- AC4. EXIF metadata is stripped server-side to prevent location leakage (`NFR-PRIV-002`). ✅ 2026-11-21 (KC#2316): every new post photo, and every pending one at activation, is rewritten without metadata by `process-post-media` before any other member sees it; until then only its owner sees it ({{ENG:post-photo-structural-sanitize}}). AC3's server-side resized derivatives are still open ({{G:post-photo-server-sizes}}).
 - AC5. Failed uploads block "Publish"; partial successes can be retried individually without re-selecting all images.
 
 **Related.** Domain: `Post.images[]`, `MediaAsset`.
