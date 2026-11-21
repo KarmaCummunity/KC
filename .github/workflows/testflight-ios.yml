@@ -335,6 +335,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Boot an available iPhone simulator
+        timeout-minutes: 10
         run: |
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/ios-simulator"
