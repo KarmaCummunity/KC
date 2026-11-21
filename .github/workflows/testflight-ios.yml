@@ -350,7 +350,7 @@ jobs:
         working-directory: app
         run: pnpm install --frozen-lockfile
       - name: Resolve public DEV backend config without account credentials
-        run: node scripts/simulator-dev-env.mjs >> "$GITHUB_ENV"
+        run: node scripts/mobile-simulator-dev-env.mjs >> "$GITHUB_ENV"
       - name: Build and install unsigned simulator app
         working-directory: app/apps/mobile
         env:
