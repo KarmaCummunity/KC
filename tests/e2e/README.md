@@ -11,6 +11,18 @@ User journeys against the deployed dev web app (`DEV_WEB_URL`, default
 - **Guard:** `lib/env.ts` refuses to run against the prod project or prod domain.
 - Rows the suite creates are titled `[e2e <timestamp>] …`.
 
+## Member `post_create` budget
+
+A member may create **20 new posts per hour** (drafts included; `kc_private.rate_limits` action `post_create`, R-SEC-Listing-Write). That product limit is unchanged for E2E.
+
+One clean **full** suite publishes about **9** posts as user A (`user1@seed.kc.test`): six world journeys (four animals kinds, food, items) via `lib/publish.ts` / `lib/worldJourney.ts`, plus the `qa/feed` and `qa/marketplace` create tests. CI retries (`retries: 1`) can add more. Two clean runs still fit in the window; a third (or a second with enough retries) spends it.
+
+- Setup refuses to start when user A's last-hour create count leaves fewer than ~9 slots (`journeys/auth.setup.ts`), with a message that names `post_create` and the hourly window.
+- `publishPostAs` rewrites a bare server `rate_limited` into the same kind of message so a spent quota is never read as a product regression.
+- Helpers and the documented spend live in `lib/postCreateBudget.mjs` (unit: `node --test scripts/e2e-post-create-budget.test.mjs`).
+
+Do **not** raise or bypass the limit for seed members. Prefer waiting out the window, or running publish-light suites (`p0_only` / focused media lanes) when the budget is low.
+
 ## Suites
 
 | File | Covers |
