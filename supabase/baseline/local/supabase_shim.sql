@@ -110,10 +110,12 @@ create table if not exists storage.objects (
   id uuid primary key default gen_random_uuid(),
   bucket_id text references storage.buckets (id),
   name text,
+  -- Set by the storage service on upload (`size`, `mimetype`, ...), as on the platform.
+  metadata jsonb,
   created_at timestamptz default now()
 );
 alter table storage.objects enable row level security;
-grant select, insert, update, delete on storage.objects to authenticated;
+grant select, insert, update, delete on storage.objects to authenticated, service_role;
 
 create or replace function storage.foldername(name text)
 returns text[]

@@ -32,7 +32,14 @@ export type PaywallAnalyticsEvent =
   | 'purchase_completed'
   | 'purchase_failed';
 
-export type AnalyticsEvent = SurveyAnalyticsEvent | FunnelAnalyticsEvent | PaywallAnalyticsEvent;
+/** Post closure funnel (FR-CLOSURE-002 AC3, #1759). */
+export type ClosureAnalyticsEvent = 'closure_step1_completed' | 'closure_completed';
+
+export type AnalyticsEvent =
+  | SurveyAnalyticsEvent
+  | FunnelAnalyticsEvent
+  | PaywallAnalyticsEvent
+  | ClosureAnalyticsEvent;
 
 type EventProperties = Record<string, unknown>;
 

@@ -8,12 +8,12 @@ The application (`app/packages/infrastructure-supabase`, `app/apps/mobile`) and 
 
 | Kind | Objects used | 1:1 | 1:1 (renamed) | CHANGED | REMOVED | MISSING |
 | --- | --- | --- | --- | --- | --- | --- |
-| RPCs | 269 | 192 | 22 | 55 | 0 | 0 |
+| RPCs | 270 | 193 | 22 | 55 | 0 | 0 |
 | Tables and views | 67 | 50 | 0 | 17 | 0 | 0 |
 | Storage buckets | 5 | 4 | 0 | 1 | 0 | 0 |
 | Realtime channels | 9 | 9 | 0 | 0 | 0 | 0 |
 | Edge Function invokes | 5 | 5 | 0 | 0 | 0 | 0 |
-| **Total** | 355 | 260 | 22 | 73 | 0 | 0 |
+| **Total** | 356 | 261 | 22 | 73 | 0 | 0 |
 
 ### Launch scope
 
@@ -21,10 +21,10 @@ Every row carries `launch` (spec D102, `docs/spec/96_launch_and_first_group_plan
 
 | Launch tier | Objects used | 1:1 | 1:1 (renamed) | CHANGED | REMOVED | MISSING |
 | --- | --- | --- | --- | --- | --- | --- |
-| core | 133 | 109 | 1 | 23 | 0 | 0 |
+| core | 134 | 110 | 1 | 23 | 0 | 0 |
 | wedge | 53 | 32 | 15 | 6 | 0 | 0 |
 | later | 169 | 119 | 6 | 44 | 0 | 0 |
-| **Launch-critical (core + wedge)** | 186 | 141 | 16 | 29 | 0 | 0 |
+| **Launch-critical (core + wedge)** | 187 | 142 | 16 | 29 | 0 | 0 |
 
 Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename of the function or its arguments · **CHANGED** the caller's logic changes · **REMOVED** no replacement by design · **MISSING** the baseline has no equivalent although the code needs one (§4). Confidence: **high** read in the baseline source, **medium** inferred from names and generated types.
 
@@ -80,7 +80,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `infrastructure-supabase/src/volunteering/` | 9 | 3 | 6 | 0 | 0 |
 | `infrastructure-supabase/src/whatsapp/` | 4 | 2 | 2 | 0 | 0 |
 | `infrastructure-supabase/src/worlds/` | 3 | 1 | 2 | 0 | 0 |
-| `apps/mobile` (direct calls outside the adapters) | 13 | 12 | 1 | 0 | 0 |
+| `apps/mobile` (direct calls outside the adapters) | 11 | 10 | 1 | 0 | 0 |
 | Edge Function `_shared` | 21 | 17 | 4 | 0 | 0 |
 | Edge Function `backfill-image-thumbs` | 2 | 0 | 2 | 0 | 0 |
 | Edge Function `embed-worker` | 3 | 3 | 0 | 0 | 0 |
@@ -89,6 +89,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | Edge Function `identity-verification-webhook` | 2 | 2 | 0 | 0 | 0 |
 | Edge Function `match-rerank` | 2 | 1 | 1 | 0 | 0 |
 | Edge Function `payments-webhook` | 1 | 1 | 0 | 0 | 0 |
+| Edge Function `process-post-media` | 1 | 1 | 0 | 0 | 0 |
 | Edge Function `public-research-submit` | 2 | 2 | 0 | 0 | 0 |
 | Edge Function `revenuecat-webhook` | 2 | 2 | 0 | 0 | 0 |
 | Edge Function `rotate-research-salt` | 1 | 1 | 0 | 0 | 0 |
@@ -716,12 +717,12 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 
 ### `apps/mobile` (direct calls outside the adapters)
 
-13 call sites: 12 map 1:1, 1 need logic changes, 0 removed, 0 MISSING.
+11 call sites: 10 map 1:1, 1 need logic changes, 0 removed, 0 MISSING.
 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `<entry.bucket>` (bucket) | core | 1:1 | bucket `post-images` | The device abandoned-upload ledger retries deletion only in its runtime-allowlisted existing buckets: post-images, avatars or chat-media. Uses the current member session and existing own-folder Storage policies; no service-role client or bucket-policy change. |  | medium | abandonedUploads.ts:70 |
-| `avatars` (bucket) | core | 1:1 | bucket `avatars` | Declared in `95_platform/090_storage.sql`: public, JPEG, 512 KB, `<user_id>/avatar.jpg` (and the thumb in the same folder) (M23, verified). |  | high | avatarUpload.ts:132, avatarUpload.ts:143, avatarUpload.ts:153, avatarUpload.ts:167 |
+| `avatars` (bucket) | core | 1:1 | bucket `avatars` | Declared in `95_platform/090_storage.sql`: public, JPEG, 512 KB, `<user_id>/avatar.jpg` (and the thumb in the same folder) (M23, verified). |  | high | avatarUpload.ts:164, avatarUpload.ts:177 |
 | `chat-media` (bucket) | core | 1:1 | bucket `chat-media` | Declared in `95_platform/090_storage.sql`: private, `<user_id>/<chat_id>/<file>`, read through signed URLs by chat members (M23, verified). |  | high | chatMediaUrl.ts:17 |
 | `post-images` (bucket) | core | 1:1 | see `infrastructure-supabase/src/posts/` |  |  |  | usePostShare.ts:69, probeDraftImageAvailability.ts:30, listingImageUpload.ts:36 |
 | `topic = 'user:${userId}:notifications'` (channel) | core | 1:1 | topic `user:<user id>:notifications` | Already on the baseline contract (event `badge`). |  | high | useNotificationInboxBadge.ts:30 |
@@ -817,6 +818,14 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `provider_webhook_apply` | later | 1:1 | `provider_webhook_apply(p_event_id: string, p_payload: Json, p_provider_slug: string) → { event_error_code: string event_status: string webhook_event_id: string }[]` | Signature unchanged; errors are stable snake_case messages. | `amount_mismatch` †, `intent_not_found` †, `intent_not_payable` †, `payment_not_found` †, `payout_not_found` †, `refund_not_found` †, `unknown_event_type` † | high | index.ts:23 |
+
+### Edge Function `process-post-media`
+
+1 call sites: 1 map 1:1, 0 need logic changes, 0 removed, 0 MISSING.
+
+| Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `<fn>` | core | 1:1 | `post_media_processing_claim(p_lease_seconds?: number, p_limit?: number) → { attempt: number lease_token: string leased_until: string media_id: string mime_type: string object_mimetype: string object_size: number owner_id: string post_id: string size_bytes: number storage_key: string }[]`<br>`post_media_processing_complete(p_derivative_key: string, p_height: number, p_lease_token: string, p_media_id: string, p_size_bytes: number, p_width: number) → string`<br>`post_media_processing_fail(p_error: string, p_lease_token: string, p_media_id: string, p_retryable: boolean) → string`<br>`post_media_processing_release(p_lease_token: string, p_media_id: string, p_reason: string) → string` | Service role only, unscheduled: the post photo worker claims a leased job, completes it with a compare-and-set, records a failure, or (DEV experiment) releases its lease. |  | high | handler.ts:159 |
 
 ### Edge Function `public-research-submit`
 
@@ -921,7 +930,7 @@ In launch order: after package *n* the app is shippable with everything up to *n
 | P3 — Chat and realtime | core | 19 | 17 | 2 | 0 | 0 | P2, P4 |
 | P4 — Reports, moderation and admin basics | core | 40 | 30 | 10 | 0 | 0 | P2, P3 |
 | P5 — Launch worlds: items, food, rides, time (events), matching, donation links | wedge | 81 | 68 | 13 | 0 | 0 | P6 |
-| P6 — Edge Functions of the launch | core | 14 | 10 | 4 | 0 | 0 | P5 |
+| P6 — Edge Functions of the launch | core | 15 | 11 | 4 | 0 | 0 | P5 |
 | L1 — Housing world | later | 15 | 11 | 4 | 0 | 0 | L2, L3, L4, L5, L6, L7 |
 | L2 — Knowledge world | later | 11 | 9 | 2 | 0 | 0 | L1, L3, L4, L5, L6, L7 |
 | L3 — Challenges | later | 9 | 6 | 3 | 0 | 0 | L1, L2, L4, L5, L6, L7 |

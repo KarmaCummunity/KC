@@ -20,6 +20,8 @@ export type FollowButtonProps = Readonly<{
   busy?: boolean;
   /** True when account is not active — primary follow/request CTA stays disabled. */
   interactionDisabled?: boolean;
+  /** The profile owner's name, for "Stop following [name]?" (FR-FOLLOW-002 AC1). */
+  displayName?: string | null;
 }>;
 
 interface ButtonCfg {
@@ -32,7 +34,7 @@ interface ButtonCfg {
 }
 
 export function FollowButton({
-  state, cooldownUntil, onPress, busy, interactionDisabled,
+  state, cooldownUntil, onPress, busy, interactionDisabled, displayName,
 }: FollowButtonProps) {
   const styles = useStyles();
   const { t } = useTranslation();
@@ -40,7 +42,7 @@ export function FollowButton({
 
   if (state === 'self') return null;
 
-  const cfg = config(state, cooldownUntil, t, styles);
+  const cfg = config(state, cooldownUntil, displayName?.trim() || null, t, styles);
   const disabled = busy || cfg.disabled || Boolean(interactionDisabled);
 
   const handlePress = () => {
@@ -81,7 +83,13 @@ export function FollowButton({
   );
 }
 
-function config(state: FollowState, cooldownUntil: string | undefined, t: TFunction, styles: ReturnType<typeof useStyles>): ButtonCfg {
+function config(
+  state: FollowState,
+  cooldownUntil: string | undefined,
+  name: string | null,
+  t: TFunction,
+  styles: ReturnType<typeof useStyles>,
+): ButtonCfg {
   switch (state) {
     case 'not_following_public':
       return { label: t('profile.followCta') };
@@ -91,7 +99,8 @@ function config(state: FollowState, cooldownUntil: string | undefined, t: TFunct
         style: styles.btnSecondary,
         textStyle: styles.textSecondary,
         confirm: {
-          title: t('profile.unfollowConfirmTitle'),
+          // FR-FOLLOW-002 AC1: the question names the person; generic only when the name is unknown.
+          title: name ? t('profile.unfollowConfirmTitleNamed', { name }) : t('profile.unfollowConfirmTitle'),
           body: '',
           cta: t('profile.unfollowConfirmCta'),
           destructive: true,

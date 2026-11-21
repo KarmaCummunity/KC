@@ -1,15 +1,10 @@
 // Mapped to spec: FR-FEED-004 (filter modal entry button with active-filter count badge)
 import React from 'react';
-import { Platform, TouchableOpacity, View, type StyleProp, type ViewStyle } from 'react-native';
+import { TouchableOpacity, View, type StyleProp, type ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { makeUseStyles, iconSize, radius, spacing, typography, useTheme, Text } from '@kc/ui';
-import { isLayoutRtl } from '../../lib/rtlLayout';
-
-function badgeCornerEnd(): Pick<ViewStyle, 'left' | 'right' | 'end'> {
-  if (Platform.OS !== 'web') return { end: 0 };
-  return isLayoutRtl() ? { left: 0 } : { right: 0 };
-}
+import { absoluteCornerEnd } from '../../lib/rtlLayout';
 
 export interface FilterButtonProps {
   readonly activeCount: number;
@@ -82,7 +77,7 @@ const useFilterButtonStyles = makeUseStyles(({ colors }) => ({
   badge: {
     position: 'absolute' as const,
     top: 0,
-    ...badgeCornerEnd(),
+    ...absoluteCornerEnd(0),
     backgroundColor: colors.error,
     borderRadius: radius.full,
     minWidth: 18,
@@ -94,7 +89,7 @@ const useFilterButtonStyles = makeUseStyles(({ colors }) => ({
   badgeBoxed: {
     position: 'absolute' as const,
     top: -4,
-    ...badgeCornerEnd(),
+    ...absoluteCornerEnd(0),
     backgroundColor: colors.error,
     borderRadius: radius.full,
     minWidth: 18,

@@ -62,10 +62,13 @@ export function Screen({
   const tabBarVisible = useShellTabBarVisibility();
   const tabBarPad = useShellTabBarScrollInset();
 
-  // Effective edges: caller wins; otherwise default to ['top'] unless a
-  // native header already eats the top inset (then default to []).
+  // Effective edges: caller wins. Defaults also cover the physical side
+  // insets: in landscape on notched / Dynamic Island iPhones the hardware
+  // areas move to the left/right edges, so a top-only default leaves content
+  // under the hardware (#861). A native header already eats the top inset,
+  // so with `hasNativeHeader` the default drops 'top' but keeps the sides.
   const effectiveEdges: readonly Edge[] =
-    edges ?? (hasNativeHeader ? [] : ['top']);
+    edges ?? (hasNativeHeader ? ['left', 'right'] : ['top', 'left', 'right']);
 
   // Memoized so KcFlashList / ScrollView don't see a fresh array on every parent
   // re-render — FR-RESP-006 AC15.

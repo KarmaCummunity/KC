@@ -19,6 +19,7 @@ export const profileEn = {
   followingActive: 'Following ✓',
   followRequestCta: '+ Send request',
   unfollowConfirmTitle: 'Unfollow?',
+  unfollowConfirmTitleNamed: 'Stop following {{name}}?',
   unfollowConfirmCta: 'Unfollow',
   cancelRequestTitle: 'Cancel the follow request?',
   cancelRequestBody: 'You can send a new request anytime.',
@@ -130,6 +131,11 @@ export const profileEn = {
 
   // Edit Profile screen (FR-PROFILE-007)
   editScreen: {
+    signIn: {
+      emailLabel: 'Sign-in email',
+      phoneLabel: 'Sign-in phone',
+      note: "Your sign-in details can't be changed here. To change them, contact Support.",
+    },
     loadFailedTitle: 'Loading failed',
     saveFailedTitle: 'Saving failed',
     unknownError: 'Unknown error',

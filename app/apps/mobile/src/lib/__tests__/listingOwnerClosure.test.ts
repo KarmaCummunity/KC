@@ -6,7 +6,7 @@ describe('listingOwnerClosure', () => {
     expect(listingOwnerMarkCtaKey('animals')).toBe('closure.markAnimalsCta');
     expect(listingOwnerMarkCtaKey('housing')).toBe('closure.markHousingCta');
     expect(listingOwnerMarkCtaKey('rides')).toBe('closure.markRidesCta');
-    expect(listingOwnerMarkCtaKey('food')).toBe('closure.markGiveCta');
+    expect(listingOwnerMarkCtaKey('food')).toBe('closure.markFoodCta');
   });
 
   it('words the volunteering close as taking place, and keeps "delivered" for items (#2078)', () => {

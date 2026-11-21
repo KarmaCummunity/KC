@@ -177,6 +177,7 @@ KC follows each platform where the user expects it to, and keeps one KC look eve
 |---|---|---|---|---|
 | Stack push / pop | Native stack slide | `slide_from_right` on the root stack; nested stacks slide natively | Cross-fade | `rootStackAnimation.ts`, `nestedStackGestureOptions.ts` |
 | Back | Edge swipe on every nested stack + mirrored back chevron | System back pops the stack; predictive back stays **off** (`app.json`) | Browser history | stack options, `MirroredIcon` |
+| Typography | Shared Rubik size/weight/line-height tokens via kit `Text` / `TextInput`; OS font fallback if brand faces fail to load | Same; kit removes extra Android font padding to avoid clipping Hebrew descenders | Same brand tokens; web direction follows the document | `packages/ui/src/theme/typography.ts`, `components/BrandText.tsx` |
 | Header | Shared `TopBar` on tab roots and worlds; no large titles (only screens that already opt in keep them) | Same | Same | `TopBarStackHeader`, `detailStackScreenOptions` |
 | Sheet / dialog dismiss | Backdrop, ✕, swipe down | + hardware back | Escape | kit `BottomSheet` / `Modal`, `useModalHardwareBack` |
 | Action menus | Kit `ActionMenuSheet` | Same | Same | `ActionMenuSheet.tsx` |

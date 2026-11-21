@@ -52,6 +52,7 @@ export const SMOKE_PROBES = {
   'identity-verification-webhook': { expect: [405], why: 'method guard (POST only) runs first; no JWT at the gateway' },
   'match-rerank': { expect: [405], why: 'method guard (POST only) runs first' },
   'payments-webhook': { expect: [405], why: 'method guard (POST only) runs first' },
+  'process-post-media': { expect: [405], why: 'method guard (POST only) runs first' },
   'public-research-submit': { expect: [200], why: 'answers the preflight for the deployed web origin (403 = origin not allowlisted)' },
   'purge-deleted-accounts': { expect: [405], why: 'method guard (POST only) runs first' },
   'reconcile-storage-orphans': { expect: [405], why: 'method guard (POST only) runs first' },

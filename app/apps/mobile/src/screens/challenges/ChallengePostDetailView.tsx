@@ -13,6 +13,7 @@ import { DetailHeroCard } from '../../components/post-detail/DetailHeroCard';
 import { PublisherCard } from '../../components/post-detail/PublisherCard';
 import { PostEngagementThread } from '../../components/post-detail/PostEngagementThread';
 import { cleanDisplayTitle } from '../../lib/displayTitle';
+import { worldPlaceholderIcon } from '../../lib/worldDetailCopy';
 import { challengeGoalLabel } from '../../lib/challenges/challengeLabels';
 import { usePostDetailStyles } from '../post/postDetailScreen.styles';
 import { ChallengeDetailStatusBadge } from './ChallengeDetailStatusBadge';
@@ -73,9 +74,9 @@ export function ChallengePostDetailView({
         badge={<ChallengeDetailStatusBadge active={active} />}
       >
         {post && post.mediaAssets.length > 0 ? (
-          <PostImageCarousel mediaAssets={post.mediaAssets} fallbackIcon="gift-outline" />
+          <PostImageCarousel mediaAssets={post.mediaAssets} fallbackIcon={worldPlaceholderIcon('challenges')} />
         ) : (
-          <PostImageCarousel mediaAssets={[]} fallbackIcon="gift-outline" />
+          <PostImageCarousel mediaAssets={[]} fallbackIcon={worldPlaceholderIcon('challenges')} />
         )}
       </DetailHeroCard>
 

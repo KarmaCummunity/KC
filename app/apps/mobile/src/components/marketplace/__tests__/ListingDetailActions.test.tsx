@@ -11,6 +11,9 @@ import type { MarketplaceListingDetail } from '@kc/domain';
 // The actions settle on a mocked promise, but under a loaded `pnpm test` (turbo runs every package at
 // once) vi.waitFor's 1 s default is too tight: every wait here gets a roomy explicit timeout (#1841).
 const SETTLE = { timeout: 5000 };
+// A test's own timeout must outlast its waits: vitest's default (5 s) equals one SETTLE, so a test
+// that chains two waits timed out under a loaded full-suite run while passing alone (#1948).
+const TEST_TIMEOUT = { timeout: 15_000 };
 const push = vi.fn();
 const startChat = vi.fn();
 const back = vi.fn();
@@ -74,7 +77,7 @@ function renderActions(
   return { ...view, onReport };
 }
 
-describe('ListingDetailActions', () => {
+describe('ListingDetailActions', TEST_TIMEOUT, () => {
   it('shows a viewer message and report', () => {
     const { queryByTestId, onReport, getByTestId } = renderActions('u_viewer');
 

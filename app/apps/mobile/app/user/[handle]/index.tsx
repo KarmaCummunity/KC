@@ -211,6 +211,7 @@ export default function OtherProfileScreen() {
                     onPress={() => onFollowPress(followInfo?.state)}
                     busy={followBusy}
                     interactionDisabled={followInfo?.followInteractionDisabled}
+                    displayName={u.displayName}
                   />
                 </View>
               ) : null}
