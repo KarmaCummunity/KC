@@ -19,7 +19,7 @@ test('fixed argv includes mandatory dry-run and no other mode', () => {
 });
 test('candidate ledger and exact migration inputs are bounded', () => {
   assert.equal(RELEASE_PLAN.ledger.length,55);
-  assert.equal(RELEASE_PLAN.pending.length,20); assert.equal(Object.keys(RELEASE_PLAN.files).length,75);
+  assert.equal(RELEASE_PLAN.pending.length,24); assert.equal(Object.keys(RELEASE_PLAN.files).length,79);
   verifyLedger(RELEASE_PLAN.ledger.map(version=>({version})), RELEASE_PLAN.ledger);
   assert.throws(()=>verifyLedger([],RELEASE_PLAN.ledger),/ledger changed/);
   assert.throws(()=>verifyLedger([...RELEASE_PLAN.ledger,'9999'].map(version=>({version})),RELEASE_PLAN.ledger));
@@ -68,10 +68,10 @@ test('official v2.99.0 formatter fixture parses only pending block', () => {
     fixture.success.stderr.replace('DRY RUN: migrations will *not* be pushed to the database.',''),
   ]) assert.throws(()=>parseDryRunPlan(fixture.success.stdout,stderr));
 });
-const CANDIDATE = '67aa4c6755da0bc43e1b30a80379ad7feba834be';
+const CANDIDATE = '21207a0157d98ad8ac248cbf704894ddc9a94656';
 // Exact reviewed candidate inputs, not this checkout's newer manifest/database state.
 // Self-contained for shallow CI checkouts. Production still verifies REAL candidate git blobs.
-const reviewed = JSON.parse(gunzipSync(readFileSync(new URL('./release/fixtures/reviewed-db-inputs-67aa.json.gz', import.meta.url))));
+const reviewed = JSON.parse(gunzipSync(readFileSync(new URL('./release/fixtures/reviewed-db-inputs-2120.json.gz', import.meta.url))));
 const digest = bytes => createHash('sha256').update(bytes).digest('hex');
 test('frozen fixture is exactly the reviewed source and all expected hashed DB inputs',()=>{
   assert.equal(reviewed.sourceCommit,CANDIDATE);
