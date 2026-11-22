@@ -35,6 +35,70 @@ test('parseClosingRefs handles empty and missing bodies', () => {
   assert.deepEqual(parseClosingRefs(null, REPO), []);
 });
 
+// Observed failure: PR #2559 body used Refs #858 and "does not close #858",
+// yet close-issues-on-dev-merge still closed #858 (issue #2565).
+const PR_2559_BODY = [
+  '## Scope',
+  'Refs #858. Completes the missing typography row in the existing platform convention table with current shared Rubik/Text/TextInput behavior and code pointers. No new font policy, design tokens or runtime behavior.',
+  '',
+  'Adds a focused regression contract that failed before the row existed. Existing native-feel implementation is retained, not rewritten.',
+  '',
+  '## Verification',
+  '- Red baseline: missing typography row failed before change.',
+  '- 32 focused convention/haptics/gesture/keyboard tests pass.',
+  '- All mobile test shards pass: 4414 tests.',
+  '- Full package TypeScript and repository lint pass.',
+  '',
+  '## Acceptance boundaries',
+  'This does not close #858. Simulator/native navigation, keyboard/layout/RTL acceptance remains engineering work; actual physical tactile/device observations are explicit human issue #2557. No native matrix result is inferred from unit tests.',
+  '',
+  'Serial integration behind #2555, related verification #2557.',
+  '',
+  '## Mapped to spec',
+  'N/A: documentation and regression contract only. Existing native-feel conventions in docs/spec/17_brand_and_design_system.md section4.4.1; refs #858.',
+].join('\n');
+
+test('parseClosingRefs ignores PR #2559 body pattern (Refs + does not close)', () => {
+  assert.deepEqual(parseClosingRefs(PR_2559_BODY, REPO), []);
+});
+
+test('parseClosingRefs ignores Refs-only and negated closing keywords', () => {
+  const body = [
+    'Refs #858',
+    'Related to #900 and follow-up to #901.',
+    'This does not close #858.',
+    'Do not close #860.',
+    "Don't close #861.",
+    "Doesn't fix #862.",
+    'Will not resolve #863.',
+    "Won't fixed #864.",
+    'not closes #865',
+  ].join('\n');
+  assert.deepEqual(parseClosingRefs(body, REPO), []);
+});
+
+test('parseClosingRefs still honors affirmative closing beside non-closing text', () => {
+  const body = [
+    'Refs #858. This does not close #858.',
+    'Closes #999',
+    'Also fixes #1000.',
+  ].join('\n');
+  assert.deepEqual(parseClosingRefs(body, REPO), [999, 1000]);
+});
+
+test('closeLinkedIssues uses only the PR body, not the title number', async () => {
+  const api = fakeApi({ 858: { state: 'open' } });
+  const pr = {
+    number: 2559,
+    merged_at: '2026-11-21T08:12:01Z',
+    title: 'docs(mobile): complete platform typography conventions for #858',
+    body: PR_2559_BODY,
+  };
+  const result = await closeLinkedIssues(pr, REPO, api);
+  assert.deepEqual(result.closed, []);
+  assert.equal(api.closed.length, 0);
+});
+
 function fakeApi(issues, reopenedAt = {}) {
   const closed = [];
   return {
