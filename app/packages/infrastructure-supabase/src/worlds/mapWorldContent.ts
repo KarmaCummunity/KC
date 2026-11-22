@@ -1,4 +1,11 @@
-import type { ExternalBodyOption, KnowledgeTopic, KnowledgeTopicStatus, WorldLink } from '@kc/domain';
+import type {
+  ExternalBodyOption,
+  KnowledgeShelfLink,
+  KnowledgeShelfSlug,
+  KnowledgeTopic,
+  KnowledgeTopicStatus,
+  WorldLink,
+} from '@kc/domain';
 import type { Database } from '../database.types';
 
 type Tables = Database['public']['Tables'];
@@ -9,6 +16,8 @@ export const WORLD_LINK_COLUMNS = 'id, from_world_slug, to_world_slug, link_slug
 export const EXTERNAL_BODY_COLUMNS = 'id, slug, world_slug, label_he, label_en, body_type, contact_url';
 export const WORLD_TOPIC_COLUMNS =
   'id, slug, parent_id, label_he, label_en, description_he, status, merged_into_id, sort_order';
+export const KNOWLEDGE_SHELF_LINK_COLUMNS =
+  'id, shelf_slug, link_slug, label_he, label_en, url';
 
 export type WorldLinkRow = Pick<
   Tables['world_links']['Row'],
@@ -21,6 +30,10 @@ export type ExternalBodyRow = Pick<
 export type WorldTopicRow = Pick<
   Tables['knowledge_topics']['Row'],
   'id' | 'slug' | 'parent_id' | 'label_he' | 'label_en' | 'description_he' | 'status' | 'merged_into_id' | 'sort_order'
+>;
+export type KnowledgeShelfLinkRow = Pick<
+  Tables['knowledge_shelf_links']['Row'],
+  'id' | 'shelf_slug' | 'link_slug' | 'label_he' | 'label_en' | 'url'
 >;
 
 /** A `world_links` row as the domain sees it. */
@@ -61,5 +74,17 @@ export function mapWorldTopic(row: WorldTopicRow): KnowledgeTopic {
     status: row.status as KnowledgeTopicStatus,
     mergedIntoId: row.merged_into_id,
     sortOrder: row.sort_order,
+  };
+}
+
+/** A `knowledge_shelf_links` row as the domain sees it (FR-KNOW-012 AC2). */
+export function mapKnowledgeShelfLink(row: KnowledgeShelfLinkRow): KnowledgeShelfLink {
+  return {
+    linkId: row.id,
+    shelfSlug: row.shelf_slug as KnowledgeShelfSlug,
+    linkSlug: row.link_slug,
+    labelHe: row.label_he,
+    labelEn: row.label_en,
+    url: row.url,
   };
 }

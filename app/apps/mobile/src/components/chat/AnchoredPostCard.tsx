@@ -1,6 +1,6 @@
 // FR-CHAT-014 + FR-CHAT-015 — sticky anchored-post card; ClosureSheet + explainer render here for chat-initiated closure.
 import { useEffect, useMemo } from 'react';
-import { Linking, Pressable } from 'react-native';
+import { Linking, Pressable, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -24,6 +24,8 @@ import { getSupabaseImageThumbUrl, getSupabasePublicImageUrl } from '../../lib/i
 import { rowDirectionStart } from '../../lib/rtlLayout';
 import { listingClosureOptions } from '../../lib/listingOwnerClosure';
 import { worldOwnerMarkCtaKey } from '../../lib/worldDetailCopy';
+import { showsKnowledgeAdviceNotice } from '@kc/domain';
+import { KnowledgeAdviceNotice } from '../marketplace/knowledge/KnowledgeAdviceNotice';
 
 interface Props {
   chatId: string;
@@ -152,46 +154,58 @@ export function AnchoredPostCard({ chatId, anchorPostId, viewerId, counterpartId
     });
   };
 
+  // FR-KNOW-012 AC1: every consulting-hour booking chat shows the D40 notice.
+  const showAdviceNotice = Boolean(
+    post && showsKnowledgeAdviceNotice({ details: post.details ?? null }),
+  );
+
   return (
     <>
       {showCard ? (
-        <KcRowCard
-          testID="chat-anchored-post"
-          containerStyle={styles.banner}
-          onPress={openPost}
-          accessibilityLabel={t('chat.anchoredOpenA11y')}
-          tone={isGive ? 'give' : 'request'}
-          badgeLabel={typeLabel}
-          placeholderIcon={isGive ? 'gift-outline' : 'search-outline'}
-          imageUri={thumbUri}
-          fallbackUri={fullUri}
-          title={cleanDisplayTitle(post!.title)}
-          openLinkLabel={t('cards.openFullPost')}
-          trailing={isOwner ? (
-            <Pressable
-              onPress={handleClose}
-              style={styles.cta}
-              accessibilityRole="button"
-              accessibilityLabel={ctaText}
-            >
-              <Text style={styles.ctaText}>{ctaText}</Text>
-            </Pressable>
+        <>
+          <KcRowCard
+            testID="chat-anchored-post"
+            containerStyle={styles.banner}
+            onPress={openPost}
+            accessibilityLabel={t('chat.anchoredOpenA11y')}
+            tone={isGive ? 'give' : 'request'}
+            badgeLabel={typeLabel}
+            placeholderIcon={isGive ? 'gift-outline' : 'search-outline'}
+            imageUri={thumbUri}
+            fallbackUri={fullUri}
+            title={cleanDisplayTitle(post!.title)}
+            openLinkLabel={t('cards.openFullPost')}
+            trailing={isOwner ? (
+              <Pressable
+                onPress={handleClose}
+                style={styles.cta}
+                accessibilityRole="button"
+                accessibilityLabel={ctaText}
+              >
+                <Text style={styles.ctaText}>{ctaText}</Text>
+              </Pressable>
+            ) : null}
+            footer={counterpartPhone ? (
+              <Pressable
+                onPress={handleCall}
+                style={styles.phoneRow}
+                accessibilityRole="link"
+                accessibilityLabel={t('chat.anchoredCallCounterpartA11y', { phone: counterpartPhone })}
+                hitSlop={6}
+              >
+                <Ionicons name="call" size={iconSize.xs} color={colors.primary} />
+                <Text style={styles.phoneText} numberOfLines={1}>
+                  {counterpartPhone}
+                </Text>
+              </Pressable>
+            ) : null}
+          />
+          {showAdviceNotice ? (
+            <View style={styles.adviceWrap}>
+              <KnowledgeAdviceNotice testID="chat-knowledge-advice-notice" />
+            </View>
           ) : null}
-          footer={counterpartPhone ? (
-            <Pressable
-              onPress={handleCall}
-              style={styles.phoneRow}
-              accessibilityRole="link"
-              accessibilityLabel={t('chat.anchoredCallCounterpartA11y', { phone: counterpartPhone })}
-              hitSlop={6}
-            >
-              <Ionicons name="call" size={iconSize.xs} color={colors.primary} />
-              <Text style={styles.phoneText} numberOfLines={1}>
-                {counterpartPhone}
-              </Text>
-            </Pressable>
-          ) : null}
-        />
+        </>
       ) : null}
       {(isOwner || isActiveChatClosure) ? (
         <>
@@ -205,6 +219,7 @@ export function AnchoredPostCard({ chatId, anchorPostId, viewerId, counterpartId
 
 const useAnchoredPostCardStyles = makeUseStyles(({ colors }) => ({
   banner: { marginHorizontal: spacing.base, marginTop: spacing.sm },
+  adviceWrap: { marginHorizontal: spacing.base },
   phoneRow: {
     flexDirection: rowDirectionStart,
     alignItems: 'center',

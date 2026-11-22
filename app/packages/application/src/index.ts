@@ -89,6 +89,7 @@ export type {
 export * from './donations/ReviewDonationLinksUseCases'; // D9 review queue + decision
 export { ListDonationLinksUseCase } from './donations/ListDonationLinksUseCase';
 export { GetWorldContentUseCase } from './worlds/GetWorldContentUseCase';
+export { ListKnowledgeShelfLinksUseCase } from './worlds/ListKnowledgeShelfLinksUseCase';
 export type { IWorldContentRepository } from './ports/IWorldContentRepository';
 export { SetWorldLaunchModeUseCase } from './worlds/SetWorldLaunchModeUseCase';
 export type { SetWorldLaunchModeInput } from './worlds/SetWorldLaunchModeUseCase';

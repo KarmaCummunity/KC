@@ -3,7 +3,12 @@ import { BackendUnavailableError } from '@kc/domain';
 import { callsTo, createFakeClient } from '../../__tests__/fakeBaselineClient';
 import { fail, ok } from '../../posts/__tests__/cardFixtures';
 import { SupabaseWorldContentRepository } from '../SupabaseWorldContentRepository';
-import { EXTERNAL_BODY_COLUMNS, WORLD_LINK_COLUMNS, WORLD_TOPIC_COLUMNS } from '../mapWorldContent';
+import {
+  EXTERNAL_BODY_COLUMNS,
+  KNOWLEDGE_SHELF_LINK_COLUMNS,
+  WORLD_LINK_COLUMNS,
+  WORLD_TOPIC_COLUMNS,
+} from '../mapWorldContent';
 
 const LINK = {
   id: 'l1', from_world_slug: 'animals', to_world_slug: 'food', link_slug: 'pet_food',
@@ -73,5 +78,22 @@ describe('SupabaseWorldContentRepository', () => {
 
     const missing = createFakeClient({ tables: { knowledge_topics: fail('PGRST205', "Could not find the table 'public.knowledge_topics' in the schema cache") } });
     await expect(new SupabaseWorldContentRepository(missing.client).getWorldContent('animals')).rejects.toBeInstanceOf(BackendUnavailableError);
+  });
+
+  it('lists active official body links for a knowledge shelf (FR-KNOW-012 AC2)', async () => {
+    const row = {
+      id: 'sl1', shelf_slug: 'rights_legal_aid', link_slug: 'kol_zchut',
+      label_he: 'כל זכות', label_en: 'Kol Zchut', url: 'https://www.kolzchut.org.il/',
+    };
+    const { client, calls } = createFakeClient({ tables: { knowledge_shelf_links: ok([row]) } });
+    const links = await new SupabaseWorldContentRepository(client).listKnowledgeShelfLinks('rights_legal_aid');
+    expect(links).toEqual([{
+      linkId: 'sl1', shelfSlug: 'rights_legal_aid', linkSlug: 'kol_zchut',
+      labelHe: 'כל זכות', labelEn: 'Kol Zchut', url: 'https://www.kolzchut.org.il/',
+    }]);
+    const call = callsTo(calls, 'knowledge_shelf_links')[0];
+    expect(call?.columns).toBe(KNOWLEDGE_SHELF_LINK_COLUMNS);
+    expect(call?.filters).toContainEqual(['eq', 'shelf_slug', 'rights_legal_aid']);
+    expect(call?.filters).toContainEqual(['eq', 'is_active', true]);
   });
 });
