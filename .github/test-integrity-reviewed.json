@@ -1,0 +1,29 @@
+{
+  "$comment": "Reviewed conditional skips accepted by scripts/check-test-integrity.mjs on PRs into main (owner delegation 22 Nov 2026, issue #2613). One entry per exact added marker line. Only skip / focus / todo markers can be listed; deleted tests, loosened limits and lost assertions still need an owner. Add an entry only in its own reviewed PR, with the reason it does not weaken the gate; `reviewedIn` is that PR. Code-owned (.github/CODEOWNERS).",
+  "entries": [
+    {
+      "file": "scripts/e2e-media-readonly.test.mjs",
+      "line": "assert.match(source, /test\\.skip\\(!postId/);",
+      "reason": "Not a skip: an assertion that the opt-in guard of media-member-readonly.spec.ts stays in place (#2548). It adds coverage.",
+      "reviewedIn": 0
+    },
+    {
+      "file": "supabase/tests/128_dev_tuning.sql",
+      "line": "return query select skip('pg_cron is not loaded on this server', 1);",
+      "reason": "Environment guard (#2517): the kc-dev tuning assertion reads cron.job and skips only when pg_cron is absent, the same condition under which the baseline itself skips the extension (non-cron database). No existing assertion is skipped.",
+      "reviewedIn": 0
+    },
+    {
+      "file": "tests/e2e/journeys/media-member-readonly.spec.ts",
+      "line": "test.skip(!postId, 'Opt-in diagnostic requires one existing post UUID.');",
+      "reason": "New opt-in, read-only DEV diagnostic (#2548) that only runs when the media-readonly suite is dispatched with MEDIA_READONLY_POST_ID; no existing test is skipped.",
+      "reviewedIn": 0
+    },
+    {
+      "file": "tests/e2e/journeys/qa/account-deletion.spec.ts",
+      "line": "test.skip(",
+      "reason": "Safety guard (#2602): the destructive account-deletion journey refuses to run when E2E_DELETE_ACCOUNT_EMAIL points at a suite user (user1/user2), so it can never delete the shared fixtures.",
+      "reviewedIn": 0
+    }
+  ]
+}
