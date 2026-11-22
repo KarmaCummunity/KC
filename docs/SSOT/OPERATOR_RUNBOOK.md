@@ -105,7 +105,7 @@ Artifact `db-backup-<target>-<YYYYMMDD>-<run id>-<attempt>`, each file gzip-comp
 | `manifest.json.gz.age` | table list and exact row count per table |
 | `BACKUP-INFO.txt`, `SHA256SUMS` | plain text: target, project, time; checksums of the `.age` files |
 
-**Not in a backup:** the files in Storage (avatars, post images; only their metadata rows are), Edge Function code and secrets, Vault secrets (`kc_project_url`, `kc_service_role_key`), Auth settings, and project settings. Re-apply those from the repo and the setup documents after a restore.
+**Not in a backup:** the files in Storage (avatars, post images; only their metadata rows are), Edge Function code and secrets, Vault secrets (`kc_project_url`, plus the applicable caller slot), Auth settings, and project settings. The caller slot is `kc_service_role_key` before the `verified_edge_caller` migration and `kc_verified_service_role_key` afterward. A migrated worker never falls back to the obsolete slot. Restore the applicable configuration through the reviewed target-specific Deploy pipeline and validate it before accepting the restore. Do not copy an unverified old caller or assume this DEV migration has been applied to PROD.
 
 ### Safety properties
 
