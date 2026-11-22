@@ -1,23 +1,19 @@
-import React, { useRef, type ReactNode } from 'react';
-import { View } from 'react-native';
+import React, { type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useTheme, Text, TextInput, type TextInput as KitTextInput } from '@kc/ui';
-import { formStreetNumberInputProps } from '../../lib/platform/formTextInputHints';
+import { Text } from '@kc/ui';
 import { ALL_CATEGORIES, ITEM_CONDITIONS } from '@kc/domain';
 import type { Category, ItemCondition, LocationDisplayLevel, PostVisibility } from '@kc/domain';
 import { CityPicker } from '../CityPicker';
-import { StreetPicker } from '../StreetPicker';
+import { StreetAddressRow } from '../address/StreetAddressRow';
 import { ExposureSettingsSection } from '../post/ExposureSettingsSection';
 import { EstimatedValueSlider } from './EstimatedValueSlider';
 import { PhotoPicker } from './PhotoPicker';
 import { TextField } from '../ui/TextField';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 import type { UploadedAsset } from '../../services/imageUpload';
 import { useCreatePostStyles } from '../../screens/tabs/create.styles';
 import { useShellTabBarScrollInset } from '../../navigation/useShellTabBarVisibility';
 import type { CreatePostCitySelection } from '../../hooks/useCreatePostPublish';
 import { FormScrollView } from '../ui/FormScrollView';
-import { useFormScopeField } from '../ui/useFormScopeField';
 import { FormSection } from '../ui/FormSection';
 import { FilterChipRow } from '../filterKit/FilterChipRow';
 
@@ -62,6 +58,8 @@ export interface CreatePostFormScrollContentProps {
   readonly uploads: UploadedAsset[];
   readonly uploadingCount: number;
   readonly onAddPhotos: () => void;
+  /** Stops the photo uploads still in flight. */
+  readonly onCancelUploads?: () => void;
   readonly onRemovePhoto: (path: string) => void;
 }
 
@@ -101,20 +99,12 @@ export function CreatePostFormScrollContent({
   uploads,
   uploadingCount,
   onAddPhotos,
+  onCancelUploads,
   onRemovePhoto,
 }: CreatePostFormScrollContentProps) {
   const { t } = useTranslation();
-  const { colors } = useTheme();
   const styles = useCreatePostStyles();
   const tabBarPad = useShellTabBarScrollInset();
-  // The house-number box is a bare TextInput (no label), so it joins the form scope by hand.
-  const streetNumberRef = useRef<KitTextInput>(null);
-  const streetNumberScope = useFormScopeField({
-    inputRef: streetNumberRef,
-    viewRef: streetNumberRef,
-    editable: !isPublishing && !!city,
-    hasError: Boolean(addressInlineError),
-  });
 
   return (
     <FormScrollView
@@ -131,6 +121,7 @@ export function CreatePostFormScrollContent({
           uploadingCount={uploadingCount}
           required={isGive}
           onAdd={onAddPhotos}
+          onCancelUploads={onCancelUploads}
           onRemove={onRemovePhoto}
         />
       </FormSection>
@@ -138,7 +129,8 @@ export function CreatePostFormScrollContent({
       <FormSection outlined={false}>
         <TextField
           testID="create-post-title"
-          label={`${t('post.title')} *`}
+          label={t('post.title')}
+          required
           errorText={titleInlineError ?? undefined}
           value={title}
           onChangeText={onTitleChange}
@@ -150,31 +142,15 @@ export function CreatePostFormScrollContent({
 
       <FormSection label={t('post.address')} required error={addressInlineError} outlined={false}>
         <CityPicker value={city} onChange={onCityChange} disabled={isPublishing} />
-        <View style={styles.streetRow}>
-          <View style={styles.streetInputStreet}>
-            <StreetPicker
-              cityId={city?.id ?? null}
-              value={street ? { id: '', name: street } : null}
-              onChange={(sel) => onStreetChange(sel.name)}
-              disabled={isPublishing}
-            />
-          </View>
-          <TextInput // brand-guard-allow: compact house-number box inline beside the street picker; TextField stacks a label
-            ref={streetNumberRef}
-            style={[styles.input, styles.streetInputHouse, !city ? { opacity: 0.5 } : null]}
-            value={streetNumber}
-            onChangeText={onStreetNumberChange}
-            placeholder={t('post.streetNumberShort')}
-            placeholderTextColor={colors.textDisabled}
-            textAlign={rtlTextAlignStart}
-            editable={!isPublishing && !!city}
-            {...formStreetNumberInputProps}
-            {...streetNumberScope.inputProps}
-            onFocus={streetNumberScope.onFocus}
-            onBlur={streetNumberScope.onBlur}
-            onSubmitEditing={streetNumberScope.onSubmitEditing}
-          />
-        </View>
+        <StreetAddressRow
+          cityId={city?.id ?? null}
+          street={street}
+          streetNumber={streetNumber}
+          onStreetChange={onStreetChange}
+          onStreetNumberChange={onStreetNumberChange}
+          disabled={isPublishing}
+          streetNumberPlaceholder={t('post.streetNumberShort')}
+        />
       </FormSection>
 
       <FormSection label={t('post.categoryLabel')}>

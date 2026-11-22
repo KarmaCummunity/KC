@@ -4,19 +4,24 @@
 import React from 'react';
 import { TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme, iconSize, Text } from '@kc/ui';
+import { useTheme, iconSize, Text, typography } from '@kc/ui';
 import { MirroredIcon } from '../ui/MirroredIcon';
 import type { VerificationLevel } from '@kc/domain';
 import { AvatarInitials } from '../AvatarInitials';
 import { VerificationBadge } from '../VerificationBadge';
 import { KCImage } from '../ui/KCImage';
 import { usePostCardGridStyles } from '../PostCardGrid.styles';
+import { textAlignStart } from '../../lib/rtlLayout';
 import { useKcCardExtraStyles } from './KcCard.styles';
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 
 export interface KcCardProps {
   width: number;
+  /** Minimal guest projection: no image/type area; no member data is fetched. */
+  textOnly?: boolean;
+  summary?: string | null;
+  disabled?: boolean;
   dense?: boolean;
   onPress: () => void;
   /** Fires on touch-down, before navigation, so a photo can start downloading. */
@@ -67,38 +72,41 @@ function KcCardInner(p: Readonly<KcCardProps>) {
       style={[styles.card, { width: p.width }, p.closed && extra.closed]}
       activeOpacity={0.86}
       onPress={p.onPress}
+      disabled={p.disabled}
       onPressIn={p.onPressIn}
-      accessibilityRole="button"
+      accessibilityRole={p.disabled ? undefined : 'button'}
       accessibilityLabel={p.accessibilityLabel}
     >
-      <View style={[styles.imageArea, { height: p.width * (p.imageRatio ?? 0.72), backgroundColor: placeholderBg }]}>
-        {p.imageUri ? (
-          <KCImage uri={p.imageUri} fallbackUri={p.fallbackUri ?? undefined} style={styles.image} contentFit="cover" onLoad={p.onImageLoad} />
-        ) : (
-          <View style={styles.placeholderTint}>
-            <Ionicons name={p.placeholderIcon} size={p.dense ? 28 : 40} color={isGive ? colors.giveTag : colors.secondary} />{/* brand-guard-allow: illustration glyph remains larger than the row icon scale */}
+      {!p.textOnly && (
+        <View style={[styles.imageArea, { height: p.width * (p.imageRatio ?? 0.72), backgroundColor: placeholderBg }]}>
+          {p.imageUri ? (
+            <KCImage uri={p.imageUri} fallbackUri={p.fallbackUri ?? undefined} style={styles.image} contentFit="cover" onLoad={p.onImageLoad} />
+          ) : (
+            <View style={styles.placeholderTint}>
+              <Ionicons name={p.placeholderIcon} size={p.dense ? 28 : 40} color={isGive ? colors.giveTag : colors.secondary} />{/* brand-guard-allow: illustration glyph remains larger than the row icon scale */}
+            </View>
+          )}
+          <View style={[styles.typePill, p.dense && styles.typePillDense]}>
+            <Text style={[styles.typePillText, isGive ? styles.givePillText : styles.requestPillText, p.dense && styles.typePillTextDense]}>
+              {p.badgeLabel}
+            </Text>
           </View>
-        )}
-        <View style={[styles.typePill, p.dense && styles.typePillDense]}>
-          <Text style={[styles.typePillText, isGive ? styles.givePillText : styles.requestPillText, p.dense && styles.typePillTextDense]}>
-            {p.badgeLabel}
-          </Text>
+          {p.roleBadgeLabel ? (
+            <View style={[styles.roleBadge, p.dense && styles.roleBadgeDense]}>
+              <Text style={[styles.roleBadgeText, p.dense && styles.roleBadgeTextDense]}>{p.roleBadgeLabel}</Text>
+            </View>
+          ) : null}
+          {p.menu ? (
+            <View
+              style={[styles.menuOverlay, p.dense && styles.menuOverlayDense]}
+              onStartShouldSetResponder={() => true}
+              onResponderRelease={(e) => e.stopPropagation()}
+            >
+              {p.menu}
+            </View>
+          ) : null}
         </View>
-        {p.roleBadgeLabel ? (
-          <View style={[styles.roleBadge, p.dense && styles.roleBadgeDense]}>
-            <Text style={[styles.roleBadgeText, p.dense && styles.roleBadgeTextDense]}>{p.roleBadgeLabel}</Text>
-          </View>
-        ) : null}
-        {p.menu ? (
-          <View
-            style={[styles.menuOverlay, p.dense && styles.menuOverlayDense]}
-            onStartShouldSetResponder={() => true}
-            onResponderRelease={(e) => e.stopPropagation()}
-          >
-            {p.menu}
-          </View>
-        ) : null}
-      </View>
+      )}
 
       <View style={styles.content}>
         {p.statusLabel || p.closed ? (
@@ -127,7 +135,7 @@ function KcCardInner(p: Readonly<KcCardProps>) {
         <View style={styles.titleRow}>
           <View style={styles.titleCol}>
             {typeof p.title === 'string' ? (
-              <Text style={[styles.title, p.dense && styles.titleDense]} numberOfLines={2}>{p.title}</Text>
+              <Text style={[styles.title, p.dense && styles.titleDense, p.textOnly && { textAlign: textAlignStart() }]} numberOfLines={p.textOnly ? undefined : 2}>{p.title}</Text>
             ) : p.title}
           </View>
           {p.chip ? (
@@ -136,6 +144,8 @@ function KcCardInner(p: Readonly<KcCardProps>) {
             </View>
           ) : null}
         </View>
+
+        {p.summary ? <Text style={{ ...typography.body, color: colors.textPrimary, textAlign: textAlignStart() }}>{p.summary}</Text> : null}
 
         {p.route ? (
           <View style={extra.routeRow}>

@@ -12,12 +12,14 @@ import { KnowledgeBookingActions } from './knowledge/KnowledgeBookingActions';
 import { HousingStayActions } from './housing/HousingStayActions';
 import { EventDetailsCard } from './events/EventDetailsCard';
 import { EventRegistrationActions } from './events/EventRegistrationActions';
+import { EmploymentDetailsCard } from './employment/EmploymentDetailsCard';
 import { RideRouteCard } from './RideRouteCard';
 import { RidePublishAgainButton } from './RidePublishAgainButton';
 import { RideSeriesManageLink } from './RideSeriesManageLink';
 import { RideSeriesOccurrences } from './RideSeriesOccurrences';
 import { PostSeriesOccurrences } from '../series/PostSeriesOccurrences';
 import { isTestListingTitle } from '../../lib/displayTitle';
+import { worldPlaceholderIcon } from '../../lib/worldDetailCopy';
 import { PostDetailHeader } from '../cards/PostDetailHeader';
 import { SimilarListingCard } from '../cards/SimilarListingCard';
 import { useAuthStore } from '../../store/authStore';
@@ -29,6 +31,7 @@ import { usePostDetailStyles } from '../../screens/post/postDetailScreen.styles'
 import { ListingMediaGallery } from './ListingMediaGallery';
 import { useCityName } from '../../hooks/useCityName';
 import { useRideHouseNumbers } from '../../hooks/useRideHouseNumbers';
+import { provenanceLabelKey } from '../../lib/importProvenance';
 
 const useStyles = makeUseStyles(({ colors }) => ({
   // Flow actions (reserve / claim / book / message) sit below the content card, like the post page's CTA.
@@ -61,10 +64,9 @@ interface Props {
   moderationInHeader?: boolean;
 }
 
-/** Placeholder icon for listings without photos; rides get a car like their cards. */
+/** Placeholder icon for listings without photos: the world's icon, like its cards. */
 function fallbackIconFor(detail: MarketplaceListingDetail) {
-  if (detail.worldSlug === 'rides') return 'car-outline' as const;
-  return detail.direction === 'give' ? ('gift-outline' as const) : ('search-outline' as const);
+  return worldPlaceholderIcon(detail.worldSlug, detail.direction === 'give' ? 'Give' : 'Request');
 }
 
 export function MarketplaceListingDetailView({ detail, bottomInset, footer, moderationInHeader = false }: Props) {
@@ -79,6 +81,8 @@ export function MarketplaceListingDetailView({ detail, bottomInset, footer, mode
   const similar = similarRaw.filter((item) => !isTestListingTitle(item.title));
 
   const worldLabel = i18n.language.startsWith('he') ? detail.worldLabelHe : detail.worldLabelEn;
+  // FR-IMPORT-007 AC3: an imported listing says where it came from.
+  const provenanceKey = provenanceLabelKey(detail.importedFrom);
   const kindLabel = i18n.language.startsWith('he') ? detail.kindLabelHe : detail.kindLabelEn;
   const ownerCityName = useCityName(detail.owner?.cityId ?? null);
   const rideHouseNumbers = useRideHouseNumbers(detail.listingId, detail.worldSlug === 'rides');
@@ -95,6 +99,7 @@ export function MarketplaceListingDetailView({ detail, bottomInset, footer, mode
             tone={detail.direction === 'request' ? 'request' : 'give'}
             badgeLabel={detail.direction === 'request' ? t('feed.requestTypeShort') : t('feed.giveTypeShort')}
             chip={worldLabel}
+            provenance={provenanceKey ? t(provenanceKey) : null}
           />
           {detail.worldSlug === 'rides' ? (
             <RideRouteCard
@@ -112,6 +117,7 @@ export function MarketplaceListingDetailView({ detail, bottomInset, footer, mode
           {detail.kindSlug === ORG_EVENT_KIND_SLUG ? (
             <PostSeriesOccurrences listingId={detail.listingId} details={detail.details} isOwner={viewerId === detail.ownerId} />
           ) : null}
+          {detail.worldSlug === 'employment' ? <EmploymentDetailsCard details={detail.details} /> : null}
           {detail.summary ? <Text style={detailStyles.description}>{detail.summary}</Text> : null}
           <Text style={styles.summary}>{kindLabel}</Text>
           {detail.owner ? (

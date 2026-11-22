@@ -7,6 +7,7 @@ import { toAgorot } from '../../../../../src/components/money/moneyAmount';
 import { newIdempotencyKey, paymentsUseCases } from '../../../../../src/services/paymentsComposition';
 import { notAvailableMessage, runAction } from '../../../../../src/lib/backendAvailability';
 import { track } from '../../../../../src/lib/analytics';
+import { InAppOrgPaymentsGate } from '../../../../../src/components/money/InAppOrgPaymentsGate';
 
 const PRESETS = [36, 72, 180, 360] as const;
 
@@ -16,7 +17,7 @@ const PRESETS = [36, 72, 180, 360] as const;
  * appears in the history with its receipt. Until the payment service gives the intent a checkout
  * page, the member is told the donation is not available yet.
  */
-export default function DonateNowScreen() {
+function DonateNowScreen() {
   const { orgId, listingId } = useLocalSearchParams<{ orgId: string; listingId?: string }>();
   const { t } = useTranslation();
   const router = useRouter();
@@ -52,5 +53,14 @@ export default function DonateNowScreen() {
       submitLabel={t('moneyPayments.confirmDonate')}
       onSubmit={donate}
     />
+  );
+}
+
+/** The screen behind the sandbox flag (FR-DONATE-003 AC7): a direct link with it off lands on the hub. */
+export default function DonateNowScreenRoute() {
+  return (
+    <InAppOrgPaymentsGate>
+      <DonateNowScreen />
+    </InAppOrgPaymentsGate>
   );
 }

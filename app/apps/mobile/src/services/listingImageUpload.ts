@@ -1,54 +1,34 @@
-import * as Crypto from 'expo-crypto';
+// Listing photos (marketplace worlds). A listing is a post: its photos live in the post bucket,
+// under the owner's folder, and go through the same pipeline as post photos (longer edge ≤ 2048,
+// a 400 px thumb for feed cards, bounded parallel uploads with time budgets and retries).
+
 import { getSupabaseClient } from '@kc/infrastructure-supabase';
 import type { MediaAssetInput } from '@kc/application';
-import { buildPostImagePath, pickPostImages, type PickedImage } from './imageUpload';
+import { pickPostImages, uploadPostImageBatch, type PickedImage } from './imageUpload';
 
 export type { PickedImage };
-import * as ImageManipulator from 'expo-image-manipulator';
-import { base64ToUint8Array } from './mediaEncoding';
 
-/** A listing is a post: its photos live in the post bucket, under the owner's folder. */
 const LISTING_BUCKET = 'post-images';
 const MAX_LISTING_IMAGES = 5;
-const MAX_EDGE = 2048;
-const COMPRESS = 0.85;
-const IMMUTABLE_CACHE_CONTROL = 'public, max-age=31536000, immutable';
-/** Every listing photo is re-encoded as JPEG before upload. */
-const LISTING_IMAGE_MIME = 'image/jpeg';
 
 export { pickPostImages as pickListingImages };
 
-async function encodeJpeg(uri: string): Promise<Uint8Array> {
-  const r = await ImageManipulator.manipulateAsync(
-    uri,
-    [{ resize: { width: MAX_EDGE } }],
-    { compress: COMPRESS, format: ImageManipulator.SaveFormat.JPEG, base64: true },
-  );
-  if (!r.base64) throw new Error('listing_image: no base64');
-  return base64ToUint8Array(r.base64);
-}
-
+/** Uploads the photos in order; rejects with the first failure (the listing form retries as a whole). */
 export async function uploadListingImages(
   userId: string,
   picked: PickedImage[],
 ): Promise<MediaAssetInput[]> {
-  const batch = Crypto.randomUUID();
-  const client = getSupabaseClient();
-  const uploaded: MediaAssetInput[] = [];
-  const slice = picked.slice(0, MAX_LISTING_IMAGES);
-  for (let i = 0; i < slice.length; i += 1) {
-    const path = buildPostImagePath(userId, batch, i);
-    const bytes = await encodeJpeg(slice[i]!.uri);
-    const { error } = await client.storage.from(LISTING_BUCKET).upload(path, bytes, {
-      contentType: LISTING_IMAGE_MIME,
-      upsert: false,
-      cacheControl: IMMUTABLE_CACHE_CONTROL,
-    });
-    if (error) throw new Error(error.message);
-    // The bytes actually stored: `post_media` records the real size and type of each file.
-    uploaded.push({ path, mimeType: LISTING_IMAGE_MIME, sizeBytes: bytes.byteLength });
+  const results = await uploadPostImageBatch(picked.slice(0, MAX_LISTING_IMAGES), userId);
+  const failure = results.find((r) => r.status === 'rejected');
+  if (failure) {
+    const reason = failure.reason as { message?: unknown } | null;
+    throw new Error(typeof reason?.message === 'string' ? reason.message : String(failure.reason));
   }
-  return uploaded;
+  // The bytes actually stored: `post_media` records the real size and type of each file.
+  return results.map((r) => {
+    const { path, mimeType, sizeBytes } = (r as PromiseFulfilledResult<MediaAssetInput>).value;
+    return { path, mimeType, sizeBytes };
+  });
 }
 
 export function listingImagePublicUrl(storagePath: string): string {

@@ -1,0 +1,20 @@
+# External post import, kill switch: while `external_post_import_enabled` is off (a missing flag is
+# off, as on kc-dev today), the import screen is not reachable. Its link opens the plain create form,
+# and the create form offers no import entry.
+# Spec: docs/spec/requirements/25_external_post_import.md FR-IMPORT-001 AC4.
+# The paste → draft → publish journey needs the flag on and a model key on kc-dev (PM decision); its
+# steps are covered by unit and component tests until then (#2419).
+appId: org.karmacommunity.app
+name: Import — off by default opens the plain form
+tags: [posts, import]
+---
+- runFlow: ../subflows/sign-in.yaml
+- openLink: karmacommunity://import-post
+- extendedWaitUntil:
+    visible:
+      id: unified-create-header
+    timeout: 20000
+- assertNotVisible:
+    id: import-post-text
+- assertNotVisible:
+    id: create-import-entry

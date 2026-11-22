@@ -640,6 +640,8 @@ export type Database = {
           channel: string
           confidence: number
           created_at: string
+          duplicate_post_id: string | null
+          edited_fields: string[] | null
           extraction: Json | null
           extraction_version: string
           id: string
@@ -657,6 +659,8 @@ export type Database = {
           channel: string
           confidence?: number
           created_at?: string
+          duplicate_post_id?: string | null
+          edited_fields?: string[] | null
           extraction?: Json | null
           extraction_version: string
           id?: string
@@ -674,6 +678,8 @@ export type Database = {
           channel?: string
           confidence?: number
           created_at?: string
+          duplicate_post_id?: string | null
+          edited_fields?: string[] | null
           extraction?: Json | null
           extraction_version?: string
           id?: string
@@ -688,6 +694,12 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "external_post_imports_duplicate_post_id_fkey"
+            columns: ["duplicate_post_id"]
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "external_post_imports_post_id_fkey"
             columns: ["post_id"]
@@ -1005,6 +1017,83 @@ export type Database = {
           },
         ]
       }
+      identity_verification_consents: {
+        Row: {
+          accepted_at: string
+          user_id: string
+          version: string
+        }
+        Insert: {
+          accepted_at?: string
+          user_id: string
+          version: string
+        }
+        Update: {
+          accepted_at?: string
+          user_id?: string
+          version?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "identity_verification_consents_user_id_fkey"
+            columns: ["user_id"]
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      identity_verifications: {
+        Row: {
+          created_at: string
+          decided_at: string | null
+          decision_reason_code: string | null
+          document_country: string | null
+          document_expires_on: string | null
+          document_type: string | null
+          id: string
+          name_match: boolean | null
+          provider: string
+          provider_session_id: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          decided_at?: string | null
+          decision_reason_code?: string | null
+          document_country?: string | null
+          document_expires_on?: string | null
+          document_type?: string | null
+          id?: string
+          name_match?: boolean | null
+          provider: string
+          provider_session_id?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          decided_at?: string | null
+          decision_reason_code?: string | null
+          document_country?: string | null
+          document_expires_on?: string | null
+          document_type?: string | null
+          id?: string
+          name_match?: boolean | null
+          provider?: string
+          provider_session_id?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "identity_verifications_user_id_fkey"
+            columns: ["user_id"]
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       item_subcategories: {
         Row: {
           created_at: string
@@ -1117,6 +1206,55 @@ export type Database = {
           url?: string
         }
         Relationships: []
+      }
+      knowledge_slot_series: {
+        Row: {
+          capacity: number
+          created_at: string
+          duration_minutes: number
+          ends_on: string | null
+          id: string
+          post_id: string
+          start_time: string
+          starts_on: string
+          status: string
+          updated_at: string
+          weekdays: number
+        }
+        Insert: {
+          capacity?: number
+          created_at?: string
+          duration_minutes: number
+          ends_on?: string | null
+          id?: string
+          post_id: string
+          start_time: string
+          starts_on?: string
+          status?: string
+          updated_at?: string
+          weekdays: number
+        }
+        Update: {
+          capacity?: number
+          created_at?: string
+          duration_minutes?: number
+          ends_on?: string | null
+          id?: string
+          post_id?: string
+          start_time?: string
+          starts_on?: string
+          status?: string
+          updated_at?: string
+          weekdays?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "knowledge_slot_series_post_id_fkey"
+            columns: ["post_id"]
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       knowledge_topic_aliases: {
         Row: {
@@ -1624,6 +1762,7 @@ export type Database = {
           id: string
           is_platform: boolean
           is_verified_nonprofit: boolean
+          may_post_jobs: boolean
           name: string
           org_type: string | null
           public_about_en: string | null
@@ -1656,6 +1795,7 @@ export type Database = {
           id?: string
           is_platform?: boolean
           is_verified_nonprofit?: boolean
+          may_post_jobs?: boolean
           name: string
           org_type?: string | null
           public_about_en?: string | null
@@ -1688,6 +1828,7 @@ export type Database = {
           id?: string
           is_platform?: boolean
           is_verified_nonprofit?: boolean
+          may_post_jobs?: boolean
           name?: string
           org_type?: string | null
           public_about_en?: string | null
@@ -2313,6 +2454,8 @@ export type Database = {
           ends_at: string
           id: string
           post_id: string
+          series_id: string | null
+          series_on: string | null
           starts_at: string
         }
         Insert: {
@@ -2321,6 +2464,8 @@ export type Database = {
           ends_at: string
           id?: string
           post_id: string
+          series_id?: string | null
+          series_on?: string | null
           starts_at: string
         }
         Update: {
@@ -2329,6 +2474,8 @@ export type Database = {
           ends_at?: string
           id?: string
           post_id?: string
+          series_id?: string | null
+          series_on?: string | null
           starts_at?: string
         }
         Relationships: [
@@ -2336,6 +2483,12 @@ export type Database = {
             foreignKeyName: "post_knowledge_slots_post_id_fkey"
             columns: ["post_id"]
             referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_knowledge_slots_series_id_fkey"
+            columns: ["series_id"]
+            referencedRelation: "knowledge_slot_series"
             referencedColumns: ["id"]
           },
         ]
@@ -2867,6 +3020,7 @@ export type Database = {
           shown_street_number: string | null
           source: string
           source_language: string | null
+          source_platform: string | null
           status: string
           status_before_removal: string | null
           time_window: unknown
@@ -2898,6 +3052,7 @@ export type Database = {
           shown_street_number?: string | null
           source?: string
           source_language?: string | null
+          source_platform?: string | null
           status?: string
           status_before_removal?: string | null
           time_window?: unknown
@@ -2929,6 +3084,7 @@ export type Database = {
           shown_street_number?: string | null
           source?: string
           source_language?: string | null
+          source_platform?: string | null
           status?: string
           status_before_removal?: string | null
           time_window?: unknown
@@ -3528,6 +3684,7 @@ export type Database = {
           status_until: string | null
           updated_at: string
           user_id: string
+          verification_expires_at: string | null
           verification_method: string | null
           verified_at: string | null
         }
@@ -3543,6 +3700,7 @@ export type Database = {
           status_until?: string | null
           updated_at?: string
           user_id: string
+          verification_expires_at?: string | null
           verification_method?: string | null
           verified_at?: string | null
         }
@@ -3558,6 +3716,7 @@ export type Database = {
           status_until?: string | null
           updated_at?: string
           user_id?: string
+          verification_expires_at?: string | null
           verification_method?: string | null
           verified_at?: string | null
         }
@@ -4062,6 +4221,10 @@ export type Database = {
           sort_order: number
         }[]
       }
+      accept_identity_verification_consent: {
+        Args: { p_version: string }
+        Returns: undefined
+      }
       accept_legal_document: {
         Args: {
           p_doc_type: string
@@ -4170,6 +4333,26 @@ export type Database = {
         Returns: string
       }
       admin_hierarchy_census: { Args: never; Returns: Json }
+      admin_import_field_edit_rates: {
+        Args: { p_days?: number }
+        Returns: {
+          edit_rate: number
+          edited: number
+          field: string
+          reported: number
+        }[]
+      }
+      admin_import_funnel: {
+        Args: { p_days?: number }
+        Returns: {
+          attempts: number
+          discarded: number
+          drafted: number
+          manual: number
+          provider_calls: number
+          published: number
+        }[]
+      }
       admin_join_support_thread: {
         Args: { p_chat_id: string }
         Returns: {
@@ -4344,6 +4527,10 @@ export type Database = {
         Args: { p_approve: boolean; p_link_id: string; p_note?: string }
         Returns: string
       }
+      admin_revoke_identity_verification: {
+        Args: { p_reason: string; p_user_id: string }
+        Returns: undefined
+      }
       admin_revoke_role: { Args: { p_grant_id: string }; Returns: undefined }
       admin_set_app_flag: {
         Args: { p_description?: string; p_enabled: boolean; p_key: string }
@@ -4363,6 +4550,10 @@ export type Database = {
       }
       admin_set_manager: {
         Args: { p_grant_id: string; p_manager_grant_id?: string }
+        Returns: undefined
+      }
+      admin_set_org_may_post_jobs: {
+        Args: { p_enabled: boolean; p_org_id: string }
         Returns: undefined
       }
       admin_set_org_slug: {
@@ -4582,6 +4773,22 @@ export type Database = {
           p_intent_id: string
           p_provider_ref: string
         }
+        Returns: undefined
+      }
+      api_identity_verification_begin: {
+        Args: { p_provider: string; p_user_id: string }
+        Returns: string
+      }
+      api_identity_verification_set_session: {
+        Args: { p_attempt_id: string; p_provider_session_id: string }
+        Returns: undefined
+      }
+      api_import_attach_post: {
+        Args: { p_import_id: string; p_post_id: string }
+        Returns: undefined
+      }
+      api_import_record_edits: {
+        Args: { p_edited_fields: string[]; p_import_id: string }
         Returns: undefined
       }
       api_match_llm_pending: {
@@ -5727,6 +5934,16 @@ export type Database = {
       }
       get_public_research_questions: { Args: { p_slug: string }; Returns: Json }
       get_research_salt: { Args: never; Returns: string }
+      guest_posts: {
+        Args: { p_before_id?: string; p_limit?: number; p_post_id?: string }
+        Returns: {
+          city_name_en: string
+          city_name_he: string
+          description: string
+          id: string
+          title: string
+        }[]
+      }
       hide_chat: { Args: { p_chat_id: string }; Returns: undefined }
       housing_completed_stays: {
         Args: { p_user_ids: string[] }
@@ -5735,7 +5952,26 @@ export type Database = {
           user_id: string
         }[]
       }
+      identity_verification_apply: {
+        Args: { p_event_id: string; p_payload: Json; p_provider_slug: string }
+        Returns: {
+          event_error_code: string
+          event_status: string
+          webhook_event_id: string
+        }[]
+      }
+      import_moderation_removals: {
+        Args: { p_since: string; p_user_id: string }
+        Returns: string[]
+      }
       import_normalize_place_text: { Args: { p_text: string }; Returns: string }
+      import_similar_open_post: {
+        Args: { p_min?: number; p_text: string; p_user_id: string }
+        Returns: {
+          post_id: string
+          similarity: number
+        }[]
+      }
       join_challenge: { Args: { p_challenge_id: string }; Returns: undefined }
       knowledge_slot_seats: {
         Args: { p_post_id: string }
@@ -5938,6 +6174,16 @@ export type Database = {
           world_slug: string
         }[]
       }
+      my_identity_verification: {
+        Args: never
+        Returns: {
+          decided_at: string
+          expires_at: string
+          reason_code: string
+          status: string
+          verified_at: string
+        }[]
+      }
       my_karma_points: { Args: never; Returns: number }
       my_matches: {
         Args: { p_limit?: number }
@@ -6084,6 +6330,42 @@ export type Database = {
         }[]
       }
       post_detail: { Args: { p_post_id: string }; Returns: Json }
+      post_media_processing_claim: {
+        Args: { p_lease_seconds?: number; p_limit?: number }
+        Returns: {
+          attempt: number
+          lease_token: string
+          leased_until: string
+          media_id: string
+          mime_type: string
+          object_mimetype: string
+          object_size: number
+          owner_id: string
+          post_id: string
+          size_bytes: number
+          storage_key: string
+        }[]
+      }
+      post_media_processing_complete: {
+        Args: {
+          p_derivative_key: string
+          p_height: number
+          p_lease_token: string
+          p_media_id: string
+          p_size_bytes: number
+          p_width: number
+        }
+        Returns: string
+      }
+      post_media_processing_fail: {
+        Args: {
+          p_error: string
+          p_lease_token: string
+          p_media_id: string
+          p_retryable: boolean
+        }
+        Returns: string
+      }
       post_seat_counts: {
         Args: { p_post_ids: string[] }
         Returns: {
@@ -6474,6 +6756,10 @@ export type Database = {
         }
       }
       set_date_of_birth: { Args: { p_date: string }; Returns: undefined }
+      set_knowledge_slot_series_status: {
+        Args: { p_post_id: string; p_status: string }
+        Returns: undefined
+      }
       set_message_reaction: {
         Args: { p_message_id: string; p_reaction_type: string }
         Returns: undefined
@@ -6505,6 +6791,17 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      start_knowledge_slot_series: {
+        Args: {
+          p_capacity?: number
+          p_duration_minutes: number
+          p_ends_on?: string
+          p_post_id: string
+          p_start_time: string
+          p_weekdays: number
+        }
+        Returns: string
       }
       submit_org_application: {
         Args: {
@@ -6702,6 +6999,8 @@ export type Database = {
         shown_street: string | null
         shown_street_number: string | null
         challenge_id: string | null
+        source: string | null
+        source_platform: string | null
       }
     }
   }

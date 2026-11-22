@@ -17,7 +17,7 @@ exception when others then
 end;
 $$;
 
-select plan(29);
+select plan(36);
 
 delete from ops.job_runs;
 delete from ops.warnings;
@@ -95,6 +95,29 @@ select is(pg_temp.err($$select kc_private.audit_drop_partitions_before(current_d
   'the audit trail cannot be cut shorter than its minimum');
 select lives_ok('select kc_private.partitions_ensure(); select kc_private.partitions_ensure()', 'partition maintenance is repeatable');
 select is(kc_private.retention_run('cron_run_history') >= 0, true, 'the scheduler''s own log is trimmed (nothing to do without pg_cron)');
+
+-- ── External post import records (FR-IMPORT-009 AC1) ────────────────────────
+insert into public.external_post_imports (user_id, channel, text_fingerprint, routing, reason, extraction_version, created_at) values
+  ('00000000-0000-4000-8000-00000000000a', 'share', repeat('a', 64), 'ready', 'ok', 'v1', now() - interval '91 days'),
+  ('00000000-0000-4000-8000-00000000000a', 'paste', repeat('b', 64), 'confirm', 'ok', 'v1', now() - interval '89 days'),
+  ('00000000-0000-4000-8000-00000000000b', 'share', repeat('c', 64), 'manual', 'not_a_post', 'v1', now());
+select is(kc_private.retention_run('external_post_imports'), 1::bigint, 'one import record is past 90 days');
+select is((select string_agg(left(text_fingerprint, 1), ',' order by text_fingerprint) from public.external_post_imports), 'b,c',
+  'the younger records stay');
+select is(kc_private.retention_run('external_post_imports'), 0::bigint, 'a second run finds nothing');
+
+-- ── Push device tokens (FR-NOTIF-015 AC4) ────────────────────────────────────
+select is((select keep || ':' || runnable from kc_private.retention_rules where name = 'user_devices'),
+  '90 days:true', 'push devices are kept 90 days after last_seen_at');
+insert into public.user_devices (id, user_id, platform, push_token, last_seen_at) values
+  ('50000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-00000000000a', 'ios', 'tok-stale',
+   now() - interval '91 days'),
+  ('50000000-0000-4000-8000-000000000002', '00000000-0000-4000-8000-00000000000b', 'android', 'tok-fresh',
+   now() - interval '89 days');
+select is(kc_private.retention_run('user_devices'), 1::bigint, 'one device is past 90 days without use');
+select is((select string_agg(push_token, ',' order by push_token) from public.user_devices), 'tok-fresh',
+  'a device seen within the period stays');
+select is(kc_private.retention_run('user_devices'), 0::bigint, 'a second prune finds nothing');
 
 -- ── Deleted posts ───────────────────────────────────────────────────────────
 insert into public.cities (city_id, name_he, name_en) values ('c1', 'c1', 'City One');

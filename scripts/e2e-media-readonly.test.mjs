@@ -1,0 +1,20 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8');
+test('member media diagnostic is opt-in, DEV-pinned, request-only and never claims photo acceptance', () => {
+  const flow = read('.github/workflows/e2e-nightly-dev.yml');
+  const source = read('tests/e2e/journeys/media-member-readonly.spec.ts');
+  assert.match(flow, /inputs\.suite == 'media-readonly'/);
+  assert.match(flow, /MEDIA_READONLY_POST_ID: \$\{\{ inputs\.media_post_id \}\}/);
+  assert.match(flow, /test -n "\$MEDIA_READONLY_POST_ID"/);
+  assert.match(flow, /media-member-readonly\.spec\.ts --project=journeys --no-deps --retries=0/);
+  assert.match(source, /test\.skip\(!postId/);
+  assert.match(source, /trace: 'off', video: 'off'/);
+  assert.match(source, /sessionFor\(USER_D\)/);
+  assert.match(source, /differentOwner: true/);
+  assert.match(source, /photoAcceptancePassed: false/);
+  assert.match(source, /expect\(posts\[0\]!\.visibility\)\.toBe\('Public'\)/);
+  assert.doesNotMatch(source, /request\.(post|put|patch|delete)|\.rpc\(|cleanupE2eContent|uploadPostPhoto|publishPostAs|create_post_with_details|admin\./);
+  assert.doesNotMatch(source, /console\.|info\.attach\([^]*session\.access_token/);
+});

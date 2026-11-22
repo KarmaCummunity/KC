@@ -12,11 +12,11 @@ Prefix: `FR-VERIFY-*`
 
 ---
 
-## FR-VERIFY-001 — Verification levels (D23, `D`)
+## FR-VERIFY-001 — Verification levels (D23, D172)
 | Level | Name (HE) | Badge | How it is reached | Code |
 |---|---|---|---|---|
 | 0 | — | none | Signed up | none of the below |
-| 1 | פרופיל מלא | green check | Complete profile (FR-VERIFY-012); no SMS, no cost (`D`) | all FR-VERIFY-012 AC1 fields non-empty |
+| 1 | פרופיל מלא | green check | Complete profile (FR-VERIFY-012); no SMS, no cost (D172) | all FR-VERIFY-012 AC1 fields non-empty |
 | 2 | זהות מאומתת | blue check | ID document + live selfie match (this spec) | `users.verified_at IS NOT NULL` and `verification_method IN ('provider','manual')` (`'manual'` via FR-VERIFY-008) |
 | 3 | ארגון מוכר | gold check | A recognised organization account (FR-ORG-019, D53) | the organization account type of `20_organizations.md`; renders nothing until that type ships |
 
@@ -24,7 +24,7 @@ Prefix: `FR-VERIFY-*`
 - AC2. The level is shown as a badge next to the member's name (D23) on: profile (own and others'), post card, post detail, chat (inbox row and conversation header), search results and follow suggestions. One badge only — the highest level. The badge never shows which fields were filled, nor the document type, number, nationality or date of birth.
 - AC3. The three badges share one check-mark shape and differ by color (green / blue / gold) from the design-system palette (`17_brand_and_design_system.md`); each has an accessibility label with the level name.
 - AC4. Read paths that return another member (profile, post owner, chat peer, search, suggestions) carry the level as a number only; the private fields behind level 1 (street, contact phone, date of birth) are never exposed to compute it.
-- AC5. The old "verified phone" level is withdrawn (`D`): phone OTP (FR-PROFILE-017) stays a sign-in method and does not change the level.
+- AC5. The old "verified phone" level is withdrawn (D172): phone OTP (FR-PROFILE-017) stays a sign-in method and does not change the level.
 
 ## FR-VERIFY-012 — Complete profile (level 1)
 - AC1. A profile is complete when all of these are non-empty: `display_name`, `city`, `date_of_birth`, avatar (`avatar_url`), `profile_street` + `profile_street_number`, `contact_phone`. Biography is not required.
@@ -95,7 +95,7 @@ Shown only to the signed-in member about their **own** profile, only while their
 
 ## FR-VERIFY-011 — Provider selection (PM action)
 - AC1. Requirements: Israeli identity card (smart card) and passports of every country; certified liveness (ISO/IEC 30107-3 presentation-attack detection, tested by an accredited lab); Hebrew UI and RTL; a hosted web flow; signed webhooks; configurable image retention ≤ 30 days; a data-processing agreement acceptable under the Israeli Privacy Protection Law and its amendment 13; per-verification pricing within the launch budget.
-- AC2. Candidates to evaluate (no preference implied): Au10tix (Israeli), Sumsub, Veriff, Onfido, Persona.
+- AC2. Candidates to evaluate (no preference implied): Au10tix (Israeli), Sumsub, Veriff, Onfido, Persona, Didit, ID Analyzer. Didit and ID Analyzer advertise a free monthly allowance and Israeli document support; their claims are vendor-reported and are checked in a sandbox before any choice. No public Israeli government register lookup exists, so every candidate verifies a document plus a live face only.
 - AC3. The PM chooses, signs the contract and DPA, and provides the sandbox and production keys through the environment secrets of FR-VERIFY-010 AC3. This is the blocker of HOUSING-H0.
 
 ## Notifications
@@ -118,4 +118,5 @@ Shown only to the signed-in member about their **own** profile, only while their
 | Version | Date | Change |
 |---|---|---|
 | 0.1 | 2026-11-03 | New domain file: ID document + live selfie via a certified provider (`D117`); FR-VERIFY-001…011. |
-| 0.2 | 2026-11-07 | Levels reshaped (`D`): 1 = complete profile (FR-VERIFY-012, replaces verified phone), 2 = ID, 3 = recognised organization; color-tier badges and display surfaces (FR-VERIFY-001 AC2–AC5); complete-profile nudges (FR-VERIFY-013). |
+| 0.2 | 2026-11-07 | Levels reshaped (D172): 1 = complete profile (FR-VERIFY-012, replaces verified phone), 2 = ID, 3 = recognised organization; color-tier badges and display surfaces (FR-VERIFY-001 AC2–AC5); complete-profile nudges (FR-VERIFY-013). |
+| 0.3 | 2026-11-18 | FR-VERIFY-011 AC2: added Didit and ID Analyzer as provider candidates (free monthly allowance, to be verified in a sandbox). |

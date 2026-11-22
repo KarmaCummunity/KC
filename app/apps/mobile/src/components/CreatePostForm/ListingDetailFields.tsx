@@ -3,6 +3,7 @@
 // with a purpose-built control per field type, styled like the rest of the create form.
 import React from 'react';
 import { format } from 'date-fns';
+import { isRideWeekday } from '@kc/domain';
 import { Switch } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { TextField } from '../ui/TextField';
@@ -12,6 +13,7 @@ import { clampWholeNumber, visibleDetailSpecs, type ListingFieldSpec } from '../
 import { detailField } from '../../lib/unifiedCreate/listingFormProblem';
 import { CountStepper } from './CountStepper';
 import { KnowledgeSlotListField } from './KnowledgeSlotListField';
+import { RideWeekdayPicker } from '../giving/RideWeekdayPicker';
 import { ListingFieldFrame, useListingFieldProblem } from './ListingFieldFrame';
 import { Chip } from '../ui/Chip';
 import { ChipSelectRow } from '../filterKit/ChipSelectRow';
@@ -64,7 +66,7 @@ interface ControlProps {
 function FieldControl({ spec, value, onChange, disabled }: ControlProps) {
   const { t } = useTranslation();
   const set = (next: unknown) => onChange(spec.key, next);
-  const label = `${t(`marketplace.field.${spec.key}`)}${spec.required ? ' *' : ''}`;
+  const label = t(`marketplace.field.${spec.key}`);
   const errorText = useListingFieldProblem(detailField(spec.key)) ?? undefined;
 
   switch (spec.type) {
@@ -156,6 +158,7 @@ function FieldControl({ spec, value, onChange, disabled }: ControlProps) {
       return (
         <TextField
           label={label}
+          required={spec.required}
           errorText={errorText}
           inputKind="decimal"
           value={typeof value === 'number' ? String(value) : ''}
@@ -172,6 +175,7 @@ function FieldControl({ spec, value, onChange, disabled }: ControlProps) {
         <TextField
           testID={`listing-integer-${spec.key}`}
           label={label}
+          required={spec.required}
           errorText={errorText}
           inputKind="integer"
           value={typeof value === 'number' ? String(value) : ''}
@@ -184,9 +188,11 @@ function FieldControl({ spec, value, onChange, disabled }: ControlProps) {
       return (
         <TextField
           label={label}
+          required={spec.required}
           errorText={errorText}
           value={typeof value === 'string' ? value : ''}
           onChangeText={set}
+          inputKind={spec.inputKind}
           multiline={spec.multiline}
           maxLength={spec.maxLength}
           editable={!disabled}
@@ -198,6 +204,10 @@ function FieldControl({ spec, value, onChange, disabled }: ControlProps) {
       );
     case 'toggle':
       return <Switch value={value === true} onValueChange={set} disabled={disabled} />;
+    case 'weekdays':
+      return (
+        <RideWeekdayPicker value={Array.isArray(value) ? value.filter(isRideWeekday) : []} onChange={set} disabled={disabled} />
+      );
   }
 }
 

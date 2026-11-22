@@ -239,6 +239,8 @@ A decision should be re-opened only when one of the following triggers fires:
 
 ## D-14 — Deleted user → "Deleted user" placeholder in chats
 
+**Clarified by owner approval 2026-11-20.** Retained counterpart conversation text does not preserve the purged member's shared chat image assets. Those images are removed for both sides at final purge (FR-SETTINGS-012, Q-8).
+
 **Decision.** When one party deletes their account, the counterpart retains the conversation; the deleted user appears as "Deleted user" with a generic avatar. Their messages remain visible.
 
 **Rationale.** Hard-deleting messages would erase context the counterpart may need (e.g., coordination history). The placeholder respects privacy without breaking continuity.
@@ -469,6 +471,8 @@ Web Push parity is deferred — only the adapter changes, the pipeline is shared
 ---
 
 ## D-21 — Privacy mode is a follow-approval flag only (2026-05-15)
+
+**Superseded for profile visibility by owner approval 2026-11-20.** Private now hides the profile from non-approved followers and caps per-field visibility. See `docs/spec/07_cross_cutting_systems.md` §7.12 and FR-PROFILE-003. The text below records the old decision, not the current target contract; separate per-post visibility is unchanged.
 
 **Decision.** `User.privacy_mode = Private` means **one thing**: new follow attempts create a `pending` follow request that the target must approve. It has no other effect on visibility — the profile header, biography, counters, post lists (subject to per-post `visibility`), and followers/following lists are visible to all signed-in viewers, exactly as for a `Public` profile. The lock indicator (`FR-PROFILE-011` / `FR-PROFILE-012`) plus the "Send Follow Request" CTA are the only user-facing differences.
 
@@ -2042,3 +2046,39 @@ Owner rules that go with it:
 **Why.** A PR that touches the app runs the Maestro lane for 40–90 minutes, and `dev` changes some `.github` file several times a day. On 2026-11-16 one PR lost five green runs this way, four of them to files no PR run uses (#2369). The binding still proves that the workflow and judges that ran are the base branch's own, and the merge-group run re-judges the final tree before anything merges.
 
 **Affected.** `scripts/ci-run-binding.mjs`, `docs/SSOT/ENVIRONMENTS.md`. `CI verdict` runs from `main`, so the rule takes effect with the next release to `main`.
+
+## D-241 — Every dev deploy installs the demo-data tools (2026-11-17)
+
+**Decision.** `deploy-db.yml` runs `supabase/seed/demo/load.sql` after the migrations whenever the target is `dev` (step **Demo-data tools (kc-dev only)**). The step refuses any project ref but kc-dev's and is skipped for prod. It installs the tools and sets the dev marker; it creates no demo data (no password is passed). The **Seed KC dev** action `demo` stays, for installing them between deploys.
+
+The Demo data screen keeps two failures apart: the RPC itself is missing (`not_installed`: kc-prod, by design) and the RPC ran but an object inside it is missing (`outdated`: an installed copy older than the schema). Both name the environment the build is connected to.
+
+**Why.** The tools are a seed, not a migration (`D-239`), so nothing brought a change to kc-dev except a manual workflow run. On 2026-11-17 kc-dev ran a copy two merges old (no `worlds` phase, no org staff in every role), and the screen answered "not installed" for every missing-object error, so a production-wired build, an old copy and a broken copy all looked the same (#2434).
+
+**Affected.** `.github/workflows/deploy-db.yml`, `supabase/seed/demo/README.md`, `docs/agents/DEPLOY.md`, `DemoData.ts` (`outdated`, `DEMO_DATA_SEED_PHASES`), `demoDataRows.ts`, `(admin)/demo-data`, `FR-ADMIN-031 AC1, AC11, AC12`.
+
+## D-242 — The weekly production copy: anonymized in the kc-prod job, applied by a dev-only seed (2026-11-19)
+
+**Decision.** `prod-copy-to-dev.yml` (FR-ADMIN-037, D176) has two jobs. `export` holds `supabase-prod` as a listed read-only monitor of `scripts/check-deploy-isolation.mjs`: one read-only transaction (`scripts/prod-copy-export.sql`) selects an allowlist of rows, and `scripts/prod-copy-anonymize.mjs` rewrites them in the same step (keyed HMAC ids, fake names, seed-domain addresses, contact details and ID numbers removed from every free text). Only the age-encrypted result leaves the job. `load` holds `supabase-dev` and applies the document in one transaction with `kc_private.prod_copy_apply`, a dev-only seed (`supabase/seed/prod-copy/`, as `D-239`) that every dev deploy installs (as `D-241`). Copied rows are written through kc-dev's own triggers like any other row; a post they refuse is skipped and counted. A post whose copied fields changed is replaced rather than edited.
+
+**Why.** Anonymizing before the data leaves the job that may read production keeps real names, text and ids off the artifact, the logs and kc-dev, and two allowlists (the export and the anonymizer) must both fail before anything private moves. A seed rather than a migration keeps every copy object off kc-prod. Going through kc-dev's triggers keeps counters, karma, search and matching consistent, which a trigger-free bulk load would break. The post status machine does not allow every move a production post makes, so replacing a changed post is the only path that always works.
+
+**Affected.** `.github/workflows/prod-copy-to-dev.yml`, `scripts/prod-copy-export.sql`, `scripts/prod-copy-anonymize.mjs`, `scripts/check-deploy-isolation.mjs` (`MONITORS`, another holder of prod secrets outside `deploy.yml`, tracked with TD-232), `supabase/seed/prod-copy/`, `.github/workflows/deploy-db.yml`, `docs/SSOT/OPERATOR_RUNBOOK.md` "Production copy to kc-dev".
+
+## D-243 — kc-dev tunes its job cadence and log retention through a dev-only seed (2026-11-19)
+
+**Decision.** The migrations carry production's job schedules and retention periods. Values that only kc-dev needs differently live in `supabase/seed/dev-tuning/load.sql`, which `deploy-db.yml` runs after the migrations on every dev deploy (step **Job tuning (kc-dev only)**, guarded to kc-dev's project ref like the other dev-only seeds of `D-241`). It updates rows of `kc_private.retention_rules`, `kc_private.scheduled_jobs` and `kc_private.matching_settings`; the `scheduled_jobs_sync` trigger reconciles pg_cron in the same transaction. First values: `ops.job_runs` kept 7 days and pg_cron's run log 1 day (#2492; production 30 and 7 days), `chat_system_messages` every 30 seconds (#2488; production 10 seconds), and a matching run scans 200 posts (#2494; production 500).
+
+**Why.** kc-dev runs on the smallest compute tier, where the job fleet's standing log writes drain the host's IO budget and the 10-second consumer runs far more often than a handful of testers need. A migration cannot tell the environments apart, and the dev marker of `D-239` is set only after the migrations of a fresh database; a seed run after every dev deploy re-applies the tuning even when a later migration resets a value.
+
+**Affected.** `supabase/seed/dev-tuning/`, `supabase/tests/128_dev_tuning.sql`, `.github/workflows/deploy-db.yml`, `docs/agents/DEPLOY.md`.
+
+## D-244 — Post photos are sanitized by a structural rewrite, not a re-encode (2026-11-21)
+
+**Decision.** `process-post-media` (KC#2316) makes the copy other members see by parsing the upload fail-closed and rebuilding it from the parts an image needs: for JPEG the tables, the one 8-bit frame, the scans and EOI, plus the ICC profile and Adobe's colour flag; for PNG the image and rendering chunks with their CRCs checked. Every metadata segment is dropped; the EXIF orientation is carried over as a single tag. A file with unknown parts, a second frame, an unsupported coding or bytes after its end is refused. The copy keeps the upload's type and pixel size within the worker's caps (4096 px per edge, 16.8 MP). The worker starts from the database: a debounced kick when a photo is queued, and a minute job as the safety net.
+
+**Why.** A pixel decode and re-encode in the Edge runtime (Jimp) measured ≈ 1.7 s of CPU for a 2048 × 1536 upload, too close to the per-request CPU limit for a production path; the structural rewrite takes milliseconds and about twice the file in memory. The app already re-encodes on the device, so the server's job is that what others receive is exactly an image with no metadata (`FR-POST-005` AC4, `NFR-PRIV-002`). Rejected: a re-encode with a lower pixel cap (still CPU-bound, and it would fail ordinary photos); paid Storage image transformations (cost, and they do not strip the stored original).
+
+**Trade-off.** The entropy-coded image data is passed through as uploaded, not regenerated; viewers' decoders see the uploader's encoding. Resized server derivatives (`FR-POST-005` AC3) are a separate gap.
+
+**Affected.** `supabase/functions/process-post-media/`, migration `*_post_media_processing_activation.sql`, `supabase/tests/132_post_media_processing_activation.sql`, `docs/SSOT/OPERATOR_RUNBOOK.md` "Post photo derivatives".

@@ -2,8 +2,31 @@ import { readFile } from 'node:fs/promises';
 import { anonKey, SUPABASE_URL } from './env';
 import { fetchPasswordSession } from './supabaseSession';
 
-export async function sessionFor(user: { email: string; password: string }) {
-  return fetchPasswordSession({ supabaseUrl: SUPABASE_URL, anonKey: await anonKey(), ...user });
+type PasswordSession = Awaited<ReturnType<typeof fetchPasswordSession>>;
+
+/** One sign-in per member and worker: a poll reads as the member many times a minute. */
+const sessions = new Map<string, Promise<PasswordSession>>();
+
+/** Seconds of validity a cached session must still have to be handed out again. */
+const SESSION_MARGIN_S = 300;
+
+/**
+ * The member's password session, signed in once and reused until it nears expiry. A sign-in per
+ * call put dozens of password hashes a minute on kc-dev's Auth, which answered some with a 504.
+ * A failed sign-in is not kept, so the next call tries again.
+ */
+export async function sessionFor(user: { email: string; password: string }): Promise<PasswordSession> {
+  const cached = await sessions.get(user.email)?.catch(() => undefined);
+  const expiresAt = Number(cached?.session.expires_at ?? 0);
+  if (cached && expiresAt - Date.now() / 1000 > SESSION_MARGIN_S) return cached;
+  const fresh = fetchPasswordSession({ supabaseUrl: SUPABASE_URL, anonKey: await anonKey(), ...user });
+  sessions.set(user.email, fresh);
+  return fresh;
+}
+
+/** Drop a cached password session so the next call signs in again (e.g. after account restore). */
+export function forgetSession(email: string): void {
+  sessions.delete(email);
 }
 
 /** Authenticated PostgREST call as the given user. Throws with the server message on error. */

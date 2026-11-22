@@ -9,7 +9,7 @@ import { ThemeProvider } from '@kc/ui';
 import { KINDS_BY_WORLD } from '../../../lib/unifiedCreate/__tests__/listingKindFixtures';
 import { exposureSpies } from '../../../lib/unifiedCreate/__tests__/listingExposureDoubles';
 
-const mocks = vi.hoisted(() => ({ listKindsForWorld: vi.fn(), createListing: vi.fn() }));
+const mocks = vi.hoisted(() => ({ listKindsForWorld: vi.fn(), createListing: vi.fn(), deleteMyListing: vi.fn() }));
 const RIDE_FILL = vi.hoisted(() => ({
   origin_label: 'לוד', dest_label: 'תל אביב', origin_lat: 31.95, origin_lng: 34.89, origin_city_id: '7000',
   dest_lat: 32.08, dest_lng: 34.78, dest_city_id: '5000', departs_at: '2030-01-01T08:30:00.000Z',
@@ -18,11 +18,16 @@ const RIDE_FILL = vi.hoisted(() => ({
 vi.mock('../../../services/postsComposition', async () => (await import('../../../lib/unifiedCreate/__tests__/listingExposureDoubles')).postsCompositionDouble);
 vi.mock('../../../services/userComposition', async () => (await import('../../../lib/unifiedCreate/__tests__/listingExposureDoubles')).userCompositionDouble);
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k: string) => k, i18n: { language: 'he' } }) }));
+// The photo tiles render through KCImage (expo-image), a native module.
+vi.mock('expo-image', () => ({ Image: () => null }));
 vi.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
 vi.mock('expo-router', () => ({ useRouter: () => ({ push: vi.fn() }) }));
 vi.mock('@react-native-community/datetimepicker', () => ({ default: () => null, DateTimePickerAndroid: { open: vi.fn() } }));
 vi.mock('../../../services/marketplaceComposition', () => ({
-  marketplaceRepository: () => ({ listKindsForWorld: mocks.listKindsForWorld, createListing: mocks.createListing, listWorldSubcategories: async () => [] }),
+  marketplaceRepository: () => ({
+    listKindsForWorld: mocks.listKindsForWorld, createListing: mocks.createListing, deleteMyListing: mocks.deleteMyListing,
+    listWorldSubcategories: async () => [],
+  }),
 }));
 vi.mock('../../../services/listingStreetAddressComposition', () => ({
   listingStreetAddressUseCases: { save: () => ({ execute: vi.fn() }), getOwn: () => ({ execute: async () => null }) },
@@ -120,6 +125,20 @@ describe('ListingCreateForm — exposure settings', () => {
     });
     await waitFor(() => expect(onPublished).toHaveBeenCalledWith('listing-1'));
     expect(exposureSpies.upsertIdentity).toHaveBeenCalledWith(expect.objectContaining({ postId: 'listing-1', hideFromCounterparty: true }));
+  });
+
+  it('withdraws the new listing when its mask cannot be saved, so it never stays live unmasked', async () => {
+    exposureSpies.upsertIdentity.mockRejectedValueOnce(new Error('network'));
+    mocks.deleteMyListing.mockResolvedValue(undefined);
+    const { onPublished } = renderForm('time');
+    fireEvent.click(await screen.findByRole('button', EXPOSURE_TOGGLE));
+    fireEvent.click(await screen.findByRole('switch'));
+    fireEvent.click(await screen.findByTestId('city-picker'));
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('listing-publish'));
+    });
+    await waitFor(() => expect(mocks.deleteMyListing).toHaveBeenCalledWith('listing-1'));
+    expect(onPublished).not.toHaveBeenCalled();
   });
 
   it('a ride offers the audience but no address level, and sends none', async () => {

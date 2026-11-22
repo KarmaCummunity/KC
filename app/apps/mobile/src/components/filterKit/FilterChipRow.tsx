@@ -17,6 +17,8 @@ interface BaseFilterChipRowProps<T> {
   readonly allLabel?: string;
   readonly showAllChip?: boolean;
   readonly chipSize?: 'sm' | 'md';
+  /** Fades every chip and blocks presses (e.g. while the form is saving). */
+  readonly disabled?: boolean;
   readonly testID?: string;
   readonly testIDPrefix?: string;
   readonly style?: StyleProp<ViewStyle>;
@@ -50,6 +52,7 @@ export function FilterChipRow<T extends string | number>(props: FilterChipRowPro
     allLabel,
     showAllChip = false,
     chipSize = 'sm',
+    disabled = false,
     testID,
     testIDPrefix,
     style,
@@ -88,6 +91,7 @@ export function FilterChipRow<T extends string | number>(props: FilterChipRowPro
           testID={chipPrefix ? `${chipPrefix}-all` : undefined}
           label={resolvedAllLabel}
           selected={isAllSelected}
+          disabled={disabled}
           onPress={handleAllPress}
         />
       )}
@@ -102,6 +106,7 @@ export function FilterChipRow<T extends string | number>(props: FilterChipRowPro
             testID={opt.testID ?? (chipPrefix ? `${chipPrefix}-${opt.value}` : undefined)}
             label={opt.label}
             selected={selected}
+            disabled={disabled}
             onPress={() => handleOptionPress(opt.value)}
             accessibilityLabel={opt.accessibilityLabel}
           />

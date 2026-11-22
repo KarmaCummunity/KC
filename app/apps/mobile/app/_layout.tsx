@@ -129,6 +129,8 @@ function ThemedRootShell() {
                 name="create"
                 options={{ animation: Platform.OS === 'web' ? 'fade' : 'slide_from_bottom' }}
               />
+              {/* FR-IMPORT-001 AC2 — paste a post from a message; opens the create form prefilled. */}
+              <Stack.Screen name="import-post" options={{ animation: Platform.OS === 'web' ? 'fade' : 'slide_from_bottom' }} />
               {/* FR-ADMIN-011 AC1 — register the admin group at the root so
                   native stack navigation can resolve `/(admin)` targets.
                   Without this, `router.push('/(admin)')` is a no-op on iOS /

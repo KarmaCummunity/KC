@@ -1,10 +1,12 @@
 // ─────────────────────────────────────────────
 // Avatar pick + upload pipeline (FR-AUTH-011).
 // Pick (camera|gallery) → square center-crop → resize to 512 + JPEG q=0.85
-// → upload to `avatars` bucket at <userId>/avatar.jpg → return public URL.
-// PERF-4: also writes a 96px square thumb at <userId>/avatar-thumb.jpg
-// alongside, and sets immutable cache headers on both. Renderers pick the
-// thumb for small surfaces (chrome avatars ≤96px) via deriveThumbUrl.
+// → upload to `avatars` bucket at a NEW <userId>/avatar-<uuid>.jpg per attempt
+// → return its public URL. Never a fixed path: an older upload that times out
+// and lands late writes only its own, never-referenced object, so it can not
+// overwrite a newer avatar. PERF-4: also writes a 96px square thumb as the
+// `-thumb` sibling, with immutable cache headers on both (safe: a path is
+// never rewritten). Renderers pick the thumb via deriveThumbUrl.
 // ─────────────────────────────────────────────
 
 import { Linking, Platform } from 'react-native';
@@ -12,17 +14,25 @@ import i18n from '../i18n';
 import { confirmAction } from './platformConfirm';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
+import * as Crypto from 'expo-crypto';
 import { getSupabaseClient } from '@kc/infrastructure-supabase';
+import { deriveThumbPath } from '../lib/imageUrl';
 import type { PickedImage } from './imageUpload';
-import { base64ToUint8Array } from './mediaEncoding';
+import { encodeJpeg, planMaxEdgeResize, type EncodedJpeg } from './imageEncoding';
+import { uploadErrorMessage, uploadStorageObject } from './storageObjectUpload';
+import { avatarPathFromUrl } from './avatarLifecycle';
+
+export { avatarPathFromUrl };
 
 const AVATAR_FULL_EDGE = 512;
 const AVATAR_THUMB_EDGE = 96;
 const COMPRESS = 0.85;
 const THUMB_COMPRESS = 0.75;
 const AVATAR_BUCKET = 'avatars';
-const AVATAR_PATH = (userId: string) => `${userId}/avatar.jpg`;
-const AVATAR_THUMB_PATH = (userId: string) => `${userId}/avatar-thumb.jpg`;
+/** A fresh object per upload attempt. */
+const AVATAR_GENERATION_PATH = (userId: string) => `${userId}/avatar-${Crypto.randomUUID()}.jpg`;
+/** The fixed paths written before per-upload paths; still removed on "remove avatar". */
+const LEGACY_AVATAR_PATHS = (userId: string) => [`${userId}/avatar.jpg`, `${userId}/avatar-thumb.jpg`];
 const IMMUTABLE_CACHE_CONTROL = 'public, max-age=31536000, immutable';
 
 export type AvatarSource = 'camera' | 'gallery';
@@ -93,78 +103,77 @@ export async function pickAvatarImage(source: AvatarSource): Promise<PickedImage
   return { uri: a.uri, width: a.width, height: a.height, fileSize: a.fileSize ?? null };
 }
 
-/**
- * Square center-crop the picked image, resize to size×size, JPEG-encode, and
- * return raw bytes (avoids the unreliable `fetch(file://).blob()` path — see
- * `mediaEncoding.ts` for context).
- */
-async function squareCropAndResize(picked: PickedImage, size: number, compress: number): Promise<Uint8Array> {
+/** Square center-crop of the picked image, sized `size`×`size` and JPEG-encoded. */
+async function squareCropAndResize(picked: PickedImage, size: number, compress: number): Promise<EncodedJpeg> {
   const side = Math.min(picked.width, picked.height);
   const originX = Math.max(0, Math.round((picked.width - side) / 2));
   const originY = Math.max(0, Math.round((picked.height - side) / 2));
-  const m = await ImageManipulator.manipulateAsync(
-    picked.uri,
-    [
-      { crop: { originX, originY, width: side, height: side } },
-      { resize: { width: size, height: size } },
-    ],
-    { compress, format: ImageManipulator.SaveFormat.JPEG, base64: true },
-  );
-  if (!m.base64) throw new Error('avatar_resize: manipulator returned no base64 payload');
-  return base64ToUint8Array(m.base64);
+  const actions: ImageManipulator.Action[] = [
+    { crop: { originX, originY, width: side, height: side } },
+    { resize: { width: size, height: size } },
+  ];
+  return encodeJpeg(picked.uri, actions, compress);
+}
+
+/** Stores one avatar object; resolves with the path Storage confirmed. */
+function uploadAvatarObject(
+  pathForAttempt: (attempt: number) => string,
+  bytes: Uint8Array,
+  opts: { attempts?: number; signal?: AbortSignal } = {},
+) {
+  return uploadStorageObject({
+    bucket: AVATAR_BUCKET,
+    pathForAttempt,
+    bytes,
+    contentType: 'image/jpeg',
+    cacheControl: IMMUTABLE_CACHE_CONTROL,
+    attempts: opts.attempts,
+    signal: opts.signal,
+  });
 }
 
 /**
- * FR-AUTH-011 AC2: square center-crop → 512×512 JPEG → upload to
- * `avatars/<userId>/avatar.jpg` (upsert). PERF-4: also writes a 96×96 thumb
- * at `avatars/<userId>/avatar-thumb.jpg`. Returns the full public URL with a
- * cache-busting `?v=` param so a replacement avatar isn't served from CDN
- * cache for the same path. The thumb URL is derived from the full URL by the
- * renderer via `deriveThumbUrl`.
+ * FR-AUTH-011 AC2: square center-crop → 512×512 JPEG → upload to a new
+ * `avatars/<userId>/avatar-<uuid>.jpg`. PERF-4: also writes a 96×96 thumb as its
+ * `-thumb` sibling, derived from the 512 encode so the original photo is decoded
+ * once. Returns the public URL; being a new path it needs no cache-busting.
  */
-export async function resizeAndUploadAvatar(picked: PickedImage, userId: string): Promise<string> {
+export async function resizeAndUploadAvatar(
+  picked: PickedImage,
+  userId: string,
+  opts: { signal?: AbortSignal } = {},
+): Promise<string> {
   if (!userId) throw new Error('resizeAndUploadAvatar: userId is required');
-  const fullBytes = await squareCropAndResize(picked, AVATAR_FULL_EDGE, COMPRESS);
-  const thumbBytes = await squareCropAndResize(picked, AVATAR_THUMB_EDGE, THUMB_COMPRESS);
+  const full = await squareCropAndResize(picked, AVATAR_FULL_EDGE, COMPRESS);
+  const thumb = await encodeJpeg(full.uri, planMaxEdgeResize(full, AVATAR_THUMB_EDGE), THUMB_COMPRESS);
 
-  const client = getSupabaseClient();
-  const fullUpload = await client.storage
-    .from(AVATAR_BUCKET)
-    .upload(AVATAR_PATH(userId), fullBytes, {
-      contentType: 'image/jpeg',
-      upsert: true,
-      cacheControl: IMMUTABLE_CACHE_CONTROL,
-    });
-  if (fullUpload.error) throw new Error(`avatar_upload: ${fullUpload.error.message}`);
-
-  // Thumb upload is best-effort — if it fails the full image still renders
-  // (KCImage's `fallbackUri` covers the missing thumb).
-  const thumbUpload = await client.storage
-    .from(AVATAR_BUCKET)
-    .upload(AVATAR_THUMB_PATH(userId), thumbBytes, {
-      contentType: 'image/jpeg',
-      upsert: true,
-      cacheControl: IMMUTABLE_CACHE_CONTROL,
-    });
-  if (thumbUpload.error) {
-    console.warn(`avatar_upload_thumb: ${thumbUpload.error.message}`);
+  let path: string;
+  try {
+    path = await uploadAvatarObject(() => AVATAR_GENERATION_PATH(userId), full.bytes, { signal: opts.signal });
+  } catch (err) {
+    throw new Error(`avatar_upload: ${uploadErrorMessage(err)}`, { cause: err });
+  }
+  // The thumb's name is fixed by `path`: one attempt, never retried at the same name. If it fails
+  // the full image still renders (KCImage's `fallbackUri` covers the missing thumb).
+  try {
+    await uploadAvatarObject(() => deriveThumbPath(path), thumb.bytes, { attempts: 1, signal: opts.signal });
+  } catch (err) {
+    console.warn(`avatar_upload_thumb: ${uploadErrorMessage(err)}`);
   }
 
-  const { data } = client.storage.from(AVATAR_BUCKET).getPublicUrl(AVATAR_PATH(userId));
-  return `${data.publicUrl}?v=${Date.now()}`;
+  return getSupabaseClient().storage.from(AVATAR_BUCKET).getPublicUrl(path).data.publicUrl;
 }
 
 /**
- * TD-108: delete the Storage object before persisting `avatar_url = null`.
+ * TD-108: delete the Storage objects before persisting `avatar_url = null`: the
+ * avatar `avatarUrl` points to and its thumb, plus the legacy fixed-path pair.
  * Best-effort — Storage failures are logged and swallowed so the user-visible
  * "avatar gone" action still succeeds; the metadata wipe is the source of truth.
- * PERF-4: also removes the sibling thumb in the same call.
  */
-export async function removeUploadedAvatar(userId: string): Promise<void> {
+export async function removeUploadedAvatar(userId: string, avatarUrl?: string | null): Promise<void> {
   if (!userId) return;
-  const client = getSupabaseClient();
-  const { error } = await client.storage
-    .from(AVATAR_BUCKET)
-    .remove([AVATAR_PATH(userId), AVATAR_THUMB_PATH(userId)]);
+  const current = avatarPathFromUrl(avatarUrl, userId);
+  const paths = [...LEGACY_AVATAR_PATHS(userId), ...(current ? [current, deriveThumbPath(current)] : [])];
+  const { error } = await getSupabaseClient().storage.from(AVATAR_BUCKET).remove([...new Set(paths)]);
   if (error) console.warn(`avatar_remove: ${error.message}`);
 }

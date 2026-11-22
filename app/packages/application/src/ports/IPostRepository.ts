@@ -39,6 +39,7 @@ export interface PostFeedFilter {
   sortOrder?: FeedSortOrder;        // 'newest' (default) | 'oldest' | 'distance'
   proximitySortCity?: string;       // city_id of center for distance sort; undefined = viewer's city
   followersOnly?: boolean;          // true = restrict to posts whose owner the viewer follows (FR-FEED-020)
+  hasPhotoOnly?: boolean;           // true = only posts with at least one ready photo (#2540)
   /** Trimmed free-text; applied only when length >= 2 after normalize (FR-FEED-003). */
   searchQuery?: string;}
 

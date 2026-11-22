@@ -17,7 +17,8 @@ function targetText(target) {
 function errorText(row) {
   const errors = new Map();
   for (const target of row.targets) for (const error of target.errors ?? []) errors.set(error.code, error.knownToApp);
-  return [...errors].map(([name, known]) => `${code(name)}${known ? '' : ' †'}`).join(', ');
+  const rendered = [...errors].map(([name, known]) => `${code(name)}${known ? '' : ' †'}`).join(', ');
+  return row.targets.some(target => target.errorBinding?.status === 'unknown') ? [rendered, 'Error binding unknown (not an assertion of no errors)'].filter(Boolean).join('; ') : rendered;
 }
 
 function table(header, lines) {

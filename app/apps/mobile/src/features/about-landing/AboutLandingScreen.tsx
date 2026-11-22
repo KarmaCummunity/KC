@@ -1,21 +1,12 @@
 import React, { useCallback, useRef, useState } from 'react';
-import { View, Platform, ScrollView, TouchableOpacity, type ViewStyle } from 'react-native';
+import { View, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, usePathname } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { iconSize, makeUseStyles, radius, shadow, typography, spacing, useTheme, Text } from '@kc/ui';
-import { isLayoutRtl } from '../../lib/rtlLayout';
+import { absoluteCornerEnd } from '../../lib/rtlLayout';
 
-/**
- * Anchor the menu FAB to the reading-end edge (same edge the drawer slides
- * from). Native auto-mirrors `end`; RN-Web ignores `start`/`end` for absolute
- * positioning, so on web we resolve RTL live and emit a physical key.
- */
-function fabEndInset(): Pick<ViewStyle, 'left' | 'right' | 'end'> {
-  if (Platform.OS !== 'web') return { end: spacing.base };
-  return isLayoutRtl() ? { left: spacing.base } : { right: spacing.base };
-}
 import { BackButton } from '../../components/BackButton';
 import { AnimatedEntry } from '../../components/animations/AnimatedEntry';
 import { AboutNavDrawer } from './AboutNavDrawer';
@@ -162,7 +153,8 @@ const useAboutLandingScreenStyles = makeUseStyles(({ colors }) => ({
   },
   fab: {
     position: 'absolute',
-    ...fabEndInset(),
+    // The menu FAB sits on the reading-end edge, the edge the nav drawer slides in from.
+    ...absoluteCornerEnd(spacing.base),
     width: 56,
     height: 56,
     borderRadius: radius.full,

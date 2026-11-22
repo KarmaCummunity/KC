@@ -11,8 +11,9 @@ name: Seed KC dev
 #   all         the three above, in that order
 #   demo        the demo-data tools behind the admin portal's Demo data screen (FR-ADMIN-031):
 #               supabase/seed/demo/load.sql installs them and marks kc-dev as the one database
-#               where a restore may run. No demo data is created: an admin presses "Restore demo
-#               data" in the portal. Not part of `all`; run it again after the tools change.
+#               where a restore may run. No demo data is created: an admin presses "Show demo
+#               data" in the portal. Every dev deploy runs the same script (deploy-db.yml), so
+#               this action is only for installing them between deploys. Not part of `all`.
 #   vault       the two Vault secrets the database needs to start Edge Functions from its jobs
 #               (kc_project_url, kc_service_role_key): created or updated, never printed. Not
 #               part of `all`: it is an operator step after the schema is applied.
@@ -103,11 +104,7 @@ jobs:
           set -euo pipefail
           url="$(cat supabase/.temp/pooler-url)"
           case "$url" in *"$KC_DEV_REF"*) ;; *) echo "::error::pooler address is not kc-dev's; refusing."; exit 1 ;; esac
-          key="$(supabase projects api-keys --project-ref "$KC_DEV_REF" -o json | jq -r '
-            ([.[] | select(.type == "secret") | select(.name == "default" or .id == "default")][0].api_key) //
-            ([.[] | select(.name == "service_role" or .id == "service_role")][0].api_key) // empty')"
-          [ -n "$key" ] || { echo "::error::no service key returned for kc-dev"; exit 1; }
-          case "$key" in sb_secret_*|eyJ*) ;; *) echo "::error::unexpected key format (not sb_secret_/JWT)"; exit 1 ;; esac
+          key="$(SUPABASE_PROJECT_REF="$KC_DEV_REF" node scripts/release/service-role-key.mjs)"
           echo "::add-mask::$key"
           export KC_VAULT_URL="https://${KC_DEV_REF}.supabase.co" KC_VAULT_KEY="$key"
           psql "$url" -v ON_ERROR_STOP=1 -qAt <<'SQL'

@@ -36,6 +36,11 @@ import { useListingFormSource } from './useListingFormSource';
 import { useListingStreetAddress } from './useListingStreetAddress';
 import { rideAutoTitle, withEventAddress, withEventOrg } from '../lib/unifiedCreate/listingCreateDetails';
 import { useListingExposure } from './useListingExposure';
+import { withJobOfferOrg } from '../lib/unifiedCreate/jobOfferOrg';
+import { useJobOfferOrgChoice } from './useJobOfferOrgChoice';
+import { saveMaskOrWithdraw } from '../lib/unifiedCreate/saveMaskOrWithdraw';
+import { attachPendingImport } from '../lib/attachPendingImport';
+import { lessonEditDetails, lessonEditFields } from '../lib/unifiedCreate/lessonEditFields';
 
 export { rideAutoTitle };
 
@@ -83,9 +88,14 @@ export function useListingCreateForm({
     () => kindForCreate(kindsQuery.data ?? [], direction, eventChoice.isEvent, chosenKindSlug),
     [kindsQuery.data, direction, eventChoice.isEvent, chosenKindSlug],
   );
-  const specs = useMemo(() => (kind ? fieldsForKind(kind) : []), [kind]);
-
   const [details, setDetails] = useState<Record<string, unknown>>({});
+  const editingLesson = Boolean(editListingId) && kind?.slug === 'lesson_offer';
+  const createSpecs = useMemo(() => (kind ? fieldsForKind(kind) : []), [kind]);
+  const specs = useMemo(() => editingLesson ? lessonEditFields(createSpecs, details) : createSpecs,
+    [createSpecs, editingLesson, details]);
+  // A new job offer names an organization allowed to post jobs (§5.11, #1476); an edit keeps its own.
+  const jobOfferOrg = useJobOfferOrgChoice(worldSlug, editListingId ? null : kind?.slug);
+
   const [city, setCity] = useState<City | null>(null);
   const [photos, setPhotos] = useState<PickedImage[]>([]);
   const [subcategoryId, setSubcategoryId] = useState<string | null>(null);
@@ -112,6 +122,7 @@ export function useListingCreateForm({
     setDetails,
     setCity,
     setChosenKindSlug,
+    setSubcategoryId,
     setError,
     eventChoice,
   });
@@ -137,7 +148,7 @@ export function useListingCreateForm({
   // The red outline goes away as soon as the member edits the form again.
   useEffect(() => {
     setError(null);
-  }, [title, details, city, street, streetNumber, recurrence, houseNumbers, eventChoice.orgId]);
+  }, [title, details, city, street, streetNumber, recurrence, houseNumbers, eventChoice.orgId, jobOfferOrg.orgId]);
   const showSubcategory = WORLDS_WITH_SUBCATEGORY_PICKER.includes(worldSlug);
   const effectiveTitle = isRides
     ? rideAutoTitle(details, (origin, dest) => t('post.unifiedCreate.rideAutoTitle', { origin, dest })) ||
@@ -148,6 +159,7 @@ export function useListingCreateForm({
   const validate = (submitted: Record<string, unknown>): ListingFormProblem | null =>
     firstListingProblem({
       t, submitted, worldSlug, direction, kind, specs, details, city, effectiveTitle, isRides, eventChoice,
+      jobOfferOrg,
       addressProblem: address.problem(), editListingId, photoCount,
       subcategoryId: showSubcategory ? subcategoryId : undefined, recurrence, eventSeries, houseNumbers,
     });
@@ -156,10 +168,16 @@ export function useListingCreateForm({
     if (!userId || !kind || busy || publishLock.current) return;
     if (source.loading) return;
     const timed = isRides && !editListingId && leaveNow ? withLeaveNowDeparture(details, new Date()) : details;
-    const submitted = withEventAddress(withEventOrg(detailsForSubmit(specs, timed), eventChoice), address.label);
+    const submitted = withJobOfferOrg(
+      withEventAddress(withEventOrg(detailsForSubmit(specs, timed), eventChoice), address.label),
+      jobOfferOrg,
+    );
     const problem = validate(submitted);
     setError(problem);
     if (problem) return;
+    // FR-IMPORT-010 AC4: the values an import draft's fields are compared with after publishing.
+    const publishedFields = { world: worldSlug, direction, kind: kind.slug, subcategory: showSubcategory ? subcategoryId : null,
+      title: effectiveTitle, description: summary, ...(isRides ? {} : { city: city?.id ?? null }) };
     publishLock.current = true;
     setBusy(true);
     try {
@@ -167,9 +185,10 @@ export function useListingCreateForm({
         await marketplaceRepository().updateMyListing(editListingId, {
           title: effectiveTitle,
           summary: summary.trim() || null,
-          details: submitted,
+          details: editingLesson ? lessonEditDetails(submitted) : submitted,
           cityId: isRides ? null : city?.id ?? null,
           ...(exposedLevel ? { locationDisplayLevel: exposedLevel } : {}),
+          visibility: exposure.visibility,
         });
         await exposure.saveIdentity(editListingId);
         await address.save(editListingId);
@@ -183,6 +202,7 @@ export function useListingCreateForm({
         const firstId = isRides ? await publishRideSeries(args, direction) : await publishEventSeries(args, city?.id ?? '');
         trackCoreLoop('listing_created', { world: worldSlug, cityId: isRides ? null : city?.id ?? null });
         if (isRides) void rememberRideRoute(submitted);
+        void attachPendingImport(firstId, publishedFields); // FR-IMPORT-007 AC3: the series' first post carries the import
         onPublished(firstId);
         return;
       }
@@ -196,7 +216,7 @@ export function useListingCreateForm({
           direction,
           title: effectiveTitle,
           summary,
-          details: submitted,
+          details: editingLesson ? lessonEditDetails(submitted) : submitted,
           cityId: city?.id ?? null,
           // The server places the listing at its city when no coordinates are sent (0353).
           lat: null,
@@ -209,7 +229,7 @@ export function useListingCreateForm({
           locationDisplayLevel: exposedLevel,
         }),
       );
-      await exposure.saveIdentity(id);
+      await saveMaskOrWithdraw(id, exposure.saveIdentity);
       trackCoreLoop('listing_created', { world: worldSlug, cityId: city?.id ?? null });
       void trackActivationIfFirst({
         world: worldSlug,
@@ -221,6 +241,7 @@ export function useListingCreateForm({
         await afterRidePublished(id, submitted, houseNumbers, flags);
       }
       await address.save(id);
+      void attachPendingImport(id, publishedFields); // FR-IMPORT-007 AC3: a post seeded from an import is marked imported
       onPublished(id);
     } catch (err) {
       setError({ message: t(postSeriesErrorKey(err) ?? marketplaceServerErrorKey(err)), field: null });
@@ -262,6 +283,7 @@ export function useListingCreateForm({
     houseNumbers,
     setHouseNumbers,
     eventChoice,
+    jobOfferOrg,
     showSubcategory,
     isRides,
     /** The form publishes an event, which may recur (FR-POST-024). */
@@ -269,7 +291,7 @@ export function useListingCreateForm({
     busy,
     error,
     publish,
-    canPublish: Boolean(userId && kind) && !busy && !source.loading && !address.loading,
+    canPublish: Boolean(userId && kind) && !busy && !source.loading && !address.loading && !exposure.loading,
     isEdit: Boolean(editListingId),
     /** The edit / republish source is loading. */
     editLoading: source.loading,

@@ -1,6 +1,7 @@
 // Styles for `ChatConversationHeader.tsx` (kept out of `app/` so `src/` does not import `app/`).
 import { StyleSheet } from 'react-native';
 import { makeUseStyles, typography, spacing, zIndex, shadow } from '@kc/ui';
+import { rowDirectionStart } from '../../lib/rtlLayout';
 
 export const useChatConversationHeaderStyles = makeUseStyles(({ colors }) => ({
   wrap: {
@@ -11,7 +12,8 @@ export const useChatConversationHeaderStyles = makeUseStyles(({ colors }) => ({
     ...shadow.card,
   },
   row: {
-    flexDirection: 'row',
+    // Back affordance at the reading-start edge, actions menu at the end (both directions).
+    flexDirection: rowDirectionStart,
     alignItems: 'stretch',
     minHeight: 44,
     paddingHorizontal: spacing.sm,

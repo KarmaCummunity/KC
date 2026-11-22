@@ -1,11 +1,12 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import React from 'react';
-import { cleanup, render } from '@testing-library/react';
+import { act, cleanup, fireEvent, render } from '@testing-library/react';
 import { Text, ThemeProvider } from '@kc/ui';
 import { TextField } from '../TextField';
 
 // Mutable so a test can render the form as another platform (the mocked `Platform.OS` reads it live).
+const listeners = vi.hoisted(() => new Map<string, Set<(event: unknown) => void>>());
 const platform = vi.hoisted(() => ({ OS: 'ios' as 'ios' | 'android' }));
 
 vi.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
@@ -25,6 +26,14 @@ vi.mock('react-native', async () => {
   const RN = await vi.importActual<typeof import('react-native')>('react-native');
   return {
     ...RN,
+    Keyboard: {
+      ...RN.Keyboard,
+      addListener: (name: string, handler: (event: unknown) => void) => {
+        const set = listeners.get(name) ?? new Set();
+        set.add(handler); listeners.set(name, set);
+        return { remove: () => set.delete(handler) };
+      },
+    },
     InputAccessoryView: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
     KeyboardAvoidingView: ({
       children,
@@ -53,6 +62,7 @@ import { FormScreen } from '../FormScreen';
 afterEach(() => {
   cleanup();
   platform.OS = 'ios';
+  listeners.clear();
 });
 
 function renderForm(props: Partial<React.ComponentProps<typeof FormScreen>> = {}) {
@@ -98,6 +108,21 @@ describe('FormScreen', () => {
   it('shrinks the height on Android so the sticky footer clears the keyboard', () => {
     platform.OS = 'android';
     expect(renderForm().getByTestId('kav').getAttribute('data-behavior')).toBe('height');
+  });
+
+  it('keeps the Android accessory and single footer inside KAV and restores tab-bar lift after hide', () => {
+    platform.OS = 'android';
+    const screen = render(<ThemeProvider mode="light" systemScheme="light" setMode={() => {}}><FormScreen footer={<Text>Footer CTA</Text>}><TextField label="First" /><TextField label="Second" /></FormScreen></ThemeProvider>);
+    fireEvent.focus(screen.getByLabelText('First'));
+    act(() => { for (const listener of listeners.get('keyboardDidShow') ?? []) listener({ endCoordinates: { screenY: 570 } }); });
+    expect(screen.getByTestId('kav').contains(screen.getByText('common.formKeyboard.next'))).toBe(true);
+    expect(screen.getByTestId('kav').contains(screen.getByTestId('form-screen-footer'))).toBe(true);
+    expect(screen.getAllByTestId('form-screen-footer')).toHaveLength(1);
+    expect(screen.getByTestId('form-screen-footer').style.paddingBottom).toBe('');
+    // Structural fix only: preserve the current resolver, do not guess screen/window offsets.
+    expect(screen.getByTestId('kav').getAttribute('data-offset')).toBe('0');
+    act(() => { for (const listener of listeners.get('keyboardDidHide') ?? []) listener({}); });
+    expect(screen.getByTestId('form-screen-footer').style.paddingBottom).toBe('64px');
   });
 
   it('lifts the sticky footer above the shell tab bar when tabBarFooterInset is enabled', () => {

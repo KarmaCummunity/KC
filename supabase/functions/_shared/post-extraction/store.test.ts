@@ -25,12 +25,38 @@ Deno.test('a count that fails is an error, not zero (a limit must not silently o
   await assertRejects(() => store.attemptsSince('u1', 'x'), Error, 'import store');
 });
 
+Deno.test('the lockout reads the member\'s moderation removals since the instant', async () => {
+  const calls: Call[] = [];
+  const store = supabaseImportStore(fakeClient({ import_moderation_removals: { data: ['2026-11-10T08:00:00Z'] } }, calls));
+  const removals = await store.moderationRemovalsSince('u1', '2026-10-03T12:00:00Z');
+  assertEquals(removals.map((d) => d.toISOString()), ['2026-11-10T08:00:00.000Z']);
+  assertEquals(calls[0], ['rpc.import_moderation_removals', { p_user_id: 'u1', p_since: '2026-10-03T12:00:00Z' }]);
+});
+
+Deno.test('a failed removals read is an error, not an open lockout', async () => {
+  const store = supabaseImportStore(fakeClient({ import_moderation_removals: { error: { message: 'down' } } }));
+  await assertRejects(() => store.moderationRemovalsSince('u1', 'x'), Error, 'import store');
+});
+
+Deno.test('the cross-post guard asks for the member\'s open post at the threshold', async () => {
+  const calls: Call[] = [];
+  const store = supabaseImportStore(fakeClient({ import_similar_open_post: { data: [{ post_id: 'p9', similarity: 0.91 }] } }, calls));
+  assertEquals(await store.similarOpenPost('u1', 'sofa haifa'), 'p9');
+  assertEquals(calls[0], ['rpc.import_similar_open_post', { p_user_id: 'u1', p_text: 'sofa haifa', p_min: 0.8 }]);
+});
+
+Deno.test('no similar post is null; a failed read is an error', async () => {
+  assertEquals(await supabaseImportStore(fakeClient({ import_similar_open_post: { data: [] } })).similarOpenPost('u1', 'x'), null);
+  const failing = supabaseImportStore(fakeClient({ import_similar_open_post: { error: { message: 'down' } } }));
+  await assertRejects(() => failing.similarOpenPost('u1', 'x'), Error, 'import store');
+});
+
 Deno.test('recording an attempt returns its id and sends exactly the row', async () => {
   const calls: Call[] = [];
   const store = supabaseImportStore(fakeClient({ external_post_imports: { data: { id: 'row-1' } } }, calls));
   const row: ImportRecord = {
     user_id: 'u1', channel: 'share', source_platform: 'yad2', text_fingerprint: FP, routing: 'confirm', reason: 'ok',
-    confidence: 0.9, extraction: { title: 't' }, extraction_version: 'v1', model: 'm', provider_called: true,
+    confidence: 0.9, extraction: { title: 't' }, extraction_version: 'v1', model: 'm', provider_called: true, duplicate_post_id: null,
   };
   assertEquals(await store.record(row), 'row-1');
   assertEquals(calls.find((c) => c[0] === 'external_post_imports.insert')?.[1], row);

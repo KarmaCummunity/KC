@@ -9,11 +9,27 @@ export function escapeHtml(value) {
   return value.replace(/[&<>"']/g, (ch) => ESCAPES[ch]);
 }
 
-/** @param {{ title: string, description: string, imageUrl: string }} card */
+/** og:image and its description; width and height only when they were measured. */
+function imageTags(image) {
+  const url = escapeHtml(image.url);
+  const tags = [`<meta property="og:image" content="${url}" />`];
+  if (image.url.startsWith('https://')) tags.push(`<meta property="og:image:secure_url" content="${url}" />`);
+  tags.push(`<meta property="og:image:type" content="${escapeHtml(image.type)}" />`);
+  if (Number.isInteger(image.width) && Number.isInteger(image.height)) {
+    tags.push(`<meta property="og:image:width" content="${image.width}" />`);
+    tags.push(`<meta property="og:image:height" content="${image.height}" />`);
+  }
+  return tags.join('\n');
+}
+
+/**
+ * @param {{ title: string, description: string,
+ *           image: { url: string, type: string, width: number | null, height: number | null } }} card
+ */
 export function renderOgHtml(card, canonicalUrl) {
   const title = escapeHtml(card.title);
   const description = escapeHtml(card.description);
-  const image = escapeHtml(card.imageUrl);
+  const image = escapeHtml(card.image.url);
   const canonical = escapeHtml(canonicalUrl);
   return `<!doctype html>
 <html lang="he" dir="rtl">
@@ -27,7 +43,7 @@ export function renderOgHtml(card, canonicalUrl) {
 <meta property="og:site_name" content="${escapeHtml(he.appName)}" />
 <meta property="og:title" content="${title}" />
 <meta property="og:description" content="${description}" />
-<meta property="og:image" content="${image}" />
+${imageTags(card.image)}
 <meta property="og:image:alt" content="${title}" />
 <meta property="og:url" content="${canonical}" />
 <meta property="og:locale" content="he_IL" />

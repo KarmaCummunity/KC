@@ -22,7 +22,7 @@ All PR checks run behind the single required check `CI gate` (`.github/workflows
 | PR → `dev` (and its merge-queue group) | `CI gate`: hygiene (PR runs only), static guards, plus the frontend / backend / edge lanes the diff needs | none |
 | PR → `main` (release) | same, plus the `release` lane | **P0 journeys required** against `DEV_WEB_URL` once it serves the release head SHA |
 | push → `dev` / `main` | every lane, then **Deploy** (kc-dev automatically; prod after the owner's approval) with its smoke stage | none |
-| nightly | — | QA suite (`e2e-nightly-dev.yml`); P0 journeys before the mobile store builds (`mobile-nightly.yml`) |
+| nightly | — | QA suite (`e2e-nightly-dev.yml`); P0 journeys before the mobile store builds (`mobile-nightly.yml`); the account purge proof on kc-dev (`e2e-account-purge-dev.yml`) |
 
 ## Port contract tests (G39, `D-204`)
 

@@ -1,3 +1,5 @@
+// Mapped to spec: FR-POST-008 / FR-RESP-006 AC28–AC30 — the items edit form, in the create form's
+// order. A rejected save marks the title, photo and address under each part and jumps to the first.
 import React from 'react';
 import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -14,13 +16,20 @@ import { useEditPostScreenStyles } from '../../screens/edit-post/editPostScreen.
 import { FormScrollView } from '../ui/FormScrollView';
 import { FormSection } from '../ui/FormSection';
 import { FilterChipRow } from '../filterKit/FilterChipRow';
+import type { PostFieldErrors } from '../../lib/createPostFieldValidation';
 
 export interface EditPostFormScrollContentProps {
+  /** What a rejected save marks under each required part. */
+  readonly fieldErrors: PostFieldErrors;
+  /** Rejected saves so far: each one jumps to the first problem again. */
+  readonly failedSubmitCount: number;
   readonly isGive: boolean;
   readonly isSaving: boolean;
   readonly uploads: UploadedAsset[];
   readonly uploadingCount: number;
   readonly onAddPhotos: () => void;
+  /** Stops the photo uploads still in flight. */
+  readonly onCancelUploads?: () => void;
   readonly onRemovePhoto: (path: string) => void;
   readonly title: string;
   readonly onTitleChange: (next: string) => void;
@@ -48,11 +57,14 @@ export interface EditPostFormScrollContentProps {
 }
 
 export function EditPostFormScrollContent({
+  fieldErrors,
+  failedSubmitCount,
   isGive,
   isSaving,
   uploads,
   uploadingCount,
   onAddPhotos,
+  onCancelUploads,
   onRemovePhoto,
   title,
   onTitleChange,
@@ -81,7 +93,11 @@ export function EditPostFormScrollContent({
   const { t } = useTranslation();
   const styles = useEditPostScreenStyles();
   return (
-    <FormScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
+    <FormScrollView
+      style={styles.scroll}
+      contentContainerStyle={styles.scrollContent}
+      jumpToProblemSignal={failedSubmitCount}
+    >
       <View style={[styles.typeBadge, isGive ? styles.typeBadgeGive : styles.typeBadgeRequest]}>
         <Text style={styles.typeBadgeText}>
           {isGive ? t('post.editPost.typeBadgeGive') : t('post.editPost.typeBadgeRequest')}
@@ -89,20 +105,24 @@ export function EditPostFormScrollContent({
         <Text style={styles.typeBadgeSub}>{t('post.editPost.typeBadgeSub')}</Text>
       </View>
 
-      <FormSection testID="edit-post-photos">
+      <FormSection error={fieldErrors.photo} testID="edit-post-photos">
         <PhotoPicker
           uploads={uploads}
           isUploading={uploadingCount > 0}
           uploadingCount={uploadingCount}
           required={isGive}
           onAdd={onAddPhotos}
+          onCancelUploads={onCancelUploads}
           onRemove={onRemovePhoto}
         />
       </FormSection>
 
       <FormSection outlined={false}>
         <TextField
-          label={`${t('post.editPost.sectionTitle')} *`}
+          testID="edit-post-title"
+          label={t('post.editPost.sectionTitle')}
+          required
+          errorText={fieldErrors.title ?? undefined}
           value={title}
           onChangeText={onTitleChange}
           placeholder={t('post.editPost.titlePlaceholder')}
@@ -111,7 +131,7 @@ export function EditPostFormScrollContent({
         <Text style={styles.charCount}>{title.length}/80</Text>
       </FormSection>
 
-      <FormSection label={t('post.editPost.sectionAddress')} required outlined={false}>
+      <FormSection label={t('post.editPost.sectionAddress')} required error={fieldErrors.address} outlined={false}>
         <CityPicker value={city} onChange={onCityChange} disabled={isSaving} />
         <StreetAddressRow
           cityId={city?.id ?? null}

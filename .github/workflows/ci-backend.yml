@@ -101,14 +101,27 @@ jobs:
       - name: Migrations apply on an empty database + pgTAP tests + seed loaders
         run: scripts/run-baseline-tests.sh
 
+      - name: Provider identity hash reservation, concurrent commit and rollback
+        timeout-minutes: 3
+        run: |
+          set -euo pipefail
+          python3 -m venv "$RUNNER_TEMP/idv-provider-venv"
+          "$RUNNER_TEMP/idv-provider-venv/bin/python" -m pip install --disable-pip-version-check --require-hashes -r scripts/requirements-identity-provider.txt
+          DB_URL="$(supabase status -o env | sed -n 's/^DB_URL="\(.*\)"$/\1/p')"
+          # run-baseline-tests.sh created this scratch DB with all migrations.
+          # Never run synthetic identity fixtures on a deployed Supabase project.
+          DB_URL="${DB_URL%/*}/kc_baseline_check" "$RUNNER_TEMP/idv-provider-venv/bin/python" scripts/test-identity-provider-concurrency.py
+
       # The Demo data screen (FR-ADMIN-031) calls RPCs of a dev-only seed (supabase/seed/demo),
       # which kc-dev gets from the Seed KC dev workflow and kc-prod never does. Installed on the
       # throwaway stack (without the dev marker) so the grant check below covers them too.
-      - name: Install the dev-only demo-data tools on the local stack
+      - name: Install the dev-only demo-data and production-copy tools on the local stack
         run: |
           set -euo pipefail
           DB_URL="$(supabase status -o env | sed -n 's/^DB_URL="\(.*\)"$/\1/p')"
           psql "$DB_URL" -v ON_ERROR_STOP=1 --single-transaction -q -f supabase/seed/demo/install.sql
+          # The "Copied from production" card (FR-ADMIN-037) calls RPCs of the dev-only copy tools.
+          psql "$DB_URL" -v ON_ERROR_STOP=1 --single-transaction -q -f supabase/seed/prod-copy/install.sql
 
       - name: Check every client RPC is granted to a client role
         # Functions are owner/service_role-only by default, so a client RPC whose

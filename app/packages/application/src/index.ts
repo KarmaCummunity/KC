@@ -8,6 +8,9 @@ export * from './ports/ICityRepository';
 export * from './ports/IStreetRepository';
 export type { ITranslationCacheRepository, CachedTranslation, TranslationCacheKey } from './ports/ITranslationCacheRepository';
 export type { BatchTranslationItem, ITranslationService } from './ports/ITranslationService';
+export type { IPostExtractionService, PostExtractionRequest } from './ports/IPostExtractionService';
+export type { IImportTelemetryRepository, ImportFunnel, ImportFieldEditRate } from './ports/IImportTelemetryRepository';
+export * from './imports';
 export type { IPostTranslationReader, PostTranslationHit } from './ports/IPostTranslationReader';
 export type * from './ports/IMarketplaceRepository';
 export * from './translations';
@@ -90,6 +93,9 @@ export type { IWorldContentRepository } from './ports/IWorldContentRepository';
 export { SetWorldLaunchModeUseCase } from './worlds/SetWorldLaunchModeUseCase';
 export type { SetWorldLaunchModeInput } from './worlds/SetWorldLaunchModeUseCase';
 export type { IAppFlagsAdminRepository } from './ports/IAppFlagsAdminRepository';
+export { ListOrgJobPostingUseCase, SetOrgMayPostJobsUseCase } from './organizations/OrgJobPostingAdminUseCases';
+export type { SetOrgMayPostJobsInput } from './organizations/OrgJobPostingAdminUseCases';
+export type { IOrgJobPostingAdminRepository, OrgJobPostingRow } from './ports/IOrgJobPostingAdminRepository';
 export { AddDonationLinkUseCase } from './donations/AddDonationLinkUseCase';
 export { UpdateDonationLinkUseCase } from './donations/UpdateDonationLinkUseCase';
 export { RemoveDonationLinkUseCase } from './donations/RemoveDonationLinkUseCase';
@@ -194,6 +200,8 @@ export * from './admin/SetOrgSlugUseCase';
 export * from './admin/GetHierarchySnapshotUseCase';
 export * from './admin/IDemoDataRepository';
 export * from './admin/DemoDataUseCases';
+export * from './admin/IProdCopyRepository';
+export * from './admin/ProdCopyUseCases';
 
 // A1 — admin reports inbox & case detail
 export * from './reports/IReportsRepository';
@@ -242,3 +250,8 @@ export * from './whatsapp/IWhatsAppLinkRepository';
 export * from './whatsapp/WhatsAppLinkUseCases';
 export * from './challenges';
 export * from './knowledge';
+export * from './ports/IIdentityVerificationService';
+export * from './identityVerification/StartIdentityVerificationUseCase';
+export * from './identityVerification/GetIdentityVerificationStatusUseCase';
+
+export type { GuestPost, IGuestPostsRepository } from './ports/IGuestPostsRepository';

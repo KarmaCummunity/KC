@@ -19,6 +19,7 @@ export const profileEn = {
   followingActive: 'Following ✓',
   followRequestCta: '+ Send request',
   unfollowConfirmTitle: 'Unfollow?',
+  unfollowConfirmTitleNamed: 'Stop following {{name}}?',
   unfollowConfirmCta: 'Unfollow',
   cancelRequestTitle: 'Cancel the follow request?',
   cancelRequestBody: 'You can send a new request anytime.',
@@ -130,6 +131,11 @@ export const profileEn = {
 
   // Edit Profile screen (FR-PROFILE-007)
   editScreen: {
+    signIn: {
+      emailLabel: 'Sign-in email',
+      phoneLabel: 'Sign-in phone',
+      note: "Your sign-in details can't be changed here. To change them, contact Support.",
+    },
     loadFailedTitle: 'Loading failed',
     saveFailedTitle: 'Saving failed',
     unknownError: 'Unknown error',
@@ -137,11 +143,8 @@ export const profileEn = {
     unsavedChangesMessage: 'If you leave now, your changes will be lost. Leave anyway?',
     unsavedChangesDiscard: 'Leave without saving',
     unsavedChangesCancel: 'Cancel',
-    invalidNameTitle: 'Invalid name',
     invalidNameMessage: 'Please enter a name between 1 and 50 characters.',
-    missingCityTitle: 'City missing',
     missingCityMessage: 'Please choose a city.',
-    incompleteAddressTitle: 'Incomplete address',
     incompleteAddressMessageNumber: 'Please add a house number too, or clear the street name.',
     incompleteAddressMessageStreet: 'Please add a street name, or clear the house number.',
     fullNameLabel: 'Full name',
@@ -161,7 +164,6 @@ export const profileEn = {
       profileStreetNumber: 'House number',
       contactPhone: 'Contact phone',
     },
-    invalidContactPhoneTitle: 'Invalid phone number',
     invalidContactPhoneMessage: 'Enter up to 20 characters.',
     biographyLabel: 'Biography (optional)',
     biographyPlaceholder: 'A bit about you — no links',

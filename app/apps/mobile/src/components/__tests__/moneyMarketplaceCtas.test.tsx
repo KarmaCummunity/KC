@@ -3,14 +3,16 @@
 // one routes or runs its use case as before and keeps its disabled rule.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import React from 'react';
-import { act, cleanup, fireEvent, render } from '@testing-library/react';
+import { cleanup, fireEvent, render } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from '@kc/ui';
 
-const { router, payments, listings, external, linking } = vi.hoisted(() => ({
+const { router, payments, listings, external, linking, flags } = vi.hoisted(() => ({
+  // FR-DONATE-003 AC7: the in-app nonprofit payment flow is behind this flag (on unless a test says).
+  flags: { money_in_app_org_payments: true },
   router: { back: vi.fn(), push: vi.fn(), replace: vi.fn() },
   payments: { getNonprofitPage: vi.fn(), donateNow: vi.fn() },
-  listings: { getListingDetail: vi.fn(), updateMyListing: vi.fn() },
+  listings: { getListingDetail: vi.fn() },
   external: { external: false, openExternal: vi.fn() },
   linking: { openURL: vi.fn(async () => true) },
 }));
@@ -20,7 +22,9 @@ vi.mock('expo-haptics', async () => (await import('../ui/__tests__/kitDialogTest
 vi.mock('@expo/vector-icons', async () => (await import('../ui/__tests__/kitDialogTestKit')).iconsDouble);
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string) => key, i18n: { language: 'he' } }) }));
 vi.mock('../../hooks/useReducedMotion', () => ({ useReducedMotion: () => true }));
+vi.mock('../../hooks/useFeatureFlag', () => ({ useFeatureFlag: (key: keyof typeof flags) => flags[key] }));
 vi.mock('expo-router', () => ({
+  Redirect: ({ href }: { href: string }) => <span data-testid="redirect">{href}</span>,
   useRouter: () => router,
   useLocalSearchParams: () => ({ slug: 'kc', orgId: 'org_1', listingId: 'l_1' }),
 }));
@@ -52,13 +56,13 @@ vi.mock('../../features/about-landing/aboutOpenExternalUrl', () => ({ aboutOpenE
 
 import NonprofitScreen from '../../../app/(tabs)/donations/money/nonprofit/[slug]';
 import DonateNowScreen from '../../../app/(tabs)/donations/money/donate/[orgId]';
-import EditMyListingScreen from '../../../app/(tabs)/donations/marketplace/my-listings/edit/[listingId]';
 import { AboutContactLinks } from '../../features/about-landing/AboutContactLinks';
 
 const PAGE = { orgId: 'org_1', name: 'KC', aboutHe: null, aboutEn: null, taglineHe: null, taglineEn: null, totalRaisedAgorot: 0, campaigns: [] };
 
 beforeEach(() => {
   vi.clearAllMocks();
+  flags.money_in_app_org_payments = true;
   external.external = false;
   payments.getNonprofitPage.mockResolvedValue(PAGE);
   listings.getListingDetail.mockResolvedValue({ listingId: 'l_1', title: 'Sofa', summary: null });
@@ -93,6 +97,23 @@ describe('nonprofit page', () => {
   });
 });
 
+describe('in-app payments switched off (#1800)', () => {
+  it('keeps the public nonprofit page but hides its donate actions', async () => {
+    flags.money_in_app_org_payments = false;
+    const { findByText, queryByRole } = renderScreen(<NonprofitScreen />);
+    expect(await findByText('moneyPayments.campaignsSection')).toBeTruthy();
+    expect(queryByRole('button', { name: 'moneyPayments.donateNow' })).toBeNull();
+    expect(queryByRole('button', { name: 'moneyPayments.monthlyGift' })).toBeNull();
+  });
+
+  it('sends a direct link to the donate screen to the Money hub', () => {
+    flags.money_in_app_org_payments = false;
+    const { getByTestId, queryByRole } = renderScreen(<DonateNowScreen />);
+    expect(getByTestId('redirect').textContent).toBe('/(tabs)/donations/money');
+    expect(queryByRole('button', { name: 'moneyPayments.confirmDonate' })).toBeNull();
+  });
+});
+
 describe('donate screen', () => {
   it('starts the donation in agorot and sends the member to the checkout page', async () => {
     payments.donateNow.mockResolvedValue({ intentId: 'i_1', checkoutUrl: 'https://pay.example.test/i_1' });
@@ -111,25 +132,6 @@ describe('donate screen', () => {
     await vi.waitFor(() => expect(alert).toHaveBeenCalledWith('backend.notAvailableYet'));
     expect(router.replace).not.toHaveBeenCalled();
     alert.mockRestore();
-  });
-});
-
-describe('edit my listing', () => {
-  it('needs a two-letter title, then saves and goes back, reading "saving" meanwhile', async () => {
-    let settle: () => void = () => {};
-    listings.updateMyListing.mockReturnValueOnce(new Promise<void>((resolve) => { settle = resolve; }));
-    const { findByTestId, getByRole } = renderScreen(<EditMyListingScreen />);
-    const save = await findByTestId('edit-listing-save');
-    const title = getByRole('textbox', { name: 'marketplace.fieldTitle' });
-
-    fireEvent.change(title, { target: { value: 'S' } });
-    expect(save.getAttribute('aria-disabled')).toBe('true');
-    fireEvent.change(title, { target: { value: ' Sofa bed ' } });
-    fireEvent.click(save);
-    expect(listings.updateMyListing).toHaveBeenCalledWith('l_1', { title: 'Sofa bed', summary: null });
-    await vi.waitFor(() => expect(save.textContent).toBe('marketplace.publishing'));
-    await act(async () => settle());
-    await vi.waitFor(() => expect(router.back).toHaveBeenCalled());
   });
 });
 

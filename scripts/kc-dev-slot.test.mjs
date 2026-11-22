@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';
-import { ApiError, SLOT_STEP, backoffMs, decide, findMe, retryAfterMs, slotWorkflows } from './kc-dev-slot.mjs';
+import { ApiError, INHERIT_MAX_LINKS, SLOT_STEP, backoffMs, decide, findMe, inheritedStart, retryAfterMs, slotWorkflows } from './kc-dev-slot.mjs';
 
 const me = { id: 100, stepStartedAt: '2026-11-15T00:10:00Z' };
 const job = (id, stepStatus, startedAt, status = 'in_progress') => ({
@@ -42,11 +42,11 @@ test('ignores itself, finished jobs and jobs without the slot step', () => {
 test('findMe matches the in-progress job on this runner and tolerates an unrecorded step start', () => {
   const jobs = [
     { id: 1, status: 'completed', runner_name: 'r1', steps: [] },
-    { id: 2, status: 'in_progress', runner_name: 'r1', steps: [{ name: SLOT_STEP, status: 'queued' }] },
-    { id: 3, status: 'in_progress', runner_name: 'r2', steps: [{ name: SLOT_STEP, started_at: '2026-11-15T00:00:00Z' }] },
+    { id: 2, name: 'm', status: 'in_progress', runner_name: 'r1', steps: [{ name: SLOT_STEP, status: 'queued' }] },
+    { id: 3, name: 'e', status: 'in_progress', runner_name: 'r2', steps: [{ name: SLOT_STEP, started_at: '2026-11-15T00:00:00Z' }] },
   ];
-  assert.deepEqual(findMe(jobs, 'r1'), { id: 2, stepStartedAt: null });
-  assert.deepEqual(findMe(jobs, 'r2'), { id: 3, stepStartedAt: '2026-11-15T00:00:00Z' });
+  assert.deepEqual(findMe(jobs, 'r1'), { id: 2, name: 'm', stepStartedAt: null });
+  assert.deepEqual(findMe(jobs, 'r2'), { id: 3, name: 'e', stepStartedAt: '2026-11-15T00:00:00Z' });
   assert.equal(findMe(jobs, 'r9'), null);
 });
 
@@ -85,4 +85,57 @@ test('in this repository the slot workflows include CI and every nightly/health 
     assert.ok(got.has(`.github/workflows/${f}`), f);
   }
   assert.equal(got.has('.github/workflows/deploy.yml'), false);
+});
+
+test('a waiter that inherited an earlier place (queuedAt) is ahead of a later starter', () => {
+  // #1619: PR B was superseded at 00:30 after queueing at 00:02; its new run starts the step at 00:40.
+  const replaced = { ...job(7, 'in_progress', '2026-11-15T00:40:00Z'), queuedAt: '2026-11-15T00:02:00Z' };
+  const holder = job(1, 'completed', '2026-11-15T00:00:00Z');
+  assert.deepEqual(decide(me, [holder, replaced], 2), { go: false, holders: 1, ahead: 1 });
+  assert.equal(decide({ ...me, queuedAt: '2026-11-15T00:01:00Z' }, [holder, replaced], 2).go, true);
+});
+
+test('without queuedAt the queue is ordered by the slot step start, as before', () => {
+  assert.equal(decide({ ...me, queuedAt: undefined }, [job(2, 'in_progress', '2026-11-15T00:05:00Z')], 1).go, false);
+});
+
+const created = '2026-11-21T17:40:00Z';
+const p = (conclusion, stepConclusion, startedAt) => ({ conclusion, step: stepConclusion === null ? null : { conclusion: stepConclusion, started_at: startedAt } });
+
+test('inherits the start of a superseded run that was still waiting', () => {
+  assert.equal(inheritedStart(created, [p('cancelled', 'cancelled', '2026-11-21T17:05:00Z')]), '2026-11-21T17:05:00Z');
+});
+
+test('walks a chain of superseded runs and keeps the earliest place', () => {
+  const chain = [p('cancelled', 'cancelled', '2026-11-21T17:30:00Z'), p('cancelled', null), p('cancelled', 'cancelled', '2026-11-21T16:50:00Z')];
+  assert.equal(inheritedStart(created, chain), '2026-11-21T16:50:00Z');
+});
+
+test('does not inherit from a run that got its slot, or finished any other way', () => {
+  assert.equal(inheritedStart(created, [p('cancelled', 'success', '2026-11-21T17:00:00Z')]), null);
+  assert.equal(inheritedStart(created, [p('failure', 'success', '2026-11-21T17:00:00Z')]), null);
+  assert.equal(inheritedStart(created, [p('success', 'success', '2026-11-21T17:00:00Z'), p('cancelled', 'cancelled', '2026-11-21T16:00:00Z')]), null);
+  assert.equal(inheritedStart(created, [p('cancelled', 'cancelled', '2026-11-21T17:20:00Z'), p('cancelled', 'success', '2026-11-21T16:00:00Z'), p('cancelled', 'cancelled', '2026-11-21T15:00:00Z')]), '2026-11-21T17:20:00Z');
+});
+
+test('a run cancelled before it queued passes nothing on', () => {
+  assert.equal(inheritedStart(created, [p('cancelled', null)]), null);
+  assert.equal(inheritedStart(created, [{ conclusion: 'cancelled', step: { conclusion: 'skipped', started_at: null } }]), null);
+  // GitHub records a start time even on a skipped step (cancelled before it ran): not a place.
+  assert.equal(inheritedStart(created, [p('cancelled', 'skipped', '2026-11-21T17:38:53Z')]), null);
+  // ... and the walk goes on past it (#2578 on 21 Nov: skipped re-run, then a 62-min wait cancelled).
+  assert.equal(inheritedStart(created, [p('cancelled', 'skipped', '2026-11-21T17:38:53Z'), p('cancelled', 'cancelled', '2026-11-21T16:35:21Z')]), '2026-11-21T16:35:21Z');
+});
+
+test('the inherited place is bounded by the lookback and the number of links', () => {
+  assert.equal(inheritedStart(created, [p('cancelled', 'cancelled', '2026-11-21T11:00:00Z')]), null);
+  assert.equal(inheritedStart(created, [p('cancelled', 'cancelled', '2026-11-21T12:00:00Z')]), '2026-11-21T12:00:00Z');
+  const long = Array.from({ length: INHERIT_MAX_LINKS + 1 }, (_, i) => p('cancelled', 'cancelled', `2026-11-21T17:${String(45 - i * 5).padStart(2, '0')}:00Z`));
+  assert.equal(inheritedStart(created, long), `2026-11-21T17:${String(45 - (INHERIT_MAX_LINKS - 1) * 5).padStart(2, '0')}:00Z`);
+  assert.equal(inheritedStart(created, []), null);
+});
+
+test('findMe reports the job name used to find its predecessors', () => {
+  const jobs = [{ id: 3, name: 'Maestro / maestro', status: 'in_progress', runner_name: 'r1', steps: [{ name: SLOT_STEP, started_at: '2026-11-21T17:00:00Z' }] }];
+  assert.deepEqual(findMe(jobs, 'r1'), { id: 3, name: 'Maestro / maestro', stepStartedAt: '2026-11-21T17:00:00Z' });
 });

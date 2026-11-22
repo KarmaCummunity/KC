@@ -15,6 +15,12 @@ export const marketplaceErrors = {
   knowledge_slots_overlap: 'שני מועדים חופפים. בחרו שעות שלא נוגעות זו בזו.',
   knowledge_slot_has_booking: 'יש הזמנה במועד הזה, ולכן אי אפשר להסיר או לשנות אותו. בטלו קודם את ההזמנה.',
   knowledge_slot_capacity_below_bookings: 'כבר הוזמנו יותר מקומות מהמספר החדש.',
+  knowledge_series_not_allowed: 'אפשר לקבוע מועד שבועי רק לשיעור פתוח שלכם.',
+  knowledge_series_exists: 'לשיעור הזה כבר יש מועד שבועי.',
+  knowledge_series_has_slots: 'לשיעור יש מועדים חד־פעמיים קרובים. הסירו אותם לפני שתקבעו מועד שבועי.',
+  knowledge_series_schedule_invalid: 'בדקו את המועד השבועי: ימים, שעה, משך של 15 דקות עד 8 שעות ותאריך סיום שלא עבר.',
+  knowledge_series_no_occurrence: 'אין אף יום שיעור בין היום לתאריך הסיום. בחרו ימים אחרים או תאריך סיום מאוחר יותר.',
+  knowledge_series_not_found: 'המועד השבועי של השיעור הזה לא נמצא.',
   consulting_requires_id_verification: 'שעת ייעוץ מקצועית דורשת אימות זהות. אמתו את הזהות בפרופיל ונסו שוב.',
   slot_not_found: 'המועד הזה כבר לא זמין.',
   booking_expired: 'ההזמנה פגה כי לא אושרה בזמן.',
@@ -91,6 +97,8 @@ export const marketplaceErrors = {
   // Organization events (0563).
   event_org_required: 'רק חברי הארגון יכולים לפרסם את האירוע שלו. בחרו אחד מהארגונים שלכם.',
   verification_required: 'האירוע פתוח לחברים מאומתים בלבד. אמתו את החשבון ונסו שוב.',
+  // Job offers (§5.11, #1476).
+  job_offer_org_required: 'הצעת עבודה מתפרסמת רק בשם ארגון שאושר לפרסם משרות. בחרו ארגון כזה.',
   not_owner: 'רק מארגני האירוע יכולים לעשות את זה.',
   event_not_started: 'אפשר לסמן נוכחות רק אחרי שהאירוע התחיל.',
   invalid_transition: 'ההרשמה כבר עודכנה. רעננו ונסו שוב.',

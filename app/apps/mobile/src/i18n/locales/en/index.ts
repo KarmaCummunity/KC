@@ -1,3 +1,4 @@
+import { guestBrowseEn } from './modules/guestBrowse';
 // ─────────────────────────────────────────────
 // English (en) translation bundle — Karma Community
 // Mapped to: FR-SETTINGS-018 (opt-in English UI locale). Machine-translated from
@@ -16,8 +17,10 @@ import { rideBooking } from './rideBooking';
 import { knowledgeBooking } from './knowledgeBooking';
 import { housingStay } from './housingStay';
 import { eventPost } from './eventPost';
+import { jobOffer } from './jobOffer';
 import { organizations } from './organizations';
 import { postSeries } from './postSeries';
+import { postImport } from './postImport';
 import { ridePlaces } from './ridePlaces';
 import { dateTimeField, rideFeed, rideRoutes, rideSafety, rideSchedule, rideSeries } from './rideSchedule';
 import { authEn } from './modules/auth';
@@ -29,6 +32,7 @@ import { dateOfBirthEn } from './modules/dateOfBirth';
 import { verificationEn } from './modules/verification';
 import { errorsEn } from './modules/errors';
 import { createPostValidationEn } from './createPostValidation';
+import { formFieldEn } from './formField';
 import { chatEn } from './modules/chat';
 import { chatNewEn } from './modules/chatNew';
 import { chatMessagingEn } from './modules/chatMessaging';
@@ -77,7 +81,7 @@ const en = {
   config: configEn,
 
   // Auth (FR-AUTH-001..014) — see modules/auth.ts
-  auth: { ...authEn, ...authVerificationHintEn },
+  auth: { ...guestBrowseEn, ...authEn, ...authVerificationHintEn },
   offlineSync: offlineSyncEn,
 
   // Onboarding (FR-AUTH-010..012, FR-AUTH-018) — see modules/onboarding.ts
@@ -196,10 +200,14 @@ const en = {
   housingStay,
   // Organization events (G1 step 5) — see eventPost.ts
   eventPost,
+  // Job offers' organization (§5.11, #1476) — see jobOffer.ts
+  jobOffer,
   // Organizations (FR-ORG-002, G18) — see organizations.ts
   organizations,
   // Recurring time posts (FR-POST-024) — see postSeries.ts
   postSeries,
+  // Import a post from a message (FR-IMPORT-001) — see postImport.ts
+  postImport,
   // Ride places (D71) — see ridePlaces.ts
   ridePlaces,
   // Ride quick publish (D75) and the shared date-time field — see rideSchedule.ts
@@ -227,6 +235,7 @@ const en = {
   // Error messages (auth/post/profile/media/createPost) — see modules/errors.ts
   errors: errorsEn,
   createPostValidation: createPostValidationEn,
+  formField: formFieldEn,
 
   // Misc chrome — see modules/ui.ts
   errorBoundary: errorBoundaryEn,

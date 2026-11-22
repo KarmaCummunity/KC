@@ -9,6 +9,7 @@
 
 import {
   ITEM_CONDITIONS,
+  importedFromOf,
   toVerificationLevel,
   type Address,
   type ItemCondition,
@@ -165,11 +166,15 @@ export function mapCardToPost(card: PostCardRow, ctx: MapCardContext): Post {
     deleteAfter: extras?.purgeAfter ?? null,
     listingId: isWorldPost ? (card.id ?? null) : null,
     listingWorldSlug: isWorldPost ? card.world_slug : null,
+    // Listing-world free details (employment salary / requirements, …) for card lines (#2537).
+    details: isRecord(card.details) ? { ...card.details } : null,
     challengeId: extras?.challengeId ?? null,
     mapPoint: postMapPoint(extras?.geo, null),
     createdAt: card.created_at ?? '',
     updatedAt: card.created_at ?? '',
     sourceLanguage: extras?.sourceLanguage ?? null,
+    // FR-IMPORT-007 AC3: the provenance chip; null for a post made in KC.
+    importedFrom: importedFromOf(card.source, card.source_platform),
   };
 }
 

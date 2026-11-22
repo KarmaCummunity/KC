@@ -15,11 +15,10 @@ import { useFeedSessionStore } from '../store/feedSessionStore';
 import { useLastAddressStore } from '../store/lastAddressStore';
 import { usePostDraftStore } from '../store/postDraftStore';
 import {
-  buildAddressInlineErrorMessage,
   buildCreatePostNonAddressToastMessage,
-  getAddressValidationIssue,
   hasAddressRequiredFieldGaps,
   hasNonAddressRequiredFieldGaps,
+  postFieldErrors,
 } from '../lib/createPostFieldValidation';
 import { mapPostErrorToHebrew } from '../services/postMessages';
 import { invalidatePersonalStatsCaches } from '../lib/invalidatePersonalStatsCaches';
@@ -29,6 +28,7 @@ import { buildPostCreatePayload } from '../lib/unifiedCreate/unifiedCreatePayloa
 import { trackActivationIfFirst, trackCoreLoop } from '../lib/analyticsCoreLoop';
 import { useAuthStore } from '../store/authStore';
 import { closeCreateForm } from '../navigation/closeCreateForm';
+import { attachPendingImport } from '../lib/attachPendingImport';
 import type { UploadedAsset } from '../services/imageUpload';
 import type { PrePromptTrigger } from '../lib/notifications/usePushPermissionGate';
 
@@ -54,7 +54,7 @@ export function useCreatePostPublish(args: {
   setPublishFollowersOpen: (open: boolean) => void;
   requestSoftGate: (fn: () => void) => void;
   uploadingCount: number;
-  presentPrePrompt: (trigger: PrePromptTrigger) => void | Promise<void>;
+  presentPrePrompt: (trigger: PrePromptTrigger) => void | Promise<void | boolean>;
 }) {
   const { t } = useTranslation();
   const router = useRouter();
@@ -86,19 +86,11 @@ export function useCreatePostPublish(args: {
     ],
   );
 
-  const addressIssue = getAddressValidationIssue(
-    args.city,
-    args.street,
-    args.streetNumber,
-  );
-  const addressInlineMessage =
-    validationTouched && addressIssue !== 'none' ? buildAddressInlineErrorMessage(addressIssue) : null;
-  const titleInlineMessage =
-    validationTouched && fieldSnapshot.title.trim().length === 0 ? t('createPostValidation.missingTitle') : null;
-  const photoInlineMessage =
-    validationTouched && fieldSnapshot.isGive && fieldSnapshot.uploadsLength === 0
-      ? t('createPostValidation.missingPhoto')
-      : null;
+  // The same per-field rules as the edit form (`postFieldErrors`), shown once Publish was rejected.
+  const fieldErrors = postFieldErrors(fieldSnapshot);
+  const addressInlineMessage = validationTouched ? fieldErrors.address : null;
+  const titleInlineMessage = validationTouched ? fieldErrors.title : null;
+  const photoInlineMessage = validationTouched ? fieldErrors.photo : null;
 
   const publish = useMutation({
     mutationFn: async () => {
@@ -121,8 +113,16 @@ export function useCreatePostPublish(args: {
         }),
       );
     },
-    onSuccess: () => {
+    onSuccess: async ({ post }) => {
       const { ownerId, city, street, streetNumber } = args;
+      // FR-IMPORT-007 AC3 — a post seeded from an import is recorded as imported (never blocks).
+      void attachPendingImport(post.postId, {
+        world: 'items',
+        direction: args.isGive ? 'give' : 'request',
+        title: args.title,
+        description: args.description,
+        city: city?.id ?? null,
+      });
       if (city) {
         useLastAddressStore.getState().setLastAddress({
           cityId: city.id,
@@ -148,7 +148,12 @@ export function useCreatePostPublish(args: {
       if (!checkedFirstPostRef.current && ownerId) {
         checkedFirstPostRef.current = true;
         if (prePublishOpenCountRef.current === 0) {
-          void args.presentPrePrompt('first-post-published');
+          // The modal belongs to this screen. Do not unmount it before a decision.
+          try {
+            if (await args.presentPrePrompt('first-post-published')) return;
+          } catch {
+            // Permission preparation must not turn a successful post into a failure.
+          }
         }
       }
       closeCreateForm(router);

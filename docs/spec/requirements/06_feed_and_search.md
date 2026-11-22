@@ -128,6 +128,7 @@ of active filters when >0; the old in-feed "X filters active" chip
      of the chosen center city. Defaults to no spatial filter.
    - **Status**: 3-mode — `Open only` (default) / `Closed only` / `All`.
    - **Source**: `All` / `Only people I follow` (`FR-FEED-020`).
+   - **Photo** (#2540): a toggle chip «רק עם תמונה» / "With photo only", off by default. When on, only posts with at least one ready image are returned (pending or failed files and videos do not count). It is applied by the database (`has_image` key of `feed_page` `p_filters`), so pages stay full; it applies to the home feed, every world feed, search and the map, counts as +1 in the badge, and is persisted with the rest of the filter (`FR-FEED-005`; a saved filter without it reads as off).
 - AC2. Filters compose with AND semantics. Sort is independent of filters.
 - AC3. Changes **auto-commit** to the persisted store on every control change
    (chips immediately; search text after `FR-FEED-003` debounce). There is
@@ -535,3 +536,4 @@ The map button in the top bar of the main feed and of every giving world's feed 
 | 0.8 | 2026-11-07 | `FR-FEED-020` AC5 & AC6 (#1627, #1629): unified feed loading skeleton, card anatomy, and date locale parity across all feeds. |
 | 0.9 | 2026-11-07 | Home Feed: the "Marketplace for you" listing strip is removed (`FR-FEED-001` AC5). Added `FR-FEED-021`: the map shows the opening feed's posts with its filter. |
 | 0.10 | 2026-11-11 | `FR-FEED-020` AC7: every world feed ends with a short list of links and a button to the world's links and knowledge screen (`D149`, migration `0024`). |
+| 0.11 | 2026-11-21 | `FR-FEED-004` AC1: the "only posts with a photo" filter (#2540). |

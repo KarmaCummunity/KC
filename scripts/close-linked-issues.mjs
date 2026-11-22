@@ -18,17 +18,30 @@ import { pathToFileURL } from 'node:url';
 
 const KEYWORDS = 'close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved';
 
+// "does not close #N" / "won't fix #N" must not authorize automatic closure (#2565).
+const NEGATION_BEFORE =
+  /(?:\b(?:does|do|did|will|can)\s+not|\b(?:don't|doesn't|didn't|won't|can't|cannot|never|not))\s+$/i;
+
 // Text inside fenced or inline code is an example, not an instruction.
 function stripCode(body) {
   return body.replace(/```[\s\S]*?```/g, ' ').replace(/`[^`\n]*`/g, ' ');
 }
 
+/** True when the keyword match is preceded by an explicit negation. */
+function isNegatedClosing(text, matchIndex) {
+  // Enough preceding chars for the longest phrase we recognize ("does not ").
+  const before = text.slice(Math.max(0, matchIndex - 24), matchIndex);
+  return NEGATION_BEFORE.test(before);
+}
+
 /** Issue numbers a PR body closes in `repo`, in order of first mention. */
 export function parseClosingRefs(body, repo) {
   if (!body) return [];
+  const text = stripCode(body);
   const re = new RegExp(`(?<![\\w-])(?:${KEYWORDS}):?\\s+(?:([\\w.-]+/[\\w.-]+))?#(\\d+)\\b`, 'gi');
   const refs = [];
-  for (const m of stripCode(body).matchAll(re)) {
+  for (const m of text.matchAll(re)) {
+    if (isNegatedClosing(text, m.index)) continue;
     const sameRepo = !m[1] || m[1].toLowerCase() === repo.toLowerCase();
     const n = Number(m[2]);
     if (sameRepo && !refs.includes(n)) refs.push(n);

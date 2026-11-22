@@ -1,32 +1,16 @@
 import React from 'react';
-import {
-  ActivityIndicator,
-  Image,
-  Platform,
-  TouchableOpacity,
-  View,
-  type ViewStyle,
-} from 'react-native';
+import { ActivityIndicator, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { iconSize, makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
 import { MAX_MEDIA_ASSETS } from '@kc/domain';
 import type { UploadedAsset } from '../../services/imageUpload';
+import { KCImage } from '../ui/KCImage';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
-import { isLayoutRtl } from '../../lib/rtlLayout';
-
-/**
- * Pin the remove (X) button to the thumbnail's reading-end corner.
- * Native auto-mirrors `end`; RN-Web ignores `start`/`end` for absolute
- * positioning, so on web we resolve RTL live and emit a physical key.
- */
-function removeBtnCornerEnd(): Pick<ViewStyle, 'left' | 'right' | 'end'> {
-  if (Platform.OS !== 'web') return { end: 4 };
-  return isLayoutRtl() ? { left: 4 } : { right: 4 };
-}
+import { absoluteCornerEnd } from '../../lib/rtlLayout';
 
 /** What a thumbnail needs: a stable id (`path`, also the remove key) and a preview URI. */
-export type PhotoPickerItem = Pick<UploadedAsset, 'path' | 'previewUri'>;
+export type PhotoPickerItem = Pick<UploadedAsset, 'path' | 'previewUri' | 'previewFallbackUri'>;
 
 interface Props {
   uploads: readonly PhotoPickerItem[];
@@ -35,6 +19,8 @@ interface Props {
   required: boolean;
   onAdd: () => void;
   onRemove: (path: string) => void;
+  /** When set, each pending tile offers to stop the uploads still in flight. */
+  onCancelUploads?: () => void;
 }
 
 const THUMB = 96;
@@ -68,7 +54,7 @@ const usePhotoPickerStyles = makeUseStyles(({ colors, isDark }) => ({
   removeBtn: {
     position: 'absolute' as const,
     top: 4,
-    ...removeBtnCornerEnd(),
+    ...absoluteCornerEnd(4),
     width: 22,
     height: 22,
     borderRadius: radius.full,
@@ -79,7 +65,7 @@ const usePhotoPickerStyles = makeUseStyles(({ colors, isDark }) => ({
   hint: { ...typography.caption, color: colors.textDisabled, textAlign: rtlTextAlignStart },
 }));
 
-export function PhotoPicker({ uploads, isUploading, uploadingCount, required, onAdd, onRemove }: Props) {
+export function PhotoPicker({ uploads, isUploading, uploadingCount, required, onAdd, onRemove, onCancelUploads }: Props) {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const styles = usePhotoPickerStyles();
@@ -95,7 +81,8 @@ export function PhotoPicker({ uploads, isUploading, uploadingCount, required, on
       <View style={styles.grid}>
         {uploads.map((u) => (
           <View key={u.path} style={styles.thumb}>
-            <Image source={{ uri: u.previewUri }} style={styles.thumbImage} />
+            {/* expo-image decodes at tile size: a 2048 px photo never sits in memory at full resolution. */}
+            <KCImage uri={u.previewUri} fallbackUri={u.previewFallbackUri} style={styles.thumbImage} recyclingKey={u.path} />
             <TouchableOpacity
               style={styles.removeBtn}
               onPress={() => onRemove(u.path)}
@@ -109,6 +96,17 @@ export function PhotoPicker({ uploads, isUploading, uploadingCount, required, on
         {Array.from({ length: uploadingCount }).map((_, i) => (
           <View key={`pending-${i}`} style={[styles.thumb, styles.pending]}>
             <ActivityIndicator size="small" color={colors.primary} />
+            {onCancelUploads ? (
+              <TouchableOpacity
+                style={styles.removeBtn}
+                onPress={onCancelUploads}
+                accessibilityRole="button"
+                accessibilityLabel={t('post.cancelPhotoUploads')}
+                testID="photo-upload-cancel"
+              >
+                <Ionicons name="close" size={iconSize.xs} color={colors.textInverse} />
+              </TouchableOpacity>
+            ) : null}
           </View>
         ))}
         {canAdd && (

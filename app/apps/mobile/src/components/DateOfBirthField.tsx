@@ -1,13 +1,15 @@
 // FR-AUTH-010 AC2.d — date of birth as three numeric fields (day, month, year).
 // A native date picker makes a year like 1985 a long scroll; typing it is faster on every
 // platform and reads the same on web. The field reports an ISO `YYYY-MM-DD` only when the three
-// parts form a real calendar date, and shows the 18+ rule inline before anything is sent.
-import React, { useState } from 'react';
+// parts form a real calendar date, and shows the 18+ rule inline before anything is sent. A form
+// may pass its own message (e.g. an unfinished date on save); the field is then a jump target.
+import React, { useRef, useState } from 'react';
 import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { composeIsoDate, dateOfBirthIssue, parseIsoDate } from '@kc/domain';
 import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
 import { TextField } from './ui/TextField';
+import { useFormScopeAnchor } from './ui/useFormScopeField';
 import { rtlTextAlignStart } from '../lib/rtlTextAlignStart';
 
 interface Props {
@@ -15,11 +17,13 @@ interface Props {
   readonly value: string | null;
   readonly onChange: (iso: string | null) => void;
   readonly disabled?: boolean;
+  /** The form's own message for the date (shown when the typed parts show no problem themselves). */
+  readonly errorText?: string;
 }
 
 const digitsOnly = (text: string) => text.replaceAll(/\D/g, '');
 
-export function DateOfBirthField({ value, onChange, disabled }: Props) {
+export function DateOfBirthField({ value, onChange, disabled, errorText: formError }: Props) {
   const styles = useStyles();
   const { t } = useTranslation();
   // The text the member typed. It is kept apart from `value`, which is null until the date is real.
@@ -35,7 +39,9 @@ export function DateOfBirthField({ value, onChange, disabled }: Props) {
 
   const filled = day.length > 0 && month.length > 0 && year.length === 4;
   const issue = !filled ? null : value ? dateOfBirthIssue(value, new Date()) : 'invalid_date_of_birth';
-  const errorText = issue ? t(issue === 'underage' ? 'dateOfBirth.errors.underage' : 'dateOfBirth.errors.invalid') : null;
+  const errorText = issue ? t(issue === 'underage' ? 'dateOfBirth.errors.underage' : 'dateOfBirth.errors.invalid') : formError ?? null;
+  const wrapperRef = useRef<View>(null);
+  useFormScopeAnchor(wrapperRef, errorText !== null);
 
   const part = (label: string, text: string, max: number, set: (v: string) => void, next: (v: string) => void) => (
     <TextField
@@ -54,7 +60,7 @@ export function DateOfBirthField({ value, onChange, disabled }: Props) {
   );
 
   return (
-    <View style={styles.wrapper}>
+    <View ref={wrapperRef} collapsable={false} style={styles.wrapper}>
       <Text style={styles.label}>{t('dateOfBirth.label')}</Text>
       <View style={styles.row}>
         {part(t('dateOfBirth.day'), day, 2, setDay, (v) => report(v, month, year))}

@@ -56,14 +56,25 @@ describe('event registrations', () => {
       userId: 'r',
       tables: {
         org_memberships: ok([
-          { org_id: 'b', organizations: { name: 'Beta' } },
-          { org_id: 'a', organizations: [{ name: 'Alpha' }] },
-          { org_id: 'a', organizations: { name: 'Alpha' } },
+          { org_id: 'b', organizations: { name: 'Beta', may_post_jobs: false, is_platform: false } },
+          { org_id: 'a', organizations: [{ name: 'Alpha', may_post_jobs: true, is_platform: false }] },
+          { org_id: 'a', organizations: { name: 'Alpha', may_post_jobs: true, is_platform: false } },
           { org_id: 'z', organizations: null },
         ]),
       },
     });
-    expect(await events.listMyOrganizations(client)).toEqual([{ orgId: 'a', name: 'Alpha' }, { orgId: 'b', name: 'Beta' }]);
+    expect(await events.listMyOrganizations(client)).toEqual([
+      { orgId: 'a', name: 'Alpha', mayPostJobs: true },
+      { orgId: 'b', name: 'Beta', mayPostJobs: false },
+    ]);
+  });
+
+  it('lets the platform organization post jobs without the admin switch (§5.11)', async () => {
+    const { client } = createFakeClient({
+      userId: 'r',
+      tables: { org_memberships: ok([{ org_id: 'kc', organizations: { name: 'KC', may_post_jobs: false, is_platform: true } }]) },
+    });
+    expect(await events.listMyOrganizations(client)).toEqual([{ orgId: 'kc', name: 'KC', mayPostJobs: true }]);
   });
 
   it('keeps refusal reasons and reports a missing function', async () => {

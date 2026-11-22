@@ -28,10 +28,12 @@ See [RELEASE.md](./RELEASE.md): version bump → EAS preview → TestFlight / Pl
 | Content (organization links, legal texts, surveys, the platform organization) | Same workflow, action `content` (`supabase/seed/content/load.sh`). Idempotent; classification in [`supabase/seed/content/README.md`](../../supabase/seed/content/README.md). |
 | The e2e members `user1`…`user4@seed.kc.test` | Same workflow, action `e2e-users` (`supabase/seed/e2e/load.sql`; password from the `E2E_SEED_PASSWORD` secret). Idempotent. |
 | All three | Action `all`. |
-| The demo-data tools of the admin portal's Demo data screen (FR-ADMIN-031) | Same workflow, action `demo` (`supabase/seed/demo/load.sql`): installs them and marks kc-dev as the database where a restore may run. Then an admin opens Admin → Demo data and presses **Restore demo data** (the demo members' password is typed once). Run it again whenever `supabase/seed/demo/` changes. Never part of `all`. |
+| The demo-data tools of the admin portal's Demo data screen (FR-ADMIN-031) | Nothing to run: every dev deploy installs them after the migrations (`deploy-db.yml`, step **Demo-data tools (kc-dev only)**, `supabase/seed/demo/load.sql`) and marks kc-dev as the database where demo data may be created. An admin then opens Admin → Demo data and presses **Show demo data** / **Hide demo data** (the demo members' password is typed once). To install them between deploys: **Seed KC dev**, action `demo`. Never on prod, never part of `all`. |
+| The production-copy tools (FR-ADMIN-037) | Nothing to run: every dev deploy installs them after the migrations (`deploy-db.yml`, step **Production-copy tools (kc-dev only)**, `supabase/seed/prod-copy/load.sql`) and marks kc-dev as the database a copy may be applied to. The weekly anonymized copy itself arrives with #2482. Never on prod. |
+| kc-dev job tuning (lighter job cadence and log retention) | Nothing to run: every dev deploy applies it after the migrations (`deploy-db.yml`, step **Job tuning (kc-dev only)**, `supabase/seed/dev-tuning/load.sql`). Values and the production defaults in [`supabase/seed/dev-tuning/README.md`](../../supabase/seed/dev-tuning/README.md). Never on prod. |
 | A change to reference or content data | Edit the CSV under `supabase/seed/`, run the loader, review the diff in the PR. Seeds are data, never migrations. |
 
-The fake Hebrew dataset (members, posts, rides, chats, follows, `[DEMO]` nonprofits) is created and deleted from the portal once the `demo` action ran; the legacy version is kept for reference in `supabase/archive/seed-kc-dev-demo/`.
+The fake Hebrew dataset (members, posts, rides, chats, follows, `[DEMO]` nonprofits) is created and deleted from the portal (show / hide); the legacy version is kept for reference in `supabase/archive/seed-kc-dev-demo/`.
 
 Never seed prod. The seed password lives only in the `E2E_SEED_PASSWORD` Actions secret; never paste them into code, issues, PRs or chat.
 
@@ -52,6 +54,7 @@ Playwright QA suite against `https://dev.karma-community.pages.dev` + kc-dev: [`
 | `deploy-smoke.yml` | manual | Read-only smoke against dev or prod |
 | `seed-kc-dev.yml` | manual | Destructive dev reseed / wipe |
 | `e2e-nightly-dev.yml` | nightly + manual | QA suite against dev |
+| `e2e-account-purge-dev.yml` | nightly + manual + when the proof changes on dev | Account purge proof on kc-dev (FR-SETTINGS-012 AC4): a throwaway member with a file in every bucket is deleted and purged, and the run fails if a file or the identity is left (`scripts/e2e-account-purge.mjs`) |
 | `k6-load-dev.yml` | manual | Load test against dev |
 | `mobile-nightly.yml` → `testflight-ios.yml`, `play-internal.yml` | nightly + manual (dev) | Store builds of the newest green dev commit, see [RELEASE.md](./RELEASE.md) |
 | `kc-mobile-eas-preview.yml` | manual | EAS preview build, no store submit |

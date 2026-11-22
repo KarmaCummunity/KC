@@ -92,6 +92,9 @@ export const KINDS_BY_WORLD: Readonly<Record<string, readonly ListingKindOption[
       gear: { type: 'array', items: { type: 'string' } },
     })),
   ],
+  // The two employment kinds of #2278 are seeded without a detail schema, so they take the column
+  // default, an open object (020_posts/010_catalog.sql): the form's specs alone shape them.
+  employment: [kind('job_offer', 'give', { type: 'object' }), kind('job_request', 'request', { type: 'object' })],
   animals: [
     // Binding schemas of migration 0612 (adoption and boarding / pet-sitting, offers and requests).
     kind('adoption_offer', 'give', obj({
@@ -133,6 +136,12 @@ export const KINDS_BY_WORLD: Readonly<Record<string, readonly ListingKindOption[
       slots: { type: 'array', minItems: 1, maxItems: 20 },
       availability_note: { type: 'string', maxLength: 280 },
       resource_ids: { type: 'array' },
+      // The weekly schedule of a recurring lesson (#2479); the server keeps it on the series.
+      schedule: { enum: ['one_off', 'weekly'] },
+      series_weekdays: { type: 'array' },
+      series_time: { type: 'string' },
+      series_duration_minutes: { type: 'integer' },
+      series_ends_on: { type: 'string' },
     }, ['modality', 'capacity_per_slot', 'slots'])),
     kind('mentoring_offer', 'give', obj({
       topic: { type: 'string', minLength: 2, maxLength: 80 },

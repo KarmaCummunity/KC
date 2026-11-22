@@ -17,7 +17,7 @@ import {
   shellTabBarHeightPx,
   useShellTabBarVisibility,
 } from '../../navigation/useShellTabBarVisibility';
-import { FormScope, FormScopeScrollView } from './FormScope';
+import { FormScope, FormScopeScrollView, JumpOnSignal } from './FormScope';
 
 export interface FormScreenProps {
   readonly children: React.ReactNode;
@@ -35,6 +35,11 @@ export interface FormScreenProps {
    * is hidden. Safe-area bottom is handled by `edges` on the outer SafeAreaView.
    */
   readonly tabBarFooterInset?: boolean;
+  /**
+   * Bump (e.g. a failed-submit counter) to scroll to the first field with an error again — needed
+   * when the same errors are still showing and nothing new appeared to trigger the jump.
+   */
+  readonly jumpToProblemSignal?: number;
 }
 
 export function FormScreen({
@@ -47,6 +52,7 @@ export function FormScreen({
   testID,
   embedded,
   tabBarFooterInset = true,
+  jumpToProblemSignal = 0,
 }: FormScreenProps) {
   const styles = useFormScreenStyles();
   const keyboardOffset = useKeyboardVerticalOffset({ headerless, headerHeight });
@@ -79,17 +85,17 @@ export function FormScreen({
 
   return (
     <Root {...rootProps}>
-      <FormScope>
-        <KeyboardAvoidingView
-          style={styles.fill}
-          behavior={resolveKeyboardAvoidingBehavior(Platform.OS)}
-          keyboardVerticalOffset={keyboardOffset}
-        >
+      <KeyboardAvoidingView
+        style={styles.fill}
+        behavior={resolveKeyboardAvoidingBehavior(Platform.OS)}
+        keyboardVerticalOffset={keyboardOffset}
+      >
+        <FormScope>
+          <JumpOnSignal signal={jumpToProblemSignal} />
           <View style={styles.fill}>
             <FormScopeScrollView
               style={styles.fill}
               contentContainerStyle={scrollStyles}
-              keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={false}
             >
               {children}
@@ -103,8 +109,8 @@ export function FormScreen({
               </View>
             ) : null}
           </View>
-        </KeyboardAvoidingView>
-      </FormScope>
+        </FormScope>
+      </KeyboardAvoidingView>
     </Root>
   );
 }

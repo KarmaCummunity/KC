@@ -1,3 +1,4 @@
+import { guestBrowseHe } from './modules/guestBrowse';
 // ─────────────────────────────────────────────
 // Hebrew (he) translation bundle — Karma Community
 // Mapped to: R-MVP-Core-4 (עברית בלבד ב-MVP)
@@ -14,8 +15,10 @@ import { rideBooking } from './rideBooking';
 import { knowledgeBooking } from './knowledgeBooking';
 import { housingStay } from './housingStay';
 import { eventPost } from './eventPost';
+import { jobOffer } from './jobOffer';
 import { organizations } from './organizations';
 import { postSeries } from './postSeries';
+import { postImport } from './postImport';
 import { ridePlaces } from './ridePlaces';
 import { dateTimeField, rideFeed, rideRoutes, rideSafety, rideSchedule, rideSeries } from './rideSchedule';
 import { authHe } from './modules/auth';
@@ -27,6 +30,7 @@ import { dateOfBirthHe } from './modules/dateOfBirth';
 import { verificationHe } from './modules/verification';
 import { errorsHe } from './modules/errors';
 import { createPostValidationHe } from './createPostValidation';
+import { formFieldHe } from './formField';
 import { chatHe } from './modules/chat';
 import { chatNewHe } from './modules/chatNew';
 import { chatMessagingHe } from './modules/chatMessaging';
@@ -75,7 +79,7 @@ const he = {
   config: configHe,
 
   // Auth (FR-AUTH-001..014) — see modules/auth.ts
-  auth: { ...authHe, ...authVerificationHintHe },
+  auth: { ...guestBrowseHe, ...authHe, ...authVerificationHintHe },
   offlineSync: offlineSyncHe,
 
   // Onboarding (FR-AUTH-010..012, FR-AUTH-018) — see modules/onboarding.ts
@@ -194,10 +198,14 @@ const he = {
   housingStay,
   // Organization events (G1 step 5) — see eventPost.ts
   eventPost,
+  // Job offers' organization (§5.11, #1476) — see jobOffer.ts
+  jobOffer,
   // Organizations (FR-ORG-002, G18) — see organizations.ts
   organizations,
   // Recurring time posts (FR-POST-024) — see postSeries.ts
   postSeries,
+  // Import a post from a message (FR-IMPORT-001) — see postImport.ts
+  postImport,
   // Ride places (D71) — see ridePlaces.ts
   ridePlaces,
   // Ride quick publish (D75) and the shared date-time field — see rideSchedule.ts
@@ -225,6 +233,7 @@ const he = {
   // Error messages (auth/post/profile/media/createPost) — see modules/errors.ts
   errors: errorsHe,
   createPostValidation: createPostValidationHe,
+  formField: formFieldHe,
 
   // Misc chrome — see modules/ui.ts
   errorBoundary: errorBoundaryHe,

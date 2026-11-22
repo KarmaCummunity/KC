@@ -13,6 +13,19 @@ on:
         description: Git ref whose tests/e2e suite runs (default refs/heads/dev, never main)
         type: string
         default: 'refs/heads/dev'
+      suite:
+        description: Full QA, request-only worker refusal, or focused media upload
+        type: choice
+        options:
+          - full
+          - worker-refusal
+          - media-upload
+          - media-readonly
+        default: full
+      media_post_id:
+        description: Existing public DEV post UUID for the request-only diagnostic
+        type: string
+        default: ''
   workflow_call:
     inputs:
       p0_only:
@@ -45,6 +58,16 @@ jobs:
     env:
       DEV_WEB_URL: ${{ vars.DEV_WEB_URL || 'https://dev.karma-community.pages.dev' }}
     steps:
+      - name: Restrict focused checks to DEV
+        if: inputs.suite == 'worker-refusal' || inputs.suite == 'media-upload' || inputs.suite == 'media-readonly'
+        env:
+          TEST_REF: ${{ inputs.ref }}
+        run: |
+          test "$TEST_REF" = 'refs/heads/dev'
+          # Pin both endpoints positively, not merely by production blacklist.
+          echo 'DEV_WEB_URL=https://dev.karma-community.pages.dev' >> "$GITHUB_ENV"
+          echo 'E2E_SUPABASE_URL=https://enbqriuxvvuontiwslun.supabase.co' >> "$GITHUB_ENV"
+
       # Cron runs this workflow file from the default branch, so an empty
       # `ref:` would check out main's tree against the dev Pages URL. Schedule
       # and a bare dispatch use refs/heads/dev. workflow_call keeps the
@@ -84,11 +107,24 @@ jobs:
         working-directory: tests/e2e
         env:
           P0_ONLY: ${{ inputs.p0_only }}
+          TARGET_SUITE: ${{ inputs.suite || 'full' }}
           E2E_SEED_PASSWORD: ${{ secrets.E2E_SEED_PASSWORD }}
+          MEDIA_READONLY_POST_ID: ${{ inputs.media_post_id }}
         run: |
           # P0 = the top-level journeys plus the auth setup they depend on; the
           # pattern cannot cross a `/`, so journeys/qa/** is excluded.
-          if [ "$P0_ONLY" = "true" ]; then
+          if [ "$TARGET_SUITE" = "worker-refusal" ]; then
+            # Existing fixture signs in through Auth only. Normal sign-in creates a session. No browser auth setup,
+            # content writes, account creation, seeding, or accepted service caller.
+            npx playwright test journeys/worker-endpoints.spec.ts --project=journeys --no-deps
+          elif [ "$TARGET_SUITE" = "media-upload" ]; then
+            # No shared auth setup or broad cleanup; exact fixture uploads only, then remove them.
+            npx playwright test journeys/media-upload-acceptance.spec.ts --project=journeys --no-deps
+          elif [ "$TARGET_SUITE" = "media-readonly" ]; then
+            # Normal Auth sign-in, then GET only. No shared setup, content writes or accepted worker.
+            test -n "$MEDIA_READONLY_POST_ID"
+            npx playwright test journeys/media-member-readonly.spec.ts --project=journeys --no-deps --retries=0
+          elif [ "$P0_ONLY" = "true" ]; then
             npx playwright test 'journeys/[a-z-]+\.(setup|spec)\.ts'
           else
             npx playwright test

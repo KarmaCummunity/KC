@@ -39,6 +39,8 @@ export function buildFeedFilters(filter: PostFeedFilter, catalog: PostCatalog): 
   if (subcategories.length > 0) out['item_subcategory_ids'] = subcategories;
   if (filter.statusFilter) out['status'] = filter.statusFilter;
   if (filter.followersOnly) out['audience'] = 'following';
+  // Applied by the database (a fixed key of feed_page), so pages stay full (#2540).
+  if (filter.hasPhotoOnly) out['has_image'] = true;
   if (filter.locationFilter) {
     out['city_id'] = filter.locationFilter.centerCity;
     out['radius_km'] = filter.locationFilter.radiusKm;

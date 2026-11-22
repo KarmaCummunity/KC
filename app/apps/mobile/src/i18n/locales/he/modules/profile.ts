@@ -19,6 +19,7 @@ export const profileHe = {
   followingActive: 'עוקב ✓',
   followRequestCta: '+ לשלוח בקשה',
   unfollowConfirmTitle: 'להפסיק לעקוב?',
+  unfollowConfirmTitleNamed: 'להפסיק לעקוב אחרי {{name}}?',
   unfollowConfirmCta: 'להפסיק לעקוב',
   cancelRequestTitle: 'לבטל את בקשת המעקב?',
   cancelRequestBody: 'אפשר לשלוח בקשה חדשה בכל עת.',
@@ -130,6 +131,11 @@ export const profileHe = {
 
   // Edit Profile screen (FR-PROFILE-007)
   editScreen: {
+    signIn: {
+      emailLabel: 'אימייל להתחברות',
+      phoneLabel: 'טלפון להתחברות',
+      note: 'את פרטי ההתחברות אי אפשר לשנות כאן. לשינוי, יש לפנות לתמיכה.',
+    },
     loadFailedTitle: 'טעינה נכשלה',
     saveFailedTitle: 'שמירה נכשלה',
     unknownError: 'שגיאה לא ידועה',
@@ -137,11 +143,8 @@ export const profileHe = {
     unsavedChangesMessage: 'אם תצא עכשיו השינויים יאבדו. לצאת בכל זאת?',
     unsavedChangesDiscard: 'צא בלי לשמור',
     unsavedChangesCancel: 'ביטול',
-    invalidNameTitle: 'שם לא תקין',
     invalidNameMessage: 'נא להזין שם בין 1 ל־50 תווים.',
-    missingCityTitle: 'עיר חסרה',
     missingCityMessage: 'נא לבחור עיר.',
-    incompleteAddressTitle: 'כתובת לא מלאה',
     incompleteAddressMessageNumber: 'נא למלא גם מספר בית, או למחוק את שם הרחוב.',
     incompleteAddressMessageStreet: 'נא למלא שם רחוב, או למחוק את מספר הבית.',
     fullNameLabel: 'שם מלא',
@@ -161,7 +164,6 @@ export const profileHe = {
       profileStreetNumber: 'מספר בית',
       contactPhone: 'טלפון ליצירת קשר',
     },
-    invalidContactPhoneTitle: 'מספר טלפון לא תקין',
     invalidContactPhoneMessage: 'יש להזין עד 20 תווים.',
     biographyLabel: 'ביוגרפיה (אופציונלי)',
     biographyPlaceholder: 'קצת עליך — בלי קישורים',

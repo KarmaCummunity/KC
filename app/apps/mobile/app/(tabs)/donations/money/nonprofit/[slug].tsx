@@ -12,6 +12,7 @@ import { CampaignProgressBar } from '../../../../../src/components/money/Campaig
 import { valueOrNull } from '../../../../../src/lib/backendAvailability';
 import { useShellTabBarScrollInset } from '../../../../../src/navigation/useShellTabBarVisibility';
 import { useExternalDonations } from '../../../../../src/hooks/useExternalDonations';
+import { useFeatureFlag } from '../../../../../src/hooks/useFeatureFlag';
 
 /** Narrowest a donate action may get before the pair wraps (a layout size, in points). */
 const ACTION_MIN_WIDTH = 140;
@@ -35,6 +36,9 @@ export default function NonprofitPublicScreen() {
   const styles = useStyles();
   const inset = useShellTabBarScrollInset();
   const { external, openExternal } = useExternalDonations();
+  // The donate actions open the sandbox in-app flow, shown only while its flag is on (FR-DONATE-003
+  // AC7); the page itself is public (FR-ORG-001 AC4) and stays.
+  const inAppPayments = useFeatureFlag('money_in_app_org_payments');
   const page = useQuery({
     queryKey: ['money', 'nonprofit', slug],
     queryFn: () => valueOrNull(() => paymentsUseCases.getNonprofitPage().execute(slug!)),
@@ -70,35 +74,37 @@ export default function NonprofitPublicScreen() {
           {t('moneyPayments.totalRaised', { amount: shekelsText(p.totalRaisedAgorot) })}
         </Text>
 
-        <View style={styles.actions}>
-          <View style={styles.action}>
-            <PrimaryButton
-              label={t('moneyPayments.donateNow')}
-              size="md"
-              fullWidth
-              onPress={() =>
-                external
-                  ? void openExternal('donate', p.orgId)
-                  : router.push({ pathname: '/(tabs)/donations/money/donate/[orgId]', params: { orgId: p.orgId } })
-              }
-            />
+        {inAppPayments ? (
+          <View style={styles.actions}>
+            <View style={styles.action}>
+              <PrimaryButton
+                label={t('moneyPayments.donateNow')}
+                size="md"
+                fullWidth
+                onPress={() =>
+                  external
+                    ? void openExternal('donate', p.orgId)
+                    : router.push({ pathname: '/(tabs)/donations/money/donate/[orgId]', params: { orgId: p.orgId } })
+                }
+              />
+            </View>
+            <View style={styles.action}>
+              <SecondaryButton
+                label={t('moneyPayments.monthlyGift')}
+                size="md"
+                fullWidth
+                onPress={() =>
+                  external
+                    ? void openExternal('standing-order', p.orgId)
+                    : router.push({
+                        pathname: '/(tabs)/donations/money/standing-order/[orgId]',
+                        params: { orgId: p.orgId },
+                      })
+                }
+              />
+            </View>
           </View>
-          <View style={styles.action}>
-            <SecondaryButton
-              label={t('moneyPayments.monthlyGift')}
-              size="md"
-              fullWidth
-              onPress={() =>
-                external
-                  ? void openExternal('standing-order', p.orgId)
-                  : router.push({
-                      pathname: '/(tabs)/donations/money/standing-order/[orgId]',
-                      params: { orgId: p.orgId },
-                    })
-              }
-            />
-          </View>
-        </View>
+        ) : null}
 
         <Text style={styles.title}>{t('moneyPayments.campaignsSection')}</Text>
         {p.campaigns.length === 0 ? (

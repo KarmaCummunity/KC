@@ -1,10 +1,10 @@
-// FR-PROFILE-007 + FR-VERIFY-012 — edit-profile state, load, and save.
+// FR-PROFILE-007 + FR-VERIFY-012 — edit-profile state, load, and save. A rejected save marks each
+// field it is about under that field (FR-RESP-006 AC29); the messages follow the values until fixed.
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import type { AuthSession } from '@kc/application';
-import { dateOfBirthIssue } from '@kc/domain';
 import {
   getEditableProfile,
   getSetDateOfBirthUseCase,
@@ -15,6 +15,8 @@ import {
 import { useAuthStore } from '../store/authStore';
 import { removeUploadedAvatar } from '../services/avatarUpload';
 import { mapEditProfileSaveError } from '../lib/editProfileSaveErrors';
+import { useProfileFieldErrors } from './useProfileFieldErrors';
+import { useAvatarGenerationCleanup } from './useAvatarGenerationCleanup';
 
 export type EditProfileInitialState = {
   readonly displayName: string | null;
@@ -44,9 +46,15 @@ export function useEditProfileController(
   const [streetNumber, setStreetNumber] = useState('');
   const [contactPhone, setContactPhone] = useState('');
   const [biography, setBiography] = useState('');
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [avatarUrl, setAvatarUrlState] = useState<string | null>(null);
   const [dateOfBirth, setDateOfBirth] = useState<string | null>(null);
   const [initial, setInitial] = useState<EditProfileInitialState | null>(null);
+  const avatarCleanup = useAvatarGenerationCleanup(session?.userId, initial?.avatarUrl);
+  /** The form's avatar setter: also tracks unsaved uploads so none outlives the screen. */
+  const setAvatarUrl = useCallback((url: string | null) => {
+    avatarCleanup.trackPicked(url);
+    setAvatarUrlState(url);
+  }, [avatarCleanup]);
   const [notify, setNotify] = useState<{ title: string; message: string } | null>(null);
 
   useEffect(() => {
@@ -65,7 +73,7 @@ export function useEditProfileController(
         setStreetNumber(p.profileStreetNumber ?? '');
         setContactPhone(p.contactPhone ?? '');
         setBiography(p.biography ?? '');
-        setAvatarUrl(p.avatarUrl ?? session.avatarUrl ?? null);
+        setAvatarUrlState(p.avatarUrl ?? session.avatarUrl ?? null);
         setDateOfBirth(selfUser?.dateOfBirth ?? null);
         setInitial({
           displayName: p.displayName,
@@ -106,49 +114,18 @@ export function useEditProfileController(
     );
   }, [initial, displayName, city, biography, avatarUrl, street, streetNumber, contactPhone, dateOfBirth]);
 
+  const dobChanged = initial !== null && dateOfBirth !== (initial.dateOfBirth ?? null);
+  const { fieldErrors, failedSubmitCount, acceptSubmit } = useProfileFieldErrors({
+    displayName, cityId: city?.id ?? null, street, streetNumber, contactPhone, dateOfBirth, dateOfBirthChanged: dobChanged,
+  });
+
   const handleSave = useCallback(async () => {
     if (!session || !initial) return;
-    if (displayName.trim().length === 0 || displayName.trim().length > 50) {
-      setNotify({ title: t('profile.editScreen.invalidNameTitle'), message: t('profile.editScreen.invalidNameMessage') });
-      return;
-    }
-    if (!city) {
-      setNotify({ title: t('profile.editScreen.missingCityTitle'), message: t('profile.editScreen.missingCityMessage') });
-      return;
-    }
+    // A missing city is one of the field errors; `!city` is repeated so the save below knows the city.
+    if (!acceptSubmit() || !city) return;
     const ts = street.trim();
     const tn = streetNumber.trim();
-    const addrTitle = t('profile.editScreen.incompleteAddressTitle');
-    if (ts.length > 0 && tn.length === 0) {
-      setNotify({ title: addrTitle, message: t('profile.editScreen.incompleteAddressMessageNumber') });
-      return;
-    }
-    if (tn.length > 0 && ts.length === 0) {
-      setNotify({ title: addrTitle, message: t('profile.editScreen.incompleteAddressMessageStreet') });
-      return;
-    }
     const tp = contactPhone.trim();
-    if (tp.length > 20) {
-      setNotify({
-        title: t('profile.editScreen.invalidContactPhoneTitle'),
-        message: t('profile.editScreen.invalidContactPhoneMessage'),
-      });
-      return;
-    }
-    const dobChanged = dateOfBirth !== (initial.dateOfBirth ?? null);
-    if (dobChanged) {
-      if (!dateOfBirth || dateOfBirthIssue(dateOfBirth, new Date())) {
-        setNotify({
-          title: t('profile.editScreen.saveFailedTitle'),
-          message: t(
-            dateOfBirthIssue(dateOfBirth ?? '', new Date()) === 'underage'
-              ? 'dateOfBirth.errors.underage'
-              : 'dateOfBirth.errors.invalid',
-          ),
-        });
-        return;
-      }
-    }
     setSaving(true);
     try {
       const trimmedName = displayName.trim();
@@ -178,7 +155,7 @@ export function useEditProfileController(
       }
       const includeBasicInfo = nameChanged || cityChanged;
       const profileAddress = addrChanged ? { street: nextStreet, streetNumber: nextNum } : undefined;
-      if (avatarChanged && avatarUrl === null && initial.avatarUrl) await removeUploadedAvatar(session.userId);
+      if (avatarChanged && avatarUrl === null && initial.avatarUrl) await removeUploadedAvatar(session.userId, initial.avatarUrl);
       await getUpdateProfileUseCase().execute({
         sessionUserId: session.userId,
         userId: session.userId,
@@ -191,6 +168,7 @@ export function useEditProfileController(
         ...(avatarChanged ? { avatarUrl } : {}),
       });
       setSession({ ...session, displayName: trimmedName, avatarUrl });
+      if (avatarChanged) avatarCleanup.committed(avatarUrl);
       await queryClient.invalidateQueries({ queryKey: ['user-profile', session.userId] });
       try {
         const nextOnboarding = await getReconcileDeferredBasicInfoUseCase().execute({
@@ -209,7 +187,7 @@ export function useEditProfileController(
     }
   }, [
     session, initial, displayName, city, street, streetNumber, contactPhone, biography,
-    avatarUrl, dateOfBirth, t, router, queryClient, setSession,
+    avatarUrl, dateOfBirth, dobChanged, acceptSubmit, t, router, queryClient, setSession, avatarCleanup,
   ]);
 
   return {
@@ -232,6 +210,8 @@ export function useEditProfileController(
     dateOfBirth,
     setDateOfBirth,
     isDirty,
+    fieldErrors,
+    failedSubmitCount,
     notify,
     setNotify,
     handleSave,

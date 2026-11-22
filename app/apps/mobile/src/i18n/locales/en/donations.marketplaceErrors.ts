@@ -15,6 +15,12 @@ export const marketplaceErrors = {
   knowledge_slots_overlap: 'Two times overlap. Pick times that do not touch each other.',
   knowledge_slot_has_booking: 'This time has a booking, so it cannot be removed or changed. Cancel the booking first.',
   knowledge_slot_capacity_below_bookings: 'More places are already booked than the new number.',
+  knowledge_series_not_allowed: 'Only an open lesson of yours can get a weekly time.',
+  knowledge_series_exists: 'This lesson already has a weekly time.',
+  knowledge_series_has_slots: 'This lesson has upcoming one-off times. Remove them before setting a weekly time.',
+  knowledge_series_schedule_invalid: 'Check the weekly time: days, a start time, 15 minutes to 8 hours, and a last day that has not passed.',
+  knowledge_series_no_occurrence: 'There is no lesson day between today and the last day. Pick other days or a later last day.',
+  knowledge_series_not_found: 'The weekly time of this lesson was not found.',
   consulting_requires_id_verification: 'A professional consulting hour requires identity verification. Verify your identity in your profile and try again.',
   slot_not_found: 'This time is no longer available.',
   booking_expired: 'The booking expired because it was not answered in time.',
@@ -91,6 +97,8 @@ export const marketplaceErrors = {
   // Organization events (0563).
   event_org_required: 'Only a member of the organization can publish its event. Pick one of your organizations.',
   verification_required: 'This event is open to verified members only. Verify your account and try again.',
+  // Job offers (§5.11, #1476).
+  job_offer_org_required: 'A job offer is published only for an organization approved to post jobs. Choose one.',
   not_owner: 'Only the event organizer can do that.',
   event_not_started: 'Attendance can be marked once the event has started.',
   invalid_transition: 'This registration was already updated. Refresh and try again.',

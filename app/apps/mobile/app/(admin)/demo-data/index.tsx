@@ -1,13 +1,15 @@
-// FR-ADMIN-031 — Demo data: how much kc-dev demo data exists, "Delete all demo data" behind a
-// confirmation, and "Restore demo data". Wipe and restore are stepped (one short RPC per phase)
-// and show the phase that runs. The tools exist only on kc-dev (supabase/seed/demo); anywhere
-// else the screen says they are not installed.
+// FR-ADMIN-031 — Demo data: whether the kc-dev demo data is shown or hidden, how much of it
+// exists, "Hide demo data" behind a confirmation (a wipe), and "Show demo data" (a restore).
+// Both are stepped (one short RPC per phase) and show the phase that runs. The tools exist only
+// on kc-dev (supabase/seed/demo, installed by every dev deploy); where they are missing or out
+// of date the screen says which, and which environment this build is connected to.
 import { useState } from 'react';
 import { RefreshControl, ScrollView, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { hasDemoData, hasPermission, isDemoDataError, type AdminRole } from '@kc/domain';
 import { makeUseStyles, radius, spacing, typography, Text } from '@kc/ui';
 import { container } from '../../../src/lib/container';
+import { getAppEnvironment } from '../../../src/config/environment';
 import { useAdminRoles } from '../../../src/hooks/useAdminRoles';
 import { confirmAction } from '../../../src/services/platformConfirm';
 import { demoDataErrorKey } from '../../../src/lib/admin/demoDataErrorKey';
@@ -15,6 +17,7 @@ import { AdminListEmpty } from '../../../src/components/admin/AdminListEmpty';
 import { AdminScreenGuard } from '../../../src/components/admin/AdminScreenGuard';
 import { DemoDataKpis } from '../../../src/components/admin/demoData/DemoDataKpis';
 import { DemoDataSeedCard } from '../../../src/components/admin/demoData/DemoDataSeedCard';
+import { ProdCopyCard } from '../../../src/components/admin/demoData/ProdCopyCard';
 import { DangerButton } from '../../../src/components/ui';
 import { useLocaleBundle } from '../../../src/i18n/useLocaleBundle';
 import { useAdminScreenTitle } from '../../../src/components/admin/useAdminScreenTitle';
@@ -71,7 +74,10 @@ export default function DemoDataScreen() {
   });
 
   const refusal = status.isError ? demoDataErrorKey(status.error) : null;
+  // The two refusals that mean "no usable tools here": the screen explains them in full.
+  const unavailable = refusal === 'notInstalled' || refusal === 'outdated' ? refusal : null;
   const busy = wipe.isPending || seed.isPending;
+  const shown = status.data ? hasDemoData(status.data) : false;
 
   const onWipe = async () => {
     const data = status.data;
@@ -107,14 +113,29 @@ export default function DemoDataScreen() {
         {notice ? <Text style={styles.notice}>{notice}</Text> : null}
         {failure ? <Text style={styles.error}>{failure}</Text> : null}
 
-        {refusal === 'notInstalled' ? <AdminListEmpty title={t.notInstalledTitle} hint={t.notInstalledHint} /> : null}
-        {refusal && refusal !== 'notInstalled' ? <Text style={styles.error}>{t.errors[refusal]}</Text> : null}
+        {unavailable ? (
+          <>
+            <AdminListEmpty
+              title={unavailable === 'outdated' ? t.outdatedTitle : t.notInstalledTitle}
+              hint={unavailable === 'outdated' ? t.outdatedHint : t.notInstalledHint}
+            />
+            {/* A production-wired build never has the tools; saying so ends the guessing. */}
+            <Text style={styles.environment} testID="admin-demo-environment">{t.connectedTo[getAppEnvironment()]}</Text>
+          </>
+        ) : null}
+        {refusal && !unavailable ? <Text style={styles.error}>{t.errors[refusal]}</Text> : null}
 
-        {status.data && !hasDemoData(status.data) ? (
+        {status.data ? (
+          <Text style={[styles.state, shown ? styles.stateShown : null]} testID="admin-demo-state">
+            {shown ? t.stateShown : t.stateHidden}
+          </Text>
+        ) : null}
+
+        {status.data && !shown ? (
           <AdminListEmpty title={t.noneTitle} hint={status.data.canSeed ? t.noneHintRestore : t.noneHintNoRestore} />
         ) : null}
 
-        {status.data && hasDemoData(status.data) ? (
+        {status.data && shown ? (
           <View style={styles.card}>
             <DemoDataKpis status={status.data} />
             <DangerButton
@@ -129,8 +150,9 @@ export default function DemoDataScreen() {
 
         {status.data?.canSeed ? (
           <>
-            {hasDemoData(status.data) ? <Text style={styles.muted}>{t.seedWhileDemoExistsHint}</Text> : null}
+            {shown ? <Text style={styles.muted}>{t.seedWhileDemoExistsHint}</Text> : null}
             <DemoDataSeedCard
+              label={shown ? t.refreshButton : t.seedButton}
               needsPassword={!status.data.hasSavedPassword}
               pending={seed.isPending}
               progressLabel={seed.isPending ? progressLabel : null}
@@ -138,6 +160,9 @@ export default function DemoDataScreen() {
             />
           </>
         ) : null}
+
+        {/* FR-ADMIN-037: the weekly anonymized copy of production; hidden where it does not exist. */}
+        {enabled ? <ProdCopyCard /> : null}
       </ScrollView>
     </AdminScreenGuard>
   );
@@ -152,6 +177,9 @@ const useStyles = makeUseStyles(({ colors }) => ({
   muted: { color: colors.textSecondary, fontSize: typography.bodySmall.fontSize, textAlign: textAlignStart() },
   notice: { color: colors.success, fontSize: typography.body.fontSize, ...typography.semiBold, textAlign: textAlignStart() },
   error: { color: colors.error, fontSize: typography.bodySmall.fontSize, textAlign: textAlignStart() },
+  environment: { color: colors.textSecondary, fontSize: typography.bodySmall.fontSize, textAlign: 'center' },
+  state: { color: colors.textSecondary, fontSize: typography.bodyLarge.fontSize, ...typography.semiBold, textAlign: textAlignStart() },
+  stateShown: { color: colors.textPrimary },
   card: {
     backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.md,
     borderWidth: 1, borderColor: colors.border, gap: spacing.md,

@@ -21,6 +21,28 @@ export const settingsEn = {
   },
   logout: 'Log out',
   loggingOut: 'Logging out...',
+  accountIdentity: {
+    noName: 'No name set yet',
+    nameCaption: 'Name',
+    emailCaption: 'Email',
+    phoneCaption: 'Phone',
+    methodCaption: 'Sign-in',
+    method: {
+      google: 'Your sign-in is managed by Google',
+      apple: 'Your sign-in is managed by Apple',
+      email: 'Signed in with email and password',
+      phone: 'Signed in with a phone number',
+    },
+  },
+  contactChange: {
+    title: 'Need to change your phone or email?',
+    message: 'Please contact Support.',
+    cta: 'Contact Support',
+  },
+  signOutConfirm: {
+    title: 'Sign out of Karma Community?',
+    message: 'You can sign in again at any time.',
+  },
   deleteAccount: 'Delete account',
   deleteAccountModal: {
     title: 'Delete account',
@@ -35,10 +57,11 @@ export const settingsEn = {
       'Chats you had will remain with the people you talked to. They will see the messages you wrote, but not your name, photo, or profile — only "{{deletedUserLabel}}".',
     warning:
       'Your account is deactivated for 30 days. If you sign in again during that time you can restore it completely. After 30 days everything is deleted for good.',
-    confirmInputLabel: 'Type "delete" to confirm',
-    confirmInputPlaceholder: 'delete',
-    confirmKeyword: 'delete',
+    confirmInputLabel: 'Type your display name to confirm',
+    confirmInputPlaceholder: 'Your display name',
+    nameUnavailable: 'Your display name is unavailable. Close this dialog and try again after your profile loads.',
     buttons: {
+      continue: 'Continue',
       cancel: 'Cancel',
       delete: 'Delete the account',
       retry: 'Try again',

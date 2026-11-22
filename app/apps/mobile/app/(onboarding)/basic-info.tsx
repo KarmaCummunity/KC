@@ -1,18 +1,17 @@
-// Onboarding step 2 — FR-AUTH-010
+// Onboarding step 2 — FR-AUTH-010: name, date of birth (required, AC2.d), address and contact phone.
+// Continue stays enabled: pressing it explains what is missing under each field (FR-RESP-006 AC29).
 import React from 'react';
 import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { makeUseStyles, typography, spacing, radius, iconSize, useTheme, Text } from '@kc/ui';
-import { CityPicker } from '../../src/components/CityPicker';
-import { StreetPicker } from '../../src/components/StreetPicker';
 import { OnboardingStepHeader } from '../../src/components/OnboardingStepHeader';
 import { useOnboardingBasicInfoFlow } from '../../src/hooks/useOnboardingBasicInfoFlow';
 import { AnimatedEntry } from '../../src/components/animations/AnimatedEntry';
 import { staggerDelay } from '../../src/lib/animations/motion';
-import { rtlTextAlignStart } from '../../src/lib/rtlTextAlignStart';
 import { TextField, FormScreen, PrimaryButton } from '../../src/components/ui';
-import { CompactStreetNumberField } from '../../src/components/address/CompactStreetNumberField';
+import { DateOfBirthField } from '../../src/components/DateOfBirthField';
+import { EditProfileAddressBlock } from '../../src/components/EditProfileAddressBlock';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
 
@@ -23,8 +22,8 @@ export default function OnboardingBasicInfoScreen() {
   const { t } = useTranslation();
   const {
     displayName, setDisplayName, city, setCity, street, setStreet, streetNumber, setStreetNumber,
-    contactPhone, setContactPhone,
-    loading, hasRequiredFields, handleBack, handleContinue, handleSkip,
+    contactPhone, setContactPhone, dateOfBirth, setDateOfBirth,
+    loading, fieldErrors, failedSubmitCount, handleBack, handleContinue, handleSkip,
   } = useOnboardingBasicInfoFlow();
 
   return (
@@ -32,6 +31,7 @@ export default function OnboardingBasicInfoScreen() {
       headerless
       edges={['top', 'bottom']}
       contentContainerStyle={styles.scrollContent}
+      jumpToProblemSignal={failedSubmitCount}
       footer={
         <AnimatedEntry delay={staggerDelay(6)}>
           <PrimaryButton
@@ -40,7 +40,6 @@ export default function OnboardingBasicInfoScreen() {
             icon="arrow-back"
             fullWidth
             loading={loading}
-            disabled={!hasRequiredFields}
             onPress={handleContinue}
           />
         </AnimatedEntry>
@@ -80,40 +79,35 @@ export default function OnboardingBasicInfoScreen() {
           onChangeText={setDisplayName}
           placeholder={t('onboarding.fullNamePlaceholder')}
           maxLength={50}
+          inputKind="name"
           editable={!loading}
+          errorText={fieldErrors.displayName}
         />
       </AnimatedEntry>
 
       <AnimatedEntry delay={staggerDelay(4)}>
         <View style={styles.field}>
-          <Text style={styles.label}>{t('profile.addressLabel')}</Text>
-          <CityPicker value={city} onChange={setCity} disabled={loading} />
+          <DateOfBirthField
+            value={dateOfBirth}
+            onChange={setDateOfBirth}
+            disabled={loading}
+            errorText={fieldErrors.dateOfBirth}
+          />
         </View>
       </AnimatedEntry>
 
-      {city ? (
-        <AnimatedEntry delay={0}>
-          <View style={styles.field}>
-            <View style={styles.streetRow}>
-              <View style={styles.streetCol}>
-                <StreetPicker
-                  cityId={city.id}
-                  value={street ? { id: '', name: street } : null}
-                  onChange={(sel) => setStreet(sel.name)}
-                  disabled={loading}
-                />
-              </View>
-              <CompactStreetNumberField
-                containerStyle={styles.streetNumberCol}
-                style={styles.streetNumberInput}
-                value={streetNumber}
-                onChangeText={setStreetNumber}
-                editable={!loading}
-              />
-            </View>
-          </View>
-        </AnimatedEntry>
-      ) : null}
+      <AnimatedEntry delay={staggerDelay(4)}>
+        <EditProfileAddressBlock
+          city={city}
+          onCityChange={setCity}
+          street={street}
+          streetNumber={streetNumber}
+          onStreetChange={setStreet}
+          onStreetNumberChange={setStreetNumber}
+          disabled={loading}
+          error={fieldErrors.address}
+        />
+      </AnimatedEntry>
 
       <AnimatedEntry delay={staggerDelay(5)}>
         <TextField
@@ -125,6 +119,7 @@ export default function OnboardingBasicInfoScreen() {
           maxLength={20}
           editable={!loading}
           inputKind="phone"
+          errorText={fieldErrors.contactPhone}
         />
       </AnimatedEntry>
     </FormScreen>
@@ -164,14 +159,4 @@ const useStyles = makeUseStyles(({ colors }) => ({
     alignSelf: 'center',
     gap: spacing.xs,
   },
-  label: { ...typography.label, color: colors.textSecondary, textAlign: rtlTextAlignStart },
-  streetRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    alignItems: 'flex-end',
-    width: '100%',
-  },
-  streetCol: { flex: 2, minWidth: 0 },
-  streetNumberCol: { flex: 1, minWidth: 0, maxWidth: 120 },
-  streetNumberInput: { minWidth: 0 },
 }));

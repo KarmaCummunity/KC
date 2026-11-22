@@ -12,6 +12,7 @@ const t = ((key: string, o?: { field?: string }) => (o?.field ? `${key}:${o.fiel
 const valid = (): ListingProblemInput => ({
   t, submitted: {}, worldSlug: 'time', direction: 'give', kind: null, specs: [], details: {},
   city: { id: '7000' }, effectiveTitle: 'A fine title', isRides: false, eventChoice: { isOrgEvent: false, orgId: null },
+  jobOfferOrg: { required: false, loaded: true, organizations: [], orgId: null },
   addressProblem: null, editListingId: null, photoCount: 0, subcategoryId: undefined,
   recurrence: null, eventSeries: null, houseNumbers: {},
 });
@@ -37,6 +38,18 @@ describe('firstListingProblem', () => {
     });
   });
 
+  it('asks for the organization of a job offer, or says none may post jobs (§5.11)', () => {
+    const allowed = { orgId: 'o1', name: 'Employer', mayPostJobs: true };
+    const jobOffer = (orgs: (typeof allowed)[], orgId: string | null) => ({
+      ...valid(), jobOfferOrg: { required: true, loaded: true, organizations: orgs, orgId },
+    });
+    expect(firstListingProblem(jobOffer([allowed, { ...allowed, orgId: 'o2' }], null))).toEqual({
+      message: 'jobOffer.create.orgRequired', field: 'org',
+    });
+    expect(firstListingProblem(jobOffer([], null))).toEqual({ message: 'jobOffer.create.noEligibleOrg', field: 'org' });
+    expect(firstListingProblem(jobOffer([allowed], 'o1'))).toBeNull();
+  });
+
   it('asks for a city on the city field, except for a ride', () => {
     expect(firstListingProblem({ ...valid(), city: null })).toEqual({ message: 'post.unifiedCreate.errors.cityRequired', field: 'city' });
     expect(firstListingProblem({ ...valid(), city: null, isRides: true, worldSlug: 'rides' })?.field).not.toBe('city');
@@ -56,5 +69,27 @@ describe('firstListingProblem', () => {
   it('a recurring event needs weekdays, with no single field at fault', () => {
     const problem = firstListingProblem({ ...valid(), eventSeries: { weekdays: [], endsOn: null } });
     expect(problem).toEqual({ message: 'postSeries.errors.weekdaysRequired', field: null });
+  });
+
+  it('asks for a pay period when a job offer has an estimated salary (#2537)', () => {
+    const problem = firstListingProblem({
+      ...valid(),
+      worldSlug: 'employment',
+      submitted: { estimated_salary_min: 10000 },
+    });
+    expect(problem).toEqual({
+      message: 'jobOffer.errors.salaryPeriodRequired',
+      field: 'detail:salary_pay_period',
+    });
+  });
+
+  it('accepts a job offer salary with its period', () => {
+    expect(
+      firstListingProblem({
+        ...valid(),
+        worldSlug: 'employment',
+        submitted: { estimated_salary_min: 10000, salary_pay_period: 'pay_monthly' },
+      }),
+    ).toBeNull();
   });
 });

@@ -177,6 +177,7 @@ KC follows each platform where the user expects it to, and keeps one KC look eve
 |---|---|---|---|---|
 | Stack push / pop | Native stack slide | `slide_from_right` on the root stack; nested stacks slide natively | Cross-fade | `rootStackAnimation.ts`, `nestedStackGestureOptions.ts` |
 | Back | Edge swipe on every nested stack + mirrored back chevron | System back pops the stack; predictive back stays **off** (`app.json`) | Browser history | stack options, `MirroredIcon` |
+| Typography | Shared Rubik size/weight/line-height tokens via kit `Text` / `TextInput`; OS font fallback if brand faces fail to load | Same; kit removes extra Android font padding to avoid clipping Hebrew descenders | Same brand tokens; web direction follows the document | `packages/ui/src/theme/typography.ts`, `components/BrandText.tsx` |
 | Header | Shared `TopBar` on tab roots and worlds; no large titles (only screens that already opt in keep them) | Same | Same | `TopBarStackHeader`, `detailStackScreenOptions` |
 | Sheet / dialog dismiss | Backdrop, ✕, swipe down | + hardware back | Escape | kit `BottomSheet` / `Modal`, `useModalHardwareBack` |
 | Action menus | Kit `ActionMenuSheet` | Same | Same | `ActionMenuSheet.tsx` |
@@ -253,6 +254,12 @@ The current user is addressed without grammatical gender. **House convention: th
 | תוכלי לשלוח בקשה חדשה | אפשר לשלוח בקשה חדשה |
 
 Out of scope: strings about *another* user ("{{name}} הצטרף"), which follow that user's stored gender.
+
+**Sign-in welcome copy (#2244).** Applying this section (D93) to the welcome and consent strings that had frozen copy-voice findings in `he/modules/auth.ts`:
+- Welcome tagline: **לתת. לקבל. לחבר קהילה.** — parallel infinitives that keep the prior three-beat meaning of "תן. קבל. חבר קהילה."
+- Consent lines (`bySigningUp`, `legalConsentShort`): impersonal **בהרשמה מסכימים ל…** — same Terms / Privacy meaning, without singular "אתה".
+
+These are the most conservative D93-compliant readings of the previous copy (agent fill on #2244). The PM may refine the brand/legal wording later; the key slogan in §7.3 stays **"לתת — זה גם לקבל."** and is unchanged.
 
 ### 7.3 Spelling, words and length
 

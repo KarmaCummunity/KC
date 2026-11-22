@@ -5,12 +5,6 @@
       "fontWeightLiteral": 1,
       "radiusLiteral": 1
     },
-    "app/research/thanks.web.tsx": {
-      "fontWeightLiteral": 2,
-      "radiusLiteral": 5,
-      "iconSizeLiteral": 2,
-      "unmirroredDirectionalIcon": 1
-    },
     "src/components/DeleteAccountSuccessOverlay.tsx": {
       "rawModal": 1
     },
@@ -45,9 +39,6 @@
       "spacingLiteral": 16,
       "physicalSide": 2,
       "shadowLiteral": 12,
-      "adHocChip": 1
-    },
-    "src/components/marketplace/listingChipStyles.ts": {
       "adHocChip": 1
     },
     "src/components/research/ResearchEndShareCard.tsx": {
