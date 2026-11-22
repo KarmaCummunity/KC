@@ -53,7 +53,9 @@ tags: [employment, posts]
       id: listing-publish
     direction: DOWN
     timeout: 10000
-    centerElement: true
+    # No centering: the button is the last scroll item; once fully visible a centering
+    # scroll can never settle and Maestro retries until timeout (run 44995095437).
+    centerElement: false
 - tapOn:
     id: listing-publish
 - assertVisible: "נא לכתוב כותרת (לפחות 2 תווים)"
@@ -67,7 +69,9 @@ tags: [employment, posts]
       id: listing-publish
     direction: DOWN
     timeout: 10000
-    centerElement: true
+    # No centering: the button is the last scroll item; once fully visible a centering
+    # scroll can never settle and Maestro retries until timeout (run 44995095437).
+    centerElement: false
 - tapOn:
     id: listing-publish
 - assertVisible: "נא למלא: תפקיד"
@@ -104,7 +108,9 @@ tags: [employment, posts]
       id: listing-publish
     direction: DOWN
     timeout: 10000
-    centerElement: true
+    # No centering: the button is the last scroll item; once fully visible a centering
+    # scroll can never settle and Maestro retries until timeout (run 44995095437).
+    centerElement: false
 - tapOn:
     id: listing-publish
 - assertVisible:
@@ -142,7 +148,9 @@ tags: [employment, posts]
       id: listing-publish
     direction: DOWN
     timeout: 10000
-    centerElement: true
+    # No centering: the button is the last scroll item; once fully visible a centering
+    # scroll can never settle and Maestro retries until timeout (run 44995095437).
+    centerElement: false
 - tapOn:
     id: listing-publish
 - assertVisible: "נא למלא: היקף משרה"

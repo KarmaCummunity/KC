@@ -9,9 +9,11 @@
 # (router.back without a write) can never be taken. After leave/reopen the value is re-read from
 # the SAME field with copyTextFrom and compared to the stored expectation with a strict-equality
 # assertTrue (docs.maestro.dev/reference/commands-available/copytextfrom), not a screen-text
-# search: only the phone input's own content can satisfy it. Each run leaves the seed user on the
-# opposite fixture value; no step asserts the absolute value, so neither direction depends on the
-# previous run.
+# search: only the phone input's own content can satisfy it. After the persistence assertion the
+# flow RESTORES the run's starting value and saves again: the seed user is shared across every
+# native run on kc-dev, and flow 19's capture-safe marker requires an empty contact phone, so
+# leaving a fixture value saved breaks later runs (run 44995095437 polluted it to 050-7654321,
+# and the next run's flow 19 failed its capture assert).
 appId: org.karmacommunity.app
 name: Profile — edit profile save persists
 tags: [profile]
@@ -63,3 +65,21 @@ tags: [profile]
     id: edit-profile-phone
 - evalScript: ${output.reopenedPhone = maestro.copiedText}
 - assertTrue: ${output.reopenedPhone === output.expectedPhone}
+# Restore the starting value (still on the reopened form). The field now holds expectedPhone,
+# so writing originalPhone back is again a real change, never the no-change fast path; an empty
+# original saves as null, which is the seeded state.
+- tapOn:
+    id: edit-profile-phone
+- eraseText
+- runFlow:
+    when:
+      true: ${output.originalPhone !== ""}
+    commands:
+      - inputText: ${output.originalPhone}
+- hideKeyboard
+- tapOn:
+    id: edit-profile-save
+- extendedWaitUntil:
+    visible:
+      id: feed-screen
+    timeout: 30000
