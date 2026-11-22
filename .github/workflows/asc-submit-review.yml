@@ -3,6 +3,9 @@
 # build to the App Store version with release type MANUAL (never auto-release),
 # sets the review notes from docs/store/app-review-notes.md and submits for
 # App Review. No TestFlight group or tester change. Secrets by name only.
+# Fail-closed: one in-flight version at most, only submissions holding that
+# version, and a waiting review is cancelled only when cancel_submission names
+# it (read it from a plan run first).
 name: ASC submit for review
 
 on:
@@ -22,6 +25,11 @@ on:
         description: iOS build number (CFBundleVersion), e.g. 38
         required: true
         type: string
+      cancel_submission:
+        description: Only to replace a waiting review. The exact review submission id the plan run printed under "submit needs"
+        required: false
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -50,6 +58,7 @@ jobs:
           ASC_MODE: ${{ inputs.mode }}
           ASC_VERSION: ${{ inputs.version }}
           ASC_BUILD_NUMBER: ${{ inputs.build_number }}
+          ASC_CANCEL_SUBMISSION: ${{ inputs.cancel_submission }}
           ASC_NOTES_FILE: docs/store/app-review-notes.md
           ASC_API_KEY_P8: ${{ secrets.ASC_API_KEY_P8 }}
           ASC_API_KEY_ID: ${{ secrets.ASC_API_KEY_ID }}

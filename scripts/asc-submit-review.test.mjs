@@ -4,8 +4,9 @@ import { assertAllowed, client, execute, plan } from './asc-submit-review.mjs';
 
 const A = 'https://api.appstoreconnect.apple.com/v1';
 const build = (n, s = 'VALID') => ({ id: `b${n}`, attributes: { version: String(n), processingState: s } });
-const ver = (id, vs, st) => ({ id, attributes: { versionString: vs, appVersionState: st } });
-const sub = (id, st) => ({ id, attributes: { state: st } });
+const ver = (id, vs, st, buildNumber = null) => ({ id, buildNumber, attributes: { versionString: vs, appVersionState: st } });
+const sub = (id, st, versionIds = []) => ({ id, versionIds, attributes: { state: st } });
+const kinds = (r) => r.steps.map((s) => s.kind);
 
 test('only the listed ASC write calls are allowed', () => {
   assertAllowed('GET', `${A}/apps/1/appStoreVersions`);
@@ -23,20 +24,49 @@ test('plan mode never sends a write', async () => {
 });
 
 test('a missing or unprocessed build blocks', () => {
-  assert.match(plan({ builds: [], versions: [], subs: [] }, { version: '1.9.287', buildNumber: 38 }).blockers[0], /not found/);
-  assert.match(plan({ builds: [build(38, 'PROCESSING')], versions: [], subs: [] }, { version: '1.9.287', buildNumber: 38 }).blockers[0], /PROCESSING/);
+  assert.match(plan({ builds: [], versions: [], subs: [] }, { version: '1.9.288', buildNumber: 38 }).blockers[0], /not found/);
+  assert.match(plan({ builds: [build(38, 'PROCESSING')], versions: [], subs: [] }, { version: '1.9.288', buildNumber: 38 }).blockers[0], /PROCESSING/);
 });
 
-test('a waiting review of the old build is cancelled and its version reused', () => {
-  const { steps, blockers } = plan({ builds: [build(38)], versions: [ver('v1', '1.9.176', 'WAITING_FOR_REVIEW')], subs: [sub('s1', 'WAITING_FOR_REVIEW')] }, { version: '1.9.287', buildNumber: 38 });
-  assert.deepEqual(blockers, []);
-  assert.deepEqual(steps.map((s) => s.kind), ['cancelSubmission', 'updateVersion', 'reviewNotes', 'createSubmission', 'submit']);
-  assert.equal(steps[1].id, 'v1');
+test('a waiting review of the old build is cancelled only when the dispatch names that submission', () => {
+  const state = { builds: [build(38)], versions: [ver('v1', '1.9.176', 'WAITING_FOR_REVIEW', '36')], subs: [sub('s1', 'WAITING_FOR_REVIEW', ['v1'])] };
+  const bare = plan(state, { version: '1.9.288', buildNumber: 38 });
+  assert.deepEqual(bare.blockers, []);
+  assert.match(bare.needs[0], /cancel_submission=s1/);
+  const named = plan(state, { version: '1.9.288', buildNumber: 38, cancelSubmission: 's1' });
+  assert.deepEqual(named.needs, []);
+  assert.deepEqual(kinds(named), ['cancelSubmission', 'updateVersion', 'reviewNotes', 'createSubmission', 'submit']);
+  assert.equal(named.steps[0].oldBuild, '36');
+  assert.equal(named.steps[1].id, 'v1');
+  assert.match(plan(state, { version: '1.9.288', buildNumber: 38, cancelSubmission: 'other' }).blockers[0], /does not match/);
+});
+
+test('the requested build already waiting for review is a no-op', () => {
+  const r = plan({ builds: [build(38)], versions: [ver('v1', '1.9.288', 'WAITING_FOR_REVIEW', '38')], subs: [sub('s1', 'WAITING_FOR_REVIEW', ['v1'])] }, { version: '1.9.288', buildNumber: 38, cancelSubmission: 's1' });
+  assert.deepEqual(r.steps, []);
+  assert.match(r.done, /already WAITING_FOR_REVIEW/);
+});
+
+test('an unrelated second version in flight blocks instead of being renamed', () => {
+  const r = plan({ builds: [build(38)], versions: [ver('v2', '2.0.0', 'PREPARE_FOR_SUBMISSION'), ver('v1', '1.9.288', 'WAITING_FOR_REVIEW', '36')], subs: [sub('s1', 'WAITING_FOR_REVIEW', ['v1'])] }, { version: '1.9.288', buildNumber: 38, cancelSubmission: 's1' });
+  assert.match(r.blockers.join(' '), /more than one version in flight/);
+});
+
+test('a submission holding another version is never touched', () => {
+  const r = plan({ builds: [build(38)], versions: [ver('v1', '1.9.176', 'PREPARE_FOR_SUBMISSION')], subs: [sub('s9', 'WAITING_FOR_REVIEW', ['vX'])] }, { version: '1.9.288', buildNumber: 38 });
+  assert.match(r.blockers.join(' '), /s9 .*another version/);
+  assert.ok(!r.steps.some((s) => s.kind === 'cancelSubmission'));
+});
+
+test('an approved version waiting for release blocks', () => {
+  const r = plan({ builds: [build(38)], versions: [ver('v1', '1.9.176', 'PENDING_DEVELOPER_RELEASE', '36')], subs: [] }, { version: '1.9.288', buildNumber: 38 });
+  assert.match(r.blockers.join(' '), /neither editable nor waiting/);
 });
 
 test('a rejected version is updated and its unresolved submission resubmitted', () => {
-  const { steps } = plan({ builds: [build(38)], versions: [ver('v1', '1.9.176', 'REJECTED')], subs: [sub('s1', 'UNRESOLVED_ISSUES')] }, { version: '1.9.287', buildNumber: 38 });
-  assert.deepEqual(steps.map((s) => s.kind), ['updateVersion', 'reviewNotes', 'reuseSubmission', 'submit']);
+  const r = plan({ builds: [build(38)], versions: [ver('v1', '1.9.176', 'REJECTED', '36')], subs: [sub('s1', 'UNRESOLVED_ISSUES', ['v1'])] }, { version: '1.9.288', buildNumber: 38 });
+  assert.deepEqual(r.blockers, []);
+  assert.deepEqual(kinds(r), ['updateVersion', 'reviewNotes', 'reuseSubmission', 'submit']);
 });
 
 test('with no editable version a new MANUAL version is created and submitted', async () => {
@@ -58,7 +88,7 @@ test('with no editable version a new MANUAL version is created and submitted', a
   const api = client({ jwt: 'j', write: true, fetchImpl });
   const state = { builds: [build(38)], versions: [ver('v0', '1.9.100', 'READY_FOR_DISTRIBUTION')], subs: [] };
   const logs = [];
-  const out = await execute(api, state, { appId: '1', version: '1.9.287', buildNumber: 38, notes: 'n'.repeat(60), log: (l) => logs.push(l) });
+  const out = await execute(api, state, { appId: '1', version: '1.9.288', buildNumber: 38, notes: 'n'.repeat(60), log: (l) => logs.push(l) });
   assert.deepEqual(out, { versionId: 'v2', submissionId: 's2' });
   assert.equal(calls[0].body.data.attributes.releaseType, 'MANUAL');
   assert.equal(calls[0].body.data.relationships.build.data.id, 'b38');
