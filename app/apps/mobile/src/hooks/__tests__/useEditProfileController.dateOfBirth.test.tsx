@@ -81,6 +81,43 @@ describe('useEditProfileController — date of birth (FR-PROFILE-007 AC7)', () =
     expect(back).toHaveBeenCalledTimes(1);
   });
 
+  it('is clean again after a successful save, so the unsaved-changes guard stays quiet', async () => {
+    getProfile.mockResolvedValue({
+      displayName: 'Dana', city: 'c1', cityName: 'Town', profileStreet: null, profileStreetNumber: null,
+      contactPhone: '050-7654321', biography: null, avatarUrl: null,
+    });
+    const { result } = await loadedForm();
+    act(() => result.current.setContactPhone(''));
+    expect(result.current.isDirty).toBe(true);
+    await act(() => result.current.handleSave());
+    expect(updateProfile).toHaveBeenCalledWith(expect.objectContaining({ contactPhone: null }));
+    expect(back).toHaveBeenCalledTimes(1);
+    expect(result.current.saving).toBe(false);
+    expect(result.current.isDirty).toBe(false);
+  });
+
+  it('keeps an edit made while the save is in flight dirty (only the saved values become the baseline)', async () => {
+    const { result } = await loadedForm();
+    let release: () => void = () => undefined;
+    updateProfile.mockReturnValueOnce(new Promise<void>((resolve) => { release = resolve; }));
+    act(() => result.current.setBiography('Saved'));
+    let pending: Promise<void> = Promise.resolve();
+    act(() => { pending = result.current.handleSave(); });
+    act(() => result.current.setBiography('Typed during save'));
+    await act(async () => { release(); await pending; });
+    expect(updateProfile).toHaveBeenCalledWith(expect.objectContaining({ biography: 'Saved' }));
+    expect(result.current.isDirty).toBe(true);
+  });
+
+  it('stays dirty when the save fails, so the guard still protects the edit', async () => {
+    const { result } = await loadedForm();
+    updateProfile.mockRejectedValueOnce(new Error('boom'));
+    act(() => result.current.setBiography('Hello'));
+    await act(() => result.current.handleSave());
+    expect(back).not.toHaveBeenCalled();
+    expect(result.current.isDirty).toBe(true);
+  });
+
   it('refuses an under-18 date under the field and saves nothing', async () => {
     const { result } = await loadedForm();
     act(() => { result.current.setDateOfBirth(CHILD); result.current.setBiography('Hello'); });

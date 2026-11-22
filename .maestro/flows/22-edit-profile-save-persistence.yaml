@@ -106,6 +106,13 @@ tags: [profile]
     visible:
       id: edit-profile-save
     timeout: 20000
+# The marker wraps the phone field, which sits below the fold on this screen (v3 retry frame), so
+# scroll it into view first. Assertion below stays strict.
+- scrollUntilVisible:
+    element:
+      id: edit-profile-phone
+    timeout: 15000
+    centerElement: false
 - extendedWaitUntil:
     visible:
       id: native-profile-capture-safe
