@@ -24,7 +24,7 @@ begin
 end;
 $$;
 
-select plan(37);
+select plan(41);
 
 -- A scheduler may be running these jobs in the background on this database: every
 -- assertion below looks only at what this transaction did (job names `zz_…`, return values).
@@ -134,7 +134,7 @@ language plpgsql
 as $$
 begin
   if not pg_temp.platform_absent() then
-    return query select skip('pg_net / Vault are installed: the stand-in is not used', 10);
+    return query select skip('pg_net / Vault are installed: the stand-in is not used', 14);
     return;
   end if;
   create schema net;
@@ -154,11 +154,22 @@ begin
   return next is(kc_private.invoke_edge_function('strip-exif'), null, 'without the Vault secrets nothing is called');
   return next is((select count(*) from ops.warnings w where w.key = 'edge_invocation_unconfigured'), 1::bigint,
                  'and a warning says so');
-  insert into vault.decrypted_secrets values ('kc_project_url', 'https://project.example/'), ('kc_service_role_key', 'test-key');
+  -- An older default-branch deploy may still write only the obsolete slot.
+  insert into vault.decrypted_secrets values ('kc_project_url', 'https://project.example/'), ('kc_service_role_key', 'obsolete-key');
+  return next is(kc_private.invoke_edge_function('strip-exif'), null, 'legacy-only caller fails closed, never falls back');
+  return next is((select count(*) from net.calls), 0::bigint, 'legacy-only configuration queues no HTTP call');
+  insert into vault.decrypted_secrets values ('kc_verified_service_role_key', 'test-key');
   return next is(kc_private.invoke_edge_function('strip-exif', '{"lookbackHours":2}') is not null, true, 'with them the call is queued');
   return next is((select c.url || ' ' || (c.headers ->> 'Authorization') || ' ' || c.body::text from net.calls c),
                  'https://project.example/functions/v1/strip-exif Bearer test-key {"lookbackHours": 2}',
                  'to the function''s URL, with the service key as bearer and the body');
+
+  update vault.decrypted_secrets set decrypted_secret = 'rewritten-obsolete-key' where name = 'kc_service_role_key';
+  perform kc_private.invoke_edge_function('strip-exif');
+  return next is((select count(*) from net.calls where headers ->> 'Authorization' = 'Bearer test-key'), 2::bigint,
+                 'replaying the obsolete writer cannot change the actual caller');
+  return next is((select count(*) from net.calls where headers ->> 'Authorization' like '%obsolete%'), 0::bigint,
+                 'the obsolete value is never sent');
 
   delete from net.calls;
   insert into kc_private.outbox_events (topic, payload)
