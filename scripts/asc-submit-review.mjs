@@ -9,7 +9,8 @@
 //           approved version is never released by itself. It sets the review
 //           notes from a file in the repo and submits the version for App Review.
 //           A review submission still waiting with an older build is cancelled
-//           first. A rejected submission (UNRESOLVED_ISSUES) is answered by
+//           first, only when the dispatch names that submission id
+//           (cancel_submission, read from a plan run). A rejected submission (UNRESOLVED_ISSUES) is answered by
 //           submitting the same submission again.
 // It never touches TestFlight groups or testers, never releases a version,
 // and never prints credentials or the demo account password.
@@ -65,6 +66,12 @@ export function client({ jwt, fetchImpl = fetch, write = false }) {
 
 const versionState = (v) => v.attributes?.appVersionState ?? v.attributes?.appStoreState ?? null;
 
+/** Version states after which a version is history (released or removed); every other state is in flight. */
+export const DONE_STATES = new Set([
+  'READY_FOR_DISTRIBUTION', 'READY_FOR_SALE', 'REMOVED_FROM_SALE', 'DEVELOPER_REMOVED_FROM_SALE', 'REPLACED_WITH_NEW_VERSION', 'NOT_APPLICABLE',
+]);
+const OPEN_SUB_STATES = ['READY_FOR_REVIEW', 'WAITING_FOR_REVIEW', 'IN_REVIEW', 'UNRESOLVED_ISSUES'];
+
 /** Read everything the decision needs. GET only. */
 export async function readState(api, { appId, version, buildNumber }) {
   const q = new URLSearchParams({
@@ -72,40 +79,89 @@ export async function readState(api, { appId, version, buildNumber }) {
     'fields[builds]': 'version,processingState,uploadedDate,usesNonExemptEncryption', limit: '5',
   });
   const builds = (await api.get(`/builds?${q}`)).data || [];
-  const versions = (await api.get(`/apps/${appId}/appStoreVersions?filter[platform]=IOS&limit=20&include=build`)).data || [];
-  const subs = (await api.get(`/reviewSubmissions?filter[app]=${appId}&filter[platform]=IOS&limit=20`)).data || [];
+  const vres = await api.get(`/apps/${appId}/appStoreVersions?filter[platform]=IOS&limit=20&include=build`);
+  const included = new Map((vres.included || []).filter((x) => x.type === 'builds').map((b) => [b.id, b]));
+  const versions = (vres.data || []).map((v) => {
+    const bid = v.relationships?.build?.data?.id ?? null;
+    return { ...v, buildId: bid, buildNumber: bid ? (included.get(bid)?.attributes?.version ?? null) : null };
+  });
+  const subs = [];
+  for (const s of (await api.get(`/reviewSubmissions?filter[app]=${appId}&filter[platform]=IOS&limit=20`)).data || []) {
+    if (!OPEN_SUB_STATES.includes(s.attributes?.state)) { subs.push(s); continue; }
+    const items = (await api.get(`/reviewSubmissions/${s.id}/items?include=appStoreVersion&limit=20`)).data || [];
+    subs.push({ ...s, versionIds: items.map((it) => it.relationships?.appStoreVersion?.data?.id).filter(Boolean) });
+  }
   return { builds, versions, subs };
 }
 
 /**
- * Decide the steps. Pure, so it is unit-tested. Returns { steps, blockers }.
+ * Decide the steps. Pure, so it is unit-tested. Returns { steps, blockers, needs, done }.
+ * `needs` lists dispatch inputs `submit` requires (the exact submission to cancel).
  * Step kinds: cancelSubmission, updateVersion, createVersion, reviewNotes,
  * reuseSubmission, createSubmission, submit.
+ *
+ * Target-bound and fail-closed (review of #2619 on issue #2613):
+ * - At most one in-flight (not released) version may exist; it is the target.
+ *   Two or more, or one that is approved and waiting for release, is a blocker.
+ * - The requested build already attached to a waiting version is a no-op.
+ * - Only a submission whose items hold the target version is touched. Any
+ *   other open submission is a blocker.
+ * - Cancelling a waiting review is done only when `cancelSubmission` names
+ *   that exact submission id, read from a `plan` run first.
  */
-export function plan({ builds, versions, subs }, { version, buildNumber }) {
+export function plan({ builds, versions, subs }, { version, buildNumber, cancelSubmission = '' }) {
   const blockers = [];
+  const needs = [];
   const steps = [];
   const build = builds.find((b) => String(b.attributes?.version) === String(buildNumber));
   if (!build) blockers.push(`build ${version} (${buildNumber}) not found in App Store Connect`);
   else if (build.attributes?.processingState !== 'VALID') blockers.push(`build ${buildNumber} is ${build.attributes?.processingState}, not VALID`);
-  const open = subs.filter((s) => ['READY_FOR_REVIEW', 'WAITING_FOR_REVIEW', 'IN_REVIEW', 'UNRESOLVED_ISSUES'].includes(s.attributes?.state));
-  for (const s of open.filter((x) => ['WAITING_FOR_REVIEW', 'IN_REVIEW'].includes(x.attributes?.state))) {
-    steps.push({ kind: 'cancelSubmission', id: s.id, state: s.attributes.state });
+
+  const inFlight = versions.filter((v) => !DONE_STATES.has(versionState(v)));
+  const label = (v) => `${v.attributes?.versionString} ${versionState(v)} (build ${v.buildNumber ?? 'none'})`;
+  if (inFlight.length > 1) blockers.push(`more than one version in flight: ${inFlight.map(label).join(', ')}; resolve in App Store Connect first`);
+  const target = inFlight.length === 1 ? inFlight[0] : null;
+  const tState = target ? versionState(target) : null;
+  if (target && !EDITABLE_STATES.has(tState) && !WAITING_STATES.has(tState)) {
+    blockers.push(`version ${label(target)} is neither editable nor waiting for review (e.g. approved, pending release); not changing it`);
   }
-  const waiting = versions.find((v) => WAITING_STATES.has(versionState(v)));
-  const editable = versions.find((v) => EDITABLE_STATES.has(versionState(v)));
-  const target = editable ?? waiting;
+
+  const open = subs.filter((s) => OPEN_SUB_STATES.includes(s.attributes?.state));
+  const mine = open.filter((s) => target && (s.versionIds || []).includes(target.id));
+  const foreign = open.filter((s) => !mine.includes(s) && (s.versionIds || []).length > 0);
+  for (const s of foreign) blockers.push(`review submission ${s.id} (${s.attributes.state}) holds another version; not touching it`);
+  const empty = open.filter((s) => (s.versionIds || []).length === 0);
+
+  if (target && WAITING_STATES.has(tState) && String(target.buildNumber) === String(buildNumber)
+      && target.attributes?.versionString === version) {
+    return { steps: [], blockers, needs, done: `build ${buildNumber} is already ${tState} on version ${version}; nothing to do` };
+  }
+
+  if (target && WAITING_STATES.has(tState)) {
+    const waitingSubs = mine.filter((s) => WAITING_STATES.has(s.attributes.state));
+    if (waitingSubs.length !== 1) blockers.push(`version ${label(target)} is waiting but ${waitingSubs.length} matching review submissions were found`);
+    for (const s of waitingSubs) {
+      if (s.id !== cancelSubmission) needs.push(`cancel_submission=${s.id} (cancels the waiting review of ${label(target)})`);
+      steps.push({ kind: 'cancelSubmission', id: s.id, state: s.attributes.state, versionId: target.id, oldBuild: target.buildNumber });
+    }
+  }
+  if (cancelSubmission && !steps.some((s) => s.kind === 'cancelSubmission' && s.id === cancelSubmission)) {
+    blockers.push(`cancel_submission=${cancelSubmission} does not match the submission this plan would cancel`);
+  }
+
   if (target) {
-    steps.push({ kind: 'updateVersion', id: target.id, from: `${target.attributes?.versionString} ${versionState(target)}`, versionString: version, buildId: build?.id ?? null });
+    steps.push({ kind: 'updateVersion', id: target.id, from: label(target), versionString: version, buildId: build?.id ?? null });
   } else {
     steps.push({ kind: 'createVersion', versionString: version, buildId: build?.id ?? null });
   }
   steps.push({ kind: 'reviewNotes', versionId: target?.id ?? null });
-  const unresolved = open.find((s) => ['UNRESOLVED_ISSUES', 'READY_FOR_REVIEW'].includes(s.attributes?.state));
-  if (unresolved) steps.push({ kind: 'reuseSubmission', id: unresolved.id, state: unresolved.attributes.state });
+  const reusable = mine.filter((s) => ['UNRESOLVED_ISSUES', 'READY_FOR_REVIEW'].includes(s.attributes.state));
+  const reuse = reusable[0] ?? (empty.length === 1 && ['UNRESOLVED_ISSUES', 'READY_FOR_REVIEW'].includes(empty[0].attributes.state) ? empty[0] : null);
+  if (empty.length > 1) blockers.push(`${empty.length} open review submissions have no items; resolve in App Store Connect first`);
+  if (reuse) steps.push({ kind: 'reuseSubmission', id: reuse.id, state: reuse.attributes.state });
   else steps.push({ kind: 'createSubmission' });
   steps.push({ kind: 'submit' });
-  return { steps, blockers };
+  return { steps, blockers, needs, done: null };
 }
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -120,9 +176,11 @@ async function waitVersionEditable(api, id, tries = 30) {
 }
 
 /** Run the plan. Logs one line per step. */
-export async function execute(api, state, { appId, version, buildNumber, notes, log = console.log }) {
-  const { steps, blockers } = plan(state, { version, buildNumber });
+export async function execute(api, state, { appId, version, buildNumber, notes, cancelSubmission = '', log = console.log }) {
+  const { steps, blockers, needs, done } = plan(state, { version, buildNumber, cancelSubmission });
   if (blockers.length) throw new Error(`not submitting: ${blockers.join('; ')}`);
+  if (needs.length) throw new Error(`not submitting: needs ${needs.join('; ')}`);
+  if (done) { log(done); return { versionId: null, submissionId: null, done }; }
   const build = state.builds.find((b) => String(b.attributes?.version) === String(buildNumber));
   let versionId = null;
   let submissionId = null;
@@ -194,14 +252,16 @@ export async function execute(api, state, { appId, version, buildNumber, notes, 
 }
 
 export function describe(state, opts) {
-  const { steps, blockers } = plan(state, opts);
+  const { steps, blockers, needs, done } = plan(state, opts);
   const lines = [];
   for (const b of state.builds) lines.push(`build ${b.attributes?.version}: ${b.attributes?.processingState}, encryption flag ${b.attributes?.usesNonExemptEncryption}`);
-  for (const v of state.versions) lines.push(`version ${v.attributes?.versionString}: ${versionState(v)} (release ${v.attributes?.releaseType ?? '?'})`);
-  for (const s of state.subs) lines.push(`review submission ${s.id}: ${s.attributes?.state}`);
-  lines.push('plan:', ...steps.map((s) => `  ${JSON.stringify(s)}`));
+  for (const v of state.versions) lines.push(`version ${v.id} ${v.attributes?.versionString}: ${versionState(v)} (build ${v.buildNumber ?? 'none'}, release ${v.attributes?.releaseType ?? '?'})`);
+  for (const s of state.subs) lines.push(`review submission ${s.id}: ${s.attributes?.state}${s.versionIds ? ` (versions ${s.versionIds.join(', ') || 'none'})` : ''}`);
+  if (done) lines.push(`no-op: ${done}`);
+  else lines.push('plan:', ...steps.map((s) => `  ${JSON.stringify(s)}`));
+  if (needs.length) lines.push('submit needs:', ...needs.map((n) => `  ${n}`));
   if (blockers.length) lines.push('BLOCKERS:', ...blockers.map((b) => `  ${b}`));
-  return { text: lines.join('\n'), blockers };
+  return { text: lines.join('\n'), blockers, needs };
 }
 
 async function main(env = process.env) {
@@ -209,6 +269,8 @@ async function main(env = process.env) {
   if (!['plan', 'submit'].includes(mode)) throw new Error('ASC_MODE must be plan or submit');
   const version = env.ASC_VERSION;
   const buildNumber = env.ASC_BUILD_NUMBER;
+  const cancelSubmission = (env.ASC_CANCEL_SUBMISSION ?? '').trim();
+  if (cancelSubmission && !/^[\w-]+$/.test(cancelSubmission)) throw new Error('ASC_CANCEL_SUBMISSION must be a review submission id');
   if (!/^\d+\.\d+\.\d+$/.test(version ?? '') || !/^\d+$/.test(buildNumber ?? '')) throw new Error('ASC_VERSION x.y.z and ASC_BUILD_NUMBER required');
   const appId = env.KC_ASC_APP_ID;
   if (!/^\d+$/.test(appId ?? '')) throw new Error('KC_ASC_APP_ID missing');
@@ -217,13 +279,14 @@ async function main(env = process.env) {
   const jwt = createAscJwt({ keyId: env.ASC_API_KEY_ID, issuerId: env.ASC_API_KEY_ISSUER_ID, privateKeyPem: env.ASC_API_KEY_P8 });
   const api = client({ jwt, write: mode === 'submit' });
   const state = await readState(api, { appId, version, buildNumber });
-  const { text, blockers } = describe(state, { version, buildNumber });
+  const { text, blockers, needs } = describe(state, { version, buildNumber, cancelSubmission });
   console.log(text);
   if (mode === 'plan') {
     if (blockers.length) process.exitCode = 1;
     return;
   }
-  await execute(api, state, { appId, version, buildNumber, notes });
+  if (blockers.length || needs.length) throw new Error(`not submitting: ${[...blockers, ...needs.map((n) => `needs ${n}`)].join('; ')}`);
+  await execute(api, state, { appId, version, buildNumber, notes, cancelSubmission });
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
