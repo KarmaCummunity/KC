@@ -105,9 +105,12 @@ tags: [employment, posts]
       id: listing-error
     timeout: 10000
 - assertVisible: "הצעת עבודה מתפרסמת רק בשם ארגון.*"
-# The request side (looking for work): the scope is required here too but has no default, so a
-# filled form still cannot publish until it is picked. Title and role may carry over from the
-# offer side; both are rewritten so the next problem is deterministic. (Whether the request form
+# The request side (looking for work): the role is its only required detail; the scope is optional
+# here (job_request specs in employmentFieldSpecs.ts, covered by its unit test), so with a role
+# the next problem is the city. Run 45049870244 showed the city error with the scope unset, which
+# is the app working as specified; the earlier assumption that the scope blocks a request was wrong.
+# Title and role may carry over from the offer side; both are rewritten so the next problem is
+# deterministic. (Whether the request form
 # omits the salary fields is covered by the field-spec unit tests — an off-screen field would
 # fool a native absence assertion, so this flow does not make that claim.)
 - scrollUntilVisible:
@@ -127,14 +130,24 @@ tags: [employment, posts]
 - eraseText
 - inputText: "[e2e] Looking for work"
 - hideKeyboard
+# An empty role is the first problem on the request side.
 - tapOn:
     id: listing-input-role
 - eraseText
-- inputText: "QA Engineer"
 - hideKeyboard
 # Header publish: the footer button can sit under the floating tab bar (see above).
 - tapOn:
     id: create-header-publish
 - extendedWaitUntil:
-    visible: "נא למלא: היקף משרה"
+    visible: "נא למלא: תפקיד"
+    timeout: 10000
+# With the role filled and the optional scope left unset, the city is the next problem.
+- tapOn:
+    id: listing-input-role
+- inputText: "QA Engineer"
+- hideKeyboard
+- tapOn:
+    id: create-header-publish
+- extendedWaitUntil:
+    visible: "נא לבחור עיר"
     timeout: 10000
