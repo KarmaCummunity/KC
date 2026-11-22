@@ -3,12 +3,20 @@ import { ScrollView, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
-import { ORG_EVENT_KIND_SLUG, type MarketplaceListingDetail } from '@kc/domain';
+import {
+  ORG_EVENT_KIND_SLUG,
+  RIGHTS_LEGAL_AID_SHELF,
+  isConsultingHourKind,
+  type MarketplaceListingDetail,
+} from '@kc/domain';
 import { useSimilarListings } from '../../hooks/useMarketplaceListingDetail';
+import { useKnowledgeShelfSlug } from '../../hooks/useKnowledgeShelfSlug';
 import { ReportListingModal } from './ReportListingModal';
 import { GivingHandoffActions } from './GivingHandoffActions';
 import { RideBookingActions } from './rides/RideBookingActions';
 import { KnowledgeBookingActions } from './knowledge/KnowledgeBookingActions';
+import { ConsultingHourDetailsCard } from './knowledge/ConsultingHourDetailsCard';
+import { KnowledgeShelfLinksSection } from './knowledge/KnowledgeShelfLinksSection';
 import { HousingStayActions } from './housing/HousingStayActions';
 import { EventDetailsCard } from './events/EventDetailsCard';
 import { EventRegistrationActions } from './events/EventRegistrationActions';
@@ -86,6 +94,9 @@ export function MarketplaceListingDetailView({ detail, bottomInset, footer, mode
   const kindLabel = i18n.language.startsWith('he') ? detail.kindLabelHe : detail.kindLabelEn;
   const ownerCityName = useCityName(detail.owner?.cityId ?? null);
   const rideHouseNumbers = useRideHouseNumbers(detail.listingId, detail.worldSlug === 'rides');
+  const shelfSlug = useKnowledgeShelfSlug(detail.worldSlug, detail.worldSubcategoryId);
+  const isConsulting = isConsultingHourKind(detail.kindSlug);
+  const isRightsShelf = shelfSlug === RIGHTS_LEGAL_AID_SHELF;
 
   return (
     <>
@@ -118,6 +129,15 @@ export function MarketplaceListingDetailView({ detail, bottomInset, footer, mode
             <PostSeriesOccurrences listingId={detail.listingId} details={detail.details} isOwner={viewerId === detail.ownerId} />
           ) : null}
           {detail.worldSlug === 'employment' ? <EmploymentDetailsCard details={detail.details} /> : null}
+          {isConsulting ? (
+            <ConsultingHourDetailsCard
+              details={detail.details}
+              verificationLevel={detail.owner?.verificationLevel}
+            />
+          ) : null}
+          {isRightsShelf && shelfSlug ? (
+            <KnowledgeShelfLinksSection shelfSlug={shelfSlug} showNotice={!isConsulting} />
+          ) : null}
           {detail.summary ? <Text style={detailStyles.description}>{detail.summary}</Text> : null}
           <Text style={styles.summary}>{kindLabel}</Text>
           {detail.owner ? (

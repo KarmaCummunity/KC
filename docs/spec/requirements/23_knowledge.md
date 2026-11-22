@@ -238,7 +238,7 @@ Two layers on one world (`docs/spec/18_knowledge_world.md` §18.2): **exchange p
 - AC3. Shelf rules of `docs/spec/06_domain_hubs.md` (no missionary content; no divisive heritage content; a source per heritage item) are shown at the contribute step and in the reviewer checklist; the checklist is data (`knowledge_review_checklists(shelf_slug, items jsonb)`), editable by super admins.
 - AC4. "Everything here is free" is shown on the library tab header and on the contribute step; the review `reject` reasons include `paid_content`, `copyright`, `not_free_access`, `advice_binding`, `shelf_rule`, `low_quality`, `duplicate`.
 - AC5. Tests: complete-profile member with a profession declaration can publish without ID verification; missing profile completeness or profession is refused; shelf notice rendered for `rights_legal_aid`.
-- **Implementation reconciliation required after 2026-11-20 approval.** Inspect the complete current migration chain and deployed function before deciding whether an ID gate remains to change. Historical implementation (#2034): AC1 server gate shipped (`posts_world_knowledge_rules`, `user_verification_level < 2`, tested in `0703`); the form-side check, the disclaimers and AC2 come with #2038.
+- **Implementation (#2038):** AC1 UI + server gate reconciled to D184 — complete profile (`verification_level ≥ 1`) without ID verification (`posts_consulting_complete_profile_gate`, create form `ConsultingCreateProfileGate`); the §18.9 notice on the consulting post and booking chat; AC2 `knowledge_shelf_links` (seeded Kol Zchut) with the notice and link block on the rights & legal aid shelf. AC3–AC4 remain #1688.
 
 ---
 

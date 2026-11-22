@@ -12,7 +12,7 @@ export const MARKETPLACE_SERVER_ERROR_CODES = [
   'ride_departure_past',
   'knowledge_slot_invalid',
   'event_window_invalid',
-  // #2034 (0703–0704) — knowledge slots, bookings and the consulting-hour identity gate.
+  // #2034 — knowledge slots, bookings and the consulting-hour gate.
   'knowledge_slot_duration_invalid',
   'knowledge_slot_in_past',
   'knowledge_slots_overlap',
@@ -25,6 +25,9 @@ export const MARKETPLACE_SERVER_ERROR_CODES = [
   'knowledge_series_schedule_invalid',
   'knowledge_series_no_occurrence',
   'knowledge_series_not_found',
+  // #2038 / D184 — consulting hour needs a complete profile (level ≥ 1), not ID verification.
+  'consulting_requires_complete_profile',
+  // Legacy archive-chain code; keep mapped so an older server message still resolves.
   'consulting_requires_id_verification',
   'slot_not_found',
   'booking_expired',

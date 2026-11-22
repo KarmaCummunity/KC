@@ -103,6 +103,9 @@ describe('knowledge slot lists', () => {
   });
 
   it('maps the new knowledge server codes', () => {
+    expect(mapMarketplaceServerError({ message: 'consulting_requires_complete_profile' })).toBe(
+      'consulting_requires_complete_profile',
+    );
     expect(mapMarketplaceServerError({ message: 'consulting_requires_id_verification' })).toBe(
       'consulting_requires_id_verification',
     );

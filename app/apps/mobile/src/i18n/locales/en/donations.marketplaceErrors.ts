@@ -21,7 +21,10 @@ export const marketplaceErrors = {
   knowledge_series_schedule_invalid: 'Check the weekly time: days, a start time, 15 minutes to 8 hours, and a last day that has not passed.',
   knowledge_series_no_occurrence: 'There is no lesson day between today and the last day. Pick other days or a later last day.',
   knowledge_series_not_found: 'The weekly time of this lesson was not found.',
-  consulting_requires_id_verification: 'A professional consulting hour requires identity verification. Verify your identity in your profile and try again.',
+  consulting_requires_complete_profile:
+    'A professional consulting hour needs a complete profile. Complete your profile and try again.',
+  consulting_requires_id_verification:
+    'A professional consulting hour needs a complete profile. Complete your profile and try again.',
   slot_not_found: 'This time is no longer available.',
   booking_expired: 'The booking expired because it was not answered in time.',
   account_not_active: 'Your account is not active right now, so you cannot book.',
