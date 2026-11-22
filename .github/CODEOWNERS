@@ -37,6 +37,8 @@
 /scripts/mobile-*                           @navesarussi
 /scripts/testflight-*                        @navesarussi
 /scripts/store-status*.mjs                   @navesarussi
+/scripts/asc-submit-review.mjs                @navesarussi
+/docs/store/app-review-notes.md               @navesarussi
 /scripts/eas-*                               @navesarussi
 /scripts/sync-eas-*                          @navesarussi
 /scripts/release-version.mjs                @navesarussi
