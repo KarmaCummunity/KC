@@ -12,6 +12,4 @@ An account is needed only for actions taken as a member: publishing a post, comm
 
 Registered members can delete their account in the app (Settings > Delete account).
 
-The member features can be reviewed with the demo account in the App Review sign-in information.
-
 Thank you!
