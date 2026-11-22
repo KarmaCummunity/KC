@@ -72,7 +72,16 @@ test.describe('account deletion (30-day restore)', () => {
     await page.getByPlaceholder('שם התצוגה שלך').fill(DISPLAY_NAME);
     await page.getByRole('button', { name: 'מחיקת החשבון', exact: true }).click();
     await expect(page.getByText('חשבונך נמחק')).toBeVisible({ timeout: 30_000 });
-    await expect(page).toHaveURL(/sign-in|auth/, { timeout: 30_000 });
+    // Signed out: the app replaces to the (auth) group. On web its index (the welcome screen with
+    // guest browsing, #2513) is served at `/`, so assert the auth entry points, not the URL.
+    await expect(
+      page
+        .getByTestId('auth-email-entry')
+        .or(page.getByTestId('auth-guest-entry'))
+        .or(page.getByTestId('auth-email'))
+        .first(),
+    ).toBeVisible({ timeout: 30_000 });
+    await expect(page).not.toHaveURL(/settings|restore-account/);
 
     // Replaces the pre-D108 assertion that sign-in failed with 400 ("auth user is gone"):
     // the identity stays, so password grant succeeds and the app offers restore.
