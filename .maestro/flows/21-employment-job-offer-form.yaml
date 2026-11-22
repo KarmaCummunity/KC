@@ -48,33 +48,27 @@ tags: [employment, posts]
 - assertVisible: "לשעה"
 # Publishing with an empty form points at the missing title first (FR-POST-001 AC6: the form
 # scrolls to the first problem).
-- scrollUntilVisible:
-    element:
-      id: listing-publish
-    direction: DOWN
-    timeout: 10000
-    # No centering: the button is the last scroll item; once fully visible a centering
-    # scroll can never settle and Maestro retries until timeout (run 44995095437).
-    centerElement: false
+# The publish tap uses the header action, not the footer button (listing-publish): at max
+# scroll the footer settles half-covered by the floating tab bar and a center tap lands on a
+# tab, abandoning the form (run 45029689831; the check-maestro-flows centerElement rule
+# documents this class). create-header-publish calls the same publish and is never covered,
+# and a rejected publish scrolls the form to the first problem.
 - tapOn:
-    id: listing-publish
-- assertVisible: "נא לכתוב כותרת (לפחות 2 תווים)"
+    id: create-header-publish
+- extendedWaitUntil:
+    visible: "נא לכתוב כותרת (לפחות 2 תווים)"
+    timeout: 10000
 - tapOn:
     id: listing-title
 - inputText: "[e2e] QA Engineer"
 - hideKeyboard
 # With a title but no role, the required role is the first problem.
-- scrollUntilVisible:
-    element:
-      id: listing-publish
-    direction: DOWN
-    timeout: 10000
-    # No centering: the button is the last scroll item; once fully visible a centering
-    # scroll can never settle and Maestro retries until timeout (run 44995095437).
-    centerElement: false
+# Header publish: the footer button can sit under the floating tab bar (see above).
 - tapOn:
-    id: listing-publish
-- assertVisible: "נא למלא: תפקיד"
+    id: create-header-publish
+- extendedWaitUntil:
+    visible: "נא למלא: תפקיד"
+    timeout: 10000
 # Fill the role, the requirements and a salary amount; the inputs take the values.
 - tapOn:
     id: listing-input-role
@@ -103,18 +97,13 @@ tags: [employment, posts]
 - tapOn: "לשעה"
 # The seed user has no organization allowed to post jobs (#1476): the publish stops at the
 # organization gate, a form-level error above Publish, and never reaches the server.
-- scrollUntilVisible:
-    element:
-      id: listing-publish
-    direction: DOWN
-    timeout: 10000
-    # No centering: the button is the last scroll item; once fully visible a centering
-    # scroll can never settle and Maestro retries until timeout (run 44995095437).
-    centerElement: false
+# Header publish: the footer button can sit under the floating tab bar (see above).
 - tapOn:
-    id: listing-publish
-- assertVisible:
-    id: listing-error
+    id: create-header-publish
+- extendedWaitUntil:
+    visible:
+      id: listing-error
+    timeout: 10000
 - assertVisible: "הצעת עבודה מתפרסמת רק בשם ארגון.*"
 # The request side (looking for work): the scope is required here too but has no default, so a
 # filled form still cannot publish until it is picked. Title and role may carry over from the
@@ -143,14 +132,9 @@ tags: [employment, posts]
 - eraseText
 - inputText: "QA Engineer"
 - hideKeyboard
-- scrollUntilVisible:
-    element:
-      id: listing-publish
-    direction: DOWN
-    timeout: 10000
-    # No centering: the button is the last scroll item; once fully visible a centering
-    # scroll can never settle and Maestro retries until timeout (run 44995095437).
-    centerElement: false
+# Header publish: the footer button can sit under the floating tab bar (see above).
 - tapOn:
-    id: listing-publish
-- assertVisible: "נא למלא: היקף משרה"
+    id: create-header-publish
+- extendedWaitUntil:
+    visible: "נא למלא: היקף משרה"
+    timeout: 10000

@@ -42,6 +42,12 @@ tags: [profile]
 - eraseText
 - inputText: ${output.expectedPhone}
 - hideKeyboard
+# The save button sits at the bottom edge, above the floating tab bar once settled. Let the
+# keyboard-hide layout settle before tapping: the assessed (unconfirmed) cause of run
+# 45029689831's first attempt is a tap taken while the layout was still moving - the
+# unsaved-changes guard opened and the retry passed unchanged.
+- waitForAnimationToEnd:
+    timeout: 5000
 - tapOn:
     id: edit-profile-save
 # A successful save navigates back to the feed; a failure stays on the form behind a NotifyModal.
@@ -77,6 +83,9 @@ tags: [profile]
     commands:
       - inputText: ${output.originalPhone}
 - hideKeyboard
+# Same settle as above before the bottom-edge save tap.
+- waitForAnimationToEnd:
+    timeout: 5000
 - tapOn:
     id: edit-profile-save
 - extendedWaitUntil:
