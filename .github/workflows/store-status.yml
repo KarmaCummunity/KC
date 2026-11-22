@@ -43,7 +43,7 @@ jobs:
           GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
         run: |
           # Mask secret values (and each line of multiline PEM/JSON) so accidental
-          # echo cannot appear in logs. Actions also auto-masks ${{ secrets.* }}.
+          # echo cannot appear in logs. Actions also auto-masks secret contexts.
           mask_value() {
             local v="$1"
             [ -n "$v" ] || return 0
