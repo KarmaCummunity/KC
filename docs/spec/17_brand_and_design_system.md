@@ -255,6 +255,12 @@ The current user is addressed without grammatical gender. **House convention: th
 
 Out of scope: strings about *another* user ("{{name}} הצטרף"), which follow that user's stored gender.
 
+**Sign-in welcome copy (#2244).** Applying this section (D93) to the welcome and consent strings that had frozen copy-voice findings in `he/modules/auth.ts`:
+- Welcome tagline: **לתת. לקבל. לחבר קהילה.** — parallel infinitives that keep the prior three-beat meaning of "תן. קבל. חבר קהילה."
+- Consent lines (`bySigningUp`, `legalConsentShort`): impersonal **בהרשמה מסכימים ל…** — same Terms / Privacy meaning, without singular "אתה".
+
+These are the most conservative D93-compliant readings of the previous copy (agent fill on #2244). The PM may refine the brand/legal wording later; the key slogan in §7.3 stays **"לתת — זה גם לקבל."** and is unchanged.
+
 ### 7.3 Spelling, words and length
 
 - **Ktiv maleh** (§15): תוכנה, שירות, תיאור, ביטול — not תכנה, שרות, תאור, בטול.
