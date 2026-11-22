@@ -2,7 +2,7 @@
 export const RELEASE_PLAN = {
   "project": "kdqtbdbzwvlugkhonexg",
   "manifestPath": "supabase/baseline/prod-allowed-migrations.txt",
-  "manifestSha256": "9b3f40b05c53d76e19a2d01c31b547f18601456f01bcdcafe1a463b0c32a9295",
+  "manifestSha256": "04419fc0fc787cdd288d530a797e895032116cc3a8ff42a0e46bc7760290e47b",
   "ledger": [
     "0001",
     "0002",
@@ -80,7 +80,11 @@ export const RELEASE_PLAN = {
     "0086_org_sec46_audit_every_change.sql",
     "0087_biography_url_check_real_tlds.sql",
     "0088_outbox_claim_exact_limit.sql",
-    "0089_identity_hash_reservation.sql"
+    "0089_identity_hash_reservation.sql",
+    "0090_feed_has_image_filter.sql",
+    "0091_post_media_processing_activation.sql",
+    "0092_employment_job_offer_fields.sql",
+    "0093_user_devices_prune.sql"
   ],
   "files": {
     "0001_baseline.sql": "4298a10c083fd237c14843af5aad23eea909aee8f3bcdf8810ab80bc2e998083",
@@ -157,7 +161,11 @@ export const RELEASE_PLAN = {
     "0086_org_sec46_audit_every_change.sql": "d13ac6e93029e8b6ddb54404b1e978f4fa93a69990cf3a2e6a267073ba1097a4",
     "0087_biography_url_check_real_tlds.sql": "b6c5fb64ad602d1a2c75c0b779762790904150709de225d643828b3e7beea5d8",
     "0088_outbox_claim_exact_limit.sql": "8491c7b389578836727e787ab8b7abb4faf109065776dc0bfa3dc0773d1bb6cb",
-    "0089_identity_hash_reservation.sql": "3a891fb57c1513d49f30c5ee65e687cef06ebe1d9c45bb184e6379d7d78bf580"
+    "0089_identity_hash_reservation.sql": "3a891fb57c1513d49f30c5ee65e687cef06ebe1d9c45bb184e6379d7d78bf580",
+    "0090_feed_has_image_filter.sql": "3a323062f2354936cf3ce2a899a35337d8215b7fc11bd7e47e719056520af997",
+    "0091_post_media_processing_activation.sql": "b40a8d6fbf3ea678f3dd1fd6cad676c6ac9e6408b77c13abd625d1d8e02d1814",
+    "0092_employment_job_offer_fields.sql": "cad830a75e34478c94132e797863b2972d5f7cf36b71ea92df289a3520725ee9",
+    "0093_user_devices_prune.sql": "6fa5e5f606174600e32455f6067d6a71f8f5a4540b2b807333de2703f9d13216"
   },
   "configSha256": "fd6dc83326a71b50fa3bb7f50aa59fe08252c6c59b3eadddba7cdc9aa996730f"
 };
