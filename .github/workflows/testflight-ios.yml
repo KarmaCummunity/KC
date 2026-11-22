@@ -288,9 +288,8 @@ jobs:
           echo "build_number=$build_number" >> "$GITHUB_OUTPUT"
           echo "**iOS → TestFlight: uploaded** build $build_number from $BUILD_SHA ($STORE_BACKEND backend, profile $EAS_PROFILE)" >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Distribute to external testers & submit for Beta App Review (non-fatal)
+      - name: Prepare external beta review without automatic tester announcements
         if: success() && env.STORE_BACKEND != 'prod'
-        continue-on-error: true
         timeout-minutes: 50
         working-directory: .
         env:

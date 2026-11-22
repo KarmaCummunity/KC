@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 // After a TestFlight upload: wait for the build to become VALID, add it to the
-// external beta groups and submit it for Beta App Review. Never prints secrets.
+// external beta groups and submit it for Beta App Review, with automatic tester
+// announcements disabled. This does not certify silent external availability.
+// Never prints secrets.
 // Env: ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_PATH, ASC_APP_ID, BUILD_NUMBER,
 //      TF_GROUPS (comma list), TF_WHATS_NEW, TF_TIMEOUT_MIN (default 45)
 import { readFileSync } from 'node:fs';
@@ -29,6 +31,30 @@ function token({ keyId, issuer, key }) {
   return `${h}.${p}.${b64u(s)}`;
 }
 
+// Standing release policy: no automatic tester announcements. There is deliberately
+// no notification override here. An explicit broadcast is a separate approved action.
+// Apple can leave a reviewed build awaiting Notify Testers, so do not claim Testing
+// merely because this policy is verified or the build is assigned to groups.
+export async function enforceSilentTesters(call, buildId) {
+  const path = `builds/${encodeURIComponent(buildId)}/buildBetaDetail`;
+  const before = await call('GET', path);
+  const detail = before.j?.data;
+  if (before.status !== 200 || detail?.type !== 'buildBetaDetails' || !detail.id) {
+    throw new Error('Cannot resolve exact build beta detail; distribution stopped');
+  }
+  const id = detail.id;
+  const updated = await call('PATCH', `buildBetaDetails/${encodeURIComponent(id)}`, {
+    data: { type: 'buildBetaDetails', id, attributes: { autoNotifyEnabled: false } },
+  });
+  if (updated.status !== 200) throw new Error('Cannot disable automatic tester announcements; distribution stopped');
+  const after = await call('GET', path);
+  if (after.status !== 200 || after.j?.data?.type !== 'buildBetaDetails' ||
+      after.j.data.id !== id || after.j.data.attributes?.autoNotifyEnabled !== false) {
+    throw new Error('Automatic tester announcement policy not verified; distribution stopped');
+  }
+  return id;
+}
+
 async function main() {
   const env = process.env;
   const creds = { keyId: env.ASC_KEY_ID, issuer: env.ASC_ISSUER_ID, key: readFileSync(env.ASC_KEY_PATH, 'utf8') };
@@ -54,6 +80,10 @@ async function main() {
     await new Promise((r) => setTimeout(r, 60000));
   }
   const bid = build.id;
+  // Must finish before group assignment or Beta App Review, including reruns of
+  // already-approved builds. A missing/failed readback must never fail open.
+  const betaDetailId = await enforceSilentTesters(call, bid);
+  console.log('Automatic tester announcements: disabled and verified');
 
   const { j: gj } = await call('GET', `apps/${app}/betaGroups?limit=50`);
   for (const name of groups) {
@@ -82,9 +112,13 @@ async function main() {
     console.log(`beta review submit: ${r.status} ${r.j.data?.attributes?.betaReviewState || ''} ${r.errs.join('; ')}`);
   }
   const d = await call('GET', `builds/${bid}/buildBetaDetail`);
-  console.log(`external state: ${d.j.data?.attributes?.externalBuildState}`);
+  if (d.status !== 200 || d.j.data?.type !== 'buildBetaDetails' ||
+      d.j.data.id !== betaDetailId || d.j.data.attributes?.autoNotifyEnabled !== false) {
+    throw new Error('Automatic tester announcement policy changed or unverifiable after review preparation');
+  }
+  console.log(`external state: ${d.j.data?.attributes?.externalBuildState}; automatic announcements disabled. Approval/group assignment is not proof of Testing or silent availability.`);
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
-  main().catch((e) => { console.log(`::warning::TestFlight distribution failed: ${e.message}`); process.exitCode = 0; });
+  main().catch(() => { console.log('::error::TestFlight distribution failed; upload may have succeeded, but distribution is not certified.'); process.exitCode = 1; });
 }
