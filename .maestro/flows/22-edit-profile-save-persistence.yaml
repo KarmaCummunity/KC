@@ -1,0 +1,65 @@
+# Spec: FR-PROFILE-007 — edit profile save persists: changing the contact phone and tapping Save
+# writes it to kc-dev, and reopening the screen shows the saved value. Flow 19 covers the
+# keyboard/sticky-CTA layout only; it never edits a field or taps Save, and no other flow does.
+#
+# The phone is the fixture field (its only validation is 1-20 characters). The value TOGGLES
+# between two fixtures (050-1234567 / 050-7654321): the flow reads the current value from the
+# field, stores it and its opposite in Maestro output variables, asserts they differ, and writes
+# the stored opposite — so every run is a real change and the controller's no-change fast path
+# (router.back without a write) can never be taken. After leave/reopen the value is re-read from
+# the SAME field with copyTextFrom and compared to the stored expectation with a strict-equality
+# assertTrue (docs.maestro.dev/reference/commands-available/copytextfrom), not a screen-text
+# search: only the phone input's own content can satisfy it. Each run leaves the seed user on the
+# opposite fixture value; no step asserts the absolute value, so neither direction depends on the
+# previous run.
+appId: org.karmacommunity.app
+name: Profile — edit profile save persists
+tags: [profile]
+---
+- runFlow: ../subflows/sign-in.yaml
+- openLink: karmacommunity://edit-profile
+- extendedWaitUntil:
+    visible:
+      id: edit-profile-save
+    timeout: 20000
+# The phone field sits below the avatar, name, city and street fields (as in flow 19).
+- scrollUntilVisible:
+    element:
+      id: edit-profile-phone
+    timeout: 15000
+    centerElement: false
+# Read the stored value from the field, then store it and its opposite fixture immediately, so no
+# later step depends on the clipboard surviving navigation.
+- copyTextFrom:
+    id: edit-profile-phone
+- evalScript: ${output.originalPhone = maestro.copiedText}
+- evalScript: '${output.expectedPhone = output.originalPhone === "050-1234567" ? "050-7654321" : "050-1234567"}'
+- assertTrue: ${output.originalPhone !== output.expectedPhone}
+- tapOn:
+    id: edit-profile-phone
+- eraseText
+- inputText: ${output.expectedPhone}
+- hideKeyboard
+- tapOn:
+    id: edit-profile-save
+# A successful save navigates back to the feed; a failure stays on the form behind a NotifyModal.
+- extendedWaitUntil:
+    visible:
+      id: feed-screen
+    timeout: 30000
+# Reopen: the form reloads the profile (getEditableProfile), so the same field must now hold the
+# value this run wrote.
+- openLink: karmacommunity://edit-profile
+- extendedWaitUntil:
+    visible:
+      id: edit-profile-save
+    timeout: 20000
+- scrollUntilVisible:
+    element:
+      id: edit-profile-phone
+    timeout: 15000
+    centerElement: false
+- copyTextFrom:
+    id: edit-profile-phone
+- evalScript: ${output.reopenedPhone = maestro.copiedText}
+- assertTrue: ${output.reopenedPhone === output.expectedPhone}

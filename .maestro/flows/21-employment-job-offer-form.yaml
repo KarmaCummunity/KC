@@ -1,0 +1,148 @@
+# Spec: docs/spec/05_giving_worlds.md §5.11 (employment) — the job-offer form's role, scope,
+# requirements and estimated salary fields (#2278, #2537), its required-field validation and the
+# organization gate on publishing a job offer (#1476); the job-request form drops the salary fields.
+#
+# Fixture limitation (like flow 18): the kc-dev seed user belongs to no organization allowed to
+# post jobs, so this flow never publishes — the organization gate (jobOffer.create.noEligibleOrg,
+# shown above Publish) is the deterministic terminal state. It also shadows the salary validation
+# (firstListingProblem judges the organization before the salary) and the detail/feed card lines
+# (EmploymentDetailsCard / employmentCardDetails): those need a seeded eligible organization or a
+# seeded job offer, and this flow deliberately creates neither. Until then their coverage is the
+# unit and component tests
+# (validateEmploymentSalary, ListingCreateForm.jobOffer, EmploymentDetailsCard, employmentCardDetails).
+#
+# Requires the employment world active on kc-dev (world_employment_enabled, #2278): in portal mode
+# the category opens the community-link form and the first wait fails. Field labels and the request
+# toggle are tapped by their Hebrew text (as in flows 13 and 18); the inputs carry static testIDs.
+appId: org.karmacommunity.app
+name: Employment — job offer form fields and validation
+tags: [employment, posts]
+---
+- runFlow: ../subflows/sign-in.yaml
+- openLink: "karmacommunity://create?category=employment&direction=give"
+- extendedWaitUntil:
+    visible:
+      id: listing-create-form
+    timeout: 20000
+# The job-offer fields of #2278/#2537 render as the curated specs: role, scope, where,
+# requirements, estimated salary and pay period (the pay-period chips sit under the salary fields).
+- scrollUntilVisible:
+    element:
+      id: listing-input-role
+    direction: DOWN
+    timeout: 10000
+    centerElement: false
+- assertVisible:
+    id: listing-input-role
+- scrollUntilVisible:
+    element: "לחודש"
+    direction: DOWN
+    timeout: 10000
+    centerElement: true
+- assertVisible:
+    id: listing-input-job-requirements
+- assertVisible:
+    id: listing-input-salary-min
+- assertVisible:
+    id: listing-input-salary-max
+- assertVisible: "לשעה"
+# Publishing with an empty form points at the missing title first (FR-POST-001 AC6: the form
+# scrolls to the first problem).
+- scrollUntilVisible:
+    element:
+      id: listing-publish
+    direction: DOWN
+    timeout: 10000
+    centerElement: true
+- tapOn:
+    id: listing-publish
+- assertVisible: "נא לכתוב כותרת (לפחות 2 תווים)"
+- tapOn:
+    id: listing-title
+- inputText: "[e2e] QA Engineer"
+- hideKeyboard
+# With a title but no role, the required role is the first problem.
+- scrollUntilVisible:
+    element:
+      id: listing-publish
+    direction: DOWN
+    timeout: 10000
+    centerElement: true
+- tapOn:
+    id: listing-publish
+- assertVisible: "נא למלא: תפקיד"
+# Fill the role, the requirements and a salary amount; the inputs take the values.
+- tapOn:
+    id: listing-input-role
+- inputText: "QA Engineer"
+- hideKeyboard
+- scrollUntilVisible:
+    element:
+      id: listing-input-job-requirements
+    direction: DOWN
+    timeout: 10000
+    centerElement: true
+- tapOn:
+    id: listing-input-job-requirements
+- inputText: "3 years experience"
+- hideKeyboard
+- scrollUntilVisible:
+    element:
+      id: listing-input-salary-min
+    direction: DOWN
+    timeout: 10000
+    centerElement: true
+- tapOn:
+    id: listing-input-salary-min
+- inputText: "50"
+- hideKeyboard
+- tapOn: "לשעה"
+# The seed user has no organization allowed to post jobs (#1476): the publish stops at the
+# organization gate, a form-level error above Publish, and never reaches the server.
+- scrollUntilVisible:
+    element:
+      id: listing-publish
+    direction: DOWN
+    timeout: 10000
+    centerElement: true
+- tapOn:
+    id: listing-publish
+- assertVisible:
+    id: listing-error
+- assertVisible: "הצעת עבודה מתפרסמת רק בשם ארגון.*"
+# The request side (looking for work): the scope is required here too but has no default, so a
+# filled form still cannot publish until it is picked. Title and role may carry over from the
+# offer side; both are rewritten so the next problem is deterministic. (Whether the request form
+# omits the salary fields is covered by the field-spec unit tests — an off-screen field would
+# fool a native absence assertion, so this flow does not make that claim.)
+- scrollUntilVisible:
+    element: "לבקש"
+    direction: UP
+    timeout: 10000
+- tapOn: "לבקש"
+- assertVisible:
+    id: listing-create-form
+- scrollUntilVisible:
+    element:
+      id: listing-title
+    direction: UP
+    timeout: 10000
+- tapOn:
+    id: listing-title
+- eraseText
+- inputText: "[e2e] Looking for work"
+- hideKeyboard
+- tapOn:
+    id: listing-input-role
+- eraseText
+- inputText: "QA Engineer"
+- hideKeyboard
+- scrollUntilVisible:
+    element:
+      id: listing-publish
+    direction: DOWN
+    timeout: 10000
+    centerElement: true
+- tapOn:
+    id: listing-publish
+- assertVisible: "נא למלא: היקף משרה"
