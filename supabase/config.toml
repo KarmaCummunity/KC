@@ -55,3 +55,10 @@ verify_jwt = false
 # Identity provider decisions (FR-VERIFY-005 AC4): authenticated by the provider signature.
 [functions.identity-verification-webhook]
 verify_jwt = false
+
+# The database calls this worker with the secret key on the apikey header; the platform's
+# built-in verify_jwt understands only legacy JWT keys, so the check stays in the function
+# (serviceRoleGuard, which also accepts the apikey header). The other database-invoked
+# workers keep their current state until their own reviewed change.
+[functions.dispatch-notification]
+verify_jwt = false

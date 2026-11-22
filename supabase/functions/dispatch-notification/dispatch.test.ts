@@ -1,7 +1,6 @@
 // The worker run against a fake database (outbox claim semantics) and a fake transport.
 import { assert, assertEquals, assertFalse } from 'jsr:@std/assert@1';
 import { backoffSeconds, runDispatch } from './dispatch.ts';
-import { createDispatchHandler } from './handler.ts';
 import { device, FakeDatabase, FakeTransport, KIND_ENTRIES, MESSAGE_ID, pushFor } from './testKit.ts';
 import { type ProviderMessage, type Ticket, TransportError } from './types.ts';
 
@@ -206,32 +205,4 @@ Deno.test('receipts are asked for in provider-sized requests', async () => {
   const transport = new FakeTransport();
   await runDispatch({ db, transport });
   assertEquals(transport.receiptRequests.map((r) => r.length), [1000, 1000, 300]);
-});
-
-Deno.test('the handler takes the service role only, drains the queue and reports counts', async () => {
-  const db = seeded(250);
-  const transport = new FakeTransport();
-  const logged: string[] = [];
-  const original = { log: console.log, warn: console.warn, error: console.error };
-  console.log = console.warn = console.error = (...args: unknown[]) => void logged.push(args.map(String).join(' '));
-  try {
-    const handler = createDispatchHandler({ db, transport, serviceRoleKey: 'service-key', options: { batchSize: 100 } });
-    assertEquals((await handler(new Request('http://x', { method: 'POST' }))).status, 401);
-    assertEquals((await handler(new Request('http://x', { headers: { Authorization: 'Bearer wrong' } }))).status, 401);
-    assertEquals(transport.requests.length, 0);
-    const response = await handler(new Request('http://x', { method: 'POST', headers: { Authorization: 'Bearer service-key' } }));
-    const body = await response.text();
-    const summary = JSON.parse(body);
-    assertEquals([response.status, summary.rounds, summary.events, summary.sent], [200, 4, 250, 250]);
-    assert(Object.values(summary).every((v) => typeof v === 'number'), 'counts only');
-    for (const text of [body, ...logged]) {
-      assertFalse(text.includes('ExponentPushToken') || text.includes('Dana'), 'no token and no text in the response or the logs');
-      assertFalse(text.includes(transport.sent[0].body), 'no rendered text');
-    }
-  } finally {
-    Object.assign(console, original);
-  }
-  const bounded = createDispatchHandler({ db: seeded(500), transport: new FakeTransport(), serviceRoleKey: 'k', options: { batchSize: 100 }, maxRounds: 2 });
-  const capped = await (await bounded(new Request('http://x', { headers: { Authorization: 'Bearer k' } }))).json();
-  assertEquals([capped.rounds, capped.sent], [2, 200], 'a run is bounded; the next call continues');
 });

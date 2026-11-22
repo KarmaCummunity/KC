@@ -36,9 +36,9 @@ Deno.test('Expo transport: wire format, ticket mapping and error classes', async
   reply = () => Response.json({ data: [{ status: 'ok', id: 'a' }] });
   assertEquals((await failure()).message, 'expo_ticket_mismatch');
   reply = () => new Response('not json');
-  assertEquals((await failure()).retryable, true);
+  assertEquals([(await failure()).retryable, (await failure()).ambiguous], [false, true]);
   const offline = createExpoTransport(undefined, () => Promise.reject(new Error('dns')));
-  assertEquals(await offline.send(messages).catch((e: TransportError) => [e.message, e.retryable]), ['expo_unreachable', true]);
+  assertEquals(await offline.send(messages).catch((e: TransportError) => [e.message, e.retryable]), ['expo_unreachable', false]);
 
   reply = () => Response.json({ data: { a: { status: 'ok' }, b: { status: 'error', details: { error: 'DeviceNotRegistered' } } } });
   assertEquals(await transport.getReceipts(['a', 'b', 'c']), { a: { status: 'ok', id: undefined }, b: { status: 'error', error: 'DeviceNotRegistered' } });
