@@ -97,6 +97,24 @@ describe('SupabaseChatV2Repository.listMessageReactions', () => {
     expect(rows).toEqual([{ messageId: 'm_1', userId: 'u_2', reactionType: 'laugh' }]);
   });
 
+  it('skips a row with a reaction type the app does not know', async () => {
+    const { client } = createFakeClient({
+      tables: {
+        message_reactions: {
+          data: [
+            { message_id: 'm_1', user_id: 'u_2', reaction_type: 'love' },
+            { message_id: 'm_1', user_id: 'u_3', reaction_type: 'angry' },
+          ],
+          error: null,
+        },
+      },
+    });
+
+    const rows = await new SupabaseChatV2Repository(client).listMessageReactions(['m_1']);
+
+    expect(rows).toEqual([{ messageId: 'm_1', userId: 'u_2', reactionType: 'love' }]);
+  });
+
   it('makes no call for an empty list', async () => {
     const { client, calls } = createFakeClient();
 
