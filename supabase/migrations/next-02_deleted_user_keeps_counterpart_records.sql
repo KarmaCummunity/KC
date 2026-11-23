@@ -30,7 +30,8 @@
 --      `cancel_reason = 'system'`) and not the member who acted. A freed event seat promotes
 --      the waiting list. Restoring the account does not bring the handoffs back.
 --   4. Reads: `posts_select_handoff_party` (the receiver reads the post they received) and
---      `post_cards` (every card surface: detail, feed, search, profile) accept a post whose
+--      `post_cards` with its worker `kc_access.post_card_rows` (every card surface: detail,
+--      feed, search, profile) accept a post whose
 --      owner is NULL. Its card has `owner_id`, the owner's name, handle, avatar and level
 --      all NULL, and `owner_identity_masked = false`. A hidden-name post has
 --      `owner_identity_masked = true`, so the two cases never look the same. A post of a
@@ -53,7 +54,8 @@
 --
 -- Rollback: delete or reassign the rows whose owner or recipient is NULL, put back the
 -- `on delete cascade` foreign keys and NOT NULL, the previous check, policy and functions
--- (`0001_baseline.sql`; `post_cards` from `0074_post_card_provenance.sql`), and drop the two
+-- (`0001_baseline.sql`; `post_cards` and `kc_access.post_card_rows` from the
+-- `post_read_visibility_gate` migration of #2648), and drop the two
 -- triggers and the two kc_private functions below.
 
 -- ── 1. Nullable members, set null on delete ─────────────────────────────────────────────
@@ -246,13 +248,15 @@ alter policy posts_select_handoff_party on public.posts
     and (posts.owner_id is null
          or exists (select 1 from public.users u where u.id = posts.owner_id)));
 
--- The card of a post whose owner is NULL: no owner, not masked. A post with an owner keeps
--- the inner join it had: no card when the caller may not read the owner. Only the users join
--- and its filter change; the rest is `0074_post_card_provenance.sql` as it was.
-create or replace function public.post_cards(p_post_ids uuid[])
+-- The card of a post whose owner is NULL: no owner, not masked. The gate of `post_cards`
+-- (`post_read_visibility_gate`, #2648) and its worker `kc_access.post_card_rows` joined the
+-- owner with an inner join. A post with an owner keeps that join: no card when the caller may
+-- not read the owner. Only the users join and its filter change.
+create or replace function kc_access.post_card_rows(p_post_ids uuid[])
 returns setof public.post_card
 language sql
 stable
+security definer
 set search_path = ''
 as $$
   select p.id, case when mk.masked then null else p.owner_id end, p.world_slug, p.kind_id, p.post_type, p.direction, p.status, p.visibility,
@@ -273,12 +277,9 @@ as $$
                   where f.follower_id = (select auth.uid()) and f.followed_id = p.owner_id)
            and not mk.masked,
          mk.masked,
-         -- What a card needs besides the facts above, so a page is one round trip (NFR-PERF-005).
-         -- `geo_approx` is text: the same hex EWKB string a direct read of the column returns.
          p.geo_approx::text, p.source_language, p.status_before_removal,
          p.shown_street, p.shown_street_number,
          (select ch.id from public.challenges ch where ch.post_id = p.id),
-         -- Provenance (FR-IMPORT-007 AC3): 'imported' with the platform the member named, for the chip.
          p.source, p.source_platform
     from public.posts p
     cross join lateral (select kc_access.post_actor_masked(p.id, p.owner_id) as masked) mk
@@ -291,8 +292,25 @@ as $$
              (array_agg(kc_access.post_media_json(m) order by m.ordinal))[1] as cover
         from public.post_media m
        where m.post_id = p.id and m.processing_status = 'ready') media on true
-   where p.id = any (p_post_ids[1:100])
-     and (p.owner_id is null or u.id is not null);
+   where p.id = any (p_post_ids[1:100]);
+$$;
+
+create or replace function public.post_cards(p_post_ids uuid[])
+returns setof public.post_card
+language sql
+stable
+security invoker
+set search_path = ''
+as $$
+  -- Row-level security decides here, once: the post's policies and its owner's (a NULL owner
+  -- is a member who deleted their account, #2088).
+  select c.*
+    from kc_access.post_card_rows(array(
+           select p.id
+             from public.posts p
+             left join public.users u on u.id = p.owner_id
+            where p.id = any (p_post_ids[1:100])
+              and (p.owner_id is null or u.id is not null))) c;
 $$;
 
 -- ── 5. Guards that a NULL member must not open ──────────────────────────────────────────
