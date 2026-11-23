@@ -5,6 +5,7 @@ import type { Database } from '../database.types';
 import { unwrapCall } from '../rpc/mapRpcError';
 import { requireRpcRow } from '../marketplace/rpcRow';
 import { sessionUserId } from '../users/userReads';
+import { presentMemberIds, memberEntry } from '../users/memberIds';
 
 type Client = SupabaseClient<Database>;
 type SlotSeatsRow = Database['public']['Functions']['knowledge_slot_seats']['Returns'][number];
@@ -51,12 +52,12 @@ export class SupabaseKnowledgeBookingRepository implements IKnowledgeBookingRepo
     if (handoffs.length === 0) return [];
     const [slots, learners] = await Promise.all([
       this.client.from('post_knowledge_slots').select('id, starts_at').eq('post_id', postId),
-      this.client.from('users').select('id, display_name, avatar_url').in('id', [...new Set(handoffs.map((h) => h.recipient_id))]),
+      this.client.from('users').select('id, display_name, avatar_url').in('id', presentMemberIds(handoffs.map((h) => h.recipient_id))),
     ]);
     const slotRefs = unwrapCall('table:post_knowledge_slots', slots) ?? [];
     const learnerById = new Map((unwrapCall('table:users', learners) ?? []).map((u) => [u.id, u]));
     return handoffs.flatMap((h) => {
-      const booking = mapBookingRow(h, slotRefs, learnerById.get(h.recipient_id) ?? null);
+      const booking = mapBookingRow(h, slotRefs, memberEntry(learnerById, h.recipient_id) ?? null);
       return booking ? [booking] : [];
     });
   }
@@ -117,7 +118,7 @@ export function mapBookingRow(row: HandoffRow, slots: readonly SlotRef[], learne
     status: row.status,
     cancelReason: row.cancel_reason,
     confirmBy: row.confirm_by,
-    learnerId: row.recipient_id,
+    learnerId: row.recipient_id ?? '',
     learnerName: learner?.display_name ?? '',
     learnerAvatarUrl: learner?.avatar_url ?? null,
   };

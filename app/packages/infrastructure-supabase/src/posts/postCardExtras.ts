@@ -16,6 +16,7 @@ import { toVerificationLevel } from '@kc/domain';
 import type { Database } from '../database.types';
 import { unwrapCall } from '../rpc/mapRpcError';
 import type { CardExtras, CardRecipient, PostCardRow } from './mapPostRow';
+import { presentMemberIds, memberEntry } from '../users/memberIds';
 
 type Client = SupabaseClient<Database>;
 
@@ -49,17 +50,17 @@ async function loadRecipients(client: Client, ids: string[]): Promise<Map<string
     await client
       .from('users')
       .select('id, display_name, avatar_url, share_handle, verification_level')
-      .in('id', [...new Set(handoffs.map((handoff) => handoff.recipient_id))]),
+      .in('id', presentMemberIds(handoffs.map((handoff) => handoff.recipient_id))),
   );
   const userById = new Map((users ?? []).map((user) => [user.id, user]));
   const out = new Map<string, CardRecipient>();
   for (const handoff of handoffs) {
-    const user = userById.get(handoff.recipient_id);
+    const user = memberEntry(userById, handoff.recipient_id);
     if (!user) continue;
     out.set(handoff.post_id, {
       recipient: {
         postId: handoff.post_id,
-        recipientUserId: handoff.recipient_id,
+        recipientUserId: user.id,
         markedAt: handoff.handed_over_at ?? handoff.updated_at,
       },
       user: {

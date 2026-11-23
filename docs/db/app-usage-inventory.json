@@ -176,7 +176,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminContentRepository.ts",
-   "line": 98,
+   "line": 99,
    "area": "admin",
    "symbol": "SupabaseAdminContentRepository.findActiveMembers",
    "via": "literal",
@@ -188,7 +188,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminContentRepository.ts",
-   "line": 114,
+   "line": 115,
    "area": "admin",
    "symbol": "SupabaseAdminContentRepository.searchUsers",
    "via": "literal",
@@ -200,7 +200,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminContentRepository.ts",
-   "line": 147,
+   "line": 148,
    "area": "admin",
    "symbol": "SupabaseAdminContentRepository.searchPosts",
    "via": "literal",
@@ -1334,7 +1334,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/housing/housingReads.ts",
-   "line": 32,
+   "line": 33,
    "area": "housing",
    "symbol": "detailsOf",
    "via": "literal",
@@ -1346,7 +1346,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/housing/housingReads.ts",
-   "line": 41,
+   "line": 42,
    "area": "housing",
    "symbol": "ratedOf",
    "via": "literal",
@@ -1358,7 +1358,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/housing/housingReads.ts",
-   "line": 50,
+   "line": 51,
    "area": "housing",
    "symbol": "completedStaysOf",
    "via": "literal",
@@ -1367,7 +1367,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/housing/housingReads.ts",
-   "line": 67,
+   "line": 68,
    "area": "housing",
    "symbol": "unwrapCall",
    "via": "literal",
@@ -1379,7 +1379,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/housing/housingReads.ts",
-   "line": 76,
+   "line": 77,
    "area": "housing",
    "symbol": "listHostBookings",
    "via": "literal",
@@ -1391,7 +1391,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/housing/housingReads.ts",
-   "line": 98,
+   "line": 99,
    "area": "housing",
    "symbol": "unwrapCall",
    "via": "literal",
@@ -1403,7 +1403,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/housing/housingReads.ts",
-   "line": 111,
+   "line": 112,
    "area": "housing",
    "symbol": "listGuestStays",
    "via": "literal",
@@ -1415,7 +1415,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/housing/housingReads.ts",
-   "line": 112,
+   "line": 113,
    "area": "housing",
    "symbol": "listGuestStays",
    "via": "literal",
@@ -1598,7 +1598,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/knowledge/SupabaseKnowledgeBookingRepository.ts",
-   "line": 31,
+   "line": 32,
    "area": "knowledge",
    "symbol": "SupabaseKnowledgeBookingRepository.listSlots",
    "via": "literal",
@@ -1607,7 +1607,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/knowledge/SupabaseKnowledgeBookingRepository.ts",
-   "line": 40,
+   "line": 41,
    "area": "knowledge",
    "symbol": "SupabaseKnowledgeBookingRepository.bookSeat",
    "via": "literal",
@@ -1616,7 +1616,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/knowledge/SupabaseKnowledgeBookingRepository.ts",
-   "line": 49,
+   "line": 50,
    "area": "knowledge",
    "symbol": "SupabaseKnowledgeBookingRepository.unwrapCall",
    "via": "literal",
@@ -1624,18 +1624,6 @@
     "select"
    ],
    "name": "post_handoffs"
-  },
-  {
-   "kind": "table",
-   "file": "app/packages/infrastructure-supabase/src/knowledge/SupabaseKnowledgeBookingRepository.ts",
-   "line": 53,
-   "area": "knowledge",
-   "symbol": "SupabaseKnowledgeBookingRepository.listBookings",
-   "via": "literal",
-   "ops": [
-    "select"
-   ],
-   "name": "post_knowledge_slots"
   },
   {
    "kind": "table",
@@ -1647,12 +1635,24 @@
    "ops": [
     "select"
    ],
+   "name": "post_knowledge_slots"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/knowledge/SupabaseKnowledgeBookingRepository.ts",
+   "line": 55,
+   "area": "knowledge",
+   "symbol": "SupabaseKnowledgeBookingRepository.listBookings",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
    "name": "users"
   },
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/knowledge/SupabaseKnowledgeBookingRepository.ts",
-   "line": 82,
+   "line": 83,
    "area": "knowledge",
    "symbol": "SupabaseKnowledgeBookingRepository.unwrapCall",
    "via": "literal",
@@ -1664,7 +1664,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/knowledge/SupabaseKnowledgeBookingRepository.ts",
-   "line": 92,
+   "line": 93,
    "area": "knowledge",
    "symbol": "SupabaseKnowledgeBookingRepository.move",
    "via": "type-union",
@@ -1673,7 +1673,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/knowledge/SupabaseKnowledgeBookingRepository.ts",
-   "line": 92,
+   "line": 93,
    "area": "knowledge",
    "symbol": "SupabaseKnowledgeBookingRepository.move",
    "via": "type-union",
@@ -1682,7 +1682,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/knowledge/SupabaseKnowledgeBookingRepository.ts",
-   "line": 92,
+   "line": 93,
    "area": "knowledge",
    "symbol": "SupabaseKnowledgeBookingRepository.move",
    "via": "type-union",
@@ -1754,7 +1754,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/marketplace/eventRegistrations.ts",
-   "line": 76,
+   "line": 77,
    "area": "marketplace",
    "symbol": "registerForEvent",
    "via": "literal",
@@ -1763,7 +1763,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/marketplace/eventRegistrations.ts",
-   "line": 88,
+   "line": 89,
    "area": "marketplace",
    "symbol": "unwrapCall",
    "via": "literal",
@@ -1772,7 +1772,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/marketplace/eventRegistrations.ts",
-   "line": 94,
+   "line": 95,
    "area": "marketplace",
    "symbol": "cancelEventRegistration",
    "via": "literal",
@@ -1781,7 +1781,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/marketplace/eventRegistrations.ts",
-   "line": 101,
+   "line": 102,
    "area": "marketplace",
    "symbol": "unwrapCall",
    "via": "literal",
@@ -1790,7 +1790,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/marketplace/eventRegistrations.ts",
-   "line": 110,
+   "line": 111,
    "area": "marketplace",
    "symbol": "unwrapCall",
    "via": "literal",
@@ -1799,7 +1799,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/marketplace/eventRegistrations.ts",
-   "line": 124,
+   "line": 125,
    "area": "marketplace",
    "symbol": "unwrapCall",
    "via": "literal",
@@ -1811,7 +1811,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/marketplace/eventRegistrations.ts",
-   "line": 130,
+   "line": 131,
    "area": "marketplace",
    "symbol": "unwrapCall",
    "via": "literal",
@@ -1823,7 +1823,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/marketplace/eventRegistrations.ts",
-   "line": 146,
+   "line": 147,
    "area": "marketplace",
    "symbol": "getMyEventRegistration",
    "via": "literal",
@@ -1835,7 +1835,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/marketplace/eventRegistrations.ts",
-   "line": 164,
+   "line": 165,
    "area": "marketplace",
    "symbol": "listMyOrganizations",
    "via": "literal",
@@ -1859,7 +1859,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/marketplace/givingHandoffs.ts",
-   "line": 61,
+   "line": 62,
    "area": "marketplace",
    "symbol": "getListingHandoff",
    "via": "literal",
@@ -1871,7 +1871,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/marketplace/givingHandoffs.ts",
-   "line": 79,
+   "line": 80,
    "area": "marketplace",
    "symbol": "listMyGivingHandoffs",
    "via": "literal",
@@ -1883,7 +1883,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/marketplace/givingHandoffs.ts",
-   "line": 115,
+   "line": 116,
    "area": "marketplace",
    "symbol": "reserveItemGiving",
    "via": "literal",
@@ -1892,7 +1892,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/marketplace/givingHandoffs.ts",
-   "line": 128,
+   "line": 129,
    "area": "marketplace",
    "symbol": "confirmItemHandoff",
    "via": "literal",
@@ -1901,7 +1901,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/marketplace/givingHandoffs.ts",
-   "line": 144,
+   "line": 145,
    "area": "marketplace",
    "symbol": "claimFoodGiving",
    "via": "literal",
@@ -1910,7 +1910,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/marketplace/givingHandoffs.ts",
-   "line": 155,
+   "line": 156,
    "area": "marketplace",
    "symbol": "cancelGivingHandoff",
    "via": "literal",
@@ -1919,7 +1919,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/marketplace/givingHandoffs.ts",
-   "line": 163,
+   "line": 164,
    "area": "marketplace",
    "symbol": "markGivingHandedOver",
    "via": "literal",
@@ -1928,7 +1928,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/marketplace/givingHandoffs.ts",
-   "line": 177,
+   "line": 178,
    "area": "marketplace",
    "symbol": "unwrapCall",
    "via": "literal",
@@ -2744,7 +2744,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/posts/closureMethods.ts",
-   "line": 137,
+   "line": 139,
    "area": "posts",
    "symbol": "getClosureCandidates",
    "via": "literal",
@@ -2801,7 +2801,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/posts/postCardExtras.ts",
-   "line": 29,
+   "line": 30,
    "area": "posts",
    "symbol": "loadPurgeDeadlines",
    "via": "literal",
@@ -2813,7 +2813,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/posts/postCardExtras.ts",
-   "line": 41,
+   "line": 42,
    "area": "posts",
    "symbol": "loadRecipients",
    "via": "literal",
@@ -2825,7 +2825,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/posts/postCardExtras.ts",
-   "line": 50,
+   "line": 51,
    "area": "posts",
    "symbol": "loadRecipients",
    "via": "literal",
@@ -3443,7 +3443,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideBookingRepository.ts",
-   "line": 27,
+   "line": 28,
    "area": "rides",
    "symbol": "SupabaseRideBookingRepository.bookSeat",
    "via": "literal",
@@ -3452,7 +3452,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideBookingRepository.ts",
-   "line": 41,
+   "line": 42,
    "area": "rides",
    "symbol": "SupabaseRideBookingRepository.unwrapCall",
    "via": "literal",
@@ -3464,7 +3464,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideBookingRepository.ts",
-   "line": 45,
+   "line": 46,
    "area": "rides",
    "symbol": "SupabaseRideBookingRepository.listForRide",
    "via": "literal",
@@ -3476,7 +3476,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideBookingRepository.ts",
-   "line": 46,
+   "line": 47,
    "area": "rides",
    "symbol": "SupabaseRideBookingRepository.listForRide",
    "via": "literal",
@@ -3488,7 +3488,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideBookingRepository.ts",
-   "line": 59,
+   "line": 60,
    "area": "rides",
    "symbol": "SupabaseRideBookingRepository.approve",
    "via": "literal",
@@ -3497,7 +3497,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideBookingRepository.ts",
-   "line": 66,
+   "line": 67,
    "area": "rides",
    "symbol": "SupabaseRideBookingRepository.cancel",
    "via": "literal",
@@ -3506,7 +3506,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideBookingRepository.ts",
-   "line": 70,
+   "line": 71,
    "area": "rides",
    "symbol": "SupabaseRideBookingRepository.complete",
    "via": "literal",
@@ -3515,7 +3515,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideBookingRepository.ts",
-   "line": 74,
+   "line": 75,
    "area": "rides",
    "symbol": "SupabaseRideBookingRepository.reinstate",
    "via": "literal",
@@ -3524,7 +3524,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideBookingRepository.ts",
-   "line": 79,
+   "line": 80,
    "area": "rides",
    "symbol": "SupabaseRideBookingRepository.completeRide",
    "via": "literal",
@@ -4466,7 +4466,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
-   "line": 37,
+   "line": 38,
    "area": "volunteering",
    "symbol": "loadEventRows",
    "via": "literal",
@@ -4478,7 +4478,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
-   "line": 53,
+   "line": 54,
    "area": "volunteering",
    "symbol": "SupabaseVolunteerRepository.listOpportunities",
    "via": "literal",
@@ -4487,7 +4487,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
-   "line": 114,
+   "line": 115,
    "area": "volunteering",
    "symbol": "SupabaseVolunteerRepository.myRegistrationStatus",
    "via": "literal",
@@ -4499,7 +4499,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
-   "line": 138,
+   "line": 139,
    "area": "volunteering",
    "symbol": "SupabaseVolunteerRepository.unwrapCall",
    "via": "literal",
@@ -4511,7 +4511,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
-   "line": 143,
+   "line": 144,
    "area": "volunteering",
    "symbol": "SupabaseVolunteerRepository.listMySignups",
    "via": "literal",
@@ -4523,7 +4523,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
-   "line": 166,
+   "line": 167,
    "area": "volunteering",
    "symbol": "SupabaseVolunteerRepository.closeOpportunity",
    "via": "literal",
@@ -4532,7 +4532,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
-   "line": 177,
+   "line": 178,
    "area": "volunteering",
    "symbol": "SupabaseVolunteerRepository.unwrapCall",
    "via": "literal",
@@ -4544,7 +4544,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
-   "line": 201,
+   "line": 202,
    "area": "volunteering",
    "symbol": "SupabaseVolunteerRepository.listShiftVolunteers",
    "via": "literal",
@@ -4556,7 +4556,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
-   "line": 204,
+   "line": 205,
    "area": "volunteering",
    "symbol": "SupabaseVolunteerRepository.listShiftVolunteers",
    "via": "literal",

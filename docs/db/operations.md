@@ -126,8 +126,11 @@ Change a period of a runnable rule: `update kc_private.retention_rules set keep 
 
 Account purge, per account past its grace period: tombstone + money records detached
 (`kc_private.account_purge_prepare`) → the member's folder removed from every bucket →
-auth identity deleted, rows cascade (`kc_private.account_purge_finish`). Every step is
-repeatable; an account stays due until the last step succeeded.
+auth identity deleted, rows cascade (`kc_private.account_purge_finish`). Before the member's
+`users` row goes, `kc_private.account_keep_counterpart_records` (a BEFORE DELETE trigger) keeps
+each post they handed over to a member who stays, without their text, photos or address, and
+deletes their other posts; the kept post and every handoff of theirs get `NULL` for them (#2088).
+Every step is repeatable; an account stays due until the last step succeeded.
 
 ## 5. Edge Functions started from the database
 

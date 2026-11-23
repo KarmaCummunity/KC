@@ -6391,7 +6391,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/knowledge/SupabaseKnowledgeBookingRepository.ts",
-     "line": 40,
+     "line": 41,
      "symbol": "SupabaseKnowledgeBookingRepository.bookSeat",
      "area": "knowledge"
     }
@@ -6472,7 +6472,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideBookingRepository.ts",
-     "line": 27,
+     "line": 28,
      "symbol": "SupabaseRideBookingRepository.bookSeat",
      "area": "rides"
     }
@@ -6576,7 +6576,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/eventRegistrations.ts",
-     "line": 94,
+     "line": 95,
      "symbol": "cancelEventRegistration",
      "area": "marketplace"
     }
@@ -6626,13 +6626,13 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/knowledge/SupabaseKnowledgeBookingRepository.ts",
-     "line": 92,
+     "line": 93,
      "symbol": "SupabaseKnowledgeBookingRepository.move",
      "area": "knowledge"
     },
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/givingHandoffs.ts",
-     "line": 155,
+     "line": 156,
      "symbol": "cancelGivingHandoff",
      "area": "marketplace"
     }
@@ -6781,7 +6781,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideBookingRepository.ts",
-     "line": 66,
+     "line": 67,
      "symbol": "SupabaseRideBookingRepository.cancel",
      "area": "rides"
     }
@@ -7094,7 +7094,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/givingHandoffs.ts",
-     "line": 144,
+     "line": 145,
      "symbol": "claimFoodGiving",
      "area": "marketplace"
     }
@@ -7275,7 +7275,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
-     "line": 166,
+     "line": 167,
      "symbol": "SupabaseVolunteerRepository.closeOpportunity",
      "area": "volunteering"
     }
@@ -7369,7 +7369,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideBookingRepository.ts",
-     "line": 79,
+     "line": 80,
      "symbol": "SupabaseRideBookingRepository.completeRide",
      "area": "rides"
     }
@@ -7426,7 +7426,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideBookingRepository.ts",
-     "line": 70,
+     "line": 71,
      "symbol": "SupabaseRideBookingRepository.complete",
      "area": "rides"
     }
@@ -7476,13 +7476,13 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/knowledge/SupabaseKnowledgeBookingRepository.ts",
-     "line": 92,
+     "line": 93,
      "symbol": "SupabaseKnowledgeBookingRepository.move",
      "area": "knowledge"
     },
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/givingHandoffs.ts",
-     "line": 128,
+     "line": 129,
      "symbol": "confirmItemHandoff",
      "area": "marketplace"
     }
@@ -7539,7 +7539,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideBookingRepository.ts",
-     "line": 59,
+     "line": 60,
      "symbol": "SupabaseRideBookingRepository.approve",
      "area": "rides"
     }
@@ -8118,7 +8118,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/eventRegistrations.ts",
-     "line": 88,
+     "line": 89,
      "symbol": "unwrapCall",
      "area": "marketplace"
     }
@@ -8465,7 +8465,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
-     "line": 53,
+     "line": 54,
      "symbol": "SupabaseVolunteerRepository.listOpportunities",
      "area": "volunteering"
     }
@@ -9425,7 +9425,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/housing/housingReads.ts",
-     "line": 50,
+     "line": 51,
      "symbol": "completedStaysOf",
      "area": "housing"
     }
@@ -9624,7 +9624,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/knowledge/SupabaseKnowledgeBookingRepository.ts",
-     "line": 31,
+     "line": 32,
      "symbol": "SupabaseKnowledgeBookingRepository.listSlots",
      "area": "knowledge"
     }
@@ -10079,7 +10079,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/eventRegistrations.ts",
-     "line": 101,
+     "line": 102,
      "symbol": "unwrapCall",
      "area": "marketplace"
     }
@@ -10137,13 +10137,13 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/knowledge/SupabaseKnowledgeBookingRepository.ts",
-     "line": 92,
+     "line": 93,
      "symbol": "SupabaseKnowledgeBookingRepository.move",
      "area": "knowledge"
     },
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/givingHandoffs.ts",
-     "line": 163,
+     "line": 164,
      "symbol": "markGivingHandedOver",
      "area": "marketplace"
     }
@@ -10241,7 +10241,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/eventRegistrations.ts",
-     "line": 110,
+     "line": 111,
      "symbol": "unwrapCall",
      "area": "marketplace"
     }
@@ -11257,7 +11257,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/givingHandoffs.ts",
-     "line": 177,
+     "line": 178,
      "symbol": "unwrapCall",
      "area": "marketplace"
     }
@@ -11412,7 +11412,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/eventRegistrations.ts",
-     "line": 76,
+     "line": 77,
      "symbol": "registerForEvent",
      "area": "marketplace"
     }
@@ -11481,7 +11481,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideBookingRepository.ts",
-     "line": 74,
+     "line": 75,
      "symbol": "SupabaseRideBookingRepository.reinstate",
      "area": "rides"
     }
@@ -11949,7 +11949,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/givingHandoffs.ts",
-     "line": 115,
+     "line": 116,
      "symbol": "reserveItemGiving",
      "area": "marketplace"
     }
@@ -14897,7 +14897,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/housing/housingReads.ts",
-     "line": 32,
+     "line": 33,
      "symbol": "detailsOf",
      "area": "housing",
      "ops": [
@@ -15612,7 +15612,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/eventRegistrations.ts",
-     "line": 164,
+     "line": 165,
      "symbol": "listMyOrganizations",
      "area": "marketplace",
      "ops": [
@@ -15837,7 +15837,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/posts/postCardExtras.ts",
-     "line": 29,
+     "line": 30,
      "symbol": "loadPurgeDeadlines",
      "area": "posts",
      "ops": [
@@ -16075,7 +16075,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
-     "line": 37,
+     "line": 38,
      "symbol": "loadEventRows",
      "area": "volunteering",
      "ops": [
@@ -16261,7 +16261,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/housing/housingReads.ts",
-     "line": 67,
+     "line": 68,
      "symbol": "unwrapCall",
      "area": "housing",
      "ops": [
@@ -16270,7 +16270,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/housing/housingReads.ts",
-     "line": 98,
+     "line": 99,
      "symbol": "unwrapCall",
      "area": "housing",
      "ops": [
@@ -16279,7 +16279,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/knowledge/SupabaseKnowledgeBookingRepository.ts",
-     "line": 49,
+     "line": 50,
      "symbol": "SupabaseKnowledgeBookingRepository.unwrapCall",
      "area": "knowledge",
      "ops": [
@@ -16288,7 +16288,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/knowledge/SupabaseKnowledgeBookingRepository.ts",
-     "line": 82,
+     "line": 83,
      "symbol": "SupabaseKnowledgeBookingRepository.unwrapCall",
      "area": "knowledge",
      "ops": [
@@ -16297,7 +16297,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/eventRegistrations.ts",
-     "line": 124,
+     "line": 125,
      "symbol": "unwrapCall",
      "area": "marketplace",
      "ops": [
@@ -16306,7 +16306,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/eventRegistrations.ts",
-     "line": 146,
+     "line": 147,
      "symbol": "getMyEventRegistration",
      "area": "marketplace",
      "ops": [
@@ -16315,7 +16315,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/givingHandoffs.ts",
-     "line": 61,
+     "line": 62,
      "symbol": "getListingHandoff",
      "area": "marketplace",
      "ops": [
@@ -16324,7 +16324,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/givingHandoffs.ts",
-     "line": 79,
+     "line": 80,
      "symbol": "listMyGivingHandoffs",
      "area": "marketplace",
      "ops": [
@@ -16333,7 +16333,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/posts/postCardExtras.ts",
-     "line": 41,
+     "line": 42,
      "symbol": "loadRecipients",
      "area": "posts",
      "ops": [
@@ -16342,7 +16342,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideBookingRepository.ts",
-     "line": 41,
+     "line": 42,
      "symbol": "SupabaseRideBookingRepository.unwrapCall",
      "area": "rides",
      "ops": [
@@ -16351,7 +16351,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
-     "line": 114,
+     "line": 115,
      "symbol": "SupabaseVolunteerRepository.myRegistrationStatus",
      "area": "volunteering",
      "ops": [
@@ -16360,7 +16360,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
-     "line": 138,
+     "line": 139,
      "symbol": "SupabaseVolunteerRepository.unwrapCall",
      "area": "volunteering",
      "ops": [
@@ -16369,7 +16369,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
-     "line": 201,
+     "line": 202,
      "symbol": "SupabaseVolunteerRepository.listShiftVolunteers",
      "area": "volunteering",
      "ops": [
@@ -16490,7 +16490,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/knowledge/SupabaseKnowledgeBookingRepository.ts",
-     "line": 53,
+     "line": 54,
      "symbol": "SupabaseKnowledgeBookingRepository.listBookings",
      "area": "knowledge",
      "ops": [
@@ -16745,7 +16745,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/housing/housingReads.ts",
-     "line": 41,
+     "line": 42,
      "symbol": "ratedOf",
      "area": "housing",
      "ops": [
@@ -16754,7 +16754,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideBookingRepository.ts",
-     "line": 46,
+     "line": 47,
      "symbol": "SupabaseRideBookingRepository.listForRide",
      "area": "rides",
      "ops": [
@@ -17206,7 +17206,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminContentRepository.ts",
-     "line": 147,
+     "line": 148,
      "symbol": "SupabaseAdminContentRepository.searchPosts",
      "area": "admin",
      "ops": [
@@ -17215,7 +17215,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/housing/housingReads.ts",
-     "line": 111,
+     "line": 112,
      "symbol": "listGuestStays",
      "area": "housing",
      "ops": [
@@ -17363,7 +17363,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
-     "line": 143,
+     "line": 144,
      "symbol": "SupabaseVolunteerRepository.listMySignups",
      "area": "volunteering",
      "ops": [
@@ -17372,7 +17372,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
-     "line": 177,
+     "line": 178,
      "symbol": "SupabaseVolunteerRepository.unwrapCall",
      "area": "volunteering",
      "ops": [
@@ -18586,7 +18586,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminContentRepository.ts",
-     "line": 98,
+     "line": 99,
      "symbol": "SupabaseAdminContentRepository.findActiveMembers",
      "area": "admin",
      "ops": [
@@ -18595,7 +18595,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminContentRepository.ts",
-     "line": 114,
+     "line": 115,
      "symbol": "SupabaseAdminContentRepository.searchUsers",
      "area": "admin",
      "ops": [
@@ -18631,7 +18631,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/housing/housingReads.ts",
-     "line": 76,
+     "line": 77,
      "symbol": "listHostBookings",
      "area": "housing",
      "ops": [
@@ -18640,7 +18640,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/housing/housingReads.ts",
-     "line": 112,
+     "line": 113,
      "symbol": "listGuestStays",
      "area": "housing",
      "ops": [
@@ -18649,7 +18649,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/knowledge/SupabaseKnowledgeBookingRepository.ts",
-     "line": 54,
+     "line": 55,
      "symbol": "SupabaseKnowledgeBookingRepository.listBookings",
      "area": "knowledge",
      "ops": [
@@ -18658,7 +18658,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/eventRegistrations.ts",
-     "line": 130,
+     "line": 131,
      "symbol": "unwrapCall",
      "area": "marketplace",
      "ops": [
@@ -18667,7 +18667,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/posts/closureMethods.ts",
-     "line": 137,
+     "line": 139,
      "symbol": "getClosureCandidates",
      "area": "posts",
      "ops": [
@@ -18676,7 +18676,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/posts/postCardExtras.ts",
-     "line": 50,
+     "line": 51,
      "symbol": "loadRecipients",
      "area": "posts",
      "ops": [
@@ -18703,7 +18703,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideBookingRepository.ts",
-     "line": 45,
+     "line": 46,
      "symbol": "SupabaseRideBookingRepository.listForRide",
      "area": "rides",
      "ops": [
@@ -18793,7 +18793,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
-     "line": 204,
+     "line": 205,
      "symbol": "SupabaseVolunteerRepository.listShiftVolunteers",
      "area": "volunteering",
      "ops": [
