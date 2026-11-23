@@ -101,7 +101,8 @@ const publicResearch = hostedPort('publicResearch', {
   create: (client) => new SupabasePublicResearchRepository(adapterClient<typeof SupabasePublicResearchRepository>(client)),
   methods: {
     loadBundle: 'public',
-    submit: 'not_served',
+    // The one write a visitor can make; the origin allowlist and the database's limits guard it (`researchSubmission.ts`).
+    submit: 'public',
   },
   // The questions of a published survey.
   visitorCacheSeconds: { loadBundle: 300 },

@@ -60,6 +60,10 @@ Only server code builds engine requests. The app can reach a table or function o
 
 Some adapter methods call an Edge Function instead of the database (`client.functions.invoke(name, { body })`). Once a function is ported to the API as a native module (ADR-009 phase 8), the SQL-backed client answers that call in process, in the shape the Supabase functions client uses (`data` for a 2xx answer, otherwise an error that carries the response). The adapter needs no change and its methods become served. A function that is not ported yet is refused by name, and its methods stay `not_served`.
 
+The gateway knows no function by itself. A function is a class that implements `HostedFunction` (`platform/ports/hostedFunction.ts`): the name the adapters call and one `handle(request, body)` method. Each module contributes its own, `modules/hostedFunctions/hostedFunctionSet.ts` is the one list, and the registry (`HostedFunctions`) fails at start-up on a duplicate name. What a function may know about the request (the caller, the `Origin` header, the client address behind the trusted proxies, the user agent) is handed to it by the gateway, so no function reads a header itself.
+
+A function that visitors call, as `public-research-submit` is, has no database grant to lean on: its method is `public` because the module is its own guard. That function only accepts a browser page on one of the origins in `KC_API_ALLOWED_ORIGINS` (the same list as CORS; the Edge Function's built-in localhost and preview-deploy patterns are not carried over), and the database function it calls keeps the honeypot, the per-visitor limits and the circuit breaker.
+
 A ported function may need to write as the service role, as it did with the service key. `IdentityDatabase.runAsService` and `PortClients.serviceClient()` are that path: for server modules only, after the module has checked the caller itself, and never handed to a hosted adapter.
 
 ## How a port moves

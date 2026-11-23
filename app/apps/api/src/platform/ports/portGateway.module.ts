@@ -1,7 +1,7 @@
 import { type DynamicModule, Module } from '@nestjs/common';
-import { checkReachable } from '../../modules/donationLinks/reachability';
 import { appLoggerProvider } from '../logging/appLogger';
-import { HostedFunctions, LINK_REACHABILITY_CHECK } from './hostedFunctions';
+import { HOSTED_FUNCTIONS, type HostedFunction, type HostedFunctionSet, NO_HOSTED_FUNCTIONS } from './hostedFunction';
+import { HostedFunctions } from './hostedFunctions';
 import { PortClients } from './portClients';
 import type { PortDefinition } from './portDefinition';
 import { PORT_DEFINITIONS, PortGatewayController } from './portGateway.controller';
@@ -42,17 +42,20 @@ export function indexPorts(definitions: readonly PortDefinition[]): ReadonlyMap<
 export class PortGatewayModule {
   /**
    * @param definitions Every port the API serves. Needs the database and identity modules (both global).
-   * @param overrides Outbound checks a test replaces, so no test reaches the network.
+   * @param functions The Edge Functions this server has taken over, which the hosted adapters invoke by name.
    */
-  static forRoot(definitions: readonly PortDefinition[], overrides: { checkReachable?: (url: URL) => Promise<boolean> } = {}): DynamicModule {
+  static forRoot(definitions: readonly PortDefinition[], functions: HostedFunctionSet = NO_HOSTED_FUNCTIONS): DynamicModule {
     return {
       module: PortGatewayModule,
       controllers: [PortGatewayController],
       providers: [
         appLoggerProvider,
         PortClients,
+        ...functions.providers,
+        ...functions.functions,
+        // Collects the function instances into the one list the registry indexes.
+        { provide: HOSTED_FUNCTIONS, useFactory: (...hosted: HostedFunction[]) => hosted, inject: [...functions.functions] },
         HostedFunctions,
-        { provide: LINK_REACHABILITY_CHECK, useValue: overrides.checkReachable ?? ((url: URL) => checkReachable(url)) },
         { provide: PORT_DEFINITIONS, useValue: indexPorts(definitions) },
       ],
     };

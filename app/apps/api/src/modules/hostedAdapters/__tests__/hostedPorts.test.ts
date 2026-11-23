@@ -43,6 +43,8 @@ describe('hosted ports', () => {
       'payments.getNonprofitPublicPage',
       'payments.listVerifiedNonprofits',
       'publicResearch.loadBundle',
+      // Reaches no table as `anon`: the server stores the answer itself, behind the origin allowlist (`researchSubmission.ts`).
+      'publicResearch.submit',
       'stats.getActivePublicPostsCount',
       'stats.getCommunityStatsSnapshot',
       'worldContent.getWorldContent',
@@ -59,13 +61,13 @@ describe('hosted ports', () => {
     }
   });
 
-  it('do not serve the methods that need Storage or an Edge Function', () => {
+  it('do not serve the one method that needs Storage', () => {
     const notServed = HOSTED_PORTS.flatMap((port) =>
       Object.entries(port.methods)
         .filter(([, access]) => access === 'not_served')
         .map(([method]) => `${port.name}.${method}`),
     ).sort();
 
-    expect(notServed).toEqual(['post.republish', 'publicResearch.submit']);
+    expect(notServed).toEqual(['post.republish']);
   });
 });

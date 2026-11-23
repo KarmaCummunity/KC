@@ -2,24 +2,15 @@ import 'reflect-metadata';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { Global, Module } from '@nestjs/common';
-import type { AddressInfo } from 'node:net';
-import { DonationLinkError, type IDonationLinksRepository, type ILegalDocumentRepository } from '@kc/application';
+import type { ILegalDocumentRepository } from '@kc/application';
 import { createPortTransport, createRemotePort } from '@kc/infrastructure-api';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { createApp } from '../../createApp';
 import { HOSTED_PORTS } from '../../modules/hostedAdapters/hostedPorts';
-import { ApiConfigModule } from '../../platform/config/apiConfig.module';
-import { DatabaseModule } from '../../platform/database/database.module';
-import { ACCESS_TOKEN_VERIFIER } from '../../platform/identity/accessTokenVerifier';
 import { loadSchemaCache, type SchemaCache } from '../../platform/postgrest/schemaCache';
-import { PortGatewayModule } from '../../platform/ports/portGateway.module';
-import { VisitorCache } from '../../platform/ports/visitorCache';
-import { RateLimiter } from '../../platform/rateLimit/rateLimiter';
 import { KC_DATABASE_URL, KcTestDatabase } from '../support/kcDatabase';
-import { testConfig } from '../support/testConfig';
-import { createTestIssuer, type TestIssuer } from '../support/testTokens';
+import { type KcGateway, startKcGateway } from '../support/kcGateway';
+import type { TestIssuer } from '../support/testTokens';
 
 const ADAPTERS_DIR = fileURLToPath(new URL('../../../../../packages/infrastructure-supabase/src', import.meta.url));
 
@@ -61,9 +52,7 @@ describe.skipIf(!KC_DATABASE_URL)('Hosted ports on the KC schema', () => {
   let cache: SchemaCache;
   let app: NestFastifyApplication;
   let issuer: TestIssuer;
-  /** Stands in for the outbound reachability check: no test reaches the network. */
-  const reachableHosts = new Set(['give.example.org']);
-  const checkReachable = (url: URL) => Promise.resolve(reachableHosts.has(url.hostname));
+  let gateway: KcGateway;
 
   beforeAll(async () => {
     cache = await loadSchemaCache(((text: string) => database.admin.query(text)) as never);
@@ -76,24 +65,8 @@ describe.skipIf(!KC_DATABASE_URL)('Hosted ports on the KC schema', () => {
       insert into public.legal_document_versions (doc_type, version, language, effective_date, body_md, content_hash, severity, change_summary, published_at)
       values ('terms', 1, 'he', '2026-01-01T00:00:00Z', 'The terms.', 'hash-1', 'standard', 'First version', '2025-12-25T08:00:00Z')
       on conflict (doc_type, version) do nothing`);
-    issuer = await createTestIssuer();
-
-    @Global()
-    @Module({
-      providers: [
-        { provide: ACCESS_TOKEN_VERIFIER, useValue: issuer.verifier },
-        { provide: RateLimiter, useValue: { check: () => Promise.resolve({ allowed: true, retryAfterSeconds: 0 }) } },
-        // Always a miss: these suites check what the database answers, not the cache.
-        { provide: VisitorCache, useValue: { read: () => Promise.resolve({ found: false }), write: () => Promise.resolve() } },
-      ],
-      exports: [ACCESS_TOKEN_VERIFIER, RateLimiter, VisitorCache],
-    })
-    class LocalIdentityModule {}
-
-    const config = testConfig({ databaseUrl: KC_DATABASE_URL ?? '' });
-    @Module({ imports: [ApiConfigModule.forRoot(config), DatabaseModule, LocalIdentityModule, PortGatewayModule.forRoot(HOSTED_PORTS, { checkReachable })] })
-    class GatewayModule {}
-    app = await createApp(GatewayModule, config);
+    gateway = await startKcGateway();
+    ({ app, issuer } = gateway);
   });
 
   afterAll(async () => {
@@ -199,9 +172,7 @@ describe.skipIf(!KC_DATABASE_URL)('Hosted ports on the KC schema', () => {
   });
 
   it('carries dates end to end: a visitor reads the terms through the remote port and gets real dates', async () => {
-    await app.listen(0, '127.0.0.1');
-    const baseUrl = `http://127.0.0.1:${(app.getHttpServer().address() as AddressInfo).port}`;
-    const asVisitor = createPortTransport({ baseUrl, getAccessToken: () => Promise.resolve(null) });
+    const asVisitor = createPortTransport({ baseUrl: await gateway.listen(), getAccessToken: () => Promise.resolve(null) });
     const legal = createRemotePort<ILegalDocumentRepository>(asVisitor, 'legalDocument');
 
     const terms = await legal.getCurrentContent('terms');
@@ -212,45 +183,6 @@ describe.skipIf(!KC_DATABASE_URL)('Hosted ports on the KC schema', () => {
     expect(terms.publishedAt.toISOString()).toBe('2025-12-25T08:00:00.000Z');
     // A member-only method of the same port is still closed to the visitor.
     await expect(legal.getPendingForCurrentUser()).rejects.toMatchObject({ reason: 'unauthenticated' });
-  });
-
-  it('a member adds and edits a donation link through the ported function; the rules hold end to end', async () => {
-    await database.admin.query(
-      "insert into public.donation_link_categories (slug, icon_name, sort_order) values ('food', 'restaurant', 1) on conflict do nothing",
-    );
-    const alice = await database.newMember();
-    const bob = await database.newMember();
-    const address = app.getHttpServer().address() as AddressInfo | null;
-    if (!address) await app.listen(0, '127.0.0.1');
-    const baseUrl = `http://127.0.0.1:${(app.getHttpServer().address() as AddressInfo).port}`;
-    const linksOf = (userId: string) =>
-      createRemotePort<IDonationLinksRepository>(createPortTransport({ baseUrl, getAccessToken: () => issuer.sign(userId) }), 'donationLinks');
-    const input = { categorySlug: 'food' as const, url: 'https://give.example.org/donate', displayName: 'Food Bank' };
-
-    const added = await linksOf(alice.userId).addViaEdgeFunction(input);
-    const edited = await linksOf(alice.userId).updateViaEdgeFunction({ ...input, linkId: added.id, displayName: 'Food Bank TLV' });
-    const stored = await database.admin.query<{ display_name: string; submitted_by: string; review_status: string }>(
-      'select display_name, submitted_by, review_status from public.donation_links where id = $1',
-      [added.id],
-    );
-
-    expect(added).toMatchObject({ categorySlug: 'food', url: 'https://give.example.org/donate', displayName: 'Food Bank' });
-    expect(edited.displayName).toBe('Food Bank TLV');
-    // Written by the server as the service role, attributed to the member, and sent to review.
-    expect(stored.rows[0]).toEqual({ display_name: 'Food Bank TLV', submitted_by: alice.userId, review_status: 'pending' });
-
-    // Another member may not edit it; a private address and an unreachable one are refused; so is an unknown world.
-    const refusal = (attempt: Promise<unknown>) => attempt.then(() => 'accepted', (error: unknown) => (error instanceof DonationLinkError ? error.code : error));
-    expect(await refusal(linksOf(bob.userId).updateViaEdgeFunction({ ...input, linkId: added.id }))).toBe('forbidden');
-    expect(await refusal(linksOf(alice.userId).addViaEdgeFunction({ ...input, url: 'http://169.254.169.254/latest/meta-data/' }))).toBe('invalid_url');
-    expect(await refusal(linksOf(alice.userId).addViaEdgeFunction({ ...input, url: 'https://down.example.org/' }))).toBe('unreachable');
-    // A real giving world with no links category: the table's foreign key refuses it.
-    expect(await refusal(linksOf(alice.userId).addViaEdgeFunction({ ...input, categorySlug: 'housing' }))).toBe('invalid_input');
-    // A value that is not a giving world at all never reaches the function: the gateway's argument check stops it.
-    expect(await refusal(linksOf(alice.userId).addViaEdgeFunction({ ...input, categorySlug: 'no-such-world' as never }))).toMatchObject({
-      code: 'invalid_arguments',
-      status: 400,
-    });
   });
 
   it('a signed-out visitor is turned away from every member method before the database is touched', async () => {

@@ -1,5 +1,6 @@
 import { type DynamicModule, Module } from '@nestjs/common';
 import { HOSTED_PORTS } from './modules/hostedAdapters/hostedPorts';
+import { hostedFunctionSet } from './modules/hostedFunctions/hostedFunctionSet';
 import { SessionModule } from './modules/session/session.module';
 import type { ApiConfig } from './platform/config/apiConfig';
 import { ApiConfigModule } from './platform/config/apiConfig.module';
@@ -29,7 +30,7 @@ export class AppModule {
         VisitorCacheModule,
         HealthModule.withProbes([DatabaseProbe, RedisProbe]),
         SessionModule,
-        PortGatewayModule.forRoot(HOSTED_PORTS),
+        PortGatewayModule.forRoot(HOSTED_PORTS, hostedFunctionSet()),
       ],
     };
   }

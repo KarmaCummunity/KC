@@ -1,46 +1,40 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { submitDonationLink } from '../../modules/donationLinks/donationLinkService';
-import { createSqlLinkStore } from '../../modules/donationLinks/sqlLinkStore';
-import type { CallerIdentity } from '../identity/callerIdentity';
-import { APP_LOGGER, type AppLogger } from '../logging/appLogger';
 import type { InProcessFunctions } from '../postgrest/sqlBackedClient';
-import { PortClients } from './portClients';
+import { type FunctionRequest, HOSTED_FUNCTIONS, type HostedFunction } from './hostedFunction';
 
-/** Injection token of the reachability check for a member-supplied address (replaced in tests). */
-export const LINK_REACHABILITY_CHECK = Symbol('LINK_REACHABILITY_CHECK');
+/** Two hosted functions claim the same name. */
+export class DuplicateHostedFunctionError extends Error {
+  constructor(name: string) {
+    super(`hosted function "${name}" is registered twice`);
+    this.name = 'DuplicateHostedFunctionError';
+  }
+}
 
 /**
- * The Edge Functions this server has taken over (ADR-009 phase 8), as the
- * hosted adapters call them: by name, with a JSON body. Each one is a native
- * module of this server; this class only binds it to the caller of a request.
+ * The registry of the Edge Functions this server has taken over. It knows no
+ * function by itself: each module contributes its own (`HOSTED_FUNCTIONS`),
+ * and this class only binds them to the request an adapter runs in.
  */
 @Injectable()
 export class HostedFunctions {
-  constructor(
-    @Inject(PortClients) private readonly clients: PortClients,
-    @Inject(LINK_REACHABILITY_CHECK) private readonly checkReachable: (url: URL) => Promise<boolean>,
-    @Inject(APP_LOGGER) private readonly logger: AppLogger,
-  ) {}
+  private readonly byName: ReadonlyMap<string, HostedFunction>;
 
-  /** The functions as `caller` may invoke them. */
-  forCaller(caller: CallerIdentity | null): InProcessFunctions {
-    return {
-      'validate-donation-link': async (body) => ({
-        status: 200,
-        body: await submitDonationLink(await this.linkMember(caller), body, {
-          checkReachable: this.checkReachable,
-          links: createSqlLinkStore(this.clients.serviceClient()),
-          report: (error, stage) => this.logger.error({ err: error, stage }, 'donation link write failed'),
-        }),
-      }),
-    };
+  constructor(@Inject(HOSTED_FUNCTIONS) functions: readonly HostedFunction[]) {
+    const byName = new Map<string, HostedFunction>();
+    for (const hosted of functions) {
+      // A second registration would silently replace the first; fail at start-up instead.
+      if (byName.has(hosted.name)) throw new DuplicateHostedFunctionError(hosted.name);
+      byName.set(hosted.name, hosted);
+    }
+    this.byName = byName;
   }
 
-  /** The caller as the donation link rules see them: who they are and whether they hold the super-admin role. */
-  private async linkMember(caller: CallerIdentity | null): Promise<{ userId: string; isSuperAdmin: boolean } | null> {
-    if (!caller) return null;
-    const { data } = await this.clients.clientFor(caller).rpc('get_my_admin_roles');
-    const roles = Array.isArray(data) ? (data as unknown[]) : [];
-    return { userId: caller.userId, isSuperAdmin: roles.includes('super_admin') };
+  /** Every function, as the adapters of `request` may invoke it. */
+  forRequest(request: FunctionRequest): InProcessFunctions {
+    const bound: Record<string, InProcessFunctions[string]> = {};
+    for (const [name, hosted] of this.byName) {
+      bound[name] = (body) => hosted.handle(request, body);
+    }
+    return bound;
   }
 }

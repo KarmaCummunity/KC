@@ -116,7 +116,13 @@ export class PortGatewayController {
       if (cached.found) return answer(cached.value, typed);
     }
 
-    const implementation = port.create(this.clients.clientFor(caller, this.functions.forCaller(caller))) as Record<string, unknown>;
+    const functions = this.functions.forRequest({
+      caller,
+      origin: request.headers.origin,
+      clientAddress: request.ip,
+      userAgent: request.headers['user-agent'] ?? '',
+    });
+    const implementation = port.create(this.clients.clientFor(caller, functions)) as Record<string, unknown>;
     const handler = implementation[method];
     if (typeof handler !== 'function') throw new Error(`port ${portName} lists ${method} but its implementation has no such method`);
 
