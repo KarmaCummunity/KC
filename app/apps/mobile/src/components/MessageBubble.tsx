@@ -2,7 +2,7 @@
 // FR-ADMIN-005 — admins can long-press a user-kind bubble to hard-delete it.
 import React, { useState } from 'react';
 import { View, TouchableOpacity } from 'react-native';
-import type { MessageReactionType } from '@kc/infrastructure-supabase';
+import type { MessageReactionType } from '@kc/domain';
 import { Ionicons } from '@expo/vector-icons';
 import type { OptimisticMessage } from '../store/chatStore';
 import { makeUseStyles, typography, spacing, radius, iconSize, useTheme, Text } from '@kc/ui';
