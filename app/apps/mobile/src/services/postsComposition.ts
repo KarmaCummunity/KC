@@ -38,7 +38,7 @@ import {
 } from '@kc/application';
 import { getUserRepo } from './userComposition';
 import { pickAuthStorage } from './authSecureStorage';
-import { viaApi } from './backend/apiBackend';
+import { viaApi, viaApiRealtime } from './backend/apiBackend';
 
 let _repo: IPostRepository | null = null;
 let _realtime: IFeedRealtime | null = null;
@@ -141,7 +141,7 @@ export function getGetClosureCandidatesUseCase(): GetClosureCandidatesUseCase {
 // ── P1.2 — feed discovery (FR-FEED-009, 014, 015) ─────────────────────────
 export function getFeedRealtime(): IFeedRealtime {
   if (!_realtime) {
-    _realtime = new SupabaseFeedRealtime(getSupabaseClient({ storage: pickAuthStorage() }));
+    _realtime = new SupabaseFeedRealtime(viaApiRealtime(getSupabaseClient({ storage: pickAuthStorage() })));
   }
   return _realtime;
 }

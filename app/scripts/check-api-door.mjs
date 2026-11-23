@@ -24,12 +24,6 @@ const SKIP_DIRS = new Set(['node_modules', '__tests__', '__mocks__', 'dist', '.e
  * Key: `<file>: <finding>`.
  */
 export const KNOWN = new Map([
-  // Realtime and presence: phase 6.
-  ['apps/mobile/src/lib/container.ts: new SupabaseChatRealtime', 'phase 6'],
-  ['apps/mobile/src/lib/container.ts: new SupabaseChatV2Realtime', 'phase 6'],
-  ['apps/mobile/src/lib/container.ts: new SupabaseOnlinePresence', 'phase 6'],
-  ['apps/mobile/src/services/postsComposition.ts: new SupabaseFeedRealtime', 'phase 6'],
-  ['apps/mobile/src/services/userRealtimeComposition.ts: new SupabaseUserRealtime', 'phase 6'],
   // Sign-in: phase 9.
   ['apps/mobile/src/services/authComposition.ts: new SupabaseAuthService', 'phase 9'],
 ]);
@@ -37,12 +31,18 @@ export const KNOWN = new Map([
 const ADAPTER = /new ((?:Supabase|EdgeFn)\w+)\(/g;
 const DIRECT_CALL = /\.(from|rpc)\(\s*'([a-z_0-9]+)'/g;
 const WRAPPED = /viaApi\(\s*'[A-Za-z0-9]+',\s*$/;
+const ON_REALTIME_DOOR = /^\s*viaApiRealtime\(/;
+/** A channel opened on the Supabase client itself, e.g. `supabase.channel(` or `supabase\n  .channel(`. */
+const DIRECT_CHANNEL = /\bsupabase\s*\.channel\(/g;
 
 /** The findings in one source file, as `<finding>` strings. */
 export function findingsIn(source) {
   const findings = [];
   for (const match of source.matchAll(ADAPTER)) {
-    if (!WRAPPED.test(source.slice(0, match.index))) findings.push(`new ${match[1]}`);
+    const after = source.slice(match.index + match[0].length);
+    // A data adapter is wrapped by `viaApi('<port>', new …)`; a realtime adapter is built on
+    // `viaApiRealtime(<client>)`, which swaps the client's channels for the API's (ADR-011).
+    if (!WRAPPED.test(source.slice(0, match.index)) && !ON_REALTIME_DOOR.test(after)) findings.push(`new ${match[1]}`);
   }
   for (const match of source.matchAll(DIRECT_CALL)) {
     const before = source.slice(0, match.index);
@@ -52,6 +52,8 @@ export function findingsIn(source) {
     if (/\b[A-Z]\w*\s*$/.test(before)) continue;
     findings.push(`.${match[1]}('${match[2]}')`);
   }
+  // Channels go through `viaApiRealtime(supabase).channel(…)` or an adapter built on it.
+  for (const _match of source.matchAll(DIRECT_CHANNEL)) findings.push('supabase.channel()');
   return findings;
 }
 
@@ -93,7 +95,7 @@ function main() {
     console.error('');
   }
   if (unexpected.length > 0 || stale.length > 0) process.exit(1);
-  console.log(`✓ API door check passed — ${KNOWN.size} known bypasses left (ADR-009 phases 5, 6, 8, 9).`);
+  console.log(`✓ API door check passed — ${KNOWN.size} known bypasses left (ADR-009 phase 9).`);
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) main();

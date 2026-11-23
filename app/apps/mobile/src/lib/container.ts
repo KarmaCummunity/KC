@@ -113,7 +113,7 @@ import { createFinanceUseCases } from './financeContainer';
 import { createModerationStaffUseCases } from './moderationContainer';
 import { isSupabaseConfigured } from './supabasePublicConfig';
 import { bindSupabaseClient } from './bindSupabaseClient';
-import { viaApi } from '../services/backend/apiBackend';
+import { viaApi, viaApiRealtime } from '../services/backend/apiBackend';
 
 // The one Supabase connection of the app, typed against the production baseline schema.
 export const supabase = bindSupabaseClient(isSupabaseConfigured(), () =>
@@ -122,15 +122,15 @@ export const supabase = bindSupabaseClient(isSupabaseConfigured(), () =>
 
 const userRepo = viaApi('user', new SupabaseUserRepository(supabase));
 const chatRepo = viaApi('chat', new SupabaseChatRepository(supabase));
-const chatRealtime = new SupabaseChatRealtime(supabase);
+const chatRealtime = new SupabaseChatRealtime(viaApiRealtime(supabase), (userId) => chatRepo.getUnreadTotal(userId));
 const reportRepo = viaApi('report', new SupabaseReportRepository(supabase));
 const blockRepo = viaApi('block', new SupabaseBlockRepository(supabase));
 const donationLinksRepo = viaApi('donationLinks', new SupabaseDonationLinksRepository(supabase));
 const postRepo = viaApi('post', new SupabasePostRepository(supabase));
 const postEngagementRepo = viaApi('postEngagement', new SupabasePostEngagementRepository(supabase));
 const notificationInboxRepo = viaApi('notificationInbox', new SupabaseNotificationInboxRepository(supabase));
-const chatV2Realtime = new SupabaseChatV2Realtime(supabase);
-const onlinePresence = new SupabaseOnlinePresence(supabase);
+const chatV2Realtime = new SupabaseChatV2Realtime(viaApiRealtime(supabase));
+const onlinePresence = new SupabaseOnlinePresence(viaApiRealtime(supabase));
 const activeStatus = viaApi('activeStatus', new SupabaseActiveStatusRepository(supabase));
 const chatV2Repo = viaApi('chatV2', new SupabaseChatV2Repository(supabase));
 const socialFeedRepo = viaApi('socialFeed', new SupabaseSocialFeedRepository(supabase));

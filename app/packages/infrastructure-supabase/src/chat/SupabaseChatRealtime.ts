@@ -31,7 +31,15 @@ const asString = (value: unknown): string | null => (typeof value === 'string' ?
 const UNREAD_DEBOUNCE_MS = 200;
 
 export class SupabaseChatRealtime implements IChatRealtime {
-  constructor(private readonly client: SupabaseClient<Database>) {}
+  /**
+   * @param readTotal Reads the member's unread total. Given by a composition root that
+   *   routes data through KC's API (`IChatRepository.getUnreadTotal`); without it the adapter
+   *   calls `chat_unread_total` on its own client.
+   */
+  constructor(
+    private readonly client: SupabaseClient<Database>,
+    private readonly readTotal?: (userId: string) => Promise<number>,
+  ) {}
 
   /**
    * Listens to one chat: new messages, the other member's read marker (the receipt) and a change
@@ -83,7 +91,7 @@ export class SupabaseChatRealtime implements IChatRealtime {
     const fireUnreadDebounced = () => {
       if (!active) return;
       if (unreadTimer) clearTimeout(unreadTimer);
-      unreadTimer = setTimeout(() => void this.readUnreadTotal(cb, options, () => active), UNREAD_DEBOUNCE_MS);
+      unreadTimer = setTimeout(() => void this.readUnreadTotal(userId, cb, options, () => active), UNREAD_DEBOUNCE_MS);
     };
 
     const managed = openExactTopicChannel(
@@ -121,11 +129,11 @@ export class SupabaseChatRealtime implements IChatRealtime {
   }
 
   /** Reads `chat_unread_total` and reports it unless the snapshot epoch moved or the call failed. */
-  private async readUnreadTotal(cb: InboxStreamCallbacks, options?: SubscribeInboxOptions, isActive = () => true): Promise<void> {
+  private async readUnreadTotal(userId: string, cb: InboxStreamCallbacks, options?: SubscribeInboxOptions, isActive = () => true): Promise<void> {
     const epoch = options?.getSnapshotEpoch;
     const before = epoch?.() ?? 0;
     try {
-      const total = unwrapCall('rpc:chat_unread_total', await this.client.rpc('chat_unread_total'));
+      const total = this.readTotal ? await this.readTotal(userId) : unwrapCall('rpc:chat_unread_total', await this.client.rpc('chat_unread_total'));
       if (!isActive() || (epoch && epoch() !== before)) return;
       cb.onUnreadTotalChanged(Number(total ?? 0));
     } catch {

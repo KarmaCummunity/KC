@@ -53,7 +53,7 @@ Typing events and presence are not stored. An instance publishes them to Redis a
 
 ### 5. The app side
 
-`@kc/infrastructure-api` gets one realtime client (connect, authenticate, heartbeat, reconnect with back-off, re-subscribe) and one adapter per realtime port, built on it. The composition root picks them the way `viaApi` picks a remote port: with no API address, the Supabase adapters stay in place. Screens do not change: they already depend on the ports, and they already fall back to a query when a channel errors.
+`@kc/infrastructure-api` gets one realtime client (connect, authenticate, heartbeat, reconnect with back-off, re-subscribe) and, on top of it, the channel interface the existing realtime adapters already use. So the adapters do not change, the way the data adapters did not (ADR-010): the composition root hands them `viaApiRealtime(client)`, which is the Supabase client itself until realtime is switched to the API. Screens do not change either: they depend on the ports, and they already fall back to a query when a channel errors.
 
 ### 6. `postgres_changes` streams become Broadcast
 
@@ -67,8 +67,8 @@ The streams that still read row changes (chat inbox rows, the member's own row, 
 | 2 | Event intake (`NOTIFY`, row read, sweep) and the hub that delivers to subscribers | Done (`databaseEvents.ts`, `realtimeHub.ts`); checked over a real WebSocket, including an event whose notification was lost |
 | 3 | The WebSocket endpoint: frames, limits, heartbeat | Done (`realtimeGateway.ts`, `realtimeConnection.ts`; the frames are `@kc/infrastructure-api`'s `realtimeWire.ts`) |
 | 4 | Client-sent Broadcast and Presence | Done for one instance (`ephemeralEvents.ts`, in memory). Redis behind the same class is left, and is needed before a second instance runs |
-| 5 | The realtime client and the port adapters in `@kc/infrastructure-api`; composition switch | — |
-| 6 | `postgres_changes` streams as Broadcast (migrations, adapters) | — |
+| 5 | The realtime client in `@kc/infrastructure-api`; composition switch | Done. The app's realtime adapters run unchanged: `createApiRealtimeHost` gives them the four client members they use (`channel`, `removeChannel`, `getChannels`, `realtime.setAuth`) over one `RealtimeSocket` (sign-in, heartbeat, reconnect with back-off, re-join, re-track). `viaApiRealtime(client)` in the app picks it when `EXPO_PUBLIC_KC_API_REALTIME=1`. Chat messages, typing, online presence and the feed signal are checked through the unchanged adapters with the real database triggers |
+| 6 | `postgres_changes` streams as Broadcast (migrations, adapters) | Nothing to do: the baseline already sends every stream as Broadcast, and no adapter subscribes to row changes any more |
 | 7 | Retention job; load test | — |
 
 It is switched on with the database move (ADR-009 phase 10): until KC runs its own PostgreSQL, `realtime.messages` belongs to Supabase's service and is not KC's to add a notification to. Everything above is built and tested before that on the plain PostgreSQL the repository's database suites already use, whose `realtime` schema (`supabase/baseline/local/supabase_shim.sql`) is the starting point of KC's own.

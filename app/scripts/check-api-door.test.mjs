@@ -54,3 +54,14 @@ test('compare reports new bypasses and entries whose code is gone', () => {
 test('a wire name with a digit still counts as wrapped', () => {
   assert.deepEqual(findingsIn("const repo = viaApi('chatV2', new SupabaseChatV2Repository(client));"), []);
 });
+
+test('a realtime adapter built on viaApiRealtime is not a finding; one built on the bare client is', () => {
+  assert.deepEqual(findingsIn("const a = new SupabaseChatRealtime(viaApiRealtime(supabase), readTotal);"), []);
+  assert.deepEqual(findingsIn("const a = new SupabaseOnlinePresence(\n  viaApiRealtime(supabase),\n);"), []);
+  assert.deepEqual(findingsIn("const a = new SupabaseChatRealtime(supabase);"), ['new SupabaseChatRealtime']);
+});
+
+test('a channel opened on the Supabase client itself is a finding; one opened through the realtime door is not', () => {
+  assert.deepEqual(findingsIn("const c = supabase\n  .channel(topic, { config: { private: true } });"), ['supabase.channel()']);
+  assert.deepEqual(findingsIn("const c = viaApiRealtime(supabase).channel(topic);"), []);
+});

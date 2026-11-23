@@ -37,3 +37,5 @@ export {
   type RealtimeExtension,
   type ServerFrame,
 } from './wire/realtimeWire';
+export { ApiRealtimeChannel, type ApiRealtimeHost, type BroadcastMessage, type ChannelStatus, createApiRealtimeHost } from './realtime/apiRealtimeHost';
+export { RealtimeSocket, type RealtimeSocketOptions, type SocketLike } from './realtime/realtimeSocket';
