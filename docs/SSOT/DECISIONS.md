@@ -2109,3 +2109,13 @@ The Demo data screen keeps two failures apart: the RPC itself is missing (`not_i
 
 **Affected.** `app/apps/api/src/platform/{ports,postgrest}`, `app/apps/api/src/modules/hostedAdapters`, `app/packages/infrastructure-api`, `app/scripts/check-architecture.mjs`, `docs/architecture/adr/ADR-009-backend-platform.md`.
 
+## {{ENG:realtime-gateway}} — Realtime moves to one WebSocket in the API; topics and policies stay as they are (2026-11-23)
+
+**Decision.** KC's own realtime service is a WebSocket endpoint of the API (`/v1/realtime`). The topics are ADR-003's. A subscription is authorized by the row-level-security policies already written on `realtime.messages`, with the algorithm of the service being replaced: a probe row, read (or inserted) as the caller, in a transaction that is rolled back. Database-sent events use `realtime.messages` as the queue and `pg_notify` as the bell; client-sent events and presence go through Redis. Full text: [`ADR-011`](../architecture/adr/ADR-011-realtime-gateway.md).
+
+**Why.** Authorization stays in SQL next to the data, so every policy and its SQL test keep their meaning and a new topic is still "a policy and a test in the same migration". Database events need no second fan-out system, because every API instance hears every notification. The app's ports and screens do not change.
+
+**Trade-off.** An event can be missed (a reconnect, a restart); ADR-003 already makes realtime an accelerator and never the source of truth. A revoked right takes effect at the next join or token replacement, as today. The protocol is KC's own.
+
+**Affected.** `app/apps/api/src/platform/realtime`, `app/packages/infrastructure-api/src/wire/realtimeWire.ts`, `supabase/baseline/local/supabase_shim.sql` (the `realtime` schema KC will own: the notification and the service role's grants).
+

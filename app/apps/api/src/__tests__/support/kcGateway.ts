@@ -17,11 +17,12 @@ import { PortClientsModule } from '../../platform/ports/portClients.module';
 import { PortGatewayModule } from '../../platform/ports/portGateway.module';
 import { VisitorCache } from '../../platform/ports/visitorCache';
 import { RateLimiter } from '../../platform/rateLimit/rateLimiter';
+import { RealtimeModule } from '../../platform/realtime/realtime.module';
 import { KC_DATABASE_URL } from './kcDatabase';
 import { testConfig } from './testConfig';
 import { createTestIssuer, type TestIssuer } from './testTokens';
 
-/** The real gateway with every hosted port, the webhook routes and the jobs route, on the KC test schema. */
+/** The real gateway with every hosted port, the webhook, jobs and realtime routes, on the KC test schema. */
 export interface KcGateway {
   readonly app: NestFastifyApplication;
   /** Signs the access tokens the gateway accepts. */
@@ -63,6 +64,7 @@ export async function startKcGateway(
       IdentityVerificationModule.forRoot({ provider: overrides.identityProvider }),
       BillingModule,
       JobsModule.forRoot(scheduledJobSet(overrides.jobs)),
+      RealtimeModule,
       PortGatewayModule.forRoot(HOSTED_PORTS, hostedFunctionSet(overrides.functions)),
     ],
   })

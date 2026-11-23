@@ -15,6 +15,7 @@ import { PortClientsModule } from './platform/ports/portClients.module';
 import { PortGatewayModule } from './platform/ports/portGateway.module';
 import { VisitorCacheModule } from './platform/ports/visitorCache';
 import { RateLimitModule } from './platform/rateLimit/rateLimiter';
+import { RealtimeModule } from './platform/realtime/realtime.module';
 import { RedisModule, RedisProbe } from './platform/redis/redis.module';
 
 /**
@@ -39,6 +40,7 @@ export class AppModule {
         IdentityVerificationModule.forRoot(),
         BillingModule,
         JobsModule.forRoot(scheduledJobSet()),
+        RealtimeModule,
         PortGatewayModule.forRoot(HOSTED_PORTS, hostedFunctionSet()),
       ],
     };

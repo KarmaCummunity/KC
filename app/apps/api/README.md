@@ -64,6 +64,10 @@ Without the variable those suites are skipped and the unit tests still run.
 
 An invalid value stops the process at start with an error that names the variable and never prints the value. The process starts even when a dependency is unreachable; readiness reports it.
 
+## Realtime
+
+`GET /v1/realtime` upgrades to a WebSocket (ADR-011). The first frame is `{ "op": "auth", "token": "<access token>" }`; then the client subscribes to topics (`{ "op": "subscribe", "ref", "topic", "extension" }`) and is sent their events. The frames are defined once, in `@kc/infrastructure-api` (`src/wire/realtimeWire.ts`). Who may join a topic is decided by the row-level-security policies on `realtime.messages`, so a new topic needs a policy and an SQL test, and no change here. The database sends an event with `kc_private.broadcast`; the API hears it through `NOTIFY kc_realtime`.
+
 ## Health
 
 | Route | Answers | Use |

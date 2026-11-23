@@ -61,16 +61,27 @@ export class IdentityDatabase {
     return this.runWithRole('service_role', { role: 'service_role' }, work);
   }
 
+  /**
+   * Runs `work` as the service role in a transaction that is always rolled
+   * back: for a check that has to write something to find its answer and must
+   * leave no trace. `work` may switch to another role for part of the check
+   * (`set_config(..., true)`), since everything it sets ends with the transaction.
+   */
+  inspectAsService<T>(work: (session: DatabaseSession) => Promise<T>): Promise<T> {
+    return this.runWithRole('service_role', { role: 'service_role' }, work, 'rollback');
+  }
+
   private async runWithRole<T>(
     role: RequestRole,
     claims: Readonly<Record<string, unknown>>,
     work: (session: DatabaseSession) => Promise<T>,
+    end: 'commit' | 'rollback' = 'commit',
   ): Promise<T> {
     const client = await this.pool.connect();
     try {
       await client.query(beginAsSql(role, client.escapeLiteral(JSON.stringify(claims))));
       const result = await work(client);
-      await client.query('commit');
+      await client.query(end);
       client.release();
       return result;
     } catch (error) {

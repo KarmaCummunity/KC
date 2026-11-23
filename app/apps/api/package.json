@@ -13,6 +13,7 @@
     "lint": "eslint . --max-warnings=0"
   },
   "dependencies": {
+    "@fastify/websocket": "^11.2.0",
     "@nestjs/common": "^12.6.0",
     "@nestjs/core": "^12.6.0",
     "@nestjs/platform-fastify": "^12.6.0",

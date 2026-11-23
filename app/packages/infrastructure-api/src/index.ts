@@ -26,3 +26,14 @@ export {
   portCallPath,
   reviveDates,
 } from './wire/portWire';
+export {
+  type ClientFrame,
+  MAX_REALTIME_FRAME_BYTES,
+  type PresenceMember,
+  REALTIME_CLOSE,
+  REALTIME_EXTENSIONS,
+  REALTIME_PATH,
+  type RealtimeErrorCode,
+  type RealtimeExtension,
+  type ServerFrame,
+} from './wire/realtimeWire';
