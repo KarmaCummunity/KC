@@ -87,7 +87,7 @@ begin
 end;
 $$;
 
-select plan(27);
+select plan(28);
 
 -- s super admin · a org admin of the platform · o org admin of another org · g org manager of
 -- the platform · m moderator · x member · e an e2e member on the seed domain.
@@ -161,6 +161,8 @@ select is(pg_temp.run('s', $$select public.admin_seed_demo_data_step('short')$$)
   'the password has at least 8 characters (AC9)');
 
 -- ── Restore ─────────────────────────────────────────────────────────────────
+-- Outbox position before the restore, to prove it leaves no derived work queued (#2495).
+create temp table outbox_mark as select coalesce(max(id), 0) as id from kc_private.outbox_events;
 select is(
   pg_temp.steps('s', $$select public.admin_seed_demo_data_step('SeedPass-2026')$$,
                 'select public.admin_seed_demo_data_step(null)') -> 'result',
@@ -179,6 +181,10 @@ select ok((select count(distinct k.slug) = 4 and bool_and(p.owner_id = any (kc_p
              from public.posts p join public.post_kinds k on k.id = p.kind_id
             where p.world_slug in ('food', 'animals')),
   'demo posts exist for every active food and animals kind, food offers with their detail row (#1964)');
+select is((select count(*)::int from kc_private.outbox_events e
+            where e.id > (select id from outbox_mark) and e.processed_at is null
+              and e.topic in ('match', 'karma', 'notification', 'notification_push', 'notification_push_receipt')),
+  0, 'the restore queues no match, karma or notification work for the fleet to drain (#2495)');
 select ok((select password_hash like '$2%' and password_hash <> 'SeedPass-2026' from kc_private.demo_data_state),
   'only the bcrypt hash of the password is kept (AC9)');
 select is((select count(*)::int from auth.users u
