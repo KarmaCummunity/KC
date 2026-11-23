@@ -30,8 +30,6 @@ export const KNOWN = new Map([
   ['apps/mobile/src/lib/container.ts: new SupabaseOnlinePresence', 'phase 6'],
   ['apps/mobile/src/services/postsComposition.ts: new SupabaseFeedRealtime', 'phase 6'],
   ['apps/mobile/src/services/userRealtimeComposition.ts: new SupabaseUserRealtime', 'phase 6'],
-  // Edge Function services: phase 8.
-  ['apps/mobile/src/services/importComposition.ts: new EdgeFnPostExtractionService', 'phase 8'],
   // Sign-in: phase 9.
   ['apps/mobile/src/services/authComposition.ts: new SupabaseAuthService', 'phase 9'],
 ]);

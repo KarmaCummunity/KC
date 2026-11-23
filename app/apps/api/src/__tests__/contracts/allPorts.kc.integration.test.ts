@@ -39,9 +39,10 @@ const DEV_SEED_PATHS = new Set([
  * What a well-typed but meaningless call is expected to run into: a rule of
  * a function (P0001), no permission (42501), a constraint (class 23), a value
  * of the wrong form such as "sample" for a time or an enum (class 22), or no
- * row where one was asked for (PGRST116).
+ * row where one was asked for (PGRST116, or P0002 when a function looked for
+ * the row itself, as the import functions do for an unknown import id).
  */
-const DATA_REFUSALS = /^(P0001|42501|PGRST116|23\d{3}|22[0-9A-Z]{3})$/;
+const DATA_REFUSALS = /^(P0001|P0002|42501|PGRST116|23\d{3}|22[0-9A-Z]{3})$/;
 
 /**
  * Every served method of every hosted port, called once on the real KC

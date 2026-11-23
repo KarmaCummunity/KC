@@ -2827,6 +2827,62 @@
     }
    ]
   },
+  "postExtraction": {
+   "extract": [
+    {
+     "name": "request",
+     "shape": {
+      "ref": "PostExtractionRequest"
+     }
+    }
+   ],
+   "attachPost": [
+    {
+     "name": "importId",
+     "shape": "string"
+    },
+    {
+     "name": "postId",
+     "shape": "string"
+    }
+   ],
+   "recordEdits": [
+    {
+     "name": "importId",
+     "shape": "string"
+    },
+    {
+     "name": "editedFields",
+     "shape": {
+      "array": {
+       "union": [
+        {
+         "literal": "title"
+        },
+        {
+         "literal": "description"
+        },
+        {
+         "literal": "city"
+        },
+        {
+         "literal": "world"
+        },
+        {
+         "literal": "direction"
+        },
+        {
+         "literal": "kind"
+        },
+        {
+         "literal": "subcategory"
+        }
+       ]
+      }
+     }
+    }
+   ]
+  },
   "postSeries": {
    "listMine": [],
    "create": [
@@ -3283,10 +3339,10 @@
         "literal": "user"
        },
        {
-        "literal": "keyword"
+        "literal": "world"
        },
        {
-        "literal": "world"
+        "literal": "keyword"
        }
       ]
      }
@@ -7188,13 +7244,13 @@
   },
   "Omit<User, \"createdAt\" | \"updatedAt\">": {
    "object": {
-    "biography": {
+    "city": {
      "union": [
       "null",
       "string"
      ]
     },
-    "city": {
+    "biography": {
      "union": [
       "null",
       "string"
@@ -7632,6 +7688,40 @@
    "object": {
     "id": "string",
     "createdAt": "string"
+   }
+  },
+  "PostExtractionRequest": {
+   "object": {
+    "text": "string",
+    "channel": {
+     "union": [
+      {
+       "literal": "share"
+      },
+      {
+       "literal": "paste"
+      }
+     ]
+    },
+    "sourcePlatform": {
+     "union": [
+      {
+       "literal": "other"
+      },
+      {
+       "literal": "whatsapp"
+      },
+      {
+       "literal": "facebook"
+      },
+      {
+       "literal": "yad2"
+      },
+      {
+       "literal": "unknown"
+      }
+     ]
+    }
    }
   },
   "PostFeedFilter": {
@@ -8172,10 +8262,10 @@
        "literal": "morning"
       },
       {
-       "literal": "midday"
+       "literal": "evening"
       },
       {
-       "literal": "evening"
+       "literal": "midday"
       }
      ]
     }
@@ -9038,6 +9128,7 @@
   "orgApplications.list",
   "orgHierarchy.getOrgTree",
   "orgTransparency.getPublic",
+  "postExtraction.extract",
   "timesheets.list",
   "whatsAppAdmin.getChannel",
   "whatsAppAdmin.getSendLimits",

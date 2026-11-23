@@ -1,4 +1,5 @@
 import {
+  EdgeFnPostExtractionService,
   SupabaseChallengeRepository,
   SupabaseGuestPostsRepository,
   SupabaseHousingRepository,
@@ -168,6 +169,16 @@ const post = hostedPort('post', {
   },
 });
 
+// `extract` is served by the function this server has taken over (`modules/postImport`); the other two are database functions.
+const postExtraction = hostedPort('postExtraction', {
+  create: (client) => new EdgeFnPostExtractionService(adapterClient<typeof EdgeFnPostExtractionService>(client)),
+  methods: {
+    extract: 'member',
+    attachPost: 'member',
+    recordEdits: 'member',
+  },
+});
+
 const postSeries = hostedPort('postSeries', {
   create: (client) => new SupabasePostSeriesRepository(adapterClient<typeof SupabasePostSeriesRepository>(client)),
   methods: {
@@ -253,4 +264,4 @@ const socialFeed = hostedPort('socialFeed', {
   },
 });
 
-export const POSTS_PORTS: readonly PortDefinition[] = [challenge, guestPosts, housing, knowledgeBooking, knowledgeSlotSeries, knowledgeTopic, listingStreetAddress, marketplace, match, post, postEngagement, postSeries, savedPosts, search, socialFeed, volunteer, worldContent];
+export const POSTS_PORTS: readonly PortDefinition[] = [challenge, guestPosts, housing, knowledgeBooking, knowledgeSlotSeries, knowledgeTopic, listingStreetAddress, marketplace, match, post, postEngagement, postExtraction, postSeries, savedPosts, search, socialFeed, volunteer, worldContent];

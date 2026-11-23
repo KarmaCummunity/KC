@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { GeminiClient } from '../../../platform/ai/geminiClient';
 import { GeminiProvider } from '../geminiProvider';
 import { GoogleFreeProvider } from '../googleFreeProvider';
 import { type ProviderInput, type ProviderResult, type TranslationProvider, translateMany } from '../translationProvider';
@@ -90,36 +91,24 @@ describe('GoogleFreeProvider', () => {
 
 describe('GeminiProvider', () => {
   const modelAnswer = (answer: unknown) => JSON.stringify({ candidates: [{ content: { parts: [{ text: JSON.stringify(answer) }] } }] });
+  const providerOver = (fetch: typeof globalThis.fetch) => new GeminiProvider(new GeminiClient({ apiKey: 'test-key', model: 'gemini-test', fetch }));
 
-  it('sends the key in a header, never in the URL, and clamps the confidence', async () => {
+  it('sends the text as data after the rules, and clamps the confidence', async () => {
     const { fetch, calls } = fakeFetch([{ status: 200, body: modelAnswer({ translatedText: 'Sofa', detectedSourceLanguage: 'he', confidence: 1.7 }) }]);
-    const provider = new GeminiProvider({ apiKey: 'test-key', model: 'gemini-test', fetch });
 
-    const result = await provider.translate({ text: 'ספה', targetLanguage: 'en', sourceHint: 'he' });
+    const result = await providerOver(fetch).translate({ text: 'ספה', targetLanguage: 'en', sourceHint: 'he' });
 
     expect(result).toEqual({ translatedText: 'Sofa', detectedSourceLanguage: 'he', confidence: 1, model: 'gemini-test' });
-    expect(calls[0]?.url).toBe('https://generativelanguage.googleapis.com/v1beta/models/gemini-test:generateContent');
-    expect(new Headers(calls[0]?.init?.headers).get('x-goog-api-key')).toBe('test-key');
-    // The member's text travels as data, after an instruction to treat it as untrusted.
-    expect(String(calls[0]?.init?.body)).toContain('UNTRUSTED DATA');
-  });
-
-  it('retries one transient failure and gives up on the second', async () => {
-    const once = fakeFetch([{ status: 503, body: 'busy' }, { status: 200, body: modelAnswer({ translatedText: 'Sofa' }) }]);
-    const twice = fakeFetch([{ status: 429, body: 'quota' }, { status: 429, body: 'quota' }]);
-    const input = { text: 'ספה', targetLanguage: 'en' };
-
-    const recovered = await new GeminiProvider({ apiKey: 'k', model: 'm', fetch: once.fetch, sleep: noSleep }).translate(input);
-
-    expect(recovered).toMatchObject({ translatedText: 'Sofa', detectedSourceLanguage: null, confidence: null });
-    await expect(new GeminiProvider({ apiKey: 'k', model: 'm', fetch: twice.fetch, sleep: noSleep }).translate(input)).rejects.toThrow('gemini http 429 (m): quota');
-    expect(twice.calls).toHaveLength(2);
+    const sent = JSON.parse(String(calls[0]?.init?.body)) as { systemInstruction: { parts: { text: string }[] }; contents: { parts: { text: string }[] }[] };
+    // The member's text travels in the user turn; the system turn tells the model to treat it as untrusted.
+    expect(sent.systemInstruction.parts[0]?.text).toContain('UNTRUSTED DATA');
+    expect(sent.contents[0]?.parts[0]?.text).toBe('Target language: en (likely source: he)\nText:\nספה');
   });
 
   it('rejects an answer with no translation', async () => {
     const { fetch } = fakeFetch([{ status: 200, body: modelAnswer({ translatedText: '' }) }]);
 
-    await expect(new GeminiProvider({ apiKey: 'k', model: 'm', fetch }).translate({ text: 'ספה', targetLanguage: 'en' })).rejects.toThrow('provider returned no translatedText');
+    await expect(providerOver(fetch).translate({ text: 'ספה', targetLanguage: 'en' })).rejects.toThrow('provider returned no translatedText');
   });
 });
 

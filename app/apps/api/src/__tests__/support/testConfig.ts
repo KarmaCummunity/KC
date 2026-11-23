@@ -25,6 +25,7 @@ export function testConfig(overrides: Partial<ApiConfig> = {}): ApiConfig {
     rateLimitPerMinute: 0,
     translationProvider: 'googlefree',
     gemini: { apiKey: null, model: 'gemini-test' },
+    postImport: { dailyBudget: 2000, model: 'gemini-test' },
     ...overrides,
   };
 }

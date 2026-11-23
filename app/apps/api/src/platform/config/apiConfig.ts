@@ -35,6 +35,15 @@ export interface ApiConfig {
   readonly translationProvider: TranslationProviderKind;
   /** Google Gemini: translation when it is the selected provider, and the other AI features as they move here. */
   readonly gemini: GeminiConfig;
+  /** The external post import (FR-IMPORT-008). */
+  readonly postImport: PostImportConfig;
+}
+
+export interface PostImportConfig {
+  /** Model calls the whole service may make per UTC day; past it, imports fall back to the manual route. */
+  readonly dailyBudget: number;
+  /** The Gemini model that reads shared messages. */
+  readonly model: string;
 }
 
 /** `googlefree`: Google's keyless public endpoint, no cost. `gemini`: Gemini Flash, needs `GEMINI_API_KEY`. */
@@ -67,6 +76,7 @@ const DEFAULT_PORT = 8080;
 const DEFAULT_RATE_LIMIT_PER_MINUTE = 600;
 const MAX_PORT = 65535;
 const DEFAULT_GEMINI_MODEL = 'gemini-2.0-flash';
+const DEFAULT_IMPORT_DAILY_BUDGET = 2000;
 
 /** Reads a variable; blank counts as unset, so `PORT=` falls back to the default. */
 function readVariable(env: Readonly<Record<string, string | undefined>>, name: string): string | undefined {
@@ -153,6 +163,7 @@ function parseServiceUrl(variable: string, value: string | undefined, schemes: r
  */
 export function loadApiConfig(env: Readonly<Record<string, string | undefined>>): ApiConfig {
   const geminiApiKey = readVariable(env, 'GEMINI_API_KEY') ?? null;
+  const geminiModel = readVariable(env, 'GEMINI_MODEL') ?? DEFAULT_GEMINI_MODEL;
   return {
     environment: parseEnvironment(readVariable(env, 'KC_API_ENVIRONMENT')),
     host: readVariable(env, 'KC_API_HOST') ?? '0.0.0.0',
@@ -171,6 +182,10 @@ export function loadApiConfig(env: Readonly<Record<string, string | undefined>>)
       100_000,
     ),
     translationProvider: parseTranslationProvider(readVariable(env, 'KC_TRANSLATION_PROVIDER'), geminiApiKey),
-    gemini: { apiKey: geminiApiKey, model: readVariable(env, 'GEMINI_MODEL') ?? DEFAULT_GEMINI_MODEL },
+    gemini: { apiKey: geminiApiKey, model: geminiModel },
+    postImport: {
+      dailyBudget: parseInteger('KC_IMPORT_DAILY_BUDGET', readVariable(env, 'KC_IMPORT_DAILY_BUDGET'), DEFAULT_IMPORT_DAILY_BUDGET, 0, 1_000_000),
+      model: readVariable(env, 'KC_IMPORT_MODEL') ?? geminiModel,
+    },
   };
 }

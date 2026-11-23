@@ -19,7 +19,7 @@ let _attachImportedPost: AttachImportedPostUseCase | undefined;
 let _importTelemetry: GetImportTelemetryUseCase | undefined;
 
 function service(): IPostExtractionService {
-  _service ??= new EdgeFnPostExtractionService(getSupabaseClient({ storage: pickAuthStorage() }));
+  _service ??= viaApi('postExtraction', new EdgeFnPostExtractionService(getSupabaseClient({ storage: pickAuthStorage() })));
   return _service;
 }
 

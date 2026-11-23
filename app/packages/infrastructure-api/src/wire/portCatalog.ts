@@ -43,6 +43,7 @@ import type {
   IOrganizationsRepository,
   IPaymentsRepository,
   IPostEngagementRepository,
+  IPostExtractionService,
   IPostRepository,
   IPostSeriesRepository,
   IPostTranslationReader,
@@ -135,6 +136,7 @@ export interface PortCatalog {
   payments: IPaymentsRepository;
   post: IPostRepository;
   postEngagement: IPostEngagementRepository;
+  postExtraction: IPostExtractionService;
   postSeries: IPostSeriesRepository;
   postTranslationReader: IPostTranslationReader;
   proEntitlement: IProEntitlementRepository;

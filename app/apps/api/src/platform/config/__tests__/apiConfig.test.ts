@@ -42,6 +42,7 @@ describe('loadApiConfig', () => {
       rateLimitPerMinute: 600,
       translationProvider: 'googlefree',
       gemini: { apiKey: null, model: 'gemini-2.0-flash' },
+      postImport: { dailyBudget: 2000, model: 'gemini-2.0-flash' },
     });
   });
 
@@ -139,6 +140,14 @@ describe('loadApiConfig', () => {
     const config = loadApiConfig({ ...REQUIRED, KC_TRANSLATION_PROVIDER: 'Gemini', GEMINI_API_KEY: 'test-key', GEMINI_MODEL: 'gemini-test' });
 
     expect(config).toMatchObject({ translationProvider: 'gemini', gemini: { apiKey: 'test-key', model: 'gemini-test' } });
+  });
+
+  it('reads the post import budget and model; the model defaults to the Gemini model', () => {
+    const tuned = loadApiConfig({ ...REQUIRED, GEMINI_MODEL: 'gemini-test', KC_IMPORT_DAILY_BUDGET: '50', KC_IMPORT_MODEL: 'gemini-import' });
+
+    expect(tuned.postImport).toEqual({ dailyBudget: 50, model: 'gemini-import' });
+    expect(loadApiConfig({ ...REQUIRED, GEMINI_MODEL: 'gemini-test' }).postImport.model).toBe('gemini-test');
+    expect(configErrorOf({ KC_IMPORT_DAILY_BUDGET: 'lots' }).variable).toBe('KC_IMPORT_DAILY_BUDGET');
   });
 
   it('refuses to start with Gemini selected and no key, or with an unknown provider', () => {
