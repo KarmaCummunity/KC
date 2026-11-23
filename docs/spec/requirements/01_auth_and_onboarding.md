@@ -398,7 +398,7 @@ A deleted account is deactivated for 30 days and can be restored by signing in; 
 **Acceptance Criteria.**
 - AC1. While an account is pending deletion its email, phone and SSO identity stay attached to it, so nobody else can register with them; there is no `DeletedIdentifier` table.
 - AC2. Signing in during the 30 days does not open the app. It shows a "restore your account" screen with the purge date and two actions: restore, or stay signed out.
-- AC3. Restoring returns the account to `active` with all its data as it was; the restore is audited.
+- AC3. Restoring returns the account to `active` with all its data as it was; the restore is audited. **Exception (#2088, KC 2026-11-24):** live handoffs (waitlisted, reserved, confirmed), on either side, are cancelled by the system when the account enters `pending_deletion`, and the counterpart is notified. A restore does **not** bring them back, so the counterpart never waits up to 30 days. The account, its posts and its history (handed-over handoffs, ratings, counters) do come back.
 - AC4. After 30 days the purge job (`FR-SETTINGS-012` AC4) deletes the account and frees the identifiers; signing up again then creates a new account.
 
 **Related.** Screens: restore screen · Domain: `User`.
@@ -433,3 +433,4 @@ The user can log out from the Settings screen, terminating the local session.
 | 0.7 | 2026-11-01 | `FR-AUTH-007` AC7: sign-in / sign-up reading order — social buttons, then the "or" divider, then the email form (the divider used to render above the Google button). |
 | 0.8 | 2026-11-08 | `FR-AUTH-003` AC6: native Google account sheet on iOS / Android (ID token → `signInWithIdToken`, browser fallback); web unchanged (#1955). |
 | 0.9 | 2026-11-10 | `FR-AUTH-007` AC8: spacing between the social sign-in buttons and reading-start alignment of the e-mail and password inputs (#2048). |
+| 0.10 | 2026-11-24 | `FR-AUTH-016` AC3: exception, live handoffs cancelled on entering `pending_deletion` are not restored (#2088). |
