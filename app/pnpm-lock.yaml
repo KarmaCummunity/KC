@@ -6,6 +6,7 @@ settings:
 
 overrides:
   shell-quote: '>=1.11.0'
+  node-forge@1: ^1.4.3
   tar: '>=7.5.19'
   brace-expansion@<2: ^1.1.19
   brace-expansion@>=2 <3: ^2.1.7
@@ -4711,8 +4712,8 @@ packages:
       encoding:
         optional: true
 
-  node-forge@1.4.2:
-    resolution: {integrity: sha512-rRtAR5XLJ8gCKd9du4qrKAsgCG1ObGP4gLeNJMa4vYSeq4bmBMOJk5IHkrviBV0q7uoAJlVd8HEQYQSVUb4FGQ==}
+  node-forge@1.4.4:
+    resolution: {integrity: sha512-T6VRRpF3+czIGcXW/LOeoD7Ej28d8CF1UMEAbJyJRUtYMvyXAgxUPW2kbUibumvV9LiUQAznJOFyeYclzSJMMg==}
     engines: {node: '>= 6.13.0'}
 
   node-int64@0.4.0:
@@ -7722,7 +7723,7 @@ snapshots:
       glob: 14.0.2
       lan-network: 0.2.1
       minimatch: 11.0.1
-      node-forge: 1.4.2
+      node-forge: 1.4.4
       npm-package-arg: 11.0.3
       ora: 3.4.0
       picomatch: 4.0.7
@@ -7759,7 +7760,7 @@ snapshots:
 
   '@expo/code-signing-certificates@0.0.6':
     dependencies:
-      node-forge: 1.4.2
+      node-forge: 1.4.4
 
   '@expo/config-plugins@54.0.6':
     dependencies:
@@ -11997,7 +11998,7 @@ snapshots:
     dependencies:
       whatwg-url: 5.0.0
 
-  node-forge@1.4.2: {}
+  node-forge@1.4.4: {}
 
   node-int64@0.4.0: {}
 
