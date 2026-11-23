@@ -2119,3 +2119,13 @@ The Demo data screen keeps two failures apart: the RPC itself is missing (`not_i
 
 **Affected.** `app/apps/api/src/platform/realtime`, `app/packages/infrastructure-api/src/wire/realtimeWire.ts`, `supabase/baseline/local/supabase_shim.sql` (the `realtime` schema KC will own: the notification and the service role's grants).
 
+## {{ENG:media-storage}} — Files move to KC's own object store; paths and storage policies stay as they are (2026-11-23)
+
+**Decision.** Bytes go to Google Cloud Storage behind one `ObjectStore` interface in the API (a local directory in development and tests). `storage.objects` stays, as KC's index of its files, and the row-level-security policies already written on it decide every upload, read and delete: the API asks them in a transaction that is rolled back. The app uploads with a signed URL the API issues and reads public files from KC's media domain; bytes never pass through the API. Full text: [`ADR-012`](../architecture/adr/ADR-012-media-storage.md).
+
+**Why.** The same reasoning as for realtime (`{{ENG:realtime-gateway}}`): authorization stays in SQL next to the data, the paths the app and the database already use do not change, and the SQL that reads `storage.objects` keeps working.
+
+**Trade-off.** KC owns a `storage` schema it must keep in step with the store (the reconciliation job exists for that). A signed URL outlives a right that was revoked, until it expires.
+
+**Affected.** `app/apps/api/src/platform/storage`, `supabase/baseline/local/supabase_shim.sql` (the `storage` schema KC will own: the service role may read a bucket's rules).
+

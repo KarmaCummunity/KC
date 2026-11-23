@@ -1,0 +1,79 @@
+# ADR-012 — Media and storage: KC's own object store, the same paths, the same policies
+
+- **Status:** Accepted (2026-11-23) · phase 7 of [ADR-009](./ADR-009-backend-platform.md)
+- **Decision log:** `{{ENG:media-storage}}` in [`../../SSOT/DECISIONS.md`](../../SSOT/DECISIONS.md)
+- **Related:** [ADR-010 port gateway](./ADR-010-port-gateway.md), [ADR-011 realtime gateway](./ADR-011-realtime-gateway.md) (the same principle, applied to realtime)
+
+## Context
+
+The app keeps three kinds of files in Supabase Storage: profile pictures (`avatars`, public), post photos (`post-images`, public, with server-made copies under `derived/`), and chat attachments (`chat-media`, private). Who may write, read or delete a file is row-level security on `storage.objects`, by bucket and path: a member writes under their own folder, a chat attachment is readable by the chat's members, and nobody but the server touches `derived/`.
+
+What uses Storage today:
+
+- The app uploads straight to Storage, shows public files by URL, asks for a signed URL to show a chat attachment, and deletes its own files (an old avatar, an abandoned upload).
+- One port method copies files (`post.republish`), and six Edge Functions read or write files: the three media functions (sanitized copies and thumbnails of post photos), the account purge, the storage reconciliation, and the WhatsApp webhook (photos members send).
+
+Leaving Supabase means replacing the service that stores the bytes. As with realtime, two things must survive: the paths the app and the database already use, and the rule that **authorization lives in SQL next to the data**.
+
+## Decision
+
+### 1. Bytes in Google Cloud Storage, behind one interface
+
+One `ObjectStore` interface in the API (put, get, delete, copy, list, signed read URL, signed upload URL, public URL). Two implementations: Google Cloud Storage for the deployed API, and a local directory for development and tests, so every flow below is tested without a cloud account. A bucket of today maps to a bucket of the same purpose; the object names do not change.
+
+### 2. `storage.objects` stays, as KC's index of its files
+
+On KC's own PostgreSQL the `storage` schema (the tables `buckets` and `objects`, and `storage.foldername`) is KC's, as the `realtime` schema is. A row of `storage.objects` is the record that a file exists, with its size and type. The SQL that already reads the table (the reconciliation, the purge, the media jobs) keeps working, and the bucket rules (`public`, `file_size_limit`, `allowed_mime_types`) keep living in `storage.buckets`.
+
+### 3. Authorization is the policies already written
+
+- **Upload:** the caller may upload `<bucket>/<name>` when they could insert that row into `storage.objects`. The API tries the insert as the caller in a transaction that is rolled back; the restrictive policies (nobody writes under `derived/`) apply because they are policies.
+- **Read of a private file:** the caller may get a signed URL when they could select the object's row.
+- **Delete:** the caller may delete when they could delete the row.
+
+A bucket's size limit and allowed types are checked by the API before a signed upload URL is issued, and enforced by the store on the upload itself.
+
+### 4. How the app moves files
+
+| Today | With KC's API |
+|---|---|
+| Upload to Storage with the member's token | Ask the API for a signed upload URL for `<bucket>/<name>` (authorized as above), upload the bytes to the store with it, then tell the API the upload is complete; the API checks the stored object (size, type) and writes the `storage.objects` row |
+| Public URL of an avatar or post photo | A URL on KC's media domain (CDN in front of the public buckets); the path is unchanged |
+| Signed URL of a chat attachment | Ask the API; it authorizes and returns a short-lived signed URL of the store |
+| Delete own file | Ask the API; it authorizes, deletes the object and its row |
+
+The app's upload and URL helpers go through one storage door, as data goes through `viaApi` and channels through `viaApiRealtime`: with no API configured they keep using Supabase Storage.
+
+Bytes never pass through the API on upload or download: it issues URLs and keeps the index. That keeps the API small and lets the store and the CDN do what they are built for.
+
+### 5. Server-side work on files
+
+The six functions and `post.republish` are ported like the others (ADR-009 phase 8), written against `ObjectStore`. Image work (the sanitized copy and thumbnails) runs as a job in the API's process at first; if its CPU cost shows in the API's latency it moves to its own Cloud Run job without changing the code that calls it. Video is not stored today; when the product adds it (the long-horizon vision), it gets a transcoding pipeline of its own and an ADR.
+
+### 6. Moving the existing files
+
+Before the switch, every object is copied to the new store by name and verified by size and checksum, in a job that can be re-run. The index rows are copied with the database (phase 10). Until the switch the copy is repeated for new objects; after it, Supabase Storage is read-only and then removed.
+
+## Order of work
+
+| Step | What | State |
+|---|---|---|
+| 1 | Storage authorizer on the real policies (upload, read, delete) | Done (`apps/api/src/platform/storage/storageAuthorizer.ts`): each bucket's rule has a case for the member it is for and for another, on the KC schema; asking stores no row |
+| 2 | `ObjectStore` with the local-directory implementation; upload, signed read and delete routes; the index row | — |
+| 3 | The app's storage door (`viaApiStorage`): upload helper, public URL, signed URL, delete | — |
+| 4 | `post.republish` and the six file functions on `ObjectStore` | — |
+| 5 | The Google Cloud Storage implementation, buckets, CDN (needs the cloud project) | — |
+| 6 | The copy-and-verify job for existing files; switch | — |
+
+Steps 1–4 need no cloud account.
+
+## Consequences
+
+- One set of policies, tested in SQL, decides for Supabase Storage today and for KC's store tomorrow.
+- The app's paths and the database's references to them do not change, so no data migration of paths is needed.
+- KC owns a `storage` schema it must keep honest: a row without an object, or an object without a row, is what the reconciliation job already looks for.
+
+## Limits
+
+- A signed URL stays valid until it expires even if the member loses the right in the meantime; URLs are short-lived for that reason.
+- The local-directory store is for development and tests only; it has no CDN and its signed URLs are the API's own routes.

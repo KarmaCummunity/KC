@@ -125,6 +125,9 @@ create table if not exists storage.objects (
 );
 alter table storage.objects enable row level security;
 grant select, insert, update, delete on storage.objects to authenticated, service_role;
+-- KC's own storage service (ADR-012) reads a bucket's rules (public, size limit, allowed types)
+-- as the service role.
+grant select on storage.buckets to service_role;
 
 create or replace function storage.foldername(name text)
 returns text[]
