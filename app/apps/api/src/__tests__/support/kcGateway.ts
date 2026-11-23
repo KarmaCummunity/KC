@@ -18,6 +18,7 @@ import { PortGatewayModule } from '../../platform/ports/portGateway.module';
 import { VisitorCache } from '../../platform/ports/visitorCache';
 import { RateLimiter } from '../../platform/rateLimit/rateLimiter';
 import { RealtimeModule } from '../../platform/realtime/realtime.module';
+import { RedisModule } from '../../platform/redis/redis.module';
 import { KC_DATABASE_URL } from './kcDatabase';
 import { testConfig } from './testConfig';
 import { createTestIssuer, type TestIssuer } from './testTokens';
@@ -54,12 +55,14 @@ export async function startKcGateway(
   })
   class LocalIdentityModule {}
 
-  const config = testConfig({ databaseUrl: KC_DATABASE_URL ?? '', ...overrides.config });
+  // Realtime carries typing and presence through Redis; without one it falls back to the instance it runs on.
+  const config = testConfig({ databaseUrl: KC_DATABASE_URL ?? '', ...(process.env.REDIS_URL ? { redisUrl: process.env.REDIS_URL } : {}), ...overrides.config });
   @Module({
     imports: [
       ApiConfigModule.forRoot(config),
       DatabaseModule,
       LocalIdentityModule,
+      RedisModule,
       PortClientsModule,
       IdentityVerificationModule.forRoot({ provider: overrides.identityProvider }),
       BillingModule,

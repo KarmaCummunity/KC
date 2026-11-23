@@ -2,7 +2,7 @@ import { REALTIME_CLOSE, type ServerFrame } from '@kc/infrastructure-api';
 import { describe, expect, it } from 'vitest';
 import { InvalidAccessTokenError } from '../../identity/accessTokenVerifier';
 import type { CallerIdentity } from '../../identity/callerIdentity';
-import { EphemeralEvents } from '../ephemeralEvents';
+import { InMemoryEphemeralEvents } from '../ephemeralEvents';
 import { MAX_FRAMES_PER_SECOND, MAX_SUBSCRIPTIONS, parseFrame, RealtimeConnection } from '../realtimeConnection';
 import { RealtimeHub } from '../realtimeHub';
 import type { TopicAccess } from '../topicAuthorizer';
@@ -14,7 +14,7 @@ const callerOf = (userId: string, exp = 2_000_000_000): CallerIdentity => ({ use
 /** One hub shared by every connection of a test, as on one server. */
 function world(access: (topic: string, userId: string) => TopicAccess = () => ({ receive: true, send: true })) {
   const hub = new RealtimeHub();
-  const ephemeral = new EphemeralEvents(hub);
+  const ephemeral = new InMemoryEphemeralEvents(hub);
   const reported: unknown[] = [];
   let clock = 0;
   /** A connection whose socket records what it was sent; tokens are user ids, `expired` is refused. */

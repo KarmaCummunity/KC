@@ -121,6 +121,23 @@ describe.skipIf(!KC_DATABASE_URL)('Scheduled jobs on the KC schema', () => {
     expect(rerank.json()).toEqual({ ok: true, skipped: 'no_gemini_key', scored: 0 });
   });
 
+  it('prunes the realtime queue: an event older than the retention goes, a recent one stays', async () => {
+    const topic = `user:${(await database.newMember()).userId}:notifications`;
+    await database.admin.query(
+      `insert into realtime.messages (topic, extension, event, private, inserted_at) values
+         ($1, 'broadcast', 'old', true, (now() at time zone 'utc') - interval '2 hours'),
+         ($1, 'broadcast', 'recent', true, (now() at time zone 'utc') - interval '1 minute')`,
+      [topic],
+    );
+
+    const response = await runJob('realtime-retention');
+    const left = await database.admin.query<{ event: string }>('select event from realtime.messages where topic = $1', [topic]);
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json().deleted).toBeGreaterThanOrEqual(1);
+    expect(left.rows).toEqual([{ event: 'recent' }]);
+  });
+
   it('starts nothing for a caller without the jobs token', async () => {
     const before = await currentSalt();
 

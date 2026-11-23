@@ -108,7 +108,7 @@ export class RealtimeConnection implements HubSubscriber {
   release(): void {
     this.isClosed = true;
     const key = this.caller?.userId;
-    for (const topic of this.tracked) if (key) this.deps.ephemeral.untrack(topic, this.id, key);
+    for (const topic of this.tracked) if (key) void this.deps.ephemeral.untrack(topic, this.id, key).catch(this.deps.report);
     for (const subscription of this.subscriptions.values()) this.deps.hub.unsubscribe(this.id, subscription.topic, subscription.extension);
     this.tracked.clear();
     this.subscriptions.clear();
@@ -181,7 +181,7 @@ export class RealtimeConnection implements HubSubscriber {
       case 'track':
         return this.track(frame.topic, frame.meta, caller);
       case 'untrack':
-        if (this.tracked.delete(frame.topic)) this.deps.ephemeral.untrack(frame.topic, this.id, caller.userId);
+        if (this.tracked.delete(frame.topic)) await this.deps.ephemeral.untrack(frame.topic, this.id, caller.userId);
     }
   }
 
@@ -196,7 +196,7 @@ export class RealtimeConnection implements HubSubscriber {
     this.subscriptions.set(key, { topic, extension, ref, access });
     this.deps.hub.subscribe(this, topic, extension);
     this.send({ op: 'ok', ref });
-    if (extension === 'presence') this.send({ op: 'presence_state', topic, members: this.deps.ephemeral.membersOf(topic) });
+    if (extension === 'presence') this.send({ op: 'presence_state', topic, members: await this.deps.ephemeral.membersOf(topic) });
   }
 
   /** A client-sent event goes to the topic's other subscribers, if this member may send on the topic they joined. */
@@ -205,18 +205,18 @@ export class RealtimeConnection implements HubSubscriber {
     this.deps.ephemeral.broadcast(topic, event, payload, this.id);
   }
 
-  private track(topic: string, meta: Readonly<Record<string, unknown>>, caller: CallerIdentity): void {
+  private async track(topic: string, meta: Readonly<Record<string, unknown>>, caller: CallerIdentity): Promise<void> {
     if (!this.subscriptions.get(keyOf('presence', topic))?.access.send) return this.send({ op: 'error', code: 'forbidden' });
     this.tracked.add(topic);
     // The key is the verified member, never a value the client chose.
-    this.deps.ephemeral.track(topic, this.id, { key: caller.userId, meta });
+    await this.deps.ephemeral.track(topic, this.id, { key: caller.userId, meta });
   }
 
   private drop(subscription: Subscription, caller: CallerIdentity): void {
     this.subscriptions.delete(keyOf(subscription.extension, subscription.topic));
     this.deps.hub.unsubscribe(this.id, subscription.topic, subscription.extension);
     if (subscription.extension === 'presence' && this.tracked.delete(subscription.topic)) {
-      this.deps.ephemeral.untrack(subscription.topic, this.id, caller.userId);
+      void this.deps.ephemeral.untrack(subscription.topic, this.id, caller.userId).catch(this.deps.report);
     }
   }
 }

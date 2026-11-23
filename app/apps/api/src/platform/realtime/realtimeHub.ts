@@ -54,6 +54,12 @@ export class RealtimeHub {
     return delivered;
   }
 
+  /** The topics someone on this instance is subscribed to for `extension`. */
+  topicsOf(extension: RealtimeExtension): string[] {
+    const prefix = `${extension}:`;
+    return [...this.subscribers.keys()].filter((key) => key.startsWith(prefix)).map((key) => key.slice(prefix.length));
+  }
+
   /** Topics that have at least one subscriber on this instance, for the health report. */
   get topicCount(): number {
     return this.subscribers.size;
