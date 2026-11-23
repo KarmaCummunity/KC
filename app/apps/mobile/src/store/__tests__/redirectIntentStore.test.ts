@@ -2,8 +2,10 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { REDIRECT_INTENT_TTL_MS, isRestorablePath, useRedirectIntentStore } from '../redirectIntentStore';
 
 describe('isRestorablePath', () => {
-  it('accepts /post/, /user/, /chat/ paths', () => {
+  it('accepts /post/, /edit-post/, /edit-listing/, /user/, /chat/ paths', () => {
     expect(isRestorablePath('/post/abc-123')).toBe(true);
+    expect(isRestorablePath('/edit-post/abc-123')).toBe(true);
+    expect(isRestorablePath('/edit-listing/abc-123')).toBe(true);
     expect(isRestorablePath('/user/handle')).toBe(true);
     expect(isRestorablePath('/chat/thread-1')).toBe(true);
   });
