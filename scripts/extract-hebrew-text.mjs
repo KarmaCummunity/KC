@@ -53,6 +53,9 @@ const SKIP_HEBREW_SCAN_EXACT_RELS = new Set([
   // Generated copy of the Hebrew notification texts (scripts/generate-notification-kinds.mjs):
   // the API's push worker renders push text from the same strings the app shows.
   "app/apps/api/src/modules/notifications/strings.he.generated.json",
+  // WhatsApp template registry: the message bodies Meta approved, in Hebrew and English. A copy of
+  // supabase/functions/_shared/whatsapp/templates.json (skipped above), kept equal by a test.
+  "app/apps/api/src/modules/whatsapp/templates.json",
   // PWA manifest: the `name`/`short_name` are the localized installed-app label
   // (Hebrew is the MVP locale, R-MVP-Core-4). A static manifest.json cannot hold
   // i18next keys, so its localized name is canonical here, not an inline leak.

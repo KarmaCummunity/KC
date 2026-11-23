@@ -4,6 +4,8 @@ import { DispatchNotificationsJob, PUSH_TRANSPORT } from '../notifications/dispa
 import { createExpoTransport } from '../notifications/expoTransport';
 import type { PushTransport } from '../notifications/pushTypes';
 import { RotateResearchSaltJob } from '../publicResearch/rotateResearchSaltJob';
+import type { FetchFn } from '../whatsapp/metaClient';
+import { WHATSAPP_FETCH, WhatsAppSenderJob } from '../whatsapp/whatsappSenderJob';
 import type { GeminiClient } from '../../platform/ai/geminiClient';
 import type { ApiConfig } from '../../platform/config/apiConfig';
 import { API_CONFIG } from '../../platform/config/apiConfig.module';
@@ -13,6 +15,7 @@ import type { ScheduledJobSet } from '../../platform/jobs/scheduledJob';
 export interface ScheduledJobOverrides {
   readonly matchRerankModel?: Pick<GeminiClient, 'generateJson'>;
   readonly pushTransport?: PushTransport;
+  readonly whatsAppFetch?: FetchFn;
 }
 
 /**
@@ -22,10 +25,11 @@ export interface ScheduledJobOverrides {
  */
 export function scheduledJobSet(overrides: ScheduledJobOverrides = {}): ScheduledJobSet {
   return {
-    jobs: [DispatchNotificationsJob, EmbedPostsJob, MatchRerankJob, RotateResearchSaltJob, StandingOrdersChargeJob],
+    jobs: [DispatchNotificationsJob, EmbedPostsJob, MatchRerankJob, RotateResearchSaltJob, StandingOrdersChargeJob, WhatsAppSenderJob],
     providers: [
       { provide: MATCH_RERANK_MODEL, inject: [API_CONFIG], useFactory: (config: ApiConfig) => overrides.matchRerankModel ?? matchRerankModelFor(config) },
       { provide: PUSH_TRANSPORT, inject: [API_CONFIG], useFactory: (config: ApiConfig) => overrides.pushTransport ?? createExpoTransport(config.expoAccessToken) },
+      { provide: WHATSAPP_FETCH, useValue: overrides.whatsAppFetch ?? ((input: string, init?: RequestInit) => fetch(input, init)) },
     ],
   };
 }

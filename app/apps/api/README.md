@@ -43,6 +43,9 @@ Without the variable those suites are skipped and the unit tests still run.
 | `KC_API_RATE_LIMIT_PER_MINUTE` | `600` | Port calls one caller may make per minute (a member by user id, a visitor by address), counted in Redis. `0` switches the limit off |
 | `KC_JOBS_TOKEN` | none | Bearer token a scheduler sends to start a job (`POST /v1/jobs/<name>`); a secret of at least 32 characters. Without it no job can be started |
 | `EXPO_ACCESS_TOKEN` | none | Access token of the Expo push service, when the Expo project requires one (a secret) |
+| `WHATSAPP_CLOUD_API_TOKEN` | none | Graph API token of the WhatsApp channel (a secret). Without it no WhatsApp message is sent |
+| `WHATSAPP_PHONE_NUMBER_ID` | channel settings | Overrides the phone number id stored with the channel's settings |
+| `WHATSAPP_GRAPH_API_VERSION` | channel settings, else `v21.0` | Overrides the Graph API version |
 | `KC_TRANSLATION_PROVIDER` | `googlefree` | Who translates member content: `googlefree` (Google's keyless public endpoint, no cost) or `gemini` |
 | `GEMINI_API_KEY` | none | Gemini API key (a secret), used by the post import and, when selected, by translation. Required when `KC_TRANSLATION_PROVIDER` is `gemini` |
 | `GEMINI_MODEL` | `gemini-2.0-flash` | Gemini model name |

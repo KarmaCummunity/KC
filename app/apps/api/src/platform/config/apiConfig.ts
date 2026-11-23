@@ -38,6 +38,8 @@ export interface ApiConfig {
   readonly jobsToken: string | null;
   /** Access token of the Expo push service, when the Expo project requires one. A secret. */
   readonly expoAccessToken: string | null;
+  /** The WhatsApp channel through Meta's Cloud API. */
+  readonly whatsapp: WhatsAppConfig;
   /** Who translates member content (FR-TRANSLATE-002). */
   readonly translationProvider: TranslationProviderKind;
   /** Google Gemini: translation when it is the selected provider, and the other AI features as they move here. */
@@ -48,6 +50,15 @@ export interface ApiConfig {
   readonly identityVerification: IdentityVerificationConfig;
   /** The billing providers' webhooks. */
   readonly billing: BillingConfig;
+}
+
+export interface WhatsAppConfig {
+  /** The Graph API token. A secret; null: nothing is sent. */
+  readonly cloudApiToken: string | null;
+  /** Overrides the phone number id stored with the channel's settings. */
+  readonly phoneNumberId: string | null;
+  /** Overrides the Graph API version stored with the channel's settings, e.g. `v21.0`. */
+  readonly graphApiVersion: string | null;
 }
 
 export interface BillingConfig {
@@ -272,6 +283,11 @@ export function loadApiConfig(env: Readonly<Record<string, string | undefined>>)
     ),
     jobsToken: parseJobsToken(readVariable(env, 'KC_JOBS_TOKEN')),
     expoAccessToken: readVariable(env, 'EXPO_ACCESS_TOKEN') ?? null,
+    whatsapp: {
+      cloudApiToken: readVariable(env, 'WHATSAPP_CLOUD_API_TOKEN') ?? null,
+      phoneNumberId: readVariable(env, 'WHATSAPP_PHONE_NUMBER_ID') ?? null,
+      graphApiVersion: readVariable(env, 'WHATSAPP_GRAPH_API_VERSION') ?? null,
+    },
     translationProvider: parseTranslationProvider(readVariable(env, 'KC_TRANSLATION_PROVIDER'), geminiApiKey),
     gemini: { apiKey: geminiApiKey, model: geminiModel },
     postImport: {

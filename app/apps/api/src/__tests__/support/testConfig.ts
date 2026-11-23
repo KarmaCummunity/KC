@@ -25,6 +25,7 @@ export function testConfig(overrides: Partial<ApiConfig> = {}): ApiConfig {
     rateLimitPerMinute: 0,
     jobsToken: null,
     expoAccessToken: null,
+    whatsapp: { cloudApiToken: null, phoneNumberId: null, graphApiVersion: null },
     translationProvider: 'googlefree',
     gemini: { apiKey: null, model: 'gemini-test' },
     postImport: { dailyBudget: 2000, model: 'gemini-test' },

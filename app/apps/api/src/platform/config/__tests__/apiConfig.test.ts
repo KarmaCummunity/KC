@@ -42,6 +42,7 @@ describe('loadApiConfig', () => {
       rateLimitPerMinute: 600,
       jobsToken: null,
       expoAccessToken: null,
+      whatsapp: { cloudApiToken: null, phoneNumberId: null, graphApiVersion: null },
       translationProvider: 'googlefree',
       gemini: { apiKey: null, model: 'gemini-2.0-flash' },
       postImport: { dailyBudget: 2000, model: 'gemini-2.0-flash' },
