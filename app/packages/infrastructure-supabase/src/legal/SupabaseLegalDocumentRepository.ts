@@ -11,7 +11,7 @@ import type {
   AcceptLegalDocumentResult,
   ILegalDocumentRepository,
 } from '@kc/application';
-import { LegalConsentError } from '@kc/application';
+import { LegalConsentError, LegalDocumentNotPublishedError } from '@kc/application';
 import { fetchBootstrapSession, type BootstrapLegalDocument } from '../auth/bootstrapSession';
 import type { Database } from '../database.types';
 import { unwrapCall } from '../rpc/mapRpcError';
@@ -61,10 +61,18 @@ function mapPendingDocument(doc: BootstrapLegalDocument): LegalPendingItem {
   };
 }
 
+/** PostgREST's code for "one row was asked for and none (or several) came back". */
+const NO_SINGLE_ROW = 'PGRST116';
+
+/** True when a single-row read found no row: the document is not there, as opposed to unreadable. */
+function isNoRow(result: { data: unknown; error: { code?: string } | null }): boolean {
+  return result.error ? result.error.code === NO_SINGLE_ROW : !result.data;
+}
+
 /**
  * The legal documents as the database holds them, with no cache: the part of
- * the port the API can serve. `getCurrentContent` throws when the document
- * cannot be read; the device wraps this source in `CachedLegalDocumentRepository`
+ * the port the API can serve. `getCurrentContent` throws `LegalDocumentNotPublishedError`
+ * for a document with no published version and a plain error when it cannot be read; the device wraps this source in `CachedLegalDocumentRepository`
  * for the offline copy.
  */
 export class SupabaseLegalDocumentSource implements ILegalDocumentRepository {
@@ -82,6 +90,7 @@ export class SupabaseLegalDocumentSource implements ILegalDocumentRepository {
 
   private async readCurrent(docType: LegalDocType, failed: (reason: string) => Error): Promise<LegalDocumentContent> {
     const ptr = await this.client.from('legal_documents').select('current_version').eq('doc_type', docType).single();
+    if (isNoRow(ptr)) throw new LegalDocumentNotPublishedError(docType);
     if (ptr.error || !ptr.data) throw failed(ptr.error?.message ?? 'no pointer row');
 
     const versionQ = await this.client
@@ -90,6 +99,7 @@ export class SupabaseLegalDocumentSource implements ILegalDocumentRepository {
       .eq('doc_type', docType)
       .eq('version', ptr.data.current_version)
       .single();
+    if (isNoRow(versionQ)) throw new LegalDocumentNotPublishedError(docType);
     if (versionQ.error || !versionQ.data) throw failed(versionQ.error?.message ?? 'no version row');
 
     return mapVersionRow(versionQ.data);

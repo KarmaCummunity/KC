@@ -2,7 +2,7 @@ import 'reflect-metadata';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import type { ILegalDocumentRepository } from '@kc/application';
+import { type ILegalDocumentRepository, LegalDocumentNotPublishedError } from '@kc/application';
 import { createPortTransport, createRemotePort } from '@kc/infrastructure-api';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -183,6 +183,17 @@ describe.skipIf(!KC_DATABASE_URL)('Hosted ports on the KC schema', () => {
     expect(terms.publishedAt.toISOString()).toBe('2025-12-25T08:00:00.000Z');
     // A member-only method of the same port is still closed to the visitor.
     await expect(legal.getPendingForCurrentUser()).rejects.toMatchObject({ reason: 'unauthenticated' });
+  });
+
+  it('refuses a document with no published version as itself, not as a server fault', async () => {
+    await database.admin.query("delete from public.legal_documents where doc_type = 'privacy'");
+    const asVisitor = createPortTransport({ baseUrl: await gateway.listen(), getAccessToken: () => Promise.resolve(null) });
+    const legal = createRemotePort<ILegalDocumentRepository>(asVisitor, 'legalDocument');
+
+    const refusal = await legal.getCurrentContent('privacy').then(() => null, (error: unknown) => error);
+
+    expect(refusal).toBeInstanceOf(LegalDocumentNotPublishedError);
+    expect((refusal as LegalDocumentNotPublishedError).docType).toBe('privacy');
   });
 
   it('a signed-out visitor is turned away from every member method before the database is touched', async () => {
