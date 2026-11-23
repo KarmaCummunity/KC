@@ -32,13 +32,15 @@
 // carry an override.
 //
 // Pushes and dispatches are not judged: their commits already passed a PR.
-// The checks are textual tripwires, not proof (TD-222).
+// JS/TS assertion counts and skip/return/empty-test markers use a dependency-free
+// structural scan (TD-222 / #1818); SQL and config limits stay textual.
 //
 // Inputs (env): EVENT_NAME, BASE_SHA, HEAD_SHA, JUDGE_REF, PR_NUMBER,
 // PR_AUTHOR, GITHUB_REPOSITORY, GITHUB_TOKEN.
 
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { countJsAssertions, findJsWeakening } from './check-test-integrity-ast.mjs';
 import { ownerApprovalRequired } from './ci-base.mjs';
 import { findOwnerOverride } from './ci-github.mjs';
 
@@ -49,29 +51,19 @@ export const isTest = (path) => TEST_PATHS.some((re) => re.test(path));
 
 const isSqlTest = (path) => path.endsWith('.sql');
 
-/** Markers that silence or narrow a JS/TS test run when added to a test file. */
-const JS_MARKERS = [
-  // Member access, not only calls, so `.each` tables, tagged templates and
-  // aliases (`const t = it.skip`) match too.
-  { re: /\.(skip|skipIf|runIf|only|todo|fixme)\b/, why: 'skip / focus / todo / conditional marker' },
-  { re: /\bDeno\.test\.(ignore|only)\b/, why: 'Deno.test.ignore / only' },
-  { re: /\b(skip|only|ignore)\s*:\s*true\b/, why: 'skip / only / ignore test option' },
-  { re: /\b(xit|xdescribe|xtest)\s*\(/, why: 'disabled test (x-prefix)' },
-  { re: /@ts-nocheck/, why: '@ts-nocheck in a test' },
-  { re: /^\s*return\s*;?\s*$/, why: 'bare `return` (can end a test body before its assertions)' },
-];
-
 /** pgTAP markers that skip or defer SQL assertions. */
 const SQL_MARKERS = [{ re: /\b(skip|todo|todo_start)\s*\(/i, why: 'pgTAP skip / todo' }];
 
 /** Lets a test command pass when it finds no tests at all (CLI flag or config key). */
 const NO_TESTS_SWITCH = /pass-?with-?no-?tests/i;
 
+/** `@ts-nocheck` often lives in a comment; the structural scan skips comments. */
+const TS_NOCHECK = /@ts-nocheck/;
+
 const VITEST_CONFIG = /(^|\/)vitest\.(config|workspace)\.[^/]+$/;
 const THRESHOLD = /\b(lines|functions|branches|statements)\s*:\s*(\d+(?:\.\d+)?)/g;
 const MAX_WARNINGS = /--max-warnings(?:=|\s+)(\d+)/g;
 
-const JS_ASSERTION = /\b(?:expect|assert)\b(?:\.\w+)*\s*\(/g;
 const SQL_ASSERTION = /\bassert\b|\braise\s+exception\b|\b(?:ok|is|isnt|throws_ok|lives_ok|results_eq|set_eq|bag_eq|is_empty)\s*\(/gi;
 
 /**
@@ -86,8 +78,11 @@ export function stripComments(text, sql = false) {
 
 /** Count assertions in the text of a test file at `path` (comments ignored). */
 export function countAssertions(path, text) {
-  const sql = isSqlTest(path);
-  return stripComments(text ?? '', sql).match(sql ? SQL_ASSERTION : JS_ASSERTION)?.length ?? 0;
+  if (isSqlTest(path)) {
+    return stripComments(text ?? '', true).match(SQL_ASSERTION)?.length ?? 0;
+  }
+  // Structural scan: strings/comments cannot inflate or hide JS assertions (TD-222).
+  return countJsAssertions(text ?? '');
 }
 
 /** Numbers captured by `re` in `lines`, grouped by key ('' when the regex has one group). */
@@ -130,6 +125,40 @@ function markerHits(file, markers) {
   return out;
 }
 
+/**
+ * JS/TS weakening on added lines via structural scan (full `newText` when
+ * present so line numbers match; otherwise each added line is scanned alone).
+ * `@ts-nocheck` stays a line regex because it usually sits inside a comment.
+ */
+function jsWeakeningHits(file) {
+  const addedTexts = new Set(file.added.map((l) => l.trim()).filter(Boolean));
+  const source = typeof file.newText === 'string' && file.newText.length > 0 ? file.newText : file.added.join('\n');
+  const out = [];
+  for (const hit of findJsWeakening(source)) {
+    // Prefer exact line-text match against the diff hunk; fall back to "any
+    // added line" only when we scanned fragments without full-file text.
+    const inDiff =
+      addedTexts.has(hit.lineText) ||
+      (typeof file.newText !== 'string' && file.added.some((l) => l.includes(hit.lineText) || hit.lineText.includes(l.trim())));
+    if (!inDiff) continue;
+    out.push({
+      path: file.path,
+      line: hit.lineText,
+      text: `${file.path}: adds ${hit.why}: \`${hit.lineText.slice(0, 120)}\``,
+    });
+  }
+  for (const line of file.added) {
+    if (TS_NOCHECK.test(line)) {
+      out.push({
+        path: file.path,
+        line: line.trim(),
+        text: `${file.path}: adds @ts-nocheck in a test: \`${line.trim().slice(0, 120)}\``,
+      });
+    }
+  }
+  return out;
+}
+
 /** Whether a parsed diff entry was or is a test file. */
 export const testSides = (file) => ({
   wasTest: file.oldPath !== null && isTest(file.oldPath),
@@ -162,7 +191,9 @@ export function findViolationRecords(files) {
     const { wasTest, isTestNow } = testSides(file);
     if (wasTest && file.newPath === null) out.push(plain(`${file.oldPath}: deletes a test file`));
     if (wasTest && file.newPath !== null && file.newPath !== file.oldPath) out.push(plain(`${file.oldPath}: renamed or moved to ${file.newPath}`));
-    if (isTestNow) out.push(...markerHits(file, isSqlTest(file.path) ? SQL_MARKERS : JS_MARKERS));
+    if (isTestNow) {
+      out.push(...(isSqlTest(file.path) ? markerHits(file, SQL_MARKERS) : jsWeakeningHits(file)));
+    }
     if (!file.path.endsWith('.md')) out.push(...markerHits(file, [{ re: NO_TESTS_SWITCH, why: 'a switch that passes when no tests exist' }]).map((r) => plain(r.text)));
     if (VITEST_CONFIG.test(file.path)) out.push(...loosenedLimits(file, THRESHOLD, (o, n) => n < o, 'coverage threshold').map(plain));
     out.push(...loosenedLimits(file, MAX_WARNINGS, (o, n) => n > o, '--max-warnings').map(plain));

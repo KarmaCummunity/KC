@@ -76,6 +76,25 @@ test('every skip / focus / todo / conditional / alias / option / nocheck / bare-
   }
 });
 
+test('structural scan catches early / same-line bare returns and ignores markers inside strings (TD-222)', () => {
+  const sk = '.sk' + 'ip';
+  assert.equal(findViolations([mod('app/a.test.ts', { added: ['if (cond) return;'] })]).length, 1);
+  assert.equal(findViolations([mod('app/a.test.ts', { added: ['return; expect(1).toBe(1);'] })]).length, 1);
+  assert.deepEqual(findViolations([mod('app/a.test.ts', { added: [`const decoy = "it${sk}('no')";`] })]), []);
+  assert.equal(
+    findViolations([mod('app/a.test.ts', { added: ["it('empty', () => {})"] })]).length,
+    1,
+  );
+});
+
+test('expect/assert inside a string does not count toward assertion totals (TD-222)', () => {
+  const file = mod('app/a.test.ts', {
+    oldText: 'expect(a).toBe(1);\nexpect(b).toBe(2);',
+    newText: "expect(a).toBe(1);\nconst s = 'expect(b).toBe(2)';",
+  });
+  assert.equal(findViolations([file]).length, 1);
+});
+
 test('markers in non-test code are ignored; pgTAP skip in SQL tests is flagged', () => {
   assert.deepEqual(findViolations([mod('app/src/list.ts', { added: [`rows${SK}(2)`] })]), []);
   assert.equal(findViolations([mod('supabase/tests/0001_x.sql', { added: ["select skip('later', 2);"] })]).length, 1);
