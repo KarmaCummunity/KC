@@ -36,7 +36,7 @@ import { CHAT_CONVERSATION_HEADER_HEIGHT } from '../../src/lib/platform/formChro
 import { useChatTypingIndicator } from '../../src/hooks/useChatTypingIndicator';
 import { useChatMessageReactions } from '../../src/hooks/useChatMessageReactions';
 import { pickChatImage, uploadChatImageAndSend } from '../../src/services/chatMediaUpload';
-import type { MessageReactionType } from '@kc/infrastructure-supabase';
+import type { MessageReactionType } from '@kc/domain';
 import { webEnterToSend } from '../../src/components/chat/webEnterToSend';
 import { firstParam } from '../../src/lib/postChatPrefillDecision';
 import { resolveKeyboardAvoidingBehavior } from '../../src/lib/platform/keyboardVerticalOffset';

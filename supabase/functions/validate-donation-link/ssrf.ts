@@ -165,6 +165,9 @@ export async function checkReachable(
     if (result.kind === 'failed' || (result.kind === 'status' && result.status === 404)) {
       result = await probe(url, 'GET', fetchFn);
     }
+    // Re-resolve after the fetch: `fetch` did its own lookup, which Deno cannot pin to the
+    // checked IP (TD-265), so a rebind to a private address in that window discards the answer.
+    if (!(await hostResolvesToPublic(url.hostname, resolve))) return false;
     if (result.kind === 'status') return result.status !== 404;
     if (result.kind === 'failed') return false;
     url = result.next;
