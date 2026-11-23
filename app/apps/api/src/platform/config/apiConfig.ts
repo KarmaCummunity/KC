@@ -31,6 +31,11 @@ export interface ApiConfig {
   readonly trustedProxyHops: number;
   /** Port calls one caller (a member, or an address when signed out) may make per minute. 0: no limit. */
   readonly rateLimitPerMinute: number;
+  /**
+   * The bearer token a scheduler sends to start a job (`POST /v1/jobs/<name>`).
+   * A secret. Null: no job can be started over HTTP.
+   */
+  readonly jobsToken: string | null;
   /** Who translates member content (FR-TRANSLATE-002). */
   readonly translationProvider: TranslationProviderKind;
   /** Google Gemini: translation when it is the selected provider, and the other AI features as they move here. */
@@ -111,6 +116,8 @@ const DEFAULT_PORT = 8080;
 const DEFAULT_RATE_LIMIT_PER_MINUTE = 600;
 const MAX_PORT = 65535;
 const DEFAULT_GEMINI_MODEL = 'gemini-2.0-flash';
+/** Shorter than this, a token could be guessed. */
+const MIN_JOBS_TOKEN_LENGTH = 32;
 const DEFAULT_IMPORT_DAILY_BUDGET = 2000;
 
 /** Reads a variable; blank counts as unset, so `PORT=` falls back to the default. */
@@ -162,6 +169,13 @@ function parseOrigins(variable: string, value: string | undefined): string[] {
     }
     return origin;
   });
+}
+
+/** Reads the jobs token. A short one is a start-up error, not a weak lock found later. */
+function parseJobsToken(value: string | undefined): string | null {
+  if (value === undefined) return null;
+  if (value.length < MIN_JOBS_TOKEN_LENGTH) throw new ApiConfigError('KC_JOBS_TOKEN', `must be at least ${MIN_JOBS_TOKEN_LENGTH} characters`);
+  return value;
 }
 
 /** One variable per payment provider: `PAYMENTS_WEBHOOK_SECRET_<PROVIDER SLUG IN UPPER CASE>`. */
@@ -254,6 +268,7 @@ export function loadApiConfig(env: Readonly<Record<string, string | undefined>>)
       0,
       100_000,
     ),
+    jobsToken: parseJobsToken(readVariable(env, 'KC_JOBS_TOKEN')),
     translationProvider: parseTranslationProvider(readVariable(env, 'KC_TRANSLATION_PROVIDER'), geminiApiKey),
     gemini: { apiKey: geminiApiKey, model: geminiModel },
     postImport: {

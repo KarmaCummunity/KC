@@ -40,6 +40,7 @@ describe('loadApiConfig', () => {
       allowedOrigins: [],
       trustedProxyHops: 0,
       rateLimitPerMinute: 600,
+      jobsToken: null,
       translationProvider: 'googlefree',
       gemini: { apiKey: null, model: 'gemini-2.0-flash' },
       postImport: { dailyBudget: 2000, model: 'gemini-2.0-flash' },
@@ -189,6 +190,13 @@ describe('loadApiConfig', () => {
       revenueCat: { webhookAuth: 'rc-secret', proEntitlementId: 'kc_pro', orgEntitlementId: 'org' },
       paymentWebhookSecrets: { sandbox: 'sandbox-secret', card_com: 'card-secret' },
     });
+  });
+
+  it('reads the jobs token and refuses one that is too short to be a secret', () => {
+    const token = 'j'.repeat(32);
+
+    expect(loadApiConfig({ ...REQUIRED, KC_JOBS_TOKEN: token }).jobsToken).toBe(token);
+    expect(configErrorOf({ KC_JOBS_TOKEN: 'short' }).variable).toBe('KC_JOBS_TOKEN');
   });
 
   it('refuses to start with Gemini selected and no key, or with an unknown provider', () => {

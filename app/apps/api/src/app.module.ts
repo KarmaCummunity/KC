@@ -3,12 +3,14 @@ import { BillingModule } from './modules/billing/billing.module';
 import { HOSTED_PORTS } from './modules/hostedAdapters/hostedPorts';
 import { hostedFunctionSet } from './modules/hostedFunctions/hostedFunctionSet';
 import { IdentityVerificationModule } from './modules/identityVerification/identityVerification.module';
+import { scheduledJobSet } from './modules/scheduledJobs/scheduledJobSet';
 import { SessionModule } from './modules/session/session.module';
 import type { ApiConfig } from './platform/config/apiConfig';
 import { ApiConfigModule } from './platform/config/apiConfig.module';
 import { DatabaseModule, DatabaseProbe } from './platform/database/database.module';
 import { HealthModule } from './platform/health/health.module';
 import { IdentityModule } from './platform/identity/identity.module';
+import { JobsModule } from './platform/jobs/jobs.module';
 import { PortClientsModule } from './platform/ports/portClients.module';
 import { PortGatewayModule } from './platform/ports/portGateway.module';
 import { VisitorCacheModule } from './platform/ports/visitorCache';
@@ -36,6 +38,7 @@ export class AppModule {
         PortClientsModule,
         IdentityVerificationModule.forRoot(),
         BillingModule,
+        JobsModule.forRoot(scheduledJobSet()),
         PortGatewayModule.forRoot(HOSTED_PORTS, hostedFunctionSet()),
       ],
     };

@@ -7,10 +7,12 @@ import { HOSTED_PORTS } from '../../modules/hostedAdapters/hostedPorts';
 import { type HostedFunctionOverrides, hostedFunctionSet } from '../../modules/hostedFunctions/hostedFunctionSet';
 import { IdentityVerificationModule } from '../../modules/identityVerification/identityVerification.module';
 import type { IdentityProvider } from '../../modules/identityVerification/identityProvider';
+import { type ScheduledJobOverrides, scheduledJobSet } from '../../modules/scheduledJobs/scheduledJobSet';
 import type { ApiConfig } from '../../platform/config/apiConfig';
 import { ApiConfigModule } from '../../platform/config/apiConfig.module';
 import { DatabaseModule } from '../../platform/database/database.module';
 import { ACCESS_TOKEN_VERIFIER } from '../../platform/identity/accessTokenVerifier';
+import { JobsModule } from '../../platform/jobs/jobs.module';
 import { PortClientsModule } from '../../platform/ports/portClients.module';
 import { PortGatewayModule } from '../../platform/ports/portGateway.module';
 import { VisitorCache } from '../../platform/ports/visitorCache';
@@ -19,7 +21,7 @@ import { KC_DATABASE_URL } from './kcDatabase';
 import { testConfig } from './testConfig';
 import { createTestIssuer, type TestIssuer } from './testTokens';
 
-/** The real gateway with every hosted port and the webhook routes, on the KC test schema. */
+/** The real gateway with every hosted port, the webhook routes and the jobs route, on the KC test schema. */
 export interface KcGateway {
   readonly app: NestFastifyApplication;
   /** Signs the access tokens the gateway accepts. */
@@ -36,7 +38,7 @@ export interface KcGateway {
  * @param overrides Outbound calls of the hosted functions, the identity provider, and configuration fields.
  */
 export async function startKcGateway(
-  overrides: { functions?: HostedFunctionOverrides; identityProvider?: IdentityProvider; config?: Partial<ApiConfig> } = {},
+  overrides: { functions?: HostedFunctionOverrides; identityProvider?: IdentityProvider; jobs?: ScheduledJobOverrides; config?: Partial<ApiConfig> } = {},
 ): Promise<KcGateway> {
   const issuer = await createTestIssuer();
 
@@ -60,6 +62,7 @@ export async function startKcGateway(
       PortClientsModule,
       IdentityVerificationModule.forRoot({ provider: overrides.identityProvider }),
       BillingModule,
+      JobsModule.forRoot(scheduledJobSet(overrides.jobs)),
       PortGatewayModule.forRoot(HOSTED_PORTS, hostedFunctionSet(overrides.functions)),
     ],
   })

@@ -33,6 +33,8 @@ export async function createApp(rootModule: Type<unknown> | DynamicModule, confi
     logger: false,
     // Webhook routes verify a signature over the body exactly as it was received.
     rawBody: true,
+    // A module that cannot start rejects here, so `main.ts` reports it and exits; the default aborts the process without a word.
+    abortOnError: false,
   });
   if (config.allowedOrigins.length > 0) {
     // Browsers only: lets the web app call the API from its own origin, and no other site.
