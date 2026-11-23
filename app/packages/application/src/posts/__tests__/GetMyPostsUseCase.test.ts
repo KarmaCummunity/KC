@@ -52,10 +52,14 @@ describe('GetMyPostsUseCase', () => {
     expect(repo.lastGetMyPostsArgs?.limit).toBe(20);
   });
 
-  it('rejects empty status array (RLS would return [] anyway, but spell it out)', async () => {
+  it('rejects empty status array with typed PostError (message preserved)', async () => {
     const repo = new FakePostRepository();
     const uc = new GetMyPostsUseCase(repo);
-    await expect(uc.execute({ userId: 'u_1', status: [] })).rejects.toThrow(/status/);
+    await expect(uc.execute({ userId: 'u_1', status: [] })).rejects.toMatchObject({
+      name: 'PostError',
+      code: 'forbidden',
+      message: 'GetMyPostsUseCase: status must include at least one value',
+    });
   });
 
   it('forwards nextCursor from the repo (audit §3.10)', async () => {
