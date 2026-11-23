@@ -41,6 +41,7 @@ describe('loadApiConfig', () => {
       trustedProxyHops: 0,
       rateLimitPerMinute: 600,
       jobsToken: null,
+      expoAccessToken: null,
       translationProvider: 'googlefree',
       gemini: { apiKey: null, model: 'gemini-2.0-flash' },
       postImport: { dailyBudget: 2000, model: 'gemini-2.0-flash' },

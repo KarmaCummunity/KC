@@ -1,8 +1,9 @@
 import 'reflect-metadata';
-import { type IPostRepository, newPostInput } from '@kc/application';
+import { type IPostRepository, type IUserRepository, newPostInput } from '@kc/application';
 import type { Address } from '@kc/domain';
 import { createPortTransport, createRemotePort } from '@kc/infrastructure-api';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import type { ProviderMessage, PushTransport } from '../../modules/notifications/pushTypes';
 import { KC_DATABASE_URL, KcTestDatabase } from '../support/kcDatabase';
 import { type KcGateway, startKcGateway } from '../support/kcGateway';
 
@@ -14,6 +15,15 @@ const JOBS_TOKEN = 'integration-jobs-token-0123456789abcdef';
  */
 describe.skipIf(!KC_DATABASE_URL)('Scheduled jobs on the KC schema', () => {
   const database = new KcTestDatabase();
+  /** Stands in for the Expo push service: accepts every message and records it. */
+  const pushed: ProviderMessage[] = [];
+  const pushTransport: PushTransport = {
+    send: (messages) => {
+      pushed.push(...messages);
+      return Promise.resolve(messages.map((_message, index) => ({ status: 'ok' as const, id: `ticket-${pushed.length}-${index}` })));
+    },
+    getReceipts: () => Promise.resolve({}),
+  };
   let gateway: KcGateway;
   let baseUrl: string;
 
@@ -33,7 +43,7 @@ describe.skipIf(!KC_DATABASE_URL)('Scheduled jobs on the KC schema', () => {
   };
 
   beforeAll(async () => {
-    gateway = await startKcGateway({ config: { jobsToken: JOBS_TOKEN } });
+    gateway = await startKcGateway({ jobs: { pushTransport }, config: { jobsToken: JOBS_TOKEN } });
     baseUrl = await gateway.listen();
   });
 
@@ -74,6 +84,32 @@ describe.skipIf(!KC_DATABASE_URL)('Scheduled jobs on the KC schema', () => {
 
     expect(processed).toBeGreaterThan(0);
     expect(stored.rows).toEqual([{ dims: 1536 }]);
+  });
+
+  it('turns a follow into an inbox notification and one push to the followed member\'s device, with no token in the report', async () => {
+    const follower = await database.newMember();
+    const followed = await database.newMember();
+    const token = `ExponentPushToken[integration-${followed.userId}]`;
+    await database.admin.query("insert into public.user_devices (user_id, platform, push_token) values ($1, 'android', $2)", [followed.userId, token]);
+    const users = createRemotePort<IUserRepository>(createPortTransport({ baseUrl, getAccessToken: () => gateway.issuer.sign(follower.userId) }), 'user');
+    await users.follow(follower.userId, followed.userId);
+    pushed.length = 0;
+
+    const response = await runJob('dispatch-notification');
+    const again = await runJob('dispatch-notification');
+    const inbox = await database.admin.query<{ kind: string }>('select kind from public.notifications where user_id = $1', [followed.userId]);
+    const toFollowed = pushed.filter((message) => message.to === token);
+
+    expect(response.statusCode).toBe(200);
+    expect(inbox.rows).toEqual([{ kind: 'follow_started' }]);
+    // One push, rendered on the server: the follower's name as the title, the kind's text as the body.
+    // The second run has nothing left to send.
+    expect(toFollowed).toHaveLength(1);
+    expect(toFollowed[0]).toMatchObject({ platform: 'android', channelId: 'social' });
+    expect(toFollowed[0]?.title).toBe(follower.displayName);
+    expect(toFollowed[0]?.body).toMatch(/\S/);
+    expect(again.json().sent).toBe(0);
+    expect(response.body).not.toContain('ExponentPushToken');
   });
 
   it('runs the charge of due standing orders and the match re-rank, which have nothing to do here', async () => {

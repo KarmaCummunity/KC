@@ -50,6 +50,9 @@ const SKIP_HEBREW_SCAN_EXACT_RELS = new Set([
   // Offer / request cue words of the external post import: matching data, not UI copy
   // (the Edge Function kept the same list under supabase/functions, which is skipped).
   "app/apps/api/src/modules/postImport/directionCues.ts",
+  // Generated copy of the Hebrew notification texts (scripts/generate-notification-kinds.mjs):
+  // the API's push worker renders push text from the same strings the app shows.
+  "app/apps/api/src/modules/notifications/strings.he.generated.json",
   // PWA manifest: the `name`/`short_name` are the localized installed-app label
   // (Hebrew is the MVP locale, R-MVP-Core-4). A static manifest.json cannot hold
   // i18next keys, so its localized name is canonical here, not an inline leak.

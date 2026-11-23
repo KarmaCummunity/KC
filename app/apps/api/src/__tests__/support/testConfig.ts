@@ -24,6 +24,7 @@ export function testConfig(overrides: Partial<ApiConfig> = {}): ApiConfig {
     trustedProxyHops: 0,
     rateLimitPerMinute: 0,
     jobsToken: null,
+    expoAccessToken: null,
     translationProvider: 'googlefree',
     gemini: { apiKey: null, model: 'gemini-test' },
     postImport: { dailyBudget: 2000, model: 'gemini-test' },

@@ -36,6 +36,8 @@ export interface ApiConfig {
    * A secret. Null: no job can be started over HTTP.
    */
   readonly jobsToken: string | null;
+  /** Access token of the Expo push service, when the Expo project requires one. A secret. */
+  readonly expoAccessToken: string | null;
   /** Who translates member content (FR-TRANSLATE-002). */
   readonly translationProvider: TranslationProviderKind;
   /** Google Gemini: translation when it is the selected provider, and the other AI features as they move here. */
@@ -269,6 +271,7 @@ export function loadApiConfig(env: Readonly<Record<string, string | undefined>>)
       100_000,
     ),
     jobsToken: parseJobsToken(readVariable(env, 'KC_JOBS_TOKEN')),
+    expoAccessToken: readVariable(env, 'EXPO_ACCESS_TOKEN') ?? null,
     translationProvider: parseTranslationProvider(readVariable(env, 'KC_TRANSLATION_PROVIDER'), geminiApiKey),
     gemini: { apiKey: geminiApiKey, model: geminiModel },
     postImport: {
