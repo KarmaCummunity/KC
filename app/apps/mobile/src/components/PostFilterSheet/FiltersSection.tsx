@@ -22,6 +22,8 @@ export interface FiltersSectionProps {
   readonly itemConditions: readonly ItemCondition[];
   readonly statusFilter: FeedStatusFilter;
   readonly followersOnly: boolean;
+  /** Only posts with a ready photo (#2540); defaults to off. */
+  readonly hasPhotoOnly?: boolean;
   readonly onTypeChange: (t: PostType | null) => void;
   readonly onWorldsChange?: (w: string[]) => void;
   readonly onWorldChange?: (w: string | null) => void;
@@ -30,6 +32,7 @@ export interface FiltersSectionProps {
   readonly onItemConditionsChange: (i: ItemCondition[]) => void;
   readonly onStatusFilterChange: (s: FeedStatusFilter) => void;
   readonly onFollowersOnlyChange: (v: boolean) => void;
+  readonly onHasPhotoOnlyChange?: (v: boolean) => void;
   /** A world screen's sheet: the world is fixed, so its picker is hidden (subcategories stay). */
   readonly hideWorldPicker?: boolean;
 }
@@ -130,6 +133,10 @@ export function FiltersSection(props: FiltersSectionProps) {
     },
   ];
 
+  const photoOptions = [
+    { value: 'photo' as const, label: t('filters.withPhotoOnly'), testID: 'photo-chip-only', accessibilityLabel: t('filters.withPhotoOnlyA11y') },
+  ];
+
   return (
     <>
       <FilterSection
@@ -189,6 +196,19 @@ export function FiltersSection(props: FiltersSectionProps) {
         onChange={(v) => props.onFollowersOnlyChange(v === 'followers')}
         testID="filters-source"
       />
+
+      {props.onHasPhotoOnlyChange ? (
+        // A multi-select row of one chip is the kit's toggle: tapping it again clears it.
+        <FilterSection<'photo'>
+          title={t('filters.sectionPhoto')}
+          multiSelect
+          showAllChip={false}
+          options={photoOptions}
+          value={props.hasPhotoOnly ? ['photo'] : []}
+          onChange={(next) => props.onHasPhotoOnlyChange?.(next.includes('photo'))}
+          testID="filters-photo"
+        />
+      ) : null}
     </>
   );
 }

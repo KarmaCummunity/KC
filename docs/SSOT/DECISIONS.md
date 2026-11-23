@@ -2075,6 +2075,16 @@ The Demo data screen keeps two failures apart: the RPC itself is missing (`not_i
 
 **Affected.** `supabase/seed/dev-tuning/`, `supabase/tests/128_dev_tuning.sql`, `.github/workflows/deploy-db.yml`, `docs/agents/DEPLOY.md`.
 
+## D-244 — Post photos are sanitized by a structural rewrite, not a re-encode (2026-11-21)
+
+**Decision.** `process-post-media` (KC#2316) makes the copy other members see by parsing the upload fail-closed and rebuilding it from the parts an image needs: for JPEG the tables, the one 8-bit frame, the scans and EOI, plus the ICC profile and Adobe's colour flag; for PNG the image and rendering chunks with their CRCs checked. Every metadata segment is dropped; the EXIF orientation is carried over as a single tag. A file with unknown parts, a second frame, an unsupported coding or bytes after its end is refused. The copy keeps the upload's type and pixel size within the worker's caps (4096 px per edge, 16.8 MP). The worker starts from the database: a debounced kick when a photo is queued, and a minute job as the safety net.
+
+**Why.** A pixel decode and re-encode in the Edge runtime (Jimp) measured ≈ 1.7 s of CPU for a 2048 × 1536 upload, too close to the per-request CPU limit for a production path; the structural rewrite takes milliseconds and about twice the file in memory. The app already re-encodes on the device, so the server's job is that what others receive is exactly an image with no metadata (`FR-POST-005` AC4, `NFR-PRIV-002`). Rejected: a re-encode with a lower pixel cap (still CPU-bound, and it would fail ordinary photos); paid Storage image transformations (cost, and they do not strip the stored original).
+
+**Trade-off.** The entropy-coded image data is passed through as uploaded, not regenerated; viewers' decoders see the uploader's encoding. Resized server derivatives (`FR-POST-005` AC3) are a separate gap.
+
+**Affected.** `supabase/functions/process-post-media/`, migration `*_post_media_processing_activation.sql`, `supabase/tests/132_post_media_processing_activation.sql`, `docs/SSOT/OPERATOR_RUNBOOK.md` "Post photo derivatives".
+
 ## {{ENG:backend-platform-off-supabase}} — KC leaves Supabase for an owned NestJS API on Google Cloud, in phases (2026-11-21)
 
 **Decision.** KC's backend becomes a modular monolith KC owns: one NestJS application (`app/apps/api`, one module per bounded context) on Cloud Run, Cloud SQL for PostgreSQL, Redis, Cloud Storage with a CDN and a video pipeline, queue workers in place of Edge Functions, and its own identity module. Final region `me-west1`. The move is a strangler: the API is added in front of the existing database and runs each request under the caller's identity, so RLS and the existing SQL functions keep working unchanged; the app switches from the Supabase adapter to a new `@kc/infrastructure-api` adapter one port at a time, behind a flag, when the port's contract suite (`D-204`) passes on both; the database itself moves last, in one rehearsed step. Eleven phases, each with an automated exit criterion, in [ADR-009](../architecture/adr/ADR-009-backend-platform.md). Supersedes `D-2`.

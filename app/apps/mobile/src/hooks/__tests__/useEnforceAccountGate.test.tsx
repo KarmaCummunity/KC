@@ -1,9 +1,11 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
-const m = vi.hoisted(() => ({ gate: vi.fn(), replace: vi.fn(), forbidden: vi.fn(), setSuspension: vi.fn(), signOut: vi.fn(), fullSignOut: vi.fn(), clear: vi.fn(), invalidate: vi.fn(), subscribe: vi.fn(), unsubscribe: vi.fn() }));
-vi.mock('expo-router', () => ({ useRouter: () => ({ replace: m.replace }) }));
-vi.mock('@tanstack/react-query', () => ({ useQueryClient: () => ({ clear: m.clear, invalidateQueries: m.invalidate }) }));
+const m = vi.hoisted(() => ({ gate: vi.fn(), replace: vi.fn(), forbidden: vi.fn(), setSuspension: vi.fn(), signOut: vi.fn(), fullSignOut: vi.fn(), clear: vi.fn(), invalidate: vi.fn(), subscribe: vi.fn(), unsubscribe: vi.fn(), pathname: '/' }));
+const router = { replace: (...a: unknown[]) => m.replace(...a) };
+const client = { clear: (...a: unknown[]) => m.clear(...a), invalidateQueries: (...a: unknown[]) => m.invalidate(...a) };
+vi.mock('expo-router', () => ({ useRouter: () => router, usePathname: () => m.pathname }));
+vi.mock('@tanstack/react-query', () => ({ useQueryClient: () => client }));
 vi.mock('../../services/userRealtimeComposition', () => ({ getUserRealtime: () => ({ subscribeToAccount: m.subscribe }) }));
 vi.mock('../..//lib/container', () => ({ container: { checkAccountGate: { execute: m.gate }, deviceRepo: {} } }));
 vi.mock('../../store/authStore', () => ({ useAuthStore: (sel: (state: { signOut: typeof m.signOut }) => unknown) => sel({ signOut: m.signOut }) }));
@@ -11,8 +13,9 @@ vi.mock('../../store/suspensionStore', () => ({ useSuspensionStore: { getState: 
 vi.mock('@kc/infrastructure-supabase', () => ({ setOnForbiddenCallback: m.forbidden }));
 vi.mock('../../services/performFullSignOut', () => ({ performFullSignOut: m.fullSignOut }));
 import { useEnforceAccountGate } from '../useEnforceAccountGate';
+import { pauseRestoreRouting } from '../../lib/moderation/restoreRoutingPause';
 describe('useEnforceAccountGate', () => {
-  beforeEach(() => { vi.clearAllMocks(); m.subscribe.mockReturnValue(m.unsubscribe); });
+  beforeEach(() => { vi.useRealTimers(); vi.clearAllMocks(); m.subscribe.mockReturnValue(m.unsubscribe); m.pathname = '/'; pauseRestoreRouting(0); });
   it('publishes suspension state while keeping the session active', async () => {
     m.gate.mockResolvedValue({ allowed: false, reason: 'suspended_admin', until: 'soon' });
     renderHook(() => useEnforceAccountGate('u1'));
@@ -42,13 +45,33 @@ describe('useEnforceAccountGate', () => {
   it('routes a deleted account to the restore screen once, without signing out (FR-AUTH-016)', async () => {
     vi.useFakeTimers();
     m.gate.mockResolvedValue({ allowed: false, reason: 'pending_deletion', until: '2026-12-03T00:00:00Z' });
-    renderHook(() => useEnforceAccountGate('u3'));
+    const { rerender } = renderHook(() => useEnforceAccountGate('u3'));
     await vi.waitFor(() => expect(m.replace).toHaveBeenCalledWith({ pathname: '/restore-account', params: { until: '2026-12-03T00:00:00Z' } }));
     expect(m.fullSignOut).not.toHaveBeenCalled();
+    m.pathname = '/restore-account'; rerender();
     await vi.advanceTimersByTimeAsync(60_000);
     expect(m.gate).toHaveBeenCalledTimes(2);
     expect(m.replace).toHaveBeenCalledTimes(1);
+    m.pathname = '/settings'; rerender();
+    expect(m.replace).toHaveBeenCalledTimes(1); // reached once: leaving it is the member's choice
     vi.useRealTimers();
+  });
+  it('re-routes to the restore screen when another redirect lands on top before it is reached', async () => {
+    m.gate.mockResolvedValue({ allowed: false, reason: 'pending_deletion', until: 'u' });
+    const { rerender } = renderHook(() => useEnforceAccountGate('u3'));
+    await waitFor(() => expect(m.replace).toHaveBeenCalledTimes(1));
+    m.pathname = '/feed'; rerender(); // the auth gate's post-sign-in redirect to the tabs won the race
+    expect(m.replace).toHaveBeenCalledTimes(2);
+    expect(m.replace).toHaveBeenLastCalledWith({ pathname: '/restore-account', params: { until: 'u' } });
+  });
+  it('does not replace the deletion confirmation while Settings holds the routing', async () => {
+    pauseRestoreRouting(10_000);
+    m.gate.mockResolvedValue({ allowed: false, reason: 'pending_deletion', until: 'u' });
+    renderHook(() => useEnforceAccountGate('u3'));
+    await waitFor(() => expect(m.gate).toHaveBeenCalledTimes(1));
+    await Promise.resolve();
+    expect(m.replace).not.toHaveBeenCalled();
+    expect(m.fullSignOut).not.toHaveBeenCalled();
   });
   it('retries after gate failures and removes callback on unmount', async () => {
     vi.useFakeTimers(); m.gate.mockRejectedValueOnce(new Error('offline')).mockResolvedValue({ allowed: true });

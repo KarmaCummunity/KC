@@ -21,6 +21,7 @@ export function worldPostFilterDefaults(worldSlug: string): PostFilterValue {
     proximitySortCity: null,
     proximitySortCityName: null,
     followersOnly: false,
+    hasPhotoOnly: false,
     searchQuery: '',
   };
 }
@@ -37,6 +38,7 @@ export function countWorldPostFilters(v: PostFilterValue): number {
     v.sortOrder !== 'newest',
     v.proximitySortCity !== null,
     v.followersOnly,
+    v.hasPhotoOnly === true,
     v.searchQuery.trim().length >= MIN_SEARCH_LENGTH,
   ];
   return active.filter(Boolean).length;
@@ -56,6 +58,7 @@ export function worldFeedFilter(worldSlug: string, v: PostFilterValue): PostFeed
     sortOrder: v.sortOrder,
     proximitySortCity: v.proximitySortCity ?? undefined,
     followersOnly: v.followersOnly,
+    hasPhotoOnly: v.hasPhotoOnly === true ? true : undefined,
     searchQuery: query.length >= MIN_SEARCH_LENGTH ? query : undefined,
   };
 }

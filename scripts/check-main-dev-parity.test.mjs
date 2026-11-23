@@ -1,7 +1,15 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { classify, devHeadFromMessage, globToRegExp, parseAllowlist, RELEASE_SUBJECT } from './check-main-dev-parity.mjs';
+import {
+  classify,
+  devHeadByTree,
+  devHeadFromMessage,
+  globToRegExp,
+  parseAllowlist,
+  RELEASE_SUBJECT,
+  splitAlreadyOnDev,
+} from './check-main-dev-parity.mjs';
 
 const SHA = '37caaa28071e21fd7931c93ed0c77d2b91c4eae7';
 
@@ -14,6 +22,35 @@ test('devHeadFromMessage ignores other commits and short SHAs', () => {
   assert.equal(devHeadFromMessage(`fix: x\n\ndev head ${SHA}`), null);
   assert.equal(devHeadFromMessage(`${RELEASE_SUBJECT} (#1)\n\ndev head 37caaa28`), null);
   assert.equal(devHeadFromMessage(undefined), null);
+});
+
+test('a release squashed by hand has no dev head line (v1.9.176, #2404)', () => {
+  assert.equal(devHeadFromMessage(`${RELEASE_SUBJECT} (v1.9.176) (#2404)\n`), null);
+});
+
+test('devHeadByTree finds the newest dev commit with the release tree', () => {
+  const TREE = 'b3ad0c1d214f2ab011e146f48950feb4a7967887';
+  const log = [
+    `${'1'.repeat(40)} ${'f'.repeat(40)}`,
+    `${'2'.repeat(40)} ${TREE}`,
+    `${'3'.repeat(40)} ${TREE}`,
+    '',
+  ];
+  assert.equal(devHeadByTree(TREE, log), '2'.repeat(40));
+  assert.equal(devHeadByTree('e'.repeat(40), log), null);
+  assert.equal(devHeadByTree(TREE, []), null);
+});
+
+test('splitAlreadyOnDev keeps content that never reached dev as drift', () => {
+  const drift = [
+    { status: 'M', path: 'supabase/functions/a/index.ts' },
+    { status: 'M', path: '.github/workflows/deploy-db.yml' },
+  ];
+  const reached = new Set(['supabase/functions/a/index.ts']);
+  const out = splitAlreadyOnDev(drift, (p) => reached.has(p));
+  assert.deepEqual(out.onDev.map((d) => d.path), ['supabase/functions/a/index.ts']);
+  assert.deepEqual(out.drift.map((d) => d.path), ['.github/workflows/deploy-db.yml']);
+  assert.deepEqual(splitAlreadyOnDev(drift, () => false).drift, drift);
 });
 
 test('globToRegExp: * stays in a segment, ** crosses, dots are literal', () => {

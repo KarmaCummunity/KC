@@ -29,6 +29,12 @@ interface BaseSpec {
   readonly key: string;
   readonly required?: boolean;
   readonly visibleWhen?: VisibleWhen;
+  /**
+   * Static RN testID of the field's text/amount input, for the Maestro device flows. The flow-id
+   * preflight (scripts/maestro-flows.test.mjs) resolves literals only, so a kind that needs device
+   * coverage declares a literal here; `listing-field-${key}` on the frame is not reachable by it.
+   */
+  readonly testID?: string;
 }
 
 export type ListingFieldSpec =

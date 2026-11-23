@@ -24,6 +24,11 @@ export async function sessionFor(user: { email: string; password: string }): Pro
   return fresh;
 }
 
+/** Drop a cached password session so the next call signs in again (e.g. after account restore). */
+export function forgetSession(email: string): void {
+  sessions.delete(email);
+}
+
 /** Authenticated PostgREST call as the given user. Throws with the server message on error. */
 export async function rest<T = unknown>(
   accessToken: string,

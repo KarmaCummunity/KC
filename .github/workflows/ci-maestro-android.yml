@@ -48,8 +48,11 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Unit-test the E2E helpers and the flow ↔ testID contract
-        run: node --test scripts/maestro-dev-env.test.mjs scripts/maestro-flows.test.mjs
+      - name: Install pinned guard-script dependencies
+        run: npm ci --prefix scripts --ignore-scripts --no-audit --no-fund
+
+      - name: Unit-test the E2E helpers, native captures and flow ↔ testID contract
+        run: node --test scripts/maestro-dev-env.test.mjs scripts/maestro-flows.test.mjs scripts/native-capture-safety.test.mjs scripts/native-success-captures.test.mjs scripts/native-capture-media.test.mjs scripts/native-capture-precedence.test.mjs
 
       - name: Resolve kc-dev environment (public anon key + seed password)
         env:
@@ -161,8 +164,16 @@ jobs:
           # One command: the action runs each script line in its own shell.
           script: bash scripts/maestro-run-android.sh "$E2E_APK" "$RUNNER_TEMP/maestro"
 
-      - name: Upload Maestro reports, screenshots and failure videos
+      - name: Remove unsafe automatic media from capture flows
+        id: native-capture-privacy
         if: always()
+        run: |
+          for label in 07-create-post-form 07-create-post-form-retry 19-edit-profile-keyboard-toolbar 19-edit-profile-keyboard-toolbar-retry; do
+            node scripts/maestro-native-capture-media.mjs "$RUNNER_TEMP/maestro" "$label"
+          done
+
+      - name: Upload Maestro reports, screenshots and failure videos
+        if: always() && steps.native-capture-privacy.outcome == 'success'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: maestro-android

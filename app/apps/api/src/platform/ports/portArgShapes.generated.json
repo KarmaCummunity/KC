@@ -7871,6 +7871,12 @@
       "boolean"
      ]
     },
+    "hasPhotoOnly": {
+     "union": [
+      "undefined",
+      "boolean"
+     ]
+    },
     "searchQuery": {
      "union": [
       "undefined",
@@ -7889,6 +7895,7 @@
     "sortOrder",
     "proximitySortCity",
     "followersOnly",
+    "hasPhotoOnly",
     "searchQuery"
    ]
   },

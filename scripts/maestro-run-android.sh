@@ -14,7 +14,8 @@ OUT_DIR="${2:-maestro-artifacts}"
 DEVICE_VIDEO=/sdcard/kc-e2e.mp4
 : "${KC_E2E_PASSWORD:?KC_E2E_PASSWORD is required (scripts/maestro-dev-env.mjs)}"
 
-mkdir -p "$OUT_DIR/reports" "$OUT_DIR/videos" "$OUT_DIR/debug"
+mkdir -p "$OUT_DIR/reports" "$OUT_DIR/videos" "$OUT_DIR/debug" "$OUT_DIR/captures"
+OUT_DIR="$(cd "$OUT_DIR" && pwd)"
 
 # A cold-booted CI emulator often shows "Pixel Launcher isn't responding" (a system ANR
 # dialog) on top of every app, which hides the app's elements from Maestro. Suppress system
@@ -25,6 +26,10 @@ adb install -r "$APK"
 
 env_args=(-e "KC_E2E_PASSWORD=$KC_E2E_PASSWORD")
 [[ -n "${KC_E2E_EMAIL:-}" ]] && env_args+=(-e "KC_E2E_EMAIL=$KC_E2E_EMAIL")
+# Explicit success images only for the known synthetic default identity, never an override.
+capture_safe=false
+[[ "${KC_E2E_EMAIL:-user1@seed.kc.test}" == 'user1@seed.kc.test' ]] && capture_safe=true
+env_args+=(-e "KC_NATIVE_CAPTURE_SAFE=$capture_safe")
 
 # Runs one flow and screen-records it. $1 flow file, $2 artifact label (the flow name, or `<name>-retry`).
 # The video is kept only when the flow fails. Returns Maestro's exit status.
@@ -38,6 +43,7 @@ run_flow() {
 
   maestro test "$flow" "${env_args[@]}" \
       --format junit --output "$OUT_DIR/reports/$label.xml" \
+      --test-output-dir "$OUT_DIR/captures/$label" \
       --debug-output "$OUT_DIR/debug/$label" || status=$?
 
   # Maestro writes the -e variables, the password included, into commands.json and maestro.log.
@@ -50,6 +56,9 @@ run_flow() {
   if ((status != 0)); then
     sleep 2
     adb pull "$DEVICE_VIDEO" "$OUT_DIR/videos/$label.mp4" || echo "::warning::no video for $label"
+  fi
+  if ! node "$(dirname "$0")/maestro-native-capture-media.mjs" "$OUT_DIR" "$label" "$capture_safe"; then
+    status=1
   fi
   return "$status"
 }
@@ -69,6 +78,12 @@ run_flow() {
 # The flows not run are listed. The gate still fails; nothing is skipped silently.
 max_consecutive="${KC_MAESTRO_MAX_CONSECUTIVE_FAILS:-3}"
 flows=(.maestro/flows/*.yaml)
+# Recovery reuses the already-built APK and the same positive in-app safety markers.
+# No CI lane is silently narrowed: this is an explicit manual capture-only runner option.
+if [[ "${KC_MAESTRO_CAPTURE_ONLY:-false}" == true ]]; then
+  [[ "$capture_safe" == true ]] || { echo "::error::capture-only requires the synthetic default identity"; exit 1; }
+  flows=(.maestro/flows/07-create-post-form.yaml .maestro/flows/19-edit-profile-keyboard-toolbar.yaml)
+fi
 failed=()
 retried=()
 consecutive=0

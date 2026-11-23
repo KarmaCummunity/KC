@@ -2,14 +2,13 @@
 //
 // The declared MIME type and the file name are the uploader's claims. This module trusts only
 // the bytes: the JPEG or PNG signature, then the frame header (JPEG SOFn) or IHDR (PNG) for the
-// pixel size. Decoding allocates width × height × 4 bytes, so the size is capped HERE, before a
-// decoder ever sees the file: a few-KB file that declares 30000 × 30000 px (a decompression bomb)
-// is rejected without being decoded. SVG, HTML or anything else labelled as an image has no
-// signature and is rejected too.
+// pixel size. Every viewer's decoder allocates width × height × 4 bytes, so the size is capped
+// here: a few-KB file that declares 30000 × 30000 px (a decompression bomb) never becomes a copy.
+// SVG, HTML or anything else labelled as an image has no signature and is rejected too.
 
 /** Largest accepted source edge. The app uploads ≤ 2048 px; WhatsApp "HD" photos are ≤ 4096 px. */
 export const MAX_SOURCE_EDGE = 4096;
-/** Largest accepted source area: 16.8 MP ≈ 67 MB of RGBA once decoded (assumed to fit the worker; not measured on Supabase). */
+/** Largest accepted source area: 16.8 MP ≈ 67 MB of RGBA in a viewer's decoder. */
 export const MAX_SOURCE_PIXELS = 4096 * 4096;
 /** The bucket's own per-object limit (`post-images`, 8 MiB). */
 export const MAX_SOURCE_BYTES = 8 * 1024 * 1024;
@@ -24,7 +23,7 @@ export interface ImageInfo {
 
 /** A file the worker refuses for what it is (never retried). `code` is recorded on the job. */
 export class ImageRejected extends Error {
-  constructor(readonly code: 'not_an_image' | 'no_dimensions' | 'too_many_pixels' | 'too_large') {
+  constructor(readonly code: 'not_an_image' | 'unsupported_format' | 'no_dimensions' | 'too_many_pixels' | 'too_large') {
     super(code);
     this.name = 'ImageRejected';
   }
@@ -69,7 +68,7 @@ export function pngHeaderSize(bytes: Uint8Array): { width: number; height: numbe
   return { width: view.getUint32(16), height: view.getUint32(20) };
 }
 
-/** Pixel caps of a profile (profiles.ts); defaults are the production candidate's. */
+/** Pixel caps of one kind of image (the photo, or its small thumb). */
 export interface SourceCaps {
   readonly maxSourceEdge: number;
   readonly maxSourcePixels: number;
@@ -89,28 +88,4 @@ export function inspectImage(
     throw new ImageRejected('too_many_pixels');
   }
   return { type, ...size };
-}
-
-/**
- * Fail-closed check of a JPEG this worker produced: true only when the header walk reaches the
- * first scan (SOS) and met no segment that can carry metadata (APP1 EXIF/XMP, APP13 IPTC, COM,
- * or any APPn other than JFIF APP0 / ICC APP2 / Adobe APP14). A walk that cannot complete is
- * "not clean".
- */
-export function jpegHeaderIsClean(bytes: Uint8Array): boolean {
-  if (sniffType(bytes) !== 'image/jpeg') return false;
-  let i = 2;
-  while (i + 3 < bytes.length) {
-    if (bytes[i] !== 0xff) return false;
-    const marker = bytes[i + 1];
-    if (marker === 0xff) { i += 1; continue; }
-    if (marker === 0xda) return true; // header complete: what follows is image data
-    if (marker === 0xd9) return false;
-    const isApp = marker >= 0xe0 && marker <= 0xef;
-    if ((isApp && marker !== 0xe0 && marker !== 0xe2 && marker !== 0xee) || marker === 0xfe) return false;
-    const length = (bytes[i + 2] << 8) | bytes[i + 3];
-    if (length < 2 || i + 2 + length > bytes.length) return false;
-    i += 2 + length;
-  }
-  return false;
 }

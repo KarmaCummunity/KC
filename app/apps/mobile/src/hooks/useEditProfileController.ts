@@ -178,6 +178,20 @@ export function useEditProfileController(
       } catch {
         // Onboarding reconcile is best-effort; profile save already succeeded.
       }
+      // The saved values are now the stored ones. Without this, `isDirty` stays true after a
+      // successful save, so once `saving` flips back to false the unsaved-changes guard can
+      // intercept the back navigation below and show its discard dialog.
+      setInitial({
+        displayName: trimmedName,
+        cityId: city.id,
+        cityName: city.name,
+        profileStreet: nextStreet,
+        profileStreetNumber: nextNum,
+        contactPhone: nextPhone,
+        biography: newBio,
+        avatarUrl,
+        dateOfBirth,
+      });
       router.back();
     } catch (err) {
       const code = err instanceof Error ? err.message : t('profile.editScreen.unknownError');
