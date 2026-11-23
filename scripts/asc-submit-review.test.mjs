@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { assertAllowed, client, execute, plan } from './asc-submit-review.mjs';
+import { assertAllowed, client, execute, plan, describeAscErrors } from './asc-submit-review.mjs';
 
 const A = 'https://api.appstoreconnect.apple.com/v1';
 const build = (n, s = 'VALID') => ({ id: `b${n}`, attributes: { version: String(n), processingState: s } });
@@ -94,4 +94,15 @@ test('with no editable version a new MANUAL version is created and submitted', a
   assert.equal(calls[0].body.data.relationships.build.data.id, 'b38');
   assert.ok(calls.some((c) => c.key === 'PATCH /v1/reviewSubmissions/s2' && c.body.data.attributes.submitted === true));
   assert.ok(!logs.join('\n').includes('password'));
+});
+
+test('describeAscErrors surfaces associated errors behind a 409', () => {
+  const body = { errors: [{ code: 'STATE_ERROR.ENTITY_STATE_INVALID', detail: 'This resource cannot be reviewed, please check associated errors to see why.',
+    meta: { associatedErrors: { '/v1/appStoreVersions/1c45': [{ code: 'ENTITY_ERROR.ATTRIBUTE.REQUIRED', detail: 'You must provide a value for the attribute whatsNew' }],
+      '/v1/appScreenshotSets/x': [{ code: 'ENTITY_ERROR', detail: 'x'.repeat(500) }] } } }] };
+  const out = describeAscErrors(body);
+  assert.match(out, /^STATE_ERROR\.ENTITY_STATE_INVALID This resource cannot be reviewed/);
+  assert.match(out, /associated \/appStoreVersions\/1c45: ENTITY_ERROR\.ATTRIBUTE\.REQUIRED You must provide a value for the attribute whatsNew/);
+  for (const part of out.split('; ')) assert.ok(part.length <= 300);
+  assert.equal(describeAscErrors({}), '');
 });
