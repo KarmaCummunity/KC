@@ -76,6 +76,8 @@ export interface IMarketplaceRepository {
       locationDisplayLevel?: LocationDisplayLevel;
       /** Who may see the listing (FR-POST-009: the owner may change it either way at any time). */
       visibility?: PostVisibility;
+      /** The listing's whole gallery, in order; omit to leave the photos untouched (FR-POST-007 AC1). */
+      media?: readonly MediaAssetInput[];
     },
   ): Promise<void>;
   pauseMyListing(listingId: string): Promise<void>;

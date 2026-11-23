@@ -12,7 +12,7 @@ import type { MediaAssetInput } from '@kc/application';
 import { marketplaceRepository } from '../services/marketplaceComposition';
 import { initialDetailsFor, type ListingFieldSpec } from '../lib/unifiedCreate/listingFieldSpecs';
 import { pickRideDetails } from '../lib/unifiedCreate/listingCreateDetails';
-import { listingRepublishSeed, type ListingRepublishSeed } from '../lib/unifiedCreate/listingRepublish';
+import { editGallery, listingRepublishSeed, type ListingRepublishSeed } from '../lib/unifiedCreate/listingRepublish';
 import type { OrgEventChoice } from './useOrgEventChoice';
 
 type City = { id: string; name: string };
@@ -57,6 +57,8 @@ export function useListingFormSource({
   const [seedVersion, setSeedVersion] = useState(0);
   // The source's photos a republish reuses; the member may remove them like picked ones.
   const [carriedMedia, setCarriedMedia] = useState<MediaAssetInput[]>([]);
+  // An edit's gallery as loaded, to tell whether the owner changed it (FR-POST-007 AC1).
+  const [loadedMedia, setLoadedMedia] = useState<MediaAssetInput[]>([]);
   const { setWantsOrgEvent, setWantsPersonalEvent, setOrgId } = eventChoice;
   const kindSlug = kind?.slug ?? null;
 
@@ -88,6 +90,9 @@ export function useListingFormSource({
     setError(null);
     if (editListingId) {
       setDetails({ ...detail.details });
+      const gallery = editGallery(detail.media);
+      setLoadedMedia(gallery);
+      setCarriedMedia(gallery);
       return;
     }
     const seed = listingRepublishSeed(detail);
@@ -109,6 +114,8 @@ export function useListingFormSource({
     detail: sourceQuery.data ?? undefined,
     sourceId,
     carriedMedia,
+    /** An edit's photos as loaded (empty outside an edit). */
+    loadedMedia,
     removeCarriedMedia: (path: string) => setCarriedMedia((prev) => prev.filter((m) => m.path !== path)),
   };
 }

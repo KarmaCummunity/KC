@@ -9,6 +9,7 @@ import type { IMarketplaceRepository, MediaAssetInput } from '@kc/application';
 import type { Database, Json } from '../database.types';
 import { unwrapCall } from '../rpc/mapRpcError';
 import { sessionUserId } from '../users/userReads';
+import { replacePostMedia } from '../posts/postMediaWrites';
 import { recordPhotos } from './listingWrites';
 import { eventDetailColumns, foodDetailColumns, freeDetails, rideCityId, rideDetailColumns } from './worldDetails';
 
@@ -80,6 +81,8 @@ export async function updateMyListing(client: Client, listingId: string, patch: 
     const rows = unwrapCall('table:posts', await client.from('posts').update(post).eq('id', listingId).select('id'));
     if (!rows || rows.length === 0) throw new BackendRuleError('listing_wrong_status', 'table:posts');
   }
+  // The whole gallery in one transaction; the server refuses to leave a live offer without a photo.
+  if (patch.media !== undefined) await replacePostMedia(client, listingId, patch.media);
   if (patch.details === undefined) return;
   if (world === 'rides') {
     const columns = rideDetailColumns(form, shape.direction === 'request' ? 'request' : 'offer');
