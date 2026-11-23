@@ -24,6 +24,8 @@ Tracking issue: KC#1235. Workflow: [`ci-maestro-android.yml`](../../.github/work
 | `18-org-event-create-and-register` | time offer form: an organization member's event choice and fields, the unchanged shift form otherwise (no seeded membership or event yet, see the flow header) | `docs/spec/08` Events, FR-POST-001 AC6 |
 | `19-edit-profile-keyboard-toolbar` | edit profile (deep link): focusing the phone field keeps the sticky save button on screen, with the keyboard open and after it closes | FR-RESP-006 AC5 |
 | `20-import-post-kill-switch` | with `external_post_import_enabled` off, the import link opens the plain create form and the form offers no import entry | FR-IMPORT-001 AC4 |
+| `21-employment-job-offer-form` | employment job offer: the role/scope/requirements/salary fields render, title and role are required, and the publish stops at the organization gate (no eligible org seeded, so no publish, salary validation and cards stay unit-covered, see the flow header) | spec 05 §5.11, #2278, #2537, #1476 |
+| `22-edit-profile-save-persistence` | edit profile: editing the phone and tapping Save persists it to kc-dev; reopening shows the saved value | FR-PROFILE-007 |
 
 `.maestro/subflows/` holds the shared steps (`sign-in`, `open-email-sign-in`, `dismiss-gates`); `config.yaml` runs only `flows/`.
 

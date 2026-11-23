@@ -85,13 +85,13 @@ export function FormScreen({
 
   return (
     <Root {...rootProps}>
-      <FormScope>
-        <JumpOnSignal signal={jumpToProblemSignal} />
-        <KeyboardAvoidingView
-          style={styles.fill}
-          behavior={resolveKeyboardAvoidingBehavior(Platform.OS)}
-          keyboardVerticalOffset={keyboardOffset}
-        >
+      <KeyboardAvoidingView
+        style={styles.fill}
+        behavior={resolveKeyboardAvoidingBehavior(Platform.OS)}
+        keyboardVerticalOffset={keyboardOffset}
+      >
+        <FormScope>
+          <JumpOnSignal signal={jumpToProblemSignal} />
           <View style={styles.fill}>
             <FormScopeScrollView
               style={styles.fill}
@@ -109,8 +109,8 @@ export function FormScreen({
               </View>
             ) : null}
           </View>
-        </KeyboardAvoidingView>
-      </FormScope>
+        </FormScope>
+      </KeyboardAvoidingView>
     </Root>
   );
 }

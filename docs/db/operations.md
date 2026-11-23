@@ -79,7 +79,7 @@ Schedules are UTC. Every job is cancelled at its `timeout` and recorded as faile
 | `lift_expired_suspensions` | every 15 min | suspensions whose period ended |
 | `posts_purge` | 04:00 | hard delete of deleted posts past the 7-day grace period |
 | `partitions_ensure` | 03:05 | this and next month's partitions |
-| `retention_*` (7 jobs) | hourly / daily | §4 |
+| `retention_*` (incl. `retention_user_devices`) | hourly / daily | §4 |
 | `user_stats_reconcile`, `post_stats_reconcile` | 01:15, 01:45 | recompute counters, record drift |
 
 Add a job: one row in `supabase/schemas/95_platform/900_job_registry.sql` (a migration after
@@ -117,6 +117,7 @@ asks `kc_access.flag_enabled('<key>')` (a missing flag is off).
 | `job_runs`, `ops_warnings`, `counter_drift` | 30 / 30 / 90 days | job `retention_ops` |
 | `rate_limit_counters` | 1 hour after expiry | job `retention_rate_limits` |
 | `cron_run_history` | 7 days | job `retention_cron_history` |
+| `user_devices` | 90 days after `last_seen_at` | job `retention_user_devices` (FR-NOTIF-015 AC4 / `bg-job-token-prune`) |
 | `posts_deleted` | 7 days | deadline stamped at delete; job `posts_purge` |
 | `accounts_pending_deletion` | 30 days | deadline stamped at request; Edge Function `purge-deleted-accounts` |
 | `billing_after_account_deletion` | undecided | nothing is purged (design §12 Q5) |
@@ -137,14 +138,24 @@ project (names only — values are never written in the repository):
 | Vault secret name | Value |
 | --- | --- |
 | `kc_project_url` | the project's API URL |
-| `kc_service_role_key` | the project's service-role key |
+| `kc_service_role_key` | historical caller slot, before `verified_edge_caller` only |
+| `kc_verified_service_role_key` | caller slot after `verified_edge_caller`; never falls back to the historical slot |
 
-```sql
-select vault.create_secret('<value>', 'kc_project_url');
-select vault.create_secret('<value>', 'kc_service_role_key');
-```
+Use the reviewed target-specific Deploy writer, not copied credentials or ad-hoc Vault SQL.
+It retrieves an existing key with explicit reveal, requires two identical reads and an
+Auth-settings 200, then stores it in the verified slot. This does not rotate keys. Provider
+rotation and any PROD action still require their own authority. Missing verified configuration
+records a warning and queues no HTTP call. A default-branch legacy writer can still overwrite
+the obsolete slot without changing the migrated worker's caller.
 
-Rotate the key: `select vault.update_secret(id, '<new value>') from vault.secrets where name = 'kc_service_role_key';`.
+The migration runs before the verified writer. If a DEV push deployment is replaced in normal
+concurrency by an old default-branch wrapper, the new slot may remain missing. Bootstrap only
+through an authorized normal Deploy dispatch on the CI-certified DEV ref, not a reseed, manual
+worker call or direct credential write. Independently check current inventory equality, the
+nonclaiming Auth response and the unchanged registry/cron/kick containment afterward. That is
+configuration proof, not worker or physical-delivery proof. Do not delete the obsolete slot as
+part of this migration. PROD continues using its own ledger and applicable slot until a
+separately approved release changes it.
 Extensions required on the project: `pg_cron`, `pg_net`, `supabase_vault`.
 
 Push latency: an insert of a `notification` outbox event starts `dispatch-notification`

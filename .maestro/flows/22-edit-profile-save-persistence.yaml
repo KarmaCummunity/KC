@@ -1,0 +1,119 @@
+# Spec: FR-PROFILE-007 — edit profile save persists: changing the contact phone and tapping Save
+# writes it to kc-dev, and reopening the screen shows the saved value. Flow 19 covers the
+# keyboard/sticky-CTA layout only; it never edits a field or taps Save, and no other flow does.
+#
+# The phone is the fixture field (its only validation is 1-20 characters). The value TOGGLES
+# between two fixtures (050-1234567 / 050-7654321): the flow reads the current value from the
+# field, stores it and its opposite in Maestro output variables, asserts they differ, and writes
+# the stored opposite — so every run is a real change and the controller's no-change fast path
+# (router.back without a write) can never be taken. After leave/reopen the value is re-read from
+# the SAME field with copyTextFrom and compared to the stored expectation with a strict-equality
+# assertTrue (docs.maestro.dev/reference/commands-available/copytextfrom), not a screen-text
+# search: only the phone input's own content can satisfy it. After the persistence assertion the
+# flow RESTORES the empty seeded baseline and saves again: the seed user is shared across every
+# native run on kc-dev, and flow 19's capture-safe marker requires an empty contact phone, so
+# leaving a fixture value saved breaks later runs (run 44995095437 polluted it to 050-7654321,
+# and the next run's flow 19 failed its capture assert).
+appId: org.karmacommunity.app
+name: Profile — edit profile save persists
+tags: [profile]
+---
+- runFlow: ../subflows/sign-in.yaml
+- openLink: karmacommunity://edit-profile
+- extendedWaitUntil:
+    visible:
+      id: edit-profile-save
+    timeout: 20000
+# The phone field sits below the avatar, name, city and street fields (as in flow 19).
+- scrollUntilVisible:
+    element:
+      id: edit-profile-phone
+    timeout: 15000
+    centerElement: false
+# Read the stored value from the field. An EMPTY Android field returns its placeholder hint
+# ("לדוגמה: 050-1234567") from copyTextFrom, not "", so the hint text is read as the empty
+# baseline (it is also what runs 45029689831 and 45049870244 wrongly saved into the shared seed
+# user, a recognized test leftover). The only starting values accepted are: empty/hint, or one of
+# the two fixtures this flow toggles. Anything else is a fixture mismatch and fails here instead
+# of being silently erased or copied back. The toggle target is stored immediately, so no later
+# step depends on the clipboard surviving navigation.
+- copyTextFrom:
+    id: edit-profile-phone
+- evalScript: ${output.rawStartPhone = maestro.copiedText}
+- assertTrue: '${output.rawStartPhone === "" || output.rawStartPhone === "לדוגמה: 050-1234567" || output.rawStartPhone === "050-1234567" || output.rawStartPhone === "050-7654321"}'
+- evalScript: '${output.startPhone = /^[0-9+-]+$/.test(output.rawStartPhone) ? output.rawStartPhone : ""}'
+- evalScript: '${output.expectedPhone = output.startPhone === "050-1234567" ? "050-7654321" : "050-1234567"}'
+- assertTrue: ${output.startPhone !== output.expectedPhone}
+- tapOn:
+    id: edit-profile-phone
+- eraseText
+- inputText: ${output.expectedPhone}
+- hideKeyboard
+# The save button sits at the bottom edge, above the floating tab bar once settled. Wait for the
+# keyboard-hide layout to settle before tapping. This is a precaution, not a proven fix: in runs
+# 45029689831 and 45049870244 an unsaved-changes dialog appeared on a first attempt (the second,
+# restore save in the latter) and the cause is unproven.
+- waitForAnimationToEnd:
+    timeout: 5000
+- tapOn:
+    id: edit-profile-save
+# A successful save navigates back to the feed; a failure stays on the form behind a NotifyModal.
+- extendedWaitUntil:
+    visible:
+      id: feed-screen
+    timeout: 30000
+# Reopen: the form reloads the profile (getEditableProfile), so the same field must now hold the
+# value this run wrote.
+- openLink: karmacommunity://edit-profile
+- extendedWaitUntil:
+    visible:
+      id: edit-profile-save
+    timeout: 20000
+- scrollUntilVisible:
+    element:
+      id: edit-profile-phone
+    timeout: 15000
+    centerElement: false
+- copyTextFrom:
+    id: edit-profile-phone
+- evalScript: ${output.reopenedPhone = maestro.copiedText}
+- assertTrue: ${output.reopenedPhone === output.expectedPhone}
+# Restore the seeded baseline: the seed user's contact phone is EMPTY by contract (flow 19's
+# capture-safe marker requires it), so the restore always ends on an empty field, which saves as
+# null. This also makes a retry after a half-run safe: a leftover fixture value is cleared rather
+# than copied back as the "original". The field holds expectedPhone here, so clearing it is a real
+# change and never the no-change fast path.
+- tapOn:
+    id: edit-profile-phone
+- eraseText
+- hideKeyboard
+# Same settle as above before the bottom-edge save tap.
+- waitForAnimationToEnd:
+    timeout: 5000
+- tapOn:
+    id: edit-profile-save
+- extendedWaitUntil:
+    visible:
+      id: feed-screen
+    timeout: 30000
+# Prove the restore persisted: reopen and require the app's own seeded-baseline marker. The
+# marker (native-profile-capture-safe, edit-profile.tsx via safeNativeProfile) renders only when
+# the loaded form's contact phone is exactly empty (plus the other seeded fields), which the
+# copied text cannot show because an empty field and a saved hint look identical. Navigation to
+# the feed and the placeholder text are NOT evidence of an empty stored value.
+- openLink: karmacommunity://edit-profile
+- extendedWaitUntil:
+    visible:
+      id: edit-profile-save
+    timeout: 20000
+# The marker wraps the phone field, which sits below the fold on this screen (v3 retry frame), so
+# scroll it into view first. Assertion below stays strict.
+- scrollUntilVisible:
+    element:
+      id: edit-profile-phone
+    timeout: 15000
+    centerElement: false
+- extendedWaitUntil:
+    visible:
+      id: native-profile-capture-safe
+    timeout: 20000

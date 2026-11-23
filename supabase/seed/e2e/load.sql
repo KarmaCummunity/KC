@@ -1,10 +1,11 @@
 -- E2E test members for kc-dev: user1 … user4 @seed.kc.test (tests/e2e). DEV ONLY.
 --
 -- The nightly browser suite signs in as user1 and user2 and blocks user3; user4 is the spare
--- for the opt-in account-deletion journey. They are ordinary members created the way the auth
--- service creates them: an `auth.users` row plus its email identity; the baseline trigger
--- builds the member rows and the confirmed email makes the account active. No posts, follows
--- or chats are created: the suite makes its own rows (`[e2e <timestamp>] …`).
+-- for the account-deletion restore journey (and write-rate-limits / media acceptance: the suite
+-- is single-worker; deletion restores before it ends). They are ordinary members created the
+-- way the auth service creates them: an `auth.users` row plus its email identity; the baseline
+-- trigger builds the member rows and the confirmed email makes the account active. No posts,
+-- follows or chats are created: the suite makes its own rows (`[e2e <timestamp>] …`).
 --
 -- Session settings the caller must set first (the Seed KC dev workflow does):
 --   kc.seed_target   = 'dev'

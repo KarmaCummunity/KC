@@ -29,12 +29,15 @@ export function NotificationsBridge(): null {
 
   useEffect(() => {
     if (!userId) return undefined;
-    const deps = { deviceRepo: container.deviceRepo };
+    let active = true;
+    const deps = { deviceRepo: container.deviceRepo, isCurrent: () => active };
     registerCurrentDeviceIfPermitted(userId, deps).catch(console.error);
     // Token rotation and long-running sessions both re-register, so last_seen_at stays fresh.
     const stopTokenWatch = watchPushTokenRefresh(userId, deps);
     const stopDailyRefresh = watchDailyDeviceRefresh(userId, deps);
     return () => {
+      // A registration still in flight must not write once the member changed or signed out.
+      active = false;
       stopTokenWatch();
       stopDailyRefresh();
     };

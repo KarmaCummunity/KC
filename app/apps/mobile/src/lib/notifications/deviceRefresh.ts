@@ -22,7 +22,8 @@ export function isDeviceRefreshDue(lastRefreshAt: number, now: number): boolean 
  */
 export function watchDailyDeviceRefresh(
   userId: string,
-  deps: { deviceRepo: IDeviceRepository },
+  // `isCurrent` lets the caller drop a refresh that outlived its session (see register.ts).
+  deps: { deviceRepo: IDeviceRepository; isCurrent?: () => boolean },
   now: () => number = Date.now,
 ): () => void {
   let lastRefreshAt = now();

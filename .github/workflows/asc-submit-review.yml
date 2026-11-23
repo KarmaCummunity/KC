@@ -1,0 +1,67 @@
+# App Store review submission of one processed PROD iOS build (issue #2613).
+# Manual only, on main only. `plan` is read-only; `submit` attaches the VALID
+# build to the App Store version with release type MANUAL (never auto-release),
+# sets the review notes from docs/store/app-review-notes.md and submits for
+# App Review. No TestFlight group or tester change. Secrets by name only.
+# Fail-closed: one in-flight version at most, only submissions holding that
+# version, and a waiting review is cancelled only when cancel_submission names
+# it (read it from a plan run first).
+name: ASC submit for review
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: plan (read-only) or submit
+        required: true
+        type: choice
+        options: [plan, submit]
+        default: plan
+      version:
+        description: Marketing version of the build, e.g. 1.9.288
+        required: true
+        type: string
+      build_number:
+        description: iOS build number (CFBundleVersion), e.g. 38
+        required: true
+        type: string
+      cancel_submission:
+        description: Only to replace a waiting review. The exact review submission id the plan run printed under "submit needs"
+        required: false
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  submit:
+    name: ASC review submission (${{ inputs.mode }})
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: mobile-store
+    concurrency:
+      group: asc-submit-review
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version-file: .nvmrc
+
+      - name: Plan or submit
+        env:
+          ASC_MODE: ${{ inputs.mode }}
+          ASC_VERSION: ${{ inputs.version }}
+          ASC_BUILD_NUMBER: ${{ inputs.build_number }}
+          ASC_CANCEL_SUBMISSION: ${{ inputs.cancel_submission }}
+          ASC_NOTES_FILE: docs/store/app-review-notes.md
+          ASC_API_KEY_P8: ${{ secrets.ASC_API_KEY_P8 }}
+          ASC_API_KEY_ID: ${{ secrets.ASC_API_KEY_ID }}
+          ASC_API_KEY_ISSUER_ID: ${{ secrets.ASC_API_KEY_ISSUER_ID }}
+          KC_ASC_APP_ID: ${{ vars.KC_ASC_APP_ID }}
+        run: node scripts/asc-submit-review.mjs

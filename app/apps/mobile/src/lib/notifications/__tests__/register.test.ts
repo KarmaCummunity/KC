@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { DeviceRegistration } from '@kc/domain';
+import type { DevicePushToken } from 'expo-notifications';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -14,16 +15,27 @@ vi.mock('expo-device', () => ({
   get isDevice() { return deviceIsDevice.current; },
 }));
 
-const tokenListener = { current: null as (() => void) | null, removed: 0 };
+const nativeToken: DevicePushToken = { type: 'ios', data: 'synthetic-native-token' };
+const tokenListener = { current: null as ((token: DevicePushToken) => void) | null, removed: 0 };
+const feedback = { enabled: false, acquisitions: 0, calls: [] as { devicePushToken?: DevicePushToken }[] };
 vi.mock('../channels', () => ({ ensureNotificationChannels: () => Promise.resolve() }));
 
 vi.mock('expo-notifications', () => ({
-  addPushTokenListener: (cb: () => void) => {
+  addPushTokenListener: (cb: (token: DevicePushToken) => void) => {
     tokenListener.current = cb;
     return { remove: () => { tokenListener.removed += 1; } };
   },
   getPermissionsAsync: () => Promise.resolve({ status: permStatus.current }),
-  getExpoPushTokenAsync: () => Promise.resolve({ data: pushToken.current }),
+  getExpoPushTokenAsync: (options: { devicePushToken?: DevicePushToken }) => {
+    feedback.calls.push(options);
+    if (feedback.enabled && !options.devicePushToken) {
+      feedback.acquisitions += 1;
+      // Model the actual iOS SDK: every native acquisition emits the listener. Bound
+      // the unpatched loop so the regression fails cleanly instead of hanging the test.
+      if (feedback.acquisitions < 6) tokenListener.current?.(nativeToken);
+    }
+    return Promise.resolve({ data: pushToken.current });
+  },
 }));
 
 vi.mock('expo-constants', () => ({
@@ -65,6 +77,8 @@ beforeEach(() => {
   permStatus.current = 'granted';
   expoProjectId.current = 'project-123';
   pushToken.current = 'ExponentPushToken[xyz]';
+  feedback.enabled = false; feedback.acquisitions = 0; feedback.calls = [];
+  tokenListener.current = null;
 });
 
 describe('registerCurrentDeviceIfPermitted', () => {
@@ -161,7 +175,7 @@ describe('watchPushTokenRefresh', () => {
     const { repo, registered } = makeDeviceRepo();
     const stop = watchPushTokenRefresh('u_1', { deviceRepo: repo });
     pushToken.current = 'ExponentPushToken[rotated]';
-    tokenListener.current?.();
+    tokenListener.current?.(nativeToken);
     await vi.waitFor(() => expect(registered).toHaveLength(1));
     expect(registered[0]).toEqual({ userId: 'u_1', pushToken: 'ExponentPushToken[rotated]', platform: expect.any(String) });
     const before = tokenListener.removed;
@@ -175,5 +189,128 @@ describe('watchPushTokenRefresh', () => {
     const { repo } = makeDeviceRepo();
     watchPushTokenRefresh('u_1', { deviceRepo: repo })();
     expect(tokenListener.current).toBeNull();
+  });
+});
+
+
+describe('native token feedback regression', () => {
+  it('does not reacquire the native token from its own refresh callback or flood backend upserts', async () => {
+    const { repo, registered } = makeDeviceRepo();
+    feedback.enabled = true;
+    const stop = watchPushTokenRefresh('u_loop', { deviceRepo: repo });
+    await registerCurrentDeviceIfPermitted('u_loop', { deviceRepo: repo });
+    await vi.waitFor(() => expect(registered).toHaveLength(1));
+    expect(feedback.acquisitions).toBe(1);
+    expect(feedback.calls.some(call => call.devicePushToken === nativeToken)).toBe(true);
+    stop();
+  });
+  it('coalesces repeated same-token events, but persists a real rotated Expo token', async () => {
+    const { repo, registered } = makeDeviceRepo();
+    const stop = watchPushTokenRefresh('u_loop', { deviceRepo: repo });
+    for (let i = 0; i < 100; i++) tokenListener.current?.(nativeToken);
+    await vi.waitFor(() => expect(registered).toHaveLength(1));
+    expect(feedback.calls).toHaveLength(1);
+    tokenListener.current?.(nativeToken);
+    await Promise.resolve();
+    expect(feedback.calls).toHaveLength(1);
+    pushToken.current = 'ExponentPushToken[rotated]';
+    tokenListener.current?.({ type: 'ios', data: 'rotated-native-token' });
+    await vi.waitFor(() => expect(registered).toHaveLength(2));
+    stop();
+  });
+  it('does not cache a failed backend registration and isolates different users', async () => {
+    const { repo, registered } = makeDeviceRepo();
+    repo.upsert.mockRejectedValueOnce(new Error('temporary backend failure'));
+    await expect(registerCurrentDeviceIfPermitted('u_a', { deviceRepo: repo }, nativeToken)).rejects.toThrow();
+    await registerCurrentDeviceIfPermitted('u_a', { deviceRepo: repo }, nativeToken);
+    await registerCurrentDeviceIfPermitted('u_b', { deviceRepo: repo }, nativeToken);
+    expect(registered.map(r => r.userId)).toEqual(['u_a', 'u_b']);
+  });
+});
+
+describe('registration lifecycle cancellation', () => {
+  it('does not persist a refresh conversion after unsubscribe', async () => {
+    const { repo, registered } = makeDeviceRepo();
+    const mod = await import('expo-notifications');
+    let release!: (value: { data: string }) => void;
+    const waiting = new Promise<{ data: string }>(resolve => { release = resolve; });
+    const getter = vi.spyOn(mod, 'getExpoPushTokenAsync').mockReturnValueOnce(waiting as any);
+    const stop = watchPushTokenRefresh('old', { deviceRepo: repo });
+    tokenListener.current?.(nativeToken);
+    await vi.waitFor(() => expect(getter).toHaveBeenCalled());
+    stop();
+    release({ data: pushToken.current });
+    await Promise.resolve(); await Promise.resolve();
+    expect(registered).toHaveLength(0);
+    getter.mockRestore();
+  });
+  it('a changed-user initial conversion cannot register the previous owner', async () => {
+    const { repo, registered } = makeDeviceRepo();
+    const mod = await import('expo-notifications');
+    let release!: (value: { data: string }) => void;
+    const waiting = new Promise<{ data: string }>(resolve => { release = resolve; });
+    const getter = vi.spyOn(mod, 'getExpoPushTokenAsync').mockReturnValueOnce(waiting as any);
+    let active = true;
+    const old = registerCurrentDeviceIfPermitted('old', { deviceRepo: repo, isCurrent: () => active });
+    await vi.waitFor(() => expect(getter).toHaveBeenCalled());
+    active = false;
+    await registerCurrentDeviceIfPermitted('new', { deviceRepo: repo });
+    release({ data: pushToken.current });
+    await old;
+    expect(registered.map(r => r.userId)).toEqual(['new']);
+    getter.mockRestore();
+  });
+  it('a replacement same-user effect retries a conversion cancelled by its old owner', async () => {
+    const { repo, registered } = makeDeviceRepo();
+    const mod = await import('expo-notifications');
+    let release!: (value: { data: string }) => void;
+    const waiting = new Promise<{ data: string }>(resolve => { release = resolve; });
+    const getter = vi.spyOn(mod, 'getExpoPushTokenAsync').mockReturnValueOnce(waiting as any);
+    let active = true;
+    const old = registerCurrentDeviceIfPermitted('same', { deviceRepo: repo, isCurrent: () => active });
+    await vi.waitFor(() => expect(getter).toHaveBeenCalled());
+    active = false;
+    const replacement = registerCurrentDeviceIfPermitted('same', { deviceRepo: repo });
+    release({ data: pushToken.current });
+    await Promise.all([old, replacement]);
+    expect(registered.map(r => r.userId)).toEqual(['same']);
+    getter.mockRestore();
+  });
+  it('logout token lookup cannot trigger re-registration while old watcher is mounted', async () => {
+    const { repo, registered, deactivated } = makeDeviceRepo();
+    feedback.enabled = true;
+    const stop = watchPushTokenRefresh('old', { deviceRepo: repo });
+    await deactivateCurrentDevice({ deviceRepo: repo });
+    await Promise.resolve();
+    expect(registered).toHaveLength(0);
+    expect(deactivated).toHaveLength(1);
+    expect(feedback.acquisitions).toBe(1);
+    stop();
+  });
+  it('logout waits for an already-issued write before deleting its token', async () => {
+    const { repo, deactivated } = makeDeviceRepo();
+    let release!: () => void;
+    repo.upsert.mockImplementationOnce(() => new Promise<void>(resolve => { release = resolve; }));
+    const registering = registerCurrentDeviceIfPermitted('old', { deviceRepo: repo }, nativeToken);
+    await vi.waitFor(() => expect(repo.upsert).toHaveBeenCalled());
+    const logout = deactivateCurrentDevice({ deviceRepo: repo });
+    await Promise.resolve();
+    expect(deactivated).toHaveLength(0);
+    release();
+    await Promise.all([registering, logout]);
+    expect(deactivated).toHaveLength(1);
+  });
+  it('late logout cleanup cannot delete a new user registration', async () => {
+    const { repo, registered, deactivated } = makeDeviceRepo();
+    let release!: () => void;
+    repo.upsert.mockImplementationOnce(() => new Promise<void>(resolve => { release = resolve; }));
+    const old = registerCurrentDeviceIfPermitted('old', { deviceRepo: repo }, nativeToken);
+    await vi.waitFor(() => expect(repo.upsert).toHaveBeenCalled());
+    const logout = deactivateCurrentDevice({ deviceRepo: repo });
+    await registerCurrentDeviceIfPermitted('new', { deviceRepo: repo }, nativeToken);
+    release();
+    await Promise.all([old, logout]);
+    expect(registered.map(r => r.userId)).toEqual(['new']);
+    expect(deactivated).toHaveLength(0);
   });
 });
