@@ -33,7 +33,7 @@ describe('DonationLinkError', () => {
   it('preserves every code in the DonationLinkErrorCode union', () => {
     for (const code of [
       'invalid_input', 'invalid_url', 'unreachable', 'rate_limited',
-      'unauthorized', 'forbidden', 'network', 'unknown',
+      'unauthorized', 'forbidden', 'server_error', 'network', 'unknown',
     ] as const) {
       expect(new DonationLinkError(code, code).code).toBe(code);
     }

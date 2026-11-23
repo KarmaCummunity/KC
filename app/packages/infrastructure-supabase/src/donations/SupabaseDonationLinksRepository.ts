@@ -7,6 +7,9 @@ import type {
   DonationLinkReviewItem,
   IDonationLinksRepository,
   UpdateDonationLinkInput,
+  ValidateDonationLinkRequestBody,
+  ValidateDonationLinkResponse,
+  ValidateDonationLinkRow,
 } from '@kc/application';
 import type { Database } from '../database.types';
 import { BackendRuleError, BackendUnavailableError } from '@kc/domain';
@@ -22,7 +25,7 @@ type LinkRow = Database['public']['Tables']['donation_links']['Row'];
 /** The most links one category list shows. */
 const LIST_LIMIT = 100;
 
-function mapRow(row: LinkRow): DonationLink {
+function mapRow(row: LinkRow | ValidateDonationLinkRow): DonationLink {
   return {
     id: row.id,
     categorySlug: row.category_slug as DonationCategorySlug,
@@ -35,12 +38,6 @@ function mapRow(row: LinkRow): DonationLink {
     reviewStatus: row.review_status as DonationLinkReviewStatus,
     reviewNote: row.review_note,
   };
-}
-
-interface EdgeAnswer {
-  ok: boolean;
-  code?: string;
-  link?: LinkRow;
 }
 
 /**
@@ -68,28 +65,36 @@ export class SupabaseDonationLinksRepository implements IDonationLinksRepository
   }
 
   addViaEdgeFunction(input: AddDonationLinkInput): Promise<DonationLink> {
-    return this.invoke({
+    const body: ValidateDonationLinkRequestBody = {
       category_slug: input.categorySlug,
       url: input.url,
       display_name: input.displayName,
       description: input.description ?? null,
-    });
+    };
+    return this.invoke(body);
   }
 
   updateViaEdgeFunction(input: UpdateDonationLinkInput): Promise<DonationLink> {
-    return this.invoke({
+    const body: ValidateDonationLinkRequestBody = {
       link_id: input.linkId,
       category_slug: input.categorySlug,
       url: input.url,
       display_name: input.displayName,
       description: input.description ?? null,
-    });
+    };
+    return this.invoke(body);
   }
 
-  private async invoke(body: Record<string, unknown>): Promise<DonationLink> {
-    const { data, error } = await this.client.functions.invoke<EdgeAnswer>('validate-donation-link', { body });
+  /** Calls `validate-donation-link` with the shared wire body/response types (TD-114 / DON-7). */
+  private async invoke(body: ValidateDonationLinkRequestBody): Promise<DonationLink> {
+    const { data, error } = await this.client.functions.invoke<ValidateDonationLinkResponse>(
+      'validate-donation-link',
+      { body },
+    );
     if (error) throw await donationLinkErrorFromInvokeFailure(error);
-    if (!data?.ok || !data.link) throw donationLinkErrorFromInvokeData(data);
+    if (!data || data.ok !== true || !data.link) {
+      throw donationLinkErrorFromInvokeData(data);
+    }
     return mapRow(data.link);
   }
 

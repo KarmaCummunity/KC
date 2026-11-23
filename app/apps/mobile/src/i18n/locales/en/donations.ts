@@ -161,6 +161,7 @@ export const donations = {
       unauthorized: 'You need to sign in to add a link.',
       forbidden: 'You don’t have permission to edit this link.',
       network: 'Network issue. Try again.',
+      server_error: 'Something went wrong on our side. Try again in a moment.',
       unknown: 'Unexpected error. Try again.',
     },
   },

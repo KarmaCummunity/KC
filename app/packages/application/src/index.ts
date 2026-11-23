@@ -103,6 +103,20 @@ export { ReportDonationLinkUseCase } from './donations/ReportDonationLinkUseCase
 export type { ReportDonationLinkInput } from './donations/ReportDonationLinkUseCase';
 export { DonationLinkError, isDonationLinkError } from './donations/errors';
 export type { DonationLinkErrorCode } from './donations/errors';
+export {
+  VALIDATE_DONATION_LINK_EDGE_ERROR_CODES,
+  isValidateDonationLinkEdgeErrorCode,
+} from './donations/validateDonationLinkContract';
+export type {
+  ValidateDonationLinkEdgeErrorCode,
+  ValidateDonationLinkInsertBody,
+  ValidateDonationLinkUpdateBody,
+  ValidateDonationLinkRequestBody,
+  ValidateDonationLinkRow,
+  ValidateDonationLinkOkResponse,
+  ValidateDonationLinkFailResponse,
+  ValidateDonationLinkResponse,
+} from './donations/validateDonationLinkContract';
 
 // Follow use cases (P1.1)
 export * from './follow/errors';
