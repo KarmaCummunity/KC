@@ -2,6 +2,7 @@
 // .github/workflows/release-train.yml). No I/O here, so every rule that can
 // stop a release is unit-tested (scripts/release-train.test.mjs).
 import { skipTokensIn } from './release-merge.mjs';
+import { justifiedFiles } from './check-migration-safety.mjs';
 
 /** Labels and names shared with the workflow and the docs. */
 export const FREEZE_LABEL = 'no-auto-merge';
@@ -106,6 +107,15 @@ export function migrationChanges(nameStatus) {
     else problems.push({ file, rule: 'edited-migration', what: `existing migration ${status === 'D' ? 'deleted' : status.startsWith('R') ? 'renamed' : 'edited'} (${status})` });
   }
   return { added, problems };
+}
+
+/**
+ * The `Migration safety: <file> — <reason>` lines of supabase/release-safety.md,
+ * in the exact format check-migration-safety.mjs (justifiedFiles) parses. The
+ * train copies them into the release PR body so the strict release scan passes.
+ */
+export function migrationSafetyLines(text) {
+  return String(text ?? '').split('\n').map((l) => l.trim()).filter((l) => justifiedFiles(l).size > 0);
 }
 
 // ---------------------------------------------------------------------------
