@@ -1,6 +1,6 @@
 # Backend migration off Supabase: review of PR #2576 and rollout plan
 
-> Companion to ADR-009 (backend platform) and ADR-010 (port gateway), which live on PR #2576 until slice S1 lands. This document does not re-decide anything in ADR-009; it records a reviewer's inventory, findings and a rollout/gating plan around that work. Epic: #1496.
+> Companion to ADR-009 (backend platform) and ADR-010 (port gateway), which live on PR #2576 until slice S1 lands. Records a reviewer's inventory, findings, the decisions of 2026-11-23 and a rollout/gating plan. Epic: #1496.
 
 - Author: KC Backend (architect and reviewer role). Implementer of the move: Nave's Claude Code session on PR #2576.
 - Date: 2026-11-23 (Asia/Jerusalem).
@@ -260,3 +260,26 @@ Explicitly **not** in the first 2 weeks: GCP provisioning (needs go-ahead), any 
 10. **Who owns what**: confirm the Claude Code session is the sole implementer and KC Backend reviews, owns docs and guard PRs, and runs parity and rollout gates.
 
 ---
+
+---
+
+## 6. Follow-up research and recorded decisions (2026-11-23, 23:00–23:20 IST)
+
+### 7.1 Research results
+
+| Q | Result | Basis |
+|---|---|---|
+| Q5 kc-prod JWT signing | **ES256 (EC)**, one key in the public JWKS (`https://kdqtbdbzwvlugkhonexg.supabase.co/auth/v1/.well-known/jwks.json`). Same as kc-dev. The API's ES256/RS256-only verifier works for both | [V] public JWKS endpoint (no credentials, read-only) |
+| Q6 regions | **kc-dev: `eu-central-1` (Frankfurt)**, Postgres 17.11. **kc-prod: unknown**: the `user-Supabase--prod` connector denied `get_project` ("You do not have permission"), and its `list_projects` shows only an unrelated project. DNS from the box is sandboxed, so no inference was possible | [V] kc-dev `get_project`. kc-prod needs an owner check (Supabase dashboard → Project Settings → General) |
+| Q8 `post-photo-derived-private` | **Not a leftover. Prepared on purpose and inactive.** Added by PR #2549 "feat(media): prepare inactive authenticated photo transport contracts" (2026-11-21, `agent:kc-bot`, refs #2316, FR-POST-005/014). The PR says explicitly that it has no bucket, migration or caller. No migration on any branch creates the bucket. It is on `dev` and `main`, not on `production` | [V] `git log --all -S` on a full mirror (2,001 refs) |
+| Q9 orphan Edge Functions on kc-dev | **Source exists, so they are NOT orphaned and were NOT undeployed.** `delete-account` and `receipts-issuer` were removed from `dev` by the D-228 baseline cut-over (#2133, 2026-11-11). `whatsapp-intake-worker` was removed by #2231 (2026-11-13). Source is still on `production` (and `staging`) for `delete-account`, and on 47–89 older feature branches for each; full history is in git. kc-dev still runs the pre-removal deployments | [V] mirror search. **No undeploy, no backup taken** (rule: source exists → do not undeploy). Retiring them on kc-dev is a separate owner decision; deploy history and the `production` branch matter for prod |
+
+### 7.2 Decisions recorded (KC, 2026-11-23)
+
+1. **Shape:** one modular NestJS application per ADR-009, with clean module boundaries (lint-enforced, own tables per module) so a module can be extracted into a service later by evidence. No microservices now.
+2. **#2576 lands as 4 stacked slices into `dev`:** S1 docs (ADR-009/010) → S2 server (`apps/api`, `infrastructure-api`, CI lane, no mobile files) → S3 application ports → S4 mobile wiring. **S4 only after the store release build is cut.**
+3. **Force-update gate:** a server-provided minimum supported version (per platform), checked at app start, shipped in an early post-launch build.
+4. **GCP billing on hold.** Phase 1 (and the first 3 steps) need no spend. A specific monthly number is proposed later, before phase 2.
+5. **API domain:** `api.karma-community-kc.com` (current KC domain `karma-community-kc.com`; dev web is `dev.karma-community-kc.com`). Dev counterpart proposal: `api.dev.karma-community-kc.com`.
+6. **Slice 2 must add an API-start timeout with fallback to Supabase.** The manifest fetch is bounded (about 2 s), and on timeout or error nothing is served by the API, so every port uses its Supabase adapter (the existing fallback path).
+7. **Widen the Supabase-use check** (`check-api-door.mjs`) to channels, storage, functions, auth and storage URL builders.
