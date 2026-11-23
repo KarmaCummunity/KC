@@ -6366,10 +6366,6 @@ export type Database = {
         }
         Returns: string
       }
-      post_media_processing_release: {
-        Args: { p_lease_token: string; p_media_id: string; p_reason: string }
-        Returns: string
-      }
       post_seat_counts: {
         Args: { p_post_ids: string[] }
         Returns: {

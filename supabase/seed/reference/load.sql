@@ -114,6 +114,18 @@ with changed as (
 select 'post_kinds' as reference_table, (select count(*) from ref_post_kinds) as rows_in_file,
        (select count(*) from changed) as rows_changed;
 
+-- Detail schemas are owned by reviewed migrations, not this file (see the catalog comment
+-- above). Numbered migrations run before the seed on a fresh baseline, so re-apply the
+-- employment job-offer patch now that the catalog row exists (#2537). Silent when the
+-- function is not installed yet (an older checkout loading this seed).
+do $employment_job_offer_schema$
+begin
+  if to_regprocedure('kc_private.apply_employment_job_offer_detail_schema()') is not null then
+    perform kc_private.apply_employment_job_offer_detail_schema();
+  end if;
+end
+$employment_job_offer_schema$;
+
 with changed as (
   insert into public.item_subcategories as c (world_slug, slug, label_he, label_en, sort_order)
   select world_slug, slug, label_he, label_en, sort_order from ref_item_subcategories

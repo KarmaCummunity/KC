@@ -1,14 +1,13 @@
 // process-post-media — service role only. Wiring only: the logic is in handler.ts.
-// NOT started by any database job yet: scheduling it is a separate, gated activation step
-// (docs/SSOT/OPERATOR_RUNBOOK.md → "Post photo derivatives"). Secrets (names): SUPABASE_URL,
-// SUPABASE_SERVICE_ROLE_KEY (or SUPABASE_SECRET_KEYS).
+// Started by the database (debounced kick on a new photo job, and the minute job
+// `post_media_process`); see docs/SSOT/OPERATOR_RUNBOOK.md → "Post photo derivatives".
+// Secrets (names): SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (or SUPABASE_SECRET_KEYS).
 
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 import { withObservability } from '../_shared/observability/mod.ts';
 import { currentServiceRoleKeys, primaryServiceRoleKey } from '../_shared/serviceRoleGuard.ts';
 import { createProcessPostMediaHandler, type MediaStorage } from './handler.ts';
-import { resolveProfile, type ProcessingProfile } from './profiles.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const BUCKET = 'post-images';
@@ -16,6 +15,17 @@ const DOWNLOAD_TIMEOUT_MS = 20_000;
 const IMMUTABLE_MAX_AGE_SECONDS = '31536000';
 
 const admin = createClient(SUPABASE_URL, primaryServiceRoleKey(), { auth: { persistSession: false } });
+
+/**
+ * Whether Storage answered "no such object": 404, or the 400 whose JSON body carries
+ * statusCode "404" (how storage-api reports a missing object on some versions).
+ */
+async function isMissingObject(response: Response): Promise<boolean> {
+  if (response.status === 404) return true;
+  if (response.status !== 400) return false;
+  const body = await response.json().catch(() => null) as { statusCode?: unknown } | null;
+  return String(body?.statusCode) === '404';
+}
 
 /** Reads a response body, aborting as soon as it would pass `maxBytes`. */
 async function readCapped(response: Response, maxBytes: number, abort: () => void): Promise<Uint8Array> {
@@ -58,21 +68,24 @@ const storage: MediaStorage = {
         headers: { authorization: `Bearer ${primaryServiceRoleKey()}`, apikey: primaryServiceRoleKey() },
         signal: controller.signal,
       });
-      if (!response.ok) throw new Error(`download HTTP ${response.status}`);
+      if (!response.ok) {
+        if (await isMissingObject(response)) return null;
+        throw new Error(`download HTTP ${response.status}`);
+      }
       return await readCapped(response, maxBytes, () => controller.abort());
     } finally {
       clearTimeout(timer);
     }
   },
   // Through fetch, not storage-js: storage-js cannot abort an upload, and the lease bounds writes.
-  async upload(key, bytes, signal) {
+  async upload(key, bytes, contentType, signal) {
     const path = key.split('/').map(encodeURIComponent).join('/');
     const response = await fetch(`${SUPABASE_URL}/storage/v1/object/${BUCKET}/${path}`, {
       method: 'POST',
       headers: {
         authorization: `Bearer ${primaryServiceRoleKey()}`,
         apikey: primaryServiceRoleKey(),
-        'content-type': 'image/jpeg',
+        'content-type': contentType,
         'cache-control': `public, max-age=${IMMUTABLE_MAX_AGE_SECONDS}, immutable`,
         'x-upsert': 'false',
       },
@@ -97,20 +110,8 @@ const storage: MediaStorage = {
   },
 };
 
-// The production candidate unless kc-dev opts into the labelled resource experiment. A refused
-// configuration (unknown name, experiment outside kc-dev) makes every run fail; no fallback.
-let profile: ProcessingProfile | undefined;
-let profileError: string | undefined;
-try {
-  profile = resolveProfile(Deno.env.get('PROCESS_POST_MEDIA_PROFILE'), SUPABASE_URL);
-} catch (err) {
-  profileError = err instanceof Error ? err.message : String(err);
-}
-
 serve(withObservability('process-post-media', createProcessPostMediaHandler({
   serviceRoleKey: currentServiceRoleKeys(),
-  profile,
-  profileError,
   rpc: async (fn, args, signal) => {
     // postgrest-js aborts the HTTP request; a statement already running in the database may still finish.
     const { data, error } = await admin.rpc(fn, args).abortSignal(signal);

@@ -20,6 +20,11 @@
 // on `dev` the findings are printed as warnings and the guard passes, and the
 // release PR into `main` surfaces them to the owner.
 //
+// Reviewed skips: on PRs into main, an added skip / focus / todo marker that
+// is listed with its exact line, reason and reviewing PR in
+// .github/test-integrity-reviewed.json is accepted without an owner (see
+// REVIEWED_FILE below). Every other finding still needs the override.
+//
 // Override: an owner listed in the base commit's .github/owners.json approves
 // the PR's current head SHA (and is not its author). The static lane runs this
 // file from the base commit (like the CI judges), and `CI gate` re-runs the
@@ -120,7 +125,7 @@ function markerHits(file, markers) {
   const out = [];
   for (const line of file.added) {
     const hit = markers.find((m) => m.re.test(line));
-    if (hit) out.push(`${file.path}: adds ${hit.why}: \`${line.trim().slice(0, 120)}\``);
+    if (hit) out.push({ path: file.path, line: line.trim(), text: `${file.path}: adds ${hit.why}: \`${line.trim().slice(0, 120)}\`` });
   }
   return out;
 }
@@ -138,18 +143,29 @@ export const testSides = (file) => ({
  * overrides them.
  */
 export function findViolations(files) {
+  return findViolationRecords(files).map((r) => r.text);
+}
+
+/**
+ * Like findViolations, as records `{ path, line, text }`. `line` (the exact
+ * trimmed added line) is set only for an added marker; deletions, renames,
+ * loosened limits and lost assertions carry `line: null` and can never be
+ * matched by a reviewed-skip entry.
+ */
+export function findViolationRecords(files) {
   const out = [];
+  const plain = (text) => ({ path: null, line: null, text });
   let before = 0;
   let after = 0;
   const losers = [];
   for (const file of files) {
     const { wasTest, isTestNow } = testSides(file);
-    if (wasTest && file.newPath === null) out.push(`${file.oldPath}: deletes a test file`);
-    if (wasTest && file.newPath !== null && file.newPath !== file.oldPath) out.push(`${file.oldPath}: renamed or moved to ${file.newPath}`);
+    if (wasTest && file.newPath === null) out.push(plain(`${file.oldPath}: deletes a test file`));
+    if (wasTest && file.newPath !== null && file.newPath !== file.oldPath) out.push(plain(`${file.oldPath}: renamed or moved to ${file.newPath}`));
     if (isTestNow) out.push(...markerHits(file, isSqlTest(file.path) ? SQL_MARKERS : JS_MARKERS));
-    if (!file.path.endsWith('.md')) out.push(...markerHits(file, [{ re: NO_TESTS_SWITCH, why: 'a switch that passes when no tests exist' }]));
-    if (VITEST_CONFIG.test(file.path)) out.push(...loosenedLimits(file, THRESHOLD, (o, n) => n < o, 'coverage threshold'));
-    out.push(...loosenedLimits(file, MAX_WARNINGS, (o, n) => n > o, '--max-warnings'));
+    if (!file.path.endsWith('.md')) out.push(...markerHits(file, [{ re: NO_TESTS_SWITCH, why: 'a switch that passes when no tests exist' }]).map((r) => plain(r.text)));
+    if (VITEST_CONFIG.test(file.path)) out.push(...loosenedLimits(file, THRESHOLD, (o, n) => n < o, 'coverage threshold').map(plain));
+    out.push(...loosenedLimits(file, MAX_WARNINGS, (o, n) => n > o, '--max-warnings').map(plain));
     // A deleted test is already a violation; count only files that survive.
     const old = wasTest && file.newPath !== null ? countAssertions(file.oldPath, file.oldText) : 0;
     const now = isTestNow ? countAssertions(file.newPath, file.newText) : 0;
@@ -158,7 +174,7 @@ export function findViolations(files) {
     if (now < old) losers.push(file.path);
   }
   if (after < before) {
-    out.push(`removes ${before - after} assertion(s) net from tests (${before} before, ${after} after; files losing some: ${losers.join(', ')})`);
+    out.push(plain(`removes ${before - after} assertion(s) net from tests (${before} before, ${after} after; files losing some: ${losers.join(', ')})`));
   }
   return out;
 }
@@ -201,6 +217,71 @@ function readHeader(file, line) {
   else if (line.startsWith('deleted file mode')) file.newPath = null;
   else if (line.startsWith('rename from ')) file.oldPath = line.slice('rename from '.length);
   else if (line.startsWith('rename to ')) file.newPath = line.slice('rename to '.length);
+}
+
+/**
+ * Reviewed conditional skips (owner delegation of 22 Nov 2026, issue #2613).
+ * A committed list of skip / focus / todo markers that a release reviewer has
+ * read and accepted, each with its reason and the PR that added the entry.
+ * Only an added MARKER line can be accepted, and only by an entry naming the
+ * same file and the exact trimmed line; detection itself is unchanged, and
+ * deletions, renames, loosened limits and lost assertions still need an
+ * owner. An entry counts when it is already on the base branch, or when the
+ * PR it names (`reviewedIn`) is a commit in this diff that changed the list,
+ * so every accepted skip has an audit trail in git history. The file lives
+ * under .github/ (CODEOWNERS).
+ */
+export const REVIEWED_FILE = '.github/test-integrity-reviewed.json';
+
+/** Validated entries of the reviewed-skip list; throws on a malformed file. */
+export function parseReviewed(raw) {
+  if (raw === null || raw === undefined || raw.trim() === '') return [];
+  const doc = JSON.parse(raw);
+  const entries = doc?.entries;
+  if (!Array.isArray(entries)) throw new Error(`${REVIEWED_FILE}: "entries" must be an array`);
+  return entries.map((e, i) => {
+    const ok =
+      e && typeof e.file === 'string' && isTest(e.file) &&
+      typeof e.line === 'string' && e.line.trim() === e.line && e.line.length > 0 &&
+      typeof e.reason === 'string' && e.reason.trim().length >= 20 &&
+      Number.isInteger(e.reviewedIn) && e.reviewedIn > 0;
+    if (!ok) throw new Error(`${REVIEWED_FILE}: entry ${i} needs a test-file "file", an exact trimmed "line", a "reason" (≥ 20 chars) and an integer "reviewedIn" PR`);
+    return { file: e.file, line: e.line, reason: e.reason.trim(), reviewedIn: e.reviewedIn };
+  });
+}
+
+/** PR numbers `(#n)` in the subjects of commits in base...head that changed the reviewed list. */
+export function prsThatChangedReviewed(base, head, cwd = process.cwd()) {
+  const subjects = git(['log', '--format=%s', `${base}...${head}`, '--', REVIEWED_FILE], cwd);
+  return new Set([...subjects.matchAll(/\(#(\d+)\)/g)].map((m) => Number(m[1])));
+}
+
+/**
+ * Split violation records into those a reviewed entry accepts and the rest.
+ * `baseEntries` are trusted as they are; `headEntries` only when their
+ * `reviewedIn` PR is in `introducedPrs`.
+ */
+export function applyReviewed(records, { baseEntries = [], headEntries = [], introducedPrs = new Set() } = {}) {
+  const usable = [...baseEntries, ...headEntries.filter((e) => introducedPrs.has(e.reviewedIn))];
+  const accepted = [];
+  const remaining = [];
+  for (const r of records) {
+    const entry = r.line === null ? null : usable.find((e) => e.file === r.path && e.line === r.line);
+    if (entry) accepted.push({ record: r, entry });
+    else remaining.push(r);
+  }
+  return { accepted, remaining };
+}
+
+/** The reviewed list at `ref`, or [] when the file does not exist there. */
+export function reviewedAt(ref, cwd = process.cwd()) {
+  let raw;
+  try {
+    raw = git(['show', `${ref}:${REVIEWED_FILE}`], cwd);
+  } catch {
+    return [];
+  }
+  return parseReviewed(raw);
 }
 
 function git(args, cwd) {
@@ -266,16 +347,29 @@ async function main() {
       process.exit(1);
     }
   }
-  const violations = findViolations(loadDiff(env.BASE_SHA, env.HEAD_SHA));
-  if (violations.length === 0) {
+  const records = findViolationRecords(loadDiff(env.BASE_SHA, env.HEAD_SHA));
+  if (records.length === 0) {
     console.log('Test integrity: no deleted tests, skip/focus markers, loosened limits or lost assertions.');
     return;
   }
   if (!ownerApprovalRequired(env)) {
     // Free on dev; the release PR into main surfaces it to the owner.
-    for (const v of violations) console.log(`::warning::Test integrity: ${v} — allowed: owner approval is required only for changes into main`);
+    for (const r of records) console.log(`::warning::Test integrity: ${r.text} — allowed: owner approval is required only for changes into main`);
     return;
   }
+  const { accepted, remaining } = applyReviewed(records, {
+    baseEntries: reviewedAt(env.BASE_SHA),
+    headEntries: reviewedAt(env.HEAD_SHA),
+    introducedPrs: prsThatChangedReviewed(env.BASE_SHA, env.HEAD_SHA),
+  });
+  for (const { record, entry } of accepted) {
+    console.log(`::notice::${record.text} — accepted: reviewed skip (${REVIEWED_FILE}, #${entry.reviewedIn}): ${entry.reason}`);
+  }
+  if (remaining.length === 0) {
+    console.log(`Test integrity: ${accepted.length} finding(s), all accepted as reviewed skips.`);
+    return;
+  }
+  const violations = remaining.map((r) => r.text);
   const override = await findOwnerOverride(env, env.JUDGE_REF);
   if (override.login) {
     for (const v of violations) console.log(`::notice::${v} — accepted: @${override.login} approved head ${env.HEAD_SHA}`);

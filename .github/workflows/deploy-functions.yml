@@ -123,8 +123,10 @@ jobs:
       # (the prefix is reserved now, so writing the key back is impossible by
       # design). Heal both here: remove a shadow, matching or stale, then the
       # deploy below refreshes every function's environment - the same way
-      # deploy-db.yml rewrites the kc_service_role_key Vault secret for the
-      # database jobs. SUPABASE_ANON_KEY would shadow the same way; nothing uses
+      # deploy-db.yml updates the verified caller slot for database jobs only after
+      # read-only key validation (kc_verified_service_role_key after its migration).
+      # The obsolete kc_service_role_key slot is not a fallback for migrated jobs.
+      # SUPABASE_ANON_KEY would shadow the same way; nothing uses
       # a saved copy of it today.
       - name: Drop a stale service-role key shadow (#2452)
         run: |

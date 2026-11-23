@@ -109,6 +109,18 @@ jobs:
             git fetch --depth=2 origin dev
             git reset --hard origin/dev
 
+            # A queued run or rejected push may now be looking at another run's
+            # VERSION child (or an explicit release version edit). The trigger's
+            # checkout decision is stale after reset. Never append another skip-CI
+            # bump to that tip: deploy certification permits only ONE version child.
+            # Compute before ID assignment, which must still run independently.
+            attempt_bump_version="$bump_version"
+            tip_changed="$(git show --name-only --format= HEAD)"
+            if grep -qx 'app/VERSION' <<<"$tip_changed"; then
+              echo "Fresh dev tip already edits app/VERSION; no duplicate version bump."
+              attempt_bump_version=false
+            fi
+
             # 1. Registry IDs, pushed on their own so CI certifies them and the
             #    bump below stays a VERSION-only child of a gated commit. A
             #    retry after this push finds no placeholders left.
@@ -127,7 +139,7 @@ jobs:
             fi
 
             # 2. Version bump: app/VERSION only, `[skip ci]` (see the header).
-            if [ "$bump_version" != true ]; then
+            if [ "$attempt_bump_version" != true ]; then
               exit 0
             fi
             node scripts/bump-app-version.mjs

@@ -1,5 +1,7 @@
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { gunzipSync } from 'node:zlib';
+import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -17,7 +19,7 @@ test('fixed argv includes mandatory dry-run and no other mode', () => {
 });
 test('candidate ledger and exact migration inputs are bounded', () => {
   assert.equal(RELEASE_PLAN.ledger.length,55);
-  assert.equal(RELEASE_PLAN.pending.length,20); assert.equal(Object.keys(RELEASE_PLAN.files).length,75);
+  assert.equal(RELEASE_PLAN.pending.length,24); assert.equal(Object.keys(RELEASE_PLAN.files).length,79);
   verifyLedger(RELEASE_PLAN.ledger.map(version=>({version})), RELEASE_PLAN.ledger);
   assert.throws(()=>verifyLedger([],RELEASE_PLAN.ledger),/ledger changed/);
   assert.throws(()=>verifyLedger([...RELEASE_PLAN.ledger,'9999'].map(version=>({version})),RELEASE_PLAN.ledger));
@@ -66,7 +68,19 @@ test('official v2.99.0 formatter fixture parses only pending block', () => {
     fixture.success.stderr.replace('DRY RUN: migrations will *not* be pushed to the database.',''),
   ]) assert.throws(()=>parseDryRunPlan(fixture.success.stdout,stderr));
 });
-const CANDIDATE = '67aa4c6755da0bc43e1b30a80379ad7feba834be';
+const CANDIDATE = '21207a0157d98ad8ac248cbf704894ddc9a94656';
+// Exact reviewed candidate inputs, not this checkout's newer manifest/database state.
+// Self-contained for shallow CI checkouts. Production still verifies REAL candidate git blobs.
+const reviewed = JSON.parse(gunzipSync(readFileSync(new URL('./release/fixtures/reviewed-db-inputs-2120.json.gz', import.meta.url))));
+const digest = bytes => createHash('sha256').update(bytes).digest('hex');
+test('frozen fixture is exactly the reviewed source and all expected hashed DB inputs',()=>{
+  assert.equal(reviewed.sourceCommit,CANDIDATE);
+  const expected=[RELEASE_PLAN.manifestPath,'supabase/config.toml',...Object.keys(RELEASE_PLAN.files).map(n=>'supabase/migrations/'+n)];
+  assert.deepEqual(Object.keys(reviewed.blobs).sort(),expected.sort());
+  assert.equal(digest(reviewed.blobs[RELEASE_PLAN.manifestPath]),RELEASE_PLAN.manifestSha256);
+  assert.equal(digest(reviewed.blobs['supabase/config.toml']),RELEASE_PLAN.configSha256);
+  for(const [name,hash] of Object.entries(RELEASE_PLAN.files))assert.equal(digest(reviewed.blobs['supabase/migrations/'+name]),hash);
+});
 function harness({ failure, movedDev, wrongLedger } = {}) {
   const env={GITHUB_EVENT_NAME:'workflow_dispatch',GITHUB_REF:'refs/heads/main',GITHUB_WORKFLOW_SHA:'b'.repeat(40),
     GITHUB_REPOSITORY:'KarmaCummunity/KC',SUPABASE_PROJECT_REF:RELEASE_PLAN.project,KC_PROD_SCHEMA_MODE:'baseline',
@@ -74,7 +88,12 @@ function harness({ failure, movedDev, wrongLedger } = {}) {
   const calls=[];let apiCalls=0;
   const deps={argv:[],git(args){
     if(args[0]==='rev-parse')return Buffer.from(env.GITHUB_WORKFLOW_SHA);
-    if(args[0]==='show')return readFileSync(resolve(args[1].slice(41)));
+    if(args[0]==='show'){
+      assert.equal(args[1].slice(0,41),env.QUALIFIED_CANDIDATE+':');
+      const path=args[1].slice(41);
+      assert.ok(Object.hasOwn(reviewed.blobs,path),'unexpected fixture blob');
+      return Buffer.from(reviewed.blobs[path]);
+    }
     if(args[0]==='ls-tree')return Buffer.from(Object.keys(RELEASE_PLAN.files).join('\n'));
     throw Error('unexpected git');
   },async json(url,token,query){
@@ -102,10 +121,14 @@ test('actual runner happy path uses only link and fixed dry-run argv, credential
   for(const c of h.calls)assert.equal(existsSync(c.options.cwd),false);
 });
 test('failed link, timeout, remote drift and moved DEV fail closed with cleanup',async()=>{
-  for(const opts of [{failure:'link'},{failure:'timeout'},{movedDev:true},{wrongLedger:true}]){
-    const h=harness(opts);await assert.rejects(()=>run(h.env,h.deps));
-    if(opts.failure==='link')assert.equal(h.calls.length,1);
-    if(opts.wrongLedger)assert.equal(h.calls.length,0);
+  for(const [opts,error,count] of [
+    [{failure:'link'},/CLI read-only planning failed/,1],
+    [{failure:'timeout'},/CLI read-only planning failed/,2],
+    [{movedDev:true},/DEV moved/,2],
+    [{wrongLedger:true},/remote ledger changed/,0],
+  ]){
+    const h=harness(opts);await assert.rejects(()=>run(h.env,h.deps),error);
+    assert.equal(h.calls.length,count);
     for(const c of h.calls)assert.equal(existsSync(c.options.cwd),false);
   }
 });
@@ -125,4 +148,13 @@ test('malformed candidate or arbitrary arguments cannot reach network or CLI',as
     await assert.rejects(()=>run(h.env,h.deps),/40 lowercase hex/);assert.equal(h.calls.length,0);
   }
   const h=harness();h.deps.argv=['--apply'];await assert.rejects(()=>run(h.env,h.deps),/arguments forbidden/);
+});
+
+test('changed candidate manifest, migration set and historical bytes stop before CLI',async()=>{
+  for(const [target,error] of [[RELEASE_PLAN.manifestPath,/manifest changed/],['set',/migration set mismatch/],['supabase/migrations/'+Object.keys(RELEASE_PLAN.files)[0],/migration bytes changed/]]){
+    const h=harness();const git=h.deps.git;
+    h.deps.git=args=>target==='set'&&args[0]==='ls-tree'?Buffer.from('9999_extra.sql'):
+      args[0]==='show'&&args[1].endsWith(':'+target)?Buffer.from('changed'):git(args);
+    await assert.rejects(()=>run(h.env,h.deps),error);assert.equal(h.calls.length,0);
+  }
 });

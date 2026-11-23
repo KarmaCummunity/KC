@@ -27,6 +27,7 @@ export interface FilterState {
   proximitySortCity: string | null;       // null = use viewer's city
   proximitySortCityName: string | null;   // display name; UI-only — for re-hydrating the city picker
   followersOnly: boolean;                 // FR-FEED-020 — restrict to people I follow
+  hasPhotoOnly: boolean;                  // #2540 — only posts with a ready photo
   searchQuery: string;                    // FR-FEED-003 — raw input; active when trim length >= 2
 
   setType: (t: PostType | null) => void;
@@ -39,6 +40,7 @@ export interface FilterState {
   setSortOrder: (s: FeedSortOrder) => void;
   setProximitySortCity: (id: string | null, name: string | null) => void;
   setFollowersOnly: (v: boolean) => void;
+  setHasPhotoOnly: (v: boolean) => void;
   setSearchQuery: (q: string) => void;
   clearAll: () => void;
   activeCount: () => number;
@@ -56,6 +58,7 @@ export const DEFAULT_STATE = {
   proximitySortCity: null as string | null,
   proximitySortCityName: null as string | null,
   followersOnly: false,
+  hasPhotoOnly: false,
   searchQuery: '',
 };
 
@@ -75,6 +78,7 @@ export const useFilterStore = create<FilterState>()(
       setProximitySortCity: (id, name) =>
         set({ proximitySortCity: id, proximitySortCityName: name }),
       setFollowersOnly: (followersOnly) => set({ followersOnly }),
+      setHasPhotoOnly: (hasPhotoOnly) => set({ hasPhotoOnly }),
       setSearchQuery: (searchQuery) => set({ searchQuery }),
 
       clearAll: () => set(DEFAULT_STATE),
@@ -92,6 +96,7 @@ export const useFilterStore = create<FilterState>()(
         if (s.sortOrder !== 'newest') count++;
         if (s.proximitySortCity) count++;
         if (s.followersOnly) count++;
+        if (s.hasPhotoOnly) count++;
         if (s.searchQuery.trim().length >= 2) count++;
         return count;
       },
@@ -118,6 +123,8 @@ export const useFilterStore = create<FilterState>()(
           proximitySortCity: typeof state.proximitySortCity === 'string' ? state.proximitySortCity : null,
           proximitySortCityName: typeof state.proximitySortCityName === 'string' ? state.proximitySortCityName : null,
           followersOnly: Boolean(state.followersOnly),
+          // Filters saved before #2540 lack the key: off.
+          hasPhotoOnly: Boolean(state.hasPhotoOnly),
           searchQuery: typeof state.searchQuery === 'string' ? state.searchQuery : '',
         };
       },
@@ -133,6 +140,7 @@ export const useFilterStore = create<FilterState>()(
         proximitySortCity: state.proximitySortCity,
         proximitySortCityName: state.proximitySortCityName,
         followersOnly: state.followersOnly,
+        hasPhotoOnly: state.hasPhotoOnly,
         searchQuery: state.searchQuery,
       }),
     }

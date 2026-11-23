@@ -36,6 +36,9 @@
 /scripts/*-guard*                           @navesarussi
 /scripts/mobile-*                           @navesarussi
 /scripts/testflight-*                        @navesarussi
+/scripts/store-status*.mjs                   @navesarussi
+/scripts/asc-submit-review.mjs                @navesarussi
+/docs/store/app-review-notes.md               @navesarussi
 /scripts/eas-*                               @navesarussi
 /scripts/sync-eas-*                          @navesarussi
 /scripts/release-version.mjs                @navesarussi
@@ -121,6 +124,7 @@ playwright.config.*                         @navesarussi
 /scripts/db-usage-inventory.mjs             @navesarussi
 
 /scripts/release/prod-dryrun-*.mjs           @navesarussi
+/scripts/release/service-role-key.mjs       @navesarussi
 
 # Exceptions — script self-tests stay unowned so agents may add tests freely.
 # Deleting a test or removing assertions is caught by the test-integrity guard

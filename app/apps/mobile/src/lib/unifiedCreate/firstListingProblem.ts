@@ -4,7 +4,9 @@
 import type { TFunction } from 'i18next';
 import {
   hasInvalidRideHouseNumber,
+  validateEmploymentSalary,
   validateListingDetails,
+  type EmploymentSalaryErrorCode,
   type ListingKindOption,
   type RideHouseNumbers,
 } from '@kc/domain';
@@ -14,7 +16,26 @@ import { marketplaceRuleFieldError } from '../marketplaceCreateErrors';
 import type { RideRecurrenceDraft } from '../../components/giving/RideRecurrenceFields';
 import { isEventSeriesDuration } from './seriesPublish';
 import { jobOfferOrgProblem, type JobOfferOrgState } from './jobOfferOrg';
-import { detailField, fieldForHouseNumbers, fieldForRule, type ListingFormProblem } from './listingFormProblem';
+import {
+  detailField,
+  fieldForHouseNumbers,
+  fieldForRule,
+  type ListingFormField,
+  type ListingFormProblem,
+} from './listingFormProblem';
+
+/** i18n key of a job-offer salary validation failure (#2537). */
+const SALARY_ERROR_KEY: Readonly<Record<EmploymentSalaryErrorCode, string>> = {
+  salary_period_required: 'jobOffer.errors.salaryPeriodRequired',
+  salary_amount_required: 'jobOffer.errors.salaryAmountRequired',
+  salary_range_inverted: 'jobOffer.errors.salaryRangeInverted',
+  salary_out_of_range: 'jobOffer.errors.salaryOutOfRange',
+};
+
+/** Form field outlined for a salary problem: the missing period or the amount range. */
+function fieldForSalaryError(code: EmploymentSalaryErrorCode): ListingFormField {
+  return code === 'salary_period_required' ? detailField('salary_pay_period') : detailField('estimated_salary_min');
+}
 
 /** The shortest title a listing may have. */
 export const TITLE_MIN = 2;
@@ -73,6 +94,10 @@ export function firstListingProblem(i: ListingProblemInput): ListingFormProblem 
   if (i.eventSeries && !isEventSeriesDuration(i.submitted)) return { message: t('postSeries.errors.durationInvalid'), field: null };
   if (i.isRides && !i.recurrence && hasInvalidRideHouseNumber(i.houseNumbers)) {
     return { message: t('ridePlaces.houseNumberInvalid'), field: fieldForHouseNumbers(i.houseNumbers) };
+  }
+  if (i.worldSlug === 'employment') {
+    const salaryErr = validateEmploymentSalary(i.submitted);
+    if (salaryErr) return { message: t(SALARY_ERROR_KEY[salaryErr]), field: fieldForSalaryError(salaryErr) };
   }
   const schemaErr = i.kind ? validateListingDetails(i.kind.detailSchema, i.submitted) : null;
   return schemaErr ? { message: t('marketplace.validationFailed', { code: schemaErr }), field: null } : null;

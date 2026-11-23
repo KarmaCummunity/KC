@@ -157,6 +157,7 @@ function FieldControl({ spec, value, onChange, disabled }: ControlProps) {
     case 'amount':
       return (
         <TextField
+          testID={spec.testID}
           label={label}
           required={spec.required}
           errorText={errorText}
@@ -187,6 +188,7 @@ function FieldControl({ spec, value, onChange, disabled }: ControlProps) {
     case 'text':
       return (
         <TextField
+          testID={spec.testID}
           label={label}
           required={spec.required}
           errorText={errorText}
