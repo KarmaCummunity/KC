@@ -82,12 +82,6 @@
       "iconSizeLiteral": 3,
       "unmirroredDirectionalIcon": 1
     },
-    "src/features/about-landing/AboutValuesGrid.tsx": {
-      "fontWeightLiteral": 1,
-      "shadowLiteral": 4,
-      "adHocChip": 1,
-      "iconSizeLiteral": 1
-    },
     "src/screens/research/SurveyIntroBlock.tsx": {
       "fontWeightLiteral": 1,
       "radiusLiteral": 2,
