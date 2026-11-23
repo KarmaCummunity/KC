@@ -24,7 +24,7 @@
    "distinct": 270
   },
   "table": {
-   "callSites": 195,
+   "callSites": 194,
    "distinct": 67
   }
  },
@@ -2176,23 +2176,11 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-   "line": 122,
+   "line": 123,
    "area": "marketplace",
    "symbol": "fetchListingDetail",
    "via": "literal",
    "name": "post_detail"
-  },
-  {
-   "kind": "table",
-   "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-   "line": 125,
-   "area": "marketplace",
-   "symbol": "fetchListingDetail",
-   "via": "literal",
-   "ops": [
-    "select"
-   ],
-   "name": "posts"
   },
   {
    "kind": "rpc",
