@@ -206,7 +206,7 @@ export function getTranslatedPostsUseCase(): GetTranslatedPostsUseCase {
 export function materializePostTranslationsUseCase(): MaterializePostTranslationsUseCase {
   if (!_materializePostTranslations) {
     _materializePostTranslations = new MaterializePostTranslationsUseCase(
-      new EdgeFnTranslationService(getSupabaseClient({ storage: pickAuthStorage() })),
+      viaApi('translation', new EdgeFnTranslationService(getSupabaseClient({ storage: pickAuthStorage() }))),
     );
   }
   return _materializePostTranslations;

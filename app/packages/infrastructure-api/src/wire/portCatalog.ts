@@ -68,6 +68,7 @@ import type {
   ISurveyRepository,
   ITimesheetsRepository,
   ITranslationCacheRepository,
+  ITranslationService,
   ITransparencySettingsRepository,
   IUserActivityRepository,
   IUserRepository,
@@ -157,6 +158,7 @@ export interface PortCatalog {
   survey: ISurveyRepository;
   surveyAdmin: ISurveyAdminRepository;
   timesheets: ITimesheetsRepository;
+  translation: ITranslationService;
   translationCache: ITranslationCacheRepository;
   transparencySettings: ITransparencySettingsRepository;
   user: IUserRepository;

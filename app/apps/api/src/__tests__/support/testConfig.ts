@@ -23,6 +23,8 @@ export function testConfig(overrides: Partial<ApiConfig> = {}): ApiConfig {
     allowedOrigins: [],
     trustedProxyHops: 0,
     rateLimitPerMinute: 0,
+    translationProvider: 'googlefree',
+    gemini: { apiKey: null, model: 'gemini-test' },
     ...overrides,
   };
 }

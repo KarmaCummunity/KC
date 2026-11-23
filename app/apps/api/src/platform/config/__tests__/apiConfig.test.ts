@@ -40,6 +40,8 @@ describe('loadApiConfig', () => {
       allowedOrigins: [],
       trustedProxyHops: 0,
       rateLimitPerMinute: 600,
+      translationProvider: 'googlefree',
+      gemini: { apiKey: null, model: 'gemini-2.0-flash' },
     });
   });
 
@@ -131,6 +133,17 @@ describe('loadApiConfig', () => {
     ['KC_API_RATE_LIMIT_PER_MINUTE', 'many'],
   ])('rejects %s=%s', (variable, value) => {
     expect(configErrorOf({ [variable]: value }).variable).toBe(variable);
+  });
+
+  it('reads the translation provider and the Gemini settings', () => {
+    const config = loadApiConfig({ ...REQUIRED, KC_TRANSLATION_PROVIDER: 'Gemini', GEMINI_API_KEY: 'test-key', GEMINI_MODEL: 'gemini-test' });
+
+    expect(config).toMatchObject({ translationProvider: 'gemini', gemini: { apiKey: 'test-key', model: 'gemini-test' } });
+  });
+
+  it('refuses to start with Gemini selected and no key, or with an unknown provider', () => {
+    expect(configErrorOf({ KC_TRANSLATION_PROVIDER: 'gemini' }).variable).toBe('GEMINI_API_KEY');
+    expect(configErrorOf({ KC_TRANSLATION_PROVIDER: 'babelfish' }).variable).toBe('KC_TRANSLATION_PROVIDER');
   });
 
   it('names the variable but never prints its value', () => {

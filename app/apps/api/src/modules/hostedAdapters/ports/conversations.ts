@@ -1,4 +1,5 @@
 import {
+  EdgeFnTranslationService,
   SupabaseChatRepository,
   SupabaseChatV2Repository,
   SupabaseDeviceRepository,
@@ -153,6 +154,15 @@ const surveyAdmin = hostedPort('surveyAdmin', {
   },
 });
 
+// Served by the `translate` function this server has taken over (`modules/translation`).
+const translation = hostedPort('translation', {
+  create: (client) => new EdgeFnTranslationService(adapterClient<typeof EdgeFnTranslationService>(client)),
+  methods: {
+    requestTranslation: 'member',
+    requestTranslationsBatch: 'member',
+  },
+});
+
 const translationCache = hostedPort('translationCache', {
   create: (client) => new SupabaseTranslationCacheRepository(adapterClient<typeof SupabaseTranslationCacheRepository>(client)),
   methods: {
@@ -188,4 +198,4 @@ const chatV2 = hostedPort('chatV2', {
   },
 });
 
-export const CONVERSATIONS_PORTS: readonly PortDefinition[] = [chat, chatV2, device, importTelemetry, moderationAdmin, moderationQueue, notificationInbox, postTranslationReader, publicResearch, report, reports, supportInbox, survey, surveyAdmin, translationCache, userActivity, whatsAppLink];
+export const CONVERSATIONS_PORTS: readonly PortDefinition[] = [chat, chatV2, device, importTelemetry, moderationAdmin, moderationQueue, notificationInbox, postTranslationReader, publicResearch, report, reports, supportInbox, survey, surveyAdmin, translation, translationCache, userActivity, whatsAppLink];

@@ -3504,6 +3504,34 @@
     }
    ]
   },
+  "translation": {
+   "requestTranslation": [
+    {
+     "name": "request",
+     "shape": {
+      "ref": "TranslationRequest"
+     }
+    },
+    {
+     "name": "sourceText",
+     "shape": "string"
+    }
+   ],
+   "requestTranslationsBatch": [
+    {
+     "name": "targetLanguage",
+     "shape": "string"
+    },
+    {
+     "name": "items",
+     "shape": {
+      "array": {
+       "ref": "BatchTranslationItem"
+      }
+     }
+    }
+   ]
+  },
   "translationCache": {
    "get": [
     {
@@ -5370,6 +5398,43 @@
     "cursor"
    ]
   },
+  "BatchTranslationItem": {
+   "object": {
+    "contentType": {
+     "union": [
+      {
+       "literal": "user"
+      },
+      {
+       "literal": "post"
+      },
+      {
+       "literal": "comment"
+      },
+      {
+       "literal": "message"
+      }
+     ]
+    },
+    "contentId": "string",
+    "field": {
+     "union": [
+      {
+       "literal": "title"
+      },
+      {
+       "literal": "description"
+      },
+      {
+       "literal": "body"
+      },
+      {
+       "literal": "biography"
+      }
+     ]
+    }
+   }
+  },
   "CachedTranslation": {
    "object": {
     "contentType": {
@@ -6313,6 +6378,7 @@
     "descriptionHe"
    ]
   },
+  "LanguageTag": "unknown",
   "ListingStreetAddress": {
    "object": {
     "street": "string",
@@ -8512,6 +8578,54 @@
      ]
     },
     "targetLanguage": "string"
+   }
+  },
+  "TranslationRequest": {
+   "object": {
+    "contentType": {
+     "union": [
+      {
+       "literal": "user"
+      },
+      {
+       "literal": "post"
+      },
+      {
+       "literal": "comment"
+      },
+      {
+       "literal": "message"
+      }
+     ]
+    },
+    "contentId": "string",
+    "field": {
+     "union": [
+      {
+       "literal": "title"
+      },
+      {
+       "literal": "description"
+      },
+      {
+       "literal": "body"
+      },
+      {
+       "literal": "biography"
+      }
+     ]
+    },
+    "sourceLanguage": {
+     "union": [
+      "null",
+      {
+       "ref": "LanguageTag"
+      }
+     ]
+    },
+    "targetLanguage": {
+     "ref": "LanguageTag"
+    }
    }
   },
   "UpdateAdminTaskInput": {

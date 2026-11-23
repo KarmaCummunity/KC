@@ -31,6 +31,20 @@ export interface ApiConfig {
   readonly trustedProxyHops: number;
   /** Port calls one caller (a member, or an address when signed out) may make per minute. 0: no limit. */
   readonly rateLimitPerMinute: number;
+  /** Who translates member content (FR-TRANSLATE-002). */
+  readonly translationProvider: TranslationProviderKind;
+  /** Google Gemini: translation when it is the selected provider, and the other AI features as they move here. */
+  readonly gemini: GeminiConfig;
+}
+
+/** `googlefree`: Google's keyless public endpoint, no cost. `gemini`: Gemini Flash, needs `GEMINI_API_KEY`. */
+export const TRANSLATION_PROVIDERS = ['googlefree', 'gemini'] as const;
+export type TranslationProviderKind = (typeof TRANSLATION_PROVIDERS)[number];
+
+export interface GeminiConfig {
+  /** The API key, or null when none is configured. A secret: never logged, never in an error. */
+  readonly apiKey: string | null;
+  readonly model: string;
 }
 
 /**
@@ -52,6 +66,7 @@ const DEFAULT_PORT = 8080;
 /** Ten calls a second, sustained: far above what a screen needs, far below a scraper. */
 const DEFAULT_RATE_LIMIT_PER_MINUTE = 600;
 const MAX_PORT = 65535;
+const DEFAULT_GEMINI_MODEL = 'gemini-2.0-flash';
 
 /** Reads a variable; blank counts as unset, so `PORT=` falls back to the default. */
 function readVariable(env: Readonly<Record<string, string | undefined>>, name: string): string | undefined {
@@ -105,6 +120,18 @@ function parseOrigins(variable: string, value: string | undefined): string[] {
 }
 
 /**
+ * Reads who translates. Selecting Gemini without its key is a start-up error:
+ * otherwise every translation would fail at request time instead.
+ */
+function parseTranslationProvider(value: string | undefined, geminiApiKey: string | null): TranslationProviderKind {
+  if (value === undefined) return 'googlefree';
+  const provider = TRANSLATION_PROVIDERS.find((candidate) => candidate === value.toLowerCase());
+  if (!provider) throw new ApiConfigError('KC_TRANSLATION_PROVIDER', `must be one of: ${TRANSLATION_PROVIDERS.join(', ')}`);
+  if (provider === 'gemini' && !geminiApiKey) throw new ApiConfigError('GEMINI_API_KEY', 'is required when KC_TRANSLATION_PROVIDER is gemini');
+  return provider;
+}
+
+/**
  * Reads a required connection string and checks its shape only (it is a URL
  * with one of the expected schemes). Whether the service answers is the
  * readiness endpoint's job, not start-up's.
@@ -125,6 +152,7 @@ function parseServiceUrl(variable: string, value: string | undefined, schemes: r
  *   process stops at start instead of failing on its first request.
  */
 export function loadApiConfig(env: Readonly<Record<string, string | undefined>>): ApiConfig {
+  const geminiApiKey = readVariable(env, 'GEMINI_API_KEY') ?? null;
   return {
     environment: parseEnvironment(readVariable(env, 'KC_API_ENVIRONMENT')),
     host: readVariable(env, 'KC_API_HOST') ?? '0.0.0.0',
@@ -142,5 +170,7 @@ export function loadApiConfig(env: Readonly<Record<string, string | undefined>>)
       0,
       100_000,
     ),
+    translationProvider: parseTranslationProvider(readVariable(env, 'KC_TRANSLATION_PROVIDER'), geminiApiKey),
+    gemini: { apiKey: geminiApiKey, model: readVariable(env, 'GEMINI_MODEL') ?? DEFAULT_GEMINI_MODEL },
   };
 }

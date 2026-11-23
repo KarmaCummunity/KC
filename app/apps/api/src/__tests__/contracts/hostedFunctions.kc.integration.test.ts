@@ -1,10 +1,18 @@
 import 'reflect-metadata';
-import { DonationLinkError, type IDonationLinksRepository, type IPublicResearchRepository } from '@kc/application';
-import { PublicResearchError, type PublicResearchSubmission } from '@kc/domain';
+import {
+  DonationLinkError,
+  type IDonationLinksRepository,
+  type IPostRepository,
+  type IPublicResearchRepository,
+  type ITranslationService,
+  newPostInput,
+} from '@kc/application';
+import { type Address, createTranslationRequest, PublicResearchError, type PublicResearchSubmission } from '@kc/domain';
 import { createPortTransport, createRemotePort } from '@kc/infrastructure-api';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { KC_DATABASE_URL, KcTestDatabase } from '../support/kcDatabase';
 import { type KcGateway, startKcGateway } from '../support/kcGateway';
+import type { ProviderInput } from '../../modules/translation/translationProvider';
 
 /** The web origin the test gateway allows, as `KC_API_ALLOWED_ORIGINS` would. */
 const WEB_ORIGIN = 'https://app.kc.test';
@@ -19,12 +27,20 @@ describe.skipIf(!KC_DATABASE_URL)('Hosted functions on the KC schema', () => {
   const database = new KcTestDatabase();
   /** Stands in for the outbound reachability check: no test reaches the network. */
   const reachableHosts = new Set(['give.example.org']);
+  /** Stands in for the translation provider and records what it was asked. */
+  const providerCalls: ProviderInput[] = [];
+  const translationProvider = {
+    translate: (input: ProviderInput) => {
+      providerCalls.push(input);
+      return Promise.resolve({ translatedText: `EN(${input.text})`, detectedSourceLanguage: 'he', confidence: 0.5, model: 'test-provider' });
+    },
+  };
   let gateway: KcGateway;
   let baseUrl: string;
 
   beforeAll(async () => {
     gateway = await startKcGateway({
-      functions: { checkReachable: (url) => Promise.resolve(reachableHosts.has(url.hostname)) },
+      functions: { checkReachable: (url) => Promise.resolve(reachableHosts.has(url.hostname)), translationProvider },
       config: { allowedOrigins: [WEB_ORIGIN] },
     });
     baseUrl = await gateway.listen();
@@ -147,6 +163,92 @@ describe.skipIf(!KC_DATABASE_URL)('Hosted functions on the KC schema', () => {
       for (let attempt = 0; attempt < 5; attempt += 1) await research.submit(submission());
 
       expect(await refusal(research.submit(submission()))).toBe('rate_limited:rate_limited');
+    });
+  });
+
+  describe('translation', () => {
+    const portsOf = (userId: string) => {
+      const transport = createPortTransport({ baseUrl, getAccessToken: () => gateway.issuer.sign(userId) });
+      return {
+        posts: createRemotePort<IPostRepository>(transport, 'post'),
+        translation: createRemotePort<ITranslationService>(transport, 'translation'),
+      };
+    };
+    const cachedFor = (postId: string) =>
+      database.admin.query<{ field: string; translated_text: string; model: string }>(
+        'select field, translated_text, model from public.content_translations where content_id = $1 order by field',
+        [postId],
+      );
+    let address: Address;
+
+    beforeAll(async () => {
+      const city = await database.admin.query<{ city_id: string; name_he: string }>('select city_id, name_he from public.cities limit 1');
+      const row = city.rows[0];
+      if (!row) throw new Error('the reference seed is not loaded: no city');
+      address = { city: row.city_id, cityName: row.name_he, street: 'Contract St', streetNumber: '1' };
+    });
+
+    it("translates another member's public post once, then answers every reader from the cache", async () => {
+      const author = await database.newMember();
+      const reader = await database.newMember();
+      const post = await portsOf(author.userId).posts.create(newPostInput(author.userId, address, { title: 'ספה כחולה', description: 'כמעט חדשה' }));
+      const items = [
+        { contentType: 'post' as const, contentId: post.postId, field: 'title' as const },
+        { contentType: 'post' as const, contentId: post.postId, field: 'description' as const },
+      ];
+      providerCalls.length = 0;
+
+      const first = await portsOf(reader.userId).translation.requestTranslationsBatch('en', items);
+      const again = await portsOf(reader.userId).translation.requestTranslationsBatch('en', items);
+      const stored = await cachedFor(post.postId);
+
+      expect(first.map((translation) => translation?.translatedText)).toEqual(['EN(ספה כחולה)', 'EN(כמעט חדשה)']);
+      expect(again).toEqual(first);
+      // The server read the text itself and asked the provider once per field, not once per reader.
+      expect(providerCalls.map((call) => call.text).sort()).toEqual(['כמעט חדשה', 'ספה כחולה'].sort());
+      expect(stored.rows).toEqual([
+        { field: 'description', translated_text: 'EN(כמעט חדשה)', model: 'test-provider' },
+        { field: 'title', translated_text: 'EN(ספה כחולה)', model: 'test-provider' },
+      ]);
+    });
+
+    it('never translates a post the reader cannot see, whatever text the request carries', async () => {
+      const author = await database.newMember();
+      const stranger = await database.newMember();
+      const hidden = await portsOf(author.userId).posts.create(newPostInput(author.userId, address, { title: 'פוסט פרטי', visibility: 'OnlyMe' }));
+      const request = createTranslationRequest({ contentType: 'post', contentId: hidden.postId, field: 'title', sourceLanguage: null, targetLanguage: 'en' });
+      providerCalls.length = 0;
+
+      const single = await portsOf(stranger.userId).translation.requestTranslation(request, 'text the stranger made up');
+      const batch = await portsOf(stranger.userId).translation.requestTranslationsBatch('en', [{ contentType: 'post', contentId: hidden.postId, field: 'title' }]);
+      const forAuthor = await portsOf(author.userId).translation.requestTranslation(request, 'ignored');
+
+      expect(single).toBeNull();
+      expect(batch).toEqual([null]);
+      // The author may translate their own post, and what is translated is the stored title.
+      expect(forAuthor?.translatedText).toBe('EN(פוסט פרטי)');
+      expect(providerCalls.map((call) => call.text)).toEqual(['פוסט פרטי']);
+    });
+
+    it('refuses a visitor and a target language the app does not offer', async () => {
+      const member = await database.newMember();
+      const call = (authorization: string | null, args: unknown[]) =>
+        gateway.app.inject({
+          method: 'POST',
+          url: '/v1/ports/translation/requestTranslationsBatch',
+          payload: { args },
+          headers: authorization ? { authorization } : {},
+        });
+      const items = [{ contentType: 'post', contentId: '11111111-1111-4111-8111-111111111111', field: 'title' }];
+      providerCalls.length = 0;
+
+      const visitor = await call(null, ['en', items]);
+      const unsupported = await call(`Bearer ${await gateway.issuer.sign(member.userId)}`, ['fr', items]);
+
+      expect(visitor.statusCode).toBe(401);
+      // The adapter shows the original text for any refusal: one null per item.
+      expect(unsupported.json()).toEqual({ result: [null] });
+      expect(providerCalls).toEqual([]);
     });
   });
 });
