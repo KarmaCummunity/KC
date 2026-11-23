@@ -8,14 +8,24 @@ import type { NotificationKind } from './notifications';
 
 // ── Authentication ────────────────────────────
 
+/** How the member signed in (maps to auth identity providers). */
 export type AuthProvider = 'google' | 'apple' | 'phone' | 'email';
 
+/** Client runtime the session or device event came from. */
 export type Platform = 'ios' | 'android' | 'web';
 
 // ── User ──────────────────────────────────────
 
+/**
+ * Profile visibility to non-followers.
+ * @invariant `Private` hides the profile from non-followers; `Public` does not.
+ */
 export type PrivacyMode = 'Public' | 'Private';
 
+/**
+ * Lifecycle of a member account (auth + admin + self-deletion).
+ * @invariant `pending_deletion` is restorable until purge (FR-AUTH-016); the row is then removed.
+ */
 export type AccountStatus =
   | 'pending_verification'
   | 'active'
@@ -25,6 +35,10 @@ export type AccountStatus =
   /** FR-AUTH-016: deletion requested, restorable until the purge (the row is then removed). */
   | 'pending_deletion';
 
+/**
+ * Onboarding progress before the member may use the full app.
+ * @invariant Order is basic info → avatar → completed.
+ */
 export type OnboardingState =
   | 'pending_basic_info'
   | 'pending_avatar'
@@ -32,8 +46,13 @@ export type OnboardingState =
 
 // ── Post ──────────────────────────────────────
 
+/** Direction of a listing: offer (`Give`) or ask (`Request`). */
 export type PostType = 'Give' | 'Request';
 
+/**
+ * Listing lifecycle states (baseline `post` machine + admin/hide/pause).
+ * @invariant `draft` is unpublished; `paused` is owner-only visible (D104 / G1).
+ */
 export type PostStatus =
   // A post that is saved but not published yet (baseline `post` machine: draft → open).
   | 'draft'
@@ -47,10 +66,13 @@ export type PostStatus =
   // D104 — the owner paused the post: hidden from everyone but the owner (G1, migration 0551).
   | 'paused';
 
+/** Who may see a published listing beyond RLS. */
 export type PostVisibility = 'Public' | 'FollowersOnly' | 'OnlyMe';
 
+/** How much of an address is shown on a listing card or detail. */
 export type LocationDisplayLevel = 'CityOnly' | 'CityAndStreet' | 'FullAddress';
 
+/** Physical condition of a Give item. */
 export type ItemCondition = 'New' | 'LikeNew' | 'Good' | 'Fair' | 'Damaged';
 
 /** Give-post condition picker order (create/edit UI, post detail). */
@@ -58,6 +80,7 @@ export const ITEM_CONDITIONS: ItemCondition[] = [
   'New', 'LikeNew', 'Good', 'Fair', 'Damaged',
 ];
 
+/** Legacy item category enum used by Give/Request listings. */
 export type Category =
   | 'Furniture'
   | 'Clothing'
@@ -70,6 +93,7 @@ export type Category =
   | 'Tools'
   | 'Other';
 
+/** Stable ordered list of every {@link Category} for pickers and filters. */
 export const ALL_CATEGORIES: Category[] = [
   'Furniture', 'Clothing', 'Books', 'Toys', 'BabyGear',
   'Kitchen', 'Sports', 'Electronics', 'Tools', 'Other',
@@ -77,8 +101,10 @@ export const ALL_CATEGORIES: Category[] = [
 
 // ── Chat ──────────────────────────────────────
 
+/** Kind of a chat message payload. */
 export type MessageKind = 'user' | 'system' | 'media';
 
+/** Delivery/read state of a chat message. */
 export type MessageStatus = 'pending' | 'delivered' | 'read';
 
 /** A member's reaction to a chat message (KC#873); one per member per message. */
@@ -94,10 +120,12 @@ export function isMessageReactionType(value: unknown): value is MessageReactionT
 
 // ── Follow ────────────────────────────────────
 
+/** Status of a follow request between two members. */
 export type FollowRequestStatus = 'pending' | 'accepted' | 'rejected' | 'cancelled';
 
 // ── Moderation ────────────────────────────────
 
+/** Reason selected when filing a moderation report. */
 export type ReportReason = 'Spam' | 'Offensive' | 'Misleading' | 'Illegal' | 'Other';
 
 /**
@@ -107,35 +135,59 @@ export type ReportReason = 'Spam' | 'Offensive' | 'Misleading' | 'Illegal' | 'Ot
  */
 export type ReportTargetType = 'post' | 'user' | 'chat' | 'comment' | 'listing';
 
+/** Outcome of a moderation report case. */
 export type ReportStatus = 'open' | 'confirmed_violation' | 'dismissed_no_violation';
 
+/** Why a post or user was auto-queued for admin review. */
 export type QueueReason = 'excessive_reopens' | 'forbidden_keyword' | 'manual_flag';
 
 // ── Feed (FR-FEED-004, 006) ──────────────────
 
+/** Feed sort modes (FR-FEED-006). */
 export type FeedSortOrder = 'newest' | 'oldest' | 'distance' | 'personalized';
 
+/** Feed filter by listing open/closed state (FR-FEED-004). */
 export type FeedStatusFilter = 'open' | 'closed' | 'all';
 
+/**
+ * Geographic feed filter: center city plus radius.
+ * @invariant `radiusKm` must be > 0.
+ */
 export interface LocationFilter {
-  readonly centerCity: string;        // city_id (CBS code or slug)
-  readonly centerCityName: string;    // display name; UI-only — never sent to repo
-  readonly radiusKm: number;          // > 0
+  /** city_id (CBS code or slug) sent to the repo */
+  readonly centerCity: string;
+  /** Display label; UI-only — never sent to the repo */
+  readonly centerCityName: string;
+  /** Search radius in kilometres */
+  readonly radiusKm: number;
 }
 
-// Canonical radius options surfaced in the FilterSheet UI (FR-FEED-004).
-// Kept here as the source of truth; UI imports for the slider/picker.
+/**
+ * Canonical radius options for the FilterSheet UI (FR-FEED-004).
+ * Source of truth; UI imports for the slider/picker.
+ */
 export const RADIUS_OPTIONS_KM: readonly number[] = [5, 10, 25, 50, 100] as const;
 
 // ── Address value object ──────────────────────
 
+/**
+ * Structured street address for a listing or profile.
+ * @invariant `city` is a city slug (e.g. `"tel-aviv"`); `cityName` is the stored display label.
+ */
 export interface Address {
-  readonly city: string;   // city slug, e.g. "tel-aviv"
-  readonly cityName: string; // display name (Hebrew label as stored), e.g. Tel Aviv
+  /** City slug, e.g. `"tel-aviv"` */
+  readonly city: string;
+  /** Display name (Hebrew label as stored) */
+  readonly cityName: string;
   readonly street: string;
   readonly streetNumber: string;
 }
 
+/**
+ * Builds an {@link Address}, requiring non-empty `city` and `cityName`.
+ * @param raw address fields as entered or loaded
+ * @throws {ValidationError} when `city` or `cityName` is empty
+ */
 export function createAddress(raw: {
   city: string;
   cityName: string;
@@ -147,17 +199,22 @@ export function createAddress(raw: {
   return { ...raw };
 }
 
-// Street number: digits + optional Latin/Hebrew letter (mirrors `0081`).
+/** Street number: digits plus optional Latin/Hebrew letter (mirrors migration `0081`). */
 export const STREET_NUMBER_PATTERN = /^[0-9]+[A-Za-z\u05D0-\u05EA]?$/;
-// Email: 2+ char alphabetic TLD; Supabase is the source of truth (audit §3.3).
+/** Email shape with a 2+ alphabetic TLD; Supabase Auth remains the source of truth. */
 export const EMAIL_PATTERN = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
 
 // ── Notification preferences ──────────────────
 
+/** Quiet-hours window for non-critical notifications. */
 export interface QuietHoursPreferences {
+  /** When false, start/end/timezone are ignored */
   enabled: boolean;
+  /** Local start time (`HH:mm`) */
   start: string;
+  /** Local end time (`HH:mm`) */
   end: string;
+  /** IANA timezone id */
   timezone: string;
 }
 
@@ -167,6 +224,10 @@ export interface QuietHoursPreferences {
  */
 export type NotificationKindPreferences = Partial<Record<NotificationKind, boolean>>;
 
+/**
+ * Member notification prefs: category toggles, optional quiet hours, optional per-kind map.
+ * @invariant A kind is on unless `kinds[kind] === false`.
+ */
 export interface NotificationPreferences {
   critical: boolean;
   social: boolean;
@@ -177,6 +238,10 @@ export interface NotificationPreferences {
 // ── Donations ─────────────────────────────────
 // FR-DONATE-006..009. Slug values mirror the CHECK on donation_categories.slug.
 
+/**
+ * Slug for a donation category row (`donation_categories.slug` CHECK).
+ * FR-DONATE-006..009.
+ */
 export type DonationCategorySlug =
   | 'time'
   | 'money'
@@ -190,15 +255,19 @@ export type DonationCategorySlug =
   | 'employment'
   | 'challenges';
 
+/** Ordered list of every {@link DonationCategorySlug}. */
 export const DONATION_CATEGORY_SLUGS: readonly DonationCategorySlug[] = [
   'time', 'money', 'food', 'housing', 'transport', 'knowledge', 'animals', 'medical',
   'democracy', 'employment', 'challenges',
 ] as const;
 
-// Mirrors the CHECK constraints in 0014_donation_categories_and_links.sql.
+/** Min length for a donation link display name (CHECK in `0014`). */
 export const DONATION_LINK_DISPLAY_NAME_MIN = 2;
+/** Max length for a donation link display name (CHECK in `0014`). */
 export const DONATION_LINK_DISPLAY_NAME_MAX = 80;
+/** Max length for a donation link description (CHECK in `0014`). */
 export const DONATION_LINK_DESCRIPTION_MAX = 280;
+/** Donation link URL must use http(s) (CHECK in `0014`). */
 export const DONATION_LINK_URL_PATTERN = /^https?:\/\//i;
 
 // ── Biography (FR-PROFILE-007 AC3 / FR-PROFILE-014) ───────────────────
@@ -206,6 +275,8 @@ export const DONATION_LINK_URL_PATTERN = /^https?:\/\//i;
 // `users_biography_check` (migration `biography_url_check_real_tlds`,
 // KC#1721). Edit both together: the grammar uses only what JavaScript and Postgres regular
 // expressions read the same way (no \b, no lookarounds), and both match case-insensitively.
+
+/** Max biography character length (FR-PROFILE-007 AC3). */
 export const BIOGRAPHY_MAX_LENGTH = 200;
 
 /**
@@ -226,6 +297,7 @@ export const BIOGRAPHY_URL_PATTERN_SOURCE =
   BIOGRAPHY_LINK_TLDS.join('|') +
   ')([^a-z0-9-]|$))';
 
+/** Compiled {@link BIOGRAPHY_URL_PATTERN_SOURCE} (case-insensitive). */
 export const BIOGRAPHY_URL_PATTERN = new RegExp(BIOGRAPHY_URL_PATTERN_SOURCE, 'i');
 
 /** FR-PROFILE-014 — true when the text contains an http(s) URL, a `www.`
