@@ -3,6 +3,7 @@ import {
   SupabaseActiveStatusRepository,
   SupabaseBlockRepository,
   SupabaseFollowSuggestionsRepository,
+  SupabaseIdentityVerificationService,
   SupabaseKarmaHistoryRepository,
   SupabaseLegalDocumentSource,
   SupabaseUserRepository,
@@ -89,6 +90,16 @@ const followSuggestions = hostedPort('followSuggestions', {
   },
 });
 
+// `startSession` is served by the function this server has taken over (`modules/identityVerification`).
+const identityVerification = hostedPort('identityVerification', {
+  create: (client) => new SupabaseIdentityVerificationService(adapterClient<typeof SupabaseIdentityVerificationService>(client)),
+  methods: {
+    getStatus: 'member',
+    acceptConsent: 'member',
+    startSession: 'member',
+  },
+});
+
 const karmaHistory = hostedPort('karmaHistory', {
   create: (client) => new SupabaseKarmaHistoryRepository(adapterClient<typeof SupabaseKarmaHistoryRepository>(client)),
   methods: {
@@ -109,4 +120,4 @@ const legalDocument = hostedPort('legalDocument', {
   visitorCacheSeconds: { getCurrentContent: 300 },
 });
 
-export const PEOPLE_PORTS: readonly PortDefinition[] = [accountGate, activeStatus, block, followSuggestions, karmaHistory, legalDocument, user];
+export const PEOPLE_PORTS: readonly PortDefinition[] = [accountGate, activeStatus, block, followSuggestions, identityVerification, karmaHistory, legalDocument, user];

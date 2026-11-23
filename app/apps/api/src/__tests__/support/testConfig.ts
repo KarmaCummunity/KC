@@ -26,6 +26,7 @@ export function testConfig(overrides: Partial<ApiConfig> = {}): ApiConfig {
     translationProvider: 'googlefree',
     gemini: { apiKey: null, model: 'gemini-test' },
     postImport: { dailyBudget: 2000, model: 'gemini-test' },
+    identityVerification: { apiKey: null, webhookSecret: null, workflowId: null, callbackUrl: null, identityHashKey: null },
     ...overrides,
   };
 }

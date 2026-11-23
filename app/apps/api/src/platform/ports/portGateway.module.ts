@@ -1,8 +1,6 @@
 import { type DynamicModule, Module } from '@nestjs/common';
-import { appLoggerProvider } from '../logging/appLogger';
 import { HOSTED_FUNCTIONS, type HostedFunction, type HostedFunctionSet, NO_HOSTED_FUNCTIONS } from './hostedFunction';
 import { HostedFunctions } from './hostedFunctions';
-import { PortClients } from './portClients';
 import type { PortDefinition } from './portDefinition';
 import { PORT_DEFINITIONS, PortGatewayController } from './portGateway.controller';
 
@@ -41,7 +39,7 @@ export function indexPorts(definitions: readonly PortDefinition[]): ReadonlyMap<
 @Module({})
 export class PortGatewayModule {
   /**
-   * @param definitions Every port the API serves. Needs the database and identity modules (both global).
+   * @param definitions Every port the API serves. Needs the database, identity and port clients modules (all global).
    * @param functions The Edge Functions this server has taken over, which the hosted adapters invoke by name.
    */
   static forRoot(definitions: readonly PortDefinition[], functions: HostedFunctionSet = NO_HOSTED_FUNCTIONS): DynamicModule {
@@ -49,8 +47,6 @@ export class PortGatewayModule {
       module: PortGatewayModule,
       controllers: [PortGatewayController],
       providers: [
-        appLoggerProvider,
-        PortClients,
         ...functions.providers,
         ...functions.functions,
         // Collects the function instances into the one list the registry indexes.

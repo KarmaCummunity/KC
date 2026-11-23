@@ -37,6 +37,26 @@ export interface ApiConfig {
   readonly gemini: GeminiConfig;
   /** The external post import (FR-IMPORT-008). */
   readonly postImport: PostImportConfig;
+  /** Identity verification by the Didit provider (FR-VERIFY-010). */
+  readonly identityVerification: IdentityVerificationConfig;
+}
+
+/**
+ * Every field is null until configured. Without the key or the workflow no
+ * session can be opened; without the webhook secret every provider event is
+ * refused; without the hash key no approval can be applied.
+ */
+export interface IdentityVerificationConfig {
+  /** The provider's API key. A secret. */
+  readonly apiKey: string | null;
+  /** Shared secret of the provider's event signature. A secret. */
+  readonly webhookSecret: string | null;
+  /** The verification workflow configured in the provider's console. */
+  readonly workflowId: string | null;
+  /** Where the hosted flow sends the member when done. */
+  readonly callbackUrl: string | null;
+  /** Key of the hash that recognizes one document across accounts. A secret; changing it orphans existing hashes. */
+  readonly identityHashKey: string | null;
 }
 
 export interface PostImportConfig {
@@ -129,6 +149,23 @@ function parseOrigins(variable: string, value: string | undefined): string[] {
   });
 }
 
+/** The one identity provider the server has an adapter for. */
+const IDENTITY_PROVIDER_SLUG = 'didit';
+
+function parseIdentityVerification(env: Readonly<Record<string, string | undefined>>): IdentityVerificationConfig {
+  const provider = readVariable(env, 'IDV_PROVIDER');
+  if (provider !== undefined && provider !== IDENTITY_PROVIDER_SLUG) throw new ApiConfigError('IDV_PROVIDER', `must be ${IDENTITY_PROVIDER_SLUG}`);
+  const callbackUrl = readVariable(env, 'IDV_CALLBACK_URL') ?? null;
+  if (callbackUrl !== null && !URL.canParse(callbackUrl)) throw new ApiConfigError('IDV_CALLBACK_URL', 'must be a URL');
+  return {
+    apiKey: readVariable(env, 'IDV_PROVIDER_API_KEY') ?? null,
+    webhookSecret: readVariable(env, 'IDV_WEBHOOK_SECRET') ?? null,
+    workflowId: readVariable(env, 'IDV_DIDIT_WORKFLOW_ID') ?? null,
+    callbackUrl,
+    identityHashKey: readVariable(env, 'IDV_IDENTITY_HASH_KEY') ?? null,
+  };
+}
+
 /**
  * Reads who translates. Selecting Gemini without its key is a start-up error:
  * otherwise every translation would fail at request time instead.
@@ -187,5 +224,6 @@ export function loadApiConfig(env: Readonly<Record<string, string | undefined>>)
       dailyBudget: parseInteger('KC_IMPORT_DAILY_BUDGET', readVariable(env, 'KC_IMPORT_DAILY_BUDGET'), DEFAULT_IMPORT_DAILY_BUDGET, 0, 1_000_000),
       model: readVariable(env, 'KC_IMPORT_MODEL') ?? geminiModel,
     },
+    identityVerification: parseIdentityVerification(env),
   };
 }

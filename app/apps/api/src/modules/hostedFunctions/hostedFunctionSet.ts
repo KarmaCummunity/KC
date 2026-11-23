@@ -1,5 +1,6 @@
 import { DonationLinkFunction, LINK_REACHABILITY_CHECK } from '../donationLinks/donationLinkFunction';
 import { checkReachable } from '../donationLinks/reachability';
+import { VerificationSessionFunction } from '../identityVerification/verificationSessionFunction';
 import { POST_EXTRACTION_PROVIDER, type PostExtractionProvider } from '../postImport/extractionProvider';
 import { ExtractPostFunction } from '../postImport/extractPostFunction';
 import { GeminiExtractionProvider } from '../postImport/geminiExtractionProvider';
@@ -23,11 +24,12 @@ export interface HostedFunctionOverrides {
 /**
  * Every Edge Function this server has taken over (ADR-009 phase 8). A newly
  * ported function is added here and nowhere else: the gateway and the
- * registry are generic.
+ * registry are generic. The identity verification function also needs
+ * `IdentityVerificationModule`, which owns its provider.
  */
 export function hostedFunctionSet(overrides: HostedFunctionOverrides = {}): HostedFunctionSet {
   return {
-    functions: [DonationLinkFunction, ExtractPostFunction, ResearchSubmitFunction, TranslateFunction],
+    functions: [DonationLinkFunction, ExtractPostFunction, ResearchSubmitFunction, TranslateFunction, VerificationSessionFunction],
     providers: [
       { provide: LINK_REACHABILITY_CHECK, useValue: overrides.checkReachable ?? ((url: URL) => checkReachable(url)) },
       {

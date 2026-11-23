@@ -23,6 +23,7 @@ import type {
   IFollowSuggestionsRepository,
   IGuestPostsRepository,
   IHousingRepository,
+  IIdentityVerificationService,
   IImportTelemetryRepository,
   IKarmaHistoryRepository,
   IKcSupportChannelsRepository,
@@ -115,6 +116,7 @@ export interface PortCatalog {
   followSuggestions: IFollowSuggestionsRepository;
   guestPosts: IGuestPostsRepository;
   housing: IHousingRepository;
+  identityVerification: IIdentityVerificationService;
   importTelemetry: IImportTelemetryRepository;
   karmaHistory: IKarmaHistoryRepository;
   kcSupportChannels: IKcSupportChannelsRepository;

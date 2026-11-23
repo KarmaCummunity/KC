@@ -29,6 +29,7 @@ import { HOSTED_PORTS } from '../../modules/hostedAdapters/hostedPorts';
 import { ApiConfigModule } from '../../platform/config/apiConfig.module';
 import { DatabaseModule } from '../../platform/database/database.module';
 import { ACCESS_TOKEN_VERIFIER, type AccessTokenVerifier } from '../../platform/identity/accessTokenVerifier';
+import { PortClientsModule } from '../../platform/ports/portClients.module';
 import { PortGatewayModule } from '../../platform/ports/portGateway.module';
 import { VisitorCache } from '../../platform/ports/visitorCache';
 import { RateLimiter } from '../../platform/rateLimit/rateLimiter';
@@ -65,7 +66,7 @@ describe.skipIf(!KC_DATABASE_URL)('Port contracts through the API gateway', () =
     class LocalIdentityModule {}
 
     const config = testConfig({ databaseUrl: KC_DATABASE_URL ?? '' });
-    @Module({ imports: [ApiConfigModule.forRoot(config), DatabaseModule, LocalIdentityModule, PortGatewayModule.forRoot(HOSTED_PORTS)] })
+    @Module({ imports: [ApiConfigModule.forRoot(config), DatabaseModule, LocalIdentityModule, PortClientsModule, PortGatewayModule.forRoot(HOSTED_PORTS)] })
     class GatewayModule {}
 
     app = await createApp(GatewayModule, config);

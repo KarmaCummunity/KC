@@ -1,12 +1,14 @@
 import { type DynamicModule, Module } from '@nestjs/common';
 import { HOSTED_PORTS } from './modules/hostedAdapters/hostedPorts';
 import { hostedFunctionSet } from './modules/hostedFunctions/hostedFunctionSet';
+import { IdentityVerificationModule } from './modules/identityVerification/identityVerification.module';
 import { SessionModule } from './modules/session/session.module';
 import type { ApiConfig } from './platform/config/apiConfig';
 import { ApiConfigModule } from './platform/config/apiConfig.module';
 import { DatabaseModule, DatabaseProbe } from './platform/database/database.module';
 import { HealthModule } from './platform/health/health.module';
 import { IdentityModule } from './platform/identity/identity.module';
+import { PortClientsModule } from './platform/ports/portClients.module';
 import { PortGatewayModule } from './platform/ports/portGateway.module';
 import { VisitorCacheModule } from './platform/ports/visitorCache';
 import { RateLimitModule } from './platform/rateLimit/rateLimiter';
@@ -30,6 +32,8 @@ export class AppModule {
         VisitorCacheModule,
         HealthModule.withProbes([DatabaseProbe, RedisProbe]),
         SessionModule,
+        PortClientsModule,
+        IdentityVerificationModule.forRoot(),
         PortGatewayModule.forRoot(HOSTED_PORTS, hostedFunctionSet()),
       ],
     };

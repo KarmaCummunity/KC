@@ -11,6 +11,7 @@ import { ACCESS_TOKEN_VERIFIER } from '../../identity/accessTokenVerifier';
 import type { SqlBackedClient } from '../../postgrest/sqlBackedClient';
 import { RateLimiter } from '../../rateLimit/rateLimiter';
 import { definePort } from '../portDefinition';
+import { PortClientsModule } from '../portClients.module';
 import { PortGatewayModule } from '../portGateway.module';
 import { type CachedResult, VisitorCache } from '../visitorCache';
 
@@ -177,7 +178,9 @@ export async function createShelfApp(): Promise<{ app: NestFastifyApplication; i
   })
   class FakePlatformModule {}
 
-  @Module({ imports: [ApiConfigModule.forRoot(testConfig()), FakePlatformModule, PortGatewayModule.forRoot([shelf, savedPostsDouble, legalDocumentDouble])] })
+  @Module({
+    imports: [ApiConfigModule.forRoot(testConfig()), FakePlatformModule, PortClientsModule, PortGatewayModule.forRoot([shelf, savedPostsDouble, legalDocumentDouble])],
+  })
   class TestModule {}
 
   return { app: await createApp(TestModule, testConfig()), issuer };

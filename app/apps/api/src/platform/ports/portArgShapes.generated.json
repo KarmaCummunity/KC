@@ -1081,6 +1081,16 @@
     }
    ]
   },
+  "identityVerification": {
+   "getStatus": [],
+   "acceptConsent": [
+    {
+     "name": "version",
+     "shape": "string"
+    }
+   ],
+   "startSession": []
+  },
   "importTelemetry": {
    "getFunnel": [
     {

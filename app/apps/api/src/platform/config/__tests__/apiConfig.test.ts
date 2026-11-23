@@ -43,6 +43,7 @@ describe('loadApiConfig', () => {
       translationProvider: 'googlefree',
       gemini: { apiKey: null, model: 'gemini-2.0-flash' },
       postImport: { dailyBudget: 2000, model: 'gemini-2.0-flash' },
+      identityVerification: { apiKey: null, webhookSecret: null, workflowId: null, callbackUrl: null, identityHashKey: null },
     });
   });
 
@@ -148,6 +149,28 @@ describe('loadApiConfig', () => {
     expect(tuned.postImport).toEqual({ dailyBudget: 50, model: 'gemini-import' });
     expect(loadApiConfig({ ...REQUIRED, GEMINI_MODEL: 'gemini-test' }).postImport.model).toBe('gemini-test');
     expect(configErrorOf({ KC_IMPORT_DAILY_BUDGET: 'lots' }).variable).toBe('KC_IMPORT_DAILY_BUDGET');
+  });
+
+  it('reads the identity verification settings and accepts only the provider it has an adapter for', () => {
+    const config = loadApiConfig({
+      ...REQUIRED,
+      IDV_PROVIDER: 'didit',
+      IDV_PROVIDER_API_KEY: 'api-key',
+      IDV_WEBHOOK_SECRET: 'webhook-secret',
+      IDV_DIDIT_WORKFLOW_ID: 'workflow-1',
+      IDV_CALLBACK_URL: 'https://app.kc.test/verified',
+      IDV_IDENTITY_HASH_KEY: 'hash-key',
+    });
+
+    expect(config.identityVerification).toEqual({
+      apiKey: 'api-key',
+      webhookSecret: 'webhook-secret',
+      workflowId: 'workflow-1',
+      callbackUrl: 'https://app.kc.test/verified',
+      identityHashKey: 'hash-key',
+    });
+    expect(configErrorOf({ IDV_PROVIDER: 'other' }).variable).toBe('IDV_PROVIDER');
+    expect(configErrorOf({ IDV_CALLBACK_URL: 'not a url' }).variable).toBe('IDV_CALLBACK_URL');
   });
 
   it('refuses to start with Gemini selected and no key, or with an unknown provider', () => {

@@ -4,10 +4,13 @@ import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { createApp } from '../../createApp';
 import { HOSTED_PORTS } from '../../modules/hostedAdapters/hostedPorts';
 import { type HostedFunctionOverrides, hostedFunctionSet } from '../../modules/hostedFunctions/hostedFunctionSet';
+import { IdentityVerificationModule } from '../../modules/identityVerification/identityVerification.module';
+import type { IdentityProvider } from '../../modules/identityVerification/identityProvider';
 import type { ApiConfig } from '../../platform/config/apiConfig';
 import { ApiConfigModule } from '../../platform/config/apiConfig.module';
 import { DatabaseModule } from '../../platform/database/database.module';
 import { ACCESS_TOKEN_VERIFIER } from '../../platform/identity/accessTokenVerifier';
+import { PortClientsModule } from '../../platform/ports/portClients.module';
 import { PortGatewayModule } from '../../platform/ports/portGateway.module';
 import { VisitorCache } from '../../platform/ports/visitorCache';
 import { RateLimiter } from '../../platform/rateLimit/rateLimiter';
@@ -29,9 +32,11 @@ export interface KcGateway {
  * depend on: tokens are signed locally, the rate limiter always allows, and
  * the visitor cache always misses (these suites check what the database
  * answers, not Redis).
- * @param overrides Outbound checks of the hosted functions, and configuration fields.
+ * @param overrides Outbound calls of the hosted functions, the identity provider, and configuration fields.
  */
-export async function startKcGateway(overrides: { functions?: HostedFunctionOverrides; config?: Partial<ApiConfig> } = {}): Promise<KcGateway> {
+export async function startKcGateway(
+  overrides: { functions?: HostedFunctionOverrides; identityProvider?: IdentityProvider; config?: Partial<ApiConfig> } = {},
+): Promise<KcGateway> {
   const issuer = await createTestIssuer();
 
   @Global()
@@ -47,7 +52,14 @@ export async function startKcGateway(overrides: { functions?: HostedFunctionOver
 
   const config = testConfig({ databaseUrl: KC_DATABASE_URL ?? '', ...overrides.config });
   @Module({
-    imports: [ApiConfigModule.forRoot(config), DatabaseModule, LocalIdentityModule, PortGatewayModule.forRoot(HOSTED_PORTS, hostedFunctionSet(overrides.functions))],
+    imports: [
+      ApiConfigModule.forRoot(config),
+      DatabaseModule,
+      LocalIdentityModule,
+      PortClientsModule,
+      IdentityVerificationModule.forRoot({ provider: overrides.identityProvider }),
+      PortGatewayModule.forRoot(HOSTED_PORTS, hostedFunctionSet(overrides.functions)),
+    ],
   })
   class GatewayModule {}
 
