@@ -27,6 +27,7 @@ export function testConfig(overrides: Partial<ApiConfig> = {}): ApiConfig {
     gemini: { apiKey: null, model: 'gemini-test' },
     postImport: { dailyBudget: 2000, model: 'gemini-test' },
     identityVerification: { apiKey: null, webhookSecret: null, workflowId: null, callbackUrl: null, identityHashKey: null },
+    billing: { revenueCat: { webhookAuth: null, proEntitlementId: 'pro', orgEntitlementId: 'org' }, paymentWebhookSecrets: {} },
     ...overrides,
   };
 }

@@ -1,4 +1,5 @@
 import { type DynamicModule, Module } from '@nestjs/common';
+import { BillingModule } from './modules/billing/billing.module';
 import { HOSTED_PORTS } from './modules/hostedAdapters/hostedPorts';
 import { hostedFunctionSet } from './modules/hostedFunctions/hostedFunctionSet';
 import { IdentityVerificationModule } from './modules/identityVerification/identityVerification.module';
@@ -34,6 +35,7 @@ export class AppModule {
         SessionModule,
         PortClientsModule,
         IdentityVerificationModule.forRoot(),
+        BillingModule,
         PortGatewayModule.forRoot(HOSTED_PORTS, hostedFunctionSet()),
       ],
     };

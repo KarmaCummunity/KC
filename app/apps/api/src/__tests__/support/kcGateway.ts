@@ -2,6 +2,7 @@ import { Global, Module } from '@nestjs/common';
 import type { AddressInfo } from 'node:net';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { createApp } from '../../createApp';
+import { BillingModule } from '../../modules/billing/billing.module';
 import { HOSTED_PORTS } from '../../modules/hostedAdapters/hostedPorts';
 import { type HostedFunctionOverrides, hostedFunctionSet } from '../../modules/hostedFunctions/hostedFunctionSet';
 import { IdentityVerificationModule } from '../../modules/identityVerification/identityVerification.module';
@@ -18,7 +19,7 @@ import { KC_DATABASE_URL } from './kcDatabase';
 import { testConfig } from './testConfig';
 import { createTestIssuer, type TestIssuer } from './testTokens';
 
-/** The real gateway with every hosted port, on the KC test schema. */
+/** The real gateway with every hosted port and the webhook routes, on the KC test schema. */
 export interface KcGateway {
   readonly app: NestFastifyApplication;
   /** Signs the access tokens the gateway accepts. */
@@ -58,6 +59,7 @@ export async function startKcGateway(
       LocalIdentityModule,
       PortClientsModule,
       IdentityVerificationModule.forRoot({ provider: overrides.identityProvider }),
+      BillingModule,
       PortGatewayModule.forRoot(HOSTED_PORTS, hostedFunctionSet(overrides.functions)),
     ],
   })

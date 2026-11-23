@@ -1,4 +1,5 @@
 import type { Provider, Type } from '@nestjs/common';
+import type { HttpAnswer } from '../http/httpAnswer';
 import type { CallerIdentity } from '../identity/callerIdentity';
 
 /**
@@ -18,10 +19,7 @@ export interface FunctionRequest {
 }
 
 /** A function's answer: the HTTP status and JSON body the Edge Function would have sent. */
-export interface FunctionAnswer {
-  readonly status: number;
-  readonly body: unknown;
-}
+export type FunctionAnswer = HttpAnswer;
 
 /**
  * An Edge Function this server has taken over (ADR-009 phase 8). A hosted

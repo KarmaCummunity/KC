@@ -47,7 +47,7 @@ function setup(overrides: Partial<WebhookDeps> = {}, result: AppliedEvent = { id
     const raw = typeof body === 'string' ? body : JSON.stringify(body);
     const headers = new Headers({ 'x-timestamp': String(NOW) });
     if (secret !== null) headers.set('x-signature', hmacHex(secret, raw));
-    return receiveVerificationEvent(headers, raw, deps);
+    return receiveVerificationEvent({ headers, rawBody: raw }, deps);
   };
   return { deliver, applied, reported };
 }

@@ -11,7 +11,8 @@
 //
 // Ported from `supabase/functions/_shared/identity/didit.ts`.
 
-import { timingSafeEqual } from 'node:crypto';
+import { equalInConstantTime } from '../../platform/security/constantTime';
+import type { WebhookHeaders } from '../../platform/webhooks/webhookRequest';
 import { hmacHex } from './decisionPayload';
 import {
   type AcceptedDocumentType,
@@ -21,7 +22,6 @@ import {
   type IdentityProvider,
   ProviderError,
   type ProviderSession,
-  type WebhookHeaders,
 } from './identityProvider';
 
 export const DIDIT_SLUG = 'didit';
@@ -57,13 +57,6 @@ const isoDate = (value: unknown): string | null => {
   const date = text(value);
   return date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : null;
 };
-
-/** Compares two strings in time that depends only on their length. */
-function equalInConstantTime(a: string, b: string): boolean {
-  const left = Buffer.from(a);
-  const right = Buffer.from(b);
-  return left.length === right.length && timingSafeEqual(left, right);
-}
 
 /** Didit document type + alpha-3 country → an accepted kind, or null for anything else (e.g. a driver's licence). */
 export function toDocumentType(diditType: string | null, country: string | null): AcceptedDocumentType | null {

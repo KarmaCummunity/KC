@@ -8,9 +8,10 @@
 //
 // Ported from `supabase/functions/identity-verification-webhook/handler.ts`.
 
-import type { FunctionAnswer } from '../../platform/ports/hostedFunction';
+import type { HttpAnswer } from '../../platform/http/httpAnswer';
+import type { WebhookRequest } from '../../platform/webhooks/webhookRequest';
 import { toDecisionPayload } from './decisionPayload';
-import type { IdentityProvider, WebhookHeaders } from './identityProvider';
+import type { IdentityProvider } from './identityProvider';
 
 export interface AppliedEvent {
   readonly id: string;
@@ -33,12 +34,11 @@ export interface WebhookDeps {
 }
 
 /**
- * @param rawBody The request body exactly as received: the signature covers these bytes.
  * @returns `200 { ok }` (also for events that change nothing), `401` for a bad signature, `400` for a
  *   body that is not JSON, `422` when the event failed and the provider should resend, `500` for an
  *   infrastructure failure.
  */
-export async function receiveVerificationEvent(headers: WebhookHeaders, rawBody: string, deps: WebhookDeps): Promise<FunctionAnswer> {
+export async function receiveVerificationEvent({ headers, rawBody }: WebhookRequest, deps: WebhookDeps): Promise<HttpAnswer> {
   if (!deps.provider.verifyWebhook(headers, rawBody, deps.nowSeconds())) {
     return { status: 401, body: { ok: false, error: 'unauthenticated' } };
   }

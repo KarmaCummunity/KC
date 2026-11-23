@@ -39,6 +39,21 @@ export interface ApiConfig {
   readonly postImport: PostImportConfig;
   /** Identity verification by the Didit provider (FR-VERIFY-010). */
   readonly identityVerification: IdentityVerificationConfig;
+  /** The billing providers' webhooks. */
+  readonly billing: BillingConfig;
+}
+
+export interface BillingConfig {
+  readonly revenueCat: {
+    /** The shared secret RevenueCat sends in its Authorization header. A secret; null: every event is refused. */
+    readonly webhookAuth: string | null;
+    /** RevenueCat entitlement of a member's Pro tier. */
+    readonly proEntitlementId: string;
+    /** RevenueCat entitlement of an organization's paid plan. */
+    readonly orgEntitlementId: string;
+  };
+  /** Signing secret of each payment provider, by provider slug. Secrets; a provider without one is refused. */
+  readonly paymentWebhookSecrets: Readonly<Record<string, string>>;
 }
 
 /**
@@ -149,6 +164,27 @@ function parseOrigins(variable: string, value: string | undefined): string[] {
   });
 }
 
+/** One variable per payment provider: `PAYMENTS_WEBHOOK_SECRET_<PROVIDER SLUG IN UPPER CASE>`. */
+const PAYMENT_SECRET_PREFIX = 'PAYMENTS_WEBHOOK_SECRET_';
+
+function parseBilling(env: Readonly<Record<string, string | undefined>>): BillingConfig {
+  const paymentWebhookSecrets: Record<string, string> = {};
+  for (const name of Object.keys(env)) {
+    const slug = name.startsWith(PAYMENT_SECRET_PREFIX) ? name.slice(PAYMENT_SECRET_PREFIX.length).toLowerCase() : '';
+    const secret = readVariable(env, name);
+    // Only a plain slug is a provider; anything else is not a variable of this family.
+    if (secret !== undefined && /^[a-z][a-z0-9_]{0,40}$/.test(slug)) paymentWebhookSecrets[slug] = secret;
+  }
+  return {
+    revenueCat: {
+      webhookAuth: readVariable(env, 'REVENUECAT_WEBHOOK_AUTH') ?? null,
+      proEntitlementId: readVariable(env, 'REVENUECAT_PRO_ENTITLEMENT_ID') ?? 'pro',
+      orgEntitlementId: readVariable(env, 'REVENUECAT_ORG_ENTITLEMENT_ID') ?? 'org',
+    },
+    paymentWebhookSecrets,
+  };
+}
+
 /** The one identity provider the server has an adapter for. */
 const IDENTITY_PROVIDER_SLUG = 'didit';
 
@@ -225,5 +261,6 @@ export function loadApiConfig(env: Readonly<Record<string, string | undefined>>)
       model: readVariable(env, 'KC_IMPORT_MODEL') ?? geminiModel,
     },
     identityVerification: parseIdentityVerification(env),
+    billing: parseBilling(env),
   };
 }

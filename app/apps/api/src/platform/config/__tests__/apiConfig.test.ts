@@ -44,6 +44,7 @@ describe('loadApiConfig', () => {
       gemini: { apiKey: null, model: 'gemini-2.0-flash' },
       postImport: { dailyBudget: 2000, model: 'gemini-2.0-flash' },
       identityVerification: { apiKey: null, webhookSecret: null, workflowId: null, callbackUrl: null, identityHashKey: null },
+      billing: { revenueCat: { webhookAuth: null, proEntitlementId: 'pro', orgEntitlementId: 'org' }, paymentWebhookSecrets: {} },
     });
   });
 
@@ -171,6 +172,23 @@ describe('loadApiConfig', () => {
     });
     expect(configErrorOf({ IDV_PROVIDER: 'other' }).variable).toBe('IDV_PROVIDER');
     expect(configErrorOf({ IDV_CALLBACK_URL: 'not a url' }).variable).toBe('IDV_CALLBACK_URL');
+  });
+
+  it('reads the billing webhook settings: one payment secret per provider slug', () => {
+    const config = loadApiConfig({
+      ...REQUIRED,
+      REVENUECAT_WEBHOOK_AUTH: 'rc-secret',
+      REVENUECAT_PRO_ENTITLEMENT_ID: 'kc_pro',
+      PAYMENTS_WEBHOOK_SECRET_SANDBOX: 'sandbox-secret',
+      PAYMENTS_WEBHOOK_SECRET_CARD_COM: 'card-secret',
+      'PAYMENTS_WEBHOOK_SECRET_BAD-NAME': 'ignored',
+      PAYMENTS_WEBHOOK_SECRET_EMPTY: ' ',
+    });
+
+    expect(config.billing).toEqual({
+      revenueCat: { webhookAuth: 'rc-secret', proEntitlementId: 'kc_pro', orgEntitlementId: 'org' },
+      paymentWebhookSecrets: { sandbox: 'sandbox-secret', card_com: 'card-secret' },
+    });
   });
 
   it('refuses to start with Gemini selected and no key, or with an unknown provider', () => {

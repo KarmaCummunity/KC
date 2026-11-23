@@ -6,6 +6,8 @@
 //
 // Ported from `supabase/functions/_shared/identity/provider.ts`.
 
+import type { WebhookHeaders } from '../../platform/webhooks/webhookRequest';
+
 /** Document kinds accepted in v1 (FR-VERIFY-005 AC1). Anything else is declined. */
 export type AcceptedDocumentType = 'il_id_card' | 'il_passport' | 'foreign_passport';
 
@@ -49,11 +51,6 @@ export interface ProviderSession {
   readonly sessionId: string;
   /** HTTPS address of the hosted flow. */
   readonly url: string;
-}
-
-/** The request headers a signature check reads: lookup by lower-case name. */
-export interface WebhookHeaders {
-  get(name: string): string | null;
 }
 
 export interface IdentityProvider {
