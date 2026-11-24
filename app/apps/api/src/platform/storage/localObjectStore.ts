@@ -1,7 +1,7 @@
-import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { publicObjectUrl } from '@kc/infrastructure-api';
-import type { ObjectStore, SignedUpload, StoredObject, UploadGrant } from './objectStore';
+import type { ObjectEntry, ObjectPage, ObjectStore, SignedUpload, StoredObject, UploadGrant } from './objectStore';
 import { isSafeObjectName } from './storageAuthorizer';
 import { signGrant } from './storageGrants';
 
@@ -96,6 +96,43 @@ export class LocalObjectStore implements ObjectStore {
   async delete(bucket: string, name: string): Promise<void> {
     const path = this.pathOf(bucket, name);
     await Promise.all([rm(path, { force: true }), rm(path + META_SUFFIX, { force: true })]);
+  }
+
+  async list(bucket: string, prefix: string, options: { readonly limit: number; readonly pageToken?: string }): Promise<ObjectPage> {
+    if (!isSafeObjectName(bucket) || bucket.includes('/')) throw new UnsafeObjectPathError();
+    const names = (await this.namesUnder(join(this.options.directory, encodeURIComponent(bucket)), ''))
+      // The token is the last name of the page before: the next page is every name after it.
+      .filter((name) => name.startsWith(prefix) && (options.pageToken === undefined || name > options.pageToken))
+      .sort();
+    const page = names.slice(0, options.limit);
+    const entries = await Promise.all(page.map((name) => this.entryOf(bucket, name)));
+    return {
+      // An object removed between the walk and the read is simply no longer listed.
+      entries: entries.filter((entry): entry is ObjectEntry => entry !== null),
+      nextPageToken: names.length > page.length ? (page.at(-1) ?? null) : null,
+    };
+  }
+
+  /** Every object name under a directory of the store, relative to the bucket. A directory that is not there holds none. */
+  private async namesUnder(directory: string, folder: string): Promise<string[]> {
+    const children = await readdir(directory, { withFileTypes: true }).catch(() => []);
+    const names: string[] = [];
+    for (const child of children) {
+      const name = folder + decodeURIComponent(child.name);
+      if (child.isDirectory()) names.push(...(await this.namesUnder(join(directory, child.name), `${name}/`)));
+      else if (!child.name.endsWith(META_SUFFIX)) names.push(name);
+    }
+    return names;
+  }
+
+  private async entryOf(bucket: string, name: string): Promise<ObjectEntry | null> {
+    try {
+      const file = await stat(this.pathOf(bucket, name));
+      // An object is written once and never changed, so the time of its last write is when it was stored.
+      return { name, size: file.size, createdAt: file.mtime };
+    } catch {
+      return null;
+    }
   }
 
   private nowSeconds(): number {

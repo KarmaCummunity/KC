@@ -101,4 +101,54 @@ describe('LocalObjectStore', () => {
   it('builds a public URL with every path segment escaped', () => {
     expect(store.publicUrl('avatars', 'u1/my photo#1.jpg')).toBe(`${BASE_URL}/storage/v1/object/public/avatars/u1/my%20photo%231.jpg`);
   });
+
+  describe('listing', () => {
+    let listed: LocalObjectStore;
+    let listDirectory: string;
+
+    beforeAll(async () => {
+      listDirectory = await mkdtemp(join(tmpdir(), 'kc-store-list-'));
+      listed = new LocalObjectStore({ directory: listDirectory, baseUrl: BASE_URL, signingSecret: SECRET });
+      for (const name of ['u1/a.jpg', 'u1/b/c.jpg', 'u1/b/d e.jpg', 'u10/x.jpg', 'u2/y.jpg']) await listed.write('post-images', name, new Uint8Array([1, 2]), JPEG);
+      await listed.write('avatars', 'u1/other-bucket.jpg', new Uint8Array([1]), JPEG);
+    });
+
+    afterAll(async () => {
+      await rm(listDirectory, { recursive: true, force: true });
+    });
+
+    const namesOf = async (prefix: string) => (await listed.list('post-images', prefix, { limit: 100 })).entries.map((entry) => entry.name);
+
+    it('lists a bucket\'s objects at any depth, in name order, with size and creation time, and never the records beside them', async () => {
+      const page = await listed.list('post-images', '', { limit: 100 });
+
+      expect(page.entries.map((entry) => entry.name)).toEqual(['u1/a.jpg', 'u1/b/c.jpg', 'u1/b/d e.jpg', 'u10/x.jpg', 'u2/y.jpg']);
+      expect(page.entries.every((entry) => entry.size === 2 && Math.abs(entry.createdAt.getTime() - Date.now()) < 60_000)).toBe(true);
+      expect(page.nextPageToken).toBeNull();
+    });
+
+    it('narrows by a name prefix: a folder with its slash does not take in a folder that merely starts alike', async () => {
+      expect(await namesOf('u1/')).toEqual(['u1/a.jpg', 'u1/b/c.jpg', 'u1/b/d e.jpg']);
+      expect(await namesOf('u1/b/')).toEqual(['u1/b/c.jpg', 'u1/b/d e.jpg']);
+      expect(await namesOf('nobody/')).toEqual([]);
+      expect((await listed.list('no-such-bucket', '', { limit: 100 })).entries).toEqual([]);
+    });
+
+    it('pages through a listing, and removing what a page listed does not disturb the next', async () => {
+      const first = await listed.list('post-images', '', { limit: 2 });
+      expect(first.entries.map((entry) => entry.name)).toEqual(['u1/a.jpg', 'u1/b/c.jpg']);
+      await listed.delete('post-images', 'u1/a.jpg');
+
+      const second = await listed.list('post-images', '', { limit: 2, pageToken: first.nextPageToken as string });
+      const third = await listed.list('post-images', '', { limit: 2, pageToken: second.nextPageToken as string });
+
+      expect(second.entries.map((entry) => entry.name)).toEqual(['u1/b/d e.jpg', 'u10/x.jpg']);
+      expect([third.entries.map((entry) => entry.name), third.nextPageToken]).toEqual([['u2/y.jpg'], null]);
+    });
+
+    it('refuses a bucket name that could leave the store', async () => {
+      await expect(listed.list('..', '', { limit: 10 })).rejects.toBeInstanceOf(UnsafeObjectPathError);
+    });
+  });
 });
+

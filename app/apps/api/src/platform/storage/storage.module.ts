@@ -6,6 +6,7 @@ import { LocalObjectStore } from './localObjectStore';
 import { LOCAL_STORE_SECRET, LocalStoreRoutes } from './localStoreRoutes';
 import { OBJECT_STORE, type ObjectStore } from './objectStore';
 import { StorageController } from './storage.controller';
+import { StorageAdmin } from './storageAdmin';
 import { StorageAuthorizer } from './storageAuthorizer';
 import { StorageCallerFiles } from './storageCallerFiles';
 import { StorageService } from './storageService';
@@ -23,6 +24,7 @@ import { CALLER_FILES } from '../ports/callerFiles';
   providers: [
     StorageAuthorizer,
     StorageService,
+    StorageAdmin,
     LocalStoreRoutes,
     // What a hosted adapter reaches as `client.storage` (the port gateway picks it up when this module is present).
     { provide: CALLER_FILES, useClass: StorageCallerFiles },
@@ -37,6 +39,6 @@ import { CALLER_FILES } from '../ports/callerFiles';
       },
     },
   ],
-  exports: [OBJECT_STORE, StorageAuthorizer, StorageService, CALLER_FILES],
+  exports: [OBJECT_STORE, StorageAuthorizer, StorageService, StorageAdmin, CALLER_FILES],
 })
 export class StorageModule {}

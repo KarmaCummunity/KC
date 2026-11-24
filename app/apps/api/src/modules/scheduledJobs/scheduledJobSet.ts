@@ -1,9 +1,11 @@
+import { PurgeDeletedAccountsJob } from '../accountPurge/purgeDeletedAccountsJob';
 import { StandingOrdersChargeJob } from '../billing/standingOrdersChargeJob';
 import { EmbedPostsJob, MATCH_RERANK_MODEL, MatchRerankJob, matchRerankModelFor } from '../matching/matchingJobs';
 import { DispatchNotificationsJob, PUSH_TRANSPORT } from '../notifications/dispatchNotificationsJob';
 import { createExpoTransport } from '../notifications/expoTransport';
 import type { PushTransport } from '../notifications/pushTypes';
 import { RotateResearchSaltJob } from '../publicResearch/rotateResearchSaltJob';
+import { ReconcileStorageOrphansJob } from '../storageMaintenance/reconcileStorageOrphansJob';
 import type { FetchFn } from '../whatsapp/metaClient';
 import { WHATSAPP_FETCH, WhatsAppSenderJob } from '../whatsapp/whatsappSenderJob';
 import type { GeminiClient } from '../../platform/ai/geminiClient';
@@ -23,11 +25,23 @@ export interface ScheduledJobOverrides {
  * Every scheduled job this server runs (ADR-009 phase 8). A newly ported job
  * is added here and nowhere else: the jobs route is generic. A job that
  * replaces an Edge Function keeps its name, so its schedule only changes
- * address; `realtime-retention` is new with KC's own realtime gateway.
+ * address; `realtime-retention` is new with KC's own realtime gateway. The
+ * two file jobs need the storage module, and fail their run on a server that
+ * has no file store.
  */
 export function scheduledJobSet(overrides: ScheduledJobOverrides = {}): ScheduledJobSet {
   return {
-    jobs: [DispatchNotificationsJob, EmbedPostsJob, MatchRerankJob, PruneRealtimeMessagesJob, RotateResearchSaltJob, StandingOrdersChargeJob, WhatsAppSenderJob],
+    jobs: [
+      DispatchNotificationsJob,
+      EmbedPostsJob,
+      MatchRerankJob,
+      PruneRealtimeMessagesJob,
+      PurgeDeletedAccountsJob,
+      ReconcileStorageOrphansJob,
+      RotateResearchSaltJob,
+      StandingOrdersChargeJob,
+      WhatsAppSenderJob,
+    ],
     providers: [
       { provide: MATCH_RERANK_MODEL, inject: [API_CONFIG], useFactory: (config: ApiConfig) => overrides.matchRerankModel ?? matchRerankModelFor(config) },
       { provide: PUSH_TRANSPORT, inject: [API_CONFIG], useFactory: (config: ApiConfig) => overrides.pushTransport ?? createExpoTransport(config.expoAccessToken) },

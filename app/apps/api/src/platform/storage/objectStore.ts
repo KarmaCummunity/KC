@@ -12,6 +12,22 @@ export interface StoredObject {
   readonly cacheControl: string | null;
 }
 
+/** One object of a listing. */
+export interface ObjectEntry {
+  readonly name: string;
+  /** Size in bytes. */
+  readonly size: number;
+  /** When the object was stored. */
+  readonly createdAt: Date;
+}
+
+/** One page of a listing, in name order. */
+export interface ObjectPage {
+  readonly entries: readonly ObjectEntry[];
+  /** Passed back to get the next page; null after the last one. */
+  readonly nextPageToken: string | null;
+}
+
 /** What an upload is allowed to be; the store refuses anything else. */
 export interface UploadGrant {
   readonly bucket: string;
@@ -47,6 +63,14 @@ export interface ObjectStore {
   write(bucket: string, name: string, bytes: Uint8Array, object: Omit<StoredObject, 'size'>): Promise<boolean>;
   /** Removes an object; removing one that is not there is not an error. */
   delete(bucket: string, name: string): Promise<void>;
+  /**
+   * The objects of a bucket whose name starts with `prefix`, at any depth, in
+   * name order: names are flat, a slash is part of the name. Objects removed
+   * while a listing is paged through do not disturb the pages that follow.
+   * @param options.limit Most entries of one page.
+   * @param options.pageToken `nextPageToken` of the page before; absent for the first.
+   */
+  list(bucket: string, prefix: string, options: { readonly limit: number; readonly pageToken?: string }): Promise<ObjectPage>;
 }
 
 /** Injection token of the configured `ObjectStore`, or of null when the API has no store. */
