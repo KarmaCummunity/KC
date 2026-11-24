@@ -8,26 +8,56 @@
 //
 // This runs in its own job, before the emulator job asks for the emulator group, so waiting here
 // holds neither the emulator nor a kc-dev slot. A merge_group run waits while any EARLIER entry of
-// the merge queue (GraphQL mergeQueue entries, by position) still has Maestro to finish. The head
-// goes at once.
+// the merge queue still has Maestro to finish. The head goes at once.
+//
+// The earlier entries come from the queue's own refs, not GraphQL: `repository.mergeQueue` refuses
+// the workflow GITHUB_TOKEN ("Resource not accessible by integration", whatever the permissions).
+// Each group is `gh-readonly-queue/<base>/pr-<N>-<base sha>`, and its base sha is the head of the
+// entry ahead of it (or the base branch tip for the head). Walking from our merge_group.base_sha
+// back through the refs' head SHAs gives the entries ahead of us, in order. Listing refs needs
+// only `contents: read`.
 //
 // Fail-open: any other event, a failed lookup, our entry missing from the queue, or
 // KC_QUEUE_TURN_MAX_WAIT_MIN (default 150) reached → go on as before this change. It never exits
 // non-zero: the emulator job needs this one.
 //
 // Env: GITHUB_TOKEN (contents + actions read), GITHUB_REPOSITORY, GITHUB_EVENT_NAME,
-// MERGE_GROUP_BASE_REF, MERGE_GROUP_HEAD_SHA.
+// MERGE_GROUP_BASE_REF, MERGE_GROUP_BASE_SHA, MERGE_GROUP_HEAD_SHA.
 import { pathToFileURL } from 'node:url';
 
 const EMULATOR = /android emulator/i;
 const BUILD = /build E2E APK/i;
 const PLAN = /^detect changes$/i;
 
-/** Entries before ours, in queue order; null when our head SHA is not in the queue. */
-export function earlierEntries(entries, ownSha) {
-  const sorted = [...(entries ?? [])].sort((a, b) => a.position - b.position);
-  const i = sorted.findIndex((e) => e.headCommit?.oid === ownSha);
-  return i < 0 ? null : sorted.slice(0, i);
+const QUEUE_REF = /^refs\/heads\/gh-readonly-queue\/(.+)\/pr-(\d+)-([0-9a-f]{40})$/;
+
+/** Parse matching-refs results into queue entries { number, base, headCommit: { oid } }. */
+export function queueEntries(refs) {
+  const out = [];
+  for (const r of refs ?? []) {
+    const m = QUEUE_REF.exec(r?.ref ?? '');
+    if (m && r.object?.sha) out.push({ pullRequest: { number: Number(m[2]) }, base: m[3], headCommit: { oid: r.object.sha } });
+  }
+  return out;
+}
+
+/**
+ * Entries ahead of ours, head first: walk back from our group's base sha through the entries'
+ * head SHAs. null when our own group is not among the refs (obsolete, or already merging).
+ */
+export function earlierEntries(entries, ownSha, ownBase) {
+  const list = entries ?? [];
+  if (!list.some((e) => e.headCommit.oid === ownSha)) return null;
+  const byHead = new Map(list.map((e) => [e.headCommit.oid, e]));
+  const chain = [];
+  const seen = new Set();
+  for (let sha = ownBase; byHead.has(sha) && !seen.has(sha); ) {
+    seen.add(sha);
+    const e = byHead.get(sha);
+    chain.unshift(e);
+    sha = e.base;
+  }
+  return chain.map((e, i) => ({ ...e, position: i + 1 }));
 }
 
 /** Why an earlier entry's CI run still has Maestro to finish, or null. */
@@ -46,14 +76,11 @@ export function blockReason(run, jobs) {
   return null;
 }
 
-export async function readEntries(gql, repo, baseRef) {
-  const [owner, name] = repo.split('/');
+export async function readEntries(gh, repo, baseRef) {
   const branch = String(baseRef).replace(/^refs\/heads\//, '');
-  const q = `query($o:String!,$n:String!,$b:String!){repository(owner:$o,name:$n){mergeQueue(branch:$b){entries(first:100){nodes{position state headCommit{oid} pullRequest{number}}}}}}`;
-  const d = await gql(q, { o: owner, n: name, b: branch });
-  const nodes = d?.repository?.mergeQueue?.entries?.nodes;
-  if (!Array.isArray(nodes)) throw new Error('no mergeQueue entries in the response');
-  return nodes;
+  const refs = await gh(`/repos/${repo}/git/matching-refs/heads/gh-readonly-queue/${branch}/`);
+  if (!Array.isArray(refs)) throw new Error('matching-refs did not return a list');
+  return queueEntries(refs);
 }
 
 /** First earlier entry that blocks us, checked from the head down: { entry, reason } or null. */
@@ -76,18 +103,13 @@ async function main(env = process.env) {
   const token = env.GITHUB_TOKEN;
   const repo = env.GITHUB_REPOSITORY;
   const own = env.MERGE_GROUP_HEAD_SHA;
-  if (!token || !repo || !own || !env.MERGE_GROUP_BASE_REF) return console.log('::warning::queue turn: missing token/repo/merge group; going on (fail-open)');
+  const ownBase = env.MERGE_GROUP_BASE_SHA;
+  if (!token || !repo || !own || !ownBase || !env.MERGE_GROUP_BASE_REF) return console.log('::warning::queue turn: missing token/repo/merge group; going on (fail-open)');
   const headers = { authorization: `Bearer ${token}`, accept: 'application/vnd.github+json', 'x-github-api-version': '2022-11-28' };
   const gh = async (path) => {
     const res = await fetch(`https://api.github.com${path}`, { headers });
     if (!res.ok) throw new Error(`GET ${path.split('?')[0]} → ${res.status}`);
     return res.json();
-  };
-  const gql = async (query, variables) => {
-    const res = await fetch('https://api.github.com/graphql', { method: 'POST', headers, body: JSON.stringify({ query, variables }) });
-    const body = await res.json().catch(() => ({}));
-    if (!res.ok || body.errors?.length) throw new Error(`GraphQL ${res.status}: ${(body.errors ?? []).map((e) => e.message).join('; ')}`);
-    return body.data;
   };
   const pollMs = Number(env.KC_QUEUE_TURN_POLL_MS) || 90_000;
   const maxMin = Number(env.KC_QUEUE_TURN_MAX_WAIT_MIN) || 150;
@@ -96,7 +118,7 @@ async function main(env = process.env) {
   for (;;) {
     let earlier, blocker;
     try {
-      earlier = earlierEntries(await readEntries(gql, repo, env.MERGE_GROUP_BASE_REF), own);
+      earlier = earlierEntries(await readEntries(gh, repo, env.MERGE_GROUP_BASE_REF), own, ownBase);
       if (earlier === null) return console.log(`queue turn: ${own.slice(0, 8)} is not in the merge queue (obsolete or already merging); going on`);
       blocker = await firstBlocker(gh, repo, earlier);
     } catch (e) {
