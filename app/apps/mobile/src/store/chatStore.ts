@@ -24,6 +24,33 @@ const compareCreatedAt = (a: { createdAt: string }, b: { createdAt: string }) =>
 
 const toOptimistic = (m: Message): OptimisticMessage => ({ ...m, clientId: m.messageId });
 
+/**
+ * Match a server echo to a pending optimistic row.
+ * Prefer `clientId` when both sides have one (the echo carries the client-generated
+ * id as `messageId` via `send_message(p_message_id)`). Fall back to the legacy
+ * senderId+body match only when the pending row has no clientId.
+ */
+function findPendingOptimisticIndex(
+  list: OptimisticMessage[],
+  msg: Message,
+): number {
+  const byClientId = list.findIndex(
+    (m) =>
+      m.status === 'pending' &&
+      m.senderId === msg.senderId &&
+      Boolean(m.clientId) &&
+      m.clientId === msg.messageId,
+  );
+  if (byClientId >= 0) return byClientId;
+  return list.findIndex(
+    (m) =>
+      m.status === 'pending' &&
+      m.senderId === msg.senderId &&
+      m.body === msg.body &&
+      !m.clientId,
+  );
+}
+
 function inboxUserId(): string | null {
   return useAuthStore.getState().session?.userId ?? null;
 }
@@ -120,12 +147,13 @@ export const useChatStore = create<ChatState>((set, get) => ({
       if (list.some((m) => m.messageId === msg.messageId)) return s;
       // A live message is new: its reactions start empty and arrive as broadcasts (#2568).
       const reactions = { ...s.reactions, [chatId]: withNewMessages(s.reactions[chatId], [msg.messageId]) };
-      const optimisticIdx = list.findIndex(
-        (m) => m.status === 'pending' && m.senderId === msg.senderId && m.body === msg.body,
-      );
+      const optimisticIdx = findPendingOptimisticIndex(list, msg);
       if (optimisticIdx >= 0) {
+        const matched = list[optimisticIdx]!;
         const next = list.map((m, i) =>
-          i === optimisticIdx ? { ...msg, clientId: m.clientId, failed: false } : m,
+          i === optimisticIdx
+            ? { ...msg, clientId: matched.clientId || msg.messageId, failed: false }
+            : m,
         );
         return { threads: { ...s.threads, [chatId]: next }, reactions };
       }
