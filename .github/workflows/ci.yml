@@ -200,15 +200,18 @@ jobs:
       contents: read
     uses: ./.github/workflows/ci-edge-functions.yml
 
-  # The Android journeys on an emulator against kc-dev (about 45 minutes). Planned only on a PR whose
-  # diff touches the app, its packages, the flows or their runner (scripts/ci-changes.mjs MAESTRO_RULES),
-  # so a failing journey now fails the gate. A merge group, a push and a dispatch do not run it: the PR
-  # already did, and `dev` has its own non-blocking run (maestro-dev-health.yml) so a shared, mutable
-  # kc-dev can never hold a deploy. The seed password reaches only runs that get secrets.
+  # The Android journeys on an emulator against kc-dev (about 45 minutes). Required in the dev merge
+  # queue, on the exact group head, when the group's diff touches the app, its packages, the flows or
+  # their runner (scripts/ci-changes.mjs MAESTRO_RULES); on a PR into main that does; and on a PR into
+  # dev only with the `maestro` label (opt-in early feedback; the queue runs it anyway). A push and a
+  # dispatch do not run it: `dev` has its own non-blocking run (maestro-dev-health.yml) so a shared,
+  # mutable kc-dev can never hold a deploy. It starts only once the cheap lanes it builds on did not
+  # fail, and its emulator job waits for the single kc-dev emulator queue without holding a runner
+  # (ci-maestro-android.yml, #2613). The seed password reaches only runs that get secrets.
   maestro:
     name: maestro
-    needs: changes
-    if: needs.changes.outputs.maestro == 'true'
+    needs: [changes, static, frontend]
+    if: needs.changes.outputs.maestro == 'true' && !cancelled() && needs.static.result != 'failure' && needs.frontend.result != 'failure'
     permissions:
       contents: read
       actions: read # kc-dev test slot (scripts/kc-dev-slot.mjs)

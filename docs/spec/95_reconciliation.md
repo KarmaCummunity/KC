@@ -77,6 +77,12 @@ Also added to [93](./93_implementation_gaps.md).
 - **CI script tests.** Before this PR only 2 of the 8 `scripts/*.test.mjs` suites ran in CI, and two Edge Function test files (`delete-account`, `revenuecat-webhook`) were never executed. Both are now wired.
 
 
+## Responsive requirements partial checkpoint (2026-11-24, #1862)
+
+Static review at dev `89f047f4`, all six FR IDs and39AC numbers retained. See the per-AC evidence table in `requirements/17_responsive_desktop.md`. Shell primitives/root wiring are present; preview flag semantics and private aside context descriptions corrected. Split-chat and split-auth wiring remain planned. Eight focused shell/inset/keyboard test files (42 tests) passed locally.
+
+This does not close #1862. Full device/large-text acceptance, named scaling constants, historical typography minima versus current tokens, and exact viewport/config claims remain unverified or inconsistent. No approved requirement was waived and no UI implementation changed. Scoped D/S/G/book searches did not supply a decision settling those gaps; do not silently replace a requirement with current code.
+
 ## Translation requirements checkpoint (2026-11-24, #1863)
 
 Scoped static reconciliation at dev `89f047f4`; no live flags, database, provider or deployed client inspected. All six `FR-TRANSLATE-*` IDs and existing AC numbers are retained. No product decision or rollout approval is added.
@@ -90,3 +96,21 @@ Scoped static reconciliation at dev `89f047f4`; no live flags, database, provide
 | Retirement | FR-TRANSLATE-005/006, engineering D-190/D-191 | Retired IDs retained, including the separately identified KC batch reuse. |
 
 Requirements and `docs/SSOT/UGC_TRANSLATION.md` now distinguish current code, historical requirements and unverified rollout. Production provider terms/approval and provider-call deduplication remain acceptance gaps, not waived requirements. No shared D/S/G numbering changed.
+
+
+## Public research requirements checkpoint (2026-11-24, #1861)
+
+Partial reconciliation at dev `551c9f44`. Four FR IDs and all 26 original numbered criteria are retained verbatim, not relaxed to match implementation. The status header now separates historical QA from current source evidence. Per-AC evidence and limitations are in [requirements 16](./requirements/16_public_research.md).
+
+D166/D186 preserve the public research surface. Source evidence covers the web runner, public route/chrome policy, draft storage, anonymous gateway, private response/contact storage and share helpers. Six focused unit-test files passed (49 tests). This is not a fresh database, deployed, native or analytics acceptance run.
+
+Unresolved: native route-file absence vs null fallback, direct anon grant vs service gateway, separate thank-you email capture, administrator read/deletion semantics. Logged together in [92](./92_open_questions.md#public-research-checkpoint-2026-11-24-1861). This domain is not ticked complete and this checkpoint must not auto-close #1861. No product/security decision, deployment, rollout or data access granted.
+
+
+## Identity verification requirements checkpoint (2026-11-24, #1867)
+
+Partial source reconciliation at dev `551c9f44`: all 13 FR IDs and 52 numbered AC sentences retained. Updated the stale phone-only/unimplemented header, distinguished D23 history from D172 tiers and annotated S62's superseded phone-tier wording. S60/S61/S62 detailed retention, attempts and validity policy remain pending; A12 provider contract/DPA and counsel/biometric/privacy launch gates remain unchanged.
+
+The [per-AC table](./requirements/22_identity_verification.md#source-reconciliation-and-remaining-acceptance-2026-11-24-1867) records existing domain/nudge/badge, adapter, session/webhook, signature/hash, attempts and expiry sources separately from unverified acceptance. Didit source selection is not PM provider approval or a deployed contract. No live PII, provider signup, keys or database inspected.
+
+Six focused unit-test files / 51 tests passed. Single SQL level-function/automatic completeness parity, full member provider flow, provider sandbox/certification, admin review, reminders, retention and device acceptance remain incomplete or unverified. Domain not ticked complete; this checkpoint must not auto-close #1867.
