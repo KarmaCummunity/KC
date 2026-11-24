@@ -1,10 +1,10 @@
 # 2.22 Identity verification (ID document + face)
 
-> **Status:** ⏳ Spec v1 (2026-11-03). Not implemented: today only a verified phone exists (FR-PROFILE-017) and `users.verified_at` / `verification_method` are set by hand. Blocked on a provider contract (FR-VERIFY-011).
+> **Status (source checkpoint 2026-11-24, #1867):** Partial implementation, not phone-only. Domain completeness/badges/nudges, an admin level setter, application/adapter seams and provider session/webhook backend sources exist. The member status screen still shows provider-soon at level 1 and is not a completed provider onboarding flow. Didit adapter code is not proof of a selected/contracted provider, configured environment, counsel approval or production acceptance. FR-VERIFY-011 and privacy/biometric launch gates remain open.
 
 Prefix: `FR-VERIFY-*`
 
-> **Source of truth.** Product book [`docs/spec/07_cross_cutting_systems.md` §7.14](../07_cross_cutting_systems.md) wins where it disagrees (D35). Decisions: D23 (levels phone → ID → blue check, shown on post, card and profile; not blocking in general), D30 (housing: both sides; medical: bodies only), D31 (an event may require verified users), D48 (elderly home visit: ID-verified volunteer), D109 (private date of birth, minimum age 18), `D117` (what "ID verified" means). Fills pending approval: `S60`, `S61`, `S62`.
+> **Source of truth.** Product book [`docs/spec/07_cross_cutting_systems.md` §7.14](../07_cross_cutting_systems.md) wins where it disagrees (D35). Decisions: D23 (historical phone → ID → blue check levels, superseded by D172 for tier definitions; display and generally non-blocking scope retained), D30 (housing: both sides; medical: bodies only), D31 (an event may require verified users), D48 (elderly home visit: ID-verified volunteer), D109 (private date of birth, minimum age 18), `D117` (what "ID verified" means). Fills pending approval: `S60`, `S61`, `S62`.
 
 > **Scope.** A professional identity check that proves a real, adult person stands behind an account: a government identity document **and** a live face that matches it, run by a certified verification provider. KC keeps the result, never the images.
 
@@ -120,3 +120,28 @@ Shown only to the signed-in member about their **own** profile, only while their
 | 0.1 | 2026-11-03 | New domain file: ID document + live selfie via a certified provider (`D117`); FR-VERIFY-001…011. |
 | 0.2 | 2026-11-07 | Levels reshaped (D172): 1 = complete profile (FR-VERIFY-012, replaces verified phone), 2 = ID, 3 = recognised organization; color-tier badges and display surfaces (FR-VERIFY-001 AC2–AC5); complete-profile nudges (FR-VERIFY-013). |
 | 0.3 | 2026-11-18 | FR-VERIFY-011 AC2: added Didit and ID Analyzer as provider candidates (free monthly allowance, to be verified in a sandbox). |
+
+
+## Source reconciliation and remaining acceptance (2026-11-24, #1867)
+
+Book §7.14 and D172 define complete-profile / ID / recognised-organization tiers. D117 defines document + live face, with result-only KC storage. D116/D122 retain housing gates and the narrow emergency guest exception. S60/S61/S62 remain proposed detailed policy, not new approval. S62's old expiry-to-phone wording conflicts with D172; the requirement's level-1 destination follows D172. No policy is changed here. D184 consulting requires completeness/profession declaration, not ID; the general voluntary rule remains consistent.
+
+Every FR ID and numbered AC is retained. Source evidence is not live acceptance:
+
+| Criterion scope | Current evidence | Unmet or unverified acceptance |
+|---|---|---|
+| 001 AC1-5; 012 AC1-3 | Domain verificationLevel mirror, badge components; users.verification_level, admin_set_verification_level, SQL 058 tests | No current user_verification_level(uid) function found in schema/migration search. Stored/admin levels are not proof of the single-function contract or automatic server completeness updates. Full badge-surface/privacy matrix unverified. |
+| 013 AC1-5 incl AC2a | Own-profile completeness hooks, seven-day per-user AsyncStorage snooze, banner/profile components and locale bundles | Unit coverage supports local rule behavior, not the full device/visual matrix or server-trigger parity. |
+| 002 AC1-3 incl AC1a | World permission and event registration gates; housing create gate | Housing level gating exists; full elderly/event/emergency-vouch workflow and every precheck not established by this review. |
+| 003 AC1-2; 004 AC1-3 | Settings/profile route, IdentityVerificationScreen, consent RPC and application port | Level-1 status screen remains provider-soon. Full status/consent/hosted flow and counsel-reviewed text are not released by source presence. |
+| 005 AC1-6 | Session handler, webhook handler, Didit adapter, decision normalization | Signature/authentication/idempotency paths exist. Document coverage, liveness certification, hosted RTL UI and timing require actual provider/sandbox evidence. |
+| 006 AC1-7 | Migration 0078 attempts/consents/hash tables; decisionPayload HMAC/name-match reduction; 0089 race-safe reservation | Storage is public.user_account for verification timestamps/method, not users fields. Hash rows cascade with user deletion: proposed banned-account retention is not demonstrated. Provider deletion contract, admin-read auditing and all retention acceptance remain unverified. |
+| 007 AC1-3 | Begin-attempt SQL advisory lock and count/decline gates; underage decision handling | Static code and test sources do not prove deployed policy or support operations. |
+| 008 AC1-3 | Audited admin level/revoke operations | Not proof of provider-dashboard manual review, users.verify permission, method assignment or 48-hour operational SLA. |
+| 009 AC1-3 | Provider expiry field and scheduled expiry sweep; audited revoke | Thirty-day reminder and notification delivery not established. Current expiry sweep sets level 1 without proving required profile fields remain complete. Confirmed housing behavior unverified. |
+| 010 AC1-4 | Application use cases/port, Supabase adapter, Edge provider seam and tests; SQL 127 | IDV_PROVIDER defaults to Didit in source, with workflow/callback configuration in addition to named secrets. No deployed secret values inspected. Native sandbox happy/declined flow not executed. |
+| 011 AC1-3 | Provider candidate criteria and launch-plan A12 | Didit implementation does not waive PM selection, signed contract/DPA, counsel, budget, certification or sandbox/production configuration gates. Vendor capability claims remain unverified here. |
+
+Webhook source uses billing.webhook_events rather than the historical provider_webhook_events name. Normalized events carry a keyed identity hash, not clear document number/legal name. No real identity data, provider account or live database was accessed for this checkpoint. Notification keys and success metrics above remain targets, not measured results. Open policy/approval dependencies remain S60/S61/S62 and launch-plan A12; this document does not settle them.
+
+Checkpoint validation: six focused Vitest files / 51 tests passed across domain, application, infrastructure adapter and mobile badge/nudge tests. Edge/Deno, SQL, deployed provider and native flows were not executed here. This is partial source reconciliation, not provider or end-to-end acceptance.
