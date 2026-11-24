@@ -41,3 +41,21 @@ export {
 } from './wire/realtimeWire';
 export { ApiRealtimeChannel, type ApiRealtimeHost, type BroadcastMessage, type ChannelStatus, createApiRealtimeHost } from './realtime/apiRealtimeHost';
 export { RealtimeSocket, type RealtimeSocketOptions, type SocketLike } from './realtime/realtimeSocket';
+export { type ApiStorage, type ApiStorageOptions, createApiStorage, type ObjectUpload, StorageRequestError } from './storage/apiStorage';
+export {
+  type DeleteObjectsRequest,
+  type DeleteObjectsResponse,
+  isPublicObjectUrl,
+  type ObjectRef,
+  PUBLIC_OBJECT_PATH,
+  publicObjectName,
+  publicObjectUrl,
+  type SignedUrlRequest,
+  type SignedUrlResponse,
+  STORAGE_PATHS,
+  type StorageErrorCode,
+  type UploadCompleteResponse,
+  type UploadGrantRequest,
+  type UploadGrantResponse,
+  type UploadTarget,
+} from './wire/storageWire';

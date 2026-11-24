@@ -2,6 +2,7 @@ import 'reflect-metadata';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { createApiStorage, publicObjectName, StorageRequestError } from '@kc/infrastructure-api';
 import { SupabaseChatRepository } from '@kc/infrastructure-supabase';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { OBJECT_STORE, type ObjectStore } from '../../platform/storage/objectStore';
@@ -52,6 +53,21 @@ describe.skipIf(!KC_DATABASE_URL)('File storage on the KC schema', () => {
     await send(granted.body.upload.url, PHOTO);
     return call(member.userId, 'uploads/complete', { bucket, name });
   };
+  /**
+   * `fetch` for the app's storage client, answered by the gateway in process:
+   * the client and the server meet without a port being opened.
+   */
+  const injectFetch = (async (input: string | URL | Request, init: RequestInit = {}) => {
+    const response = await gateway.app.inject({
+      method: (init.method ?? 'GET') as 'GET' | 'POST' | 'PUT',
+      url: pathOf(String(input)),
+      headers: Object.fromEntries(new Headers(init.headers)),
+      payload: typeof init.body === 'string' ? init.body : Buffer.from(init.body as Uint8Array),
+    });
+    return new Response(new Uint8Array(response.rawPayload), { status: response.statusCode, headers: response.headers as Record<string, string> });
+  }) as typeof fetch;
+  /** The app's storage client, signed in as `member`. */
+  const storageOf = (member: TestMember) => createApiStorage({ baseUrl: 'http://api.kc.test', getAccessToken: () => gateway.issuer.sign(member.userId), fetch: injectFetch });
   const rowsOf = async (bucket: string, name: string) =>
     (await database.admin.query<{ metadata: Record<string, unknown> }>('select metadata from storage.objects where bucket_id = $1 and name = $2', [bucket, name])).rows;
 
@@ -124,7 +140,10 @@ describe.skipIf(!KC_DATABASE_URL)('File storage on the KC schema', () => {
   it('accepts bytes only at an address it signed for uploading', async () => {
     const name = `${alice.userId}/forged.jpg`;
     const { url } = (await grant(alice, 'avatars', name)).body.upload;
-    const readUrl = (await call(alice.userId, 'signed-urls', { bucket: 'avatars', name, expiresIn: 60 })).body.signedUrl as string;
+    // A read address of a file that exists: valid, signed by the same key, but for reading.
+    const existing = `${alice.userId}/readable.jpg`;
+    await upload(alice, 'avatars', existing);
+    const readUrl = (await call(alice.userId, 'signed-urls', { bucket: 'avatars', name: existing, expiresIn: 60 })).body.signedUrl as string;
 
     const tampered = `${url.slice(0, -2)}xx`;
     const readTokenAsUpload = url.replace(/[^=]+$/, readUrl.split('=').pop() as string);
@@ -175,6 +194,10 @@ describe.skipIf(!KC_DATABASE_URL)('File storage on the KC schema', () => {
     expect(read.rawPayload.equals(PHOTO)).toBe(true);
 
     expect((await call(outsider.userId, 'signed-urls', { bucket: 'chat-media', name, expiresIn: 600 })).status).toBe(403);
+    // A member of the chat learns that a file is not there; an outsider learns nothing either way.
+    const missing = `${alice.userId}/${chatId}/never-sent.jpg`;
+    expect(await call(bob.userId, 'signed-urls', { bucket: 'chat-media', name: missing, expiresIn: 600 })).toEqual({ status: 404, body: { error: 'not_found' } });
+    expect((await call(outsider.userId, 'signed-urls', { bucket: 'chat-media', name: missing, expiresIn: 600 })).status).toBe(403);
     expect((await call(bob.userId, 'signed-urls', { bucket: 'chat-media', name, expiresIn: 0 })).status).toBe(400);
     // A private bucket has no lasting address, and a signed address cannot be altered.
     expect((await gateway.app.inject({ method: 'GET', url: pathOf(store.publicUrl('chat-media', name)) })).statusCode).toBe(404);
@@ -203,5 +226,35 @@ describe.skipIf(!KC_DATABASE_URL)('File storage on the KC schema', () => {
     for (const names of [[], 'a.jpg', [7], Array(101).fill(`${alice.userId}/x.jpg`)]) {
       expect((await call(alice.userId, 'objects/delete', { bucket: 'avatars', names })).status, JSON.stringify(names).slice(0, 40)).toBe(400);
     }
+  });
+
+  it('serves the app\'s own storage client: upload, signed address, delete, and the refusals as typed errors', async () => {
+    const name = `${alice.userId}/${chatId}/from-the-app.jpg`;
+    const storage = storageOf(alice);
+
+    await storage.upload({ bucket: 'chat-media', name, bytes: PHOTO, contentType: JPEG, cacheControl: 'private, max-age=3600' });
+
+    expect(await rowsOf('chat-media', name)).toEqual([{ metadata: { size: PHOTO.byteLength, mimetype: JPEG, cacheControl: 'private, max-age=3600' } }]);
+    const signedUrl = await storageOf(bob).signedUrl({ bucket: 'chat-media', name }, 600);
+    expect((await gateway.app.inject({ method: 'GET', url: pathOf(signedUrl) })).rawPayload.equals(PHOTO)).toBe(true);
+
+    await expect(storage.upload({ bucket: 'chat-media', name, bytes: PHOTO, contentType: JPEG })).rejects.toEqual(new StorageRequestError(409, 'exists'));
+    await expect(storageOf(outsider).signedUrl({ bucket: 'chat-media', name }, 600)).rejects.toEqual(new StorageRequestError(403, 'forbidden'));
+    await expect(storageOf(bob).upload({ bucket: 'avatars', name: `${alice.userId}/by-bob.jpg`, bytes: PHOTO, contentType: JPEG })).rejects.toEqual(new StorageRequestError(403, 'forbidden'));
+
+    expect(await storageOf(bob).remove('chat-media', [name])).toEqual([]);
+    expect(await storage.remove('chat-media', [name])).toEqual([name]);
+    await expect(storageOf(bob).signedUrl({ bucket: 'chat-media', name }, 600)).rejects.toEqual(new StorageRequestError(404, 'not_found'));
+  });
+
+  it('serves a public file at the address shape the app and the database already use', async () => {
+    const name = `${alice.userId}/shape.jpg`;
+    await storageOf(alice).upload({ bucket: 'avatars', name, bytes: PHOTO, contentType: JPEG });
+
+    const address = store.publicUrl('avatars', name);
+
+    expect(address).toBe(`http://api.kc.test/storage/v1/object/public/avatars/${name}`);
+    expect(publicObjectName(address, 'avatars')).toBe(name);
+    expect((await gateway.app.inject({ method: 'GET', url: pathOf(address) })).statusCode).toBe(200);
   });
 });

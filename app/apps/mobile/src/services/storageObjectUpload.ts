@@ -1,13 +1,8 @@
-// One Supabase Storage upload that can really be cancelled, with a bounded time budget and
-// retries for transient failures. Every media pipeline goes through here.
+// One file upload that can really be cancelled, with a bounded time budget and retries for
+// transient failures. Every media pipeline goes through here; the request itself is the
+// storage door's (`backend/storageBackend.ts`), which sends it with an abort signal.
 //
-// Why not `client.storage.from(b).upload()`: storage-js (2.119) passes no abort signal to its
-// fetch, so a cancel or a timeout could only stop *waiting*, never the write itself. This module
-// sends the same request (POST /storage/v1/object/<bucket>/<path>, as the signed-in member,
-// without upsert) through `fetch` with an AbortController, so cancel and timeout abort the
-// transport.
-//
-// What an abort can NOT guarantee: a server that already received the whole body may still
+// What an abort can NOT guarantee: a store that already received the whole body may still
 // commit the object. Hence the contract:
 //   * every attempt writes a path no other attempt uses (`pathForAttempt`), so a late write can
 //     never overwrite, or be mistaken for, another attempt's object;
@@ -17,10 +12,11 @@
 //     best-effort delay. That delay does not prove server quiescence. Each upload start sweeps
 //     due entries; later commits and devices that never reopen remain possible gaps.
 
-import { getSupabaseClient } from '@kc/infrastructure-supabase';
-import { getSupabasePublicEnv } from '../lib/supabasePublicConfig';
 import { abandonUpload, sweepAbandonedUploads } from './abandonedUploads';
+import { openFileStore, type SendFile, StorageHttpError } from './backend/storageBackend';
 import { retryAsync, throwIfAborted, UploadCancelledError, UploadTimeoutError } from './uploadControl';
+
+export { StorageHttpError } from './backend/storageBackend';
 
 /** Fixed part of the per-attempt budget: TLS handshake, auth, server-side write. */
 const BASE_TIMEOUT_MS = 20_000;
@@ -49,14 +45,6 @@ export interface StorageObjectUpload {
   readonly timeoutMs?: number;
 }
 
-/** Storage answered with an error status: the attempt stored nothing. */
-export class StorageHttpError extends Error {
-  constructor(readonly status: number, message: string) {
-    super(message);
-    this.name = 'StorageHttpError';
-  }
-}
-
 /** Per-attempt time budget, proportional to the payload size. */
 export function uploadTimeoutMs(byteLength: number): number {
   return BASE_TIMEOUT_MS + Math.ceil((byteLength / MIN_THROUGHPUT_BYTES_PER_SEC) * 1000);
@@ -81,30 +69,8 @@ export function uploadErrorMessage(err: unknown): string {
   return String(err);
 }
 
-function objectUrl(baseUrl: string, bucket: string, path: string): string {
-  const encoded = path.split('/').map(encodeURIComponent).join('/');
-  return `${baseUrl.replace(/\/+$/, '')}/storage/v1/object/${encodeURIComponent(bucket)}/${encoded}`;
-}
-
-async function storageHttpError(response: Response): Promise<StorageHttpError> {
-  let message = `HTTP ${response.status}`;
-  try {
-    const body = (await response.json()) as { message?: unknown };
-    if (typeof body.message === 'string') message = body.message;
-  } catch {
-    // Not JSON: keep the status line.
-  }
-  return new StorageHttpError(response.status, message);
-}
-
-interface AttemptContext {
-  readonly url: string;
-  readonly headers: Record<string, string>;
-  readonly timeoutMs: number;
-}
-
-/** One POST of the bytes to `path`, aborted by the caller's signal or by its own deadline. */
-async function uploadAttempt(input: StorageObjectUpload, path: string, ctx: AttemptContext): Promise<string> {
+/** One send of the bytes to `path`, aborted by the caller's signal or by its own deadline. */
+async function uploadAttempt(input: StorageObjectUpload, path: string, send: SendFile, timeoutMs: number): Promise<string> {
   throwIfAborted(input.signal);
   const controller = new AbortController();
   let timedOut = false;
@@ -113,24 +79,15 @@ async function uploadAttempt(input: StorageObjectUpload, path: string, ctx: Atte
   const timer = setTimeout(() => {
     timedOut = true;
     controller.abort();
-  }, ctx.timeoutMs);
+  }, timeoutMs);
   try {
-    const response = await fetch(objectUrl(ctx.url, input.bucket, path), {
-      method: 'POST',
-      headers: ctx.headers,
-      // React Native's fetch accepts typed arrays (its typings omit them); like storage-js before,
-      // RN's networking layer base64-encodes a binary body in JS before handing it to native
-      // (Libraries/Network/convertRequestBody.js). The DOM fetch on web sends the bytes as is.
-      body: input.bytes as unknown as BodyInit,
-      signal: controller.signal,
-    });
-    if (response.ok) return path;
-    throw await storageHttpError(response);
+    await send({ bucket: input.bucket, path, bytes: input.bytes, contentType: input.contentType, cacheControl: input.cacheControl, signal: controller.signal });
+    return path;
   } catch (err) {
-    if (err instanceof StorageHttpError) throw err; // the server answered: nothing stored
+    if (err instanceof StorageHttpError) throw err; // the store answered: nothing stored
     void abandonUpload(input.bucket, path); // aborted or lost mid-flight: the write may still land
     if (controller.signal.aborted) {
-      throw timedOut ? new UploadTimeoutError(`${input.bucket}/${path}`, ctx.timeoutMs) : new UploadCancelledError();
+      throw timedOut ? new UploadTimeoutError(`${input.bucket}/${path}`, timeoutMs) : new UploadCancelledError();
     }
     throw err;
   } finally {
@@ -139,27 +96,13 @@ async function uploadAttempt(input: StorageObjectUpload, path: string, ctx: Atte
   }
 }
 
-/** Uploads the bytes; resolves with the path of the attempt that Storage confirmed. */
+/** Uploads the bytes; resolves with the path of the attempt that the store confirmed. */
 export async function uploadStorageObject(input: StorageObjectUpload): Promise<string> {
   throwIfAborted(input.signal);
   void sweepAbandonedUploads().catch(() => undefined); // earlier abandoned attempts whose window has passed
-  const env = getSupabasePublicEnv();
-  if (!env) throw new StorageHttpError(500, 'storage_not_configured');
-  const { data } = await getSupabaseClient().auth.getSession();
-  const token = data.session?.access_token;
-  if (!token) throw new StorageHttpError(401, 'not_authenticated');
-  const ctx: AttemptContext = {
-    url: env.url,
-    timeoutMs: input.timeoutMs ?? uploadTimeoutMs(input.bytes.byteLength),
-    headers: {
-      authorization: `Bearer ${token}`,
-      apikey: env.anonKey,
-      'content-type': input.contentType,
-      'cache-control': input.cacheControl,
-      'x-upsert': 'false',
-    },
-  };
-  return retryAsync((attempt) => uploadAttempt(input, input.pathForAttempt(attempt), ctx), {
+  const send = await openFileStore();
+  const timeoutMs = input.timeoutMs ?? uploadTimeoutMs(input.bytes.byteLength);
+  return retryAsync((attempt) => uploadAttempt(input, input.pathForAttempt(attempt), send, timeoutMs), {
     attempts: input.attempts ?? DEFAULT_ATTEMPTS,
     baseDelayMs: RETRY_BASE_DELAY_MS,
     isRetryable: isTransientUploadError,

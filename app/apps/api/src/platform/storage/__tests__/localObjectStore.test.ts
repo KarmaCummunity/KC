@@ -99,6 +99,6 @@ describe('LocalObjectStore', () => {
   });
 
   it('builds a public URL with every path segment escaped', () => {
-    expect(store.publicUrl('avatars', 'u1/my photo#1.jpg')).toBe(`${BASE_URL}${LOCAL_STORE_PATH}/public/avatars/u1/my%20photo%231.jpg`);
+    expect(store.publicUrl('avatars', 'u1/my photo#1.jpg')).toBe(`${BASE_URL}/storage/v1/object/public/avatars/u1/my%20photo%231.jpg`);
   });
 });

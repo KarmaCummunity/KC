@@ -3,7 +3,9 @@ process.env.EXPO_PUBLIC_SUPABASE_URL =
 process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY =
   process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? 'test-anon-key';
 
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { resetApiBackendForTests } from '../../services/backend/apiBackend';
+import { resetStorageBackendForTests } from '../../services/backend/storageBackend';
 import {
   buildSupabaseImageTransformUrl,
   deriveThumbPath,
@@ -182,3 +184,39 @@ describe('getSupabaseHeroImageUrl (post detail hero)', () => {
     expect(getSupabaseHeroImageUrl('post-images', '', 390)).toBe('');
   });
 });
+
+describe('image URLs when the files are on KC\'s own storage', () => {
+  beforeEach(() => {
+    process.env.EXPO_PUBLIC_KC_API_URL = 'https://api.kc.test';
+    process.env.EXPO_PUBLIC_KC_API_STORAGE = '1';
+    process.env.EXPO_PUBLIC_KC_MEDIA_URL = 'https://media.kc.test';
+    resetApiBackendForTests();
+    resetStorageBackendForTests();
+  });
+
+  afterEach(() => {
+    delete process.env.EXPO_PUBLIC_KC_API_URL;
+    delete process.env.EXPO_PUBLIC_KC_API_STORAGE;
+    delete process.env.EXPO_PUBLIC_KC_MEDIA_URL;
+    delete process.env.EXPO_PUBLIC_USE_STORAGE_TRANSFORM;
+    resetApiBackendForTests();
+    resetStorageBackendForTests();
+  });
+
+  it('serves the same paths from the media domain', () => {
+    expect(getSupabasePublicImageUrl({ bucket: 'post-images', path: 'a/b.jpg' })).toBe('https://media.kc.test/storage/v1/object/public/post-images/a/b.jpg');
+    expect(deriveThumbUrl('https://media.kc.test/storage/v1/object/public/post-images/a/b.jpg')).toBe('https://media.kc.test/storage/v1/object/public/post-images/a/b-thumb.jpg');
+  });
+
+  it('uses the stored thumbnail in a feed even in a build that opted in to transforms: this host makes none', () => {
+    process.env.EXPO_PUBLIC_USE_STORAGE_TRANSFORM = '1';
+
+    expect(getSupabaseFeedImageUrl('post-images', 'a/b.jpg', 180)).toBe('https://media.kc.test/storage/v1/object/public/post-images/a/b-thumb.jpg');
+    expect(getSupabaseHeroImageUrl('post-images', 'a/b.jpg', 390)).toBe('https://media.kc.test/storage/v1/object/public/post-images/a/b.jpg');
+  });
+
+  it('answers a direct request for a transform with the plain public address', () => {
+    expect(buildSupabaseImageTransformUrl({ bucket: 'post-images', path: 'a/b.jpg', width: 200 })).toBe('https://media.kc.test/storage/v1/object/public/post-images/a/b.jpg');
+  });
+});
+

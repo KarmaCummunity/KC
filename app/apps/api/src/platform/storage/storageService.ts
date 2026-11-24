@@ -105,14 +105,18 @@ export class StorageService {
   }
 
   /**
-   * A short-lived URL of a private file the caller may read.
-   * @returns `200 { signedUrl }`, or `400 invalid_request`, `403 forbidden`, `503 not_configured`.
+   * A short-lived URL of a file the caller may read. A file that is not in
+   * the index has none: the app also asks this to learn whether an upload it
+   * remembers is still there.
+   * @returns `200 { signedUrl }`, or `400 invalid_request`, `403 forbidden`, `404 not_found`, `503 not_configured`.
    */
   async signedReadUrl(caller: CallerIdentity, body: unknown): Promise<HttpAnswer> {
     if (!this.store) return refusal(503, 'not_configured');
     const { bucket, name, expiresIn } = (body ?? {}) as Record<string, unknown>;
     if (!isText(bucket) || !isText(name) || typeof expiresIn !== 'number' || expiresIn <= 0) return refusal(400, 'invalid_request');
     if (!(await this.authorizer.mayRead(caller, bucket, name))) return refusal(403, 'forbidden');
+    // Only after the right was established: whether a file exists is not told to someone who may not read it.
+    if (!(await this.authorizer.objectExists(bucket, name))) return refusal(404, 'not_found');
     return { status: 200, body: { signedUrl: await this.store.signedReadUrl(bucket, name, Math.min(Math.floor(expiresIn), MAX_READ_URL_SECONDS)) } };
   }
 

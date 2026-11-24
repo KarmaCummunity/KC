@@ -2,7 +2,7 @@
 // under the owner's folder, and go through the same pipeline as post photos (longer edge ≤ 2048,
 // a 400 px thumb for feed cards, bounded parallel uploads with time budgets and retries).
 
-import { getSupabaseClient } from '@kc/infrastructure-supabase';
+import { publicFileUrl } from './backend/storageBackend';
 import type { MediaAssetInput } from '@kc/application';
 import { pickPostImages, uploadPostImageBatch, type PickedImage } from './imageUpload';
 
@@ -32,6 +32,5 @@ export async function uploadListingImages(
 }
 
 export function listingImagePublicUrl(storagePath: string): string {
-  const client = getSupabaseClient();
-  return client.storage.from(LISTING_BUCKET).getPublicUrl(storagePath).data.publicUrl;
+  return publicFileUrl(LISTING_BUCKET, storagePath);
 }

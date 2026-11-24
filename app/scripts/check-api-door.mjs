@@ -2,7 +2,8 @@
 // Guards ADR-009 phase 5 ("the API becomes the only door") while the move is in flight.
 //
 // The app must reach the backend only through the doors in apps/mobile/src/services/backend:
-// data through adapters wrapped with `viaApi`, channels through `viaApiRealtime`. This check
+// data through adapters wrapped with `viaApi`, channels through `viaApiRealtime`, files
+// through `storageBackend.ts`. This check
 // finds, in apps/mobile, every place that reaches Supabase another way:
 //   - an adapter constructed without `viaApi(...)` around it
 //   - a table or function called on a Supabase client directly (`.from('x')`, `.rpc('x')`)
@@ -30,23 +31,17 @@ const SKIP_DIRS = new Set(['node_modules', '__tests__', '__mocks__', 'dist', '.e
  * Key: `<file>: <finding>`.
  */
 export const KNOWN = new Map([
-  // Files: phase 7 (ADR-012 step 3 moves them behind the storage door).
-  ['apps/mobile/src/hooks/usePostShare.ts: storage.from()', 'phase 7'],
-  ['apps/mobile/src/lib/imageUrl.ts: storage URL', 'phase 7'],
+  // Files: phase 7. Everything goes through the storage door (ADR-012 step 3); what is left
+  // is the door's own Supabase side, removed when the files have moved, and a prepared,
+  // unused contract for private photos.
   ['apps/mobile/src/lib/privatePhotoSource.ts: storage URL', 'phase 7'],
-  ['apps/mobile/src/lib/probeDraftImageAvailability.ts: storage.from()', 'phase 7'],
-  ['apps/mobile/src/services/abandonedUploads.ts: storage.from()', 'phase 7'],
-  ['apps/mobile/src/services/avatarLifecycle.ts: storage URL', 'phase 7'],
-  ['apps/mobile/src/services/avatarUpload.ts: storage.from()', 'phase 7'],
-  ['apps/mobile/src/services/chatMediaUrl.ts: storage.from()', 'phase 7'],
-  ['apps/mobile/src/services/listingImageUpload.ts: storage.from()', 'phase 7'],
-  ['apps/mobile/src/services/storageObjectUpload.ts: storage URL', 'phase 7'],
+  ['apps/mobile/src/services/backend/storageBackend.ts: storage.from()', 'phase 7'],
+  ['apps/mobile/src/services/backend/storageBackend.ts: storage URL', 'phase 7'],
   // Sign-in and the session: phase 9.
-  ['apps/mobile/src/services/abandonedUploads.ts: .auth.getSession()', 'phase 9'],
   ['apps/mobile/src/services/authComposition.ts: new SupabaseAuthService', 'phase 9'],
   ['apps/mobile/src/services/backend/apiBackend.ts: .auth.getSession()', 'phase 9'],
   ['apps/mobile/src/services/backend/apiBackend.ts: .auth.refreshSession()', 'phase 9'],
-  ['apps/mobile/src/services/storageObjectUpload.ts: .auth.getSession()', 'phase 9'],
+  ['apps/mobile/src/services/backend/storageBackend.ts: .auth.getSession()', 'phase 9'],
 ]);
 
 const ADAPTER = /new ((?:Supabase|EdgeFn)\w+)\(/g;
@@ -138,7 +133,8 @@ function main() {
     console.error('\n✗ The app reaches Supabase without going through the API door:\n');
     for (const key of unexpected) console.error(`  • ${key}`);
     console.error("\nWrap the adapter with viaApi('<wire name>', …) or build it on viaApiRealtime(…)");
-    console.error('(apps/mobile/src/services/backend/apiBackend.ts), or move a direct call behind an application port.');
+    console.error('(apps/mobile/src/services/backend/apiBackend.ts), send file work through storageBackend.ts next to it,');
+    console.error('or move a direct call behind an application port.');
     console.error('See docs/architecture/adr/ADR-010-port-gateway.md.\n');
   }
   if (stale.length > 0) {

@@ -38,11 +38,17 @@ A bucket's size limit and allowed types are checked by the API before a signed u
 | Today | With KC's API |
 |---|---|
 | Upload to Storage with the member's token | Ask the API for a signed upload URL for `<bucket>/<name>` (authorized as above), upload the bytes to the store with it, then tell the API the upload is complete; the API checks the stored object (size, type) and writes the `storage.objects` row |
-| Public URL of an avatar or post photo | A URL on KC's media domain (CDN in front of the public buckets); the path is unchanged |
+| Public URL of an avatar or post photo | The same address shape on KC's media domain (CDN in front of the public buckets): `<host>/storage/v1/object/public/<bucket>/<name>`. Only the host changes |
 | Signed URL of a chat attachment | Ask the API; it authorizes and returns a short-lived signed URL of the store |
 | Delete own file | Ask the API; it authorizes, deletes the object and its row |
 
 The app's upload and URL helpers go through one storage door, as data goes through `viaApi` and channels through `viaApiRealtime`: with no API configured they keep using Supabase Storage.
+
+**The public address keeps its shape.** A member's `avatar_url` is stored in the database as a full address, and the app reads a file's path back out of such an address. So KC's media domain serves public files under the path they have today, and the app recognises an address by that path, not by its host: an address written before the move still names the same file. At the switch the stored addresses get the new host in one update (a prefix replacement), and the load balancer maps the path to the bucket.
+
+**No resizing on request.** Supabase Storage can resize an image per request (a paid add-on the app opts in to per build). KC's store does not: it serves the copies the server writes at upload (the thumbnail beside every photo), which is what the app already shows by default.
+
+**A signed address is also the app's "is it still there".** The app asks for one to learn whether an upload it remembers still exists, so the API answers `404` for a file that is not in the index, after the right to read it was established.
 
 Bytes never pass through the API on upload or download: it issues URLs and keeps the index. That keeps the API small and lets the store and the CDN do what they are built for.
 
@@ -60,7 +66,7 @@ Before the switch, every object is copied to the new store by name and verified 
 |---|---|---|
 | 1 | Storage authorizer on the real policies (upload, read, delete) | Done (`apps/api/src/platform/storage/storageAuthorizer.ts`): each bucket's rule has a case for the member it is for and for another, on the KC schema; asking stores no row |
 | 2 | `ObjectStore` with the local-directory implementation; upload, signed read and delete routes; the index row | Done (`platform/storage`): `POST /v1/storage/uploads` (grant), `/uploads/complete` (index row, written as the member), `/signed-urls`, `/objects/delete`. A name is written once and never replaced; a grant fixes the type and the largest size; a confirmation checks the stored object against the bucket's rules again; a member who may not write a name can neither confirm nor remove another member's upload. The local store serves its own signed and public addresses (`KC_STORAGE_LOCAL_DIR`, `KC_API_PUBLIC_URL`); with no store configured the routes answer `503`. Checked end to end on the KC schema |
-| 3 | The app's storage door (`viaApiStorage`): upload helper, public URL, signed URL, delete | — |
+| 3 | The app's storage door: upload helper, public URL, signed URL, delete | Done. `apps/mobile/src/services/backend/storageBackend.ts` is the only place that addresses a bucket or builds a storage address; the nine helpers that did are on it. On KC's storage it uses `createApiStorage` (`@kc/infrastructure-api`), whose wire format (`storageWire.ts`) the API shares; the client is checked against the real server on the KC schema. Switched on per build with `EXPO_PUBLIC_KC_API_STORAGE=1`. The door guard's list of file touchpoints went from ten to the door's own Supabase side and one prepared, unused contract |
 | 4 | `post.republish` and the six file functions on `ObjectStore` | — |
 | 5 | The Google Cloud Storage implementation, buckets, CDN (needs the cloud project) | — |
 | 6 | The copy-and-verify job for existing files; switch | — |
@@ -70,7 +76,7 @@ Steps 1–4 need no cloud account.
 ## Consequences
 
 - One set of policies, tested in SQL, decides for Supabase Storage today and for KC's store tomorrow.
-- The app's paths and the database's references to them do not change, so no data migration of paths is needed.
+- The app's paths and the database's references to them do not change. The one stored full address (`avatar_url`) keeps its path and gets the new host in one update at the switch.
 - KC owns a `storage` schema it must keep honest: a row without an object, or an object without a row, is what the reconciliation job already looks for.
 
 ## Limits

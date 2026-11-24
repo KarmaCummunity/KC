@@ -33,7 +33,7 @@ export function getApiBaseUrl(): string | null {
  * Until KC issues its own tokens (ADR-009 phase 9) this is the Supabase session's token,
  * which the API verifies against the same issuer.
  */
-async function getAccessToken(forceRefresh: boolean): Promise<string | null> {
+export async function getAccessToken(forceRefresh: boolean): Promise<string | null> {
   // Loaded on first use: the storage module pulls in native modules, and this file is imported
   // by every composition root, including ones that never touch the session.
   const { pickAuthStorage } = await import('../authSecureStorage');

@@ -1,10 +1,11 @@
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
+import { publicObjectUrl } from '@kc/infrastructure-api';
 import type { ObjectStore, SignedUpload, StoredObject, UploadGrant } from './objectStore';
 import { isSafeObjectName } from './storageAuthorizer';
 import { signGrant } from './storageGrants';
 
-/** Path of the API's routes that stand in for the store's own addresses. */
+/** Path of the API's routes that stand in for the store's signed addresses; public files are served under the shared public path. */
 export const LOCAL_STORE_PATH = '/v1/storage/local';
 /** Query parameter that carries the grant: a token is longer than a path segment may be. */
 export const GRANT_PARAMETER = 'grant';
@@ -56,7 +57,7 @@ export class LocalObjectStore implements ObjectStore {
   }
 
   publicUrl(bucket: string, name: string): string {
-    return `${this.options.baseUrl}${LOCAL_STORE_PATH}/public/${encodeURIComponent(bucket)}/${name.split('/').map(encodeURIComponent).join('/')}`;
+    return publicObjectUrl(this.options.baseUrl, bucket, name);
   }
 
   async head(bucket: string, name: string): Promise<StoredObject | null> {

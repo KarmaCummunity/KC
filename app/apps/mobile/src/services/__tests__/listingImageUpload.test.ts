@@ -1,16 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { PickedImage } from '../imageUpload';
 
-const { batch, mockGetPublicUrl, mockClient } = vi.hoisted(() => {
-  const mockGetPublicUrl = vi.fn();
-  return {
-    batch: { uploadPostImageBatch: vi.fn() },
-    mockGetPublicUrl,
-    mockClient: { storage: { from: vi.fn(() => ({ getPublicUrl: mockGetPublicUrl })) } },
-  };
-});
+const { batch } = vi.hoisted(() => ({ batch: { uploadPostImageBatch: vi.fn() } }));
 
-vi.mock('@kc/infrastructure-supabase', () => ({ getSupabaseClient: () => mockClient }));
+vi.mock('@kc/infrastructure-supabase', () => ({ getSupabaseClient: () => ({}) }));
+// The file host the storage door builds public addresses on.
+vi.mock('../../lib/supabasePublicConfig', () => ({ getSupabasePublicEnv: () => ({ url: 'https://p.supabase.co', anonKey: 'anon' }) }));
 vi.mock('../imageUpload', () => ({
   pickPostImages: vi.fn(),
   uploadPostImageBatch: batch.uploadPostImageBatch,
@@ -50,8 +45,6 @@ describe('listingImageUpload', () => {
   });
 
   it('builds the public URL of a stored photo', () => {
-    mockGetPublicUrl.mockReturnValueOnce({ data: { publicUrl: 'https://cdn.example.com/post-images/u/b/0.jpg' } });
-    expect(listingImagePublicUrl('u/b/0.jpg')).toBe('https://cdn.example.com/post-images/u/b/0.jpg');
-    expect(mockClient.storage.from).toHaveBeenCalledWith('post-images');
+    expect(listingImagePublicUrl('u/b/0.jpg')).toBe('https://p.supabase.co/storage/v1/object/public/post-images/u/b/0.jpg');
   });
 });

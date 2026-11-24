@@ -1,3 +1,4 @@
+import { PUBLIC_OBJECT_PATH } from '@kc/infrastructure-api';
 import { Inject, Injectable, type OnModuleInit } from '@nestjs/common';
 import { HttpAdapterHost } from '@nestjs/core';
 import type { FastifyInstance, FastifyReply } from 'fastify';
@@ -54,7 +55,7 @@ export class LocalStoreRoutes implements OnModuleInit {
         return grant ? this.serve(store, reply, grant.bucket, grant.name) : reply.status(403).send({ error: 'forbidden' });
       });
 
-      scope.get<{ Params: { bucket: string; '*': string } }>(`${LOCAL_STORE_PATH}/public/:bucket/*`, async (request, reply) => {
+      scope.get<{ Params: { bucket: string; '*': string } }>(`${PUBLIC_OBJECT_PATH}/:bucket/*`, async (request, reply) => {
         const { bucket, '*': name } = request.params;
         // Only a public bucket has lasting addresses; a private file needs a grant.
         if (!(await this.authorizer.mayRead(null, bucket, name))) return reply.status(404).send({ error: 'not_found' });

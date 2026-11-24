@@ -16,6 +16,7 @@
 
 import { deriveThumbPath } from '../lib/imageUrl';
 import { abandonUpload } from './abandonedUploads';
+import { publicFilePath } from './backend/storageBackend';
 
 const AVATAR_BUCKET = 'avatars';
 
@@ -33,12 +34,9 @@ export type AvatarCleanupOutcome =
 /** The object path inside the avatars bucket of one of the member's own avatar URLs, or null. */
 export function avatarPathFromUrl(avatarUrl: string | null | undefined, userId: string): string | null {
   if (!avatarUrl) return null;
-  const marker = `/storage/v1/object/public/${AVATAR_BUCKET}/`;
-  const at = avatarUrl.indexOf(marker);
-  if (at < 0) return null;
-  const path = decodeURIComponent(avatarUrl.slice(at + marker.length).split(/[?#]/)[0] ?? '');
+  const path = publicFilePath(avatarUrl, AVATAR_BUCKET);
   // Only an object under the member's own folder, never a path that climbs out of it.
-  return path.startsWith(`${userId}/`) && !path.includes('..') ? path : null;
+  return path !== null && path.startsWith(`${userId}/`) && !path.includes('..') ? path : null;
 }
 
 /** Reads the profile's current `avatar_url` from the server (never from a cache). */
