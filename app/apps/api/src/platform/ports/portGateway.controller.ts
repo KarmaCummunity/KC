@@ -78,7 +78,7 @@ export class PortGatewayController {
   manifest(): PortManifest {
     const ports: Record<string, string[]> = {};
     for (const [name, port] of this.ports) {
-      ports[name] = Object.keys(port.methods).filter((method) => port.methods[method] !== 'not_served');
+      ports[name] = Object.keys(port.methods).filter((method) => this.accessOf(port, method) !== 'not_served');
     }
     return Object.keys(this.rollout).length > 0 ? { ports, rollout: this.rollout } : { ports };
   }
@@ -141,9 +141,16 @@ export class PortGatewayController {
     }
   }
 
-  /** `Object.hasOwn`, so `constructor` or `toString` in the URL can never name a method. */
-  private accessOf(port: PortDefinition, method: string): PortAccess | undefined {
-    return Object.hasOwn(port.methods, method) ? port.methods[method] : undefined;
+  /**
+   * How the method is served by this server, or undefined when the port has
+   * no such method. `Object.hasOwn`, so `constructor` or `toString` in the
+   * URL can never name a method. A method that needs files is a member's on
+   * a server with a file store and not served on one without.
+   */
+  private accessOf(port: PortDefinition, method: string): Exclude<PortAccess, 'member_with_files'> | undefined {
+    const access = Object.hasOwn(port.methods, method) ? port.methods[method] : undefined;
+    if (access !== 'member_with_files') return access;
+    return this.clients.hasFileStore ? 'member' : 'not_served';
   }
 
   /** A typed port error travels to the app as itself; anything else stays a server fault. */

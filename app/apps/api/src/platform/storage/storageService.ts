@@ -2,7 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { IdentityDatabase } from '../database/identityDatabase';
 import type { HttpAnswer } from '../http/httpAnswer';
 import type { CallerIdentity } from '../identity/callerIdentity';
-import { OBJECT_STORE, type ObjectStore } from './objectStore';
+import { OBJECT_STORE, type ObjectStore, type StoredObject } from './objectStore';
 import { type BucketRules, isSafeObjectName, StorageAuthorizer } from './storageAuthorizer';
 
 /** How long a member has to carry out an upload they were granted. */
@@ -69,7 +69,9 @@ export class StorageService {
    * Confirms an upload and writes its row, as the caller, so the insert
    * policy decides once more on the real row. The stored object is checked
    * against the bucket's rules here too: what the store accepted is what
-   * counts, not what the grant asked for. Confirming twice is harmless.
+   * counts, not what the grant asked for. Confirming twice is harmless. When
+   * the row is refused the object is left for the reconciliation job, which
+   * removes files without a row: it may be another member's upload in flight.
    * @returns `200 { path }`, or `400 invalid_request`, `403 forbidden`, `404 not_uploaded`,
    *   `413 too_large`, `415 type_not_allowed`, `503 not_configured`.
    */
@@ -88,6 +90,39 @@ export class StorageService {
       await this.store.delete(bucket, name);
       return outsideRules;
     }
+    return (await this.indexObject(caller, bucket, name, stored)) ? { status: 200, body: { path: name } } : refusal(403, 'forbidden');
+  }
+
+  /**
+   * Stores bytes this server already holds, as `caller`: the server-side
+   * counterpart of grant, upload and confirm, for a hosted adapter that copies
+   * a file (ADR-012 section 5). The same policy and bucket rules apply.
+   * @returns `200 { path }`, or `400 invalid_request`, `403 forbidden`, `409 exists`,
+   *   `413 too_large`, `415 type_not_allowed`, `503 not_configured`.
+   */
+  async storeBytes(caller: CallerIdentity | null, file: { bucket: string; name: string; bytes: Uint8Array; contentType: string }): Promise<HttpAnswer> {
+    if (!this.store) return refusal(503, 'not_configured');
+    const { bucket, name, bytes, contentType } = file;
+    if (!isSafeObjectName(name) || bytes.byteLength === 0) return refusal(400, 'invalid_request');
+    const rules = await this.authorizer.bucketRules(bucket);
+    if (!caller || !rules || !(await this.authorizer.mayUpload(caller, bucket, name))) return refusal(403, 'forbidden');
+    const outsideRules = brokenRule(rules, bytes.byteLength, contentType);
+    if (outsideRules) return outsideRules;
+    const stored = { size: bytes.byteLength, contentType, cacheControl: null };
+    // The store refuses to replace: a name that is taken stays what it was.
+    if (!(await this.store.write(bucket, name, bytes, stored))) return refusal(409, 'exists');
+    if (await this.indexObject(caller, bucket, name, stored)) return { status: 200, body: { path: name } };
+    // This call created the object a moment ago and the index refused it: it is ours to remove.
+    await this.store.delete(bucket, name);
+    return refusal(403, 'forbidden');
+  }
+
+  /**
+   * Writes the object's row as the caller, so the insert policy decides on
+   * the real row. Writing a row that is already there changes nothing.
+   * @returns false when the policy refused the row (the right was lost since it was asked).
+   */
+  private async indexObject(caller: CallerIdentity, bucket: string, name: string, stored: StoredObject): Promise<boolean> {
     try {
       await this.database.runAs(caller, (session) =>
         session.query('insert into storage.objects (bucket_id, name, metadata) values ($1, $2, $3::jsonb) on conflict (bucket_id, name) do nothing', [
@@ -96,12 +131,11 @@ export class StorageService {
           JSON.stringify({ size: stored.size, mimetype: stored.contentType, cacheControl: stored.cacheControl }),
         ]),
       );
+      return true;
     } catch (error) {
-      // The right was lost between the question and the write. The object is left for the reconciliation job, which removes files without a row.
-      if (REFUSED_WRITE.has((error as { code?: string }).code ?? '')) return refusal(403, 'forbidden');
+      if (REFUSED_WRITE.has((error as { code?: string }).code ?? '')) return false;
       throw error;
     }
-    return { status: 200, body: { path: name } };
   }
 
   /**

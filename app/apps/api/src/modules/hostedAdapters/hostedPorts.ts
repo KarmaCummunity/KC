@@ -19,10 +19,14 @@ import { RIDES_PORTS } from './ports/rides';
  *   (the functions and tables granted to the `anon` role). The gateway never
  *   opens more than the database does; `hostedPorts.kc.integration.test.ts`
  *   checks the two against each other.
- * - **`not_served`** for a method that reaches Storage or an Edge Function
- *   this server has not taken over; the app keeps its current adapter for it
- *   until phases 7 and 8. A function that has been ported is answered in
- *   process (`platform/ports/hostedFunctions.ts`) and its methods are served.
+ * - **`member_with_files`** for a method that reads or writes stored files:
+ *   the adapter's `client.storage` is answered by this server's own store
+ *   (`platform/storage/storageCallerFiles.ts`), and the method is served
+ *   only where the server has one.
+ * - **`not_served`** for a method that reaches an Edge Function this server
+ *   has not taken over; the app keeps its current adapter for it. A function
+ *   that has been ported is answered in process
+ *   (`platform/ports/hostedFunctions.ts`) and its methods are served.
  *
  * Not here on purpose: the realtime ports (phase 6), the auth service
  * (phase 9), the Edge Function services (phase 8) and the legal documents

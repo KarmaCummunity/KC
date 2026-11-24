@@ -1,3 +1,5 @@
+import { CALLER_FILES, type CallerFiles } from '../callerFiles';
+import type { InProcessStorage } from '../../postgrest/sqlBackedClient';
 import type { ApiConfig } from '../../config/apiConfig';
 import { FollowError } from '@kc/application';
 import { Global, Module } from '@nestjs/common';
@@ -29,6 +31,8 @@ export interface Shelf {
   crash(): Promise<never>;
   needsStorage(): Promise<unknown>;
   upload(): Promise<void>;
+  /** Reads a stored file's address: served only where the server has a file store. */
+  filed(path: string): Promise<string>;
   /** Counts how often it really ran, to observe the visitor cache. */
   counted(key: string): Promise<number>;
   countedNothing(): Promise<void>;
@@ -65,6 +69,10 @@ class ShelfImplementation implements Shelf {
   upload() {
     return Promise.resolve();
   }
+  filed(path: string) {
+    const { storage } = this.client as unknown as { storage: InProcessStorage };
+    return Promise.resolve(storage.from('shelf-files').getPublicUrl(path).data.publicUrl);
+  }
   counted() {
     runs.counted += 1;
     return Promise.resolve(runs.counted);
@@ -90,6 +98,7 @@ export const shelf = definePort<Shelf>({
     crash: 'member',
     needsStorage: 'member',
     upload: 'not_served',
+    filed: 'member_with_files',
     counted: 'public',
     countedNothing: 'public',
     countedRefusal: 'public',
@@ -163,7 +172,8 @@ export function resetShelf(): void {
 }
 
 /** An app that serves the shelf port. The shelf never queries, so the database behind it is inert. */
-export async function createShelfApp(overrides: Partial<ApiConfig> = {}): Promise<{ app: NestFastifyApplication; issuer: TestIssuer }> {
+/** @param files The server's file store for hosted adapters; omitted: a server without one. */
+export async function createShelfApp(overrides: Partial<ApiConfig> = {}, files?: CallerFiles): Promise<{ app: NestFastifyApplication; issuer: TestIssuer }> {
   const config = testConfig(overrides);
   const issuer = await createTestIssuer();
 
@@ -175,8 +185,9 @@ export async function createShelfApp(overrides: Partial<ApiConfig> = {}): Promis
       { provide: IdentityDatabase, useValue: {} },
       { provide: RateLimiter, useValue: limiter },
       { provide: VisitorCache, useValue: visitorCache },
+      ...(files ? [{ provide: CALLER_FILES, useValue: files }] : []),
     ],
-    exports: [ACCESS_TOKEN_VERIFIER, DATABASE_POOL, IdentityDatabase, RateLimiter, VisitorCache],
+    exports: [ACCESS_TOKEN_VERIFIER, DATABASE_POOL, IdentityDatabase, RateLimiter, VisitorCache, ...(files ? [CALLER_FILES] : [])],
   })
   class FakePlatformModule {}
 

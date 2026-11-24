@@ -4,11 +4,13 @@ import type { SqlBackedClient } from '../postgrest/sqlBackedClient';
  * Who may call a port method through the gateway.
  * - `member`: a signed-in caller only.
  * - `public`: anyone; a signed-out visitor runs as the database's `anon` role.
+ * - `member_with_files`: a signed-in caller only, and only on a server that
+ *   has a file store: the method reads or writes stored files. On a server
+ *   without one it is `not_served`, never served without its files.
  * - `not_served`: the method exists on the port but the API does not carry it
- *   yet (it needs Storage, an Edge Function or Realtime); the app keeps
- *   calling its current adapter for it.
+ *   yet; the app keeps calling its current adapter for it.
  */
-export type PortAccess = 'member' | 'public' | 'not_served';
+export type PortAccess = 'member' | 'public' | 'member_with_files' | 'not_served';
 
 /** Names of the methods of a port interface. */
 type MethodName<Port> = { [Key in keyof Port]: Port[Key] extends (...args: never[]) => unknown ? Key : never }[keyof Port] & string;

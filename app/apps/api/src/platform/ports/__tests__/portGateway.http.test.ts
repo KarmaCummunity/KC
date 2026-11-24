@@ -4,6 +4,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { type TestIssuer, USER_A } from '../../../__tests__/support/testTokens';
 import { DuplicatePortError, indexPorts } from '../portGateway.module';
 import type { PortManifest } from '@kc/infrastructure-api';
+import type { CallerFiles } from '../callerFiles';
 import { UnknownRolloutPortError } from '../portRollout';
 import { callShelf, createShelfApp, resetShelf, shelf } from './shelfPort';
 
@@ -77,6 +78,8 @@ describe('port gateway over HTTP', () => {
   it('answers 501 for a method the API does not carry yet', async () => {
     expect((await call('shelf/upload', [])).json().error.code).toBe('port_method_not_served');
     expect((await call('shelf/needsStorage', [])).statusCode).toBe(501);
+    // A method that needs stored files is not carried by a server without a file store.
+    expect((await call('shelf/filed', ['a.jpg'])).json().error.code).toBe('port_method_not_served');
   });
 
   it.each([
@@ -161,6 +164,43 @@ describe('port gateway manifest with rollout rules', () => {
 
   it('refuses to start with a rule for a port it does not have', async () => {
     await expect(createShelfApp({ portRollout: { savedPost: { percent: 10 } } })).rejects.toBeInstanceOf(UnknownRolloutPortError);
+  });
+});
+
+describe('port gateway on a server with a file store', () => {
+  let app: NestFastifyApplication;
+  let token: string;
+  /** The callers the store was asked to act as. */
+  const actedAs: Array<string | null> = [];
+  const files: CallerFiles = {
+    available: true,
+    forCaller: (caller) => {
+      actedAs.push(caller?.userId ?? null);
+      return { from: (bucket) => ({ getPublicUrl: (path) => ({ data: { publicUrl: `https://files.kc.test/${bucket}/${path}` } }), upload: () => Promise.resolve({ data: null, error: null }) }) };
+    },
+  };
+
+  beforeAll(async () => {
+    const started = await createShelfApp({}, files);
+    app = started.app;
+    token = await started.issuer.sign(USER_A);
+  });
+
+  afterAll(async () => {
+    await app.close();
+  });
+
+  it('lists the method that needs files and serves it to a member, with storage acting as that member', async () => {
+    const manifest = (await app.inject({ method: 'GET', url: '/v1/ports' })).json<PortManifest>();
+    const response = await callShelf(app, 'shelf/filed', ['a.jpg'], `Bearer ${token}`);
+
+    expect(manifest.ports.shelf).toContain('filed');
+    expect(response.json()).toEqual({ result: 'https://files.kc.test/shelf-files/a.jpg' });
+    expect(actedAs).toContain(USER_A);
+  });
+
+  it('still needs a member: files do not open the method to a visitor', async () => {
+    expect((await callShelf(app, 'shelf/filed', ['a.jpg'], null)).statusCode).toBe(401);
   });
 });
 

@@ -155,7 +155,8 @@ const post = hostedPort('post', {
     close: 'member',
     ownerCompleteOffer: 'member',
     reopen: 'member',
-    republish: 'not_served',
+    // Copies the old post's photos (postMediaCopy.ts), so it is served only where the server has a file store.
+    republish: 'member_with_files',
     unmrkRecipientSelf: 'member',
     getClosureCandidates: 'member',
     getMyPosts: 'member',

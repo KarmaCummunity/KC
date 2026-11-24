@@ -62,7 +62,8 @@ describe.skipIf(!KC_DATABASE_URL)('Every hosted port method on the compatibility
     for (const port of HOSTED_PORTS) {
       for (const [method, access] of Object.entries(port.methods)) {
         const parameters = shapes.ports[port.name]?.[method];
-        if (access === 'not_served' || !parameters) continue;
+        // A method that needs files is left out too: this run's clients have no file store, as a server without one.
+        if (access === 'not_served' || access === 'member_with_files' || !parameters) continue;
         // A fresh member per call: a method that closes the account must not starve the next one.
         const member = await database.newMember();
         const call = `${port.name}.${method}`;

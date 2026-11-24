@@ -48,6 +48,21 @@ function lowerCaseHeaders(headers: HeadersInit | undefined): Record<string, stri
   return result;
 }
 
+/** One bucket, with the storage methods the hosted adapters use, answering in the client library's shapes. */
+export interface InProcessBucket {
+  getPublicUrl(path: string): { data: { publicUrl: string } };
+  upload(
+    path: string,
+    body: ArrayBuffer | Uint8Array,
+    options?: { contentType?: string; upsert?: boolean },
+  ): Promise<{ data: { path: string } | null; error: { message: string } | null }>;
+}
+
+/** The `storage` member of the client, answered by this server's own file store. */
+export interface InProcessStorage {
+  from(bucket: string): InProcessBucket;
+}
+
 /** Names the services the gateway cannot serve, failing loudly instead of with `undefined is not a function`. */
 function unsupportedService(service: string): never {
   throw new UnsupportedSupabaseServiceError(service);
@@ -60,6 +75,7 @@ function unsupportedService(service: string): never {
  *   like one PostgREST request).
  * @param observe Sees every request with its answer, for logging; it must not throw.
  * @param functions The Edge Functions this server has taken over, by name.
+ * @param storage The server's own file store acting as `caller`; without one, reaching for `storage` fails loudly.
  */
 export function createSqlBackedClient(
   caller: CallerIdentity | null,
@@ -67,6 +83,7 @@ export function createSqlBackedClient(
   run: StatementRunner,
   observe?: (request: CompatRequest, response: CompatResponse) => void,
   functions: InProcessFunctions = {},
+  storage: InProcessStorage | null = null,
 ): SqlBackedClient {
   const fetchInProcess: typeof fetch = async (input, init) => {
     const request: CompatRequest = {
@@ -104,9 +121,9 @@ export function createSqlBackedClient(
         return { data: null, error: { name: 'FunctionsHttpError', message: 'Edge Function returned a non-2xx status code', context } };
       },
     },
-    // Storage and Realtime move in their own phases (ADR-009 phases 6 and 7).
+    // Files are answered by the server's own store when it has one (ADR-012); channels are not a server-side concern.
     get storage() {
-      return unsupportedService('storage');
+      return storage ?? unsupportedService('storage');
     },
     channel: () => unsupportedService('realtime'),
   };

@@ -1,5 +1,5 @@
 import { Global, Module } from '@nestjs/common';
-import type { AddressInfo } from 'node:net';
+import { type AddressInfo, createServer } from 'node:net';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { createApp } from '../../createApp';
 import { BillingModule } from '../../modules/billing/billing.module';
@@ -38,10 +38,11 @@ export interface KcGateway {
  * depend on: tokens are signed locally, the rate limiter always allows, and
  * the visitor cache always misses (these suites check what the database
  * answers, not Redis).
- * @param overrides Outbound calls of the hosted functions, the identity provider, and configuration fields.
+ * @param overrides Outbound calls of the hosted functions, the identity provider, configuration fields, and the
+ *   port `listen()` opens (a test that must put the server's own address in its configuration picks it first: `freePort`).
  */
 export async function startKcGateway(
-  overrides: { functions?: HostedFunctionOverrides; identityProvider?: IdentityProvider; jobs?: ScheduledJobOverrides; config?: Partial<ApiConfig> } = {},
+  overrides: { functions?: HostedFunctionOverrides; identityProvider?: IdentityProvider; jobs?: ScheduledJobOverrides; config?: Partial<ApiConfig>; port?: number } = {},
 ): Promise<KcGateway> {
   const issuer = await createTestIssuer();
 
@@ -80,8 +81,18 @@ export async function startKcGateway(
     app,
     issuer,
     async listen() {
-      if (!app.getHttpServer().address()) await app.listen(0, '127.0.0.1');
+      if (!app.getHttpServer().address()) await app.listen(overrides.port ?? 0, '127.0.0.1');
       return `http://127.0.0.1:${(app.getHttpServer().address() as AddressInfo).port}`;
     },
   };
 }
+
+/** A local port that is free right now, for a server whose configuration must name its own address before it listens. */
+export async function freePort(): Promise<number> {
+  const probe = createServer();
+  await new Promise<void>((resolve) => probe.listen(0, '127.0.0.1', resolve));
+  const { port } = probe.address() as AddressInfo;
+  await new Promise<void>((resolve) => probe.close(() => resolve()));
+  return port;
+}
+

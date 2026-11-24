@@ -7,7 +7,9 @@ import { LOCAL_STORE_SECRET, LocalStoreRoutes } from './localStoreRoutes';
 import { OBJECT_STORE, type ObjectStore } from './objectStore';
 import { StorageController } from './storage.controller';
 import { StorageAuthorizer } from './storageAuthorizer';
+import { StorageCallerFiles } from './storageCallerFiles';
 import { StorageService } from './storageService';
+import { CALLER_FILES } from '../ports/callerFiles';
 
 /**
  * File storage (ADR-012): the member routes, the authorizer and the object
@@ -22,6 +24,8 @@ import { StorageService } from './storageService';
     StorageAuthorizer,
     StorageService,
     LocalStoreRoutes,
+    // What a hosted adapter reaches as `client.storage` (the port gateway picks it up when this module is present).
+    { provide: CALLER_FILES, useClass: StorageCallerFiles },
     // A key of this process only: a local store's URLs do not outlive a restart.
     { provide: LOCAL_STORE_SECRET, useFactory: () => randomBytes(32).toString('base64url') },
     {
@@ -33,6 +37,6 @@ import { StorageService } from './storageService';
       },
     },
   ],
-  exports: [OBJECT_STORE, StorageAuthorizer],
+  exports: [OBJECT_STORE, StorageAuthorizer, StorageService, CALLER_FILES],
 })
 export class StorageModule {}

@@ -61,13 +61,15 @@ describe('hosted ports', () => {
     }
   });
 
-  it('do not serve the one method that needs Storage', () => {
-    const notServed = HOSTED_PORTS.flatMap((port) =>
-      Object.entries(port.methods)
-        .filter(([, access]) => access === 'not_served')
-        .map(([method]) => `${port.name}.${method}`),
-    ).sort();
+  it('serve every method, and the one that needs stored files only where the server has a file store', () => {
+    const methodsWith = (wanted: string) =>
+      HOSTED_PORTS.flatMap((port) =>
+        Object.entries(port.methods)
+          .filter(([, access]) => access === wanted)
+          .map(([method]) => `${port.name}.${method}`),
+      ).sort();
 
-    expect(notServed).toEqual(['post.republish']);
+    expect(methodsWith('not_served')).toEqual([]);
+    expect(methodsWith('member_with_files')).toEqual(['post.republish']);
   });
 });

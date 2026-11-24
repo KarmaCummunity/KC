@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
 import type { Pool } from 'pg';
 import { DATABASE_POOL } from '../database/database.tokens';
 import { type DatabaseSession, IdentityDatabase } from '../database/identityDatabase';
@@ -10,6 +10,7 @@ import type { CatalogQuery } from '../postgrest/schemaCache';
 import { createSchemaCacheSource } from '../postgrest/schemaCacheSource';
 import { createSqlBackedClient, type InProcessFunctions, type SqlBackedClient } from '../postgrest/sqlBackedClient';
 import type { ResultRow } from '../postgrest/sqlStatements';
+import { CALLER_FILES, type CallerFiles } from './callerFiles';
 
 /**
  * Error codes that mean the engine itself could not serve a request an
@@ -43,6 +44,8 @@ export class PortClients {
     @Inject(DATABASE_POOL) pool: Pool,
     @Inject(IdentityDatabase) private readonly database: IdentityDatabase,
     @Inject(APP_LOGGER) private readonly logger: AppLogger,
+    // Absent on a server composed without the storage module (some test compositions).
+    @Optional() @Inject(CALLER_FILES) private readonly files: CallerFiles | null = null,
   ) {
     const catalog: CatalogQuery = (text) => pool.query(text) as never;
     this.schema = createSchemaCacheSource(catalog);
@@ -54,7 +57,12 @@ export class PortClients {
       const work = this.statementWork(statement);
       return caller ? this.database.runAs(caller, work) : this.database.runAnonymous(work);
     };
-    return createSqlBackedClient(caller, this.schema, run, (request, response) => this.reportEngineFault(request, response), functions);
+    return createSqlBackedClient(caller, this.schema, run, (request, response) => this.reportEngineFault(request, response), functions, this.files?.forCaller(caller) ?? null);
+  }
+
+  /** True when a client's `storage` is answered here: the methods that need files can be served. */
+  get hasFileStore(): boolean {
+    return this.files?.available ?? false;
   }
 
   /**
