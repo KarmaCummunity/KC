@@ -22,8 +22,9 @@ import { execFileSync } from 'node:child_process';
 import { appendFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import {
-  FREEZE_LABEL, TRAIN_LABELS, deployVerdict, freezePlan, isCiSkipped, judgeChecks,
+  FREEZE_LABEL, TRAIN_LABELS, deployVerdict, freezePlan, isCiSkipped, judgeChecks, lastLabelEvent,
   migrationChanges, migrationSafetyLines, nextPatch, renderSummary, scanMigrationSql, skipDecision,
+  unfreezeAction,
 } from './release-train-lib.mjs';
 import { checkReleaseMigrations, isScannedMigrationPath, permanentTablesCreatedIn } from './check-migration-safety.mjs';
 import { RELEASE_SUBJECT, releasePrProblems, releaseSquashMessage } from './release-merge.mjs';
@@ -281,9 +282,14 @@ async function freezeNew(s) {
   for (const p of fp) {
     if (p.queued) await gql('operator', 'mutation($id:ID!){dequeuePullRequest(input:{id:$id}){clientMutationId}}', { id: ids[p.number] });
     if (p.armed) await gql('operator', 'mutation($id:ID!){disablePullRequestAutoMerge(input:{pullRequestId:$id}){clientMutationId}}', { id: ids[p.number] });
-    if (p.addLabel) await api('operator', 'POST', repoPath(`issues/${p.number}/labels`), { labels: [FREEZE_LABEL] });
+    if (p.addLabel) {
+      await api('operator', 'POST', repoPath(`issues/${p.number}/labels`), { labels: [FREEZE_LABEL] });
+      // Remember our own label event: unfreeze removes the label only while it is still the newest.
+      const last = lastLabelEvent(await list('operator', repoPath(`issues/${p.number}/events`)));
+      if (last?.event === 'labeled' && last.actor?.login === s.operator) p.hold_event_id = last.id;
+    }
     const prev = s.freeze.find((x) => x.number === p.number);
-    if (prev) Object.assign(prev, { armed: prev.armed || p.armed, queued: prev.queued || p.queued, addLabel: prev.addLabel || p.addLabel });
+    if (prev) Object.assign(prev, { armed: prev.armed || p.armed, queued: prev.queued || p.queued, addLabel: prev.addLabel || p.addLabel, hold_event_id: prev.hold_event_id ?? p.hold_event_id });
     else { s.freeze.push(p); s.frozen.push(p.number); }
     save(s);
   }
@@ -298,21 +304,24 @@ async function freeze(s) {
 async function unfreeze(s) {
   const fp = s.freeze ?? [];
   const errors = [];
+  const held = [];
   for (const p of fp) {
     try {
-      if (p.addLabel) await api('operator', 'DELETE', repoPath(`issues/${p.number}/labels/${encodeURIComponent(FREEZE_LABEL)}`), null, { allow: [404] });
-      if (p.armed || p.queued) {
-        const pr = await get('workflow', repoPath(`pulls/${p.number}`));
-        if (pr.state === 'open') {
-          await gql('operator', 'mutation($id:ID!){enablePullRequestAutoMerge(input:{pullRequestId:$id,mergeMethod:SQUASH}){clientMutationId}}', { id: pr.node_id })
-            .catch((e) => { if (!/clean status|already/i.test(e.message)) throw e; });
-        }
-      }
+      // A hold placed while the train ran (draft, a re-added no-auto-merge label) wins: see unfreezeAction.
+      const pr = await get('workflow', repoPath(`pulls/${p.number}`));
+      const last = p.addLabel ? lastLabelEvent(await list('operator', repoPath(`issues/${p.number}/events`))) : null;
+      const act = unfreezeAction(p, pr, last, s.operator);
+      if (act.removeLabel) await api('operator', 'DELETE', repoPath(`issues/${p.number}/labels/${encodeURIComponent(FREEZE_LABEL)}`), null, { allow: [404] });
+      if (act.rearm) {
+        await gql('operator', 'mutation($id:ID!){enablePullRequestAutoMerge(input:{pullRequestId:$id,mergeMethod:SQUASH}){clientMutationId}}', { id: pr.node_id })
+          .catch((e) => { if (!/clean status|already/i.test(e.message)) throw e; });
+      } else if ((p.armed || p.queued) && act.reason !== 'not open') held.push(`#${p.number} (${act.reason})`);
     } catch (e) { errors.push(`#${p.number}: ${e.message}`); }
   }
   if (!fp.length) return step(s, 'lift freeze', 'skipped', 'nothing was frozen');
-  if (errors.length) return step(s, 'lift freeze', 'failure', `re-arm by hand: ${errors.join('; ')}`);
-  step(s, 'lift freeze', 'success', `restored ${fp.map((p) => `#${p.number}`).join(' ')}`);
+  const kept = held.length ? `; kept held: ${held.join(' ')}` : '';
+  if (errors.length) return step(s, 'lift freeze', 'failure', `re-arm by hand: ${errors.join('; ')}${kept}`);
+  step(s, 'lift freeze', 'success', `restored ${fp.map((p) => `#${p.number}`).join(' ')}${kept}`);
 }
 
 // ---------------------------------------------------------------------------

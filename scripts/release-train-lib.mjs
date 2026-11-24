@@ -202,6 +202,37 @@ function job(jobs, re) {
  * Verdict on a finished Deploy (main) run: every prod stage green, the backup
  * job green, the tag job green; the rollback jobs say what happened if not.
  */
+// The newest labeled/unlabeled event for `name` in an issue's event list (oldest first, as the
+// REST API returns it), or null.
+export function lastLabelEvent(events, name = FREEZE_LABEL) {
+  return (events ?? []).filter((e) => ['labeled', 'unlabeled'].includes(e.event) && e.label?.name === name).at(-1) ?? null;
+}
+
+// What lifting the freeze may do for one frozen PR (#2509 / #2514). `p` is the freezePlan entry
+// (plus `hold_event_id`, the id of the label event the train itself created). `pr` is the PR's
+// live REST state, and `last` is lastLabelEvent of its events. A hold someone placed while the
+// train ran wins:
+// - a PR that is now a draft or no longer open is left as it is;
+// - the train removes the label only if its own label event is still the newest one (a label
+//   removed and added again by a person, or state saved before hold_event_id existed, stays);
+// - auto-merge is re-armed only if no `no-auto-merge` label remains afterwards.
+export function unfreezeAction(p, pr, last, operator) {
+  const hold = (reason) => ({ removeLabel: false, rearm: false, reason });
+  if (!pr || pr.state !== 'open') return hold('not open');
+  if (pr.draft) return hold('draft');
+  let removeLabel = false;
+  if (p.addLabel) {
+    const ours = p.hold_event_id != null && last?.id === p.hold_event_id
+      && last.event === 'labeled' && last.actor?.login === operator;
+    if (!ours) return hold(`${FREEZE_LABEL} label changed since the freeze`);
+    removeLabel = true;
+  }
+  const labels = (pr.labels ?? []).map((l) => l?.name ?? l).filter((n) => !(removeLabel && n === FREEZE_LABEL));
+  if (!(p.armed || p.queued)) return { removeLabel, rearm: false, reason: 'was not armed' };
+  if (labels.includes(FREEZE_LABEL)) return { removeLabel, rearm: false, reason: `${FREEZE_LABEL} held` };
+  return { removeLabel, rearm: true, reason: 'restored' };
+}
+
 export function deployVerdict(jobs) {
   const pick = (re) => job(jobs, re)?.conclusion ?? 'missing';
   const stages = {
