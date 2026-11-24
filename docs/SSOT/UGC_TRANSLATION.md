@@ -20,7 +20,7 @@ flowchart LR
   end
   subgraph db [Postgres]
     CT[content_translations]
-    Src[posts / messages / ride_listings / users]
+    Src[posts / post_comments / messages / users]
   end
   Read --> CT
   Miss --> Batch --> T
@@ -42,7 +42,7 @@ flowchart LR
 | App adapter | `EdgeFnTranslationService` | `requestTranslation` (single) + `requestTranslationsBatch` |
 | Feed materialization | `MaterializePostTranslationsUseCase` | Sends all post misses in one batch invoke |
 
-KC uses **`content_translations` only**. Migration `0239` extends CHECK constraints and purge triggers for `ride_listing` and `user` biography.
+KC uses **`content_translations` only**. Current schema: `supabase/schemas/78_translation/010_content_translations.sql`, included in `0001_baseline.sql`. Historical migration `0239` predates the baseline reset. Rides are now posts, not a separate translation content type.
 
 ### Batch API contract
 
@@ -55,7 +55,7 @@ Content-Type: application/json
   "targetLanguage": "en",
   "items": [
     { "contentType": "post", "contentId": "<uuid>", "field": "title" },
-    { "contentType": "ride_listing", "contentId": "<uuid>", "field": "description" }
+    { "contentType": "post", "contentId": "<another-uuid>", "field": "description" }
   ]
 }
 ```
@@ -66,7 +66,7 @@ Response:
 {
   "results": [
     { "contentType": "post", "contentId": "…", "field": "title", "status": "cached", "translation": { … } },
-    { "contentType": "ride_listing", "contentId": "…", "field": "description", "status": "skipped" }
+    { "contentType": "post", "contentId": "…", "field": "description", "status": "skipped" }
   ]
 }
 ```
@@ -77,12 +77,19 @@ Response:
 
 | `contentType` | Table | PK | Fields |
 | --- | --- | --- | --- |
-| `post` | `posts` | `post_id` | `title`, `description` |
-| `message` | `messages` | `message_id` | `body` |
-| `ride_listing` | `ride_listings` | `ride_id` | `title`, `description` |
-| `user` | `users` | `user_id` | `biography` (not `display_name`) |
+| `post` | `posts` | `id` | `title`, `description` |
+| `comment` | `post_comments` | `id` | `body` |
+| `message` | `messages` | `id` | `body` |
+| `user` | `users` | `id` | `biography` (not `display_name`) |
 
-Post cache reads for the feed use `get_post_translations` (migration `0210`). Other types use the batch translate path until a dedicated read RPC is added.
+Post cache reads for the feed use `get_post_translations`, a SECURITY INVOKER function limited to the first 100 supplied post IDs. Authenticated cache SELECT policies exist for visible posts, active comments and visible users. There is no message-cache SELECT policy while chat translation remains planned. Registry support alone does not mean a type has released reader UX or consent handling.
+
+## Source checkpoint (2026-11-24, #1863)
+
+- `provider.ts` defaults to `googlefree`; `gemini` is an explicit selector. This does not verify the deployed selector, provider terms, a DPA or permission to spend. D-63/D-65's conditions before real-user exposure are not waived by the current default.
+- `resolveBatch.ts` reads eligible sources under caller permissions before using the cache, reads cache rows in one batch, and bounds provider fan-out to two. Unique-key insertion deduplicates persistence **after** provider calls; it does not guarantee one provider call across simultaneous misses.
+- `useTranslatedPosts.ts` is gated by `ugc_auto_translation`, whose local default is off. Live flag state was not checked. Chat remains opt-in, default-off and sender-consent-gated in the requirements, with UX planned.
+- No project-book chapter or product D/S/G registry entry found in the scoped reconciliation adds a conflicting translation rule. Engineering decisions D-63/D-64/D-65/D-191 and current source remain separately identified; static code presence is not rollout evidence.
 
 ## How to add a new translatable entity
 

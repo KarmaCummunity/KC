@@ -77,6 +77,17 @@ Deno.test('a name that resolves to a private address is unreachable without any 
   assertEquals(log, []);
 });
 
+// TD-265: Deno `fetch` cannot connect to a pinned IP, so a name that flips to a private
+// address between the guard's lookup and the fetch is caught by looking it up again.
+Deno.test('a name that rebinds to a private address during the fetch is unreachable', async () => {
+  let lookups = 0;
+  const rebinding: ResolveRecords = (_host, type) => {
+    if (type !== 'A') return Promise.resolve([]);
+    return Promise.resolve(lookups++ === 0 ? ['93.184.215.14'] : ['169.254.169.254']);
+  };
+  assertEquals(await checkReachable(new URL('https://rebind.example/'), scripted({ 'https://rebind.example/': [200] }), rebinding), false);
+});
+
 Deno.test('redirect loops stop after the hop limit, and non-http redirect targets fail', async () => {
   const loop = scripted({ 'https://example.org/': [302, 'https://example.org/'] });
   assertEquals(await checkReachable(new URL('https://example.org/'), loop, PUBLIC_DNS), false);

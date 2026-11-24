@@ -1,0 +1,10 @@
+# actionlint configuration (read by the "Workflow lint" step in ci-static-guards.yml).
+#
+# GitHub added `queue: max` to `concurrency` on 7 May 2026 (docs: "Control the concurrency of
+# workflows and jobs"); actionlint 1.7.7, and 1.7.12 as of 23 Nov 2026, does not know the key yet.
+# Only that one message is ignored, only in the one file that uses it (the single kc-dev emulator
+# queue, #2613); every other check still applies there. Drop this once actionlint knows `queue`.
+paths:
+  .github/workflows/ci-maestro-android.yml:
+    ignore:
+      - 'unexpected key "queue" for "concurrency" section'

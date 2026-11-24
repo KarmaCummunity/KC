@@ -15,6 +15,7 @@ import {
 } from '../lib/chatInboxQuery';
 import { reduceBumpInboxForIncomingInsert } from './chatStoreInboxBump';
 import { useActiveScreenStore } from '../lib/notifications/useActiveScreenStore';
+import { withLoadedReactions, withNewMessages, withReactionChange } from './chatStoreReactions';
 
 export type { OptimisticMessage } from './chatStoreTypes';
 
@@ -31,6 +32,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   unreadTotal: 0,
   inboxSnapshotEpoch: 0,
   threads: {},
+  reactions: {},
   inboxSub: null,
   threadSubs: {},
 
@@ -83,9 +85,11 @@ export const useChatStore = create<ChatState>((set, get) => ({
     set((s) => ({ threads: { ...s.threads, [chatId]: next } }));
   },
 
+  // A message created on this device has no reactions yet (#2568): known as empty, never read.
   appendOptimistic: (chatId, msg) =>
     set((s) => ({
       threads: { ...s.threads, [chatId]: [...(s.threads[chatId] ?? []), msg] },
+      reactions: { ...s.reactions, [chatId]: withNewMessages(s.reactions[chatId], [msg.messageId]) },
     })),
 
   reconcileSent: (chatId, clientId, server) =>
@@ -94,7 +98,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
       const next = list.map((m) =>
         m.clientId === clientId ? { ...server, clientId, failed: false } : m,
       );
-      return { threads: { ...s.threads, [chatId]: next } };
+      return {
+        threads: { ...s.threads, [chatId]: next },
+        reactions: { ...s.reactions, [chatId]: withNewMessages(s.reactions[chatId], [server.messageId]) },
+      };
     }),
 
   markFailed: (chatId, clientId) =>
@@ -111,6 +118,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
     set((s) => {
       const list = s.threads[chatId] ?? [];
       if (list.some((m) => m.messageId === msg.messageId)) return s;
+      // A live message is new: its reactions start empty and arrive as broadcasts (#2568).
+      const reactions = { ...s.reactions, [chatId]: withNewMessages(s.reactions[chatId], [msg.messageId]) };
       const optimisticIdx = list.findIndex(
         (m) => m.status === 'pending' && m.senderId === msg.senderId && m.body === msg.body,
       );
@@ -118,10 +127,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
         const next = list.map((m, i) =>
           i === optimisticIdx ? { ...msg, clientId: m.clientId, failed: false } : m,
         );
-        return { threads: { ...s.threads, [chatId]: next } };
+        return { threads: { ...s.threads, [chatId]: next }, reactions };
       }
       const next = [...list, toOptimistic(msg)].sort(compareCreatedAt);
-      return { threads: { ...s.threads, [chatId]: next } };
+      return { threads: { ...s.threads, [chatId]: next }, reactions };
     }),
 
   applyReadMarker: (chatId, marker) =>
@@ -138,6 +147,18 @@ export const useChatStore = create<ChatState>((set, get) => ({
           ),
         },
       };
+    }),
+
+  setMessageReactions: (chatId, messageIds, rows) =>
+    set((s) => ({
+      reactions: { ...s.reactions, [chatId]: withLoadedReactions(s.reactions[chatId], messageIds, rows) },
+    })),
+
+  applyReactionChange: (chatId, change) =>
+    set((s) => {
+      const current = s.reactions[chatId];
+      const next = withReactionChange(current, change);
+      return next === current || !next ? s : { reactions: { ...s.reactions, [chatId]: next } };
     }),
 
   startInboxSub: async (userId, repo, realtime) => {
@@ -167,12 +188,16 @@ export const useChatStore = create<ChatState>((set, get) => ({
       const msgs = await repo.getMessages(chatId, 50);
       if (get().threadSubs[chatId] !== noopUnsub) return;
       get().setThreadMessages(chatId, msgs);
+      // Reactions cached from an earlier visit missed the changes made while it was closed:
+      // forget them, so the page's reactions are read once, fresh (#2568).
+      set((s) => ({ reactions: { ...s.reactions, [chatId]: {} } }));
       const userId = inboxUserId();
       let unsub = noopUnsub;
       unsub = realtime.subscribeToChat(chatId, {
         onMessage: (m) => get().applyIncomingMessage(chatId, m),
         onReadMarker: (marker) => get().applyReadMarker(chatId, marker),
         onChatChanged,
+        onReaction: (change) => get().applyReactionChange(chatId, change),
         onError: () => { /* deferred: surface via ChatChannelStatus hook */ },
         // The channel rejoined after a failure (#1778): merge the latest page so messages sent
         // while it was down appear, without dropping pending sends or older loaded pages.
@@ -182,7 +207,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
           void repo
             .getMessages(chatId, 50)
             .then((latest) => {
-              if (isCurrent()) latest.forEach((m) => get().applyIncomingMessage(chatId, m));
+              if (!isCurrent()) return;
+              latest.forEach((m) => get().applyIncomingMessage(chatId, m));
+              // Reaction broadcasts sent while the channel was down are lost too: re-read them.
+              set((s) => ({ reactions: { ...s.reactions, [chatId]: {} } }));
             })
             .catch(() => undefined);
         },
@@ -219,6 +247,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       unreadTotal: 0,
       inboxSnapshotEpoch: 0,
       threads: {},
+      reactions: {},
       inboxSub: null,
       threadSubs: {},
     });
