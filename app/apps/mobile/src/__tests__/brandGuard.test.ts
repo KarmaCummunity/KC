@@ -162,12 +162,11 @@ describe('brand identity in the shipped app', () => {
   });
 
   // Config files cannot import tokens, so these copies of the decoration orange are pinned here.
+  // `+html.tsx` is unreachable under `web.output: "single"` (TD-129 / #1784); theme-color lives in app.json.
   it('keeps browser chrome and notification colours on the primaryVivid token', () => {
     const notificationPlugin = pluginOptions<{ color: string }>('expo-notifications');
-    const htmlHead = readFileSync(path.join(MOBILE_ROOT, 'app/+html.tsx'), 'utf8');
     expect(appJson.expo.web.themeColor).toBe(lightColors.primaryVivid);
     expect(notificationPlugin?.color).toBe(lightColors.primaryVivid);
-    expect(htmlHead).toContain(`name="theme-color" content="${lightColors.primaryVivid}"`);
   });
 
   // Spec 17 §2 (#1290): the logo lands on the cream the app opens with, not on white.
