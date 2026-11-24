@@ -1,9 +1,10 @@
-// FR-HOUSING-003 AC2 (TD-245) — housing create/book pre-check: unverified members see the card,
-// not the listing fields they cannot publish anyway.
+// FR-HOUSING-003 AC2 (TD-245) — housing create pre-check: incomplete profiles see the card,
+// not the listing fields. Until Didit IDV ships (#1037), complete profile unlocks housing.
 import React, { useEffect, type ReactNode } from 'react';
 import { ActivityIndicator, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
+import { meetsVerificationRequirement } from '@kc/domain';
 import { Text, useTheme } from '@kc/ui';
 import { useViewerVerificationLevel } from '../../hooks/useViewerVerificationLevel';
 import { useCreatePostStyles } from '../../screens/tabs/create.styles';
@@ -20,11 +21,14 @@ export function HousingCreateVerificationGate({ header, children, onPublishActio
   const styles = useCreatePostStyles();
   const router = useRouter();
   const level = useViewerVerificationLevel();
+  const atLevel = level.data ?? 0;
+  // Spec still names level 2 for housing; live product caps the requirement at complete profile.
+  const unlocked = meetsVerificationRequirement(atLevel, 2);
 
   useEffect(() => {
-    if (level.isPending || (level.data ?? 0) >= 2) return;
+    if (level.isPending || unlocked) return;
     onPublishActionChange(null, false);
-  }, [level.data, level.isPending, onPublishActionChange]);
+  }, [level.isPending, unlocked, onPublishActionChange]);
 
   if (level.isPending) {
     return (
@@ -35,24 +39,22 @@ export function HousingCreateVerificationGate({ header, children, onPublishActio
     );
   }
 
-  if ((level.data ?? 0) < 2) {
-    const atLevel = level.data ?? 0;
-    const ctaPath = atLevel < 1 ? '/edit-profile' : '/identity-verification';
-    const ctaKey = atLevel < 1 ? 'housingStay.create.verifyCtaProfile' : 'housingStay.create.verifyCtaIdentity';
-    const hintKey = atLevel < 1 ? 'housingStay.create.verifyBodyProfile' : 'housingStay.create.verifyBody';
+  if (!unlocked) {
     return (
       <>
         {header}
         <View style={styles.section} testID="housing-verify-gate">
           <Text style={styles.sectionLabel}>{t('housingStay.create.verifyTitle')}</Text>
-          <Text style={styles.sectionHint}>{t(hintKey)}</Text>
+          <Text style={styles.sectionHint}>{t('housingStay.create.verifyBodyProfile')}</Text>
           <TouchableOpacity
             accessibilityRole="button"
             style={styles.publishBtn}
-            onPress={() => router.push(ctaPath)}
+            onPress={() => router.push('/edit-profile')}
             testID="housing-verify-cta"
           >
-            <Text style={[styles.publishBtnText, { color: colors.textInverse }]}>{t(ctaKey)}</Text>
+            <Text style={[styles.publishBtnText, { color: colors.textInverse }]}>
+              {t('housingStay.create.verifyCtaProfile')}
+            </Text>
           </TouchableOpacity>
         </View>
       </>

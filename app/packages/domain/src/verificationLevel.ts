@@ -5,6 +5,28 @@
 /** 0 none · 1 complete profile · 2 ID verified · 3 recognised organization. */
 export type VerificationLevel = 0 | 1 | 2 | 3;
 
+// Until ID verification (Didit) ships, complete profile = maximum verification level. Revisit per action when IDV launches (see #1037).
+/** Highest level the live app awards and gates against until Didit IDV is live. */
+export const MAX_LIVE_VERIFICATION_LEVEL: VerificationLevel = 1;
+
+/**
+ * Whether `level` unlocks a feature that nominally needs `required`.
+ * Caps the requirement at {@link MAX_LIVE_VERIFICATION_LEVEL} so complete-profile
+ * members clear every higher gate until IDV ships.
+ */
+export function meetsVerificationRequirement(
+  level: VerificationLevel,
+  required: VerificationLevel,
+): boolean {
+  const liveRequired = Math.min(required, MAX_LIVE_VERIFICATION_LEVEL) as VerificationLevel;
+  return level >= liveRequired;
+}
+
+/** True when the member is already at the live maximum (no higher tier is offered yet). */
+export function isAtMaxLiveVerificationLevel(level: VerificationLevel): boolean {
+  return level >= MAX_LIVE_VERIFICATION_LEVEL;
+}
+
 /** Profile fields that must all be non-blank for level 1 (FR-VERIFY-012 AC1). */
 export interface CompleteProfileFields {
   readonly displayName: string | null;
