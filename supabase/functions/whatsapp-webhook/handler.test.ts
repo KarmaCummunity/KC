@@ -19,7 +19,7 @@ function deps(overrides: Partial<Record<string, unknown>> = {}, calls: Call[] = 
     };
     return Promise.resolve({ data: canned[fn] ?? null, error: null });
   };
-  return { rpc, verifyToken: 'verify-me', appSecret: SECRET, skipSignatureVerify: false };
+  return { rpc, verifyToken: 'verify-me', appSecret: SECRET };
 }
 
 function metaBody(text: string, from = '972500000001') {
@@ -209,6 +209,8 @@ Deno.test('#1089: no app secret and no dev override → POST rejected (fails clo
   const calls: Call[] = [];
   const h = createWebhookHandler({ ...deps({}, calls), appSecret: '' });
   assertEquals((await post(h, metaBody('hi'))).status, 401);
+  // There is no bypass switch: an unsigned POST is rejected the same way.
+  assertEquals((await post(h, metaBody('hi'), false)).status, 401);
   assertEquals(calls.length, 0);
 });
 

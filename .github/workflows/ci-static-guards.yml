@@ -186,6 +186,10 @@ jobs:
         if: ${{ !cancelled() }}
         run: node scripts/check-required-checks-drift.mjs
 
+      - name: Webhook functions authenticate their caller
+        if: ${{ !cancelled() }}
+        run: node scripts/check-webhook-auth.mjs
+
       - name: Deploys only through deploy.yml
         if: ${{ !cancelled() }}
         run: node scripts/check-deploy-isolation.mjs
