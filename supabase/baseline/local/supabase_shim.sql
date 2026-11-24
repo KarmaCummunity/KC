@@ -123,6 +123,9 @@ create table if not exists storage.objects (
   metadata jsonb,
   created_at timestamptz default now()
 );
+-- One object per name in a bucket, as on the platform (its index has the same name): an upload
+-- never replaces a file, and the storage service relies on it when two requests race.
+create unique index if not exists bucketid_objname on storage.objects (bucket_id, name);
 alter table storage.objects enable row level security;
 grant select, insert, update, delete on storage.objects to authenticated, service_role;
 -- KC's own storage service (ADR-012) reads a bucket's rules (public, size limit, allowed types)

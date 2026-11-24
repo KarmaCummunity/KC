@@ -17,6 +17,7 @@ import { VisitorCacheModule } from './platform/ports/visitorCache';
 import { RateLimitModule } from './platform/rateLimit/rateLimiter';
 import { RealtimeModule } from './platform/realtime/realtime.module';
 import { RedisModule, RedisProbe } from './platform/redis/redis.module';
+import { StorageModule } from './platform/storage/storage.module';
 
 /**
  * Root module. Each bounded context is added here as its own module
@@ -41,6 +42,7 @@ export class AppModule {
         BillingModule,
         JobsModule.forRoot(scheduledJobSet()),
         RealtimeModule,
+        StorageModule,
         PortGatewayModule.forRoot(HOSTED_PORTS, hostedFunctionSet()),
       ],
     };

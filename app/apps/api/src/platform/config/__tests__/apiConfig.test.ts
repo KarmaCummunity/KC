@@ -42,6 +42,7 @@ describe('loadApiConfig', () => {
       rateLimitPerMinute: 600,
       jobsToken: null,
       expoAccessToken: null,
+      storage: { localDirectory: null, publicUrl: null },
       whatsapp: { cloudApiToken: null, phoneNumberId: null, graphApiVersion: null },
       translationProvider: 'googlefree',
       gemini: { apiKey: null, model: 'gemini-2.0-flash' },
@@ -199,6 +200,14 @@ describe('loadApiConfig', () => {
 
     expect(loadApiConfig({ ...REQUIRED, KC_JOBS_TOKEN: token }).jobsToken).toBe(token);
     expect(configErrorOf({ KC_JOBS_TOKEN: 'short' }).variable).toBe('KC_JOBS_TOKEN');
+  });
+
+  it('reads the local file store and needs the address its URLs point at', () => {
+    const config = loadApiConfig({ ...REQUIRED, KC_STORAGE_LOCAL_DIR: '/var/kc-files', KC_API_PUBLIC_URL: 'http://localhost:8080/' });
+
+    expect(config.storage).toEqual({ localDirectory: '/var/kc-files', publicUrl: 'http://localhost:8080' });
+    expect(configErrorOf({ KC_STORAGE_LOCAL_DIR: '/var/kc-files' }).variable).toBe('KC_API_PUBLIC_URL');
+    expect(configErrorOf({ KC_API_PUBLIC_URL: 'not a url' }).variable).toBe('KC_API_PUBLIC_URL');
   });
 
   it('refuses to start with Gemini selected and no key, or with an unknown provider', () => {

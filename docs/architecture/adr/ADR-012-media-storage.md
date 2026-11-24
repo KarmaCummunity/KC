@@ -31,7 +31,7 @@ On KC's own PostgreSQL the `storage` schema (the tables `buckets` and `objects`,
 - **Read of a private file:** the caller may get a signed URL when they could select the object's row.
 - **Delete:** the caller may delete when they could delete the row.
 
-A bucket's size limit and allowed types are checked by the API before a signed upload URL is issued, and enforced by the store on the upload itself.
+A bucket's size limit and allowed types are checked by the API before a signed upload URL is issued, and enforced by the store on the upload itself. A name holds one object for good (the index has one row per bucket and name, as the service being replaced does): the app already gives every upload attempt its own path, so nothing is ever replaced under a URL someone holds.
 
 ### 4. How the app moves files
 
@@ -59,7 +59,7 @@ Before the switch, every object is copied to the new store by name and verified 
 | Step | What | State |
 |---|---|---|
 | 1 | Storage authorizer on the real policies (upload, read, delete) | Done (`apps/api/src/platform/storage/storageAuthorizer.ts`): each bucket's rule has a case for the member it is for and for another, on the KC schema; asking stores no row |
-| 2 | `ObjectStore` with the local-directory implementation; upload, signed read and delete routes; the index row | — |
+| 2 | `ObjectStore` with the local-directory implementation; upload, signed read and delete routes; the index row | Done (`platform/storage`): `POST /v1/storage/uploads` (grant), `/uploads/complete` (index row, written as the member), `/signed-urls`, `/objects/delete`. A name is written once and never replaced; a grant fixes the type and the largest size; a confirmation checks the stored object against the bucket's rules again; a member who may not write a name can neither confirm nor remove another member's upload. The local store serves its own signed and public addresses (`KC_STORAGE_LOCAL_DIR`, `KC_API_PUBLIC_URL`); with no store configured the routes answer `503`. Checked end to end on the KC schema |
 | 3 | The app's storage door (`viaApiStorage`): upload helper, public URL, signed URL, delete | — |
 | 4 | `post.republish` and the six file functions on `ObjectStore` | — |
 | 5 | The Google Cloud Storage implementation, buckets, CDN (needs the cloud project) | — |

@@ -18,6 +18,8 @@ export const MAX_OBJECT_NAME_LENGTH = 512;
 const INSUFFICIENT_PRIVILEGE = '42501';
 /** PostgreSQL foreign_key_violation: the bucket does not exist. */
 const FOREIGN_KEY_VIOLATION = '23503';
+/** PostgreSQL unique_violation: a file of that name is already in the index. */
+const UNIQUE_VIOLATION = '23505';
 /** True when the text holds a C0 control character or DEL: characters with no place in a path. */
 function hasControlCharacter(text: string): boolean {
   for (let index = 0; index < text.length; index += 1) {
@@ -59,21 +61,31 @@ export class StorageAuthorizer {
     return { isPublic: row.public === true, fileSizeLimit: row.file_size_limit === null ? null : Number(row.file_size_limit), allowedMimeTypes: row.allowed_mime_types };
   }
 
-  /** True when the caller could insert the row of `<bucket>/<name>`. */
+  /**
+   * True when the policies let the caller insert the row of `<bucket>/<name>`.
+   * Whether a file of that name already exists is a separate question
+   * (`objectExists`): the policy is checked before the unique index, so a
+   * duplicate means the policy allowed the row.
+   */
   mayUpload(caller: CallerIdentity, bucket: string, name: string): Promise<boolean> {
     if (!isSafeObjectName(name)) return Promise.resolve(false);
     return this.database.inspectAsService(async (session) => {
       await actAs(session, caller);
-      await session.query('savepoint upload_probe');
       try {
         await session.query('insert into storage.objects (bucket_id, name) values ($1, $2)', [bucket, name]);
         return true;
       } catch (error) {
         const code = (error as { code?: string }).code;
+        if (code === UNIQUE_VIOLATION) return true;
         if (code !== INSUFFICIENT_PRIVILEGE && code !== FOREIGN_KEY_VIOLATION) throw error;
         return false;
       }
     });
+  }
+
+  /** True when the index has a file of that name, whoever it belongs to. */
+  objectExists(bucket: string, name: string): Promise<boolean> {
+    return this.database.inspectAsService(async (session) => (await session.query('select 1 from storage.objects where bucket_id = $1 and name = $2', [bucket, name])).rowCount === 1);
   }
 
   /**

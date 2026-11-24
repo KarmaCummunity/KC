@@ -19,6 +19,7 @@ import { VisitorCache } from '../../platform/ports/visitorCache';
 import { RateLimiter } from '../../platform/rateLimit/rateLimiter';
 import { RealtimeModule } from '../../platform/realtime/realtime.module';
 import { RedisModule } from '../../platform/redis/redis.module';
+import { StorageModule } from '../../platform/storage/storage.module';
 import { KC_DATABASE_URL } from './kcDatabase';
 import { testConfig } from './testConfig';
 import { createTestIssuer, type TestIssuer } from './testTokens';
@@ -68,6 +69,7 @@ export async function startKcGateway(
       BillingModule,
       JobsModule.forRoot(scheduledJobSet(overrides.jobs)),
       RealtimeModule,
+      StorageModule,
       PortGatewayModule.forRoot(HOSTED_PORTS, hostedFunctionSet(overrides.functions)),
     ],
   })

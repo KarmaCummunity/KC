@@ -1,0 +1,53 @@
+// Where the bytes of KC's files live (ADR-012 section 1). The API never
+// streams a member's upload or download: it issues URLs and keeps the index.
+// Server modules that work on files (copies, thumbnails, clean-up) read and
+// write through the same interface.
+
+/** What the store knows about one object. */
+export interface StoredObject {
+  /** Size in bytes. */
+  readonly size: number;
+  readonly contentType: string;
+  /** The Cache-Control value served with the object, when one was stored. */
+  readonly cacheControl: string | null;
+}
+
+/** What an upload is allowed to be; the store refuses anything else. */
+export interface UploadGrant {
+  readonly bucket: string;
+  readonly name: string;
+  readonly contentType: string;
+  /** Largest body the upload may have, in bytes. */
+  readonly maxBytes: number;
+  readonly cacheControl: string | null;
+}
+
+/** How a client carries out an upload it was granted. */
+export interface SignedUpload {
+  readonly url: string;
+  readonly method: 'PUT';
+  /** Headers the client must send with the bytes, exactly. */
+  readonly headers: Readonly<Record<string, string>>;
+  /** ISO time after which the URL no longer works. */
+  readonly expiresAt: string;
+}
+
+export interface ObjectStore {
+  /** A URL the client uploads the bytes to. The object replaces nothing: a name that exists is refused. */
+  signedUploadUrl(grant: UploadGrant, expiresInSeconds: number): Promise<SignedUpload>;
+  /** A short-lived URL that serves a private object. */
+  signedReadUrl(bucket: string, name: string, expiresInSeconds: number): Promise<string>;
+  /** The lasting address of an object of a public bucket. */
+  publicUrl(bucket: string, name: string): string;
+  /** What is stored under the name, or null when nothing is. */
+  head(bucket: string, name: string): Promise<StoredObject | null>;
+  /** The bytes of an object, or null when nothing is stored under the name. */
+  read(bucket: string, name: string): Promise<Uint8Array | null>;
+  /** Stores bytes on the server's own behalf (a copy, a thumbnail). @returns false when the name is taken. */
+  write(bucket: string, name: string, bytes: Uint8Array, object: Omit<StoredObject, 'size'>): Promise<boolean>;
+  /** Removes an object; removing one that is not there is not an error. */
+  delete(bucket: string, name: string): Promise<void>;
+}
+
+/** Injection token of the configured `ObjectStore`, or of null when the API has no store. */
+export const OBJECT_STORE = Symbol('OBJECT_STORE');

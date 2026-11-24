@@ -3,7 +3,7 @@ import { type FeatureConfig, loadFeatureConfig } from './featureConfig';
 
 // The names other modules have always imported from here.
 export { ApiConfigError } from './configReader';
-export type { BillingConfig, GeminiConfig, IdentityVerificationConfig, PostImportConfig, TranslationProviderKind, WhatsAppConfig } from './featureConfig';
+export type { BillingConfig, GeminiConfig, IdentityVerificationConfig, PostImportConfig, StorageConfig, TranslationProviderKind, WhatsAppConfig } from './featureConfig';
 
 /** Environments the API runs in. `test` is the in-process test run. */
 export const API_ENVIRONMENTS = ['development', 'production', 'test'] as const;

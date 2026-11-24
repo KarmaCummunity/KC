@@ -43,6 +43,8 @@ Without the variable those suites are skipped and the unit tests still run.
 | `KC_API_RATE_LIMIT_PER_MINUTE` | `600` | Port calls one caller may make per minute (a member by user id, a visitor by address), counted in Redis. `0` switches the limit off |
 | `KC_JOBS_TOKEN` | none | Bearer token a scheduler sends to start a job (`POST /v1/jobs/<name>`); a secret of at least 32 characters. Without it no job can be started |
 | `EXPO_ACCESS_TOKEN` | none | Access token of the Expo push service, when the Expo project requires one (a secret) |
+| `KC_STORAGE_LOCAL_DIR` | none | Directory of the local file store, for development and tests only (ADR-012). Without a store the storage routes answer `503 not_configured` |
+| `KC_API_PUBLIC_URL` | none | The API's own address as clients reach it; required with `KC_STORAGE_LOCAL_DIR`, whose upload and read addresses point back at the API |
 | `WHATSAPP_CLOUD_API_TOKEN` | none | Graph API token of the WhatsApp channel (a secret). Without it no WhatsApp message is sent |
 | `WHATSAPP_PHONE_NUMBER_ID` | channel settings | Overrides the phone number id stored with the channel's settings |
 | `WHATSAPP_GRAPH_API_VERSION` | channel settings, else `v21.0` | Overrides the Graph API version |
@@ -67,6 +69,10 @@ An invalid value stops the process at start with an error that names the variabl
 ## Realtime
 
 `GET /v1/realtime` upgrades to a WebSocket (ADR-011). The first frame is `{ "op": "auth", "token": "<access token>" }`; then the client subscribes to topics (`{ "op": "subscribe", "ref", "topic", "extension" }`) and is sent their events. The frames are defined once, in `@kc/infrastructure-api` (`src/wire/realtimeWire.ts`). Who may join a topic is decided by the row-level-security policies on `realtime.messages`, so a new topic needs a policy and an SQL test, and no change here. The database sends an event with `kc_private.broadcast`; the API hears it through `NOTIFY kc_realtime`.
+
+## File storage
+
+[ADR-012](../../../docs/architecture/adr/ADR-012-media-storage.md). A member's file moves in three steps: `POST /v1/storage/uploads` grants an upload of `<bucket>/<name>` and returns the address to send the bytes to; the app sends them there; `POST /v1/storage/uploads/complete` writes the file into the index (`storage.objects`). `POST /v1/storage/signed-urls` gives a short-lived address of a private file, and `POST /v1/storage/objects/delete` removes the member's files. Who may do what is decided by the policies on `storage.objects` (`src/platform/storage/storageAuthorizer.ts`), never by the API's own code. The bytes live behind the `ObjectStore` interface: a local directory here, Google Cloud Storage when deployed. Server modules that work on files inject `OBJECT_STORE`.
 
 ## Health
 

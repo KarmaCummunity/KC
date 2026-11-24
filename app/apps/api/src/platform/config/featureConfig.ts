@@ -61,8 +61,17 @@ export interface GeminiConfig {
   readonly model: string;
 }
 
+export interface StorageConfig {
+  /** Directory of the local-directory object store (development and tests); null: no store of that kind. */
+  readonly localDirectory: string | null;
+  /** The API's own address as clients reach it, which the local store's URLs point back at. */
+  readonly publicUrl: string | null;
+}
+
 /** The feature settings, as `loadApiConfig` adds them to the configuration. */
 export interface FeatureConfig {
+  /** Where files are stored (ADR-012). */
+  readonly storage: StorageConfig;
   /** The WhatsApp channel through Meta's Cloud API. */
   readonly whatsapp: WhatsAppConfig;
   /** Who translates member content (FR-TRANSLATE-002). */
@@ -130,11 +139,21 @@ function parseTranslationProvider(value: string | undefined, geminiApiKey: strin
   return provider;
 }
 
+/** The local store needs both its directory and the address its URLs point at. */
+function parseStorage(env: Env): StorageConfig {
+  const localDirectory = readVariable(env, 'KC_STORAGE_LOCAL_DIR') ?? null;
+  const publicUrl = readVariable(env, 'KC_API_PUBLIC_URL')?.replace(/\/+$/, '') ?? null;
+  if (publicUrl !== null && !URL.canParse(publicUrl)) throw new ApiConfigError('KC_API_PUBLIC_URL', 'must be a URL');
+  if (localDirectory !== null && publicUrl === null) throw new ApiConfigError('KC_API_PUBLIC_URL', 'is required when KC_STORAGE_LOCAL_DIR is set');
+  return { localDirectory, publicUrl };
+}
+
 /** Reads every feature's settings. @throws ApiConfigError on the first invalid variable. */
 export function loadFeatureConfig(env: Env): FeatureConfig {
   const geminiApiKey = readVariable(env, 'GEMINI_API_KEY') ?? null;
   const geminiModel = readVariable(env, 'GEMINI_MODEL') ?? DEFAULT_GEMINI_MODEL;
   return {
+    storage: parseStorage(env),
     whatsapp: {
       cloudApiToken: readVariable(env, 'WHATSAPP_CLOUD_API_TOKEN') ?? null,
       phoneNumberId: readVariable(env, 'WHATSAPP_PHONE_NUMBER_ID') ?? null,
