@@ -12,7 +12,7 @@ test database. They are a seed, not a migration, so kc-prod never gets them
 | `wipe.sql` | Deletes the demo data from the command line. Refuses unless `kc.seed_target = 'dev'` |
 | `lib/10_scope.sql` | `kc_private.demo_data_state` (dev marker, password hash, operation lock), who is demo, `can_manage_demo_data` |
 | `lib/20_wipe.sql` … `lib/60_seed_orgs.sql` | The phases: wipe content, wipe accounts, members, items, rides, worlds (food, animals, knowledge and time posts of every active kind), social, chats, orgs |
-| `lib/70_operations.sql` | The stepped driver (`demo_advance`) and the one-transaction runner (`demo_run_all`) |
+| `lib/70_operations.sql` | The stepped driver (`demo_advance`) and the one-transaction runner (`demo_run_all`); each phase closes the match, karma and notification outbox events it queued (#2495) |
 | `lib/80_admin_rpcs.sql` | `admin_demo_data_status`, `admin_wipe_demo_data_step`, `admin_seed_demo_data_step` |
 
 On kc-dev nothing has to be run: every dev deploy installs the tools after the migrations

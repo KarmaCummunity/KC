@@ -1001,7 +1001,7 @@
   {
    "kind": "channel",
    "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRealtime.ts",
-   "line": 42,
+   "line": 43,
    "area": "chat",
    "symbol": "SupabaseChatRealtime.subscribeToChat",
    "via": "expression",
@@ -1010,7 +1010,7 @@
   {
    "kind": "channel",
    "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRealtime.ts",
-   "line": 89,
+   "line": 97,
    "area": "chat",
    "symbol": "SupabaseChatRealtime.subscribeToInbox",
    "via": "expression",
@@ -1019,7 +1019,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRealtime.ts",
-   "line": 128,
+   "line": 136,
    "area": "chat",
    "symbol": "SupabaseChatRealtime.readUnreadTotal",
    "via": "literal",
@@ -1121,7 +1121,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatV2Repository.ts",
-   "line": 20,
+   "line": 21,
    "area": "chat",
    "symbol": "SupabaseChatV2Repository.setMessageReaction",
    "via": "literal",
@@ -1130,7 +1130,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatV2Repository.ts",
-   "line": 36,
+   "line": 37,
    "area": "chat",
    "symbol": "SupabaseChatV2Repository.sendMediaMessage",
    "via": "literal",
@@ -1139,7 +1139,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatV2Repository.ts",
-   "line": 52,
+   "line": 53,
    "area": "chat",
    "symbol": "SupabaseChatV2Repository.listMessageReactions",
    "via": "literal",
