@@ -12,6 +12,10 @@ export interface WhatsAppConfig {
   readonly phoneNumberId: string | null;
   /** Overrides the Graph API version stored with the channel's settings, e.g. `v21.0`. */
   readonly graphApiVersion: string | null;
+  /** The token the provider echoes when the inbound webhook is registered. A secret; null: registration is refused. */
+  readonly verifyToken: string | null;
+  /** The app secret inbound deliveries are signed with. A secret; null: every delivery is refused. */
+  readonly appSecret: string | null;
 }
 
 export interface BillingConfig {
@@ -162,6 +166,8 @@ export function loadFeatureConfig(env: Env): FeatureConfig {
       cloudApiToken: readVariable(env, 'WHATSAPP_CLOUD_API_TOKEN') ?? null,
       phoneNumberId: readVariable(env, 'WHATSAPP_PHONE_NUMBER_ID') ?? null,
       graphApiVersion: readVariable(env, 'WHATSAPP_GRAPH_API_VERSION') ?? null,
+      verifyToken: readVariable(env, 'WHATSAPP_VERIFY_TOKEN') ?? null,
+      appSecret: readVariable(env, 'WHATSAPP_APP_SECRET') ?? null,
     },
     translationProvider: parseTranslationProvider(readVariable(env, 'KC_TRANSLATION_PROVIDER'), geminiApiKey),
     gemini: { apiKey: geminiApiKey, model: geminiModel },

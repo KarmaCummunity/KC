@@ -50,6 +50,10 @@ const SKIP_HEBREW_SCAN_EXACT_RELS = new Set([
   // Offer / request cue words of the external post import: matching data, not UI copy
   // (the Edge Function kept the same list under supabase/functions, which is skipped).
   "app/apps/api/src/modules/postImport/directionCues.ts",
+  // The WhatsApp channel's fixed replies and link-code words, moved from
+  // supabase/functions/_shared/whatsapp (skipped above) as they are.
+  "app/apps/api/src/modules/whatsapp/inbound/replies.ts",
+  "app/apps/api/src/modules/whatsapp/inbound/link.ts",
   // Generated copy of the Hebrew notification texts (scripts/generate-notification-kinds.mjs):
   // the API's push worker renders push text from the same strings the app shows.
   "app/apps/api/src/modules/notifications/strings.he.generated.json",

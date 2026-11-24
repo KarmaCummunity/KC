@@ -48,6 +48,8 @@ Without the variable those suites are skipped and the unit tests still run.
 | `KC_API_PUBLIC_URL` | none | The API's own address as clients reach it; required with `KC_STORAGE_LOCAL_DIR`, whose upload and read addresses point back at the API |
 | `WHATSAPP_CLOUD_API_TOKEN` | none | Graph API token of the WhatsApp channel (a secret). Without it no WhatsApp message is sent |
 | `WHATSAPP_PHONE_NUMBER_ID` | channel settings | Overrides the phone number id stored with the channel's settings |
+| `WHATSAPP_VERIFY_TOKEN` | none | The token the WhatsApp provider echoes when the inbound webhook is registered (a secret). Without it registration is refused |
+| `WHATSAPP_APP_SECRET` | none | The app secret inbound WhatsApp deliveries are signed with (a secret). Without it every delivery is refused |
 | `WHATSAPP_GRAPH_API_VERSION` | channel settings, else `v21.0` | Overrides the Graph API version |
 | `KC_TRANSLATION_PROVIDER` | `googlefree` | Who translates member content: `googlefree` (Google's keyless public endpoint, no cost) or `gemini` |
 | `GEMINI_API_KEY` | none | Gemini API key (a secret), used by the post import and, when selected, by translation. Required when `KC_TRANSLATION_PROVIDER` is `gemini` |

@@ -1,3 +1,4 @@
+import { WhatsAppWebhookModule } from '../../modules/whatsapp/inbound/whatsappWebhook.module';
 import { Global, Module } from '@nestjs/common';
 import { type AddressInfo, createServer } from 'node:net';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
@@ -68,6 +69,7 @@ export async function startKcGateway(
       PortClientsModule,
       IdentityVerificationModule.forRoot({ provider: overrides.identityProvider }),
       BillingModule,
+      WhatsAppWebhookModule,
       JobsModule.forRoot(scheduledJobSet(overrides.jobs)),
       RealtimeModule,
       StorageModule,

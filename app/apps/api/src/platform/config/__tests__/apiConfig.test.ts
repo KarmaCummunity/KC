@@ -44,7 +44,7 @@ describe('loadApiConfig', () => {
       expoAccessToken: null,
       storage: { localDirectory: null, publicUrl: null },
       portRollout: {},
-      whatsapp: { cloudApiToken: null, phoneNumberId: null, graphApiVersion: null },
+      whatsapp: { cloudApiToken: null, phoneNumberId: null, graphApiVersion: null, verifyToken: null, appSecret: null },
       translationProvider: 'googlefree',
       gemini: { apiKey: null, model: 'gemini-2.0-flash' },
       postImport: { dailyBudget: 2000, model: 'gemini-2.0-flash' },

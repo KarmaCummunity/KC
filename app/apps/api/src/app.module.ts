@@ -1,3 +1,4 @@
+import { WhatsAppWebhookModule } from './modules/whatsapp/inbound/whatsappWebhook.module';
 import { type DynamicModule, Module } from '@nestjs/common';
 import { BillingModule } from './modules/billing/billing.module';
 import { HOSTED_PORTS } from './modules/hostedAdapters/hostedPorts';
@@ -40,6 +41,7 @@ export class AppModule {
         PortClientsModule,
         IdentityVerificationModule.forRoot(),
         BillingModule,
+        WhatsAppWebhookModule,
         JobsModule.forRoot(scheduledJobSet()),
         RealtimeModule,
         StorageModule,
