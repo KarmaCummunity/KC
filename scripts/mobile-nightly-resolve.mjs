@@ -21,14 +21,24 @@
 // an error (typo safety). PLATFORM ('both' default, 'ios', 'android') limits a
 // manual run to one platform.
 //
+// Version at release time (#2613): the candidate's app/VERSION must be ahead of
+// the last shipped release (highest `vX.Y.Z` tag, scripts/store-version.mjs).
+// If it is not — or the tags cannot be read — every platform is skipped tonight
+// with a clear log line (even with FORCE: never upload an already-released
+// version), and `version_ahead=false` lets the `version-pr` job open one
+// version PR. The next run builds the new version.
+//
 // Inputs (env): GITHUB_TOKEN, GITHUB_REPOSITORY, GITHUB_API_URL (optional),
 // BRANCH (default dev), LOOKBACK (commits to scan, 1–100, default 30), FORCE ('true'),
 // PLATFORM, KC_NIGHTLY_IOS_ENABLED, KC_NIGHTLY_ANDROID_ENABLED.
-// Outputs (GITHUB_OUTPUT): sha, version, build (any platform), build_ios, build_android.
+// Outputs (GITHUB_OUTPUT): sha, version, build (any platform), build_ios, build_android,
+// version_ahead ('true'/'false'), latest_release (highest v* tag, may be empty),
+// next_version (set only when the version gate stopped a build: the version-pr job runs).
 
 import { appendFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { parseLookback, resolveNewestGreenDevSha } from './resolve-green-dev-sha.mjs';
+import { tagNames, versionGate } from './store-version.mjs';
 
 export { parseLookback, pickGreenSha } from './resolve-green-dev-sha.mjs';
 
@@ -114,6 +124,27 @@ export function planNightly({ greenSha, shipped, force }) {
   return { build: true, reason: 'new green commit' };
 }
 
+/** Version gate over the per-platform plan: not ahead → nothing builds, whatever FORCE says. */
+export function applyVersionGate(plan, gate) {
+  if (gate.ahead) return plan;
+  return Object.fromEntries(Object.entries(plan).map(([p, d]) => [p, d.build ? { build: false, reason: gate.reason } : d]));
+}
+
+/** A version PR is worth opening only when the gate (not the tags/switches) stopped a build and knows the next version. */
+export function versionPrNeeded(platformPlan, gate) {
+  return !gate.ahead && Boolean(gate.next) && PLATFORMS.some((p) => platformPlan[p].build);
+}
+
+/** Release tags (`v*`), or null when they cannot be read (the gate then skips). */
+export async function readReleaseTags(get, repo, log = console.log) {
+  try {
+    return tagNames((await get(`/repos/${repo}/git/matching-refs/tags/v`)) ?? []);
+  } catch (err) {
+    log(`::warning::Could not read the release tags: ${err.message}`);
+    return null;
+  }
+}
+
 /** Validate the `MAJOR.MINOR.PATCH` content of app/VERSION. */
 export function parseVersion(text) {
   const version = String(text).trim();
@@ -161,7 +192,7 @@ async function main() {
   // An empty list (or a 404) means nothing has shipped yet. The `mobile` prefix covers
   // the legacy combined tags and both per-platform prefixes.
   const refs = (await api(`/repos/${repo}/git/matching-refs/tags/mobile`, { allow404: true })) ?? [];
-  const plan = planNightlyPlatforms({
+  const platformPlan = planNightlyPlatforms({
     greenSha,
     refs,
     force: env.FORCE === 'true',
@@ -169,6 +200,9 @@ async function main() {
     env,
   });
   const version = parseVersion(await api(`/repos/${repo}/contents/app/VERSION?ref=${greenSha}`, { raw: true }));
+  const gate = versionGate({ version, tags: await readReleaseTags((path) => api(path), repo) });
+  console.log(gate.ahead ? `Version gate: ${gate.reason}` : `::notice title=Store build skipped::${gate.reason}`);
+  const plan = applyVersionGate(platformPlan, gate);
   const any = PLATFORMS.some((p) => plan[p].build);
 
   writeOutputs({
@@ -177,12 +211,16 @@ async function main() {
     build: String(any),
     build_ios: String(plan.ios.build),
     build_android: String(plan.android.build),
+    version_ahead: String(gate.ahead),
+    latest_release: gate.latest ?? '',
+    next_version: versionPrNeeded(platformPlan, gate) ? gate.next : '',
   });
   writeSummary(
     [
       `### Mobile nightly — ${any ? 'building' : 'nothing to build'}`,
       '',
       `- Green ${branch} commit: \`${greenSha}\` (version ${version})`,
+      `- Version gate: ${gate.reason}`,
       '',
       '| Platform | Build tonight | Reason |',
       '| --- | --- | --- |',

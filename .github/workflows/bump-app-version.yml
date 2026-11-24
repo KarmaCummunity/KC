@@ -2,8 +2,9 @@ name: Bump app version
 
 # Org policy blocks GitHub Actions from creating PRs (409 / GraphQL createPullRequest).
 # This workflow therefore only prepares a bump branch; agents (or a human) open the PR.
-# The routine patch bump now happens on merge (bump-version-on-merge.yml, TD-196);
-# this manual dispatch remains for a prepared branch.
+# The routine patch bump happens at release time (#2613): the store build and
+# the release train open a version PR when app/VERSION is not ahead of the last
+# `v*` tag. This manual dispatch remains for a prepared branch.
 
 on:
   workflow_dispatch:

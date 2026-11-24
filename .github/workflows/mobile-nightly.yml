@@ -21,6 +21,13 @@ name: Mobile nightly
 # KC_NIGHTLY_ANDROID_ENABLED is "false" (unset = on). A night where only
 # Android failed therefore rebuilds only Android the next night.
 #
+# Version at release time (#2613): `resolve` also checks that the commit's
+# app/VERSION is ahead of the last shipped release (highest `v*` tag). If not —
+# or the tags cannot be read — nothing is built tonight (a clear notice, even
+# with `force`), and `version-pr` opens one version PR into dev (auto-merge,
+# merge queue; at most one per day, none while one is open). The next run
+# builds the new version. scripts/store-version.mjs.
+#
 # Scheduled runs use the default branch's (main's) copy of this file, so the
 # schedule takes effect once it reaches main; it still builds dev's commit.
 
@@ -55,7 +62,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
-      contents: read # commits, app/VERSION, shipped tags
+      contents: read # commits, app/VERSION, shipped and release tags
       actions: read # CI run conclusions
     outputs:
       sha: ${{ steps.pick.outputs.sha }}
@@ -63,6 +70,7 @@ jobs:
       build: ${{ steps.pick.outputs.build }}
       build_ios: ${{ steps.pick.outputs.build_ios }}
       build_android: ${{ steps.pick.outputs.build_android }}
+      next_version: ${{ steps.pick.outputs.next_version }}
     steps:
       # A dispatch from a feature branch would run that branch's copy of the
       # store workflows; only dev's (or the schedule's main) copy may ship.
@@ -77,6 +85,8 @@ jobs:
             .nvmrc
             scripts/resolve-green-dev-sha.mjs
             scripts/mobile-nightly-resolve.mjs
+            scripts/store-version.mjs
+            scripts/release-version.mjs
           sparse-checkout-cone-mode: false
           persist-credentials: false
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
@@ -93,6 +103,38 @@ jobs:
           KC_NIGHTLY_IOS_ENABLED: ${{ vars.KC_NIGHTLY_IOS_ENABLED }}
           KC_NIGHTLY_ANDROID_ENABLED: ${{ vars.KC_NIGHTLY_ANDROID_ENABLED }}
         run: node scripts/mobile-nightly-resolve.mjs
+
+  # app/VERSION is not ahead of the last release: open one version PR (bot
+  # account, auto-merge into the merge queue) and build nothing tonight. The
+  # operator token lives only in the `release-train` environment (deployment
+  # branches dev, main), like the release train's own version PRs.
+  version-pr:
+    name: version PR
+    needs: resolve
+    if: needs.resolve.outputs.next_version != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: release-train
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: |
+            .nvmrc
+            scripts/store-version.mjs
+            scripts/release-version.mjs
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version-file: .nvmrc
+      - name: Open the version PR (at most one per day)
+        env:
+          OPERATOR_TOKEN: ${{ secrets.KC_RELEASE_TRAIN_TOKEN }}
+          BASE: dev
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: node scripts/store-version.mjs open-pr
 
   # Jobs that call a reusable workflow cannot set timeout-minutes; each called
   # job sets its own (e2e 30, ios 150, android 90 minutes).

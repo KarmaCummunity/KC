@@ -80,10 +80,10 @@ Every schema change must be a committed file in `supabase/migrations/`. **A PR n
 
 **App-wide semver lives in `app/VERSION` (`MAJOR.MINOR.PATCH`).**
 
-1. **PATCH is bumped automatically on every merge into `dev`** by `.github/workflows/bump-version-on-merge.yml`. **Do not edit `app/VERSION` in ordinary PRs** — two open PRs that both edit it always conflict (TD-196).
-2. **When you ship a breaking change → set MAJOR** (e.g. `1.4.2` → `2.0.0`) by editing `app/VERSION` in that PR. A PR that edits the file itself is not auto-bumped.
+1. **PATCH moves at release time, not per merge (#2613).** Before a store build (Mobile nightly, manual dispatch) `scripts/store-version.mjs` checks that `app/VERSION` is ahead of the last shipped release (highest `v*` tag); if not, that night's build is skipped and one version PR (`store-version/<date>`, bot account, auto-merge) sets the next PATCH. The release train does the same for dev → main. **Do not edit `app/VERSION` in ordinary PRs** — two open PRs that both edit it always conflict (TD-196).
+2. **When you ship a breaking change → set MAJOR** (e.g. `1.4.2` → `2.0.0`) by editing `app/VERSION` in that PR.
 3. **When you ship a significant non-breaking feature set → set MINOR** (e.g. `1.4.2` → `1.5.0`) the same way.
-4. The bump commit is `[skip ci]`, so a deploy builds the previous number and the new one ships with the next merge.
+4. Builds between releases share a version; the Settings footer shows `v<version>+<sha7>` so a dev build is still identifiable.
 
 ## ⭐ Current status & product source of truth (read before anything else)
 
@@ -118,7 +118,7 @@ Every schema change must be a committed file in `supabase/migrations/`. **A PR n
    5. Check [`docs/SSOT/DECISIONS.md`](./docs/SSOT/DECISIONS.md) before structural changes
 3. **Do not implement from.** `docs/SSOT/archive/**`, `PRD_V2_NOT_FOR_MVP/**` (vision treasure — never archive it), and design/plan trees under `docs/SSOT/archive/superpowers/**` — unless an **open** backlog row or active spec links there.
 4. **Pre-push gates** (from `app/`): `pnpm typecheck && pnpm test && pnpm lint`
-5. **Version.** Do not bump `app/VERSION` in ordinary PRs; it is bumped on merge (see banner above).
+5. **Version.** Do not bump `app/VERSION` in ordinary PRs; it moves at release time (see banner above, #2613).
 
 Doc map for humans: [`docs/README.md`](./docs/README.md).
 
@@ -223,7 +223,7 @@ Parallel branches that each take "the next free number" collide. So a PR **never
 | `docs/spec/93_implementation_gaps.md` | `{{G:slug}}` | `G50` |
 | `docs/SSOT/DECISIONS.md` (`## …` heading) | `{{ENG:slug}}` | `D-200` |
 
-After the merge into `dev`, `bump-version-on-merge.yml` runs `node scripts/spec-ids.mjs assign`: every placeholder becomes the next free number of its registry and every citation is rewritten, in a commit of its own that CI certifies (the version bump stays a separate `app/VERSION`-only commit, TD-231). `node scripts/spec-ids.mjs check` (in `pnpm lint:arch` and CI static guards) fails on a duplicate number or a placeholder without exactly one entry. Existing numbers are never renumbered.
+After the merge into `dev`, `bump-version-on-merge.yml` runs `node scripts/spec-ids.mjs assign`: every placeholder becomes the next free number of its registry and every citation is rewritten, in a commit of its own that CI certifies (no version bump follows since #2613). `node scripts/spec-ids.mjs check` (in `pnpm lint:arch` and CI static guards) fails on a duplicate number or a placeholder without exactly one entry. Existing numbers are never renumbered.
 
 ### Before you call the work done
 

@@ -9,12 +9,12 @@ Related: #949, #840, #841, #866. Version source of truth: [`app/VERSION`](../../
 
 | Field | Where | Who bumps |
 |---|---|---|
-| Marketing version (`MAJOR.MINOR.PATCH`) | `app/VERSION` (read by `app.config.ts` → Expo `version`) | [`bump-version-on-merge.yml`](../../.github/workflows/bump-version-on-merge.yml) on every merge to `dev`; a PR sets MINOR/MAJOR by editing the file |
+| Marketing version (`MAJOR.MINOR.PATCH`) | `app/VERSION` (read by `app.config.ts` → Expo `version`) | release time (#2613): [`store-version.mjs`](../../scripts/store-version.mjs) opens a version PR when it is not ahead of the latest `v*` tag; a PR sets MINOR/MAJOR by editing the file |
 | iOS `buildNumber` / Android `versionCode` | EAS remote (`eas build:version:get`) with `autoIncrement` on production profile | EAS on each store-bound build |
 
-### Patch bump (automatic)
+### Patch bump (at release time, #2613)
 
-Every merge into `dev` bumps PATCH through `bump-version-on-merge.yml`; PRs do not touch `app/VERSION`. To release a MINOR or MAJOR, edit `app/VERSION` in that PR (a PR that edits the file is not auto-bumped). The bump commit is `[skip ci]`, so a deploy shows the previous number until the next merge.
+Merges no longer bump `app/VERSION` (a per-merge `[skip ci]` push moved `dev` under the merge queue and rebuilt every queued group). Before a store build — the Mobile nightly (02:43) and a manual store dispatch — the version gate checks `app/VERSION` > the latest `v*` tag (the last shipped release). If it is not ahead, or the tags cannot be read, the build is skipped with a clear notice (never an upload of an already-released version), and the nightly's `version-pr` job opens one `store-version/<date>` PR (bot account, auto-merge into the queue; at most one per day, none while one is open). The next run builds the new version. The release train applies the same check to dev → main. PRs do not touch `app/VERSION`, except to set MINOR/MAJOR. The Settings footer shows `v<version>+<sha7>`.
 
 Manual bump (rare): `node scripts/bump-app-version.mjs` writes `app/VERSION`; `--dry-run` only prints.
 

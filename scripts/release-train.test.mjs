@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { parse } from 'yaml';
 import {
   deployVerdict, freezePlan, isCiSkipped, judgeChecks, latestByName, migrationChanges,
-  nextPatch, renderSummary, scanMigrationSql, skipDecision, sqlStatements, RELEASE_E2E_CHECK,
+  nextPatch, releaseHeadPlan, renderSummary, scanMigrationSql, skipDecision, sqlStatements, RELEASE_E2E_CHECK,
 } from './release-train-lib.mjs';
 
 test('nextPatch bumps PATCH and rejects junk', () => {
@@ -165,4 +165,20 @@ test('release PR body carries justifications that pass the strict release scan (
   assert.equal(lines.length, 1, 'prose and the format example are not copied');
   assert.deepEqual(checkReleaseMigrations(files, ['Summary', ...lines].join('\n')), []);
   assert.ok(checkReleaseMigrations(files, 'Migration safety: 0998_other.sql — unrelated reason here').length > 0, 'justification is per file');
+});
+
+// #2613: versions move at release time; the train opens the version PR when dev is not ahead of the latest tag.
+test('releaseHeadPlan: ahead + CI-run tip releases as is; not ahead or [skip ci] → version PR; unreadable tags throw', () => {
+  const tags = ['v1.9.289', 'v1.9.290', 'mobile/ios/v1.9.295-b43'];
+  assert.deepEqual(
+    (({ needsVersionPr, version }) => ({ needsVersionPr, version }))(releaseHeadPlan({ current: '1.9.291\n', tipMessage: 'feat: x (#1)', tags })),
+    { needsVersionPr: false, version: '1.9.291' },
+  );
+  const notAhead = releaseHeadPlan({ current: '1.9.290\n', tipMessage: 'feat: x (#1)', tags });
+  assert.equal(notAhead.needsVersionPr, true);
+  assert.equal(notAhead.version, '1.9.291');
+  assert.match(notAhead.why, /not ahead of the released v1\.9\.290/);
+  const skipped = releaseHeadPlan({ current: '1.9.291', tipMessage: 'chore: x [skip ci]', tags });
+  assert.deepEqual([skipped.needsVersionPr, skipped.version], [true, '1.9.292']);
+  assert.throws(() => releaseHeadPlan({ current: '1.9.291', tipMessage: 'feat', tags: null }), /release tags are required/);
 });

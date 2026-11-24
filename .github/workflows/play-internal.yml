@@ -4,10 +4,9 @@
 # Callers: the nightly pipeline (mobile-nightly.yml, `workflow_call` with the
 # green SHA) and manual dispatch on dev. Manual dispatch resolves the newest dev
 # commit with a successful CI push run (scripts/mobile-store-target.mjs), or
-# accepts an optional `ref` input validated the same way. A `[skip ci]` bump
-# commit may inherit its parent's green `CI gate` on dev when it matches the
-# bump workflow shape (same policy as scripts/deploy-target.mjs and
-# testflight-ios.yml). The commit built must be certified on dev (D-195
+# accepts an optional `ref` input validated the same way; a manual dispatch
+# also refuses an app/VERSION that is not ahead of the last `v*` release
+# (#2613). The commit built must be certified on dev (D-195
 # "Mobile nightly"). Tester builds use the eas.json
 # `nightly` profile and the kc-dev Supabase backend. PROD store builds are
 # started only by prod-store-build.yml (`backend: prod`), which builds the
@@ -60,7 +59,7 @@ on:
   workflow_dispatch:
     inputs:
       ref:
-        description: Optional dev commit SHA to build (default resolves the newest green dev commit, including a [skip ci] version-bump tip that inherits its parent's green CI gate)
+        description: Optional dev commit SHA to build (default resolves the newest dev commit with its own green CI push run)
         type: string
         required: false
 
@@ -107,8 +106,9 @@ jobs:
           path: .store-target
           sparse-checkout: |
             .nvmrc
-            scripts/deploy-target.mjs
             scripts/resolve-green-dev-sha.mjs
+            scripts/store-version.mjs
+            scripts/release-version.mjs
             scripts/mobile-store-target.mjs
           sparse-checkout-cone-mode: false
           persist-credentials: false

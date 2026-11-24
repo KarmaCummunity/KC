@@ -7,15 +7,14 @@ import { join, dirname } from 'node:path';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { parse } from 'yaml';
 const workflow = parse(readFileSync(new URL('../.github/workflows/bump-version-on-merge.yml', import.meta.url),'utf8'));
-const script = workflow.jobs.bump.steps.find(s=>s.name==='Assign spec ids, bump patch and push to dev').run;
+const script = workflow.jobs.assign.steps.find(s=>s.name==='Assign spec ids and push to dev').run;
 const realGit = execFileSync('which',['git'],{encoding:'utf8'}).trim();
 function fixture() {
- const root=mkdtempSync(join(tmpdir(),'kc-bump-race-'));const remote=join(root,'remote.git'),work=join(root,'work'),rival=join(root,'rival');
+ const root=mkdtempSync(join(tmpdir(),'kc-ids-race-'));const remote=join(root,'remote.git'),work=join(root,'work'),rival=join(root,'rival');
  const git=(cwd,...args)=>execFileSync(realGit,args,{cwd,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim();
  git(root,'init','--bare',remote);git(root,'clone',remote,work);
  for(const name of ['scripts','app','supabase/migrations'])mkdirSync(join(work,name),{recursive:true});
  writeFileSync(join(work,'app/VERSION'),'1.0.0\n');
- cpSync(new URL('./bump-app-version.mjs',import.meta.url),join(work,'scripts/bump-app-version.mjs'));
  for(const name of ['spec-ids','migration-ids'])writeFileSync(join(work,'scripts/'+name+'.mjs'),'// fixture: no placeholders\n');
  git(work,'config','user.name','fixture');git(work,'config','user.email','fixture@example.invalid');
  git(work,'add','.');git(work,'commit','-m','initial');git(work,'branch','-M','dev');git(work,'push','origin','dev');
@@ -36,39 +35,23 @@ function run(f,{race}={}) {
  assert.equal(result.status,0,result.stderr+'\n'+result.stdout);
  return result;
 }
-test('one ordinary merge produces one VERSION-only child',()=>{
- const f=fixture();try{run(f);assert.equal(readFileSync(join(f.work,'app/VERSION'),'utf8'),'1.0.1\n');assert.equal(f.git(f.work,'rev-parse','HEAD^'),f.trigger);assert.equal(f.git(f.work,'show','--format=','--name-only','HEAD'),'app/VERSION');}finally{f.cleanup();}
+const IDS=`import {existsSync,writeFileSync,unlinkSync} from 'node:fs';if(existsSync('pending-id')){writeFileSync('assigned-id','ID'+Date.now());unlinkSync('pending-id');}`;
+test('an ordinary merge with no placeholders adds no commit and never touches app/VERSION (#2613)',()=>{
+ const f=fixture();try{const r=run(f);assert.equal(f.git(f.work,'rev-parse','origin/dev'),f.trigger);assert.equal(readFileSync(join(f.work,'app/VERSION'),'utf8'),'1.0.0\n');assert.match(r.stdout,/nothing to commit/);}finally{f.cleanup();}
 });
-test('queued stale merge run sees an already bumped fresh tip and adds no second bump',()=>{
- const f=fixture();try{const bump=f.commit(f.rival,'app/VERSION','1.0.1\n','chore(release): bump app version to 1.0.1 [skip ci]');f.git(f.rival,'push','origin','dev');run(f);assert.equal(f.git(f.work,'rev-parse','HEAD'),bump);}finally{f.cleanup();}
-});
-test('rejected push racing another bump retries without a duplicate VERSION child',()=>{
- const f=fixture();try{
- const race=`cd '${f.rival}'\nprintf '1.0.1\\n' > app/VERSION\n'${realGit}' add app/VERSION\n'${realGit}' commit -m 'chore(release): bump app version to 1.0.1 [skip ci]'\n'${realGit}' push origin dev\n`;
- run(f,{race});assert.equal(readFileSync(join(f.work,'app/VERSION'),'utf8'),'1.0.1\n');assert.equal(f.git(f.work,'rev-parse','HEAD'),f.git(f.rival,'rev-parse','HEAD'));
+test('placeholders become one CI-certified id commit (no [skip ci]) on top of the merge',()=>{
+ const f=fixture();try{f.commit(f.rival,'scripts/spec-ids.mjs',IDS,'fixture assigner');const merge=f.commit(f.rival,'pending-id','placeholder','merge placeholder');f.git(f.rival,'push','origin','dev');
+ run(f);assert.equal(f.git(f.work,'rev-parse','HEAD^'),merge);assert.equal(f.git(f.work,'log','-1','--format=%s'),'chore(release): assign spec ids');assert.equal(readFileSync(join(f.work,'app/VERSION'),'utf8'),'1.0.0\n');assert.equal(f.git(f.work,'rev-parse','origin/dev'),f.git(f.work,'rev-parse','HEAD'));
  }finally{f.cleanup();}
 });
-test('fresh explicit VERSION edit wins even when trigger checkout had no VERSION edit',()=>{
- const f=fixture();try{const manual=f.commit(f.rival,'app/VERSION','2.0.0\n','release minor');f.git(f.rival,'push','origin','dev');run(f);assert.equal(f.git(f.work,'rev-parse','HEAD'),manual);}finally{f.cleanup();}
-});
-test('new substantive merge after previous bump receives its own single bump',()=>{
- const f=fixture();try{f.commit(f.rival,'app/VERSION','1.0.1\n','chore(release): bump app version to 1.0.1 [skip ci]');const newer=f.commit(f.rival,'second.txt','second','merge second');f.git(f.rival,'push','origin','dev');run(f);assert.equal(readFileSync(join(f.work,'app/VERSION'),'utf8'),'1.0.2\n');assert.equal(f.git(f.work,'rev-parse','HEAD^'),newer);}finally{f.cleanup();}
-});
-test('rejected push racing a substantive merge retries on that merge and keeps one version child',()=>{
- const f=fixture();try{
+test('a rejected push retries on the new tip and assigns once',()=>{
+ const f=fixture();try{f.commit(f.rival,'scripts/spec-ids.mjs',IDS,'fixture assigner');f.commit(f.rival,'pending-id','placeholder','merge placeholder');f.git(f.rival,'push','origin','dev');
  const race=`cd '${f.rival}'\nprintf second > newer.txt\n'${realGit}' add newer.txt\n'${realGit}' commit -m 'merge newer'\n'${realGit}' push origin dev\n`;
- run(f,{race});assert.equal(readFileSync(join(f.work,'app/VERSION'),'utf8'),'1.0.1\n');assert.equal(f.git(f.work,'rev-parse','HEAD^'),f.git(f.rival,'rev-parse','HEAD'));
+ run(f,{race});assert.equal(f.git(f.work,'rev-parse','HEAD^'),f.git(f.rival,'rev-parse','HEAD'));assert.equal(f.git(f.work,'log','-1','--format=%s'),'chore(release): assign spec ids');assert.equal(f.git(f.work,'rev-list','--count','--grep=assign spec ids','HEAD'),'1');
  }finally{f.cleanup();}
 });
-test('a fresh VERSION tip still assigns IDs without adding a second bump',()=>{
- const f=fixture();try{
- const ids=`import {existsSync,writeFileSync,unlinkSync} from 'node:fs';if(existsSync('pending-id')){writeFileSync('assigned-id','ID1');unlinkSync('pending-id');}`;
- f.commit(f.rival,'scripts/spec-ids.mjs',ids,'fixture assigner');f.commit(f.rival,'pending-id','placeholder','merge placeholder');f.commit(f.rival,'app/VERSION','1.0.1\n','chore(release): bump app version to 1.0.1 [skip ci]');f.git(f.rival,'push','origin','dev');
- run(f);assert.equal(readFileSync(join(f.work,'app/VERSION'),'utf8'),'1.0.1\n');assert.equal(readFileSync(join(f.work,'assigned-id'),'utf8'),'ID1');assert.equal(f.git(f.work,'log','-1','--format=%s'),'chore(release): assign spec ids');
- }finally{f.cleanup();}
-});
-test('trigger explicit VERSION edit remains authoritative after fresh substantive tip',()=>{
- const f=fixture();try{
- f.commit(f.work,'app/VERSION','2.0.0\n','explicit release');f.git(f.work,'push','origin','dev');f.git(f.rival,'pull','--ff-only');const newer=f.commit(f.rival,'another.txt','new','merge newer');f.git(f.rival,'push','origin','dev');run(f);assert.equal(f.git(f.work,'rev-parse','HEAD'),newer);assert.equal(readFileSync(join(f.work,'app/VERSION'),'utf8'),'2.0.0\n');
- }finally{f.cleanup();}
+test('the workflow has no version-bump step left',()=>{
+ const text=readFileSync(new URL('../.github/workflows/bump-version-on-merge.yml', import.meta.url),'utf8');
+ assert.doesNotMatch(script,/bump-app-version|app\/VERSION|\[skip ci\]/);
+ assert.doesNotMatch(text,/bump app version to/);
 });

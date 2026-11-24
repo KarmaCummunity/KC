@@ -10,8 +10,9 @@ name: Weekly release train
 #             flight, strict migration scan (destructive → stop), fresh prod
 #             backup, release head, train credentials. A dry run stops here.
 #   freeze    dequeue / disarm auto-merge on open dev PRs (+ no-auto-merge).
-#   head      dev tip is a [skip ci] bump → version-only PR through the queue,
-#             so the release head is a commit real CI ran on.
+#   head      app/VERSION not above the latest v* tag (#2613), or dev tip is a
+#             [skip ci] commit → version-only PR through the queue, so the
+#             release head is a new version on a commit real CI ran on.
 #   open-pr   release PR dev → main (karma-community-kc).
 #   wait      CI gate, CI verdict, release E2E, every other check; one
 #             automatic re-run of failed jobs, then any red check stops.
@@ -116,7 +117,7 @@ jobs:
           OPERATOR_TOKEN: ${{ secrets.KC_RELEASE_TRAIN_TOKEN }}
         run: node scripts/release-train.mjs freeze
 
-      - name: Release head (version PR when dev's tip is a [skip ci] bump)
+      - name: Release head (version PR when app/VERSION is not ahead or dev's tip is [skip ci])
         if: steps.plan.outputs.proceed == 'true'
         timeout-minutes: 140
         env:

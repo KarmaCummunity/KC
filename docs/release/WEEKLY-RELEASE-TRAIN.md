@@ -45,7 +45,7 @@ gh workflow run release-train.yml --ref dev -f dry_run=true
 
      Comments, strings and `$$` function bodies are not scanned.
    - **Fresh prod backup.** A green `db-backup-prod.yml` run on main must be at most 30 h old. That workflow runs nightly at 01:17 UTC and includes a restore check.
-   - **Release head.** If dev's tip is a `[skip ci]` version bump, a version-only PR is needed: a release PR on that tip would get no PR CI.
+   - **Release head.** A version-only PR is needed when dev's `app/VERSION` is not above the latest `v*` tag (versions move at release time, #2613), or when dev's tip is a `[skip ci]` commit (a release PR on it would get no PR CI). If the nightly's `store-version/*` version PR is already open, the train stops and the next run releases after it merges.
    - **Credentials.** The train checks that both tokens exist, that the approver is a required reviewer of `production`, and that the operator is a repo admin with Administration access.
    - **Freeze preview.**
 2. **Freeze dev.** Every open PR into dev with auto-merge armed or a merge-queue slot is dequeued, has auto-merge turned off, and gets the `no-auto-merge` label. PRs armed later in the run (dependabot, for example) are frozen as soon as they appear.

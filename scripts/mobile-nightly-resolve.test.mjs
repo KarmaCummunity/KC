@@ -2,14 +2,17 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  applyVersionGate,
   nightlyEnabled,
   parseVersion,
   planNightly,
   planNightlyPlatforms,
   platformTag,
+  readReleaseTags,
   requestedPlatforms,
   shippedTags,
   shippedTagsFor,
+  versionPrNeeded,
 } from './mobile-nightly-resolve.mjs';
 
 const tagRef = (name, sha, type = 'commit') => ({ ref: `refs/tags/${name}`, object: { type, sha } });
@@ -96,4 +99,29 @@ test('nightlyEnabled defaults on and requestedPlatforms defaults to both', () =>
   assert.equal(nightlyEnabled('ios', { KC_NIGHTLY_IOS_ENABLED: 'true' }).enabled, true);
   assert.equal(nightlyEnabled('android', { KC_NIGHTLY_ANDROID_ENABLED: 'false' }).enabled, false);
   assert.deepEqual(requestedPlatforms(''), ['ios', 'android']);
+});
+
+// Version at release time (#2613).
+test('applyVersionGate: ahead keeps the plan; not ahead skips every platform even when forced', () => {
+  const plan = { ios: { build: true, reason: 'forced by the `force` input' }, android: { build: false, reason: 'disabled' } };
+  assert.equal(applyVersionGate(plan, { ahead: true }), plan);
+  const gated = applyVersionGate(plan, { ahead: false, reason: 'app/VERSION 1.9.290 is not ahead of the released v1.9.290' });
+  assert.deepEqual(gated.ios, { build: false, reason: 'app/VERSION 1.9.290 is not ahead of the released v1.9.290' });
+  assert.deepEqual(gated.android, plan.android);
+});
+
+test('versionPrNeeded only when the gate stopped a real build and knows the next version', () => {
+  const would = { ios: { build: true }, android: { build: false } };
+  const none = { ios: { build: false }, android: { build: false } };
+  assert.equal(versionPrNeeded(would, { ahead: false, next: '1.9.291' }), true);
+  assert.equal(versionPrNeeded(none, { ahead: false, next: '1.9.291' }), false);
+  assert.equal(versionPrNeeded(would, { ahead: true, next: null }), false);
+  assert.equal(versionPrNeeded(would, { ahead: false, next: null }), false, 'API failure: skip, no PR');
+});
+
+test('readReleaseTags returns null on an API failure (the gate then skips)', async () => {
+  const logs = [];
+  assert.equal(await readReleaseTags(async () => { throw new Error('HTTP 502'); }, 'o/r', (m) => logs.push(m)), null);
+  assert.match(logs[0], /Could not read the release tags: HTTP 502/);
+  assert.deepEqual(await readReleaseTags(async () => [{ ref: 'refs/tags/v1.9.290' }], 'o/r'), ['v1.9.290']);
 });

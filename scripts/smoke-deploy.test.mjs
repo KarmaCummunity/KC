@@ -16,7 +16,6 @@ import {
   renderSummary,
   runSmoke,
   waitForVersion,
-  isVersionBumpOf,
 } from './smoke-deploy.mjs';
 
 const SHA = 'a'.repeat(40);
@@ -277,41 +276,10 @@ test('checkSharedLinks fails when a browser is served the crawler card or an err
   assert.match(broken.detail, /as a browser → HTTP 500/);
 });
 
-const BUMP = 'c'.repeat(40);
-const bumpCommit = (over = {}) => ({
-  parents: [{ sha: SHA }],
-  commit: { message: 'chore(release): bump app version to 1.9.98 [skip ci]' },
-  files: [{ filename: 'app/VERSION' }],
-  ...over,
-});
-
-test('isVersionBumpOf accepts only a VERSION-only bump commit whose single parent is the expected SHA', () => {
-  assert.equal(isVersionBumpOf(bumpCommit(), SHA), true);
-  assert.equal(isVersionBumpOf(bumpCommit(), OLD), false);
-  assert.equal(isVersionBumpOf(bumpCommit({ parents: [{ sha: SHA }, { sha: OLD }] }), SHA), false);
-  assert.equal(isVersionBumpOf(bumpCommit({ commit: { message: 'feat: something [skip ci]' } }), SHA), false);
-  assert.equal(isVersionBumpOf(bumpCommit({ files: [{ filename: 'app/VERSION' }, { filename: 'x.ts' }] }), SHA), false);
-  assert.equal(isVersionBumpOf(null, SHA), false);
-});
-
-test('waitForVersion accepts a build of the version-bump child only through isBumpOf', async () => {
-  const served = () => ({ [`GET ${WEB}/version.json`]: [response(200, JSON.stringify({ version: '1.9.98', sha: BUMP }))] });
-  const asked = [];
-  const isBumpOf = async (found, sha) => {
-    asked.push([found, sha]);
-    return found === BUMP && sha === SHA;
-  };
-  const ok = await waitForVersion({ webUrl: WEB, sha: SHA, timeoutMs: 1000, fetch: fakeFetch(served()).fetch, ...clock(), isBumpOf });
-  assert.equal(ok.ok, true);
-  assert.match(ok.detail, /version bump of a{40}/);
-  assert.deepEqual(asked[0], [BUMP, SHA]);
+test('waitForVersion matches the exact SHA only: a build of another commit (a former [skip ci] bump child too) never passes', async () => {
+  const other = 'c'.repeat(40);
+  const served = () => ({ [`GET ${WEB}/version.json`]: [response(200, JSON.stringify({ version: '1.9.98', sha: other }))] });
   const strict = await waitForVersion({ webUrl: WEB, sha: SHA, timeoutMs: 1000, fetch: fakeFetch(served()).fetch, ...clock() });
   assert.equal(strict.ok, false);
-});
-
-test('optionsFromEnv wires SMOKE_ACCEPT_VERSION_BUMP only with a token and repository', () => {
-  const base = { SMOKE_CHECKS: 'version', SMOKE_WEB_URL: WEB, SMOKE_SHA: SHA };
-  assert.equal(optionsFromEnv(base).acceptVersionBump, null);
-  assert.deepEqual(optionsFromEnv({ ...base, SMOKE_ACCEPT_VERSION_BUMP: '1', GITHUB_TOKEN: 't', GITHUB_REPOSITORY: 'o/r' }).acceptVersionBump, { token: 't', repo: 'o/r' });
-  assert.throws(() => optionsFromEnv({ ...base, SMOKE_ACCEPT_VERSION_BUMP: '1' }), /GITHUB_TOKEN/);
+  assert.equal('acceptVersionBump' in optionsFromEnv({ SMOKE_CHECKS: 'version', SMOKE_WEB_URL: WEB, SMOKE_SHA: SHA, SMOKE_ACCEPT_VERSION_BUMP: '1' }), false);
 });

@@ -109,10 +109,6 @@ jobs:
           SMOKE_WEB_URL: ${{ vars.DEV_WEB_URL }}
           SMOKE_SHA: ${{ github.event.pull_request.head.sha }}
           SMOKE_TIMEOUT_SECONDS: '1800'
-          # dev deploys the `[skip ci]` version bump on top of the merge, and a [skip ci]
-          # head never re-runs this PR's CI: accept that bump child as the release head.
-          SMOKE_ACCEPT_VERSION_BUMP: '1'
-          GITHUB_TOKEN: ${{ github.token }}
         run: node scripts/smoke-deploy.mjs
       - name: Install Playwright
         working-directory: tests/e2e

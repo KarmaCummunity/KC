@@ -2082,3 +2082,15 @@ The Demo data screen keeps two failures apart: the RPC itself is missing (`not_i
 **Trade-off.** The entropy-coded image data is passed through as uploaded, not regenerated; viewers' decoders see the uploader's encoding. Resized server derivatives (`FR-POST-005` AC3) are a separate gap.
 
 **Affected.** `supabase/functions/process-post-media/`, migration `*_post_media_processing_activation.sql`, `supabase/tests/132_post_media_processing_activation.sql`, `docs/SSOT/OPERATOR_RUNBOOK.md` "Post photo derivatives".
+
+---
+
+## {{ENG:version-at-release-time}} — app/VERSION moves at release time, not on every merge (2026-11-24)
+
+**Decision.** `bump-version-on-merge.yml` no longer pushes a `[skip ci]` PATCH bump after each merge into `dev`; it only assigns spec / migration IDs. Before a store build (Mobile nightly, manual store dispatch) `scripts/store-version.mjs` checks `app/VERSION` > the latest `v*` tag (the last shipped release). Not ahead, or the tags cannot be read → that night's build is skipped with a clear notice (never an upload of an already-released version), and the nightly opens one `store-version/<date>` version PR (`karma-community-kc` via `KC_RELEASE_TRAIN_TOKEN`, auto-merge into the queue; at most one per day, none while one is open). The release train applies the same check (`releaseHeadPlan`). The Settings footer shows `v<version>+<sha7>`. This supersedes the per-merge bump of D-181 / TD-196 and retires the TD-231 bump-certification inheritance in `deploy-target.mjs`, `mobile-store-target.mjs` and `smoke-deploy.mjs` (`SMOKE_ACCEPT_VERSION_BUMP`); `deploy.yml` triggers on `CI` only.
+
+**Why.** Each bump was a direct push to `dev` under the merge queue, so every merge rebuilt every queued group (KC#2613): with a ~45 min Maestro lane the queue could not drain.
+
+**Trade-off.** Dev / tester builds between releases share a marketing version (identified by `+sha7` and by store build numbers, which EAS increments on its own). A version PR costs one queue slot per release.
+
+**Affected.** `.github/workflows/{bump-version-on-merge,deploy,ci-release,mobile-nightly,testflight-ios,play-internal}.yml`, `scripts/{store-version,mobile-nightly-resolve,mobile-store-target,deploy-target,smoke-deploy,release-train,release-train-lib}.mjs` (+ tests), `SettingsVersionFooter.tsx`, `AGENTS.md`, `docs/agents/{RELEASE,DEPLOY}.md`.

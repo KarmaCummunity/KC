@@ -2,9 +2,9 @@ name: Deploy
 
 # The only workflow that deploys KC (D-195, INFRA-CI-3). Nothing deploys on
 # push: a dev/main push runs CI, and when that CI run succeeds this workflow
-# deploys exactly the commit CI tested — or, on dev, that commit's `[skip ci]`
-# version-bump child, which inherits its parent's certification (TD-231,
-# scripts/deploy-target.mjs).
+# deploys exactly the commit CI tested (scripts/deploy-target.mjs). Since
+# #2613 no `[skip ci]` version bump follows a merge, so nothing inherits a
+# parent's certification any more (TD-231 retired).
 #
 #   dev  → supabase-dev + cloudflare-dev, automatic.
 #   main → one approval click by the owner on the `production` environment,
@@ -34,37 +34,29 @@ name: Deploy
 # so deploy-pipeline changes take effect only after a release. Dispatch runs
 # use the dispatched ref's copy and are limited to dev and main.
 
-# Two `workflow_run` sources. `CI` is the real one. `Bump app version on
-# merge` (bump-version-on-merge.yml) is a wake-up only: its `[skip ci]` bump
-# commit never gets a CI run, so when the merge's CI run finishes BEFORE the
-# bump lands, CI deploys the merge and nothing would ever deploy the bump.
-# The bump run's completion re-runs the resolver, which deploys the bump
-# child only if the merge's CI gate is already green (and otherwise leaves it
-# to the CI run's completion). Both are matched by name; deploy-target.mjs
-# accepts only runs of these two workflow files and always reads the
-# certification from ci.yml's runs, never from the triggering run.
+# One `workflow_run` source: `CI`, matched by name. deploy-target.mjs accepts
+# only runs of ci.yml and always reads the certification from ci.yml's runs,
+# never from the triggering run.
 #
 # dev push (TD #1430). `workflow_run` only fires for a file on the default
 # branch (main), so until a release carries deploy.yml no dev push would ever
 # deploy kc-dev. A push to dev therefore also starts this workflow from dev's
 # own copy: resolve waits for that commit's push CI run to finish, then judges
-# it exactly like a dispatch (same CI-gate and bump-inheritance rules). Push is
-# dev-only — prod still deploys only through workflow_run/dispatch on main with
-# the owner's approval. A `[skip ci]` bump push starts nothing; the merge's
-# push run picks up the bump child once CI is green.
+# it exactly like a dispatch (same CI-gate rule). Push is dev-only — prod
+# still deploys only through workflow_run/dispatch on main with the owner's
+# approval.
 on:
   push:
     branches: [dev]
   workflow_run:
-    workflows: [CI, Bump app version on merge]
+    workflows: [CI]
     types: [completed]
     branches: [dev, main]
   workflow_dispatch:
 
 # One deploy per environment at a time; a running deploy is never cancelled.
 # Runs that cannot deploy (PR events, failures) get a unique group so they
-# never displace a queued real deploy. A bump run shares its branch's group
-# with CI-triggered deploys, so they never run concurrently.
+# never displace a queued real deploy.
 concurrency:
   group: >-
     deploy-${{ (github.event_name == 'workflow_dispatch' || github.event_name == 'push' || (github.event.workflow_run.event == 'push' && github.event.workflow_run.conclusion == 'success'))
@@ -74,8 +66,7 @@ concurrency:
 permissions: {}
 
 jobs:
-  # Which commit, which target, and proof that CI gated it (directly, or for a
-  # dev version-bump commit through its parent). The judge,
+  # Which commit, which target, and proof that CI gated it. The judge,
   # scripts/deploy-target.mjs, runs from this workflow's own commit
   # (github.workflow_sha: main for workflow_run), never from the judged
   # commit. On prod it also requires a merged dev → main PR of this repo for

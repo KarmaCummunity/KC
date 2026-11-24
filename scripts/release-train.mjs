@@ -23,7 +23,7 @@ import { appendFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs
 import { fileURLToPath } from 'node:url';
 import {
   FREEZE_LABEL, TRAIN_LABELS, deployVerdict, freezePlan, isCiSkipped, judgeChecks,
-  migrationChanges, migrationSafetyLines, nextPatch, renderSummary, scanMigrationSql, skipDecision,
+  migrationChanges, migrationSafetyLines, releaseHeadPlan, renderSummary, scanMigrationSql, skipDecision,
 } from './release-train-lib.mjs';
 import { checkReleaseMigrations, isScannedMigrationPath, permanentTablesCreatedIn } from './check-migration-safety.mjs';
 import { RELEASE_SUBJECT, releasePrProblems, releaseSquashMessage } from './release-merge.mjs';
@@ -187,14 +187,19 @@ async function plan(s) {
   if (ageH > maxAgeH) blockers.push(['prod backup', last ? `last green db-backup-prod is ${ageH.toFixed(1)} h old (> ${maxAgeH} h): ${last.html_url}` : 'no green db-backup-prod run found']);
   else step(s, 'prod backup', 'success', `green db-backup-prod ${ageH.toFixed(1)} h ago: ${last.html_url}`);
 
-  // 5. Release head: dev's tip must be a commit real CI ran on.
+  // 5. Release head: dev's tip must be a commit real CI ran on, and its
+  // app/VERSION must be ahead of the latest v* tag (#2613: versions move at
+  // release time, not per merge).
   const tip = await get('workflow', repoPath(`commits/${s.dev_sha}`));
   const current = git('show', 'origin/dev:app/VERSION');
-  s.needs_version_pr = isCiSkipped(tip.commit.message);
-  s.version = s.needs_version_pr ? nextPatch(current) : current.trim();
+  const tags = (await get('workflow', repoPath('git/matching-refs/tags/v'))).map((r) => r.ref.replace(/^refs\/tags\//, ''));
+  const headPlan = releaseHeadPlan({ current, tipMessage: tip.commit.message, tags });
+  s.needs_version_pr = headPlan.needsVersionPr;
+  s.version = headPlan.version;
+  s.version_pr_why = headPlan.why;
   step(s, 'release head', 'success', s.needs_version_pr
-    ? `dev tip ${s.dev_sha.slice(0, 8)} is a [skip ci] commit → a version-only PR sets ${s.version}`
-    : `dev tip ${s.dev_sha.slice(0, 8)} ran CI → release ${s.version} as is`);
+    ? `dev tip ${s.dev_sha.slice(0, 8)}: ${headPlan.why} → a version-only PR sets ${s.version}`
+    : `dev tip ${s.dev_sha.slice(0, 8)} ran CI and ${headPlan.why} → release ${s.version} as is`);
 
   // 6. Tokens: present, the right identity, the right reach (read-only probes).
   const tokenProblems = [];
@@ -316,7 +321,7 @@ async function unfreeze(s) {
 }
 
 // ---------------------------------------------------------------------------
-// head — version-only PR when dev's tip is a [skip ci] bump
+// head — version-only PR when dev's tip is a [skip ci] commit or app/VERSION is not ahead of the latest tag
 // ---------------------------------------------------------------------------
 const BODY_FOOTER = [
   '', '## Mapped to spec', '- Mapped to spec: N/A (release train)', '',
@@ -328,6 +333,9 @@ async function head(s) {
   if (devSha !== s.dev_sha) abort(s, 'release head', `dev moved during the plan (${s.dev_sha.slice(0, 8)} → ${devSha.slice(0, 8)}); the next run will pick it up`);
   if (!s.needs_version_pr) { s.head_sha = devSha; return step(s, 'release head', 'success', `dev tip ${devSha.slice(0, 8)} (already CI-run)`); }
 
+  // The nightly store build may have opened a version PR already (store-version.mjs).
+  const pending = (await list('workflow', repoPath('pulls?state=open&base=dev'))).find((p) => p.head.ref.startsWith('store-version/'));
+  if (pending) abort(s, 'release head', `version PR #${pending.number} (${pending.head.ref}) is open; the next run releases after it merges`);
   const branch = `release-train/v${s.version}-${process.env.GITHUB_RUN_ID || Date.now()}`;
   await api('operator', 'POST', repoPath('git/refs'), { ref: `refs/heads/${branch}`, sha: devSha });
   const file = await get('operator', repoPath(`contents/app/VERSION?ref=${encodeURIComponent(branch)}`));
@@ -338,8 +346,8 @@ async function head(s) {
   const body = [
     'Opened by: agent:kc-bot', '',
     '## Summary',
-    `Weekly release train ${RUN_URL}. dev's tip \`${devSha.slice(0, 8)}\` is an automatic \`[skip ci]\` version bump, so a release PR on it would get no PR CI.`,
-    `A merge that edits \`app/VERSION\` gets no bump, so this PR's merge commit (${s.version}) becomes the release head with its own full CI.`,
+    `Weekly release train ${RUN_URL}. dev's tip \`${devSha.slice(0, 8)}\`: ${s.version_pr_why ?? 'needs a version-only PR'}.`,
+    `Versions move at release time (#2613), so this PR's merge commit (${s.version}) becomes the release head with its own full CI.`,
     '', '## Changes', `- \`app/VERSION\` → ${s.version}.`, ...BODY_FOOTER,
   ].join('\n');
   const pr = (await api('operator', 'POST', repoPath('pulls'), { title, body, head: branch, base: 'dev' })).data;
@@ -366,7 +374,7 @@ async function head(s) {
   if (!merged) abort(s, 'version PR', `#${pr.number} not merged after the time limit`);
   step(s, 'version PR', 'success', `#${pr.number} merged as ${merged.slice(0, 8)}`);
 
-  // Let bump-version-on-merge finish (it may add an ID commit, never a bump here).
+  // Let bump-version-on-merge finish (it may add an ID commit; it never bumps).
   await sleep(2 * MIN);
   for (let i = 0; i < 20; i++) {
     const runs = await get('workflow', repoPath(`actions/workflows/bump-version-on-merge.yml/runs?head_sha=${merged}&per_page=5`));

@@ -14,7 +14,7 @@ supabase/
 └── functions/                  Edge Functions (Deno)
 .github/workflows/              CI gate + lanes, gated Deploy + stages, nightly mobile builds
 ```
-Dependency direction is strictly inward: `apps/mobile → application → domain`; `infrastructure-supabase` implements `application` ports. App semver: `app/VERSION` (PATCH bumped automatically on every merge into `dev`, `bump-version-on-merge.yml`).
+Dependency direction is strictly inward: `apps/mobile → application → domain`; `infrastructure-supabase` implements `application` ports. App semver: `app/VERSION` (PATCH set at release time when it is not ahead of the latest `v*` tag, `scripts/store-version.mjs`, #2613).
 
 ## C4 Context diagram
 

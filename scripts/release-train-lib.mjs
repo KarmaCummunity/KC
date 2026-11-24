@@ -3,6 +3,7 @@
 // stop a release is unit-tested (scripts/release-train.test.mjs).
 import { skipTokensIn } from './release-merge.mjs';
 import { justifiedFiles } from './check-migration-safety.mjs';
+import { versionGate } from './store-version.mjs';
 
 /** Labels and names shared with the workflow and the docs. */
 export const FREEZE_LABEL = 'no-auto-merge';
@@ -18,6 +19,22 @@ export function nextPatch(version) {
   const m = String(version ?? '').trim().match(/^(\d+)\.(\d+)\.(\d+)$/);
   if (!m) throw new Error(`app/VERSION is not MAJOR.MINOR.PATCH: "${version}"`);
   return `${m[1]}.${m[2]}.${Number(m[3]) + 1}`;
+}
+
+/**
+ * Release head (#2613): dev's tip needs a version-only PR when it is a
+ * `[skip ci]` commit (no PR CI on it) or when app/VERSION is not ahead of the
+ * latest `v*` tag (versions move at release time, not per merge). `tags` must
+ * be read (an unreadable tag list is the caller's error, never "ahead").
+ */
+export function releaseHeadPlan({ current, tipMessage, tags }) {
+  if (!Array.isArray(tags)) throw new Error('release tags are required');
+  const gate = versionGate({ version: current, tags });
+  if (!gate.ahead && !gate.next) throw new Error(gate.reason);
+  const skipped = isCiSkipped(tipMessage);
+  if (!gate.ahead) return { needsVersionPr: true, version: gate.next, why: gate.reason };
+  if (skipped) return { needsVersionPr: true, version: nextPatch(current), why: 'dev tip is a [skip ci] commit' };
+  return { needsVersionPr: false, version: String(current).trim(), why: gate.reason };
 }
 
 /** True when GitHub starts no workflow for a commit with this message. */

@@ -37,11 +37,6 @@
 // Env: SMOKE_WEB_URL, SMOKE_SHA (empty = skip the SHA match, used after a
 // rollback with no earlier release tag), SMOKE_CHECKS (comma list, default
 // all), SMOKE_TIMEOUT_SECONDS (default 600), SUPABASE_URL, SUPABASE_ANON_KEY.
-// SMOKE_ACCEPT_VERSION_BUMP=1 (+ GITHUB_TOKEN, GITHUB_REPOSITORY): the version
-// check also accepts a build of SMOKE_SHA's `[skip ci]` version-bump child. The
-// release lane needs it: dev deploys the bump tip (bump-version-on-merge.yml),
-// and a `[skip ci]` head never re-runs the release PR's CI, so the PR's CI head
-// is the bump's parent.
 
 import assert from 'node:assert/strict';
 import { appendFileSync, readdirSync, readFileSync } from 'node:fs';
@@ -76,29 +71,11 @@ export function parseVersion(body) {
 }
 
 /**
- * True when `commit` (a GitHub REST commit object) is only the post-merge
- * version bump on top of `sha`: one parent `sha`, the bump message, and
- * app/VERSION as its only changed file.
- */
-export function isVersionBumpOf(commit, sha) {
-  const parents = commit?.parents ?? [];
-  const files = commit?.files ?? [];
-  return (
-    parents.length === 1 &&
-    parents[0].sha === sha &&
-    /^chore\(release\): bump app version to \S+ \[skip ci\]/.test(commit?.commit?.message ?? '') &&
-    files.length === 1 &&
-    files[0].filename === 'app/VERSION'
-  );
-}
-
-/**
  * Poll `${webUrl}/version.json` until it reports `sha` (any well-formed file
  * when `sha` is empty). Delays double from 5 s up to 30 s; gives up after
  * `timeoutMs`. The query string defeats any cache between us and the origin.
- * With `isBumpOf`, a build of `sha`'s version-bump child also passes.
  */
-export async function waitForVersion({ webUrl, sha, timeoutMs, fetch, sleep, now, isBumpOf }) {
+export async function waitForVersion({ webUrl, sha, timeoutMs, fetch, sleep, now }) {
   const deadline = now() + timeoutMs;
   let delay = FIRST_DELAY_MS;
   let last = 'no response';
@@ -107,9 +84,6 @@ export async function waitForVersion({ webUrl, sha, timeoutMs, fetch, sleep, now
       const res = await request(fetch, `${webUrl}/version.json?smoke=${now()}`, { cache: 'no-store' });
       const found = res.ok ? parseVersion(await res.text()) : null;
       if (found && (!sha || found.sha === sha)) return { ok: true, detail: `v${found.version} @ ${found.sha} (attempt ${attempt})` };
-      if (found && sha && isBumpOf && (await isBumpOf(found.sha, sha))) {
-        return { ok: true, detail: `v${found.version} @ ${found.sha}, the version bump of ${sha} (attempt ${attempt})` };
-      }
       last = found ? `serving ${found.sha}` : `HTTP ${res.status}, no version.json yet`;
     } catch (err) {
       last = err.message;
@@ -343,7 +317,6 @@ export function optionsFromEnv(env) {
     webUrl: need('SMOKE_WEB_URL'),
     sha: env.SMOKE_SHA ?? '',
     timeoutMs: Number(env.SMOKE_TIMEOUT_SECONDS || 600) * 1000,
-    acceptVersionBump: env.SMOKE_ACCEPT_VERSION_BUMP === '1' ? { token: need('GITHUB_TOKEN'), repo: need('GITHUB_REPOSITORY') } : null,
     supabaseUrl: needsSupabase ? need('SUPABASE_URL') : '',
     anonKey: needsSupabase ? need('SUPABASE_ANON_KEY') : '',
     probes: Object.fromEntries(listDeployableFunctions().map((n) => [n, SMOKE_PROBES[n]])),
@@ -352,18 +325,8 @@ export function optionsFromEnv(env) {
 
 async function main() {
   const opts = optionsFromEnv(process.env);
-  const bump = opts.acceptVersionBump;
-  const isBumpOf = bump
-    ? async (foundSha, sha) => {
-        const res = await request(globalThis.fetch, `https://api.github.com/repos/${bump.repo}/commits/${foundSha}`, {
-          headers: { Authorization: `Bearer ${bump.token}`, Accept: 'application/vnd.github+json' },
-        });
-        return res.ok && isVersionBumpOf(await res.json(), sha);
-      }
-    : undefined;
   const results = await runSmoke({
     ...opts,
-    isBumpOf,
     fetch: globalThis.fetch,
     sleep: (ms) => new Promise((r) => setTimeout(r, ms)),
     now: Date.now,

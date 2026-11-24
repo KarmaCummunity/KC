@@ -2,11 +2,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  BUMP_IDENTITY,
-  BUMP_SUBJECT,
-} from './deploy-target.mjs';
-import {
   assertDevDispatchAllowed,
+  assertVersionAhead,
   certifyStoreBuildSha,
   pickBuildSha,
   resolveStoreTarget,
@@ -15,21 +12,7 @@ import {
 const SHA = 'a'.repeat(40);
 const GREEN = 'b'.repeat(40);
 const PARENT = 'c'.repeat(40);
-const BUMP = 'd'.repeat(40);
-const bot = { ...BUMP_IDENTITY, date: '2026-10-31T00:00:00Z' };
-
-const bumpPayload = (overrides = {}) => ({
-  sha: BUMP,
-  parents: [{ sha: PARENT }],
-  files: [{ filename: 'app/VERSION' }],
-  commit: {
-    author: bot,
-    committer: bot,
-    message: `${BUMP_SUBJECT} to 1.7.214 [skip ci]`,
-    ...overrides.commit,
-  },
-  ...overrides,
-});
+const TIP = 'd'.repeat(40);
 
 test('assertDevDispatchAllowed rejects non-dev manual runs', () => {
   assert.throws(
@@ -127,97 +110,43 @@ test('resolveStoreTarget refuses a commit with no green CI', async () => {
   );
 });
 
-test('certifyStoreBuildSha accepts a version-only bump with a green parent CI gate on dev', async () => {
-  const jobs = { 99: [{ name: 'CI gate', conclusion: 'success' }] };
+test('certifyStoreBuildSha needs the commit\'s own green dev push run; a former [skip ci] bump never inherits', async () => {
   const api = async (path) => {
-    if (path.includes(`head_sha=${BUMP}`)) return { workflow_runs: [] };
-    if (path.includes(`head_sha=${PARENT}`)) {
-      return { workflow_runs: [{ id: 99, event: 'push', conclusion: 'success', head_branch: 'dev' }] };
-    }
-    if (path.includes(`/commits/${BUMP}`)) return bumpPayload();
+    if (path.includes(`head_sha=${GREEN}`)) return { workflow_runs: [{ head_sha: GREEN, head_branch: 'dev' }] };
+    if (path.includes(`head_sha=${SHA}`)) return { workflow_runs: [{ head_sha: SHA, head_branch: 'feat/x' }] };
+    if (path.includes(`head_sha=${TIP}`)) return { workflow_runs: [] };
     throw new Error(`unexpected ${path}`);
   };
-  const jobsOf = async (id) => jobs[id];
-  const r = await certifyStoreBuildSha(api, 'o/r', BUMP, { jobsOf });
-  assert.deepEqual(r, { sha: BUMP, branch: 'dev', inheritedFrom: PARENT });
+  assert.deepEqual(await certifyStoreBuildSha(api, 'o/r', GREEN), { sha: GREEN, branch: 'dev' });
+  await assert.rejects(certifyStoreBuildSha(api, 'o/r', SHA), /no successful CI push run on dev/);
+  await assert.rejects(certifyStoreBuildSha(api, 'o/r', TIP), /no successful CI push run on dev/);
 });
 
-test('certifyStoreBuildSha refuses a bump whose parent has no green CI gate', async () => {
+test('resolveStoreTarget builds a certified tip on dispatch without INPUT_REF, without walking back', async () => {
   const api = async (path) => {
-    if (path.includes(`head_sha=${BUMP}`)) return { workflow_runs: [] };
-    if (path.includes(`head_sha=${PARENT}`)) return { workflow_runs: [] };
-    if (path.includes(`/commits/${BUMP}`)) return bumpPayload();
-    throw new Error(`unexpected ${path}`);
-  };
-  await assert.rejects(
-    () => certifyStoreBuildSha(api, 'o/r', BUMP, { jobsOf: async () => [] }),
-    /parent.*no green/,
-  );
-});
-
-test('certifyStoreBuildSha refuses a malformed bump shape', async () => {
-  const api = async (path) => {
-    if (path.includes(`head_sha=${BUMP}`)) return { workflow_runs: [] };
-    if (path.includes(`/commits/${BUMP}`)) {
-      return bumpPayload({ files: [{ filename: 'app/VERSION' }, { filename: 'app/x.ts' }] });
-    }
-    throw new Error(`unexpected ${path}`);
-  };
-  await assert.rejects(() => certifyStoreBuildSha(api, 'o/r', BUMP, { jobsOf: async () => [] }), /refusing to build/);
-});
-
-test('resolveStoreTarget builds an explicit bump SHA on inherited parent certification', async () => {
-  const jobs = { 99: [{ name: 'CI gate', conclusion: 'success' }] };
-  const api = async (path) => {
-    if (path.includes(`head_sha=${BUMP}`)) return { workflow_runs: [] };
-    if (path.includes(`head_sha=${PARENT}`)) {
-      return { workflow_runs: [{ id: 99, event: 'push', conclusion: 'success', head_branch: 'dev' }] };
-    }
-    if (path.includes('/actions/runs/99/jobs')) return { jobs: jobs[99] };
-    if (path.includes(`/commits/${BUMP}`)) return bumpPayload();
+    if (path.includes(`head_sha=${TIP}`)) return { workflow_runs: [{ head_sha: TIP, head_branch: 'dev' }] };
+    if (path.includes('/commits?') || path.includes('branch=dev')) throw new Error(`should not walk back: ${path}`);
     throw new Error(`unexpected ${path}`);
   };
   const target = await resolveStoreTarget(
-    {
-      GITHUB_REPOSITORY: 'o/r',
-      GITHUB_TOKEN: 't',
-      EVENT_NAME: 'workflow_dispatch',
-      GITHUB_REF: 'refs/heads/dev',
-      INPUT_REF: BUMP,
-    },
+    { GITHUB_REPOSITORY: 'o/r', GITHUB_TOKEN: 't', EVENT_NAME: 'workflow_dispatch', GITHUB_REF: 'refs/heads/dev', GITHUB_SHA: TIP, INPUT_REF: '' },
     api,
   );
-  assert.equal(target.sha, BUMP);
-  assert.equal(target.branch, 'dev');
-  assert.equal(target.inheritedFrom, PARENT);
+  assert.deepEqual(target, { sha: TIP, branch: 'dev', resolvedFromGreenWalk: false });
 });
 
-test('resolveStoreTarget prefers a certified skip-ci tip over walking back on dispatch without INPUT_REF', async () => {
-  const jobs = { 99: [{ name: 'CI gate', conclusion: 'success' }] };
-  const api = async (path) => {
-    if (path.includes(`head_sha=${BUMP}`)) return { workflow_runs: [] };
-    if (path.includes(`head_sha=${PARENT}`)) {
-      return { workflow_runs: [{ id: 99, event: 'push', conclusion: 'success', head_branch: 'dev' }] };
-    }
-    if (path.includes('/actions/runs/99/jobs')) return { jobs: jobs[99] };
-    if (path.includes(`/commits/${BUMP}`)) return bumpPayload();
-    if (path.includes('/commits?') || path.includes('branch=dev')) {
-      throw new Error(`should not walk back when the tip is a certified bump: ${path}`);
+// Version at release time (#2613): manual dispatch never uploads an already-released version.
+test('assertVersionAhead: ahead passes; not ahead and API failure refuse (fail-safe)', async () => {
+  const b64 = (v) => Buffer.from(`${v}\n`).toString('base64');
+  const api = (version, tags) => async (path) => {
+    if (path.includes('/contents/app/VERSION')) return { content: b64(version) };
+    if (path.includes('/matching-refs/tags/v')) {
+      if (tags instanceof Error) throw tags;
+      return tags.map((t) => ({ ref: `refs/tags/${t}` }));
     }
     throw new Error(`unexpected ${path}`);
   };
-  const target = await resolveStoreTarget(
-    {
-      GITHUB_REPOSITORY: 'o/r',
-      GITHUB_TOKEN: 't',
-      EVENT_NAME: 'workflow_dispatch',
-      GITHUB_REF: 'refs/heads/dev',
-      GITHUB_SHA: BUMP,
-      INPUT_REF: '',
-    },
-    api,
-  );
-  assert.equal(target.sha, BUMP);
-  assert.equal(target.inheritedFrom, PARENT);
-  assert.equal(target.resolvedFromGreenWalk, false);
+  assert.equal((await assertVersionAhead(api('1.9.291', ['v1.9.290']), 'o/r', GREEN)).ahead, true);
+  await assert.rejects(assertVersionAhead(api('1.9.290', ['v1.9.290']), 'o/r', GREEN), /not ahead of the released v1\.9\.290.*Not uploading/);
+  await assert.rejects(assertVersionAhead(api('1.9.291', new Error('HTTP 502')), 'o/r', GREEN), /could not read the release tags/);
 });
