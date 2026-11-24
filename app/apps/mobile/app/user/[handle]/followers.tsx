@@ -22,6 +22,7 @@ import {
 import { useFollowListStyles } from '../../../src/screens/followList.styles';
 import { KcFlashList } from '../../../src/components/lists/KcFlashList';
 import { FollowUserRow } from '../../../src/components/profile/FollowUserRow';
+import { invalidateRemovedFollower } from '../../../src/lib/invalidateRemovedFollower';
 
 const userKeyExtractor = (u: User) => u.userId;
 
@@ -92,7 +93,7 @@ export default function FollowersListScreen() {
   }
 
   const confirmRemove = async () => {
-    if (!me || !isMe || !pendingRemove) return;
+    if (!me || !owner || !isMe || !pendingRemove) return;
     setBusyRemove(true);
     try {
       await getRemoveFollowerUseCase().execute({
@@ -100,8 +101,7 @@ export default function FollowersListScreen() {
         ownerId: me,
         followerId: pendingRemove.userId,
       });
-      qc.invalidateQueries({ queryKey: ['followers', me] });
-      qc.invalidateQueries({ queryKey: ['user-profile', me] });
+      invalidateRemovedFollower(qc, owner, pendingRemove);
       setPendingRemove(null);
     } finally {
       setBusyRemove(false);
