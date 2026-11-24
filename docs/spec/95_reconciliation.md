@@ -90,3 +90,12 @@ Scoped static reconciliation at dev `89f047f4`; no live flags, database, provide
 | Retirement | FR-TRANSLATE-005/006, engineering D-190/D-191 | Retired IDs retained, including the separately identified KC batch reuse. |
 
 Requirements and `docs/SSOT/UGC_TRANSLATION.md` now distinguish current code, historical requirements and unverified rollout. Production provider terms/approval and provider-call deduplication remain acceptance gaps, not waived requirements. No shared D/S/G numbering changed.
+
+
+## Identity verification requirements checkpoint (2026-11-24, #1867)
+
+Partial source reconciliation at dev `551c9f44`: all 13 FR IDs and 52 numbered AC sentences retained. Updated the stale phone-only/unimplemented header, distinguished D23 history from D172 tiers and annotated S62's superseded phone-tier wording. S60/S61/S62 detailed retention, attempts and validity policy remain pending; A12 provider contract/DPA and counsel/biometric/privacy launch gates remain unchanged.
+
+The [per-AC table](./requirements/22_identity_verification.md#source-reconciliation-and-remaining-acceptance-2026-11-24-1867) records existing domain/nudge/badge, adapter, session/webhook, signature/hash, attempts and expiry sources separately from unverified acceptance. Didit source selection is not PM provider approval or a deployed contract. No live PII, provider signup, keys or database inspected.
+
+Six focused unit-test files / 51 tests passed. Single SQL level-function/automatic completeness parity, full member provider flow, provider sandbox/certification, admin review, reminders, retention and device acceptance remain incomplete or unverified. Domain not ticked complete; this checkpoint must not auto-close #1867.
