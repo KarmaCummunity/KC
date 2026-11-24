@@ -1,6 +1,6 @@
 # 2.15 Public Market Research
 
-> **Status:** 🟡 FR-RESEARCH-001..003 done and verified end to end (one open defect: KC#2381, desktop navigation rail); FR-RESEARCH-004 post-merge QA pending — Survey B captures pain-language from alt-platform users (FB / WhatsApp / Agora). Output: Karma Phrasebook (see design spec §2). Migration `0123`, Edge Functions `public-research-submit` + `rotate-research-salt`, and `.web.tsx` routes are implemented; verified on kc-dev on 2026-11-16 by the Playwright journey `tests/e2e/journeys/research-submit.spec.ts` (KC#1646).
+> **Status (source checkpoint 2026-11-24, #1861):** Public runner, draft persistence, gateway, separate contact capture and share surfaces exist in source. Historical DEV QA is recorded below; it is not current live verification. Desktop public-surface chrome policy now hides the rail, but the historical defect should not be treated as an unverified live failure. Some ACs below remain stronger than source (thank-you email capture); those gaps are not waived. Current DB definitions are in `supabase/schemas/90_research/030_public_research.sql`, not historical migration `0123`.
 > **Post-merge QA (2026-06-14):** fixed mid-survey draft loss on reload — answers lived in ephemeral React state and were wiped by any refresh; now persisted to `localStorage` (FR-RESEARCH-001 AC7). The public form was also reflowed into a single, more spacious scroll column (intro + progress + question scroll together; only the prev/next nav stays pinned). Backend save path verified healthy end-to-end on prod (origin allowlist, daily salt, service-role, RPC insert).
 > **Post-merge QA (2026-11-16, KC#1646):** on the baseline database the survey `alt-platforms-research` did not exist (its questions lived only in the archived migration `0131`), so the form answered "survey not active" on kc-dev. The survey is now part of the content seed (`supabase/seed/content/`, checked by `check.sql`), and the Playwright journey `tests/e2e/journeys/research-submit.spec.ts` covers the form end to end (open signed out, rate 11 questions, send, stored-row id from the gateway, thank-you page, draft kept on reload and cleared after sending).
 > **In progress:** FR-RESEARCH-004 (share affordance) — three viral surfaces (public thank-you page, public survey header, in-app Settings row) to make the survey self-spreading among non-registered users.
@@ -15,7 +15,7 @@ A public, anonymous web form at `/research/[slug]?src=...`, served from the Expo
 
 ## FR-RESEARCH-001 — Public market research runner
 
-**Status.** 🟡 Done and verified end to end on kc-dev (2026-11-16), except AC2 at desktop width: the app navigation rail is still shown (KC#2381).
+**Status.** Source implementation present. Historical DEV QA: 2026-11-16. Current `shellNavigationRailVisible` excludes research routes, with desktop-shell regression coverage; this checkpoint did not run a fresh deployed journey.
 
 **Acceptance Criteria.**
 - AC1. Web-only route `/research/[slug]` rendered via Expo Router `.web.tsx` platform extension. The route file does not exist in iOS/Android bundles (bundle-inspection test).
@@ -30,7 +30,7 @@ A public, anonymous web form at `/research/[slug]?src=...`, served from the Expo
 
 ## FR-RESEARCH-002 — Anti-abuse for public research form
 
-**Status.** ✅ Done (database rules covered by `supabase/tests/090_research.sql`; gateway verified on kc-dev 2026-11-16).
+**Status.** Database/gateway source present; historical DEV QA recorded on 2026-11-16. No fresh deployed security verification here; direct-anon execution criterion differs from the service gateway design.
 
 **Acceptance Criteria.**
 - AC1. Hidden honeypot field; non-empty value → silent reject (200 OK but no row inserted).
@@ -43,7 +43,7 @@ A public, anonymous web form at `/research/[slug]?src=...`, served from the Expo
 
 ## FR-RESEARCH-003 — Contact-request opt-in
 
-**Status.** ✅ Done
+**Status.** Partial source implementation. Separate thank-you email capture and admin read acceptance are not established.
 
 **Acceptance Criteria.**
 - AC1. Submission can optionally include `contact_email` (RFC-5322-lite validated) + `contact_window_he` (free text ≤200 chars).
@@ -78,3 +78,22 @@ A public, anonymous web form at `/research/[slug]?src=...`, served from the Expo
 | 0.3 | 2026-06-14 | FR-RESEARCH-001 AC7 — in-progress answers persist across reload (localStorage draft, cleared on submit). Public form reflowed into one spacious scroll column. |
 | 0.4 | 2026-11-16 | Survey `alt-platforms-research` restored through the content seed; end-to-end journey added (KC#1646). No AC changed. |
 | 0.5 | 2026-11-16 | FR-RESEARCH-001..003 statuses updated after the end-to-end run on kc-dev (KC#1646); AC2 desktop defect tracked in KC#2381. |
+
+
+## Source reconciliation and remaining acceptance (2026-11-24, #1861)
+
+Book comparison: D166 lists public research among signed-out surfaces, retained by D186; current public-route and chrome policy match that scope. No additional research-specific product rule was found in the scoped book/D/S/G review. Historical QA entries above remain dated records, not current execution claims. Every original AC and FR-ID is retained verbatim. Source discrepancies below do not change or waive requirements.
+
+| AC scope | Current evidence | Qualification |
+|---|---|---|
+| 001 AC1-2 | Web runner plus null native siblings; `publicResearchPaths.ts`, `shellChromePolicy.ts` and tests | Public web access and chrome policy implemented; native file absence criterion is not met by the fallback design; do not silently redefine it. |
+| 001 AC3-4,6 | Runner/question panel, content seed, source attribution, localized intro | Source presence; no fresh live survey/content verification. |
+| 001 AC5; 003 AC4 | `research/thanks.web.tsx` | Thank-you page has sharing and a sign-up CTA, no separate email opt-in field. Keep email-capture acceptance open rather than claiming it implemented. |
+| 001 AC7 | `surveyDraftStorage.ts` and tests | Slug/version-tagged drafts, 14-day TTL, contact fields and safe storage failure handling exist. |
+| 002 AC1-5 | Gateway handler; current `90_research/030_public_research.sql`; default privilege definitions | Honeypot, origin check, hashed visitor identifiers, rate/circuit checks and service gateway described by source. Direct anon execution AC5 differs from service-only gateway design and requires explicit reconciliation. No live security/rate-limit test performed for this checkpoint. |
+| 003 AC1-3 | Gateway body/SQL; private contact table and response FK | Separate contact capture exists. Current table names are kc_private.research_contact_requests and kc_private.research_responses. Delete cascade is asymmetric; administrator read acceptance not established here. |
+| 004 AC1-10 | Thanks page, SurveyIntroBlock, Settings card, ResearchEndShareCard, trigger/share helpers, guest banner and finish-modal integration | Share implementation and test sources exist. Share/clipboard probes do not prove native sheet behavior or production analytics ingest. Exact labels remain locale-governed. AC9 production-noop description differs from current conditional PostHog forwarding; deployed ingest unverified. |
+
+Current tests include shareResearchSurvey, triggerResearchShare, ResearchThanksShare, surveyDraftStorage, public research path and shell policy unit tests; SQL `090_research.sql`; Playwright research-share and research-submit journeys. Presence is not execution. Open product/security decisions are recorded in [92](../92_open_questions.md#public-research-checkpoint-2026-11-24-1861). This reconciliation is partial: separate thank-you email capture and admin read acceptance remain unresolved; #1861 must not be closed solely from these source corrections.
+
+Validation for this checkpoint: six focused unit-test files, 49 tests passed. No SQL, deployed Playwright, native sheet or production analytics execution claimed.
