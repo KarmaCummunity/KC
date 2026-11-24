@@ -65,6 +65,7 @@
 /scripts/db-connect-retry.mjs               @navesarussi
 /scripts/kc-dev-slot.mjs                    @navesarussi
 /scripts/e2e-account-purge.mjs              @navesarussi
+/scripts/e2e-post-media.mjs                 @navesarussi
 /scripts/release-merge.mjs @navesarussi
 /scripts/release-train.mjs @navesarussi
 /scripts/release-train-lib.mjs @navesarussi
