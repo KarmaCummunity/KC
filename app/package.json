@@ -44,6 +44,7 @@
   "pnpm": {
     "overrides": {
       "shell-quote": ">=1.11.0",
+      "node-forge@1": "^1.4.3",
       "tar": ">=7.5.19",
       "brace-expansion@<2": "^1.1.19",
       "brace-expansion@>=2 <3": "^2.1.7",

@@ -7,7 +7,8 @@
 // when an owner listed in the base commit's .github/owners.json approved the
 // PR's current head SHA, and that owner is not the PR author.
 //
-// Every API failure throws; callers turn that into a red gate (fail closed).
+// Every API failure throws; callers turn that into a red gate (fail closed). A
+// rate limit is waited out first, within CI_GITHUB_RATE_LIMIT_MAX_WAIT_MIN.
 
 import { execFileSync } from 'node:child_process';
 
@@ -65,25 +66,82 @@ export function ownerApproval({ reviews, owners, headSha, author }) {
   return null;
 }
 
-/** GET one REST resource; throws on any non-2xx answer. */
-export async function githubGet(path, env = process.env) {
+/**
+ * A rate-limited answer: 429, or 403 carrying GitHub's rate-limit signals
+ * (Retry-After, X-RateLimit-Remaining: 0, or a "rate limit" message). The
+ * GITHUB_TOKEN budget (1,000 requests per hour per repository) is shared by
+ * every job, including every kc-dev slot waiter polling once a minute, so a
+ * busy queue can exhaust it and a judge then read 403 (PR #2647, 23 Nov 2026).
+ * Returns { waitMs, why } or null. Pure apart from reading the answer.
+ */
+export async function rateLimitOf(res, nowMs = Date.now()) {
+  if (res.status !== 403 && res.status !== 429) return null;
+  const header = (name) => res.headers?.get?.(name) ?? null;
+  let message = '';
+  try {
+    message = String((await res.clone().json())?.message ?? '');
+  } catch {
+    message = '';
+  }
+  const remaining = header('x-ratelimit-remaining');
+  const after = Number.parseInt(header('retry-after') ?? '', 10);
+  const reset = Number.parseInt(header('x-ratelimit-reset') ?? '', 10);
+  const limited = res.status === 429 || Number.isFinite(after) || remaining === '0' || /rate limit/i.test(message);
+  if (!limited) return null;
+  let waitMs = 60_000; // GitHub's advice for a secondary limit without Retry-After
+  if (Number.isFinite(after) && after >= 0) waitMs = after * 1000;
+  else if (remaining === '0' && Number.isFinite(reset)) waitMs = Math.max(0, reset * 1000 - nowMs);
+  const why = [`remaining=${remaining ?? '?'}`, Number.isFinite(reset) ? `reset=${new Date(reset * 1000).toISOString()}` : null, message ? `"${message.slice(0, 120)}"` : null]
+    .filter(Boolean)
+    .join(' ');
+  return { waitMs, why };
+}
+
+/** Longest total wait for rate limits in one call (default 10 min; the gate job allows 25). */
+function maxRateWaitMs(env) {
+  const min = Number(env.CI_GITHUB_RATE_LIMIT_MAX_WAIT_MIN ?? 10);
+  return Number.isFinite(min) && min >= 0 ? min * 60_000 : 600_000;
+}
+
+/**
+ * fetch with a bounded wait on rate limits. Every other non-2xx answer, and a
+ * rate limit that outlasts the budget, still throws (the judges fail closed);
+ * the error names the status and, for a rate limit, its headers.
+ */
+export async function githubFetch(method, path, init, env = process.env, sleep = (ms) => new Promise((r) => setTimeout(r, ms))) {
   const api = env.GITHUB_API_URL || 'https://api.github.com';
-  const res = await fetch(`${api}${path}`, {
+  const budget = maxRateWaitMs(env);
+  let waited = 0;
+  for (;;) {
+    const res = await fetch(`${api}${path}`, { ...init, method });
+    if (res.ok) return res.json();
+    const limit = await rateLimitOf(res);
+    if (limit && waited + limit.waitMs + 1000 <= budget) {
+      const ms = limit.waitMs + 1000;
+      console.log(`::warning::GitHub API ${method} ${path} rate-limited (HTTP ${res.status}, ${limit.why}); retrying in ${Math.ceil(ms / 1000)} s`);
+      waited += ms;
+      await sleep(ms);
+      continue;
+    }
+    const detail = limit ? ` (rate limit: ${limit.why}; waited ${Math.round(waited / 1000)} s of ${Math.round(budget / 1000)} s)` : '';
+    throw new Error(`GitHub API ${method} ${path} answered HTTP ${res.status}${detail}`);
+  }
+}
+
+/** GET one REST resource; throws on any non-2xx answer except a rate limit it can wait out. */
+export async function githubGet(path, env = process.env) {
+  return githubFetch('GET', path, {
     headers: {
       Authorization: `Bearer ${env.GITHUB_TOKEN}`,
       Accept: 'application/vnd.github+json',
       'X-GitHub-Api-Version': '2022-11-28',
     },
-  });
-  if (!res.ok) throw new Error(`GitHub API GET ${path} answered HTTP ${res.status}`);
-  return res.json();
+  }, env);
 }
 
-/** POST a JSON body; throws on any non-2xx answer. */
+/** POST a JSON body; throws on any non-2xx answer except a rate limit it can wait out. */
 export async function githubPost(path, body, env = process.env) {
-  const api = env.GITHUB_API_URL || 'https://api.github.com';
-  const res = await fetch(`${api}${path}`, {
-    method: 'POST',
+  return githubFetch('POST', path, {
     headers: {
       Authorization: `Bearer ${env.GITHUB_TOKEN}`,
       Accept: 'application/vnd.github+json',
@@ -91,9 +149,7 @@ export async function githubPost(path, body, env = process.env) {
       'X-GitHub-Api-Version': '2022-11-28',
     },
     body: JSON.stringify(body),
-  });
-  if (!res.ok) throw new Error(`GitHub API POST ${path} answered HTTP ${res.status}`);
-  return res.json();
+  }, env);
 }
 
 /** Most pages githubList reads before giving up (1,000 items). */

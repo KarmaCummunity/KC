@@ -2,13 +2,14 @@
 // Mapped to spec: FR-CHAT-003 (sending, incl. media messages); reactions: KC#873.
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Message } from '@kc/domain';
-import type { IChatV2Repository, MessageReactionType } from '@kc/application';
+import { isMessageReactionType, type Message, type MessageReactionType } from '@kc/domain';
+import type { IChatV2Repository } from '@kc/application';
 import type { Database, Json } from '../database.types';
 import { rowToMessage } from './rowMappers';
 import { chatCall, requireRow } from './mapChatError';
 
-export type { MessageReactionType } from '@kc/application';
+// Re-exported for the app's existing imports; the type itself is a domain value object (#2568).
+export type { MessageReactionType } from '@kc/domain';
 
 export class SupabaseChatV2Repository implements IChatV2Repository {
   constructor(private readonly client: SupabaseClient<Database>) {}
@@ -52,10 +53,11 @@ export class SupabaseChatV2Repository implements IChatV2Repository {
       'table:message_reactions',
       this.client.from('message_reactions').select('message_id, user_id, reaction_type').in('message_id', messageIds),
     );
-    return (rows ?? []).map((r) => ({
-      messageId: r.message_id,
-      userId: r.user_id,
-      reactionType: r.reaction_type as MessageReactionType,
-    }));
+    // The column is checked against the same list; an unknown value (a newer server) is skipped.
+    return (rows ?? []).flatMap((r) =>
+      isMessageReactionType(r.reaction_type)
+        ? [{ messageId: r.message_id, userId: r.user_id, reactionType: r.reaction_type }]
+        : [],
+    );
   }
 }

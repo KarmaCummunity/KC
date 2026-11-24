@@ -12,6 +12,7 @@ import { router, usePathname } from 'expo-router';
 import { type AdminRole, hasPermission } from '@kc/domain';
 import { makeUseStyles, radius, spacing, typography, useTheme, Text, iconSize } from '@kc/ui';
 import { useAdminRoles } from '../../hooks/useAdminRoles';
+import { useRtlWebHorizontalScrollStart } from '../../hooks/useRtlWebHorizontalScrollStart';
 import { rowDirectionStart, textAlignStart } from '../../lib/rtlLayout';
 import { useLocaleBundle } from '../../i18n/useLocaleBundle';
 import { useLaunchSurface } from '../../hooks/useLaunchSurface';
@@ -33,6 +34,8 @@ export function AdminNav({ variant }: { variant: 'sidebar' | 'topbar' }): ReactE
   const { colors } = useTheme();
   const styles = useStyles();
   const L = useLocaleBundle();
+  // #1747 — topbar pills use rowDirectionStart; pin RTL-web scroll to the first pill.
+  const rtlScroll = useRtlWebHorizontalScrollStart();
   const labels = L.admin.nav;
 
   const items = ITEMS.filter(
@@ -92,10 +95,12 @@ export function AdminNav({ variant }: { variant: 'sidebar' | 'topbar' }): ReactE
   return (
     <View style={styles.topbarWrap}>
       <ScrollView
+        ref={rtlScroll.ref}
         style={adminChipScroll.scroll}
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.topbar}
+        onContentSizeChange={rtlScroll.onContentSizeChange}
       >
         {items.map(renderItem)}
       </ScrollView>

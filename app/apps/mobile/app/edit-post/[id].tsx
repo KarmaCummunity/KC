@@ -39,6 +39,8 @@ import { useKeyboardVerticalOffset } from '../../src/lib/platform/useKeyboardVer
 import { TAB_INLINE_FORM_HEADER_HEIGHT } from '../../src/lib/platform/formChromeHeights';
 import { resolveKeyboardAvoidingBehavior } from '../../src/lib/platform/keyboardVerticalOffset';
 
+export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
+
 const POST_IMAGES_BUCKET = 'post-images';
 /** The 96 px gallery tile needs the 400 px thumb, never the 2048 px original. */
 function assetPreviewUrl(path: string): string {

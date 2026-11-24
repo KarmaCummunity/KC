@@ -1,6 +1,4 @@
-import type { Message } from '@kc/domain';
-
-export type MessageReactionType = 'like' | 'love' | 'laugh' | 'sad';
+import type { Message, MessageReactionType } from '@kc/domain';
 
 /** Message reactions and media messages (FR-CHAT-003; reactions: KC#873). */
 export interface IChatV2Repository {
