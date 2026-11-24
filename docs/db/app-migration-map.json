@@ -1606,13 +1606,13 @@
    "callSites": [
     {
      "file": "app/apps/mobile/src/services/avatarUpload.ts",
-     "line": 164,
+     "line": 175,
      "symbol": "resizeAndUploadAvatar",
      "area": "mobile"
     },
     {
      "file": "app/apps/mobile/src/services/avatarUpload.ts",
-     "line": 177,
+     "line": 188,
      "symbol": "removeUploadedAvatar",
      "area": "mobile"
     }
