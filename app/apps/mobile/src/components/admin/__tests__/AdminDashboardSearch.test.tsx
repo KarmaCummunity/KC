@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-// Mapped to spec: FR-ADMIN-011 / #2081 — the admin home search: finds screens in Hebrew and English,
-// navigates on tap, shows an empty state, and never offers a screen the roles cannot open.
+// Mapped to spec: FR-ADMIN-011 / #2081 — the admin home search: finds screens/settings/actions in
+// Hebrew and English, navigates on tap, shows an empty state, and never offers what roles cannot open.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import React from 'react';
 import { cleanup, fireEvent, render } from '@testing-library/react';
@@ -8,13 +8,20 @@ import { ThemeProvider } from '@kc/ui';
 import type { AdminRole } from '@kc/domain';
 
 const push = vi.hoisted(() => vi.fn());
+const startReplay = vi.hoisted(() => vi.fn());
 vi.mock('expo-router', () => ({ useRouter: () => ({ push }) }));
 vi.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
+vi.mock('../../../store/onboardingReplayStore', () => ({
+  useOnboardingReplayStore: { getState: () => ({ start: startReplay }) },
+}));
 
 import { AdminDashboardSearch } from '../AdminDashboardSearch';
 
 afterEach(cleanup);
-beforeEach(() => push.mockClear());
+beforeEach(() => {
+  push.mockClear();
+  startReplay.mockClear();
+});
 
 function renderSearch(roles: readonly AdminRole[], isHidden?: (k: string) => boolean) {
   return render(
@@ -38,6 +45,21 @@ describe('AdminDashboardSearch', () => {
     type(v, 'דיווחים');
     fireEvent.click(v.getByTestId('admin-search-result-reports'));
     expect(push).toHaveBeenCalledWith('/(admin)/reports');
+  });
+
+  it('finds a finance setting and navigates to it', () => {
+    const v = renderSearch(['super_admin']);
+    type(v, 'accounts');
+    fireEvent.click(v.getByTestId('admin-search-result-moneyAccounts'));
+    expect(push).toHaveBeenCalledWith('/(admin)/money/accounts');
+  });
+
+  it('starts onboarding replay before navigating to the action', () => {
+    const v = renderSearch(['super_admin']);
+    type(v, 'onboarding');
+    fireEvent.click(v.getByTestId('admin-search-result-onboardingReplay'));
+    expect(startReplay).toHaveBeenCalledOnce();
+    expect(push).toHaveBeenCalledWith('/(onboarding)/about-intro');
   });
 
   it('finds a screen by an English word', () => {
