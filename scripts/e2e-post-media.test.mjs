@@ -88,11 +88,19 @@ test('the database helpers pass ids as psql variables and refuse anything that i
   const calls = [];
   const sql = createPhotoSql((text, vars) => {
     calls.push({ text, vars });
-    return text.startsWith('update') ? '1' : POST;
+    if (text.startsWith('update')) return '';
+    return text.startsWith('select status') ? 'active' : POST;
   });
   sql.activate(OWNER);
   assert.equal(sql.createPost(OWNER), POST);
   assert.ok(calls.every((c) => !c.text.includes(OWNER)), 'an id never enters the SQL text');
   assert.throws(() => sql.activate("x'; drop table public.posts; --"), /not an id/);
   assert.throws(() => sql.deletePost('1 or 1=1'), /not an id/);
+});
+
+test('activation accepts an account the project already activated, and refuses any other state', () => {
+  const accountIs = (status) => createPhotoSql((text) => (text.startsWith('update') ? '' : status));
+  accountIs('active').activate(OWNER); // email-confirmed accounts start active on kc-dev
+  assert.throws(() => accountIs('suspended_admin').activate(OWNER), /is suspended_admin, not active/);
+  assert.throws(() => accountIs('').activate(OWNER), /is missing, not active/);
 });

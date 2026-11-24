@@ -23,8 +23,9 @@ import { appendFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs
 import { fileURLToPath } from 'node:url';
 import {
   FREEZE_LABEL, TRAIN_LABELS, deployVerdict, freezePlan, isCiSkipped, judgeChecks,
-  migrationChanges, nextPatch, renderSummary, scanMigrationSql, skipDecision,
+  migrationChanges, migrationSafetyLines, nextPatch, renderSummary, scanMigrationSql, skipDecision,
 } from './release-train-lib.mjs';
+import { checkReleaseMigrations, isScannedMigrationPath, permanentTablesCreatedIn } from './check-migration-safety.mjs';
 import { RELEASE_SUBJECT, releasePrProblems, releaseSquashMessage } from './release-merge.mjs';
 
 const REPO = process.env.GITHUB_REPOSITORY || 'KarmaCummunity/KC';
@@ -116,6 +117,18 @@ function abort(s, name, reason) {
   throw new Abort(s.reason);
 }
 const git = (...args) => execFileSync('git', args, { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 }).trim();
+/** `git show ref:path`, or '' when the file does not exist on that ref. */
+const optionalShow = (ref, path) => { try { return git('show', `${ref}:${path}`); } catch { return ''; } };
+
+/** checkReleaseMigrations over the added migrations of main..dev, read from origin/dev. */
+function strictReleaseErrors(added, body) {
+  const files = added.filter(isScannedMigrationPath).map((f) => ({ name: f.split('/').pop(), content: git('show', `origin/dev:${f}`) }));
+  const permanentTables = new Set();
+  for (const f of git('ls-tree', '--name-only', 'origin/dev', 'supabase/migrations/').split('\n').filter(isScannedMigrationPath)) {
+    for (const n of permanentTablesCreatedIn(git('show', `origin/dev:${f}`))) permanentTables.add(n);
+  }
+  return checkReleaseMigrations(files, body, { permanentTables });
+}
 
 // ---------------------------------------------------------------------------
 // plan — every read-only check; the whole of a dry run
@@ -159,6 +172,10 @@ async function plan(s) {
   for (const file of added) findings.push(...scanMigrationSql(file, git('show', `origin/dev:${file}`)));
   s.migrations = added;
   s.findings = findings;
+  // Same strict scan CI runs on the release PR (check-migration-safety.mjs --release),
+  // fed with the justifications the train will put in the PR body.
+  s.safety_lines = migrationSafetyLines(optionalShow('origin/dev', 'supabase/release-safety.md'));
+  for (const err of strictReleaseErrors(added, s.safety_lines.join('\n'))) blockers.push(['release migration scan (strict)', err]);
   if (findings.length) blockers.push(['migration safety', `${findings.length} destructive or irreversible change(s) in ${[...new Set(findings.map((f) => f.file))].join(', ')}`]);
   else step(s, 'migration safety', 'success', added.length ? `${added.length} new migration(s), none destructive: ${added.join(', ')}` : 'no migration changes');
 
@@ -376,7 +393,8 @@ async function openPr(s) {
     `Weekly release train ${RUN_URL}: v${s.version}, dev head \`${s.head_sha}\`. No human approval (owner decision 16 Nov 2026); the train stops on any failing check, a destructive migration, a missing backup, or a failed deploy.`,
     '', '## Summary',
     `${commits.ahead_by} commit(s), ${commits.files?.length ?? '?'} file(s) on top of main \`${s.main_sha.slice(0, 8)}\`.`,
-    s.migrations?.length ? `Migrations: ${s.migrations.map((m) => `\`${m}\``).join(', ')} (strict scan: none destructive).` : 'No migration changes.',
+    s.migrations?.length ? `Migrations: ${s.migrations.map((m) => `\`${m}\``).join(', ')} (strict scan: justified in supabase/release-safety.md).` : 'No migration changes.',
+    ...(s.safety_lines ?? []),
     '', '## After merge',
     'Deploy (main): approved by the train, backup, migrations, functions, web, smoke, tag. Then prod-store-build: TestFlight + Play internal only. No store publication.',
     '', '## Rollback',
