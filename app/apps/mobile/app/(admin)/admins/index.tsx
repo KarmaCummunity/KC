@@ -27,6 +27,7 @@ import { AdminsLayersView } from '../../../src/components/admin/admins/layers/Ad
 import { useLocaleBundle } from '../../../src/i18n/useLocaleBundle';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../../src/components/RouteErrorBoundary';
+import { SilentUnauthorizedFallback } from '../../../src/components/permissions/SilentUnauthorizedFallback';
 
 type ViewMode = 'layers' | 'list' | 'tree';
 // The layered pyramid is the overview and opens first (FR-ADMIN-028 AC5).
@@ -47,12 +48,7 @@ export default function AdminsScreen() {
     return <View style={styles.center}><Text>{L.admin.admins.loading}</Text></View>;
   }
   if (!can('admins.view')) {
-    return (
-      <View style={styles.center}>
-        <Text style={styles.deniedTitle}>{L.admin.admins.forbiddenTitle}</Text>
-        <Text style={styles.deniedHint}>{L.admin.admins.forbiddenHint}</Text>
-      </View>
-    );
+    return <SilentUnauthorizedFallback href="/(admin)" />;
   }
 
   const canGrant = can('admins.grant_role');
