@@ -17,9 +17,6 @@ const ROOT_LAYOUT = '_layout.tsx';
 // without cleaning the whole file, and none has a layout of its own. Adding
 // the export when a file gets its brand cleanup removes it from this list.
 const ROOT_BOUNDARY_ONLY = [
-  'dev/shell-preview.tsx',
-  'edit-post/[id].tsx',
-  'edit-profile.tsx',
   'follow/suggestions.tsx',
   'karma-history.tsx',
   'notifications/inbox.tsx',
