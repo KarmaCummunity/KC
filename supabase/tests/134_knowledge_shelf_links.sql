@@ -104,10 +104,14 @@ select is(
   '1',
   'a platform admin sees inactive shelf links');
 
+-- RLS hides the row from a non-admin UPDATE (USING fails), so the statement
+-- finishes without 42501 and changes no rows. Assert the seeded value is intact.
 select is(
   pg_temp.act('b',
-    $$update public.knowledge_shelf_links set label_he = 'changed' where link_slug = 'kol_zchut'$$),
-  '42501',
+    $$update public.knowledge_shelf_links set label_he = 'changed' where link_slug = 'kol_zchut'$$)
+  || pg_temp.val('anon',
+    $$select label_he from public.knowledge_shelf_links where link_slug = 'kol_zchut'$$),
+  'okכל זכות',
   'an ordinary member cannot update a shelf link');
 
 select is(
