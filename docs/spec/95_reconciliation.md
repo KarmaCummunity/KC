@@ -82,3 +82,17 @@ Also added to [93](./93_implementation_gaps.md).
 Static review at dev `89f047f4`, all six FR IDs and39AC numbers retained. See the per-AC evidence table in `requirements/17_responsive_desktop.md`. Shell primitives/root wiring are present; preview flag semantics and private aside context descriptions corrected. Split-chat and split-auth wiring remain planned. Eight focused shell/inset/keyboard test files (42 tests) passed locally.
 
 This does not close #1862. Full device/large-text acceptance, named scaling constants, historical typography minima versus current tokens, and exact viewport/config claims remain unverified or inconsistent. No approved requirement was waived and no UI implementation changed. Scoped D/S/G/book searches did not supply a decision settling those gaps; do not silently replace a requirement with current code.
+
+## Translation requirements checkpoint (2026-11-24, #1863)
+
+Scoped static reconciliation at dev `89f047f4`; no live flags, database, provider or deployed client inspected. All six `FR-TRANSLATE-*` IDs and existing AC numbers are retained. No product decision or rollout approval is added.
+
+| Scope | Evidence | Result |
+|---|---|---|
+| Book and product registries | Chapters indexed by `README.md`; `90_decisions_log.md`, `91_kc_fills_pending.md`, `92_open_questions.md`, `93_implementation_gaps.md` | No domain-specific translation rule found that conflicts with this retained engineering contract. This is not a new PM decision. |
+| Current cache and taxonomy | `supabase/schemas/78_translation/010_content_translations.sql`; `_shared/translation/kcSource.ts`; domain `TranslationTypes.ts` | Post/comment/message/user with `id` PKs; rides are posts. Updated stale ride-listing and pre-baseline policy/trigger descriptions. Source-row confidence is historical, not claimed present. |
+| Cache and provider | `translate/resolveBatch.ts`, `translate/cache.ts`, `_shared/translation/provider.ts` | Unique persistence does not guarantee one provider call. Current default selector is googlefree; DPA/zero-retention approval and deployed selector are not verified. Earlier single-provider-call goal remains unmet/unverified. |
+| Reader UX and release | `src/hooks/useTranslatedPosts.ts`, `src/config/featureFlags.ts`; schema message-policy comment | Implementation exists behind default-off flag. Chat remains planned and sender-consent-gated. Registry support is not released UX. |
+| Retirement | FR-TRANSLATE-005/006, engineering D-190/D-191 | Retired IDs retained, including the separately identified KC batch reuse. |
+
+Requirements and `docs/SSOT/UGC_TRANSLATION.md` now distinguish current code, historical requirements and unverified rollout. Production provider terms/approval and provider-call deduplication remain acceptance gaps, not waived requirements. No shared D/S/G numbering changed.
