@@ -75,3 +75,10 @@ Also added to [93](./93_implementation_gaps.md).
 - **Tech-debt ID reuse.** Legacy spec headers cite `TD-69`, `TD-75` and `TD-79` for 2026-05-16 audit items, but the `tech-debt` issues now use those IDs for unrelated rows (migration-drift guard, translation provider, translate tests). When reading a legacy header, treat its TD reference as **historical** and use the `tech-debt` issues as the live register. New IDs must never reuse a number.
 - **Migration registry.** `docs/agents/MIGRATION_RANGES.md` recorded `0440` for the world launch flags; the flags shipped as `0441`, and `0440` is the chat-media path change. Noted in the registry.
 - **CI script tests.** Before this PR only 2 of the 8 `scripts/*.test.mjs` suites ran in CI, and two Edge Function test files (`delete-account`, `revenuecat-webhook`) were never executed. Both are now wired.
+
+
+## Responsive requirements partial checkpoint (2026-11-24, #1862)
+
+Static review at dev `89f047f4`, all six FR IDs and39AC numbers retained. See the per-AC evidence table in `requirements/17_responsive_desktop.md`. Shell primitives/root wiring are present; preview flag semantics and private aside context descriptions corrected. Split-chat and split-auth wiring remain planned. Eight focused shell/inset/keyboard test files (42 tests) passed locally.
+
+This does not close #1862. Full device/large-text acceptance, named scaling constants, historical typography minima versus current tokens, and exact viewport/config claims remain unverified or inconsistent. No approved requirement was waived and no UI implementation changed. Scoped D/S/G/book searches did not supply a decision settling those gaps; do not silently replace a requirement with current code.
