@@ -5,11 +5,13 @@
 -- state the kernel (kc_private.fsm_state) knows, so a state added later shows up as a gap in
 -- the coverage report until a fixture is written for it.
 --
--- Every row is reached through legal moves of its machine (the kernel guards run as in
--- production), never by writing a status the graph forbids. The two fixture members are demo
--- members (`demo-dcc-*@seed.kc.test`, `demo` flag), so the demo wipe removes them with
--- everything they own; the tasks and reports, which no member owns, are removed by the wipe
--- through their markers.
+-- Posts are inserted as draft or open and then moved with post_move. Admin tasks are
+-- inserted already in their target status (legal on INSERT). Reports are written to the
+-- resolved status the same way report_resolve does, not through admin_confirm_report /
+-- admin_dismiss_report. The two fixture members are demo members
+-- (`demo-dcc-*@seed.kc.test`, `demo` flag), so the demo wipe removes them with everything
+-- they own; the tasks and reports, which no member owns, are removed by the wipe through
+-- their markers.
 
 -- Marker of the fixture rows that no member owns (see kc_private.demo_wipe_content).
 create or replace function kc_private.demo_coverage_label()

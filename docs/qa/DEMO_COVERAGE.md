@@ -24,7 +24,7 @@
 | An admin task per state | `kc_private.admin_tasks` | label `demo_coverage` |
 | A report per state | `public.reports` | note `demo-coverage:<state>` |
 
-Both members are demo members (`demo` flag), so the demo wipe removes them with everything they own; the tasks and reports, which no member owns, are removed by the wipe through their markers. Every fixture is reached through legal moves of its machine, so the kernel guards run as in production.
+Both members are demo members (`demo` flag), so the demo wipe removes them with everything they own; the tasks and reports, which no member owns, are removed by the wipe through their markers. How each machine is seeded: posts start as `draft` or `open` and are then moved with `post_move`, so those kernel guards run as in production; admin tasks are inserted already in their target status; reports are written to the resolved status the same way `report_resolve` does (not through `admin_confirm_report` / `admin_dismiss_report`).
 
 ## Waves
 
