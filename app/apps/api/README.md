@@ -43,6 +43,7 @@ Without the variable those suites are skipped and the unit tests still run.
 | `KC_API_RATE_LIMIT_PER_MINUTE` | `600` | Port calls one caller may make per minute (a member by user id, a visitor by address), counted in Redis. `0` switches the limit off |
 | `KC_JOBS_TOKEN` | none | Bearer token a scheduler sends to start a job (`POST /v1/jobs/<name>`); a secret of at least 32 characters. Without it no job can be started |
 | `EXPO_ACCESS_TOKEN` | none | Access token of the Expo push service, when the Expo project requires one (a secret) |
+| `KC_APP_BASE_URL` | the product's address | The app's public web address, which a message to a member links to (for example the edit link of a draft) |
 | `KC_PORT_ROLLOUT` | everyone | Who each served port is served to: a JSON object of port name to `{ "percent": 0-100, "minAppVersion": "1.2.3" }`, with `*` for every port without a rule of its own (ADR-010). A rule for a port that does not exist stops the process at start |
 | `KC_STORAGE_LOCAL_DIR` | none | Directory of the local file store, for development and tests only (ADR-012). Without a store the storage routes answer `503 not_configured` |
 | `KC_API_PUBLIC_URL` | none | The API's own address as clients reach it; required with `KC_STORAGE_LOCAL_DIR`, whose upload and read addresses point back at the API |

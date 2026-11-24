@@ -1,3 +1,5 @@
+import { BackgroundModule } from '../../platform/background/background.module';
+import type { FetchFn } from '../../modules/whatsapp/metaClient';
 import { WhatsAppWebhookModule } from '../../modules/whatsapp/inbound/whatsappWebhook.module';
 import { Global, Module } from '@nestjs/common';
 import { type AddressInfo, createServer } from 'node:net';
@@ -43,7 +45,7 @@ export interface KcGateway {
  *   port `listen()` opens (a test that must put the server's own address in its configuration picks it first: `freePort`).
  */
 export async function startKcGateway(
-  overrides: { functions?: HostedFunctionOverrides; identityProvider?: IdentityProvider; jobs?: ScheduledJobOverrides; config?: Partial<ApiConfig>; port?: number } = {},
+  overrides: { functions?: HostedFunctionOverrides; identityProvider?: IdentityProvider; jobs?: ScheduledJobOverrides; config?: Partial<ApiConfig>; port?: number; whatsAppInboundFetch?: FetchFn } = {},
 ): Promise<KcGateway> {
   const issuer = await createTestIssuer();
 
@@ -69,9 +71,10 @@ export async function startKcGateway(
       PortClientsModule,
       IdentityVerificationModule.forRoot({ provider: overrides.identityProvider }),
       BillingModule,
-      WhatsAppWebhookModule,
+      WhatsAppWebhookModule.forRoot({ fetch: overrides.whatsAppInboundFetch }),
       JobsModule.forRoot(scheduledJobSet(overrides.jobs)),
       RealtimeModule,
+      BackgroundModule,
       StorageModule,
       PortGatewayModule.forRoot(HOSTED_PORTS, hostedFunctionSet(overrides.functions)),
     ],

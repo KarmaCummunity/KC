@@ -79,6 +79,8 @@ export interface FeatureConfig {
   readonly storage: StorageConfig;
   /** Who each served port is served to; empty: everyone (`portRolloutConfig.ts`). */
   readonly portRollout: PortRolloutRules;
+  /** The app's public web address, which a message to a member links to; null: the product's default. */
+  readonly appBaseUrl: string | null;
   /** The WhatsApp channel through Meta's Cloud API. */
   readonly whatsapp: WhatsAppConfig;
   /** Who translates member content (FR-TRANSLATE-002). */
@@ -146,6 +148,13 @@ function parseTranslationProvider(value: string | undefined, geminiApiKey: strin
   return provider;
 }
 
+/** The app's public web address, without a trailing slash. */
+function parseAppBaseUrl(env: Env): string | null {
+  const url = readVariable(env, 'KC_APP_BASE_URL')?.replace(/\/+$/, '') ?? null;
+  if (url !== null && !URL.canParse(url)) throw new ApiConfigError('KC_APP_BASE_URL', 'must be a URL');
+  return url;
+}
+
 /** The local store needs both its directory and the address its URLs point at. */
 function parseStorage(env: Env): StorageConfig {
   const localDirectory = readVariable(env, 'KC_STORAGE_LOCAL_DIR') ?? null;
@@ -162,6 +171,7 @@ export function loadFeatureConfig(env: Env): FeatureConfig {
   return {
     storage: parseStorage(env),
     portRollout: parsePortRollout(env),
+    appBaseUrl: parseAppBaseUrl(env),
     whatsapp: {
       cloudApiToken: readVariable(env, 'WHATSAPP_CLOUD_API_TOKEN') ?? null,
       phoneNumberId: readVariable(env, 'WHATSAPP_PHONE_NUMBER_ID') ?? null,

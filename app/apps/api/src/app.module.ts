@@ -1,3 +1,4 @@
+import { BackgroundModule } from './platform/background/background.module';
 import { WhatsAppWebhookModule } from './modules/whatsapp/inbound/whatsappWebhook.module';
 import { type DynamicModule, Module } from '@nestjs/common';
 import { BillingModule } from './modules/billing/billing.module';
@@ -41,9 +42,10 @@ export class AppModule {
         PortClientsModule,
         IdentityVerificationModule.forRoot(),
         BillingModule,
-        WhatsAppWebhookModule,
+        WhatsAppWebhookModule.forRoot(),
         JobsModule.forRoot(scheduledJobSet()),
         RealtimeModule,
+        BackgroundModule,
         StorageModule,
         PortGatewayModule.forRoot(HOSTED_PORTS, hostedFunctionSet()),
       ],

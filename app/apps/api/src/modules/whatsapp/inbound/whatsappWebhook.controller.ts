@@ -5,8 +5,18 @@ import { API_CONFIG } from '../../../platform/config/apiConfig.module';
 import { APP_LOGGER, type AppLogger } from '../../../platform/logging/appLogger';
 import { PortClients } from '../../../platform/ports/portClients';
 import { type RawBodyRequest, readWebhook, sendAnswer } from '../../../platform/webhooks/webhookRequest';
-import type { RpcFn } from './inboundMessages';
+import { BackgroundWork } from '../../../platform/background/backgroundWork';
+import { StorageAdmin } from '../../../platform/storage/storageAdmin';
+import { type FetchFn } from '../metaClient';
+import type { ProPhoto, RpcFn } from './inboundMessages';
+import { handleProPhoto, type PhotoDeps, POST_PHOTO_BUCKET } from './photo';
+import { detectLang } from './replies';
 import { receiveDelivery, verifySubscription } from './whatsappWebhook';
+
+/** Injection token of the `fetch` the webhook downloads a member's photo with. */
+export const WHATSAPP_INBOUND_FETCH = Symbol('WHATSAPP_INBOUND_FETCH');
+/** A photo never changes under its name, so it may be cached for good. */
+const IMMUTABLE_CACHE_CONTROL = 'public, max-age=31536000, immutable';
 
 /**
  * `/v1/webhooks/whatsapp`: where the WhatsApp Cloud API delivers the messages
@@ -21,6 +31,9 @@ export class WhatsAppWebhookController {
     @Inject(PortClients) private readonly clients: PortClients,
     @Inject(API_CONFIG) private readonly config: ApiConfig,
     @Inject(APP_LOGGER) private readonly logger: AppLogger,
+    @Inject(BackgroundWork) private readonly background: BackgroundWork,
+    @Inject(StorageAdmin) private readonly files: StorageAdmin,
+    @Inject(WHATSAPP_INBOUND_FETCH) private readonly fetchFn: FetchFn,
   ) {}
 
   /** The provider's registration check: answers its challenge as plain text. */
@@ -40,10 +53,31 @@ export class WhatsAppWebhookController {
     };
     const answer = await receiveDelivery(readWebhook(request), {
       rpc,
+      // The provider is answered at once; the photo's outcome reaches the member as a queued reply.
+      onProPhoto: (photo) => Promise.resolve(this.background.start('whatsapp photo', () => this.attachPhoto(rpc, photo))),
       verifyToken: this.config.whatsapp.verifyToken,
       appSecret: this.config.whatsapp.appSecret,
       report: (error) => this.logger.error({ err: error }, 'whatsapp delivery failed'),
     });
     return sendAnswer(reply, answer);
+  }
+
+  /** D158: a linked Pro member's photo completes their waiting draft, on KC's own storage. */
+  private attachPhoto(rpc: RpcFn, photo: ProPhoto): Promise<unknown> {
+    const { cloudApiToken, graphApiVersion } = this.config.whatsapp;
+    const deps: PhotoDeps = {
+      rpc,
+      fetch: this.fetchFn,
+      graph: { token: cloudApiToken ?? '', ...(graphApiVersion ? { graphVersion: graphApiVersion } : {}) },
+      storage: {
+        upload: async (path, bytes, contentType) => {
+          const stored = await this.files.write(POST_PHOTO_BUCKET, path, bytes, { contentType, cacheControl: IMMUTABLE_CACHE_CONTROL });
+          return { error: stored ? null : { message: 'The resource already exists' } };
+        },
+        remove: (path) => this.files.remove(POST_PHOTO_BUCKET, [path]),
+      },
+      ...(this.config.appBaseUrl ? { appBaseUrl: this.config.appBaseUrl } : {}),
+    };
+    return handleProPhoto(deps, { waId: photo.waId, userId: photo.userId, mediaId: photo.mediaId, mimeType: photo.mimeType, lang: detectLang(photo.caption) });
   }
 }

@@ -27,6 +27,7 @@ export function testConfig(overrides: Partial<ApiConfig> = {}): ApiConfig {
     expoAccessToken: null,
     storage: { localDirectory: null, publicUrl: null },
     portRollout: {},
+    appBaseUrl: null,
     whatsapp: { cloudApiToken: null, phoneNumberId: null, graphApiVersion: null, verifyToken: null, appSecret: null },
     translationProvider: 'googlefree',
     gemini: { apiKey: null, model: 'gemini-test' },
