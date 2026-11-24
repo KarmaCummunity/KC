@@ -114,17 +114,22 @@ export function createApi({ supabaseUrl, anonKey, serviceKey, fetch = globalThis
 }
 
 /**
- * The database side, through psql. Values travel as psql variables read from stdin, so an id
- * never becomes part of the SQL text.
+ * One psql statement runner. Values travel as psql variables read from stdin, so an id never
+ * becomes part of the SQL text. Returns the unaligned output, trimmed.
  */
-export function createSql({ dbUrl, run = spawnSync }) {
-  const query = (sql, vars = {}) => {
+export function createPsql({ dbUrl, run = spawnSync }) {
+  return (sql, vars = {}) => {
     const args = [dbUrl, '-v', 'ON_ERROR_STOP=1', '-qAt'];
     for (const [name, value] of Object.entries(vars)) args.push('-v', `${name}=${value}`);
     const out = run('psql', [...args, '-f', '-'], { input: sql, encoding: 'utf8' });
     if (out.status !== 0) throw new Error(`psql exited with ${out.status}: ${String(out.stderr).trim().split('\n')[0]}`);
     return String(out.stdout).trim();
   };
+}
+
+/** The database side of the purge proof, through psql. */
+export function createSql({ dbUrl, run = spawnSync }) {
+  const query = createPsql({ dbUrl, run });
   return {
     /** The one direct write: the account's purge date moves into the past. True when a row moved. */
     makeDue(userId) {

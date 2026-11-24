@@ -1,0 +1,9 @@
+{
+  "provenance": {
+    "kind": "live capture, Supabase CLI 2.99.0 (Bun wrapper + supabase-go), 22 Nov 2026",
+    "how": "supabase db push --dry-run --db-url <throwaway local Postgres 17> --yes, run in a copy of supabase/ from main 5e84da4a; the throwaway ledger held kc-prod's 55 versions (0001–0069). No production connection.",
+    "why": "the CLI appends a two-line update notice to stderr after the plan when a newer release (v3.2.0) exists; parseDryRunPlan rejected it, failing PROD dry-runs 45046581315 and 45046738021"
+  },
+  "stdout": "Finished supabase db push.\n",
+  "stderr": "DRY RUN: migrations will *not* be pushed to the database.\nConnecting to remote database...\nWould push these migrations:\n • 0070_external_post_imports_retention.sql\n • 0071_employment_job_offer_orgs.sql\n • 0072_followers_only_needs_private_profile.sql\n • 0073_import_attach_post.sql\n • 0074_post_card_provenance.sql\n • 0075_import_moderation_lockout.sql\n • 0076_import_telemetry.sql\n • 0077_import_cross_post_guard.sql\n • 0078_identity_verification.sql\n • 0079_knowledge_slot_series.sql\n • 0080_knowledge_slot_series_rpcs.sql\n • 0081_guest_posts.sql\n • 0082_post_image_owner_metadata.sql\n • 0083_oneoff_knowledge_slots.sql\n • 0084_post_media_sanitized_derivative.sql\n • 0085_match_process_time_budget.sql\n • 0086_org_sec46_audit_every_change.sql\n • 0087_biography_url_check_real_tlds.sql\n • 0088_outbox_claim_exact_limit.sql\n • 0089_identity_hash_reservation.sql\n • 0090_feed_has_image_filter.sql\n • 0091_post_media_processing_activation.sql\n • 0092_employment_job_offer_fields.sql\n • 0093_user_devices_prune.sql\nA new version of Supabase CLI is available: v3.2.0 (currently installed v)\nWe recommend updating regularly for new features and bug fixes: https://supabase.com/docs/guides/cli/getting-started#updating-the-supabase-cli\n"
+}
