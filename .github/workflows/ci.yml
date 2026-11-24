@@ -79,6 +79,8 @@ jobs:
     timeout-minutes: 5
     permissions:
       contents: read
+      # Reads the PR's live labels: a re-run keeps its old payload (ci-maestro-label.yml).
+      pull-requests: read
     outputs:
       draft: ${{ steps.plan.outputs.draft }}
       hygiene: ${{ steps.plan.outputs.hygiene }}
@@ -111,6 +113,8 @@ jobs:
           BASE_REF: ${{ github.base_ref || github.event.pull_request.base.ref || github.event.merge_group.base_ref }}
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           # Only PRs into dev or main are gated; a PR or review into any other
           # base gets a red gate (its JUDGE_REF would be an unprotected branch).

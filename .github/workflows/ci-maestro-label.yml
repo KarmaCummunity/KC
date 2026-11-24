@@ -1,0 +1,60 @@
+name: CI — maestro label
+
+# Adding the `maestro` label to a PR into dev opts it into the Maestro journeys on its own CI
+# (scripts/ci-changes.mjs, MAESTRO_LABEL). ci.yml does not listen to `labeled`: the labelers add
+# several labels to every PR, and each event would start a CI run that becomes the newest run for
+# the SHA (CI verdict judges the newest) and cancels or races the full run. Instead, this workflow
+# reacts to that one label and re-runs the PR's newest full CI run with "Re-run all jobs", which
+# keeps it the newest run, keeps every job on one attempt (CI verdict rejects mixed attempts) and
+# lets `detect changes` read the label live. Every other label skips at the job level, so it
+# takes no runner. The dev merge queue runs Maestro whatever the label says; this is early
+# feedback only. Docs: docs/process/MAESTRO.md.
+on:
+  pull_request:
+    types: [labeled]
+    branches: [dev]
+
+permissions: {}
+
+concurrency:
+  group: ci-maestro-label-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  rerun:
+    name: re-run CI with Maestro
+    # Fork PRs get a read-only token; their author pushes again instead.
+    if: github.event.label.name == 'maestro' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: write
+    steps:
+      - name: Re-run the newest full CI run of the head commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          runs="$(gh api "repos/$REPO/actions/workflows/ci.yml/runs?event=pull_request&head_sha=$HEAD_SHA&per_page=20" \
+            --jq '.workflow_runs | sort_by(.created_at) | reverse')"
+          newest="$(jq -c '.[0] // empty' <<<"$runs")"
+          if [ -z "$newest" ]; then
+            echo "::notice::no CI run for $HEAD_SHA yet; the first run reads the label itself."; exit 0
+          fi
+          id="$(jq -r .id <<<"$newest")"; title="$(jq -r .display_title <<<"$newest")"
+          if [ "$title" = 'CI (edit)' ]; then
+            # Re-running the full run would leave this edit run as the newest one the verdict judges.
+            echo "::warning::the newest CI run for $HEAD_SHA is an edit run; push or update the branch to run Maestro on this PR."
+            exit 0
+          fi
+          if [ "$(jq -r .status <<<"$newest")" != completed ]; then
+            gh api -X POST "repos/$REPO/actions/runs/$id/cancel" >/dev/null || true
+            for _ in $(seq 1 30); do
+              [ "$(gh api "repos/$REPO/actions/runs/$id" --jq .status)" = completed ] && break
+              sleep 5
+            done
+          fi
+          gh api -X POST "repos/$REPO/actions/runs/$id/rerun" >/dev/null
+          echo "re-ran CI run $id (all jobs) for $HEAD_SHA with the maestro label."
