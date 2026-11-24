@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { IdentityDatabase } from '../database/identityDatabase';
-import { OBJECT_STORE, type ObjectPage, type ObjectStore } from './objectStore';
+import { OBJECT_STORE, type ObjectPage, type ObjectStore, type StoredObject } from './objectStore';
 
 /** Objects asked for per page of a listing, and removed per statement. */
 export const FILE_PAGE_SIZE = 500;
@@ -38,6 +38,34 @@ export class StorageAdmin {
    */
   listPage(bucket: string, prefix: string, pageToken?: string): Promise<ObjectPage> {
     return this.requireStore().list(bucket, prefix, { limit: FILE_PAGE_SIZE, ...(pageToken === undefined ? {} : { pageToken }) });
+  }
+
+  /**
+   * The bytes of a file, or null when it is not stored.
+   * @param maxBytes The most the caller will take.
+   * @throws ObjectTooLargeError, NoObjectStoreError
+   */
+  read(bucket: string, name: string, maxBytes: number): Promise<Uint8Array | null> {
+    return this.requireStore().read(bucket, name, { maxBytes });
+  }
+
+  /**
+   * Stores a file the server made (a sanitized copy, a thumbnail) and writes
+   * its row, so the database sees it with its real size and type. A name
+   * that is taken is never replaced.
+   * @returns false when the name is taken.
+   * @throws NoObjectStoreError
+   */
+  async write(bucket: string, name: string, bytes: Uint8Array, object: Omit<StoredObject, 'size'>): Promise<boolean> {
+    if (!(await this.requireStore().write(bucket, name, bytes, object))) return false;
+    await this.database.runAsService((session) =>
+      session.query('insert into storage.objects (bucket_id, name, metadata) values ($1, $2, $3::jsonb) on conflict (bucket_id, name) do nothing', [
+        bucket,
+        name,
+        JSON.stringify({ size: bytes.byteLength, mimetype: object.contentType, cacheControl: object.cacheControl }),
+      ]),
+    );
+    return true;
   }
 
   /**

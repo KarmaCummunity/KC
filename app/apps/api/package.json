@@ -33,6 +33,7 @@
     "@swc/core": "^1.16.22",
     "@types/node": "^26.6.6",
     "@types/pg": "^8.23.1",
+    "jimp": "1.6.0",
     "tsup": "^9.0.0",
     "typescript": "^5.5.0",
     "unplugin-swc": "^2.0.0",

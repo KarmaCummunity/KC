@@ -1,7 +1,7 @@
 import { mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { publicObjectUrl } from '@kc/infrastructure-api';
-import type { ObjectEntry, ObjectPage, ObjectStore, SignedUpload, StoredObject, UploadGrant } from './objectStore';
+import { type ObjectEntry, type ObjectPage, type ObjectStore, ObjectTooLargeError, type SignedUpload, type StoredObject, type UploadGrant } from './objectStore';
 import { isSafeObjectName } from './storageAuthorizer';
 import { signGrant } from './storageGrants';
 
@@ -69,13 +69,17 @@ export class LocalObjectStore implements ObjectStore {
     }
   }
 
-  async read(bucket: string, name: string): Promise<Uint8Array | null> {
+  async read(bucket: string, name: string, options: { readonly maxBytes?: number } = {}): Promise<Uint8Array | null> {
     const path = this.pathOf(bucket, name);
+    let size: number;
     try {
-      return await readFile(path);
+      size = (await stat(path)).size;
     } catch {
       return null;
     }
+    // Decided from the file's size, before a byte of it is read.
+    if (options.maxBytes !== undefined && size > options.maxBytes) throw new ObjectTooLargeError(options.maxBytes);
+    return readFile(path).catch(() => null);
   }
 
   async write(bucket: string, name: string, bytes: Uint8Array, object: Omit<StoredObject, 'size'>): Promise<boolean> {

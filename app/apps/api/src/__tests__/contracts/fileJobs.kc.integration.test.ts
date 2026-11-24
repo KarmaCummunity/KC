@@ -3,6 +3,7 @@ import { mkdtemp, rm, utimes } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { type IPostRepository, newPostInput } from '@kc/application';
+import { Jimp } from 'jimp';
 import type { Address } from '@kc/domain';
 import { type ApiStorage, createApiStorage } from '@kc/infrastructure-api';
 import { SupabasePostRepository } from '@kc/infrastructure-supabase';
@@ -18,21 +19,33 @@ const JPEG = 'image/jpeg';
 const PHOTO = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3]);
 const TWO_DAYS_AGO = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
 
+const latin1 = (bytes: Uint8Array | null) => new TextDecoder('latin1').decode(bytes ?? new Uint8Array());
+
+/** A real JPEG that carries a metadata segment naming where it was taken, as a phone's camera writes. */
+async function photoWithLocation(): Promise<Uint8Array> {
+  const jpeg = new Uint8Array(await new Jimp({ width: 64, height: 48, color: 0x336699ff }).getBuffer('image/jpeg', { quality: 90 }));
+  const metadata = new TextEncoder().encode('Exif\0\0GPSLatitude 32.0853 GPSLongitude 34.7818');
+  // An APP1 segment right after the start-of-image marker: marker, length (itself included), body.
+  const segment = Uint8Array.of(0xff, 0xe1, (metadata.length + 2) >> 8, (metadata.length + 2) & 0xff, ...metadata);
+  return Uint8Array.of(...jpeg.subarray(0, 2), ...segment, ...jpeg.subarray(2));
+}
+
 /**
- * The two scheduled jobs that clean up files, on KC's own storage and the
- * real KC schema (ADR-012 section 5): the removal of files no row references,
- * and the purge of an account past its grace period with every file it had.
+ * The scheduled jobs that work on files, on KC's own storage and the real KC
+ * schema (ADR-012 section 5): the sanitized copy of a new post photo, the
+ * removal of files no row references, and the purge of an account past its
+ * grace period with every file it had.
  */
-describe.skipIf(!KC_DATABASE_URL)('File clean-up jobs on the KC schema', () => {
+describe.skipIf(!KC_DATABASE_URL)('File jobs on the KC schema', () => {
   const database = new KcTestDatabase();
   const address = {} as Address;
   let gateway: KcGateway;
   let directory: string;
   let store: ObjectStore;
 
-  const runJob = async (name: string) => {
-    const response = await gateway.app.inject({ method: 'POST', url: `/v1/jobs/${name}`, payload: {}, headers: { authorization: `Bearer ${JOBS_TOKEN}` } });
-    return { status: response.statusCode, body: response.json<Record<string, number>>() };
+  const runJob = async (name: string, payload: Record<string, unknown> = {}) => {
+    const response = await gateway.app.inject({ method: 'POST', url: `/v1/jobs/${name}`, payload, headers: { authorization: `Bearer ${JOBS_TOKEN}` } });
+    return { status: response.statusCode, body: response.json<Record<string, any>>() }; // eslint-disable-line @typescript-eslint/no-explicit-any
   };
   const storageOf = (member: TestMember): ApiStorage =>
     createApiStorage({ baseUrl: 'http://api.kc.test', getAccessToken: () => gateway.issuer.sign(member.userId), fetch: injectFetch(gateway.app) });
@@ -78,6 +91,36 @@ describe.skipIf(!KC_DATABASE_URL)('File clean-up jobs on the KC schema', () => {
     await gateway.app.close();
     await database.close();
     await rm(directory, { recursive: true, force: true });
+  });
+
+  it('makes the sanitized copy of a new post photo: where it was taken never reaches the copy, and the photo is marked ready', async () => {
+    const alice = await database.newMember();
+    // A photo queued before Alice's whose file never reached the store: the worker must refuse it and go on.
+    const earlier = await database.newMember();
+    await postsOf(earlier).create(newPostInput(earlier.userId, address, { mediaAssets: [{ path: `${earlier.userId}/batch/never-stored.jpg`, mimeType: JPEG, sizeBytes: 10 }] }));
+    const photo = await photoWithLocation();
+    const path = `${alice.userId}/batch-copy/0.jpg`;
+    await storageOf(alice).upload({ bucket: 'post-images', name: path, bytes: photo, contentType: JPEG });
+    const post = await postsOf(alice).create(newPostInput(alice.userId, address, { mediaAssets: [{ path, mimeType: JPEG, sizeBytes: photo.byteLength }] }));
+    const mediaId = (await database.admin.query<{ id: string }>('select id from public.post_media where post_id = $1', [post.postId])).rows[0]?.id as string;
+
+    // Other suites queue photos of their own on this database, and a run takes a few jobs: run until this one was handed out.
+    let outcome: string | undefined;
+    for (let run = 0; run < 40 && outcome === undefined; run += 1) outcome = (await runJob('process-post-media', { limit: 5 })).body.outcomes?.[mediaId];
+
+    expect(outcome).toBe('ready');
+    const key = `derived/${alice.userId}/${mediaId}-a1.jpg`;
+    const copy = await store.read('post-images', key);
+    expect(latin1(photo)).toContain('GPSLatitude');
+    expect(latin1(copy)).not.toContain('GPSLatitude');
+    expect(await stateOf('post-images', key)).toEqual({ stored: true, indexed: true });
+    const job = (await database.admin.query<{ state: string; derivative_key: string }>('select state, derivative_key from kc_private.post_media_processing where media_id = $1', [mediaId])).rows[0];
+    expect(job).toEqual({ state: 'done', derivative_key: key });
+    // The photo's row now names the copy: that is the file everyone else is shown.
+    const shown = (await database.admin.query<{ processing_status: string; storage_key: string }>('select processing_status, storage_key from public.post_media where id = $1', [mediaId])).rows[0];
+    expect(shown).toEqual({ processing_status: 'ready', storage_key: key });
+    // The upload itself is still stored, untouched.
+    expect(await stateOf('post-images', path)).toEqual({ stored: true, indexed: true });
   });
 
   it('removes old files no row references, confirmed or not, and keeps a post\'s photo and a fresh upload', async () => {

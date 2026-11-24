@@ -57,8 +57,12 @@ export interface ObjectStore {
   publicUrl(bucket: string, name: string): string;
   /** What is stored under the name, or null when nothing is. */
   head(bucket: string, name: string): Promise<StoredObject | null>;
-  /** The bytes of an object, or null when nothing is stored under the name. */
-  read(bucket: string, name: string): Promise<Uint8Array | null>;
+  /**
+   * The bytes of an object, or null when nothing is stored under the name.
+   * @param options.maxBytes The most the caller will take; a larger object is not read.
+   * @throws ObjectTooLargeError when the object is larger than `maxBytes`.
+   */
+  read(bucket: string, name: string, options?: { readonly maxBytes?: number }): Promise<Uint8Array | null>;
   /** Stores bytes on the server's own behalf (a copy, a thumbnail). @returns false when the name is taken. */
   write(bucket: string, name: string, bytes: Uint8Array, object: Omit<StoredObject, 'size'>): Promise<boolean>;
   /** Removes an object; removing one that is not there is not an error. */
@@ -71,6 +75,14 @@ export interface ObjectStore {
    * @param options.pageToken `nextPageToken` of the page before; absent for the first.
    */
   list(bucket: string, prefix: string, options: { readonly limit: number; readonly pageToken?: string }): Promise<ObjectPage>;
+}
+
+/** An object is larger than the reader said it would take; nothing of it was handed over. */
+export class ObjectTooLargeError extends Error {
+  constructor(maxBytes: number) {
+    super(`object larger than ${maxBytes} bytes`);
+    this.name = 'ObjectTooLargeError';
+  }
 }
 
 /** Injection token of the configured `ObjectStore`, or of null when the API has no store. */

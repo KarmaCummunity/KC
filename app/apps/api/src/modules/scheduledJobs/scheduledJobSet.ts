@@ -4,6 +4,7 @@ import { EmbedPostsJob, MATCH_RERANK_MODEL, MatchRerankJob, matchRerankModelFor 
 import { DispatchNotificationsJob, PUSH_TRANSPORT } from '../notifications/dispatchNotificationsJob';
 import { createExpoTransport } from '../notifications/expoTransport';
 import type { PushTransport } from '../notifications/pushTypes';
+import { ProcessPostMediaJob } from '../postMedia/processPostMediaJob';
 import { RotateResearchSaltJob } from '../publicResearch/rotateResearchSaltJob';
 import { ReconcileStorageOrphansJob } from '../storageMaintenance/reconcileStorageOrphansJob';
 import type { FetchFn } from '../whatsapp/metaClient';
@@ -26,8 +27,8 @@ export interface ScheduledJobOverrides {
  * is added here and nowhere else: the jobs route is generic. A job that
  * replaces an Edge Function keeps its name, so its schedule only changes
  * address; `realtime-retention` is new with KC's own realtime gateway. The
- * two file jobs need the storage module, and fail their run on a server that
- * has no file store.
+ * three file jobs need the storage module, and fail their run on a server
+ * that has no file store.
  */
 export function scheduledJobSet(overrides: ScheduledJobOverrides = {}): ScheduledJobSet {
   return {
@@ -35,6 +36,7 @@ export function scheduledJobSet(overrides: ScheduledJobOverrides = {}): Schedule
       DispatchNotificationsJob,
       EmbedPostsJob,
       MatchRerankJob,
+      ProcessPostMediaJob,
       PruneRealtimeMessagesJob,
       PurgeDeletedAccountsJob,
       ReconcileStorageOrphansJob,
