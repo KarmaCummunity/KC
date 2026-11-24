@@ -28,6 +28,8 @@ tags: [auth, smoke]
       id: guest-sign-in
     direction: DOWN
     timeout: 30000
+    # The guest feed is outside the tab shell: no floating tab bar can cover the button.
+    centerElement: false
 # Signing in from the guest feed lands on the welcome screen again: browsing created no session.
 - tapOn:
     id: guest-sign-in
