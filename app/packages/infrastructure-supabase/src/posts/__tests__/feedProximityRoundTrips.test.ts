@@ -16,7 +16,7 @@ describe('SupabasePostRepository nearest feed round-trips', () => {
 
     const page = await new SupabasePostRepository(client).getFeed('viewer', {
       type: 'Give', sortOrder: 'distance', proximitySortCity: 'IL-001',
-      locationFilter: { centerCity: 'IL-001', radiusKm: 10 },
+      locationFilter: { centerCity: 'IL-001', centerCityName: 'Tel Aviv', radiusKm: 10 },
     }, 2, JSON.stringify(cursor));
 
     expect(calls.filter((call) => call.kind === 'rpc').map((call) => call.fn)).toEqual(['feed_page']);
