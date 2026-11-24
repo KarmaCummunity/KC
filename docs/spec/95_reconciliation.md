@@ -90,3 +90,12 @@ Scoped static reconciliation at dev `89f047f4`; no live flags, database, provide
 | Retirement | FR-TRANSLATE-005/006, engineering D-190/D-191 | Retired IDs retained, including the separately identified KC batch reuse. |
 
 Requirements and `docs/SSOT/UGC_TRANSLATION.md` now distinguish current code, historical requirements and unverified rollout. Production provider terms/approval and provider-call deduplication remain acceptance gaps, not waived requirements. No shared D/S/G numbering changed.
+
+
+## Public research requirements checkpoint (2026-11-24, #1861)
+
+Partial reconciliation at dev `551c9f44`. Four FR IDs and all 26 original numbered criteria are retained verbatim, not relaxed to match implementation. The status header now separates historical QA from current source evidence. Per-AC evidence and limitations are in [requirements 16](./requirements/16_public_research.md).
+
+D166/D186 preserve the public research surface. Source evidence covers the web runner, public route/chrome policy, draft storage, anonymous gateway, private response/contact storage and share helpers. Six focused unit-test files passed (49 tests). This is not a fresh database, deployed, native or analytics acceptance run.
+
+Unresolved: native route-file absence vs null fallback, direct anon grant vs service gateway, separate thank-you email capture, administrator read/deletion semantics. Logged together in [92](./92_open_questions.md#public-research-checkpoint-2026-11-24-1861). This domain is not ticked complete and this checkpoint must not auto-close #1861. No product/security decision, deployment, rollout or data access granted.
