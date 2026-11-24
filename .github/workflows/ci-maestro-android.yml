@@ -1,8 +1,9 @@
 name: CI — Maestro Android E2E
 
-# Maestro lane, called by ci.yml on a PR whose diff touches the app, its packages, the flows or their
-# runner (scripts/ci-changes.mjs MAESTRO_RULES), and by maestro-dev-health.yml for the non-blocking
-# runs on `dev`. KC#1235 / #1619. It taps through the critical journeys (.maestro/flows) on an Android
+# Maestro lane, called by ci.yml on a dev merge group whose diff touches the app, its packages, the
+# flows or their runner (scripts/ci-changes.mjs MAESTRO_RULES), on a PR into main that does, and on a
+# PR into dev labelled `maestro` (opt-in), and by maestro-dev-health.yml for the non-blocking runs on
+# `dev`. KC#1235 / #1619. It taps through the critical journeys (.maestro/flows) on an Android
 # emulator against kc-dev. The APK is a local Gradle release build (no EAS, no EXPO_TOKEN) with OTA
 # updates off (KC_E2E_BUILD=1), so it runs exactly the JS of the commit it was called for.
 # Runbook: docs/process/MAESTRO.md
@@ -35,15 +36,16 @@ env:
   EXPO_PUBLIC_LAUNCH_EMAIL_AUTH: '1'
 
 jobs:
-  android-e2e:
-    name: maestro · android emulator
+  # The APK is built in parallel by every caller; only the emulator job below takes the single kc-dev
+  # queue, so a waiting run holds no runner while it waits (#2613: on 23 Nov 2026 15 of ~17 running
+  # jobs were Maestro runs idling in the kc-dev slot step, starving the merge queue and every gate).
+  build-apk:
+    name: maestro · build E2E APK
     runs-on: ubuntu-latest
-    # Build (~15 min, ~30 with the retry) + flows (55) + up to 125 queued for a kc-dev test slot, with
-    # slack. A hang now ends as a timeout of the step that hung, not as a 4-hour run.
-    timeout-minutes: 190
+    # Build (~12 min, ~30 with the retry), with slack.
+    timeout-minutes: 45
     permissions:
       contents: read
-      actions: read # the kc-dev test slot reads which jobs are running
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -117,6 +119,65 @@ jobs:
           ./gradlew --stop || true
           ./gradlew assembleRelease -PreactNativeArchitectures="$E2E_ABI" --console=plain
           echo "E2E_APK=$PWD/app/build/outputs/apk/release/app-release.apk" >> "$GITHUB_ENV"
+
+      - name: Upload the E2E APK for the emulator job
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: maestro-e2e-apk
+          path: ${{ env.E2E_APK }}
+          if-no-files-found: error
+          retention-days: 3
+          # A re-run of the run uploads it again under the same name.
+          overwrite: true
+
+  android-e2e:
+    name: maestro · android emulator
+    needs: build-apk
+    runs-on: ubuntu-latest
+    # One emulator suite at a time across every caller (PR opt-ins, merge groups, dev health). A run
+    # waits here as a queued job, which holds no runner; `queue: max` keeps every waiter in FIFO order
+    # (up to 100) instead of the default, which cancels the pending one when another arrives. The
+    # kc-dev slot step below still orders it with the other kc-dev suites (nightly, deploy E2E).
+    concurrency:
+      group: kc-dev-maestro-emulator
+      queue: max
+    # Flows (55) + up to 125 for a kc-dev test slot held by another suite, with slack. Time spent
+    # queued on the concurrency group does not count: the job has not started.
+    timeout-minutes: 190
+    permissions:
+      contents: read
+      actions: read # the kc-dev test slot reads which jobs are running
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install pinned guard-script dependencies
+        run: npm ci --prefix scripts --ignore-scripts --no-audit --no-fund
+
+      - name: Resolve kc-dev environment (public anon key + seed password)
+        env:
+          DEV_WEB_URL: ${{ vars.DEV_WEB_URL }}
+          E2E_SEED_PASSWORD: ${{ secrets.E2E_SEED_PASSWORD }}
+        run: |
+          set -euo pipefail
+          node scripts/maestro-dev-env.mjs > "$RUNNER_TEMP/kc-dev.env"
+          while IFS='=' read -r key value; do
+            echo "::add-mask::$value"
+            echo "$key=$value" >> "$GITHUB_ENV"
+          done < "$RUNNER_TEMP/kc-dev.env"
+
+      - name: Download the E2E APK
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: maestro-e2e-apk
+          path: ${{ runner.temp }}/e2e-apk
+
+      - name: Locate the E2E APK
+        run: |
+          set -euo pipefail
+          apk="$(find "$RUNNER_TEMP/e2e-apk" -name '*.apk' -print -quit)"
+          test -n "$apk"
+          echo "E2E_APK=$apk" >> "$GITHUB_ENV"
 
       - name: Install Maestro
         run: |

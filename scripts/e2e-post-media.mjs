@@ -57,11 +57,16 @@ export function createPhotoSql(query) {
     return value;
   };
   return {
-    /** A fresh account is `pending_verification`; the pipeline makes copies for active owners only. */
+    /**
+     * Makes the account active: the pipeline makes copies for active owners only. An account the
+     * project already activated (email confirmed at creation) is left as it is; one awaiting
+     * verification is moved to active; any other state (suspended, pending deletion) fails the proof.
+     */
     activate(userId) {
-      const moved = query("update public.user_account set status = 'active' where user_id = :'uid' and status = 'pending_verification' returning 1;",
-        { uid: id(userId, 'activate') });
-      if (moved !== '1') throw new Error('activate: the account was not pending verification');
+      const uid = id(userId, 'activate');
+      query("update public.user_account set status = 'active' where user_id = :'uid' and status = 'pending_verification';", { uid });
+      const status = query("select status from public.user_account where user_id = :'uid';", { uid });
+      if (status !== 'active') throw new Error(`activate: the account is ${status || 'missing'}, not active`);
     },
     /** One open request of the items world, public, in the first city: a post any member can read. */
     createPost(ownerId) {
