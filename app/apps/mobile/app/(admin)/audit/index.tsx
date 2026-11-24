@@ -19,6 +19,7 @@ import { useLocaleBundle, type LocaleBundle } from '../../../src/i18n/useLocaleB
 import { KcFlashList } from '../../../src/components/lists/KcFlashList';
 import { AdminSearchFilterToolbar } from '../../../src/components/admin/AdminSearchFilterToolbar';
 import { FilterSection } from '../../../src/components/filterKit/FilterSection';
+import { SilentUnauthorizedFallback } from '../../../src/components/permissions/SilentUnauthorizedFallback';
 
 const COMMON_ACTIONS = [
   null,
@@ -118,7 +119,7 @@ export default function AuditScreen() {
     return <View style={styles.center}><Text>{L.admin.content.loading}</Text></View>;
   }
   if (!can('audit.view_own')) {
-    return <View style={styles.center}><Text style={styles.deniedTitle}>{L.admin.content.forbiddenTitle}</Text></View>;
+    return <SilentUnauthorizedFallback href="/(admin)" />;
   }
 
   const canSeeAll = can('audit.view_any');
