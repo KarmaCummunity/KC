@@ -10,8 +10,8 @@
    "missing": 0
   },
   "table": {
-   "objects": 67,
-   "same": 50,
+   "objects": 68,
+   "same": 51,
    "renamed": 0,
    "changed": 17,
    "removed": 0,
@@ -52,8 +52,8 @@
    "missing": 0
   },
   "later": {
-   "objects": 169,
-   "same": 119,
+   "objects": 170,
+   "same": 120,
    "renamed": 6,
    "changed": 44,
    "removed": 0,
@@ -448,8 +448,8 @@
    "missing": 0
   },
   "worlds": {
-   "callSites": 3,
-   "oneToOne": 1,
+   "callSites": 4,
+   "oneToOne": 2,
    "changed": 2,
    "removed": 0,
    "missing": 0
@@ -908,6 +908,7 @@
     "rpc:set_ride_series_status",
     "table:ride_series",
     "table:ride_saved_routes",
+    "table:knowledge_shelf_links",
     "table:karma_ledger",
     "table:donation_links",
     "rpc:admin_review_donation_link",
@@ -949,8 +950,8 @@
     "table:post_ratings"
    ],
    "counts": {
-    "objects": 81,
-    "oneToOne": 68,
+    "objects": 82,
+    "oneToOne": 69,
     "changed": 13,
     "removed": 0,
     "missing": 0
@@ -14388,7 +14389,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/worlds/SupabaseWorldContentRepository.ts",
-     "line": 35,
+     "line": 36,
      "symbol": "SupabaseWorldContentRepository.getWorldContent",
      "area": "worlds",
      "ops": [
@@ -15115,6 +15116,49 @@
    ]
   },
   {
+   "old": "knowledge_shelf_links",
+   "kind": "table",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Active official-body links for a knowledge shelf, read by members; written only by an operator. Seeded with Kol Zchut for `rights_legal_aid`.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "table",
+     "name": "knowledge_shelf_links",
+     "columns": [
+      "created_at",
+      "id",
+      "is_active",
+      "label_en",
+      "label_he",
+      "link_slug",
+      "shelf_slug",
+      "sort_order",
+      "updated_at",
+      "url"
+     ],
+     "clientGrants": {}
+    }
+   ],
+   "areas": [
+    "worlds"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/worlds/SupabaseWorldContentRepository.ts",
+     "line": 60,
+     "symbol": "SupabaseWorldContentRepository.listKnowledgeShelfLinks",
+     "area": "worlds",
+     "ops": [
+      "select"
+     ]
+    }
+   ]
+  },
+  {
    "old": "knowledge_slot_series",
    "kind": "table",
    "status": "same",
@@ -15212,7 +15256,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/worlds/SupabaseWorldContentRepository.ts",
-     "line": 42,
+     "line": 43,
      "symbol": "SupabaseWorldContentRepository.getWorldContent",
      "area": "worlds",
      "ops": [
@@ -18859,7 +18903,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/worlds/SupabaseWorldContentRepository.ts",
-     "line": 28,
+     "line": 29,
      "symbol": "SupabaseWorldContentRepository.getWorldContent",
      "area": "worlds",
      "ops": [

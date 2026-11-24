@@ -24,8 +24,8 @@
    "distinct": 270
   },
   "table": {
-   "callSites": 195,
-   "distinct": 67
+   "callSites": 196,
+   "distinct": 68
   }
  },
  "entries": [
@@ -4616,7 +4616,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/worlds/SupabaseWorldContentRepository.ts",
-   "line": 28,
+   "line": 29,
    "area": "worlds",
    "symbol": "SupabaseWorldContentRepository.getWorldContent",
    "via": "literal",
@@ -4628,7 +4628,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/worlds/SupabaseWorldContentRepository.ts",
-   "line": 35,
+   "line": 36,
    "area": "worlds",
    "symbol": "SupabaseWorldContentRepository.getWorldContent",
    "via": "literal",
@@ -4640,7 +4640,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/worlds/SupabaseWorldContentRepository.ts",
-   "line": 42,
+   "line": 43,
    "area": "worlds",
    "symbol": "SupabaseWorldContentRepository.getWorldContent",
    "via": "literal",
@@ -4648,6 +4648,18 @@
     "select"
    ],
    "name": "knowledge_topics"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/worlds/SupabaseWorldContentRepository.ts",
+   "line": 60,
+   "area": "worlds",
+   "symbol": "SupabaseWorldContentRepository.listKnowledgeShelfLinks",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "knowledge_shelf_links"
   },
   {
    "kind": "rpc",

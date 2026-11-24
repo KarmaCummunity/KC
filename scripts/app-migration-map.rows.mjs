@@ -159,6 +159,8 @@ table('post_knowledge_slots', 'same', 'table:post_knowledge_slots', 'The giver\'
 table('knowledge_slot_series', 'same', 'table:knowledge_slot_series', 'The weekly schedule of a recurring lesson offer, one per post; readable exactly when its offer is, written only by the series RPCs.');
 rpc('start_knowledge_slot_series', 'same', 'rpc:start_knowledge_slot_series', 'Makes a lesson offer recurring and adds its slots for the next 30 days; called on the draft before `publish_post`, so a refused schedule leaves no offer.');
 rpc('set_knowledge_slot_series_status', 'same', 'rpc:set_knowledge_slot_series_status', '`p_post_id`, `p_status`: active, paused or ended; pausing and ending drop the upcoming unbooked slots and keep booked ones. The giver or a post editor only.');
+// Official links on the rights & legal aid shelf (FR-KNOW-012 AC2, #2038).
+table('knowledge_shelf_links', 'same', 'table:knowledge_shelf_links', 'Active official-body links for a knowledge shelf, read by members; written only by an operator. Seeded with Kol Zchut for `rights_legal_aid`.');
 
 // ───────────────────────────── challenges, matching, karma, stats, surveys
 rpc('create_challenge', 'same', 'rpc:create_challenge', 'New optional `p_city_id` (required for a community challenge: `city_required`).');

@@ -9,11 +9,11 @@ The application (`app/packages/infrastructure-supabase`, `app/apps/mobile`) and 
 | Kind | Objects used | 1:1 | 1:1 (renamed) | CHANGED | REMOVED | MISSING |
 | --- | --- | --- | --- | --- | --- | --- |
 | RPCs | 270 | 193 | 22 | 55 | 0 | 0 |
-| Tables and views | 67 | 50 | 0 | 17 | 0 | 0 |
+| Tables and views | 68 | 51 | 0 | 17 | 0 | 0 |
 | Storage buckets | 5 | 4 | 0 | 1 | 0 | 0 |
 | Realtime channels | 9 | 9 | 0 | 0 | 0 | 0 |
 | Edge Function invokes | 5 | 5 | 0 | 0 | 0 | 0 |
-| **Total** | 356 | 261 | 22 | 73 | 0 | 0 |
+| **Total** | 357 | 262 | 22 | 73 | 0 | 0 |
 
 ### Launch scope
 
@@ -23,7 +23,7 @@ Every row carries `launch` (spec D102, `docs/spec/96_launch_and_first_group_plan
 | --- | --- | --- | --- | --- | --- | --- |
 | core | 134 | 110 | 1 | 23 | 0 | 0 |
 | wedge | 53 | 32 | 15 | 6 | 0 | 0 |
-| later | 169 | 119 | 6 | 44 | 0 | 0 |
+| later | 170 | 120 | 6 | 44 | 0 | 0 |
 | **Launch-critical (core + wedge)** | 187 | 142 | 16 | 29 | 0 | 0 |
 
 Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename of the function or its arguments · **CHANGED** the caller's logic changes · **REMOVED** no replacement by design · **MISSING** the baseline has no equivalent although the code needs one (§4). Confidence: **high** read in the baseline source, **medium** inferred from names and generated types.
@@ -79,7 +79,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `infrastructure-supabase/src/users/` | 34 | 21 | 13 | 0 | 0 |
 | `infrastructure-supabase/src/volunteering/` | 9 | 3 | 6 | 0 | 0 |
 | `infrastructure-supabase/src/whatsapp/` | 4 | 2 | 2 | 0 | 0 |
-| `infrastructure-supabase/src/worlds/` | 3 | 1 | 2 | 0 | 0 |
+| `infrastructure-supabase/src/worlds/` | 4 | 2 | 2 | 0 | 0 |
 | `apps/mobile` (direct calls outside the adapters) | 11 | 10 | 1 | 0 | 0 |
 | Edge Function `_shared` | 21 | 17 | 4 | 0 | 0 |
 | Edge Function `backfill-image-thumbs` | 2 | 0 | 2 | 0 | 0 |
@@ -707,13 +707,14 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 
 ### `infrastructure-supabase/src/worlds/`
 
-3 call sites: 1 map 1:1, 2 need logic changes, 0 removed, 0 MISSING.
+4 call sites: 2 map 1:1, 2 need logic changes, 0 removed, 0 MISSING.
 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `external_bodies` (table) | later | CHANGED | table `external_bodies` | `id` (not `body_id`); read directly, the search and admin RPCs of the old picker are not in the baseline. |  | high | SupabaseWorldContentRepository.ts:35 |
-| `knowledge_topics` (table) | later | CHANGED | table `knowledge_topics` | The topic tree, read-only for members: `id` (not `topic_id`), `world_slug` added, no `created_by` / `approved_by` / `legacy_category_slug`. Proposals, review and follows are not in the baseline. |  | high | SupabaseWorldContentRepository.ts:42 |
-| `world_links` (table) | later | 1:1 | table `world_links` | Curated links from one world to a related one; readable signed-out too. |  | high | SupabaseWorldContentRepository.ts:28 |
+| `external_bodies` (table) | later | CHANGED | table `external_bodies` | `id` (not `body_id`); read directly, the search and admin RPCs of the old picker are not in the baseline. |  | high | SupabaseWorldContentRepository.ts:36 |
+| `knowledge_shelf_links` (table) | later | 1:1 | table `knowledge_shelf_links` | Active official-body links for a knowledge shelf, read by members; written only by an operator. Seeded with Kol Zchut for `rights_legal_aid`. |  | high | SupabaseWorldContentRepository.ts:60 |
+| `knowledge_topics` (table) | later | CHANGED | table `knowledge_topics` | The topic tree, read-only for members: `id` (not `topic_id`), `world_slug` added, no `created_by` / `approved_by` / `legacy_category_slug`. Proposals, review and follows are not in the baseline. |  | high | SupabaseWorldContentRepository.ts:43 |
+| `world_links` (table) | later | 1:1 | table `world_links` | Curated links from one world to a related one; readable signed-out too. |  | high | SupabaseWorldContentRepository.ts:29 |
 
 ### `apps/mobile` (direct calls outside the adapters)
 
@@ -929,7 +930,7 @@ In launch order: after package *n* the app is shippable with everything up to *n
 | P2 — Posts, feed, search, closure, translations | core | 51 | 40 | 11 | 0 | 0 | P3, P4 |
 | P3 — Chat and realtime | core | 19 | 17 | 2 | 0 | 0 | P2, P4 |
 | P4 — Reports, moderation and admin basics | core | 40 | 30 | 10 | 0 | 0 | P2, P3 |
-| P5 — Launch worlds: items, food, rides, time (events), matching, donation links | wedge | 81 | 68 | 13 | 0 | 0 | P6 |
+| P5 — Launch worlds: items, food, rides, time (events), matching, donation links | wedge | 82 | 69 | 13 | 0 | 0 | P6 |
 | P6 — Edge Functions of the launch | core | 15 | 11 | 4 | 0 | 0 | P5 |
 | L1 — Housing world | later | 15 | 11 | 4 | 0 | 0 | L2, L3, L4, L5, L6, L7 |
 | L2 — Knowledge world | later | 11 | 9 | 2 | 0 | 0 | L1, L3, L4, L5, L6, L7 |
