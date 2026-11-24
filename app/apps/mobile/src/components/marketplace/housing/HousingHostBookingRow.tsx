@@ -3,7 +3,7 @@
 // party, the guest's message and only the actions the rules allow right now.
 import React from 'react';
 import { View } from 'react-native';
-import { format } from 'date-fns';
+import { format } from 'date-fns/format';
 import { useTranslation } from 'react-i18next';
 import { Text } from '@kc/ui';
 import { hostBookingActions, type HousingHostBooking } from '@kc/domain';

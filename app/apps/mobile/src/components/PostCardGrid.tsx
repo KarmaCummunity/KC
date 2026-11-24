@@ -2,7 +2,7 @@
 import React from 'react';
 import { useRouter } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow } from 'date-fns/formatDistanceToNow';
 import { useTranslation } from 'react-i18next';
 import { resolveDateFnsLocale } from '../lib/resolveDateFnsLocale';
 import { avatarPalette, spacing } from '@kc/ui';
