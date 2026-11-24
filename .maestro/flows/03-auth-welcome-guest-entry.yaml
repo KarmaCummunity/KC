@@ -1,0 +1,37 @@
+# The welcome screen offers a "Browse without an account" link next to sign-in; it opens the
+# read-only guest feed without a session, and the guest feed's sign-in returns to the welcome screen.
+# The former guest preview of the member feed ("הצץ בפיד…", removed in #2245) stays gone.
+# Spec: docs/spec/requirements/01_auth_and_onboarding.md FR-AUTH-001 AC3–AC4, FR-AUTH-014 AC1/AC5 (D186).
+appId: org.karmacommunity.app
+name: Auth — the welcome screen links to read-only guest browsing
+tags: [auth, smoke]
+---
+- launchApp:
+    clearState: true
+    permissions:
+      all: allow
+- runFlow: ../subflows/dismiss-gates.yaml
+# The email entry is the last control of the welcome screen, so once it shows the screen is complete.
+- extendedWaitUntil:
+    visible:
+      id: auth-email-entry
+    timeout: 30000
+- assertVisible:
+    id: auth-guest-entry
+# The removed preview button is matched by its former label: a flow may only use ids that exist in the app.
+- assertNotVisible: "הצץ בפיד.*"
+- tapOn:
+    id: auth-guest-entry
+# The guest feed always renders its sign-in button (below the posts, or the empty/error state).
+- scrollUntilVisible:
+    element:
+      id: guest-sign-in
+    direction: DOWN
+    timeout: 30000
+# Signing in from the guest feed lands on the welcome screen again: browsing created no session.
+- tapOn:
+    id: guest-sign-in
+- extendedWaitUntil:
+    visible:
+      id: auth-email-entry
+    timeout: 20000
