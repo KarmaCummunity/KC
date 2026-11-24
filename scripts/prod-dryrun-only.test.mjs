@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import { stringify } from 'yaml';
 import { checkWorkflow } from './check-deploy-isolation.mjs';
 import { DRYRUN_WORKFLOW } from './release/prod-dryrun-contract.mjs';
-import { DRYRUN_ARGS, verifyLedger, parseDryRunPlan, run } from './release/prod-dryrun-only.mjs';
+import { DRYRUN_ARGS, verifyLedger, parseDryRunPlan, sanitizeCliOutput, run } from './release/prod-dryrun-only.mjs';
 import { RELEASE_PLAN } from './release/prod-dryrun-plan.mjs';
 const clone = () => structuredClone(DRYRUN_WORKFLOW);
 const fails = (mutate) => { const d = clone(); mutate(d); assert.ok(checkWorkflow('prod-migration-dryrun.yml', stringify(d)).length); };
@@ -67,6 +67,30 @@ test('official v2.99.0 formatter fixture parses only pending block', () => {
     fixture.success.stderr + ' • 0070_example.sql\n',
     fixture.success.stderr.replace('DRY RUN: migrations will *not* be pushed to the database.',''),
   ]) assert.throws(()=>parseDryRunPlan(fixture.success.stdout,stderr));
+});
+const live = JSON.parse(readFileSync(new URL('./release/fixtures/cli-2.99.0-dryrun-live-update-notice.json', import.meta.url)));
+test('live v2.99.0 output with the trailing CLI update notice parses to the reviewed pending set', () => {
+  assert.deepEqual(parseDryRunPlan(live.stdout, live.stderr), [...RELEASE_PLAN.pending].sort());
+  const [plan, notice] = live.stderr.split('A new version of Supabase CLI');
+  // Only the exact two-line notice, and only at the very end, is dropped.
+  for (const stderr of [
+    `${plan}A new version of Supabase CLI${notice} • 0094_extra.sql\n`,
+    `${plan}A new version of Supabase CLI${notice.split('\n')[0]}\n`,
+    `${plan}A new version of Supabase CLI is available: soon\nWe recommend updating regularly\n`,
+    `${plan}Would seed these files:\n • seed.sql\nA new version of Supabase CLI${notice}`,
+  ]) assert.throws(() => parseDryRunPlan(live.stdout, stderr), /unrecognized dry-run output/);
+});
+test('sanitized CLI output keeps messages and drops connection strings, keys and passwords', () => {
+  // Fake credential, assembled at runtime so secret scanners do not read a test fixture as a
+  // real connection string (GitGuardian incident on #2625 was this placeholder).
+  const fakeUrl = ['postgresql:', '', `postgres.ref:${'hunter2'}@db.example.invalid:5432`, 'postgres'].join('/');
+  const raw = `failed to connect to ${fakeUrl}\n` +
+    'password=hunter2 token: sbp_abc123 sb_secret_XYZ eyJhbGciOi.eyJzdWIiOi.c2ln host 10.1.2.3\n • 0070_x.sql';
+  const safe = sanitizeCliOutput(raw);
+  for (const leak of ['hunter2', 'sbp_abc123', 'sb_secret_XYZ', 'eyJhbGciOi', '10.1.2.3', 'postgres.ref:']) assert.ok(!safe.includes(leak), leak);
+  assert.match(safe, /0070_x\.sql/);
+  assert.match(safe, /failed to connect to <redacted-url>/);
+  assert.equal(sanitizeCliOutput(Array.from({ length: 100 }, (_, i) => `l${i}`).join('\n'), 5).split('\n').length, 6);
 });
 const CANDIDATE = '21207a0157d98ad8ac248cbf704894ddc9a94656';
 // Exact reviewed candidate inputs, not this checkout's newer manifest/database state.

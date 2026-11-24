@@ -47,6 +47,28 @@ describe('foregroundHandler — handleNotification', () => {
     });
   });
 
+  for (const kind of ['support_message', 'system_message'] as const) {
+    it(`suppresses ${kind} in its exact active thread`, async () => {
+      useActiveScreenStore.setState({ route: '/chat/c_1' });
+      expect(await dispatch({ kind, entity: { type: 'chat', id: 'c_1' } })).toEqual({
+        shouldShowBanner: false,
+        shouldShowList: false,
+        shouldPlaySound: false,
+        shouldSetBadge: false,
+      });
+    });
+
+    it(`shows ${kind} for another thread instead of suppressing all chat pushes`, async () => {
+      useActiveScreenStore.setState({ route: '/chat/c_2' });
+      expect(await dispatch({ kind, entity: { type: 'chat', id: 'c_1' } })).toEqual({
+        shouldShowBanner: true,
+        shouldShowList: true,
+        shouldPlaySound: true,
+        shouldSetBadge: true,
+      });
+    });
+  }
+
   it('shows everything when active route is the inbox (not the specific chat)', async () => {
     useActiveScreenStore.setState({ route: '/chat' });
     const out = await dispatch({ kind: 'chat_message', entity: { type: 'chat', id: 'c_1' } });

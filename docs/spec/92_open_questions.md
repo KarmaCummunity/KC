@@ -10,3 +10,9 @@
 6. **Knowledge questions: answered 2026-11-20.** Give-and-take default (S66); KC admin/moderator review and trusted-contributor direct publication with post-review (S65); v1 links/text only, no uploads (S71); consulting requires complete profile and profession declaration, no ID verification (S70); "KC community completion record", verification code and owner opt-in profile display (S69). → [18](./18_knowledge_world.md)
 
 Also pending: card/detail design depth (D6*); submitted build 36 source/backend verification (historical D8/G7 policy is not provenance); size of extra org vote weight (D49).
+
+
+## Closure checkpoint (2026-11-24, #1850)
+
+- **Recipient unmark and the owner's delivery count:** historical FR-CLOSURE-007 AC3 said to decrement both members' counters. The current baseline `recipient_unmark_self` cancels the recipient mark and moves the post to `deleted_no_recipient`; `035_handoffs.sql` explicitly expects the owner's given count to remain one and the recipient's received count to return to zero. Should unmark mean only "not me" (retain owner delivery), or "not delivered" (reverse owner delivery)? The related copy currently uses the latter framing. No counter or copy change is authorized by this checkpoint. See [closure requirements](./requirements/05_closure_and_reopen.md).
+- **Reopen after a completed or partial handoff:** current single-taker `reopen_post` withdraws its completed mark; #2089 covers the wider policy across partial/multi-recipient handoffs and other world machines. Do not infer that the generic item reopen may undo a completed ride, stay or event. D104's ban on deleting shared completed history does not itself settle the reopen policy.
