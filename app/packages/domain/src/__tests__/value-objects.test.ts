@@ -4,7 +4,9 @@ import {
   EMAIL_PATTERN,
   STREET_NUMBER_PATTERN,
   containsBiographyUrl,
+  MESSAGE_REACTION_TYPES,
   createAddress,
+  isMessageReactionType,
 } from '../value-objects';
 import { ValidationError } from '../errors';
 
@@ -139,5 +141,15 @@ describe('containsBiographyUrl + BIOGRAPHY_URL_PATTERN — FR-PROFILE-014', () =
   it('uses the exported pattern (the function is a thin wrapper, same semantics)', () => {
     const text = 'visit https://x.com';
     expect(containsBiographyUrl(text)).toBe(BIOGRAPHY_URL_PATTERN.test(text));
+  });
+});
+
+describe('isMessageReactionType (KC#873, #2568)', () => {
+  it('accepts every listed reaction type', () => {
+    for (const type of MESSAGE_REACTION_TYPES) expect(isMessageReactionType(type)).toBe(true);
+  });
+
+  it('rejects unknown strings and non-strings', () => {
+    for (const value of ['angry', '', 'LIKE', null, undefined, 1, {}]) expect(isMessageReactionType(value)).toBe(false);
   });
 });

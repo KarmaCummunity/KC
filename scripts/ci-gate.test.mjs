@@ -226,3 +226,18 @@ test('a PR into dev skips a heavy lane only when the plan says false explicitly'
   assert.deepEqual(evaluateGate({ ...DEV_PR, needs, plan: { ...PLAN, bundles: false } }), []);
   assert.deepEqual(evaluateGate({ ...DEV_PR, needs, plan: PLAN }), ['job "bundles" is not in the change detector\'s plan']);
 });
+
+// #2613 (23 Nov 2026): Maestro is required in the dev merge queue on the group head. A merge group
+// whose plan needs it can never pass with it skipped, cancelled, failed or unwired; only a plan that
+// leaves it out (the group touches nothing the journeys see) lets it skip.
+test('a merge group into dev that needs the maestro lane cannot pass without it', () => {
+  const group = { draft: false, event: 'merge_group', ref: 'refs/heads/gh-readonly-queue/dev/pr-1', baseRef: 'dev' };
+  const full = { changes: ok, static: ok, frontend: ok, backend: ok, edge: ok, bundles: ok, hygiene: skipped };
+  const plan = { hygiene: false, static: true, frontend: true, backend: true, edge: true, bundles: true, maestro: true };
+  assert.deepEqual(evaluateGate({ ...group, needs: { ...full, maestro: skipped }, plan }), ['job "maestro" is needed for this change but was skipped']);
+  assert.deepEqual(evaluateGate({ ...group, needs: { ...full, maestro: { result: 'cancelled' } }, plan }), ['job "maestro" cancelled']);
+  assert.deepEqual(evaluateGate({ ...group, needs: full, plan }), ['job "maestro" is planned but missing from the gate\'s needs: list']);
+  assert.deepEqual(evaluateGate({ ...group, needs: { ...full, maestro: ok }, plan }), []);
+  const { maestro, ...noJourneys } = plan;
+  assert.deepEqual(evaluateGate({ ...group, needs: { ...full, maestro: skipped }, plan: noJourneys }), []);
+});
