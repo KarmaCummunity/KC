@@ -3,6 +3,7 @@
 // settings refuses its own requests and the rest of the API works.
 
 import { ApiConfigError, type Env, parseInteger, readVariable } from './configReader';
+import { parsePortRollout, type PortRolloutRules } from './portRolloutConfig';
 
 export interface WhatsAppConfig {
   /** The Graph API token. A secret; null: nothing is sent. */
@@ -72,6 +73,8 @@ export interface StorageConfig {
 export interface FeatureConfig {
   /** Where files are stored (ADR-012). */
   readonly storage: StorageConfig;
+  /** Who each served port is served to; empty: everyone (`portRolloutConfig.ts`). */
+  readonly portRollout: PortRolloutRules;
   /** The WhatsApp channel through Meta's Cloud API. */
   readonly whatsapp: WhatsAppConfig;
   /** Who translates member content (FR-TRANSLATE-002). */
@@ -154,6 +157,7 @@ export function loadFeatureConfig(env: Env): FeatureConfig {
   const geminiModel = readVariable(env, 'GEMINI_MODEL') ?? DEFAULT_GEMINI_MODEL;
   return {
     storage: parseStorage(env),
+    portRollout: parsePortRollout(env),
     whatsapp: {
       cloudApiToken: readVariable(env, 'WHATSAPP_CLOUD_API_TOKEN') ?? null,
       phoneNumberId: readVariable(env, 'WHATSAPP_PHONE_NUMBER_ID') ?? null,

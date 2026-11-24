@@ -38,6 +38,24 @@ export interface PortCallResponse {
  */
 export interface PortManifest {
   readonly ports: Readonly<Record<string, readonly string[]>>;
+  /** Who each port is served to, when that is not everyone. A port with no entry is served to all. */
+  readonly rollout?: Readonly<Record<string, PortRollout>>;
+}
+
+/**
+ * Narrows who a served port is served to, so a port can be moved behind the
+ * API for a share of the members first and for everyone later, again without
+ * a new app build. The app applies it; it is a routing choice, not access.
+ */
+export interface PortRollout {
+  /**
+   * Share of the members, 0 to 100. A member's place is a stable hash of
+   * their id and the port, so whoever is in at 10 is still in at 50. A
+   * visitor is served only at 100.
+   */
+  readonly percent?: number;
+  /** Lowest app version (`MAJOR.MINOR.PATCH`) the port is served to. */
+  readonly minAppVersion?: string;
 }
 
 /** Path of the manifest, relative to the API base URL. */

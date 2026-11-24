@@ -6,6 +6,7 @@ import {
   PORT_ERROR_CODE,
   type PortCallResponse,
   type PortManifest,
+  type PortRollout,
   reviveDates,
   serializePortError,
 } from '@kc/infrastructure-api';
@@ -20,6 +21,7 @@ import generatedArgShapes from './portArgShapes.generated.json';
 import { HostedFunctions } from './hostedFunctions';
 import { PortClients } from './portClients';
 import type { PortAccess, PortDefinition } from './portDefinition';
+import { PORT_ROLLOUT } from './portRollout';
 import { VisitorCache } from './visitorCache';
 
 /** Argument shapes of every catalog port method, generated from the port interfaces. */
@@ -64,11 +66,13 @@ export class PortGatewayController {
     @Inject(RateLimiter) private readonly rateLimiter: RateLimiter,
     @Inject(VisitorCache) private readonly visitorCache: VisitorCache,
     @Inject(HostedFunctions) private readonly functions: HostedFunctions,
+    @Inject(PORT_ROLLOUT) private readonly rollout: Readonly<Record<string, PortRollout>>,
   ) {}
 
   /**
-   * What this API serves, for the app's router. Listing is not access: a
-   * `member` method still needs a token when it is called.
+   * What this API serves, for the app's router, and to whom when that is not
+   * everyone (`rollout`). Listing is not access: a `member` method still
+   * needs a token when it is called.
    */
   @Get()
   manifest(): PortManifest {
@@ -76,7 +80,7 @@ export class PortGatewayController {
     for (const [name, port] of this.ports) {
       ports[name] = Object.keys(port.methods).filter((method) => port.methods[method] !== 'not_served');
     }
-    return { ports };
+    return Object.keys(this.rollout).length > 0 ? { ports, rollout: this.rollout } : { ports };
   }
 
   @Post(':port/:method')

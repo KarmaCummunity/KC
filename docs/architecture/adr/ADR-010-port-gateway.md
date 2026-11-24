@@ -74,6 +74,17 @@ A ported function may need to write as the service role, as it did with the serv
 
 State on 2026-11-23: 79 ports (375 methods) are declared and wrapped in the app. Six of them have shared contract suites (`user`, `post`, `savedPosts`, `chat`, `report`: 57 cases), which pass end to end (remote port → HTTP → gateway → adapter → engine → the real schema, as the calling member) and on the engine alone. The other ports have no contract of their own yet; they are covered by the schema audit (every function and table they name exists in a shape the engine serves), by the access checks, and by the all-ports run: every served method is called once on the real schema with well-typed sample arguments generated from its shapes, and the run fails on any request the engine cannot serve, any SQL it builds wrongly, any missing table, column or function, and any crash in an adapter. On 2026-11-21 it made 360 calls: no engine fault, no crash, and 175 refusals by the database that all depend on the data (a rule, no permission, a constraint, a meaningless sample value). In production the same engine faults are logged as errors with the request's path and never its values.
 
+## Who a served port is served to
+
+A port the API serves is, by default, served to every app build that is pointed at the API. Two settings narrow that, both on the server, so a move can be staged and undone without a new build:
+
+- **A share of the members.** The manifest may carry `rollout: { <port>: { percent } }`. The app serves a member from the API when their place (a stable hash of their id and the port's name, 0 to 99) is below the share. Whoever is in at 10 is in at 50; a signed-out visitor is served only at 100. `percent: 0` takes a port off the API for everyone within the manifest's lifetime (five minutes).
+- **A lowest app version.** `minAppVersion` keeps a port on the adapters in place for builds older than the one that is known to work with it.
+
+The rules are configuration (`KC_PORT_ROLLOUT`, a JSON object by port name; `*` is the rule of every port without its own). A rule that names a port the API does not have, or carries a field it does not know, stops the server at start: a typo must not turn a staged move into "everyone". The rules choose a route; they are not access, which stays with the token and the database.
+
+**The app never waits on the API to start.** The manifest is fetched with a bound (two seconds). A manifest that does not arrive in time, or an API that is down, means nothing is served: every port uses the adapter in place, and the next attempt comes thirty seconds later, in the background.
+
 ## Consequences and limits
 
 - **Arguments are checked against the port's types.** `scripts/generate-port-args.mjs` reads every catalog port with the TypeScript checker and writes each method's parameter shapes to `portArgShapes.generated.json`; the gateway refuses a call that does not match with `400 invalid_arguments` before any adapter code runs. The shapes are never stricter than the types: what cannot be described is accepted, and an object may carry fields the server does not know. A test fails when a port interface changes without the file (`pnpm --filter @kc/api generate:port-args`). Postgres still validates what reaches SQL.

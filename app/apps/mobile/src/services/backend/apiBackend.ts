@@ -3,8 +3,10 @@
 // With EXPO_PUBLIC_KC_API_URL unset (the default) `viaApi` returns the adapter it was given:
 // the app talks to Supabase exactly as before. With it set, each port method goes to the API
 // when the API's manifest lists it, and to the same adapter otherwise or while the API is
-// unreachable. What is served is the server's decision, so a port moves behind the API, or
-// back, without a new app build.
+// unreachable or slow to answer (the router waits a bounded time for the manifest, so a
+// silent API never holds up the app's start). What is served, and to which share of the
+// members and from which app version, is the server's decision, so a port moves behind the
+// API, or back, without a new app build.
 
 import {
   type ApiRealtimeHost,
@@ -40,13 +42,32 @@ async function getAccessToken(forceRefresh: boolean): Promise<string | null> {
   return data.session?.access_token ?? null;
 }
 
+/**
+ * The signed-in member's id, or null when signed out. The router asks only for a port the
+ * server serves to a share of the members: the share a member falls in is a hash of this id.
+ */
+async function getMemberId(): Promise<string | null> {
+  const { pickAuthStorage } = await import('../authSecureStorage');
+  const { data } = await getSupabaseClient({ storage: pickAuthStorage() }).auth.getSession();
+  return data.session?.user.id ?? null;
+}
+
+/**
+ * This build's version (from `app/VERSION` at build time), or null when the build does not
+ * expose its config. Loaded on first use, like the session storage above.
+ */
+async function getAppVersion(): Promise<string | null> {
+  const { default: Constants } = await import('expo-constants');
+  return Constants.expoConfig?.version?.trim() || null;
+}
+
 let router: PortRouter | null | undefined;
 
 function getRouter(): PortRouter | null {
   if (router !== undefined) return router;
   const baseUrl = getApiBaseUrl();
   router = baseUrl
-    ? createPortRouter({ baseUrl, transport: createPortTransport({ baseUrl, getAccessToken }) })
+    ? createPortRouter({ baseUrl, transport: createPortTransport({ baseUrl, getAccessToken }), getMemberId, getAppVersion })
     : null;
   return router;
 }

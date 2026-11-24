@@ -7,8 +7,12 @@ const auth = {
 
 vi.mock('@kc/infrastructure-supabase', () => ({ getSupabaseClient: () => ({ auth }) }));
 vi.mock('../../authSecureStorage', () => ({ pickAuthStorage: () => undefined }));
+/** The build's config as `expo-constants` exposes it; a test changes the version it reports. */
+const constants: { expoConfig?: { version?: string } } = { expoConfig: { version: '1.6.0' } };
+vi.mock('expo-constants', () => ({ default: constants }));
 
 import type { ISavedPostsRepository } from '@kc/application';
+import { rolloutBucket } from '@kc/infrastructure-api';
 import { getApiBaseUrl, resetApiBackendForTests, viaApi } from '../apiBackend';
 
 /** The adapter in place: records the calls that reach it. */
@@ -117,5 +121,61 @@ describe('viaApi', () => {
 
     const call = fetchMock.mock.calls[1] as [string, RequestInit];
     expect(new Headers(call[1].headers).has('authorization')).toBe(false);
+  });
+
+  describe('when the server serves a port to some of the app', () => {
+    /** A member whose place in the savedPosts rollout is neither first nor last. */
+    const memberId = ['member-1', 'member-2', 'member-3', 'member-4'].find((id) => rolloutBucket(id, 'savedPosts') % 99 !== 0) as string;
+    const place = rolloutBucket(memberId, 'savedPosts');
+
+    /** One call with the manifest carrying `rollout` for savedPosts; true when it went to the API. */
+    const wentToApi = async (rollout: Record<string, unknown>) => {
+      resetApiBackendForTests();
+      fetchMock.mockReset();
+      vi.stubEnv('EXPO_PUBLIC_KC_API_URL', 'https://api.kc.test');
+      fetchMock.mockResolvedValueOnce(json(200, { ports: { savedPosts: ['savePost'] }, rollout: { savedPosts: rollout } })).mockResolvedValueOnce(json(200, {}));
+      const { adapter, savePost } = localAdapter();
+      await viaApi('savedPosts', adapter).savePost('p1');
+      return savePost.mock.calls.length === 0;
+    };
+
+    beforeEach(() => {
+      constants.expoConfig = { version: '1.6.0' };
+      auth.getSession.mockResolvedValue({ data: { session: { access_token: 'token-1', user: { id: memberId } } } });
+    });
+
+    it('routes the signed-in member by their place in the share', async () => {
+      expect(await wentToApi({ percent: place + 1 })).toBe(true);
+      expect(await wentToApi({ percent: place })).toBe(false);
+    });
+
+    it('keeps a signed-out visitor on the adapter in place until the share is everyone', async () => {
+      auth.getSession.mockResolvedValue({ data: { session: null } });
+
+      expect(await wentToApi({ percent: 99 })).toBe(false);
+      expect(await wentToApi({ percent: 100 })).toBe(true);
+    });
+
+    it('routes by the version of this build', async () => {
+      expect(await wentToApi({ minAppVersion: '1.6.0' })).toBe(true);
+      expect(await wentToApi({ minAppVersion: '1.6.1' })).toBe(false);
+
+      constants.expoConfig = undefined;
+      expect(await wentToApi({ minAppVersion: '0.0.1' })).toBe(false);
+    });
+  });
+
+  it('does not hold up a call when the API never answers the manifest', async () => {
+    vi.stubEnv('EXPO_PUBLIC_KC_API_URL', 'https://api.kc.test');
+    vi.useFakeTimers();
+    fetchMock.mockReturnValueOnce(new Promise(() => undefined));
+    const { adapter, savePost } = localAdapter();
+
+    const call = viaApi('savedPosts', adapter).savePost('p1');
+    await vi.advanceTimersByTimeAsync(2_000);
+    await call;
+    vi.useRealTimers();
+
+    expect(savePost).toHaveBeenCalledWith('p1');
   });
 });

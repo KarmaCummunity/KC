@@ -3,6 +3,9 @@ import { HOSTED_FUNCTIONS, type HostedFunction, type HostedFunctionSet, NO_HOSTE
 import { HostedFunctions } from './hostedFunctions';
 import type { PortDefinition } from './portDefinition';
 import { PORT_DEFINITIONS, PortGatewayController } from './portGateway.controller';
+import { PORT_ROLLOUT, resolveRollout } from './portRollout';
+import type { ApiConfig } from '../config/apiConfig';
+import { API_CONFIG } from '../config/apiConfig.module';
 
 /** Two definitions claim the same wire name. */
 export class DuplicatePortError extends Error {
@@ -39,10 +42,11 @@ export function indexPorts(definitions: readonly PortDefinition[]): ReadonlyMap<
 @Module({})
 export class PortGatewayModule {
   /**
-   * @param definitions Every port the API serves. Needs the database, identity and port clients modules (all global).
+   * @param definitions Every port the API serves. Needs the configuration, database, identity and port clients modules (all global).
    * @param functions The Edge Functions this server has taken over, which the hosted adapters invoke by name.
    */
   static forRoot(definitions: readonly PortDefinition[], functions: HostedFunctionSet = NO_HOSTED_FUNCTIONS): DynamicModule {
+    const ports = indexPorts(definitions);
     return {
       module: PortGatewayModule,
       controllers: [PortGatewayController],
@@ -52,7 +56,9 @@ export class PortGatewayModule {
         // Collects the function instances into the one list the registry indexes.
         { provide: HOSTED_FUNCTIONS, useFactory: (...hosted: HostedFunction[]) => hosted, inject: [...functions.functions] },
         HostedFunctions,
-        { provide: PORT_DEFINITIONS, useValue: indexPorts(definitions) },
+        { provide: PORT_DEFINITIONS, useValue: ports },
+        // Resolved once at start: a rule for a port that does not exist stops the process there.
+        { provide: PORT_ROLLOUT, inject: [API_CONFIG], useFactory: (config: ApiConfig) => resolveRollout(ports.keys(), config.portRollout) },
       ],
     };
   }

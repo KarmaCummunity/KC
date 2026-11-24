@@ -1,5 +1,6 @@
 // @kc/infrastructure-api: the app's adapters for KC's own API (ADR-009, ADR-010).
 export { createPortRouter, type PortRouter, type PortRouterOptions } from './client/portRouter';
+export { isAtLeastVersion, isServedTo, rolloutBucket, type RolloutSubject } from './client/portRollout';
 export { createRemotePort, PortMethodNotRoutedError, type RemotePortOptions } from './client/remotePort';
 export {
   createPortTransport,
@@ -23,6 +24,7 @@ export {
   type PortCallResponse,
   type PortErrorWire,
   type PortManifest,
+  type PortRollout,
   portCallPath,
   reviveDates,
 } from './wire/portWire';

@@ -3,6 +3,8 @@ import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { type TestIssuer, USER_A } from '../../../__tests__/support/testTokens';
 import { DuplicatePortError, indexPorts } from '../portGateway.module';
+import type { PortManifest } from '@kc/infrastructure-api';
+import { UnknownRolloutPortError } from '../portRollout';
 import { callShelf, createShelfApp, resetShelf, shelf } from './shelfPort';
 
 describe('port gateway over HTTP', () => {
@@ -144,3 +146,21 @@ describe('port gateway over HTTP', () => {
     });
   });
 });
+
+describe('port gateway manifest with rollout rules', () => {
+  it('publishes each port\'s own rule, the default for the others, and nothing for a port neither covers', async () => {
+    const { app } = await createShelfApp({ portRollout: { '*': { percent: 0 }, savedPosts: { percent: 25, minAppVersion: '1.6.0' } } });
+
+    const manifest = (await app.inject({ method: 'GET', url: '/v1/ports' })).json<PortManifest>();
+    await app.close();
+
+    expect(manifest.rollout).toEqual({ shelf: { percent: 0 }, savedPosts: { percent: 25, minAppVersion: '1.6.0' }, legalDocument: { percent: 0 } });
+    // The rules narrow who is routed here; what is served is unchanged.
+    expect(Object.keys(manifest.ports)).toEqual(['shelf', 'savedPosts', 'legalDocument']);
+  });
+
+  it('refuses to start with a rule for a port it does not have', async () => {
+    await expect(createShelfApp({ portRollout: { savedPost: { percent: 10 } } })).rejects.toBeInstanceOf(UnknownRolloutPortError);
+  });
+});
+

@@ -1,3 +1,4 @@
+import type { ApiConfig } from '../../config/apiConfig';
 import { FollowError } from '@kc/application';
 import { Global, Module } from '@nestjs/common';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
@@ -162,7 +163,8 @@ export function resetShelf(): void {
 }
 
 /** An app that serves the shelf port. The shelf never queries, so the database behind it is inert. */
-export async function createShelfApp(): Promise<{ app: NestFastifyApplication; issuer: TestIssuer }> {
+export async function createShelfApp(overrides: Partial<ApiConfig> = {}): Promise<{ app: NestFastifyApplication; issuer: TestIssuer }> {
+  const config = testConfig(overrides);
   const issuer = await createTestIssuer();
 
   @Global()
@@ -179,11 +181,11 @@ export async function createShelfApp(): Promise<{ app: NestFastifyApplication; i
   class FakePlatformModule {}
 
   @Module({
-    imports: [ApiConfigModule.forRoot(testConfig()), FakePlatformModule, PortClientsModule, PortGatewayModule.forRoot([shelf, savedPostsDouble, legalDocumentDouble])],
+    imports: [ApiConfigModule.forRoot(config), FakePlatformModule, PortClientsModule, PortGatewayModule.forRoot([shelf, savedPostsDouble, legalDocumentDouble])],
   })
   class TestModule {}
 
-  return { app: await createApp(TestModule, testConfig()), issuer };
+  return { app: await createApp(TestModule, config), issuer };
 }
 
 /** Calls a shelf method over HTTP; `authorization: null` is a signed-out visitor. */
