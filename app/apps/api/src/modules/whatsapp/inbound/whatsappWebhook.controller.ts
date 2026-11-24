@@ -7,13 +7,14 @@ import { PortClients } from '../../../platform/ports/portClients';
 import { type RawBodyRequest, readWebhook, sendAnswer } from '../../../platform/webhooks/webhookRequest';
 import { BackgroundWork } from '../../../platform/background/backgroundWork';
 import { StorageAdmin } from '../../../platform/storage/storageAdmin';
+import { runAgent } from '../agent/run';
 import { type FetchFn } from '../metaClient';
 import type { ProPhoto, RpcFn } from './inboundMessages';
 import { handleProPhoto, type PhotoDeps, POST_PHOTO_BUCKET } from './photo';
 import { detectLang } from './replies';
 import { receiveDelivery, verifySubscription } from './whatsappWebhook';
 
-/** Injection token of the `fetch` the webhook downloads a member's photo with. */
+/** Injection token of the `fetch` the webhook reaches the provider's media addresses and the model with. */
 export const WHATSAPP_INBOUND_FETCH = Symbol('WHATSAPP_INBOUND_FETCH');
 /** A photo never changes under its name, so it may be cached for good. */
 const IMMUTABLE_CACHE_CONTROL = 'public, max-age=31536000, immutable';
@@ -53,13 +54,27 @@ export class WhatsAppWebhookController {
     };
     const answer = await receiveDelivery(readWebhook(request), {
       rpc,
-      // The provider is answered at once; the photo's outcome reaches the member as a queued reply.
+      // The provider is answered at once; the agent's answer and the photo's outcome reach the member as queued replies.
+      onProMessage: (message) => Promise.resolve(this.background.start('whatsapp agent', () => this.answer(rpc, message))),
       onProPhoto: (photo) => Promise.resolve(this.background.start('whatsapp photo', () => this.attachPhoto(rpc, photo))),
       verifyToken: this.config.whatsapp.verifyToken,
       appSecret: this.config.whatsapp.appSecret,
       report: (error) => this.logger.error({ err: error }, 'whatsapp delivery failed'),
     });
     return sendAnswer(reply, answer);
+  }
+
+  /** #1091: the agent answers a linked Pro member's text. With no model key configured it does nothing. */
+  private answer(rpc: RpcFn, message: { waId: string; userId: string; text: string; recordId: string | null }): Promise<unknown> {
+    const { apiKey, model } = this.config.gemini;
+    return runAgent(
+      {
+        rpc,
+        gemini: apiKey ? { apiKey, model, fetch: this.fetchFn } : null,
+        ...(this.config.appBaseUrl ? { appBaseUrl: this.config.appBaseUrl } : {}),
+      },
+      message,
+    );
   }
 
   /** D158: a linked Pro member's photo completes their waiting draft, on KC's own storage. */

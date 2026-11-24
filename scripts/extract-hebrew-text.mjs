@@ -55,6 +55,7 @@ const SKIP_HEBREW_SCAN_EXACT_RELS = new Set([
   "app/apps/api/src/modules/whatsapp/inbound/replies.ts",
   "app/apps/api/src/modules/whatsapp/inbound/link.ts",
   "app/apps/api/src/modules/whatsapp/inbound/photoReplies.ts",
+  "app/apps/api/src/modules/whatsapp/agent/publishOutcomeText.ts",
   // Generated copy of the Hebrew notification texts (scripts/generate-notification-kinds.mjs):
   // the API's push worker renders push text from the same strings the app shows.
   "app/apps/api/src/modules/notifications/strings.he.generated.json",
