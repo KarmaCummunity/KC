@@ -77,6 +77,12 @@ Also added to [93](./93_implementation_gaps.md).
 - **CI script tests.** Before this PR only 2 of the 8 `scripts/*.test.mjs` suites ran in CI, and two Edge Function test files (`delete-account`, `revenuecat-webhook`) were never executed. Both are now wired.
 
 
+## Responsive requirements partial checkpoint (2026-11-24, #1862)
+
+Static review at dev `89f047f4`, all six FR IDs and39AC numbers retained. See the per-AC evidence table in `requirements/17_responsive_desktop.md`. Shell primitives/root wiring are present; preview flag semantics and private aside context descriptions corrected. Split-chat and split-auth wiring remain planned. Eight focused shell/inset/keyboard test files (42 tests) passed locally.
+
+This does not close #1862. Full device/large-text acceptance, named scaling constants, historical typography minima versus current tokens, and exact viewport/config claims remain unverified or inconsistent. No approved requirement was waived and no UI implementation changed. Scoped D/S/G/book searches did not supply a decision settling those gaps; do not silently replace a requirement with current code.
+
 ## Translation requirements checkpoint (2026-11-24, #1863)
 
 Scoped static reconciliation at dev `89f047f4`; no live flags, database, provider or deployed client inspected. All six `FR-TRANSLATE-*` IDs and existing AC numbers are retained. No product decision or rollout approval is added.
