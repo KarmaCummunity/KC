@@ -1,4 +1,4 @@
-import type { Message } from '@kc/domain';
+import type { Message, MessageReactionType } from '@kc/domain';
 
 /** What the member's inbox topic tells: some chat of theirs changed (ids only, no content). */
 export interface InboxChange {
@@ -31,6 +31,13 @@ export interface ChatChange {
   readonly anchorPostId: string | null;
 }
 
+/** A member set, changed or (with a null type) cleared their reaction to a message (KC#873). */
+export interface MessageReactionChange {
+  readonly messageId: string;
+  readonly userId: string;
+  readonly reactionType: MessageReactionType | null;
+}
+
 export interface ChatStreamCallbacks {
   onMessage: (m: Message) => void;
   /**
@@ -41,6 +48,8 @@ export interface ChatStreamCallbacks {
   // Fires when the chat's pinned post changes (FR-CHAT-014 AC6). Optional — consumers that
   // only care about messages can omit it.
   onChatChanged?: (change: ChatChange) => void;
+  /** A reaction in this chat changed (#2568): apply it live instead of re-reading reactions. */
+  onReaction?: (change: MessageReactionChange) => void;
   onError: (err: Error) => void;
   /**
    * The channel rejoined after a failure. Messages sent while it was down were not delivered

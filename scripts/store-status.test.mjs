@@ -60,6 +60,10 @@ test('guarded fetch records only allowlisted ASC GETs (injected, no network)', a
   assert.equal(status.reviewSubmissions[0].id, '4f86322a');
   assert.equal(status.appStoreVersions[0].buildNumber, '36');
   assert.equal(status.builds[0].processingState, 'VALID');
+  const buildsCall = calls.find((c) => new URL(c.url).pathname.endsWith('/builds'));
+  const q = new URL(buildsCall.url).searchParams;
+  assert.equal(q.get('sort'), '-uploadedDate');
+  assert.equal(q.get('filter[app]'), '123');
   assert.ok(calls.length >= 3);
   for (const c of calls) {
     assert.equal(c.method, 'GET');

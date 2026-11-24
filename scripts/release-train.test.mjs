@@ -152,3 +152,17 @@ test('release-train.yml guards', () => {
   assert.ok(!/secrets:\s*inherit/.test(text));
   assert.ok(!/environment:\s*production/.test(text), 'never holds the production environment itself');
 });
+
+test('release PR body carries justifications that pass the strict release scan (DROP FUNCTION)', async () => {
+  const { checkReleaseMigrations } = await import('./check-migration-safety.mjs');
+  const { migrationSafetyLines } = await import('./release-train-lib.mjs');
+  const files = [{ name: '0999_replace_fn.sql', content: 'drop function kc_private.f(integer);\n' }];
+  assert.ok(checkReleaseMigrations(files, '').length > 0, 'unjustified drop fails the strict scan');
+  const lines = migrationSafetyLines([
+    '# notes', '    Migration safety: <file name ending in sql> — <why>',
+    'Migration safety: 0999_replace_fn.sql — only the scheduled job calls it, no client grant.',
+  ].join('\n'));
+  assert.equal(lines.length, 1, 'prose and the format example are not copied');
+  assert.deepEqual(checkReleaseMigrations(files, ['Summary', ...lines].join('\n')), []);
+  assert.ok(checkReleaseMigrations(files, 'Migration safety: 0998_other.sql — unrelated reason here').length > 0, 'justification is per file');
+});

@@ -11,6 +11,7 @@
 | [adr/ADR-005-library-evaluation-matrix.md](./adr/ADR-005-library-evaluation-matrix.md) | Library evaluation matrix: navigation, forms, maps, media, animation, i18n, lists, dependabot groups (#1024) |
 | [adr/ADR-006-one-post-model.md](./adr/ADR-006-one-post-model.md) | One Post model: six-step plan from `listings` to `posts` + `ride_post_details` + `post_handoffs` (G1, D2 / D19; `D-214`) |
 | [adr/ADR-007-event-group-audience.md](./adr/ADR-007-event-group-audience.md) | Audience of an event ride group: fail-closed membership (`OnlyMe` + membership clause), reader inventory test, per-group realtime (Proposed, `G62`) |
+| [backend-migration-plan.md](./backend-migration-plan.md) | Backend move off Supabase: inventory (client + kc-dev), review of PR #2576, target shape, rollout gates and first steps (companion to ADR-009/010, epic #1496) |
 | [state-machines.md](./state-machines.md) | Every status lifecycle: states, copies, divergences, and the wave order onto the FSM kernel (`fsm_state` / `fsm_edge` / `fsm_assert_transition`; gap `G61`) |
 
 Environment details (branches, hosting, env vars by name): [`../SSOT/ENVIRONMENTS.md`](../SSOT/ENVIRONMENTS.md). Operational runbooks: [`../SSOT/OPERATOR_RUNBOOK.md`](../SSOT/OPERATOR_RUNBOOK.md). Secrets are referenced **by name only**.
