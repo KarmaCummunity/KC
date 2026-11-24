@@ -130,9 +130,31 @@ jobs:
           # A re-run of the run uploads it again under the same name.
           overwrite: true
 
+  # Merge-queue head first (scripts/maestro-queue-turn.mjs): a merge_group run waits here, before
+  # its emulator job asks for the emulator group, while an earlier queue entry still has Maestro to
+  # finish. It holds neither the emulator nor a kc-dev slot while it waits, and it runs alongside
+  # the APK build. Any other caller passes straight through, and a failed lookup goes on (fail-open).
+  queue-turn:
+    name: maestro · queue turn
+    runs-on: ubuntu-latest
+    timeout-minutes: 160
+    permissions:
+      contents: read
+      actions: read # reads the earlier entries' CI jobs
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: scripts
+      - name: Wait for the merge-queue entries ahead to finish Maestro
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          MERGE_GROUP_BASE_REF: ${{ github.event.merge_group.base_ref }}
+          MERGE_GROUP_HEAD_SHA: ${{ github.event.merge_group.head_sha }}
+        run: if [ -f scripts/maestro-queue-turn.mjs ]; then node scripts/maestro-queue-turn.mjs; else echo 'no queue-turn script in this tree'; fi
+
   android-e2e:
     name: maestro · android emulator
-    needs: build-apk
+    needs: [build-apk, queue-turn]
     runs-on: ubuntu-latest
     # One emulator suite at a time across every caller (PR opt-ins, merge groups, dev health). A run
     # waits here as a queued job, which holds no runner; `queue: max` keeps every waiter in FIFO order
