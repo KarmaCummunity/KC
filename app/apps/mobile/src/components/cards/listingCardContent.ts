@@ -35,7 +35,7 @@ function rideDetails(
   if (ride.seats != null) {
     details.push({
       icon: 'people-outline',
-      text: t(rideSeatCountKey(isRequest ? 'passengers' : 'seats', ride.seats), { count: ride.seats }),
+      text: t(rideSeatCountKey(isRequest ? 'passengers' : 'seats'), { count: ride.seats }),
     });
   }
   return details;
