@@ -338,3 +338,26 @@ test('prsThatChangedReviewed and reviewedAt read the list and its PRs from git',
     assert.deepEqual(remaining, []);
   });
 });
+
+// CI-owner re-review at b814152b: each decoy zeroes the structural OLD count, so
+// only dev's textual count can see the removed expect. Flag on either measure.
+function assertOldMisparseStillFlagged(decoy) {
+  const three = 'expect(a).toBe(1);\nexpect(b).toBe(2);\nexpect(c).toBe(3);';
+  const two = 'expect(a).toBe(1);\nexpect(b).toBe(2);';
+  for (const newText of [`${decoy}\n${two}`, two]) {
+    const file = mod('app/a.test.tsx', { oldText: `${decoy}\n${three}`, newText });
+    assert.ok(findViolations([file]).some((v) => v.includes('removes 1 assertion(s) net')), `${decoy} -> ${newText}`);
+  }
+}
+
+test('removed assertion is flagged after an old-side regex-after-`)` decoy', () => {
+  assertOldMisparseStillFlagged("if (ok) /'/.test(s);");
+});
+
+test('removed assertion is flagged after an old-side generic-arrow decoy', () => {
+  assertOldMisparseStillFlagged('const f = <T,>(x: T) => x; const s = "\'";');
+});
+
+test('removed assertion is flagged after an old-side angle-bracket type-assertion decoy', () => {
+  assertOldMisparseStillFlagged('const x = <any>y; const s = "don\'t";');
+});

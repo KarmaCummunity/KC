@@ -199,8 +199,10 @@ export function findViolations(files) {
 export function findViolationRecords(files) {
   const out = [];
   const plain = (text) => ({ path: null, line: null, text });
-  let before = 0;
-  let after = 0;
+  // Fail closed on EITHER measure: dev's textual regex count and the structural
+  // count are tracked separately, so a misparse of the old side can never hide
+  // a removed assertion (never weaker than dev; TD-222 / #1818).
+  const sum = { s: [0, 0], t: [0, 0] };
   const losers = [];
   for (const file of files) {
     const { wasTest, isTestNow } = testSides(file);
@@ -213,13 +215,20 @@ export function findViolationRecords(files) {
     if (VITEST_CONFIG.test(file.path)) out.push(...loosenedLimits(file, THRESHOLD, (o, n) => n < o, 'coverage threshold').map(plain));
     out.push(...loosenedLimits(file, MAX_WARNINGS, (o, n) => n > o, '--max-warnings').map(plain));
     // A deleted test is already a violation; count only files that survive.
-    const old = wasTest && file.newPath !== null ? countAssertions(file.oldPath, file.oldText) : 0;
-    const now = isTestNow ? countAssertions(file.newPath, file.newText) : 0;
-    before += old;
-    after += now;
-    if (now < old) losers.push(file.path);
+    const keep = wasTest && file.newPath !== null;
+    let lost = false;
+    for (const [k, count] of [['s', countAssertions], ['t', countAssertionsTextual]]) {
+      const old = keep ? count(file.oldPath, file.oldText) : 0;
+      const now = isTestNow ? count(file.newPath, file.newText) : 0;
+      sum[k][0] += old;
+      sum[k][1] += now;
+      lost ||= now < old;
+    }
+    if (lost) losers.push(file.path);
   }
-  if (after < before) {
+  const drop = ['t', 's'].map((k) => sum[k]).find(([b, a]) => a < b);
+  if (drop) {
+    const [before, after] = drop;
     out.push(plain(`removes ${before - after} assertion(s) net from tests (${before} before, ${after} after; files losing some: ${losers.join(', ')})`));
   }
   return out;
