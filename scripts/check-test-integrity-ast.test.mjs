@@ -48,3 +48,15 @@ test('scanJsTestSource still sees option markers and x-prefixed tests', () => {
   const x = scanJsTestSource('x' + "it('x', () => { expect(1).toBe(1); });");
   assert.ok(x.markers.some((m) => m.why.includes('x-prefix')));
 });
+
+test('regex literals and JSX text do not swallow a following it.skip', () => {
+  const sk = '.sk' + 'ip';
+  const skip = `it${sk}('x', () => {});`;
+  for (const decoy of ["const r = /'/;", "const r = /[/]'/;", 'function f(){ return /"/.test(x) }', "const el = <div>don't</div>;"]) {
+    const hits = findJsWeakening(`${decoy}\n${skip}\n`);
+    assert.ok(
+      hits.some((h) => h.why.includes('skip / focus') && h.lineText.includes(sk)),
+      `structural scan must still see skip after: ${decoy}`,
+    );
+  }
+});

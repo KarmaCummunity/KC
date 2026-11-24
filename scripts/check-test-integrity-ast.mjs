@@ -1,9 +1,9 @@
 // Lightweight JS/TS structural scan for the test-integrity guard (TD-222 / #1818).
 // Dependency-free: the integrity CI job runs this judge without `npm ci`.
 //
-// Replaces regex-on-text for assertion counts and skip/return markers so that
-// strings and comments are not misread, and so `if (cond) return;` / `return; x`
-// are visible as bare returns. Also flags empty / assertion-free test callbacks.
+// Adds findings the line-regex set cannot see (empty tests, early / same-line
+// bare returns). Marker detection in check-test-integrity.mjs ORs this with
+// JS_MARKERS so a tokenizer misparse can never hide a regex hit (fail closed).
 
 const ASSERT_ROOTS = new Set(['expect', 'assert']);
 const MARKER_MEMBERS = new Set(['skip', 'skipIf', 'runIf', 'only', 'todo', 'fixme', 'ignore']);
@@ -98,7 +98,7 @@ function analyze(tokens, source) {
       continue;
     }
 
-    // { skip: true } / only: true / ignore: true
+    // { skip: true } / only: true / ignore: true (top-level; also found inside it/test args)
     if (
       t.kind === 'id' &&
       OPTION_KEYS.has(t.value) &&
@@ -232,7 +232,6 @@ function isCallbackArg(toks) {
   if (toks[i]?.kind === 'punct' && toks[i].value === '(') {
     return toks.some((t) => t.kind === 'punct' && t.value === '=>') ? toks : null;
   }
-  // bare identifier arrow: x => …
   if (toks[i]?.kind === 'id' && toks[i + 1]?.kind === 'punct' && toks[i + 1].value === '=>') return toks;
   return null;
 }
@@ -249,10 +248,36 @@ function callbackHasNoAssertions(toks) {
   return true;
 }
 
+/** Punctuators after which `/…/` is a regex literal, not division. */
+const REGEX_PREV_PUNCT = new Set([
+  '(', '{', '[', ',', '=', ':', '!', '&', '|', '?', ';', '}', '=>', '~', '^', '%', '+', '-', '*', '/', '<', '>',
+]);
+const REGEX_PREV_KW = new Set([
+  'return', 'typeof', 'case', 'throw', 'delete', 'void', 'new', 'in', 'instanceof', 'else', 'do', 'await', 'yield', 'of',
+]);
+
+function canStartRegex(prev) {
+  if (!prev) return true;
+  if (prev.kind === 'punct') return REGEX_PREV_PUNCT.has(prev.value);
+  if (prev.kind === 'id') return REGEX_PREV_KW.has(prev.value);
+  return false;
+}
+
+/** `<` starts JSX when it looks like a tag and the previous token allows it. */
+function canStartJsx(prev, text, i) {
+  const after = text[i + 1];
+  if (!after || !/[A-Za-z_/]/.test(after)) return false;
+  if (!prev) return true;
+  if (prev.kind === 'punct') return REGEX_PREV_PUNCT.has(prev.value) || prev.value === '(';
+  if (prev.kind === 'id') return prev.value === 'return' || prev.value === 'await' || prev.value === 'yield';
+  return false;
+}
+
 /**
- * Tokenize JS/TS into identifiers, punctuators and numbers. Comments and
- * string/template literal *contents* are consumed and not emitted, so a marker
- * or assertion hidden inside a string never counts.
+ * Tokenize JS/TS into identifiers, punctuators and numbers. Comments,
+ * string/template contents, regex literals and JSX text are consumed and not
+ * emitted as code tokens, so a quote inside `/…/` or JSX cannot swallow the
+ * rest of the file.
  */
 export function tokenize(source) {
   const tokens = [];
@@ -261,6 +286,7 @@ export function tokenize(source) {
   let lineStart = 0;
   const text = source ?? '';
   const col = () => i - lineStart + 1;
+  const last = () => tokens[tokens.length - 1];
 
   while (i < text.length) {
     const ch = text[i];
@@ -292,6 +318,49 @@ export function tokenize(source) {
         i += 1;
       }
       i += 2;
+      continue;
+    }
+
+    // Regex literal before treating `/` as division / punct.
+    if (ch === '/' && canStartRegex(last())) {
+      const startCol = col();
+      i += 1;
+      let closed = false;
+      while (i < text.length) {
+        const c = text[i];
+        if (c === '\\') {
+          i += 2;
+          continue;
+        }
+        if (c === '\n') break;
+        if (c === '[') {
+          i += 1;
+          while (i < text.length && text[i] !== ']' && text[i] !== '\n') {
+            if (text[i] === '\\') i += 2;
+            else i += 1;
+          }
+          if (text[i] === ']') i += 1;
+          continue;
+        }
+        if (c === '/') {
+          i += 1;
+          closed = true;
+          break;
+        }
+        i += 1;
+      }
+      while (closed && i < text.length && /[a-z]/i.test(text[i])) i += 1;
+      tokens.push({ kind: 'regex', value: '/', line, col: startCol });
+      continue;
+    }
+
+    // JSX: consume the tree so apostrophes in text nodes are not string starts.
+    if (ch === '<' && canStartJsx(last(), text, i)) {
+      const skipped = skipJsx(text, i, line, lineStart);
+      i = skipped.i;
+      line = skipped.line;
+      lineStart = skipped.lineStart;
+      tokens.push({ kind: 'jsx', value: '<…>', line: skipped.tagLine, col: 1 });
       continue;
     }
 
@@ -354,6 +423,114 @@ export function tokenize(source) {
   }
 
   return tokens;
+}
+
+/**
+ * Skip one JSX tree starting at `<`. Text between tags is opaque (quotes do
+ * not start strings). `{…}` expressions nest with string awareness.
+ */
+function skipJsx(text, start, line, lineStart) {
+  const tagLine = line;
+  let i = start;
+  let depth = 0;
+
+  const consumeString = (q) => {
+    i += 1;
+    while (i < text.length) {
+      if (text[i] === '\\') {
+        i += 2;
+        continue;
+      }
+      if (text[i] === '\n') {
+        line += 1;
+        lineStart = i + 1;
+      }
+      if (text[i] === q) {
+        i += 1;
+        break;
+      }
+      i += 1;
+    }
+  };
+
+  const consumeBrace = () => {
+    i += 1;
+    let d = 1;
+    while (i < text.length && d > 0) {
+      const c = text[i];
+      if (c === "'" || c === '"' || c === '`') {
+        consumeString(c);
+        continue;
+      }
+      if (c === '{') d += 1;
+      else if (c === '}') d -= 1;
+      if (c === '\n') {
+        line += 1;
+        lineStart = i + 1;
+      }
+      i += 1;
+    }
+  };
+
+  while (i < text.length) {
+    if (text[i] === '{') {
+      consumeBrace();
+      continue;
+    }
+    if (text[i] === '<' && text[i + 1] === '/') {
+      i += 2;
+      while (i < text.length && text[i] !== '>') {
+        if (text[i] === '\n') {
+          line += 1;
+          lineStart = i + 1;
+        }
+        i += 1;
+      }
+      if (text[i] === '>') i += 1;
+      depth -= 1;
+      if (depth <= 0) break;
+      continue;
+    }
+    if (text[i] === '<') {
+      i += 1;
+      while (i < text.length && /[A-Za-z0-9._$-]/.test(text[i])) i += 1;
+      let selfClosing = false;
+      while (i < text.length) {
+        if (text[i] === '{') {
+          consumeBrace();
+          continue;
+        }
+        if (text[i] === '"' || text[i] === "'") {
+          consumeString(text[i]);
+          continue;
+        }
+        if (text[i] === '/' && text[i + 1] === '>') {
+          selfClosing = true;
+          i += 2;
+          break;
+        }
+        if (text[i] === '>') {
+          i += 1;
+          break;
+        }
+        if (text[i] === '\n') {
+          line += 1;
+          lineStart = i + 1;
+        }
+        i += 1;
+      }
+      if (!selfClosing) depth += 1;
+      if (selfClosing && depth === 0) break;
+      continue;
+    }
+    if (text[i] === '\n') {
+      line += 1;
+      lineStart = i + 1;
+    }
+    i += 1;
+  }
+
+  return { i, line, lineStart, tagLine };
 }
 
 /** Advance past a `${ … }` template expression, respecting nested braces/strings. */
