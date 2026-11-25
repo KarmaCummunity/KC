@@ -45,3 +45,12 @@ test('encrypted export bounds large build logs and screenshots instead of losing
   assert.match(workflow, /ipad-evidence-compact/);
   assert.match(workflow, /Encrypted evidence bytes/);
 });
+
+test('startup failure keeps private native crash reports and simulator log before runner cleanup', () => {
+  const workflow = readFileSync(new URL('../.github/workflows/ipad-guest-qualification.yml', import.meta.url), 'utf8');
+  assert.match(workflow, /DiagnosticReports/);
+  assert.match(workflow, /crash-report/);
+  assert.match(workflow, /log show --last 8m/);
+  assert.match(workflow, /process == "KC"/);
+  assert.match(workflow, /capture_native_diagnostics/);
+});

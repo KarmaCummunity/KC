@@ -84,7 +84,22 @@ jobs:
         run: |
           set -euo pipefail
           cd "$RUNNER_TEMP/ipad-evidence"
-          trap 'xcrun simctl io "$SIMULATOR_UDID" screenshot "$RUNNER_TEMP/ipad-evidence/final-screen.png" > "$RUNNER_TEMP/ipad-evidence/screenshot.log" 2>&1 || true' EXIT
+          capture_native_diagnostics() {
+            xcrun simctl io "$SIMULATOR_UDID" screenshot "$RUNNER_TEMP/ipad-evidence/final-screen.png" > "$RUNNER_TEMP/ipad-evidence/screenshot.log" 2>&1 || true
+            xcrun simctl spawn "$SIMULATOR_UDID" log show --last 8m --style compact \
+              --predicate 'process == "KC"' > "$RUNNER_TEMP/ipad-evidence/native-console.log" 2>&1 || true
+            # Crash reports can contain device data. Keep them inside encrypted evidence.
+            index=0
+            for directory in "$HOME/Library/Logs/DiagnosticReports" "$HOME/Library/Developer/CoreSimulator/Devices/$SIMULATOR_UDID/data/Library/Logs/CrashReporter"; do
+              [ -d "$directory" ] || continue
+              find "$directory" -type f -name 'KC*' -mmin -15 | sed -n '1,4p' > "$RUNNER_TEMP/crash-paths.txt"
+              while IFS= read -r report; do
+                index=$((index + 1))
+                tail -c 262144 "$report" > "$RUNNER_TEMP/ipad-evidence/crash-report-$index.log"
+              done < "$RUNNER_TEMP/crash-paths.txt"
+            done
+          }
+          trap capture_native_diagnostics EXIT
           maestro --device "$SIMULATOR_UDID" test --debug-output "$RUNNER_TEMP/ipad-evidence/debug" \
             "$GITHUB_WORKSPACE/tests/native/ipad-guest-qualification.yaml" \
             > "$RUNNER_TEMP/ipad-evidence/interaction.log" 2>&1
