@@ -29,3 +29,12 @@ test('startup instrumentation is isolated to non-main DEV diagnostic workflow', 
     assert.doesNotMatch(readFileSync(new URL(`../.github/workflows/${path}`, import.meta.url), 'utf8'), /ipad-qualification-startup/);
   }
 });
+
+
+test('private native capture includes info-level warning markers and bundled source proof', () => {
+  const workflow = readFileSync(new URL('../.github/workflows/ipad-guest-qualification.yml', import.meta.url), 'utf8');
+  const reads = workflow.split('log show --last ').slice(1);
+  assert.equal(reads.length, 2);
+  for (const capture of reads) assert.match(capture.split('|| true')[0], /--info/);
+  assert.match(workflow, /ipad-qualification-bundle-proof.mjs/);
+});

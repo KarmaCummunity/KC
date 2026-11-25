@@ -128,6 +128,7 @@ playwright.config.*                         @navesarussi
 /scripts/release/service-role-key.mjs       @navesarussi
 
 /scripts/ipad-qualification-startup.mjs       @navesarussi
+/scripts/ipad-qualification-bundle-proof.mjs       @navesarussi
 
 # Exceptions — script self-tests stay unowned so agents may add tests freely.
 # Deleting a test or removing assertions is caught by the test-integrity guard
