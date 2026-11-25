@@ -75,3 +75,12 @@ test('warm relaunch control preserves initial failure and never clears persisted
   assert.match(workflow, /exit "\$initial_status"/);
   assert.match(workflow, /warm-console.log/);
 });
+
+
+test('warm comparison uses visible guest link and preserves startup markers before log bounds', () => {
+  const workflow = readFileSync(new URL('../.github/workflows/ipad-guest-qualification.yml', import.meta.url), 'utf8');
+  assert.match(workflow, /Browse without an account/);
+  assert.match(workflow, /צפייה ללא חשבון/);
+  assert.match(workflow, /startup-markers.log/);
+  assert.match(workflow, /source-pr-head.txt/);
+});

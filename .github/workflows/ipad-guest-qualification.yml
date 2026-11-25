@@ -25,6 +25,7 @@ jobs:
       SENTRY_DISABLE_AUTO_UPLOAD: 'true'
       EVIDENCE_CERTIFICATE: ${{ inputs.evidence_certificate }}
       MAESTRO_VERSION: 2.12.0
+      PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -53,6 +54,7 @@ jobs:
           xcrun simctl boot "$udid"
           xcrun simctl bootstatus "$udid" -b
           printf '%s\n' "$GITHUB_SHA" > "$RUNNER_TEMP/ipad-evidence/source.txt"
+          printf '%s\n' "$PR_HEAD_SHA" > "$RUNNER_TEMP/ipad-evidence/source-pr-head.txt"
       - name: Install frozen dependencies without persistent caches
         working-directory: app
         run: pnpm install --frozen-lockfile
@@ -130,7 +132,8 @@ jobs:
           if [ "$initial_status" -ne 0 ]; then
             # Same binary, preserve native RTL preferences after the initial failure.
             # This control cannot turn a failed first launch into acceptance.
-            sed 's/clearState: true/clearState: false/' \
+            sed -e 's/clearState: true/clearState: false/' \
+              -e 's/id: auth-guest-entry/text: "(צפייה ללא חשבון|Browse without an account)"/' \
               "$GITHUB_WORKSPACE/tests/native/ipad-guest-qualification.yaml" > "$RUNNER_TEMP/warm-guest.yaml"
             warm_status=0
             maestro --device "$SIMULATOR_UDID" test --debug-output "$RUNNER_TEMP/ipad-evidence/warm-debug" \
@@ -139,6 +142,7 @@ jobs:
             xcrun simctl spawn "$SIMULATOR_UDID" log show --last 4m --style compact --info \
               --predicate 'process == "KC"' > "$RUNNER_TEMP/ipad-evidence/warm-console.log" 2>&1 || true
           fi
+          grep -h 'KC_STARTUP_DIAGNOSTIC' "$RUNNER_TEMP/ipad-evidence/"*console.log > "$RUNNER_TEMP/ipad-evidence/startup-markers.log" || true
           exit "$initial_status"
       - name: Encrypt evidence before any public log output
         if: always()
