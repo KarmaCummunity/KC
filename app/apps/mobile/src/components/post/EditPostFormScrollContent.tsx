@@ -31,6 +31,7 @@ export interface EditPostFormScrollContentProps {
   /** Stops the photo uploads still in flight. */
   readonly onCancelUploads?: () => void;
   readonly onRemovePhoto: (path: string) => void;
+  readonly permissionBlocked?: boolean;
   readonly title: string;
   readonly onTitleChange: (next: string) => void;
   readonly city: { id: string; name: string } | null;
@@ -66,6 +67,7 @@ export function EditPostFormScrollContent({
   onAddPhotos,
   onCancelUploads,
   onRemovePhoto,
+  permissionBlocked,
   title,
   onTitleChange,
   city,
@@ -114,6 +116,7 @@ export function EditPostFormScrollContent({
           onAdd={onAddPhotos}
           onCancelUploads={onCancelUploads}
           onRemove={onRemovePhoto}
+          permissionBlocked={permissionBlocked}
         />
       </FormSection>
 

@@ -157,7 +157,7 @@ export default function EditPostScreen() {
   const onMissingOwner = useCallback(() => {
     setNotify({ title: t('post.editPost.notifyErrorTitle'), message: t('post.editPost.needReauthBody') });
   }, [t]);
-  const { uploadingCount, pickAndUpload: handlePickImages, cancelUploads } = usePostImageUploads({
+  const { uploadingCount, permissionBlocked, pickAndUpload: handlePickImages, cancelUploads } = usePostImageUploads({
     ownerId: viewerId,
     galleryCount: uploads.length,
     setUploads,
@@ -334,6 +334,7 @@ export default function EditPostScreen() {
           uploadingCount={uploadingCount}
           onAddPhotos={handlePickImages}
           onCancelUploads={cancelUploads}
+          permissionBlocked={permissionBlocked === 'mediaLibrary'}
           onRemovePhoto={handleRemoveImage}
           title={title}
           onTitleChange={setTitle}
