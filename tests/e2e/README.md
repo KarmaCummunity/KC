@@ -41,7 +41,7 @@ Do **not** raise or bypass the limit for seed members. Prefer waiting out the wi
 | `journeys/qa/feed.spec.ts` | feed renders without failed API calls, create a post, like, comment |
 | `journeys/qa/marketplace.spec.ts` | browse, search, listing detail, create item with/without photo on the unified create screen (`/create?category=items`), reserve by a second user |
 | `journeys/qa/social.spec.ts` | chat between two users, notifications inbox, donations hub, money world (active hub or portal per `world_money_enabled`), he/en + RTL |
-| `journeys/qa/block-user.spec.ts` | block then unblock `user3@seed.kc.test` from the profile ⋮ menu (Apple 1.2) |
+| `journeys/qa/block-user.spec.ts` | block then unblock `user3@seed.kc.test` from the profile ⋮ menu (Apple 1.2); then (#2062) user A blocks user3 from a fresh post's ⋮ menu → the `blocks` row exists and the post is hidden from A → unblock from Settings → Blocked Users removes the row and the post is visible again (ends unblocked; the post is deleted) |
 | `journeys/qa/report-issue.spec.ts` | report a problem from Settings (FR-MOD-002): Send disabled while too short, then the report opens the support thread and is stored there once (leaves one tagged report in user A's support thread) |
 | `journeys/qa/account-deletion.spec.ts` | **account deletion restore (FR-SETTINGS-012 / FR-AUTH-016, D108):** as user4, publish a keep-post → delete from Settings (type display name) → password grant still works → sign-in lands on `/restore-account` with the purge date → restore → feed and the keep-post are visible again; ends restored so nightly can repeat it |
 | `journeys/*.spec.ts` | P0 smoke journeys + the world journeys above (`lib/worldJourney.ts` holds the shared shape; a world is a fixture) |
