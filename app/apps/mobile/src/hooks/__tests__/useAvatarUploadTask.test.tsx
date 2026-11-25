@@ -28,7 +28,7 @@ function heldUpload() {
 
 describe('useAvatarUploadTask', () => {
   it('hands the new avatar to the form and reports the uploading state around it', async () => {
-    avatar.pickAvatarImage.mockResolvedValue({ uri: 'local' });
+    avatar.pickAvatarImage.mockResolvedValue({ status: 'ok', value: { uri: 'local' } });
     avatar.resizeAndUploadAvatar.mockResolvedValue('gen-1');
     const onChange = vi.fn();
     const onUploadingChange = vi.fn();
@@ -40,7 +40,7 @@ describe('useAvatarUploadTask', () => {
   });
 
   it('an upload that finishes AFTER the screen closed is aborted, never handed to the form, and its generation discarded', async () => {
-    avatar.pickAvatarImage.mockResolvedValue({ uri: 'local' });
+    avatar.pickAvatarImage.mockResolvedValue({ status: 'ok', value: { uri: 'local' } });
     const held = heldUpload();
     const onChange = vi.fn();
     const { result, unmount } = renderHook(() => useAvatarUploadTask({ userId: 'u1', onChange }));
@@ -57,7 +57,7 @@ describe('useAvatarUploadTask', () => {
   });
 
   it('shows the error of a failed upload while mounted, and nothing after', async () => {
-    avatar.pickAvatarImage.mockResolvedValue({ uri: 'local' });
+    avatar.pickAvatarImage.mockResolvedValue({ status: 'ok', value: { uri: 'local' } });
     avatar.resizeAndUploadAvatar.mockRejectedValueOnce(new Error('avatar_upload: quota'));
     const { result } = renderHook(() => useAvatarUploadTask({ userId: 'u1', onChange: vi.fn() }));
     await act(async () => { await result.current.pickAndUpload('gallery'); });
@@ -65,10 +65,20 @@ describe('useAvatarUploadTask', () => {
   });
 
   it('a cancelled picker changes nothing', async () => {
-    avatar.pickAvatarImage.mockResolvedValue(null);
+    avatar.pickAvatarImage.mockResolvedValue({ status: 'cancelled' });
     const onChange = vi.fn();
     const { result } = renderHook(() => useAvatarUploadTask({ userId: 'u1', onChange }));
     await act(async () => { await result.current.pickAndUpload('gallery'); });
+    expect(avatar.resizeAndUploadAvatar).not.toHaveBeenCalled();
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('records a blocked camera permission without uploading', async () => {
+    avatar.pickAvatarImage.mockResolvedValue({ status: 'blocked', kind: 'camera' });
+    const onChange = vi.fn();
+    const { result } = renderHook(() => useAvatarUploadTask({ userId: 'u1', onChange }));
+    await act(async () => { await result.current.pickAndUpload('camera'); });
+    expect(result.current.permissionBlocked).toBe('camera');
     expect(avatar.resizeAndUploadAvatar).not.toHaveBeenCalled();
     expect(onChange).not.toHaveBeenCalled();
   });

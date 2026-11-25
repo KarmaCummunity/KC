@@ -11,10 +11,8 @@
 // Avatar pipeline lives in ./avatarUpload.ts.
 // ─────────────────────────────────────────────
 
-import { Linking } from 'react-native';
-import i18n from '../i18n';
-import { confirmAction } from './platformConfirm';
 import * as ImagePicker from 'expo-image-picker';
+import { blockedPick, ensureMediaPermission, type MediaPickResult } from '../lib/mediaPermissions';
 import * as Crypto from 'expo-crypto';
 import type { MediaAssetInput } from '@kc/application';
 import { MAX_MEDIA_ASSETS } from '@kc/domain';
@@ -50,32 +48,18 @@ export interface UploadedAsset extends MediaAssetInput {
 }
 
 /**
- * If permission is permanently denied (`canAskAgain === false`), surface an
- * actionable alert that opens iOS / Android Settings. Returns true when the
- * caller may proceed.
- */
-async function ensureMediaLibraryPermission(): Promise<boolean> {
-  const result = await ImagePicker.requestMediaLibraryPermissionsAsync();
-  if (result.granted) return true;
-  if (result.canAskAgain) return false;
-  const openSettings = await confirmAction(
-    i18n.t('errors.media.galleryDeniedTitle'),
-    i18n.t('errors.media.galleryDeniedBodyPost'),
-    { confirmLabel: i18n.t('errors.media.openSettings') },
-  );
-  if (openSettings) void Linking.openSettings();
-  return false;
-}
-
-/**
  * FR-POST-005 AC2: picks up to (MAX - already) images from the gallery.
- * Returns [] if the user cancels or denies permission.
+ * A cancellation or a fresh denial returns a non-ok status with no alert and
+ * no Settings redirect. `blocked` means the user tapped again after the OS
+ * will no longer prompt, so the UI can show an optional Settings link.
  */
-export async function pickPostImages(alreadyPicked: number): Promise<PickedImage[]> {
+export async function pickPostImages(alreadyPicked: number): Promise<MediaPickResult<PickedImage[]>> {
   const remaining = Math.max(0, MAX_MEDIA_ASSETS - alreadyPicked);
-  if (remaining === 0) return [];
+  if (remaining === 0) return { status: 'ok', value: [] };
 
-  if (!(await ensureMediaLibraryPermission())) return [];
+  const permission = await ensureMediaPermission('mediaLibrary');
+  if (permission === 'blocked') return blockedPick('mediaLibrary');
+  if (permission !== 'granted') return { status: 'denied' };
 
   const result = await ImagePicker.launchImageLibraryAsync({
     mediaTypes: ['images'] as ImagePicker.MediaType[], // SDK 54 array form
@@ -84,14 +68,17 @@ export async function pickPostImages(alreadyPicked: number): Promise<PickedImage
     quality: 1,
     exif: false, // ask the picker not to include EXIF; not all platforms honor it
   });
-  if (result.canceled) return [];
+  if (result.canceled) return { status: 'cancelled' };
 
-  return result.assets.map((a) => ({
-    uri: a.uri,
-    width: a.width,
-    height: a.height,
-    fileSize: a.fileSize ?? null,
-  }));
+  return {
+    status: 'ok',
+    value: result.assets.map((a) => ({
+      uri: a.uri,
+      width: a.width,
+      height: a.height,
+      fileSize: a.fileSize ?? null,
+    })),
+  };
 }
 
 /**
