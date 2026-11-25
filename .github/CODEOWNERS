@@ -133,3 +133,7 @@ playwright.config.*                         @navesarussi
 /scripts/*.test.mjs
 /scripts/ops/*.test.mjs
 /app/scripts/*.test.mjs
+
+# Isolated native qualification scripts run on standard macOS with read-only permissions.
+/scripts/ipad-qualification-device.mjs       @navesarussi
+/scripts/ipad-qualification-env.mjs          @navesarussi

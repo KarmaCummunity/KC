@@ -1,0 +1,102 @@
+name: Isolated DEV iPad guest qualification
+on:
+  pull_request:
+    branches: [dev]
+    paths:
+      - '.github/workflows/ipad-guest-qualification.yml'
+      - 'scripts/ipad-qualification*'
+      - 'tests/native/**'
+  workflow_dispatch:
+    inputs:
+      evidence_certificate:
+        description: Base64 PEM public certificate for private evidence encryption
+        type: string
+        required: false
+permissions:
+  contents: read
+jobs:
+  ipad:
+    if: github.ref != 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: macos-latest
+    timeout-minutes: 90
+    env:
+      EXPO_PUBLIC_ENVIRONMENT: development
+      EXPO_PUBLIC_SUPABASE_URL: https://enbqriuxvvuontiwslun.supabase.co
+      SENTRY_DISABLE_AUTO_UPLOAD: 'true'
+      EVIDENCE_CERTIFICATE: ${{ inputs.evidence_certificate }}
+      MAESTRO_VERSION: 2.12.0
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115
+        with:
+          package_json_file: app/package.json
+          run_install: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version-file: .nvmrc
+      - name: Prepare private evidence destination and iPad
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/ipad-evidence"
+          if [ -n "$EVIDENCE_CERTIFICATE" ]; then
+            printf '%s' "$EVIDENCE_CERTIFICATE" | base64 --decode > "$RUNNER_TEMP/evidence-cert.pem"
+          else
+            cp tests/native/evidence-recipient.pem "$RUNNER_TEMP/evidence-cert.pem"
+          fi
+          openssl x509 -in "$RUNNER_TEMP/evidence-cert.pem" -noout
+          xcrun simctl list devices available --json > "$RUNNER_TEMP/devices.json"
+          node scripts/ipad-qualification-device.mjs "$RUNNER_TEMP/devices.json" > "$RUNNER_TEMP/ipad-evidence/device.json"
+          udid=$(node -p 'JSON.parse(require("fs").readFileSync(process.env.RUNNER_TEMP+"/ipad-evidence/device.json")).udid')
+          echo "SIMULATOR_UDID=$udid" >> "$GITHUB_ENV"
+          xcrun simctl boot "$udid"
+          xcrun simctl bootstatus "$udid" -b
+          printf '%s\n' "$GITHUB_SHA" > "$RUNNER_TEMP/ipad-evidence/source.txt"
+      - name: Install frozen dependencies without persistent caches
+        working-directory: app
+        run: pnpm install --frozen-lockfile
+      - name: Resolve only public DEV configuration
+        run: node scripts/ipad-qualification-env.mjs >> "$GITHUB_ENV"
+      - name: Build and install unsigned iPad simulator candidate
+        timeout-minutes: 50
+        working-directory: app/apps/mobile
+        env:
+          NODE_ENV: production
+        run: |
+          set -euo pipefail
+          npx expo prebuild --platform ios --no-install --clean > "$RUNNER_TEMP/ipad-evidence/prebuild.log" 2>&1
+          cd ios
+          pod install > "$RUNNER_TEMP/ipad-evidence/pods.log" 2>&1
+          xcodebuild -workspace KC.xcworkspace -scheme KC -configuration Release \
+            -sdk iphonesimulator -destination "platform=iOS Simulator,id=$SIMULATOR_UDID" \
+            -derivedDataPath "$RUNNER_TEMP/kc-ipad-build" \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build \
+            > "$RUNNER_TEMP/ipad-evidence/build.log" 2>&1
+          xcrun simctl install "$SIMULATOR_UDID" "$RUNNER_TEMP/kc-ipad-build/Build/Products/Release-iphonesimulator/KC.app"
+      - name: Install pinned native interaction runner
+        run: |
+          set -euo pipefail
+          curl -fsSL https://get.maestro.mobile.dev | bash > "$RUNNER_TEMP/ipad-evidence/maestro-install.log" 2>&1
+          echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
+      - name: Real native guest interaction without member login
+        timeout-minutes: 8
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/ipad-evidence"
+          maestro --device "$SIMULATOR_UDID" test --debug-output "$RUNNER_TEMP/ipad-evidence/debug" \
+            "$GITHUB_WORKSPACE/tests/native/ipad-guest-qualification.yaml" \
+            > "$RUNNER_TEMP/ipad-evidence/interaction.log" 2>&1
+          echo 'Native guest flow completed. No physical APNs or production-binary claim.'
+      - name: Encrypt evidence before any public log output
+        if: always()
+        run: |
+          set -euo pipefail
+          test -s "$RUNNER_TEMP/evidence-cert.pem"
+          tar -czf "$RUNNER_TEMP/ipad-evidence.tar.gz" -C "$RUNNER_TEMP" ipad-evidence
+          openssl cms -encrypt -binary -aes-256-cbc -in "$RUNNER_TEMP/ipad-evidence.tar.gz" \
+            -outform DER -out "$RUNNER_TEMP/ipad-evidence.cms" "$RUNNER_TEMP/evidence-cert.pem"
+          test "$(wc -c < "$RUNNER_TEMP/ipad-evidence.cms")" -lt 12000000
+          echo KC_ENCRYPTED_IPAD_EVIDENCE_BEGIN
+          base64 < "$RUNNER_TEMP/ipad-evidence.cms"
+          echo KC_ENCRYPTED_IPAD_EVIDENCE_END
