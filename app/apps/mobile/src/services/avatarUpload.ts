@@ -41,7 +41,7 @@ export type AvatarSource = 'camera' | 'gallery';
 export const isCameraAvailable = Platform.OS !== 'web';
 
 /**
- * If the OS-level permission was permanently denied (`canAskAgain === false`),
+ * If the OS-level permission was denied before this feature attempt,
  * surface an actionable alert that opens iOS / Android Settings. If denied but
  * the system can still prompt next time, return false silently — the next tap
  * triggers the system sheet again.
@@ -49,9 +49,14 @@ export const isCameraAvailable = Platform.OS !== 'web';
  * Returns `true` when the caller may proceed (granted or limited).
  */
 async function ensureMediaLibraryPermission(): Promise<boolean> {
-  const result = await ImagePicker.requestMediaLibraryPermissionsAsync();
-  if (result.granted) return true;
-  if (result.canAskAgain) return false;
+  const before = await ImagePicker.getMediaLibraryPermissionsAsync();
+  if (before.granted) return true;
+  // A denial in this attempt is final: never follow the OS sheet with persuasion.
+  // Settings recovery is reserved for a later, explicit use of this feature.
+  if (before.canAskAgain !== false) {
+    const result = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    return result.granted;
+  }
   const openSettings = await confirmAction(
     i18n.t('errors.media.galleryDeniedTitle'),
     i18n.t('errors.media.galleryDeniedBodyAvatar'),
@@ -62,9 +67,14 @@ async function ensureMediaLibraryPermission(): Promise<boolean> {
 }
 
 async function ensureCameraPermission(): Promise<boolean> {
-  const result = await ImagePicker.requestCameraPermissionsAsync();
-  if (result.granted) return true;
-  if (result.canAskAgain) return false;
+  const before = await ImagePicker.getCameraPermissionsAsync();
+  if (before.granted) return true;
+  // A denial in this attempt is final: never follow the OS sheet with persuasion.
+  // Settings recovery is reserved for a later, explicit use of this feature.
+  if (before.canAskAgain !== false) {
+    const result = await ImagePicker.requestCameraPermissionsAsync();
+    return result.granted;
+  }
   const openSettings = await confirmAction(
     i18n.t('errors.media.cameraDeniedTitle'),
     i18n.t('errors.media.cameraDeniedBodyAvatar'),

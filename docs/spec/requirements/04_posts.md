@@ -133,6 +133,7 @@ Constraints on uploaded images (both types).
 - AC3. Client-side resize to a max edge of 2048px before upload; further server-side derivatives produced for `feed_thumb` (640px), `detail_main` (1280px), and `original`.
 - AC4. EXIF metadata is stripped server-side to prevent location leakage (`NFR-PRIV-002`). ✅ 2026-11-21 (KC#2316): every new post photo, and every pending one at activation, is rewritten without metadata by `process-post-media` before any other member sees it; until then only its owner sees it (D-244). AC3's server-side resized derivatives are still open (G63).
 - AC5. Failed uploads block "Publish"; partial successes can be retried individually without re-selecting all images.
+- AC6. A fresh photo-library denial returns without another custom prompt or Settings navigation. Optional Settings recovery is limited to a later explicit photo-selection attempt when access was already permanently denied; cancel never opens Settings. (#2719)
 
 **Related.** Domain: `Post.images[]`, `MediaAsset`.
 

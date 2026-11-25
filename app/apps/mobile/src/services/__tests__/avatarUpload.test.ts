@@ -8,7 +8,9 @@ const { picker, encoder, uploader, storageBucket, client, confirm, linking, plat
   };
   return {
     picker: {
+      getMediaLibraryPermissionsAsync: vi.fn(),
       requestMediaLibraryPermissionsAsync: vi.fn(),
+      getCameraPermissionsAsync: vi.fn(),
       requestCameraPermissionsAsync: vi.fn(),
       launchImageLibraryAsync: vi.fn(),
       launchCameraAsync: vi.fn(),
@@ -44,7 +46,11 @@ import { avatarPathFromUrl, isCameraAvailable, pickAvatarImage, removeUploadedAv
 
 const asset = { uri: 'file://a.jpg', width: 1200, height: 800 };
 
-beforeEach(() => vi.clearAllMocks());
+beforeEach(() => {
+  vi.clearAllMocks();
+  picker.getMediaLibraryPermissionsAsync.mockResolvedValue({ granted: false, status: 'undetermined', canAskAgain: true });
+  picker.getCameraPermissionsAsync.mockResolvedValue({ granted: false, status: 'undetermined', canAskAgain: true });
+});
 
 describe('pickAvatarImage', () => {
   it('reports the camera as available off the web', () => {
@@ -59,7 +65,8 @@ describe('pickAvatarImage', () => {
     await expect(pickAvatarImage('camera')).resolves.toBeNull();
   });
 
-  it('offers the settings page when camera access is permanently denied', async () => {
+  it('offers optional Settings only on a later camera attempt with access already denied', async () => {
+    picker.getCameraPermissionsAsync.mockResolvedValue({ granted: false, status: 'denied', canAskAgain: false });
     picker.requestCameraPermissionsAsync.mockResolvedValue({ granted: false, canAskAgain: false });
     confirm.mockResolvedValue(true);
     await expect(pickAvatarImage('camera')).resolves.toBeNull();
@@ -70,6 +77,34 @@ describe('pickAvatarImage', () => {
     );
     expect(linking.openSettings).toHaveBeenCalledTimes(1);
     expect(picker.launchCameraAsync).not.toHaveBeenCalled();
+  });
+
+  it.each(['camera', 'gallery'] as const)('respects the first %s denial without a second prompt or Settings jump', async (source) => {
+    picker.requestCameraPermissionsAsync.mockResolvedValue({ granted: false, status: 'denied', canAskAgain: false });
+    picker.requestMediaLibraryPermissionsAsync.mockResolvedValue({ granted: false, status: 'denied', canAskAgain: false });
+    confirm.mockResolvedValue(true);
+    await expect(pickAvatarImage(source)).resolves.toBeNull();
+    expect(confirm).not.toHaveBeenCalled();
+    expect(linking.openSettings).not.toHaveBeenCalled();
+    expect(picker.launchCameraAsync).not.toHaveBeenCalled();
+    expect(picker.launchImageLibraryAsync).not.toHaveBeenCalled();
+  });
+
+  it('uses an existing camera grant without requesting it again', async () => {
+    picker.getCameraPermissionsAsync.mockResolvedValue({ granted: true, status: 'granted' });
+    picker.launchCameraAsync.mockResolvedValueOnce({ canceled: true, assets: [] });
+    await expect(pickAvatarImage('camera')).resolves.toBeNull();
+    expect(picker.requestCameraPermissionsAsync).not.toHaveBeenCalled();
+    expect(confirm).not.toHaveBeenCalled();
+  });
+
+  it('keeps a later gallery retry optional and does not repeat the OS request', async () => {
+    picker.getMediaLibraryPermissionsAsync.mockResolvedValue({ granted: false, status: 'denied', canAskAgain: false });
+    confirm.mockResolvedValueOnce(false);
+    await expect(pickAvatarImage('gallery')).resolves.toBeNull();
+    expect(confirm).toHaveBeenCalledTimes(1);
+    expect(picker.requestMediaLibraryPermissionsAsync).not.toHaveBeenCalled();
+    expect(linking.openSettings).not.toHaveBeenCalled();
   });
 
   it('returns null silently when the camera prompt can be shown again', async () => {

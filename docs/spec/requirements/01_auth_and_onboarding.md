@@ -285,6 +285,7 @@ Captures an optional profile photo.
 - AC3. Skipping leaves the user with a generated initial-letter silhouette as avatar.
 - AC4. SSO-prefilled photo is shown by default; the user may replace or remove it.
 - AC5. Upload errors are recoverable: the user can proceed without a photo and add it later via Edit Profile (`FR-PROFILE-007`).
+- AC6. Respect camera/photo access denial: a fresh OS refusal returns without a second custom prompt or Settings navigation. Only a later explicit attempt to use the unavailable feature may offer optional Settings recovery; cancellation leaves the user in the app. (App Review 5.1.1(iv), #2719)
 
 **Related.** Screens: 1.5 · Domain: `User.avatar_url`.
 

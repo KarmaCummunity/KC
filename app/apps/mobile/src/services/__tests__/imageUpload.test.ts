@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const { picker, encoder, uploader, confirm, linking } = vi.hoisted(() => ({
-  picker: { requestMediaLibraryPermissionsAsync: vi.fn(), launchImageLibraryAsync: vi.fn() },
+  picker: { getMediaLibraryPermissionsAsync: vi.fn(),
+      requestMediaLibraryPermissionsAsync: vi.fn(), launchImageLibraryAsync: vi.fn() },
   encoder: { encodeJpeg: vi.fn() },
   uploader: { uploadStorageObject: vi.fn() },
   confirm: vi.fn(),
@@ -39,7 +40,10 @@ import { UploadCancelledError } from '../uploadControl';
 const MB = 1024 * 1024;
 const picked = { uri: 'file://p.jpg', width: 4000, height: 3000, fileSize: null };
 
-beforeEach(() => vi.clearAllMocks());
+beforeEach(() => {
+  vi.clearAllMocks();
+  picker.getMediaLibraryPermissionsAsync.mockResolvedValue({ granted: false, status: 'undetermined', canAskAgain: true });
+});
 
 describe('pickPostImages', () => {
   it('returns [] without asking when the media limit is reached', async () => {
@@ -53,7 +57,8 @@ describe('pickPostImages', () => {
     expect(confirm).not.toHaveBeenCalled();
   });
 
-  it('offers the settings page when permission is permanently denied', async () => {
+  it('offers optional Settings only when access was denied before this feature attempt', async () => {
+    picker.getMediaLibraryPermissionsAsync.mockResolvedValue({ granted: false, status: 'denied', canAskAgain: false });
     picker.requestMediaLibraryPermissionsAsync.mockResolvedValue({ granted: false, canAskAgain: false });
     confirm.mockResolvedValueOnce(true);
     await expect(pickPostImages(0)).resolves.toEqual([]);
@@ -61,6 +66,23 @@ describe('pickPostImages', () => {
     confirm.mockResolvedValueOnce(false);
     await pickPostImages(0);
     expect(linking.openSettings).toHaveBeenCalledTimes(1);
+  });
+
+  it('respects a fresh photo-library denial without a second prompt or Settings jump', async () => {
+    picker.requestMediaLibraryPermissionsAsync.mockResolvedValue({ granted: false, status: 'denied', canAskAgain: false });
+    confirm.mockResolvedValue(true);
+    await expect(pickPostImages(0)).resolves.toEqual([]);
+    expect(confirm).not.toHaveBeenCalled();
+    expect(linking.openSettings).not.toHaveBeenCalled();
+    expect(picker.launchImageLibraryAsync).not.toHaveBeenCalled();
+  });
+
+  it('uses an existing photo grant without another permission request', async () => {
+    picker.getMediaLibraryPermissionsAsync.mockResolvedValue({ granted: true, status: 'granted' });
+    picker.launchImageLibraryAsync.mockResolvedValueOnce({ canceled: true, assets: [] });
+    await expect(pickPostImages(0)).resolves.toEqual([]);
+    expect(picker.requestMediaLibraryPermissionsAsync).not.toHaveBeenCalled();
+    expect(confirm).not.toHaveBeenCalled();
   });
 
   it('limits the selection to the remaining slots and maps the assets', async () => {

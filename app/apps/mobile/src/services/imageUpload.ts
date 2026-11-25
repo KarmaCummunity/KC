@@ -50,14 +50,19 @@ export interface UploadedAsset extends MediaAssetInput {
 }
 
 /**
- * If permission is permanently denied (`canAskAgain === false`), surface an
+ * If permission was already permanently denied before this attempt, surface an
  * actionable alert that opens iOS / Android Settings. Returns true when the
  * caller may proceed.
  */
 async function ensureMediaLibraryPermission(): Promise<boolean> {
-  const result = await ImagePicker.requestMediaLibraryPermissionsAsync();
-  if (result.granted) return true;
-  if (result.canAskAgain) return false;
+  const before = await ImagePicker.getMediaLibraryPermissionsAsync();
+  if (before.granted) return true;
+  // A denial in this attempt is final: never follow the OS sheet with persuasion.
+  // Settings recovery is reserved for a later, explicit use of this feature.
+  if (before.canAskAgain !== false) {
+    const result = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    return result.granted;
+  }
   const openSettings = await confirmAction(
     i18n.t('errors.media.galleryDeniedTitle'),
     i18n.t('errors.media.galleryDeniedBodyPost'),
