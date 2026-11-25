@@ -1,5 +1,5 @@
-import { Jimp } from 'jimp';
 import { describe, expect, it } from 'vitest';
+import { jpegPixels, pngPixels, realJpeg, realPng } from '../../../__tests__/support/testImages';
 import { ImageRejected, inspectImage, jpegFrameSize, MAX_SOURCE_BYTES } from '../imageCheck';
 import { crc32, exifOrientation, sanitizeImage } from '../sanitize';
 
@@ -17,16 +17,6 @@ function rejection(run: () => unknown): ImageRejected {
 const latin1 = (bytes: Uint8Array) => new TextDecoder('latin1').decode(bytes);
 const segment = (marker: number, body: number[]) => [0xff, marker, (body.length + 2) >> 8, (body.length + 2) & 255, ...body];
 const text = (s: string) => [...new TextEncoder().encode(s)];
-
-/** A real JPEG (Jimp-encoded gradient), `width` × `height`. */
-async function realJpeg(width: number, height: number): Promise<Uint8Array> {
-  const image = new Jimp({ width, height, color: 0x336699ff });
-  for (let x = 0; x < width; x++) image.setPixelColor(((x * 255 / width) << 24 | 0x0000ffff) >>> 0, x, 0);
-  return new Uint8Array(await image.getBuffer('image/jpeg', { quality: 90 }));
-}
-
-const realPng = async (width: number, height: number) =>
-  new Uint8Array(await new Jimp({ width, height, color: 0x336699ff }).getBuffer('image/png'));
 
 /**
  * EXIF APP1 with a TIFF IFD0 holding Orientation = 6 and a GPS IFD pointer, followed by a
@@ -58,7 +48,7 @@ const withChunks = (png: Uint8Array, ...chunks: number[][]) =>
 
 describe('image sanitizer (process-post-media)', () => {
   it('a photo with EXIF/GPS, XMP, IPTC and a comment keeps only its image data and its orientation', async () => {
-    const source = await realJpeg(320, 240);
+    const source = realJpeg(320, 240);
     const dirty = withSegments(source, exifWithGps(), segment(0xe1, text('http://ns.adobe.com/xap/1.0/\0<x:xmpmeta>secret')),
       segment(0xed, text('Photoshop 3.0\0IPTC-city')), segment(0xfe, text('my home')));
     const clean = sanitizeImage(dirty);
@@ -67,39 +57,38 @@ describe('image sanitizer (process-post-media)', () => {
     expect(exifOrientation(clean.bytes.subarray(clean.bytes.indexOf(0x45) /* 'E' of Exif */))).toEqual(6);
     expect([clean.type, clean.width, clean.height]).toEqual(['image/jpeg', 320, 240]);
     // The image itself is untouched: the upload and the copy decode to the same (rotated) pixels.
-    const [a, b] = await Promise.all([Jimp.read(dirty.slice().buffer as ArrayBuffer), Jimp.read(clean.bytes.slice().buffer as ArrayBuffer)]);
-    expect(b.bitmap.data).toEqual(a.bitmap.data);
+    expect(jpegPixels(clean.bytes)).toEqual(jpegPixels(dirty));
   });
 
   it('the orientation APP1 holds exactly one tag and nothing else', async () => {
-    const clean = sanitizeImage(withSegments(await realJpeg(16, 8), exifWithGps(8)));
+    const clean = sanitizeImage(withSegments(realJpeg(16, 8), exifWithGps(8)));
     const at = latin1(clean.bytes).indexOf('Exif\0\0');
     expect((clean.bytes[at - 2]! << 8) | clean.bytes[at - 1]!, 'APP1 length: 32 bytes of payload').toEqual(34);
     expect(exifOrientation(clean.bytes.subarray(at, at + 32))).toEqual(8);
     // Upright photos (orientation 1, or none) carry no APP1 at all.
-    expect(!latin1(sanitizeImage(withSegments(await realJpeg(16, 8), exifWithGps(1))).bytes).includes('Exif')).toBeTruthy();
+    expect(!latin1(sanitizeImage(withSegments(realJpeg(16, 8), exifWithGps(1))).bytes).includes('Exif')).toBeTruthy();
   });
 
   it('JFIF is kept without its thumbnail; ICC and Adobe segments are kept', async () => {
-    const source = await realJpeg(16, 8);
+    const source = realJpeg(16, 8);
     const jfifWithThumb = segment(0xe0, [...text('JFIF\0'), 1, 2, 1, 0, 72, 0, 72, 1, 1, 0xaa, 0xbb, 0xcc]);
     const icc = segment(0xe2, [...text('ICC_PROFILE\0'), 1, 1, 9, 9, 9]);
     const adobe = segment(0xee, [...text('Adobe'), 0, 100, 0, 0, 0, 0, 1]);
-    const stripped = source.subarray(2 + 4 + ((source[4]! << 8) | source[5]!) - 2); // drop Jimp's own APP0
+    const stripped = source.subarray(2 + 4 + ((source[4]! << 8) | source[5]!) - 2); // drop the encoder's own APP0
     const clean = sanitizeImage(withSegments(new Uint8Array([0xff, 0xd8, ...stripped]), jfifWithThumb, icc, adobe)).bytes;
     expect([...clean.subarray(2, 20)]).toEqual(segment(0xe0, [...text('JFIF\0'), 1, 2, 1, 0, 72, 0, 72, 0, 0]));
     expect(latin1(clean).includes('ICC_PROFILE') && latin1(clean).includes('Adobe')).toBeTruthy();
   });
 
   it('a PNG keeps its image and rendering chunks and loses text, eXIf and time', async () => {
-    const source = await realPng(20, 10);
+    const source = realPng(20, 10);
     const dirty = withChunks(source, chunk('tEXt', text('GPS\0home')), chunk('iTXt', text('XML:com.adobe.xmp\0\0\0\0\0secret')),
       chunk('eXIf', [0x4d, 0x4d, 0, 0x2a]), chunk('tIME', [7, 234, 1, 1, 0, 0, 0]), chunk('gAMA', [0, 0, 0xb1, 0x8f]));
     const clean = sanitizeImage(dirty);
     for (const leak of ['tEXt', 'iTXt', 'eXIf', 'tIME', 'secret', 'home']) expect(!latin1(clean.bytes).includes(leak), leak).toBeTruthy();
     expect(latin1(clean.bytes).includes('gAMA')).toBeTruthy();
     expect([clean.type, clean.width, clean.height]).toEqual(['image/png', 20, 10]);
-    expect((await Jimp.read(clean.bytes.slice().buffer as ArrayBuffer)).bitmap.data).toEqual((await Jimp.read(source.slice().buffer as ArrayBuffer)).bitmap.data);
+    expect(pngPixels(clean.bytes)).toEqual(pngPixels(source));
   });
 
   it('wrong magic bytes are refused: HTML and SVG labelled as images', () => {
@@ -116,13 +105,13 @@ describe('image sanitizer (process-post-media)', () => {
   });
 
   it('a JPEG with trailing bytes (a polyglot), a truncated one, or no EOI is refused', async () => {
-    const jpeg = await realJpeg(16, 8);
+    const jpeg = realJpeg(16, 8);
     const cases = [new Uint8Array([...jpeg, ...text('PK\u0003\u0004zip')]), jpeg.subarray(0, jpeg.length - 40), jpeg.subarray(0, jpeg.length - 2)];
     for (const bytes of cases) expect(rejection(() => sanitizeImage(bytes)).code).toEqual('not_an_image');
   });
 
   it('unsupported JPEG coding (12-bit, lossless, arithmetic) and unknown markers are refused', async () => {
-    const jpeg = await realJpeg(16, 8);
+    const jpeg = realJpeg(16, 8);
     const sof = latin1(jpeg).indexOf('\xff\xc0');
     const twelveBit = jpeg.slice();
     twelveBit[sof + 4] = 12;
@@ -134,7 +123,7 @@ describe('image sanitizer (process-post-media)', () => {
   });
 
   it('a PNG with a bad CRC, an unknown critical chunk, IHDR not first or bytes after IEND is refused', async () => {
-    const png = await realPng(8, 8);
+    const png = realPng(8, 8);
     const badCrc = png.slice();
     badCrc[29]! ^= 0xff; // inside IHDR's CRC
     expect(rejection(() => sanitizeImage(badCrc)).code).toEqual('not_an_image');
@@ -148,14 +137,14 @@ describe('image sanitizer (process-post-media)', () => {
     expect(rejection(() => inspectImage(new Uint8Array(MAX_SOURCE_BYTES + 1))).code).toEqual('too_large');
     expect(rejection(() => inspectImage(new Uint8Array([0xff, 0xd8, 0xff, 0xd9]))).code).toEqual('no_dimensions');
     const thumbCaps = { maxSourceEdge: 1024, maxSourcePixels: 1024 * 1024 };
-    const wide = await realJpeg(1025, 4);
+    const wide = realJpeg(1025, 4);
     expect(rejection(() => sanitizeImage(wide, thumbCaps)).code).toEqual('too_many_pixels');
-    expect(sanitizeImage(await realJpeg(1024, 4), thumbCaps).width).toEqual(1024);
+    expect(sanitizeImage(realJpeg(1024, 4), thumbCaps).width).toEqual(1024);
   });
 
   it('a JPEG with several scans (as progressive files have) is walked scan by scan to its EOI', async () => {
-    const baseline = await realJpeg(64, 32);
-    // Jimp writes one scan only; repeating the scan gives the walk a second SOS after entropy data.
+    const baseline = realJpeg(64, 32);
+    // The encoder writes one scan only; repeating the scan gives the walk a second SOS after entropy data.
     const sos = latin1(baseline).indexOf('\xff\xda');
     const eoi = baseline.length - 2;
     const progressive = new Uint8Array([...baseline.subarray(0, eoi), ...baseline.subarray(sos, eoi), 0xff, 0xd9]);

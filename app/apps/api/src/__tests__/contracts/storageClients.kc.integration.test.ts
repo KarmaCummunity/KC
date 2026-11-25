@@ -8,7 +8,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { CALLER_FILES, type CallerFiles } from '../../platform/ports/callerFiles';
 import type { InProcessBucket } from '../../platform/postgrest/sqlBackedClient';
 import { OBJECT_STORE, type ObjectStore } from '../../platform/storage/objectStore';
-import { KC_DATABASE_URL, KcTestDatabase, type TestMember } from '../support/kcDatabase';
+import { KcTestDatabase, type TestMember } from '../support/kcDatabase';
 import { type KcGateway, startKcGateway } from '../support/kcGateway';
 import { injectFetch, pathOf } from '../support/storageRequests';
 
@@ -21,7 +21,7 @@ const PHOTO = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3, 4]);
  * the `client.storage` a hosted adapter reaches on the server (ADR-012
  * sections 4 and 5).
  */
-describe.skipIf(!KC_DATABASE_URL)('File storage clients on the KC schema', () => {
+describe('File storage clients on the KC schema', () => {
   const database = new KcTestDatabase();
   let gateway: KcGateway;
   let directory: string;

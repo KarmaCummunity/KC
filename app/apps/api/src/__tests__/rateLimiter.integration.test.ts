@@ -7,7 +7,7 @@ import { testConfig } from './support/testConfig';
 const { REDIS_URL } = process.env;
 
 /** The limiter against a real Redis: the transaction it sends and the expiry it sets. */
-describe.skipIf(!REDIS_URL)('RateLimiter on Redis', () => {
+describe('RateLimiter on Redis', () => {
   let redis: Redis;
   const subject = `user:test-${Date.now()}`;
   const silent = { warn: () => undefined } as unknown as AppLogger;

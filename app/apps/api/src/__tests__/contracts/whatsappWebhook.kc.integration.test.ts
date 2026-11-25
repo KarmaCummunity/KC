@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { createHmac, randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { KC_DATABASE_URL, KcTestDatabase } from '../support/kcDatabase';
+import { KcTestDatabase } from '../support/kcDatabase';
 import { type KcGateway, startKcGateway } from '../support/kcGateway';
 
 const URL = '/v1/webhooks/whatsapp';
@@ -13,7 +13,7 @@ const APP_SECRET = 'integration-app-secret';
  * delivery the provider signed is stored once, a consent keyword is answered,
  * and nothing is accepted without the provider's credential.
  */
-describe.skipIf(!KC_DATABASE_URL)('WhatsApp inbound webhook on the KC schema', () => {
+describe('WhatsApp inbound webhook on the KC schema', () => {
   const database = new KcTestDatabase();
   let gateway: KcGateway;
   /** A phone number no other run uses, so throttles and consent start clean. */

@@ -4,7 +4,7 @@ import type { Address } from '@kc/domain';
 import { createPortTransport, createRemotePort } from '@kc/infrastructure-api';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { ProviderMessage, PushTransport } from '../../modules/notifications/pushTypes';
-import { KC_DATABASE_URL, KcTestDatabase } from '../support/kcDatabase';
+import { KcTestDatabase } from '../support/kcDatabase';
 import { type KcGateway, startKcGateway } from '../support/kcGateway';
 
 const JOBS_TOKEN = 'integration-jobs-token-0123456789abcdef';
@@ -13,7 +13,7 @@ const JOBS_TOKEN = 'integration-jobs-token-0123456789abcdef';
  * The scheduled jobs on the real KC schema, started the way a scheduler
  * starts them: `POST /v1/jobs/<name>` with the jobs token.
  */
-describe.skipIf(!KC_DATABASE_URL)('Scheduled jobs on the KC schema', () => {
+describe('Scheduled jobs on the KC schema', () => {
   const database = new KcTestDatabase();
   /** Stands in for the Expo push service: accepts every message and records it. */
   const pushed: ProviderMessage[] = [];

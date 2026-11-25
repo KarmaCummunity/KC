@@ -1,6 +1,6 @@
 import { SupabaseChatRepository } from '@kc/infrastructure-supabase';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { KC_DATABASE_URL, KcTestDatabase, type TestMember } from '../../../__tests__/support/kcDatabase';
+import { KcTestDatabase, type TestMember } from '../../../__tests__/support/kcDatabase';
 import { IdentityDatabase } from '../../database/identityDatabase';
 import { MAX_TOPIC_LENGTH, TopicAuthorizer } from '../topicAuthorizer';
 
@@ -13,7 +13,7 @@ const CLOSED = { receive: false, send: false };
  * `realtime.messages` (ADR-011 section 2). Every row of ADR-003's table that
  * a policy guards has a case here, for the member it is for and for another.
  */
-describe.skipIf(!KC_DATABASE_URL)('TopicAuthorizer on the KC policies', () => {
+describe('TopicAuthorizer on the KC policies', () => {
   const database = new KcTestDatabase();
   const authorizer = new TopicAuthorizer(new IdentityDatabase(database.admin));
   let alice: TestMember;

@@ -5,7 +5,7 @@ import { createPortTransport, createRemotePort } from '@kc/infrastructure-api';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { hmacHex } from '../../modules/identityVerification/decisionPayload';
 import { diditProvider } from '../../modules/identityVerification/diditProvider';
-import { KC_DATABASE_URL, KcTestDatabase } from '../support/kcDatabase';
+import { KcTestDatabase } from '../support/kcDatabase';
 import { type KcGateway, startKcGateway } from '../support/kcGateway';
 import { testConfig } from '../support/testConfig';
 
@@ -19,7 +19,7 @@ const HOSTED_URL = 'https://verify.example.test/session/1';
  * the real KC schema. The real provider adapter runs; only its outbound call
  * is a stand-in.
  */
-describe.skipIf(!KC_DATABASE_URL)('Identity verification on the KC schema', () => {
+describe('Identity verification on the KC schema', () => {
   const database = new KcTestDatabase();
   /** The attempt ids the stand-in provider was asked to open sessions for. */
   const sessionRequests: string[] = [];

@@ -1,6 +1,6 @@
 // A photo worker with doubles for the database and the store, which record what the worker did
 // with them. Shared by the worker's test files.
-import { Jimp } from 'jimp';
+import * as testImages from '../../../__tests__/support/testImages';
 import { type ClaimedMediaJob, jobsPerRun, type MediaStorage, type PostMediaRun, processPostMedia } from '../processPostMedia';
 
 export const OWNER = '0a0a0a0a-0000-4000-8000-00000000000a';
@@ -15,10 +15,10 @@ export const job = (patch: Partial<ClaimedMediaJob> = {}): ClaimedMediaJob => ({
   object_size: 5000, object_mimetype: 'image/jpeg', ...patch,
 });
 
-export const realJpeg = async (width = 64, height = 48) =>
-  new Uint8Array(await new Jimp({ width, height, color: 0x112233ff }).getBuffer('image/jpeg', { quality: 90 }));
-export const realPng = async (width = 64, height = 48) =>
-  new Uint8Array(await new Jimp({ width, height, color: 0x112233ff }).getBuffer('image/png'));
+/** The photos the worker's cases upload: a real JPEG or PNG in a colour of their own. */
+const WORKER_COLOUR = [0x11, 0x22, 0x33] as const;
+export const realJpeg = (width = 64, height = 48) => testImages.realJpeg(width, height, WORKER_COLOUR);
+export const realPng = (width = 64, height = 48) => testImages.realPng(width, height, WORKER_COLOUR);
 export const isThumb = (key: string) => /-thumb\.[a-z]+$/.test(key);
 
 export interface Harness {

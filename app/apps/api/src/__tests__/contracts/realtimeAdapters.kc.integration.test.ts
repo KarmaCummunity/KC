@@ -11,7 +11,7 @@ import {
   SupabasePostRepository,
 } from '@kc/infrastructure-supabase';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
-import { KC_DATABASE_URL, KcTestDatabase, type TestMember } from '../support/kcDatabase';
+import { KcTestDatabase, type TestMember } from '../support/kcDatabase';
 import { type KcGateway, startKcGateway } from '../support/kcGateway';
 
 const WAIT_MS = 8_000;
@@ -32,7 +32,7 @@ async function eventually<T>(what: string, check: () => T | undefined | null | f
  * (ADR-011 section 5): the channel host replaces the Supabase client under
  * them, and the events come from the real database triggers.
  */
-describe.skipIf(!KC_DATABASE_URL)('Realtime adapters on the gateway', () => {
+describe('Realtime adapters on the gateway', () => {
   const database = new KcTestDatabase();
   const cleanups: Array<() => void> = [];
   let gateway: KcGateway;

@@ -7,7 +7,7 @@ import type { Address } from '@kc/domain';
 import { type ApiStorage, createApiStorage, createPortTransport, createRemotePort, type PortManifest } from '@kc/infrastructure-api';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { OBJECT_STORE, type ObjectStore } from '../../platform/storage/objectStore';
-import { KC_DATABASE_URL, KcTestDatabase, type TestMember } from '../support/kcDatabase';
+import { KcTestDatabase, type TestMember } from '../support/kcDatabase';
 import { freePort, type KcGateway, startKcGateway } from '../support/kcGateway';
 
 const BUCKET = 'post-images';
@@ -22,7 +22,7 @@ const THUMB = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 1, 2]);
  * storage as the member (ADR-012 section 5). The server listens on a real
  * port, because the adapter fetches the public address over HTTP.
  */
-describe.skipIf(!KC_DATABASE_URL)('Republishing a post with its photos on the KC schema', () => {
+describe('Republishing a post with its photos on the KC schema', () => {
   const database = new KcTestDatabase();
   const address = {} as Address;
   let gateway: KcGateway;

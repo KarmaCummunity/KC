@@ -10,7 +10,7 @@ import {
 import { type Address, createTranslationRequest, PublicResearchError, type PublicResearchSubmission } from '@kc/domain';
 import { createPortTransport, createRemotePort } from '@kc/infrastructure-api';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { KC_DATABASE_URL, KcTestDatabase } from '../support/kcDatabase';
+import { KcTestDatabase } from '../support/kcDatabase';
 import { type KcGateway, startKcGateway } from '../support/kcGateway';
 import type { ProviderInput } from '../../modules/translation/translationProvider';
 
@@ -23,7 +23,7 @@ const SURVEY_SLUG = 'gateway-research-check';
  * way the app calls them: through the remote port, the gateway, the unchanged
  * hosted adapter and the native module, down to the real KC schema.
  */
-describe.skipIf(!KC_DATABASE_URL)('Hosted functions on the KC schema', () => {
+describe('Hosted functions on the KC schema', () => {
   const database = new KcTestDatabase();
   /** Stands in for the outbound reachability check: no test reaches the network. */
   const reachableHosts = new Set(['give.example.org']);

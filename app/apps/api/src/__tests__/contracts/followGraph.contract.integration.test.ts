@@ -1,13 +1,13 @@
 import { followGraphContract, type FollowGraphContractContext } from '@kc/application';
 import { SupabaseUserRepository } from '@kc/infrastructure-supabase';
 import { afterAll, describe, it } from 'vitest';
-import { KC_DATABASE_URL, KcTestDatabase } from '../support/kcDatabase';
+import { KcTestDatabase } from '../support/kcDatabase';
 
 /**
  * The shared follow-graph contract, run against the unchanged Supabase adapter
  * on top of the compatibility engine and a real KC schema.
  */
-describe.skipIf(!KC_DATABASE_URL)('Follow-graph contract: SupabaseUserRepository on the compatibility engine', () => {
+describe('Follow-graph contract: SupabaseUserRepository on the compatibility engine', () => {
   const database = new KcTestDatabase();
   const ctx: FollowGraphContractContext = {
     newActor: async (privacyMode = 'Public') => {

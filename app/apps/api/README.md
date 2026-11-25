@@ -11,7 +11,7 @@ export DATABASE_URL=postgres://user:password@localhost:5432/kc REDIS_URL=redis:/
 export KC_AUTH_ISSUER=https://<project>.supabase.co/auth/v1
 pnpm --filter @kc/api build && pnpm --filter @kc/api start   # http://localhost:8080/health
 pnpm --filter @kc/api test                                    # unit and in-process HTTP tests
-KC_API_TEST_DISPOSABLE_DATABASE=1 pnpm --filter @kc/api test  # also the platform integration tests; they create roles and a schema, so only on a throwaway database
+KC_API_TEST_DISPOSABLE_DATABASE=1 pnpm --filter @kc/api test  # also the platform integration tests (with DATABASE_URL and REDIS_URL set); they create roles and a schema, so only on a throwaway database
 docker build -f apps/api/Dockerfile -t kc-api .               # from app/
 ```
 
@@ -25,7 +25,7 @@ export KC_API_TEST_KC_DATABASE_URL=postgres://postgres@127.0.0.1:5432/kc_api_tes
 pnpm --filter @kc/api test
 ```
 
-Without the variable those suites are skipped and the unit tests still run.
+Without the variable those suites are not collected and the unit tests still run (`vitest.config.ts` lists which suites need what). Coverage has two floors there: the full one when both kinds of database are present, and a lower one for a run without them.
 
 ## Configuration (environment variables)
 

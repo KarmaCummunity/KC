@@ -6,9 +6,9 @@ import {
 } from '@kc/application';
 import { SupabaseChatRepository, SupabaseReportRepository } from '@kc/infrastructure-supabase';
 import { afterAll, describe, it } from 'vitest';
-import { KC_DATABASE_URL, KcTestDatabase } from '../support/kcDatabase';
+import { KcTestDatabase } from '../support/kcDatabase';
 
-describe.skipIf(!KC_DATABASE_URL)('Chat and report contracts: Supabase adapters on the compatibility engine', () => {
+describe('Chat and report contracts: Supabase adapters on the compatibility engine', () => {
   const database = new KcTestDatabase();
 
   afterAll(async () => {

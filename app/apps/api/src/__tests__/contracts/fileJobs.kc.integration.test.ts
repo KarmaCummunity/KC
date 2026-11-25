@@ -3,16 +3,16 @@ import { mkdtemp, rm, utimes } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { type IPostRepository, newPostInput } from '@kc/application';
-import { Jimp } from 'jimp';
 import type { Address } from '@kc/domain';
 import { type ApiStorage, createApiStorage } from '@kc/infrastructure-api';
 import { SupabasePostRepository } from '@kc/infrastructure-supabase';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { SqlBackedClient } from '../../platform/postgrest/sqlBackedClient';
 import { OBJECT_STORE, type ObjectStore } from '../../platform/storage/objectStore';
-import { KC_DATABASE_URL, KcTestDatabase, type TestMember } from '../support/kcDatabase';
+import { KcTestDatabase, type TestMember } from '../support/kcDatabase';
 import { type KcGateway, startKcGateway } from '../support/kcGateway';
 import { injectFetch } from '../support/storageRequests';
+import { realJpeg } from '../support/testImages';
 
 const JOBS_TOKEN = 'integration-jobs-token-0123456789abcdef';
 const JPEG = 'image/jpeg';
@@ -22,8 +22,8 @@ const TWO_DAYS_AGO = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
 const latin1 = (bytes: Uint8Array | null) => new TextDecoder('latin1').decode(bytes ?? new Uint8Array());
 
 /** A real JPEG that carries a metadata segment naming where it was taken, as a phone's camera writes. */
-async function photoWithLocation(): Promise<Uint8Array> {
-  const jpeg = new Uint8Array(await new Jimp({ width: 64, height: 48, color: 0x336699ff }).getBuffer('image/jpeg', { quality: 90 }));
+function photoWithLocation(): Uint8Array {
+  const jpeg = realJpeg(64, 48);
   const metadata = new TextEncoder().encode('Exif\0\0GPSLatitude 32.0853 GPSLongitude 34.7818');
   // An APP1 segment right after the start-of-image marker: marker, length (itself included), body.
   const segment = Uint8Array.of(0xff, 0xe1, (metadata.length + 2) >> 8, (metadata.length + 2) & 0xff, ...metadata);
@@ -36,7 +36,7 @@ async function photoWithLocation(): Promise<Uint8Array> {
  * removal of files no row references, and the purge of an account past its
  * grace period with every file it had.
  */
-describe.skipIf(!KC_DATABASE_URL)('File jobs on the KC schema', () => {
+describe('File jobs on the KC schema', () => {
   const database = new KcTestDatabase();
   const address = {} as Address;
   let gateway: KcGateway;
@@ -98,7 +98,7 @@ describe.skipIf(!KC_DATABASE_URL)('File jobs on the KC schema', () => {
     // A photo queued before Alice's whose file never reached the store: the worker must refuse it and go on.
     const earlier = await database.newMember();
     await postsOf(earlier).create(newPostInput(earlier.userId, address, { mediaAssets: [{ path: `${earlier.userId}/batch/never-stored.jpg`, mimeType: JPEG, sizeBytes: 10 }] }));
-    const photo = await photoWithLocation();
+    const photo = photoWithLocation();
     const path = `${alice.userId}/batch-copy/0.jpg`;
     await storageOf(alice).upload({ bucket: 'post-images', name: path, bytes: photo, contentType: JPEG });
     const post = await postsOf(alice).create(newPostInput(alice.userId, address, { mediaAssets: [{ path, mimeType: JPEG, sizeBytes: photo.byteLength }] }));

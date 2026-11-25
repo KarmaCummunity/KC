@@ -5,7 +5,6 @@ import type { AppLogger } from '../../logging/appLogger';
 import { RealtimeHub } from '../realtimeHub';
 import { PRESENCE_TTL_MS, RedisEphemeralEvents } from '../redisEphemeralEvents';
 
-const { REDIS_URL, KC_API_TEST_DISPOSABLE_DATABASE } = process.env;
 const silent = { error: () => undefined, warn: () => undefined } as unknown as AppLogger;
 const ALICE = { key: 'alice', meta: { device: 'phone' } };
 const BOB = { key: 'bob', meta: {} };
@@ -23,7 +22,9 @@ async function eventually(check: () => boolean): Promise<void> {
  * Two API instances sharing one Redis (ADR-011 section 4): what a member on
  * one instance sends or shows must reach members connected to the other.
  */
-describe.skipIf(!REDIS_URL || KC_API_TEST_DISPOSABLE_DATABASE !== '1')('RedisEphemeralEvents across two instances', () => {
+const { REDIS_URL } = process.env;
+
+describe('RedisEphemeralEvents across two instances', () => {
   const clients: Redis[] = [];
   const instances: RedisEphemeralEvents[] = [];
   /** A topic of its own per test, so tests do not see each other's presence. */

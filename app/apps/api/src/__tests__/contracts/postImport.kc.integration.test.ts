@@ -3,7 +3,7 @@ import type { IPostExtractionService } from '@kc/application';
 import { createPortTransport, createRemotePort } from '@kc/infrastructure-api';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import type { ExtractionProviderInput } from '../../modules/postImport/extractionProvider';
-import { KC_DATABASE_URL, KcTestDatabase } from '../support/kcDatabase';
+import { KcTestDatabase } from '../support/kcDatabase';
 import { type KcGateway, startKcGateway } from '../support/kcGateway';
 
 const FLAG_KEY = 'external_post_import_enabled';
@@ -14,7 +14,7 @@ const SHARED_TEXT = 'מוסר ספה תלת מושבית בתירוש, התקש�
  * remote port, gateway, the unchanged hosted adapter, the native module, and
  * the real KC schema with its place catalog. Only the model is a stand-in.
  */
-describe.skipIf(!KC_DATABASE_URL)('Post import on the KC schema', () => {
+describe('Post import on the KC schema', () => {
   const database = new KcTestDatabase();
   /** What the stand-in model was sent; it answers a furniture offer in the city of Tirosh. */
   const providerInputs: ExtractionProviderInput[] = [];

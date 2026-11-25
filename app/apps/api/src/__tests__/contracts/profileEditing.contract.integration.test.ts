@@ -1,9 +1,9 @@
 import { profileEditingContract, type ProfileEditingContractContext } from '@kc/application';
 import { SupabaseUserRepository } from '@kc/infrastructure-supabase';
 import { afterAll, describe, it } from 'vitest';
-import { KC_DATABASE_URL, KcTestDatabase } from '../support/kcDatabase';
+import { KcTestDatabase } from '../support/kcDatabase';
 
-describe.skipIf(!KC_DATABASE_URL)('Profile-editing contract: SupabaseUserRepository on the compatibility engine', () => {
+describe('Profile-editing contract: SupabaseUserRepository on the compatibility engine', () => {
   const database = new KcTestDatabase();
   const ctx: ProfileEditingContractContext = {
     // Two cities of the reference seed.

@@ -4,7 +4,6 @@ import { IdentityDatabase } from '../platform/database/identityDatabase';
 import type { CallerIdentity } from '../platform/identity/callerIdentity';
 import { USER_A, USER_B } from './support/testTokens';
 
-const { DATABASE_URL, KC_API_TEST_DISPOSABLE_DATABASE } = process.env;
 
 const SCHEMA = 'kc_api_identity_test';
 const callerOf = (userId: string): CallerIdentity => ({ userId, claims: { sub: userId, role: 'authenticated' } });
@@ -14,7 +13,9 @@ const callerOf = (userId: string): CallerIdentity => ({ userId, claims: { sub: u
  * so it runs only on a database explicitly marked disposable (a local
  * instance or a CI service container), never on a shared one.
  */
-describe.skipIf(!DATABASE_URL || KC_API_TEST_DISPOSABLE_DATABASE !== '1')('IdentityDatabase on Postgres', () => {
+const { DATABASE_URL } = process.env;
+
+describe('IdentityDatabase on Postgres', () => {
   let pool: Pool;
   let database: IdentityDatabase;
 

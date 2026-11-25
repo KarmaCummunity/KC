@@ -18,10 +18,10 @@
    "missing": 0
   },
   "bucket": {
-   "objects": 5,
-   "same": 4,
+   "objects": 2,
+   "same": 2,
    "renamed": 0,
-   "changed": 1,
+   "changed": 0,
    "removed": 0,
    "missing": 0
   },
@@ -44,16 +44,16 @@
  },
  "launchTotals": {
   "core": {
-   "objects": 134,
-   "same": 110,
+   "objects": 130,
+   "same": 107,
    "renamed": 1,
-   "changed": 23,
+   "changed": 22,
    "removed": 0,
    "missing": 0
   },
   "later": {
-   "objects": 169,
-   "same": 119,
+   "objects": 170,
+   "same": 120,
    "renamed": 6,
    "changed": 44,
    "removed": 0,
@@ -125,6 +125,13 @@
    "removed": 0,
    "missing": 0
   },
+  "featureFlags": {
+   "callSites": 1,
+   "oneToOne": 1,
+   "changed": 0,
+   "removed": 0,
+   "missing": 0
+  },
   "feed": {
    "callSites": 6,
    "oneToOne": 6,
@@ -141,8 +148,8 @@
   },
   "fn:backfill-image-thumbs": {
    "callSites": 2,
-   "oneToOne": 0,
-   "changed": 2,
+   "oneToOne": 2,
+   "changed": 0,
    "removed": 0,
    "missing": 0
   },
@@ -279,6 +286,13 @@
    "removed": 0,
    "missing": 0
   },
+  "karma": {
+   "callSites": 1,
+   "oneToOne": 0,
+   "changed": 1,
+   "removed": 0,
+   "missing": 0
+  },
   "knowledge": {
    "callSites": 12,
    "oneToOne": 9,
@@ -308,9 +322,9 @@
    "missing": 0
   },
   "mobile": {
-   "callSites": 11,
-   "oneToOne": 10,
-   "changed": 1,
+   "callSites": 2,
+   "oneToOne": 2,
+   "changed": 0,
    "removed": 0,
    "missing": 0
   },
@@ -336,8 +350,8 @@
    "missing": 0
   },
   "payments": {
-   "callSites": 11,
-   "oneToOne": 3,
+   "callSites": 12,
+   "oneToOne": 4,
    "changed": 8,
    "removed": 0,
    "missing": 0
@@ -620,15 +634,14 @@
     "rpc:notifications_mark_all_read",
     "table:user_devices",
     "rpc:api_my_pro_status",
-    "bucket:avatars",
     "channel:topic = `user:${userId}:notifications`",
     "channel:topic = `user:${userId}:account`",
     "channel:`user:${userId}:stats`",
     "rpc:list_my_blocked_users"
    ],
    "counts": {
-    "objects": 37,
-    "oneToOne": 33,
+    "objects": 36,
+    "oneToOne": 32,
     "changed": 4,
     "removed": 0,
     "missing": 0
@@ -703,7 +716,6 @@
     "rpc:get_post_translations",
     "table:content_translations",
     "bucket:post-images",
-    "bucket:<entry.bucket>",
     "channel:FEED_PUBLIC_TOPIC = 'feed:public'",
     "edge_function:translate",
     "rpc:admin_world_flow_funnel",
@@ -711,8 +723,8 @@
     "rpc:replace_post_media"
    ],
    "counts": {
-    "objects": 51,
-    "oneToOne": 40,
+    "objects": 50,
+    "oneToOne": 39,
     "changed": 11,
     "removed": 0,
     "missing": 0
@@ -754,15 +766,14 @@
     "table:chat_members",
     "table:messages",
     "table:message_reactions",
-    "bucket:chat-media",
     "channel:`chat:${chatId}:messages`",
     "channel:`user:${userId}:chats`",
     "channel:`chat:${chatId}:typing`",
     "rpc:submit_support_issue"
    ],
    "counts": {
-    "objects": 19,
-    "oneToOne": 17,
+    "objects": 18,
+    "oneToOne": 16,
     "changed": 2,
     "removed": 0,
     "missing": 0
@@ -856,6 +867,7 @@
     "matching/**",
     "donations/**",
     "organizations/**",
+    "karma/**",
     "apps/mobile: world screens, ridesKnowledgeComposition, listing image upload, karma history"
    ],
    "work": "Listings become posts; one handoff row shape; the legacy ride tables and their repositories are deleted; volunteering maps onto event posts; matches as cards. Two agents may split it by folder (rides / the rest): no shared file.",
@@ -995,8 +1007,8 @@
    ],
    "counts": {
     "objects": 15,
-    "oneToOne": 11,
-    "changed": 4,
+    "oneToOne": 12,
+    "changed": 3,
     "removed": 0,
     "missing": 0
    }
@@ -1192,13 +1204,14 @@
     "rpc:finance_donors_summary",
     "rpc:provider_webhook_apply",
     "rpc:api_revenuecat_set_pro",
+    "rpc:api_my_pro_status",
     "rpc:api_revenuecat_set_org_entitlement",
     "rpc:api_standing_orders_charge_due",
     "rpc:list_kc_support_channels"
    ],
    "counts": {
-    "objects": 30,
-    "oneToOne": 14,
+    "objects": 31,
+    "oneToOne": 15,
     "changed": 16,
     "removed": 0,
     "missing": 0
@@ -1528,11 +1541,11 @@
   {
    "old": "<bucket>",
    "kind": "bucket",
-   "status": "changed",
+   "status": "same",
    "launch": "core",
    "confidence": "medium",
    "missing": null,
-   "note": "`backfill-image-thumbs` loops over a bucket list passed at run time; after the cut-over the list is `post-images` (plus `avatars` and `chat-media`).",
+   "note": "A bucket named at run time. The app's storage door (`apps/mobile/src/services/backend/storageBackend.ts`, ADR-012) is handed the bucket by its caller: `post-images`, `avatars` (public, JPEG, 512 KB, `<user_id>/…`) or `chat-media` (private, `<user_id>/<chat_id>/<file>`, read through signed URLs by chat members), each declared by the baseline with own-folder policies; the abandoned-upload ledger deletes only in those three. `backfill-image-thumbs` loops over a bucket list passed at run time (`post-images`, `avatars`).",
    "oldObject": {},
    "targets": [
     {
@@ -1541,9 +1554,16 @@
     }
    ],
    "areas": [
-    "fn:backfill-image-thumbs"
+    "fn:backfill-image-thumbs",
+    "mobile"
    ],
    "callSites": [
+    {
+     "file": "app/apps/mobile/src/services/backend/storageBackend.ts",
+     "line": 187,
+     "symbol": "signFileUrl",
+     "area": "mobile"
+    },
     {
      "file": "supabase/functions/backfill-image-thumbs/index.ts",
      "line": 180,
@@ -1555,93 +1575,6 @@
      "line": 194,
      "symbol": "recordError",
      "area": "fn:backfill-image-thumbs"
-    }
-   ]
-  },
-  {
-   "old": "<entry.bucket>",
-   "kind": "bucket",
-   "status": "same",
-   "launch": "core",
-   "confidence": "medium",
-   "missing": null,
-   "note": "The device abandoned-upload ledger retries deletion only in its runtime-allowlisted existing buckets: post-images, avatars or chat-media. Uses the current member session and existing own-folder Storage policies; no service-role client or bucket-policy change.",
-   "oldObject": {},
-   "targets": [
-    {
-     "type": "bucket",
-     "name": "post-images"
-    }
-   ],
-   "areas": [
-    "mobile"
-   ],
-   "callSites": [
-    {
-     "file": "app/apps/mobile/src/services/abandonedUploads.ts",
-     "line": 70,
-     "symbol": "tryRemove",
-     "area": "mobile"
-    }
-   ]
-  },
-  {
-   "old": "avatars",
-   "kind": "bucket",
-   "status": "same",
-   "launch": "core",
-   "confidence": "high",
-   "missing": null,
-   "note": "Declared in `95_platform/090_storage.sql`: public, JPEG, 512 KB, `<user_id>/avatar.jpg` (and the thumb in the same folder) (M23, verified).",
-   "oldObject": {},
-   "targets": [
-    {
-     "type": "bucket",
-     "name": "avatars"
-    }
-   ],
-   "areas": [
-    "mobile"
-   ],
-   "callSites": [
-    {
-     "file": "app/apps/mobile/src/services/avatarUpload.ts",
-     "line": 164,
-     "symbol": "resizeAndUploadAvatar",
-     "area": "mobile"
-    },
-    {
-     "file": "app/apps/mobile/src/services/avatarUpload.ts",
-     "line": 177,
-     "symbol": "removeUploadedAvatar",
-     "area": "mobile"
-    }
-   ]
-  },
-  {
-   "old": "chat-media",
-   "kind": "bucket",
-   "status": "same",
-   "launch": "core",
-   "confidence": "high",
-   "missing": null,
-   "note": "Declared in `95_platform/090_storage.sql`: private, `<user_id>/<chat_id>/<file>`, read through signed URLs by chat members (M23, verified).",
-   "oldObject": {},
-   "targets": [
-    {
-     "type": "bucket",
-     "name": "chat-media"
-    }
-   ],
-   "areas": [
-    "mobile"
-   ],
-   "callSites": [
-    {
-     "file": "app/apps/mobile/src/services/chatMediaUrl.ts",
-     "line": 17,
-     "symbol": "signWithSupabase",
-     "area": "mobile"
     }
    ]
   },
@@ -1663,28 +1596,9 @@
    "areas": [
     "fn:strip-exif",
     "fn:whatsapp-webhook",
-    "mobile",
     "posts"
    ],
    "callSites": [
-    {
-     "file": "app/apps/mobile/src/hooks/usePostShare.ts",
-     "line": 69,
-     "symbol": "recipientNavigable",
-     "area": "mobile"
-    },
-    {
-     "file": "app/apps/mobile/src/lib/probeDraftImageAvailability.ts",
-     "line": 30,
-     "symbol": "defaultStorageProbe",
-     "area": "mobile"
-    },
-    {
-     "file": "app/apps/mobile/src/services/listingImageUpload.ts",
-     "line": 36,
-     "symbol": "listingImagePublicUrl",
-     "area": "mobile"
-    },
     {
      "file": "app/packages/infrastructure-supabase/src/posts/postMediaCopy.ts",
      "line": 33,
@@ -1744,7 +1658,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRealtime.ts",
-     "line": 43,
+     "line": 51,
      "symbol": "SupabaseChatRealtime.subscribeToChat",
      "area": "chat"
     }
@@ -1798,7 +1712,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRealtime.ts",
-     "line": 97,
+     "line": 105,
      "symbol": "SupabaseChatRealtime.subscribeToInbox",
      "area": "chat"
     }
@@ -1960,7 +1874,7 @@
    "callSites": [
     {
      "file": "app/apps/mobile/src/hooks/useNotificationInboxBadge.ts",
-     "line": 30,
+     "line": 33,
      "symbol": "useEffect",
      "area": "mobile"
     }
@@ -2275,8 +2189,8 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/legal/SupabaseLegalDocumentRepository.ts",
-     "line": 117,
-     "symbol": "SupabaseLegalDocumentRepository.unwrapCall",
+     "line": 119,
+     "symbol": "SupabaseLegalDocumentSource.unwrapCall",
      "area": "legal"
     }
    ]
@@ -3178,7 +3092,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/matching/SupabaseMatchRepository.ts",
-     "line": 145,
+     "line": 94,
      "symbol": "SupabaseMatchRepository.qualityByWorld",
      "area": "matching"
     }
@@ -5043,7 +4957,7 @@
    "old": "api_my_pro_status",
    "kind": "rpc",
    "status": "same",
-   "launch": "core",
+   "launch": "later",
    "confidence": "high",
    "missing": null,
    "note": "The caller's Pro status (`is_pro`); the Pro screen reads it.",
@@ -5064,14 +4978,14 @@
     }
    ],
    "areas": [
-    "mobile"
+    "payments"
    ],
    "callSites": [
     {
-     "file": "app/apps/mobile/app/pro.tsx",
-     "line": 38,
-     "symbol": "ProPaywallScreen",
-     "area": "mobile"
+     "file": "app/packages/infrastructure-supabase/src/payments/SupabaseProEntitlementRepository.ts",
+     "line": 12,
+     "symbol": "SupabaseProEntitlementRepository.isPro",
+     "area": "payments"
     }
    ]
   },
@@ -6978,7 +6892,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRealtime.ts",
-     "line": 136,
+     "line": 144,
      "symbol": "SupabaseChatRealtime.readUnreadTotal",
      "area": "chat"
     },
@@ -10192,7 +10106,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/matching/SupabaseMatchRepository.ts",
-     "line": 138,
+     "line": 87,
      "symbol": "SupabaseMatchRepository.respond",
      "area": "matching"
     }
@@ -10374,7 +10288,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/matching/SupabaseMatchRepository.ts",
-     "line": 130,
+     "line": 79,
      "symbol": "SupabaseMatchRepository.listMine",
      "area": "matching"
     }
@@ -10926,7 +10840,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/posts/SupabasePostEngagementRepository.ts",
-     "line": 161,
+     "line": 138,
      "symbol": "SupabasePostEngagementRepository.commentsPage",
      "area": "posts"
     }
@@ -12223,7 +12137,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/social/SupabaseFollowSuggestionsRepository.ts",
-     "line": 35,
+     "line": 20,
      "symbol": "SupabaseFollowSuggestionsRepository.listSuggestions",
      "area": "social"
     }
@@ -12299,7 +12213,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/social/SupabaseFollowSuggestionsRepository.ts",
-     "line": 51,
+     "line": 36,
      "symbol": "SupabaseFollowSuggestionsRepository.getProfileCompleteness",
      "area": "social"
     }
@@ -12545,7 +12459,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatV2Repository.ts",
-     "line": 37,
+     "line": 38,
      "symbol": "SupabaseChatV2Repository.sendMediaMessage",
      "area": "chat"
     },
@@ -12680,7 +12594,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatV2Repository.ts",
-     "line": 21,
+     "line": 22,
      "symbol": "SupabaseChatV2Repository.setMessageReaction",
      "area": "chat"
     }
@@ -12823,7 +12737,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/posts/SupabasePostEngagementRepository.ts",
-     "line": 106,
+     "line": 83,
      "symbol": "SupabasePostEngagementRepository.unwrapCall",
      "area": "posts"
     }
@@ -13726,15 +13640,15 @@
     }
    ],
    "areas": [
-    "fn:extract-external-post",
-    "mobile"
+    "featureFlags",
+    "fn:extract-external-post"
    ],
    "callSites": [
     {
-     "file": "app/apps/mobile/src/services/featureFlagsComposition.ts",
-     "line": 12,
-     "symbol": "fetchRemoteFeatureFlags",
-     "area": "mobile",
+     "file": "app/packages/infrastructure-supabase/src/featureFlags/SupabaseFeatureFlagsRepository.ts",
+     "line": 11,
+     "symbol": "SupabaseFeatureFlagsRepository.listFlags",
+     "area": "featureFlags",
      "ops": [
       "select"
      ]
@@ -14484,7 +14398,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/feed/SupabaseSocialFeedRepository.ts",
-     "line": 51,
+     "line": 44,
      "symbol": "SupabaseSocialFeedRepository.unwrapCall",
      "area": "feed",
      "ops": [
@@ -14532,7 +14446,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/feed/SupabaseSocialFeedRepository.ts",
-     "line": 61,
+     "line": 54,
      "symbol": "SupabaseSocialFeedRepository.unwrapCall",
      "area": "feed",
      "ops": [
@@ -14592,7 +14506,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/feed/SupabaseSocialFeedRepository.ts",
-     "line": 69,
+     "line": 62,
      "symbol": "SupabaseSocialFeedRepository.listMuteFilters",
      "area": "feed",
      "ops": [
@@ -14601,7 +14515,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/feed/SupabaseSocialFeedRepository.ts",
-     "line": 86,
+     "line": 79,
      "symbol": "SupabaseSocialFeedRepository.unwrapCall",
      "area": "feed",
      "ops": [
@@ -14610,7 +14524,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/feed/SupabaseSocialFeedRepository.ts",
-     "line": 91,
+     "line": 84,
      "symbol": "SupabaseSocialFeedRepository.removeMuteFilter",
      "area": "feed",
      "ops": [
@@ -15100,14 +15014,14 @@
     }
    ],
    "areas": [
-    "mobile"
+    "karma"
    ],
    "callSites": [
     {
-     "file": "app/apps/mobile/src/hooks/useKarmaHistory.ts",
-     "line": 24,
-     "symbol": "useKarmaHistory",
-     "area": "mobile",
+     "file": "app/packages/infrastructure-supabase/src/karma/SupabaseKarmaHistoryRepository.ts",
+     "line": 15,
+     "symbol": "SupabaseKarmaHistoryRepository.listHistory",
+     "area": "karma",
      "ops": [
       "select"
      ]
@@ -15274,8 +15188,8 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/legal/SupabaseLegalDocumentRepository.ts",
-     "line": 82,
-     "symbol": "SupabaseLegalDocumentRepository.getCurrentContent",
+     "line": 97,
+     "symbol": "SupabaseLegalDocumentSource.readCurrent",
      "area": "legal",
      "ops": [
       "select"
@@ -15327,8 +15241,8 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/legal/SupabaseLegalDocumentRepository.ts",
-     "line": 72,
-     "symbol": "SupabaseLegalDocumentRepository.getCurrentContent",
+     "line": 92,
+     "symbol": "SupabaseLegalDocumentSource.readCurrent",
      "area": "legal",
      "ops": [
       "select"
@@ -15375,7 +15289,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatV2Repository.ts",
-     "line": 53,
+     "line": 54,
      "symbol": "SupabaseChatV2Repository.listMessageReactions",
      "area": "chat",
      "ops": [
@@ -15884,7 +15798,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/posts/SupabasePostEngagementRepository.ts",
-     "line": 146,
+     "line": 123,
      "symbol": "SupabasePostEngagementRepository.unwrapCall",
      "area": "posts",
      "ops": [
@@ -15893,7 +15807,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/posts/SupabasePostEngagementRepository.ts",
-     "line": 153,
+     "line": 130,
      "symbol": "SupabasePostEngagementRepository.unwrapCall",
      "area": "posts",
      "ops": [
@@ -15991,7 +15905,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/posts/SupabasePostEngagementRepository.ts",
-     "line": 120,
+     "line": 97,
      "symbol": "SupabasePostEngagementRepository.createComment",
      "area": "posts",
      "ops": [
@@ -16807,7 +16721,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/posts/SupabasePostEngagementRepository.ts",
-     "line": 88,
+     "line": 65,
      "symbol": "SupabasePostEngagementRepository.getViewerReaction",
      "area": "posts",
      "ops": [
@@ -16816,7 +16730,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/posts/SupabasePostEngagementRepository.ts",
-     "line": 101,
+     "line": 78,
      "symbol": "SupabasePostEngagementRepository.setReaction",
      "area": "posts",
      "ops": [
@@ -17007,7 +16921,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/posts/SupabasePostEngagementRepository.ts",
-     "line": 71,
+     "line": 48,
      "symbol": "SupabasePostEngagementRepository.getStats",
      "area": "posts",
      "ops": [
@@ -18308,7 +18222,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/users/SupabaseActiveStatusRepository.ts",
-     "line": 20,
+     "line": 21,
      "symbol": "SupabaseActiveStatusRepository.get",
      "area": "users",
      "ops": [

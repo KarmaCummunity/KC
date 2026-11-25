@@ -8,7 +8,7 @@ import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { HOSTED_PORTS } from '../../modules/hostedAdapters/hostedPorts';
 import { loadSchemaCache, type SchemaCache } from '../../platform/postgrest/schemaCache';
-import { KC_DATABASE_URL, KcTestDatabase } from '../support/kcDatabase';
+import { KcTestDatabase } from '../support/kcDatabase';
 import { type KcGateway, startKcGateway } from '../support/kcGateway';
 import type { TestIssuer } from '../support/testTokens';
 
@@ -46,7 +46,7 @@ function namesIn(sources: readonly string[], pattern: RegExp): string[] {
  * schema: every function and table they name must exist in a shape the
  * engine can serve, and the gateway's public surface must be the database's.
  */
-describe.skipIf(!KC_DATABASE_URL)('Hosted ports on the KC schema', () => {
+describe('Hosted ports on the KC schema', () => {
   const database = new KcTestDatabase();
   const sources = adapterSources();
   let cache: SchemaCache;

@@ -42,7 +42,7 @@ import { createTestIssuer, type TestIssuer } from '../support/testTokens';
  * the generic remote port → HTTP → the gateway → the hosted adapters → the
  * compatibility engine → the real KC schema, as the calling member.
  */
-describe.skipIf(!KC_DATABASE_URL)('Port contracts through the API gateway', () => {
+describe('Port contracts through the API gateway', () => {
   const database = new KcTestDatabase();
   const address = {} as Address;
   let app: NestFastifyApplication;

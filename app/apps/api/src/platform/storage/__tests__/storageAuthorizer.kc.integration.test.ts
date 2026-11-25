@@ -1,6 +1,6 @@
 import { SupabaseChatRepository } from '@kc/infrastructure-supabase';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { KC_DATABASE_URL, KcTestDatabase, type TestMember } from '../../../__tests__/support/kcDatabase';
+import { KcTestDatabase, type TestMember } from '../../../__tests__/support/kcDatabase';
 import { IdentityDatabase } from '../../database/identityDatabase';
 import { isSafeObjectName, MAX_OBJECT_NAME_LENGTH, StorageAuthorizer } from '../storageAuthorizer';
 
@@ -9,7 +9,7 @@ import { isSafeObjectName, MAX_OBJECT_NAME_LENGTH, StorageAuthorizer } from '../
  * policies on `storage.objects` (ADR-012 section 3): each bucket's rule for
  * the member it is for, and for another member.
  */
-describe.skipIf(!KC_DATABASE_URL)('StorageAuthorizer on the KC policies', () => {
+describe('StorageAuthorizer on the KC policies', () => {
   const database = new KcTestDatabase();
   const authorizer = new StorageAuthorizer(new IdentityDatabase(database.admin));
   let alice: TestMember;

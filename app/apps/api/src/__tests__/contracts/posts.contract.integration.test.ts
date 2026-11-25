@@ -7,9 +7,9 @@ import {
 import type { Address } from '@kc/domain';
 import { SupabasePostRepository, SupabaseSavedPostsRepository } from '@kc/infrastructure-supabase';
 import { afterAll, beforeAll, describe, it } from 'vitest';
-import { KC_DATABASE_URL, KcTestDatabase } from '../support/kcDatabase';
+import { KcTestDatabase } from '../support/kcDatabase';
 
-describe.skipIf(!KC_DATABASE_URL)('Post contracts: Supabase adapters on the compatibility engine', () => {
+describe('Post contracts: Supabase adapters on the compatibility engine', () => {
   const database = new KcTestDatabase();
   // Filled before the cases run; the contexts read it lazily.
   const address = {} as Address;

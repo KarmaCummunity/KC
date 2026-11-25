@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { SupabaseChatRepository } from '@kc/infrastructure-supabase';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { OBJECT_STORE, type ObjectStore } from '../../platform/storage/objectStore';
-import { KC_DATABASE_URL, KcTestDatabase, type TestMember } from '../support/kcDatabase';
+import { KcTestDatabase, type TestMember } from '../support/kcDatabase';
 import { type KcGateway, startKcGateway } from '../support/kcGateway';
 import { pathOf } from '../support/storageRequests';
 
@@ -18,7 +18,7 @@ const PHOTO = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3, 4]);
  * the address they are given, confirms, and the file is in the index; reading
  * a private file and deleting go through the same policies.
  */
-describe.skipIf(!KC_DATABASE_URL)('File storage on the KC schema', () => {
+describe('File storage on the KC schema', () => {
   const database = new KcTestDatabase();
   let gateway: KcGateway;
   let directory: string;

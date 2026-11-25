@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { SqlBackedClient } from '../../platform/postgrest/sqlBackedClient';
-import { KC_DATABASE_URL, KcTestDatabase, type TestMember } from '../support/kcDatabase';
+import { KcTestDatabase, type TestMember } from '../support/kcDatabase';
 
 /**
  * The compatibility engine against the real KC schema, for the parts of the
@@ -8,7 +8,7 @@ import { KC_DATABASE_URL, KcTestDatabase, type TestMember } from '../support/kcD
  * reads, logic trees, embedded resources, and what row-level security makes
  * of direct writes.
  */
-describe.skipIf(!KC_DATABASE_URL)('Compatibility engine on the KC schema', () => {
+describe('Compatibility engine on the KC schema', () => {
   const database = new KcTestDatabase();
   let alice: TestMember;
   let bob: TestMember;

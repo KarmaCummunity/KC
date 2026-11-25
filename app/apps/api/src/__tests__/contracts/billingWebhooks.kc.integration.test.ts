@@ -4,7 +4,7 @@ import type { IProEntitlementRepository } from '@kc/application';
 import { createPortTransport, createRemotePort } from '@kc/infrastructure-api';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { signBody } from '../../modules/billing/paymentProviderEvents';
-import { KC_DATABASE_URL, KcTestDatabase } from '../support/kcDatabase';
+import { KcTestDatabase } from '../support/kcDatabase';
 import { type KcGateway, startKcGateway } from '../support/kcGateway';
 
 const REVENUECAT_SECRET = 'rc-integration-secret';
@@ -16,7 +16,7 @@ const DAY_MS = 24 * 3600_000;
  * provider sends, the route's own check of who sent it, and the database
  * function that applies the event.
  */
-describe.skipIf(!KC_DATABASE_URL)('Billing webhooks on the KC schema', () => {
+describe('Billing webhooks on the KC schema', () => {
   const database = new KcTestDatabase();
   let gateway: KcGateway;
   let baseUrl: string;

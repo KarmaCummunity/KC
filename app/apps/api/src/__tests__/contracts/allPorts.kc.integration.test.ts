@@ -4,7 +4,7 @@ import { findArgsProblem, type PortArgShapes } from '../../platform/ports/argSha
 import { errorCodeOf } from '../../platform/ports/portClients';
 import generated from '../../platform/ports/portArgShapes.generated.json';
 import type { SqlBackedClient } from '../../platform/postgrest/sqlBackedClient';
-import { KC_DATABASE_URL, KcTestDatabase } from '../support/kcDatabase';
+import { KcTestDatabase } from '../support/kcDatabase';
 import { sampleArgs } from '../support/sampleArgs';
 
 const shapes = generated as unknown as PortArgShapes;
@@ -51,7 +51,7 @@ const DATA_REFUSALS = /^(P0001|P0002|42501|PGRST116|23\d{3}|22[0-9A-Z]{3})$/;
  * point is that the engine understood every request the adapters build.
  * It covers the ports that have no contract suite of their own.
  */
-describe.skipIf(!KC_DATABASE_URL)('Every hosted port method on the compatibility engine', () => {
+describe('Every hosted port method on the compatibility engine', () => {
   const database = new KcTestDatabase();
   const refusals: Refusal[] = [];
   const crashes: Array<{ call: string; error: string }> = [];

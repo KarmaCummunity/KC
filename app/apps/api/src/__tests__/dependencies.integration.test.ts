@@ -11,7 +11,7 @@ const { DATABASE_URL, REDIS_URL } = process.env;
  * Runs only when both variables point at live services (a local Postgres and
  * Redis, or the CI service containers); skipped everywhere else.
  */
-describe.skipIf(!DATABASE_URL || !REDIS_URL)('AppModule with live dependencies', () => {
+describe('AppModule with live dependencies', () => {
   let app: NestFastifyApplication;
 
   beforeAll(async () => {

@@ -2,7 +2,7 @@ import 'reflect-metadata';
 import { type ClientFrame, REALTIME_CLOSE, REALTIME_PATH, type ServerFrame } from '@kc/infrastructure-api';
 import { SupabaseChatRepository } from '@kc/infrastructure-supabase';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
-import { KC_DATABASE_URL, KcTestDatabase, type TestMember } from '../support/kcDatabase';
+import { KcTestDatabase, type TestMember } from '../support/kcDatabase';
 import { type KcGateway, startKcGateway } from '../support/kcGateway';
 
 /** How long a test waits for a frame that should arrive. */
@@ -25,7 +25,7 @@ interface TestSocket {
  * The realtime gateway end to end (ADR-011): a real WebSocket, the real
  * policies on `realtime.messages`, and events the database itself sends.
  */
-describe.skipIf(!KC_DATABASE_URL)('Realtime gateway on the KC schema', () => {
+describe('Realtime gateway on the KC schema', () => {
   const database = new KcTestDatabase();
   const open: TestSocket[] = [];
   let gateway: KcGateway;
