@@ -14,22 +14,23 @@ describe('listingCardDetails', () => {
   it('shows a ride offer departure and its free seats', () => {
     expect(listingCardDetails({ ride: RIDE, isRequest: false, secondary: 'ignored', t, formatTime })).toEqual([
       { icon: 'time-outline', text: 'at 08:00' },
-      { icon: 'people-outline', text: 'cards.seats_other:3' },
+      { icon: 'people-outline', text: 'cards.seats:3' },
     ]);
   });
 
   it('counts passengers on a ride request', () => {
     const details = listingCardDetails({ ride: { ...RIDE, departsAt: null }, isRequest: true, secondary: null, t, formatTime });
-    expect(details).toEqual([{ icon: 'people-outline', text: 'cards.passengers_other:3' }]);
+    expect(details).toEqual([{ icon: 'people-outline', text: 'cards.passengers:3' }]);
   });
 
-  it('picks the singular copy for one seat or one passenger (#1412: v3 i18n does not resolve plurals)', () => {
+  // #1784: the card passes the base key + `{ count }`; i18n JSON v4 picks the plural form.
+  it('passes the base seats/passengers key with count for one seat or passenger', () => {
     const one = { ...RIDE, departsAt: null, seats: 1 };
     expect(listingCardDetails({ ride: one, isRequest: false, secondary: null, t, formatTime })).toEqual([
-      { icon: 'people-outline', text: 'cards.seats_one:1' },
+      { icon: 'people-outline', text: 'cards.seats:1' },
     ]);
     expect(listingCardDetails({ ride: one, isRequest: true, secondary: null, t, formatTime })).toEqual([
-      { icon: 'people-outline', text: 'cards.passengers_one:1' },
+      { icon: 'people-outline', text: 'cards.passengers:1' },
     ]);
   });
 

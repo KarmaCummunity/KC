@@ -15,8 +15,8 @@ export type WebhookDeps = {
   /** D158: a photo from a linked Pro user, for their waiting bot draft. Absent → ignored. */
   onProPhoto?: (args: ProPhoto) => Promise<void>;
   verifyToken: string;
+  /** Meta app secret. Empty → every POST is rejected (fail closed; there is no bypass). */
   appSecret: string;
-  skipSignatureVerify: boolean;
 };
 
 export type ProPhoto = {
@@ -56,7 +56,7 @@ function timingSafeEqual(a: string, b: string): boolean {
 }
 
 async function verifySignature(deps: WebhookDeps, rawBody: string, header: string | null) {
-  if (!deps.appSecret) return deps.skipSignatureVerify;
+  if (!deps.appSecret) return false;
   if (!header?.startsWith('sha256=')) return false;
   const expected = await hmacSha256Hex(deps.appSecret, rawBody);
   return timingSafeEqual(header.slice('sha256='.length), expected);
