@@ -179,6 +179,14 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      - name: Require current merge-group candidate
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          MERGE_GROUP_BASE_REF: ${{ github.event.merge_group.base_ref }}
+          MERGE_GROUP_HEAD_REF: ${{ github.event.merge_group.head_ref }}
+          MERGE_GROUP_HEAD_SHA: ${{ github.event.merge_group.head_sha }}
+        run: node scripts/maestro-queue-freshness.mjs
+
       - name: Install pinned guard-script dependencies
         run: npm ci --prefix scripts --ignore-scripts --no-audit --no-fund
 
@@ -236,6 +244,14 @@ jobs:
         # An older checked-out tree (e.g. mobile-nightly's pinned SHA) has no throttle yet.
         run: if [ -f scripts/kc-dev-slot.mjs ]; then node scripts/kc-dev-slot.mjs; else echo 'no kc-dev slot script in this tree'; fi
 
+      - name: Recheck candidate after waiting for DEV slot
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          MERGE_GROUP_BASE_REF: ${{ github.event.merge_group.base_ref }}
+          MERGE_GROUP_HEAD_REF: ${{ github.event.merge_group.head_ref }}
+          MERGE_GROUP_HEAD_SHA: ${{ github.event.merge_group.head_sha }}
+        run: node scripts/maestro-queue-freshness.mjs
+
       # A green run takes 24–28 min (19 flows). 55 min is twice that; the runner itself stops early,
       # failed, when kc-dev is down or 3 flows in a row fail twice (scripts/maestro-run-android.sh).
       - name: Run Maestro flows on the emulator
@@ -258,6 +274,14 @@ jobs:
           pre-emulator-launch-script: $ANDROID_HOME/platform-tools/adb start-server
           # One command: the action runs each script line in its own shell.
           script: bash scripts/maestro-run-android.sh "$E2E_APK" "$RUNNER_TEMP/maestro"
+
+      - name: Reject acceptance if candidate changed during Maestro
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          MERGE_GROUP_BASE_REF: ${{ github.event.merge_group.base_ref }}
+          MERGE_GROUP_HEAD_REF: ${{ github.event.merge_group.head_ref }}
+          MERGE_GROUP_HEAD_SHA: ${{ github.event.merge_group.head_sha }}
+        run: node scripts/maestro-queue-freshness.mjs
 
       - name: Remove unsafe automatic media from capture flows
         id: native-capture-privacy
