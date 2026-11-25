@@ -7,14 +7,15 @@ const notes = 'b'.repeat(64);
 const input = () => ({
   record: { upload_run_id: 456, backend: 'prod', source_sha: sha, version: '1.9.400', build_number: '50', notes_sha256: notes, release_type: 'MANUAL',
     acceptance: { guest: true, media_denial: true, notification_consent: true, production_signed_binary: true },
-    evidence: [{ run_id: 123, head_sha: sha, kind: 'physical-ios-candidate', evidence_url: 'https://example.invalid/private-reviewed-evidence', version: '1.9.400', build_number: '50', source_sha: sha }] },
+    evidence: [{ method: 'human-device', reviewed_by: 'test-reviewer', device: 'test-iPhone', os: 'test-iOS', checked_at: '2026-11-25T12:00:00Z', checks: ['notification_consent_delivery'], kind: 'reviewed-device-candidate', evidence_url: 'https://example.invalid/private-reviewed-evidence', version: '1.9.400', build_number: '50', source_sha: sha }] },
   currentNotesHash: notes, sourceOnMain: true, uploadProof: { backend: 'prod', source_sha: sha, build_number: '50' },
-  runs: [{ id: 456, status: 'completed', head_sha: sha, path: '.github/workflows/prod-store-build.yml', repository: { full_name: 'KarmaCummunity/KC' } }, { id: 123, conclusion: 'success', head_sha: sha, repository: { full_name: 'KarmaCummunity/KC' } }],
+  runs: [{ id: 456, status: 'completed', head_sha: sha, path: '.github/workflows/prod-store-build.yml', repository: { full_name: 'KarmaCummunity/KC' } }],
 });
 test('only exact qualified PROD binary with manual release is eligible', () => {
   assert.deepEqual(qualifyCandidate(input()), { version: '1.9.400', buildNumber: '50', sourceSha: sha });
 });
 for (const [name, change] of [
+  ['missing notification delivery check', x => { x.record.evidence[0].checks = []; }],
   ['missing upload provenance', x => { x.record.upload_run_id = 999; }],
   ['wrong upload source', x => { x.uploadProof.source_sha = 'd'.repeat(40); }],
   ['missing guest acceptance', x => { delete x.record.acceptance.guest; }],
@@ -22,8 +23,8 @@ for (const [name, change] of [
   ['missing signed binary acceptance', x => { x.record.acceptance.production_signed_binary = false; }],
   ['stale notes', x => { x.currentNotesHash = 'c'.repeat(64); }],
   ['source not on main', x => { x.sourceOnMain = false; }],
-  ['failed evidence run', x => { x.runs[1].conclusion = 'failure'; }],
-  ['foreign evidence repository', x => { x.runs[1].repository.full_name = 'other/repo'; }],
+  ['unreviewed device evidence', x => { delete x.record.evidence[0].reviewed_by; }],
+  ['foreign upload repository', x => { x.runs[0].repository.full_name = 'other/repo'; }],
   ['wrong evidence build', x => { x.record.evidence[0].build_number = '49'; }],
   ['old simulator substituted for physical candidate', x => { x.record.evidence[0].kind = 'dev-ipad-simulator'; }],
   ['automatic release', x => { x.record.release_type = 'AFTER_APPROVAL'; }],

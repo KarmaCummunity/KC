@@ -17,11 +17,12 @@ export function qualifyCandidate({ record, currentNotesHash, sourceOnMain, runs,
   const upload = runs.find(r => r.id === record.upload_run_id);
   reject(upload?.status === 'completed' && upload.path === '.github/workflows/prod-store-build.yml' && upload.repository?.full_name === 'KarmaCummunity/KC', 'completed PROD upload run required');
   reject(uploadProof?.backend === 'prod' && uploadProof.source_sha === record.source_sha && uploadProof.build_number === record.build_number, 'exact successful iOS upload proof required');
-  const exact = record.evidence.find(e => e.kind === 'physical-ios-candidate' && e.version === record.version && e.build_number === record.build_number && e.source_sha === record.source_sha);
-  reject(exact && Number.isSafeInteger(exact.run_id), 'physical candidate evidence does not match');
+  const exact = record.evidence.find(e => e.kind === 'reviewed-device-candidate' && e.version === record.version && e.build_number === record.build_number && e.source_sha === record.source_sha);
+  reject(exact && ['human-device', 'automated-device'].includes(exact.method), 'reviewed device evidence does not match');
+  reject(['reviewed_by', 'device', 'os', 'checked_at'].every(k => typeof exact[k] === 'string' && exact[k].trim().length > 0), 'device evidence review metadata missing');
+  reject(!Number.isNaN(Date.parse(exact.checked_at)), 'device evidence date invalid');
   reject(typeof exact.evidence_url === 'string' && /^https:\/\//.test(exact.evidence_url), 'private reviewed evidence reference required');
-  const run = runs.find(r => r.id === exact.run_id);
-  reject(run?.conclusion === 'success' && run.head_sha === exact.head_sha && run.repository?.full_name === 'KarmaCummunity/KC', 'evidence run failed, foreign or mismatched');
+  reject(exact.checks?.includes('notification_consent_delivery'), 'physical notification consent/delivery scope missing');
   return { version: record.version, buildNumber: record.build_number, sourceSha: record.source_sha };
 }
 
@@ -41,7 +42,7 @@ async function main(env = process.env) {
   const branchResponse = await fetch('https://api.github.com/repos/KarmaCummunity/KC/branches/main', { headers: { Authorization: `Bearer ${env.GITHUB_TOKEN}` } });
   if (!branchResponse.ok || (await branchResponse.json()).commit?.sha !== env.CANDIDATE_COMMIT) throw new Error('Candidate qualification commit is not current main');
   const runs = [];
-  for (const runId of new Set([record.upload_run_id, ...(record.evidence ?? []).map(e => e.run_id)])) {
+  for (const runId of [record.upload_run_id]) {
     if (!Number.isSafeInteger(runId)) throw new Error('Invalid evidence/upload run id');
     const response = await fetch(`https://api.github.com/repos/KarmaCummunity/KC/actions/runs/${runId}`, {
       headers: { Authorization: `Bearer ${env.GITHUB_TOKEN}`, Accept: 'application/vnd.github+json' },

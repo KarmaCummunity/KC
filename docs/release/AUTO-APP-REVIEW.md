@@ -27,12 +27,15 @@ cancels another review, deploys production or enables a store-build variable.
      `docs/store/app-review-notes.md`. Notes must be factual and reviewed.
    - `acceptance`: explicit true for `guest`, `media_denial`,
      `notification_consent`, `production_signed_binary`.
-   - `evidence`: at least one reviewed `physical-ios-candidate` entry with
-     exact `version`, `build_number`, `source_sha`, a successful same-repository
-     evidence `run_id` and its exact `head_sha`, and a private `evidence_url`.
-     This is a protected reviewer attestation backed by a successful evidence
-     run, not a claim that any successful run proves physical-device behavior.
-     Do not use this field for a simulator run or invent a physical evidence run.
+   - `evidence`: at least one reviewed `reviewed-device-candidate` entry with
+     exact `version`, `build_number`, `source_sha`, `method` (`human-device`
+     or `automated-device`), `device`, `os`, `checked_at`, `reviewed_by`, a
+     private `evidence_url`, and `checks` including
+     `notification_consent_delivery`. A legitimate human device test qualifies.
+     No physical CI provider or fabricated successful run is required.
+     The protected record is the review attestation, not the URL itself.
+     Simulator evidence may support guest and media checks. The device entry
+     covers the unresolved OS-consent and delivery boundary only.
 
 4. Once that qualification-record commit is current main and its push CI
    succeeds, the automatic workflow validates provenance without ASC secrets.
@@ -52,7 +55,12 @@ The existing manual plan/submit workflow remains available with its safeguards.
 
 The automation is installed only after its workflow reaches main. A local green
 script test, DEV merge or uploaded binary is not evidence of App Review submission.
-A reviewed record is necessary because no existing unattended physical-device
-acceptance provider is configured here. Do not fabricate that missing evidence.
+A reviewed record is necessary to bind the actual tested binary and factual
+notes to this automatic submission. It does not require a new CI provider.
+A human device test with exact build identity and honest reviewed evidence can
+satisfy notification acceptance; simulator screenshots can cover other relevant
+checks. These candidate checks address the three unresolved Apple findings,
+not a new blanket release policy. The existing CI/CODEOWNERS, VALID processing,
+conflict checks and MANUAL release behavior remain the release protections.
 The Apple remediation outcome stays open until the actual corrected candidate
 has been qualified and Apple confirms the submission state.
