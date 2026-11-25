@@ -1,7 +1,7 @@
 import React from 'react';
 import { ActivityIndicator, Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
-import { useRouter } from 'expo-router';
+import { useRouter, type Href } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Text, spacing, radius, typography, useTheme } from '@kc/ui';
@@ -9,6 +9,7 @@ import type { GuestPost } from '@kc/application';
 import { guestPosts } from '../../services/guestPostsComposition';
 import { useRedirectIntentStore } from '../../store/redirectIntentStore';
 import { guestMemberIntent } from '../../navigation/guestBrowsePaths';
+import { guestAuthorPath } from '../../navigation/guestAuthorPath';
 import { KcCard } from '../../components/cards/KcCard';
 import { textAlignStart } from '../../lib/rtlLayout';
 
@@ -38,6 +39,7 @@ export function GuestBrowseScreen({ postId }: Readonly<{ postId?: string }>) {
     router.push('/(auth)');
   };
   const linkStyle = { paddingVertical: spacing.md, paddingHorizontal: spacing.sm };
+  const cardWidth = Math.min(680, width) - spacing.lg * 2;
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView contentContainerStyle={{ padding: spacing.lg, gap: spacing.md, maxWidth: 680, width: '100%', alignSelf: 'center' }}>
@@ -51,12 +53,7 @@ export function GuestBrowseScreen({ postId }: Readonly<{ postId?: string }>) {
         </Text>
         <Text style={{ ...typography.body, color: colors.textSecondary, textAlign: alignment }}>{t('auth.guestReadOnly')}</Text>
         {postId === undefined ? (
-          <Pressable
-            accessibilityRole="link"
-            testID="guest-map-link"
-            onPress={() => router.push('/browse/map')}
-            style={linkStyle}
-          >
+          <Pressable accessibilityRole="link" testID="guest-map-link" onPress={() => router.push('/browse/map')} style={linkStyle}>
             <Text style={{ color: colors.primary }}>{t('auth.guestMapLink')}</Text>
           </Pressable>
         ) : null}
@@ -73,17 +70,37 @@ export function GuestBrowseScreen({ postId }: Readonly<{ postId?: string }>) {
             {t(postId === undefined ? 'auth.guestEmpty' : 'auth.guestUnavailable')}
           </Text>
         ) : null}
-        {!state.isError && posts.map((post) => (
-          <KcCard
-            key={post.id} testID={`guest-post-${post.id}`}
-            width={Math.min(680, width) - spacing.lg * 2}
-            textOnly disabled={postId !== undefined}
-            title={post.title} summary={post.description}
-            location={i18n.language.startsWith('en') ? post.cityNameEn : post.cityNameHe}
-            tone="give" badgeLabel="" placeholderIcon="document-text-outline"
-            onPress={() => router.push({ pathname: '/browse/post/[id]', params: { id: post.id } })}
-          />
-        ))}
+        {!state.isError && posts.map((post) => {
+          const authorHref = guestAuthorPath(post.authorShareHandle);
+          return (
+            <View key={post.id} style={{ gap: spacing.xs }}>
+              {authorHref && post.authorShareHandle ? (
+                <Pressable
+                  accessibilityRole="link"
+                  testID={`guest-author-${post.authorShareHandle}`}
+                  accessibilityLabel={t('auth.guestAuthorA11y', { handle: post.authorShareHandle })}
+                  onPress={() => router.push(authorHref as Href)}
+                  style={linkStyle}
+                >
+                  <Text style={{ color: colors.primary, textAlign: alignment }}>@{post.authorShareHandle}</Text>
+                </Pressable>
+              ) : null}
+              <KcCard
+                testID={`guest-post-${post.id}`}
+                width={cardWidth}
+                textOnly
+                disabled={postId !== undefined}
+                title={post.title}
+                summary={post.description}
+                location={i18n.language.startsWith('en') ? post.cityNameEn : post.cityNameHe}
+                tone="give"
+                badgeLabel=""
+                placeholderIcon="document-text-outline"
+                onPress={() => router.push({ pathname: '/browse/post/[id]', params: { id: post.id } })}
+              />
+            </View>
+          );
+        })}
         {postId === undefined && feed.hasNextPage && !feed.isError && (
           <Pressable accessibilityRole="button" disabled={feed.isFetchingNextPage} onPress={() => { void feed.fetchNextPage(); }} style={linkStyle}>
             <Text style={{ color: colors.primary }}>{t('auth.guestMore')}</Text>

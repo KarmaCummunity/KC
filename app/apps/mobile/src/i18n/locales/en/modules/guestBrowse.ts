@@ -13,4 +13,5 @@ export const guestBrowseEn = {
   guestMapLink: 'View on map',
   guestProfileUnavailable: 'This profile is not available.',
   guestProfileStats: '{{followers}} followers · {{openPosts}} open posts',
+  guestAuthorA11y: 'Open @{{handle}} profile',
 } as const;

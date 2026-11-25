@@ -3139,7 +3139,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/posts/SupabaseGuestPostsRepository.ts",
-   "line": 18,
+   "line": 15,
    "area": "posts",
    "symbol": "SupabaseGuestPostsRepository.list",
    "via": "literal",
@@ -3148,7 +3148,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/posts/SupabaseGuestPostsRepository.ts",
-   "line": 25,
+   "line": 22,
    "area": "posts",
    "symbol": "SupabaseGuestPostsRepository.get",
    "via": "literal",
@@ -3157,7 +3157,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/posts/SupabaseGuestProfileRepository.ts",
-   "line": 40,
+   "line": 33,
    "area": "posts",
    "symbol": "SupabaseGuestProfileRepository.getByHandle",
    "via": "literal",
@@ -3166,7 +3166,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/posts/SupabaseGuestProfileRepository.ts",
-   "line": 49,
+   "line": 42,
    "area": "posts",
    "symbol": "SupabaseGuestProfileRepository.listPosts",
    "via": "literal",

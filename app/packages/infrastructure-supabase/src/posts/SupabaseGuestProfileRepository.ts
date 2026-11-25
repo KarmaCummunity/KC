@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { GuestPost, GuestProfile, IGuestProfileRepository } from '@kc/application';
 import type { Database } from '../database.types';
 import { unwrapCall } from '../rpc/mapRpcError';
+import { mapGuestPostRow } from './mapGuestPostRow';
 
 type ProfileRow = Database['public']['Functions']['guest_profile']['Returns'][number];
 type PostRow = Database['public']['Functions']['guest_profile_posts']['Returns'][number];
@@ -20,14 +21,6 @@ const mapProfile = (row: ProfileRow): GuestProfile => ({
   itemsGivenCount: row.items_given_count,
   itemsReceivedCount: row.items_received_count,
   openPostsCount: row.open_posts_count,
-});
-
-const mapPost = (row: PostRow): GuestPost => ({
-  id: row.id,
-  title: row.title,
-  description: row.description,
-  cityNameHe: row.city_name_he,
-  cityNameEn: row.city_name_en,
 });
 
 /** Guest public profile + that member's open Public posts (anon only). */
@@ -52,6 +45,6 @@ export class SupabaseGuestProfileRepository implements IGuestProfileRepository {
         ...(beforeId ? { p_before_id: beforeId } : {}),
       }),
     );
-    return (rows ?? []).map(mapPost);
+    return (rows ?? []).map((row) => mapGuestPostRow(row as PostRow));
   }
 }

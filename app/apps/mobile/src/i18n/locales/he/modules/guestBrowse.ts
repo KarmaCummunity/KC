@@ -13,4 +13,5 @@ export const guestBrowseHe = {
   guestMapLink: 'צפייה במפה',
   guestProfileUnavailable: 'הפרופיל הזה לא זמין.',
   guestProfileStats: '{{followers}} עוקבים · {{openPosts}} פוסטים פתוחים',
+  guestAuthorA11y: 'פתיחת הפרופיל של @{{handle}}',
 } as const;

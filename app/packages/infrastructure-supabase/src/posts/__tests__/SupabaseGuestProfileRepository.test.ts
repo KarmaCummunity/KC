@@ -20,6 +20,7 @@ const profileRow = {
 };
 const postRow = {
   id, title: 'Desk', description: 'A desk', city_name_he: 'לוד', city_name_en: 'Lod',
+  author_share_handle: 'alice',
 };
 
 describe('guest profile adapter', () => {
@@ -60,7 +61,10 @@ describe('guest profile adapter', () => {
     });
     const repo = new SupabaseGuestProfileRepository(client);
     expect(await repo.listPosts('alice', id)).toEqual([
-      { id, title: 'Desk', description: 'A desk', cityNameHe: 'לוד', cityNameEn: 'Lod' },
+      {
+        id, title: 'Desk', description: 'A desk', cityNameHe: 'לוד', cityNameEn: 'Lod',
+        authorShareHandle: 'alice',
+      },
     ]);
     expect(calls[0]?.args).toEqual({
       p_share_handle: 'alice', p_limit: 20, p_before_id: id,

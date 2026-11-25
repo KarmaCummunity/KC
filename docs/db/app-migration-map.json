@@ -9359,14 +9359,14 @@
    "launch": "core",
    "confidence": "high",
    "missing": null,
-   "note": "D186 / FR-AUTH-014, guest_posts forward migration: read-only signed-out projection of open Public posts with active owner/world/kind, published and unexpired. Returns only opaque id, title, description and city names; existing member grants stay closed. Optional post id, before-id cursor and bounded page limit.",
+   "note": "D186 / FR-AUTH-014 (+ #2729): read-only signed-out projection of open Public posts. Returns opaque id, title, description, city names, and author_share_handle (null when the author is not Public). Optional post id, before-id cursor and bounded page limit.",
    "oldObject": {},
    "targets": [
     {
      "type": "rpc",
      "name": "guest_posts",
      "signature": [
-      "guest_posts(p_before_id?: string, p_limit?: number, p_post_id?: string) → { city_name_en: string city_name_he: string description: string id: string title: string }[]"
+      "guest_posts(p_before_id?: string, p_limit?: number, p_post_id?: string) → { author_share_handle: string city_name_en: string city_name_he: string description: string id: string title: string }[]"
      ],
      "errors": []
     }
@@ -9377,13 +9377,13 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/posts/SupabaseGuestPostsRepository.ts",
-     "line": 18,
+     "line": 15,
      "symbol": "SupabaseGuestPostsRepository.list",
      "area": "posts"
     },
     {
      "file": "app/packages/infrastructure-supabase/src/posts/SupabaseGuestPostsRepository.ts",
-     "line": 25,
+     "line": 22,
      "symbol": "SupabaseGuestPostsRepository.get",
      "area": "posts"
     }
@@ -9414,7 +9414,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/posts/SupabaseGuestProfileRepository.ts",
-     "line": 40,
+     "line": 33,
      "symbol": "SupabaseGuestProfileRepository.getByHandle",
      "area": "posts"
     }
@@ -9427,14 +9427,14 @@
    "launch": "core",
    "confidence": "high",
    "missing": null,
-   "note": "App Store 5.1.1(v) / FR-AUTH-014 AC7 (#2729): anon-only open Public posts of one Public member; guest_posts row shape and before-id cursor. EXECUTE to anon only.",
+   "note": "App Store 5.1.1(v) / FR-AUTH-014 AC7 (#2729): anon-only open Public posts of one Public member; same row shape as guest_posts including author_share_handle; before-id cursor. EXECUTE to anon only.",
    "oldObject": {},
    "targets": [
     {
      "type": "rpc",
      "name": "guest_profile_posts",
      "signature": [
-      "guest_profile_posts(p_before_id?: string, p_limit?: number, p_share_handle: string) → { city_name_en: string city_name_he: string description: string id: string title: string }[]"
+      "guest_profile_posts(p_before_id?: string, p_limit?: number, p_share_handle: string) → { author_share_handle: string city_name_en: string city_name_he: string description: string id: string title: string }[]"
      ],
      "errors": []
     }
@@ -9445,7 +9445,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/posts/SupabaseGuestProfileRepository.ts",
-     "line": 49,
+     "line": 42,
      "symbol": "SupabaseGuestProfileRepository.listPosts",
      "area": "posts"
     }
