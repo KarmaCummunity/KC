@@ -6,6 +6,9 @@ import { instrumentStartup } from './ipad-qualification-startup.mjs';
 test('diagnostic markers preserve startup decisions and contain no user values', () => {
   const source = readFileSync(new URL('../app/apps/mobile/app/_layout.tsx', import.meta.url), 'utf8');
   const result = instrumentStartup(source);
+  for (const marker of ['module-loaded', 'root-render', 'font-status', 'content-render', 'content-effect']) {
+    assert.ok(result.includes(`KC_STARTUP_DIAGNOSTIC ${marker}`));
+  }
   assert.match(result, /rtl-read-start/);
   assert.match(result, /rtl-read-finished/);
   assert.match(result, /rtl-needs-reload/);

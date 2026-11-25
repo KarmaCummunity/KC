@@ -5,6 +5,11 @@ import { fileURLToPath } from 'node:url';
 /** Add fixed, non-personal startup markers without changing branch decisions. */
 export function instrumentStartup(source) {
   const replacements = [
+    ["void SplashScreen.preventAutoHideAsync();", 'console.warn("KC_STARTUP_DIAGNOSTIC module-loaded");\nvoid SplashScreen.preventAutoHideAsync();'],
+    ['export default function RootLayout() {', 'export default function RootLayout() {\n  console.warn("KC_STARTUP_DIAGNOSTIC root-render");'],
+    ['  const brandFontStatus = useBrandFonts();', '  const brandFontStatus = useBrandFonts();\n  console.warn("KC_STARTUP_DIAGNOSTIC font-status", brandFontStatus);'],
+    ['function RootLayoutContent() {', 'function RootLayoutContent() {\n  console.warn("KC_STARTUP_DIAGNOSTIC content-render");'],
+    ['    return setupQueryLifecycleSync();', '    console.warn("KC_STARTUP_DIAGNOSTIC content-effect");\n    return setupQueryLifecycleSync();'],
     ['      const stored = await loadStoredLanguageAsync();', '      console.warn("KC_STARTUP_DIAGNOSTIC rtl-read-start");\n      const stored = await loadStoredLanguageAsync();\n      console.warn("KC_STARTUP_DIAGNOSTIC rtl-read-finished");'],
     ['      const needsReload = I18nManager.isRTL !== isRtlLanguage(desired);', '      const needsReload = I18nManager.isRTL !== isRtlLanguage(desired);\n      console.warn("KC_STARTUP_DIAGNOSTIC rtl-needs-reload", needsReload);'],
     ['      if (needsReload) reloadApp();', '      if (needsReload) { console.warn("KC_STARTUP_DIAGNOSTIC rtl-reload-call"); reloadApp(); }'],
