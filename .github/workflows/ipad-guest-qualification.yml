@@ -58,6 +58,10 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Resolve only public DEV configuration
         run: node scripts/ipad-qualification-env.mjs >> "$GITHUB_ENV"
+      - name: Instrument only isolated DEV startup decision boundary
+        run: |
+          node scripts/ipad-qualification-startup.mjs
+          printf '%s\n' 'Diagnostic source differs only by fixed RTL startup markers. Not a production candidate.' > "$RUNNER_TEMP/ipad-evidence/diagnostic-source.txt"
       - name: Build and install locally signed iPad simulator candidate
         timeout-minutes: 50
         working-directory: app/apps/mobile
