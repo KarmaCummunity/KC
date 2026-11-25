@@ -7,7 +7,7 @@ set local search_path = extensions, public;
 -- Keep assertion-helper access inside this rolled-back test transaction only.
 grant usage on schema extensions to anon;
 grant execute on all functions in schema extensions to anon;
-select plan(33);
+select plan(38);
 insert into auth.users (id, email, raw_app_meta_data) values
  ('00000000-0000-4000-8000-00000000000b', 'guest-map-owner@example.test', '{"provider":"google"}');
 update public.users set share_handle = 'guest_owner', biography = 'Hello', city_id = null
@@ -73,6 +73,17 @@ select is((select array_agg(key order by key) from jsonb_object_keys((select to_
   array['avatar_url','biography','city_name_en','city_name_he','display_name','followers_count','following_count','items_given_count','items_received_count','open_posts_count','share_handle','verification_level'],
   'profile DTO has public fields only: no id, contact, settings or account state');
 select is((select biography || '|' || open_posts_count from public.guest_profile('guest_owner')),'Hello|2','public profile and its guest-visible open posts count');
+select is((select array_agg(key order by key) from jsonb_object_keys((select to_jsonb(g) from public.guest_posts(p_post_id => '50000000-0000-4000-8000-000000000001') g)) key),
+  array['author_share_handle','city_name_en','city_name_he','description','id','title'],
+  'guest_posts DTO has the public author handle and no private columns');
+select is((select array_agg(key order by key) from jsonb_object_keys((select to_jsonb(g) from public.guest_profile_posts('guest_owner') g limit 1)) key),
+  array['author_share_handle','city_name_en','city_name_he','description','id','title'],
+  'guest_profile_posts shares the guest_posts shape');
+select is((select author_share_handle from public.guest_posts(p_post_id => '50000000-0000-4000-8000-000000000001')),
+  (select share_handle from public.guest_profile('guest_owner')),
+  'author_share_handle matches the public profile handle');
+select is((select author_share_handle from public.guest_profile_posts('guest_owner') where id = '50000000-0000-4000-8000-000000000001'),
+  'guest_owner','profile posts carry the same public handle');
 select is((select array_agg(id order by id) from public.guest_profile_posts('guest_owner')),
   array['50000000-0000-4000-8000-000000000001','50000000-0000-4000-8000-000000000009']::uuid[],'profile posts: open Public only');
 select is((select array_agg(id) from public.guest_profile_posts('guest_owner', '50000000-0000-4000-8000-000000000009')),
@@ -86,6 +97,8 @@ update public.users set privacy_mode='Private' where id='00000000-0000-4000-8000
 set local role anon;
 select is((select count(*) from public.guest_profile('guest_owner')),0::bigint,'private profile returns nothing');
 select is((select count(*) from public.guest_profile_posts('guest_owner')),0::bigint,'private profile posts return nothing');
+select is((select author_share_handle from public.guest_posts(p_post_id => '50000000-0000-4000-8000-000000000001')),
+  null::text,'private profile: the post stays visible and the author handle is withheld');
 reset role;
 update public.users set privacy_mode='Public', is_active=false where id='00000000-0000-4000-8000-00000000000b';
 set local role anon;

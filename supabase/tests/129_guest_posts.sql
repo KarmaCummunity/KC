@@ -37,7 +37,7 @@ select ok(not has_function_privilege('anon','public.post_detail(uuid)','execute'
 set local role anon;
 select is((select count(*) from public.guest_posts()),1::bigint,'only one open Public fixture is visible');
 select is((select title from public.guest_posts()),'guest 1','the public title is readable');
-select is((select array_agg(key order by key) from jsonb_object_keys((select to_jsonb(g) from public.guest_posts() g limit 1)) key),array['city_name_en','city_name_he','description','id','title'],'DTO has no member identity, media or details');
+select is((select array_agg(key order by key) from jsonb_object_keys((select to_jsonb(g) from public.guest_posts() g limit 1)) key),array['author_share_handle','city_name_en','city_name_he','description','id','title'],'DTO has the public author handle and no private identity, media or details');
 select is((select count(*) from public.guest_posts('40000000-0000-4000-8000-000000000002')),0::bigint,'followers-only not readable by id');
 select is((select count(*) from public.guest_posts('40000000-0000-4000-8000-000000000003')),0::bigint,'private not readable by id');
 select is((select count(*) from public.guest_posts('40000000-0000-4000-8000-000000000008')),0::bigint,'moderated not readable by id');

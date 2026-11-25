@@ -5947,6 +5947,7 @@ export type Database = {
       guest_posts: {
         Args: { p_before_id?: string; p_limit?: number; p_post_id?: string }
         Returns: {
+          author_share_handle: string | null
           city_name_en: string
           city_name_he: string
           description: string
@@ -5974,6 +5975,7 @@ export type Database = {
       guest_profile_posts: {
         Args: { p_before_id?: string; p_limit?: number; p_share_handle: string }
         Returns: {
+          author_share_handle: string | null
           city_name_en: string
           city_name_he: string
           description: string

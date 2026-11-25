@@ -3,15 +3,18 @@
 --
 -- One eligibility rule for every guest read: kc_access.guest_open_posts is the guest_posts predicate
 -- (open, Public, published, unexpired, active owner/world/kind, known city). guest_posts is redefined on
--- top of it with no change in behaviour, and the new RPCs below read only through it, so the three
--- guest surfaces cannot drift apart. The view is not granted to anyone: anon has no usage on kc_access
--- and only these SECURITY DEFINER functions read it.
+-- top of it, and the new RPCs below read only through it, so the three guest surfaces cannot drift
+-- apart. guest_posts / guest_profile_posts also return author_share_handle (users.share_handle when
+-- privacy_mode is Public, otherwise null) so a guest feed can open /browse/user/[handle]. The view
+-- is not granted to anyone: anon has no usage on kc_access and only these SECURITY DEFINER functions
+-- read it.
 --
 -- Existing tables, member RPCs and their RLS/grants remain unchanged. EXECUTE goes to anon only.
 
 create view kc_access.guest_open_posts as
   select p.id, p.owner_id, p.title, p.description, p.world_slug, p.direction,
-         p.item_subcategory_id, p.geo_approx, p.published_at, c.name_he as city_name_he, c.name_en as city_name_en
+         p.item_subcategory_id, p.geo_approx, p.published_at, c.name_he as city_name_he, c.name_en as city_name_en,
+         case when u.privacy_mode = 'Public' then u.share_handle end as author_share_handle
     from public.posts p
     join public.users u on u.id = p.owner_id and u.is_active
     join public.worlds w on w.slug = p.world_slug and w.is_active
@@ -22,26 +25,32 @@ create view kc_access.guest_open_posts as
      and (p.expires_at is null or p.expires_at > now());
 revoke all on kc_access.guest_open_posts from public, anon, authenticated;
 comment on view kc_access.guest_open_posts is
-  'The single guest eligibility rule (D186 / #2728): open Public published unexpired posts of active owners, worlds and kinds. Read only by guest_* SECURITY DEFINER RPCs.';
+  'The single guest eligibility rule (D186 / #2728): open Public published unexpired posts of active owners, worlds and kinds. author_share_handle is the public profile handle, or null when the owner is not Public. Read only by guest_* SECURITY DEFINER RPCs.';
 
-create or replace function public.guest_posts(
+-- RETURNS TABLE change (author_share_handle): DROP + CREATE, then the same grants as 0081.
+drop function if exists public.guest_posts(uuid, uuid, integer);
+create function public.guest_posts(
   p_post_id uuid default null,
   p_before_id uuid default null,
   p_limit integer default 20
 )
-returns table (id uuid, title text, description text, city_name_he text, city_name_en text)
+returns table (id uuid, title text, description text, city_name_he text, city_name_en text, author_share_handle text)
 language sql
 stable
 security definer
 set search_path = ''
 as $$
-  select g.id, g.title, g.description, g.city_name_he, g.city_name_en
+  select g.id, g.title, g.description, g.city_name_he, g.city_name_en, g.author_share_handle
     from kc_access.guest_open_posts g
    where (p_post_id is null or g.id = p_post_id)
      and (p_before_id is null or g.id < p_before_id)
    order by g.id desc
    limit least(greatest(coalesce(p_limit, 20), 1), 20);
 $$;
+revoke all on function public.guest_posts(uuid, uuid, integer) from public;
+grant execute on function public.guest_posts(uuid, uuid, integer) to anon, authenticated;
+comment on function public.guest_posts(uuid, uuid, integer) is
+  'Guest read-only open Public posts: title, description, city, and the author public share handle (null if the author is not Public). No private identity, contact, media or details.';
 
 -- Guest location: posts.geo_approx is already public-grade (the city centre, or the exact point coarsened
 -- to ~300 m with a per-post jitter; kc_private.post_geo_approx). For guests it is snapped once more to a
@@ -131,18 +140,19 @@ comment on function public.guest_profile(text) is
 
 -- That member's open Public posts, in the guest_posts row shape and keyset cursor (before-id), 20 per page.
 -- Same visibility as guest_profile: nothing for a private or inactive member.
+drop function if exists public.guest_profile_posts(text, uuid, integer);
 create function public.guest_profile_posts(
   p_share_handle text,
   p_before_id uuid default null,
   p_limit integer default 20
 )
-returns table (id uuid, title text, description text, city_name_he text, city_name_en text)
+returns table (id uuid, title text, description text, city_name_he text, city_name_en text, author_share_handle text)
 language sql
 stable
 security definer
 set search_path = ''
 as $$
-  select g.id, g.title, g.description, g.city_name_he, g.city_name_en
+  select g.id, g.title, g.description, g.city_name_he, g.city_name_en, g.author_share_handle
     from public.users u
     join kc_access.guest_open_posts g on g.owner_id = u.id
    where u.share_handle = lower(p_share_handle)
@@ -154,4 +164,4 @@ $$;
 revoke all on function public.guest_profile_posts(text, uuid, integer) from public;
 grant execute on function public.guest_profile_posts(text, uuid, integer) to anon;
 comment on function public.guest_profile_posts(text, uuid, integer) is
-  'Guest read-only open Public posts of one Public member (App Store 5.1.1(v), #2728): title, description, city only.';
+  'Guest read-only open Public posts of one Public member (App Store 5.1.1(v), #2728): same row shape as guest_posts, including the author public share handle.';
