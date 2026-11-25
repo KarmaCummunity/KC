@@ -726,7 +726,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `chat-media` (bucket) | core | 1:1 | bucket `chat-media` | Declared in `95_platform/090_storage.sql`: private, `<user_id>/<chat_id>/<file>`, read through signed URLs by chat members (M23, verified). |  | high | chatMediaUrl.ts:17 |
 | `post-images` (bucket) | core | 1:1 | see `infrastructure-supabase/src/posts/` |  |  |  | usePostShare.ts:69, probeDraftImageAvailability.ts:30, listingImageUpload.ts:36 |
 | `topic = 'user:${userId}:notifications'` (channel) | core | 1:1 | topic `user:<user id>:notifications` | Already on the baseline contract (event `badge`). |  | high | useNotificationInboxBadge.ts:30 |
-| `api_my_pro_status` | core | 1:1 | `api_my_pro_status() → Json` | The caller's Pro status (`is_pro`); the Pro screen reads it. |  | high | pro.tsx:38 |
+| `api_my_pro_status` | core | 1:1 | `api_my_pro_status() → Json` | The caller's Pro status (`is_pro`); the Pro screen reads it. |  | high | pro.tsx:39 |
 | `app_flags` (table) | core | 1:1 | table `app_flags` | Same `select key, enabled`, for signed-in members only (no `anon` grant): before sign-in the compiled defaults apply. After sign-in the same map is `bootstrap_session().flags`. The rows (`world_<slug>_enabled`) are seed data, not part of the baseline (M09, verified). |  | high | featureFlagsComposition.ts:12 |
 | `karma_ledger` (table) | wedge | CHANGED | table `karma_ledger` | `ledger_id` → `id`, `points_delta` → `points`, `ref_type` / `ref_id` → `subject` / `reference`. The total is `my_karma_points()`. |  | high | useKarmaHistory.ts:24 |
 
