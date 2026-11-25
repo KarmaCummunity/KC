@@ -113,4 +113,7 @@ export { SupabaseWhatsAppLinkRepository } from './whatsapp/SupabaseWhatsAppLinkR
 export { SupabaseKnowledgeTopicRepository } from './knowledge/SupabaseKnowledgeTopicRepository';
 export { SupabaseKnowledgeBookingRepository } from './knowledge/SupabaseKnowledgeBookingRepository';
 export { SupabaseGuestPostsRepository } from './posts/SupabaseGuestPostsRepository';
+export { SupabaseGuestMapRepository } from './posts/SupabaseGuestMapRepository';
+export { SupabaseGuestProfileRepository } from './posts/SupabaseGuestProfileRepository';
+
 export { SupabaseKnowledgeSlotSeriesRepository } from './knowledge/SupabaseKnowledgeSlotSeriesRepository';

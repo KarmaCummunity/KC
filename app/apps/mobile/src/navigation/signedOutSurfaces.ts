@@ -4,8 +4,7 @@
 //
 // Signed-out access (docs/db/target-design.md §12.1, D186 + guest read-only expansion):
 // the sign-in flow, published legal text, About pages, public research, nonprofit pages, and
-// `/browse` (+ `/browse/post/<uuid>`). Member map and other-user profile routes stay gated until
-// anon RPCs exist. Pure: no expo-router import.
+// `/browse` (+ post / map / user). Pure: no expo-router import.
 import { isGuestBrowsePath } from './guestBrowsePaths';
 import { isPublicLegalSegment } from './publicLegalPaths';
 import { isPublicOrgPagePath } from './publicOrgPaths';

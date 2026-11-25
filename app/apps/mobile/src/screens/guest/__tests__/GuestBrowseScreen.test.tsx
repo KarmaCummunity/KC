@@ -34,6 +34,8 @@ describe('read-only guest screen', () => {
     for (const write of ['comment', 'follow', 'save', 'report', 'request', 'chat']) {
       expect(screen.queryByText(write)).toBeNull();
     }
+    fireEvent.click(screen.getByTestId('guest-map-link'));
+    expect(mocks.push).toHaveBeenCalledWith('/browse/map');
   });
   it('does not load feed on detail and saves only member intent when sign in is tapped', async () => {
     show(id); await screen.findByText('Desk to give');

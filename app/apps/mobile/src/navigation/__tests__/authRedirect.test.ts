@@ -48,6 +48,20 @@ describe('resolveAuthRedirect', () => {
         resolveAuthRedirect(input({ segments: ['post', '[id]'], pathname: `/post/${id}` })),
       ).toEqual({ kind: 'guest', href: `/browse/post/${id}` });
     });
+
+    it('remaps the member map and other-user profile to guest routes', () => {
+      expect(
+        resolveAuthRedirect(
+          input({
+            segments: ['(tabs)', 'donations', 'marketplace', 'map'],
+            pathname: '/donations/marketplace/map',
+          }),
+        ),
+      ).toEqual({ kind: 'guest', href: '/browse/map' });
+      expect(
+        resolveAuthRedirect(input({ segments: ['user', '[handle]'], pathname: '/user/alice' })),
+      ).toEqual({ kind: 'guest', href: '/browse/user/alice' });
+    });
   });
 
   describe('signed in', () => {

@@ -255,3 +255,13 @@ export * from './identityVerification/StartIdentityVerificationUseCase';
 export * from './identityVerification/GetIdentityVerificationStatusUseCase';
 
 export type { GuestPost, IGuestPostsRepository } from './ports/IGuestPostsRepository';
+export type {
+  GuestMapBounds,
+  GuestMapPin,
+  IGuestMapRepository,
+} from './ports/IGuestMapRepository';
+export type { GuestProfile, IGuestProfileRepository } from './ports/IGuestProfileRepository';
+export { ListGuestMapPinsUseCase } from './guest/ListGuestMapPinsUseCase';
+export { GetGuestProfileUseCase } from './guest/GetGuestProfileUseCase';
+export { ListGuestProfilePostsUseCase } from './guest/ListGuestProfilePostsUseCase';
+

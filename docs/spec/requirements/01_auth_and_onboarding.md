@@ -336,11 +336,11 @@ map and other-user profiles read-only; writes require an account). Supersedes th
 of `D166`; other public-surface decisions stay unchanged.
 
 **Description.** A visitor can browse real open Public posts without registering. The shipped
-view is read-only via `/browse` and `/browse/post/<uuid>` and deliberately smaller than the member
-feed/detail. It does not create an anonymous Auth account, mount member engagement controls or
-load private member data. Product intent also includes read-only map and other-user profiles
-(`{{G:guest-map-profile-rpc}}`); those surfaces stay behind a post-sign-in restore until anon
-RPCs exist, and must not present a no-permission error screen.
+view is read-only via `/browse`, `/browse/post/<uuid>`, `/browse/map` and `/browse/user/<handle>`
+and deliberately smaller than the member feed/detail. It does not create an anonymous Auth
+account, mount member engagement controls or load private member data. Map pins and public
+profiles use the anon-only `guest_map_post_pins` / `guest_profile` / `guest_profile_posts` RPCs
+(KC#2729); missing profiles share one neutral unavailable state (never a lock screen).
 
 **Acceptance Criteria.**
 - AC1. The welcome screen links to `/browse`. A card opens `/browse/post/<uuid>` without sign-in.
@@ -367,9 +367,11 @@ RPCs exist, and must not present a no-permission error screen.
 - AC6. Guest screens have loading, empty/unavailable and retriable error states. Errors must not
   be represented as an empty feed. Hebrew/English use the same data boundary and readable
   small-screen layout. No demo-only content is presented as proof of Apple acceptance.
-- AC7. (Product intent — blocked on `{{G:guest-map-profile-rpc}}`.) Guests may view the map and
-  other users' public profiles read-only once dedicated anon RPCs exist. Until then those member
-  routes keep the remember-and-welcome behaviour; they must not show a no-permission lock screen.
+- AC7. Guests may view the map (`/browse/map`, pins only via `guest_map_post_pins`) and other
+  users' public profiles (`/browse/user/<handle>` via `guest_profile` + `guest_profile_posts`)
+  read-only. Signed-out deep links to the member map or `/user/<handle>` remap to these routes.
+  A private, inactive or unknown handle shows one neutral unavailable state — never an error or
+  lock screen. Writes stay hidden or prompt sign-up only when tapped.
 
 **Related.** `FR-AUTH-001`, `FR-POST-023 AC6`, `docs/db/target-design.md` §12.1.
 

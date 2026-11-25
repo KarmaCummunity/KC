@@ -50,6 +50,16 @@ export function GuestBrowseScreen({ postId }: Readonly<{ postId?: string }>) {
           {t('auth.guestTitle')}
         </Text>
         <Text style={{ ...typography.body, color: colors.textSecondary, textAlign: alignment }}>{t('auth.guestReadOnly')}</Text>
+        {postId === undefined ? (
+          <Pressable
+            accessibilityRole="link"
+            testID="guest-map-link"
+            onPress={() => router.push('/browse/map')}
+            style={linkStyle}
+          >
+            <Text style={{ color: colors.primary }}>{t('auth.guestMapLink')}</Text>
+          </Pressable>
+        ) : null}
         {state.isPending && <ActivityIndicator accessibilityLabel={t('general.loading')} color={colors.primary} />}
         {state.isError ? (
           <View style={{ gap: spacing.sm }}>

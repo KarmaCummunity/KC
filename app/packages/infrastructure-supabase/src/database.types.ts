@@ -5934,8 +5934,45 @@ export type Database = {
       }
       get_public_research_questions: { Args: { p_slug: string }; Returns: Json }
       get_research_salt: { Args: never; Returns: string }
+      guest_map_post_pins: {
+        Args: { p_bounds: Json; p_filters?: Json; p_limit?: number }
+        Returns: {
+          direction: string
+          lat: number
+          lng: number
+          post_id: string
+          world_slug: string
+        }[]
+      }
       guest_posts: {
         Args: { p_before_id?: string; p_limit?: number; p_post_id?: string }
+        Returns: {
+          city_name_en: string
+          city_name_he: string
+          description: string
+          id: string
+          title: string
+        }[]
+      }
+      guest_profile: {
+        Args: { p_share_handle: string }
+        Returns: {
+          avatar_url: string
+          biography: string
+          city_name_en: string
+          city_name_he: string
+          display_name: string
+          followers_count: number
+          following_count: number
+          items_given_count: number
+          items_received_count: number
+          open_posts_count: number
+          share_handle: string
+          verification_level: number
+        }[]
+      }
+      guest_profile_posts: {
+        Args: { p_before_id?: string; p_limit?: number; p_share_handle: string }
         Returns: {
           city_name_en: string
           city_name_he: string
