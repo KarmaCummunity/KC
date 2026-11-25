@@ -65,3 +65,13 @@ test('direct native launch is captured separately before Maestro clear-state lau
   assert.match(workflow, /direct-launch-console.log/);
   assert.ok(workflow.indexOf('Direct native launch diagnostic') < workflow.indexOf('Real native guest interaction'));
 });
+
+
+test('warm relaunch control preserves initial failure and never clears persisted RTL state', () => {
+  const workflow = readFileSync(new URL('../.github/workflows/ipad-guest-qualification.yml', import.meta.url), 'utf8');
+  assert.match(workflow, /initial_status=0/);
+  assert.match(workflow, /warm-interaction.log/);
+  assert.match(workflow, /clearState: false/);
+  assert.match(workflow, /exit "\$initial_status"/);
+  assert.match(workflow, /warm-console.log/);
+});

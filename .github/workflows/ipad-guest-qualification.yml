@@ -121,10 +121,25 @@ jobs:
             done
           }
           trap capture_native_diagnostics EXIT
+          initial_status=0
           maestro --device "$SIMULATOR_UDID" test --debug-output "$RUNNER_TEMP/ipad-evidence/debug" \
             "$GITHUB_WORKSPACE/tests/native/ipad-guest-qualification.yaml" \
-            > "$RUNNER_TEMP/ipad-evidence/interaction.log" 2>&1
-          echo 'Native guest flow completed. No physical APNs or production-binary claim.'
+            > "$RUNNER_TEMP/ipad-evidence/interaction.log" 2>&1 || initial_status=$?
+          capture_native_diagnostics
+          cp "$RUNNER_TEMP/ipad-evidence/native-console.log" "$RUNNER_TEMP/ipad-evidence/initial-console.log"
+          if [ "$initial_status" -ne 0 ]; then
+            # Same binary, preserve native RTL preferences after the initial failure.
+            # This control cannot turn a failed first launch into acceptance.
+            sed 's/clearState: true/clearState: false/' \
+              "$GITHUB_WORKSPACE/tests/native/ipad-guest-qualification.yaml" > "$RUNNER_TEMP/warm-guest.yaml"
+            warm_status=0
+            maestro --device "$SIMULATOR_UDID" test --debug-output "$RUNNER_TEMP/ipad-evidence/warm-debug" \
+              "$RUNNER_TEMP/warm-guest.yaml" > "$RUNNER_TEMP/ipad-evidence/warm-interaction.log" 2>&1 || warm_status=$?
+            printf '%s\n' "$warm_status" > "$RUNNER_TEMP/ipad-evidence/warm-status.txt"
+            xcrun simctl spawn "$SIMULATOR_UDID" log show --last 4m --style compact --info \
+              --predicate 'process == "KC"' > "$RUNNER_TEMP/ipad-evidence/warm-console.log" 2>&1 || true
+          fi
+          exit "$initial_status"
       - name: Encrypt evidence before any public log output
         if: always()
         run: |
