@@ -20,8 +20,8 @@
    "distinct": 5
   },
   "rpc": {
-   "callSites": 295,
-   "distinct": 270
+   "callSites": 298,
+   "distinct": 273
   },
   "table": {
    "callSites": 195,
@@ -3129,6 +3129,15 @@
   },
   {
    "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/posts/SupabaseGuestMapRepository.ts",
+   "line": 27,
+   "area": "posts",
+   "symbol": "SupabaseGuestMapRepository.listPins",
+   "via": "literal",
+   "name": "guest_map_post_pins"
+  },
+  {
+   "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/posts/SupabaseGuestPostsRepository.ts",
    "line": 18,
    "area": "posts",
@@ -3144,6 +3153,24 @@
    "symbol": "SupabaseGuestPostsRepository.get",
    "via": "literal",
    "name": "guest_posts"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/posts/SupabaseGuestProfileRepository.ts",
+   "line": 40,
+   "area": "posts",
+   "symbol": "SupabaseGuestProfileRepository.getByHandle",
+   "via": "literal",
+   "name": "guest_profile"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/posts/SupabaseGuestProfileRepository.ts",
+   "line": 49,
+   "area": "posts",
+   "symbol": "SupabaseGuestProfileRepository.listPosts",
+   "via": "literal",
+   "name": "guest_profile_posts"
   },
   {
    "kind": "table",

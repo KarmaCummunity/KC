@@ -12,7 +12,7 @@ import {
   type MapRegion,
   type MarketplaceMapPin,
 } from '@kc/domain';
-import { Text, spacing, typography, useTheme } from '@kc/ui';
+import { Text, radius, spacing, typography, useTheme } from '@kc/ui';
 import { listGuestMapPins } from '../../services/guestBrowseComposition';
 import { KcMap } from '../../components/map/KcMap';
 import { textAlignStart } from '../../lib/rtlLayout';
@@ -120,7 +120,7 @@ export function GuestMapScreen() {
         style={{
           margin: spacing.md,
           padding: spacing.md,
-          borderRadius: 8,
+          borderRadius: radius.md,
           backgroundColor: colors.primary,
         }}
       >

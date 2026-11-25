@@ -60,6 +60,9 @@ table('app_flags', 'same', 'table:app_flags', 'Same `select key, enabled`, for s
 
 // ───────────────────────────── posts, feed, search
 rpc('guest_posts', 'same', 'rpc:guest_posts', 'D186 / FR-AUTH-014, guest_posts forward migration: read-only signed-out projection of open Public posts with active owner/world/kind, published and unexpired. Returns only opaque id, title, description and city names; existing member grants stay closed. Optional post id, before-id cursor and bounded page limit.');
+rpc('guest_map_post_pins', 'same', 'rpc:guest_map_post_pins', 'App Store 5.1.1(v) / FR-AUTH-014 AC7 (#2729): anon-only map pins under the guest_posts eligibility rule; same args/shape as map_post_pins, coords snapped ~1 km. EXECUTE to anon only.');
+rpc('guest_profile', 'same', 'rpc:guest_profile', 'App Store 5.1.1(v) / FR-AUTH-014 AC7 (#2729): anon-only public profile by share_handle (active Public members). No member id or contact. EXECUTE to anon only.');
+rpc('guest_profile_posts', 'same', 'rpc:guest_profile_posts', 'App Store 5.1.1(v) / FR-AUTH-014 AC7 (#2729): anon-only open Public posts of one Public member; guest_posts row shape and before-id cursor. EXECUTE to anon only.');
 rpc('profile_closed_posts_count', 'changed', 'rpc:profile_closed_posts_count', 'One argument, `p_user_id` (the viewer is the caller); counts the closed tab only, so the Hidden tab badge (`p_list_mode = owner_only_me`) is not served: take it from `user_stats.open_posts_only_me` or drop it (M13, built as a count over the same rows as the tab).');
 rpc('close_post_with_recipient', 'changed', 'rpc:close_post_with_recipient', '`p_recipient_user_id` → `p_recipient_id`; returns the handoff row, not the post. The recipient must have a chat with the owner (`closure_recipient_not_in_chat`).');
 rpc('admin_remove_post', 'same', 'rpc:admin_remove_post', 'Status becomes `removed_admin`; the previous status is kept in `status_before_removal`.');
@@ -584,7 +587,7 @@ export const notes = [
   'Money: integer agorot (`*_agorot`), never ILS floats or `*_cents` names.',
   'Lists of posts return `post_card` (post, owner, city name, cover, counters, viewer state): no follow-up queries for owners, media or counters.',
   'Status columns are never client-writable; every move is an RPC checked by the FSM kernel.',
-  'Signed-out access: legal documents and the D186 narrow `guest_posts` projection. Member tables and account actions still need a session.',
+  'Signed-out access: legal documents and the D186/FR-AUTH-014 guest projections (`guest_posts`, `guest_map_post_pins`, `guest_profile`, `guest_profile_posts`). Member tables and account actions still need a session.',
   'Workers that need `kc_private` connect over Postgres (as `dispatch-notification` does); only `public` is reachable through the HTTP API.',
 ];
 

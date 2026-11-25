@@ -2,8 +2,8 @@
  "generatedBy": "scripts/app-migration-map.mjs",
  "totals": {
   "rpc": {
-   "objects": 270,
-   "same": 193,
+   "objects": 273,
+   "same": 196,
    "renamed": 22,
    "changed": 55,
    "removed": 0,
@@ -44,8 +44,8 @@
  },
  "launchTotals": {
   "core": {
-   "objects": 134,
-   "same": 110,
+   "objects": 137,
+   "same": 113,
    "renamed": 1,
    "changed": 23,
    "removed": 0,
@@ -343,8 +343,8 @@
    "missing": 0
   },
   "posts": {
-   "callSites": 50,
-   "oneToOne": 35,
+   "callSites": 53,
+   "oneToOne": 38,
    "changed": 15,
    "removed": 0,
    "missing": 0
@@ -463,7 +463,7 @@
   "Money: integer agorot (`*_agorot`), never ILS floats or `*_cents` names.",
   "Lists of posts return `post_card` (post, owner, city name, cover, counters, viewer state): no follow-up queries for owners, media or counters.",
   "Status columns are never client-writable; every move is an RPC checked by the FSM kernel.",
-  "Signed-out access: legal documents and the D186 narrow `guest_posts` projection. Member tables and account actions still need a session.",
+  "Signed-out access: legal documents and the D186/FR-AUTH-014 guest projections (`guest_posts`, `guest_map_post_pins`, `guest_profile`, `guest_profile_posts`). Member tables and account actions still need a session.",
   "Workers that need `kc_private` connect over Postgres (as `dispatch-notification` does); only `public` is reachable through the HTTP API."
  ],
  "missing": [],
@@ -664,6 +664,9 @@
     "table:user_stats",
     "table:users",
     "rpc:guest_posts",
+    "rpc:guest_map_post_pins",
+    "rpc:guest_profile",
+    "rpc:guest_profile_posts",
     "rpc:profile_closed_posts_count",
     "rpc:close_post_with_recipient",
     "rpc:admin_remove_post",
@@ -711,8 +714,8 @@
     "rpc:replace_post_media"
    ],
    "counts": {
-    "objects": 51,
-    "oneToOne": 40,
+    "objects": 54,
+    "oneToOne": 43,
     "changed": 11,
     "removed": 0,
     "missing": 0
@@ -9319,6 +9322,37 @@
    ]
   },
   {
+   "old": "guest_map_post_pins",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "App Store 5.1.1(v) / FR-AUTH-014 AC7 (#2729): anon-only map pins under the guest_posts eligibility rule; same args/shape as map_post_pins, coords snapped ~1 km. EXECUTE to anon only.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "guest_map_post_pins",
+     "signature": [
+      "guest_map_post_pins(p_bounds: Json, p_filters?: Json, p_limit?: number) → { direction: string lat: number lng: number post_id: string world_slug: string }[]"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "posts"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/posts/SupabaseGuestMapRepository.ts",
+     "line": 27,
+     "symbol": "SupabaseGuestMapRepository.listPins",
+     "area": "posts"
+    }
+   ]
+  },
+  {
    "old": "guest_posts",
    "kind": "rpc",
    "status": "same",
@@ -9351,6 +9385,68 @@
      "file": "app/packages/infrastructure-supabase/src/posts/SupabaseGuestPostsRepository.ts",
      "line": 25,
      "symbol": "SupabaseGuestPostsRepository.get",
+     "area": "posts"
+    }
+   ]
+  },
+  {
+   "old": "guest_profile",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "App Store 5.1.1(v) / FR-AUTH-014 AC7 (#2729): anon-only public profile by share_handle (active Public members). No member id or contact. EXECUTE to anon only.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "guest_profile",
+     "signature": [
+      "guest_profile(p_share_handle: string) → { avatar_url: string biography: string city_name_en: string city_name_he: string display_name: string followers_count: number following_count: number items_given_count: number items_received_count: number open_posts_c..."
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "posts"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/posts/SupabaseGuestProfileRepository.ts",
+     "line": 40,
+     "symbol": "SupabaseGuestProfileRepository.getByHandle",
+     "area": "posts"
+    }
+   ]
+  },
+  {
+   "old": "guest_profile_posts",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "App Store 5.1.1(v) / FR-AUTH-014 AC7 (#2729): anon-only open Public posts of one Public member; guest_posts row shape and before-id cursor. EXECUTE to anon only.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "guest_profile_posts",
+     "signature": [
+      "guest_profile_posts(p_before_id?: string, p_limit?: number, p_share_handle: string) → { city_name_en: string city_name_he: string description: string id: string title: string }[]"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "posts"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/posts/SupabaseGuestProfileRepository.ts",
+     "line": 49,
+     "symbol": "SupabaseGuestProfileRepository.listPosts",
      "area": "posts"
     }
    ]

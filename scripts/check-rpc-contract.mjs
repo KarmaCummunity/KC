@@ -100,11 +100,15 @@ export function checkRpcContract({ repoRoot = DEFAULT_REPO_ROOT } = {}) {
   for (const rpc of collectSymbols(infraDir, RPC_RE)) {
     if (allowlist.rpcs.includes(rpc)) continue;
     const needle = rpc.toLowerCase();
+    // `supabase gen types` emits unquoted keys for valid identifiers (`name: {`),
+    // so a types-only forward declaration (RPC migration landing in a stacked PR)
+    // still counts. Quoted keys cover any reserved / non-identifier names.
     const patterns = [
       `function public.${needle}`,
       `function ${needle}(`,
       `'${needle}':`,
       `"${needle}":`,
+      `${needle}: {`,
     ];
     if (!patterns.some((p) => corpus.includes(p))) {
       if (deferred.rpcs.has(rpc)) {

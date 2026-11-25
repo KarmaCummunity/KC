@@ -205,3 +205,24 @@ test('an RPC of the dev-only demo-data seed counts (FR-ADMIN-031)', () => {
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test('passes when an RPC exists only as an unquoted key in database.types.ts', () => {
+  const root = mkdtempSync(join(tmpdir(), 'contract-types-'));
+  try {
+    const infra = join(root, 'app/packages/infrastructure-supabase/src');
+    mkdirSync(infra, { recursive: true });
+    mkdirSync(join(root, 'supabase/migrations'), { recursive: true });
+    mkdirSync(join(root, 'scripts'), { recursive: true });
+    seedAllowlist(root);
+    writeFileSync(join(infra, 'Repo.ts'), `client.rpc('guest_map_post_pins', {});`);
+    writeFileSync(
+      join(infra, 'database.types.ts'),
+      `export type Database = { public: { Functions: { guest_map_post_pins: { Args: {}; Returns: unknown } } } };\n`,
+    );
+    writeFileSync(join(root, 'supabase/migrations/0001_empty.sql'), '-- no rpc yet');
+    const result = checkRpcContract({ repoRoot: root });
+    assert.equal(result.ok, true, result.errors.join('\n'));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
