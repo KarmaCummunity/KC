@@ -697,6 +697,32 @@ already `ready` keep pointing at their copies; queued rows stay `pending` (shown
 
 ---
 
+## Storage deletion intents — account purge (FR-SETTINGS-012 AC4)
+
+**What it does.** When `purge-deleted-accounts` deletes an identity (`kc_private.account_purge_finish`),
+the same transaction records one row in `kc_private.storage_deletion_intents` per folder of the
+member: `<user_id>` in every bucket and `derived/<user_id>` in `post-images`. The table has no foreign
+key, so the member's cascade does not remove it. Every run of the purge (daily, job `account_purge`)
+then sweeps the due intents: it lists the folder, deletes what it finds, and lists again. An intent
+closes (`verified_absent_at`) only when that second listing is empty **and** its quiet window
+(`not_before`, one hour after the deletion) has passed; otherwise it is swept again later, and a
+failed sweep backs off (15 min doubling, at most a day). Closed rows are deleted after 7 days (the
+path holds a user id). Design: `supabase/proposals/post-media-privacy-lifecycle/DESIGN.md` §4, phase 1.
+
+**What it does not do.** It is eventual deletion, re-checked, not a storage fence: nothing refuses a
+service write at storage-commit time, and a finite quiet window cannot prove that no write will still
+commit. A "closed" intent means the folder was empty at a sweep after the window.
+
+### Operate
+
+- **Open intents:** `select bucket, count(*), max(sweeps), min(created_at) from kc_private.storage_deletion_intents where verified_absent_at is null group by 1;`
+- **Stuck:** an intent swept 5 times without closing raises `ops.warnings` key `storage_deletion_stuck`
+  (it keeps being swept). `last_error` and `last_remaining` say why.
+- **Sweep now:** the purge worker sweeps due intents on every run (`POST /functions/v1/purge-deleted-accounts`,
+  service role); its answer carries `intents: { verified, pending, failed }`.
+
+---
+
 ## KC support channels — donations to KC (FR-DONATE-011, migration `0447`)
 
 The Money hub's *Support KC directly* card reads its payment links from `public.kc_support_channels`. Changing a row changes the app immediately — **no release**. Only super admins can write (RLS); the URL must be `https://` with no credentials (CHECK).
