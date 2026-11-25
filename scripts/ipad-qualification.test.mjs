@@ -57,3 +57,11 @@ test('startup failure keeps private native crash reports and simulator log befor
   assert.match(workflow, /process == "KC"/);
   assert.match(workflow, /capture_native_diagnostics/);
 });
+
+test('direct native launch is captured separately before Maestro clear-state launch', () => {
+  const workflow = readFileSync(new URL('../.github/workflows/ipad-guest-qualification.yml', import.meta.url), 'utf8');
+  assert.match(workflow, /Direct native launch diagnostic before interaction runner/);
+  assert.match(workflow, /direct-launch-screen.png/);
+  assert.match(workflow, /direct-launch-console.log/);
+  assert.ok(workflow.indexOf('Direct native launch diagnostic') < workflow.indexOf('Real native guest interaction'));
+});
