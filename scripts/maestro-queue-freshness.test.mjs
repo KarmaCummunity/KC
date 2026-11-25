@@ -29,7 +29,7 @@ import { readFileSync } from 'node:fs';
 const workflow=readFileSync(new URL('../.github/workflows/ci-maestro-android.yml',import.meta.url),'utf8');
 test('workflow checks after exclusive acquisition, after slot wait, and after native flows',()=>{
  const emu=workflow.split('  android-e2e:')[1];const positions=[...emu.matchAll(/run: node scripts\/maestro-queue-freshness\.mjs/g)].map(m=>m.index);
- assert.equal(positions.length,3);assert.ok(positions[0] < emu.indexOf('Install pinned guard-script dependencies'));
+ assert.equal(positions.length,3);assert.equal((emu.match(/if: github.event_name == 'merge_group'/g) ?? []).length,3);assert.ok(positions[0] < emu.indexOf('Install pinned guard-script dependencies'));
  assert.ok(positions[1] > emu.indexOf('Wait for a kc-dev test slot'));assert.ok(positions[1] < emu.indexOf('Run Maestro flows on the emulator'));
  assert.ok(positions[2] > emu.indexOf('script: bash scripts/maestro-run-android.sh'));assert.ok(positions[2] < emu.indexOf('Remove unsafe automatic media'));
  assert.ok(!emu.includes('continue-on-error: true'));assert.ok(emu.includes('queue: max'));

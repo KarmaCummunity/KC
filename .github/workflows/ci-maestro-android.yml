@@ -180,6 +180,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Require current merge-group candidate
+        if: github.event_name == 'merge_group'
         env:
           GITHUB_TOKEN: ${{ github.token }}
           MERGE_GROUP_BASE_REF: ${{ github.event.merge_group.base_ref }}
@@ -245,6 +246,7 @@ jobs:
         run: if [ -f scripts/kc-dev-slot.mjs ]; then node scripts/kc-dev-slot.mjs; else echo 'no kc-dev slot script in this tree'; fi
 
       - name: Recheck candidate after waiting for DEV slot
+        if: github.event_name == 'merge_group'
         env:
           GITHUB_TOKEN: ${{ github.token }}
           MERGE_GROUP_BASE_REF: ${{ github.event.merge_group.base_ref }}
@@ -276,6 +278,7 @@ jobs:
           script: bash scripts/maestro-run-android.sh "$E2E_APK" "$RUNNER_TEMP/maestro"
 
       - name: Reject acceptance if candidate changed during Maestro
+        if: github.event_name == 'merge_group'
         env:
           GITHUB_TOKEN: ${{ github.token }}
           MERGE_GROUP_BASE_REF: ${{ github.event.merge_group.base_ref }}
