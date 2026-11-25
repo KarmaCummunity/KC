@@ -119,8 +119,8 @@ describe.skipIf(!KC_DATABASE_URL)('File jobs on the KC schema', () => {
     // The photo's row now names the copy: that is the file everyone else is shown.
     const shown = (await database.admin.query<{ processing_status: string; storage_key: string }>('select processing_status, storage_key from public.post_media where id = $1', [mediaId])).rows[0];
     expect(shown).toEqual({ processing_status: 'ready', storage_key: key });
-    // The upload itself is still stored, untouched.
-    expect(await stateOf('post-images', path)).toEqual({ stored: true, indexed: true });
+    // The upload itself, the file that carried the location, is gone from the store and the index.
+    expect(await stateOf('post-images', path)).toEqual({ stored: false, indexed: false });
   });
 
   it('removes old files no row references, confirmed or not, and keeps a post\'s photo and a fresh upload', async () => {

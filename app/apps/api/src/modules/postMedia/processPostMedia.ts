@@ -19,6 +19,9 @@
 //      upload wrote). When it does not answer 'ready'
 //      (a lost race, a job cancelled by the account purge) or anything fails after an upload, the
 //      worker removes the objects this attempt wrote: they are never referenced.
+//   6. once the photo is 'ready', remove the member's upload and its thumbnail: everyone is shown
+//      the copy, and the upload is the file that may still carry where it was taken. (New with
+//      KC's own storage; the Edge Function left the upload to a daily in-place rewrite.)
 // The worker's own writes are bounded by the lease: it starts no upload in the lease's last 30 s
 // and aborts every upload at that point. That is an application-level limit, NOT a storage fence:
 // an aborted request may still be committed by Storage afterwards, and nothing checks the owner or
@@ -149,6 +152,18 @@ async function sanitizedThumb(
   }
 }
 
+/**
+ * Removes the member's upload and its thumbnail once the copy is what the photo's row points
+ * at (ADR-012, "The uploaded originals"): the upload may carry where it was taken, and nothing
+ * references it any more. Best effort: a file that could not be removed is logged, and the
+ * daily reconciliation removes it, as a file no row references.
+ */
+async function removeUpload(job: ClaimedMediaJob, deps: ProcessPostMediaDeps, cleanupMs: number): Promise<void> {
+  const uploads = [job.storage_key, thumbKey(job.storage_key)];
+  await withDeadline(cleanupMs, 'remove upload', (signal) => deps.storage.remove(uploads, signal)).catch((err: unknown) =>
+    deps.log('warn', 'remove upload', job.media_id, reasonOf(err)));
+}
+
 async function processJob(job: ClaimedMediaJob, deps: ProcessPostMediaDeps): Promise<JobOutcome> {
   const deadlines = { ...DEFAULT_DEADLINES, ...deps.deadlines };
   const fail = async (error: string, retryable: boolean): Promise<JobOutcome> => {
@@ -218,7 +233,10 @@ async function processJob(job: ClaimedMediaJob, deps: ProcessPostMediaDeps): Pro
     await removeWritten();
     return fail(`complete: ${done.error.message}`, true);
   }
-  if (done.data === 'ready') return 'ready';
+  if (done.data === 'ready') {
+    await removeUpload(job, deps, deadlines.cleanupMs);
+    return 'ready';
+  }
   await removeWritten();
   return done.data === 'changed' ? 'changed' : 'stale';
 }

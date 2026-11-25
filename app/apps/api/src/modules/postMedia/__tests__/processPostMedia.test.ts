@@ -228,4 +228,40 @@ describe('processPostMedia', () => {
     await capped.run({ limit: 99 });
     expect([claims(byDefault), claims(capped)]).toEqual([3, 5]);
   });
+
+  // ADR-012: everyone is shown the copy, so the upload, which may carry where it was taken, goes.
+  it('removes the member\'s upload and its thumbnail once the photo is ready, and never the copy', async () => {
+    const h = harness({ jobs: [job()], bytes: await realJpeg(), thumb: await realJpeg(16, 12) });
+
+    expect((await h.run()).outcomes).toEqual({ [MEDIA]: 'ready' });
+
+    expect(h.removed).toEqual([job().storage_key, thumbKey(job().storage_key)]);
+    expect(h.removed).not.toContain(derivativeKey(OWNER, MEDIA, 1));
+  });
+
+  it.each([
+    ['another attempt won', { complete: 'stale' }],
+    ['the post changed meanwhile', { complete: 'changed' }],
+    ['the completion was refused', { complete: { error: 'derivative_not_stored' } }],
+  ] as const)('keeps the upload when %s: the photo still depends on it', async (_case, options) => {
+    const h = harness({ jobs: [job()], bytes: await realJpeg(), ...options });
+
+    await h.run();
+
+    expect(h.removed).not.toContain(job().storage_key);
+  });
+
+  it('keeps the upload when the completion was never answered: it may not have happened', async () => {
+    const h = harness({ jobs: [job()], bytes: await realJpeg(), hang: ['post_media_processing_complete'], deadlines: { rpcMs: 30, downloadMs: 30, uploadMs: 30, cleanupMs: 30 } });
+
+    expect((await h.run()).outcomes).toEqual({ [MEDIA]: 'unknown' });
+    expect(h.removed).toEqual([]);
+  });
+
+  it('still reports the photo ready when the upload cannot be removed, and logs it for the reconciliation to finish', async () => {
+    const h = harness({ jobs: [job()], bytes: await realJpeg(), hang: ['remove'], deadlines: { rpcMs: 30, downloadMs: 30, uploadMs: 30, cleanupMs: 30 } });
+
+    expect((await h.run()).outcomes).toEqual({ [MEDIA]: 'ready' });
+    expect(h.logged).toEqual(['warn remove upload']);
+  });
 });
