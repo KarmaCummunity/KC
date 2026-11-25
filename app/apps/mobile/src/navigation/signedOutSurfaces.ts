@@ -1,10 +1,11 @@
 // The routes a signed-out visitor may stay on. Everything else is a member route: `AuthGate`
-// remembers it as the post-sign-in target and sends the visitor to the welcome screen.
+// either remaps guest-readable content (`guestReadableRedirect`) or remembers the path and
+// sends the visitor to the welcome screen.
 //
-// Signed-out access is minimal by decision (docs/db/target-design.md §12.1): the sign-in flow, the
-// published legal text, the About pages, the public research form and public nonprofit pages.
-// A separate minimal guest browse is allowed by the 2026-11-19 owner decision.
-// Member feed and post detail routes stay gated. Pure: no expo-router import.
+// Signed-out access (docs/db/target-design.md §12.1, D186 + guest read-only expansion):
+// the sign-in flow, published legal text, About pages, public research, nonprofit pages, and
+// `/browse` (+ `/browse/post/<uuid>`). Member map and other-user profile routes stay gated until
+// anon RPCs exist. Pure: no expo-router import.
 import { isGuestBrowsePath } from './guestBrowsePaths';
 import { isPublicLegalSegment } from './publicLegalPaths';
 import { isPublicOrgPagePath } from './publicOrgPaths';

@@ -30,7 +30,10 @@ describe('read-only guest screen', () => {
     expect(mocks.get).not.toHaveBeenCalled();
     fireEvent.click(screen.getByTestId(`guest-post-${id}`));
     expect(mocks.push).toHaveBeenCalledWith({ pathname: '/browse/post/[id]', params: { id } });
-    expect(screen.queryByText('comment')).toBeNull();
+    // Write actions stay off the guest surface (prompt only via the explicit sign-in CTA).
+    for (const write of ['comment', 'follow', 'save', 'report', 'request', 'chat']) {
+      expect(screen.queryByText(write)).toBeNull();
+    }
   });
   it('does not load feed on detail and saves only member intent when sign in is tapped', async () => {
     show(id); await screen.findByText('Desk to give');
