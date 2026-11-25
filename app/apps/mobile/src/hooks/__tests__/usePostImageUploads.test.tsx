@@ -43,7 +43,7 @@ describe('usePostImageUploads', () => {
     expect(missing.onMissingOwner).toHaveBeenCalledTimes(1);
     expect(pickPostImages).not.toHaveBeenCalled();
 
-    pickPostImages.mockResolvedValue([]);
+    pickPostImages.mockResolvedValue({ status: 'ok', value: [] });
     const empty = setup();
     await act(async () => { await empty.result.current.pickAndUpload(); });
     expect(uploadPostImageBatch).not.toHaveBeenCalled();
@@ -51,7 +51,7 @@ describe('usePostImageUploads', () => {
   });
 
   it('adds photos in pick order as they settle and shrinks the pending tiles with them', async () => {
-    pickPostImages.mockResolvedValue([picked(0), picked(1)]);
+    pickPostImages.mockResolvedValue({ status: 'ok', value: [picked(0), picked(1)] });
     const gate = deferred<void>();
     uploadPostImageBatch.mockImplementation(async (_p, _owner, opts) => {
       // The second photo finishes first: it must wait for the first one to keep the cover.
@@ -74,7 +74,7 @@ describe('usePostImageUploads', () => {
   });
 
   it('keeps the stored photos and reports the failures, ignoring cancellations', async () => {
-    pickPostImages.mockResolvedValue([picked(0), picked(1), picked(2)]);
+    pickPostImages.mockResolvedValue({ status: 'ok', value: [picked(0), picked(1), picked(2)] });
     const boom = new Error('upload[1]: quota');
     const settled: PromiseSettledResult<UploadedAsset>[] = [
       { status: 'fulfilled', value: asset(0) },
@@ -93,7 +93,7 @@ describe('usePostImageUploads', () => {
   });
 
   it('aborts in-flight uploads on cancel and when the screen unmounts', async () => {
-    pickPostImages.mockResolvedValue([picked(0)]);
+    pickPostImages.mockResolvedValue({ status: 'ok', value: [picked(0)] });
     const signals: AbortSignal[] = [];
     uploadPostImageBatch.mockImplementation((_p, _owner, opts) => {
       signals.push(opts.signal);
@@ -108,5 +108,13 @@ describe('usePostImageUploads', () => {
     await act(async () => { await Promise.resolve(); });
     unmount();
     expect(signals[1]?.aborted).toBe(true);
+  });
+
+  it('surfaces a blocked photo-library permission without uploading', async () => {
+    pickPostImages.mockResolvedValue({ status: 'blocked', kind: 'mediaLibrary' });
+    const { result } = setup();
+    await act(async () => { await result.current.pickAndUpload(); });
+    expect(result.current.permissionBlocked).toBe('mediaLibrary');
+    expect(uploadPostImageBatch).not.toHaveBeenCalled();
   });
 });

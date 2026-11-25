@@ -33,6 +33,7 @@ export const notificationsEn = {
   permissionRetry: 'Try again',
   permissionLoading: 'Checking notification permission',
   permissionNotRequested: 'Notifications are not enabled on this device yet',
+  permissionExplainer: 'KC can notify you about messages, replies and updates you are involved in. You can turn notifications off later in Settings.',
   permissionError: 'Could not enable notifications. Try again',
   permissionGranted: 'Notification permission enabled',
   permissionDenied: 'Permission blocked in device settings',
@@ -40,11 +41,11 @@ export const notificationsEn = {
   tokenNotRegistered: 'Device not registered yet',
   openOsSettings: 'Open Settings',
 
-  enablePushTitle: 'Stay in touch?',
-  enablePushBodyFromChat: 'We will send you a notification when someone replies to you — even when the app is closed.',
-  enablePushBodyFromPost: 'We will send you a notification when someone reaches out about your post — even when the app is closed.',
-  enablePushAccept: 'Yes, enable',
-  enablePushDecline: 'Maybe later',
+  enablePushTitle: 'Notifications',
+  enablePushBodyFromChat: 'KC can notify you about replies, even when the app is closed. You can turn notifications off later in Settings.',
+  enablePushBodyFromPost: 'KC can notify you when someone reaches out about your post, even when the app is closed. You can turn notifications off later in Settings.',
+  enablePushAccept: 'Enable notifications',
+  enablePushDecline: 'Not now',
 
   // The push worker renders these as well, through strings.he.generated.json.
   chatTitle: '{{actorName}}',

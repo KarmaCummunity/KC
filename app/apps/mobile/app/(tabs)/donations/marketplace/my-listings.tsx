@@ -14,6 +14,7 @@ import { hrefForPostEdit } from '../../../../src/lib/postEditNavigation';
 import { Screen } from '../../../../src/components/ui/Screen';
 import { useMyMarketplaceListings } from '../../../../src/hooks/useMyMarketplaceListings';
 import { useMyListingActions } from '../../../../src/hooks/useMyListingActions';
+import { PermissionSettingsNote } from '../../../../src/components/PermissionSettingsNote';
 import { MyListingsClosureHost } from '../../../../src/components/marketplace/MyListingsClosureHost';
 import { useShellTabBarScrollInset } from '../../../../src/navigation/useShellTabBarVisibility';
 import { LIST_END_THRESHOLD } from '../../../../src/hooks/usePrefetchNextPage';
@@ -199,6 +200,7 @@ export default function MyListingsScreen() {
       <Screen hasNativeHeader blobs="off">
       <View style={styles.header}>
         <Text style={styles.hint}>{t('marketplace.myListingsSubtitle')}</Text>
+        {actions.permissionBlocked ? <PermissionSettingsNote kind={actions.permissionBlocked} /> : null}
       </View>
       <MyListingsClosureHost onDone={() => { void refetch(); }} />
       <KcFlashList
