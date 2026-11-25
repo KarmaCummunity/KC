@@ -22,7 +22,10 @@ test('qualification is free standard DEV-only compute without account or store c
   assert.match(workflow, /head.repo.full_name == github.repository/);
   assert.match(workflow, /contents: read/);
   assert.doesNotMatch(workflow, /secrets\.|upload-artifact|actions\/cache|cache:|setup-pnpm-turbo|eas build|eas submit|backend: prod/);
-  assert.match(workflow, /CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO/);
+  assert.match(workflow, /CODE_SIGNING_ALLOWED=YES CODE_SIGNING_REQUIRED=YES/);
+  assert.match(workflow, /CODE_SIGN_IDENTITY="-" DEVELOPMENT_TEAM=""/);
+  assert.match(workflow, /codesign --verify --deep --strict/);
+  assert.doesNotMatch(workflow, /allowProvisioningUpdates|security import|PROVISIONING_PROFILE_SPECIFIER=/);
   assert.match(workflow, /openssl cms -encrypt/);
   assert.match(workflow, /base64 < "\$RUNNER_TEMP\/ipad-evidence.cms"/);
   assert.doesNotMatch(workflow, /base64 < .*\.png|cat .*interaction.log|tail .*build.log/);
