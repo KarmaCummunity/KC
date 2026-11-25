@@ -84,6 +84,7 @@ jobs:
         run: |
           set -euo pipefail
           cd "$RUNNER_TEMP/ipad-evidence"
+          trap 'xcrun simctl io "$SIMULATOR_UDID" screenshot "$RUNNER_TEMP/ipad-evidence/final-screen.png" > "$RUNNER_TEMP/ipad-evidence/screenshot.log" 2>&1 || true' EXIT
           maestro --device "$SIMULATOR_UDID" test --debug-output "$RUNNER_TEMP/ipad-evidence/debug" \
             "$GITHUB_WORKSPACE/tests/native/ipad-guest-qualification.yaml" \
             > "$RUNNER_TEMP/ipad-evidence/interaction.log" 2>&1
@@ -93,10 +94,26 @@ jobs:
         run: |
           set -euo pipefail
           test -s "$RUNNER_TEMP/evidence-cert.pem"
-          tar -czf "$RUNNER_TEMP/ipad-evidence.tar.gz" -C "$RUNNER_TEMP" ipad-evidence
+          # Large build/debug logs exceeded the previous encrypted-export cap.
+          # Bound logs and resize only diagnostic screenshots before encryption.
+          mkdir -p "$RUNNER_TEMP/ipad-evidence-compact"
+          cp "$RUNNER_TEMP/ipad-evidence/"*.json "$RUNNER_TEMP/ipad-evidence/"*.txt "$RUNNER_TEMP/ipad-evidence-compact/"
+          for log in "$RUNNER_TEMP/ipad-evidence/"*.log; do
+            tail -c 131072 "$log" > "$RUNNER_TEMP/ipad-evidence-compact/$(basename "$log")"
+          done
+          find "$RUNNER_TEMP/ipad-evidence" -name '*.png' -type f | sed -n '1,8p' > "$RUNNER_TEMP/evidence-images.txt"
+          index=0
+          while IFS= read -r image; do
+            index=$((index + 1))
+            sips -Z 1600 -s format jpeg -s formatOptions 70 "$image" \
+              --out "$RUNNER_TEMP/ipad-evidence-compact/screenshot-$index.jpg" > "$RUNNER_TEMP/sips-output.log" 2>&1
+          done < "$RUNNER_TEMP/evidence-images.txt"
+          tar -czf "$RUNNER_TEMP/ipad-evidence.tar.gz" -C "$RUNNER_TEMP" ipad-evidence-compact
           openssl cms -encrypt -binary -aes-256-cbc -in "$RUNNER_TEMP/ipad-evidence.tar.gz" \
             -outform DER -out "$RUNNER_TEMP/ipad-evidence.cms" "$RUNNER_TEMP/evidence-cert.pem"
-          test "$(wc -c < "$RUNNER_TEMP/ipad-evidence.cms")" -lt 12000000
+          bytes=$(wc -c < "$RUNNER_TEMP/ipad-evidence.cms")
+          echo "Encrypted evidence bytes: $bytes"
+          test "$bytes" -lt 10000000
           echo KC_ENCRYPTED_IPAD_EVIDENCE_BEGIN
           base64 < "$RUNNER_TEMP/ipad-evidence.cms"
           echo KC_ENCRYPTED_IPAD_EVIDENCE_END

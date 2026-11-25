@@ -36,3 +36,12 @@ test('native flow requires real post content and detail, not only sign-in button
   assert.match(flow, /ipad-guest-detail/);
   assert.doesNotMatch(flow, /inputText|create-post|push-gate-accept\s*\n- tapOn/);
 });
+
+test('encrypted export bounds large build logs and screenshots instead of losing all failure evidence', () => {
+  const workflow = readFileSync(new URL('../.github/workflows/ipad-guest-qualification.yml', import.meta.url), 'utf8');
+  assert.match(workflow, /tail -c 131072/);
+  assert.match(workflow, /sips -Z 1600 -s format jpeg/);
+  assert.match(workflow, /sed -n '1,8p'/);
+  assert.match(workflow, /ipad-evidence-compact/);
+  assert.match(workflow, /Encrypted evidence bytes/);
+});
