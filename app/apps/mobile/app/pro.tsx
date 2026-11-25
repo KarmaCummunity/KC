@@ -19,6 +19,7 @@ import {
   restoreProPurchases,
   type ProPackage,
 } from '../src/services/purchases/revenuecat';
+export { RouteErrorBoundary as ErrorBoundary } from '../src/components/RouteErrorBoundary';
 
 const PRO_KEY = ['is-pro'];
 
