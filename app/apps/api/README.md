@@ -27,6 +27,8 @@ pnpm --filter @kc/api test
 
 Without the variable those suites are not collected and the unit tests still run (`vitest.config.ts` lists which suites need what). Coverage has two floors there: the full one when both kinds of database are present, and a lower one for a run without them.
 
+In CI the frontend lane runs the package without a database (the lower floor). The backend lane (`.github/workflows/ci-backend.yml`) runs every suite on the local Supabase stack's Postgres with Redis 7.2 (the full floor), and builds this package's container image and starts it. That lane is planned for a pull request that touches `app/apps/api` or `app/packages/infrastructure-api`, and always runs in the merge queue.
+
 ## Configuration (environment variables)
 
 | Variable | Default | Meaning |
