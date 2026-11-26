@@ -40,7 +40,8 @@ export class WhatsAppWebhookController {
   /** The provider's registration check: answers its challenge as plain text. */
   @Get()
   verify(@Query() query: Record<string, unknown>, @Res({ passthrough: true }) reply: FastifyReply): unknown {
-    void reply.type('text/plain');
+    // Plain text, and the browser is told not to guess otherwise.
+    void reply.type('text/plain').header('x-content-type-options', 'nosniff');
     return sendAnswer(reply, verifySubscription(query, this.config.whatsapp.verifyToken));
   }
 

@@ -17,6 +17,9 @@ export interface WhatsAppWebhookDeps extends InboundDeps {
   readonly report: (error: unknown) => void;
 }
 
+/** The challenge of a registration check: digits only. */
+const CHALLENGE = /^\d{1,32}$/;
+
 const text = (status: number, body: string): HttpAnswer => ({ status, body });
 
 /**
@@ -28,7 +31,9 @@ export function verifySubscription(query: Readonly<Record<string, unknown>>, ver
   const token = query['hub.verify_token'];
   const challenge = query['hub.challenge'];
   const matches = verifyToken !== null && typeof token === 'string' && equalInConstantTime(token, verifyToken);
-  return query['hub.mode'] === 'subscribe' && matches && typeof challenge === 'string' && challenge !== '' ? text(200, challenge) : text(403, 'forbidden');
+  // The provider's challenge is a number. Only a number is ever echoed, so the answer cannot carry anything else.
+  const isNumber = typeof challenge === 'string' && CHALLENGE.test(challenge);
+  return query['hub.mode'] === 'subscribe' && matches && isNumber ? text(200, challenge) : text(403, 'forbidden');
 }
 
 /** True when the delivery carries the signature of exactly this body under the app secret. */
