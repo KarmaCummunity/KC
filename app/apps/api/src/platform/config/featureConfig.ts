@@ -2,6 +2,7 @@
 // billing providers, WhatsApp, translation). Each is optional at start: a feature without its
 // settings refuses its own requests and the rest of the API works.
 
+import { withoutTrailingSlashes } from '@kc/infrastructure-api';
 import { ApiConfigError, type Env, parseInteger, readVariable } from './configReader';
 import { parsePortRollout, type PortRolloutRules } from './portRolloutConfig';
 
@@ -150,7 +151,8 @@ function parseTranslationProvider(value: string | undefined, geminiApiKey: strin
 
 /** The app's public web address, without a trailing slash. */
 function parseAppBaseUrl(env: Env): string | null {
-  const url = readVariable(env, 'KC_APP_BASE_URL')?.replace(/\/+$/, '') ?? null;
+  const raw = readVariable(env, 'KC_APP_BASE_URL');
+  const url = raw === undefined ? null : withoutTrailingSlashes(raw);
   if (url !== null && !URL.canParse(url)) throw new ApiConfigError('KC_APP_BASE_URL', 'must be a URL');
   return url;
 }
@@ -158,7 +160,8 @@ function parseAppBaseUrl(env: Env): string | null {
 /** The local store needs both its directory and the address its URLs point at. */
 function parseStorage(env: Env): StorageConfig {
   const localDirectory = readVariable(env, 'KC_STORAGE_LOCAL_DIR') ?? null;
-  const publicUrl = readVariable(env, 'KC_API_PUBLIC_URL')?.replace(/\/+$/, '') ?? null;
+  const rawPublicUrl = readVariable(env, 'KC_API_PUBLIC_URL');
+  const publicUrl = rawPublicUrl === undefined ? null : withoutTrailingSlashes(rawPublicUrl);
   if (publicUrl !== null && !URL.canParse(publicUrl)) throw new ApiConfigError('KC_API_PUBLIC_URL', 'must be a URL');
   if (localDirectory !== null && publicUrl === null) throw new ApiConfigError('KC_API_PUBLIC_URL', 'is required when KC_STORAGE_LOCAL_DIR is set');
   return { localDirectory, publicUrl };

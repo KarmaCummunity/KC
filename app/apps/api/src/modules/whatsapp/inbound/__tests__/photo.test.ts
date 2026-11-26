@@ -99,7 +99,7 @@ describe('WhatsApp photo flow', () => {
     const w = world();
     expect((await handleProPhoto(w.deps, { ...INPUT, mimeType: 'image/webp' })).status).toEqual('invalid_photo');
     expect(w.fetched).toEqual([]);
-    expect(w.reply().includes('https://kc.test/edit-post/p1')).toEqual(true);
+    expect(w.reply()).toEqual(PHOTO_REPLY_TEXT.invalid_photo.he.replace('{link}', 'https://kc.test/edit-post/p1'));
   });
 
   it('the bytes decide the type, and the size limit holds', async () => {

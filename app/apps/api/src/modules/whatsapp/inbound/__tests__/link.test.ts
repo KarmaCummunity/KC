@@ -18,4 +18,19 @@ describe('WhatsApp link', () => {
     expect(linkReply('linked', 'en').includes('linked')).toEqual(true);
     expect(/[\u0590-\u05ff]/.test(linkReply('invalid', 'he'))).toEqual(true);
   });
+
+  it('parseLinkCode takes the word with or without spaces, a colon or a dash around it', () => {
+    for (const text of ['link123456', 'link 123456', 'link:123456', 'link : 123456', 'link -123456', 'LINK   -   123456', '  connect:  123456  ']) {
+      expect(parseLinkCode(text), text).toEqual({ code: '123456', lang: 'en' });
+    }
+    for (const text of ['link :: 123456', 'link 123 456', 'the link 123456', 'link 123456 please']) expect(parseLinkCode(text), text).toEqual(null);
+  });
+
+  it('parseLinkCode answers a very long message of spaces at once', () => {
+    const startedAt = Date.now();
+
+    expect(parseLinkCode(`link${' '.repeat(100_000)}x`)).toEqual(null);
+    expect(parseLinkCode(`${' '.repeat(100_000)}123456${' '.repeat(100_000)}`)).toEqual({ code: '123456', lang: 'he' });
+    expect(Date.now() - startedAt).toBeLessThan(500);
+  });
 });

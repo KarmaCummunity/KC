@@ -59,3 +59,4 @@ export {
   type UploadGrantResponse,
   type UploadTarget,
 } from './wire/storageWire';
+export { withoutTrailingSlashes } from './wire/urlText';
