@@ -31,6 +31,8 @@ export const ADMIN_DESTINATIONS: readonly AdminDestination[] = [
   { key: 'tasks',     href: '/(admin)/tasks',   icon: 'checkbox-outline',         perm: 'tasks.view', available: ADMIN_TASKS_AVAILABLE },
   { key: 'time',      href: '/(admin)/time',    icon: 'hourglass-outline',        perm: 'time.report', available: TIMESHEETS_AVAILABLE },
   { key: 'crm',       href: '/(admin)/crm',     icon: 'people-circle-outline',    perm: 'crm.manage', available: CRM_AVAILABLE },
+  // V2-ADMIN-ORG-7 — NGO application queue (nav label already existed; keep it on the rail + search).
+  { key: 'orgApprovals', href: '/(admin)/org-approvals', icon: 'checkmark-done-outline', perm: 'org.review_applications' },
   { key: 'admins',    href: '/(admin)/admins',  icon: 'shield-checkmark-outline', perm: 'admins.view' },
   { key: 'users',     href: '/(admin)/users',   icon: 'people-outline',           perm: 'users.search' },
   { key: 'posts',     href: '/(admin)/posts',   icon: 'document-text-outline',    perm: 'posts.search' },

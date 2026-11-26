@@ -1,13 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-const { picker, encoder, uploader, storageBucket, client, confirm, linking, platform } = vi.hoisted(() => {
+const { picker, encoder, uploader, storageBucket, client, platform } = vi.hoisted(() => {
   const storageBucket = {
     upload: vi.fn(),
     remove: vi.fn(),
   };
   return {
     picker: {
+      getMediaLibraryPermissionsAsync: vi.fn(),
       requestMediaLibraryPermissionsAsync: vi.fn(),
+      getCameraPermissionsAsync: vi.fn(),
       requestCameraPermissionsAsync: vi.fn(),
       launchImageLibraryAsync: vi.fn(),
       launchCameraAsync: vi.fn(),
@@ -16,15 +18,11 @@ const { picker, encoder, uploader, storageBucket, client, confirm, linking, plat
     uploader: { uploadStorageObject: vi.fn() },
     storageBucket,
     client: { storage: { from: vi.fn(() => storageBucket) } },
-    confirm: vi.fn(),
-    linking: { openSettings: vi.fn() },
     platform: { OS: 'ios' },
   };
 });
 
-vi.mock('react-native', () => ({ Linking: linking, Platform: platform }));
-vi.mock('../../i18n', () => ({ default: { t: (key: string) => key } }));
-vi.mock('../platformConfirm', () => ({ confirmAction: confirm }));
+vi.mock('react-native', () => ({ Platform: platform }));
 vi.mock('expo-image-picker', () => picker);
 vi.mock('expo-image-manipulator', () => ({ SaveFormat: { JPEG: 'jpeg' } }));
 let uuid = 0;
@@ -53,47 +51,41 @@ describe('pickAvatarImage', () => {
   });
 
   it('returns the camera capture when permission is granted', async () => {
-    picker.requestCameraPermissionsAsync.mockResolvedValue({ granted: true });
+    picker.getCameraPermissionsAsync.mockResolvedValue({ granted: true, canAskAgain: true });
     picker.launchCameraAsync.mockResolvedValueOnce({ canceled: false, assets: [asset] });
-    await expect(pickAvatarImage('camera')).resolves.toEqual({ ...asset, fileSize: null });
+    await expect(pickAvatarImage('camera')).resolves.toEqual({ status: 'ok', value: { ...asset, fileSize: null } });
     picker.launchCameraAsync.mockResolvedValueOnce({ canceled: true, assets: [] });
-    await expect(pickAvatarImage('camera')).resolves.toBeNull();
+    await expect(pickAvatarImage('camera')).resolves.toEqual({ status: 'cancelled' });
+    expect(picker.requestCameraPermissionsAsync).not.toHaveBeenCalled();
   });
 
-  it('offers the settings page when camera access is permanently denied', async () => {
-    picker.requestCameraPermissionsAsync.mockResolvedValue({ granted: false, canAskAgain: false });
-    confirm.mockResolvedValue(true);
-    await expect(pickAvatarImage('camera')).resolves.toBeNull();
-    expect(confirm).toHaveBeenCalledWith(
-      'errors.media.cameraDeniedTitle',
-      'errors.media.cameraDeniedBodyAvatar',
-      { confirmLabel: 'errors.media.openSettings' },
-    );
-    expect(linking.openSettings).toHaveBeenCalledTimes(1);
+  it('returns blocked without opening Settings when camera access will not be re-prompted', async () => {
+    picker.getCameraPermissionsAsync.mockResolvedValue({ granted: false, canAskAgain: false });
+    await expect(pickAvatarImage('camera')).resolves.toEqual({ status: 'blocked', kind: 'camera' });
+    expect(picker.requestCameraPermissionsAsync).not.toHaveBeenCalled();
     expect(picker.launchCameraAsync).not.toHaveBeenCalled();
   });
 
-  it('returns null silently when the camera prompt can be shown again', async () => {
+  it('returns denied silently when the camera prompt can be shown again and is refused', async () => {
+    picker.getCameraPermissionsAsync.mockResolvedValue({ granted: false, canAskAgain: true });
     picker.requestCameraPermissionsAsync.mockResolvedValue({ granted: false, canAskAgain: true });
-    await expect(pickAvatarImage('camera')).resolves.toBeNull();
-    expect(confirm).not.toHaveBeenCalled();
+    await expect(pickAvatarImage('camera')).resolves.toEqual({ status: 'denied' });
   });
 
-  it('picks one gallery image, or null on cancel', async () => {
-    picker.requestMediaLibraryPermissionsAsync.mockResolvedValue({ granted: true });
+  it('picks one gallery image, or cancelled on dismiss', async () => {
+    picker.getMediaLibraryPermissionsAsync.mockResolvedValue({ granted: true, canAskAgain: true });
     picker.launchImageLibraryAsync.mockResolvedValueOnce({ canceled: false, assets: [{ ...asset, fileSize: 7 }] });
-    await expect(pickAvatarImage('gallery')).resolves.toEqual({ ...asset, fileSize: 7 });
+    await expect(pickAvatarImage('gallery')).resolves.toEqual({ status: 'ok', value: { ...asset, fileSize: 7 } });
     picker.launchImageLibraryAsync.mockResolvedValueOnce({ canceled: true, assets: [] });
-    await expect(pickAvatarImage('gallery')).resolves.toBeNull();
+    await expect(pickAvatarImage('gallery')).resolves.toEqual({ status: 'cancelled' });
   });
 
-  it('handles a denied gallery permission without opening settings unless confirmed', async () => {
-    picker.requestMediaLibraryPermissionsAsync.mockResolvedValueOnce({ granted: false, canAskAgain: true });
-    await expect(pickAvatarImage('gallery')).resolves.toBeNull();
+  it('does not open Settings after a gallery denial, and reports blocked on a later tap', async () => {
+    picker.getMediaLibraryPermissionsAsync.mockResolvedValueOnce({ granted: false, canAskAgain: true });
     picker.requestMediaLibraryPermissionsAsync.mockResolvedValueOnce({ granted: false, canAskAgain: false });
-    confirm.mockResolvedValueOnce(false);
-    await expect(pickAvatarImage('gallery')).resolves.toBeNull();
-    expect(linking.openSettings).not.toHaveBeenCalled();
+    await expect(pickAvatarImage('gallery')).resolves.toEqual({ status: 'denied' });
+    picker.getMediaLibraryPermissionsAsync.mockResolvedValueOnce({ granted: false, canAskAgain: false });
+    await expect(pickAvatarImage('gallery')).resolves.toEqual({ status: 'blocked', kind: 'mediaLibrary' });
     expect(picker.launchImageLibraryAsync).not.toHaveBeenCalled();
   });
 });

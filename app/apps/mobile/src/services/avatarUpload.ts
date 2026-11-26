@@ -9,10 +9,9 @@
 // never rewritten). Renderers pick the thumb via deriveThumbUrl.
 // ─────────────────────────────────────────────
 
-import { Linking, Platform } from 'react-native';
-import i18n from '../i18n';
-import { confirmAction } from './platformConfirm';
+import { Platform } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { blockedPick, ensureMediaPermission, type MediaPickResult } from '../lib/mediaPermissions';
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as Crypto from 'expo-crypto';
 import { publicFileUrl, removeFiles } from './backend/storageBackend';
@@ -41,66 +40,32 @@ export type AvatarSource = 'camera' | 'gallery';
 export const isCameraAvailable = Platform.OS !== 'web';
 
 /**
- * If the OS-level permission was permanently denied (`canAskAgain === false`),
- * surface an actionable alert that opens iOS / Android Settings. If denied but
- * the system can still prompt next time, return false silently — the next tap
- * triggers the system sheet again.
- *
- * Returns `true` when the caller may proceed (granted or limited).
- */
-async function ensureMediaLibraryPermission(): Promise<boolean> {
-  const result = await ImagePicker.requestMediaLibraryPermissionsAsync();
-  if (result.granted) return true;
-  if (result.canAskAgain) return false;
-  const openSettings = await confirmAction(
-    i18n.t('errors.media.galleryDeniedTitle'),
-    i18n.t('errors.media.galleryDeniedBodyAvatar'),
-    { confirmLabel: i18n.t('errors.media.openSettings') },
-  );
-  if (openSettings) void Linking.openSettings();
-  return false;
-}
-
-async function ensureCameraPermission(): Promise<boolean> {
-  const result = await ImagePicker.requestCameraPermissionsAsync();
-  if (result.granted) return true;
-  if (result.canAskAgain) return false;
-  const openSettings = await confirmAction(
-    i18n.t('errors.media.cameraDeniedTitle'),
-    i18n.t('errors.media.cameraDeniedBodyAvatar'),
-    { confirmLabel: i18n.t('errors.media.openSettings') },
-  );
-  if (openSettings) void Linking.openSettings();
-  return false;
-}
-
-/**
  * FR-AUTH-011 AC1: pick a single image from the camera or the gallery.
- * Returns null on cancel / permission denial / camera-on-web.
+ * A cancellation or a fresh denial is silent (no alert, no Settings redirect).
+ * `blocked` means the user tapped again after the OS will no longer prompt.
  *
  * Note: we deliberately do NOT pass `allowsEditing` / `aspect` — on iOS 14+
  * the new PHPickerViewController doesn't support them, and combining them
  * with `aspect: [1,1]` crashes the app on the simulator (iOS 26). We do the
  * square center-crop ourselves in `resizeAndUploadAvatar` via ImageManipulator.
  */
-export async function pickAvatarImage(source: AvatarSource): Promise<PickedImage | null> {
+export async function pickAvatarImage(source: AvatarSource): Promise<MediaPickResult<PickedImage>> {
   const mediaTypes = ['images'] as ImagePicker.MediaType[]; // SDK 54 array form
-  if (source === 'camera') {
-    if (!isCameraAvailable) return null;
-    if (!(await ensureCameraPermission())) return null;
-    const r = await ImagePicker.launchCameraAsync({ mediaTypes, quality: 1, exif: false });
-    if (r.canceled) return null;
-    const a = r.assets[0]!;
-    return { uri: a.uri, width: a.width, height: a.height, fileSize: a.fileSize ?? null };
-  }
+  const kind = source === 'camera' ? 'camera' : 'mediaLibrary';
+  if (source === 'camera' && !isCameraAvailable) return { status: 'cancelled' };
 
-  if (!(await ensureMediaLibraryPermission())) return null;
-  const r = await ImagePicker.launchImageLibraryAsync({
-    mediaTypes, allowsMultipleSelection: false, quality: 1, exif: false,
-  });
-  if (r.canceled) return null;
+  const permission = await ensureMediaPermission(kind);
+  if (permission === 'blocked') return blockedPick(kind);
+  if (permission !== 'granted') return { status: 'denied' };
+
+  const r = source === 'camera'
+    ? await ImagePicker.launchCameraAsync({ mediaTypes, quality: 1, exif: false })
+    : await ImagePicker.launchImageLibraryAsync({
+      mediaTypes, allowsMultipleSelection: false, quality: 1, exif: false,
+    });
+  if (r.canceled) return { status: 'cancelled' };
   const a = r.assets[0]!;
-  return { uri: a.uri, width: a.width, height: a.height, fileSize: a.fileSize ?? null };
+  return { status: 'ok', value: { uri: a.uri, width: a.width, height: a.height, fileSize: a.fileSize ?? null } };
 }
 
 /** Square center-crop of the picked image, sized `size`×`size` and JPEG-encoded. */

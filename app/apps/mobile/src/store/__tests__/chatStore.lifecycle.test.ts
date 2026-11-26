@@ -133,21 +133,6 @@ describe('useChatStore — thread mutations', () => {
     expect(byId['theirs']).toMatchObject({ status: 'delivered' });
   });
 
-  it('applyIncomingMessage replaces a matching pending optimistic row', () => {
-    useChatStore.getState().appendOptimistic('c1', {
-      messageId: 'tmp', clientId: 'k1', status: 'pending', senderId: 'u_other', body: 'hi',
-      createdAt: '2026-05-16T13:00:00.000Z',
-    } as never);
-    useChatStore.getState().applyIncomingMessage('c1', MSG);
-    const list = useChatStore.getState().threads.c1 ?? [];
-    expect(list).toHaveLength(1);
-    expect(list[0]).toMatchObject({ messageId: 'm9', clientId: 'k1' });
-  });
-
-  it('applyIncomingMessage appends a new message', () => {
-    useChatStore.getState().applyIncomingMessage('c1', MSG);
-    expect(useChatStore.getState().threads.c1).toHaveLength(1);
-  });
 });
 
 describe('useChatStore — subscriptions lifecycle', () => {

@@ -3,6 +3,7 @@
 // read it through a signed URL (`chatMediaUrl.ts`).
 
 import * as ImagePicker from 'expo-image-picker';
+import { blockedPick, ensureMediaPermission, type MediaPickResult } from '../lib/mediaPermissions';
 import * as Crypto from 'expo-crypto';
 import { encodeJpeg, planMaxEdgeResize, type ImageSize } from './imageEncoding';
 import { uploadErrorMessage, uploadStorageObject } from './storageObjectUpload';
@@ -15,17 +16,18 @@ export interface PickedChatImage extends ImageSize {
   readonly uri: string;
 }
 
-export async function pickChatImage(): Promise<PickedChatImage | null> {
-  const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-  if (!perm.granted) return null;
+export async function pickChatImage(): Promise<MediaPickResult<PickedChatImage>> {
+  const permission = await ensureMediaPermission('mediaLibrary');
+  if (permission === 'blocked') return blockedPick('mediaLibrary');
+  if (permission !== 'granted') return { status: 'denied' };
   const result = await ImagePicker.launchImageLibraryAsync({
     mediaTypes: ['images'] as ImagePicker.MediaType[],
     quality: 1,
     exif: false,
   });
   const asset = result.canceled ? undefined : result.assets[0];
-  if (!asset) return null;
-  return { uri: asset.uri, width: asset.width, height: asset.height };
+  if (!asset) return { status: 'cancelled' };
+  return { status: 'ok', value: { uri: asset.uri, width: asset.width, height: asset.height } };
 }
 
 /**
