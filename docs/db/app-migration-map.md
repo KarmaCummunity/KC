@@ -740,7 +740,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `<bucket>` (bucket) | core | 1:1 | bucket `post-images` | A bucket named at run time. The app's storage door (`apps/mobile/src/services/backend/storageBackend.ts`, ADR-012) is handed the bucket by its caller: `post-images`, `avatars` (public, JPEG, 512 KB, `<user_id>/…`) or `chat-media` (private, `<user_id>/<chat_id>/<file>`, read through signed URLs by chat members), each declared by the baseline with own-folder policies; the abandoned-upload ledger deletes only in those three. `backfill-image-thumbs` loops over a bucket list passed at run time (`post-images`, `avatars`). |  | medium | storageBackend.ts:187 |
+| `<bucket>` (bucket) | core | 1:1 | bucket `post-images` | A bucket named at run time. The app's storage door (`apps/mobile/src/services/backend/storageBackend.ts`, ADR-012) is handed the bucket by its caller: `post-images`, `avatars` (public, JPEG, 512 KB, `<user_id>/…`) or `chat-media` (private, `<user_id>/<chat_id>/<file>`, read through signed URLs by chat members), each declared by the baseline with own-folder policies; the abandoned-upload ledger deletes only in those three. `backfill-image-thumbs` loops over a bucket list passed at run time (`post-images`, `avatars`). |  | medium | storageBackend.ts:189 |
 | `topic = 'user:${userId}:notifications'` (channel) | core | 1:1 | topic `user:<user id>:notifications` | Already on the baseline contract (event `badge`). |  | high | useNotificationInboxBadge.ts:33 |
 
 ### Edge Function `_shared`

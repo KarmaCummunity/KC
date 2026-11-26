@@ -17,6 +17,7 @@ import {
   publicObjectName,
   publicObjectUrl,
   StorageRequestError,
+  withoutTrailingSlashes,
 } from '@kc/infrastructure-api';
 import { getSupabaseClient } from '@kc/infrastructure-supabase';
 import { getSupabasePublicEnv } from '../../lib/supabasePublicConfig';
@@ -63,10 +64,11 @@ function getApiStorage(): ApiStorage | null {
  */
 export function publicFilesBaseUrl(): string | null {
   if (getApiStorage()) {
-    const media = typeof process !== 'undefined' ? process.env['EXPO_PUBLIC_KC_MEDIA_URL']?.trim().replace(/\/+$/, '') : undefined;
-    return media || getApiBaseUrl();
+    const media = typeof process !== 'undefined' ? process.env['EXPO_PUBLIC_KC_MEDIA_URL'] : undefined;
+    return (media === undefined ? '' : withoutTrailingSlashes(media.trim())) || getApiBaseUrl();
   }
-  return getSupabasePublicEnv()?.url.replace(/\/+$/, '') ?? null;
+  const env = getSupabasePublicEnv();
+  return env ? withoutTrailingSlashes(env.url) : null;
 }
 
 /**
@@ -133,7 +135,7 @@ async function supabaseStorageError(response: Response): Promise<StorageHttpErro
 function supabaseSender(baseUrl: string, anonKey: string, token: string): SendFile {
   return async ({ bucket, path, bytes, contentType, cacheControl, signal }) => {
     const encoded = path.split('/').map(encodeURIComponent).join('/');
-    const response = await fetch(`${baseUrl.replace(/\/+$/, '')}/storage/v1/object/${encodeURIComponent(bucket)}/${encoded}`, {
+    const response = await fetch(`${withoutTrailingSlashes(baseUrl)}/storage/v1/object/${encodeURIComponent(bucket)}/${encoded}`, {
       method: 'POST',
       headers: { authorization: `Bearer ${token}`, apikey: anonKey, 'content-type': contentType, 'cache-control': cacheControl, 'x-upsert': 'false' },
       // React Native's fetch accepts typed arrays (its typings omit them) and base64-encodes a

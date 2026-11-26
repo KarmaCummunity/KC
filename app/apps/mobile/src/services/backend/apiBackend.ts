@@ -18,13 +18,14 @@ import {
   type PortRouter,
   REALTIME_PATH,
   RealtimeSocket,
+  withoutTrailingSlashes,
 } from '@kc/infrastructure-api';
 import { getSupabaseClient } from '@kc/infrastructure-supabase';
 
 /** Base URL of KC's API without a trailing slash, or null when the app is not pointed at one. */
 export function getApiBaseUrl(): string | null {
   const raw = typeof process !== 'undefined' ? process.env['EXPO_PUBLIC_KC_API_URL'] : undefined;
-  const url = raw?.trim().replace(/\/+$/, '');
+  const url = raw === undefined ? '' : withoutTrailingSlashes(raw.trim());
   return url ? url : null;
 }
 

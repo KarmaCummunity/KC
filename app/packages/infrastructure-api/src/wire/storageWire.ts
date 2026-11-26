@@ -1,6 +1,8 @@
 // The wire format of file storage (ADR-012), shared by the API and the app so neither can
 // drift from the other: the member routes, their bodies, and the shape of a public address.
 
+import { withoutTrailingSlashes } from './urlText';
+
 /** Paths of the member routes, relative to the API base URL. */
 export const STORAGE_PATHS = {
   /** Grants an upload: `UploadGrantRequest` → `UploadGrantResponse`. */
@@ -87,7 +89,7 @@ function encodeName(name: string): string {
  * @param baseUrl Host that serves the files, with or without a trailing slash.
  */
 export function publicObjectUrl(baseUrl: string, bucket: string, name: string): string {
-  return `${baseUrl.replace(/\/+$/, '')}${PUBLIC_OBJECT_PATH}/${encodeURIComponent(bucket)}/${encodeName(name)}`;
+  return `${withoutTrailingSlashes(baseUrl)}${PUBLIC_OBJECT_PATH}/${encodeURIComponent(bucket)}/${encodeName(name)}`;
 }
 
 /** True when the address is a public file's, on any host. */

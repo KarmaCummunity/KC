@@ -3,12 +3,13 @@
 
 import type { Lang } from './replies';
 
-const LINK_RE = /^\s*(?:(link|connect|קישור|חיבור|קוד)\s*[:-]?\s*)?(\d{6})\s*$/i;
+// Matched on trimmed text. After the word, spaces are taken once; more follow only after a colon or a dash.
+const LINK_RE = /^(?:(link|connect|קישור|חיבור|קוד)\s*(?:[:-]\s*)?)?(\d{6})$/i;
 
 export type LinkStatus = 'linked' | 'invalid' | 'locked' | 'not_pro';
 
 export function parseLinkCode(text: string): { code: string; lang: Lang } | null {
-  const m = LINK_RE.exec(text ?? '');
+  const m = LINK_RE.exec((text ?? '').trim());
   if (!m) return null;
   const word = (m[1] ?? '').toLowerCase();
   // The pattern's second group is the six digits: a match always has it.
