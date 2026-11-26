@@ -1,5 +1,5 @@
 import { mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
-import { dirname, join } from 'node:path';
+import { dirname, join, resolve, sep } from 'node:path';
 import { publicObjectUrl } from '@kc/infrastructure-api';
 import { type ObjectEntry, type ObjectPage, type ObjectStore, ObjectTooLargeError, type SignedUpload, type StoredObject, type UploadGrant } from './objectStore';
 import { isSafeObjectName } from './storageAuthorizer';
@@ -104,7 +104,7 @@ export class LocalObjectStore implements ObjectStore {
 
   async list(bucket: string, prefix: string, options: { readonly limit: number; readonly pageToken?: string }): Promise<ObjectPage> {
     if (!isSafeObjectName(bucket) || bucket.includes('/')) throw new UnsafeObjectPathError();
-    const names = (await this.namesUnder(join(this.options.directory, encodeURIComponent(bucket)), ''))
+    const names = (await this.namesUnder(this.inside(encodeURIComponent(bucket)), ''))
       // The token is the last name of the page before: the next page is every name after it.
       .filter((name) => name.startsWith(prefix) && (options.pageToken === undefined || name > options.pageToken))
       .sort();
@@ -151,6 +151,19 @@ export class LocalObjectStore implements ObjectStore {
    */
   private pathOf(bucket: string, name: string): string {
     if (!isSafeObjectName(name) || !isSafeObjectName(bucket) || bucket.includes('/')) throw new UnsafeObjectPathError();
-    return join(this.options.directory, encodeURIComponent(bucket), ...name.split('/').map(encodeURIComponent));
+    return this.inside(join(encodeURIComponent(bucket), ...name.split('/').map(encodeURIComponent)));
+  }
+
+  /**
+   * The absolute path of `relative` under the store's directory. The last
+   * line of defence, independent of how the name was checked: a path that
+   * resolves to anywhere outside the directory is refused.
+   * @throws UnsafeObjectPathError
+   */
+  private inside(relative: string): string {
+    const root = resolve(this.options.directory);
+    const path = resolve(root, relative);
+    if (path !== root && !path.startsWith(root + sep)) throw new UnsafeObjectPathError();
+    return path;
   }
 }

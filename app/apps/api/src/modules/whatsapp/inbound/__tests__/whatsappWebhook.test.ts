@@ -36,6 +36,8 @@ describe('verifySubscription', () => {
     ['a wrong token', query({ 'hub.verify_token': 'guess' }), 'verify-token'],
     ['another mode', query({ 'hub.mode': 'unsubscribe' }), 'verify-token'],
     ['no challenge', query({ 'hub.challenge': '' }), 'verify-token'],
+    ['a challenge that is not a number', query({ 'hub.challenge': '<b>1158201444</b>' }), 'verify-token'],
+    ['a challenge longer than any number the provider sends', query({ 'hub.challenge': '1'.repeat(33) }), 'verify-token'],
     ['a token that is not text', query({ 'hub.verify_token': ['verify-token'] }), 'verify-token'],
     ['no token configured', query({ 'hub.verify_token': '' }), null],
   ])('refuses %s', (_case, parameters, verifyToken) => {
