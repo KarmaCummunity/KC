@@ -285,7 +285,7 @@ English is opt-in and machine-translated from Hebrew (D-167 in `docs/SSOT/DECISI
 
 ### 7.5 Enforcement (automated)
 
-`apps/mobile/src/__tests__/copyVoiceGuard.test.ts` (rules in `__tests__/guardKit/copyVoiceRules.ts`, unit tests in `copyVoiceRules.test.ts`) reads every string in `src/i18n/locales/{he,en}/**` and runs inside `pnpm test`. Shortcut: `pnpm lint:hebrew-register` (from `app/`). It works like the brand guard (§6): per-file counts frozen in `apps/mobile/copy-voice.baseline.json` may only go down (refresh with `KC_COPY_BASELINE=update pnpm --filter @kc/mobile test -- copyVoiceGuard`), and the **touched-file rule** (D67) applies — a locale file a PR changes must have zero findings. The findings frozen at adoption (290, mostly singular imperatives on buttons) are tracked as TD-233.
+`apps/mobile/src/__tests__/copyVoiceGuard.test.ts` (rules in `__tests__/guardKit/copyVoiceRules.ts`, unit tests in `copyVoiceRules.test.ts`) reads every string in `src/i18n/locales/{he,en}/**` and runs inside `pnpm test`. Shortcut: `pnpm lint:hebrew-register` (from `app/`). It works like the brand guard (§6): per-file counts frozen in `apps/mobile/copy-voice.baseline.json` may only go down (refresh with `KC_COPY_BASELINE=update pnpm --filter @kc/mobile test -- copyVoiceGuard`), and the **touched-file rule** (D67) applies — a locale file a PR changes must have zero findings. The findings frozen at adoption (290, mostly singular imperatives on buttons; TD-233) were all rewritten by #1744, so the baseline is empty and any new finding fails.
 
 | Rule | Locale | Fails when |
 |---|---|---|
