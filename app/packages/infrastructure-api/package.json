@@ -1,0 +1,23 @@
+{
+  "name": "@kc/infrastructure-api",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "lint": "eslint . --max-warnings=0"
+  },
+  "dependencies": {
+    "@kc/application": "workspace:*",
+    "@kc/domain": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "typescript": "^5.5.0",
+    "vite": "^6.0.0",
+    "vitest": "^5.1.0"
+  }
+}
