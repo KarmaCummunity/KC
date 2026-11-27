@@ -55,6 +55,17 @@ jobs:
           xcrun simctl bootstatus "$udid" -b
           printf '%s\n' "$GITHUB_SHA" > "$RUNNER_TEMP/ipad-evidence/source.txt"
           printf '%s\n' "$PR_HEAD_SHA" > "$RUNNER_TEMP/ipad-evidence/source-pr-head.txt"
+      - name: Prepare independently verified read-only XCTest diagnostic runner
+        run: |
+          set -euo pipefail
+          node --test tests/native/diagnostics/ax-probe.test.mjs
+          gem install xcodeproj --version 1.27.0 --user-install --no-document > "$RUNNER_TEMP/ipad-evidence/ax-gem.log" 2>&1
+          ruby tests/native/diagnostics/create-project.rb "$RUNNER_TEMP/kc-ax-reader"
+          xcodebuild -project "$RUNNER_TEMP/kc-ax-reader/KCAXReader.xcodeproj" \
+            -scheme KCAXReader -configuration Debug -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/kc-ax-reader-build" \
+            CODE_SIGNING_ALLOWED=NO build-for-testing > "$RUNNER_TEMP/ipad-evidence/ax-reader-build.log" 2>&1
       - name: Install frozen dependencies without persistent caches
         working-directory: app
         run: pnpm install --frozen-lockfile
@@ -72,6 +83,8 @@ jobs:
         run: |
           set -euo pipefail
           npx expo prebuild --platform ios --no-install --clean > "$RUNNER_TEMP/ipad-evidence/prebuild.log" 2>&1
+          node "$GITHUB_WORKSPACE/tests/native/diagnostics/ax-probe.mjs" ios/KC/AppDelegate.swift
+          printf '%s\n' 'Includes bounded read-only UIKit AX shape/flags diagnostic. Not a production candidate.' >> "$RUNNER_TEMP/ipad-evidence/diagnostic-source.txt"
           cd ios
           pod install > "$RUNNER_TEMP/ipad-evidence/pods.log" 2>&1
           xcodebuild -workspace KC.xcworkspace -scheme KC -configuration Release \
@@ -82,6 +95,7 @@ jobs:
             > "$RUNNER_TEMP/ipad-evidence/build.log" 2>&1
           app="$RUNNER_TEMP/kc-ipad-build/Build/Products/Release-iphonesimulator/KC.app"
           # Local ad-hoc identity only: no Apple account, certificate or profile access.
+          shasum -a 256 "$app/KC" > "$RUNNER_TEMP/ipad-evidence/native-executable-sha256.txt"
           codesign --verify --deep --strict "$app" > "$RUNNER_TEMP/ipad-evidence/signature.log" 2>&1
           codesign -d --entitlements :- "$app" > "$RUNNER_TEMP/ipad-evidence/entitlements.log" 2>&1
           node "$GITHUB_WORKSPACE/scripts/ipad-qualification-bundle-proof.mjs" "$app" > "$RUNNER_TEMP/ipad-evidence/bundle-proof.log"
@@ -103,7 +117,7 @@ jobs:
           curl -fsSL https://get.maestro.mobile.dev | bash > "$RUNNER_TEMP/ipad-evidence/maestro-install.log" 2>&1
           echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
       - name: Real native guest interaction without member login
-        timeout-minutes: 8
+        timeout-minutes: 12
         run: |
           set -euo pipefail
           cd "$RUNNER_TEMP/ipad-evidence"
@@ -132,6 +146,22 @@ jobs:
           capture_native_diagnostics
           cp "$RUNNER_TEMP/ipad-evidence/native-console.log" "$RUNNER_TEMP/ipad-evidence/initial-console.log"
           if [ "$initial_status" -ne 0 ]; then
+            # Preserve the failed first-launch screen/tree before a warm control.
+            # This independent reader neither activates nor relaunches KC.
+            ax_status=0
+            xcodebuild -project "$RUNNER_TEMP/kc-ax-reader/KCAXReader.xcodeproj" \
+              -scheme KCAXReader -configuration Debug -sdk iphonesimulator \
+              -destination "platform=iOS Simulator,id=$SIMULATOR_UDID" \
+              -derivedDataPath "$RUNNER_TEMP/kc-ax-reader-build" \
+              -resultBundlePath "$RUNNER_TEMP/kc-raw-ax.xcresult" \
+              -parallel-testing-enabled NO -test-timeouts-enabled YES \
+              -default-test-execution-time-allowance 60 -maximum-test-execution-time-allowance 90 \
+              CODE_SIGNING_ALLOWED=NO test-without-building \
+              > "$RUNNER_TEMP/ipad-evidence/independent-xctest.log" 2>&1 || ax_status=$?
+            printf '%s\n' "$ax_status" > "$RUNNER_TEMP/ipad-evidence/independent-xctest-status.txt"
+            xcrun xcresulttool export attachments --path "$RUNNER_TEMP/kc-raw-ax.xcresult" \
+              --output-path "$RUNNER_TEMP/ipad-evidence/xctest-attachments" \
+              > "$RUNNER_TEMP/ipad-evidence/ax-export.log" 2>&1 || true
             # Same binary, preserve native RTL preferences after the initial failure.
             # This control cannot turn a failed first launch into acceptance.
             sed -e 's/clearState: true/clearState: false/' \
@@ -165,10 +195,19 @@ jobs:
             sips -Z 1600 -s format jpeg -s formatOptions 70 "$image" \
               --out "$RUNNER_TEMP/ipad-evidence-compact/screenshot-$index.jpg" > "$RUNNER_TEMP/sips-output.log" 2>&1
           done < "$RUNNER_TEMP/evidence-images.txt"
+          # Prioritize the independent raw tree so nested Maestro files cannot crowd it out.
+          if [ -d "$RUNNER_TEMP/ipad-evidence/xctest-attachments" ]; then
+            find "$RUNNER_TEMP/ipad-evidence/xctest-attachments" -type f -name '*.txt' | sort | head -4 > "$RUNNER_TEMP/ax-tree-paths.txt"
+            index=0
+            while IFS= read -r tree; do
+              index=$((index + 1))
+              head -c 131072 "$tree" > "$RUNNER_TEMP/ipad-evidence-compact/xctest-tree-$index.txt"
+            done < "$RUNNER_TEMP/ax-tree-paths.txt"
+          fi
           # Maestro stores hierarchy/command state below hidden debug directories.
           # Keep a bounded, encrypted copy of nested text diagnostics, never public plaintext.
-          find "$RUNNER_TEMP/ipad-evidence/debug" "$RUNNER_TEMP/ipad-evidence/warm-debug" \
-            -type f \( -name '*.json' -o -name '*.xml' -o -name '*.log' \) 2>/dev/null \
+          find "$RUNNER_TEMP/ipad-evidence/debug" "$RUNNER_TEMP/ipad-evidence/warm-debug" "$RUNNER_TEMP/ipad-evidence/xctest-attachments" \
+            -type f \( -name '*.json' -o -name '*.xml' -o -name '*.log' -o -name '*.txt' \) 2>/dev/null \
             | sort | head -40 > "$RUNNER_TEMP/nested-evidence-paths.txt" || true
           index=0
           while IFS= read -r diagnostic; do
