@@ -49,6 +49,8 @@ In CI the frontend lane runs the package without a database (the lower floor). T
 | `KC_PORT_ROLLOUT` | everyone | Who each served port is served to: a JSON object of port name to `{ "percent": 0-100, "minAppVersion": "1.2.3" }`, with `*` for every port without a rule of its own (ADR-010). A rule for a port that does not exist stops the process at start |
 | `KC_STORAGE_LOCAL_DIR` | none | Directory of the local file store, for development and tests only (ADR-012). Without a store the storage routes answer `503 not_configured` |
 | `KC_API_PUBLIC_URL` | none | The API's own address as clients reach it; required with `KC_STORAGE_LOCAL_DIR`, whose upload and read addresses point back at the API |
+| `KC_STORAGE_GCS_BUCKET_PREFIX` | none | Selects the Google Cloud Storage file store of a deployed API (ADR-012): what precedes a KC bucket's name in its cloud bucket's name, e.g. `kc-dev-` for `kc-dev-avatars`. 1 to 30 lowercase letters, digits, dashes or underscores. Not together with `KC_STORAGE_LOCAL_DIR` |
+| `KC_MEDIA_PUBLIC_URL` | none | KC's media address, which serves the public buckets; required with `KC_STORAGE_GCS_BUCKET_PREFIX` |
 | `WHATSAPP_CLOUD_API_TOKEN` | none | Graph API token of the WhatsApp channel (a secret). Without it no WhatsApp message is sent |
 | `WHATSAPP_PHONE_NUMBER_ID` | channel settings | Overrides the phone number id stored with the channel's settings |
 | `WHATSAPP_VERIFY_TOKEN` | none | The token the WhatsApp provider echoes when the inbound webhook is registered (a secret). Without it registration is refused |
@@ -79,6 +81,16 @@ An invalid value stops the process at start with an error that names the variabl
 ## File storage
 
 [ADR-012](../../../docs/architecture/adr/ADR-012-media-storage.md). A member's file moves in three steps: `POST /v1/storage/uploads` grants an upload of `<bucket>/<name>` and returns the address to send the bytes to; the app sends them there; `POST /v1/storage/uploads/complete` writes the file into the index (`storage.objects`). `POST /v1/storage/signed-urls` gives a short-lived address of a private file, and `POST /v1/storage/objects/delete` removes the member's files. Who may do what is decided by the policies on `storage.objects` (`src/platform/storage/storageAuthorizer.ts`), never by the API's own code. The bytes live behind the `ObjectStore` interface: a local directory here, Google Cloud Storage when deployed. Server modules that work on files inject `OBJECT_STORE`.
+
+**The two stores.** `LocalObjectStore` keeps files in a directory and its signed addresses are routes of this API. `GcsObjectStore` (`src/platform/storage/gcsObjectStore.ts`, on the official `@google-cloud/storage` SDK) keeps them in Cloud Storage: a KC bucket `avatars` is the cloud bucket `<prefix>avatars`, the object names are unchanged, and the client uploads straight to the store. What a grant fixes is part of the signed address, so Cloud Storage itself refuses anything else: another content type, a body over the granted size (`x-goog-content-length-range`), a name that is taken (`x-goog-if-generation-match: 0`). The API runs as its service's own identity: there is no key file, and it signs addresses through the IAM credentials service, which needs the role "Service Account Token Creator" on that same service account, beside object access on the buckets.
+
+**How the stores are checked.** One contract (`src/platform/storage/__tests__/objectStoreContract.ts`) runs against each store:
+
+| Run | Needs | Covers |
+|---|---|---|
+| Local directory | nothing (every `pnpm test`) | the whole contract, with paging and Cache-Control |
+| Cloud Storage emulator | `KC_API_TEST_GCS_ENDPOINT=http://127.0.0.1:4443` and a running [fake-gcs-server](https://github.com/fsouza/fake-gcs-server) (`docker run -p 127.0.0.1:4443:4443 fsouza/fake-gcs-server -scheme http -backend memory -public-host 127.0.0.1:4443`); the backend CI lane starts one | the contract and the signed addresses as real HTTP requests. The emulator answers a listing in one page, does not record Cache-Control and checks no signed condition, so those are not asserted there |
+| A real project | `KC_API_TEST_GCS_BUCKET_PREFIX=<prefix>`, Google credentials of the run's own, and the buckets `<prefix>avatars`, `<prefix>post-images`, `<prefix>chat-media` | everything, including what only the service enforces: a second upload to a name, an oversized body, another type, a missing condition. Run before the first deploy of an environment and after an SDK upgrade. **Not run yet: there is no cloud project** |
 
 ## Health
 

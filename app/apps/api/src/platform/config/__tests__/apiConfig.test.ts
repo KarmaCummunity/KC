@@ -42,7 +42,7 @@ describe('loadApiConfig', () => {
       rateLimitPerMinute: 600,
       jobsToken: null,
       expoAccessToken: null,
-      storage: { localDirectory: null, publicUrl: null },
+      storage: { localDirectory: null, publicUrl: null, cloud: null },
       portRollout: {},
       appBaseUrl: null,
       whatsapp: { cloudApiToken: null, phoneNumberId: null, graphApiVersion: null, verifyToken: null, appSecret: null },
@@ -207,9 +207,29 @@ describe('loadApiConfig', () => {
   it('reads the local file store and needs the address its URLs point at', () => {
     const config = loadApiConfig({ ...REQUIRED, KC_STORAGE_LOCAL_DIR: '/var/kc-files', KC_API_PUBLIC_URL: 'http://localhost:8080/' });
 
-    expect(config.storage).toEqual({ localDirectory: '/var/kc-files', publicUrl: 'http://localhost:8080' });
+    expect(config.storage).toEqual({ localDirectory: '/var/kc-files', publicUrl: 'http://localhost:8080', cloud: null });
     expect(configErrorOf({ KC_STORAGE_LOCAL_DIR: '/var/kc-files' }).variable).toBe('KC_API_PUBLIC_URL');
     expect(configErrorOf({ KC_API_PUBLIC_URL: 'not a url' }).variable).toBe('KC_API_PUBLIC_URL');
+  });
+
+  it('reads the cloud file store: the prefix of its buckets and the media address public files are served from', () => {
+    const config = loadApiConfig({ ...REQUIRED, KC_STORAGE_GCS_BUCKET_PREFIX: 'kc-dev-', KC_MEDIA_PUBLIC_URL: 'https://media.example.org/' });
+
+    expect(config.storage).toEqual({ localDirectory: null, publicUrl: null, cloud: { bucketPrefix: 'kc-dev-', mediaUrl: 'https://media.example.org' } });
+    expect(loadApiConfig(REQUIRED).storage.cloud).toBeNull();
+  });
+
+  it.each([
+    [{ KC_STORAGE_GCS_BUCKET_PREFIX: 'kc-dev-' }, 'KC_MEDIA_PUBLIC_URL'],
+    [{ KC_STORAGE_GCS_BUCKET_PREFIX: 'kc-dev-', KC_MEDIA_PUBLIC_URL: 'not a url' }, 'KC_MEDIA_PUBLIC_URL'],
+    [{ KC_STORAGE_GCS_BUCKET_PREFIX: 'KC Dev/', KC_MEDIA_PUBLIC_URL: 'https://media.example.org' }, 'KC_STORAGE_GCS_BUCKET_PREFIX'],
+    [{ KC_STORAGE_GCS_BUCKET_PREFIX: '-kc', KC_MEDIA_PUBLIC_URL: 'https://media.example.org' }, 'KC_STORAGE_GCS_BUCKET_PREFIX'],
+    [
+      { KC_STORAGE_GCS_BUCKET_PREFIX: 'kc-dev-', KC_MEDIA_PUBLIC_URL: 'https://media.example.org', KC_STORAGE_LOCAL_DIR: '/var/kc-files', KC_API_PUBLIC_URL: 'http://localhost:8080' },
+      'KC_STORAGE_LOCAL_DIR',
+    ],
+  ])('refuses to start with a cloud file store that is half configured, misnamed, or beside a local one: %j', (env, variable) => {
+    expect(configErrorOf(env).variable).toBe(variable);
   });
 
   it('refuses to start with Gemini selected and no key, or with an unknown provider', () => {

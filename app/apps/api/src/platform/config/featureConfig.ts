@@ -67,11 +67,21 @@ export interface GeminiConfig {
   readonly model: string;
 }
 
+/** The Google Cloud Storage object store of a deployed API (ADR-012). */
+export interface CloudStorageConfig {
+  /** What precedes a KC bucket's name in its cloud bucket's name, e.g. `kc-dev-`. */
+  readonly bucketPrefix: string;
+  /** KC's media address, which serves the public buckets. */
+  readonly mediaUrl: string;
+}
+
 export interface StorageConfig {
   /** Directory of the local-directory object store (development and tests); null: no store of that kind. */
   readonly localDirectory: string | null;
   /** The API's own address as clients reach it, which the local store's URLs point back at. */
   readonly publicUrl: string | null;
+  /** The cloud object store; null: no store of that kind. Never together with `localDirectory`. */
+  readonly cloud: CloudStorageConfig | null;
 }
 
 /** The feature settings, as `loadApiConfig` adds them to the configuration. */
@@ -164,7 +174,24 @@ function parseStorage(env: Env): StorageConfig {
   const publicUrl = rawPublicUrl === undefined ? null : withoutTrailingSlashes(rawPublicUrl);
   if (publicUrl !== null && !URL.canParse(publicUrl)) throw new ApiConfigError('KC_API_PUBLIC_URL', 'must be a URL');
   if (localDirectory !== null && publicUrl === null) throw new ApiConfigError('KC_API_PUBLIC_URL', 'is required when KC_STORAGE_LOCAL_DIR is set');
-  return { localDirectory, publicUrl };
+  const cloud = parseCloudStorage(env);
+  // One process, one store: two would split the files between them.
+  if (localDirectory !== null && cloud !== null) throw new ApiConfigError('KC_STORAGE_LOCAL_DIR', 'cannot be set together with KC_STORAGE_GCS_BUCKET_PREFIX');
+  return { localDirectory, publicUrl, cloud };
+}
+
+/** Lowercase letters, digits, dashes and underscores, as a cloud bucket name allows; short, since the bucket's own name follows. */
+const BUCKET_PREFIX = /^[a-z0-9][a-z0-9_-]{0,29}$/;
+
+function parseCloudStorage(env: Env): CloudStorageConfig | null {
+  const bucketPrefix = readVariable(env, 'KC_STORAGE_GCS_BUCKET_PREFIX');
+  const rawMediaUrl = readVariable(env, 'KC_MEDIA_PUBLIC_URL');
+  const mediaUrl = rawMediaUrl === undefined ? null : withoutTrailingSlashes(rawMediaUrl);
+  if (mediaUrl !== null && !URL.canParse(mediaUrl)) throw new ApiConfigError('KC_MEDIA_PUBLIC_URL', 'must be a URL');
+  if (bucketPrefix === undefined) return null;
+  if (!BUCKET_PREFIX.test(bucketPrefix)) throw new ApiConfigError('KC_STORAGE_GCS_BUCKET_PREFIX', 'must be 1 to 30 lowercase letters, digits, dashes or underscores, starting with a letter or digit');
+  if (mediaUrl === null) throw new ApiConfigError('KC_MEDIA_PUBLIC_URL', 'is required when KC_STORAGE_GCS_BUCKET_PREFIX is set');
+  return { bucketPrefix, mediaUrl };
 }
 
 /** Reads every feature's settings. @throws ApiConfigError on the first invalid variable. */

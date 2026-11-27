@@ -80,7 +80,7 @@ describe('File jobs on the KC schema', () => {
 
   beforeAll(async () => {
     directory = await mkdtemp(join(tmpdir(), 'kc-file-jobs-'));
-    gateway = await startKcGateway({ config: { jobsToken: JOBS_TOKEN, storage: { localDirectory: directory, publicUrl: 'http://api.kc.test' } } });
+    gateway = await startKcGateway({ config: { jobsToken: JOBS_TOKEN, storage: { localDirectory: directory, publicUrl: 'http://api.kc.test', cloud: null } } });
     store = gateway.app.get<ObjectStore>(OBJECT_STORE);
     const city = (await database.admin.query<{ city_id: string; name_he: string }>('select city_id, name_he from public.cities limit 1')).rows[0];
     if (!city) throw new Error('the reference seed is not loaded: no city');

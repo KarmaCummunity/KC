@@ -16,6 +16,12 @@ const DISPOSABLE_STACK_SUITES = [
   'src/__tests__/rateLimiter.integration.test.ts',
   'src/platform/realtime/__tests__/redisEphemeralEvents.integration.test.ts',
 ];
+// The Cloud Storage emulator, at the address in KC_API_TEST_GCS_ENDPOINT.
+const hasGcsEmulator = Boolean(process.env.KC_API_TEST_GCS_ENDPOINT);
+const GCS_EMULATOR_SUITES = ['src/**/*.gcs.integration.test.ts'];
+// A real Cloud Storage project: its buckets carry the prefix in KC_API_TEST_GCS_BUCKET_PREFIX and the run has Google credentials of its own.
+const hasGcsProject = Boolean(process.env.KC_API_TEST_GCS_BUCKET_PREFIX);
+const GCS_PROJECT_SUITES = ['src/**/*.cloud.integration.test.ts'];
 
 /**
  * Coverage floors (percent). Much of this server is code that talks to the database, and its
@@ -32,7 +38,13 @@ export default defineConfig({
   plugins: [swc.vite()],
   test: {
     include: ['src/**/__tests__/**/*.test.ts'],
-    exclude: [...configDefaults.exclude, ...(hasKcSchema ? [] : KC_SCHEMA_SUITES), ...(hasDisposableStack ? [] : DISPOSABLE_STACK_SUITES)],
+    exclude: [
+      ...configDefaults.exclude,
+      ...(hasKcSchema ? [] : KC_SCHEMA_SUITES),
+      ...(hasDisposableStack ? [] : DISPOSABLE_STACK_SUITES),
+      ...(hasGcsEmulator ? [] : GCS_EMULATOR_SUITES),
+      ...(hasGcsProject ? [] : GCS_PROJECT_SUITES),
+    ],
     environment: 'node',
     globals: false,
     coverage: {

@@ -210,6 +210,27 @@ jobs:
           done
           exit 1
 
+      # The API's Cloud Storage object store (ADR-012) is checked against the service's emulator:
+      # the SDK calls are real HTTP requests. The emulator does not page listings, record
+      # Cache-Control or check signed conditions; a real project is checked before a first deploy
+      # (app/apps/api/README.md, "File storage").
+      - name: Start the Cloud Storage emulator for the API suites
+        run: |
+          # fake-gcs-server 1.52, pinned by digest; the same image on two registries.
+          digest=sha256:666f86b873120818b10a5e68d99401422fcf8b00c1f27fe89599c35236f48b4c
+          for repo in mirror.gcr.io/fsouza/fake-gcs-server docker.io/fsouza/fake-gcs-server; do
+            docker run -d --name kc-api-gcs -p 127.0.0.1:4443:4443 "$repo@$digest" \
+              -scheme http -port 4443 -backend memory -public-host 127.0.0.1:4443 -external-url http://127.0.0.1:4443 && break
+            echo "::warning::emulator pull via $repo failed, trying next registry"
+            docker rm -f kc-api-gcs >/dev/null 2>&1 || true
+            sleep 15
+          done
+          for _ in $(seq 1 30); do
+            curl -fs -o /dev/null 'http://127.0.0.1:4443/storage/v1/b?project=kc-test' && exit 0
+            sleep 1
+          done
+          exit 1
+
       # An empty database of the local stack's server with the whole migration chain and the
       # reference data. The connection string is local-only; GITHUB_ENV scopes it to this job.
       - name: Build the API's test database
@@ -226,6 +247,7 @@ jobs:
         env:
           REDIS_URL: redis://127.0.0.1:6379
           KC_API_TEST_DISPOSABLE_DATABASE: '1'
+          KC_API_TEST_GCS_ENDPOINT: http://127.0.0.1:4443
         run: DATABASE_URL="$KC_API_TEST_KC_DATABASE_URL" pnpm --filter @kc/api test:coverage
 
       - name: Diagnose (on failure)

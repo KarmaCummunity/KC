@@ -2,9 +2,9 @@ import { randomBytes } from 'node:crypto';
 import { Global, Module } from '@nestjs/common';
 import type { ApiConfig } from '../config/apiConfig';
 import { API_CONFIG } from '../config/apiConfig.module';
-import { LocalObjectStore } from './localObjectStore';
 import { LOCAL_STORE_SECRET, LocalStoreRoutes } from './localStoreRoutes';
 import { OBJECT_STORE, type ObjectStore } from './objectStore';
+import { createObjectStore } from './objectStoreFactory';
 import { StorageController } from './storage.controller';
 import { StorageAdmin } from './storageAdmin';
 import { StorageAuthorizer } from './storageAuthorizer';
@@ -33,10 +33,7 @@ import { CALLER_FILES } from '../ports/callerFiles';
     {
       provide: OBJECT_STORE,
       inject: [API_CONFIG, LOCAL_STORE_SECRET],
-      useFactory: (config: ApiConfig, signingSecret: string): ObjectStore | null => {
-        const { localDirectory, publicUrl } = config.storage;
-        return localDirectory && publicUrl ? new LocalObjectStore({ directory: localDirectory, baseUrl: publicUrl, signingSecret }) : null;
-      },
+      useFactory: (config: ApiConfig, signingSecret: string): Promise<ObjectStore | null> => createObjectStore(config.storage, signingSecret),
     },
   ],
   exports: [OBJECT_STORE, StorageAuthorizer, StorageService, StorageAdmin, CALLER_FILES],
