@@ -82,7 +82,9 @@ describe('Copying the existing files, on the KC schema', () => {
     expect(first.status).toBe(200);
     expect(first.body).toEqual({ ok: true, scanned: 2, verified: 0, copied: 2, replaced: 0, destinationOnly: 0, absent: 0, failed: 0, next: { bucket: 'avatars', after: `${folder}/a.jpg` } });
     expect(second.body).toMatchObject({ scanned: 1, copied: 1, failed: 0, next: { bucket: 'avatars', after: `${folder}/c.jpg` } });
-    expect(downloads).toEqual([`${folder}/B.jpg`, `${folder}/a.jpg`, `${folder}/c.jpg`]);
+    // The two files of the first run are copied side by side: which was downloaded first is not fixed, that the third came after is.
+    expect([...downloads.slice(0, 2)].sort()).toEqual([`${folder}/B.jpg`, `${folder}/a.jpg`]);
+    expect(downloads.slice(2)).toEqual([`${folder}/c.jpg`]);
     expect(textOf(await store.read('avatars', `${folder}/B.jpg`))).toBe('second in the alphabet, first in bytes');
     expect(await store.head('avatars', `${folder}/c.jpg`)).toEqual({ size: 12, contentType: 'image/jpeg', cacheControl: 'max-age=3600', md5: md5(bytesOf('the last one')) });
   });
