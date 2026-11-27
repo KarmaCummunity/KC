@@ -198,3 +198,76 @@ set search_path = ''
 as $$
   update auth.users set raw_user_meta_data = coalesce(raw_user_meta_data, '{}'::jsonb) || p_patch where id = p_user_id;
 $$;
+
+-- ── Carrying the accounts over from Supabase Auth (ADR-013 section 5) ───────────────────────────
+-- Supabase Auth keeps identities, password hashes, sessions and refresh tokens in tables of its
+-- own, in this same database. At the cut-over they are copied into the tables above, so that a
+-- member keeps their password and stays signed in:
+--
+--   identities      as they are; an email identity is known by its address, a provider's by the
+--                   provider's own id of the account
+--   passwords       the bcrypt hash as it is (the identity module verifies it and replaces it at
+--                   the member's next sign-in)
+--   sessions        the ones that have not ended and still hold a token that was not revoked,
+--                   under the id they already have
+--   refresh tokens  the tokens of those sessions that were not revoked, as SHA-256 digests: the
+--                   text Supabase Auth stores is not copied
+--
+-- It can be run again at any time and adds only what is missing; it changes and removes nothing.
+-- On a database that has no Supabase Auth tables it does nothing and says so.
+create function kc_private.auth_copy_from_supabase()
+returns table (source_present boolean, identities bigint, passwords bigint, sessions bigint, refresh_tokens bigint)
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_identities bigint := 0;
+  v_passwords bigint := 0;
+  v_sessions bigint := 0;
+  v_tokens bigint := 0;
+begin
+  if to_regclass('auth.identities') is null or to_regclass('auth.sessions') is null or to_regclass('auth.refresh_tokens') is null then
+    return query select false, 0::bigint, 0::bigint, 0::bigint, 0::bigint;
+    return;
+  end if;
+
+  insert into kc_private.auth_identities (user_id, provider, subject, created_at, last_sign_in_at)
+  select i.user_id,
+         i.provider,
+         case when i.provider = 'email' then lower(coalesce(i.identity_data ->> 'email', u.email)) else i.provider_id end,
+         coalesce(i.created_at, now()),
+         i.last_sign_in_at
+    from auth.identities i
+    join auth.users u on u.id = i.user_id
+   where i.provider in ('google', 'apple', 'email')
+     and (i.provider <> 'email' or coalesce(i.identity_data ->> 'email', u.email) is not null)
+  on conflict (provider, subject) do nothing;
+  get diagnostics v_identities = row_count;
+
+  insert into kc_private.auth_passwords (user_id, hash)
+  select u.id, u.encrypted_password
+    from auth.users u
+   where coalesce(u.encrypted_password, '') <> ''
+  on conflict (user_id) do nothing;
+  get diagnostics v_passwords = row_count;
+
+  insert into kc_private.auth_sessions (id, user_id, created_at, refreshed_at)
+  select s.id, s.user_id, coalesce(s.created_at, now()), coalesce(s.refreshed_at, s.updated_at, s.created_at, now())
+    from auth.sessions s
+   where (s.not_after is null or s.not_after > now())
+     and exists (select 1 from auth.refresh_tokens t where t.session_id = s.id and not coalesce(t.revoked, false))
+  on conflict (id) do nothing;
+  get diagnostics v_sessions = row_count;
+
+  insert into kc_private.auth_refresh_tokens (token_hash, session_id, created_at)
+  select pg_catalog.sha256(pg_catalog.convert_to(t.token, 'UTF8')), t.session_id, coalesce(t.created_at, now())
+    from auth.refresh_tokens t
+    join kc_private.auth_sessions s on s.id = t.session_id and s.ended_at is null
+   where not coalesce(t.revoked, false) and t.token is not null
+  on conflict (token_hash) do nothing;
+  get diagnostics v_tokens = row_count;
+
+  return query select true, v_identities, v_passwords, v_sessions, v_tokens;
+end;
+$$;

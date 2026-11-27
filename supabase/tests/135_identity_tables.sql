@@ -4,7 +4,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = extensions, public;
 
-select plan(19);
+select plan(20);
 
 -- ── Nobody but the service role reaches them ────────────────────────────────────────────────────
 select ok(
@@ -151,6 +151,15 @@ select ok(
   not has_function_privilege('authenticated', 'kc_private.auth_user_create(text, text, boolean, jsonb)', 'execute')
     and not has_function_privilege('anon', 'kc_private.auth_user_confirm_email(uuid)', 'execute'),
   'no client role can call them'
+);
+
+-- ── The copy from Supabase Auth ─────────────────────────────────────────────────────────────────
+-- Its work is checked against a real Supabase Auth by the API's own suite; here, where that
+-- service's tables do not exist, it must do nothing and say so.
+select results_eq(
+  $$select source_present, (identities + passwords + sessions + refresh_tokens)::int from kc_private.auth_copy_from_supabase()$$,
+  $$values (false, 0)$$,
+  'on a database without Supabase Auth''s tables the copy does nothing and says the source is absent'
 );
 
 -- ── Removed with the member ─────────────────────────────────────────────────────────────────────
