@@ -1,6 +1,6 @@
 # ADR-010 — The API serves application ports through one gateway, and hosts the Supabase adapters on a SQL engine
 
-- **Status:** Accepted (2026-11-21) · engineering decision `{{ENG:port-gateway-compat-engine}}` · refines phase 5 of [ADR-009](./ADR-009-backend-platform.md)
+- **Status:** Accepted (2026-11-21) · engineering decision `D-246` · refines phase 5 of [ADR-009](./ADR-009-backend-platform.md)
 - **Issue:** epic KC#1496
 - **Related:** `D-204` (port contract suites), [ADR-002](./ADR-002-data-layer.md) (RLS and RPCs are the authority), [ADR-003](./ADR-003-realtime.md)
 

@@ -1,7 +1,7 @@
 # ADR-011 — Realtime gateway: one WebSocket, the same topics, the same policies
 
 - **Status:** Accepted (2026-11-23) · phase 6 of [ADR-009](./ADR-009-backend-platform.md)
-- **Decision log:** `{{ENG:realtime-gateway}}` in [`../../SSOT/DECISIONS.md`](../../SSOT/DECISIONS.md)
+- **Decision log:** `D-247` in [`../../SSOT/DECISIONS.md`](../../SSOT/DECISIONS.md)
 - **Related:** [ADR-003 realtime](./ADR-003-realtime.md) (topics, mechanisms, lifecycle; unchanged by this ADR), [ADR-010 port gateway](./ADR-010-port-gateway.md), topic registry [`docs/SSOT/social_realtime_conventions.md`](../../SSOT/social_realtime_conventions.md)
 
 ## Context

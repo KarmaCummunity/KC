@@ -21,6 +21,7 @@ import { container } from '../../../src/lib/container';
 import { useLocaleBundle, type LocaleBundle } from '../../../src/i18n/useLocaleBundle';
 import { useAdminScreenTitle } from '../../../src/components/admin/useAdminScreenTitle';
 import { KcFlashList } from '../../../src/components/lists/KcFlashList';
+import { SilentUnauthorizedFallback } from '../../../src/components/permissions/SilentUnauthorizedFallback';
 
 type StatusFilter = OrgApplicationStatus | 'all';
 
@@ -117,7 +118,7 @@ export default function OrgApprovalsScreen() {
     return <View style={styles.center}><Text>{t.loading}</Text></View>;
   }
   if (!can('org.review_applications')) {
-    return <View style={styles.center}><Text style={styles.deniedTitle}>{t.forbiddenTitle}</Text></View>;
+    return <SilentUnauthorizedFallback href="/(admin)" />;
   }
 
   return (
