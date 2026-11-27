@@ -5,7 +5,7 @@ import { execFileSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { HEAVY_LANES, LANE_JOBS, OPTIONAL_LANES, REVIEW_LANES, changedFiles, classify, plan, readPrAction } from './ci-changes.mjs';
+import { HEAVY_LANES, LANE_JOBS, MAESTRO_LABEL, OPTIONAL_LANES, REVIEW_LANES, changedFiles, classify, plan, readPrAction } from './ci-changes.mjs';
 
 const PR = { event: 'pull_request', draft: false, actor: 'agent', ref: 'refs/pull/1/merge', baseRef: 'dev' };
 const ALL = { hygiene: true, static: true, frontend: true, backend: true, edge: true, bundles: true };
@@ -21,9 +21,9 @@ test('the plan names every lane job explicitly', () => {
   assert.deepEqual(Object.keys(r.plan).sort(), [...LANE_JOBS].sort());
 });
 
-test('app change into dev runs frontend only: bundles wait for the merge queue, Sonar for main', () => {
+test('app change into dev runs frontend only: bundles and Maestro wait for the merge queue, Sonar for main', () => {
   const r = plan({ ...PR, files: ['app/apps/mobile/src/lib/x.ts'] });
-  assert.deepEqual(r.plan, { hygiene: true, static: true, frontend: true, backend: false, edge: false, bundles: false, maestro: true });
+  assert.deepEqual(r.plan, { hygiene: true, static: true, frontend: true, backend: false, edge: false, bundles: false });
   assert.equal(r.sonar, false);
 });
 
@@ -36,6 +36,18 @@ test('app change into main runs frontend, bundles and Sonar', () => {
 test('infrastructure-supabase change runs frontend and backend', () => {
   const lanes = classify(['app/packages/infrastructure-supabase/src/database.types.ts']);
   assert.deepEqual(lanes, { frontend: true, backend: true, edge: false });
+});
+
+test('API server and its client package run frontend and backend (database suites, container image)', () => {
+  for (const f of ['app/apps/api/src/main.ts', 'app/apps/api/Dockerfile', 'app/packages/infrastructure-api/src/wire/portWire.ts']) {
+    assert.deepEqual(classify([f]), { frontend: true, backend: true, edge: false }, f);
+  }
+});
+
+test('packages the API shares with the app do not plan backend on a PR', () => {
+  for (const f of ['app/packages/domain/src/index.ts', 'app/packages/application/src/index.ts', 'app/apps/mobile/src/lib/x.ts']) {
+    assert.equal(classify([f]).backend, false, f);
+  }
 });
 
 test('lockfile change also runs backend (sqlProbes install the workspace)', () => {
@@ -72,7 +84,7 @@ test('draft PR plans every lane as not needed and flags draft', () => {
 });
 
 test('unknown diff runs every lane, except the heavy ones on a PR into dev', () => {
-  assert.deepEqual(plan({ ...PR, files: null }).plan, { ...ALL, bundles: false, maestro: true });
+  assert.deepEqual(plan({ ...PR, files: null }).plan, { ...ALL, bundles: false });
 });
 
 test('dependabot PR skips sonar (no secrets)', () => {
@@ -88,7 +100,9 @@ test('merge queue runs no hygiene and no sonar', () => {
 
 test('a merge group runs every lane even for a docs-only diff', () => {
   const group = { event: 'merge_group', draft: false, actor: 'x', ref: 'refs/heads/gh-readonly-queue/dev/pr-1', baseRef: 'refs/heads/dev' };
-  assert.deepEqual(plan({ ...group, files: ['docs/a.md'] }).plan, { ...ALL, hygiene: false });
+  assert.deepEqual(plan({ ...group, files: ['docs/a.md'], groupFiles: ['docs/a.md'] }).plan, { ...ALL, hygiene: false });
+  // Only Maestro follows the group's diff (and fails closed when it is unknown).
+  assert.deepEqual(plan({ ...group, files: ['docs/a.md'], groupFiles: null }).plan, { ...ALL, hygiene: false, maestro: true });
 });
 
 test('push runs sonar on main only', () => {
@@ -184,12 +198,14 @@ test('readPrAction reads the action and a base change from the event payload', (
   try {
     const path = join(dir, 'event.json');
     writeFileSync(path, JSON.stringify({ action: 'edited', changes: { body: { from: 'old' } } }));
-    assert.deepEqual(readPrAction(path), { action: 'edited', baseChanged: false });
+    assert.deepEqual(readPrAction(path), { action: 'edited', baseChanged: false, labels: [] });
     writeFileSync(path, JSON.stringify({ action: 'edited', changes: { base: { ref: { from: 'dev' } } } }));
-    assert.deepEqual(readPrAction(path), { action: 'edited', baseChanged: true });
+    assert.deepEqual(readPrAction(path), { action: 'edited', baseChanged: true, labels: [] });
+    writeFileSync(path, JSON.stringify({ action: 'synchronize', pull_request: { labels: [{ name: 'maestro' }, { name: 'area:mobile' }, {}] } }));
+    assert.deepEqual(readPrAction(path), { action: 'synchronize', baseChanged: false, labels: ['maestro', 'area:mobile'] });
     writeFileSync(path, 'not-json');
-    assert.deepEqual(readPrAction(path), { action: undefined, baseChanged: false });
-    assert.deepEqual(readPrAction(''), { action: undefined, baseChanged: false });
+    assert.deepEqual(readPrAction(path), { action: undefined, baseChanged: false, labels: [] });
+    assert.deepEqual(readPrAction(''), { action: undefined, baseChanged: false, labels: [] });
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -221,7 +237,7 @@ test('the heavy lanes are regular lane jobs, named in every plan', () => {
 
 test('a PR into dev plans the heavy lanes as not needed, even for an app change', () => {
   const r = plan({ ...PR, baseRef: 'dev', files: APP });
-  assert.deepEqual(r.plan, { hygiene: true, static: true, frontend: true, backend: false, edge: false, bundles: false, maestro: true });
+  assert.deepEqual(r.plan, { hygiene: true, static: true, frontend: true, backend: false, edge: false, bundles: false });
   assert.equal(r.run.bundles, false);
 });
 
@@ -307,28 +323,67 @@ test('an unresolvable base yields null (every lane runs)', () => {
   assert.equal(changedFiles('', 'HEAD'), null);
 });
 
-// The Maestro Android lane: needed on a PR that touches what the journeys see, never planned otherwise.
-test('the maestro lane is needed on a PR that touches the app, its packages, the flows or their runner', () => {
-  for (const f of [
-    'app/apps/mobile/src/lib/x.ts',
-    'app/packages/domain/src/a.ts',
-    'app/pnpm-lock.yaml',
-    '.maestro/flows/01-auth-email-sign-in.yaml',
-    'scripts/maestro-run-android.sh',
-    '.github/workflows/ci-maestro-android.yml',
-  ]) {
-    assert.equal(plan({ ...PR, files: [f] }).plan.maestro, true, f);
+// The Maestro Android lane (#2613, 23 Nov 2026): required in the dev merge queue on the exact group
+// head when the group touches what the journeys see; on a PR into dev only with the opt-in label;
+// on a PR into main (no queue after it) on its diff, as before.
+const LABELED = { ...PR, labels: [MAESTRO_LABEL] };
+const GROUP = { event: 'merge_group', draft: false, actor: 'kc-agent-bot[bot]', ref: 'refs/heads/gh-readonly-queue/dev/pr-1-abc', baseRef: 'dev', files: null };
+const JOURNEY_FILES = [
+  'app/apps/mobile/src/lib/x.ts',
+  'app/packages/domain/src/a.ts',
+  'app/pnpm-lock.yaml',
+  '.maestro/flows/01-auth-email-sign-in.yaml',
+  'scripts/maestro-run-android.sh',
+  '.github/workflows/ci-maestro-android.yml',
+];
+
+test('a merge group into dev needs the maestro lane when its diff touches the app, its packages, the flows or their runner', () => {
+  for (const f of JOURNEY_FILES) {
+    const r = plan({ ...GROUP, groupFiles: [f] });
+    assert.equal(r.plan.maestro, true, f);
+    assert.equal(r.run.maestro, true, f);
   }
 });
 
-test('the maestro lane is left out of the plan, never planned false, when the diff touches nothing the journeys see', () => {
-  for (const files of [['docs/spec/README.md'], ['supabase/migrations/0010_x.sql'], ['.github/workflows/ci.yml'], ['scripts/ci-gate.mjs'], []]) {
-    assert.equal('maestro' in plan({ ...PR, files }).plan, false, files.join());
+test('a merge group into dev fails closed: an undiffable group needs the maestro lane', () => {
+  assert.equal(plan({ ...GROUP, groupFiles: null }).plan.maestro, true);
+});
+
+test('a merge group into dev that touches nothing the journeys see leaves the maestro lane out, never planned false', () => {
+  for (const groupFiles of [['docs/spec/README.md'], ['supabase/migrations/0010_x.sql'], ['.github/workflows/ci.yml'], ['scripts/ci-gate.mjs'], ['app/apps/mobile/public/privacy.html'], []]) {
+    const r = plan({ ...GROUP, groupFiles });
+    assert.equal('maestro' in r.plan, false, groupFiles.join());
+    // ...while every other lane still runs: a merge group is the full gate.
+    assert.deepEqual(r.plan, { static: true, frontend: true, backend: true, edge: true, bundles: true, hygiene: false });
   }
+});
+
+test('a merge group from a Dependabot PR still runs the maestro lane (the queue runs as the enqueuing app, with secrets)', () => {
+  assert.equal(plan({ ...GROUP, actor: 'kc-agent-bot[bot]', groupFiles: ['app/pnpm-lock.yaml'] }).plan.maestro, true);
+});
+
+test('a PR into dev does not run the maestro lane without the opt-in label, whatever it touches', () => {
+  for (const f of JOURNEY_FILES) assert.equal('maestro' in plan({ ...PR, files: [f] }).plan, false, f);
+  assert.equal('maestro' in plan({ ...PR, files: null }).plan, false);
+});
+
+test('a PR into dev with the opt-in label runs the maestro lane; a Dependabot PR (no secrets) never does', () => {
+  assert.equal(plan({ ...LABELED, files: ['docs/a.md'] }).plan.maestro, true);
+  assert.equal(plan({ ...LABELED, files: APP }).run.maestro, true);
+  assert.equal('maestro' in plan({ ...LABELED, actor: 'dependabot[bot]', files: APP }).plan, false);
+  assert.equal('maestro' in plan({ ...PR, labels: ['area:mobile'], files: APP }).plan, false);
+});
+
+test('a PR into main still runs the maestro lane on its diff (no merge queue after it); undiffable fails closed', () => {
+  const MAIN = { ...PR, baseRef: 'main' };
+  for (const f of JOURNEY_FILES) assert.equal(plan({ ...MAIN, files: [f] }).plan.maestro, true, f);
+  assert.equal(plan({ ...MAIN, files: null }).plan.maestro, true);
+  assert.equal('maestro' in plan({ ...MAIN, files: ['docs/a.md'] }).plan, false);
+  assert.equal('maestro' in plan({ ...MAIN, actor: 'dependabot[bot]', files: APP }).plan, false);
 });
 
 test('the maestro lane is not planned by files that never reach the APK (web-only, tests, docs)', () => {
-  for (const files of [
+  for (const groupFiles of [
     // #2301: legal pages + a unit test
     ['app/apps/mobile/public/delete-account.html', 'app/apps/mobile/public/privacy.html', 'app/apps/mobile/src/i18n/__tests__/publicDeletionWording.test.ts'],
     ['app/apps/mobile/functions/post/[id].js'],
@@ -340,38 +395,33 @@ test('the maestro lane is not planned by files that never reach the APK (web-onl
     ['app/apps/mobile/copy-voice.baseline.json'],
     ['app/apps/mobile/README.md'],
   ]) {
-    assert.equal('maestro' in plan({ ...PR, files }).plan, false, files.join());
+    assert.equal('maestro' in plan({ ...GROUP, groupFiles }).plan, false, groupFiles.join());
   }
 });
 
 test('one APK-relevant file next to ignored ones still plans the maestro lane', () => {
-  for (const files of [
+  for (const groupFiles of [
     ['app/apps/mobile/public/privacy.html', 'app/apps/mobile/src/i18n/locales/he.json'],
     ['app/apps/mobile/src/lib/__tests__/x.test.ts', 'app/apps/mobile/src/lib/x.ts'],
     ['app/apps/mobile/app.config.ts'],
     ['app/apps/mobile/assets/icon.png'],
     ['app/packages/ui/src/testing.ts'],
   ]) {
-    assert.equal(plan({ ...PR, files }).plan.maestro, true, files.join());
+    assert.equal(plan({ ...GROUP, groupFiles }).plan.maestro, true, groupFiles.join());
   }
 });
 
-test('the maestro lane fails closed: an undiffable PR plans it, a Dependabot PR (no secrets) does not', () => {
-  assert.equal(plan({ ...PR, files: null }).plan.maestro, true);
-  assert.equal('maestro' in plan({ ...PR, actor: 'dependabot[bot]', files: ['app/pnpm-lock.yaml'] }).plan, false);
-});
-
-test('a merge group, a push and a dispatch do not plan the maestro lane (a dev push has its own non-blocking run)', () => {
-  for (const event of ['merge_group', 'push', 'workflow_dispatch']) {
-    const r = plan({ event, draft: false, actor: 'x', ref: 'refs/heads/dev', baseRef: 'dev', files: null });
+test('a merge group into main, a push and a dispatch do not plan the maestro lane (a dev push has its own non-blocking run)', () => {
+  for (const [event, baseRef] of [['merge_group', 'main'], ['push', undefined], ['workflow_dispatch', undefined]]) {
+    const r = plan({ event, draft: false, actor: 'x', ref: 'refs/heads/dev', baseRef, files: null, groupFiles: null });
     assert.equal('maestro' in r.plan, false, event);
     assert.equal(r.run.maestro === true, false, event);
   }
 });
 
-test('a review or an edit plans the maestro lane but does not re-run it (the gate reuses the PR run)', () => {
+test('a review or an edit of an opted-in PR plans the maestro lane but does not re-run it (the gate reuses the PR run)', () => {
   const files = ['app/apps/mobile/src/lib/x.ts'];
-  for (const r of [plan({ ...PR, event: 'pull_request_review', files }), plan({ ...PR, action: 'edited', baseChanged: false, files })]) {
+  for (const r of [plan({ ...LABELED, event: 'pull_request_review', files }), plan({ ...LABELED, action: 'edited', baseChanged: false, files })]) {
     assert.equal(r.plan.maestro, true);
     assert.equal(r.run.maestro, false);
   }

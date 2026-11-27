@@ -3,12 +3,13 @@
 // Authorization enforces it for presence (no track, no receive when off).
 
 import type { SupabaseClient } from '@supabase/supabase-js';
+import type { IActiveStatusRepository } from '@kc/application';
 import type { Database } from '../database.types';
 import { unwrapCall } from '../rpc/mapRpcError';
 import { updateUserPrivate } from './ownPrivateUpdate';
 import { sessionUserId } from './userReads';
 
-export class SupabaseActiveStatusRepository {
+export class SupabaseActiveStatusRepository implements IActiveStatusRepository {
   constructor(private readonly client: SupabaseClient<Database>) {}
 
   /** Defaults to true (the column default) when the row is missing or nobody is signed in. */

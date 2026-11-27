@@ -15,7 +15,7 @@ set search_path = ''
 as $$
   select case p_operation
     when 'wipe' then array['wipe_content', 'wipe_accounts']
-    when 'seed' then array['wipe_content', 'wipe_accounts', 'members', 'items', 'rides', 'worlds', 'social', 'chats', 'orgs']
+    when 'seed' then array['wipe_content', 'wipe_accounts', 'members', 'items', 'rides', 'worlds', 'social', 'chats', 'orgs', 'coverage']
   end;
 $$;
 
@@ -74,6 +74,7 @@ begin
     when 'social' then jsonb_build_object('follows_created', kc_private.demo_seed_social())
     when 'chats' then jsonb_build_object('chats_created', kc_private.demo_seed_chats())
     when 'orgs' then jsonb_build_object('organizations_created', kc_private.demo_seed_orgs(p_actor_id))
+    when 'coverage' then jsonb_build_object('coverage_fixtures_created', kc_private.demo_seed_coverage(p_actor_id))
   end;
   if v_out is null then
     raise exception 'demo_phase_invalid' using errcode = 'P0001', detail = p_phase;

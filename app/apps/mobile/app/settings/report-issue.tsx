@@ -12,6 +12,7 @@ import { NotifyModal } from '../../src/components/NotifyModal';
 import { useShellStackScreenOptions } from '../../src/navigation/shellStackScreenOptions';
 import { useReportIssueSubmit } from '../../src/hooks/useReportIssueSubmit';
 import { webViewRtl } from '../../src/lib/webRtlStyle';
+export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
 
 export default function ReportIssueScreen() {
   const shellStackScreenOptions = useShellStackScreenOptions();

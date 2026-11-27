@@ -31,6 +31,7 @@ import { onboardingReplayEn } from './modules/onboardingReplay';
 import { dateOfBirthEn } from './modules/dateOfBirth';
 import { verificationEn } from './modules/verification';
 import { errorsEn } from './modules/errors';
+import { mediaAccessEn } from './modules/mediaAccess';
 import { createPostValidationEn } from './createPostValidation';
 import { formFieldEn } from './formField';
 import { chatEn } from './modules/chat';
@@ -234,6 +235,7 @@ const en = {
 
   // Error messages (auth/post/profile/media/createPost) — see modules/errors.ts
   errors: errorsEn,
+  mediaAccess: mediaAccessEn,
   createPostValidation: createPostValidationEn,
   formField: formFieldEn,
 

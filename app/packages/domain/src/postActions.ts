@@ -52,6 +52,28 @@ export function isPostEditableByOwner(status: string): boolean {
   return OWNER_EDITABLE.includes(status);
 }
 
+/** Whether the viewer may open the post or listing editor: the owner or a super admin. */
+export interface CanAccessPostEditorArgs {
+  readonly viewerId: string | null;
+  readonly ownerId: string;
+  readonly isSuperAdmin: boolean;
+}
+
+export function canAccessPostEditor({ viewerId, ownerId, isSuperAdmin }: CanAccessPostEditorArgs): boolean {
+  return viewerId != null && (viewerId === ownerId || isSuperAdmin);
+}
+
+/**
+ * Whether the Edit action should be offered. Same permission as `canAccessPostEditor`,
+ * plus the post must be in a status the owner (or super admin) may edit.
+ * Screens that already handled the permission check still use `isPostEditableByOwner`
+ * for the not-editable / republish states.
+ */
+export function canEditPost(args: CanAccessPostEditorArgs & { readonly status: string }): boolean {
+  return canAccessPostEditor(args) && isPostEditableByOwner(args.status);
+}
+
+
 /** The statuses of a post that ended: delivered, deleted by its owner, or expired. */
 const ENDED: readonly string[] = ['closed_delivered', 'deleted_no_recipient', 'expired'] satisfies readonly PostStatus[];
 

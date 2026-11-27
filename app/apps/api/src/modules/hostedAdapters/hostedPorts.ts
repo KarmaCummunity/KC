@@ -1,0 +1,42 @@
+import type { PortDefinition } from '../../platform/ports/portDefinition';
+import { ADMIN_PORTS } from './ports/admin';
+import { CONVERSATIONS_PORTS } from './ports/conversations';
+import { ORGANIZATIONS_PORTS } from './ports/organizations';
+import { PEOPLE_PORTS } from './ports/people';
+import { POSTS_PORTS } from './ports/posts';
+import { RIDES_PORTS } from './ports/rides';
+
+/**
+ * Every port the API serves by running its existing Supabase data adapter on
+ * the server (ADR-010). A port leaves these files when a native module
+ * replaces its adapter.
+ *
+ * Rules the declarations in `ports/` follow:
+ * - **Wire name**: the port interface without its `I` prefix and its
+ *   `Repository` / `Service` suffix, first letter lower case
+ *   (`IRideBookingRepository` → `rideBooking`).
+ * - **`public`** only where the database itself lets a signed-out visitor in
+ *   (the functions and tables granted to the `anon` role). The gateway never
+ *   opens more than the database does; `hostedPorts.kc.integration.test.ts`
+ *   checks the two against each other.
+ * - **`member_with_files`** for a method that reads or writes stored files:
+ *   the adapter's `client.storage` is answered by this server's own store
+ *   (`platform/storage/storageCallerFiles.ts`), and the method is served
+ *   only where the server has one.
+ * - **`not_served`** for a method that reaches an Edge Function this server
+ *   has not taken over; the app keeps its current adapter for it. A function
+ *   that has been ported is answered in process
+ *   (`platform/ports/hostedFunctions.ts`) and its methods are served.
+ *
+ * Not here on purpose: the realtime ports (phase 6), the auth service
+ * (phase 9), the Edge Function services (phase 8) and the legal documents
+ * port, whose adapter is a device cache around public reads.
+ */
+export const HOSTED_PORTS: readonly PortDefinition[] = [
+  ...PEOPLE_PORTS,
+  ...POSTS_PORTS,
+  ...CONVERSATIONS_PORTS,
+  ...RIDES_PORTS,
+  ...ORGANIZATIONS_PORTS,
+  ...ADMIN_PORTS,
+];

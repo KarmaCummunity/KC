@@ -4,6 +4,8 @@ import { useTheme, useBreakpoint, spacing, radius, typography, Text } from '@kc/
 import { AppShell } from '../../src/components/shell/AppShell';
 import { SHELL_V2_ENABLED } from '../../src/config/environment';
 
+export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
+
 export default function ShellPreviewRoute() {
   if (!SHELL_V2_ENABLED) return <Redirect href="/" />;
   return <ShellPreviewScreen />;
