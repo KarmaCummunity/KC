@@ -3,7 +3,7 @@
 // change so the guest sees what is wrong before sending; the server re-checks everything.
 import React, { useState } from 'react';
 import { Switch, View } from 'react-native';
-import { format } from 'date-fns';
+import { format } from 'date-fns/format';
 import { useTranslation } from 'react-i18next';
 import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
 import {

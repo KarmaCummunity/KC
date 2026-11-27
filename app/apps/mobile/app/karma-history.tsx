@@ -7,7 +7,7 @@ import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
-import { format } from 'date-fns';
+import { format } from 'date-fns/format';
 import { he as dateFnsHe } from 'date-fns/locale/he';
 import { iconSize, makeUseStyles, radius, shadow, spacing, typography, useTheme, Text } from '@kc/ui';
 import { useAuthStore } from '../src/store/authStore';

@@ -2,7 +2,8 @@
 // Rebuilt on top of the shared filterKit (issue #1457).
 import React, { useState } from 'react';
 import { View } from 'react-native';
-import { endOfDay, startOfDay } from 'date-fns';
+import { endOfDay } from 'date-fns/endOfDay';
+import { startOfDay } from 'date-fns/startOfDay';
 import { useTranslation } from 'react-i18next';
 import type { RideMode } from '@kc/domain';
 import { makeUseStyles, spacing, typography, Text } from '@kc/ui';

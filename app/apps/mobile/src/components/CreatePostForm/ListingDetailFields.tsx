@@ -2,7 +2,7 @@
 // Renders the curated field set of one listing kind (lib/unifiedCreate/listingFieldSpecs)
 // with a purpose-built control per field type, styled like the rest of the create form.
 import React from 'react';
-import { format } from 'date-fns';
+import { format } from 'date-fns/format';
 import { isRideWeekday } from '@kc/domain';
 import { Switch } from 'react-native';
 import { useTranslation } from 'react-i18next';
