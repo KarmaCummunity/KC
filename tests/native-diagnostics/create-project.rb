@@ -41,5 +41,6 @@ control_scheme.add_build_target(control)
 control_scheme.add_build_target(target)
 control_scheme.add_test_target(target)
 control_scheme.test_action.build_configuration = 'Debug'
+control_scheme.test_action.should_use_launch_scheme_args_env = false
 control_scheme.test_action.environment_variables = Xcodeproj::XCScheme::EnvironmentVariables.new([{ :key => 'KC_AX_SMOKE_CONTROL', :value => '1', :enabled => true }])
 control_scheme.save_as(project.path, 'KCAXControlSmoke', true)
