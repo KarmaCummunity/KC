@@ -16,14 +16,8 @@ import i18n from '../src/i18n';
 import React, { useEffect } from 'react';
 import { RevenueCatSync } from '../src/services/purchases/RevenueCatSync';
 import { Stack } from 'expo-router';
-import { I18nManager, Platform } from 'react-native';
-import {
-  isRtlLanguage,
-  applyLayoutDirection,
-  loadStoredLanguageAsync,
-  reloadApp,
-  type AppLanguage,
-} from '../src/i18n/language';
+import { Platform } from 'react-native';
+import { useLanguageBootstrap } from '../src/i18n/useLanguageBootstrap';
 import '../src/lib/webDocumentBootstrap';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -181,29 +175,6 @@ function RootLayoutContent() {
     return setupQueryLifecycleSync();
   }, []);
 
-  useEffect(() => {
-    // FR-SETTINGS-018: keep layout direction aligned with the active UI language.
-    // Web resolved its direction at module load from localStorage; here we align
-    // I18nManager. Native reconciles the async-persisted preference and reloads
-    // once if the reading direction has to flip (RN bakes RTL at load time).
-    if (Platform.OS === 'web') {
-      applyLayoutDirection(i18n.language === 'en' ? 'en' : 'he');
-      return;
-    }
-    let cancelled = false;
-    void (async () => {
-      const stored = await loadStoredLanguageAsync();
-      if (cancelled) return;
-      const desired: AppLanguage = stored ?? (i18n.language === 'en' ? 'en' : 'he');
-      const needsReload = I18nManager.isRTL !== isRtlLanguage(desired);
-      if (desired !== i18n.language) await i18n.changeLanguage(desired);
-      applyLayoutDirection(desired);
-      if (needsReload) reloadApp();
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   return (
     <GestureHandlerRootView style={{ flex: 1, width: '100%', alignSelf: 'stretch' }}>
@@ -229,6 +200,8 @@ function RootLayoutContent() {
 export default function RootLayout() {
   // Splash stays up (preventAutoHideAsync) until the brand font settles.
   const brandFontStatus = useBrandFonts();
+  const languageReady = useLanguageBootstrap();
+  if (!languageReady) return null;
   if (brandFontStatus === 'loading') return null;
   return (
     <BrandFontProvider available={brandFontStatus === 'loaded'}>
