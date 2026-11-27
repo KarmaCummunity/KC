@@ -135,11 +135,17 @@ jobs:
         working-directory: tests/e2e
         run: node scripts/summary.mjs
 
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      # Raw browser reports can contain filled passwords, auth tokens and network payloads.
+      # Keep failures red; publish only an allowlisted numeric summary, never raw attachments.
+      - name: Prepare credential-safe Playwright counts
+        id: safe-playwright-summary
         if: always()
+        run: node scripts/playwright-safe-summary.mjs tests/e2e/test-results/results.json "$RUNNER_TEMP/safe-playwright-summary/counts.json"
+      - name: Upload credential-safe Playwright counts only
+        if: always() && steps['safe-playwright-summary'].outcome == 'success'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: playwright-report-nightly${{ inputs.p0_only && '-p0' || '' }}
-          path: |
-            tests/e2e/playwright-report/
-            tests/e2e/test-results/
+          name: playwright-safe-counts
+          path: ${{ runner.temp }}/safe-playwright-summary/counts.json
+          if-no-files-found: error
           retention-days: 14
