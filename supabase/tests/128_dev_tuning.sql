@@ -2,13 +2,15 @@
 -- production values; the dev-only seed shortens the two run-log retention periods, slows the
 -- system-message consumer and narrows the matching scan, reaches pg_cron with the same
 -- update, leaves every other rule and job alone, and changes nothing when it runs again.
+-- A repeat run must also skip the statement-level scheduled_jobs_sync trigger, not only
+-- leave values unchanged.
 -- The tuning is a dev-only seed, not a migration, so this test loads it itself.
 begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = extensions, public;
 set local client_min_messages = warning;
 
-select plan(11);
+select plan(12);
 
 -- ── Production values, as the migrations leave them ─────────────────────────
 select is((select r.keep from kc_private.retention_rules r where r.name = 'job_runs'), interval '30 days',
@@ -28,10 +30,27 @@ create temp table untouched_before on commit drop as
   select 'job:' || j.name, j.schedule || '|' || j.alert_after::text from kc_private.scheduled_jobs j
    where j.name <> 'chat_system_messages';
 
--- Loaded twice: the second run must succeed and change nothing.
+-- Count statement-level UPDATE trigger invocations. A WHERE clause matching
+-- zero rows still fires this trigger, so checking final values alone is not enough.
+create temp table dev_tuning_sync_calls(n integer);
+insert into dev_tuning_sync_calls values (0);
+create function pg_temp.count_dev_tuning_sync()
+returns trigger language plpgsql as $$
+begin
+  update pg_temp.dev_tuning_sync_calls set n = n + 1;
+  return null;
+end;
+$$;
+create trigger test_dev_tuning_sync_calls
+  after update on kc_private.scheduled_jobs
+  for each statement execute function pg_temp.count_dev_tuning_sync();
+
 select set_config('kc.seed_target', 'dev', true);
 \ir ../seed/dev-tuning/load.sql
+update dev_tuning_sync_calls set n = 0;
 \ir ../seed/dev-tuning/load.sql
+select is((select n from dev_tuning_sync_calls), 0,
+  'repeat seed skips the UPDATE statement and scheduler sync trigger entirely');
 
 -- ── kc-dev values ───────────────────────────────────────────────────────────
 select is((select r.keep from kc_private.retention_rules r where r.name = 'job_runs'), interval '7 days',
