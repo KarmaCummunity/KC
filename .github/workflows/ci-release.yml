@@ -121,7 +121,7 @@ jobs:
           npx playwright install --with-deps chromium
       # kc-dev (Free/Nano) stalls when several suites hit it at once (13/14 Nov 2026), so at
       # most KC_DEV_TEST_SLOTS suites (default 2) run their tests against it together; the rest
-      # queue here FIFO. Best effort: proceeds after 120 min or on any API error.
+      # queue here FIFO. API errors keep waiting; the bounded wait fails closed without a slot.
       - name: Wait for a kc-dev test slot
         timeout-minutes: 125
         env:
