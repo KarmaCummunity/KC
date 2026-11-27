@@ -99,6 +99,10 @@ An invalid value stops the process at start with an error that names the variabl
 | Cloud Storage emulator | `KC_API_TEST_GCS_ENDPOINT=http://127.0.0.1:4443` and a running [fake-gcs-server](https://github.com/fsouza/fake-gcs-server) (`docker run -p 127.0.0.1:4443:4443 fsouza/fake-gcs-server -scheme http -backend memory -public-host 127.0.0.1:4443`); the backend CI lane starts one | the contract and the signed addresses as real HTTP requests. The emulator answers a listing in one page, does not record Cache-Control and checks no signed condition, so those are not asserted there |
 | A real project | `KC_API_TEST_GCS_BUCKET_PREFIX=<prefix>`, Google credentials of the run's own, and the buckets `<prefix>avatars`, `<prefix>post-images`, `<prefix>chat-media` | everything, including what only the service enforces: a second upload to a name, an oversized body, another type, a missing condition. Run before the first deploy of an environment and after an SDK upgrade. **Not run yet: there is no cloud project** |
 
+## Logs
+
+One stream of JSON lines on standard output (`src/platform/logging/loggerOptions.ts`): request logs and everything the server says outside a request. Each line carries `severity` and `message`, the two fields Google Cloud's log viewer reads, so an error is filed as an error there and can raise an alert. A request is logged with its path and never its query string: a query can carry a credential of that request (a signed address, a provider's verification token). Every line of a request has its `reqId`, which is also the `x-request-id` header of the response.
+
 ## Health
 
 | Route | Answers | Use |

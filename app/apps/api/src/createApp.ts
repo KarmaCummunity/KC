@@ -5,6 +5,7 @@ import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fa
 import type { ApiConfig } from './platform/config/apiConfig';
 import { ApiErrorFilter } from './platform/errors/apiError.filter';
 import { REQUEST_ID_HEADER, resolveRequestId } from './platform/http/requestId';
+import { loggerOptions } from './platform/logging/loggerOptions';
 
 /** Prefix of every business route. A breaking API change ships as a new prefix. */
 export const API_VERSION_PREFIX = 'v1';
@@ -16,8 +17,7 @@ export const API_VERSION_PREFIX = 'v1';
  */
 export async function createApp(rootModule: Type<unknown> | DynamicModule, config: ApiConfig): Promise<NestFastifyApplication> {
   const adapter = new FastifyAdapter({
-    // Structured JSON request logs; silent in tests to keep their output readable.
-    logger: config.environment !== 'test',
+    logger: loggerOptions(config),
     genReqId: (request: IncomingMessage) => resolveRequestId(request.headers[REQUEST_ID_HEADER]),
     // Behind a load balancer the socket address is the balancer's; trust only as many hops as are ours.
     // `hop` counts proxies from the socket outwards; entries beyond ours are the client's own claim.
