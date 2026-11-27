@@ -36,18 +36,21 @@ function FollowUserRowInner({
   }, [user, onRemove]);
 
   return (
-    <TouchableOpacity style={styles.row} onPress={handlePress} testID={`follow-user-${user.userId}`}>
-      <AvatarInitials name={user.displayName ?? fallbackName} avatarUrl={user.avatarUrl} size={44} />
-      <View style={styles.rowText}>
-        <Text style={styles.name}>{user.displayName ?? fallbackName}</Text>
-        <Text style={styles.city}>{user.cityName ?? cityNotSet}</Text>
-      </View>
+    <View style={styles.row}>
+      {/* Sibling controls avoid native nested-press navigation while opening the remove dialog. */}
+      <TouchableOpacity style={styles.profileLink} onPress={handlePress} testID={`follow-user-${user.userId}`}>
+        <AvatarInitials name={user.displayName ?? fallbackName} avatarUrl={user.avatarUrl} size={44} />
+        <View style={styles.rowText}>
+          <Text style={styles.name}>{user.displayName ?? fallbackName}</Text>
+          <Text style={styles.city}>{user.cityName ?? cityNotSet}</Text>
+        </View>
+      </TouchableOpacity>
       {isMe && onRemove ? (
         <TouchableOpacity onPress={handleRemove} style={styles.menuBtn} testID={`remove-follower-${user.userId}`}>
           <Ionicons name="ellipsis-horizontal" size={iconSize.md} color={textColorSecondary} />
         </TouchableOpacity>
       ) : null}
-    </TouchableOpacity>
+    </View>
   );
 }
 

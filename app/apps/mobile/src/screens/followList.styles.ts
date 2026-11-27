@@ -13,6 +13,7 @@ export const useFollowListStyles = makeUseStyles(({ colors }) => ({
     paddingHorizontal: spacing.base, paddingVertical: spacing.sm,
     borderBottomWidth: 1, borderBottomColor: colors.border,
   },
+  profileLink: { flex: 1, flexDirection: rowDirectionStart, alignItems: 'center', gap: spacing.sm },
   rowText: { flex: 1 },
   name: { ...typography.body, color: colors.textPrimary, textAlign: rtlTextAlignStart },
   city: { ...typography.caption, color: colors.textSecondary, textAlign: rtlTextAlignStart },
