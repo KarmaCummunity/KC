@@ -1,0 +1,35 @@
+name: Isolated native AX diagnostic compile smoke
+on:
+  pull_request:
+    branches: [dev]
+    paths:
+      - '.github/workflows/native-ax-compile-smoke.yml'
+      - 'tests/native-diagnostics/**'
+permissions:
+  contents: read
+jobs:
+  typecheck:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: macos-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Test isolated source transforms
+        run: node --test tests/native-diagnostics/ax-probe.test.mjs
+      - name: Typecheck read-only UIKit diagnostic and independent XCTest tree reader
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'JS'
+          import { AX_PROBE } from './tests/native-diagnostics/ax-probe.mjs';
+          import { writeFileSync } from 'node:fs';
+          writeFileSync(process.env.RUNNER_TEMP + '/KCAXDiagnostic.swift', 'import UIKit\n' + AX_PROBE);
+          JS
+          sdk=$(xcrun --sdk iphonesimulator --show-sdk-path)
+          developer=$(xcode-select -p)
+          frameworks="$developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks"
+          xcrun swiftc -typecheck -swift-version 5 -sdk "$sdk" -target arm64-apple-ios18.0-simulator \
+            "$RUNNER_TEMP/KCAXDiagnostic.swift"
+          xcrun swiftc -typecheck -swift-version 5 -sdk "$sdk" -target arm64-apple-ios18.0-simulator \
+            -F "$frameworks" tests/native-diagnostics/RawAXTests.swift
