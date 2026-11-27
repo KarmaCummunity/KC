@@ -6,6 +6,11 @@ import { RegisterDeviceUseCase, DeactivateDeviceUseCase } from '@kc/application'
 import type { IDeviceRepository } from '@kc/application';
 import { ensureNotificationChannels } from './channels';
 
+/** Simulator transport is opt-in in dedicated DEV test binaries, never in store builds. */
+export function canUseDevicePush(): boolean {
+  return Device.isDevice || Constants.expoConfig?.extra?.pushSimulatorEnabled === true;
+}
+
 interface RegistrationState {
   pending: Map<string, Promise<void>>;
   savedExpoToken: Map<string, string>;
@@ -75,7 +80,7 @@ async function register(
   state: RegistrationState,
   nativeToken?: Notifications.DevicePushToken,
 ): Promise<boolean> {
-  if (!Device.isDevice || !isCurrent(deps, state)) return false;
+  if (!canUseDevicePush() || !isCurrent(deps, state)) return false;
   await ensureNotificationChannels();
   const perm = await Notifications.getPermissionsAsync();
   if (perm.status !== 'granted') {
@@ -121,7 +126,7 @@ export async function deactivateCurrentDevice(
   // Invalidate old watchers and token conversions BEFORE asking the SDK for a token.
   // That lookup can itself emit a native-token event while logout is still mounted.
   registrations.delete(deps.deviceRepo);
-  if (!Device.isDevice) return;
+  if (!canUseDevicePush()) return;
   const projectId = Constants.expoConfig?.extra?.eas?.projectId as string | undefined;
   if (!projectId) return;
   try {
@@ -153,7 +158,7 @@ export function watchPushTokenRefresh(
   userId: string,
   deps: RegistrationDeps,
 ): () => void {
-  if (!Device.isDevice) return () => undefined;
+  if (!canUseDevicePush()) return () => undefined;
   const state = stateFor(deps.deviceRepo);
   let active = true;
   const watchedDeps = { ...deps, isCurrent: () => active && isCurrent(deps, state) };
