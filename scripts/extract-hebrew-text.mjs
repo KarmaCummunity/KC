@@ -47,6 +47,21 @@ const DEFAULT_OUT = path.join(REPO_ROOT, "scripts", "hebrew-text-report.md");
  */
 const SKIP_HEBREW_SCAN_EXACT_RELS = new Set([
   "app/packages/infrastructure-supabase/src/search/searchConstants.ts",
+  // Offer / request cue words of the external post import: matching data, not UI copy
+  // (the Edge Function kept the same list under supabase/functions, which is skipped).
+  "app/apps/api/src/modules/postImport/directionCues.ts",
+  // The WhatsApp channel's fixed replies and link-code words, moved from
+  // supabase/functions/_shared/whatsapp (skipped above) as they are.
+  "app/apps/api/src/modules/whatsapp/inbound/replies.ts",
+  "app/apps/api/src/modules/whatsapp/inbound/link.ts",
+  "app/apps/api/src/modules/whatsapp/inbound/photoReplies.ts",
+  "app/apps/api/src/modules/whatsapp/agent/publishOutcomeText.ts",
+  // Generated copy of the Hebrew notification texts (scripts/generate-notification-kinds.mjs):
+  // the API's push worker renders push text from the same strings the app shows.
+  "app/apps/api/src/modules/notifications/strings.he.generated.json",
+  // WhatsApp template registry: the message bodies Meta approved, in Hebrew and English. A copy of
+  // supabase/functions/_shared/whatsapp/templates.json (skipped above), kept equal by a test.
+  "app/apps/api/src/modules/whatsapp/templates.json",
   // PWA manifest: the `name`/`short_name` are the localized installed-app label
   // (Hebrew is the MVP locale, R-MVP-Core-4). A static manifest.json cannot hold
   // i18next keys, so its localized name is canonical here, not an inline leak.
