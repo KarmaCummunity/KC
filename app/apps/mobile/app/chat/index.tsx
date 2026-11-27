@@ -20,6 +20,7 @@ import { InboxListSkeleton } from '../../src/components/skeletons/InboxListSkele
 import { NotifyModal } from '../../src/components/NotifyModal';
 import { KcFlashList } from '../../src/components/lists/KcFlashList';
 import { useChatInboxQuery } from '../../src/hooks/useChatInboxQuery';
+import { useScreenFocused } from '../../src/hooks/useScreenFocused';
 import { useChatStore } from '../../src/store/chatStore';
 import { useShellStackScreenOptions } from '../../src/navigation/shellStackScreenOptions';
 import { queryClient } from '../../src/lib/queryPersist';
@@ -38,7 +39,9 @@ export default function ChatListScreen() {
   const styles = useChatListStyles();
   const shellStackOptions = useShellStackScreenOptions();
   const userId = useAuthStore((s) => s.session?.userId);
-  const inboxQuery = useChatInboxQuery(userId);
+  // Paused under an open conversation: no inbox re-read per message nobody sees (#2571).
+  const inboxFocused = useScreenFocused();
+  const inboxQuery = useChatInboxQuery(userId, { subscribed: inboxFocused });
   const inbox = inboxQuery.data?.chats;
   const [q, setQ] = useState('');
   const [visible, setVisible] = useState(PAGE);
