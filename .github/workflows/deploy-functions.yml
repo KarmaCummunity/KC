@@ -78,6 +78,11 @@ jobs:
           release-sha: ${{ inputs.release_sha }}
           approved-attempt: ${{ inputs.approved_attempt }}
 
+      # The candidate checkout cleans the workspace, including the nested guard checkout.
+      # Preserve this trusted, self-contained judge outside that workspace first.
+      - name: Preserve trusted webhook judge across candidate checkout
+        run: cp .deploy-guard/scripts/check-webhook-auth.mjs "$RUNNER_TEMP/trusted-check-webhook-auth.mjs"
+
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.sha }}
@@ -92,7 +97,7 @@ jobs:
       # must authenticate its caller and fail closed. A tree without those checks
       # (for example a `main` that has not yet received `dev`) is refused here.
       - name: Webhook functions authenticate their caller
-        run: node .deploy-guard/scripts/check-webhook-auth.mjs --root .
+        run: node "$RUNNER_TEMP/trusted-check-webhook-auth.mjs" --root "$GITHUB_WORKSPACE"
 
       # Pins the project ref per target, so functions never land on the wrong project.
       - name: Preflight (secrets present, project ref matches the target)

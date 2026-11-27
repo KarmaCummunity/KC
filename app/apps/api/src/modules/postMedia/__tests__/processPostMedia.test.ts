@@ -190,24 +190,36 @@ describe('processPostMedia', () => {
     expect(out.outcomes).toEqual({ [MEDIA]: 'ready' });
   });
 
-  it('a missing, invalid or unreadable thumb costs only the thumb: the photo is still made ready', async () => {
-    const cases: Partial<Parameters<typeof harness>[0]>[] = [
-      {}, // no thumb uploaded
-      { thumb: new TextEncoder().encode('<svg/>') },
-      { thumb: realJpeg(1600, 1200) }, // bigger than any thumb the app makes
-    ];
+  // Each optional-thumb outcome has its own deadline. Real JPEGs cross one edge
+  // by one pixel, without spending the CI budget encoding a 1.9-million-pixel photo.
+  it.each([
+    ['missing', (): Uint8Array | undefined => undefined],
+    ['invalid', (): Uint8Array => new TextEncoder().encode('<svg/>')],
+    ['too wide', (): Uint8Array => realJpeg(1025, 1)],
+    ['too tall', (): Uint8Array => realJpeg(1, 1025)],
+  ] as const)('a %s thumb costs only the thumb: the photo is still made ready', async (_kind, makeThumb) => {
+    const h = harness({ jobs: [job()], bytes: realJpeg(), thumb: makeThumb() });
+    const out = await h.run();
+    expect(h.uploads).toEqual([derivativeKey(OWNER, MEDIA, 1)]);
+    expect(out.outcomes).toEqual({ [MEDIA]: 'ready' });
+  });
+
+  it.each([[1024, 1], [1, 1024]] as const)('a thumb at the %i by %i edge boundary is kept', async (width, height) => {
+    const h = harness({ jobs: [job()], bytes: realJpeg(), thumb: realJpeg(width, height) });
+    const out = await h.run();
+    const key = derivativeKey(OWNER, MEDIA, 1);
+    expect(h.uploads).toEqual([key, thumbKey(key)]);
+    expect(out.outcomes).toEqual({ [MEDIA]: 'ready' });
+  });
+
+  it('an unreadable thumb costs only the thumb: the photo is still made ready', async () => {
     const photo = realJpeg();
-    for (const patch of cases) {
-      const h = harness({ jobs: [job()], bytes: photo, ...patch });
-      const out = await h.run();
-      expect(h.uploads).toEqual([derivativeKey(OWNER, MEDIA, 1)]);
-      expect(out.outcomes).toEqual({ [MEDIA]: 'ready' });
-    }
     const flaky = harness({
       jobs: [job()],
       storage: { download: (key) => isThumb(key) ? Promise.reject(new Error('network')) : Promise.resolve(photo) },
     });
     expect((await flaky.run()).outcomes).toEqual({ [MEDIA]: 'ready' });
+    expect(flaky.uploads).toEqual([derivativeKey(OWNER, MEDIA, 1)]);
   });
 
   it('an object Storage no longer has fails as final (object_missing), with nothing written', async () => {
