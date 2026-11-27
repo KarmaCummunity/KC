@@ -20,7 +20,7 @@ private enum KCAXDiagnostic {
     var remaining = 240
     NSLog("KC_AX_DIAGNOSTIC windows=%d", windows.count)
     for window in windows.prefix(8) {
-      NSLog("KC_AX_DIAGNOSTIC window key=%d level=%.1f frame=%@", window.isKeyWindow ? 1 : 0, window.windowLevel.rawValue, NSStringFromCGRect(window.frame))
+      NSLog("KC_AX_DIAGNOSTIC window key=%d level=%.1f frame=%@", window.isKeyWindow ? 1 : 0, window.windowLevel.rawValue, NSCoder.string(for: window.frame))
       walk(window, depth: 0, remaining: &remaining)
     }
   }
@@ -28,7 +28,7 @@ private enum KCAXDiagnostic {
     guard remaining > 0, depth < 28 else { return }
     remaining -= 1
     let guest = view.accessibilityIdentifier == "auth-guest-entry"
-    NSLog("KC_AX_DIAGNOSTIC view class=%@ depth=%d frame=%@ hidden=%d alpha=%.2f ax=%d axHidden=%d axModal=%d guest=%d children=%d explicitAX=%d", NSStringFromClass(type(of: view)), depth, NSStringFromCGRect(view.frame), view.isHidden ? 1 : 0, view.alpha, view.isAccessibilityElement ? 1 : 0, view.accessibilityElementsHidden ? 1 : 0, view.accessibilityViewIsModal ? 1 : 0, guest ? 1 : 0, view.subviews.count, view.accessibilityElements?.count ?? -1)
+    NSLog("KC_AX_DIAGNOSTIC view class=%@ depth=%d frame=%@ hidden=%d alpha=%.2f ax=%d axHidden=%d axModal=%d guest=%d children=%d explicitAX=%d", NSStringFromClass(type(of: view)), depth, NSCoder.string(for: view.frame), view.isHidden ? 1 : 0, view.alpha, view.isAccessibilityElement ? 1 : 0, view.accessibilityElementsHidden ? 1 : 0, view.accessibilityViewIsModal ? 1 : 0, guest ? 1 : 0, view.subviews.count, view.accessibilityElements?.count ?? -1)
     for child in view.subviews { walk(child, depth: depth + 1, remaining: &remaining) }
   }
 }
