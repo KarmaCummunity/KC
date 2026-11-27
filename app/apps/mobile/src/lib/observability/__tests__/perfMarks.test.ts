@@ -122,6 +122,32 @@ describe('perfMarks with a DSN', () => {
     expect(startInactiveSpan).toHaveBeenCalledWith(expect.objectContaining({ startTime: restart }));
   });
 
+  // #2579: slow sign-out / onboarding saves need field timings split by how the wait ended.
+  it('measureMark times a wait and tags it ok, returning its value', async () => {
+    sdkReady = true;
+    const marks = await load();
+    const value = await marks.measureMark('onboarding.finalize', async () => {
+      vi.setSystemTime(new Date('2026-01-01T00:00:03Z'));
+      return 42;
+    });
+    expect(value).toBe(42);
+    const start = Date.parse('2026-01-01T00:00:00Z') / 1000;
+    expect(startInactiveSpan).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'onboarding.finalize', startTime: start, attributes: { outcome: 'ok' } }),
+    );
+    expect(spanEnd).toHaveBeenCalledWith(start + 3);
+  });
+
+  it('measureMark tags a failed wait as error and rethrows it', async () => {
+    sdkReady = true;
+    const marks = await load();
+    const boom = new Error('rpc failed');
+    await expect(marks.measureMark('auth.onboarding_bootstrap', () => Promise.reject(boom))).rejects.toBe(boom);
+    expect(startInactiveSpan).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'auth.onboarding_bootstrap', attributes: { outcome: 'error' } }),
+    );
+  });
+
   it('does not throw when the SDK fails to create a span', async () => {
     sdkReady = true;
     startInactiveSpan.mockImplementation(() => {

@@ -37,7 +37,19 @@ function getGate(): SentryGate | null {
   }
 }
 
-type MarkName = 'app.cold_start' | 'feed.first_render' | 'image.first_paint' | 'post_detail.content_painted';
+type MarkName =
+  | 'app.cold_start'
+  | 'feed.first_render'
+  | 'image.first_paint'
+  | 'post_detail.content_painted'
+  // #2579: the waits behind slow sign-in routing, onboarding steps and logout.
+  | 'auth.onboarding_bootstrap'
+  | 'auth.sign_out'
+  | 'auth.sign_out.device_deactivation'
+  | 'auth.sign_out.server_revoke'
+  | 'onboarding.basic_info_save'
+  | 'onboarding.basic_info_skip'
+  | 'onboarding.finalize';
 type Span = { end?(endTimestamp?: number): void; finish?(): void };
 /** Low-cardinality facts about how a mark ended (e.g. `source: 'cache'`), sent as span attributes. */
 type MarkAttributes = Readonly<Record<string, string>>;
@@ -119,6 +131,22 @@ export function finishMark(name: MarkName, attributes?: MarkAttributes): boolean
  */
 export function cancelMark(name: MarkName): void {
   active.delete(name);
+}
+
+/**
+ * Times one awaited step as a mark tagged `outcome: ok | error`, so a slow failure is not
+ * mixed into the success percentile. Returns the step's value and rethrows its error.
+ */
+export async function measureMark<T>(name: MarkName, work: () => Promise<T>): Promise<T> {
+  startMark(name);
+  try {
+    const value = await work();
+    finishMark(name, { outcome: 'ok' });
+    return value;
+  } catch (err) {
+    finishMark(name, { outcome: 'error' });
+    throw err;
+  }
 }
 
 /** Sends the marks that finished before Sentry was ready; call once `initSentry()` has settled. */

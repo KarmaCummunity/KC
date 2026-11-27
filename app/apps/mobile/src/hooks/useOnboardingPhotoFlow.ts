@@ -12,6 +12,7 @@ import {
 } from '../services/userComposition';
 import { retirePreviousAvatar } from '../services/avatarLifecycle';
 import { isBlockedMediaPick, type MediaPermissionKind } from '../lib/mediaPermissionTypes';
+import { measureMark } from '../lib/observability/perfMarks';
 import {
   pickAvatarImage,
   removeUploadedAvatar,
@@ -109,7 +110,10 @@ export function useOnboardingPhotoFlow() {
     setFinalizing(true);
     try {
       if (onboardingState === 'pending_avatar') {
-        await getCompleteOnboardingUseCase().execute({ userId: session.userId });
+        // #2579: timed, so field traces show how long finishing holds the member on this step.
+        await measureMark('onboarding.finalize', () =>
+          getCompleteOnboardingUseCase().execute({ userId: session.userId }),
+        );
         setOnboardingState('completed');
       }
       router.replace('/(onboarding)/tour');
