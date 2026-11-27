@@ -172,7 +172,7 @@ $$;
 
 grant execute on all functions in schema pg_temp to authenticated;
 
-select plan(31);
+select plan(35);
 
 -- Alice posts; Bob follows her; Carol is a stranger; Dan blocked Alice; Eve blocked Carol;
 -- Fay is platform staff and blocked Eve (staff read every post, but not a blocked owner's card).
@@ -322,10 +322,18 @@ select is((select count(*)::integer from pg_proc p join pg_namespace n on n.oid 
               and p.proname in ('post_card_rows', 'post_comment_rows', 'post_comment_reaction_rows', 'post_gallery')), 0,
   'and none of them is in the API schema');
 
--- ── Before / after on the same fixture, as a member (reported with diag, not asserted) ─────
--- Timing is noisy and the fixture is small, so nothing here can fail the lane. It prints the
--- warm average of the old definitions (pg_temp.old_*) and of the new functions for the same
--- member and ids, so the lane log carries a before/after next to the equivalence asserts above.
+-- ── Before / after of the full public reads ──────────────────────────────────────────────────
+-- Only whole entry points are compared: the old definitions (pg_temp.old_*) against public.post_cards,
+-- public.post_comments_page and public.post_detail, as member c, with the same fixed inputs: the
+-- eleven post ids below (p1 and ten bench posts), chosen ONCE as that member under row-level
+-- security and stored as one literal, and for the comments the same post, parent, cursor and limit,
+-- so each public function picks its own page. Equivalence (count and every ordered row, including
+-- counts, reactions and viewer flags) is computed once into bench_eq, asserted, and also GATES the
+-- numbers: if any check is false or null, no BENCH or PLAN line is printed at all. The timings are
+-- warm averages that serialize the whole result. The plans are EXPLAIN (ANALYZE, BUFFERS, JSON) of
+-- each whole public statement as the member, old with row-level security inline, new with the
+-- definer workers and kc_access predicates opaque. Function bodies on a tiny fixture: not the API,
+-- not field latency, and no component is added up or compared on its own.
 insert into public.posts (id, owner_id, world_slug, kind_id, direction, status, visibility, title, city_id)
 select gen_random_uuid(), '00000000-0000-4000-8000-00000000000a', 'items',
        '20000000-0000-4000-8000-000000000001', 'offer', 'open', 'Public', 'bench ' || n, 'c1'
@@ -335,49 +343,62 @@ select '40000000-0000-4000-8000-000000000001',
        (array['00000000-0000-4000-8000-00000000000b', '00000000-0000-4000-8000-00000000000c'])[1 + n % 2]::uuid,
        'bench ' || n, now() - make_interval(secs => n)
   from generate_series(1, 40) n;
-create function pg_temp.bench(p_who text, p_label text, p_sql text, p_runs integer default 30)
+
+-- The fixed inputs, populated once under row-level security.
+create temp table bench_in as
+select pg_temp.q('c', $q$select 'array[' || string_agg(quote_literal(id::text), ',' order by id) || ']::uuid[]'
+                            from public.posts where id = #p1 or title like 'bench %'$q$) as ids;
+alter table bench_in add column n integer;
+update bench_in set n = pg_temp.q('c', 'select cardinality(' || ids || ')::text')::integer;
+
+-- Equivalence results, computed once.
+create temp table bench_eq (name text primary key, ok boolean);
+insert into bench_eq
+select 'ids', (select n = 11 from bench_in)
+union all
+select 'cards', pg_temp.q('c', format($q$select count(*)::text || ':' || md5(string_agg(c::text, '|' order by c.id)) from pg_temp.old_post_cards(%s) c$q$, (select ids from bench_in)))
+              = pg_temp.q('c', format($q$select count(*)::text || ':' || md5(string_agg(c::text, '|' order by c.id)) from public.post_cards(%s) c$q$, (select ids from bench_in)))
+union all
+select 'comments', pg_temp.q('c', $q$select count(*)::text || ':' || md5(string_agg(c::text, '|' order by c.created_at, c.id)) from pg_temp.old_post_comments_page(#p1, null, null, 5) c$q$)
+                 = pg_temp.q('c', $q$select count(*)::text || ':' || md5(string_agg(c::text, '|' order by c.created_at, c.id)) from public.post_comments_page(#p1, null, null, 5) c$q$)
+union all
+select 'detail', pg_temp.q('c', $q$select md5(pg_temp.old_post_detail(#p1)::text)$q$)
+               = pg_temp.q('c', $q$select md5(public.post_detail(#p1)::text)$q$);
+
+select ok((select ok from bench_eq where name = 'ids'), 'before/after input: the fixed id literal holds exactly 11 member-visible posts');
+select ok((select ok from bench_eq where name = 'cards'), 'before/after input: post_cards on the eleven fixed ids returns the identical rows');
+select ok((select ok from bench_eq where name = 'comments'), 'before/after input: the first comment page (five) returns the identical rows, counts and flags');
+select ok((select ok from bench_eq where name = 'detail'), 'before/after input: post_detail returns the identical payload');
+
+create function pg_temp.bench(p_who text, p_sql text, p_runs integer default 30)
 returns text
 language plpgsql
 as $$
 declare
   v_t timestamptz;
-  v_ms numeric;
   v_dummy text;
 begin
   perform set_config('request.jwt.claims', jsonb_build_object('role', 'authenticated',
     'sub', '00000000-0000-4000-8000-00000000000' || p_who)::text, true);
   perform set_config('role', 'authenticated', true);
-  execute pg_temp.expand(p_sql) into v_dummy;
+  execute pg_temp.expand(p_sql) into v_dummy;                 -- warm-up, not counted
   v_t := clock_timestamp();
   for i in 1..p_runs loop
     execute pg_temp.expand(p_sql) into v_dummy;
   end loop;
-  v_ms := extract(epoch from clock_timestamp() - v_t) * 1000 / p_runs;
   perform set_config('role', 'none', true);
-  return 'bench ' || p_label || ': ' || round(v_ms, 2) || ' ms avg over ' || p_runs || ' warm runs';
+  return round((extract(epoch from clock_timestamp() - v_t) * 1000 / p_runs)::numeric, 2) || ' ms avg over ' || p_runs || ' warm runs';
+exception when others then
+  perform set_config('role', 'none', true);
+  return 'bench unavailable: ' || sqlerrm;
 end;
 $$;
-grant execute on function pg_temp.bench(text, text, text, integer) to authenticated;
-select diag(pg_temp.bench('c', 'post_cards x10 old', $$select count(*)::text from pg_temp.old_post_cards((select array_agg(id) from (select id from public.posts order by created_at, id limit 10) x))$$));
-select diag(pg_temp.bench('c', 'post_cards x10 new', $$select count(*)::text from public.post_cards((select array_agg(id) from (select id from public.posts order by created_at, id limit 10) x))$$));
-select diag(pg_temp.bench('c', 'post_cards x1  old', $$select count(*)::text from pg_temp.old_post_cards(array[#p1])$$));
-select diag(pg_temp.bench('c', 'post_cards x1  new', $$select count(*)::text from public.post_cards(array[#p1])$$));
-select diag(pg_temp.bench('c', 'post_detail    old', $$select length(pg_temp.old_post_detail(#p1)::text)::text$$));
-select diag(pg_temp.bench('c', 'post_detail    new', $$select length(public.post_detail(#p1)::text)::text$$));
-select diag(pg_temp.bench('c', 'comments page  old', $$select count(*)::text from pg_temp.old_post_comments_page(#p1, null, null, 50)$$));
-select diag(pg_temp.bench('c', 'comments page  new', $$select count(*)::text from public.post_comments_page(#p1, null, null, 50)$$));
 
--- ── Query plans of the same reads, old vs new (reported in the lane log, not asserted) ──────
--- A function is opaque to EXPLAIN, so the plan is taken of the statement inside it: the body of the
--- old definition run as the member (row-level security applies inline), and the body of the new
--- worker run as the table owner, which is what `security definer` does. Each runs once to warm,
--- then once under EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON), with the member's JWT claims set so
--- the predicates see the same caller. Printed: planning and execution time, shared-hit blocks,
--- SubPlan / InitPlan node counts, then the whole plan. Predicate calls (kc_access.viewer_can_read_*)
--- are function calls inside the plan, so their cost shows in the execution time. Nothing here can
--- fail the lane: an error becomes a notice.
-create function pg_temp.plan_of(p_who text, p_label text, p_function regprocedure, p_args text[], p_as_member boolean)
-returns void
+-- The plan of the statement inside a SQL function, its arguments replaced by the given literals,
+-- run as member p_who with the function's own empty search_path. One line of numbers is returned;
+-- the whole JSON follows as a notice.
+create function pg_temp.plan_line(p_who text, p_label text, p_function regprocedure, p_args text[])
+returns text
 language plpgsql
 as $$
 declare
@@ -385,42 +406,64 @@ declare
   v_names text[];
   v_plan jsonb;
   v_dummy record;
+  v_path text := current_setting('search_path');
   i integer;
 begin
-  select regexp_replace(p.prosrc, ';\s*$', ''), p.proargnames
-    into v_body, v_names from pg_proc p where p.oid = p_function;
+  select regexp_replace(p.prosrc, ';\s*$', ''), p.proargnames into v_body, v_names from pg_proc p where p.oid = p_function;
   for i in 1..array_length(p_args, 1) loop
     v_body := regexp_replace(v_body, '\m' || v_names[i] || '\M', replace(p_args[i], '\', '\\'), 'g');
   end loop;
   perform set_config('request.jwt.claims', jsonb_build_object('role', 'authenticated',
     'sub', '00000000-0000-4000-8000-00000000000' || p_who)::text, true);
-  if p_as_member then perform set_config('role', 'authenticated', true); end if;
-  for v_dummy in execute v_body loop null; end loop;
+  perform set_config('role', 'authenticated', true);
+  perform set_config('search_path', '', true);
+  for v_dummy in execute v_body loop null; end loop;        -- warm
   execute 'explain (analyze, buffers, format json) ' || v_body into v_plan;
+  perform set_config('search_path', v_path, true);
   perform set_config('role', 'none', true);
-  raise notice 'PLAN % | planning % ms | execution % ms | shared hit % | SubPlan nodes % | InitPlan nodes %',
-    p_label, v_plan -> 0 ->> 'Planning Time', v_plan -> 0 ->> 'Execution Time',
-    v_plan -> 0 -> 'Plan' ->> 'Shared Hit Blocks',
-    (select count(*) from jsonb_path_query(v_plan, 'lax $.**."Parent Relationship"') x where x = '"SubPlan"'),
-    (select count(*) from jsonb_path_query(v_plan, 'lax $.**."Parent Relationship"') x where x = '"InitPlan"');
   raise notice 'PLAN-JSON % %', p_label, v_plan::text;
+  return format('planning %s ms | execution %s ms | shared hit %s | SubPlan nodes %s | InitPlan nodes %s',
+    v_plan -> 0 ->> 'Planning Time', v_plan -> 0 ->> 'Execution Time', v_plan -> 0 -> 'Plan' ->> 'Shared Hit Blocks',
+    (select count(*) from jsonb_path_query(v_plan, 'lax $.**."Parent Relationship"') x where x = '"SubPlan"'),
+    (select count(*) from jsonb_path_query(v_plan, 'lax $.**."Parent Relationship"') x where x = '"InitPlan"'));
 exception when others then
+  perform set_config('search_path', v_path, true);
   perform set_config('role', 'none', true);
-  raise notice 'plan capture unavailable for %: %', p_label, sqlerrm;
+  return 'plan capture unavailable: ' || sqlerrm;
 end;
 $$;
-select pg_temp.plan_of('c', 'post_cards x1 OLD (as member, RLS inline)', 'pg_temp.old_post_cards(uuid[])'::regprocedure,
-  array['array[''40000000-0000-4000-8000-000000000001'']::uuid[]'], true);
-select pg_temp.plan_of('c', 'post_cards x1 NEW (worker body as owner)', 'kc_access.post_card_rows(uuid[])'::regprocedure,
-  array['array[''40000000-0000-4000-8000-000000000001'']::uuid[]'], false);
-select pg_temp.plan_of('c', 'post_cards x10 OLD (as member, RLS inline)', 'pg_temp.old_post_cards(uuid[])'::regprocedure,
-  array['(select array_agg(id) from (select id from public.posts order by created_at, id limit 10) x)'], true);
-select pg_temp.plan_of('c', 'post_cards x10 NEW (worker body as owner)', 'kc_access.post_card_rows(uuid[])'::regprocedure,
-  array['(select array_agg(id) from (select id from public.posts order by created_at, id limit 10) x)'], false);
-select pg_temp.plan_of('c', 'comments page(5) OLD (as member, RLS inline)', 'pg_temp.old_post_comments_page(uuid,uuid,jsonb,integer)'::regprocedure,
-  array['''40000000-0000-4000-8000-000000000001''::uuid', 'null::uuid', 'null::jsonb', '5'], true);
-select pg_temp.plan_of('c', 'comment rows x5 NEW (worker body as owner)', 'kc_access.post_comment_rows(uuid[])'::regprocedure,
-  array['(select array_agg(id) from (select id from public.post_comments where post_id = ''40000000-0000-4000-8000-000000000001'' order by created_at, id limit 5) x)'], false);
+
+-- Prints nothing unless all four equivalence checks are true (a false or null one withholds everything).
+create function pg_temp.show_full_read_numbers()
+returns void
+language plpgsql
+as $$
+declare
+  v_ids text := (select ids from bench_in);
+  v_n integer := (select n from bench_in);
+  v_post constant text := '''40000000-0000-4000-8000-000000000001''::uuid';
+begin
+  if (select count(*) from bench_eq) <> 4 or exists (select 1 from bench_eq where ok is not true) then
+    raise notice 'BENCH withheld: before/after equivalence not established';
+    return;
+  end if;
+  raise notice 'BENCH (function bodies, tiny fixture, member c, whole result serialized) post_cards on % fixed ids', v_n;
+  raise notice 'BENCH post_cards OLD: %', pg_temp.bench('c', format('select length(coalesce(jsonb_agg(to_jsonb(c) order by c.id)::text, '''')) ::text from pg_temp.old_post_cards(%s) c', v_ids));
+  raise notice 'BENCH post_cards NEW: %', pg_temp.bench('c', format('select length(coalesce(jsonb_agg(to_jsonb(c) order by c.id)::text, '''')) ::text from public.post_cards(%s) c', v_ids));
+  raise notice 'BENCH post_cards OLD plan: %', pg_temp.plan_line('c', 'post_cards OLD', 'pg_temp.old_post_cards(uuid[])'::regprocedure, array[v_ids]);
+  raise notice 'BENCH post_cards NEW plan (workers and predicates opaque): %', pg_temp.plan_line('c', 'post_cards NEW', 'public.post_cards(uuid[])'::regprocedure, array[v_ids]);
+  raise notice 'BENCH comments page(5) OLD: %', pg_temp.bench('c', format('select length(coalesce(jsonb_agg(to_jsonb(c) order by c.created_at, c.id)::text, '''')) ::text from pg_temp.old_post_comments_page(%s, null, null, 5) c', v_post));
+  raise notice 'BENCH comments page(5) NEW: %', pg_temp.bench('c', format('select length(coalesce(jsonb_agg(to_jsonb(c) order by c.created_at, c.id)::text, '''')) ::text from public.post_comments_page(%s, null, null, 5) c', v_post));
+  raise notice 'BENCH comments page(5) OLD plan: %', pg_temp.plan_line('c', 'comments page(5) OLD', 'pg_temp.old_post_comments_page(uuid,uuid,jsonb,integer)'::regprocedure, array[v_post, 'null::uuid', 'null::jsonb', '5']);
+  raise notice 'BENCH comments page(5) NEW plan (workers and predicates opaque): %', pg_temp.plan_line('c', 'comments page(5) NEW', 'public.post_comments_page(uuid,uuid,jsonb,integer)'::regprocedure, array[v_post, 'null::uuid', 'null::jsonb', '5']);
+  raise notice 'BENCH post_detail OLD: %', pg_temp.bench('c', format('select length(pg_temp.old_post_detail(%s)::text)::text', v_post));
+  raise notice 'BENCH post_detail NEW: %', pg_temp.bench('c', format('select length(public.post_detail(%s)::text)::text', v_post));
+exception when others then
+  perform set_config('role', 'none', true);
+  raise notice 'BENCH numbers unavailable: %', sqlerrm;
+end;
+$$;
+select pg_temp.show_full_read_numbers();
 
 select * from finish();
 rollback;
