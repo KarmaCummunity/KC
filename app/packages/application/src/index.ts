@@ -255,6 +255,16 @@ export * from './identityVerification/StartIdentityVerificationUseCase';
 export * from './identityVerification/GetIdentityVerificationStatusUseCase';
 
 export type { GuestPost, IGuestPostsRepository } from './ports/IGuestPostsRepository';
+export type {
+  GuestMapBounds,
+  GuestMapPin,
+  IGuestMapRepository,
+} from './ports/IGuestMapRepository';
+export type { GuestProfile, IGuestProfileRepository } from './ports/IGuestProfileRepository';
+export { ListGuestMapPinsUseCase } from './guest/ListGuestMapPinsUseCase';
+export { GetGuestProfileUseCase } from './guest/GetGuestProfileUseCase';
+export { ListGuestProfilePostsUseCase } from './guest/ListGuestProfilePostsUseCase';
+
 
 // Ports of the adapters that had none (ADR-010): each is served through the API gateway.
 export * from './ports/IActiveStatusRepository';

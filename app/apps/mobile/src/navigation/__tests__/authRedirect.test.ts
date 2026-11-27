@@ -41,6 +41,27 @@ describe('resolveAuthRedirect', () => {
         rememberPath: '/post/42',
       });
     });
+
+    it('remaps a UUID member post to the guest detail instead of a sign-up wall', () => {
+      const id = '40000000-0000-4000-8000-000000000001';
+      expect(
+        resolveAuthRedirect(input({ segments: ['post', '[id]'], pathname: `/post/${id}` })),
+      ).toEqual({ kind: 'guest', href: `/browse/post/${id}` });
+    });
+
+    it('remaps the member map and other-user profile to guest routes', () => {
+      expect(
+        resolveAuthRedirect(
+          input({
+            segments: ['(tabs)', 'donations', 'marketplace', 'map'],
+            pathname: '/donations/marketplace/map',
+          }),
+        ),
+      ).toEqual({ kind: 'guest', href: '/browse/map' });
+      expect(
+        resolveAuthRedirect(input({ segments: ['user', '[handle]'], pathname: '/user/alice' })),
+      ).toEqual({ kind: 'guest', href: '/browse/user/alice' });
+    });
   });
 
   describe('signed in', () => {

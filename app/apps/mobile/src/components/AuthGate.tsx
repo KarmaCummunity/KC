@@ -180,6 +180,9 @@ export function AuthGate({ children }: Readonly<{ children: React.ReactNode }>) 
       // it after the user completes sign-in / onboarding.
       if (redirect.rememberPath !== null) capturePendingPath(redirect.rememberPath);
       router.replace('/(auth)');
+    } else if (redirect.kind === 'guest') {
+      // FR-AUTH-014 — guest-readable substitute (no unsolicited sign-up wall).
+      router.replace(redirect.href as Href);
     } else if (redirect.kind === 'onboarding') {
       router.replace(redirect.href);
     } else {

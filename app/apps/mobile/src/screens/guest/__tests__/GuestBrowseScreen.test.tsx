@@ -10,11 +10,19 @@ vi.mock('@expo/vector-icons', async () => (await import('../../../components/ui/
 vi.mock('react-native-reanimated', async () => (await import('../../../components/ui/__tests__/kitDialogTestKit')).reanimatedDouble);
 vi.mock('../../../components/ui/KCImage', () => ({ KCImage: () => null }));
 vi.mock('expo-router', () => ({ useRouter: () => ({ push: mocks.push, replace: mocks.replace }) }));
-vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k: string) => k, i18n: { language: 'en' } }) }));
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (k: string, opts?: Record<string, unknown>) => (opts ? `${k}:${JSON.stringify(opts)}` : k),
+    i18n: { language: 'en' },
+  }),
+}));
 vi.mock('../../../store/redirectIntentStore', () => ({ useRedirectIntentStore: { getState: () => ({ capturePath: mocks.capture }) } }));
 import { GuestBrowseScreen } from '../GuestBrowseScreen';
 const id = '40000000-0000-4000-8000-000000000001';
-const post = { id, title: 'Desk to give', description: 'A small desk', cityNameEn: 'Lod', cityNameHe: 'City' };
+const post = {
+  id, title: 'Desk to give', description: 'A small desk', cityNameEn: 'Lod', cityNameHe: 'City',
+  authorShareHandle: null as string | null,
+};
 function show(postId?: string) {
   return render(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
     <ThemeProvider mode="light" systemScheme="light" setMode={() => {}}><GuestBrowseScreen postId={postId} /></ThemeProvider>
@@ -30,7 +38,12 @@ describe('read-only guest screen', () => {
     expect(mocks.get).not.toHaveBeenCalled();
     fireEvent.click(screen.getByTestId(`guest-post-${id}`));
     expect(mocks.push).toHaveBeenCalledWith({ pathname: '/browse/post/[id]', params: { id } });
-    expect(screen.queryByText('comment')).toBeNull();
+    // Write actions stay off the guest surface (prompt only via the explicit sign-in CTA).
+    for (const write of ['comment', 'follow', 'save', 'report', 'request', 'chat']) {
+      expect(screen.queryByText(write)).toBeNull();
+    }
+    fireEvent.click(screen.getByTestId('guest-map-link'));
+    expect(mocks.push).toHaveBeenCalledWith('/browse/map');
   });
   it('does not load feed on detail and saves only member intent when sign in is tapped', async () => {
     show(id); await screen.findByText('Desk to give');
@@ -59,5 +72,24 @@ describe('read-only guest screen', () => {
     fireEvent.click(await screen.findByText('auth.guestMore'));
     await waitFor(() => expect(mocks.list).toHaveBeenLastCalledWith(rows.at(-1)?.id));
     expect(mocks.get).not.toHaveBeenCalled();
+  });
+  it('shows an author link only when authorShareHandle is present', async () => {
+    mocks.list.mockResolvedValue([{ ...post, authorShareHandle: 'alice' }]);
+    show();
+    expect(await screen.findByTestId('guest-author-alice')).toBeTruthy();
+    fireEvent.click(screen.getByTestId('guest-author-alice'));
+    expect(mocks.push).toHaveBeenCalledWith('/browse/user/alice');
+  });
+  it('omits the author link when the handle is null (no dead end)', async () => {
+    show();
+    await screen.findByText('Desk to give');
+    expect(screen.queryByTestId('guest-author-alice')).toBeNull();
+    expect(screen.queryByText(/^@/)).toBeNull();
+  });
+  it('keeps the author link tappable on guest post detail', async () => {
+    mocks.get.mockResolvedValue({ ...post, authorShareHandle: 'alice' });
+    show(id);
+    fireEvent.click(await screen.findByTestId('guest-author-alice'));
+    expect(mocks.push).toHaveBeenCalledWith('/browse/user/alice');
   });
 });

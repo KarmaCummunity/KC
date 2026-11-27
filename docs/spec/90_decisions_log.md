@@ -202,3 +202,9 @@ Source: owner approval in WhatsApp at 00:54:29 Asia/Jerusalem, answering the eig
 | # | Decision | Lives in | Status |
 |---|---|---|---|
 | D186 | Basic guest browsing: signed-out visitors may browse open Public posts and read title, description and city only. No poster identity, handle, avatar, contact, exact location, details, time window, media or comments. Minimal technical IDs support navigation. Posting, commenting, contact and account actions require sign-in. Supersedes the no-guest-feed/no-post-preview part of D166; D152 community counters and D155 public nonprofit pages remain. Free-text title/description may contain information the author entered; removing identity fields does not promise automatic PII removal. Implementation tracked in #2511. | `requirements/01_auth_and_onboarding.md`, `docs/db/target-design.md` section 12.1 | Owner approved the limited proposal and clarified yes on 2026-11-19. Development is authorized; main/production and store submission are not implied. |
+
+## Guest read-only feed, map and profiles (App Store 5.1.1(v))
+
+| # | Decision | Lives in | Status |
+|---|---|---|---|
+| {{D:guest-readonly-feed-map-profile}} | Guests without an account may view the Feed, post details, the map and other users' profiles **read-only**. An account is required to post, chat, request or make any write. Expands D186's product surface; feed/detail stay on the `guest_posts` projection (title, description, city); map and profiles use `guest_map_post_pins` / `guest_profile` / `guest_profile_posts` (KC#2729). Write controls are hidden or prompt sign-up only when tapped — no dead ends, no no-permission screens, no unsolicited sign-up walls for guest-readable content. | `requirements/01_auth_and_onboarding.md` FR-AUTH-014, `docs/db/target-design.md` §12.1 | Owner (Nave) product decision for the 1.9.290 App Store remediation; development authorized on `dev`. |

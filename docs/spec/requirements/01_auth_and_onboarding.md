@@ -330,16 +330,23 @@ A user with a valid session token who launches the app skips Splash and Auth and
 
 ## FR-AUTH-014 — Basic guest browsing
 
-**Source.** Owner approval on 2026-11-19, `D186`, following Apple review guideline 5.1.1(v).
-Supersedes the no-guest portion of `D166`; other public-surface decisions stay unchanged.
+**Source.** Owner approval on 2026-11-19, `D186`, following Apple review guideline 5.1.1(v);
+expanded 2026-11-25 by owner decision `{{D:guest-readonly-feed-map-profile}}` (feed, post detail,
+map and other-user profiles read-only; writes require an account). Supersedes the no-guest portion
+of `D166`; other public-surface decisions stay unchanged.
 
-**Description.** A visitor can browse real open Public posts without registering. The view is
-read-only and deliberately smaller than the member feed/detail. It does not create an anonymous
-Auth account, mount member engagement controls or load private member data.
+**Description.** A visitor can browse real open Public posts without registering. The shipped
+view is read-only via `/browse`, `/browse/post/<uuid>`, `/browse/map` and `/browse/user/<handle>`
+and deliberately smaller than the member feed/detail. It does not create an anonymous Auth
+account, mount member engagement controls or load private member data. Map pins and public
+profiles use the anon-only `guest_map_post_pins` / `guest_profile` / `guest_profile_posts` RPCs
+(KC#2729); missing profiles share one neutral unavailable state (never a lock screen).
 
 **Acceptance Criteria.**
 - AC1. The welcome screen links to `/browse`. A card opens `/browse/post/<uuid>` without sign-in.
-  A stale former `(guest)` route is not reopened. The existing member `/post/<uuid>` remains gated.
+  A stale former `(guest)` route is not reopened. A signed-out deep link to member `/post/<uuid>`
+  (UUID) or the home feed remaps to the guest substitute — never an unsolicited sign-up wall for
+  content `guest_posts` can serve. The member `/post/<uuid>` screen itself remains session-gated.
 - AC2. The server returns only an opaque post id (navigation/pagination), title, description and
   city names in Hebrew/English. No author id, name, handle, avatar, contact, private location,
   coordinates, details JSON, media/storage paths, comments or viewer/account state is returned.
@@ -353,12 +360,18 @@ Auth account, mount member engagement controls or load private member data.
   member feed/detail RPC privileges stay unchanged. The definer function fixes an empty
   search_path, uses no dynamic SQL and returns an explicit projection. Pages cap at 20, using
   an opaque UUID keyset cursor; this basic view does not claim personalized/newest ranking.
-- AC5. Publishing, comments, reactions, saving, following, messaging/contact and all account
-  actions still require sign-in. The guest detail's sign-in CTA remembers the normal member
-  post route and resumes it after the existing sign-in/onboarding flow.
+- AC5. Publishing, comments, reactions, saving, following, messaging/contact, requests and all
+  account actions still require sign-in. Write controls on guest-reachable UI are hidden or open
+  sign-up only when tapped. The guest detail's sign-in CTA remembers the normal member post route
+  and resumes it after the existing sign-in/onboarding flow.
 - AC6. Guest screens have loading, empty/unavailable and retriable error states. Errors must not
   be represented as an empty feed. Hebrew/English use the same data boundary and readable
   small-screen layout. No demo-only content is presented as proof of Apple acceptance.
+- AC7. Guests may view the map (`/browse/map`, pins only via `guest_map_post_pins`) and other
+  users' public profiles (`/browse/user/<handle>` via `guest_profile` + `guest_profile_posts`)
+  read-only. Signed-out deep links to the member map or `/user/<handle>` remap to these routes.
+  A private, inactive or unknown handle shows one neutral unavailable state — never an error or
+  lock screen. Writes stay hidden or prompt sign-up only when tapped.
 
 **Related.** `FR-AUTH-001`, `FR-POST-023 AC6`, `docs/db/target-design.md` §12.1.
 

@@ -1,7 +1,8 @@
 // Where the auth gate sends the visitor, as a pure decision (no expo-router import).
 // `AuthGate` feeds it the store and route state and performs the navigation it returns.
-// Mapped to spec: FR-AUTH-001 AC4, FR-AUTH-007 AC2, FR-AUTH-010 AC3, FR-AUTH-013.
+// Mapped to spec: FR-AUTH-001 AC4, FR-AUTH-007 AC2, FR-AUTH-010 AC3, FR-AUTH-013, FR-AUTH-014.
 import type { OnboardingState } from '@kc/domain';
+import { guestReadableRedirect } from './guestBrowsePaths';
 import { isSignedOutSurface } from './signedOutSurfaces';
 
 export interface AuthRedirectInput {
@@ -27,6 +28,8 @@ export type AuthRedirect =
   | { readonly kind: 'stay' }
   /** Signed out on a member route: open the welcome screen, and come back to `rememberPath` after sign-in. */
   | { readonly kind: 'welcome'; readonly rememberPath: string | null }
+  /** Signed out on content guests can already read: open the guest substitute, no sign-up wall. */
+  | { readonly kind: 'guest'; readonly href: string }
   /** Signed in with an onboarding step left. */
   | { readonly kind: 'onboarding'; readonly href: '/(onboarding)/about-intro' | '/(onboarding)/photo' }
   /** Signed in and done: the remembered path if there is one, else the tabs. */
@@ -50,6 +53,8 @@ export function resolveAuthRedirect(input: AuthRedirectInput): AuthRedirect {
 
   if (!input.isAuthenticated) {
     if (isSignedOutSurface(input.segments, input.pathname ?? '')) return STAY;
+    const guestHref = guestReadableRedirect(input.pathname ?? '');
+    if (guestHref !== null) return { kind: 'guest', href: guestHref };
     return { kind: 'welcome', rememberPath: input.pathname };
   }
 
