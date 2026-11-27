@@ -10,6 +10,14 @@ export const API_ENVIRONMENTS = ['development', 'production', 'test'] as const;
 export type ApiEnvironment = (typeof API_ENVIRONMENTS)[number];
 
 /** Runtime configuration of the API process, read once at start. The feature settings are in `featureConfig.ts`. */
+/** The scheduler that starts jobs with its own Google identity instead of a shared secret. */
+export interface JobsSchedulerConfig {
+  /** The audience the scheduler's identity tokens are issued for: this API's address as the scheduler calls it. */
+  readonly audience: string;
+  /** Email address of the scheduler's service account; a token of any other account is refused. */
+  readonly serviceAccount: string;
+}
+
 export interface ApiConfig extends FeatureConfig {
   readonly environment: ApiEnvironment;
   /** Network interface to bind. A container must bind every interface. */
@@ -43,6 +51,8 @@ export interface ApiConfig extends FeatureConfig {
    * A secret. Null: no job can be started over HTTP.
    */
   readonly jobsToken: string | null;
+  /** The scheduler whose own Google identity starts jobs. Null: only the jobs token does. */
+  readonly jobsScheduler: JobsSchedulerConfig | null;
   /** Access token of the Expo push service, when the Expo project requires one. A secret. */
   readonly expoAccessToken: string | null;
 }
@@ -53,6 +63,8 @@ const DEFAULT_RATE_LIMIT_PER_MINUTE = 600;
 const MAX_PORT = 65535;
 /** Shorter than this, a token could be guessed. */
 const MIN_JOBS_TOKEN_LENGTH = 32;
+/** A service account's address: a name at a project's `iam.gserviceaccount.com` domain (or Google's own, for its agents). */
+const SERVICE_ACCOUNT_EMAIL = /^[a-z0-9-]+@[a-z0-9.-]+\.gserviceaccount\.com$/;
 
 function parseEnvironment(value: string | undefined): ApiEnvironment {
   if (value === undefined) return 'development';
@@ -87,6 +99,21 @@ function parseOrigins(variable: string, value: string | undefined): string[] {
     }
     return origin;
   });
+}
+
+/**
+ * Reads the scheduler's identity: both variables or neither. An audience with
+ * no account would accept a token of anyone at Google, so half a
+ * configuration is a start-up error.
+ */
+function parseJobsScheduler(env: Env): JobsSchedulerConfig | null {
+  const audience = readVariable(env, 'KC_JOBS_OIDC_AUDIENCE');
+  const serviceAccount = readVariable(env, 'KC_JOBS_SERVICE_ACCOUNT');
+  if (audience === undefined && serviceAccount === undefined) return null;
+  if (audience === undefined) throw new ApiConfigError('KC_JOBS_OIDC_AUDIENCE', 'is required when KC_JOBS_SERVICE_ACCOUNT is set');
+  if (serviceAccount === undefined) throw new ApiConfigError('KC_JOBS_SERVICE_ACCOUNT', 'is required when KC_JOBS_OIDC_AUDIENCE is set');
+  if (!SERVICE_ACCOUNT_EMAIL.test(serviceAccount)) throw new ApiConfigError('KC_JOBS_SERVICE_ACCOUNT', 'must be the email address of a Google service account');
+  return { audience, serviceAccount };
 }
 
 /** Reads the jobs token. A short one is a start-up error, not a weak lock found later. */
@@ -129,6 +156,7 @@ export function loadApiConfig(env: Env): ApiConfig {
     trustedProxyHops: parseInteger('KC_API_TRUSTED_PROXY_HOPS', readVariable(env, 'KC_API_TRUSTED_PROXY_HOPS'), 0, 0, 10),
     rateLimitPerMinute: parseInteger('KC_API_RATE_LIMIT_PER_MINUTE', readVariable(env, 'KC_API_RATE_LIMIT_PER_MINUTE'), DEFAULT_RATE_LIMIT_PER_MINUTE, 0, 100_000),
     jobsToken: parseJobsToken(readVariable(env, 'KC_JOBS_TOKEN')),
+    jobsScheduler: parseJobsScheduler(env),
     expoAccessToken: readVariable(env, 'EXPO_ACCESS_TOKEN') ?? null,
     ...loadFeatureConfig(env),
   };

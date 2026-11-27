@@ -24,6 +24,7 @@ export function testConfig(overrides: Partial<ApiConfig> = {}): ApiConfig {
     trustedProxyHops: 0,
     rateLimitPerMinute: 0,
     jobsToken: null,
+    jobsScheduler: null,
     expoAccessToken: null,
     storage: { localDirectory: null, publicUrl: null, cloud: null },
     portRollout: {},

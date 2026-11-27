@@ -44,6 +44,8 @@ In CI the frontend lane runs the package without a database (the lower floor). T
 | `KC_API_TRUSTED_PROXY_HOPS` | `0` | Reverse proxies in front of the API whose `X-Forwarded-For` entry is trusted for the client address |
 | `KC_API_RATE_LIMIT_PER_MINUTE` | `600` | Port calls one caller may make per minute (a member by user id, a visitor by address), counted in Redis. `0` switches the limit off |
 | `KC_JOBS_TOKEN` | none | Bearer token a scheduler sends to start a job (`POST /v1/jobs/<name>`); a secret of at least 32 characters. Without it no job can be started |
+| `KC_JOBS_OIDC_AUDIENCE` | none | With `KC_JOBS_SERVICE_ACCOUNT`: lets a scheduler start jobs with its own Google identity instead of a stored secret. The audience its identity tokens are issued for, which is this API's address as the scheduler calls it |
+| `KC_JOBS_SERVICE_ACCOUNT` | none | Email address of the scheduler's Google service account. Only a token Google signed for this account, for the audience above, starts a job |
 | `EXPO_ACCESS_TOKEN` | none | Access token of the Expo push service, when the Expo project requires one (a secret) |
 | `KC_APP_BASE_URL` | the product's address | The app's public web address, which a message to a member links to (for example the edit link of a draft) |
 | `KC_PORT_ROLLOUT` | everyone | Who each served port is served to: a JSON object of port name to `{ "percent": 0-100, "minAppVersion": "1.2.3" }`, with `*` for every port without a rule of its own (ADR-010). A rule for a port that does not exist stops the process at start |

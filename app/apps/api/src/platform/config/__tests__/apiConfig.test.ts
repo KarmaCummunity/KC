@@ -41,6 +41,7 @@ describe('loadApiConfig', () => {
       trustedProxyHops: 0,
       rateLimitPerMinute: 600,
       jobsToken: null,
+      jobsScheduler: null,
       expoAccessToken: null,
       storage: { localDirectory: null, publicUrl: null, cloud: null },
       portRollout: {},
@@ -202,6 +203,15 @@ describe('loadApiConfig', () => {
 
     expect(loadApiConfig({ ...REQUIRED, KC_JOBS_TOKEN: token }).jobsToken).toBe(token);
     expect(configErrorOf({ KC_JOBS_TOKEN: 'short' }).variable).toBe('KC_JOBS_TOKEN');
+  });
+
+  it('reads the scheduler whose own identity starts jobs: its audience and its service account, both or neither', () => {
+    const scheduler = { KC_JOBS_OIDC_AUDIENCE: 'https://api.example.org', KC_JOBS_SERVICE_ACCOUNT: 'kc-scheduler@kc-dev.iam.gserviceaccount.com' };
+
+    expect(loadApiConfig({ ...REQUIRED, ...scheduler }).jobsScheduler).toEqual({ audience: 'https://api.example.org', serviceAccount: 'kc-scheduler@kc-dev.iam.gserviceaccount.com' });
+    expect(configErrorOf({ KC_JOBS_OIDC_AUDIENCE: scheduler.KC_JOBS_OIDC_AUDIENCE }).variable).toBe('KC_JOBS_SERVICE_ACCOUNT');
+    expect(configErrorOf({ KC_JOBS_SERVICE_ACCOUNT: scheduler.KC_JOBS_SERVICE_ACCOUNT }).variable).toBe('KC_JOBS_OIDC_AUDIENCE');
+    expect(configErrorOf({ ...scheduler, KC_JOBS_SERVICE_ACCOUNT: 'someone@gmail.com' }).variable).toBe('KC_JOBS_SERVICE_ACCOUNT');
   });
 
   it('reads the local file store and needs the address its URLs point at', () => {

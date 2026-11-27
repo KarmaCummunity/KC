@@ -103,6 +103,19 @@ describe('POST /v1/jobs/:name', () => {
     expect(runs).toEqual([]);
   });
 
+  it('asks for a proof, not for configuration, when only the scheduler\'s identity is configured', async () => {
+    const config = testConfig({ jobsScheduler: { audience: 'https://api.kc.test', serviceAccount: 'kc-scheduler@kc-test.iam.gserviceaccount.com' } });
+    @Module({ imports: [ApiConfigModule.forRoot(config), LoggerModule, JobsModule.forRoot({ jobs: [CountingJob], providers: [] })] })
+    class SchedulerOnlyModule {}
+    app = await createApp(SchedulerOnlyModule, config);
+
+    // Not shaped like a signed token, so it is refused before any key is looked up.
+    const response = await app.inject({ method: 'POST', url: '/v1/jobs/count-things', payload: {}, headers: { authorization: `Bearer ${TOKEN}` } });
+
+    expect(response.statusCode).toBe(401);
+    expect(response.json()).toEqual({ ok: false, error: 'unauthenticated' });
+  });
+
   it('answers 404 for a name no job has, only to a caller with the token', async () => {
     const call = await start();
 
