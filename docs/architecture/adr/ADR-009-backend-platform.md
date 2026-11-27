@@ -1,6 +1,6 @@
 # ADR-009 — Backend platform: an owned NestJS API on Google Cloud, off Supabase in phases
 
-- **Status:** Accepted (PM, chat, 2026-11-21) · engineering decision `{{ENG:backend-platform-off-supabase}}` · supersedes `D-2`
+- **Status:** Accepted (PM, chat, 2026-11-21) · engineering decision `D-245` · supersedes `D-2`
 - **Issue:** epic KC#1496 · this document KC#2575
 - **Related:** [ADR-002](./ADR-002-data-layer.md) (data layer, stays in force for every context not yet moved), [ADR-003](./ADR-003-realtime.md) (realtime topics and auth), `D-204` (port contract suites), [`target.md`](../target.md) §4
 

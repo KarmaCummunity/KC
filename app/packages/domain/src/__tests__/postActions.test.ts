@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isPostEditableByOwner, isPostEnded, postAdminActions, postOwnerActions } from '../postActions';
+import { canAccessPostEditor, canEditPost, isPostEditableByOwner, isPostEnded, postAdminActions, postOwnerActions } from '../postActions';
 import { POST_STATUSES } from '../posts';
 
 /** The names of the owner actions offered in `status`, in a stable order. */
@@ -51,5 +51,29 @@ describe('postAdminActions', () => {
     expect(postAdminActions('hidden_pending_review')).toEqual({ remove: true, restore: true });
     expect(postAdminActions('removed_admin')).toEqual({ remove: false, restore: true });
     expect(postAdminActions('draft')).toEqual({ remove: false, restore: false });
+  });
+});
+
+describe('canAccessPostEditor / canEditPost', () => {
+  const owner = { viewerId: 'u_owner', ownerId: 'u_owner', isSuperAdmin: false } as const;
+  const other = { viewerId: 'u_other', ownerId: 'u_owner', isSuperAdmin: false } as const;
+
+  it('lets the owner and a super admin in, and nobody else', () => {
+    expect(canAccessPostEditor(owner)).toBe(true);
+    expect(canAccessPostEditor({ ...other, isSuperAdmin: true })).toBe(true);
+    expect(canAccessPostEditor(other)).toBe(false);
+    expect(canAccessPostEditor({ ...other, viewerId: null })).toBe(false);
+  });
+
+  it('offers Edit only when the viewer may access the editor and the status is editable', () => {
+    expect(canEditPost({ ...owner, status: 'open' })).toBe(true);
+    expect(canEditPost({ ...owner, status: 'draft' })).toBe(true);
+    expect(canEditPost({ ...owner, status: 'paused' })).toBe(true);
+    expect(canEditPost({ ...owner, status: 'expired' })).toBe(false);
+    expect(canEditPost({ ...owner, status: 'removed_admin' })).toBe(false);
+    expect(canEditPost({ ...other, status: 'open' })).toBe(false);
+    expect(canEditPost({ ...other, isSuperAdmin: true, status: 'open' })).toBe(true);
+    expect(canEditPost({ ...other, isSuperAdmin: true, status: 'expired' })).toBe(false);
+    expect(canEditPost({ viewerId: null, ownerId: 'u_owner', isSuperAdmin: true, status: 'open' })).toBe(false);
   });
 });

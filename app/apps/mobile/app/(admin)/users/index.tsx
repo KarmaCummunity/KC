@@ -16,6 +16,7 @@ import {
 import { UserSearchRow } from '../../../src/components/admin/content/UserSearchRow';
 import { useLocaleBundle } from '../../../src/i18n/useLocaleBundle';
 import { KcFlashList } from '../../../src/components/lists/KcFlashList';
+import { SilentUnauthorizedFallback } from '../../../src/components/permissions/SilentUnauthorizedFallback';
 
 const STATUS_OPTIONS = [
   { value: null,                            key: 'all' as const },
@@ -69,7 +70,7 @@ export default function UsersScreen() {
     return <View style={styles.center}><Text>{L.admin.content.loading}</Text></View>;
   }
   if (!can('users.search')) {
-    return <View style={styles.center}><Text style={styles.deniedTitle}>{L.admin.content.forbiddenTitle}</Text></View>;
+    return <SilentUnauthorizedFallback href="/(admin)" />;
   }
 
   return (
