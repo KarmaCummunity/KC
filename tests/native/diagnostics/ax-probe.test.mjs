@@ -43,3 +43,12 @@ test('private integration preserves original failure and forbids product mutatio
   assert.match(reader, /back\.tap\(\)/);
   assert.match(reader, /runningForeground/);
 });
+
+
+test('semantic evidence captures the full display and verifies foreground at every stage', () => {
+  const reader = readFileSync(new URL('./RawAXTests.swift', import.meta.url), 'utf8');
+  assert.match(reader, /XCUIScreen.main.screenshot\(\)/);
+  assert.doesNotMatch(reader, /app.screenshot\(\)/);
+  assert.match(reader, /XCTAssertEqual\(state, XCUIApplication.State.runningForeground\)/);
+  assert.match(reader, /private-guest-state-/);
+});

@@ -36,7 +36,14 @@ final class RawAXTests: XCTestCase {
     }
     continueAfterFailure = false
     func capture(_ stage: String) {
-      let shot = XCTAttachment(screenshot: app.screenshot())
+      // Capture the full display: app-scoped capture crops iPhone compatibility windows on iPad.
+      let state = app.state
+      let stateProof = XCTAttachment(string: "stage=\(stage) state=\(state.rawValue) frame=\(app.frame)")
+      stateProof.name = "private-guest-state-" + stage
+      stateProof.lifetime = .keepAlways
+      add(stateProof)
+      XCTAssertEqual(state, XCUIApplication.State.runningForeground)
+      let shot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
       shot.name = "private-guest-" + stage
       shot.lifetime = .keepAlways
       add(shot)

@@ -215,7 +215,7 @@ jobs:
           done < "$RUNNER_TEMP/evidence-images.txt"
           # Keep each semantic stage's screenshot/tree in the private export, ahead of generic diagnostics.
           if [ -d "$RUNNER_TEMP/ipad-evidence/guest-semantic-attachments" ]; then
-            find "$RUNNER_TEMP/ipad-evidence/guest-semantic-attachments" -type f -name '*.txt' | sort | head -6 > "$RUNNER_TEMP/semantic-tree-paths.txt"
+            find "$RUNNER_TEMP/ipad-evidence/guest-semantic-attachments" -type f -name '*.txt' | sort | head -12 > "$RUNNER_TEMP/semantic-tree-paths.txt"
             index=0
             while IFS= read -r tree; do
               index=$((index + 1))
