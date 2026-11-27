@@ -15,6 +15,7 @@ import { useTranslation } from 'react-i18next';
 import { rtlTextAlignStart } from '../../src/lib/rtlTextAlignStart';
 import { webTextRtl, webViewRtl } from '../../src/lib/webRtlStyle';
 import { KcFlashList } from '../../src/components/lists/KcFlashList';
+export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
 
 interface UserHit { userId: string; displayName: string; }
 

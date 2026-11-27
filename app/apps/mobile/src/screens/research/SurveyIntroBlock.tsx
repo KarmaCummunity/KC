@@ -5,7 +5,7 @@ import React, { useCallback, useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
-import { makeUseStyles, spacing, typography, useTheme, Text } from '@kc/ui';
+import { iconSize, makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
 import { webTextRtl, webViewRtl } from '../../lib/webRtlStyle';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 import {
@@ -59,7 +59,7 @@ export function SurveyIntroBlock(): React.JSX.Element {
           accessibilityRole="button"
           accessibilityLabel={t('research.share.duringSurveyAria')}
         >
-          <Ionicons name="share-social-outline" size={14} color={colors.primary} />
+          <Ionicons name="share-social-outline" size={iconSize.xs} color={colors.primary} />
           <Text style={styles.shareBtnSmallText}>
             {t('research.share.duringSurveyLabel')}
           </Text>
@@ -89,7 +89,7 @@ const useStyles = makeUseStyles(({ colors }) => ({
   introBlock: {
     gap: spacing.sm,
     padding: spacing.lg,
-    borderRadius: 16,
+    borderRadius: radius.lg,
     backgroundColor: colors.primarySurface,
     borderWidth: 1,
     borderColor: colors.border,
@@ -116,10 +116,10 @@ const useStyles = makeUseStyles(({ colors }) => ({
   shareBtnSmall: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingVertical: 4,
+    gap: spacing.xs,
+    paddingVertical: spacing.xs,
     paddingHorizontal: spacing.sm,
-    borderRadius: 8,
+    borderRadius: radius.sm,
     backgroundColor: colors.primarySurface,
     borderWidth: 1,
     borderColor: colors.primary,
@@ -128,7 +128,7 @@ const useStyles = makeUseStyles(({ colors }) => ({
   shareBtnSmallText: {
     ...typography.caption,
     color: colors.primary,
-    fontWeight: '600',
+    ...typography.semiBold,
     ...webTextRtl,
   },
   shareStatusLine: {

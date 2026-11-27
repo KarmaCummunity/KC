@@ -12,26 +12,9 @@ const APP = join(__dirname, '..', '..', '..', 'app');
 const EXPORTS_BOUNDARY = /export\s*\{\s*RouteErrorBoundary as ErrorBoundary\s*\}/;
 const ROOT_LAYOUT = '_layout.tsx';
 
-// Routes that only the root boundary covers. Each still carries findings under
-// the brand guard's touched-file rule (D67), which forbids a one-line edit
-// without cleaning the whole file, and none has a layout of its own. Adding
-// the export when a file gets its brand cleanup removes it from this list.
-const ROOT_BOUNDARY_ONLY = [
-  'follow/suggestions.tsx',
-  'karma-history.tsx',
-  'notifications/inbox.tsx',
-  'pro.tsx',
-  'settings/appearance.tsx',
-  'settings/audit.tsx',
-  'settings/feed.tsx',
-  'settings/feedback.tsx',
-  'settings/follow-requests.tsx',
-  'settings/language.tsx',
-  'settings/report-issue.tsx',
-  'settings/survey-demo.tsx',
-  'settings/surveys.tsx',
-  'stats.tsx',
-];
+// Routes that only the root boundary covers. Empty since #1805: every route exports the
+// boundary or sits under a layout that does. Keep it empty; a new route must be covered.
+const ROOT_BOUNDARY_ONLY: string[] = [];
 
 /** Every route module: `.tsx` files under app/, skipping `+html`-style specials and tests. */
 function listRouteFiles(dir: string, out: string[] = []): string[] {

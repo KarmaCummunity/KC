@@ -5069,7 +5069,7 @@
    "callSites": [
     {
      "file": "app/apps/mobile/app/pro.tsx",
-     "line": 38,
+     "line": 39,
      "symbol": "ProPaywallScreen",
      "area": "mobile"
     }
