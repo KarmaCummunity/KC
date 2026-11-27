@@ -3,7 +3,7 @@
 import { Linking } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { makeUseStyles, typography, Text } from '@kc/ui';
-import { rtlTextAlignStart } from '../lib/rtlTextAlignStart';
+import { rtlTextAlignStart } from '../lib/rtlLayout';
 import type { PrePromptTrigger } from '../lib/notifications/usePushPermissionGate';
 import { GhostButton, PrimaryButton } from './ui/Buttons';
 import { Modal } from './ui/Modal';

@@ -10,7 +10,7 @@ import type { HousingGuestStay } from '@kc/domain';
 import { Screen } from '../../ui/Screen';
 import { EmptyState } from '../../EmptyState';
 import { housingQueryKeys, housingUseCases } from '../../../services/housingComposition';
-import { rtlTextAlignStart } from '../../../lib/rtlTextAlignStart';
+import { rtlTextAlignStart } from '../../../lib/rtlLayout';
 import { WorldSubScreenChrome } from '../../giving/useWorldHeader';
 import { listOrEmpty } from '../../../lib/backendAvailability';
 

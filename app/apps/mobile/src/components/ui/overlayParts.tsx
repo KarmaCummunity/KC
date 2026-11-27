@@ -12,7 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { iconSize, makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
 import { useModalHardwareBack } from '../../hooks/useModalHardwareBack';
 import { useReducedMotion } from '../../hooks/useReducedMotion';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { rtlTextAlignStart } from '../../lib/rtlLayout';
 import { MIN_TAP_TARGET } from './kitMetrics';
 
 /** Delay before moving screen-reader focus, so the native modal window has mounted. */

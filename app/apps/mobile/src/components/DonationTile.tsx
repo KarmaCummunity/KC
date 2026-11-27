@@ -16,9 +16,8 @@ import { PressableScale } from './animations/PressableScale';
 import { Card } from './ui/Card';
 import { MirroredIcon } from './ui/MirroredIcon';
 import { IconTile } from './ui/IconTile';
-import { rtlTextAlignStart } from '../lib/rtlTextAlignStart';
-import { rowDirectionStart } from '../lib/rtlLayout';
 
+import { rowDirectionStart, rtlTextAlignStart } from '../lib/rtlLayout';
 interface DonationTileProps {
   icon: keyof typeof Ionicons.glyphMap;
   title: string;

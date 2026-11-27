@@ -4,8 +4,7 @@ import React, { forwardRef } from 'react';
 import type { TextInput as KitTextInput } from '@kc/ui';
 import { useTranslation } from 'react-i18next';
 import { TextField, type TextFieldProps } from '../ui/TextField';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
-
+import { rtlTextAlignStart } from '../../lib/rtlLayout';
 export type CompactStreetNumberFieldProps = Omit<TextFieldProps, 'label' | 'hideLabel'> & {
   /** Defaults to `profile.streetNumberShort`. */
   readonly placeholder?: string;

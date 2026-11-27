@@ -10,7 +10,7 @@ import { useTranslation } from 'react-i18next';
 import { makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
 import i18n from '../../src/i18n';
 import { useShellStackScreenOptions } from '../../src/navigation/shellStackScreenOptions';
-import { rtlTextAlignStart } from '../../src/lib/rtlTextAlignStart';
+import { rtlTextAlignStart } from '../../src/lib/rtlLayout';
 import { webTextRtl, webViewRtl } from '../../src/lib/webRtlStyle';
 import { LanguageRow } from '../../src/components/settings/translationLanguageParts';
 import {

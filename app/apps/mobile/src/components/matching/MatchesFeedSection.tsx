@@ -7,8 +7,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { iconSize, makeUseStyles, spacing, typography, useTheme, Text } from '@kc/ui';
 import { useOpenMatches } from '../../hooks/useOpenMatches';
 import { useRespondToMatch } from '../../hooks/useMyMatches';
-import { rowDirectionStart } from '../../lib/rtlLayout';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { rowDirectionStart, rtlTextAlignStart } from '../../lib/rtlLayout';
+
 import { MatchFeedRow } from './MatchFeedRow';
 
 type Props = {

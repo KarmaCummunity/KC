@@ -16,8 +16,7 @@ import {
 } from '../../components/challenges/ChallengeHistoryAndLeaderboard';
 import { GhostButton } from '../../components/ui/Buttons';
 import { challengeErrorMessage } from '../../lib/challenges/challengeErrorMessage';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
-
+import { rtlTextAlignStart } from '../../lib/rtlLayout';
 const useStyles = makeUseStyles(({ colors }) => ({
   actions: { marginHorizontal: spacing.base, marginTop: spacing.base, gap: spacing.md },
   error: { ...typography.bodySmall, color: colors.error, textAlign: rtlTextAlignStart },

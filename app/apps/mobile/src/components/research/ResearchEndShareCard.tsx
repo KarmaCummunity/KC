@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { iconSize, makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
 import { webTextRtl, webViewRtl } from '../../lib/webRtlStyle';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { rtlTextAlignStart } from '../../lib/rtlLayout';
 import {
   shareResearchSurvey,
   RESEARCH_SHARE_SRC_DURING_SURVEY,

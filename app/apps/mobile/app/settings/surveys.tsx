@@ -16,7 +16,7 @@ import { MirroredIcon } from '../../src/components/ui/MirroredIcon';
 import { iconSize, makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
 import type { SurveyCompletionStatus, SurveyListItem } from '@kc/domain';
 import { useShellStackScreenOptions } from '../../src/navigation/shellStackScreenOptions';
-import { rtlTextAlignStart } from '../../src/lib/rtlTextAlignStart';
+import { rtlTextAlignStart } from '../../src/lib/rtlLayout';
 import { webTextRtl, webViewRtl } from '../../src/lib/webRtlStyle';
 import { NotifyModal } from '../../src/components/NotifyModal';
 import { container } from '../../src/lib/container';

@@ -5,8 +5,7 @@ import type { ChallengeSummary } from '@kc/domain';
 import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
 import { Card } from '../ui/Card';
 import { Chip } from '../ui/Chip';
-import { rowDirectionStart } from '../../lib/rtlLayout';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { rowDirectionStart, rtlTextAlignStart } from '../../lib/rtlLayout';
 
 const useStyles = makeUseStyles(({ colors }) => ({
   stats: { flexDirection: rowDirectionStart, justifyContent: 'space-between', gap: spacing.md },

@@ -22,7 +22,7 @@ import { AmbientBlobs } from '../ui/AmbientBlobs';
 import { AnimatedAuthInput } from './AnimatedAuthInput';
 import { PrimaryButton } from '../ui/Buttons';
 import { MirroredIcon, useDirectionalBackIcon } from '../ui/MirroredIcon';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { rtlTextAlignStart } from '../../lib/rtlLayout';
 import type { AuthEmailForm } from './useAuthEmailForm';
 import { useKeyboardVerticalOffset } from '../../lib/platform/useKeyboardVerticalOffset';
 import { resolveKeyboardAvoidingBehavior } from '../../lib/platform/keyboardVerticalOffset';

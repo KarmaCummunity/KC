@@ -1,6 +1,5 @@
 import { makeUseStyles, radius, shadow, spacing, typography } from '@kc/ui';
-import { crossAxisAlignStart, layoutDirectionStyle, layoutWritingDirectionStyle, textAlignStart } from '../../lib/rtlLayout';
-import { rtlTextAlignEnd, rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { crossAxisAlignStart, layoutDirectionStyle, layoutWritingDirectionStyle, textAlignStart, rtlTextAlignEnd, rtlTextAlignStart } from '../../lib/rtlLayout';
 
 /** Brand card shadow in light mode; dark mode separates surfaces with borders instead. */
 const cardShadow = (isDark: boolean, shadowColor: string) =>

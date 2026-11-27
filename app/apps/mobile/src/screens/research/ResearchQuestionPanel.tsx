@@ -9,8 +9,7 @@ import { TextField } from '../../components/ui/TextField';
 import type { SurveyQuestion } from '@kc/domain';
 import { SurveyRatingRow } from '../../components/survey/SurveyRatingRow';
 import { webTextRtl } from '../../lib/webRtlStyle';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
-
+import { rtlTextAlignStart } from '../../lib/rtlLayout';
 // Q11 is the final "contact us" question — identified by its position as the
 // last question in the survey (design spec §9 row 11). Using sort_order keeps
 // the Q11 sentinel out of the source tree (Hebrew-scan compliance).

@@ -5,8 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { iconSize, makeUseStyles, spacing, typography, useTheme, Text } from '@kc/ui';
 import { MirroredIcon } from '../ui/MirroredIcon';
-import { rowDirectionStart } from '../../lib/rtlLayout';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { rowDirectionStart, rtlTextAlignStart } from '../../lib/rtlLayout';
 
 export function FeedSettingsLinkSection({ onPress }: { readonly onPress: () => void }) {
   const { t } = useTranslation();

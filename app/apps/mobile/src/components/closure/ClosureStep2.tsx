@@ -17,8 +17,7 @@ import { useClosureStore } from '../../store/closureStore';
 import { closureCopyKeys } from '../../lib/closureCopy';
 import { GhostButton, PrimaryButton, SecondaryButton } from '../ui/Buttons';
 import { ChatsPane, ModeTabs, SearchPane } from './ClosureRecipientPanes';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
-
+import { rtlTextAlignStart } from '../../lib/rtlLayout';
 interface Props {
   readonly ownerId: string;
   readonly isBusy: boolean;

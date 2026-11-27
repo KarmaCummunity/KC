@@ -13,7 +13,7 @@ import React, { type ComponentProps } from 'react';
 import { Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { iconSize, spacing, typography, useTheme, Text } from '@kc/ui';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { rtlTextAlignStart } from '../../lib/rtlLayout';
 import { webTextRtl } from '../../lib/webRtlStyle';
 import { BUTTON_HEIGHT } from './buttonStyles';
 import { DISABLED_OPACITY } from './kitMetrics';

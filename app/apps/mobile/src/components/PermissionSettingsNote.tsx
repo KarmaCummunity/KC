@@ -4,7 +4,7 @@
 import { Linking, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
-import { rtlTextAlignStart } from '../lib/rtlTextAlignStart';
+import { rtlTextAlignStart } from '../lib/rtlLayout';
 import type { MediaPermissionKind } from '../lib/mediaPermissionTypes';
 
 interface Props {

@@ -12,7 +12,7 @@ import { makeUseStyles, PlatformSwitch, spacing, typography, Text } from '@kc/ui
 import { Card, FormScreen, FormSection, PrimaryButton, TextField } from '../../../src/components/ui';
 import { useShellStackScreenOptions } from '../../../src/navigation/shellStackScreenOptions';
 import { orgErrorKey } from '../../../src/lib/organizations/orgErrorMessage';
-import { rtlTextAlignStart } from '../../../src/lib/rtlTextAlignStart';
+import { rtlTextAlignStart } from '../../../src/lib/rtlLayout';
 import { webTextRtl, webViewRtl } from '../../../src/lib/webRtlStyle';
 import {
   MY_ORG_APPLICATION_QUERY_KEY,

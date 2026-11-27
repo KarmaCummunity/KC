@@ -1,6 +1,6 @@
 import { type TextStyle } from 'react-native';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
-import { rowDirectionStart } from '../../lib/rtlLayout';
+
+import { rowDirectionStart, rtlTextAlignStart } from '../../lib/rtlLayout';
 import { webViewRtl, webTextRtl } from '../../lib/webRtlStyle';
 
 export const aboutWebViewRtl = webViewRtl;

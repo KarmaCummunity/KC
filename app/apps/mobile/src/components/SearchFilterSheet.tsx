@@ -11,8 +11,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { useSearchStore } from '../store/searchStore';
 import { CityPicker } from './CityPicker';
 import { FilterSheetFrame, FilterSection, SortSection } from './filterKit';
-import { rtlTextAlignStart } from '../lib/rtlTextAlignStart';
-
+import { rtlTextAlignStart } from '../lib/rtlLayout';
 const DEFAULT_RADIUS_KM = 5;
 
 interface Props {

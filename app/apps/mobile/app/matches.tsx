@@ -11,8 +11,7 @@ import { MatchSuggestionCard } from '../src/components/matching/MatchSuggestionC
 import { useMyMatches, useRespondToMatch } from '../src/hooks/useMyMatches';
 import { sortMatches, matchStateOf } from '../src/lib/matching';
 import { trackCoreLoop } from '../src/lib/analyticsCoreLoop';
-import { rtlTextAlignStart } from '../src/lib/rtlTextAlignStart';
-
+import { rtlTextAlignStart } from '../src/lib/rtlLayout';
 export { RouteErrorBoundary as ErrorBoundary } from '../src/components/RouteErrorBoundary';
 
 export default function MatchesScreen() {

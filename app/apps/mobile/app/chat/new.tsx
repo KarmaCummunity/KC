@@ -17,8 +17,7 @@ import { useShellStackScreenOptions } from '../../src/navigation/shellStackScree
 import { useChatStartCandidates } from '../../src/hooks/useChatStartCandidates';
 import { useAuthStore } from '../../src/store/authStore';
 import { container } from '../../src/lib/container';
-import { rtlTextAlignStart } from '../../src/lib/rtlTextAlignStart';
-
+import { rtlTextAlignStart } from '../../src/lib/rtlLayout';
 export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
 
 type Row =

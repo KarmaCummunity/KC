@@ -9,7 +9,7 @@ import { makeUseStyles, radius, spacing, typography, Text } from '@kc/ui';
 import { useFeatureFlag } from '../src/hooks/useFeatureFlag';
 import { useAuthStore } from '../src/store/authStore';
 import { track } from '../src/lib/analytics';
-import { rtlTextAlignStart } from '../src/lib/rtlTextAlignStart';
+import { rtlTextAlignStart } from '../src/lib/rtlLayout';
 import { webTextRtl, webViewRtl } from '../src/lib/webRtlStyle';
 import { getMarketplaceSupabaseClient } from '../src/services/marketplaceComposition';
 import {

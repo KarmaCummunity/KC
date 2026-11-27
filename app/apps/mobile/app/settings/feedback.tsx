@@ -7,8 +7,8 @@ import { makeUseStyles, spacing, typography, useTheme, Text } from '@kc/ui';
 import { TextField, FormScreen, PrimaryButton } from '../../src/components/ui';
 import { useShellStackScreenOptions } from '../../src/navigation/shellStackScreenOptions';
 import { SurveyRatingRow } from '../../src/components/survey/SurveyRatingRow';
-import { inputTextAlignStart } from '../../src/lib/rtlLayout';
-import { rtlTextAlignStart } from '../../src/lib/rtlTextAlignStart';
+import { inputTextAlignStart, rtlTextAlignStart } from '../../src/lib/rtlLayout';
+
 import { webTextRtl, webViewRtl } from '../../src/lib/webRtlStyle';
 import { useFeedSessionStore } from '../../src/store/feedSessionStore';
 import { container } from '../../src/lib/container';

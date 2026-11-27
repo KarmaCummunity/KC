@@ -60,7 +60,7 @@ describe('AdditionalWorldsPicker (#1475)', () => {
   });
 
   it('aligns label and hint to the reading-start edge', async () => {
-    const { rtlTextAlignStart } = await import('../../../lib/rtlTextAlignStart');
+    const { rtlTextAlignStart } = await import('../../../lib/rtlLayout');
     renderPicker('time');
     for (const key of [
       'post.unifiedCreate.additionalWorldsLabel',

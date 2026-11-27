@@ -26,8 +26,7 @@ import { ActivityTimelineList } from '../src/components/stats/ActivityTimelineLi
 import { MyWorldGivingsPanel } from '../src/components/stats/MyWorldGivingsPanel';
 import { OrgTransparencySection } from '../src/components/finance/OrgTransparencySection';
 import { activityLabelKey } from '../src/lib/activityLabelKey';
-import { rowDirectionStart } from '../src/lib/rtlLayout';
-import { rtlTextAlignStart } from '../src/lib/rtlTextAlignStart';
+import { rowDirectionStart, rtlTextAlignStart } from '../src/lib/rtlLayout';
 export { RouteErrorBoundary as ErrorBoundary } from '../src/components/RouteErrorBoundary';
 
 

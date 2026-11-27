@@ -5,8 +5,7 @@ import { KCImage } from '../ui/KCImage';
 import { useTranslation } from 'react-i18next';
 import { makeUseStyles, radius, spacing, typography, Text } from '@kc/ui';
 import type { ClosureCandidate } from '@kc/application';
-import { rowDirectionStart } from '../../lib/rtlLayout';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { rowDirectionStart, rtlTextAlignStart } from '../../lib/rtlLayout';
 
 interface Props {
   candidate: ClosureCandidate;

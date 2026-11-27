@@ -5,8 +5,7 @@
 import React from 'react';
 import { View, type StyleProp, type ViewStyle } from 'react-native';
 import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
-
+import { rtlTextAlignStart } from '../../lib/rtlLayout';
 interface SectionHeadingProps {
   readonly title: string;
   readonly subtitle?: string;

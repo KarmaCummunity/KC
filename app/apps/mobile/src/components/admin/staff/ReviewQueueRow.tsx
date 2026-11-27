@@ -6,9 +6,8 @@ import type { ModerationQueueEntry } from '@kc/application';
 import { makeUseStyles, radius, spacing, typography, Text } from '@kc/ui';
 import { SecondaryButton } from '../../ui/Buttons';
 import { useLocaleBundle } from '../../../i18n/useLocaleBundle';
-import { rtlTextAlignStart } from '../../../lib/rtlTextAlignStart';
-import { rowDirectionStart } from '../../../lib/rtlLayout';
 
+import { rowDirectionStart, rtlTextAlignStart } from '../../../lib/rtlLayout';
 export type ReviewQueueAction = 'open' | 'take' | 'resolve';
 
 export interface ReviewQueueRowProps {

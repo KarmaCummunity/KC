@@ -16,8 +16,7 @@ import { VerifiedNonprofitsSection } from '../../../../src/components/money/Veri
 import { useFeatureFlag } from '../../../../src/hooks/useFeatureFlag';
 import { useShellTabBarScrollInset } from '../../../../src/navigation/useShellTabBarVisibility';
 import { WorldLaunchGateByFlag } from '../../../../src/components/worlds/WorldLaunchGate';
-import { rtlTextAlignStart } from '../../../../src/lib/rtlTextAlignStart';
-
+import { rtlTextAlignStart } from '../../../../src/lib/rtlLayout';
 export { RouteErrorBoundary as ErrorBoundary } from '../../../../src/components/RouteErrorBoundary';
 
 const useStyles = makeUseStyles(({ colors }) => ({

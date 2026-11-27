@@ -14,8 +14,7 @@ import { performFullSignOut } from '../../services/performFullSignOut';
 import { useAuthStore } from '../../store/authStore';
 import { container } from '../../lib/container';
 import { useQueryClient } from '@tanstack/react-query';
-import { layoutWritingDirectionStyle, rowDirectionStart } from '../../lib/rtlLayout';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { layoutWritingDirectionStyle, rowDirectionStart, rtlTextAlignStart } from '../../lib/rtlLayout';
 
 export type LegalConsentMode = 'signup' | 'update';
 

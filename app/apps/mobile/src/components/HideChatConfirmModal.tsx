@@ -3,7 +3,7 @@
 // confirm is the red `DangerButton` (D94).
 import { useTranslation } from 'react-i18next';
 import { makeUseStyles, typography, Text } from '@kc/ui';
-import { rtlTextAlignStart } from '../lib/rtlTextAlignStart';
+import { rtlTextAlignStart } from '../lib/rtlLayout';
 import { DangerButton, SecondaryButton } from './ui/Buttons';
 import { Modal } from './ui/Modal';
 

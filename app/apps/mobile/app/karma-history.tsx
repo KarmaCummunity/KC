@@ -14,9 +14,9 @@ import { useAuthStore } from '../src/store/authStore';
 import { getUserRepo } from '../src/services/userComposition';
 import { karmaReasonKey, useKarmaHistory, type KarmaHistoryRow } from '../src/hooks/useKarmaHistory';
 import { karmaEventIcon } from '../src/components/profile/karmaHistoryIcon';
-import { rowDirectionStart } from '../src/lib/rtlLayout';
+import { rowDirectionStart, rtlTextAlignStart } from '../src/lib/rtlLayout';
 import { MirroredIcon, useDirectionalBackIcon } from '../src/components/ui/MirroredIcon';
-import { rtlTextAlignStart } from '../src/lib/rtlTextAlignStart';
+
 import { useShellTabBarScrollInset } from '../src/navigation/useShellTabBarVisibility';
 export { RouteErrorBoundary as ErrorBoundary } from '../src/components/RouteErrorBoundary';
 

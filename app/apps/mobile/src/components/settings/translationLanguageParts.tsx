@@ -3,7 +3,7 @@
 import React from 'react';
 import { Pressable, View } from 'react-native';
 import { makeUseStyles, spacing, radius, typography, Text } from '@kc/ui';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { rtlTextAlignStart } from '../../lib/rtlLayout';
 import { webTextRtl, webViewRtl } from '../../lib/webRtlStyle';
 
 interface LanguageRowProps {

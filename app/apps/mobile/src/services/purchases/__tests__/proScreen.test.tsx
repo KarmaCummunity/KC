@@ -42,7 +42,7 @@ vi.mock('../../../store/authStore', () => ({
   useAuthStore: (sel: (s: unknown) => unknown) => sel({ session: { userId: 'u1' } }),
 }));
 vi.mock('../../../lib/analytics', () => ({ track: (...a: unknown[]) => track(...a) }));
-vi.mock('../../../lib/rtlTextAlignStart', () => ({ rtlTextAlignStart: 'left' }));
+vi.mock('../../../lib/rtlLayout', () => ({ rtlTextAlignStart: 'left' }));
 vi.mock('../../../lib/webRtlStyle', () => ({ webTextRtl: {}, webViewRtl: {} }));
 vi.mock('../../marketplaceComposition', () => ({ getMarketplaceSupabaseClient: () => ({}) }));
 vi.mock('../revenuecat', () => ({

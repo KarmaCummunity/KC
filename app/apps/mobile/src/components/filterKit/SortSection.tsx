@@ -4,8 +4,7 @@ import { View } from 'react-native';
 import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
 import { Chip } from '../ui/Chip';
 import { ChipSelectRow } from './ChipSelectRow';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
-
+import { rtlTextAlignStart } from '../../lib/rtlLayout';
 export interface SortOption<T> {
   readonly value: T;
   readonly label: string;

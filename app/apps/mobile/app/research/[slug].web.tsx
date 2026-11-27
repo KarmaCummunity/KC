@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
 import { container } from '../../src/lib/container';
 import { webTextRtl } from '../../src/lib/webRtlStyle';
-import { rtlTextAlignStart } from '../../src/lib/rtlTextAlignStart';
+import { rtlTextAlignStart } from '../../src/lib/rtlLayout';
 import {
   clearSurveyDraft,
   loadSurveyDraft,

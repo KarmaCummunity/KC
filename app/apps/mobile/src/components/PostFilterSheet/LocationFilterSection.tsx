@@ -6,8 +6,7 @@ import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
 import { CityPicker } from '../CityPicker';
 import { Chip } from '../ui/Chip';
 import { ChipSelectRow } from '../filterKit/ChipSelectRow';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
-
+import { rtlTextAlignStart } from '../../lib/rtlLayout';
 interface LocationFilterSectionProps {
   value: LocationFilter | null;
   onChange: (next: LocationFilter | null) => void;

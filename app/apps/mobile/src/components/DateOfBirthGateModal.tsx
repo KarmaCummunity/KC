@@ -12,8 +12,7 @@ import { Modal } from './ui/Modal';
 import { useAuthStore } from '../store/authStore';
 import { getSetDateOfBirthUseCase } from '../services/userComposition';
 import { mapEditProfileSaveError } from '../lib/editProfileSaveErrors';
-import { rtlTextAlignStart } from '../lib/rtlTextAlignStart';
-
+import { rtlTextAlignStart } from '../lib/rtlLayout';
 interface Props {
   readonly visible: boolean;
   readonly onClose: () => void;

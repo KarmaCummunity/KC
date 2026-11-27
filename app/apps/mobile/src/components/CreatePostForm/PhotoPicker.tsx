@@ -6,10 +6,8 @@ import { iconSize, makeUseStyles, radius, spacing, typography, useTheme, Text } 
 import { MAX_MEDIA_ASSETS } from '@kc/domain';
 import type { UploadedAsset } from '../../services/imageUpload';
 import { KCImage } from '../ui/KCImage';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
-import { absoluteCornerEnd } from '../../lib/rtlLayout';
+import { absoluteCornerEnd, rtlTextAlignStart } from '../../lib/rtlLayout';
 import { PermissionSettingsNote } from '../PermissionSettingsNote';
-
 /** What a thumbnail needs: a stable id (`path`, also the remove key) and a preview URI. */
 export type PhotoPickerItem = Pick<UploadedAsset, 'path' | 'previewUri' | 'previewFallbackUri'>;
 

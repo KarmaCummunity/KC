@@ -5,8 +5,7 @@ import { useTranslation } from 'react-i18next';
 import type { User } from '@kc/domain';
 import { makeUseStyles, typography, spacing, Text } from '@kc/ui';
 import { AvatarInitials } from '../AvatarInitials';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
-
+import { rtlTextAlignStart } from '../../lib/rtlLayout';
 interface Props {
   readonly user: User;
   readonly disabled: boolean;
