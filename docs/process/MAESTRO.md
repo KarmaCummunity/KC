@@ -88,3 +88,9 @@ cd ../../.. && scripts/maestro-run-android.sh app/apps/mobile/android/app/build/
 ## Not yet covered (phase 2)
 
 iOS simulator job (macOS runner), screenshot comparison for layout regressions, and deeper journeys that write data (create a post with a photo, chat with an image, handoff + feedback, map pan, delete account).
+
+## Isolated iPad guest qualification (KC#2723)
+
+The dedicated `ipad-guest-qualification.yml` runs on same-repository PRs touching its isolated files, or by manual dispatch on a non-main branch. It builds unsigned Release source against public DEV configuration, boots an available iPad, then uses `tests/native/ipad-guest-qualification.yaml` to require a real guest list and detail without member login. No existing2560 probes, seed, registration override or store upload are included. Current permission starts denied on this disposable simulator; this proves no first-use prompt is forced by browsing, not physical APNs delivery or production-signed binary acceptance.
+
+Standard public-repository macOS compute is free. No cache/artifact storage actions are used. Screenshots and logs are encrypted with CMS to the committed temporary PUBLIC certificate before ciphertext enters public run logs; the private key is not in GitHub. Only allowlisted non-sensitive step status is logged in plaintext. The temporary certificate is valid for two days. A manual run can supply a fresh base64 PEM public certificate via `evidence_certificate`; retain its private key outside GitHub. Do not print plaintext guest content or user/session data. Decode and decrypt evidence privately, then inspect actual screenshots. The flow fails when there is no real public post, rather than treating the sign-in button as proof.

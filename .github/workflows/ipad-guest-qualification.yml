@@ -1,0 +1,261 @@
+name: Isolated DEV iPad guest qualification
+on:
+  pull_request:
+    branches: [dev]
+    paths:
+      - '.github/workflows/ipad-guest-qualification.yml'
+      - 'scripts/ipad-qualification*'
+      - 'tests/native/**'
+  workflow_dispatch:
+    inputs:
+      evidence_certificate:
+        description: Base64 PEM public certificate for private evidence encryption
+        type: string
+        required: false
+permissions:
+  contents: read
+jobs:
+  ipad:
+    if: github.ref != 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: macos-latest
+    timeout-minutes: 90
+    env:
+      EXPO_PUBLIC_ENVIRONMENT: development
+      EXPO_PUBLIC_SUPABASE_URL: https://enbqriuxvvuontiwslun.supabase.co
+      SENTRY_DISABLE_AUTO_UPLOAD: 'true'
+      EVIDENCE_CERTIFICATE: ${{ inputs.evidence_certificate }}
+      MAESTRO_VERSION: 2.12.0
+      PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115
+        with:
+          package_json_file: app/package.json
+          run_install: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version-file: .nvmrc
+      - name: Prepare private evidence destination and iPad
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/ipad-evidence"
+          if [ -n "$EVIDENCE_CERTIFICATE" ]; then
+            printf '%s' "$EVIDENCE_CERTIFICATE" | base64 --decode > "$RUNNER_TEMP/evidence-cert.pem"
+          else
+            cp tests/native/evidence-recipient.pem "$RUNNER_TEMP/evidence-cert.pem"
+          fi
+          openssl x509 -in "$RUNNER_TEMP/evidence-cert.pem" -noout
+          xcrun simctl list devices available --json > "$RUNNER_TEMP/devices.json"
+          node scripts/ipad-qualification-device.mjs "$RUNNER_TEMP/devices.json" > "$RUNNER_TEMP/ipad-evidence/device.json"
+          udid=$(node -p 'JSON.parse(require("fs").readFileSync(process.env.RUNNER_TEMP+"/ipad-evidence/device.json")).udid')
+          echo "SIMULATOR_UDID=$udid" >> "$GITHUB_ENV"
+          xcrun simctl boot "$udid"
+          xcrun simctl bootstatus "$udid" -b
+          printf '%s\n' "$GITHUB_SHA" > "$RUNNER_TEMP/ipad-evidence/source.txt"
+          printf '%s\n' "$PR_HEAD_SHA" > "$RUNNER_TEMP/ipad-evidence/source-pr-head.txt"
+      - name: Prepare independently verified read-only XCTest diagnostic runner
+        run: |
+          set -euo pipefail
+          node --test tests/native/diagnostics/ax-probe.test.mjs
+          gem install xcodeproj --version 1.27.0 --user-install --no-document > "$RUNNER_TEMP/ipad-evidence/ax-gem.log" 2>&1
+          ruby tests/native/diagnostics/create-project.rb "$RUNNER_TEMP/kc-ax-reader"
+          xcodebuild -project "$RUNNER_TEMP/kc-ax-reader/KCAXReader.xcodeproj" \
+            -scheme KCAXReader -configuration Debug -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/kc-ax-reader-build" \
+            CODE_SIGNING_ALLOWED=NO build-for-testing > "$RUNNER_TEMP/ipad-evidence/ax-reader-build.log" 2>&1
+      - name: Install frozen dependencies without persistent caches
+        working-directory: app
+        run: pnpm install --frozen-lockfile
+      - name: Resolve only public DEV configuration
+        run: node scripts/ipad-qualification-env.mjs >> "$GITHUB_ENV"
+      - name: Instrument only isolated DEV startup decision boundary
+        run: |
+          node scripts/ipad-qualification-startup.mjs
+          printf '%s\n' 'Diagnostic source differs only by fixed root/font/RTL startup markers. Not a production candidate.' > "$RUNNER_TEMP/ipad-evidence/diagnostic-source.txt"
+      - name: Build and install locally signed iPad simulator candidate
+        timeout-minutes: 50
+        working-directory: app/apps/mobile
+        env:
+          NODE_ENV: production
+        run: |
+          set -euo pipefail
+          npx expo prebuild --platform ios --no-install --clean > "$RUNNER_TEMP/ipad-evidence/prebuild.log" 2>&1
+          node "$GITHUB_WORKSPACE/tests/native/diagnostics/ax-probe.mjs" ios/KC/AppDelegate.swift
+          printf '%s\n' 'Includes bounded read-only UIKit AX shape/flags diagnostic. Not a production candidate.' >> "$RUNNER_TEMP/ipad-evidence/diagnostic-source.txt"
+          cd ios
+          pod install > "$RUNNER_TEMP/ipad-evidence/pods.log" 2>&1
+          xcodebuild -workspace KC.xcworkspace -scheme KC -configuration Release \
+            -sdk iphonesimulator -destination "platform=iOS Simulator,id=$SIMULATOR_UDID" \
+            -derivedDataPath "$RUNNER_TEMP/kc-ipad-build" \
+            CODE_SIGNING_ALLOWED=YES CODE_SIGNING_REQUIRED=YES \
+            CODE_SIGN_IDENTITY="-" DEVELOPMENT_TEAM="" build \
+            > "$RUNNER_TEMP/ipad-evidence/build.log" 2>&1
+          app="$RUNNER_TEMP/kc-ipad-build/Build/Products/Release-iphonesimulator/KC.app"
+          # Local ad-hoc identity only: no Apple account, certificate or profile access.
+          shasum -a 256 "$app/KC" > "$RUNNER_TEMP/ipad-evidence/native-executable-sha256.txt"
+          codesign --verify --deep --strict "$app" > "$RUNNER_TEMP/ipad-evidence/signature.log" 2>&1
+          codesign -d --entitlements :- "$app" > "$RUNNER_TEMP/ipad-evidence/entitlements.log" 2>&1
+          node "$GITHUB_WORKSPACE/scripts/ipad-qualification-bundle-proof.mjs" "$app" > "$RUNNER_TEMP/ipad-evidence/bundle-proof.log"
+          xcrun simctl install "$SIMULATOR_UDID" "$app"
+      - name: Direct native launch diagnostic before interaction runner
+        timeout-minutes: 2
+        run: |
+          set -euo pipefail
+          # Isolate app startup from Maestro clearState without changing app behavior.
+          xcrun simctl launch "$SIMULATOR_UDID" org.karmacommunity.app > "$RUNNER_TEMP/ipad-evidence/direct-launch.log" 2>&1
+          sleep 15
+          xcrun simctl io "$SIMULATOR_UDID" screenshot "$RUNNER_TEMP/ipad-evidence/direct-launch-screen.png" > "$RUNNER_TEMP/ipad-evidence/direct-screenshot.log" 2>&1
+          xcrun simctl spawn "$SIMULATOR_UDID" log show --last 1m --style compact --info \
+            --predicate 'process == "KC"' > "$RUNNER_TEMP/ipad-evidence/direct-launch-console.log" 2>&1 || true
+          xcrun simctl terminate "$SIMULATOR_UDID" org.karmacommunity.app > "$RUNNER_TEMP/ipad-evidence/direct-terminate.log" 2>&1 || true
+      - name: Install pinned native interaction runner
+        run: |
+          set -euo pipefail
+          curl -fsSL https://get.maestro.mobile.dev | bash > "$RUNNER_TEMP/ipad-evidence/maestro-install.log" 2>&1
+          echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
+      - name: Real native guest interaction without member login
+        timeout-minutes: 12
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/ipad-evidence"
+          capture_native_diagnostics() {
+            # Export the actual accessibility tree, not only screenshots of the app.
+            maestro --device "$SIMULATOR_UDID" hierarchy > "$RUNNER_TEMP/ipad-evidence/hierarchy-$(date +%s).log" 2>&1 || true
+            xcrun simctl io "$SIMULATOR_UDID" screenshot "$RUNNER_TEMP/ipad-evidence/final-screen.png" > "$RUNNER_TEMP/ipad-evidence/screenshot.log" 2>&1 || true
+            xcrun simctl spawn "$SIMULATOR_UDID" log show --last 8m --style compact --info \
+              --predicate 'process == "KC"' > "$RUNNER_TEMP/ipad-evidence/native-console.log" 2>&1 || true
+            # Crash reports can contain device data. Keep them inside encrypted evidence.
+            index=0
+            for directory in "$HOME/Library/Logs/DiagnosticReports" "$HOME/Library/Developer/CoreSimulator/Devices/$SIMULATOR_UDID/data/Library/Logs/CrashReporter"; do
+              [ -d "$directory" ] || continue
+              find "$directory" -type f -name 'KC*' -mmin -15 | sed -n '1,4p' > "$RUNNER_TEMP/crash-paths.txt"
+              while IFS= read -r report; do
+                index=$((index + 1))
+                tail -c 262144 "$report" > "$RUNNER_TEMP/ipad-evidence/crash-report-$index.log"
+              done < "$RUNNER_TEMP/crash-paths.txt"
+            done
+          }
+          trap capture_native_diagnostics EXIT
+          initial_status=0
+          maestro --device "$SIMULATOR_UDID" test --debug-output "$RUNNER_TEMP/ipad-evidence/debug" \
+            "$GITHUB_WORKSPACE/tests/native/ipad-guest-qualification.yaml" \
+            > "$RUNNER_TEMP/ipad-evidence/interaction.log" 2>&1 || initial_status=$?
+          capture_native_diagnostics
+          cp "$RUNNER_TEMP/ipad-evidence/native-console.log" "$RUNNER_TEMP/ipad-evidence/initial-console.log"
+          cp "$RUNNER_TEMP/ipad-evidence/final-screen.png" "$RUNNER_TEMP/ipad-evidence/initial-screen.png" || true
+          if [ "$initial_status" -ne 0 ]; then
+            # Preserve the failed first-launch screen/tree before a warm control.
+            # This independent reader neither activates nor relaunches KC.
+            ax_status=0
+            xcodebuild -project "$RUNNER_TEMP/kc-ax-reader/KCAXReader.xcodeproj" \
+              -scheme KCAXReader -configuration Debug -sdk iphonesimulator \
+              -destination "platform=iOS Simulator,id=$SIMULATOR_UDID" \
+              -derivedDataPath "$RUNNER_TEMP/kc-ax-reader-build" \
+              -resultBundlePath "$RUNNER_TEMP/kc-raw-ax.xcresult" \
+              -only-testing:KCAXReader/RawAXTests/testInstalledAppTree \
+              -parallel-testing-enabled NO -test-timeouts-enabled YES \
+              -default-test-execution-time-allowance 60 -maximum-test-execution-time-allowance 90 \
+              CODE_SIGNING_ALLOWED=NO test-without-building \
+              > "$RUNNER_TEMP/ipad-evidence/independent-xctest.log" 2>&1 || ax_status=$?
+            printf '%s\n' "$ax_status" > "$RUNNER_TEMP/ipad-evidence/independent-xctest-status.txt"
+            xcrun xcresulttool export attachments --path "$RUNNER_TEMP/kc-raw-ax.xcresult" \
+              --output-path "$RUNNER_TEMP/ipad-evidence/xctest-attachments" \
+              > "$RUNNER_TEMP/ipad-evidence/ax-export.log" 2>&1 || true
+            # Separate semantic qualification of the same installed binary, not first-launch acceptance.
+            guest_status=0
+            xcodebuild -project "$RUNNER_TEMP/kc-ax-reader/KCAXReader.xcodeproj" \
+              -scheme KCAXReader -configuration Debug -sdk iphonesimulator \
+              -destination "platform=iOS Simulator,id=$SIMULATOR_UDID" \
+              -derivedDataPath "$RUNNER_TEMP/kc-ax-reader-build" \
+              -resultBundlePath "$RUNNER_TEMP/kc-guest-semantic.xcresult" \
+              -only-testing:KCAXReader/RawAXTests/testSemanticGuestBrowse \
+              -parallel-testing-enabled NO -test-timeouts-enabled YES \
+              -default-test-execution-time-allowance 180 -maximum-test-execution-time-allowance 210 \
+              CODE_SIGNING_ALLOWED=NO test-without-building \
+              > "$RUNNER_TEMP/ipad-evidence/semantic-guest-xctest.log" 2>&1 || guest_status=$?
+            printf '%s\n' "$guest_status" > "$RUNNER_TEMP/ipad-evidence/semantic-guest-status.txt"
+            xcrun xcresulttool export attachments --path "$RUNNER_TEMP/kc-guest-semantic.xcresult" \
+              --output-path "$RUNNER_TEMP/ipad-evidence/guest-semantic-attachments" \
+              > "$RUNNER_TEMP/ipad-evidence/guest-export.log" 2>&1 || true
+            # Same binary, preserve native RTL preferences after the initial failure.
+            # This control cannot turn a failed first launch into acceptance.
+            sed -e 's/clearState: true/clearState: false/' \
+              -e 's/id: auth-guest-entry/text: "(צפייה ללא חשבון|Browse without an account)"/' \
+              "$GITHUB_WORKSPACE/tests/native/ipad-guest-qualification.yaml" > "$RUNNER_TEMP/warm-guest.yaml"
+            warm_status=0
+            maestro --device "$SIMULATOR_UDID" test --debug-output "$RUNNER_TEMP/ipad-evidence/warm-debug" \
+              "$RUNNER_TEMP/warm-guest.yaml" > "$RUNNER_TEMP/ipad-evidence/warm-interaction.log" 2>&1 || warm_status=$?
+            printf '%s\n' "$warm_status" > "$RUNNER_TEMP/ipad-evidence/warm-status.txt"
+            xcrun simctl spawn "$SIMULATOR_UDID" log show --last 4m --style compact --info \
+              --predicate 'process == "KC"' > "$RUNNER_TEMP/ipad-evidence/warm-console.log" 2>&1 || true
+          fi
+          grep -h 'KC_STARTUP_DIAGNOSTIC' "$RUNNER_TEMP/ipad-evidence/"*console.log > "$RUNNER_TEMP/ipad-evidence/startup-markers.log" || true
+          exit "$initial_status"
+      - name: Encrypt evidence before any public log output
+        if: always()
+        run: |
+          set -euo pipefail
+          test -s "$RUNNER_TEMP/evidence-cert.pem"
+          # Large build/debug logs exceeded the previous encrypted-export cap.
+          # Bound logs and resize only diagnostic screenshots before encryption.
+          mkdir -p "$RUNNER_TEMP/ipad-evidence-compact"
+          cp "$RUNNER_TEMP/ipad-evidence/"*.json "$RUNNER_TEMP/ipad-evidence/"*.txt "$RUNNER_TEMP/ipad-evidence-compact/"
+          for log in "$RUNNER_TEMP/ipad-evidence/"*.log; do
+            tail -c 131072 "$log" > "$RUNNER_TEMP/ipad-evidence-compact/$(basename "$log")"
+          done
+          find "$RUNNER_TEMP/ipad-evidence" -name '*.png' -type f | sed -n '1,8p' > "$RUNNER_TEMP/evidence-images.txt"
+          index=0
+          while IFS= read -r image; do
+            index=$((index + 1))
+            sips -Z 1600 -s format jpeg -s formatOptions 70 "$image" \
+              --out "$RUNNER_TEMP/ipad-evidence-compact/screenshot-$index.jpg" > "$RUNNER_TEMP/sips-output.log" 2>&1
+          done < "$RUNNER_TEMP/evidence-images.txt"
+          # Keep each semantic stage's screenshot/tree in the private export, ahead of generic diagnostics.
+          if [ -d "$RUNNER_TEMP/ipad-evidence/guest-semantic-attachments" ]; then
+            find "$RUNNER_TEMP/ipad-evidence/guest-semantic-attachments" -type f -name '*.txt' | sort | head -12 > "$RUNNER_TEMP/semantic-tree-paths.txt"
+            index=0
+            while IFS= read -r tree; do
+              index=$((index + 1))
+              head -c 131072 "$tree" > "$RUNNER_TEMP/ipad-evidence-compact/semantic-tree-$index.txt"
+            done < "$RUNNER_TEMP/semantic-tree-paths.txt"
+            find "$RUNNER_TEMP/ipad-evidence/guest-semantic-attachments" -type f -name '*.png' | sort | head -6 > "$RUNNER_TEMP/semantic-image-paths.txt"
+            index=0
+            while IFS= read -r image; do
+              index=$((index + 1))
+              sips -Z 1600 -s format jpeg -s formatOptions 70 "$image" \
+                --out "$RUNNER_TEMP/ipad-evidence-compact/semantic-screen-$index.jpg" > "$RUNNER_TEMP/sips-semantic.log" 2>&1
+            done < "$RUNNER_TEMP/semantic-image-paths.txt"
+            cp "$RUNNER_TEMP/ipad-evidence/guest-semantic-attachments/manifest.json" "$RUNNER_TEMP/ipad-evidence-compact/semantic-manifest.json" || true
+          fi
+          # Prioritize the independent raw tree so nested Maestro files cannot crowd it out.
+          if [ -d "$RUNNER_TEMP/ipad-evidence/xctest-attachments" ]; then
+            find "$RUNNER_TEMP/ipad-evidence/xctest-attachments" -type f -name '*.txt' | sort | head -4 > "$RUNNER_TEMP/ax-tree-paths.txt"
+            index=0
+            while IFS= read -r tree; do
+              index=$((index + 1))
+              head -c 131072 "$tree" > "$RUNNER_TEMP/ipad-evidence-compact/xctest-tree-$index.txt"
+            done < "$RUNNER_TEMP/ax-tree-paths.txt"
+          fi
+          # Maestro stores hierarchy/command state below hidden debug directories.
+          # Keep a bounded, encrypted copy of nested text diagnostics, never public plaintext.
+          find "$RUNNER_TEMP/ipad-evidence/debug" "$RUNNER_TEMP/ipad-evidence/warm-debug" "$RUNNER_TEMP/ipad-evidence/xctest-attachments" "$RUNNER_TEMP/ipad-evidence/guest-semantic-attachments" \
+            -type f \( -name '*.json' -o -name '*.xml' -o -name '*.log' -o -name '*.txt' \) 2>/dev/null \
+            | sort | head -40 > "$RUNNER_TEMP/nested-evidence-paths.txt" || true
+          index=0
+          while IFS= read -r diagnostic; do
+            index=$((index + 1))
+            printf '%s\n' "${diagnostic#"$RUNNER_TEMP/ipad-evidence/"}" > "$RUNNER_TEMP/ipad-evidence-compact/nested-$index-path.txt"
+            tail -c 131072 "$diagnostic" > "$RUNNER_TEMP/ipad-evidence-compact/nested-$index.log"
+          done < "$RUNNER_TEMP/nested-evidence-paths.txt"
+          tar -czf "$RUNNER_TEMP/ipad-evidence.tar.gz" -C "$RUNNER_TEMP" ipad-evidence-compact
+          openssl cms -encrypt -binary -aes-256-cbc -in "$RUNNER_TEMP/ipad-evidence.tar.gz" \
+            -outform DER -out "$RUNNER_TEMP/ipad-evidence.cms" "$RUNNER_TEMP/evidence-cert.pem"
+          bytes=$(wc -c < "$RUNNER_TEMP/ipad-evidence.cms")
+          echo "Encrypted evidence bytes: $bytes"
+          test "$bytes" -lt 10000000
+          echo KC_ENCRYPTED_IPAD_EVIDENCE_BEGIN
+          base64 < "$RUNNER_TEMP/ipad-evidence.cms"
+          echo KC_ENCRYPTED_IPAD_EVIDENCE_END

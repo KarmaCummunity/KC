@@ -127,6 +127,8 @@ playwright.config.*                         @navesarussi
 /scripts/release/prod-dryrun-*.mjs           @navesarussi
 /scripts/release/service-role-key.mjs       @navesarussi
 
+/scripts/ipad-qualification-startup.mjs       @navesarussi
+/scripts/ipad-qualification-bundle-proof.mjs       @navesarussi
 /scripts/asc-auto-candidate.mjs              @navesarussi
 /docs/release/asc-qualified-candidate.json   @navesarussi
 
@@ -136,3 +138,7 @@ playwright.config.*                         @navesarussi
 /scripts/*.test.mjs
 /scripts/ops/*.test.mjs
 /app/scripts/*.test.mjs
+
+# Isolated native qualification scripts run on standard macOS with read-only permissions.
+/scripts/ipad-qualification-device.mjs       @navesarussi
+/scripts/ipad-qualification-env.mjs          @navesarussi

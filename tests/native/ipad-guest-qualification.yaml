@@ -1,0 +1,46 @@
+appId: org.karmacommunity.app
+name: Isolated iPad guest list and detail, no account writes
+---
+- launchApp:
+    clearState: true
+    permissions:
+      all: deny
+- scrollUntilVisible:
+    element:
+      id: auth-guest-entry
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 100
+    centerElement: true
+- extendedWaitUntil:
+    visible:
+      id: auth-guest-entry
+    timeout: 45000
+- assertNotVisible:
+    id: push-gate-accept
+- takeScreenshot: ipad-welcome
+- tapOn:
+    id: auth-guest-entry
+- extendedWaitUntil:
+    visible:
+      id: guest-post-.*
+    timeout: 45000
+- assertNotVisible:
+    id: guest-empty
+- takeScreenshot: ipad-guest-list
+- tapOn:
+    id: guest-post-.*
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: guest-back
+    timeout: 30000
+- assertVisible:
+    id: guest-post-.*
+- takeScreenshot: ipad-guest-detail
+- tapOn:
+    id: guest-back
+- extendedWaitUntil:
+    visible:
+      id: guest-sign-in
+    timeout: 30000
