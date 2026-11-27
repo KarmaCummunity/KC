@@ -22,6 +22,7 @@ import { KcFlashList } from '../../../src/components/lists/KcFlashList';
 import { AdminSearchFilterToolbar } from '../../../src/components/admin/AdminSearchFilterToolbar';
 import { FilterSection } from '../../../src/components/filterKit/FilterSection';
 import { PrimaryButton } from '../../../src/components/ui/Buttons';
+import { SilentUnauthorizedFallback } from '../../../src/components/permissions/SilentUnauthorizedFallback';
 
 type StatusFilter = CrmContactStatus | 'all';
 
@@ -168,7 +169,7 @@ export default function CrmScreen() {
     return <View style={styles.center}><Text>{t.loading}</Text></View>;
   }
   if (!can('crm.manage')) {
-    return <View style={styles.center}><Text style={styles.deniedTitle}>{t.forbiddenTitle}</Text></View>;
+    return <SilentUnauthorizedFallback href="/(admin)" />;
   }
 
   if (!orgs.isLoading && orgId === null) {

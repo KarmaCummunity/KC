@@ -1,7 +1,8 @@
 import { test, expect } from '@playwright/test';
-import { USER_A } from '../../lib/env';
-import { rest, sessionFor } from '../../lib/api';
-import { dismissGates } from '../../lib/app';
+import { STORAGE_B, USER_A, USER_B, USER_C } from '../../lib/env';
+import { rest, runTag, sessionFor } from '../../lib/api';
+import { dismissGates, gotoApp } from '../../lib/app';
+import { publishPostAs } from '../../lib/publish';
 
 /** Apple 1.2: a user can block (and unblock) another user from their profile. Non-destructive: ends unblocked. */
 const TARGET_EMAIL = process.env.E2E_BLOCK_TARGET_EMAIL ?? 'user3@seed.kc.test';
@@ -29,4 +30,68 @@ test('block and unblock a user from the profile menu', async ({ page }) => {
   await toggle.click();
   await openMenu();
   await expect(toggle).toHaveText('חסימת משתמש', { timeout: 15_000 });
+});
+
+/**
+ * FR-MOD-003 / FR-MOD-004 (#2062): the reported failure was a block from a feed post's ⋮ menu
+ * that showed no confirmation and saved nothing. User B blocks user C from C's fresh post. B is
+ * the blocker because B holds no staff role: staff (user A is `support`) read every post by
+ * design (`posts_select_staff`), so a block can never hide content from them. Then:
+ * the block is stored, C's post disappears for A (the server hides content across a block),
+ * and the unblock from Settings → Blocked Users removes the row and brings the post back.
+ * Ends unblocked even on failure, and C's post is deleted, so nightly runs repeat cleanly.
+ */
+test('block from a post menu hides the content; unblock from Blocked Users restores it', async ({ browser }) => {
+  test.setTimeout(150_000);
+  const { session: b } = await sessionFor(USER_B);
+  const bToken = b.access_token as string;
+  const bId = (b.user as { id: string }).id;
+  const { session: c } = await sessionFor(USER_C);
+  const cId = (c.user as { id: string }).id;
+  const blockPath = `blocks?blocker_id=eq.${bId}&blocked_id=eq.${cId}`;
+  const blockRows = async () => (await rest<unknown[]>(bToken, `${blockPath}&select=blocked_id`)).length;
+  // The post as B sees it through RLS: gone while a block stands between B and C.
+  const visibleToB = async (postId: string) =>
+    (await rest<unknown[]>(bToken, `posts?select=id&id=eq.${postId}`)).length;
+
+  // Start unblocked: a run that died between block and unblock must not poison this one.
+  await rest(bToken, blockPath, { method: 'DELETE' });
+  const post = await publishPostAs(USER_C, {
+    world: 'items',
+    kindSlug: 'item_offer',
+    title: `${runTag()} מנורה לבדיקת חסימה`,
+    publish: 'plain',
+    details: () => ({}),
+  });
+  const context = await browser.newContext({ storageState: STORAGE_B, locale: 'he-IL' });
+  const page = await context.newPage();
+  // Web confirms (block, unblock) are window.confirm; their outcome toasts are window.alert.
+  page.on('dialog', (d) => void d.accept());
+
+  try {
+    await gotoApp(page, `/post/${post.id}`);
+    await expect(page.getByText(post.title).first()).toBeVisible({ timeout: 45_000 });
+    await page.getByRole('button', { name: 'תפריט פעולות', exact: true }).first().click();
+    await page.getByTestId('post-menu-block-owner').click();
+
+    await expect.poll(blockRows, { timeout: 30_000, message: 'B → C block row is stored' }).toBe(1);
+    expect(await visibleToB(post.id)).toBe(0);
+
+    await gotoApp(page, '/settings/blocked-users');
+    const row = page.getByTestId(`blocked-user-row-${cId}`);
+    await expect(row).toBeVisible({ timeout: 30_000 });
+    await page.getByTestId(`blocked-user-unblock-${cId}`).click();
+
+    await expect(row).toHaveCount(0, { timeout: 30_000 });
+    await expect.poll(blockRows, { timeout: 30_000, message: 'B → C block row is removed' }).toBe(0);
+    expect(await visibleToB(post.id)).toBe(1);
+  } finally {
+    // Never leave B blocking C (other journeys use both), and keep C's feed clean.
+    await rest(bToken, blockPath, { method: 'DELETE' }).catch(() => undefined);
+    await rest(c.access_token as string, 'rpc/delete_post', {
+      method: 'POST',
+      body: { p_post_id: post.id },
+    }).catch(() => undefined);
+    await context.close();
+  }
 });

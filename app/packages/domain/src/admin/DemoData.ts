@@ -56,7 +56,7 @@ export interface DemoDataStep<R> {
  * runs the first two only. Each phase is one RPC call and one progress label on the screen.
  */
 export const DEMO_DATA_SEED_PHASES = [
-  'wipe_content', 'wipe_accounts', 'members', 'items', 'rides', 'worlds', 'social', 'chats', 'orgs',
+  'wipe_content', 'wipe_accounts', 'members', 'items', 'rides', 'worlds', 'social', 'chats', 'orgs', 'coverage',
 ] as const;
 
 export type DemoDataPhase = (typeof DEMO_DATA_SEED_PHASES)[number];

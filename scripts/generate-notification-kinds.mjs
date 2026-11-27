@@ -10,13 +10,15 @@
  * the named columns of the earlier row, `on conflict (kind) do nothing` keeps the earlier row,
  * and a plain second insert of the same kind is reported as registered twice. The app (type `NotificationKind`, routes, channels),
  * the push worker (`dispatch-notification`) and the tests all need the same list, so this
- * script derives it and writes three generated files:
+ * script derives it and writes four generated files:
  *
  *   app/packages/domain/src/notificationKinds.generated.ts          the list, for the app
  *   supabase/functions/dispatch-notification/kinds.generated.ts     the same list, for the worker
  *   supabase/functions/dispatch-notification/strings.he.generated.json
  *       the Hebrew texts of the kinds, copied from the app's locale module — the worker
  *       renders push text from the same strings the app shows
+ *   app/apps/api/src/modules/notifications/strings.he.generated.json
+ *       the same texts for the API's push worker (it takes the list itself from the domain package)
  *
  * It reads the SQL source, not a database, so `--check` runs in a static CI lane. That is
  * only sound because the registry is written as literal `values` rows: any other statement
@@ -43,6 +45,8 @@ export const PATHS = {
   domain: 'app/packages/domain/src/notificationKinds.generated.ts',
   worker: `${WORKER_DIR}/kinds.generated.ts`,
   strings: `${WORKER_DIR}/strings.he.generated.json`,
+  /** The same texts for the API's push worker, which replaces the Edge Function (ADR-009 phase 8). */
+  apiStrings: 'app/apps/api/src/modules/notifications/strings.he.generated.json',
 };
 
 /** Arguments a notification text may interpolate; both renderers provide exactly these. */
@@ -302,7 +306,8 @@ export function build(rows, locale) {
     .filter((key) => key !== null).sort();
   const strings = Object.fromEntries(stringKeys.map((key) => [key, locale[localeKey(key)]]));
   const module = renderModule(kinds);
-  return { kinds, files: { [PATHS.domain]: module, [PATHS.worker]: module, [PATHS.strings]: `${JSON.stringify(strings, null, 2)}\n` } };
+  const stringsJson = `${JSON.stringify(strings, null, 2)}\n`;
+  return { kinds, files: { [PATHS.domain]: module, [PATHS.worker]: module, [PATHS.strings]: stringsJson, [PATHS.apiStrings]: stringsJson } };
 }
 
 function renderModule(kinds) {

@@ -1,5 +1,6 @@
 import * as Notifications from 'expo-notifications';
 import type { PushData } from '@kc/domain';
+import { currentNotificationPresentation } from './currentNotificationPresentation';
 import { useActiveScreenStore } from './useActiveScreenStore';
 
 let installed = false;
@@ -21,12 +22,7 @@ export function installForegroundHandler(): void {
           shouldSetBadge: false,
         });
       }
-      return Promise.resolve({
-        shouldShowBanner: true,
-        shouldShowList: true,
-        shouldPlaySound: true,
-        shouldSetBadge: true,
-      });
+      return currentNotificationPresentation();
     },
   });
 }

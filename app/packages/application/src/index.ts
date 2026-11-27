@@ -265,3 +265,15 @@ export { ListGuestMapPinsUseCase } from './guest/ListGuestMapPinsUseCase';
 export { GetGuestProfileUseCase } from './guest/GetGuestProfileUseCase';
 export { ListGuestProfilePostsUseCase } from './guest/ListGuestProfilePostsUseCase';
 
+
+// Ports of the adapters that had none (ADR-010): each is served through the API gateway.
+export * from './ports/IActiveStatusRepository';
+export * from './ports/IChatV2Repository';
+export * from './ports/IFollowSuggestionsRepository';
+export * from './ports/IPostEngagementRepository';
+export * from './ports/ISocialFeedRepository';
+export * from './ports/IMatchRepository';
+
+export * from './ports/IKarmaHistoryRepository';
+export * from './ports/IFeatureFlagsRepository';
+export * from './ports/IProEntitlementRepository';
