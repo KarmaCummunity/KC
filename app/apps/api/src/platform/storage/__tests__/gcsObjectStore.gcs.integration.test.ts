@@ -59,7 +59,8 @@ describe('GcsObjectStore (emulator)', () => {
     const response = await fetch(upload.url, { method: upload.method, headers: upload.headers, body: new Uint8Array([5, 6, 7]) });
 
     expect(response.status).toBe(200);
-    expect(await leg.store.head('post-images', 'u1/p1/photo.jpg')).toMatchObject({ size: 3, contentType: 'image/jpeg' });
+    // The checksum is the store's own, of bytes it received from a client and not from this server.
+    expect(await leg.store.head('post-images', 'u1/p1/photo.jpg')).toMatchObject({ size: 3, contentType: 'image/jpeg', md5: '7f3f475c2226024677d239d6580b3a0d' });
   });
 
   it('serves a private object from a signed read address, for the period asked', async () => {

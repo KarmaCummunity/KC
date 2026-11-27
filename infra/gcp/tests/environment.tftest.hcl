@@ -60,6 +60,11 @@ run "smallest_environment" {
   }
 
   assert {
+    condition     = !contains(keys(local.api_env), "KC_STORAGE_COPY_SOURCE_URL")
+    error_message = "Unless it is told where the existing files are, the API copies none."
+  }
+
+  assert {
     condition     = length(google_cloud_scheduler_job.api) == 10 && alltrue([for job in google_cloud_scheduler_job.api : job.paused])
     error_message = "All ten jobs exist and are paused until their work is switched over."
   }
@@ -102,8 +107,15 @@ run "with_files_redis_and_secrets" {
     media_public_url = "https://media.example.test"
     redis_url_secret = true
     max_instances    = 3
-    mounted_secrets  = ["DATABASE_URL", "GEMINI_API_KEY"]
+    mounted_secrets  = ["DATABASE_URL", "GEMINI_API_KEY", "KC_STORAGE_COPY_SOURCE_KEY"]
     allowed_origins  = ["https://app.example.test"]
+
+    storage_copy_source_url = "https://project.supabase.test"
+  }
+
+  assert {
+    condition     = local.api_env.KC_STORAGE_COPY_SOURCE_URL == "https://project.supabase.test" && contains(local.mounted_secret_env, "KC_STORAGE_COPY_SOURCE_KEY")
+    error_message = "For the time the files are moved, the API is told where they are and is started with the key that reads them."
   }
 
   assert {
@@ -112,7 +124,7 @@ run "with_files_redis_and_secrets" {
   }
 
   assert {
-    condition     = !contains(keys(local.api_env), "KC_API_SINGLE_INSTANCE") && local.mounted_secret_env == toset(["DATABASE_URL", "GEMINI_API_KEY", "REDIS_URL"])
+    condition     = !contains(keys(local.api_env), "KC_API_SINGLE_INSTANCE") && local.mounted_secret_env == toset(["DATABASE_URL", "GEMINI_API_KEY", "KC_STORAGE_COPY_SOURCE_KEY", "REDIS_URL"])
     error_message = "With Redis the API is not declared a single instance, and it is started with the Redis address and the declared secrets."
   }
 
@@ -137,6 +149,26 @@ run "refuses_a_mounted_secret_the_api_does_not_have" {
 
   variables {
     mounted_secrets = ["NOT_A_SECRET_OF_THE_API"]
+  }
+
+  expect_failures = [google_cloud_run_v2_service.api]
+}
+
+run "refuses_a_copy_source_without_its_key" {
+  command = plan
+
+  variables {
+    storage_copy_source_url = "https://project.supabase.test"
+  }
+
+  expect_failures = [google_cloud_run_v2_service.api]
+}
+
+run "refuses_a_copy_key_without_its_source" {
+  command = plan
+
+  variables {
+    mounted_secrets = ["KC_STORAGE_COPY_SOURCE_KEY"]
   }
 
   expect_failures = [google_cloud_run_v2_service.api]

@@ -10,7 +10,16 @@ export interface StoredObject {
   readonly contentType: string;
   /** The Cache-Control value served with the object, when one was stored. */
   readonly cacheControl: string | null;
+  /**
+   * MD5 of the bytes, in lower-case hex, as the store itself recorded it;
+   * null when the store has none for the object. It tells a damaged or
+   * different copy from a faithful one and is no protection against forgery.
+   */
+  readonly md5: string | null;
 }
+
+/** What the writer of an object decides about it; the store works out the rest. */
+export type ObjectAttributes = Pick<StoredObject, 'contentType' | 'cacheControl'>;
 
 /** One object of a listing. */
 export interface ObjectEntry {
@@ -64,7 +73,7 @@ export interface ObjectStore {
    */
   read(bucket: string, name: string, options?: { readonly maxBytes?: number }): Promise<Uint8Array | null>;
   /** Stores bytes on the server's own behalf (a copy, a thumbnail). @returns false when the name is taken. */
-  write(bucket: string, name: string, bytes: Uint8Array, object: Omit<StoredObject, 'size'>): Promise<boolean>;
+  write(bucket: string, name: string, bytes: Uint8Array, object: ObjectAttributes): Promise<boolean>;
   /** Removes an object; removing one that is not there is not an error. */
   delete(bucket: string, name: string): Promise<void>;
   /**

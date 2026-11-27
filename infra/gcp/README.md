@@ -83,6 +83,7 @@ One time per environment, by a person who owns the Google Cloud project. Google 
 - **Another secret** (a provider's key, when its feature is switched on): add its value as in step 5 (the secret's name is in `terraform output secret_names`), then add the variable's name to `mounted_secrets` and apply. A service that references a secret without a value cannot start, which is why the two steps are in this order.
 - **Switching a job over**: its schedule is removed from the database's scheduler in a migration and the jobs here are unpaused (`jobs_paused = false`). Both at once would do the work twice.
 - **A file store for the API**: set `media_public_url` once KC's media address exists; until then the API is deployed without one and its storage routes answer `503`.
+- **Copying the existing files** (ADR-012): add the Supabase project's service role key as the value of the `KC_STORAGE_COPY_SOURCE_KEY` secret (as in step 5), then set `storage_copy_source_url` to the project's address and add `"KC_STORAGE_COPY_SOURCE_KEY"` to `mounted_secrets`, and apply. The configuration refuses one without the other. Both are removed again once the files have moved.
 - **A second instance**: needs Redis first. Set `redis_url_secret = true` after the Redis address was added as the value of the `REDIS_URL` secret, and only then raise `max_instances`; the configuration refuses the other order.
 
 ## Checking a change

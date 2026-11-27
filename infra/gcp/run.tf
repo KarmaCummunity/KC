@@ -22,6 +22,7 @@ locals {
       KC_STORAGE_GCS_BUCKET_PREFIX = local.bucket_prefix
       KC_MEDIA_PUBLIC_URL          = var.media_public_url
     },
+    var.storage_copy_source_url == null ? {} : { KC_STORAGE_COPY_SOURCE_URL = var.storage_copy_source_url },
   )
 }
 
@@ -106,6 +107,11 @@ resource "google_cloud_run_v2_service" "api" {
     precondition {
       condition     = length(setsubtract(var.mounted_secrets, local.secret_env)) == 0
       error_message = "mounted_secrets names a variable that is not one of the API's secrets (local.secret_env in secrets.tf)."
+    }
+
+    precondition {
+      condition     = (var.storage_copy_source_url != null) == contains(var.mounted_secrets, "KC_STORAGE_COPY_SOURCE_KEY")
+      error_message = "The copy of the existing files needs both where they are (storage_copy_source_url) and the key that reads them (KC_STORAGE_COPY_SOURCE_KEY in mounted_secrets): the API refuses to start with one of the two."
     }
   }
 

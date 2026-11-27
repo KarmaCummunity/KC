@@ -63,7 +63,8 @@ jobs:
           # code error — so rotate registries before giving up.
           for reg in docker.io public.ecr.aws ghcr.io docker.io; do
             export SUPABASE_INTERNAL_IMAGE_REGISTRY=$reg
-            timeout 300 supabase start -x studio,inbucket,imgproxy,edge-runtime,realtime,storage-api && exit 0
+            # The storage service stays: the copy of KC's existing files (ADR-012) is checked against it.
+            timeout 300 supabase start -x studio,inbucket,imgproxy,edge-runtime,realtime && exit 0
             echo "::warning::supabase start via $reg failed, trying next registry"
             supabase stop --no-backup >/dev/null 2>&1 || true
             sleep 30
@@ -256,6 +257,17 @@ jobs:
             echo "KC_API_TEST_POSTGREST_ANON_KEY=$ANON_KEY"
             echo "KC_API_TEST_POSTGREST_JWT_SECRET=$JWT_SECRET"
             echo "KC_API_TEST_POSTGREST_DATABASE_URL=$DB_URL"
+          } >> "$GITHUB_ENV"
+          # The copy of KC's existing files reads from the stack's own storage service (ADR-012
+          # section 6): files are uploaded to it, and the copy is run on the rows it wrote.
+          stack_url="$(supabase status -o env | sed -n 's/^API_URL="\(.*\)"$/\1/p')"
+          service_key="$(supabase status -o env | sed -n 's/^SERVICE_ROLE_KEY="\(.*\)"$/\1/p')"
+          echo "::add-mask::$service_key"
+          {
+            echo "KC_API_TEST_SUPABASE_URL=$stack_url"
+            echo "KC_API_TEST_SUPABASE_SERVICE_KEY=$service_key"
+            echo "KC_API_TEST_SUPABASE_ANON_KEY=$ANON_KEY"
+            echo "KC_API_TEST_SUPABASE_DATABASE_URL=$DB_URL"
           } >> "$GITHUB_ENV"
 
       # KC_API_TEST_DISPOSABLE_DATABASE also collects the platform suites, which create roles

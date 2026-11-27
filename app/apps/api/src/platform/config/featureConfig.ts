@@ -84,10 +84,20 @@ export interface StorageConfig {
   readonly cloud: CloudStorageConfig | null;
 }
 
+/** The Supabase project KC's existing files are copied from (ADR-012 section 6). */
+export interface StorageCopySourceConfig {
+  /** The project's address. */
+  readonly url: string;
+  /** A key of the project that reads private files too. A secret. */
+  readonly key: string;
+}
+
 /** The feature settings, as `loadApiConfig` adds them to the configuration. */
 export interface FeatureConfig {
   /** Where files are stored (ADR-012). */
   readonly storage: StorageConfig;
+  /** Where the existing files are copied from; null: this server copies none. */
+  readonly storageCopySource: StorageCopySourceConfig | null;
   /** Who each served port is served to; empty: everyone (`portRolloutConfig.ts`). */
   readonly portRollout: PortRolloutRules;
   /** The app's public web address, which a message to a member links to; null: the product's default. */
@@ -198,12 +208,25 @@ function parseCloudStorage(env: Env): CloudStorageConfig | null {
   return { bucketPrefix, mediaUrl };
 }
 
+/** The copy needs both the address of the files and the key that reads them. */
+function parseStorageCopySource(env: Env): StorageCopySourceConfig | null {
+  const rawUrl = readVariable(env, 'KC_STORAGE_COPY_SOURCE_URL');
+  const key = readVariable(env, 'KC_STORAGE_COPY_SOURCE_KEY');
+  if (rawUrl === undefined && key === undefined) return null;
+  if (rawUrl === undefined) throw new ApiConfigError('KC_STORAGE_COPY_SOURCE_URL', 'is required when KC_STORAGE_COPY_SOURCE_KEY is set');
+  if (key === undefined) throw new ApiConfigError('KC_STORAGE_COPY_SOURCE_KEY', 'is required when KC_STORAGE_COPY_SOURCE_URL is set');
+  const url = withoutTrailingSlashes(rawUrl);
+  if (!URL.canParse(url)) throw new ApiConfigError('KC_STORAGE_COPY_SOURCE_URL', 'must be a URL');
+  return { url, key };
+}
+
 /** Reads every feature's settings. @throws ApiConfigError on the first invalid variable. */
 export function loadFeatureConfig(env: Env): FeatureConfig {
   const geminiApiKey = readVariable(env, 'GEMINI_API_KEY') ?? null;
   const geminiModel = readVariable(env, 'GEMINI_MODEL') ?? DEFAULT_GEMINI_MODEL;
   return {
     storage: parseStorage(env),
+    storageCopySource: parseStorageCopySource(env),
     portRollout: parsePortRollout(env),
     appBaseUrl: parseAppBaseUrl(env),
     whatsapp: {

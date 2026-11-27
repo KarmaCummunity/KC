@@ -1,7 +1,8 @@
+import { createHash } from 'node:crypto';
 import { mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve, sep } from 'node:path';
 import { publicObjectUrl } from '@kc/infrastructure-api';
-import { type ObjectEntry, type ObjectPage, type ObjectStore, ObjectTooLargeError, type SignedUpload, type StoredObject, type UploadGrant } from './objectStore';
+import { type ObjectAttributes, type ObjectEntry, type ObjectPage, type ObjectStore, ObjectTooLargeError, type SignedUpload, type StoredObject, type UploadGrant } from './objectStore';
 import { isSafeObjectName } from './storageAuthorizer';
 import { signGrant } from './storageGrants';
 
@@ -63,7 +64,9 @@ export class LocalObjectStore implements ObjectStore {
   async head(bucket: string, name: string): Promise<StoredObject | null> {
     const path = this.pathOf(bucket, name) + META_SUFFIX;
     try {
-      return JSON.parse(await readFile(path, 'utf8')) as StoredObject;
+      const record = JSON.parse(await readFile(path, 'utf8')) as Omit<StoredObject, 'md5'> & { md5?: string };
+      // A record written before the store kept checksums has none.
+      return { ...record, md5: record.md5 ?? null };
     } catch {
       return null;
     }
@@ -82,7 +85,7 @@ export class LocalObjectStore implements ObjectStore {
     return readFile(path).catch(() => null);
   }
 
-  async write(bucket: string, name: string, bytes: Uint8Array, object: Omit<StoredObject, 'size'>): Promise<boolean> {
+  async write(bucket: string, name: string, bytes: Uint8Array, object: ObjectAttributes): Promise<boolean> {
     const path = this.pathOf(bucket, name);
     await mkdir(dirname(path), { recursive: true });
     try {
@@ -92,7 +95,7 @@ export class LocalObjectStore implements ObjectStore {
       if ((error as NodeJS.ErrnoException).code === 'EEXIST') return false;
       throw error;
     }
-    const stored: StoredObject = { size: bytes.byteLength, contentType: object.contentType, cacheControl: object.cacheControl };
+    const stored: StoredObject = { size: bytes.byteLength, contentType: object.contentType, cacheControl: object.cacheControl, md5: createHash('md5').update(bytes).digest('hex') };
     await writeFile(path + META_SUFFIX, JSON.stringify(stored));
     return true;
   }

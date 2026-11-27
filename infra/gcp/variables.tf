@@ -45,6 +45,12 @@ variable "media_public_url" {
   default     = null
 }
 
+variable "storage_copy_source_url" {
+  description = "The Supabase project KC's existing files are copied from (KC_STORAGE_COPY_SOURCE_URL), for the time the files are being moved (ADR-012). Needs KC_STORAGE_COPY_SOURCE_KEY in mounted_secrets. Null: the API copies none."
+  type        = string
+  default     = null
+}
+
 variable "bucket_prefix" {
   description = "What precedes a KC bucket's name in its cloud bucket's name (KC_STORAGE_GCS_BUCKET_PREFIX). Null: the project's id and a dash."
   type        = string

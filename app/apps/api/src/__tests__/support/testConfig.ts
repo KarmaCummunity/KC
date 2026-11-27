@@ -27,6 +27,7 @@ export function testConfig(overrides: Partial<ApiConfig> = {}): ApiConfig {
     jobsScheduler: null,
     expoAccessToken: null,
     storage: { localDirectory: null, publicUrl: null, cloud: null },
+    storageCopySource: null,
     portRollout: {},
     appBaseUrl: null,
     whatsapp: { cloudApiToken: null, phoneNumberId: null, graphApiVersion: null, verifyToken: null, appSecret: null },
