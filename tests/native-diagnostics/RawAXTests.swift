@@ -6,7 +6,9 @@ final class RawAXTests: XCTestCase {
     let app = XCUIApplication(bundleIdentifier: "org.karmacommunity.app")
     // The caller must already install and launch the exact candidate. Do not relaunch,
     // activate, clear data, change accessibility settings, or add fallback taps here.
-    XCTAssertEqual(app.state, .runningForeground)
+    guard app.state == XCUIApplication.State.runningForeground else {
+      throw NSError(domain: "KCAXDiagnosticAppNotForeground", code: 1)
+    }
     let tree = XCTAttachment(string: String(app.debugDescription.prefix(131072)))
     tree.name = "private-xctest-raw-accessibility-tree"
     tree.lifetime = .keepAlways
