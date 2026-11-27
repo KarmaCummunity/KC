@@ -10,6 +10,17 @@ name: Bump app version on merge
 # 2. Bumps `app/VERSION` PATCH, so PRs no longer edit the file themselves
 #    (TD-196): two open PRs that both bump it always conflict.
 #
+# The bump waits for an empty merge queue ({{ENG:bump-waits-for-empty-queue}}).
+# Any push to `dev` makes GitHub rebuild every merge group still waiting, and
+# each rebuilt group runs CI again from the start, the one-at-a-time Maestro
+# lane included (on 26-27 Nov 2026 a group that had already passed was rebuilt
+# up to five times, and a merge took hours). So a merge that leaves groups
+# waiting behind it pushes no bump; the merge that empties the queue pushes
+# one bump for the whole burst. If the queue empties without a merge (its last
+# entry was dropped), run this workflow by hand on `dev` to bump. The ID
+# commit of step 1 is not deferred: `dev` must not keep an unnumbered
+# migration, and it lands only for a merge that added a placeholder.
+#
 # A PR that edits `app/VERSION` itself (a MINOR/MAJOR release) gets no bump, but
 # its placeholders are still assigned.
 #
@@ -35,6 +46,9 @@ name: Bump app version on merge
 on:
   push:
     branches: [dev]
+  # Catch-up bump when the queue emptied without a merge. Only a run on `dev`
+  # can read the App key (the `version-bump` environment is dev-only).
+  workflow_dispatch:
 
 # One run at a time; each run re-reads the tip of `dev`. GitHub keeps only one
 # pending run per group, so a newer pending run replaces an older one. The run
@@ -102,6 +116,19 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
+          # True while a merge group other than the one that just landed is waiting in the
+          # dev merge queue. A group ref's commit that is already on dev (the tip, or its
+          # parent under an ID commit) is the landed merge, whose ref GitHub has not removed
+          # yet; an unknown commit is a waiting group. A failed lookup reads as an empty
+          # queue, so the bump still happens (the behavior before the deferral).
+          queue_has_waiting_groups() {
+            local sha ref
+            while read -r sha ref; do
+              git merge-base --is-ancestor "$sha" HEAD 2>/dev/null || return 0
+            done < <(git ls-remote origin 'refs/heads/gh-readonly-queue/dev/*')
+            return 1
+          }
+
           # `dev` may move between checkout and push, so retry on a fresh tip.
           # Each attempt re-reads the registries, so numbers stay unique even
           # when several merges land close together.
@@ -140,6 +167,11 @@ jobs:
 
             # 2. Version bump: app/VERSION only, `[skip ci]` (see the header).
             if [ "$attempt_bump_version" != true ]; then
+              exit 0
+            fi
+            # Pushing now would rebuild every waiting merge group (see the header).
+            if queue_has_waiting_groups; then
+              echo "::notice::Merge groups are waiting behind this merge; the merge that empties the queue bumps the version."
               exit 0
             fi
             node scripts/bump-app-version.mjs
