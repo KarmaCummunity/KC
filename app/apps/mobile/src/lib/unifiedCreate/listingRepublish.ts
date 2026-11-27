@@ -95,6 +95,27 @@ export interface ListingRepublishSeed {
   readonly media: MediaAssetInput[];
 }
 
+/** An edited listing's photos in gallery order; unlike a republish none is dropped, so a save never loses a file it did not touch. */
+export function editGallery(media: MarketplaceListingDetail['media']): MediaAssetInput[] {
+  return [...media]
+    .sort((a, b) => a.sortOrder - b.sortOrder)
+    .map((m) => ({ path: m.storagePath, mimeType: m.mimeType, sizeBytes: m.sizeBytes }));
+}
+
+/**
+ * The gallery to save after an edit (carried photos, then the newly uploaded ones), or undefined
+ * when the owner left it as loaded, so a plain text edit never rewrites the photos.
+ */
+export function editedGallery(
+  loaded: readonly MediaAssetInput[],
+  carried: readonly MediaAssetInput[],
+  uploaded: readonly MediaAssetInput[],
+): MediaAssetInput[] | undefined {
+  const next = [...carried, ...uploaded];
+  const same = next.length === loaded.length && next.every((m, i) => m.path === loaded[i]?.path);
+  return same ? undefined : next;
+}
+
 /** The republish seed of `source` (see ListingRepublishSeed). */
 export function listingRepublishSeed(
   source: Pick<MarketplaceListingDetail, 'kindSlug' | 'details' | 'media' | 'worldSubcategoryId'>,

@@ -60,6 +60,8 @@ export interface ListingProblemInput {
   readonly addressProblem: string | null;
   readonly editListingId: string | null;
   readonly photoCount: number;
+  /** An edit of a listing that had photos: removing them all is refused for an offer (D132). */
+  readonly hadPhotos?: boolean;
   readonly subcategoryId: string | null | undefined;
   readonly recurrence: RideRecurrenceDraft | null;
   /** The recurrence of a new event; null for a single event, an edit or another kind. */
@@ -83,8 +85,10 @@ export function firstListingProblem(i: ListingProblemInput): ListingFormProblem 
   if (jobOrgProblem) return { message: t(jobOrgProblem), field: 'org' };
   if (!i.isRides && !i.city) return { message: t('post.unifiedCreate.errors.cityRequired'), field: 'city' };
   if (i.addressProblem) return { message: i.addressProblem, field: 'city' };
-  // An edit keeps the listing's photos and sub-category, so it passes neither and skips those rules.
-  const creating = i.editListingId ? {} : { photoCount: i.photoCount, subcategoryId: i.subcategoryId };
+  // An edit keeps the listing's sub-category; its photos count only when it had some to remove.
+  const creating = i.editListingId
+    ? i.hadPhotos ? { photoCount: i.photoCount } : {}
+    : { photoCount: i.photoCount, subcategoryId: i.subcategoryId };
   const rule = marketplaceRuleFieldError({ worldSlug: i.worldSlug, direction: i.direction, details: i.submitted, ...creating });
   if (rule) return { message: t(rule.key), field: fieldForRule(rule.code, i.submitted) };
   if (i.isRides && i.recurrence?.weekdays.length === 0) {

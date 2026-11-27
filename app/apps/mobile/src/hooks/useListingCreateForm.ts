@@ -41,7 +41,7 @@ import { useJobOfferOrgChoice } from './useJobOfferOrgChoice';
 import { saveMaskOrWithdraw } from '../lib/unifiedCreate/saveMaskOrWithdraw';
 import { attachPendingImport } from '../lib/attachPendingImport';
 import { lessonEditDetails, lessonEditFields } from '../lib/unifiedCreate/lessonEditFields';
-
+import { editedGallery } from '../lib/unifiedCreate/listingRepublish';
 export { rideAutoTitle };
 
 /** Matching radius sent with every listing; the world rules refine reach server-side. */
@@ -112,7 +112,6 @@ export function useListingCreateForm({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<ListingFormProblem | null>(null);
   const publishLock = useRef(false);
-
   // Edit / republish source: hydration and the per-kind defaults reset (useListingFormSource).
   const source = useListingFormSource({
     editListingId,
@@ -160,10 +159,9 @@ export function useListingCreateForm({
     firstListingProblem({
       t, submitted, worldSlug, direction, kind, specs, details, city, effectiveTitle, isRides, eventChoice,
       jobOfferOrg,
-      addressProblem: address.problem(), editListingId, photoCount,
+      addressProblem: address.problem(), editListingId, photoCount, hadPhotos: source.loadedMedia.length > 0,
       subcategoryId: showSubcategory ? subcategoryId : undefined, recurrence, eventSeries, houseNumbers,
     });
-
   const publish = async () => {
     if (!userId || !kind || busy || publishLock.current) return;
     if (source.loading) return;
@@ -182,7 +180,10 @@ export function useListingCreateForm({
     setBusy(true);
     try {
       if (editListingId) {
+        const added = photos.length > 0 ? await uploadListingImages(userId, photos) : [];
+        const media = editedGallery(source.loadedMedia, source.carriedMedia, added); // undefined: photos untouched
         await marketplaceRepository().updateMyListing(editListingId, {
+          ...(media ? { media } : {}),
           title: effectiveTitle,
           summary: summary.trim() || null,
           details: editingLesson ? lessonEditDetails(submitted) : submitted,

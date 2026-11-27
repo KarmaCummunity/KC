@@ -3,6 +3,8 @@
 import { describe, expect, it } from 'vitest';
 import type { PostStatus } from '@kc/domain';
 import {
+  editGallery,
+  editedGallery,
   TIME_BOUND_DETAIL_KEYS,
   canRepublishListingPost,
   listingRepublishSeed,
@@ -117,5 +119,21 @@ describe('listingRepublishSeed', () => {
     expect(seed.isOrgEvent).toBe(true);
     expect(seed.orgId).toBe('o1');
     expect(seed.details).toEqual({ registration_policy: 'automatic' });
+  });
+});
+
+describe('editGallery / editedGallery (FR-POST-007 AC1)', () => {
+  const m = (path: string) => ({ path, mimeType: 'image/jpeg', sizeBytes: 1 });
+  it('keeps every photo of an edit in gallery order, even one without a recorded size', () => {
+    const media = [
+      { storagePath: 'b', sortOrder: 1, mimeType: 'image/jpeg', sizeBytes: 0 },
+      { storagePath: 'a', sortOrder: 0, mimeType: 'image/jpeg', sizeBytes: 5 },
+    ] as never;
+    expect(editGallery(media).map((x) => x.path)).toEqual(['a', 'b']);
+  });
+  it('returns nothing to save while the gallery is as loaded, else the new gallery', () => {
+    expect(editedGallery([m('a'), m('b')], [m('a'), m('b')], [])).toBeUndefined();
+    expect(editedGallery([m('a'), m('b')], [m('a')], [m('c')])).toEqual([m('a'), m('c')]);
+    expect(editedGallery([m('a')], [], [])).toEqual([]);
   });
 });

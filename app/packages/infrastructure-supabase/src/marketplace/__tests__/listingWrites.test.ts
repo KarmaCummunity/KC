@@ -170,6 +170,27 @@ describe('listing owner actions', () => {
     expect(callsTo(calls, 'posts').find((c) => c.kind === 'update')?.payload).toEqual({ visibility: 'OnlyMe' });
   });
 
+  it('replaces the gallery in one call, and leaves it alone when the patch has no media (FR-POST-007 AC1)', async () => {
+    const shape = ok({ post_type: 'standard', world_slug: 'items', direction: 'offer', details: {} });
+    const { client, calls } = createFakeClient({ rpc: { replace_post_media: ok(null) }, tables: { posts: shape } });
+    await owner.updateMyListing(client, 'p1', { media: [photo('u1/b.jpg', 'image/jpeg', 10)] });
+    expect(callsTo(calls, 'replace_post_media')[0]?.args).toEqual({
+      p_post_id: 'p1',
+      p_media: [{ storage_key: 'u1/b.jpg', mime_type: 'image/jpeg', size_bytes: 10 }],
+    });
+    const plain = createFakeClient({ rpc: { replace_post_media: ok(null) }, tables: { posts: shape } });
+    await owner.updateMyListing(plain.client, 'p1', {});
+    expect(callsTo(plain.calls, 'replace_post_media')).toHaveLength(0);
+  });
+
+  it('refuses to remove the last photo of a live offer with the photo-required reason', async () => {
+    const { client } = createFakeClient({
+      rpc: { replace_post_media: fail('P0001', 'offer_photo_required') },
+      tables: { posts: ok({ post_type: 'standard', world_slug: 'items', direction: 'offer', details: {} }) },
+    });
+    await expect(owner.updateMyListing(client, 'p1', { media: [] })).rejects.toMatchObject({ reason: 'offer_photo_required' });
+  });
+
   it('refuses an edit the row policy let no row through', async () => {
     const { client } = createFakeClient({
       tables: { posts: (c: FakeCall) => (c.kind === 'update' ? ok([]) : ok({ post_type: 'standard', world_slug: 'items', direction: 'offer', details: {} })) },

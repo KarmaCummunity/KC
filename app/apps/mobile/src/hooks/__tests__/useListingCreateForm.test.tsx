@@ -158,13 +158,33 @@ describe('republish an expired listing (D127)', () => {
     repo.getListingDetail.mockResolvedValue(open);
     const { result } = renderHook(() => useListingCreateForm({ worldSlug: 'food', direction: 'give', title: 'Soup', summary: '', onPublished: vi.fn(), editListingId: 'old-1', onSaved }), { wrapper });
     await waitFor(() => expect(result.current.details).toEqual(open.details));
-    expect(result.current.carriedMedia).toEqual([]);
+    // An edit shows the listing's own photos (FR-POST-007 AC1).
+    expect(result.current.carriedMedia).toHaveLength(2);
     await act(() => result.current.publish());
     expect(repo.createListing).not.toHaveBeenCalled();
     expect(repo.updateMyListing).toHaveBeenCalledWith('old-1', expect.objectContaining({ details: open.details }));
     expect(onSaved).toHaveBeenCalled();
     // An edit is not a new post: no import is ever attached to it.
     expect(attach).not.toHaveBeenCalled();
+  });
+
+  it('an edit shows the listing photos, saves a changed gallery and refuses removing the last one (FR-POST-007 AC1, D132)', async () => {
+    repo.getListingDetail.mockResolvedValue({ ...source, details: { food_type: 'cooked', expires_at: '2099-01-01T10:00:00Z' } });
+    const { result } = renderHook(() => useListingCreateForm({ worldSlug: 'food', direction: 'give', title: 'Soup', summary: '', onPublished: vi.fn(), editListingId: 'old-1', onSaved: vi.fn() }), { wrapper });
+    await waitFor(() => expect(result.current.carriedMedia.map((m) => m.path)).toEqual(['u1/b/0.jpg', 'u1/b/1.jpg']));
+    // Untouched photos are not rewritten.
+    await act(() => result.current.publish());
+    expect(repo.updateMyListing.mock.calls[0]?.[1]).not.toHaveProperty('media');
+    // Remove one, add one: the saved gallery is the kept photo, then the new one.
+    upload.mockResolvedValue([{ path: 'u1/new.jpg', mimeType: 'image/jpeg', sizeBytes: 5 }]);
+    act(() => { result.current.removeCarriedMedia('u1/b/1.jpg'); result.current.setPhotos([{ uri: 'file://new.jpg' } as never]); });
+    await act(() => result.current.publish());
+    expect(repo.updateMyListing.mock.calls[1]?.[1].media.map((m: { path: string }) => m.path)).toEqual(['u1/b/0.jpg', 'u1/new.jpg']);
+    // Removing every photo of an offer is refused before anything is sent.
+    act(() => { result.current.removeCarriedMedia('u1/b/0.jpg'); result.current.setPhotos([]); });
+    await act(() => result.current.publish());
+    expect(result.current.error).toEqual({ message: 'marketplace.errors.offer_photo_required', field: 'photos' });
+    expect(repo.updateMyListing).toHaveBeenCalledTimes(2);
   });
 
   it('an edit saves the audience the owner picked (FR-POST-009: either way, at any time)', async () => {

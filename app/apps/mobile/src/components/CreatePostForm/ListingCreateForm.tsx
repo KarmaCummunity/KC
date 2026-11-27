@@ -112,7 +112,7 @@ export function ListingCreateForm({
     return () => onPublishActionChange(null, false);
   }, [form.busy, onPublishActionChange]);
 
-  // An offer in a photo world needs one photo (D132); an edit keeps its photos.
+  // An offer in a photo world needs one photo (D132), also when an edit removes the others.
   const photoPicker = (
     <ListingFieldFrame field="photos" testID="listing-photos-field">
       <ListingFormPhotoPicker
@@ -120,7 +120,7 @@ export function ListingCreateForm({
         setPhotos={form.setPhotos}
         carriedMediaPaths={form.carriedMedia.map((m) => m.path)}
         onRemoveCarried={form.removeCarriedMedia}
-        required={!editListingId && offerRequiresPhoto(worldSlug, direction)}
+        required={offerRequiresPhoto(worldSlug, direction)}
       />
     </ListingFieldFrame>
   );
