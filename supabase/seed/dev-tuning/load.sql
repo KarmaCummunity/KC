@@ -30,12 +30,21 @@ update kc_private.retention_rules r
 
 -- Slower system-message consumer (#2488): production runs it every 10 seconds. Its
 -- alert_after (5 minutes) still covers three periods, so jobs_late keeps its meaning.
--- The update reconciles pg_cron through the scheduled_jobs_sync trigger; the guard on the
--- current value keeps a re-run from rescheduling an unchanged job.
-update kc_private.scheduled_jobs j
-   set schedule = '30 seconds'
- where j.name = 'chat_system_messages'
-   and j.schedule is distinct from '30 seconds';
+-- The update reconciles pg_cron through the statement-level scheduled_jobs_sync trigger.
+-- That trigger fires even when UPDATE matches zero rows, so a WHERE-only guard still
+-- re-syncs the whole registry on every seed re-run. Skip the statement itself unless
+-- the current value differs.
+do $$
+begin
+  if exists (select 1 from kc_private.scheduled_jobs j
+              where j.name = 'chat_system_messages'
+                and j.schedule is distinct from '30 seconds') then
+    update kc_private.scheduled_jobs j
+       set schedule = '30 seconds'
+     where j.name = 'chat_system_messages'
+       and j.schedule is distinct from '30 seconds';
+  end if;
+end $$;
 
 -- Smaller matching scan (#2494): one run looks at the newest 200 opposite posts of a world
 -- instead of production's 500, so a run's worst case stays well inside its time budget
