@@ -10,6 +10,7 @@ describe('GetWorldContentUseCase', () => {
         asked.push(worldSlug);
         return emptyWorldContent(worldSlug);
       },
+      listKnowledgeShelfLinks: async () => [],
     });
     await expect(useCase.execute('medical')).resolves.toEqual(emptyWorldContent('medical'));
     expect(asked).toEqual(['medical']);

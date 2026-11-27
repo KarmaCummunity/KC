@@ -1,13 +1,15 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { WorldContent } from '@kc/domain';
+import type { KnowledgeShelfLink, WorldContent } from '@kc/domain';
 import type { IWorldContentRepository } from '@kc/application';
 import type { Database } from '../database.types';
 import { unwrapCall } from '../rpc/mapRpcError';
 import {
   EXTERNAL_BODY_COLUMNS,
+  KNOWLEDGE_SHELF_LINK_COLUMNS,
   WORLD_LINK_COLUMNS,
   WORLD_TOPIC_COLUMNS,
   mapExternalBody,
+  mapKnowledgeShelfLink,
   mapWorldLink,
   mapWorldTopic,
 } from './mapWorldContent';
@@ -15,9 +17,8 @@ import {
 type Client = SupabaseClient<Database>;
 
 /**
- * Links and knowledge of a giving world (migration 0024). Three plain reads in parallel: row
- * level security already hides what is not live, so the filters below only narrow to the world
- * and keep a platform admin's view of the member screens identical to a member's.
+ * Links and knowledge of a giving world (migration 0024) plus knowledge shelf official
+ * links (FR-KNOW-012 AC2). Plain reads: RLS already hides what is not live.
  */
 export class SupabaseWorldContentRepository implements IWorldContentRepository {
   constructor(private readonly client: Client) {}
@@ -52,5 +53,16 @@ export class SupabaseWorldContentRepository implements IWorldContentRepository {
       externalBodies: (unwrapCall('table:external_bodies', bodies) ?? []).map(mapExternalBody),
       topics: (unwrapCall('table:knowledge_topics', topics) ?? []).map(mapWorldTopic),
     };
+  }
+
+  async listKnowledgeShelfLinks(shelfSlug: string): Promise<readonly KnowledgeShelfLink[]> {
+    const rows = await this.client
+      .from('knowledge_shelf_links')
+      .select(KNOWLEDGE_SHELF_LINK_COLUMNS)
+      .eq('shelf_slug', shelfSlug)
+      .eq('is_active', true)
+      .order('sort_order')
+      .order('link_slug');
+    return (unwrapCall('table:knowledge_shelf_links', rows) ?? []).map(mapKnowledgeShelfLink);
   }
 }

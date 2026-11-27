@@ -21,7 +21,10 @@ export const marketplaceErrors = {
   knowledge_series_schedule_invalid: 'בדקו את המועד השבועי: ימים, שעה, משך של 15 דקות עד 8 שעות ותאריך סיום שלא עבר.',
   knowledge_series_no_occurrence: 'אין אף יום שיעור בין היום לתאריך הסיום. בחרו ימים אחרים או תאריך סיום מאוחר יותר.',
   knowledge_series_not_found: 'המועד השבועי של השיעור הזה לא נמצא.',
-  consulting_requires_id_verification: 'שעת ייעוץ מקצועית דורשת אימות זהות. אמתו את הזהות בפרופיל ונסו שוב.',
+  consulting_requires_complete_profile:
+    'שעת ייעוץ מקצועית דורשת פרופיל מלא. השלימו את הפרופיל ונסו שוב.',
+  consulting_requires_id_verification:
+    'שעת ייעוץ מקצועית דורשת פרופיל מלא. השלימו את הפרופיל ונסו שוב.',
   slot_not_found: 'המועד הזה כבר לא זמין.',
   booking_expired: 'ההזמנה פגה כי לא אושרה בזמן.',
   account_not_active: 'החשבון לא פעיל כרגע, ולכן אי אפשר להזמין.',

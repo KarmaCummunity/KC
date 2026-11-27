@@ -91,6 +91,9 @@ select plan(26);
 insert into auth.users (id, email, raw_app_meta_data)
 select ('00000000-0000-4000-8000-00000000000' || x)::uuid, x || '@example.test', '{"provider":"google"}'
   from unnest(array['a', 'b']) x;
+-- D184 / #2038: consulting hours need a complete profile (level ≥ 1), not ID verification.
+update public.users set verification_level = 1
+  where id = '00000000-0000-4000-8000-00000000000a';
 insert into public.cities (city_id, name_he, name_en, location) values
   ('c1', 'c1', 'City One', 'SRID=4326;POINT(34.78 32.08)');
 insert into public.worlds (slug, label_he, label_en) values ('knowledge', 'knowledge', 'knowledge');

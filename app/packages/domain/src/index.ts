@@ -90,4 +90,5 @@ export * from './hebrewText';
 export * from './knowledge/knowledgeTopics';
 export * from './knowledge/knowledgeSlots';
 export * from './knowledge/knowledgeSlotSeries';
+export * from './knowledge/knowledgeShelfLinks';
 export * from './whatsapp/WhatsAppLink';

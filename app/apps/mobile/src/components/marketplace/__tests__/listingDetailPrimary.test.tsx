@@ -71,6 +71,10 @@ vi.mock('../ReportListingModal', () => ({ ReportListingModal: () => null }));
 vi.mock('../RideRouteCard', () => ({ RideRouteCard: () => null }));
 // The housing stay section has its own tests (housing/__tests__); not the subject here.
 vi.mock('../housing/HousingStayActions', () => ({ HousingStayActions: () => null }));
+// Knowledge trust blocks (#2038) pull world-content / Expo; not the subject of the primary CTA count.
+vi.mock('../knowledge/ConsultingHourDetailsCard', () => ({ ConsultingHourDetailsCard: () => null }));
+vi.mock('../knowledge/KnowledgeShelfLinksSection', () => ({ KnowledgeShelfLinksSection: () => null }));
+vi.mock('../../../hooks/useKnowledgeShelfSlug', () => ({ useKnowledgeShelfSlug: () => null }));
 vi.mock('../../closure/OwnerAssignUserButton', () => ({ OwnerAssignUserButton: () => null }));
 // The publisher card and the city lookup pull in Expo modules; neither holds a button.
 vi.mock('../../post-detail/PublisherCard', () => ({ PublisherCard: () => null }));

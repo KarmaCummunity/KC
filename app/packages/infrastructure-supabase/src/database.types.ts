@@ -1207,6 +1207,45 @@ export type Database = {
         }
         Relationships: []
       }
+      knowledge_shelf_links: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          label_en: string
+          label_he: string
+          link_slug: string
+          shelf_slug: string
+          sort_order: number
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          label_en: string
+          label_he: string
+          link_slug: string
+          shelf_slug: string
+          sort_order?: number
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          label_en?: string
+          label_he?: string
+          link_slug?: string
+          shelf_slug?: string
+          sort_order?: number
+          updated_at?: string
+          url?: string
+        }
+        Relationships: []
+      }
       knowledge_slot_series: {
         Row: {
           capacity: number

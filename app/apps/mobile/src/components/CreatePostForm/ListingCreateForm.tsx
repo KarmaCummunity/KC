@@ -24,6 +24,7 @@ import { ListingFieldFrame, ListingFieldProblemContext } from './ListingFieldFra
 import { ListingFormPhotoPicker } from './ListingFormPhotoPicker';
 import { ListingKindChooser } from './ListingKindChooser';
 import { KindGate } from './ListingKindGate';
+import { ConsultingFields } from './ConsultingFields';
 import { JobOfferOrgSection } from './JobOfferOrgSection';
 import { TimeOfferKindChooser } from './TimeOfferKindChooser';
 import { OrgEventMembershipHint } from './OrgEventMembershipHint';
@@ -157,6 +158,11 @@ export function ListingCreateForm({
             />
           )}
 
+          {/* FR-KNOW-012 AC1 / D184: consulting hour needs a complete profile before the form. */}
+          <ConsultingFields
+            gated={form.kind?.slug === 'consulting_hour'}
+            onPublishActionChange={onPublishActionChange}
+          >
           {/* A member of an organization picks a volunteer shift or the organization's event (G1 step 5);
               anyone else is told how to become one (FR-ORG-002). */}
           {form.eventChoice.personalAvailable ? <TimeOfferKindChooser choice={form.eventChoice} disabled={form.busy} /> : null}
@@ -282,6 +288,7 @@ export function ListingCreateForm({
               <Text style={styles.publishBtnText}>{t('post.publish')}</Text>
             )}
           </TouchableOpacity>
+          </ConsultingFields>
         </KindGate>
       </ListingFieldProblemContext.Provider>
     </FormScrollView>
