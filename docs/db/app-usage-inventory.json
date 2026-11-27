@@ -32,7 +32,7 @@
   {
    "kind": "rpc",
    "file": "app/apps/mobile/app/pro.tsx",
-   "line": 38,
+   "line": 39,
    "area": "mobile",
    "symbol": "ProPaywallScreen",
    "via": "literal",
@@ -89,7 +89,7 @@
   {
    "kind": "bucket",
    "file": "app/apps/mobile/src/services/avatarUpload.ts",
-   "line": 164,
+   "line": 129,
    "area": "mobile",
    "symbol": "resizeAndUploadAvatar",
    "via": "const",
@@ -98,7 +98,7 @@
   {
    "kind": "bucket",
    "file": "app/apps/mobile/src/services/avatarUpload.ts",
-   "line": 177,
+   "line": 142,
    "area": "mobile",
    "symbol": "removeUploadedAvatar",
    "via": "const",

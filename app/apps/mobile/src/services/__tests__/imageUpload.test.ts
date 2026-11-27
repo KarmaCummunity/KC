@@ -1,17 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-const { picker, encoder, uploader, confirm, linking } = vi.hoisted(() => ({
-  picker: { requestMediaLibraryPermissionsAsync: vi.fn(), launchImageLibraryAsync: vi.fn() },
+const { picker, encoder, uploader } = vi.hoisted(() => ({
+  picker: {
+    getMediaLibraryPermissionsAsync: vi.fn(),
+    requestMediaLibraryPermissionsAsync: vi.fn(),
+    launchImageLibraryAsync: vi.fn(),
+  },
   encoder: { encodeJpeg: vi.fn() },
   uploader: { uploadStorageObject: vi.fn() },
-  confirm: vi.fn(),
-  linking: { openSettings: vi.fn() },
 }));
 
-vi.mock('react-native', () => ({ Linking: linking, Platform: { OS: 'ios' } }));
 vi.mock('expo-image-manipulator', () => ({ SaveFormat: { JPEG: 'jpeg' } }));
-vi.mock('../../i18n', () => ({ default: { t: (key: string) => key } }));
-vi.mock('../platformConfirm', () => ({ confirmAction: confirm }));
 vi.mock('expo-image-picker', () => picker);
 vi.mock('expo-crypto', () => ({ randomUUID: () => 'batch-1' }));
 vi.mock('../imageEncoding', async (importOriginal) => ({
@@ -42,39 +41,42 @@ const picked = { uri: 'file://p.jpg', width: 4000, height: 3000, fileSize: null 
 beforeEach(() => vi.clearAllMocks());
 
 describe('pickPostImages', () => {
-  it('returns [] without asking when the media limit is reached', async () => {
-    await expect(pickPostImages(5)).resolves.toEqual([]);
+  it('returns an empty ok result without asking when the media limit is reached', async () => {
+    await expect(pickPostImages(5)).resolves.toEqual({ status: 'ok', value: [] });
+    expect(picker.getMediaLibraryPermissionsAsync).not.toHaveBeenCalled();
     expect(picker.requestMediaLibraryPermissionsAsync).not.toHaveBeenCalled();
   });
 
-  it('returns [] silently when permission can still be asked again', async () => {
+  it('returns denied silently when the user dismisses a still-askable prompt', async () => {
+    picker.getMediaLibraryPermissionsAsync.mockResolvedValue({ granted: false, canAskAgain: true });
     picker.requestMediaLibraryPermissionsAsync.mockResolvedValue({ granted: false, canAskAgain: true });
-    await expect(pickPostImages(0)).resolves.toEqual([]);
-    expect(confirm).not.toHaveBeenCalled();
+    await expect(pickPostImages(0)).resolves.toEqual({ status: 'denied' });
+    expect(picker.launchImageLibraryAsync).not.toHaveBeenCalled();
   });
 
-  it('offers the settings page when permission is permanently denied', async () => {
-    picker.requestMediaLibraryPermissionsAsync.mockResolvedValue({ granted: false, canAskAgain: false });
-    confirm.mockResolvedValueOnce(true);
-    await expect(pickPostImages(0)).resolves.toEqual([]);
-    expect(linking.openSettings).toHaveBeenCalledTimes(1);
-    confirm.mockResolvedValueOnce(false);
-    await pickPostImages(0);
-    expect(linking.openSettings).toHaveBeenCalledTimes(1);
+  it('returns blocked without requesting or opening Settings when the OS will not ask again', async () => {
+    picker.getMediaLibraryPermissionsAsync.mockResolvedValue({ granted: false, canAskAgain: false });
+    await expect(pickPostImages(0)).resolves.toEqual({ status: 'blocked', kind: 'mediaLibrary' });
+    expect(picker.requestMediaLibraryPermissionsAsync).not.toHaveBeenCalled();
+    expect(picker.launchImageLibraryAsync).not.toHaveBeenCalled();
   });
 
   it('limits the selection to the remaining slots and maps the assets', async () => {
-    picker.requestMediaLibraryPermissionsAsync.mockResolvedValue({ granted: true });
+    picker.getMediaLibraryPermissionsAsync.mockResolvedValue({ granted: true, canAskAgain: true });
     picker.launchImageLibraryAsync.mockResolvedValueOnce({ canceled: true, assets: [] });
-    await expect(pickPostImages(2)).resolves.toEqual([]);
+    await expect(pickPostImages(2)).resolves.toEqual({ status: 'cancelled' });
     picker.launchImageLibraryAsync.mockResolvedValueOnce({
       canceled: false,
       assets: [{ uri: 'a', width: 1, height: 2 }, { uri: 'b', width: 3, height: 4, fileSize: 9 }],
     });
-    await expect(pickPostImages(2)).resolves.toEqual([
-      { uri: 'a', width: 1, height: 2, fileSize: null },
-      { uri: 'b', width: 3, height: 4, fileSize: 9 },
-    ]);
+    await expect(pickPostImages(2)).resolves.toEqual({
+      status: 'ok',
+      value: [
+        { uri: 'a', width: 1, height: 2, fileSize: null },
+        { uri: 'b', width: 3, height: 4, fileSize: 9 },
+      ],
+    });
+    expect(picker.requestMediaLibraryPermissionsAsync).not.toHaveBeenCalled();
     expect(picker.launchImageLibraryAsync).toHaveBeenLastCalledWith(expect.objectContaining({ selectionLimit: 3 }));
   });
 });

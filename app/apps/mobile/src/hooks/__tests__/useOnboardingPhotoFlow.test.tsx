@@ -19,7 +19,7 @@ beforeEach(() => { vi.clearAllMocks(); state.session = { userId: 'u1', avatarUrl
 
 describe('useOnboardingPhotoFlow', () => {
   it('does not delete an uploaded avatar after an ambiguous profile save failure', async () => {
-    pickAvatarImage.mockResolvedValueOnce({ uri: 'local' });
+    pickAvatarImage.mockResolvedValueOnce({ status: 'ok', value: { uri: 'local' } });
     resizeAndUploadAvatar.mockResolvedValueOnce('remote-new');
     setAvatar.mockRejectedValueOnce(new Error('response lost after commit'));
     const { result } = renderHook(() => useOnboardingPhotoFlow());
@@ -30,7 +30,7 @@ describe('useOnboardingPhotoFlow', () => {
   });
 
   it('picks and stores an avatar; a cancelled picker leaves it unset', async () => {
-    pickAvatarImage.mockResolvedValueOnce({ uri: 'local' }).mockResolvedValueOnce(null);
+    pickAvatarImage.mockResolvedValueOnce({ status: 'ok', value: { uri: 'local' } }).mockResolvedValueOnce({ status: 'cancelled' });
     resizeAndUploadAvatar.mockResolvedValue('remote'); setAvatar.mockResolvedValue(undefined);
     const { result } = renderHook(() => useOnboardingPhotoFlow());
     await act(async () => { await result.current.pick('gallery'); });
@@ -43,7 +43,7 @@ describe('useOnboardingPhotoFlow', () => {
     expect(result.current.busy).toBe(false);
   });
   it('reports picker and removal errors and always clears uploading', async () => {
-    pickAvatarImage.mockRejectedValueOnce(new Error('picker')).mockResolvedValueOnce({ uri: 'x' });
+    pickAvatarImage.mockRejectedValueOnce(new Error('picker')).mockResolvedValueOnce({ status: 'ok', value: { uri: 'x' } });
     resizeAndUploadAvatar.mockRejectedValueOnce('bad'); removeUploadedAvatar.mockRejectedValueOnce(new Error('delete'));
     const { result } = renderHook(() => useOnboardingPhotoFlow());
     await act(async () => { await result.current.pick('camera'); });
@@ -95,7 +95,7 @@ describe('useOnboardingPhotoFlow', () => {
     });
 
     it('previews the picked photo locally and removes it, with no upload and no profile write', async () => {
-      pickAvatarImage.mockResolvedValueOnce({ uri: 'file://picked.jpg' });
+      pickAvatarImage.mockResolvedValueOnce({ status: 'ok', value: { uri: 'file://picked.jpg' } });
       const { result } = renderHook(() => useOnboardingPhotoFlow());
       await act(async () => { await result.current.pick('gallery'); });
       expect(result.current.avatarUrl).toBe('file://picked.jpg');

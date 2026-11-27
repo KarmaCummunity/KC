@@ -101,7 +101,6 @@ export default function DemoDataScreen() {
       isLoading={rolesLoading}
       allowed={enabled && refusal !== 'forbidden'}
       loadingLabel={t.loading}
-      forbiddenLabel={t.forbiddenTitle}
     >
       <ScrollView
         style={styles.root}

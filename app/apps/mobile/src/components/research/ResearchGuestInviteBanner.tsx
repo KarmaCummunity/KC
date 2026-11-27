@@ -4,8 +4,8 @@ import React from 'react';
 import { Pressable, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { Ionicons } from '@expo/vector-icons';
-import { makeUseStyles, spacing, typography, useTheme, Text } from '@kc/ui';
+import { iconSize, makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
+import { MirroredIcon } from '../ui/MirroredIcon';
 import { webTextRtl, webViewRtl } from '../../lib/webRtlStyle';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 import { useAuthStore } from '../../store/authStore';
@@ -38,7 +38,7 @@ export function ResearchGuestInviteBanner(): React.JSX.Element | null {
         accessibilityLabel={t('research.guestInvite.signUpCta')}
       >
         <Text style={styles.ctaText}>{t('research.guestInvite.signUpCta')}</Text>
-        <Ionicons name="arrow-back" size={16} color={colors.textInverse} />
+        <MirroredIcon name="arrow-forward" size={iconSize.sm} color={colors.textInverse} />
       </Pressable>
       <Text style={styles.finePrint}>{t('research.guestInvite.finePrint')}</Text>
     </View>
@@ -50,7 +50,7 @@ const useStyles = makeUseStyles(({ colors }) => ({
     marginHorizontal: spacing.base,
     marginBottom: spacing.sm,
     padding: spacing.base,
-    borderRadius: 14,
+    borderRadius: radius.lg,
     gap: spacing.sm,
     backgroundColor: colors.surface,
     borderWidth: 1,
@@ -60,7 +60,7 @@ const useStyles = makeUseStyles(({ colors }) => ({
   kicker: {
     ...typography.caption,
     color: colors.primary,
-    fontWeight: '700',
+    ...typography.bold,
     textAlign: rtlTextAlignStart,
     ...webTextRtl,
   },
@@ -83,7 +83,7 @@ const useStyles = makeUseStyles(({ colors }) => ({
     justifyContent: 'center',
     gap: spacing.xs,
     backgroundColor: colors.primary,
-    borderRadius: 10,
+    borderRadius: radius.md,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
     marginTop: spacing.xs,
@@ -92,7 +92,7 @@ const useStyles = makeUseStyles(({ colors }) => ({
   ctaText: {
     ...typography.button,
     color: colors.textInverse,
-    fontWeight: '700',
+    ...typography.bold,
     ...webTextRtl,
   },
   finePrint: {

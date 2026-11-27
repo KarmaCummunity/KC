@@ -8,6 +8,7 @@ import type { UploadedAsset } from '../../services/imageUpload';
 import { KCImage } from '../ui/KCImage';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 import { absoluteCornerEnd } from '../../lib/rtlLayout';
+import { PermissionSettingsNote } from '../PermissionSettingsNote';
 
 /** What a thumbnail needs: a stable id (`path`, also the remove key) and a preview URI. */
 export type PhotoPickerItem = Pick<UploadedAsset, 'path' | 'previewUri' | 'previewFallbackUri'>;
@@ -21,6 +22,8 @@ interface Props {
   onRemove: (path: string) => void;
   /** When set, each pending tile offers to stop the uploads still in flight. */
   onCancelUploads?: () => void;
+  /** When the photo library is blocked, show an inline Settings note. */
+  readonly permissionBlocked?: boolean;
 }
 
 const THUMB = 96;
@@ -65,7 +68,7 @@ const usePhotoPickerStyles = makeUseStyles(({ colors, isDark }) => ({
   hint: { ...typography.caption, color: colors.textDisabled, textAlign: rtlTextAlignStart },
 }));
 
-export function PhotoPicker({ uploads, isUploading, uploadingCount, required, onAdd, onRemove, onCancelUploads }: Props) {
+export function PhotoPicker({ uploads, isUploading, uploadingCount, required, onAdd, onRemove, onCancelUploads, permissionBlocked }: Props) {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const styles = usePhotoPickerStyles();
@@ -122,7 +125,8 @@ export function PhotoPicker({ uploads, isUploading, uploadingCount, required, on
           </TouchableOpacity>
         )}
       </View>
-      {uploads.length === 0 && !isUploading && (
+      {permissionBlocked ? <PermissionSettingsNote kind="mediaLibrary" /> : null}
+      {uploads.length === 0 && !isUploading && !permissionBlocked && (
         <Text style={styles.hint}>{t('post.photosHint', { max: MAX_MEDIA_ASSETS })}</Text>
       )}
     </View>
