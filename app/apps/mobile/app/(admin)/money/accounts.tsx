@@ -78,7 +78,7 @@ export default function MoneyAccountsScreen() {
   );
 
   return (
-    <AdminScreenGuard isLoading={rolesLoading} allowed={allowed} loadingLabel={t.loading} forbiddenLabel={t.forbiddenTitle}>
+    <AdminScreenGuard isLoading={rolesLoading} allowed={allowed} loadingLabel={t.loading}>
       <View style={styles.root}>
         <MoneySubNav active="accounts" />
         <ScrollView

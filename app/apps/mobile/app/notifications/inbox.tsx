@@ -20,6 +20,7 @@ import { NotificationInboxRow } from '../../src/components/notifications/Notific
 import { EmptyState } from '../../src/components/EmptyState';
 import { KcFlashList } from '../../src/components/lists/KcFlashList';
 import { SimpleRowListSkeleton } from '../../src/components/skeletons/SimpleRowListSkeleton';
+export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
 
 
 const notificationKeyExtractor = (entry: { key: string }) => entry.key;

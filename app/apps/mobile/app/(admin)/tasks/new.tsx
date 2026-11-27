@@ -21,6 +21,7 @@ import { AssigneePicker } from '../../../src/components/admin/tasks/AssigneePick
 import { TaskCategoryPicker } from '../../../src/components/admin/tasks/TaskCategoryPicker';
 import { useLocaleBundle, type LocaleBundle } from '../../../src/i18n/useLocaleBundle';
 import { FormScrollView } from '../../../src/components/ui/FormScrollView';
+import { SilentUnauthorizedFallback } from '../../../src/components/permissions/SilentUnauthorizedFallback';
 
 export default function NewTaskScreen() {
   const styles = useStyles();
@@ -41,11 +42,7 @@ export default function NewTaskScreen() {
   const canSubmit = title.trim().length > 0 && !create.isPending;
 
   if (!can('tasks.create')) {
-    return (
-      <View style={styles.center}>
-        <Text style={styles.deniedTitle}>{L.admin.tasks.forbiddenTitle}</Text>
-      </View>
-    );
+    return <SilentUnauthorizedFallback href="/(admin)" />;
   }
 
   async function submit() {

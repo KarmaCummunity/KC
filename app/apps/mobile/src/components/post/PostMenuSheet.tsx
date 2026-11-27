@@ -8,7 +8,7 @@ import { container } from '../../lib/container';
 import { View, StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import type { PostWithOwner } from '@kc/application';
-import { isPostEditableByOwner } from '@kc/domain';
+import { canEditPost } from '@kc/domain';
 import { makeUseStyles, spacing } from '@kc/ui';
 import { BottomSheet } from '../ui/BottomSheet';
 import { SheetActionRow } from '../ui/SheetActionRow';
@@ -34,6 +34,8 @@ interface Props {
   readonly listingId?: string | null;
   readonly viewerId: string | null;
   readonly isSuperAdmin: boolean;
+  /** Staff with `reports.manual_remove_post` (not the same as super-admin edit). */
+  readonly canAdminRemove: boolean;
   readonly isSaved: boolean;
   readonly saveBusy: boolean;
   readonly onToggleSave: () => void;
@@ -51,6 +53,7 @@ export function PostMenuSheet({
   listingId = null,
   viewerId,
   isSuperAdmin,
+  canAdminRemove,
   isSaved,
   saveBusy,
   onToggleSave,
@@ -70,7 +73,7 @@ export function PostMenuSheet({
   const isOwner = viewerId !== null && post.ownerId === viewerId;
   const block = useUserBlock(isOwner ? '' : post.ownerId);
   // The same statuses the edit screen and the server accept (open and paused; spec 07 §7.1).
-  const canEditPost = (isOwner || isSuperAdmin) && isPostEditableByOwner(post.status);
+  const showEdit = canEditPost({ viewerId, ownerId: post.ownerId, isSuperAdmin, status: post.status });
   const showExposureBlock = viewerId !== null && shouldShowPostExposureControls(viewerId, post);
 
   function openModal(name: Exclude<ActiveModal, null>) {
@@ -164,7 +167,7 @@ export function PostMenuSheet({
               onClose();
             }}
           />
-          {canEditPost ? (
+          {showEdit ? (
             <SheetActionRow
               icon="create-outline"
               label={t('post.menuEdit')}
@@ -182,7 +185,7 @@ export function PostMenuSheet({
               onPress={() => openModal('delete-owner')}
             />
           ) : null}
-          {isSuperAdmin ? (
+          {canAdminRemove ? (
             <SheetActionRow
               icon="shield-outline"
               label={t('post.menuAdminRemove')}
