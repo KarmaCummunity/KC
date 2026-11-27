@@ -8,6 +8,7 @@ import { useFeedSessionStore } from '../store/feedSessionStore';
 import { useOnboardingReplayStore } from '../store/onboardingReplayStore';
 import { getCompleteBasicInfoUseCase, markBasicInfoSkipped } from '../services/userComposition';
 import { mapEditProfileSaveError } from '../lib/editProfileSaveErrors';
+import { measureMark } from '../lib/observability/perfMarks';
 import { useAddressStateWithCityReset } from './useAddressStateWithCityReset';
 import { useProfileFieldErrors } from './useProfileFieldErrors';
 
@@ -54,17 +55,20 @@ export function useOnboardingBasicInfoFlow() {
     }
     setLoading(true);
     try {
-      await getCompleteBasicInfoUseCase().execute({
-        sessionUserId: session.userId,
-        userId: session.userId,
-        displayName,
-        cityId: city.id,
-        cityName: city.name,
-        dateOfBirth,
-        profileStreet: street,
-        profileStreetNumber: streetNumber,
-        contactPhone,
-      });
+      // #2579: timed, so field traces show how long the save holds the member on this step.
+      await measureMark('onboarding.basic_info_save', () =>
+        getCompleteBasicInfoUseCase().execute({
+          sessionUserId: session.userId,
+          userId: session.userId,
+          displayName,
+          cityId: city.id,
+          cityName: city.name,
+          dateOfBirth,
+          profileStreet: street,
+          profileStreetNumber: streetNumber,
+          contactPhone,
+        }),
+      );
       setOnboardingState('pending_avatar');
       router.replace('/(onboarding)/photo');
     } catch (err) {
@@ -84,7 +88,7 @@ export function useOnboardingBasicInfoFlow() {
     }
     setLoading(true);
     try {
-      await markBasicInfoSkipped(session.userId);
+      await measureMark('onboarding.basic_info_skip', () => markBasicInfoSkipped(session.userId));
       useAuthStore.getState().setBasicInfoSkipped(true);
       router.replace('/(onboarding)/photo');
     } catch (err) {

@@ -956,6 +956,8 @@ Design spec: `docs/SSOT/archive/superpowers/specs/2026-05-24-closed-post-dual-su
 
 **2026-10-31:** Edge Functions now also report to Sentry — `withTiming` is composed into `withObservability` (`D-202`, G41).
 
+**2026-11-23 (#2579):** auth and onboarding waits are marks too, tagged `outcome`: `auth.onboarding_bootstrap`, `auth.sign_out` (+ `.device_deactivation` `settled|timed_out`, `.server_revoke`), `onboarding.basic_info_save`, `onboarding.basic_info_skip`, `onboarding.finalize`.
+
 ---
 
 ## D-49 — Server-driven surveys via Supabase Studio publish (mirrors legal-documents pattern)

@@ -12,6 +12,8 @@ vi.mock('react-i18next', () => ({ useTranslation: () => ({ t }) }));
 vi.mock('../../store/authStore', () => ({ useAuthStore: (selector: (s: typeof state) => unknown) => selector(state) }));
 vi.mock('../../services/userComposition', () => ({ getSetAvatarUseCase: () => ({ execute: setAvatar }), getCompleteOnboardingUseCase: () => ({ execute: complete }) }));
 vi.mock('../../services/avatarUpload', () => ({ pickAvatarImage, removeUploadedAvatar, resizeAndUploadAvatar }));
+const measureMark = vi.hoisted(() => vi.fn((_name: string, work: () => Promise<unknown>) => work()));
+vi.mock('../../lib/observability/perfMarks', () => ({ measureMark }));
 import { useOnboardingPhotoFlow } from '../useOnboardingPhotoFlow';
 import { useOnboardingReplayStore } from '../../store/onboardingReplayStore';
 
@@ -64,6 +66,8 @@ describe('useOnboardingPhotoFlow', () => {
     expect(setAvatar).toHaveBeenCalledWith({ sessionUserId: 'u1', userId: 'u1', avatarUrl: null });
     await act(async () => { await result.current.finalize(); });
     expect(complete).toHaveBeenCalledWith({ userId: 'u1' });
+    // #2579: the finalize save is timed, so a slow photo → tour step shows up in field traces.
+    expect(measureMark).toHaveBeenCalledWith('onboarding.finalize', expect.any(Function));
     expect(state.setOnboardingState).toHaveBeenCalledWith('completed');
     expect(replace).toHaveBeenCalledWith('/(onboarding)/tour');
     state.onboardingState = 'pending_avatar';
