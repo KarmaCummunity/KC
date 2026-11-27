@@ -8,6 +8,8 @@ import type { AdminGrant } from '@kc/domain';
 import { makeUseStyles, spacing } from '@kc/ui';
 import { Chip } from '../../ui/Chip';
 import { container } from '../../../lib/container';
+import { useRtlWebHorizontalScrollStart } from '../../../hooks/useRtlWebHorizontalScrollStart';
+import { rowDirectionStart } from '../../../lib/rtlLayout';
 import { useLocaleBundle } from '../../../i18n/useLocaleBundle';
 
 export interface AssigneePickerProps {
@@ -24,6 +26,8 @@ interface PickEntry {
 export function AssigneePicker({ value, onChange }: AssigneePickerProps) {
   const styles = useStyles();
   const L = useLocaleBundle();
+  // #1747 — assignee chips share the RTL-web reading-start scroll pin.
+  const rtlScroll = useRtlWebHorizontalScrollStart();
   const q = useQuery({
     queryKey: ['admin.admins.list', { includeRevoked: false }],
     queryFn:  () => container.listAdmins.execute({ includeRevoked: false }),
@@ -33,7 +37,14 @@ export function AssigneePicker({ value, onChange }: AssigneePickerProps) {
 
   return (
     <View>
-      <ScrollView horizontal style={adminChipScroll.scroll} showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.row, adminChipScroll.content]}>
+      <ScrollView
+        ref={rtlScroll.ref}
+        horizontal
+        style={adminChipScroll.scroll}
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={[styles.row, adminChipScroll.content]}
+        onContentSizeChange={rtlScroll.onContentSizeChange}
+      >
         <Chip
           label={L.admin.tasks.form.unassigned}
           selected={value === null}
@@ -74,5 +85,5 @@ function derivePickEntries(
 }
 
 const useStyles = makeUseStyles(() => ({
-  row: { gap: spacing.sm, paddingVertical: spacing.xs },
+  row: { flexDirection: rowDirectionStart, gap: spacing.sm, paddingVertical: spacing.xs },
 }));

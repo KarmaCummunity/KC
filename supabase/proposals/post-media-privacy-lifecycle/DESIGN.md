@@ -143,6 +143,9 @@ An intent completes only when `now() >= not_before` and the second listing is em
 
 1. **Intents + verified re-sweep** for account purge only (non-cascading table, reconciler,
    `not_before`), pgTAP and handler tests including a late write after the first sweep.
+   *Implemented (2026-11-25):* `kc_private.storage_deletion_intents`, written by
+   `account_purge_finish`; swept by `purge-deleted-accounts` (`sweep.ts`); quiet window 1 hour;
+   closed intents pruned after 7 days. Runbook: "Storage deletion intents".
 2. **Avatars orphan reconciliation** (§5), pgTAP for the reference rule, purge-compatible.
 3. **Private upload bucket** (§3 A) behind an app release; the worker reads from it; copies unchanged.
 4. **Commit-time authorization** for member writes (§4), then the chosen option for service writes.

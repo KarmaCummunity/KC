@@ -3,19 +3,10 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { PostError } from '@kc/application';
+import type { ISocialFeedRepository, FeedMuteFilterKind, FeedMuteFilterRow } from '@kc/application';
 import type { Database } from '../database.types';
 import { unwrapCall } from '../rpc/mapRpcError';
 import { sessionUserId } from '../users/userReads';
-
-/** What a mute hides. The baseline table knows these three; there is no per-category mute. */
-export type FeedMuteFilterKind = 'user' | 'keyword' | 'world';
-
-export interface FeedMuteFilterRow {
-  filterId: string;
-  filterKind: FeedMuteFilterKind;
-  filterValue: string;
-  createdAt: string;
-}
 
 type MuteInsert = Database['public']['Tables']['feed_mute_filters']['Insert'];
 
@@ -33,7 +24,9 @@ function muteRow(userId: string, kind: FeedMuteFilterKind, value: string): { row
   };
 }
 
-export class SupabaseSocialFeedRepository {
+export type { FeedMuteFilterKind, FeedMuteFilterRow } from '@kc/application';
+
+export class SupabaseSocialFeedRepository implements ISocialFeedRepository {
   constructor(private readonly client: SupabaseClient<Database>) {}
 
   private async requireUserId(): Promise<string> {

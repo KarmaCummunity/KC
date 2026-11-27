@@ -28,6 +28,7 @@ import { OrgTransparencySection } from '../src/components/finance/OrgTransparenc
 import { activityLabelKey } from '../src/lib/activityLabelKey';
 import { rowDirectionStart } from '../src/lib/rtlLayout';
 import { rtlTextAlignStart } from '../src/lib/rtlTextAlignStart';
+export { RouteErrorBoundary as ErrorBoundary } from '../src/components/RouteErrorBoundary';
 
 
 

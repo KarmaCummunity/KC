@@ -12,8 +12,6 @@ import { Ionicons } from '@expo/vector-icons';
 import {
   type DonationCategorySlug,
   type DonationLink,
-  hasPermission,
-  type AdminRole,
 } from '@kc/domain';
 import { iconSize, useTheme, Text } from '@kc/ui';
 import { useAuthStore } from '../store/authStore';
@@ -23,7 +21,7 @@ import { PrimaryButton } from './ui/Buttons';
 import { DonationLinkRow } from './DonationLinkRow';
 import { DonationLinkRowMenu } from './DonationLinkRowMenu';
 import { useDonationLinkActions } from './useDonationLinkActions';
-import { useAdminRoles } from '../hooks/useAdminRoles';
+import { useIsSuperAdmin } from '../hooks/useIsSuperAdmin';
 import { useDonationLinksListState } from './useDonationLinksListState';
 import { filterAndSortLinks, type WorldLinksSort } from '../lib/worldLinksCatalog';
 
@@ -40,8 +38,7 @@ export function DonationLinksList({ categorySlug, showTitle = true, view }: Read
   const { colors } = useTheme();
   const styles = useDonationLinksListStyles();
   const me = useAuthStore((s) => s.session?.userId ?? null);
-  const { roles } = useAdminRoles();
-  const canManuallyRemovePost = hasPermission(roles as readonly AdminRole[], 'reports.manual_remove_post');
+  const isSuperAdmin = useIsSuperAdmin();
 
   const { links, loading, errored, load, onAdded, onUpdated, onRemoved } =
     useDonationLinksListState(categorySlug);
@@ -64,7 +61,7 @@ export function DonationLinksList({ categorySlug, showTitle = true, view }: Read
     setEditingLink(null);
     setModalOpen(true);
   }, []);
-  const runNativeMenu = useDonationLinkActions({ me, isSuperAdmin: canManuallyRemovePost, onRemoved, onEdit: onEditLink });
+  const runNativeMenu = useDonationLinkActions({ me, isSuperAdmin, onRemoved, onEdit: onEditLink });
   const onMenuPress = useCallback(
     (link: DonationLink) => {
       if (Platform.OS === 'web') setWebMenuLink(link);
@@ -156,7 +153,7 @@ export function DonationLinksList({ categorySlug, showTitle = true, view }: Read
       visible={webMenuLink !== null}
       link={webMenuLink}
       me={me}
-      isSuperAdmin={canManuallyRemovePost}
+      isSuperAdmin={isSuperAdmin}
       onClose={() => setWebMenuLink(null)}
       onRemoved={(id) => {
         onRemoved(id);

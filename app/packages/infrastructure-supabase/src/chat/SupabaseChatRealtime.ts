@@ -8,6 +8,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { IChatRealtime, InboxStreamCallbacks, SubscribeInboxOptions, ChatStreamCallbacks, Unsubscribe } from '@kc/application';
+import { isMessageReactionType } from '@kc/domain';
 import type { Database } from '../database.types';
 import { rowToMessage, type MessageRowSlice } from './rowMappers';
 import { isChannelFailure, openExactTopicChannel } from '../realtime/exactTopicChannel';
@@ -31,11 +32,19 @@ const asString = (value: unknown): string | null => (typeof value === 'string' ?
 const UNREAD_DEBOUNCE_MS = 200;
 
 export class SupabaseChatRealtime implements IChatRealtime {
-  constructor(private readonly client: SupabaseClient<Database>) {}
+  /**
+   * @param readTotal Reads the member's unread total. Given by a composition root that
+   *   routes data through KC's API (`IChatRepository.getUnreadTotal`); without it the adapter
+   *   calls `chat_unread_total` on its own client.
+   */
+  constructor(
+    private readonly client: SupabaseClient<Database>,
+    private readonly readTotal?: (userId: string) => Promise<number>,
+  ) {}
 
   /**
-   * Listens to one chat: new messages, the other member's read marker (the receipt) and a change
-   * of the pinned post. Reactions arrive on the same topic as `reaction` and are not consumed here.
+   * Listens to one chat: new messages, the other member's read marker (the receipt), a change
+   * of the pinned post and every member's reaction changes (`reaction`, #2568).
    */
   subscribeToChat(chatId: string, cb: ChatStreamCallbacks): Unsubscribe {
     let failed = false;
@@ -51,6 +60,13 @@ export class SupabaseChatRealtime implements IChatRealtime {
         channel.on('broadcast', { event: 'read' }, (msg) => {
           const { user_id: userId, last_read_at: lastReadAt } = payloadOf(msg);
           if (typeof userId === 'string' && typeof lastReadAt === 'string') cb.onReadMarker({ userId, lastReadAt });
+        });
+        channel.on('broadcast', { event: 'reaction' }, (msg) => {
+          const { message_id: messageId, user_id: userId, reaction_type: type } = payloadOf(msg);
+          if (typeof messageId !== 'string' || typeof userId !== 'string') return;
+          // A null type is a cleared reaction; an unknown one (a newer server) is ignored.
+          if (type !== null && !isMessageReactionType(type)) return;
+          cb.onReaction?.({ messageId, userId, reactionType: type });
         });
         channel.on('broadcast', { event: 'chat_updated' }, (msg) => {
           cb.onChatChanged?.({ chatId, anchorPostId: asString(payloadOf(msg)['anchor_post_id']) });
@@ -83,7 +99,7 @@ export class SupabaseChatRealtime implements IChatRealtime {
     const fireUnreadDebounced = () => {
       if (!active) return;
       if (unreadTimer) clearTimeout(unreadTimer);
-      unreadTimer = setTimeout(() => void this.readUnreadTotal(cb, options, () => active), UNREAD_DEBOUNCE_MS);
+      unreadTimer = setTimeout(() => void this.readUnreadTotal(userId, cb, options, () => active), UNREAD_DEBOUNCE_MS);
     };
 
     const managed = openExactTopicChannel(
@@ -121,11 +137,11 @@ export class SupabaseChatRealtime implements IChatRealtime {
   }
 
   /** Reads `chat_unread_total` and reports it unless the snapshot epoch moved or the call failed. */
-  private async readUnreadTotal(cb: InboxStreamCallbacks, options?: SubscribeInboxOptions, isActive = () => true): Promise<void> {
+  private async readUnreadTotal(userId: string, cb: InboxStreamCallbacks, options?: SubscribeInboxOptions, isActive = () => true): Promise<void> {
     const epoch = options?.getSnapshotEpoch;
     const before = epoch?.() ?? 0;
     try {
-      const total = unwrapCall('rpc:chat_unread_total', await this.client.rpc('chat_unread_total'));
+      const total = this.readTotal ? await this.readTotal(userId) : unwrapCall('rpc:chat_unread_total', await this.client.rpc('chat_unread_total'));
       if (!isActive() || (epoch && epoch() !== before)) return;
       cb.onUnreadTotalChanged(Number(total ?? 0));
     } catch {

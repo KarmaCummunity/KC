@@ -9,6 +9,7 @@ import { makeUseStyles, spacing, iconSize, useTheme } from '@kc/ui';
 import { hasPermission, type AdminRole } from '@kc/domain';
 import { useAuthStore } from '../../store/authStore';
 import { useAdminRoles } from '../../hooks/useAdminRoles';
+import { useIsSuperAdmin } from '../../hooks/useIsSuperAdmin';
 import { invalidatePersonalStatsCaches } from '../../lib/invalidatePersonalStatsCaches';
 import { PostMenuSheet } from './PostMenuSheet';
 import { usePostSavedActions } from '../../hooks/usePostSavedActions';
@@ -43,7 +44,8 @@ export function PostMenuButton({
   const { colors } = useTheme();
   const viewerId = useAuthStore((s) => s.session?.userId ?? null);
   const { roles } = useAdminRoles();
-  const canManuallyRemovePost = hasPermission(roles as readonly AdminRole[], 'reports.manual_remove_post');
+  const isSuperAdmin = useIsSuperAdmin();
+  const canAdminRemove = hasPermission(roles as readonly AdminRole[], 'reports.manual_remove_post');
   const [open, setOpen] = useState(false);
   // The saved state is only shown inside the sheet, so it is looked up when the sheet opens
   // (not once per rendered card). The toggle stays disabled until that first lookup resolves,
@@ -87,7 +89,8 @@ export function PostMenuButton({
         showShareInMenu={showShareInMenu}
         listingId={post.listingId ?? null}
         viewerId={viewerId}
-        isSuperAdmin={canManuallyRemovePost}
+        isSuperAdmin={isSuperAdmin}
+        canAdminRemove={canAdminRemove}
         isSaved={isSaved}
         saveBusy={saveBusy || savedLoading}
         onToggleSave={toggleSave}

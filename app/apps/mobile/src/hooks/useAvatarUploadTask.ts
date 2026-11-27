@@ -7,6 +7,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { pickAvatarImage, resizeAndUploadAvatar, type AvatarSource } from '../services/avatarUpload';
+import { isBlockedMediaPick, type MediaPermissionKind } from '../lib/mediaPermissionTypes';
 import { discardUnsavedAvatar } from '../services/avatarLifecycle';
 import { getUserRepo } from '../services/userComposition';
 
@@ -21,6 +22,7 @@ export function useAvatarUploadTask({ userId, onChange, onUploadingChange }: Arg
   const { t } = useTranslation();
   const [uploading, setUploading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [permissionBlocked, setPermissionBlocked] = useState<MediaPermissionKind | null>(null);
   const mounted = useRef(true);
   const controller = useRef<AbortController | null>(null);
 
@@ -44,8 +46,14 @@ export function useAvatarUploadTask({ userId, onChange, onUploadingChange }: Arg
     controller.current = task;
     try {
       const picked = await pickAvatarImage(source);
-      if (!picked || !mounted.current) return;
-      const url = await resizeAndUploadAvatar(picked, userId, { signal: task.signal });
+      if (!mounted.current) return;
+      if (isBlockedMediaPick(picked)) {
+        setPermissionBlocked(picked.kind);
+        return;
+      }
+      setPermissionBlocked(null);
+      if (picked.status !== 'ok') return;
+      const url = await resizeAndUploadAvatar(picked.value, userId, { signal: task.signal });
       if (mounted.current && !task.signal.aborted) {
         onChange(url);
         return;
@@ -65,5 +73,5 @@ export function useAvatarUploadTask({ userId, onChange, onUploadingChange }: Arg
     }
   }, [onChange, setBusy, t, userId]);
 
-  return { uploading, errorMsg, setErrorMsg, pickAndUpload };
+  return { uploading, errorMsg, setErrorMsg, permissionBlocked, pickAndUpload };
 }

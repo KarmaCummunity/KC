@@ -18,6 +18,7 @@ import { useLocaleBundle } from '../../../src/i18n/useLocaleBundle';
 import { textAlignStart } from '../../../src/lib/rtlLayout';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../../src/components/RouteErrorBoundary';
+import { SilentUnauthorizedFallback } from '../../../src/components/permissions/SilentUnauthorizedFallback';
 
 const WINDOWS = [
   { key: 'd7', days: 7 },
@@ -47,7 +48,7 @@ export default function MatchQualityScreen() {
     return <View style={styles.center}><Text>{t.loading}</Text></View>;
   }
   if (!enabled) {
-    return <View style={styles.center}><Text style={styles.forbidden}>{t.forbiddenTitle}</Text></View>;
+    return <SilentUnauthorizedFallback href="/(admin)" />;
   }
 
   const isHebrew = i18n.language.startsWith('he');

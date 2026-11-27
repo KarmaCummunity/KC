@@ -86,6 +86,7 @@ export * from './payments/standingOrderActions';
 export * from './payments/KcSupportChannel';
 export * from './volunteering';
 export * from './challenges';
+export * from './hebrewText';
 export * from './knowledge/knowledgeTopics';
 export * from './knowledge/knowledgeSlots';
 export * from './knowledge/knowledgeSlotSeries';

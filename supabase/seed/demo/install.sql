@@ -13,5 +13,6 @@
 \ir lib/45_seed_worlds.sql
 \ir lib/50_seed_social.sql
 \ir lib/60_seed_orgs.sql
+\ir lib/65_seed_coverage.sql
 \ir lib/70_operations.sql
 \ir lib/80_admin_rpcs.sql
