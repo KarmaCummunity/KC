@@ -155,6 +155,7 @@ jobs:
               -destination "platform=iOS Simulator,id=$SIMULATOR_UDID" \
               -derivedDataPath "$RUNNER_TEMP/kc-ax-reader-build" \
               -resultBundlePath "$RUNNER_TEMP/kc-raw-ax.xcresult" \
+              -only-testing:KCAXReader/RawAXTests/testInstalledAppTree \
               -parallel-testing-enabled NO -test-timeouts-enabled YES \
               -default-test-execution-time-allowance 60 -maximum-test-execution-time-allowance 90 \
               CODE_SIGNING_ALLOWED=NO test-without-building \
@@ -163,6 +164,22 @@ jobs:
             xcrun xcresulttool export attachments --path "$RUNNER_TEMP/kc-raw-ax.xcresult" \
               --output-path "$RUNNER_TEMP/ipad-evidence/xctest-attachments" \
               > "$RUNNER_TEMP/ipad-evidence/ax-export.log" 2>&1 || true
+            # Separate semantic qualification of the same installed binary, not first-launch acceptance.
+            guest_status=0
+            xcodebuild -project "$RUNNER_TEMP/kc-ax-reader/KCAXReader.xcodeproj" \
+              -scheme KCAXReader -configuration Debug -sdk iphonesimulator \
+              -destination "platform=iOS Simulator,id=$SIMULATOR_UDID" \
+              -derivedDataPath "$RUNNER_TEMP/kc-ax-reader-build" \
+              -resultBundlePath "$RUNNER_TEMP/kc-guest-semantic.xcresult" \
+              -only-testing:KCAXReader/RawAXTests/testSemanticGuestBrowse \
+              -parallel-testing-enabled NO -test-timeouts-enabled YES \
+              -default-test-execution-time-allowance 180 -maximum-test-execution-time-allowance 210 \
+              CODE_SIGNING_ALLOWED=NO test-without-building \
+              > "$RUNNER_TEMP/ipad-evidence/semantic-guest-xctest.log" 2>&1 || guest_status=$?
+            printf '%s\n' "$guest_status" > "$RUNNER_TEMP/ipad-evidence/semantic-guest-status.txt"
+            xcrun xcresulttool export attachments --path "$RUNNER_TEMP/kc-guest-semantic.xcresult" \
+              --output-path "$RUNNER_TEMP/ipad-evidence/guest-semantic-attachments" \
+              > "$RUNNER_TEMP/ipad-evidence/guest-export.log" 2>&1 || true
             # Same binary, preserve native RTL preferences after the initial failure.
             # This control cannot turn a failed first launch into acceptance.
             sed -e 's/clearState: true/clearState: false/' \
@@ -196,6 +213,23 @@ jobs:
             sips -Z 1600 -s format jpeg -s formatOptions 70 "$image" \
               --out "$RUNNER_TEMP/ipad-evidence-compact/screenshot-$index.jpg" > "$RUNNER_TEMP/sips-output.log" 2>&1
           done < "$RUNNER_TEMP/evidence-images.txt"
+          # Keep each semantic stage's screenshot/tree in the private export, ahead of generic diagnostics.
+          if [ -d "$RUNNER_TEMP/ipad-evidence/guest-semantic-attachments" ]; then
+            find "$RUNNER_TEMP/ipad-evidence/guest-semantic-attachments" -type f -name '*.txt' | sort | head -6 > "$RUNNER_TEMP/semantic-tree-paths.txt"
+            index=0
+            while IFS= read -r tree; do
+              index=$((index + 1))
+              head -c 131072 "$tree" > "$RUNNER_TEMP/ipad-evidence-compact/semantic-tree-$index.txt"
+            done < "$RUNNER_TEMP/semantic-tree-paths.txt"
+            find "$RUNNER_TEMP/ipad-evidence/guest-semantic-attachments" -type f -name '*.png' | sort | head -6 > "$RUNNER_TEMP/semantic-image-paths.txt"
+            index=0
+            while IFS= read -r image; do
+              index=$((index + 1))
+              sips -Z 1600 -s format jpeg -s formatOptions 70 "$image" \
+                --out "$RUNNER_TEMP/ipad-evidence-compact/semantic-screen-$index.jpg" > "$RUNNER_TEMP/sips-semantic.log" 2>&1
+            done < "$RUNNER_TEMP/semantic-image-paths.txt"
+            cp "$RUNNER_TEMP/ipad-evidence/guest-semantic-attachments/manifest.json" "$RUNNER_TEMP/ipad-evidence-compact/semantic-manifest.json" || true
+          fi
           # Prioritize the independent raw tree so nested Maestro files cannot crowd it out.
           if [ -d "$RUNNER_TEMP/ipad-evidence/xctest-attachments" ]; then
             find "$RUNNER_TEMP/ipad-evidence/xctest-attachments" -type f -name '*.txt' | sort | head -4 > "$RUNNER_TEMP/ax-tree-paths.txt"
@@ -207,7 +241,7 @@ jobs:
           fi
           # Maestro stores hierarchy/command state below hidden debug directories.
           # Keep a bounded, encrypted copy of nested text diagnostics, never public plaintext.
-          find "$RUNNER_TEMP/ipad-evidence/debug" "$RUNNER_TEMP/ipad-evidence/warm-debug" "$RUNNER_TEMP/ipad-evidence/xctest-attachments" \
+          find "$RUNNER_TEMP/ipad-evidence/debug" "$RUNNER_TEMP/ipad-evidence/warm-debug" "$RUNNER_TEMP/ipad-evidence/xctest-attachments" "$RUNNER_TEMP/ipad-evidence/guest-semantic-attachments" \
             -type f \( -name '*.json' -o -name '*.xml' -o -name '*.log' -o -name '*.txt' \) 2>/dev/null \
             | sort | head -40 > "$RUNNER_TEMP/nested-evidence-paths.txt" || true
           index=0

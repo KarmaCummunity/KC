@@ -103,3 +103,12 @@ test('guest entry is scrolled fully into view before selector tap without coordi
   assert.match(flow, /id: guest-post-\.\*/);
   assert.match(flow, /ipad-guest-detail/);
 });
+
+
+test('independent semantic qualification preserves the original Maestro failure', () => {
+  const workflow = readFileSync(new URL('../.github/workflows/ipad-guest-qualification.yml', import.meta.url), 'utf8');
+  assert.match(workflow, /testSemanticGuestBrowse/);
+  assert.match(workflow, /semantic-guest-status/);
+  assert.match(workflow, /exit "\$initial_status"/);
+  assert.match(workflow, /guest-semantic-attachments/);
+});

@@ -37,6 +37,9 @@ test('private integration preserves original failure and forbids product mutatio
   const reader = readFileSync(new URL('./RawAXTests.swift', import.meta.url), 'utf8');
   assert.match(reader, /prefix\(131072\)/);
   assert.match(reader, /XCTAttachment/);
-  assert.doesNotMatch(reader, /app\.(?:launch|activate|terminate)\(|\.tap\(|coordinate\(/);
+  assert.doesNotMatch(reader, /app\.(?:launch|activate|terminate)\(|coordinate\(/);
+  assert.match(reader, /guest\.tap\(\)/);
+  assert.match(reader, /posts\.firstMatch\.tap\(\)/);
+  assert.match(reader, /back\.tap\(\)/);
   assert.match(reader, /runningForeground/);
 });
