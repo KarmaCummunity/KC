@@ -15,6 +15,8 @@ function sampleString(name: string, context: SampleContext): string {
     if (!PERSON.test(name)) return randomUUID();
     return /follow(ed|er)?|target|other|blocked|requester/i.test(name) ? context.otherMemberId : context.memberId;
   }
+  // Unique among members: a token is one device's, and a second member sending the same one is a conflict, not a sample.
+  if (/token/i.test(name)) return `sample-${context.memberId.slice(0, 8)}`;
   if (/slug/i.test(name)) return 'food';
   if (/handle/i.test(name)) return 'sample_handle';
   if (/(date|at|time|from|to|since|until)$/i.test(name)) return '2026-11-21T10:00:00.000Z';

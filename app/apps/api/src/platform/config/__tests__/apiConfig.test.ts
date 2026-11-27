@@ -41,8 +41,9 @@ describe('loadApiConfig', () => {
       trustedProxyHops: 0,
       rateLimitPerMinute: 600,
       jobsToken: null,
+      jobsScheduler: null,
       expoAccessToken: null,
-      storage: { localDirectory: null, publicUrl: null },
+      storage: { localDirectory: null, publicUrl: null, cloud: null },
       portRollout: {},
       appBaseUrl: null,
       whatsapp: { cloudApiToken: null, phoneNumberId: null, graphApiVersion: null, verifyToken: null, appSecret: null },
@@ -84,6 +85,14 @@ describe('loadApiConfig', () => {
 
     expect(error.variable).toBe('KC_API_ENVIRONMENT');
     expect(error.message).toContain('development, production, test');
+  });
+
+  it('runs without Redis only when one process is declared to be the whole server', () => {
+    expect(loadApiConfig({ ...REQUIRED, REDIS_URL: '', KC_API_SINGLE_INSTANCE: '1' }).redisUrl).toBeNull();
+    // With Redis given, the declaration changes nothing.
+    expect(loadApiConfig({ ...REQUIRED, KC_API_SINGLE_INSTANCE: '1' }).redisUrl).toBe(REQUIRED.REDIS_URL);
+    expect(configErrorOf({ REDIS_URL: '', KC_API_SINGLE_INSTANCE: 'yes' }).variable).toBe('REDIS_URL');
+    expect(configErrorOf({ REDIS_URL: '' }).message).toContain('KC_API_SINGLE_INSTANCE=1');
   });
 
   it.each(['DATABASE_URL', 'REDIS_URL', 'KC_AUTH_ISSUER'])('requires %s', (variable) => {
@@ -204,12 +213,42 @@ describe('loadApiConfig', () => {
     expect(configErrorOf({ KC_JOBS_TOKEN: 'short' }).variable).toBe('KC_JOBS_TOKEN');
   });
 
+  it('reads the scheduler whose own identity starts jobs: its audience and its service account, both or neither', () => {
+    const scheduler = { KC_JOBS_OIDC_AUDIENCE: 'https://api.example.org', KC_JOBS_SERVICE_ACCOUNT: 'kc-scheduler@kc-dev.iam.gserviceaccount.com' };
+
+    expect(loadApiConfig({ ...REQUIRED, ...scheduler }).jobsScheduler).toEqual({ audience: 'https://api.example.org', serviceAccount: 'kc-scheduler@kc-dev.iam.gserviceaccount.com' });
+    expect(configErrorOf({ KC_JOBS_OIDC_AUDIENCE: scheduler.KC_JOBS_OIDC_AUDIENCE }).variable).toBe('KC_JOBS_SERVICE_ACCOUNT');
+    expect(configErrorOf({ KC_JOBS_SERVICE_ACCOUNT: scheduler.KC_JOBS_SERVICE_ACCOUNT }).variable).toBe('KC_JOBS_OIDC_AUDIENCE');
+    expect(configErrorOf({ ...scheduler, KC_JOBS_SERVICE_ACCOUNT: 'someone@gmail.com' }).variable).toBe('KC_JOBS_SERVICE_ACCOUNT');
+  });
+
   it('reads the local file store and needs the address its URLs point at', () => {
     const config = loadApiConfig({ ...REQUIRED, KC_STORAGE_LOCAL_DIR: '/var/kc-files', KC_API_PUBLIC_URL: 'http://localhost:8080/' });
 
-    expect(config.storage).toEqual({ localDirectory: '/var/kc-files', publicUrl: 'http://localhost:8080' });
+    expect(config.storage).toEqual({ localDirectory: '/var/kc-files', publicUrl: 'http://localhost:8080', cloud: null });
     expect(configErrorOf({ KC_STORAGE_LOCAL_DIR: '/var/kc-files' }).variable).toBe('KC_API_PUBLIC_URL');
     expect(configErrorOf({ KC_API_PUBLIC_URL: 'not a url' }).variable).toBe('KC_API_PUBLIC_URL');
+  });
+
+  it('reads the cloud file store: the prefix of its buckets and the media address public files are served from', () => {
+    const config = loadApiConfig({ ...REQUIRED, KC_STORAGE_GCS_BUCKET_PREFIX: 'kc-dev-', KC_MEDIA_PUBLIC_URL: 'https://media.example.org/' });
+
+    expect(config.storage).toEqual({ localDirectory: null, publicUrl: null, cloud: { bucketPrefix: 'kc-dev-', mediaUrl: 'https://media.example.org' } });
+    expect(loadApiConfig(REQUIRED).storage.cloud).toBeNull();
+  });
+
+  it.each([
+    [{ KC_STORAGE_GCS_BUCKET_PREFIX: 'kc-dev-' }, 'KC_MEDIA_PUBLIC_URL'],
+    [{ KC_STORAGE_GCS_BUCKET_PREFIX: 'kc-dev-', KC_MEDIA_PUBLIC_URL: 'not a url' }, 'KC_MEDIA_PUBLIC_URL'],
+    [{ KC_STORAGE_GCS_BUCKET_PREFIX: 'KC Dev/', KC_MEDIA_PUBLIC_URL: 'https://media.example.org' }, 'KC_STORAGE_GCS_BUCKET_PREFIX'],
+    [{ KC_STORAGE_GCS_BUCKET_PREFIX: '-kc', KC_MEDIA_PUBLIC_URL: 'https://media.example.org' }, 'KC_STORAGE_GCS_BUCKET_PREFIX'],
+    [{ KC_STORAGE_GCS_BUCKET_PREFIX: 'k'.repeat(51), KC_MEDIA_PUBLIC_URL: 'https://media.example.org' }, 'KC_STORAGE_GCS_BUCKET_PREFIX'],
+    [
+      { KC_STORAGE_GCS_BUCKET_PREFIX: 'kc-dev-', KC_MEDIA_PUBLIC_URL: 'https://media.example.org', KC_STORAGE_LOCAL_DIR: '/var/kc-files', KC_API_PUBLIC_URL: 'http://localhost:8080' },
+      'KC_STORAGE_LOCAL_DIR',
+    ],
+  ])('refuses to start with a cloud file store that is half configured, misnamed, or beside a local one: %j', (env, variable) => {
+    expect(configErrorOf(env).variable).toBe(variable);
   });
 
   it('refuses to start with Gemini selected and no key, or with an unknown provider', () => {

@@ -1,15 +1,16 @@
 name: CI — backend
 
 # Database lane, called by ci.yml when migrations, seed/config, the Supabase
-# adapter package, the API server (app/apps/api), its client package or CI
-# plumbing changed. Boots a fresh local Supabase stack
+# adapter package, the API server (app/apps/api), its client package, its cloud
+# environment (infra/) or CI plumbing changed. Boots a fresh local Supabase stack
 # (supabase/migrations: 0001_baseline.sql, then any later migration), runs the
 # pgTAP suites of supabase/tests on an empty scratch database of the same server
 # (plus the reference and content seed loaders, applied twice), the RPC grants
 # check, the database.types.ts drift check, the FSM catalog contract, the
 # SECURITY DEFINER SQL probe / port contract integration tests and the API
 # server's database suites. A second job builds the API's container image and
-# starts it. The migration chain, destructive-op and baseline-assembly scans
+# starts it; a third checks the API's cloud environment (infra/gcp) without a
+# cloud account. The migration chain, destructive-op and baseline-assembly scans
 # are static and run in ci-static-guards.yml.
 
 on:
@@ -210,6 +211,27 @@ jobs:
           done
           exit 1
 
+      # The API's Cloud Storage object store (ADR-012) is checked against the service's emulator:
+      # the SDK calls are real HTTP requests. The emulator does not page listings, record
+      # Cache-Control or check signed conditions; a real project is checked before a first deploy
+      # (app/apps/api/README.md, "File storage").
+      - name: Start the Cloud Storage emulator for the API suites
+        run: |
+          # fake-gcs-server 1.52, pinned by digest; the same image on two registries.
+          digest=sha256:666f86b873120818b10a5e68d99401422fcf8b00c1f27fe89599c35236f48b4c
+          for repo in mirror.gcr.io/fsouza/fake-gcs-server docker.io/fsouza/fake-gcs-server; do
+            docker run -d --name kc-api-gcs -p 127.0.0.1:4443:4443 "$repo@$digest" \
+              -scheme http -port 4443 -backend memory -public-host 127.0.0.1:4443 -external-url http://127.0.0.1:4443 && break
+            echo "::warning::emulator pull via $repo failed, trying next registry"
+            docker rm -f kc-api-gcs >/dev/null 2>&1 || true
+            sleep 15
+          done
+          for _ in $(seq 1 30); do
+            curl -fs -o /dev/null 'http://127.0.0.1:4443/storage/v1/b?project=kc-test' && exit 0
+            sleep 1
+          done
+          exit 1
+
       # An empty database of the local stack's server with the whole migration chain and the
       # reference data. The connection string is local-only; GITHUB_ENV scopes it to this job.
       - name: Build the API's test database
@@ -217,6 +239,24 @@ jobs:
           set -euo pipefail
           DB_URL="$(supabase status -o env | sed -n 's/^DB_URL="\(.*\)"$/\1/p')"
           DB_URL="$DB_URL" app/apps/api/scripts/kc-test-db.sh | grep '^KC_API_TEST_KC_DATABASE_URL=' >> "$GITHUB_ENV"
+          # The server under test connects as the API's own database user (kc_api), which holds
+          # no rights until it switches role: the shape of a deployment, not the fixtures' owner
+          # connection. The password is made here, for this throwaway server only.
+          api_password="$(openssl rand -hex 24)"
+          echo "::add-mask::$api_password"
+          psql "$DB_URL" -X -v ON_ERROR_STOP=1 -q -c "alter role kc_api password '$api_password'"
+          api_url="$(sed -E "s#://[^@]*@#://kc_api:${api_password}@#" <<<"${DB_URL%/*}/kc_api_test")"
+          echo "KC_API_TEST_API_DATABASE_URL=$api_url" >> "$GITHUB_ENV"
+          # The API's compatibility engine is compared, request by request, with the stack's own
+          # PostgREST over the stack's database (ADR-010). Local-only values of a throwaway stack.
+          eval "$(supabase status -o env | grep -E '^(REST_URL|ANON_KEY|JWT_SECRET)=')"
+          echo "::add-mask::$JWT_SECRET"
+          {
+            echo "KC_API_TEST_POSTGREST_URL=$REST_URL"
+            echo "KC_API_TEST_POSTGREST_ANON_KEY=$ANON_KEY"
+            echo "KC_API_TEST_POSTGREST_JWT_SECRET=$JWT_SECRET"
+            echo "KC_API_TEST_POSTGREST_DATABASE_URL=$DB_URL"
+          } >> "$GITHUB_ENV"
 
       # KC_API_TEST_DISPOSABLE_DATABASE also collects the platform suites, which create roles
       # and a schema of their own: allowed here, the database is thrown away with the stack.
@@ -226,6 +266,7 @@ jobs:
         env:
           REDIS_URL: redis://127.0.0.1:6379
           KC_API_TEST_DISPOSABLE_DATABASE: '1'
+          KC_API_TEST_GCS_ENDPOINT: http://127.0.0.1:4443
         run: DATABASE_URL="$KC_API_TEST_KC_DATABASE_URL" pnpm --filter @kc/api test:coverage
 
       - name: Diagnose (on failure)
@@ -255,6 +296,45 @@ jobs:
       - name: Stop Supabase
         if: always()
         run: supabase stop || true
+
+  # The cloud environment of the API (infra/gcp, ADR-009 phase 2). No cloud account is
+  # involved: the configuration is formatted, validated and tested against a mocked provider.
+  infra:
+    name: cloud environment · terraform fmt · validate · test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # Pinned release binary, fetched directly and checked against its SHA-256 (from the
+      # release's terraform_<version>_SHA256SUMS), as the workflow linter is.
+      - name: Install Terraform 1.17.2
+        env:
+          TERRAFORM_VERSION: 1.17.2
+          TERRAFORM_SHA256: e6f16b2f0b137ee5729caa8c4e79a3bae4ee261acd198a1fcfa8584a6296605b
+        run: |
+          set -euo pipefail
+          asset="terraform_${TERRAFORM_VERSION}_linux_amd64.zip"
+          curl -fsSL --retry 3 --retry-all-errors -o "$RUNNER_TEMP/$asset" \
+            "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/${asset}"
+          echo "${TERRAFORM_SHA256}  $RUNNER_TEMP/$asset" | sha256sum --check --strict -
+          unzip -q "$RUNNER_TEMP/$asset" terraform -d "$RUNNER_TEMP/bin"
+          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+
+      - name: Format
+        working-directory: infra/gcp
+        run: terraform fmt -check -recursive
+
+      # The provider is the version and checksums of .terraform.lock.hcl; no state is read.
+      - name: Validate
+        working-directory: infra/gcp
+        run: terraform init -backend=false -input=false -lockfile=readonly && terraform validate
+
+      - name: Test (mocked provider)
+        working-directory: infra/gcp
+        run: terraform test
 
   # The image is what the hosting platform runs (ADR-009 phase 2). Building it proves the
   # Dockerfile, the bundle and the production dependency set; starting it proves the process
