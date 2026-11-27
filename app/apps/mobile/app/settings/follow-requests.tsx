@@ -22,6 +22,7 @@ import {
 import { rtlTextAlignStart } from '../../src/lib/rtlTextAlignStart';
 import { webTextRtl, webViewRtl } from '../../src/lib/webRtlStyle';
 import { KcFlashList } from '../../src/components/lists/KcFlashList';
+export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
 
 const requestKeyExtractor = (r: FollowRequestWithUser) => r.requester.userId;
 

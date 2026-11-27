@@ -48,7 +48,7 @@ export default function MoneyVisibilityScreen() {
   });
 
   return (
-    <AdminScreenGuard isLoading={rolesLoading} allowed={allowed} loadingLabel={t.loading} forbiddenLabel={t.forbiddenTitle}>
+    <AdminScreenGuard isLoading={rolesLoading} allowed={allowed} loadingLabel={t.loading}>
       <View style={styles.root}>
         <MoneySubNav active="visibility" />
         <ScrollView contentContainerStyle={styles.content}>

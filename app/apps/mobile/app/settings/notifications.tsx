@@ -55,6 +55,7 @@ const useStyles = makeUseStyles(({ colors }) => ({
     borderRadius: radius.sm,
   },
   buttonText: { ...typography.body, color: colors.textInverse },
+  statusCopy: { flex: 1, gap: spacing.xs },
 }));
 
 export default function NotificationSettingsScreen() {
@@ -109,9 +110,14 @@ export default function NotificationSettingsScreen() {
               {t('notifications.deviceStatusSection')}
             </Text>
             <View style={styles.statusRow}>
+              <View style={styles.statusCopy}>
               <Text style={styles.statusText}>
                 {t(`notifications.${permissionKey[permission.status]}`)}
               </Text>
+              {permission.status === 'askable' ? (
+                <Text style={styles.statusText}>{t('notifications.permissionExplainer')}</Text>
+              ) : null}
+              </View>
               {permission.status !== 'loading' && permission.status !== 'granted' && (
                 <Pressable
                   testID="notification-permission-action"

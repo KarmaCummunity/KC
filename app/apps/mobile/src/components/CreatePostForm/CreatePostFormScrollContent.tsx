@@ -61,6 +61,7 @@ export interface CreatePostFormScrollContentProps {
   /** Stops the photo uploads still in flight. */
   readonly onCancelUploads?: () => void;
   readonly onRemovePhoto: (path: string) => void;
+  readonly permissionBlocked?: boolean;
 }
 
 export function CreatePostFormScrollContent({
@@ -101,6 +102,7 @@ export function CreatePostFormScrollContent({
   onAddPhotos,
   onCancelUploads,
   onRemovePhoto,
+  permissionBlocked,
 }: CreatePostFormScrollContentProps) {
   const { t } = useTranslation();
   const styles = useCreatePostStyles();
@@ -123,6 +125,7 @@ export function CreatePostFormScrollContent({
           onAdd={onAddPhotos}
           onCancelUploads={onCancelUploads}
           onRemove={onRemovePhoto}
+          permissionBlocked={permissionBlocked}
         />
       </FormSection>
 

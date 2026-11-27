@@ -29,6 +29,21 @@ function isCurrent(deps: RegistrationDeps, state: RegistrationState): boolean {
   return registrations.get(deps.deviceRepo) === state && deps.isCurrent?.() !== false;
 }
 
+/** Drop a previously saved token so the server stops pushing after permission is withdrawn. */
+async function deactivateSavedToken(deps: RegistrationDeps, state: RegistrationState): Promise<void> {
+  const token = state.lastToken;
+  if (!token) return;
+  try {
+    await new DeactivateDeviceUseCase(deps.deviceRepo).execute(token);
+    if (isCurrent(deps, state) || registrations.get(deps.deviceRepo) === state) {
+      state.lastToken = undefined;
+      state.savedExpoToken.clear();
+    }
+  } catch {
+    // Best effort: a later explicit registration or sign-out retries.
+  }
+}
+
 export function registerCurrentDeviceIfPermitted(
   userId: string,
   deps: RegistrationDeps,
@@ -63,7 +78,11 @@ async function register(
   if (!Device.isDevice || !isCurrent(deps, state)) return false;
   await ensureNotificationChannels();
   const perm = await Notifications.getPermissionsAsync();
-  if (perm.status !== 'granted' || !isCurrent(deps, state)) return false;
+  if (perm.status !== 'granted') {
+    await deactivateSavedToken(deps, state);
+    return false;
+  }
+  if (!isCurrent(deps, state)) return false;
   const projectId = Constants.expoConfig?.extra?.eas?.projectId as string | undefined;
   if (!projectId) {
     console.warn('No EAS projectId configured — push token cannot be registered');
@@ -110,7 +129,14 @@ export async function deactivateCurrentDevice(
     // never delete a newer user's registration if logout's best-effort work runs late.
     await Promise.allSettled([...(previous?.writes ?? [])]);
     if (registrations.has(deps.deviceRepo)) return;
-    const token = previous?.lastToken ?? (await Notifications.getExpoPushTokenAsync({ projectId })).data;
+    let token = previous?.lastToken;
+    if (!token) {
+      // Never fetch a push token unless permission is already granted — the SDK
+      // must not present the system prompt here (guideline 4.5.4).
+      const perm = await Notifications.getPermissionsAsync();
+      if (perm.status !== 'granted') return;
+      token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
+    }
     if (registrations.has(deps.deviceRepo) || deps.isCurrent?.() === false) return;
     await new DeactivateDeviceUseCase(deps.deviceRepo).execute(token);
   } catch {

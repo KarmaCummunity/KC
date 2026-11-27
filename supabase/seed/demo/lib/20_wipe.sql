@@ -30,6 +30,14 @@ begin
   delete from public.follows f
    where f.follower_id = any (p_member_ids) or f.followed_id = any (p_member_ids);
 
+  -- Reports about a demo post or filed by a demo member survive their reporter (the reporter
+  -- column is set to null), so they go first; so do the coverage tasks, which no member owns.
+  delete from public.reports r
+   where r.reporter_id = any (p_member_ids)
+      or (r.target_type = 'post'
+          and r.target_id in (select p.id from public.posts p where p.owner_id = any (p_member_ids)));
+  delete from kc_private.admin_tasks t where kc_private.demo_coverage_label() = any (t.labels);
+
   -- Details, saves, reactions and handoffs of the posts cascade with them.
   delete from public.posts p where p.owner_id = any (p_member_ids);
   get diagnostics v_posts = row_count;
@@ -38,7 +46,7 @@ begin
 end;
 $$;
 comment on function kc_private.demo_wipe_content(uuid[]) is
-  'Demo wipe phase 1: chats, follows and posts of the given demo members.';
+  'Demo wipe phase 1: chats, follows, reports, coverage tasks and posts of the given demo members.';
 
 -- Phase 2: the accounts (everything left cascades from auth.users) and the demo nonprofits.
 -- AC4: a nonprofit with payment history (billing keeps a restricting foreign key) stays and

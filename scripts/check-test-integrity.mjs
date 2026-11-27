@@ -32,13 +32,18 @@
 // carry an override.
 //
 // Pushes and dispatches are not judged: their commits already passed a PR.
-// The checks are textual tripwires, not proof (TD-222).
+// JS/TS markers stay fail-closed on the line-regex set (JS_MARKERS); a
+// dependency-free structural scan (TD-222 / #1818) only ADDS findings
+// (empty tests, early / same-line bare returns). Assertion counts use the
+// structural scan and may only under-count on a misparse (also fail-closed).
+// SQL and config limits stay textual.
 //
 // Inputs (env): EVENT_NAME, BASE_SHA, HEAD_SHA, JUDGE_REF, PR_NUMBER,
 // PR_AUTHOR, GITHUB_REPOSITORY, GITHUB_TOKEN.
 
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { countJsAssertions, findJsWeakening } from './check-test-integrity-ast.mjs';
 import { ownerApprovalRequired } from './ci-base.mjs';
 import { findOwnerOverride } from './ci-github.mjs';
 
@@ -86,8 +91,20 @@ export function stripComments(text, sql = false) {
 
 /** Count assertions in the text of a test file at `path` (comments ignored). */
 export function countAssertions(path, text) {
-  const sql = isSqlTest(path);
-  return stripComments(text ?? '', sql).match(sql ? SQL_ASSERTION : JS_ASSERTION)?.length ?? 0;
+  if (isSqlTest(path)) {
+    return stripComments(text ?? '', true).match(SQL_ASSERTION)?.length ?? 0;
+  }
+  // Structural scan (strings/comments ignored). A tokenizer misparse can only
+  // lower this count, which fails closed on net-removal (TD-222 / #1818).
+  return countJsAssertions(text ?? '');
+}
+
+/** Textual assertion count (comment-stripped regex) — baseline for fail-closed pins. */
+export function countAssertionsTextual(path, text) {
+  if (isSqlTest(path)) {
+    return stripComments(text ?? '', true).match(SQL_ASSERTION)?.length ?? 0;
+  }
+  return stripComments(text ?? '', false).match(JS_ASSERTION)?.length ?? 0;
 }
 
 /** Numbers captured by `re` in `lines`, grouped by key ('' when the regex has one group). */
@@ -130,6 +147,33 @@ function markerHits(file, markers) {
   return out;
 }
 
+/**
+ * JS/TS weakening: line-regex JS_MARKERS first (fail closed — at least as
+ * strict as dev), then OR in structural findings the regex cannot see
+ * (empty / assertion-free tests, early or same-line bare returns). The AST
+ * path never removes a regex hit (#1818 CI-owner review).
+ */
+function jsWeakeningHits(file) {
+  const out = markerHits(file, JS_MARKERS);
+  const seenLines = new Set(out.map((r) => r.line));
+  const addedTexts = new Set(file.added.map((l) => l.trim()).filter(Boolean));
+  const source = typeof file.newText === 'string' && file.newText.length > 0 ? file.newText : file.added.join('\n');
+  for (const hit of findJsWeakening(source)) {
+    const inDiff =
+      addedTexts.has(hit.lineText) ||
+      (typeof file.newText !== 'string' &&
+        file.added.some((l) => l.includes(hit.lineText) || hit.lineText.includes(l.trim())));
+    if (!inDiff || seenLines.has(hit.lineText)) continue;
+    seenLines.add(hit.lineText);
+    out.push({
+      path: file.path,
+      line: hit.lineText,
+      text: `${file.path}: adds ${hit.why}: \`${hit.lineText.slice(0, 120)}\``,
+    });
+  }
+  return out;
+}
+
 /** Whether a parsed diff entry was or is a test file. */
 export const testSides = (file) => ({
   wasTest: file.oldPath !== null && isTest(file.oldPath),
@@ -155,25 +199,36 @@ export function findViolations(files) {
 export function findViolationRecords(files) {
   const out = [];
   const plain = (text) => ({ path: null, line: null, text });
-  let before = 0;
-  let after = 0;
+  // Fail closed on EITHER measure: dev's textual regex count and the structural
+  // count are tracked separately, so a misparse of the old side can never hide
+  // a removed assertion (never weaker than dev; TD-222 / #1818).
+  const sum = { s: [0, 0], t: [0, 0] };
   const losers = [];
   for (const file of files) {
     const { wasTest, isTestNow } = testSides(file);
     if (wasTest && file.newPath === null) out.push(plain(`${file.oldPath}: deletes a test file`));
     if (wasTest && file.newPath !== null && file.newPath !== file.oldPath) out.push(plain(`${file.oldPath}: renamed or moved to ${file.newPath}`));
-    if (isTestNow) out.push(...markerHits(file, isSqlTest(file.path) ? SQL_MARKERS : JS_MARKERS));
+    if (isTestNow) {
+      out.push(...(isSqlTest(file.path) ? markerHits(file, SQL_MARKERS) : jsWeakeningHits(file)));
+    }
     if (!file.path.endsWith('.md')) out.push(...markerHits(file, [{ re: NO_TESTS_SWITCH, why: 'a switch that passes when no tests exist' }]).map((r) => plain(r.text)));
     if (VITEST_CONFIG.test(file.path)) out.push(...loosenedLimits(file, THRESHOLD, (o, n) => n < o, 'coverage threshold').map(plain));
     out.push(...loosenedLimits(file, MAX_WARNINGS, (o, n) => n > o, '--max-warnings').map(plain));
     // A deleted test is already a violation; count only files that survive.
-    const old = wasTest && file.newPath !== null ? countAssertions(file.oldPath, file.oldText) : 0;
-    const now = isTestNow ? countAssertions(file.newPath, file.newText) : 0;
-    before += old;
-    after += now;
-    if (now < old) losers.push(file.path);
+    const keep = wasTest && file.newPath !== null;
+    let lost = false;
+    for (const [k, count] of [['s', countAssertions], ['t', countAssertionsTextual]]) {
+      const old = keep ? count(file.oldPath, file.oldText) : 0;
+      const now = isTestNow ? count(file.newPath, file.newText) : 0;
+      sum[k][0] += old;
+      sum[k][1] += now;
+      lost ||= now < old;
+    }
+    if (lost) losers.push(file.path);
   }
-  if (after < before) {
+  const drop = ['t', 's'].map((k) => sum[k]).find(([b, a]) => a < b);
+  if (drop) {
+    const [before, after] = drop;
     out.push(plain(`removes ${before - after} assertion(s) net from tests (${before} before, ${after} after; files losing some: ${losers.join(', ')})`));
   }
   return out;

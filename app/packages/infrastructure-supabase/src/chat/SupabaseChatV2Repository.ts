@@ -3,6 +3,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { isMessageReactionType, type Message, type MessageReactionType } from '@kc/domain';
+import type { IChatV2Repository } from '@kc/application';
 import type { Database, Json } from '../database.types';
 import { rowToMessage } from './rowMappers';
 import { chatCall, requireRow } from './mapChatError';
@@ -10,7 +11,7 @@ import { chatCall, requireRow } from './mapChatError';
 // Re-exported for the app's existing imports; the type itself is a domain value object (#2568).
 export type { MessageReactionType } from '@kc/domain';
 
-export class SupabaseChatV2Repository {
+export class SupabaseChatV2Repository implements IChatV2Repository {
   constructor(private readonly client: SupabaseClient<Database>) {}
 
   /** Sets, changes or (with null) clears the caller's reaction; the change arrives as a `reaction` broadcast. */

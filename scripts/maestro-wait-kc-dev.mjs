@@ -7,10 +7,15 @@
 // maestro-run-android.sh calls this between a failed flow and its retry: it probes the auth endpoint
 // until a password sign-in succeeds, so the retry meets a working environment, and when none comes it
 // says so plainly instead of leaving a confusing flow assertion.
+// ci-maestro-android.yml also calls it before the emulator boots, with a longer wait: on 26-27 Nov 2026
+// kc-dev answered HTTP 504 for about eleven hours and 21 of 25 red merge-group runs were that outage,
+// each one dropping its PR from the merge queue and rebuilding the groups behind it. Waiting there turns
+// an outage into a delay. kc-dev also flapped (one good sign-in between 504s, then the retry failed), so
+// KC_WAIT_STREAK asks for several sign-ins in a row before the environment counts as working.
 //
 // Env: EXPO_PUBLIC_SUPABASE_URL, EXPO_PUBLIC_SUPABASE_ANON_KEY, KC_E2E_PASSWORD (required),
 //      KC_E2E_EMAIL (default user1@seed.kc.test), KC_WAIT_TIMEOUT_MS (default 600000),
-//      KC_WAIT_INTERVAL_MS (default 15000).
+//      KC_WAIT_INTERVAL_MS (default 15000), KC_WAIT_STREAK (sign-ins in a row required, default 1).
 // Exit: 0 when a sign-in worked, 1 on timeout. It prints status codes and elapsed time only, never a secret.
 
 import { fileURLToPath } from 'node:url';
@@ -34,19 +39,28 @@ export async function probeSignIn({ url, anonKey, email, password }, fetchImpl =
 }
 
 /**
- * Probe until one succeeds or `timeoutMs` passes. `probe`, `sleep` and `now` are injected so the loop is
- * testable without a network or a clock. Resolves to `{ ok, attempts, waitedMs, detail }`.
+ * Probe until `streak` probes in a row succeed or `timeoutMs` passes; a failed probe starts the count
+ * again. `probe`, `sleep` and `now` are injected so the loop is testable without a network or a clock.
+ * Resolves to `{ ok, attempts, waitedMs, detail }`; on a timeout `detail` is the last failure seen.
  */
-export async function waitForSignIn({ probe, timeoutMs, intervalMs, sleep, now, log = () => {} }) {
+export async function waitForSignIn({ probe, timeoutMs, intervalMs, sleep, now, streak = 1, log = () => {} }) {
   const start = now();
   let attempts = 0;
+  let inARow = 0;
+  let lastFailure = 'no sign-in failed, the wait ended before enough in a row';
   for (;;) {
     attempts += 1;
     const result = await probe();
     const waitedMs = now() - start;
-    if (result.ok) return { ok: true, attempts, waitedMs, detail: result.detail };
-    log(`attempt ${attempts}: ${result.detail}`);
-    if (waitedMs + intervalMs > timeoutMs) return { ok: false, attempts, waitedMs, detail: result.detail };
+    if (result.ok) {
+      inARow += 1;
+      if (inARow >= streak) return { ok: true, attempts, waitedMs, detail: result.detail };
+    } else {
+      inARow = 0;
+      lastFailure = result.detail;
+      log(`attempt ${attempts}: ${result.detail}`);
+    }
+    if (waitedMs + intervalMs > timeoutMs) return { ok: false, attempts, waitedMs, detail: lastFailure };
     await sleep(intervalMs);
   }
 }
@@ -61,6 +75,7 @@ async function main(env = process.env) {
     probe: () => probeSignIn({ url, anonKey, email, password }),
     timeoutMs: Number(env.KC_WAIT_TIMEOUT_MS ?? 600_000),
     intervalMs: Number(env.KC_WAIT_INTERVAL_MS ?? 15_000),
+    streak: Math.max(1, Number(env.KC_WAIT_STREAK ?? 1) || 1),
     sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
     now: Date.now,
     log: (line) => console.log(`kc-dev sign-in: ${line}`),
