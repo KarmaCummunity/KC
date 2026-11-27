@@ -2129,3 +2129,12 @@ The Demo data screen keeps two failures apart: the RPC itself is missing (`not_i
 
 **Affected.** `app/apps/api/src/platform/storage`, `supabase/baseline/local/supabase_shim.sql` (the `storage` schema KC will own: the service role may read a bucket's rules).
 
+## {{ENG:bump-waits-for-empty-queue}} — The version bump waits for an empty merge queue (2026-11-27)
+
+**Decision.** `bump-version-on-merge.yml` pushes the `app/VERSION` bump only when no merge group is waiting in the `dev` merge queue. A merge that leaves groups behind it pushes nothing; the merge that empties the queue pushes one PATCH bump for the whole burst. The ID-assignment commit (spec registry IDs, migration numbers) is still pushed at once. The workflow also runs by hand on `dev`, for the case where the queue emptied without a merge.
+
+**Why.** GitHub rebuilds every waiting merge group when the base branch moves outside the queue, and each rebuilt group runs `CI` from the start. The Maestro lane runs one group at a time (about 15 min of APK build and 30 min of emulator), so its result for a group behind the head was discarded on every merge ahead of it. On 26-27 Nov 2026 groups that had already passed were rebuilt up to five times, merge-group runs lasted two to seven hours, and about fifty agent PRs waited. Rejected: deriving PATCH from the commit count at build time (the release lane, the store builds and `/version.json` all read the committed file); a scheduled catch-up (scheduled runs execute from `main`, which cannot read the dev-only `version-bump` environment).
+
+**Trade-off.** PATCH no longer counts merges: the merges of one burst share a number, told apart by the commit SHA in `/version.json`. `dev` can sit one bump behind when the queue's last entry is dropped instead of merged, until the next merge or a manual run.
+
+**Affected.** `.github/workflows/bump-version-on-merge.yml`, `scripts/bump-version-on-merge.test.mjs`, `AGENTS.md`, `docs/agents/DEPLOY.md`, `docs/agents/RELEASE.md`, `docs/process/MAESTRO.md`.
