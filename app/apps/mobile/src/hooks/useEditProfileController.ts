@@ -16,6 +16,7 @@ import { useAuthStore } from '../store/authStore';
 import { removeUploadedAvatar } from '../services/avatarUpload';
 import { mapEditProfileSaveError } from '../lib/editProfileSaveErrors';
 import { useProfileFieldErrors } from './useProfileFieldErrors';
+import { useAvatarGenerationCleanup } from './useAvatarGenerationCleanup';
 
 export type EditProfileInitialState = {
   readonly displayName: string | null;
@@ -45,9 +46,15 @@ export function useEditProfileController(
   const [streetNumber, setStreetNumber] = useState('');
   const [contactPhone, setContactPhone] = useState('');
   const [biography, setBiography] = useState('');
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [avatarUrl, setAvatarUrlState] = useState<string | null>(null);
   const [dateOfBirth, setDateOfBirth] = useState<string | null>(null);
   const [initial, setInitial] = useState<EditProfileInitialState | null>(null);
+  const avatarCleanup = useAvatarGenerationCleanup(session?.userId, initial?.avatarUrl);
+  /** The form's avatar setter: also tracks unsaved uploads so none outlives the screen. */
+  const setAvatarUrl = useCallback((url: string | null) => {
+    avatarCleanup.trackPicked(url);
+    setAvatarUrlState(url);
+  }, [avatarCleanup]);
   const [notify, setNotify] = useState<{ title: string; message: string } | null>(null);
 
   useEffect(() => {
@@ -66,7 +73,7 @@ export function useEditProfileController(
         setStreetNumber(p.profileStreetNumber ?? '');
         setContactPhone(p.contactPhone ?? '');
         setBiography(p.biography ?? '');
-        setAvatarUrl(p.avatarUrl ?? session.avatarUrl ?? null);
+        setAvatarUrlState(p.avatarUrl ?? session.avatarUrl ?? null);
         setDateOfBirth(selfUser?.dateOfBirth ?? null);
         setInitial({
           displayName: p.displayName,
@@ -148,7 +155,7 @@ export function useEditProfileController(
       }
       const includeBasicInfo = nameChanged || cityChanged;
       const profileAddress = addrChanged ? { street: nextStreet, streetNumber: nextNum } : undefined;
-      if (avatarChanged && avatarUrl === null && initial.avatarUrl) await removeUploadedAvatar(session.userId);
+      if (avatarChanged && avatarUrl === null && initial.avatarUrl) await removeUploadedAvatar(session.userId, initial.avatarUrl);
       await getUpdateProfileUseCase().execute({
         sessionUserId: session.userId,
         userId: session.userId,
@@ -161,6 +168,7 @@ export function useEditProfileController(
         ...(avatarChanged ? { avatarUrl } : {}),
       });
       setSession({ ...session, displayName: trimmedName, avatarUrl });
+      if (avatarChanged) avatarCleanup.committed(avatarUrl);
       await queryClient.invalidateQueries({ queryKey: ['user-profile', session.userId] });
       try {
         const nextOnboarding = await getReconcileDeferredBasicInfoUseCase().execute({
@@ -170,6 +178,20 @@ export function useEditProfileController(
       } catch {
         // Onboarding reconcile is best-effort; profile save already succeeded.
       }
+      // The saved values are now the stored ones. Without this, `isDirty` stays true after a
+      // successful save, so once `saving` flips back to false the unsaved-changes guard can
+      // intercept the back navigation below and show its discard dialog.
+      setInitial({
+        displayName: trimmedName,
+        cityId: city.id,
+        cityName: city.name,
+        profileStreet: nextStreet,
+        profileStreetNumber: nextNum,
+        contactPhone: nextPhone,
+        biography: newBio,
+        avatarUrl,
+        dateOfBirth,
+      });
       router.back();
     } catch (err) {
       const code = err instanceof Error ? err.message : t('profile.editScreen.unknownError');
@@ -179,7 +201,7 @@ export function useEditProfileController(
     }
   }, [
     session, initial, displayName, city, street, streetNumber, contactPhone, biography,
-    avatarUrl, dateOfBirth, dobChanged, acceptSubmit, t, router, queryClient, setSession,
+    avatarUrl, dateOfBirth, dobChanged, acceptSubmit, t, router, queryClient, setSession, avatarCleanup,
   ]);
 
   return {

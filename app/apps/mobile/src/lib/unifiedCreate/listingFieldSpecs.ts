@@ -29,6 +29,12 @@ interface BaseSpec {
   readonly key: string;
   readonly required?: boolean;
   readonly visibleWhen?: VisibleWhen;
+  /**
+   * Static RN testID of the field's text/amount input, for the Maestro device flows. The flow-id
+   * preflight (scripts/maestro-flows.test.mjs) resolves literals only, so a kind that needs device
+   * coverage declares a literal here; `listing-field-${key}` on the frame is not reachable by it.
+   */
+  readonly testID?: string;
 }
 
 export type ListingFieldSpec =
@@ -49,6 +55,8 @@ export type ListingFieldSpec =
   | (BaseSpec & { readonly type: 'toggle'; readonly defaultValue?: boolean })
   // Bookable time slots of a knowledge lesson or consulting hour (#2034): `[{starts_at, ends_at}]`.
   | (BaseSpec & { readonly type: 'slotList'; readonly maxSlots: number })
+  // Days of the week, stored as `Date.getDay()` numbers (a recurring lesson, #2479).
+  | (BaseSpec & { readonly type: 'weekdays' })
   // A detail the form sets without a control (no editor for it yet); seeded from `defaultValue`.
   | (BaseSpec & { readonly type: 'fixed'; readonly defaultValue: unknown });
 

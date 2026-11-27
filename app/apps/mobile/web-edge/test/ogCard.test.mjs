@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildGenericCard, buildPostCard, buildProfileCard, resolveImageUrl, resolveWorld } from '../src/ogCard.mjs';
+import { buildGenericCard, buildPostCard, buildProfileCard, resolveWorld } from '../src/ogCard.mjs';
 import { renderOgHtml } from '../src/ogHtml.mjs';
 import { he } from '../i18n/he.mjs';
 
@@ -39,18 +39,14 @@ describe('buildPostCard', () => {
   });
 });
 
-describe('resolveImageUrl', () => {
-  it('builds the public URL of the cover in the media bucket, encoding each path segment', () => {
-    assert.equal(
-      resolveImageUrl({ cover_bucket: 'post-images', cover_key: 'u/a b.jpg' }, config),
-      'https://proj.supabase.co/storage/v1/object/public/post-images/u/a%20b.jpg',
-    );
-  });
-  it('falls back to the logo for no cover, a foreign bucket or missing config', () => {
-    const logo = 'https://karma-community-kc.com/pwa-icon-512.png';
-    assert.equal(resolveImageUrl({ cover_bucket: null, cover_key: null }, config), logo);
-    assert.equal(resolveImageUrl({ cover_bucket: 'chat-media', cover_key: 'x.jpg' }, config), logo);
-    assert.equal(resolveImageUrl({ cover_bucket: 'post-images', cover_key: 'x.jpg' }, { ...config, supabaseUrl: '' }), logo);
+describe('card image', () => {
+  const logo = { url: 'https://karma-community-kc.com/pwa-icon-512.png', type: 'image/png', width: 512, height: 512 };
+  it('uses the image it is given, else the logo', () => {
+    const chosen = { url: 'https://proj.supabase.co/x-thumb.jpg', type: 'image/jpeg', width: 400, height: 300 };
+    assert.deepEqual(buildPostCard(row(), config, chosen).image, chosen);
+    assert.deepEqual(buildPostCard(row(), config).image, logo);
+    assert.deepEqual(buildGenericCard(config).image, logo);
+    assert.deepEqual(buildProfileCard(config).image, logo);
   });
 });
 
@@ -63,10 +59,24 @@ describe('generic and profile cards', () => {
 
 describe('renderOgHtml', () => {
   it('escapes user input in every attribute', () => {
-    const html = renderOgHtml({ title: '<b>"x"</b>', description: "a&b'", imageUrl: 'https://i/x.png?a=1&b=2' }, 'https://s/post/1');
+    const image = { url: 'https://i/x.png?a=1&b=2', type: 'image/png', width: 512, height: 512 };
+    const html = renderOgHtml({ title: '<b>"x"</b>', description: "a&b'", image }, 'https://s/post/1');
     assert.ok(!html.includes('<b>'));
     assert.ok(html.includes('&lt;b&gt;&quot;x&quot;&lt;/b&gt;'));
     assert.ok(html.includes('a&amp;b&#39;'));
     assert.ok(html.includes('og:image" content="https://i/x.png?a=1&amp;b=2"'));
+  });
+  it('describes the image: secure URL, type and measured size', () => {
+    const html = renderOgHtml({ title: 't', description: 'd', image: { url: 'https://i/x.jpg', type: 'image/jpeg', width: 400, height: 300 } }, 'https://s/post/1');
+    assert.ok(html.includes('og:image:secure_url" content="https://i/x.jpg"'));
+    assert.ok(html.includes('og:image:type" content="image/jpeg"'));
+    assert.ok(html.includes('og:image:width" content="400"'));
+    assert.ok(html.includes('og:image:height" content="300"'));
+    assert.ok(html.includes('twitter:image" content="https://i/x.jpg"'));
+  });
+  it('omits width and height it did not measure, and secure_url for a non-https URL', () => {
+    const html = renderOgHtml({ title: 't', description: 'd', image: { url: 'http://i/x.jpg', type: 'image/jpeg', width: null, height: null } }, 'https://s/post/1');
+    assert.ok(!html.includes('og:image:width'));
+    assert.ok(!html.includes('og:image:secure_url'));
   });
 });

@@ -23,11 +23,11 @@ export const adminTimeHe = {
     rejectedBy:    (name: string) => `נדחה ע"י ${name}`,
     reportedBy:    (name: string) => `מאת ${name}`,
     project:       'פרויקט:',
-    submit:        'שלח לאישור',
+    submit:        'לשלוח לאישור',
     approve:       'אשר',
     reject:        'דחה',
-    edit:          'ערוך',
-    delete:        'מחק',
+    edit:          'לערוך',
+    delete:        'למחוק',
   },
   form: {
     createTitle:      'דיווח חדש',
@@ -37,7 +37,7 @@ export const adminTimeHe = {
     projectLabel:     'פרויקט (אופציונלי)',
     descriptionLabel: 'תיאור (אופציונלי)',
     cancel:           'ביטול',
-    submit:           'שמור',
+    submit:           'לשמור',
   },
   decideModal: {
     approveTitle: 'אישור דיווח',
@@ -49,7 +49,7 @@ export const adminTimeHe = {
   confirm: {
     delete:      'למחוק את הדיווח?',
     deleteTitle: 'אישור מחיקה',
-    deleteOk:    'מחק',
+    deleteOk:    'למחוק',
     deleteCancel:'ביטול',
   },
   errors: {
@@ -58,6 +58,6 @@ export const adminTimeHe = {
     invalid_hours:           'שעות לא תקינות (טווח 0..24).',
     missing_required_fields: 'חסרים שדות חובה.',
     entry_not_found:         'הדיווח לא נמצא.',
-    unknown:                 'אירעה שגיאה. נסה שוב.',
+    unknown:                 'אירעה שגיאה. אפשר לנסות שוב.',
   },
 };

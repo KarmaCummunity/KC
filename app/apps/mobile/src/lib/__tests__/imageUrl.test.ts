@@ -19,15 +19,17 @@ describe('getSupabasePublicImageUrl', () => {
     delete process.env.EXPO_PUBLIC_USE_STORAGE_TRANSFORM;
   });
 
-  it('uses CDN render URL when width/quality are provided (#897)', () => {
+  it('uses CDN render URL when width/quality are provided and the build opted in (#897)', () => {
+    process.env.EXPO_PUBLIC_USE_STORAGE_TRANSFORM = '1';
     const url = getSupabasePublicImageUrl({ bucket: 'post-images', path: 'a/b.jpg', width: 400, quality: 80 });
     expect(url).toContain('/storage/v1/render/image/public/post-images/a/b.jpg');
     expect(url).toContain('width=400');
     expect(url).toContain('format=webp');
   });
 
-  it('falls back to /object/public/ when EXPO_PUBLIC_USE_STORAGE_TRANSFORM=0', () => {
-    process.env.EXPO_PUBLIC_USE_STORAGE_TRANSFORM = '0';
+  it.each([undefined, '0', 'true'])('never asks for a paid transform unless the flag is exactly 1 (flag %s)', (flag) => {
+    if (flag === undefined) delete process.env.EXPO_PUBLIC_USE_STORAGE_TRANSFORM;
+    else process.env.EXPO_PUBLIC_USE_STORAGE_TRANSFORM = flag;
     const url = getSupabasePublicImageUrl({ bucket: 'post-images', path: 'a/b.jpg', width: 400, quality: 80 });
     expect(url).toContain('/storage/v1/object/public/post-images/a/b.jpg');
     expect(url).not.toContain('/render/image/');
@@ -73,7 +75,18 @@ describe('buildSupabaseImageTransformUrl', () => {
 });
 
 describe('getSupabaseFeedImageUrl', () => {
-  it('scales display width to 2x for retina', () => {
+  afterEach(() => {
+    delete process.env.EXPO_PUBLIC_USE_STORAGE_TRANSFORM;
+  });
+
+  it('serves the 400 px -thumb sibling by default, never the 2048 px original', () => {
+    expect(getSupabaseFeedImageUrl('post-images', 'u/b/0.jpg', 180)).toBe(
+      'https://example.supabase.co/storage/v1/object/public/post-images/u/b/0-thumb.jpg',
+    );
+  });
+
+  it('scales display width to 2x for retina when transforms are opted in', () => {
+    process.env.EXPO_PUBLIC_USE_STORAGE_TRANSFORM = '1';
     const url = getSupabaseFeedImageUrl('post-images', 'p.jpg', 100);
     expect(url).toContain('width=200');
   });
@@ -145,7 +158,8 @@ describe('getSupabaseHeroImageUrl (post detail hero)', () => {
     delete process.env.EXPO_PUBLIC_USE_STORAGE_TRANSFORM;
   });
 
-  it('asks for a webp sized to twice the display width, not the 2048 px original', () => {
+  it('asks for a webp sized to twice the display width when transforms are opted in', () => {
+    process.env.EXPO_PUBLIC_USE_STORAGE_TRANSFORM = '1';
     const url = getSupabaseHeroImageUrl('post-images', 'a/b.jpg', 390);
     expect(url).toContain('/storage/v1/render/image/public/post-images/a/b.jpg');
     expect(url).toContain('width=780');
@@ -153,6 +167,7 @@ describe('getSupabaseHeroImageUrl (post detail hero)', () => {
   });
 
   it('caps very wide displays so a desktop window does not ask for the original', () => {
+    process.env.EXPO_PUBLIC_USE_STORAGE_TRANSFORM = '1';
     expect(getSupabaseHeroImageUrl('post-images', 'a/b.jpg', 2000)).toContain('width=1600');
   });
 

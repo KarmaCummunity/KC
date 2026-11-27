@@ -15,7 +15,7 @@ set search_path = ''
 as $$
   select case p_operation
     when 'wipe' then array['wipe_content', 'wipe_accounts']
-    when 'seed' then array['wipe_content', 'wipe_accounts', 'members', 'items', 'rides', 'worlds', 'social', 'chats', 'orgs']
+    when 'seed' then array['wipe_content', 'wipe_accounts', 'members', 'items', 'rides', 'worlds', 'social', 'chats', 'orgs', 'coverage']
   end;
 $$;
 
@@ -56,6 +56,8 @@ declare
   v_claims constant text := coalesce(nullif(current_setting('request.jwt.claims', true), ''), '{}');
   v_sub constant text := coalesce(current_setting('request.jwt.claim.sub', true), '');
   v_out jsonb;
+  -- Highest outbox id before the phase: everything above it was recorded by this phase.
+  v_outbox_mark constant bigint := coalesce((select max(e.id) from kc_private.outbox_events e), 0);
 begin
   -- Both the claims document and the legacy single claim that auth.uid() may read.
   perform set_config('request.jwt.claims', '{}', true);
@@ -72,11 +74,21 @@ begin
     when 'social' then jsonb_build_object('follows_created', kc_private.demo_seed_social())
     when 'chats' then jsonb_build_object('chats_created', kc_private.demo_seed_chats())
     when 'orgs' then jsonb_build_object('organizations_created', kc_private.demo_seed_orgs(p_actor_id))
+    when 'coverage' then jsonb_build_object('coverage_fixtures_created', kc_private.demo_seed_coverage(p_actor_id))
   end;
   if v_out is null then
     raise exception 'demo_phase_invalid' using errcode = 'P0001', detail = p_phase;
   end if;
   perform set_config('kc.rate_limit_exempt', '', true);
+  -- The demo data owns its end state, so the derived work the baseline triggers queued for
+  -- it (match runs, karma entries, notifications and pushes) is closed at once instead of
+  -- being drained by the per-minute fleet (#2495). Embeddings still run: they make the demo
+  -- posts searchable.
+  update kc_private.outbox_events e
+     set processed_at = now()
+   where e.id > v_outbox_mark
+     and e.processed_at is null
+     and e.topic in ('match', 'karma', 'notification', 'notification_push', 'notification_push_receipt');
   perform set_config('request.jwt.claims', v_claims, true);
   perform set_config('request.jwt.claim.sub', v_sub, true);
   return v_out;

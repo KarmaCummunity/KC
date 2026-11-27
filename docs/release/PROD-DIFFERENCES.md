@@ -9,6 +9,8 @@
 
 The main tree must equal the dev commit it was released from. `scripts/release-merge.mjs` squashes a dev head into main and records `dev head <sha>` in the commit body; `scripts/check-main-dev-parity.mjs` (workflow **main ↔ dev parity**, on every push to main and on dispatch) compares the main tree with that commit and fails on any path outside [`prod-differences.allowlist.json`](./prod-differences.allowlist.json).
 
+It uses the **newest** release commit only. A release squashed by hand (no `dev head` line, e.g. v1.9.176 / #2404) is matched to the newest dev commit with the same tree. A path whose main content reached dev after the release (a hotfix cherry-picked from dev, e.g. #2499 from #2498) is listed as "already on dev" and does not fail; content that never existed on dev is drift.
+
 The allowlist is **empty on purpose**. Code that behaves differently in PROD reads a build-time or runtime setting (sections 2–5); the same file ships on both branches. To add a real git difference, add a row below **and** an allowlist entry with a reason (the script's test checks each allowlisted path appears in this file).
 
 Run locally: `node scripts/check-main-dev-parity.mjs --main origin/main` (or `--dev <sha>` to compare with any dev commit).

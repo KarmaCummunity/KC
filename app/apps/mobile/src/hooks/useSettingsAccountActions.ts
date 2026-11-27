@@ -9,6 +9,10 @@ import { performFullSignOut } from '../services/performFullSignOut';
 import { useAuthStore } from '../store/authStore';
 import { container } from '../lib/container';
 import { reportAuthEvent } from '../lib/observability/reportAuthEvent';
+import { pauseRestoreRouting } from '../lib/moderation/restoreRoutingPause';
+
+/** How long the "account deleted" confirmation shows before the device signs out. */
+const DELETE_SIGN_OUT_MS = 1500;
 
 export function useSettingsAccountActions() {
   const { t } = useTranslation();
@@ -16,10 +20,15 @@ export function useSettingsAccountActions() {
   const queryClient = useQueryClient();
   const signOutLocal = useAuthStore((s) => s.signOut);
   const [signingOut, setSigningOut] = useState(false);
+  // FR-SETTINGS-011 AC1: the logout row opens a confirmation; only its confirm signs out.
+  const [signOutConfirmVisible, setSignOutConfirmVisible] = useState(false);
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [deleteSuccessVisible, setDeleteSuccessVisible] = useState(false);
 
   const handleDeleteConfirm = useCallback(async () => {
+    // The deletion pushes `account_changed`; keep the restore screen from replacing the
+    // confirmation below before this device signs out (FR-SETTINGS-012, FR-AUTH-016).
+    pauseRestoreRouting(DELETE_SIGN_OUT_MS + 5_000);
     await getDeleteAccountUseCase().execute();
     setDeleteModalVisible(false);
     setDeleteSuccessVisible(true);
@@ -34,9 +43,13 @@ export function useSettingsAccountActions() {
         setDeleteSuccessVisible(false);
         router.replace('/(auth)');
       }
-    }, 1500);
+    }, DELETE_SIGN_OUT_MS);
   }, [queryClient, router, signOutLocal]);
 
+  const requestSignOut = useCallback(() => setSignOutConfirmVisible(true), []);
+  const cancelSignOut = useCallback(() => setSignOutConfirmVisible(false), []);
+
+  /** The confirmed sign-out: signs the device out and routes to the auth flow (AC2). */
   const handleSignOut = useCallback(async () => {
     if (signingOut) return;
     setSigningOut(true);
@@ -52,6 +65,7 @@ export function useSettingsAccountActions() {
       Alert.alert(t('general.error'), t('settings.signOutFailed'));
     } finally {
       setSigningOut(false);
+      setSignOutConfirmVisible(false);
     }
   }, [queryClient, router, signOutLocal, signingOut, t]);
 
@@ -61,6 +75,9 @@ export function useSettingsAccountActions() {
     setDeleteModalVisible,
     deleteSuccessVisible,
     handleDeleteConfirm,
+    signOutConfirmVisible,
+    requestSignOut,
+    cancelSignOut,
     handleSignOut,
   };
 }

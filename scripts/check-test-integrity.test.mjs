@@ -9,7 +9,8 @@ import { execFileSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { ancestryGapMessage, countAssertions, findViolations, isTest, loadDiff, parseDiff, stripComments } from './check-test-integrity.mjs';
+import { ancestryGapMessage, applyReviewed, countAssertions, countAssertionsTextual, findViolationRecords, findViolations, isTest, loadDiff, parseDiff, parseReviewed, prsThatChangedReviewed, REVIEWED_FILE, reviewedAt, stripComments } from './check-test-integrity.mjs';
+import { countJsAssertions } from './check-test-integrity-ast.mjs';
 
 const SK = '.sk' + 'ip';
 const MARKER_LINES = [
@@ -74,6 +75,57 @@ test('every skip / focus / todo / conditional / alias / option / nocheck / bare-
   for (const line of MARKER_LINES) {
     assert.equal(findViolations([mod('app/a.test.ts', { added: [line] })]).length, 1, line);
   }
+});
+
+test('structural scan adds early / same-line bare returns and empty tests (TD-222)', () => {
+  assert.equal(findViolations([mod('app/a.test.ts', { added: ['if (cond) return;'] })]).length, 1);
+  assert.equal(findViolations([mod('app/a.test.ts', { added: ['return; expect(1).toBe(1);'] })]).length, 1);
+  // Line regex still flags `.skip` inside a string (fail closed, same as dev).
+  assert.equal(findViolations([mod('app/a.test.ts', { added: [`const decoy = "it${SK}('no')";`] })]).length, 1);
+  assert.equal(
+    findViolations([mod('app/a.test.ts', { added: ["it('empty', () => {})"] })]).length,
+    1,
+  );
+});
+
+test('regex / JSX decoys before it.skip cannot hide the marker (fail closed, #1818 review)', () => {
+  const skipLine = `it${SK}('x', () => {});`;
+  const decoys = [
+    "const r = /'/;",
+    "const r = /[/]'/;",
+    'function f(){ return /"/.test(x) }',
+    "const el = <div>don't</div>;",
+  ];
+  for (const decoy of decoys) {
+    const newText = `${decoy}\n${skipLine}\n`;
+    const files = [mod('app/a.test.tsx', { added: [skipLine], newText, oldText: `${decoy}\n` })];
+    assert.ok(findViolations(files).length >= 1, `decoy must not hide marker: ${decoy}`);
+    assert.match(findViolations(files)[0], /skip \/ focus/);
+  }
+});
+
+test('a tokenizer misparse can only lower the assertion count (fails closed)', () => {
+  const clean = 'expect(1).toBe(1);\nexpect(2).toBe(2);\n';
+  // Decoys that previously swallowed the file: structural count must not rise.
+  for (const decoy of ["const r = /'/;\n", "const el = <div>don't</div>;\n"]) {
+    const confused = decoy + clean;
+    assert.ok(
+      countJsAssertions(confused) <= countJsAssertions(clean),
+      `misparse must not inflate assertions: ${decoy}`,
+    );
+    assert.ok(
+      countAssertions('a.test.tsx', confused) <= countAssertionsTextual('a.test.tsx', confused),
+      'structural count stays ≤ textual (fail closed on net-removal)',
+    );
+  }
+});
+
+test('expect/assert inside a string does not count toward assertion totals (TD-222)', () => {
+  const file = mod('app/a.test.ts', {
+    oldText: 'expect(a).toBe(1);\nexpect(b).toBe(2);',
+    newText: "expect(a).toBe(1);\nconst s = 'expect(b).toBe(2)';",
+  });
+  assert.equal(findViolations([file]).length, 1);
 });
 
 test('markers in non-test code are ignored; pgTAP skip in SQL tests is flagged', () => {
@@ -220,4 +272,92 @@ test('ancestryGapMessage names the stale merge-base when main is not an ancestor
     assert.match(msg, new RegExp(first.slice(0, 12)));
     assert.match(msg, /Sync main → dev/);
   });
+});
+
+// ── Reviewed conditional skips (.github/test-integrity-reviewed.json) ──────────
+
+const skipLine = "test.skip(!id, 'opt-in only');";
+const entry = (over = {}) => ({ file: 'app/a.test.ts', line: skipLine, reason: 'opt-in diagnostic, runs only when asked', reviewedIn: 7, ...over });
+const skipDiff = () => [{ oldPath: 'app/a.test.ts', newPath: 'app/a.test.ts', path: 'app/a.test.ts', added: [`  ${skipLine}`], removed: [],
+  oldText: 'expect(1).toBe(1);\n', newText: `expect(1).toBe(1);\n${skipLine}\n` }];
+
+test('parseReviewed accepts a complete entry and rejects incomplete ones', () => {
+  assert.deepEqual(parseReviewed(''), []);
+  assert.deepEqual(parseReviewed(JSON.stringify({ entries: [entry()] })), [entry()]);
+  for (const bad of [
+    { file: 'app/a.ts' },                 // not a test file
+    { line: ` ${skipLine}` },             // not trimmed
+    { line: '' },
+    { reason: 'too short' },
+    { reviewedIn: 0 },
+    { reviewedIn: '7' },
+  ]) assert.throws(() => parseReviewed(JSON.stringify({ entries: [entry(bad)] })), /entry 0/);
+  assert.throws(() => parseReviewed('{"entries":{}}'), /must be an array/);
+});
+
+test('a marker record carries its file and exact trimmed line; other findings carry none', () => {
+  const recs = findViolationRecords(skipDiff());
+  assert.deepEqual(recs.map((r) => [r.path, r.line]), [['app/a.test.ts', skipLine]]);
+  const del = findViolationRecords([{ oldPath: 'app/b.test.ts', newPath: null, path: 'app/b.test.ts', added: [], removed: [], oldText: 'expect(1)' }]);
+  assert.equal(del[0].line, null);
+  assert.deepEqual(findViolations(skipDiff()), recs.map((r) => r.text));
+});
+
+test('applyReviewed accepts only an exact file + line match from a trusted entry', () => {
+  const recs = findViolationRecords(skipDiff());
+  // Base entries are trusted as they are.
+  assert.equal(applyReviewed(recs, { baseEntries: [entry()] }).remaining.length, 0);
+  // A head entry counts only when the PR it names changed the list in this diff.
+  assert.equal(applyReviewed(recs, { headEntries: [entry()] }).remaining.length, 1);
+  assert.equal(applyReviewed(recs, { headEntries: [entry()], introducedPrs: new Set([8]) }).remaining.length, 1);
+  const ok = applyReviewed(recs, { headEntries: [entry()], introducedPrs: new Set([7]) });
+  assert.equal(ok.remaining.length, 0);
+  assert.equal(ok.accepted[0].entry.reviewedIn, 7);
+  // Another file or another line is not covered.
+  assert.equal(applyReviewed(recs, { baseEntries: [entry({ file: 'app/c.test.ts' })] }).remaining.length, 1);
+  assert.equal(applyReviewed(recs, { baseEntries: [entry({ line: 'test.skip(true);' })] }).remaining.length, 1);
+  // Deletions and lost assertions can never be accepted by an entry.
+  const del = findViolationRecords([{ oldPath: 'app/a.test.ts', newPath: null, path: 'app/a.test.ts', added: [], removed: [], oldText: '' }]);
+  assert.equal(applyReviewed(del, { baseEntries: [entry({ line: 'app/a.test.ts: deletes a test file' })] }).remaining.length, 1);
+});
+
+test('prsThatChangedReviewed and reviewedAt read the list and its PRs from git', () => {
+  withRepo((dir, base) => {
+    assert.deepEqual(reviewedAt(base, dir), []);
+    mkdirSync(join(dir, '.github'), { recursive: true });
+    writeFileSync(join(dir, REVIEWED_FILE), JSON.stringify({ entries: [entry()] }));
+    git(dir, 'add', '-A');
+    git(dir, 'commit', '-q', '-m', 'ci: review a skip (#7)');
+    writeFileSync(join(dir, 'app/a.test.ts'), `expect(1).toBe(1);\nexpect(2).toBe(2);\n${skipLine}\n`);
+    git(dir, 'commit', '-qam', 'test: add opt-in (#9)');
+    const head = git(dir, 'rev-parse', 'HEAD');
+    assert.deepEqual([...prsThatChangedReviewed(base, head, dir)], [7]);
+    assert.deepEqual(reviewedAt(head, dir), [entry()]);
+    const recs = findViolationRecords(loadDiff(base, head, dir));
+    const { remaining } = applyReviewed(recs, { headEntries: reviewedAt(head, dir), introducedPrs: prsThatChangedReviewed(base, head, dir) });
+    assert.deepEqual(remaining, []);
+  });
+});
+
+// CI-owner re-review at b814152b: each decoy zeroes the structural OLD count, so
+// only dev's textual count can see the removed expect. Flag on either measure.
+function assertOldMisparseStillFlagged(decoy) {
+  const three = 'expect(a).toBe(1);\nexpect(b).toBe(2);\nexpect(c).toBe(3);';
+  const two = 'expect(a).toBe(1);\nexpect(b).toBe(2);';
+  for (const newText of [`${decoy}\n${two}`, two]) {
+    const file = mod('app/a.test.tsx', { oldText: `${decoy}\n${three}`, newText });
+    assert.ok(findViolations([file]).some((v) => v.includes('removes 1 assertion(s) net')), `${decoy} -> ${newText}`);
+  }
+}
+
+test('removed assertion is flagged after an old-side regex-after-`)` decoy', () => {
+  assertOldMisparseStillFlagged("if (ok) /'/.test(s);");
+});
+
+test('removed assertion is flagged after an old-side generic-arrow decoy', () => {
+  assertOldMisparseStillFlagged('const f = <T,>(x: T) => x; const s = "\'";');
+});
+
+test('removed assertion is flagged after an old-side angle-bracket type-assertion decoy', () => {
+  assertOldMisparseStillFlagged('const x = <any>y; const s = "don\'t";');
 });

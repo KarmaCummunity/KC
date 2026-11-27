@@ -18,6 +18,8 @@ const NETWORK_FAILURE_PATTERN = /network request failed|failed to fetch|network 
 
 /** True for errors worth a Sentry event: not a network blip. */
 export function isReportableError(error: Error): boolean {
+  // PostgreSQL statement cancellation is a backend failure, not an offline network blip.
+  if (/canceling statement due to statement timeout/i.test(error.message)) return true;
   return !NETWORK_FAILURE_PATTERN.test(error.message);
 }
 

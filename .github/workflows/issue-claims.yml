@@ -44,7 +44,10 @@ jobs:
           fi
           release() {
             labels=$(gh issue view "$1" --json labels -q '[.labels[].name | select(. == "in-progress" or startswith("agent:"))] | join(",")')
-            [ -n "$labels" ] && gh issue edit "$1" --remove-label "$labels" && echo "released #$1 ($2)"
+            if [ -n "$labels" ]; then
+              gh issue edit "$1" --remove-label "$labels" || return $?
+              echo "released #$1 ($2)"
+            fi
             return 0
           }
           if [ -n "${PR_NUMBER:-}" ]; then
@@ -62,5 +65,8 @@ jobs:
             [ -z "$claimed" ] && continue
             [ "$(date -u -d "$claimed" +%s)" -gt "$cutoff" ] && continue
             prs=$(gh pr list --state open --search "$n in:body" --json number -q 'length')
-            [ "$prs" = 0 ] && release "$n" stale
+            # A retained claim is a successful no-op, not a failed loop status.
+            if [ "$prs" = 0 ]; then
+              release "$n" stale
+            fi
           done

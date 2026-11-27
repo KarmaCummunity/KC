@@ -9,7 +9,9 @@ import { makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/
 import { AvatarInitials } from './AvatarInitials';
 import { NotifyModal } from './NotifyModal';
 import { PhotoSourceSheet } from './PhotoSourceSheet';
-import { pickAvatarImage, resizeAndUploadAvatar, type AvatarSource } from '../services/avatarUpload';
+import type { AvatarSource } from '../services/avatarUpload';
+import { useAvatarUploadTask } from '../hooks/useAvatarUploadTask';
+import { PermissionSettingsNote } from './PermissionSettingsNote';
 
 interface Props {
   readonly userId: string;
@@ -17,31 +19,21 @@ interface Props {
   readonly avatarUrl: string | null;
   readonly disabled?: boolean;
   readonly onChange: (next: string | null) => void;
+  /** Lets the screen block Save while an upload is running. */
+  readonly onUploadingChange?: (uploading: boolean) => void;
 }
 
-export function EditProfileAvatar({ userId, displayName, avatarUrl, disabled, onChange }: Props) {
+export function EditProfileAvatar({ userId, displayName, avatarUrl, disabled, onChange, onUploadingChange }: Props) {
   const styles = useStyles();
   const { colors } = useTheme();
   const { t } = useTranslation();
   const [sheetVisible, setSheetVisible] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const { uploading, errorMsg, setErrorMsg, permissionBlocked, pickAndUpload } = useAvatarUploadTask({ userId, onChange, onUploadingChange });
   const busy = !!disabled || uploading;
 
-  const handlePick = async (source: AvatarSource) => {
+  const handlePick = (source: AvatarSource) => {
     setSheetVisible(false);
-    setUploading(true);
-    try {
-      const picked = await pickAvatarImage(source);
-      if (!picked) return;
-      const url = await resizeAndUploadAvatar(picked, userId);
-      onChange(url);
-    } catch (err) {
-      // TD-138: `Alert.alert` is a no-op on react-native-web@0.21.2 — use NotifyModal.
-      setErrorMsg(err instanceof Error ? err.message : t('profile.avatarUploadRetry'));
-    } finally {
-      setUploading(false);
-    }
+    void pickAndUpload(source);
   };
 
   const handleRemove = () => {
@@ -63,6 +55,7 @@ export function EditProfileAvatar({ userId, displayName, avatarUrl, disabled, on
         )}
       </TouchableOpacity>
       <Text style={styles.hint}>{avatarUrl ? t('profile.avatarChangeHint') : t('profile.avatarAddHint')}</Text>
+      {permissionBlocked ? <PermissionSettingsNote kind={permissionBlocked} /> : null}
       <PhotoSourceSheet
         visible={sheetVisible}
         canRemove={!!avatarUrl}

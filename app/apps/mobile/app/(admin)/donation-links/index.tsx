@@ -19,6 +19,7 @@ import { openExternalUrl } from '../../../src/utils/openExternalUrl';
 import { adminChipScroll } from '../../../src/components/admin/adminChipScroll';
 import { FormScrollView } from '../../../src/components/ui/FormScrollView';
 export { RouteErrorBoundary as ErrorBoundary } from '../../../src/components/RouteErrorBoundary';
+import { SilentUnauthorizedFallback } from '../../../src/components/permissions/SilentUnauthorizedFallback';
 
 const STATUS_TABS: readonly DonationLinkReviewStatus[] = ['pending', 'approved', 'rejected'];
 
@@ -99,7 +100,7 @@ export default function DonationLinkReviewScreen() {
   );
 
   if (rolesLoading) return <Text style={styles.message}>{t.loading}</Text>;
-  if (!allowed) return <Text style={styles.message}>{t.forbidden}</Text>;
+  if (!allowed) return <SilentUnauthorizedFallback href="/(admin)" />;
 
   return (
     <FormScrollView

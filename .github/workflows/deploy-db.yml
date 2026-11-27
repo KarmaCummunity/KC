@@ -253,9 +253,11 @@ jobs:
           CONTENT_DB_URL="$url" supabase/seed/content/load.sh
 
       # The database starts Edge Functions from its jobs with two Vault secrets
-      # (kc_project_url, kc_service_role_key). Created when missing, updated otherwise, on every
+      # (kc_project_url, kc_verified_service_role_key). Created when missing, updated otherwise, on every
       # deploy so a rotated key heals itself. The key is read from the Management API, masked at
       # once and handed to psql through the environment; only names are printed.
+      # Isolated from the obsolete kc_service_role_key writer in older MAIN copies.
+      # Migrations run first: a missing verified slot is a safe no-op until this succeeds.
       - name: Vault secrets for the database jobs
         env:
           PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
@@ -263,8 +265,7 @@ jobs:
           set -euo pipefail
           url="$(cat supabase/.temp/pooler-url)"
           case "$url" in *"$SUPABASE_PROJECT_REF"*) ;; *) echo "::error::pooler address is not the target project's; refusing."; exit 1 ;; esac
-          key="$(supabase projects api-keys --project-ref "$SUPABASE_PROJECT_REF" -o json | jq -r '[.[] | select(.name == "service_role" or .id == "service_role")][0].api_key // empty')"
-          [ -n "$key" ] || { echo "::error::no service_role key returned for the target project"; exit 1; }
+          key="$(node scripts/release/service-role-key.mjs)"
           echo "::add-mask::$key"
           export KC_VAULT_URL="https://${SUPABASE_PROJECT_REF}.supabase.co" KC_VAULT_KEY="$key"
           psql "$url" -v ON_ERROR_STOP=1 -qAt <<'SQL'
@@ -272,10 +273,10 @@ jobs:
           \getenv vault_key KC_VAULT_KEY
           select vault.create_secret(:'vault_url', 'kc_project_url') where not exists (select 1 from vault.secrets where name = 'kc_project_url');
           select vault.update_secret(id, :'vault_url') from vault.secrets where name = 'kc_project_url';
-          select vault.create_secret(:'vault_key', 'kc_service_role_key') where not exists (select 1 from vault.secrets where name = 'kc_service_role_key');
-          select vault.update_secret(id, :'vault_key') from vault.secrets where name = 'kc_service_role_key';
+          select vault.create_secret(:'vault_key', 'kc_verified_service_role_key') where not exists (select 1 from vault.secrets where name = 'kc_verified_service_role_key');
+          select vault.update_secret(id, :'vault_key') from vault.secrets where name = 'kc_verified_service_role_key';
           SQL
-          psql "$url" -v ON_ERROR_STOP=1 -qAt -c "select 'vault: ' || string_agg(name, ', ' order by name) from vault.secrets where name in ('kc_project_url','kc_service_role_key')"
+          psql "$url" -v ON_ERROR_STOP=1 -qAt -c "select 'vault: ' || string_agg(name, ', ' order by name) from vault.secrets where name in ('kc_project_url','kc_verified_service_role_key')"
 
       # The admin portal's Demo data screen (FR-ADMIN-031) calls RPCs of a dev-only seed
       # (supabase/seed/demo) that is not a migration, so nothing else brings it to kc-dev. It is
@@ -297,6 +298,45 @@ jobs:
           case "$url" in *"$KC_DEV_REF"*) ;; *) echo "::error::pooler address is not kc-dev's; refusing."; exit 1 ;; esac
           psql "$url" -v ON_ERROR_STOP=1 --single-transaction -qAt \
             -c "select set_config('kc.seed_target', 'dev', false)" -f supabase/seed/demo/load.sql
+
+      # The weekly anonymized copy of production (FR-ADMIN-037) lands through a dev-only seed
+      # (supabase/seed/prod-copy) for the same reason, and is installed the same way: on every
+      # dev deploy, after the schema it writes, guarded to kc-dev. load.sql sets the marker that
+      # lets a copy be applied; it copies nothing (the Production copy workflow does, weekly).
+      - name: Production-copy tools (kc-dev only)
+        if: inputs.target == 'dev'
+        env:
+          PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          KC_DEV_REF: enbqriuxvvuontiwslun
+        run: |
+          set -euo pipefail
+          if [ "$SUPABASE_PROJECT_REF" != "$KC_DEV_REF" ]; then
+            echo "::error::the dev target is not kc-dev; refusing to install the production-copy tools."; exit 1
+          fi
+          url="$(cat supabase/.temp/pooler-url)"
+          case "$url" in *"$KC_DEV_REF"*) ;; *) echo "::error::pooler address is not kc-dev's; refusing."; exit 1 ;; esac
+          psql "$url" -v ON_ERROR_STOP=1 --single-transaction -qAt \
+            -c "select set_config('kc.seed_target', 'dev', false)" -f supabase/seed/prod-copy/load.sql
+
+      # kc-dev runs on the smallest compute tier, where the job fleet's log writes drain the
+      # host's IO budget (#2492) and the busiest job runs more often than testers need (#2488).
+      # The migrations keep production's values; a dev-only seed (supabase/seed/dev-tuning)
+      # shortens the run-log retention and slows that job. It runs on every dev deploy, after
+      # the migrations, so a migration that resets a value is tuned again on the same deploy.
+      - name: Job tuning (kc-dev only)
+        if: inputs.target == 'dev'
+        env:
+          PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          KC_DEV_REF: enbqriuxvvuontiwslun
+        run: |
+          set -euo pipefail
+          if [ "$SUPABASE_PROJECT_REF" != "$KC_DEV_REF" ]; then
+            echo "::error::the dev target is not kc-dev; refusing to tune its jobs."; exit 1
+          fi
+          url="$(cat supabase/.temp/pooler-url)"
+          case "$url" in *"$KC_DEV_REF"*) ;; *) echo "::error::pooler address is not kc-dev's; refusing."; exit 1 ;; esac
+          psql "$url" -v ON_ERROR_STOP=1 --single-transaction -qAt \
+            -c "select set_config('kc.seed_target', 'dev', false)" -f supabase/seed/dev-tuning/load.sql
 
       # After a fresh schema the pg_cron launcher was once seen idle on kc-dev (no
       # cron.job_run_details rows for an hour, until a new job was scheduled). Wait up to three

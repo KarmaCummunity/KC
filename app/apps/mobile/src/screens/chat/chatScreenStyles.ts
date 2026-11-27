@@ -1,13 +1,19 @@
 // Styles for `app/chat/[id].tsx` — keeps screen file under architecture LOC cap.
 import { makeUseStyles, typography, spacing, radius } from '@kc/ui';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { rowDirectionStart, rtlTextAlignStart } from '../../lib/rtlLayout';
 
 export const useChatConversationStyles = makeUseStyles(({ colors }) => ({
   container: { flex: 1, backgroundColor: colors.background },
   headerTitle: { ...typography.h3, color: colors.textPrimary },
   messageList: { padding: spacing.base, gap: spacing.sm },
+  // Centered over the thread while its first page loads; touches pass through to the composer.
+  threadLoading: {
+    position: 'absolute', top: 0, bottom: 0, start: 0, end: 0,
+    alignItems: 'center', justifyContent: 'center',
+  },
   inputBar: {
-    flexDirection: 'row', alignItems: 'flex-end',
+    // Reading-direction row (web needs an explicit reverse in RTL; native mirrors `row`).
+    flexDirection: rowDirectionStart, alignItems: 'flex-end',
     paddingHorizontal: spacing.base, paddingVertical: spacing.sm,
     backgroundColor: colors.surface, borderTopWidth: 1, borderTopColor: colors.border, gap: spacing.sm,
   },

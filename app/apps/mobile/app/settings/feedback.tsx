@@ -13,6 +13,7 @@ import { webTextRtl, webViewRtl } from '../../src/lib/webRtlStyle';
 import { useFeedSessionStore } from '../../src/store/feedSessionStore';
 import { container } from '../../src/lib/container';
 import { track } from '../../src/lib/analytics';
+export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
 
 const MIN_BODY = 10;
 const MAX_BODY = 500;

@@ -38,6 +38,8 @@ A decision should be re-opened only when one of the following triggers fires:
 
 ## D-2 — Supabase as the unified backend
 
+> **Superseded (2026-11-21)** by `D-245`: KC moves to an owned NestJS API on Google Cloud, in phases. This entry describes the backend until each phase of that plan lands.
+
 **Decision.** Use Supabase (Postgres, Auth, Storage, Realtime, Edge Functions) as the only backend.
 
 **Rationale.** Single integrated platform, mature RLS for the SRS's authorization model, native Realtime for our chat/feed UX, EU residency available, generous free tier for MVP.
@@ -238,6 +240,8 @@ A decision should be re-opened only when one of the following triggers fires:
 ---
 
 ## D-14 — Deleted user → "Deleted user" placeholder in chats
+
+**Clarified by owner approval 2026-11-20.** Retained counterpart conversation text does not preserve the purged member's shared chat image assets. Those images are removed for both sides at final purge (FR-SETTINGS-012, Q-8).
 
 **Decision.** When one party deletes their account, the counterpart retains the conversation; the deleted user appears as "Deleted user" with a generic avatar. Their messages remain visible.
 
@@ -469,6 +473,8 @@ Web Push parity is deferred — only the adapter changes, the pipeline is shared
 ---
 
 ## D-21 — Privacy mode is a follow-approval flag only (2026-05-15)
+
+**Superseded for profile visibility by owner approval 2026-11-20.** Private now hides the profile from non-approved followers and caps per-field visibility. See `docs/spec/07_cross_cutting_systems.md` §7.12 and FR-PROFILE-003. The text below records the old decision, not the current target contract; separate per-post visibility is unchanged.
 
 **Decision.** `User.privacy_mode = Private` means **one thing**: new follow attempts create a `pending` follow request that the target must approve. It has no other effect on visibility — the profile header, biography, counters, post lists (subject to per-post `visibility`), and followers/following lists are visible to all signed-in viewers, exactly as for a `Public` profile. The lock indicator (`FR-PROFILE-011` / `FR-PROFILE-012`) plus the "Send Follow Request" CTA are the only user-facing differences.
 
@@ -2052,3 +2058,83 @@ The Demo data screen keeps two failures apart: the RPC itself is missing (`not_i
 **Why.** The tools are a seed, not a migration (`D-239`), so nothing brought a change to kc-dev except a manual workflow run. On 2026-11-17 kc-dev ran a copy two merges old (no `worlds` phase, no org staff in every role), and the screen answered "not installed" for every missing-object error, so a production-wired build, an old copy and a broken copy all looked the same (#2434).
 
 **Affected.** `.github/workflows/deploy-db.yml`, `supabase/seed/demo/README.md`, `docs/agents/DEPLOY.md`, `DemoData.ts` (`outdated`, `DEMO_DATA_SEED_PHASES`), `demoDataRows.ts`, `(admin)/demo-data`, `FR-ADMIN-031 AC1, AC11, AC12`.
+
+## D-242 — The weekly production copy: anonymized in the kc-prod job, applied by a dev-only seed (2026-11-19)
+
+**Decision.** `prod-copy-to-dev.yml` (FR-ADMIN-037, D176) has two jobs. `export` holds `supabase-prod` as a listed read-only monitor of `scripts/check-deploy-isolation.mjs`: one read-only transaction (`scripts/prod-copy-export.sql`) selects an allowlist of rows, and `scripts/prod-copy-anonymize.mjs` rewrites them in the same step (keyed HMAC ids, fake names, seed-domain addresses, contact details and ID numbers removed from every free text). Only the age-encrypted result leaves the job. `load` holds `supabase-dev` and applies the document in one transaction with `kc_private.prod_copy_apply`, a dev-only seed (`supabase/seed/prod-copy/`, as `D-239`) that every dev deploy installs (as `D-241`). Copied rows are written through kc-dev's own triggers like any other row; a post they refuse is skipped and counted. A post whose copied fields changed is replaced rather than edited.
+
+**Why.** Anonymizing before the data leaves the job that may read production keeps real names, text and ids off the artifact, the logs and kc-dev, and two allowlists (the export and the anonymizer) must both fail before anything private moves. A seed rather than a migration keeps every copy object off kc-prod. Going through kc-dev's triggers keeps counters, karma, search and matching consistent, which a trigger-free bulk load would break. The post status machine does not allow every move a production post makes, so replacing a changed post is the only path that always works.
+
+**Affected.** `.github/workflows/prod-copy-to-dev.yml`, `scripts/prod-copy-export.sql`, `scripts/prod-copy-anonymize.mjs`, `scripts/check-deploy-isolation.mjs` (`MONITORS`, another holder of prod secrets outside `deploy.yml`, tracked with TD-232), `supabase/seed/prod-copy/`, `.github/workflows/deploy-db.yml`, `docs/SSOT/OPERATOR_RUNBOOK.md` "Production copy to kc-dev".
+
+## D-243 — kc-dev tunes its job cadence and log retention through a dev-only seed (2026-11-19)
+
+**Decision.** The migrations carry production's job schedules and retention periods. Values that only kc-dev needs differently live in `supabase/seed/dev-tuning/load.sql`, which `deploy-db.yml` runs after the migrations on every dev deploy (step **Job tuning (kc-dev only)**, guarded to kc-dev's project ref like the other dev-only seeds of `D-241`). It updates rows of `kc_private.retention_rules`, `kc_private.scheduled_jobs` and `kc_private.matching_settings`; the `scheduled_jobs_sync` trigger reconciles pg_cron in the same transaction. First values: `ops.job_runs` kept 7 days and pg_cron's run log 1 day (#2492; production 30 and 7 days), `chat_system_messages` every 30 seconds (#2488; production 10 seconds), and a matching run scans 200 posts (#2494; production 500).
+
+**Why.** kc-dev runs on the smallest compute tier, where the job fleet's standing log writes drain the host's IO budget and the 10-second consumer runs far more often than a handful of testers need. A migration cannot tell the environments apart, and the dev marker of `D-239` is set only after the migrations of a fresh database; a seed run after every dev deploy re-applies the tuning even when a later migration resets a value.
+
+**Affected.** `supabase/seed/dev-tuning/`, `supabase/tests/128_dev_tuning.sql`, `.github/workflows/deploy-db.yml`, `docs/agents/DEPLOY.md`.
+
+## D-244 — Post photos are sanitized by a structural rewrite, not a re-encode (2026-11-21)
+
+**Decision.** `process-post-media` (KC#2316) makes the copy other members see by parsing the upload fail-closed and rebuilding it from the parts an image needs: for JPEG the tables, the one 8-bit frame, the scans and EOI, plus the ICC profile and Adobe's colour flag; for PNG the image and rendering chunks with their CRCs checked. Every metadata segment is dropped; the EXIF orientation is carried over as a single tag. A file with unknown parts, a second frame, an unsupported coding or bytes after its end is refused. The copy keeps the upload's type and pixel size within the worker's caps (4096 px per edge, 16.8 MP). The worker starts from the database: a debounced kick when a photo is queued, and a minute job as the safety net.
+
+**Why.** A pixel decode and re-encode in the Edge runtime (Jimp) measured ≈ 1.7 s of CPU for a 2048 × 1536 upload, too close to the per-request CPU limit for a production path; the structural rewrite takes milliseconds and about twice the file in memory. The app already re-encodes on the device, so the server's job is that what others receive is exactly an image with no metadata (`FR-POST-005` AC4, `NFR-PRIV-002`). Rejected: a re-encode with a lower pixel cap (still CPU-bound, and it would fail ordinary photos); paid Storage image transformations (cost, and they do not strip the stored original).
+
+**Trade-off.** The entropy-coded image data is passed through as uploaded, not regenerated; viewers' decoders see the uploader's encoding. Resized server derivatives (`FR-POST-005` AC3) are a separate gap.
+
+**Affected.** `supabase/functions/process-post-media/`, migration `*_post_media_processing_activation.sql`, `supabase/tests/132_post_media_processing_activation.sql`, `docs/SSOT/OPERATOR_RUNBOOK.md` "Post photo derivatives".
+
+## D-245 — KC leaves Supabase for an owned NestJS API on Google Cloud, in phases (2026-11-21)
+
+**Decision.** KC's backend becomes a modular monolith KC owns: one NestJS application (`app/apps/api`, one module per bounded context) on Cloud Run, Cloud SQL for PostgreSQL, Redis, Cloud Storage with a CDN and a video pipeline, queue workers in place of Edge Functions, and its own identity module. Final region `me-west1`. The move is a strangler: the API is added in front of the existing database and runs each request under the caller's identity, so RLS and the existing SQL functions keep working unchanged; the app switches from the Supabase adapter to a new `@kc/infrastructure-api` adapter one port at a time, behind a flag, when the port's contract suite (`D-204`) passes on both; the database itself moves last, in one rehearsed step. Eleven phases, each with an automated exit criterion, in [ADR-009](../architecture/adr/ADR-009-backend-platform.md). Supersedes `D-2`.
+
+**Why.** The PM wants a backend that carries a social network with photos and video for many concurrent users (PM, chat, 2026-11-21; cloud, shape and budget posture chosen there). Today the database schema is the public API of every installed build, 731 SQL functions run on the one machine that is hardest to scale, server code on Deno cannot import the domain packages, and media has no transcoding or CDN pipeline (`G53`).
+
+**Rejected.** Adding NestJS beside Supabase (keeps the schema as the public API); self-hosting Supabase's stack (same shape); a service and a database per context from day one (operations cost with no measured need; modules can be split out later); Railway (no region near Israel); AWS (equivalent, the PM chose Google Cloud); a parallel environment switched at the end (one large cut-over against a moving codebase).
+
+**Rules while in flight.** A context not yet moved follows ADR-002. A moved context gets new capabilities as endpoint + adapter method + contract case. No new Edge Function, Realtime channel or Storage bucket once the phase that replaces it has started. Migrations stay in `supabase/migrations/` until the database move.
+
+**Affected.** `docs/architecture/adr/ADR-009-backend-platform.md`, `docs/architecture/target.md` §4; later `app/apps/api`, `app/packages/infrastructure-api`, `infra/gcp/`, the **Deploy** workflow, and in the end `supabase/**` and `app/packages/infrastructure-supabase`.
+
+## D-246 — The API serves application ports through one gateway and hosts the Supabase adapters on a SQL engine (2026-11-21)
+
+**Decision.** The app's data access goes through one route, `POST /v1/ports/<port>/<method>`: the app calls a method of an application port and the API runs it as the caller. On the app, `createRemotePort<Port>()` of the new `@kc/infrastructure-api` is the one generic adapter for every port; a typed domain or application error crosses the wire and is rebuilt as an instance of its class. On the API, `definePort<Port>()` requires an access decision (`member`, `public`, `not_served`) for every method of the interface at compile time. A port is served by running its existing Supabase adapter on the server: `platform/postgrest` answers the PostgREST requests the adapters build with SQL, each request in its own transaction as the caller, so grants and row-level security decide as before. Details and limits in [ADR-010](../architecture/adr/ADR-010-port-gateway.md); it refines phase 5 of `D-245`.
+
+**Why.** 54 ports with about 275 methods sit on 184 adapter files (about 15 000 lines) that use a small PostgREST vocabulary. An endpoint and client adapter per method, or a rewrite of the adapters, is months of work that drifts from the tested originals. The ports are already the typed contract and six have shared contract suites (`D-204`); on 2026-11-21 all six (57 cases) pass end to end through the gateway on the real schema, built locally on plain PostgreSQL by `apps/api/scripts/kc-test-db.sh`.
+
+**Rejected.** An endpoint per method; rewriting adapters first; running PostgREST as a sidecar behind the API (one more service and pool, and the schema stays exposable); tRPC or GraphQL (a second schema next to the port interfaces).
+
+**Open.** Realtime, auth and the Edge Function services are not behind the gateway yet (`app/scripts/check-api-door.mjs` lists them). Arguments are checked against shapes generated from the port interfaces; signed-out access is exactly what the database grants the `anon` role.
+
+**Affected.** `app/apps/api/src/platform/{ports,postgrest}`, `app/apps/api/src/modules/hostedAdapters`, `app/packages/infrastructure-api`, `app/scripts/check-architecture.mjs`, `docs/architecture/adr/ADR-009-backend-platform.md`.
+
+## D-247 — Realtime moves to one WebSocket in the API; topics and policies stay as they are (2026-11-23)
+
+**Decision.** KC's own realtime service is a WebSocket endpoint of the API (`/v1/realtime`). The topics are ADR-003's. A subscription is authorized by the row-level-security policies already written on `realtime.messages`, with the algorithm of the service being replaced: a probe row, read (or inserted) as the caller, in a transaction that is rolled back. Database-sent events use `realtime.messages` as the queue and `pg_notify` as the bell; client-sent events and presence go through Redis. Full text: [`ADR-011`](../architecture/adr/ADR-011-realtime-gateway.md).
+
+**Why.** Authorization stays in SQL next to the data, so every policy and its SQL test keep their meaning and a new topic is still "a policy and a test in the same migration". Database events need no second fan-out system, because every API instance hears every notification. The app's ports and screens do not change.
+
+**Trade-off.** An event can be missed (a reconnect, a restart); ADR-003 already makes realtime an accelerator and never the source of truth. A revoked right takes effect at the next join or token replacement, as today. The protocol is KC's own.
+
+**Affected.** `app/apps/api/src/platform/realtime`, `app/packages/infrastructure-api/src/wire/realtimeWire.ts`, `supabase/baseline/local/supabase_shim.sql` (the `realtime` schema KC will own: the notification and the service role's grants).
+
+## D-248 — Files move to KC's own object store; paths and storage policies stay as they are (2026-11-23)
+
+**Decision.** Bytes go to Google Cloud Storage behind one `ObjectStore` interface in the API (a local directory in development and tests). `storage.objects` stays, as KC's index of its files, and the row-level-security policies already written on it decide every upload, read and delete: the API asks them in a transaction that is rolled back. The app uploads with a signed URL the API issues and reads public files from KC's media domain; bytes never pass through the API. Full text: [`ADR-012`](../architecture/adr/ADR-012-media-storage.md).
+
+**Why.** The same reasoning as for realtime (`D-247`): authorization stays in SQL next to the data, the paths the app and the database already use do not change, and the SQL that reads `storage.objects` keeps working.
+
+**Trade-off.** KC owns a `storage` schema it must keep in step with the store (the reconciliation job exists for that). A signed URL outlives a right that was revoked, until it expires.
+
+**Affected.** `app/apps/api/src/platform/storage`, `supabase/baseline/local/supabase_shim.sql` (the `storage` schema KC will own: the service role may read a bucket's rules).
+
+## {{ENG:bump-waits-for-empty-queue}} — The version bump waits for an empty merge queue (2026-11-27)
+
+**Decision.** `bump-version-on-merge.yml` pushes the `app/VERSION` bump only when no merge group is waiting in the `dev` merge queue. A merge that leaves groups behind it pushes nothing; the merge that empties the queue pushes one PATCH bump for the whole burst. The ID-assignment commit (spec registry IDs, migration numbers) is still pushed at once. The workflow also runs by hand on `dev`, for the case where the queue emptied without a merge.
+
+**Why.** GitHub rebuilds every waiting merge group when the base branch moves outside the queue, and each rebuilt group runs `CI` from the start. The Maestro lane runs one group at a time (about 15 min of APK build and 30 min of emulator), so its result for a group behind the head was discarded on every merge ahead of it. On 26-27 Nov 2026 groups that had already passed were rebuilt up to five times, merge-group runs lasted two to seven hours, and about fifty agent PRs waited. Rejected: deriving PATCH from the commit count at build time (the release lane, the store builds and `/version.json` all read the committed file); a scheduled catch-up (scheduled runs execute from `main`, which cannot read the dev-only `version-bump` environment).
+
+**Trade-off.** PATCH no longer counts merges: the merges of one burst share a number, told apart by the commit SHA in `/version.json`. `dev` can sit one bump behind when the queue's last entry is dropped instead of merged, until the next merge or a manual run.
+
+**Affected.** `.github/workflows/bump-version-on-merge.yml`, `scripts/bump-version-on-merge.test.mjs`, `AGENTS.md`, `docs/agents/DEPLOY.md`, `docs/agents/RELEASE.md`, `docs/process/MAESTRO.md`.

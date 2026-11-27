@@ -31,6 +31,7 @@ describe('SupabaseChatRealtime — subscribeToChat', () => {
     expect(topic.bindings.map((b) => [b.type, b.filter.event])).toEqual([
       ['broadcast', 'INSERT'],
       ['broadcast', 'read'],
+      ['broadcast', 'reaction'],
       ['broadcast', 'chat_updated'],
     ]);
     expect(f.created).toHaveLength(1);
@@ -66,6 +67,25 @@ describe('SupabaseChatRealtime — subscribeToChat', () => {
     expect(onChatChanged).toHaveBeenNthCalledWith(2, { chatId: 'c_1', anchorPostId: null });
   });
 
+  it('reaction broadcast → onReaction for a set and a cleared reaction (#2568)', async () => {
+    const onReaction = vi.fn();
+    const { topic } = await sub({ onReaction });
+    topic.emit('broadcast', 'reaction', { payload: { message_id: 'm_1', user_id: 'u_2', reaction_type: 'love' } });
+    topic.emit('broadcast', 'reaction', { payload: { message_id: 'm_1', user_id: 'u_2', reaction_type: null } });
+    expect(onReaction).toHaveBeenNthCalledWith(1, { messageId: 'm_1', userId: 'u_2', reactionType: 'love' });
+    expect(onReaction).toHaveBeenNthCalledWith(2, { messageId: 'm_1', userId: 'u_2', reactionType: null });
+  });
+
+  it('ignores a reaction broadcast with missing ids or an unknown type', async () => {
+    const onReaction = vi.fn();
+    const { topic } = await sub({ onReaction });
+    topic.emit('broadcast', 'reaction', { payload: { user_id: 'u_2', reaction_type: 'like' } });
+    topic.emit('broadcast', 'reaction', { payload: { message_id: 'm_1', reaction_type: 'like' } });
+    topic.emit('broadcast', 'reaction', { payload: { message_id: 'm_1', user_id: 'u_2', reaction_type: 'angry' } });
+    topic.emit('broadcast', 'reaction', {});
+    expect(onReaction).not.toHaveBeenCalled();
+  });
+
   it('ignores an INSERT broadcast without a record', async () => {
     const { topic, cb } = await sub();
     topic.emit('broadcast', 'INSERT', { payload: { op: 'INSERT' } });
@@ -81,6 +101,18 @@ describe('SupabaseChatRealtime — subscribeToChat', () => {
     expect(cb.onError).toHaveBeenCalledTimes(2);
     expect(cb.onError.mock.calls[0]?.[0]?.message).toBe('chat channel channel_error');
     expect(cb.onError.mock.calls[1]?.[0]?.message).toBe('chat channel timed_out');
+  });
+
+  // #1778: the messages sent while the channel was down are re-read once it rejoins.
+  it('asks for a resync when the channel rejoins after a failure, and only then', async () => {
+    const onResync = vi.fn();
+    const { topic } = await sub({ onResync });
+    topic.statusCb!('SUBSCRIBED');
+    expect(onResync).not.toHaveBeenCalled();
+    topic.statusCb!('TIMED_OUT');
+    topic.statusCb!('SUBSCRIBED');
+    topic.statusCb!('SUBSCRIBED');
+    expect(onResync).toHaveBeenCalledTimes(1);
   });
 
   it('unsubscribe removes the channel it opened', async () => {

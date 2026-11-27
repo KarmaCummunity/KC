@@ -3,6 +3,7 @@
 // with a purpose-built control per field type, styled like the rest of the create form.
 import React from 'react';
 import { format } from 'date-fns';
+import { isRideWeekday } from '@kc/domain';
 import { Switch } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { TextField } from '../ui/TextField';
@@ -12,6 +13,7 @@ import { clampWholeNumber, visibleDetailSpecs, type ListingFieldSpec } from '../
 import { detailField } from '../../lib/unifiedCreate/listingFormProblem';
 import { CountStepper } from './CountStepper';
 import { KnowledgeSlotListField } from './KnowledgeSlotListField';
+import { RideWeekdayPicker } from '../giving/RideWeekdayPicker';
 import { ListingFieldFrame, useListingFieldProblem } from './ListingFieldFrame';
 import { Chip } from '../ui/Chip';
 import { ChipSelectRow } from '../filterKit/ChipSelectRow';
@@ -155,6 +157,7 @@ function FieldControl({ spec, value, onChange, disabled }: ControlProps) {
     case 'amount':
       return (
         <TextField
+          testID={spec.testID}
           label={label}
           required={spec.required}
           errorText={errorText}
@@ -185,6 +188,7 @@ function FieldControl({ spec, value, onChange, disabled }: ControlProps) {
     case 'text':
       return (
         <TextField
+          testID={spec.testID}
           label={label}
           required={spec.required}
           errorText={errorText}
@@ -202,6 +206,10 @@ function FieldControl({ spec, value, onChange, disabled }: ControlProps) {
       );
     case 'toggle':
       return <Switch value={value === true} onValueChange={set} disabled={disabled} />;
+    case 'weekdays':
+      return (
+        <RideWeekdayPicker value={Array.isArray(value) ? value.filter(isRideWeekday) : []} onChange={set} disabled={disabled} />
+      );
   }
 }
 

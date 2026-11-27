@@ -25,7 +25,7 @@ export async function loadChannelConfigViaRpc(rpc: RpcFn): Promise<ChannelConfig
 
 export type SenderDeps = {
   /** The only accepted bearer token (`SUPABASE_SERVICE_ROLE_KEY`). */
-  serviceKey: string;
+  serviceKey: string | string[];
   rpc: RpcFn;
   /** Returns the channel settings (or null); see loadChannelConfigViaRpc. */
   loadChannelConfig: () => Promise<ChannelConfig | null>;

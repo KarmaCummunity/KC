@@ -188,6 +188,14 @@ describe('useFilterStore — activeCount() per dimension', () => {
     expect(useFilterStore.getState().activeCount()).toBe(1);
   });
 
+  it('counts hasPhotoOnly=true as 1, defaults to off and is cleared by clearAll (#2540)', () => {
+    expect(useFilterStore.getState().hasPhotoOnly).toBe(false);
+    useFilterStore.getState().setHasPhotoOnly(true);
+    expect(useFilterStore.getState().activeCount()).toBe(1);
+    useFilterStore.getState().clearAll();
+    expect(useFilterStore.getState().hasPhotoOnly).toBe(false);
+  });
+
   it('counts worlds and subcategories as active filters', () => {
     useFilterStore.getState().setWorlds(['items']);
     expect(useFilterStore.getState().activeCount()).toBe(1);
@@ -252,6 +260,15 @@ describe('useFilterStore — persisted state migration (v4 -> v5)', () => {
       followersOnly: true,
       searchQuery: 'laptop',
     });
+  });
+  it('keeps hasPhotoOnly off for a saved filter that predates it (#2540)', () => {
+    const migrate = (
+      useFilterStore as unknown as {
+        persist: { getOptions: () => { migrate?: (persisted: unknown, version: number) => unknown } };
+      }
+    ).persist.getOptions().migrate;
+    expect(migrate!({ type: 'Give' }, 4)).toMatchObject({ hasPhotoOnly: false });
+    expect(migrate!({ hasPhotoOnly: true }, 4)).toMatchObject({ hasPhotoOnly: true });
   });
   it('falls back to defaults when the persisted state is not an object', () => {
     const migrate = (

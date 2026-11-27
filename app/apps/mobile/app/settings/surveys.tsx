@@ -26,6 +26,7 @@ import {
 } from '../../src/lib/shareResearchSurvey';
 import { triggerResearchShare } from '../../src/lib/triggerResearchShare';
 import { useFeedSessionStore } from '../../src/store/feedSessionStore';
+export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
 
 type ChipColors = { bg: string; text: string };
 
@@ -122,8 +123,9 @@ export default function SurveysHubScreen() {
     void triggerResearchShare(
       RESEARCH_SHARE_SRC_SETTINGS,
       {
-        title: t('survey.shareResearch.shareTitle'),
-        message: t('survey.shareResearch.shareMessage'),
+        // One share copy for every placement of the research link (FR-RESEARCH-004, #1790).
+        title: t('research.share.shareTitle'),
+        message: t('research.share.shareMessage'),
         toastShared: t('survey.shareResearch.toastShared'),
         toastCopied: t('survey.shareResearch.toastCopied'),
         toastFailed: t('survey.shareResearch.toastFailed'),

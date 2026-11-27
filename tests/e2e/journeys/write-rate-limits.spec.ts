@@ -12,8 +12,9 @@
 // Handoff requests (30 an hour) and follows (100 an hour) use the same limiter; reaching them
 // would take that many real writes on kc-dev every night, so they stay with the pgTAP suite.
 //
-// It runs as a member no other journey signs in as (user4 of the seed), so the quota of the
-// members who publish in the other journeys is untouched. No browser.
+// It runs as user4 of the seed (shared with the account-deletion restore journey; the suite is
+// single-worker and that journey restores before it ends), so the quota of the members who
+// publish in the other journeys is untouched. No browser.
 import { test, expect } from '@playwright/test';
 import { rest, runTag, sessionFor } from '../lib/api';
 import { SUPABASE_URL, USER_D, anonKey } from '../lib/env';

@@ -239,3 +239,29 @@ describe('FiltersSection — world and subcategory behavior', () => {
     expect(screen.queryByTestId('filters-condition')).toBeNull();
   });
 });
+
+describe('FiltersSection — photo filter (#2540)', () => {
+  afterEach(cleanup);
+
+  it('shows the label, is off by default and patches the value when tapped', () => {
+    const onHasPhotoOnlyChange = vi.fn();
+    renderFiltersSection({ onHasPhotoOnlyChange });
+
+    expect(screen.getByText('filters.withPhotoOnly')).toBeTruthy();
+    fireEvent.click(screen.getByTestId('photo-chip-only'));
+    expect(onHasPhotoOnlyChange).toHaveBeenCalledWith(true);
+  });
+
+  it('clears the filter when the chip is tapped again', () => {
+    const onHasPhotoOnlyChange = vi.fn();
+    renderFiltersSection({ hasPhotoOnly: true, onHasPhotoOnlyChange });
+
+    fireEvent.click(screen.getByTestId('photo-chip-only'));
+    expect(onHasPhotoOnlyChange).toHaveBeenCalledWith(false);
+  });
+
+  it('hides the row on a sheet that does not handle it', () => {
+    renderFiltersSection({});
+    expect(screen.queryByTestId('filters-photo')).toBeNull();
+  });
+});

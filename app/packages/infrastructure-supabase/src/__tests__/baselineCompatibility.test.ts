@@ -62,9 +62,11 @@ describe('baseline compatibility inventory', () => {
     expect(Object.keys(MIGRATION_STATUS).sort()).toEqual([...PACKAGE_IDS].sort());
   });
 
-  it('every dev-only seed RPC the scan accepts is declared by the demo-data seed (FR-ADMIN-031)', () => {
-    const seedDir = path.join(REPO_ROOT, 'supabase/seed/demo/lib');
-    const seedSql = fs.readdirSync(seedDir).map((file) => fs.readFileSync(path.join(seedDir, file), 'utf8')).join('\n');
+  it('every dev-only seed RPC the scan accepts is declared by a dev-only seed (FR-ADMIN-031, FR-ADMIN-037)', () => {
+    const seedSql = ['supabase/seed/demo/lib', 'supabase/seed/prod-copy/lib']
+      .map((dir) => path.join(REPO_ROOT, dir))
+      .flatMap((dir) => fs.readdirSync(dir).map((file) => fs.readFileSync(path.join(dir, file), 'utf8')))
+      .join('\n');
     const undeclared = [...DEV_SEED_RPCS].filter((name) => !seedSql.includes(`function public.${name}(`));
     expect(undeclared).toEqual([]);
     // Never a baseline object: a migrated RPC must leave this list.

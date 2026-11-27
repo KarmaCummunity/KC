@@ -1,3 +1,4 @@
+import { guestBrowseEn } from './modules/guestBrowse';
 // ─────────────────────────────────────────────
 // English (en) translation bundle — Karma Community
 // Mapped to: FR-SETTINGS-018 (opt-in English UI locale). Machine-translated from
@@ -30,6 +31,7 @@ import { onboardingReplayEn } from './modules/onboardingReplay';
 import { dateOfBirthEn } from './modules/dateOfBirth';
 import { verificationEn } from './modules/verification';
 import { errorsEn } from './modules/errors';
+import { mediaAccessEn } from './modules/mediaAccess';
 import { createPostValidationEn } from './createPostValidation';
 import { formFieldEn } from './formField';
 import { chatEn } from './modules/chat';
@@ -80,7 +82,7 @@ const en = {
   config: configEn,
 
   // Auth (FR-AUTH-001..014) — see modules/auth.ts
-  auth: { ...authEn, ...authVerificationHintEn },
+  auth: { ...guestBrowseEn, ...authEn, ...authVerificationHintEn },
   offlineSync: offlineSyncEn,
 
   // Onboarding (FR-AUTH-010..012, FR-AUTH-018) — see modules/onboarding.ts
@@ -233,6 +235,7 @@ const en = {
 
   // Error messages (auth/post/profile/media/createPost) — see modules/errors.ts
   errors: errorsEn,
+  mediaAccess: mediaAccessEn,
   createPostValidation: createPostValidationEn,
   formField: formFieldEn,
 

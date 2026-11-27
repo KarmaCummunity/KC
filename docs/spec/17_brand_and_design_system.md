@@ -57,7 +57,7 @@ packages/ui/tokens/kc.tokens.json   ← generated, W3C design-tokens format
 | Icon size | `theme/iconSize.ts` | `iconSize` xs 14 · sm 16 · md 18 · lg 20 · xl 22 · 2xl 24 (D87 — the six sizes screens already used most, ~85% of literal Ionicons sizes). |
 | Layers | `theme/zIndex.ts` | `zIndex` base 0 · raised 1 · overlay 2 · floating 20 · toast 9999 (D87 — the values already in use, so stacking does not change). |
 | Weight | `theme/typography.ts` | Weight modifiers `typography.medium / semiBold / bold / extraBold` (500–800), one per loaded Rubik face, spread over a size preset. |
-| Decoration orange | `theme/colors.ts` | `primaryVivid` `#F97316` — the same in both palettes; decoration only (no text, no meaning). Config files that cannot import tokens (`app.json` web `themeColor`, notification `color`, `app/+html.tsx`) are pinned to it by `brandGuard.test.ts`. |
+| Decoration orange | `theme/colors.ts` | `primaryVivid` `#F97316` — the same in both palettes; decoration only (no text, no meaning). Config files that cannot import tokens (`app.json` web `themeColor`, notification `color`) are pinned to it by `brandGuard.test.ts`. |
 | Avatar colours | `theme/colors.ts` | `avatarPalette` — 8 theme-independent backgrounds with white initials, each ≥ 4.5:1. |
 | Breakpoints | `theme/breakpoints.ts` | Responsive shell (mobile → desktop web). |
 
@@ -177,6 +177,7 @@ KC follows each platform where the user expects it to, and keeps one KC look eve
 |---|---|---|---|---|
 | Stack push / pop | Native stack slide | `slide_from_right` on the root stack; nested stacks slide natively | Cross-fade | `rootStackAnimation.ts`, `nestedStackGestureOptions.ts` |
 | Back | Edge swipe on every nested stack + mirrored back chevron | System back pops the stack; predictive back stays **off** (`app.json`) | Browser history | stack options, `MirroredIcon` |
+| Typography | Shared Rubik size/weight/line-height tokens via kit `Text` / `TextInput`; OS font fallback if brand faces fail to load | Same; kit removes extra Android font padding to avoid clipping Hebrew descenders | Same brand tokens; web direction follows the document | `packages/ui/src/theme/typography.ts`, `components/BrandText.tsx` |
 | Header | Shared `TopBar` on tab roots and worlds; no large titles (only screens that already opt in keep them) | Same | Same | `TopBarStackHeader`, `detailStackScreenOptions` |
 | Sheet / dialog dismiss | Backdrop, ✕, swipe down | + hardware back | Escape | kit `BottomSheet` / `Modal`, `useModalHardwareBack` |
 | Action menus | Kit `ActionMenuSheet` | Same | Same | `ActionMenuSheet.tsx` |
@@ -219,7 +220,7 @@ All run inside `pnpm test` (pre-push gate and CI):
 | Haptics gate | ESLint `no-restricted-imports` (`app/eslint.config.mjs`) | app code other than `src/lib/haptics.ts` imports `expo-haptics` (§4.4.1) |
 | Hard-coded style ratchet | `apps/mobile/src/__tests__/brandGuard.test.ts` (rules in `brandGuardRules.ts`, pinned by `brandGuardRules.test.ts`) | a file gains a finding beyond its frozen baseline, or a new file has any. Rules: `colorLiteral`, `fontSizeLiteral`, `fontWeightLiteral`, `fontFamilyLiteral`, `radiusLiteral`, `spacingLiteral`, `physicalSide`; since D87 also `iconSizeLiteral` (numeric Ionicons `size`), `zIndexLiteral`, `shadowLiteral`, `rawTextInput` (use `TextField`) and `rawModal` (use `Modal` / `BottomSheet`; counts only React Native's `Modal`, by its import); since #1285 also `adHocChip` (a style key named exactly `chip` — use `Chip`) |
 | Touched-file rule | `apps/mobile/src/__tests__/brandGuard.test.ts` | a file changed since the PR base still has any finding (D67) |
-| Config colours | `apps/mobile/src/__tests__/brandGuard.test.ts` | `app.json` / `+html.tsx` brand colours drift from `primaryVivid`, or the native colour scheme is forced to light |
+| Config colours | `apps/mobile/src/__tests__/brandGuard.test.ts` | `app.json` brand colours drift from `primaryVivid`, or the native colour scheme is forced to light |
 | Copy voice | `apps/mobile/src/__tests__/copyVoiceGuard.test.ts` | a locale file gains a voice finding (§7.5) beyond its frozen baseline, a changed locale file has any, or the key slogan leaves the Hebrew bundle (D93) |
 
 **Touched-file rule (D67).** A PR that changes a file in `apps/mobile/{src,app}` must leave that file with **zero** findings — every rule, the whole file, not only the changed lines. Files nobody touches keep their frozen counts until someone works in them. The guard diffs against the merge-base with the PR base (`GITHUB_BASE_REF`, else `origin/dev`; override with `KC_BRAND_BASE_REF`), including uncommitted changes. In CI an unresolvable base fails the test (the frontend job checks out full history); a local clone without the ref skips the rule. The rule does **not** apply to release traffic into `main` — a push to `main` and a dev → main release PR (`GITHUB_BASE_REF=main`, `GITHUB_HEAD_REF=dev`): their files were already gated on their own PRs into `dev`, and until the main → dev sync lands `dev` lacks `main`'s history, so the merge-base is the previous release and every file changed since then would count (CI on `main` failed this way after the first release, #1490). Setting `KC_BRAND_BASE_REF` applies the rule regardless. Pinned by `apps/mobile/src/__tests__/ratchetTouchedRule.test.ts`.
@@ -253,6 +254,12 @@ The current user is addressed without grammatical gender. **House convention: th
 | תוכלי לשלוח בקשה חדשה | אפשר לשלוח בקשה חדשה |
 
 Out of scope: strings about *another* user ("{{name}} הצטרף"), which follow that user's stored gender.
+
+**Sign-in welcome copy (#2244).** Applying this section (D93) to the welcome and consent strings that had frozen copy-voice findings in `he/modules/auth.ts`:
+- Welcome tagline: **לתת. לקבל. לחבר קהילה.** — parallel infinitives that keep the prior three-beat meaning of "תן. קבל. חבר קהילה."
+- Consent lines (`bySigningUp`, `legalConsentShort`): impersonal **בהרשמה מסכימים ל…** — same Terms / Privacy meaning, without singular "אתה".
+
+These are the most conservative D93-compliant readings of the previous copy (agent fill on #2244). The PM may refine the brand/legal wording later; the key slogan in §7.3 stays **"לתת — זה גם לקבל."** and is unchanged.
 
 ### 7.3 Spelling, words and length
 

@@ -1,6 +1,6 @@
 // Chat conversation screen — FR-CHAT-002, 003, 004, 005, 010, 011, 013, 016.
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View, TouchableOpacity, KeyboardAvoidingView, Platform, type ListRenderItem } from 'react-native';
+import { View, TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator, type ListRenderItem } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,10 +8,12 @@ import { useTranslation } from 'react-i18next';
 import { MESSAGE_MAX_CHARS } from '@kc/domain';
 import { ChatError } from '@kc/application';
 import { useTheme, Text, TextInput, iconSize } from '@kc/ui';
-import { rtlTextAlignStart } from '../../src/lib/rtlLayout';
+import { emptyInputDirectionStyle } from '../../src/lib/rtlLayout';
+import { MirroredIcon } from '../../src/components/ui/MirroredIcon';
 import { useChatStore, type OptimisticMessage } from '../../src/store/chatStore';
 import { useAuthStore } from '../../src/store/authStore';
 import { container } from '../../src/lib/container';
+import { useMarkChatRead } from '../../src/hooks/useMarkChatRead';
 import { markNeedFreshThreadWith } from '../../src/lib/chatNavigationPrefs';
 import { forgetHiddenChat } from '../../src/lib/forgetHiddenChat';
 import { MessageBubble } from '../../src/components/MessageBubble';
@@ -33,8 +35,9 @@ import { useKeyboardVerticalOffset } from '../../src/lib/platform/useKeyboardVer
 import { CHAT_CONVERSATION_HEADER_HEIGHT } from '../../src/lib/platform/formChromeHeights';
 import { useChatTypingIndicator } from '../../src/hooks/useChatTypingIndicator';
 import { useChatMessageReactions } from '../../src/hooks/useChatMessageReactions';
-import { pickChatImage, uploadChatImageAndSend } from '../../src/services/chatMediaUpload';
-import type { MessageReactionType } from '@kc/infrastructure-supabase';
+import { useChatImageAttach } from '../../src/hooks/useChatImageAttach';
+import { PermissionSettingsNote } from '../../src/components/PermissionSettingsNote';
+import type { MessageReactionType } from '@kc/domain';
 import { webEnterToSend } from '../../src/components/chat/webEnterToSend';
 import { firstParam } from '../../src/lib/postChatPrefillDecision';
 import { resolveKeyboardAvoidingBehavior } from '../../src/lib/platform/keyboardVerticalOffset';
@@ -58,7 +61,9 @@ export default function ChatScreen() {
   });
 
   const messages = useChatStore((s) => s.threads[chatId] ?? EMPTY_MESSAGES);
-  const { chat, counterpart, status: chatStatus } = useChatInit(chatId, userId);
+  // A thread with no entry yet has never loaded its first page (an empty chat loads as []).
+  const threadLoading = useChatStore((s) => s.threads[chatId] === undefined);
+  const { chat, counterpart, status: chatStatus, initiallyUnread } = useChatInit(chatId, userId);
   const prefillText = firstParam(prefill);
   const [input, setInput] = useState(() => prefillText ?? '');
   const autoPrefillDedupeRef = useRef<string | undefined>(prefillText);
@@ -92,17 +97,7 @@ export default function ChatScreen() {
     [],
   );
 
-  const unreadIncoming = useMemo(
-    () => messages.some((m) => m.senderId !== userId && m.status !== 'read'),
-    [messages, userId],
-  );
-  useEffect(() => {
-    if (!unreadIncoming) return;
-    void (async () => {
-      await container.markChatRead.execute({ chatId, userId });
-      useChatStore.getState().markChatLocallyRead(chatId);
-    })();
-  }, [unreadIncoming, chatId, userId]);
+  useMarkChatRead(messages, chatId, userId, initiallyUnread);
 
   const counter = input.length;
   const showCounter = counter >= 1900;
@@ -133,21 +128,9 @@ export default function ChatScreen() {
     [toggleReaction],
   );
 
-  const handleAttachImage = useCallback(async () => {
-    const picked = await pickChatImage();
-    if (!picked) return;
-    try {
-      await uploadChatImageAndSend(chatId, userId, picked.uri, async (payload) => {
-        const server = await container.chatV2Repo.sendMediaMessage(chatId, payload);
-        useChatStore.getState().appendOptimistic(chatId, {
-          ...server,
-          clientId: server.messageId,
-        });
-      });
-    } catch {
-      setNotify({ title: t('chat.errorTitle'), message: t('chat.mediaUploadFailed') });
-    }
-  }, [chatId, userId, t]);
+  const { attach: handleAttachImage, permissionBlocked } = useChatImageAttach({
+    chatId, userId, onError: setNotify,
+  });
 
   // Stable renderItem so the thread KcFlashList doesn't re-render every bubble on
   // each composer keystroke — deps change only on real data changes.
@@ -226,11 +209,38 @@ export default function ChatScreen() {
           contentContainerStyle={styles.messageList}
           renderItem={renderItem}
         />
+        {threadLoading ? (
+          <View style={styles.threadLoading} pointerEvents="none">
+            <ActivityIndicator color={colors.primary} testID="chat-thread-loading" />
+          </View>
+        ) : null}
 
         {peerTyping ? (
           <Text style={styles.typingHint}>{t('chat.typingIndicator')}</Text>
         ) : null}
+        {permissionBlocked ? <PermissionSettingsNote kind={permissionBlocked} /> : null}
         <View style={styles.inputBar}>
+          {/* Composer order follows the reading direction: text field at the reading-start edge
+              (right in Hebrew, left in English), then attach, with "send" at the reading-end edge. */}
+          <View style={{ flex: 1 }}>
+            <TextInput // brand-guard-allow: chat composer is a non-form input (spec 17 §4.1)
+              // Native inputs do not mirror `textAlign`, so an empty field pins its placeholder
+              // to the layout's start edge; typed text keeps natural per-script alignment.
+              style={[styles.input, input.length === 0 ? emptyInputDirectionStyle() : null]}
+              value={input}
+              onChangeText={(text) => {
+                setInput(text);
+                notifyComposerChanged();
+              }}
+              placeholder={t('chat.inputPlaceholder')}
+              placeholderTextColor={colors.textDisabled}
+              testID="chat-input"
+              multiline
+              maxLength={MESSAGE_MAX_CHARS}
+              onKeyPress={webEnterToSend(send, sendDisabled)}
+            />
+            {showCounter && <Text style={styles.counter}>{counter}/{MESSAGE_MAX_CHARS}</Text>}
+          </View>
           <TouchableOpacity
             style={styles.attachBtn}
             onPress={() => void handleAttachImage()}
@@ -240,26 +250,9 @@ export default function ChatScreen() {
           </TouchableOpacity>
           <TouchableOpacity style={[styles.sendBtn, sendDisabled && styles.sendBtnDisabled]} onPress={() => { notifyMessageSent(); void send(); }} disabled={sendDisabled}
             accessibilityRole="button" accessibilityLabel={t('chat.send')} testID="chat-send">
-            <Ionicons name="send" size={iconSize.lg} color={colors.textInverse} />
+            {/* The paper-plane glyph points right; MirroredIcon turns it to point left in RTL. */}
+            <MirroredIcon name="send" size={iconSize.lg} color={colors.textInverse} />
           </TouchableOpacity>
-          <View style={{ flex: 1 }}>
-            <TextInput // brand-guard-allow: chat composer is a non-form input (spec 17 §4.1)
-              style={styles.input}
-              value={input}
-              onChangeText={(text) => {
-                setInput(text);
-                notifyComposerChanged();
-              }}
-              placeholder={t('chat.inputPlaceholder')}
-              placeholderTextColor={colors.textDisabled}
-              testID="chat-input"
-              textAlign={rtlTextAlignStart}
-              multiline
-              maxLength={MESSAGE_MAX_CHARS}
-              onKeyPress={webEnterToSend(send, sendDisabled)}
-            />
-            {showCounter && <Text style={styles.counter}>{counter}/{MESSAGE_MAX_CHARS}</Text>}
-          </View>
         </View>
       </KeyboardAvoidingView>
 

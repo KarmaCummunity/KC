@@ -5,6 +5,7 @@
 // Mapped to: FR-POST-001..006 (FR-POST-001 AC6 categories + remembered choice) (incl. FR-POST-003 visibility + FR-POST-006 followers publish confirm), FR-POST-021 (D-31 partner-surface mask + collapsible exposure settings), FR-POST-007 (local draft autosave + resume), FR-POST-010 (delete) lives elsewhere.
 // FR-AUTH-015 soft-gate preserved from #12 — Publish wraps publish.mutate() with requestSoftGate.
 // FR-NOTIF-015 AC1: push pre-prompt fires after first post published.
+import { nativeCaptureMarkers, safeNativeCreate } from '../src/lib/nativeCaptureSafety';
 import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -20,9 +21,7 @@ import { useCreatePostAddressPrefill } from '../src/hooks/useCreatePostAddressPr
 import { useCreatePostFormState } from '../src/hooks/useCreatePostFormState';
 import { usePostDraftAutosave } from '../src/hooks/usePostDraftAutosave';
 import { usePostDraftHydration } from '../src/hooks/usePostDraftHydration';
-import {
-  newUploadBatchId, pickPostImages, resizeAndUploadImage,
-} from '../src/services/imageUpload';
+import { usePostImageUploads, type PostImageUploadSummary } from '../src/hooks/usePostImageUploads';
 import { getUserRepo } from '../src/services/userComposition';
 import { useCreatePostStyles } from '../src/screens/tabs/create.styles';
 import { useCreatePostPublish } from '../src/hooks/useCreatePostPublish';
@@ -52,6 +51,7 @@ export default function CreatePostScreen() {
   const { presentPrePrompt } = pushGate;
 
   const {
+    capturePrefillReady,
     city,
     street,
     streetNumber,
@@ -113,8 +113,6 @@ export default function CreatePostScreen() {
   }, [profilePrivacy, form]);
 
   const [publishFollowersOpen, setPublishFollowersOpen] = useState(false);
-  const [uploadingCount, setUploadingCount] = useState(0);
-  const [batchId] = useState(() => newUploadBatchId());
   const [notify, setNotify] = useState<{ title: string; message: string } | null>(null);
   const [missingDraftImagesNotified, setMissingDraftImagesNotified] = useState(false);
   const [listingPublishAction, setListingPublishAction] = useState<(() => void) | null>(null);
@@ -126,31 +124,21 @@ export default function CreatePostScreen() {
 
   const isGive = form.type === 'Give';
 
-  const handlePick = async () => {
-    if (!ownerId) {
-      setNotify({ title: t('general.errorTitle'), message: t('post.reauthRequired') });
-      return;
-    }
-    const picked = await pickPostImages(form.uploads.length + uploadingCount);
-    if (picked.length === 0) return;
-
-    setUploadingCount((n) => n + picked.length);
-    try {
-      const startOrdinal = form.uploads.length;
-      const r = await Promise.allSettled(
-        picked.map((p, i) => resizeAndUploadImage(p, ownerId, batchId, startOrdinal + i)),
-      );
-      const ok = r.flatMap((x) => (x.status === 'fulfilled' ? [x.value] : []));
-      if (ok.length > 0) form.setUploads((prev) => [...prev, ...ok]);
-      if (ok.length < r.length) {
-        const msg =
-          ok.length === 0 ? t('post.uploadRetry') : t('post.uploadPartial', { ok: ok.length, total: r.length });
-        setNotify({ title: t('post.uploadFailedTitle'), message: msg });
-      }
-    } finally {
-      setUploadingCount((n) => Math.max(0, n - picked.length));
-    }
-  };
+  // FR-POST-005 AC5: a partial failure keeps the stored photos and asks to retry only the rest.
+  const onUploadFailures = useCallback(({ ok, total }: PostImageUploadSummary) => {
+    const message = ok === 0 ? t('post.uploadRetry') : t('post.uploadPartial', { ok, total });
+    setNotify({ title: t('post.uploadFailedTitle'), message });
+  }, [t]);
+  const onMissingOwner = useCallback(() => {
+    setNotify({ title: t('general.errorTitle'), message: t('post.reauthRequired') });
+  }, [t]);
+  const { uploadingCount, permissionBlocked, pickAndUpload: handlePick, cancelUploads } = usePostImageUploads({
+    ownerId,
+    galleryCount: form.uploads.length,
+    setUploads: form.setUploads,
+    onMissingOwner,
+    onFailures: onUploadFailures,
+  });
 
   const handleRemove = (path: string) =>
     form.setUploads((prev) => prev.filter((u) => u.path !== path));
@@ -200,7 +188,14 @@ export default function CreatePostScreen() {
 
   return (
     <Screen blobs="off" testID="create-post-screen">
-      <View style={styles.header}>
+      <View
+        style={styles.header}
+        {...(safeNativeCreate(
+          form, city, street, streetNumber,
+          capturePrefillReady && ready && !republish.loading && userQuery.isSuccess,
+          draftHydration.status.phase, activeCategory.engine, session,
+        ) ? nativeCaptureMarkers.create : {})}
+      >
         <TouchableOpacity onPress={() => closeCreateForm(router)} style={styles.headerClose}>
           <Ionicons name="close" size={iconSize['2xl']} color={colors.textPrimary} />
         </TouchableOpacity>
@@ -274,6 +269,8 @@ export default function CreatePostScreen() {
         uploads={form.uploads}
         uploadingCount={uploadingCount}
         onAddPhotos={handlePick}
+        onCancelUploads={cancelUploads}
+        permissionBlocked={permissionBlocked === 'mediaLibrary'}
         onRemovePhoto={handleRemove}
         />
       </KeyboardAvoidingView>

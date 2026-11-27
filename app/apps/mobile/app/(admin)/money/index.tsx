@@ -20,6 +20,7 @@ import { useLocaleBundle } from '../../../src/i18n/useLocaleBundle';
 import { KcFlashList } from '../../../src/components/lists/KcFlashList';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../../src/components/RouteErrorBoundary';
+import { SilentUnauthorizedFallback } from '../../../src/components/permissions/SilentUnauthorizedFallback';
 
 type DirFilter = FinanceDirection | 'all';
 
@@ -133,7 +134,7 @@ export default function MoneyScreen() {
     return <View style={styles.center}><Text>{t.loading}</Text></View>;
   }
   if (!canView) {
-    return <View style={styles.center}><Text style={styles.deniedTitle}>{t.forbiddenTitle}</Text></View>;
+    return <SilentUnauthorizedFallback href="/(admin)" />;
   }
 
   return (

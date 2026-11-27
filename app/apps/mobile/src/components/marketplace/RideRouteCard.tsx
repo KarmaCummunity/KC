@@ -41,7 +41,7 @@ export function RideRouteCard({ details, direction, houseNumbers, embedded = fal
   if (when) chips.push({ icon: 'time-outline', text: when });
   // An occurrence of a recurring ride says when it repeats (FR-RIDE-046).
   if (series) chips.push({ icon: 'repeat-outline', text: rideSeriesLabel(series, t) });
-  if (seats != null) chips.push({ icon: 'people-outline', text: t(rideSeatCountKey(direction === 'request' ? 'passengers' : 'seats', seats), { count: seats }) });
+  if (seats != null) chips.push({ icon: 'people-outline', text: t(rideSeatCountKey(direction === 'request' ? 'passengers' : 'seats'), { count: seats }) });
   // Rides are free for now (spec 05 §5.3): no cost chip, even on older rides that carry an amount.
 
   return (

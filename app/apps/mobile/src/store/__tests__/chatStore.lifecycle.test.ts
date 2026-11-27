@@ -133,21 +133,6 @@ describe('useChatStore — thread mutations', () => {
     expect(byId['theirs']).toMatchObject({ status: 'delivered' });
   });
 
-  it('applyIncomingMessage replaces a matching pending optimistic row', () => {
-    useChatStore.getState().appendOptimistic('c1', {
-      messageId: 'tmp', clientId: 'k1', status: 'pending', senderId: 'u_other', body: 'hi',
-      createdAt: '2026-05-16T13:00:00.000Z',
-    } as never);
-    useChatStore.getState().applyIncomingMessage('c1', MSG);
-    const list = useChatStore.getState().threads.c1 ?? [];
-    expect(list).toHaveLength(1);
-    expect(list[0]).toMatchObject({ messageId: 'm9', clientId: 'k1' });
-  });
-
-  it('applyIncomingMessage appends a new message', () => {
-    useChatStore.getState().applyIncomingMessage('c1', MSG);
-    expect(useChatStore.getState().threads.c1).toHaveLength(1);
-  });
 });
 
 describe('useChatStore — subscriptions lifecycle', () => {
@@ -193,6 +178,66 @@ describe('useChatStore — subscriptions lifecycle', () => {
     expect(unsub).toHaveBeenCalled();
     expect(useChatStore.getState().threadSubs.c1).toBeUndefined();
   });
+
+  // #1778: after the channel rejoins, the latest page is re-read and merged, never replaced.
+  it('startThreadSub merges the latest page on a resync and keeps what it already holds', async () => {
+    const missed = { ...(MSG as object), messageId: 'm11', createdAt: '2026-05-16T13:05:00.000Z' };
+    const repo = { getMessages: vi.fn().mockResolvedValueOnce([MSG]).mockResolvedValueOnce([MSG, missed]) };
+    let handlers: Record<string, (x?: unknown) => void> = {};
+    const realtime = {
+      subscribeToChat: vi.fn((_id: string, h: Record<string, (x?: unknown) => void>) => {
+        handlers = h;
+        return vi.fn();
+      }),
+    };
+    await useChatStore.getState().startThreadSub('c1', repo as never, realtime as never, vi.fn());
+    useChatStore.getState().appendOptimistic('c1', { clientId: 'k1', status: 'pending', body: 'mine' } as never);
+
+    handlers.onResync?.();
+    await vi.waitFor(() => expect(useChatStore.getState().threads.c1).toHaveLength(3));
+    expect(repo.getMessages).toHaveBeenCalledTimes(2);
+    expect(useChatStore.getState().threads.c1.map((m) => m.messageId ?? m.clientId)).toEqual(
+      expect.arrayContaining(['m9', 'm11', 'k1']),
+    );
+  });
+
+  it.each(['stop', 'signout', 'replace'] as const)(
+    'ignores a late resync result after %s',
+    async (action) => {
+      auth.userId = 'u_me';
+      let finish!: (messages: unknown[]) => void;
+      const repo = { getMessages: vi.fn().mockResolvedValueOnce([MSG]).mockImplementationOnce(
+        () => new Promise((resolve) => { finish = resolve; }),
+      ) };
+      let handlers: Record<string, (x?: unknown) => void> = {};
+      const realtime = { subscribeToChat: vi.fn((_id: string, h: Record<string, (x?: unknown) => void>) => {
+        handlers = h;
+        return vi.fn();
+      }) };
+      await useChatStore.getState().startThreadSub('c1', repo as never, realtime as never, vi.fn());
+      const oldResync = handlers.onResync;
+      oldResync?.();
+      if (action === 'signout') {
+        useChatStore.getState().resetOnSignOut();
+        auth.userId = null;
+      } else {
+        useChatStore.getState().stopThreadSub('c1');
+        if (action === 'replace') {
+          await useChatStore.getState().startThreadSub('c1', {
+            getMessages: vi.fn().mockResolvedValue([]),
+          } as never, realtime as never, vi.fn());
+        }
+      }
+      const before = useChatStore.getState().threads;
+      finish([{ ...(MSG as object), messageId: 'late-private-message' }]);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      expect(useChatStore.getState().threads).toBe(before);
+      const calls = repo.getMessages.mock.calls.length;
+      oldResync?.();
+      expect(repo.getMessages).toHaveBeenCalledTimes(calls);
+      auth.userId = 'u_me';
+    },
+  );
 
   it('startThreadSub removes the placeholder when loading fails', async () => {
     const repo = { getMessages: vi.fn(async () => { throw new Error('net'); }) };

@@ -1,0 +1,80 @@
+# Read-only App Store Connect + Google Play status (#2608).
+# ASC: GET only via ASC_API_KEY_* + KC_ASC_APP_ID.
+# Play: create edit → list tracks → DELETE edit (never commit) via
+# GOOGLE_PLAY_SERVICE_ACCOUNT_JSON for package org.karmacommunity.app.
+# Secrets are referenced by name only and never echoed.
+# Optional var KC_STORE_STATUS_ISSUE: comment only when fingerprint changes.
+name: Store status
+
+on:
+  schedule:
+    # Daily, off the top of the hour
+    - cron: '17 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  report:
+    name: Collect store status
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Store credentials live in the mobile-store environment (same as TestFlight / Play lanes).
+    environment: mobile-store
+    permissions:
+      contents: read
+      issues: write
+    concurrency:
+      group: store-status
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version-file: .nvmrc
+
+      - name: Mask store credential material
+        env:
+          ASC_API_KEY_P8: ${{ secrets.ASC_API_KEY_P8 }}
+          ASC_API_KEY_ID: ${{ secrets.ASC_API_KEY_ID }}
+          ASC_API_KEY_ISSUER_ID: ${{ secrets.ASC_API_KEY_ISSUER_ID }}
+          GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+        run: |
+          # Mask secret values (and each line of multiline PEM/JSON) so accidental
+          # echo cannot appear in logs. Actions also auto-masks secret contexts.
+          mask_value() {
+            local v="$1"
+            [ -n "$v" ] || return 0
+            echo "::add-mask::$v"
+            while IFS= read -r line; do
+              [ -n "$line" ] && echo "::add-mask::$line"
+            done <<< "$v"
+          }
+          mask_value "$ASC_API_KEY_P8"
+          mask_value "$ASC_API_KEY_ID"
+          mask_value "$ASC_API_KEY_ISSUER_ID"
+          mask_value "$GOOGLE_PLAY_SERVICE_ACCOUNT_JSON"
+
+      - name: Collect ASC + Play status (read-only)
+        env:
+          ASC_API_KEY_P8: ${{ secrets.ASC_API_KEY_P8 }}
+          ASC_API_KEY_ID: ${{ secrets.ASC_API_KEY_ID }}
+          ASC_API_KEY_ISSUER_ID: ${{ secrets.ASC_API_KEY_ISSUER_ID }}
+          KC_ASC_APP_ID: ${{ vars.KC_ASC_APP_ID }}
+          GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          KC_STORE_STATUS_ISSUE: ${{ vars.KC_STORE_STATUS_ISSUE }}
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          STORE_STATUS_OUT: store-status.json
+        run: node scripts/store-status.mjs
+
+      - name: Upload store-status.json
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: store-status
+          path: store-status.json
+          if-no-files-found: ignore
+          retention-days: 30

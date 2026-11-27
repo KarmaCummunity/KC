@@ -115,6 +115,10 @@ jobs:
           fi
           node scripts/check-dependency-audit.mjs "${args[@]}"
 
+      - name: Application migration map freshness
+        if: ${{ !cancelled() }}
+        run: node scripts/app-migration-map.mjs --check
+
       - name: Script self-tests (scripts/*.test.mjs, scripts/ops/*.test.mjs, app/scripts/*.test.mjs)
         if: ${{ !cancelled() }}
         run: node --test scripts/*.test.mjs scripts/ops/*.test.mjs app/scripts/*.test.mjs
@@ -170,6 +174,12 @@ jobs:
         if: ${{ !cancelled() }}
         run: node scripts/check-migration-safety.mjs
 
+      # A changed parameter list adds an overload instead of replacing the function, and the old
+      # one stays callable with its old grants (KC#1722): the old signature must be dropped first.
+      - name: Migration function signatures (no stale overloads)
+        if: ${{ !cancelled() }}
+        run: node scripts/check-function-signatures.mjs
+
       - name: No FlatList in mobile (#896)
         if: ${{ !cancelled() }}
         run: node app/scripts/check-mobile-flatlist.mjs
@@ -181,6 +191,10 @@ jobs:
       - name: Required-check docs and CI gate wiring
         if: ${{ !cancelled() }}
         run: node scripts/check-required-checks-drift.mjs
+
+      - name: Webhook functions authenticate their caller
+        if: ${{ !cancelled() }}
+        run: node scripts/check-webhook-auth.mjs
 
       - name: Deploys only through deploy.yml
         if: ${{ !cancelled() }}

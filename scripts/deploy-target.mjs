@@ -19,8 +19,8 @@
 // read from ci.yml's runs through the API.
 //
 // Version-bump inheritance (dev only, TD-231). bump-version-on-merge.yml
-// pushes a `[skip ci]` commit right after every merge into dev, so the dev tip
-// usually has no CI run of its own. Such a commit may deploy on its parent's
+// pushes a `[skip ci]` commit after a merge into dev that leaves the merge
+// queue empty, so the dev tip often has no CI run of its own. Such a commit may deploy on its parent's
 // certification when ALL of these hold (bumpCommitErrors): its only changed
 // file is app/VERSION, it has exactly one parent, its author or committer is
 // the bump workflow's git identity, and its subject is the bump workflow's;

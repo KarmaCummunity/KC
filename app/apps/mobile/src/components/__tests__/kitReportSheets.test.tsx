@@ -134,14 +134,14 @@ describe('report sheets — degrade rule', () => {
     renderInTheme(<ReportPostModal postId="p_1" visible onClose={vi.fn()} />);
     fireEvent.click(screen.getByRole('button', { name: 'post.reportSubmit' }));
     await flush();
-    expect(screen.getByText('not available yet')).toBeTruthy();
+    expect(await screen.findByText('not available yet')).toBeTruthy();
     cleanup();
 
     container.reportPost.execute.mockRejectedValueOnce(new Error('boom'));
     renderInTheme(<ReportPostModal postId="p_1" visible onClose={vi.fn()} />);
     fireEvent.click(screen.getByRole('button', { name: 'post.reportSubmit' }));
     await flush();
-    expect(screen.getByText('post.reportErrorBody')).toBeTruthy();
+    expect(await screen.findByText('post.reportErrorBody')).toBeTruthy();
   });
 });
 

@@ -8,7 +8,10 @@ import { useOnboardingReplayStore } from '../store/onboardingReplayStore';
 import {
   getCompleteOnboardingUseCase,
   getSetAvatarUseCase,
+  getUserRepo,
 } from '../services/userComposition';
+import { retirePreviousAvatar } from '../services/avatarLifecycle';
+import { isBlockedMediaPick, type MediaPermissionKind } from '../lib/mediaPermissionTypes';
 import {
   pickAvatarImage,
   removeUploadedAvatar,
@@ -25,6 +28,7 @@ export function useOnboardingPhotoFlow() {
   const setOnboardingState = useAuthStore((s) => s.setOnboardingState);
   const [uploading, setUploading] = useState(false);
   const [finalizing, setFinalizing] = useState(false);
+  const [permissionBlocked, setPermissionBlocked] = useState<MediaPermissionKind | null>(null);
 
   // FR-ADMIN-035: an admin replay shows only the photo picked during the replay (none at first,
   // like a new member) and never uploads it or writes the profile.
@@ -41,18 +45,30 @@ export function useOnboardingPhotoFlow() {
     setUploading(true);
     try {
       const picked = await pickAvatarImage(source);
-      if (!picked) return;
-      if (replayActive) {
-        setReplayAvatar(picked.uri);
+      if (isBlockedMediaPick(picked)) {
+        setPermissionBlocked(picked.kind);
         return;
       }
-      const url = await resizeAndUploadAvatar(picked, session.userId);
+      setPermissionBlocked(null);
+      if (picked.status !== 'ok') return;
+      if (replayActive) {
+        setReplayAvatar(picked.value.uri);
+        return;
+      }
+      const url = await resizeAndUploadAvatar(picked.value, session.userId);
+      // A rejected save does not prove the profile was not updated (a lost response can follow a
+      // commit), so nothing is deleted on failure here.
       await getSetAvatarUseCase().execute({
         sessionUserId: session.userId,
         userId: session.userId,
         avatarUrl: url,
       });
       setSession({ ...session, avatarUrl: url });
+      const readCurrent = async () => (await getUserRepo().findById(session.userId))?.avatarUrl ?? null;
+      // The replaced generation stays public unless retired (skipped on any doubt).
+      void retirePreviousAvatar({
+        userId: session.userId, previousUrl: session.avatarUrl, committedUrl: url, readCurrentAvatarUrl: readCurrent,
+      });
     } catch (err) {
       const msg = err instanceof Error ? err.message : t('general.unknownError');
       Alert.alert(t('onboarding.uploadFailed'), `${t('onboarding.uploadFailedBody')}\n${msg}`);
@@ -69,7 +85,7 @@ export function useOnboardingPhotoFlow() {
     }
     setUploading(true);
     try {
-      await removeUploadedAvatar(session.userId); // TD-108: delete Storage object first.
+      await removeUploadedAvatar(session.userId, session.avatarUrl); // TD-108: delete Storage object first.
       await getSetAvatarUseCase().execute({
         sessionUserId: session.userId,
         userId: session.userId,
@@ -121,5 +137,6 @@ export function useOnboardingPhotoFlow() {
     remove,
     finalize,
     goBack,
+    permissionBlocked,
   };
 }

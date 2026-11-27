@@ -69,6 +69,7 @@ jobs:
             .github/actions/deploy-guard
             scripts/deploy-guard.mjs
             scripts/release-version.mjs
+            scripts/check-webhook-auth.mjs
           sparse-checkout-cone-mode: false
           persist-credentials: false
       - uses: ./.deploy-guard/.github/actions/deploy-guard
@@ -85,6 +86,13 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version-file: .nvmrc
+
+      # The guard's copy comes from deploy.yml's own commit and judges the commit
+      # being deployed: every function without a Supabase JWT (verify_jwt = false)
+      # must authenticate its caller and fail closed. A tree without those checks
+      # (for example a `main` that has not yet received `dev`) is refused here.
+      - name: Webhook functions authenticate their caller
+        run: node .deploy-guard/scripts/check-webhook-auth.mjs --root .
 
       # Pins the project ref per target, so functions never land on the wrong project.
       - name: Preflight (secrets present, project ref matches the target)
@@ -113,6 +121,37 @@ jobs:
             "SENTRY_DSN=$EDGE_SENTRY_DSN" \
             "SENTRY_ENVIRONMENT=$TARGET" \
             "SENTRY_RELEASE=functions@${RELEASE_SHA::12}"
+
+      # #2452: every worker checks its caller against SUPABASE_SERVICE_ROLE_KEY, a
+      # default secret the platform sets per function version. If the project's
+      # service_role key is rotated or re-issued, deployed functions keep comparing
+      # against the old string until their next deploy, and a
+      # SUPABASE_SERVICE_ROLE_KEY secret saved while the SUPABASE_ prefix was still
+      # allowed shadows the platform value and can never be edited, only removed
+      # (the prefix is reserved now, so writing the key back is impossible by
+      # design). Heal both here: remove a shadow, matching or stale, then the
+      # deploy below refreshes every function's environment - the same way
+      # deploy-db.yml updates the verified caller slot for database jobs only after
+      # read-only key validation (kc_verified_service_role_key after its migration).
+      # The obsolete kc_service_role_key slot is not a fallback for migrated jobs.
+      # SUPABASE_ANON_KEY would shadow the same way; nothing uses
+      # a saved copy of it today.
+      - name: Drop a stale service-role key shadow (#2452)
+        run: |
+          set -euo pipefail
+          key="$(supabase projects api-keys --project-ref "$SUPABASE_PROJECT_REF" -o json | jq -r '[.[] | select(.name == "service_role" or .id == "service_role")][0].api_key // empty')"
+          [ -n "$key" ] || { echo "::error::no service_role key returned for the target project"; exit 1; }
+          echo "::add-mask::$key"
+          shadow="$(supabase secrets list --project-ref "$SUPABASE_PROJECT_REF" -o json | jq -r '[.[] | select(.name == "SUPABASE_SERVICE_ROLE_KEY")][0].digest // empty')"
+          if [ -z "$shadow" ]; then
+            echo "no SUPABASE_SERVICE_ROLE_KEY shadow: the platform-managed key applies."
+          elif [ "$shadow" = "$(printf %s "$key" | sha256sum | cut -d ' ' -f 1)" ]; then
+            echo "SUPABASE_SERVICE_ROLE_KEY shadow matches the current key; removing it so the platform manages the value."
+            supabase secrets unset --project-ref "$SUPABASE_PROJECT_REF" SUPABASE_SERVICE_ROLE_KEY
+          else
+            echo "::warning::SUPABASE_SERVICE_ROLE_KEY shadow is stale: its digest differs from the current service_role key. Removing it."
+            supabase secrets unset --project-ref "$SUPABASE_PROJECT_REF" SUPABASE_SERVICE_ROLE_KEY
+          fi
 
       # --use-api bundles server-side (no Docker); verify_jwt per function
       # comes from supabase/config.toml.

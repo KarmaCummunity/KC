@@ -8,6 +8,10 @@
 
 Verify: `https://dev.karma-community.pages.dev/version.json` shows the merged SHA; the Deploy run's smoke stage is green. To redeploy dev, dispatch **Deploy** on `dev`.
 
+## Edge Functions on prod: only from a `main` that has received `dev`
+
+Webhook functions with `verify_jwt = false` (`payments-webhook`, `whatsapp-webhook`, `revenuecat-webhook`, `identity-verification-webhook`) must authenticate their caller themselves. `scripts/check-webhook-auth.mjs` pins that in CI and runs again as a step of `deploy-functions.yml` against the tree being deployed (the script itself comes from the workflow commit), so a deploy from a `main` that has not yet received `dev` is refused. Ship function changes to prod by releasing `dev` → `main`; never deploy a function from a branch or by hand.
+
 ## Local DB
 
 ```bash
@@ -29,6 +33,8 @@ See [RELEASE.md](./RELEASE.md): version bump → EAS preview → TestFlight / Pl
 | The e2e members `user1`…`user4@seed.kc.test` | Same workflow, action `e2e-users` (`supabase/seed/e2e/load.sql`; password from the `E2E_SEED_PASSWORD` secret). Idempotent. |
 | All three | Action `all`. |
 | The demo-data tools of the admin portal's Demo data screen (FR-ADMIN-031) | Nothing to run: every dev deploy installs them after the migrations (`deploy-db.yml`, step **Demo-data tools (kc-dev only)**, `supabase/seed/demo/load.sql`) and marks kc-dev as the database where demo data may be created. An admin then opens Admin → Demo data and presses **Show demo data** / **Hide demo data** (the demo members' password is typed once). To install them between deploys: **Seed KC dev**, action `demo`. Never on prod, never part of `all`. |
+| The production-copy tools (FR-ADMIN-037) | Nothing to run: every dev deploy installs them after the migrations (`deploy-db.yml`, step **Production-copy tools (kc-dev only)**, `supabase/seed/prod-copy/load.sql`) and marks kc-dev as the database a copy may be applied to. The weekly anonymized copy itself arrives with #2482. Never on prod. |
+| kc-dev job tuning (lighter job cadence and log retention) | Nothing to run: every dev deploy applies it after the migrations (`deploy-db.yml`, step **Job tuning (kc-dev only)**, `supabase/seed/dev-tuning/load.sql`). Values and the production defaults in [`supabase/seed/dev-tuning/README.md`](../../supabase/seed/dev-tuning/README.md). Never on prod. |
 | A change to reference or content data | Edit the CSV under `supabase/seed/`, run the loader, review the diff in the PR. Seeds are data, never migrations. |
 
 The fake Hebrew dataset (members, posts, rides, chats, follows, `[DEMO]` nonprofits) is created and deleted from the portal (show / hide); the legacy version is kept for reference in `supabase/archive/seed-kc-dev-demo/`.
@@ -53,11 +59,12 @@ Playwright QA suite against `https://dev.karma-community.pages.dev` + kc-dev: [`
 | `seed-kc-dev.yml` | manual | Destructive dev reseed / wipe |
 | `e2e-nightly-dev.yml` | nightly + manual | QA suite against dev |
 | `e2e-account-purge-dev.yml` | nightly + manual + when the proof changes on dev | Account purge proof on kc-dev (FR-SETTINGS-012 AC4): a throwaway member with a file in every bucket is deleted and purged, and the run fails if a file or the identity is left (`scripts/e2e-account-purge.mjs`) |
+| `e2e-post-media-dev.yml` | nightly + manual + when the proof changes on dev | Post photo proof on kc-dev (FR-POST-005 AC4, KC#2316): a throwaway owner's photo carrying a GPS block must reach a second member only as the sanitized copy under `derived/`, copy and thumb free of the block (`scripts/e2e-post-media.mjs`) |
 | `k6-load-dev.yml` | manual | Load test against dev |
 | `mobile-nightly.yml` → `testflight-ios.yml`, `play-internal.yml` | nightly + manual (dev) | Store builds of the newest green dev commit, see [RELEASE.md](./RELEASE.md) |
 | `kc-mobile-eas-preview.yml` | manual | EAS preview build, no store submit |
 | `sync-main-to-dev.yml` | main push | Opens a zero-diff PR into `dev`; the owner merges it as a merge commit with the admin bypass (`TD-182`) |
-| `bump-version-on-merge.yml` | dev push | Bumps `app/VERSION` PATCH after each merge (`TD-196`); PRs do not edit VERSION |
+| `bump-version-on-merge.yml` | dev push | Bumps `app/VERSION` PATCH after a merge that leaves the merge queue empty, one bump per burst of merges ({{ENG:bump-waits-for-empty-queue}}, `TD-196`); PRs do not edit VERSION. Run it by hand on `dev` if the queue emptied without a merge |
 | `auto-merge-agent-ready.yml`, `labeler.yml`, `bump-app-version.yml`, `stale-stack-report.yml` | PR / schedule | Housekeeping |
 
 ## Web (Cloudflare Pages)

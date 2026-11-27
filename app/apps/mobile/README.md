@@ -7,7 +7,7 @@ If `EXPO_PUBLIC_SUPABASE_URL` / `EXPO_PUBLIC_SUPABASE_ANON_KEY` are missing at r
 
 ## Prerequisites
 
-- Node.js per repo [`.nvmrc`](../../../.nvmrc)
+- Node.js per repo [`.nvmrc`](../../../.nvmrc), at least 22.12 (`engines.node` in `app/package.json`; older 22.x cannot load vitest)
 - [pnpm](https://pnpm.io/) from `app/package.json`
 - Local Supabase: `./scripts/dev-up.sh` from repo root (see [CONTRIBUTING.md](../../../CONTRIBUTING.md))
 - For device builds: [EAS CLI](https://docs.expo.dev/build/setup/) and an Expo account

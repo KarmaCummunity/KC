@@ -32,6 +32,8 @@ vi.mock('react-i18next', () => ({
     i18n: { language: 'he' },
   }),
 }));
+// The photo tiles render through KCImage (expo-image), a native module.
+vi.mock('expo-image', () => ({ Image: () => null }));
 vi.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
 // The organization membership hint (FR-ORG-002) opens My organizations.
 vi.mock('expo-router', () => ({ useRouter: () => ({ push: mocks.push }) }));
@@ -51,7 +53,7 @@ vi.mock('../../ui/DateTimeField', () => ({
   ),
 }));
 vi.mock('../../giving/RideCreateSection', () => ({ RIDE_CREATE_DETAIL_KEYS: [], RideCreateSection: () => null }));
-vi.mock('../../../services/listingImageUpload', () => ({ pickListingImages: vi.fn(async () => []), uploadListingImages: vi.fn() }));
+vi.mock('../../../services/listingImageUpload', () => ({ pickListingImages: vi.fn(async () => ({ status: 'ok' as const, value: [] })), uploadListingImages: vi.fn() }));
 vi.mock('../../../lib/analyticsCoreLoop', () => ({ trackCoreLoop: vi.fn(), trackActivationIfFirst: vi.fn() }));
 vi.mock('../../../lib/haptics', () => ({ hapticLightImpact: () => undefined, hapticLightTap: () => {} }));
 vi.mock('../../../navigation/useShellTabBarVisibility', () => ({ useShellTabBarScrollInset: () => 0 }));

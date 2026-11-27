@@ -2,24 +2,24 @@
  "generatedBy": "scripts/app-migration-map.mjs",
  "totals": {
   "rpc": {
-   "objects": 246,
-   "same": 169,
+   "objects": 270,
+   "same": 193,
    "renamed": 22,
    "changed": 55,
    "removed": 0,
    "missing": 0
   },
   "table": {
-   "objects": 63,
-   "same": 46,
+   "objects": 67,
+   "same": 50,
    "renamed": 0,
    "changed": 17,
    "removed": 0,
    "missing": 0
   },
   "bucket": {
-   "objects": 4,
-   "same": 3,
+   "objects": 5,
+   "same": 4,
    "renamed": 0,
    "changed": 1,
    "removed": 0,
@@ -34,8 +34,8 @@
    "missing": 0
   },
   "edge_function": {
-   "objects": 3,
-   "same": 3,
+   "objects": 5,
+   "same": 5,
    "renamed": 0,
    "changed": 0,
    "removed": 0,
@@ -44,16 +44,16 @@
  },
  "launchTotals": {
   "core": {
-   "objects": 127,
-   "same": 103,
+   "objects": 134,
+   "same": 110,
    "renamed": 1,
    "changed": 23,
    "removed": 0,
    "missing": 0
   },
   "later": {
-   "objects": 145,
-   "same": 95,
+   "objects": 169,
+   "same": 119,
    "renamed": 6,
    "changed": 44,
    "removed": 0,
@@ -77,8 +77,8 @@
    "missing": 0
   },
   "admin": {
-   "callSites": 66,
-   "oneToOne": 37,
+   "callSites": 74,
+   "oneToOne": 45,
    "changed": 29,
    "removed": 0,
    "missing": 0
@@ -125,6 +125,13 @@
    "removed": 0,
    "missing": 0
   },
+  "featureFlags": {
+   "callSites": 1,
+   "oneToOne": 1,
+   "changed": 0,
+   "removed": 0,
+   "missing": 0
+  },
   "feed": {
    "callSites": 6,
    "oneToOne": 6,
@@ -133,8 +140,8 @@
    "missing": 0
   },
   "fn:_shared": {
-   "callSites": 13,
-   "oneToOne": 9,
+   "callSites": 21,
+   "oneToOne": 17,
    "changed": 4,
    "removed": 0,
    "missing": 0
@@ -153,6 +160,27 @@
    "removed": 0,
    "missing": 0
   },
+  "fn:extract-external-post": {
+   "callSites": 1,
+   "oneToOne": 1,
+   "changed": 0,
+   "removed": 0,
+   "missing": 0
+  },
+  "fn:identity-verification-session": {
+   "callSites": 3,
+   "oneToOne": 3,
+   "changed": 0,
+   "removed": 0,
+   "missing": 0
+  },
+  "fn:identity-verification-webhook": {
+   "callSites": 2,
+   "oneToOne": 2,
+   "changed": 0,
+   "removed": 0,
+   "missing": 0
+  },
   "fn:match-rerank": {
    "callSites": 2,
    "oneToOne": 1,
@@ -161,6 +189,13 @@
    "missing": 0
   },
   "fn:payments-webhook": {
+   "callSites": 1,
+   "oneToOne": 1,
+   "changed": 0,
+   "removed": 0,
+   "missing": 0
+  },
+  "fn:process-post-media": {
    "callSites": 1,
    "oneToOne": 1,
    "changed": 0,
@@ -203,9 +238,9 @@
    "missing": 0
   },
   "fn:translate": {
-   "callSites": 3,
+   "callSites": 4,
    "oneToOne": 0,
-   "changed": 3,
+   "changed": 4,
    "removed": 0,
    "missing": 0
   },
@@ -237,9 +272,30 @@
    "removed": 0,
    "missing": 0
   },
+  "identityVerification": {
+   "callSites": 3,
+   "oneToOne": 3,
+   "changed": 0,
+   "removed": 0,
+   "missing": 0
+  },
+  "imports": {
+   "callSites": 5,
+   "oneToOne": 5,
+   "changed": 0,
+   "removed": 0,
+   "missing": 0
+  },
+  "karma": {
+   "callSites": 1,
+   "oneToOne": 0,
+   "changed": 1,
+   "removed": 0,
+   "missing": 0
+  },
   "knowledge": {
-   "callSites": 9,
-   "oneToOne": 6,
+   "callSites": 12,
+   "oneToOne": 9,
    "changed": 3,
    "removed": 0,
    "missing": 0
@@ -252,8 +308,8 @@
    "missing": 0
   },
   "marketplace": {
-   "callSites": 48,
-   "oneToOne": 35,
+   "callSites": 50,
+   "oneToOne": 37,
    "changed": 13,
    "removed": 0,
    "missing": 0
@@ -266,8 +322,8 @@
    "missing": 0
   },
   "mobile": {
-   "callSites": 18,
-   "oneToOne": 17,
+   "callSites": 11,
+   "oneToOne": 10,
    "changed": 1,
    "removed": 0,
    "missing": 0
@@ -294,16 +350,16 @@
    "missing": 0
   },
   "payments": {
-   "callSites": 11,
-   "oneToOne": 3,
+   "callSites": 12,
+   "oneToOne": 4,
    "changed": 8,
    "removed": 0,
    "missing": 0
   },
   "posts": {
-   "callSites": 51,
+   "callSites": 50,
    "oneToOne": 35,
-   "changed": 16,
+   "changed": 15,
    "removed": 0,
    "missing": 0
   },
@@ -421,11 +477,63 @@
   "Money: integer agorot (`*_agorot`), never ILS floats or `*_cents` names.",
   "Lists of posts return `post_card` (post, owner, city name, cover, counters, viewer state): no follow-up queries for owners, media or counters.",
   "Status columns are never client-writable; every move is an RPC checked by the FSM kernel.",
-  "Signed-out access: only `legal_documents` and `legal_document_versions`. Every other call needs a session.",
+  "Signed-out access: legal documents and the D186 narrow `guest_posts` projection. Member tables and account actions still need a session.",
   "Workers that need `kc_private` connect over Postgres (as `dispatch-notification` does); only `public` is reachable through the HTTP API."
  ],
  "missing": [],
  "packages": [
+  {
+   "id": "CURRENT",
+   "title": "Current post-baseline integrations",
+   "launch": "mixed inventory, not a launch commitment",
+   "parallelWith": [],
+   "files": [
+    "admin/**",
+    "imports/**",
+    "identityVerification/**",
+    "posts/postMediaWrites.ts",
+    "supabase/functions/**"
+   ],
+   "work": "Inventory existing callers, not runtime completion.",
+   "tests": [
+    "node --test scripts/app-migration-map*.test.mjs"
+   ],
+   "degrade": "Existing flags and refusals unchanged.",
+   "risks": "Not deployment or provider acceptance. Dev seed RPCs are not baseline contracts.",
+   "rows": [
+    "rpc:admin_set_app_flag",
+    "rpc:admin_demo_data_status",
+    "rpc:admin_wipe_demo_data_step",
+    "rpc:admin_seed_demo_data_step",
+    "rpc:admin_set_org_may_post_jobs",
+    "rpc:my_identity_verification",
+    "rpc:accept_identity_verification_consent",
+    "edge_function:identity-verification-session",
+    "edge_function:extract-external-post",
+    "rpc:api_import_attach_post",
+    "rpc:api_import_record_edits",
+    "rpc:admin_import_funnel",
+    "rpc:admin_import_field_edit_rates",
+    "rpc:replace_post_media",
+    "rpc:api_resolve_place",
+    "table:external_post_imports",
+    "rpc:import_similar_open_post",
+    "rpc:import_moderation_removals",
+    "table:post_extraction_cache",
+    "rpc:api_identity_verification_begin",
+    "table:identity_verification_consents",
+    "rpc:api_identity_verification_set_session",
+    "table:identity_verifications",
+    "rpc:identity_verification_apply"
+   ],
+   "counts": {
+    "objects": 24,
+    "oneToOne": 24,
+    "changed": 0,
+    "removed": 0,
+    "missing": 0
+   }
+  },
   {
    "id": "P0",
    "title": "Contract switch and the degrade rule (first, alone)",
@@ -569,6 +677,7 @@
     "rpc:search_suggested_queries",
     "table:user_stats",
     "table:users",
+    "rpc:guest_posts",
     "rpc:profile_closed_posts_count",
     "rpc:close_post_with_recipient",
     "rpc:admin_remove_post",
@@ -600,7 +709,6 @@
     "table:post_private_locations",
     "table:post_stats",
     "table:post_closures",
-    "table:challenges",
     "table:item_subcategories",
     "table:post_kinds",
     "table:chats",
@@ -609,14 +717,16 @@
     "rpc:get_post_translations",
     "table:content_translations",
     "bucket:post-images",
+    "bucket:<entry.bucket>",
     "channel:FEED_PUBLIC_TOPIC = 'feed:public'",
     "edge_function:translate",
     "rpc:admin_world_flow_funnel",
-    "rpc:my_world_givings"
+    "rpc:my_world_givings",
+    "rpc:replace_post_media"
    ],
    "counts": {
-    "objects": 49,
-    "oneToOne": 38,
+    "objects": 51,
+    "oneToOne": 40,
     "changed": 11,
     "removed": 0,
     "missing": 0
@@ -729,11 +839,18 @@
     "table:moderation_queue",
     "rpc:admin_assign_queue_entry",
     "rpc:admin_resolve_queue_entry",
-    "table:organizations"
+    "table:organizations",
+    "rpc:admin_set_app_flag",
+    "rpc:admin_demo_data_status",
+    "rpc:admin_wipe_demo_data_step",
+    "rpc:admin_seed_demo_data_step",
+    "rpc:admin_set_org_may_post_jobs",
+    "rpc:admin_prod_copy_status",
+    "rpc:admin_delete_prod_copy"
    ],
    "counts": {
-    "objects": 33,
-    "oneToOne": 23,
+    "objects": 40,
+    "oneToOne": 30,
     "changed": 10,
     "removed": 0,
     "missing": 0
@@ -874,6 +991,9 @@
    "degrade": "Workers fail closed: a worker that cannot reach its function logs and exits; the app is unaffected (no embedding → no matches yet; no purge → accounts stay deactivated).",
    "risks": "No file shared with the app packages. **Launch line: after P6 the app is shippable on the new database.**",
    "rows": [
+    "table:app_flags",
+    "table:item_subcategories",
+    "table:post_kinds",
     "rpc:get_my_admin_roles",
     "table:donation_links",
     "table:content_translations",
@@ -882,12 +1002,14 @@
     "rpc:embedding_job_fail",
     "rpc:api_match_llm_pending",
     "rpc:api_match_llm_store",
+    "rpc:<fn>",
     "bucket:post-images",
-    "bucket:<bucket>"
+    "bucket:<bucket>",
+    "table:worlds"
    ],
    "counts": {
-    "objects": 10,
-    "oneToOne": 6,
+    "objects": 15,
+    "oneToOne": 11,
     "changed": 4,
     "removed": 0,
     "missing": 0
@@ -972,11 +1094,14 @@
     "rpc:cancel_giving_handoff",
     "table:post_handoffs",
     "rpc:knowledge_slot_seats",
-    "table:post_knowledge_slots"
+    "table:post_knowledge_slots",
+    "table:knowledge_slot_series",
+    "rpc:start_knowledge_slot_series",
+    "rpc:set_knowledge_slot_series_status"
    ],
    "counts": {
-    "objects": 8,
-    "oneToOne": 6,
+    "objects": 11,
+    "oneToOne": 9,
     "changed": 2,
     "removed": 0,
     "missing": 0
@@ -1281,6 +1406,18 @@
  ],
  "edgeFunctions": [
   {
+   "name": "extract-external-post",
+   "verdict": "done",
+   "uses": "Post-extraction store and place resolver",
+   "change": "Existing implementation; not deployment proof."
+  },
+  {
+   "name": "identity-verification-session",
+   "verdict": "done",
+   "uses": "Identity verification session RPCs and consent",
+   "change": "Existing implementation; provider setup and live proof remain separate."
+  },
+  {
    "name": "dispatch-notification",
    "verdict": "done",
    "uses": "kc_private.notifications_deliver_batch, notification_push_retry_batch, notification_push_settle (direct Postgres)",
@@ -1436,6 +1573,33 @@
    ]
   },
   {
+   "old": "<entry.bucket>",
+   "kind": "bucket",
+   "status": "same",
+   "launch": "core",
+   "confidence": "medium",
+   "missing": null,
+   "note": "The device abandoned-upload ledger retries deletion only in its runtime-allowlisted existing buckets: post-images, avatars or chat-media. Uses the current member session and existing own-folder Storage policies; no service-role client or bucket-policy change.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "bucket",
+     "name": "post-images"
+    }
+   ],
+   "areas": [
+    "mobile"
+   ],
+   "callSites": [
+    {
+     "file": "app/apps/mobile/src/services/abandonedUploads.ts",
+     "line": 70,
+     "symbol": "tryRemove",
+     "area": "mobile"
+    }
+   ]
+  },
+  {
    "old": "avatars",
    "kind": "bucket",
    "status": "same",
@@ -1456,25 +1620,13 @@
    "callSites": [
     {
      "file": "app/apps/mobile/src/services/avatarUpload.ts",
-     "line": 132,
+     "line": 129,
      "symbol": "resizeAndUploadAvatar",
      "area": "mobile"
     },
     {
      "file": "app/apps/mobile/src/services/avatarUpload.ts",
-     "line": 143,
-     "symbol": "resizeAndUploadAvatar",
-     "area": "mobile"
-    },
-    {
-     "file": "app/apps/mobile/src/services/avatarUpload.ts",
-     "line": 153,
-     "symbol": "resizeAndUploadAvatar",
-     "area": "mobile"
-    },
-    {
-     "file": "app/apps/mobile/src/services/avatarUpload.ts",
-     "line": 167,
+     "line": 142,
      "symbol": "removeUploadedAvatar",
      "area": "mobile"
     }
@@ -1499,12 +1651,6 @@
     "mobile"
    ],
    "callSites": [
-    {
-     "file": "app/apps/mobile/src/services/chatMediaUpload.ts",
-     "line": 44,
-     "symbol": "uploadChatImageAndSend",
-     "area": "mobile"
-    },
     {
      "file": "app/apps/mobile/src/services/chatMediaUrl.ts",
      "line": 17,
@@ -1536,20 +1682,8 @@
    ],
    "callSites": [
     {
-     "file": "app/apps/mobile/app/edit-post/[id].tsx",
-     "line": 46,
-     "symbol": "assetUrl",
-     "area": "mobile"
-    },
-    {
-     "file": "app/apps/mobile/src/components/PostImageCarousel.tsx",
-     "line": 72,
-     "symbol": "PostImageCarousel",
-     "area": "mobile"
-    },
-    {
      "file": "app/apps/mobile/src/hooks/usePostShare.ts",
-     "line": 64,
+     "line": 69,
      "symbol": "recipientNavigable",
      "area": "mobile"
     },
@@ -1560,26 +1694,8 @@
      "area": "mobile"
     },
     {
-     "file": "app/apps/mobile/src/services/imageUpload.ts",
-     "line": 182,
-     "symbol": "resizeAndUploadImage",
-     "area": "mobile"
-    },
-    {
-     "file": "app/apps/mobile/src/services/imageUpload.ts",
-     "line": 194,
-     "symbol": "resizeAndUploadImage",
-     "area": "mobile"
-    },
-    {
      "file": "app/apps/mobile/src/services/listingImageUpload.ts",
-     "line": 42,
-     "symbol": "uploadListingImages",
-     "area": "mobile"
-    },
-    {
-     "file": "app/apps/mobile/src/services/listingImageUpload.ts",
-     "line": 56,
+     "line": 36,
      "symbol": "listingImagePublicUrl",
      "area": "mobile"
     },
@@ -1628,7 +1744,7 @@
    "launch": "core",
    "confidence": "high",
    "missing": null,
-   "note": "Private topic of the chat; broadcast events `INSERT` (the message row), `read` (a member's marker), `reaction` and `chat_updated` (the pinned post). The app consumes `INSERT`, `read` and `chat_updated`; reactions are re-read on demand.",
+   "note": "Private topic of the chat; broadcast events `INSERT` (the message row), `read` (a member's marker), `reaction` and `chat_updated` (the pinned post). The app consumes all four; a `reaction` updates the reactions of the open chat in place (#2568), which are read once per open.",
    "oldObject": {},
    "targets": [
     {
@@ -1642,7 +1758,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRealtime.ts",
-     "line": 41,
+     "line": 51,
      "symbol": "SupabaseChatRealtime.subscribeToChat",
      "area": "chat"
     }
@@ -1696,7 +1812,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRealtime.ts",
-     "line": 77,
+     "line": 105,
      "symbol": "SupabaseChatRealtime.subscribeToInbox",
      "area": "chat"
     }
@@ -1865,6 +1981,70 @@
    ]
   },
   {
+   "old": "extract-external-post",
+   "kind": "edge_function",
+   "status": "same",
+   "launch": "later",
+   "confidence": "medium",
+   "missing": null,
+   "note": "Existing current caller: app/packages/infrastructure-supabase/src/imports/EdgeFnPostExtractionService.ts. Current source declaration is bound; transitive errors remain explicitly unknown, not runtime acceptance.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "edge",
+     "name": "extract-external-post",
+     "source": "supabase/functions/extract-external-post/index.ts",
+     "errorBinding": {
+      "status": "unknown",
+      "reason": "handler and provider errors not exhaustively bound"
+     }
+    }
+   ],
+   "areas": [
+    "imports"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/imports/EdgeFnPostExtractionService.ts",
+     "line": 15,
+     "symbol": "EdgeFnPostExtractionService.extract",
+     "area": "imports"
+    }
+   ]
+  },
+  {
+   "old": "identity-verification-session",
+   "kind": "edge_function",
+   "status": "same",
+   "launch": "later",
+   "confidence": "medium",
+   "missing": null,
+   "note": "Existing current caller: app/packages/infrastructure-supabase/src/identityVerification/SupabaseIdentityVerificationService.ts. Current source declaration is bound; transitive errors remain explicitly unknown, not runtime acceptance.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "edge",
+     "name": "identity-verification-session",
+     "source": "supabase/functions/identity-verification-session/index.ts",
+     "errorBinding": {
+      "status": "unknown",
+      "reason": "handler and provider errors not exhaustively bound"
+     }
+    }
+   ],
+   "areas": [
+    "identityVerification"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/identityVerification/SupabaseIdentityVerificationService.ts",
+     "line": 68,
+     "symbol": "SupabaseIdentityVerificationService.startSession",
+     "area": "identityVerification"
+    }
+   ]
+  },
+  {
    "old": "public-research-submit",
    "kind": "edge_function",
    "status": "same",
@@ -1925,33 +2105,6 @@
    ]
   },
   {
-   "old": "extract-external-post",
-   "kind": "edge_function",
-   "status": "same",
-   "launch": "later",
-   "confidence": "high",
-   "missing": null,
-   "note": "New function of the external post import (ADR-008): the app invokes it with the shared text, channel and source platform; the member comes from the session.",
-   "oldObject": {},
-   "targets": [
-    {
-     "type": "edge",
-     "name": "extract-external-post"
-    }
-   ],
-   "areas": [
-    "imports"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/imports/EdgeFnPostExtractionService.ts",
-     "line": 15,
-     "symbol": "EdgeFnPostExtractionService.extract",
-     "area": "imports"
-    }
-   ]
-  },
-  {
    "old": "validate-donation-link",
    "kind": "edge_function",
    "status": "same",
@@ -1979,6 +2132,53 @@
    ]
   },
   {
+   "old": "<fn>",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "Service role only: the post photo worker (started by the database) claims a leased job, completes it with a compare-and-set, or records a failure.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "post_media_processing_claim",
+     "signature": [
+      "post_media_processing_claim(p_lease_seconds?: number, p_limit?: number) → { attempt: number lease_token: string leased_until: string media_id: string mime_type: string object_mimetype: string object_size: number owner_id: string post_id: string size_bytes: number storage_key: string }[]"
+     ],
+     "errors": []
+    },
+    {
+     "type": "rpc",
+     "name": "post_media_processing_complete",
+     "signature": [
+      "post_media_processing_complete(p_derivative_key: string, p_height: number, p_lease_token: string, p_media_id: string, p_size_bytes: number, p_width: number) → string"
+     ],
+     "errors": []
+    },
+    {
+     "type": "rpc",
+     "name": "post_media_processing_fail",
+     "signature": [
+      "post_media_processing_fail(p_error: string, p_lease_token: string, p_media_id: string, p_retryable: boolean) → string"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "fn:process-post-media"
+   ],
+   "callSites": [
+    {
+     "file": "supabase/functions/process-post-media/handler.ts",
+     "line": 165,
+     "symbol": "callRpc",
+     "area": "fn:process-post-media"
+    }
+   ]
+  },
+  {
    "old": "about_team_profiles",
    "kind": "rpc",
    "status": "same",
@@ -1992,7 +2192,7 @@
      "type": "rpc",
      "name": "about_team_profiles",
      "signature": [
-      "about_team_profiles(avatar_url: string, display_name: string, role_key: string, share_handle: string, sort_order: number) → { avatar_url: string display_name: string role_key: string share_handle: string sort_order: number }[]"
+      "about_team_profiles() → { avatar_url: string display_name: string role_key: string share_handle: string sort_order: number }[]"
      ],
      "errors": []
     }
@@ -2006,6 +2206,43 @@
      "line": 17,
      "symbol": "SupabaseAboutRepository.listTeamMembers",
      "area": "about"
+    }
+   ]
+  },
+  {
+   "old": "accept_identity_verification_consent",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "medium",
+   "missing": null,
+   "note": "Existing current caller: app/packages/infrastructure-supabase/src/identityVerification/SupabaseIdentityVerificationService.ts. Current source declaration is bound; transitive errors remain explicitly unknown, not runtime acceptance.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "accept_identity_verification_consent",
+     "source": "supabase/migrations/0078_identity_verification.sql",
+     "sqlSignature": "accept_identity_verification_consent(p_version text) → void",
+     "errorBinding": {
+      "status": "unknown",
+      "reason": "transitive SQL helpers and constraints not exhaustively bound"
+     },
+     "signature": [
+      "accept_identity_verification_consent(p_version: string) → undefined"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "identityVerification"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/identityVerification/SupabaseIdentityVerificationService.ts",
+     "line": 64,
+     "symbol": "SupabaseIdentityVerificationService.unwrapCall",
+     "area": "identityVerification"
     }
    ]
   },
@@ -2052,8 +2289,8 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/legal/SupabaseLegalDocumentRepository.ts",
-     "line": 117,
-     "symbol": "SupabaseLegalDocumentRepository.unwrapCall",
+     "line": 119,
+     "symbol": "SupabaseLegalDocumentSource.unwrapCall",
      "area": "legal"
     }
    ]
@@ -2529,6 +2766,76 @@
    ]
   },
   {
+   "old": "admin_delete_prod_copy",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "core",
+   "confidence": "medium",
+   "missing": null,
+   "note": "DEV-only confirmed deletion of previously copied data, with manager authorization and counts-only audit. Definition is not execution approval.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "sql",
+     "name": "supabase/seed/prod-copy/lib/60_admin_rpcs.sql#admin_delete_prod_copy",
+     "signature": "admin_delete_prod_copy() → jsonb",
+     "source": "supabase/seed/prod-copy/lib/60_admin_rpcs.sql",
+     "errorBinding": {
+      "status": "unknown",
+      "reason": "transitive seed helper errors require separate review"
+     }
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseProdCopyRepository.ts",
+     "line": 68,
+     "symbol": "SupabaseProdCopyRepository.deleteAll",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "admin_demo_data_status",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "medium",
+   "missing": null,
+   "note": "Dev-only seed RPC, deliberately absent from production baseline types; adapter refuses not_installed where unavailable.",
+   "oldObject": {
+    "signature": [
+     "admin_demo_data_status() → Json"
+    ]
+   },
+   "targets": [
+    {
+     "type": "sql",
+     "name": "supabase/seed/demo/lib/80_admin_rpcs.sql#admin_demo_data_status",
+     "signature": "admin_demo_data_status() → jsonb",
+     "source": "supabase/seed/demo/lib/80_admin_rpcs.sql",
+     "errorBinding": {
+      "status": "unknown",
+      "reason": "transitive seed helper errors require separate review"
+     }
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseDemoDataRepository.ts",
+     "line": 31,
+     "symbol": "SupabaseDemoDataRepository.getStatus",
+     "area": "admin"
+    }
+   ]
+  },
+  {
    "old": "admin_dismiss_report",
    "kind": "rpc",
    "status": "same",
@@ -2686,6 +2993,80 @@
    ]
   },
   {
+   "old": "admin_import_field_edit_rates",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "medium",
+   "missing": null,
+   "note": "Existing current caller: app/packages/infrastructure-supabase/src/imports/SupabaseImportTelemetryRepository.ts. Current source declaration is bound; transitive errors remain explicitly unknown, not runtime acceptance.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "admin_import_field_edit_rates",
+     "source": "supabase/migrations/0076_import_telemetry.sql",
+     "sqlSignature": "admin_import_field_edit_rates(p_days integer default 30) → table (field text, reported integer, edited integer, edit_rate numeric)",
+     "errorBinding": {
+      "status": "unknown",
+      "reason": "transitive SQL helpers and constraints not exhaustively bound"
+     },
+     "signature": [
+      "admin_import_field_edit_rates(p_days?: number) → { edit_rate: number edited: number field: string reported: number }[]"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "imports"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/imports/SupabaseImportTelemetryRepository.ts",
+     "line": 31,
+     "symbol": "SupabaseImportTelemetryRepository.getFieldEditRates",
+     "area": "imports"
+    }
+   ]
+  },
+  {
+   "old": "admin_import_funnel",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "medium",
+   "missing": null,
+   "note": "Existing current caller: app/packages/infrastructure-supabase/src/imports/SupabaseImportTelemetryRepository.ts. Current source declaration is bound; transitive errors remain explicitly unknown, not runtime acceptance.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "admin_import_funnel",
+     "source": "supabase/migrations/0076_import_telemetry.sql",
+     "sqlSignature": "admin_import_funnel(p_days integer default 30) → table (attempts integer, manual integer, drafted integer, published integer, discarded integer, provider_calls integer)",
+     "errorBinding": {
+      "status": "unknown",
+      "reason": "transitive SQL helpers and constraints not exhaustively bound"
+     },
+     "signature": [
+      "admin_import_funnel(p_days?: number) → { attempts: number discarded: number drafted: number manual: number provider_calls: number published: number }[]"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "imports"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/imports/SupabaseImportTelemetryRepository.ts",
+     "line": 16,
+     "symbol": "SupabaseImportTelemetryRepository.getFunnel",
+     "area": "imports"
+    }
+   ]
+  },
+  {
    "old": "admin_join_support_thread",
    "kind": "rpc",
    "status": "same",
@@ -2811,7 +3192,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/matching/SupabaseMatchRepository.ts",
-     "line": 145,
+     "line": 94,
      "symbol": "SupabaseMatchRepository.qualityByWorld",
      "area": "matching"
     }
@@ -3025,6 +3406,39 @@
    ]
   },
   {
+   "old": "admin_prod_copy_status",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "core",
+   "confidence": "medium",
+   "missing": null,
+   "note": "DEV-only status RPC with demo-manager authorization. Absent from production baseline; no copy operation is invoked.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "sql",
+     "name": "supabase/seed/prod-copy/lib/60_admin_rpcs.sql#admin_prod_copy_status",
+     "signature": "admin_prod_copy_status() → jsonb",
+     "source": "supabase/seed/prod-copy/lib/60_admin_rpcs.sql",
+     "errorBinding": {
+      "status": "unknown",
+      "reason": "transitive seed helper errors require separate review"
+     }
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseProdCopyRepository.ts",
+     "line": 62,
+     "symbol": "SupabaseProdCopyRepository.getStatus",
+     "area": "admin"
+    }
+   ]
+  },
+  {
    "old": "admin_remove_post",
    "kind": "rpc",
    "status": "same",
@@ -3071,7 +3485,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/posts/postWriteMethods.ts",
-     "line": 180,
+     "line": 175,
      "symbol": "adminRemovePost",
      "area": "posts"
     }
@@ -3447,6 +3861,93 @@
    ]
   },
   {
+   "old": "admin_seed_demo_data_step",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "medium",
+   "missing": null,
+   "note": "Dev-only seed RPC, deliberately absent from production baseline types; adapter refuses not_installed where unavailable.",
+   "oldObject": {
+    "signature": [
+     "admin_seed_demo_data_step(p_password?: string) → Json"
+    ]
+   },
+   "targets": [
+    {
+     "type": "sql",
+     "name": "supabase/seed/demo/lib/80_admin_rpcs.sql#admin_seed_demo_data_step",
+     "signature": "admin_seed_demo_data_step(p_password text default null) → jsonb",
+     "source": "supabase/seed/demo/lib/80_admin_rpcs.sql",
+     "errorBinding": {
+      "status": "unknown",
+      "reason": "transitive seed helper errors require separate review"
+     }
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseDemoDataRepository.ts",
+     "line": 43,
+     "symbol": "SupabaseDemoDataRepository.seedStep",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "admin_set_app_flag",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "core",
+   "confidence": "medium",
+   "missing": null,
+   "note": "Existing current caller: app/packages/infrastructure-supabase/src/admin/SupabaseAppFlagsAdminRepository.ts. Current source declaration is bound; transitive errors remain explicitly unknown, not runtime acceptance.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "admin_set_app_flag",
+     "source": "supabase/migrations/0001_baseline.sql",
+     "sqlSignature": "admin_set_app_flag(p_key text, p_enabled boolean, p_description text default null) → public.app_flags",
+     "errorBinding": {
+      "status": "unknown",
+      "reason": "transitive SQL helpers and constraints not exhaustively bound"
+     },
+     "signature": [
+      "admin_set_app_flag(p_description?: string, p_enabled: boolean, p_key: string) → app_flags row"
+     ],
+     "errors": [
+      {
+       "code": "forbidden",
+       "knownToApp": true
+      },
+      {
+       "code": "invalid_flag_key",
+       "knownToApp": false
+      },
+      {
+       "code": "unauthenticated",
+       "knownToApp": true
+      }
+     ]
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAppFlagsAdminRepository.ts",
+     "line": 13,
+     "symbol": "SupabaseAppFlagsAdminRepository.setFlag",
+     "area": "admin"
+    }
+   ]
+  },
+  {
    "old": "admin_set_manager",
    "kind": "rpc",
    "status": "same",
@@ -3503,6 +4004,43 @@
      "file": "app/packages/infrastructure-supabase/src/admin/SupabaseOrgHierarchyRepository.ts",
      "line": 116,
      "symbol": "SupabaseOrgHierarchyRepository.unwrap",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "admin_set_org_may_post_jobs",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "core",
+   "confidence": "medium",
+   "missing": null,
+   "note": "Existing current caller: app/packages/infrastructure-supabase/src/admin/SupabaseOrgJobPostingAdminRepository.ts. Current source declaration is bound; transitive errors remain explicitly unknown, not runtime acceptance.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "admin_set_org_may_post_jobs",
+     "source": "supabase/migrations/0071_employment_job_offer_orgs.sql",
+     "sqlSignature": "admin_set_org_may_post_jobs(p_org_id uuid, p_enabled boolean) → void",
+     "errorBinding": {
+      "status": "unknown",
+      "reason": "transitive SQL helpers and constraints not exhaustively bound"
+     },
+     "signature": [
+      "admin_set_org_may_post_jobs(p_enabled: boolean, p_org_id: string) → undefined"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseOrgJobPostingAdminRepository.ts",
+     "line": 42,
+     "symbol": "SupabaseOrgJobPostingAdminRepository.unwrapCall",
      "area": "admin"
     }
    ]
@@ -3955,6 +4493,43 @@
    ]
   },
   {
+   "old": "admin_wipe_demo_data_step",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "medium",
+   "missing": null,
+   "note": "Dev-only seed RPC, deliberately absent from production baseline types; adapter refuses not_installed where unavailable.",
+   "oldObject": {
+    "signature": [
+     "admin_wipe_demo_data_step() → Json"
+    ]
+   },
+   "targets": [
+    {
+     "type": "sql",
+     "name": "supabase/seed/demo/lib/80_admin_rpcs.sql#admin_wipe_demo_data_step",
+     "signature": "admin_wipe_demo_data_step() → jsonb",
+     "source": "supabase/seed/demo/lib/80_admin_rpcs.sql",
+     "errorBinding": {
+      "status": "unknown",
+      "reason": "transitive seed helper errors require separate review"
+     }
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseDemoDataRepository.ts",
+     "line": 36,
+     "symbol": "SupabaseDemoDataRepository.wipeStep",
+     "area": "admin"
+    }
+   ]
+  },
+  {
    "old": "admin_world_flow_funnel",
    "kind": "rpc",
    "status": "same",
@@ -4250,6 +4825,154 @@
    ]
   },
   {
+   "old": "api_identity_verification_begin",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "medium",
+   "missing": null,
+   "note": "Existing current caller: supabase/functions/identity-verification-session/index.ts. Current source declaration is bound; transitive errors remain explicitly unknown, not runtime acceptance.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_identity_verification_begin",
+     "source": "supabase/migrations/0078_identity_verification.sql",
+     "sqlSignature": "api_identity_verification_begin(p_user_id uuid, p_provider text) → uuid",
+     "errorBinding": {
+      "status": "unknown",
+      "reason": "transitive SQL helpers and constraints not exhaustively bound"
+     },
+     "signature": [
+      "api_identity_verification_begin(p_provider: string, p_user_id: string) → string"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "fn:identity-verification-session"
+   ],
+   "callSites": [
+    {
+     "file": "supabase/functions/identity-verification-session/index.ts",
+     "line": 34,
+     "symbol": "begin",
+     "area": "fn:identity-verification-session"
+    }
+   ]
+  },
+  {
+   "old": "api_identity_verification_set_session",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "medium",
+   "missing": null,
+   "note": "Existing current caller: supabase/functions/identity-verification-session/index.ts. Current source declaration is bound; transitive errors remain explicitly unknown, not runtime acceptance.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_identity_verification_set_session",
+     "source": "supabase/migrations/0078_identity_verification.sql",
+     "sqlSignature": "api_identity_verification_set_session(p_attempt_id uuid, p_provider_session_id text) → void",
+     "errorBinding": {
+      "status": "unknown",
+      "reason": "transitive SQL helpers and constraints not exhaustively bound"
+     },
+     "signature": [
+      "api_identity_verification_set_session(p_attempt_id: string, p_provider_session_id: string) → undefined"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "fn:identity-verification-session"
+   ],
+   "callSites": [
+    {
+     "file": "supabase/functions/identity-verification-session/index.ts",
+     "line": 47,
+     "symbol": "setSession",
+     "area": "fn:identity-verification-session"
+    }
+   ]
+  },
+  {
+   "old": "api_import_attach_post",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "medium",
+   "missing": null,
+   "note": "Existing current caller: app/packages/infrastructure-supabase/src/imports/EdgeFnPostExtractionService.ts. Current source declaration is bound; transitive errors remain explicitly unknown, not runtime acceptance.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_import_attach_post",
+     "source": "supabase/migrations/0073_import_attach_post.sql",
+     "sqlSignature": "api_import_attach_post(p_import_id uuid, p_post_id uuid) → void",
+     "errorBinding": {
+      "status": "unknown",
+      "reason": "transitive SQL helpers and constraints not exhaustively bound"
+     },
+     "signature": [
+      "api_import_attach_post(p_import_id: string, p_post_id: string) → undefined"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "imports"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/imports/EdgeFnPostExtractionService.ts",
+     "line": 24,
+     "symbol": "EdgeFnPostExtractionService.attachPost",
+     "area": "imports"
+    }
+   ]
+  },
+  {
+   "old": "api_import_record_edits",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "medium",
+   "missing": null,
+   "note": "Existing current caller: app/packages/infrastructure-supabase/src/imports/EdgeFnPostExtractionService.ts. Current source declaration is bound; transitive errors remain explicitly unknown, not runtime acceptance.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_import_record_edits",
+     "source": "supabase/migrations/0076_import_telemetry.sql",
+     "sqlSignature": "api_import_record_edits(p_import_id uuid, p_edited_fields text[]) → void",
+     "errorBinding": {
+      "status": "unknown",
+      "reason": "transitive SQL helpers and constraints not exhaustively bound"
+     },
+     "signature": [
+      "api_import_record_edits(p_edited_fields: string[], p_import_id: string) → undefined"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "imports"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/imports/EdgeFnPostExtractionService.ts",
+     "line": 29,
+     "symbol": "EdgeFnPostExtractionService.recordEdits",
+     "area": "imports"
+    }
+   ]
+  },
+  {
    "old": "api_match_llm_pending",
    "kind": "rpc",
    "status": "same",
@@ -4355,14 +5078,58 @@
     }
    ],
    "areas": [
-    "mobile"
+    "mobile",
+    "payments"
    ],
    "callSites": [
     {
      "file": "app/apps/mobile/app/pro.tsx",
-     "line": 38,
+     "line": 39,
      "symbol": "ProPaywallScreen",
      "area": "mobile"
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/payments/SupabaseProEntitlementRepository.ts",
+     "line": 12,
+     "symbol": "SupabaseProEntitlementRepository.isPro",
+     "area": "payments"
+    }
+   ]
+  },
+  {
+   "old": "api_resolve_place",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "medium",
+   "missing": null,
+   "note": "Existing current caller: supabase/functions/_shared/post-extraction/catalog.ts. Current source declaration is bound; transitive errors remain explicitly unknown, not runtime acceptance.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_resolve_place",
+     "source": "supabase/migrations/0065_import_place_resolution.sql",
+     "sqlSignature": "api_resolve_place(p_level text,\n  p_text text,\n  p_city_id text default null,\n  p_limit integer default 3) → table (place_id text, name_he text, city_id text, score real, margin real)",
+     "errorBinding": {
+      "status": "unknown",
+      "reason": "transitive SQL helpers and constraints not exhaustively bound"
+     },
+     "signature": [
+      "api_resolve_place(p_city_id?: string, p_level: string, p_limit?: number, p_text: string) → { city_id: string margin: number name_he: string place_id: string score: number }[]"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "fn:_shared"
+   ],
+   "callSites": [
+    {
+     "file": "supabase/functions/_shared/post-extraction/catalog.ts",
+     "line": 20,
+     "symbol": "rpcPlaceResolver",
+     "area": "fn:_shared"
     }
    ]
   },
@@ -4755,7 +5522,7 @@
      "type": "rpc",
      "name": "api_whatsapp_admin_list_templates",
      "signature": [
-      "api_whatsapp_admin_list_templates(body_preview: string, category: string, is_approved: boolean, language_code: string, meta_status: string, meta_template_id: string, params: Json, registry_version: number, template_name: string, updated_at: string) → { body_preview: string category: string is_approved: boolean language_code: string meta_status: string meta_template_id: string params: Json registry_version: number template_name: string updated_at: string }[]"
+      "api_whatsapp_admin_list_templates() → { body_preview: string category: string is_approved: boolean language_code: string meta_status: string meta_template_id: string params: Json registry_version: number template_name: string updated_at: string }[]"
      ],
      "errors": []
     }
@@ -5830,7 +6597,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/eventRegistrations.ts",
-     "line": 84,
+     "line": 94,
      "symbol": "cancelEventRegistration",
      "area": "marketplace"
     }
@@ -6232,7 +6999,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRealtime.ts",
-     "line": 101,
+     "line": 144,
      "symbol": "SupabaseChatRealtime.readUnreadTotal",
      "area": "chat"
     },
@@ -6550,7 +7317,7 @@
      "name": "community_stats",
      "source": "79_activity_stats/020_activity_and_community.sql:110",
      "signature": [
-      "community_stats(delivered_posts: number, open_public_posts: number, refreshed_at: string, registered_users: number) → { delivered_posts: number open_public_posts: number refreshed_at: string registered_users: number }[]"
+      "community_stats() → { delivered_posts: number open_public_posts: number refreshed_at: string registered_users: number }[]"
      ],
      "errors": [
       {
@@ -6995,7 +7762,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/listingWrites.ts",
-     "line": 78,
+     "line": 83,
      "symbol": "unwrapCall",
      "area": "marketplace"
     }
@@ -7308,7 +8075,7 @@
      "type": "rpc",
      "name": "crm_my_orgs",
      "signature": [
-      "crm_my_orgs(is_platform: boolean, name: string, org_id: string) → { is_platform: boolean name: string org_id: string }[]"
+      "crm_my_orgs() → { is_platform: boolean name: string org_id: string }[]"
      ],
      "errors": []
     }
@@ -7372,7 +8139,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/eventRegistrations.ts",
-     "line": 78,
+     "line": 88,
      "symbol": "unwrapCall",
      "area": "marketplace"
     }
@@ -7509,7 +8276,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/posts/postWriteMethods.ts",
-     "line": 170,
+     "line": 165,
      "symbol": "deletePost",
      "area": "posts"
     }
@@ -7713,7 +8480,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/posts/postCardPages.ts",
-     "line": 86,
+     "line": 91,
      "symbol": "fetchFeedPage",
      "area": "posts"
     },
@@ -7788,7 +8555,7 @@
    "note": "New required `p_org_id`; `*_cents` → `*_agorot`; `account_id` → `id`; no `entry_count`.",
    "oldObject": {
     "signature": [
-     "finance_accounts_list(account_id: string, balance_cents: number, entry_count: number, is_active: boolean, kind: string, last4: string, name: string, opening_balance_at: string, opening_balance_cents: number, sort_order: number) → { account_id: string balance_cents: number entry_count: number is_active: boolean kind: string last4: string name: string opening_balance_at: string opening_balance_cents: number sort_order: number }[]"
+     "finance_accounts_list() → { account_id: string balance_cents: number entry_count: number is_active: boolean kind: string last4: string name: string opening_balance_at: string opening_balance_cents: number sort_order: number }[]"
     ]
    },
    "targets": [
@@ -8573,6 +9340,43 @@
    ]
   },
   {
+   "old": "guest_posts",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "D186 / FR-AUTH-014, guest_posts forward migration: read-only signed-out projection of open Public posts with active owner/world/kind, published and unexpired. Returns only opaque id, title, description and city names; existing member grants stay closed. Optional post id, before-id cursor and bounded page limit.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "guest_posts",
+     "signature": [
+      "guest_posts(p_before_id?: string, p_limit?: number, p_post_id?: string) → { city_name_en: string city_name_he: string description: string id: string title: string }[]"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "posts"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/posts/SupabaseGuestPostsRepository.ts",
+     "line": 18,
+     "symbol": "SupabaseGuestPostsRepository.list",
+     "area": "posts"
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/posts/SupabaseGuestPostsRepository.ts",
+     "line": 25,
+     "symbol": "SupabaseGuestPostsRepository.get",
+     "area": "posts"
+    }
+   ]
+  },
+  {
    "old": "hide_chat",
    "kind": "rpc",
    "status": "same",
@@ -8645,6 +9449,117 @@
      "line": 50,
      "symbol": "completedStaysOf",
      "area": "housing"
+    }
+   ]
+  },
+  {
+   "old": "identity_verification_apply",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "medium",
+   "missing": null,
+   "note": "Existing current caller: supabase/functions/identity-verification-webhook/index.ts. Current source declaration is bound; transitive errors remain explicitly unknown, not runtime acceptance.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "identity_verification_apply",
+     "source": "supabase/migrations/0078_identity_verification.sql",
+     "sqlSignature": "identity_verification_apply(p_provider_slug text, p_event_id text, p_payload jsonb) → table (webhook_event_id uuid, event_status text, event_error_code text)",
+     "errorBinding": {
+      "status": "unknown",
+      "reason": "transitive SQL helpers and constraints not exhaustively bound"
+     },
+     "signature": [
+      "identity_verification_apply(p_event_id: string, p_payload: Json, p_provider_slug: string) → { event_error_code: string event_status: string webhook_event_id: string }[]"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "fn:identity-verification-webhook"
+   ],
+   "callSites": [
+    {
+     "file": "supabase/functions/identity-verification-webhook/index.ts",
+     "line": 30,
+     "symbol": "apply",
+     "area": "fn:identity-verification-webhook"
+    }
+   ]
+  },
+  {
+   "old": "import_moderation_removals",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "medium",
+   "missing": null,
+   "note": "Existing current caller: supabase/functions/_shared/post-extraction/store.ts. Current source declaration is bound; transitive errors remain explicitly unknown, not runtime acceptance.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "import_moderation_removals",
+     "source": "supabase/migrations/0075_import_moderation_lockout.sql",
+     "sqlSignature": "import_moderation_removals(p_user_id uuid, p_since timestamptz) → setof timestamptz",
+     "errorBinding": {
+      "status": "unknown",
+      "reason": "transitive SQL helpers and constraints not exhaustively bound"
+     },
+     "signature": [
+      "import_moderation_removals(p_since: string, p_user_id: string) → string[]"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "fn:_shared"
+   ],
+   "callSites": [
+    {
+     "file": "supabase/functions/_shared/post-extraction/store.ts",
+     "line": 65,
+     "symbol": "moderationRemovalsSince",
+     "area": "fn:_shared"
+    }
+   ]
+  },
+  {
+   "old": "import_similar_open_post",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "medium",
+   "missing": null,
+   "note": "Existing current caller: supabase/functions/_shared/post-extraction/store.ts. Current source declaration is bound; transitive errors remain explicitly unknown, not runtime acceptance.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "import_similar_open_post",
+     "source": "supabase/migrations/0077_import_cross_post_guard.sql",
+     "sqlSignature": "import_similar_open_post(p_user_id uuid, p_text text, p_min real default 0.8) → table (post_id uuid, similarity real)",
+     "errorBinding": {
+      "status": "unknown",
+      "reason": "transitive SQL helpers and constraints not exhaustively bound"
+     },
+     "signature": [
+      "import_similar_open_post(p_min?: number, p_text: string, p_user_id: string) → { post_id: string similarity: number }[]"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "fn:_shared"
+   ],
+   "callSites": [
+    {
+     "file": "supabase/functions/_shared/post-extraction/store.ts",
+     "line": 59,
+     "symbol": "similarOpenPost",
+     "area": "fn:_shared"
     }
    ]
   },
@@ -8880,7 +9795,7 @@
    "note": "Active KC support channels; the payee phone only for signed-in callers; the table is edited by the super admin; `0019` (M20, built).",
    "oldObject": {
     "signature": [
-     "list_kc_support_channels(channel: string, payee_phone: string, provider_label: string, url: string) → { channel: string payee_phone: string provider_label: string url: string }[]"
+     "list_kc_support_channels() → { channel: string payee_phone: string provider_label: string url: string }[]"
     ]
    },
    "targets": [
@@ -8888,7 +9803,7 @@
      "type": "rpc",
      "name": "list_kc_support_channels",
      "signature": [
-      "list_kc_support_channels(channel: string, payee_phone: string, provider_label: string, url: string) → { channel: string payee_phone: string provider_label: string url: string }[]"
+      "list_kc_support_channels() → { channel: string payee_phone: string provider_label: string url: string }[]"
      ],
      "errors": []
     }
@@ -8915,7 +9830,7 @@
    "note": "The caller's blocks with the blocked member's name and avatar, newest first, keyset (`p_before_blocked_at`, `p_before_user_id`, `p_limit` ≤ 100); `0015` (M01, built).",
    "oldObject": {
     "signature": [
-     "list_my_blocked_users(avatar_url: string, blocked_at: string, display_name: string, user_id: string) → { avatar_url: string blocked_at: string display_name: string user_id: string }[]"
+     "list_my_blocked_users() → { avatar_url: string blocked_at: string display_name: string user_id: string }[]"
     ]
    },
    "targets": [
@@ -9185,7 +10100,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/eventRegistrations.ts",
-     "line": 91,
+     "line": 101,
      "symbol": "unwrapCall",
      "area": "marketplace"
     }
@@ -9298,7 +10213,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/matching/SupabaseMatchRepository.ts",
-     "line": 138,
+     "line": 87,
      "symbol": "SupabaseMatchRepository.respond",
      "area": "matching"
     }
@@ -9347,7 +10262,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/eventRegistrations.ts",
-     "line": 100,
+     "line": 110,
      "symbol": "unwrapCall",
      "area": "marketplace"
     }
@@ -9382,6 +10297,43 @@
      "line": 52,
      "symbol": "SupabaseStatsRepository.listMyActivityTimeline",
      "area": "stats"
+    }
+   ]
+  },
+  {
+   "old": "my_identity_verification",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "medium",
+   "missing": null,
+   "note": "Existing current caller: app/packages/infrastructure-supabase/src/identityVerification/SupabaseIdentityVerificationService.ts. Current source declaration is bound; transitive errors remain explicitly unknown, not runtime acceptance.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "my_identity_verification",
+     "source": "supabase/migrations/0078_identity_verification.sql",
+     "sqlSignature": "my_identity_verification() → table (status text, reason_code text, decided_at timestamptz, verified_at timestamptz, expires_at timestamptz)",
+     "errorBinding": {
+      "status": "unknown",
+      "reason": "transitive SQL helpers and constraints not exhaustively bound"
+     },
+     "signature": [
+      "my_identity_verification() → { decided_at: string expires_at: string reason_code: string status: string verified_at: string }[]"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "identityVerification"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/identityVerification/SupabaseIdentityVerificationService.ts",
+     "line": 50,
+     "symbol": "SupabaseIdentityVerificationService.getStatus",
+     "area": "identityVerification"
     }
    ]
   },
@@ -9443,7 +10395,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/matching/SupabaseMatchRepository.ts",
-     "line": 130,
+     "line": 79,
      "symbol": "SupabaseMatchRepository.listMine",
      "area": "matching"
     }
@@ -9459,7 +10411,7 @@
    "note": "The caller's handed-over givings (given / received) and closed posts per world; `0018` (M15, built).",
    "oldObject": {
     "signature": [
-     "my_world_givings(closed: number, given: number, received: number, world_label_en: string, world_label_he: string, world_slug: string) → { closed: number given: number received: number world_label_en: string world_label_he: string world_slug: string }[]"
+     "my_world_givings() → { closed: number given: number received: number world_label_en: string world_label_he: string world_slug: string }[]"
     ]
    },
    "targets": [
@@ -9467,7 +10419,7 @@
      "type": "rpc",
      "name": "my_world_givings",
      "signature": [
-      "my_world_givings(closed: number, given: number, received: number, world_label_en: string, world_label_he: string, world_slug: string) → { closed: number given: number received: number world_label_en: string world_label_he: string world_slug: string }[]"
+      "my_world_givings() → { closed: number given: number received: number world_label_en: string world_label_he: string world_slug: string }[]"
      ],
      "errors": []
     }
@@ -9694,7 +10646,7 @@
      "name": "open_support_thread",
      "source": "40_messaging/030_chat_rpcs.sql:61",
      "signature": [
-      "open_support_thread(anchor_post_id: string | null, created_at: string, direct_user_a: string | null, direct_user_b: string | null, id: string, kind: string, last_message_at: string | null, moderation_hidden_at: string | null, support_user_id: string | null) → chats row"
+      "open_support_thread() → chats row"
      ],
      "errors": [
       {
@@ -9957,13 +10909,13 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/posts/postCardPages.ts",
-     "line": 68,
+     "line": 73,
      "symbol": "fetchPostsByIds",
      "area": "posts"
     },
     {
      "file": "app/packages/infrastructure-supabase/src/posts/postRepoQueries.ts",
-     "line": 41,
+     "line": 46,
      "symbol": "fetchPostDetail",
      "area": "posts"
     }
@@ -9995,7 +10947,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/posts/SupabasePostEngagementRepository.ts",
-     "line": 161,
+     "line": 138,
      "symbol": "SupabasePostEngagementRepository.commentsPage",
      "area": "posts"
     }
@@ -10027,7 +10979,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-     "line": 108,
+     "line": 122,
      "symbol": "fetchListingDetail",
      "area": "marketplace"
     }
@@ -10094,7 +11046,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/posts/postRepoQueries.ts",
-     "line": 106,
+     "line": 115,
      "symbol": "countProfileClosedPosts",
      "area": "posts"
     }
@@ -10144,7 +11096,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/posts/postCardPages.ts",
-     "line": 125,
+     "line": 130,
      "symbol": "fetchProfileTabPage",
      "area": "posts"
     }
@@ -10263,13 +11215,13 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/listingWrites.ts",
-     "line": 97,
+     "line": 113,
      "symbol": "postId",
      "area": "marketplace"
     },
     {
      "file": "app/packages/infrastructure-supabase/src/posts/postWriteMethods.ts",
-     "line": 94,
+     "line": 93,
      "symbol": "completeDraft",
      "area": "posts"
     }
@@ -10481,7 +11433,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/eventRegistrations.ts",
-     "line": 66,
+     "line": 76,
      "symbol": "registerForEvent",
      "area": "marketplace"
     }
@@ -10605,6 +11557,43 @@
      "file": "app/packages/infrastructure-supabase/src/posts/closureMethods.ts",
      "line": 62,
      "symbol": "reopenPost",
+     "area": "posts"
+    }
+   ]
+  },
+  {
+   "old": "replace_post_media",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "core",
+   "confidence": "medium",
+   "missing": null,
+   "note": "Existing current caller: app/packages/infrastructure-supabase/src/posts/postMediaWrites.ts. Current source declaration is bound; transitive errors remain explicitly unknown, not runtime acceptance.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "replace_post_media",
+     "source": "supabase/migrations/0068_replace_post_media.sql",
+     "sqlSignature": "replace_post_media(p_post_id uuid, p_media jsonb) → void",
+     "errorBinding": {
+      "status": "unknown",
+      "reason": "transitive SQL helpers and constraints not exhaustively bound"
+     },
+     "signature": [
+      "replace_post_media(p_media: Json, p_post_id: string) → undefined"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "posts"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/posts/postMediaWrites.ts",
+     "line": 57,
+     "symbol": "unwrapCall",
      "area": "posts"
     }
    ]
@@ -11151,7 +12140,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-     "line": 70,
+     "line": 71,
      "symbol": "seriesMarker",
      "area": "marketplace"
     }
@@ -11255,7 +12244,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/social/SupabaseFollowSuggestionsRepository.ts",
-     "line": 35,
+     "line": 20,
      "symbol": "SupabaseFollowSuggestionsRepository.listSuggestions",
      "area": "social"
     }
@@ -11331,7 +12320,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/social/SupabaseFollowSuggestionsRepository.ts",
-     "line": 51,
+     "line": 36,
      "symbol": "SupabaseFollowSuggestionsRepository.getProfileCompleteness",
      "area": "social"
     }
@@ -11438,7 +12427,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/posts/postCardPages.ts",
-     "line": 105,
+     "line": 110,
      "symbol": "fetchSearchPage",
      "area": "posts"
     }
@@ -11577,7 +12566,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatV2Repository.ts",
-     "line": 36,
+     "line": 38,
      "symbol": "SupabaseChatV2Repository.sendMediaMessage",
      "area": "chat"
     },
@@ -11639,6 +12628,37 @@
    ]
   },
   {
+   "old": "set_knowledge_slot_series_status",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "`p_post_id`, `p_status`: active, paused or ended; pausing and ending drop the upcoming unbooked slots and keep booked ones. The giver or a post editor only.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "set_knowledge_slot_series_status",
+     "signature": [
+      "set_knowledge_slot_series_status(p_post_id: string, p_status: string) → undefined"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "knowledge"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/knowledge/SupabaseKnowledgeSlotSeriesRepository.ts",
+     "line": 78,
+     "symbol": "SupabaseKnowledgeSlotSeriesRepository.unwrapCall",
+     "area": "knowledge"
+    }
+   ]
+  },
+  {
    "old": "set_message_reaction",
    "kind": "rpc",
    "status": "same",
@@ -11681,7 +12701,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatV2Repository.ts",
-     "line": 20,
+     "line": 22,
      "symbol": "SupabaseChatV2Repository.setMessageReaction",
      "area": "chat"
     }
@@ -11775,7 +12795,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/listingWrites.ts",
-     "line": 129,
+     "line": 145,
      "symbol": "createListing",
      "area": "marketplace"
     }
@@ -11824,7 +12844,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/posts/SupabasePostEngagementRepository.ts",
-     "line": 106,
+     "line": 83,
      "symbol": "SupabasePostEngagementRepository.unwrapCall",
      "area": "posts"
     }
@@ -11988,6 +13008,37 @@
      "line": 33,
      "symbol": "SupabaseMarketplaceRepository.similarListings",
      "area": "marketplace"
+    }
+   ]
+  },
+  {
+   "old": "start_knowledge_slot_series",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Makes a lesson offer recurring and adds its slots for the next 30 days; called on the draft before `publish_post`, so a refused schedule leaves no offer.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "start_knowledge_slot_series",
+     "signature": [
+      "start_knowledge_slot_series(p_capacity?: number, p_duration_minutes: number, p_ends_on?: string, p_post_id: string, p_start_time: string, p_weekdays: number) → string"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "knowledge"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/knowledge/SupabaseKnowledgeSlotSeriesRepository.ts",
+     "line": 47,
+     "symbol": "startKnowledgeSlotSeries",
+     "area": "knowledge"
     }
    ]
   },
@@ -12509,7 +13560,7 @@
       },
       {
        "code": "followers_only_requires_public_profile",
-       "knownToApp": true
+       "knownToApp": false
       },
       {
        "code": "invalid_identity_visibility",
@@ -12696,6 +13747,8 @@
     }
    ],
    "areas": [
+    "featureFlags",
+    "fn:extract-external-post",
     "mobile"
    ],
    "callSites": [
@@ -12704,6 +13757,24 @@
      "line": 12,
      "symbol": "fetchRemoteFeatureFlags",
      "area": "mobile",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/featureFlags/SupabaseFeatureFlagsRepository.ts",
+     "line": 11,
+     "symbol": "SupabaseFeatureFlagsRepository.listFlags",
+     "area": "featureFlags",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "supabase/functions/extract-external-post/index.ts",
+     "line": 28,
+     "symbol": "<module>",
+     "area": "fn:extract-external-post",
      "ops": [
       "select"
      ]
@@ -12830,79 +13901,6 @@
    ]
   },
   {
-   "old": "challenges",
-   "kind": "table",
-   "status": "same",
-   "launch": "core",
-   "confidence": "high",
-   "missing": null,
-   "note": "Read to find the challenge of a challenge post (`post_id` → `id`).",
-   "oldObject": {
-    "columns": [
-     "cadence",
-     "challenge_id",
-     "created_at",
-     "creator_id",
-     "description",
-     "difficulty",
-     "ends_at",
-     "goal_direction",
-     "goal_value",
-     "measurement",
-     "participants_count",
-     "post_id",
-     "scope",
-     "status",
-     "target_cycles",
-     "title",
-     "topic_label",
-     "updated_at"
-    ],
-    "isView": false
-   },
-   "targets": [
-    {
-     "type": "table",
-     "name": "challenges",
-     "columns": [
-      "cadence",
-      "created_at",
-      "creator_id",
-      "difficulty",
-      "ends_at",
-      "goal_direction",
-      "goal_value",
-      "id",
-      "measurement",
-      "participants_count",
-      "post_id",
-      "scope",
-      "status",
-      "target_cycles",
-      "topic_label",
-      "updated_at"
-     ],
-     "clientGrants": {
-      "select": true
-     }
-    }
-   ],
-   "areas": [
-    "posts"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/posts/postCardExtras.ts",
-     "line": 36,
-     "symbol": "loadChallengeIds",
-     "area": "posts",
-     "ops": [
-      "select"
-     ]
-    }
-   ]
-  },
-  {
    "old": "chat_members",
    "kind": "table",
    "status": "same",
@@ -13021,7 +14019,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/reports/reportTargetPreviews.ts",
-     "line": 89,
+     "line": 91,
      "symbol": "chatPreviews",
      "area": "reports",
      "ops": [
@@ -13196,7 +14194,16 @@
     },
     {
      "file": "supabase/functions/translate/cache.ts",
-     "line": 38,
+     "line": 55,
+     "symbol": "getCachedMany",
+     "area": "fn:translate",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "supabase/functions/translate/cache.ts",
+     "line": 71,
      "symbol": "putIfAbsent",
      "area": "fn:translate",
      "ops": [
@@ -13205,7 +14212,7 @@
     },
     {
      "file": "supabase/functions/translate/cache.ts",
-     "line": 56,
+     "line": 89,
      "symbol": "deleteCached",
      "area": "fn:translate",
      "ops": [
@@ -13422,6 +14429,59 @@
    ]
   },
   {
+   "old": "external_post_imports",
+   "kind": "table",
+   "status": "same",
+   "launch": "later",
+   "confidence": "medium",
+   "missing": null,
+   "note": "Existing current caller: supabase/functions/_shared/post-extraction/store.ts. Current source declaration is bound; transitive errors remain explicitly unknown, not runtime acceptance.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "table",
+     "name": "external_post_imports",
+     "source": "supabase/migrations/0067_import_extraction_store.sql",
+     "errorBinding": {
+      "status": "unknown",
+      "reason": "transitive SQL helpers and constraints not exhaustively bound"
+     },
+     "columns": [
+      "channel",
+      "confidence",
+      "created_at",
+      "duplicate_post_id",
+      "edited_fields",
+      "extraction",
+      "extraction_version",
+      "id",
+      "model",
+      "post_id",
+      "provider_called",
+      "reason",
+      "routing",
+      "source_platform",
+      "status",
+      "text_fingerprint",
+      "user_id"
+     ],
+     "clientGrants": {}
+    }
+   ],
+   "areas": [
+    "fn:_shared"
+   ],
+   "callSites": [
+    {
+     "file": "supabase/functions/_shared/post-extraction/store.ts",
+     "line": 52,
+     "symbol": "supabaseImportStore",
+     "area": "fn:_shared",
+     "ops": []
+    }
+   ]
+  },
+  {
    "old": "feed_hides",
    "kind": "table",
    "status": "same",
@@ -13455,7 +14515,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/feed/SupabaseSocialFeedRepository.ts",
-     "line": 51,
+     "line": 44,
      "symbol": "SupabaseSocialFeedRepository.unwrapCall",
      "area": "feed",
      "ops": [
@@ -13503,7 +14563,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/feed/SupabaseSocialFeedRepository.ts",
-     "line": 61,
+     "line": 54,
      "symbol": "SupabaseSocialFeedRepository.unwrapCall",
      "area": "feed",
      "ops": [
@@ -13563,7 +14623,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/feed/SupabaseSocialFeedRepository.ts",
-     "line": 69,
+     "line": 62,
      "symbol": "SupabaseSocialFeedRepository.listMuteFilters",
      "area": "feed",
      "ops": [
@@ -13572,7 +14632,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/feed/SupabaseSocialFeedRepository.ts",
-     "line": 86,
+     "line": 79,
      "symbol": "SupabaseSocialFeedRepository.unwrapCall",
      "area": "feed",
      "ops": [
@@ -13581,7 +14641,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/feed/SupabaseSocialFeedRepository.ts",
-     "line": 91,
+     "line": 84,
      "symbol": "SupabaseSocialFeedRepository.removeMuteFilter",
      "area": "feed",
      "ops": [
@@ -13878,6 +14938,97 @@
    ]
   },
   {
+   "old": "identity_verification_consents",
+   "kind": "table",
+   "status": "same",
+   "launch": "later",
+   "confidence": "medium",
+   "missing": null,
+   "note": "Existing current caller: supabase/functions/identity-verification-session/index.ts. Current source declaration is bound; transitive errors remain explicitly unknown, not runtime acceptance.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "table",
+     "name": "identity_verification_consents",
+     "source": "supabase/migrations/0078_identity_verification.sql",
+     "errorBinding": {
+      "status": "unknown",
+      "reason": "transitive SQL helpers and constraints not exhaustively bound"
+     },
+     "columns": [
+      "accepted_at",
+      "user_id",
+      "version"
+     ],
+     "clientGrants": {}
+    }
+   ],
+   "areas": [
+    "fn:identity-verification-session"
+   ],
+   "callSites": [
+    {
+     "file": "supabase/functions/identity-verification-session/index.ts",
+     "line": 39,
+     "symbol": "latestConsent",
+     "area": "fn:identity-verification-session",
+     "ops": [
+      "select"
+     ]
+    }
+   ]
+  },
+  {
+   "old": "identity_verifications",
+   "kind": "table",
+   "status": "same",
+   "launch": "later",
+   "confidence": "medium",
+   "missing": null,
+   "note": "Existing current caller: supabase/functions/identity-verification-webhook/index.ts. Current source declaration is bound; transitive errors remain explicitly unknown, not runtime acceptance.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "table",
+     "name": "identity_verifications",
+     "source": "supabase/migrations/0078_identity_verification.sql",
+     "errorBinding": {
+      "status": "unknown",
+      "reason": "transitive SQL helpers and constraints not exhaustively bound"
+     },
+     "columns": [
+      "created_at",
+      "decided_at",
+      "decision_reason_code",
+      "document_country",
+      "document_expires_on",
+      "document_type",
+      "id",
+      "name_match",
+      "provider",
+      "provider_session_id",
+      "status",
+      "user_id"
+     ],
+     "clientGrants": {}
+    }
+   ],
+   "areas": [
+    "fn:identity-verification-webhook"
+   ],
+   "callSites": [
+    {
+     "file": "supabase/functions/identity-verification-webhook/index.ts",
+     "line": 24,
+     "symbol": "profileNameForAttempt",
+     "area": "fn:identity-verification-webhook",
+     "ops": [
+      "select"
+     ]
+    }
+   ]
+  },
+  {
    "old": "item_subcategories",
    "kind": "table",
    "status": "same",
@@ -13907,6 +15058,7 @@
     }
    ],
    "areas": [
+    "fn:_shared",
     "marketplace",
     "posts"
    ],
@@ -13925,6 +15077,15 @@
      "line": 54,
      "symbol": "readCatalog",
      "area": "posts",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "supabase/functions/_shared/post-extraction/lists.ts",
+     "line": 30,
+     "symbol": "rows",
+     "area": "fn:_shared",
      "ops": [
       "select"
      ]
@@ -13970,6 +15131,7 @@
     }
    ],
    "areas": [
+    "karma",
     "mobile"
    ],
    "callSites": [
@@ -13978,6 +15140,59 @@
      "line": 24,
      "symbol": "useKarmaHistory",
      "area": "mobile",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/karma/SupabaseKarmaHistoryRepository.ts",
+     "line": 15,
+     "symbol": "SupabaseKarmaHistoryRepository.listHistory",
+     "area": "karma",
+     "ops": [
+      "select"
+     ]
+    }
+   ]
+  },
+  {
+   "old": "knowledge_slot_series",
+   "kind": "table",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "The weekly schedule of a recurring lesson offer, one per post; readable exactly when its offer is, written only by the series RPCs.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "table",
+     "name": "knowledge_slot_series",
+     "columns": [
+      "capacity",
+      "created_at",
+      "duration_minutes",
+      "ends_on",
+      "id",
+      "post_id",
+      "start_time",
+      "starts_on",
+      "status",
+      "updated_at",
+      "weekdays"
+     ],
+     "clientGrants": {}
+    }
+   ],
+   "areas": [
+    "knowledge"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/knowledge/SupabaseKnowledgeSlotSeriesRepository.ts",
+     "line": 70,
+     "symbol": "SupabaseKnowledgeSlotSeriesRepository.getForPost",
+     "area": "knowledge",
      "ops": [
       "select"
      ]
@@ -14100,8 +15315,8 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/legal/SupabaseLegalDocumentRepository.ts",
-     "line": 82,
-     "symbol": "SupabaseLegalDocumentRepository.getCurrentContent",
+     "line": 97,
+     "symbol": "SupabaseLegalDocumentSource.readCurrent",
      "area": "legal",
      "ops": [
       "select"
@@ -14153,8 +15368,8 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/legal/SupabaseLegalDocumentRepository.ts",
-     "line": 72,
-     "symbol": "SupabaseLegalDocumentRepository.getCurrentContent",
+     "line": 92,
+     "symbol": "SupabaseLegalDocumentSource.readCurrent",
      "area": "legal",
      "ops": [
       "select"
@@ -14201,7 +15416,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatV2Repository.ts",
-     "line": 52,
+     "line": 54,
      "symbol": "SupabaseChatV2Repository.listMessageReactions",
      "area": "chat",
      "ops": [
@@ -14438,7 +15653,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/eventRegistrations.ts",
-     "line": 154,
+     "line": 164,
      "symbol": "listMyOrganizations",
      "area": "marketplace",
      "ops": [
@@ -14493,6 +15708,7 @@
       "id",
       "is_platform",
       "is_verified_nonprofit",
+      "may_post_jobs",
       "name",
       "org_type",
       "public_about_en",
@@ -14541,6 +15757,15 @@
      "file": "app/packages/infrastructure-supabase/src/admin/financeOrg.ts",
      "line": 20,
      "symbol": "readPlatformOrgId",
+     "area": "admin",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseOrgJobPostingAdminRepository.ts",
+     "line": 34,
+     "symbol": "SupabaseOrgJobPostingAdminRepository.listOrganizations",
      "area": "admin",
      "ops": [
       "select"
@@ -14653,7 +15878,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/posts/postCardExtras.ts",
-     "line": 44,
+     "line": 29,
      "symbol": "loadPurgeDeadlines",
      "area": "posts",
      "ops": [
@@ -14700,7 +15925,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/posts/SupabasePostEngagementRepository.ts",
-     "line": 146,
+     "line": 123,
      "symbol": "SupabasePostEngagementRepository.unwrapCall",
      "area": "posts",
      "ops": [
@@ -14709,7 +15934,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/posts/SupabasePostEngagementRepository.ts",
-     "line": 153,
+     "line": 130,
      "symbol": "SupabasePostEngagementRepository.unwrapCall",
      "area": "posts",
      "ops": [
@@ -14807,7 +16032,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/posts/SupabasePostEngagementRepository.ts",
-     "line": 120,
+     "line": 97,
      "symbol": "SupabasePostEngagementRepository.createComment",
      "area": "posts",
      "ops": [
@@ -14817,7 +16042,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/reports/reportTargetPreviews.ts",
-     "line": 71,
+     "line": 73,
      "symbol": "commentPreviews",
      "area": "reports",
      "ops": [
@@ -14873,7 +16098,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-     "line": 78,
+     "line": 79,
      "symbol": "loadEventDetails",
      "area": "marketplace",
      "ops": [
@@ -14897,6 +16122,46 @@
      "ops": [
       "select"
      ]
+    }
+   ]
+  },
+  {
+   "old": "post_extraction_cache",
+   "kind": "table",
+   "status": "same",
+   "launch": "later",
+   "confidence": "medium",
+   "missing": null,
+   "note": "Existing current caller: supabase/functions/_shared/post-extraction/store.ts. Current source declaration is bound; transitive errors remain explicitly unknown, not runtime acceptance.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "table",
+     "name": "post_extraction_cache",
+     "source": "supabase/migrations/0067_import_extraction_store.sql",
+     "errorBinding": {
+      "status": "unknown",
+      "reason": "transitive SQL helpers and constraints not exhaustively bound"
+     },
+     "columns": [
+      "created_at",
+      "extraction_version",
+      "fingerprint",
+      "result"
+     ],
+     "clientGrants": {}
+    }
+   ],
+   "areas": [
+    "fn:_shared"
+   ],
+   "callSites": [
+    {
+     "file": "supabase/functions/_shared/post-extraction/store.ts",
+     "line": 79,
+     "symbol": "supabaseExtractionCache",
+     "area": "fn:_shared",
+     "ops": []
     }
    ]
   },
@@ -14951,7 +16216,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-     "line": 99,
+     "line": 100,
      "symbol": "loadFoodDetails",
      "area": "marketplace",
      "ops": [
@@ -15073,7 +16338,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/eventRegistrations.ts",
-     "line": 114,
+     "line": 124,
      "symbol": "unwrapCall",
      "area": "marketplace",
      "ops": [
@@ -15082,7 +16347,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/eventRegistrations.ts",
-     "line": 136,
+     "line": 146,
      "symbol": "getMyEventRegistration",
      "area": "marketplace",
      "ops": [
@@ -15109,7 +16374,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/posts/postCardExtras.ts",
-     "line": 56,
+     "line": 41,
      "symbol": "loadRecipients",
      "area": "posts",
      "ops": [
@@ -15186,6 +16451,7 @@
     }
    ],
    "areas": [
+    "fn:_shared",
     "marketplace",
     "posts"
    ],
@@ -15204,6 +16470,15 @@
      "line": 56,
      "symbol": "readCatalog",
      "area": "posts",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "supabase/functions/_shared/post-extraction/lists.ts",
+     "line": 32,
+     "symbol": "rows",
+     "area": "fn:_shared",
      "ops": [
       "select"
      ]
@@ -15229,6 +16504,8 @@
       "ends_at",
       "id",
       "post_id",
+      "series_id",
+      "series_on",
       "starts_at"
      ],
      "clientGrants": {
@@ -15321,7 +16598,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/listingOwnerActions.ts",
-     "line": 89,
+     "line": 98,
      "symbol": "addMyListingMedia",
      "area": "marketplace",
      "ops": [
@@ -15330,7 +16607,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/listingWrites.ts",
-     "line": 55,
+     "line": 57,
      "symbol": "recordPhotos",
      "area": "marketplace",
      "ops": [
@@ -15338,18 +16615,9 @@
      ]
     },
     {
-     "file": "app/packages/infrastructure-supabase/src/posts/postMediaWrites.ts",
-     "line": 40,
-     "symbol": "unwrapCall",
-     "area": "posts",
-     "ops": [
-      "insert"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/posts/postMediaWrites.ts",
-     "line": 54,
-     "symbol": "unwrapCall",
+     "file": "app/packages/infrastructure-supabase/src/posts/ownPendingCovers.ts",
+     "line": 30,
+     "symbol": "withOwnPendingCovers",
      "area": "posts",
      "ops": [
       "select"
@@ -15357,17 +16625,8 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/posts/postMediaWrites.ts",
-     "line": 65,
-     "symbol": "replacePostMedia",
-     "area": "posts",
-     "ops": [
-      "delete"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/posts/postMediaWrites.ts",
-     "line": 70,
-     "symbol": "replacePostMedia",
+     "line": 41,
+     "symbol": "unwrapCall",
      "area": "posts",
      "ops": [
       "insert"
@@ -15375,7 +16634,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/posts/postRepoQueries.ts",
-     "line": 23,
+     "line": 24,
      "symbol": "loadGallery",
      "area": "posts",
      "ops": [
@@ -15432,6 +16691,7 @@
    ],
    "areas": [
     "housing",
+    "marketplace",
     "posts",
     "rides"
    ],
@@ -15446,8 +16706,26 @@
      ]
     },
     {
+     "file": "app/packages/infrastructure-supabase/src/marketplace/SupabaseListingStreetAddressRepository.ts",
+     "line": 22,
+     "symbol": "SupabaseListingStreetAddressRepository.unwrapCall",
+     "area": "marketplace",
+     "ops": [
+      "upsert"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/marketplace/SupabaseListingStreetAddressRepository.ts",
+     "line": 35,
+     "symbol": "SupabaseListingStreetAddressRepository.getOwn",
+     "area": "marketplace",
+     "ops": [
+      "select"
+     ]
+    },
+    {
      "file": "app/packages/infrastructure-supabase/src/posts/postRepoQueries.ts",
-     "line": 34,
+     "line": 35,
      "symbol": "loadOwnStreet",
      "area": "posts",
      "ops": [
@@ -15456,7 +16734,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/posts/postWriteMethods.ts",
-     "line": 47,
+     "line": 46,
      "symbol": "unwrapCall",
      "area": "posts",
      "ops": [
@@ -15570,7 +16848,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/posts/SupabasePostEngagementRepository.ts",
-     "line": 88,
+     "line": 65,
      "symbol": "SupabasePostEngagementRepository.getViewerReaction",
      "area": "posts",
      "ops": [
@@ -15579,7 +16857,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/posts/SupabasePostEngagementRepository.ts",
-     "line": 101,
+     "line": 78,
      "symbol": "SupabasePostEngagementRepository.setReaction",
      "area": "posts",
      "ops": [
@@ -15656,7 +16934,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-     "line": 38,
+     "line": 39,
      "symbol": "loadRideDetails",
      "area": "marketplace",
      "ops": [
@@ -15770,7 +17048,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/posts/SupabasePostEngagementRepository.ts",
-     "line": 71,
+     "line": 48,
      "symbol": "SupabasePostEngagementRepository.getStats",
      "area": "posts",
      "ops": [
@@ -15862,6 +17140,7 @@
       "shown_street_number",
       "source",
       "source_language",
+      "source_platform",
       "status",
       "status_before_removal",
       "time_window",
@@ -16013,7 +17292,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/listingOwnerActions.ts",
-     "line": 71,
+     "line": 80,
      "symbol": "updateMyListing",
      "area": "marketplace",
      "ops": [
@@ -16023,7 +17302,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/listingWrites.ts",
-     "line": 89,
+     "line": 104,
      "symbol": "createPlain",
      "area": "marketplace",
      "ops": [
@@ -16033,7 +17312,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/listingWrites.ts",
-     "line": 100,
+     "line": 116,
      "symbol": "postId",
      "area": "marketplace",
      "ops": [
@@ -16042,7 +17321,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-     "line": 79,
+     "line": 80,
      "symbol": "loadEventDetails",
      "area": "marketplace",
      "ops": [
@@ -16051,7 +17330,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-     "line": 116,
+     "line": 125,
      "symbol": "fetchListingDetail",
      "area": "marketplace",
      "ops": [
@@ -16077,17 +17356,8 @@
      ]
     },
     {
-     "file": "app/packages/infrastructure-supabase/src/posts/postCardExtras.ts",
-     "line": 27,
-     "symbol": "loadPostColumns",
-     "area": "posts",
-     "ops": [
-      "select"
-     ]
-    },
-    {
      "file": "app/packages/infrastructure-supabase/src/posts/postRepoQueries.ts",
-     "line": 64,
+     "line": 73,
      "symbol": "baseCount",
      "area": "posts",
      "ops": [
@@ -16096,7 +17366,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/posts/postWriteMethods.ts",
-     "line": 60,
+     "line": 59,
      "symbol": "insertDraft",
      "area": "posts",
      "ops": [
@@ -16106,7 +17376,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/posts/postWriteMethods.ts",
-     "line": 105,
+     "line": 104,
      "symbol": "createPost",
      "area": "posts",
      "ops": [
@@ -16115,7 +17385,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/posts/postWriteMethods.ts",
-     "line": 127,
+     "line": 126,
      "symbol": "mergedDetails",
      "area": "posts",
      "ops": [
@@ -16124,7 +17394,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/posts/postWriteMethods.ts",
-     "line": 150,
+     "line": 149,
      "symbol": "updatePost",
      "area": "posts",
      "ops": [
@@ -16134,7 +17404,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/reports/reportTargetPreviews.ts",
-     "line": 33,
+     "line": 35,
      "symbol": "postPreviews",
      "area": "reports",
      "ops": [
@@ -16832,6 +18102,7 @@
       "status_until",
       "updated_at",
       "user_id",
+      "verification_expires_at",
       "verification_method",
       "verified_at"
      ],
@@ -16846,7 +18117,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/reports/reportTargetPreviews.ts",
-     "line": 54,
+     "line": 56,
      "symbol": "userPreviews",
      "area": "reports",
      "ops": [
@@ -17078,7 +18349,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/users/SupabaseActiveStatusRepository.ts",
-     "line": 20,
+     "line": 21,
      "symbol": "SupabaseActiveStatusRepository.get",
      "area": "users",
      "ops": [
@@ -17303,6 +18574,7 @@
       "status_until",
       "updated_at",
       "user_id",
+      "verification_expires_at",
       "verification_method",
       "verified_at"
      ],
@@ -17436,7 +18708,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/eventRegistrations.ts",
-     "line": 120,
+     "line": 130,
      "symbol": "unwrapCall",
      "area": "marketplace",
      "ops": [
@@ -17454,7 +18726,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/posts/postCardExtras.ts",
-     "line": 65,
+     "line": 50,
      "symbol": "loadRecipients",
      "area": "posts",
      "ops": [
@@ -17463,7 +18735,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/reports/reportTargetPreviews.ts",
-     "line": 50,
+     "line": 52,
      "symbol": "userPreviews",
      "area": "reports",
      "ops": [
@@ -17472,7 +18744,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/reports/reportTargetPreviews.ts",
-     "line": 121,
+     "line": 123,
      "symbol": "loadDisplayNames",
      "area": "reports",
      "ops": [
@@ -17692,14 +18964,24 @@
     }
    ],
    "areas": [
+    "fn:_shared",
     "marketplace"
    ],
    "callSites": [
     {
-     "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-     "line": 115,
-     "symbol": "fetchListingDetail",
+     "file": "app/packages/infrastructure-supabase/src/marketplace/worldCatalog.ts",
+     "line": 21,
+     "symbol": "readWorlds",
      "area": "marketplace",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "supabase/functions/_shared/post-extraction/lists.ts",
+     "line": 28,
+     "symbol": "loadExtractionLists",
+     "area": "fn:_shared",
      "ops": [
       "select"
      ]

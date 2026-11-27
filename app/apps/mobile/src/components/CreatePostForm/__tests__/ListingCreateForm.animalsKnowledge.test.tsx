@@ -16,7 +16,7 @@ const mocks = vi.hoisted(() => ({
   listKindsForWorld: vi.fn(),
   createListing: vi.fn(),
   nativeDatePicker: vi.fn(() => null),
-  pickListingImages: vi.fn(async () => [] as { uri: string }[]),
+  pickListingImages: vi.fn(async () => ({ status: 'ok' as const, value: [] as { uri: string }[] })),
   uploadListingImages: vi.fn(async () => [] as { path: string; mimeType: string; sizeBytes: number }[]),
 }));
 
@@ -28,6 +28,8 @@ vi.mock('react-i18next', () => ({
     i18n: { language: 'he' },
   }),
 }));
+// The photo tiles render through KCImage (expo-image), a native module.
+vi.mock('expo-image', () => ({ Image: () => null }));
 vi.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
 // The organization membership hint (FR-ORG-002) opens My organizations.
 vi.mock('expo-router', () => ({ useRouter: () => ({ push: vi.fn() }) }));
@@ -146,7 +148,7 @@ describe('ListingCreateForm — knowledge & animals (#1630, #1625)', () => {
     });
     expect(await screen.findByText('marketplace.errors.offer_photo_required')).toBeTruthy();
     expect(mocks.createListing).not.toHaveBeenCalled();
-    mocks.pickListingImages.mockResolvedValueOnce([{ uri: 'file://puppy.jpg' }]);
+    mocks.pickListingImages.mockResolvedValueOnce({ status: 'ok', value: [{ uri: 'file://puppy.jpg' }] });
     mocks.uploadListingImages.mockResolvedValueOnce([{ path: 'u1/puppy.jpg', mimeType: 'image/jpeg', sizeBytes: 4096 }]);
     await act(async () => {
       fireEvent.click(screen.getByLabelText('post.addPhoto'));

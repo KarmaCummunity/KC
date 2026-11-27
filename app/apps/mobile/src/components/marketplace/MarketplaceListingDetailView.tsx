@@ -12,12 +12,14 @@ import { KnowledgeBookingActions } from './knowledge/KnowledgeBookingActions';
 import { HousingStayActions } from './housing/HousingStayActions';
 import { EventDetailsCard } from './events/EventDetailsCard';
 import { EventRegistrationActions } from './events/EventRegistrationActions';
+import { EmploymentDetailsCard } from './employment/EmploymentDetailsCard';
 import { RideRouteCard } from './RideRouteCard';
 import { RidePublishAgainButton } from './RidePublishAgainButton';
 import { RideSeriesManageLink } from './RideSeriesManageLink';
 import { RideSeriesOccurrences } from './RideSeriesOccurrences';
 import { PostSeriesOccurrences } from '../series/PostSeriesOccurrences';
 import { isTestListingTitle } from '../../lib/displayTitle';
+import { worldPlaceholderIcon } from '../../lib/worldDetailCopy';
 import { PostDetailHeader } from '../cards/PostDetailHeader';
 import { SimilarListingCard } from '../cards/SimilarListingCard';
 import { useAuthStore } from '../../store/authStore';
@@ -62,10 +64,9 @@ interface Props {
   moderationInHeader?: boolean;
 }
 
-/** Placeholder icon for listings without photos; rides get a car like their cards. */
+/** Placeholder icon for listings without photos: the world's icon, like its cards. */
 function fallbackIconFor(detail: MarketplaceListingDetail) {
-  if (detail.worldSlug === 'rides') return 'car-outline' as const;
-  return detail.direction === 'give' ? ('gift-outline' as const) : ('search-outline' as const);
+  return worldPlaceholderIcon(detail.worldSlug, detail.direction === 'give' ? 'Give' : 'Request');
 }
 
 export function MarketplaceListingDetailView({ detail, bottomInset, footer, moderationInHeader = false }: Props) {
@@ -116,6 +117,7 @@ export function MarketplaceListingDetailView({ detail, bottomInset, footer, mode
           {detail.kindSlug === ORG_EVENT_KIND_SLUG ? (
             <PostSeriesOccurrences listingId={detail.listingId} details={detail.details} isOwner={viewerId === detail.ownerId} />
           ) : null}
+          {detail.worldSlug === 'employment' ? <EmploymentDetailsCard details={detail.details} /> : null}
           {detail.summary ? <Text style={detailStyles.description}>{detail.summary}</Text> : null}
           <Text style={styles.summary}>{kindLabel}</Text>
           {detail.owner ? (

@@ -1,6 +1,7 @@
 // FR-PROFILE-007 — Edit Profile (getEditableProfile + UpdateProfileUseCase).
 // FR-VERIFY-012 — all fields required for verification level 1 are editable here.
-import React from 'react';
+import { nativeCaptureMarkers, safeNativeProfile } from '../src/lib/nativeCaptureSafety';
+import React, { useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useTheme, Text } from '@kc/ui';
@@ -12,10 +13,12 @@ import { NotifyModal } from '../src/components/NotifyModal';
 import { useAuthStore } from '../src/store/authStore';
 import { EditProfileDateOfBirthBlock } from '../src/components/profile/EditProfileDateOfBirthBlock';
 import { EditProfileCompletenessCard } from '../src/components/profile/EditProfileCompletenessCard';
+import { EditProfileSignInBlock } from '../src/components/profile/EditProfileSignInBlock';
 import { useUnsavedChangesGuard } from '../src/hooks/useUnsavedChangesGuard';
 import { useEditProfileStyles } from '../src/screens/edit-profile.styles';
 import { useEditProfileController } from '../src/hooks/useEditProfileController';
 
+export { RouteErrorBoundary as ErrorBoundary } from '../src/components/RouteErrorBoundary';
 
 export default function EditProfileScreen() {
   const { t } = useTranslation();
@@ -25,6 +28,7 @@ export default function EditProfileScreen() {
   const setSession = useAuthStore((s) => s.setSession);
 
   const form = useEditProfileController(session, setSession);
+  const [avatarUploading, setAvatarUploading] = useState(false);
 
   useUnsavedChangesGuard({
     isDirty: form.isDirty && !form.saving,
@@ -54,7 +58,8 @@ export default function EditProfileScreen() {
             label={t('profile.editScreen.save')}
             fullWidth
             loading={form.saving}
-            disabled={form.saving}
+            // Not while an avatar is still uploading: the save would not include it.
+            disabled={form.saving || avatarUploading}
             onPress={form.handleSave}
           />
         }
@@ -65,6 +70,7 @@ export default function EditProfileScreen() {
           avatarUrl={form.avatarUrl}
           disabled={form.saving}
           onChange={form.setAvatarUrl}
+          onUploadingChange={setAvatarUploading}
         />
         <EditProfileCompletenessCard
           displayName={form.displayName}
@@ -104,7 +110,7 @@ export default function EditProfileScreen() {
           disabled={form.saving}
           error={form.fieldErrors.address}
         />
-        <View style={styles.field}>
+        <View style={styles.field} {...(safeNativeProfile(form, session) ? nativeCaptureMarkers.profile : {})}>
           <TextField
             testID="edit-profile-phone"
             label={t('profile.editScreen.contactPhoneLabel')}
@@ -119,6 +125,7 @@ export default function EditProfileScreen() {
           />
           <Text style={styles.helper}>{t('profile.editScreen.contactPhoneHelper')}</Text>
         </View>
+        <EditProfileSignInBlock />
         <View style={styles.field}>
           <TextField
             label={t('profile.editScreen.biographyLabel')}

@@ -1,4 +1,4 @@
-import type { Message } from '@kc/domain';
+import type { Message, MessageReactionType } from '@kc/domain';
 
 /** What the member's inbox topic tells: some chat of theirs changed (ids only, no content). */
 export interface InboxChange {
@@ -12,6 +12,11 @@ export interface InboxStreamCallbacks {
   onUnreadTotalChanged: (total: number) => void;
   /** A new message in a listed chat — bump its row's unread before the debounced total read. */
   onInboxMessageInsert?: (message: Message) => void;
+  /**
+   * The inbox channel failed (error or timeout). The client rejoins on its own; once it is back,
+   * `onInboxChanged` fires so the inbox and the unread total catch up on what was missed.
+   */
+  onError?: (err: Error) => void;
 }
 
 /** Optional tuning for inbox realtime (FR-CHAT-012 race with mark-read). */
@@ -26,6 +31,13 @@ export interface ChatChange {
   readonly anchorPostId: string | null;
 }
 
+/** A member set, changed or (with a null type) cleared their reaction to a message (KC#873). */
+export interface MessageReactionChange {
+  readonly messageId: string;
+  readonly userId: string;
+  readonly reactionType: MessageReactionType | null;
+}
+
 export interface ChatStreamCallbacks {
   onMessage: (m: Message) => void;
   /**
@@ -36,7 +48,14 @@ export interface ChatStreamCallbacks {
   // Fires when the chat's pinned post changes (FR-CHAT-014 AC6). Optional — consumers that
   // only care about messages can omit it.
   onChatChanged?: (change: ChatChange) => void;
+  /** A reaction in this chat changed (#2568): apply it live instead of re-reading reactions. */
+  onReaction?: (change: MessageReactionChange) => void;
   onError: (err: Error) => void;
+  /**
+   * The channel rejoined after a failure. Messages sent while it was down were not delivered
+   * live, so the caller re-reads the latest page (merging, never replacing what it holds).
+   */
+  onResync?: () => void;
 }
 
 export type Unsubscribe = () => void;

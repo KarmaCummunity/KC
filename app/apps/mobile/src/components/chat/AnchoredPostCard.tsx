@@ -22,7 +22,8 @@ import { KcRowCard } from '../cards/KcRowCard';
 import { cleanDisplayTitle } from '../../lib/displayTitle';
 import { getSupabaseImageThumbUrl, getSupabasePublicImageUrl } from '../../lib/imageUrl';
 import { rowDirectionStart } from '../../lib/rtlLayout';
-import { listingClosureOptions, listingOwnerMarkCtaKey } from '../../lib/listingOwnerClosure';
+import { listingClosureOptions } from '../../lib/listingOwnerClosure';
+import { worldOwnerMarkCtaKey } from '../../lib/worldDetailCopy';
 
 interface Props {
   chatId: string;
@@ -56,11 +57,12 @@ export function AnchoredPostCard({ chatId, anchorPostId, viewerId, counterpartId
     staleTime: 60_000, // PERF-3: chat anchored post — closure event invalidates explicitly
   });
 
-  // FR-CHAT-014 AC7 — counterpart contact phone via chat-scoped RPC (TD-163).
+  // FR-CHAT-014 AC7 — counterpart contact phone via chat-scoped RPC (TD-163). The phone shows
+  // only inside the anchored-post card, so a chat without an anchored post skips the RPC (#2566).
   const counterpartPhoneQuery = useQuery({
     queryKey: ['chat-counterparty-contact', chatId],
     queryFn: () => getUserRepo().getChatCounterpartyContact(chatId),
-    enabled: Boolean(counterpartId),
+    enabled: Boolean(counterpartId && anchorPostId),
     staleTime: 60_000,
   });
   const counterpartPhone = counterpartPhoneQuery.data ?? null;
@@ -121,7 +123,7 @@ export function AnchoredPostCard({ chatId, anchorPostId, viewerId, counterpartId
   const isGive = post?.type === 'Give';
   const ctaText = !post
     ? ''
-    : t(post.type === 'Request' ? 'closure.markRequestCta' : listingOwnerMarkCtaKey(post.listingWorldSlug));
+    : t(worldOwnerMarkCtaKey(post.listingWorldSlug, post.type));
 
   const path0 = post?.mediaAssets[0]?.path;
   const thumbUri = path0 ? getSupabaseImageThumbUrl({ bucket: 'post-images', path: path0 }) : null;

@@ -61,7 +61,12 @@ export { SupabaseOrgJobPostingAdminRepository } from './admin/SupabaseOrgJobPost
 export { SupabaseWorldContentRepository } from './worlds/SupabaseWorldContentRepository';
 export { SupabaseSearchRepository } from './search/SupabaseSearchRepository';
 export { SupabaseDeviceRepository } from './notifications/SupabaseDeviceRepository';
-export { SupabaseLegalDocumentRepository } from './legal/SupabaseLegalDocumentRepository';
+export { SupabaseLegalDocumentRepository, SupabaseLegalDocumentSource } from './legal/SupabaseLegalDocumentRepository';
+export { CachedLegalDocumentRepository } from './legal/CachedLegalDocumentRepository';
+export {
+  SupabaseIdentityVerificationService,
+  IDENTITY_VERIFICATION_SESSION_FUNCTION,
+} from './identityVerification/SupabaseIdentityVerificationService';
 export { LegalDocumentCache, type AsyncKVStorage } from './legal/legalCache';
 export * from './admin/SupabaseAdminRoleRepository';
 export * from './admin/SupabaseAdminTaskRepository';
@@ -104,6 +109,13 @@ export { SupabaseOrganizationsRepository } from './organizations/SupabaseOrganiz
 export { SupabaseChallengeRepository } from './challenges/SupabaseChallengeRepository';
 export * from './admin/SupabaseWhatsAppAdminRepository';
 export * from './admin/SupabaseDemoDataRepository';
+export * from './admin/SupabaseProdCopyRepository';
 export { SupabaseWhatsAppLinkRepository } from './whatsapp/SupabaseWhatsAppLinkRepository';
 export { SupabaseKnowledgeTopicRepository } from './knowledge/SupabaseKnowledgeTopicRepository';
 export { SupabaseKnowledgeBookingRepository } from './knowledge/SupabaseKnowledgeBookingRepository';
+export { SupabaseGuestPostsRepository } from './posts/SupabaseGuestPostsRepository';
+export { SupabaseKnowledgeSlotSeriesRepository } from './knowledge/SupabaseKnowledgeSlotSeriesRepository';
+
+export { SupabaseKarmaHistoryRepository } from './karma/SupabaseKarmaHistoryRepository';
+export { SupabaseFeatureFlagsRepository } from './featureFlags/SupabaseFeatureFlagsRepository';
+export { SupabaseProEntitlementRepository } from './payments/SupabaseProEntitlementRepository';

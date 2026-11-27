@@ -1,6 +1,6 @@
 # 2.2 Profile & Privacy Mode
 
-> **Status:** ✅ Core Complete — Edit profile, privacy toggle, avatar upload all shipped. **Audit 2026-05-29:** users PII column grants + adapter scrub (TD-163); session-bound profile mutators. ⏳ `FR-PROFILE-017` (optional add-phone on main shell) — **spec only** until implemented. ⚠️ Audit 2026-05-16: 🔴 `mapUserRow.privacyMode` blind cast (TD-69, BACKLOG P2.12). 🟠 FR-PROFILE-009 AC5 followers list non-paginated; FR-PROFILE-012 AC1 lock icon tappable on other-user profile; FR-PROFILE-015 AC1 SSO avatar never copied to our bucket; FR-PROFILE-013 AC5 counters not Realtime-subscribed. TD-104 / TD-105. See `docs/SSOT/archive/audit/2026-05-16/02_auth_profile.md`.
+> **Status:** Owner approval 2026-11-20 changes FR-PROFILE-003 visibility semantics; implementation and regression verification of that change are pending. Earlier status: ✅ Core Complete — Edit profile, privacy toggle, avatar upload all shipped. **Audit 2026-05-29:** users PII column grants + adapter scrub (TD-163); session-bound profile mutators. ⏳ `FR-PROFILE-017` (optional add-phone on main shell) — **spec only** until implemented. ⚠️ Audit 2026-05-16: 🔴 `mapUserRow.privacyMode` blind cast (TD-69, BACKLOG P2.12). 🟠 FR-PROFILE-009 AC5 followers list non-paginated; FR-PROFILE-012 AC1 lock icon tappable on other-user profile; FR-PROFILE-015 AC1 SSO avatar never copied to our bucket; FR-PROFILE-013 AC5 counters not Realtime-subscribed. TD-104 / TD-105. See `docs/SSOT/archive/audit/2026-05-16/02_auth_profile.md`.
 
 
 
@@ -82,19 +82,19 @@ Viewing the profile of another user whose `privacy_mode = Public` shows their id
 ## FR-PROFILE-003 — Other-user profile (private mode, not an approved follower)
 
 **Description.**
-Viewing the profile of another user whose `privacy_mode = Private` and to whom I am not an approved follower renders **identically to a Public profile** (`FR-PROFILE-002`); the only differences are the follow CTA and the lock indicator.
+Owner decision 2026-11-20 supersedes D-21: a Private profile is hidden from viewers who are not approved followers. Public remains the default. This is the approved target contract; implementation and regression verification are separate.
 
 **Source.**
-- PRD: `03_Core_Features.md` §3.2.2 (revised by D-21 — see `DECISIONS.md`).
-- Constraints: `R-MVP-Privacy-11` (superseded by D-21).
+- Owner approval 2026-11-20 supersedes the old D-21 visibility semantics; PRD: `03_Core_Features.md` §3.2.2.
+- Constraints: `R-MVP-Privacy-11`; the old D-21 visibility override is superseded by owner approval 2026-11-20.
 
 **Acceptance Criteria.**
-- AC1. Header, counters, tabs, and post lists behave exactly as in `FR-PROFILE-002`. There is no locked panel; followers/following lists are reachable from the counters per `FR-PROFILE-010`.
+- AC1. Non-approved viewers cannot read the private profile biography, counters, profile post lists or followers/following lists. They can request to follow. Enforce the profile boundary on the server as well as in the UI; do not leak fields through direct API calls.
 - AC2. Per-post visibility still applies: `FollowersOnly` posts are hidden from non-approved followers regardless of profile privacy; `OnlyMe` posts are hidden from everyone except the owner.
 - AC3. Action buttons replace "Follow" with "Send Follow Request" / "Cancel Request" depending on state (see `FR-FOLLOW-006`); "Send Message" remains available (a private profile does not block DMs).
-- AC4. The lock icon next to the display name (`FR-PROFILE-012`) is the single user-facing signal that this profile is private.
+- AC4. Per-field everyone / approved-followers / only-me controls apply to Public and Private profiles. Private caps even everyone fields at approved followers; approved followers still cannot read only-me fields. The lock and follow-request UI must not reveal hidden profile content.
 
-**Related.** Screens: 3.3 · D-21.
+**Related.** Screens: 3.3 · D-21 historical rule, superseded for visibility by owner approval 2026-11-20.
 
 ---
 
@@ -104,7 +104,7 @@ Viewing the profile of another user whose `privacy_mode = Private` and to whom I
 Viewing a `Private` profile when I am an approved follower is identical to viewing a `Public` profile where I am an approved follower.
 
 **Source.**
-- PRD: `03_Core_Features.md` §3.2.2 (revised by D-21).
+- PRD: `03_Core_Features.md` §3.2.2; D-21 is historical, superseded for profile visibility by owner approval 2026-11-20.
 
 **Acceptance Criteria.**
 - AC1. Lists, tabs, and counters behave exactly as in `FR-PROFILE-002`.
@@ -234,11 +234,11 @@ Visibility of another user's followers/following lists depends on their privacy 
 - Constraints: `R-MVP-Privacy-11`.
 
 **Acceptance Criteria.**
-- AC1. Followers and Following lists of any active user are visible to any signed-in viewer, regardless of the target's `privacy_mode`. Blocked counterparts are filtered out per `FR-MOD-009` (when block is reintroduced post-MVP per EXEC-9). Revised by D-21.
+- AC1. Followers and Following lists of a Public profile are visible to signed-in viewers; lists of a Private profile are visible only to its owner and approved followers. Blocked counterparts are filtered out per `FR-MOD-009` (when block is reintroduced post-MVP per EXEC-9). Owner approval 2026-11-20 supersedes D-21 for this visibility rule.
 - AC2. The actions on each row (Follow / Following / Send Follow Request / Send Message) respect the row target's privacy mode independently — a row representing a Private user shows "Send Follow Request" instead of "Follow".
 - AC3. Lists remain paginated server-side at 50 rows per page.
 
-**Related.** Screens: 3.4 · D-21.
+**Related.** Screens: 3.4 · D-21 historical rule, superseded for visibility by owner approval 2026-11-20.
 
 ---
 
@@ -306,6 +306,7 @@ The biography text rejects external URLs to prevent spam.
 **Acceptance Criteria.**
 - AC1. The validator runs both client- and server-side; the server is authoritative.
 - AC2. The pattern flags `http(s)://`, bare domains containing `.`, and well-known shorteners (`bit.ly`, `t.co`, `tinyurl`, etc.).
+  - *Implementation:* a bare domain is a dotted word ending in a top-level domain of a curated list (`BIOGRAPHY_URL_PATTERN_SOURCE` in `@kc/domain`, mirrored in the `users_biography_check` constraint), so ordinary dotted words such as "Node.js" or "Dr.Smith" are allowed (#1721).
 - AC3. Rejection produces an inline error: *"Links are not allowed in the biography."*
 - AC4. Existing biographies that violate the rule due to retroactive policy changes are preserved but flagged for moderation review.
 

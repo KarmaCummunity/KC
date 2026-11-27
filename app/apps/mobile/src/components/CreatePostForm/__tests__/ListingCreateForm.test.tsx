@@ -18,7 +18,6 @@ const mocks = vi.hoisted(() => ({
   rememberRideRoute: vi.fn(),
   nativeDatePicker: vi.fn(() => null),
 }));
-
 vi.mock('../../../services/postsComposition', async () => (await import('../../../lib/unifiedCreate/__tests__/listingExposureDoubles')).postsCompositionDouble);
 vi.mock('../../../services/userComposition', async () => (await import('../../../lib/unifiedCreate/__tests__/listingExposureDoubles')).userCompositionDouble);
 vi.mock('react-i18next', () => ({
@@ -27,6 +26,7 @@ vi.mock('react-i18next', () => ({
     i18n: { language: 'he' },
   }),
 }));
+vi.mock('expo-image', () => ({ Image: () => null })); // photo tiles render through KCImage
 vi.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
 vi.mock('expo-router', () => ({ useRouter: () => ({ push: vi.fn() }) })); // the membership hint (FR-ORG-002)
 // A native picker may only ever mount inside the date sheet, never inline in the form.
@@ -75,7 +75,7 @@ vi.mock('../../giving/RideCreateSection', async () => {
     ),
   };
 });
-vi.mock('../../../services/listingImageUpload', () => ({ pickListingImages: vi.fn(async () => []), uploadListingImages: vi.fn() }));
+vi.mock('../../../services/listingImageUpload', () => ({ pickListingImages: vi.fn(async () => ({ status: 'ok' as const, value: [] })), uploadListingImages: vi.fn() }));
 vi.mock('../../../lib/analyticsCoreLoop', () => ({ trackCoreLoop: vi.fn(), trackActivationIfFirst: vi.fn() }));
 vi.mock('../../../lib/haptics', () => ({ hapticLightImpact: () => undefined, hapticLightTap: () => {} }));
 vi.mock('../../../navigation/useShellTabBarVisibility', () => ({ useShellTabBarScrollInset: () => 0 }));

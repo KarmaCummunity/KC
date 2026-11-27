@@ -12,6 +12,7 @@ type PostEngagementContextValue = {
   readonly activeReaction: PostReactionType | null;
   readonly threads: readonly PostCommentThreadItem[];
   readonly busy: boolean;
+  readonly commentSendFailed: boolean;
   readonly replyTo: ReplyTarget | null;
   readonly commentsLoaded: boolean;
   readonly commentsFailed: boolean;
@@ -42,6 +43,7 @@ type ProviderProps = Readonly<{
 
 export function PostEngagementProvider({ postId, viewerId, children }: ProviderProps) {
   const [busy, setBusy] = useState(false);
+  const [commentSendFailed, setCommentSendFailed] = useState(false);
   const [replyTo, setReplyTo] = useState<ReplyTarget | null>(null);
   // Cached per post and viewer: a reopened post shows its thread at once and refreshes behind it.
   const { snapshot, loaded, refresh, patch, restore } = usePostEngagementSnapshot(postId, viewerId);
@@ -97,12 +99,19 @@ export function PostEngagementProvider({ postId, viewerId, children }: ProviderP
       if (!viewerId || !body || busy) return;
       void (async () => {
         setBusy(true);
+        setCommentSendFailed(false);
         try {
-          await container.postEngagement.createComment(postId, body, replyTo?.commentId ?? null);
+          try {
+            await container.postEngagement.createComment(postId, body, replyTo?.commentId ?? null);
+          } catch {
+            setCommentSendFailed(true);
+            return; // Keep the composer draft and reply target for a retry.
+          }
           hapticSuccess();
           onSent();
           setReplyTo(null);
-          await refresh();
+          // A stored comment must not be reported as an unsent draft on a refresh failure.
+          await refresh().catch(() => undefined);
         } finally {
           setBusy(false);
         }
@@ -117,6 +126,7 @@ export function PostEngagementProvider({ postId, viewerId, children }: ProviderP
       activeReaction,
       threads,
       busy,
+      commentSendFailed,
       replyTo,
       commentsLoaded,
       commentsFailed,
@@ -127,7 +137,7 @@ export function PostEngagementProvider({ postId, viewerId, children }: ProviderP
       onToggleCommentLike,
       onSubmitComment,
     }),
-    [stats, activeReaction, threads, busy, replyTo, commentsLoaded, commentsFailed, visibleCommentCount, onReaction, onToggleCommentLike, onSubmitComment],
+    [stats, activeReaction, threads, busy, commentSendFailed, replyTo, commentsLoaded, commentsFailed, visibleCommentCount, onReaction, onToggleCommentLike, onSubmitComment],
   );
 
   if (!viewerId) {

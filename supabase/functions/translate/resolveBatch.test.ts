@@ -23,13 +23,30 @@ function fakeReader(rows: Record<string, Record<string, unknown>[]>, reads: Sour
   } as unknown as SupabaseClient;
 }
 
-/** A fake cache client over content_translations holding `cached` rows keyed by content id and field. */
-function fakeCache(cached: Record<string, Record<string, unknown>>): SupabaseClient {
-  const chain = (filters: Record<string, string> = {}) => ({
-    eq: (column: string, value: string) => chain({ ...filters, [column]: value }),
-    maybeSingle: () => Promise.resolve({ data: cached[`${filters.content_id}:${filters.field}`] ?? null, error: null }),
-  });
-  return { from: (_table: string) => ({ select: () => chain() }) } as unknown as SupabaseClient;
+/** One batched cache read: the target language and the content ids it asked for. */
+interface CacheRead { targetLanguage: string; ids: string[] }
+
+/**
+ * A fake cache client over content_translations holding `cached` rows keyed by content id and
+ * field. It answers only the batched lookup (`eq(target_language).in(content_id, ids)`) and
+ * records every read, so a test sees how many round-trips a batch costs.
+ */
+function fakeCache(cached: Record<string, Record<string, unknown>>, reads: CacheRead[] = []): SupabaseClient {
+  return {
+    from: (_table: string) => ({
+      select: () => ({
+        eq: (_column: string, targetLanguage: string) => ({
+          in: (_idColumn: string, ids: string[]) => {
+            reads.push({ targetLanguage, ids });
+            const rows = Object.values(cached).filter(
+              (r) => r.target_language === targetLanguage && ids.includes(String(r.content_id)),
+            );
+            return Promise.resolve({ data: rows, error: null });
+          },
+        }),
+      }),
+    }),
+  } as unknown as SupabaseClient;
 }
 
 Deno.test('a post title is read from posts by id and answered from the cache without a provider call', async () => {
@@ -72,4 +89,27 @@ Deno.test('items outside the registry, or whose row the caller cannot see, are s
   ]);
   assertEquals(results.map((r) => r.status), ['skipped', 'skipped', 'skipped']);
   assertEquals(reads.map((r) => r.table), ['posts']);
+});
+
+// #1798: the whole batch costs one cache round-trip, matched in memory by type, id and field.
+Deno.test('a batch reads the cache once for every item and matches each row to its own field', async () => {
+  const reads: SourceRead[] = [];
+  const cacheReads: CacheRead[] = [];
+  const reader = fakeReader({ posts: [{ id: POST_ID, title: HEBREW_TITLE, description: HEBREW_TITLE }] }, reads);
+  const cache = fakeCache({
+    [`${POST_ID}:title`]: {
+      content_type: 'post', content_id: POST_ID, field: 'title', target_language: 'en',
+      source_language: 'he', translated_text: 'Blue sofa', model: null, confidence: null,
+    },
+    [`${POST_ID}:description`]: {
+      content_type: 'post', content_id: POST_ID, field: 'description', target_language: 'en',
+      source_language: 'he', translated_text: 'A blue sofa to give away', model: null, confidence: null,
+    },
+  }, cacheReads);
+  const results = await resolveBatch(reader, cache, 'en', [
+    { contentType: 'post', contentId: POST_ID, field: 'title' },
+    { contentType: 'post', contentId: POST_ID, field: 'description' },
+  ]);
+  assertEquals(cacheReads, [{ targetLanguage: 'en', ids: [POST_ID] }]);
+  assertEquals(results.map((r) => r.translation?.translatedText), ['Blue sofa', 'A blue sofa to give away']);
 });

@@ -23,6 +23,22 @@ tags: [profile, keyboard]
     id: edit-profile-phone
 - assertVisible:
     id: edit-profile-save
+# Focus was requested, but only actual pixels can confirm keyboard visibility/bounds.
+- runFlow:
+    when:
+      true: ${typeof KC_NATIVE_CAPTURE_SAFE !== 'undefined' && KC_NATIVE_CAPTURE_SAFE === 'true'}
+    commands:
+      - assertVisible:
+          id: native-profile-capture-safe
+      - takeScreenshot: 861-profile-input-focused
 - hideKeyboard
 - assertVisible:
     id: edit-profile-save
+
+- runFlow:
+    when:
+      true: ${typeof KC_NATIVE_CAPTURE_SAFE !== 'undefined' && KC_NATIVE_CAPTURE_SAFE === 'true'}
+    commands:
+      - assertVisible:
+          id: native-profile-capture-safe
+      - takeScreenshot: 861-profile-keyboard-dismissed

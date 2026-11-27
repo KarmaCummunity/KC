@@ -7,36 +7,11 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { PostError } from '@kc/application';
+import type { IPostEngagementRepository, PostReactionType, PostEngagementStats, PostCommentRow, PostCommentWithAuthor } from '@kc/application';
 import type { Database } from '../database.types';
 import { unwrapCall } from '../rpc/mapRpcError';
 import { sessionUserId } from '../users/userReads';
 import { toPostError } from './postErrors';
-
-export type PostReactionType = 'like' | 'support' | 'thanks';
-
-export type PostEngagementStats = {
-  postId: string;
-  reactionCount: number;
-  commentCount: number;
-  shareCount: number;
-};
-
-export type PostCommentRow = {
-  commentId: string;
-  postId: string;
-  authorId: string;
-  parentCommentId: string | null;
-  body: string;
-  createdAt: string;
-};
-
-export type PostCommentWithAuthor = PostCommentRow & {
-  authorDisplayName: string | null;
-  authorAvatarUrl: string | null;
-  authorShareHandle: string | null;
-  likeCount: number;
-  likedByViewer: boolean;
-};
 
 /** Most comments the detail screen loads: root comments, then the replies of those that have any. */
 const ROOT_PAGE_MAX = 50;
@@ -60,7 +35,9 @@ function toCommentWithAuthor(row: CommentPageRow): PostCommentWithAuthor {
   };
 }
 
-export class SupabasePostEngagementRepository {
+export type { PostReactionType, PostEngagementStats, PostCommentRow, PostCommentWithAuthor } from '@kc/application';
+
+export class SupabasePostEngagementRepository implements IPostEngagementRepository {
   constructor(private readonly client: SupabaseClient<Database>) {}
 
   /** The post's counters; zeros while nobody has reacted, commented or shared (no `post_stats` row yet). */

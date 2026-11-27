@@ -7,9 +7,11 @@ import { iconSize, makeUseStyles, radius, spacing, typography, useTheme, Text } 
 
 type Props = Readonly<{
   status: PostStatus;
+  /** i18n key of the closed pill label (world-specific, #2539); defaults to the generic "Completed". */
+  closedLabelKey?: string;
 }>;
 
-export function PostDetailStatusBadge({ status }: Props) {
+export function PostDetailStatusBadge({ status, closedLabelKey = 'post.detail.statusClosed' }: Props) {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const styles = useStyles();
@@ -27,7 +29,7 @@ export function PostDetailStatusBadge({ status }: Props) {
     return (
       <View style={[styles.pill, styles.pillClosed]} accessibilityRole="text">
         <Ionicons name="checkmark-circle" size={iconSize.sm} color={colors.success} />
-        <Text style={styles.pillTextClosed}>{t('post.detail.statusClosed')}</Text>
+        <Text style={styles.pillTextClosed}>{t(closedLabelKey)}</Text>
       </View>
     );
   }

@@ -1,14 +1,16 @@
 name: CI — backend
 
 # Database lane, called by ci.yml when migrations, seed/config, the Supabase
-# adapter package or CI plumbing changed. Boots a fresh local Supabase stack
+# adapter package, the API server (app/apps/api), its client package or CI
+# plumbing changed. Boots a fresh local Supabase stack
 # (supabase/migrations: 0001_baseline.sql, then any later migration), runs the
 # pgTAP suites of supabase/tests on an empty scratch database of the same server
 # (plus the reference and content seed loaders, applied twice), the RPC grants
-# check, the database.types.ts drift check, the FSM catalog contract and the
-# SECURITY DEFINER SQL probe / port contract integration tests. The migration
-# chain, destructive-op and baseline-assembly scans are static and run in
-# ci-static-guards.yml.
+# check, the database.types.ts drift check, the FSM catalog contract, the
+# SECURITY DEFINER SQL probe / port contract integration tests and the API
+# server's database suites. A second job builds the API's container image and
+# starts it. The migration chain, destructive-op and baseline-assembly scans
+# are static and run in ci-static-guards.yml.
 
 on:
   workflow_call:
@@ -101,14 +103,27 @@ jobs:
       - name: Migrations apply on an empty database + pgTAP tests + seed loaders
         run: scripts/run-baseline-tests.sh
 
+      - name: Provider identity hash reservation, concurrent commit and rollback
+        timeout-minutes: 3
+        run: |
+          set -euo pipefail
+          python3 -m venv "$RUNNER_TEMP/idv-provider-venv"
+          "$RUNNER_TEMP/idv-provider-venv/bin/python" -m pip install --disable-pip-version-check --require-hashes -r scripts/requirements-identity-provider.txt
+          DB_URL="$(supabase status -o env | sed -n 's/^DB_URL="\(.*\)"$/\1/p')"
+          # run-baseline-tests.sh created this scratch DB with all migrations.
+          # Never run synthetic identity fixtures on a deployed Supabase project.
+          DB_URL="${DB_URL%/*}/kc_baseline_check" "$RUNNER_TEMP/idv-provider-venv/bin/python" scripts/test-identity-provider-concurrency.py
+
       # The Demo data screen (FR-ADMIN-031) calls RPCs of a dev-only seed (supabase/seed/demo),
       # which kc-dev gets from the Seed KC dev workflow and kc-prod never does. Installed on the
       # throwaway stack (without the dev marker) so the grant check below covers them too.
-      - name: Install the dev-only demo-data tools on the local stack
+      - name: Install the dev-only demo-data and production-copy tools on the local stack
         run: |
           set -euo pipefail
           DB_URL="$(supabase status -o env | sed -n 's/^DB_URL="\(.*\)"$/\1/p')"
           psql "$DB_URL" -v ON_ERROR_STOP=1 --single-transaction -q -f supabase/seed/demo/install.sql
+          # The "Copied from production" card (FR-ADMIN-037) calls RPCs of the dev-only copy tools.
+          psql "$DB_URL" -v ON_ERROR_STOP=1 --single-transaction -q -f supabase/seed/prod-copy/install.sql
 
       - name: Check every client RPC is granted to a client role
         # Functions are owner/service_role-only by default, so a client RPC whose
@@ -172,6 +187,47 @@ jobs:
           CI_LOCAL_SUPABASE: 'true'
         run: pnpm --filter @kc/infrastructure-supabase test sqlProbes contract.integration
 
+      # The API server (app/apps/api, ADR-009) answers the app's port calls with these same
+      # adapters, on its own connection to this database instead of through PostgREST. Its
+      # database suites (port contracts, realtime, storage, jobs, webhooks) run here because
+      # this job already holds the server the migrations were proven on, which is also the
+      # Postgres build the API talks to until the database itself moves. The frontend lane
+      # runs the same package without a database, against the lower unit-only coverage floor.
+      - name: Start Redis for the API suites
+        run: |
+          # Pinned by digest (Redis 7.2, the newest line the hosting plan's managed Redis offers).
+          # Registries rate-limit pulls intermittently, so rotate over mirrors of the same image.
+          digest=sha256:2f66de68111e64c3927859f158f8e666066dae2b97d9f82770a6f37a5aa1c335
+          for repo in mirror.gcr.io/library/redis public.ecr.aws/docker/library/redis docker.io/library/redis; do
+            docker run -d --name kc-api-redis -p 127.0.0.1:6379:6379 "$repo@$digest" && break
+            echo "::warning::redis pull via $repo failed, trying next registry"
+            docker rm -f kc-api-redis >/dev/null 2>&1 || true
+            sleep 15
+          done
+          for _ in $(seq 1 30); do
+            docker exec kc-api-redis redis-cli ping 2>/dev/null | grep -q PONG && exit 0
+            sleep 1
+          done
+          exit 1
+
+      # An empty database of the local stack's server with the whole migration chain and the
+      # reference data. The connection string is local-only; GITHUB_ENV scopes it to this job.
+      - name: Build the API's test database
+        run: |
+          set -euo pipefail
+          DB_URL="$(supabase status -o env | sed -n 's/^DB_URL="\(.*\)"$/\1/p')"
+          DB_URL="$DB_URL" app/apps/api/scripts/kc-test-db.sh | grep '^KC_API_TEST_KC_DATABASE_URL=' >> "$GITHUB_ENV"
+
+      # KC_API_TEST_DISPOSABLE_DATABASE also collects the platform suites, which create roles
+      # and a schema of their own: allowed here, the database is thrown away with the stack.
+      # With every suite collected, vitest holds the run to the full coverage floor.
+      - name: API database suites + full coverage floor (against local stack)
+        working-directory: app
+        env:
+          REDIS_URL: redis://127.0.0.1:6379
+          KC_API_TEST_DISPOSABLE_DATABASE: '1'
+        run: DATABASE_URL="$KC_API_TEST_KC_DATABASE_URL" pnpm --filter @kc/api test:coverage
+
       - name: Diagnose (on failure)
         if: failure()
         continue-on-error: true
@@ -199,3 +255,47 @@ jobs:
       - name: Stop Supabase
         if: always()
         run: supabase stop || true
+
+  # The image is what the hosting platform runs (ADR-009 phase 2). Building it proves the
+  # Dockerfile, the bundle and the production dependency set; starting it proves the process
+  # boots as an unprivileged user, answers liveness, reports unreachable dependencies as not
+  # ready instead of crashing, and ends cleanly on a stop signal. Nothing is pushed anywhere.
+  api-image:
+    name: api container image · build · start
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Build the image
+        run: |
+          # One retry: a base-image pull can hit a registry rate limit; a real build error fails twice.
+          docker build -f app/apps/api/Dockerfile -t kc-api:ci app/ && exit 0
+          sleep 30
+          docker build -f app/apps/api/Dockerfile -t kc-api:ci app/
+
+      - name: Start it without its dependencies
+        run: |
+          set -euo pipefail
+          # Nothing listens on these two ports, and the issuer is never contacted at start.
+          docker run -d --name kc-api -p 127.0.0.1:8080:8080 \
+            -e DATABASE_URL=postgres://ci@127.0.0.1:5999/ci \
+            -e REDIS_URL=redis://127.0.0.1:6999 \
+            -e KC_AUTH_ISSUER=https://auth.invalid/auth/v1 \
+            kc-api:ci
+          for _ in $(seq 1 30); do
+            curl -fs -o /dev/null http://127.0.0.1:8080/health && break
+            sleep 1
+          done
+          status() { curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:8080$1"; }
+          test "$(status /health)" = 200
+          test "$(status /health/ready)" = 503
+          test "$(docker exec kc-api id -u)" != 0
+          docker stop -t 10 kc-api >/dev/null
+          test "$(docker inspect -f '{{.State.ExitCode}}' kc-api)" = 0
+
+      - name: Container log (on failure)
+        if: failure()
+        run: docker logs --tail 80 kc-api 2>&1 || true

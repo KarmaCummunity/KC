@@ -28,6 +28,8 @@ import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse } from 'yaml';
+import { isDeepStrictEqual } from 'node:util';
+import { DRYRUN_WORKFLOW } from './release/prod-dryrun-contract.mjs';
 
 const DEFAULT_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const ORCHESTRATOR = 'deploy.yml';
@@ -68,6 +70,8 @@ export const COMMANDS = [
  * environment. Holding prod secrets outside deploy.yml is tracked as TD-232.
  */
 export const MONITORS = {
+  // Explicit CLI planning monitor. Exact workflow contract and fixed spawn argv are reviewed together.
+  'prod-migration-dryrun.yml': { job: 'dryrun', envs: ['supabase-prod'], triggers: ['workflow_dispatch'] },
   'ops-health.yml': { job: 'monitor', envs: ['supabase-dev', 'supabase-prod'], triggers: ['schedule', 'workflow_dispatch'] },
   'ci-prod-ledger.yml': { job: 'ledger', envs: ['supabase-prod'], triggers: ['schedule', 'workflow_dispatch'] },
   // Read-only ledger gate of the PROD store-build pipeline. Other jobs in this
@@ -75,6 +79,9 @@ export const MONITORS = {
   'prod-store-build.yml': { job: 'ledger', envs: ['supabase-prod'], triggers: ['workflow_run', 'workflow_dispatch'] },
   // Daily encrypted `supabase db dump` of kc-prod (read-only; Supabase Free has no backups).
   'db-backup-prod.yml': { job: 'backup', envs: ['supabase-prod'], triggers: ['schedule', 'workflow_dispatch'] },
+  // Weekly read of kc-prod for the anonymized copy added to kc-dev (FR-ADMIN-037): a read-only
+  // transaction, anonymized in the same job; its load job holds supabase-dev only.
+  'prod-copy-to-dev.yml': { job: 'export', envs: ['supabase-prod'], triggers: ['schedule', 'workflow_dispatch'] },
 };
 
 const PROD_ENVS = new Set(['production', 'supabase-prod', 'cloudflare-prod']);
@@ -185,6 +192,9 @@ export function checkWorkflow(file, text) {
     return [`${file}: not valid YAML (${err.message.split('\n')[0]})`];
   }
   const errors = [...checkTriggers(file, doc), ...checkGuards(file, doc)];
+  if (file === 'prod-migration-dryrun.yml' && !isDeepStrictEqual(doc, DRYRUN_WORKFLOW)) {
+    errors.push(`${file}: read-only monitor must match its exact reviewed contract`);
+  }
   for (const [id, job] of jobsOf(doc)) {
     errors.push(...checkEnvironment(file, id, envName(job), job, doc), ...checkCommands(file, id, job));
   }

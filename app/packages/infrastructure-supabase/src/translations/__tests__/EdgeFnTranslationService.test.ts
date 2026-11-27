@@ -88,3 +88,46 @@ describe('EdgeFnTranslationService', () => {
     expect(out[1]).toBeNull();
   });
 });
+
+// #1791: a visible window is sent as one invocation, never one call per field.
+describe('EdgeFnTranslationService batch transport', () => {
+  const items = [
+    { contentType: 'post', contentId: 'p1', field: 'title' },
+    { contentType: 'post', contentId: 'p1', field: 'description' },
+  ] as const;
+
+  it('sends one batch invocation with only server-resolved content references', async () => {
+    const calls: { name: string; body: unknown }[] = [];
+    const client = { functions: { invoke: async (name: string, options: { body: unknown }) => {
+      calls.push({ name, body: options.body });
+      return { data: { results: items.map(() => ({ status: 'skipped' })) }, error: null };
+    } } } as unknown as SupabaseClient;
+
+    const result = await new EdgeFnTranslationService(client).requestTranslationsBatch('en', [...items]);
+
+    expect(calls).toEqual([{ name: 'translate', body: { targetLanguage: 'en', items } }]);
+    expect(result).toEqual([null, null]);
+  });
+
+  it('does not invoke the Edge Function for an empty batch', async () => {
+    let calls = 0;
+    const client = { functions: { invoke: async () => {
+      calls += 1;
+      return { data: null, error: null };
+    } } } as unknown as SupabaseClient;
+
+    expect(await new EdgeFnTranslationService(client).requestTranslationsBatch('en', [])).toEqual([]);
+    expect(calls).toBe(0);
+  });
+
+  for (const response of [
+    { data: null, error: { message: 'offline' } },
+    { data: null, error: null },
+    { data: {}, error: null },
+  ]) {
+    it(`preserves null slots for every item when the batch has no usable envelope (${JSON.stringify(response)})`, async () => {
+      const service = new EdgeFnTranslationService(fakeClient(response));
+      expect(await service.requestTranslationsBatch('en', [...items])).toEqual([null, null]);
+    });
+  }
+});

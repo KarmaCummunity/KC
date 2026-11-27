@@ -48,7 +48,7 @@ Decision D-228 (approved by the owner 2026-11-11). Design: [target-design.md](./
 2. Reset kc-dev: drop the application schemas and objects and `supabase_migrations.schema_migrations`, delete `auth.users`. The project, API keys and Auth settings stay.
 3. **Deploy** (normal path) applies `0001_baseline.sql`; `supabase db push` records exactly one ledger row.
 4. **Seed KC dev** (`all`): reference, content, e2e members.
-5. Vault secrets `kc_project_url` and `kc_service_role_key` are set on kc-dev (see below).
+5. Vault secrets `kc_project_url` and the caller slot applicable to that migration state are validated on kc-dev (see below). After `verified_edge_caller`, the caller slot is `kc_verified_service_role_key`; the baseline-only historical state uses `kc_service_role_key`.
 6. Verify: ledger = baseline only, `pg_cron` / `pg_net` / `supabase_vault` present, Deploy and the nightly E2E green.
 
 ## First super admin
@@ -68,7 +68,13 @@ A database built from the baseline has no staff at all, and no RPC hands out `su
 
 ## Vault (what it is)
 
-Supabase Vault is the encrypted secret store inside the database. The database needs two values to start Edge Functions from scheduled jobs and the outbox (through `pg_net`, an HTTP client in Postgres): the project URL and a service-role key. They cannot live in a migration or in the repository, so they are stored once per project with `vault.create_secret(<value>, 'kc_project_url')` and `vault.create_secret(<value>, 'kc_service_role_key')` and read at call time by `kc_private.invoke_edge_function` (from `vault.decrypted_secrets`). Without them the database still works; the four workers it starts (push dispatcher, account purge, storage orphan reconciliation, EXIF strip) are recorded as a warning in `ops.warnings` instead of running. Each project (kc-dev, kc-prod) has its own two secrets, never set by a migration. The Deploy pipeline (`deploy-db.yml`, step "Vault secrets for the database jobs") creates or updates them on every deploy from the environment's secrets.
+Supabase Vault is the encrypted secret store inside the database. Database jobs use `pg_net` and `kc_private.invoke_edge_function` to call Edge Functions with the project's URL and service credential. Values never belong in migrations, source, logs or messages.
+
+The baseline-only historical state reads `kc_project_url` and `kc_service_role_key`. After the `verified_edge_caller` migration it reads `kc_project_url` and **only** `kc_verified_service_role_key`. The normal reviewed Deploy writer retrieves the existing credential with explicit reveal, requires two matching reads and a nonclaiming Auth-settings 200, then populates that verified slot. The migration does not copy an existing key, rotate keys, start a worker, enable a job or change containment. Missing/empty verified configuration leaves a warning and no HTTP request, even if an obsolete slot exists.
+
+An older default-branch deployment copy may continue rewriting the obsolete slot. That cannot populate or replace the migrated worker's verified caller. If normal concurrency cancels the DEV-copy deployment before it populates the slot, a separately authorized normal Deploy dispatch on the CI-certified DEV ref is the bootstrap path. Do not substitute a seed/reseed, direct Vault SQL or a manual worker call. Verify the current verified slot and preserve the approved registry/cron/kick state afterward. Auth-settings 200 alone does not prove worker or delivery success.
+
+DEV and PROD have separate projects, credentials and migration ledgers. This DEV repair is not proof of PROD adoption or permission to deploy, rotate, restore or re-enable anything there. A later PROD release must review its own migration and writer together under its separate approval.
 
 ## Still not in the baseline (all launch tier `later`)
 

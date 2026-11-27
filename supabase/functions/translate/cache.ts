@@ -33,6 +33,39 @@ export async function getCached(svc: SupabaseClient, key: CacheKey): Promise<Cac
   return data ? mapRow(data) : null;
 }
 
+/** The in-memory key of a cached row: its content type, id and field (the language is fixed per batch). */
+export function cacheKeyOf(key: Omit<CacheKey, 'targetLanguage'>): string {
+  return `${key.contentType}|${key.contentId}|${key.field}`;
+}
+
+/**
+ * The cached rows of a whole batch in one round-trip (#1798): one read by target language and
+ * content id, matched in memory by type, id and field. A row of another type or field that shares
+ * an id is read but never matched. Returns a map keyed by `cacheKeyOf`.
+ */
+export async function getCachedMany(
+  svc: SupabaseClient,
+  targetLanguage: string,
+  keys: Omit<CacheKey, 'targetLanguage'>[],
+): Promise<Map<string, CacheRow>> {
+  const found = new Map<string, CacheRow>();
+  const ids = [...new Set(keys.map((k) => k.contentId))];
+  if (ids.length === 0) return found;
+  const { data, error } = await svc
+    .from('content_translations')
+    .select(COLUMNS)
+    .eq('target_language', targetLanguage)
+    .in('content_id', ids);
+  if (error) throw new Error(`getCachedMany: ${error.message}`);
+  const wanted = new Set(keys.map(cacheKeyOf));
+  for (const d of (data ?? []) as Record<string, unknown>[]) {
+    const row = mapRow(d);
+    const key = cacheKeyOf(row);
+    if (wanted.has(key)) found.set(key, row);
+  }
+  return found;
+}
+
 /** Returns true if this call inserted; false if a row already existed (23505). */
 export async function putIfAbsent(svc: SupabaseClient, row: CacheRow): Promise<boolean> {
   const { error } = await svc.from('content_translations').insert({

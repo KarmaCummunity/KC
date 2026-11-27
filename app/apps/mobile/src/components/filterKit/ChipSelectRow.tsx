@@ -4,6 +4,8 @@
 import React, { type ReactNode } from 'react';
 import { ScrollView, type StyleProp, type ViewStyle } from 'react-native';
 import { makeUseStyles, spacing } from '@kc/ui';
+import { useRtlWebHorizontalScrollStart } from '../../hooks/useRtlWebHorizontalScrollStart';
+import { rowDirectionStart } from '../../lib/rtlLayout';
 
 export interface ChipSelectRowProps {
   readonly children: ReactNode;
@@ -15,14 +17,18 @@ export interface ChipSelectRowProps {
 
 export function ChipSelectRow({ children, style, contentContainerStyle, testID, accessibilityLabel }: ChipSelectRowProps) {
   const styles = useChipSelectRowStyles();
+  // #1747 — admin task (and every other) chip bar: reading-start order + RTL-web scroll pin.
+  const rtlScroll = useRtlWebHorizontalScrollStart();
   return (
     <ScrollView
+      ref={rtlScroll.ref}
       horizontal
       showsHorizontalScrollIndicator={false}
       // Taps on a chip must not be swallowed while the keyboard of the field above is open.
       keyboardShouldPersistTaps="handled"
       style={[styles.scroll, style]}
       contentContainerStyle={[styles.gapRow, contentContainerStyle]}
+      onContentSizeChange={rtlScroll.onContentSizeChange}
       testID={testID}
       accessibilityLabel={accessibilityLabel}
     >
@@ -33,5 +39,5 @@ export function ChipSelectRow({ children, style, contentContainerStyle, testID, 
 
 const useChipSelectRowStyles = makeUseStyles(() => ({
   scroll: { flexGrow: 0, flexShrink: 0 },
-  gapRow: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: spacing.sm },
+  gapRow: { flexDirection: rowDirectionStart, alignItems: 'center' as const, gap: spacing.sm },
 }));

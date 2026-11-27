@@ -61,17 +61,56 @@ Also added to [93](./93_implementation_gaps.md).
 | # | Question | Why it blocks |
 |---|---|---|
 | Q-1 | **D3 vs launch flags:** should inactive worlds be *shown* as "not active yet" (D3), or *hidden* as `0441` does today? And are `time` and `money` live at launch (the phase table says "MVP, live", the flags default them off)? | **Answered 2026-10-30 → D60.** Navigation and the launch scope differ between book and code |
-| Q-2 | **Moderation (D33):** confirm a post with 3 reports is **hidden for review** (not removed) and a user needs **5 distinct reporters in 30 days** (code: 3 in 14 days, and the user is suspended). | **Answered 2026-10-30 → D61.** Changing it relaxes today's protection; needs explicit approval |
+| Q-2 | **Moderation (D33):** confirm a post with 3 reports is **hidden for review** (not removed) and a user needs **5 distinct reporters in 30 days** (code: 3 in 14 days, and the user is suspended). | **Answered 2026-10-30 → D61**, later repo wording in D134. Changing it relaxes today's protection; needs explicit approval |
 | Q-3 | **Worlds in code that the book does not have:** `creative` → `experiences` world or `culture` domain? Remove `app_design` (D18)? Map `medical` / `animals` / `environment` listings to domains? | **Answered 2026-10-30 → D62.** Data migration of existing listings |
-| Q-4 | **Chats:** today 3 reports remove a chat. The book does not cover chats in D33 — keep, or align with posts (hide for review)? | Undefined in the book |
+| Q-4 | **Chats:** today 3 reports remove a chat. The book does not cover chats in D33 — keep, or align with posts (hide for review)? | Open: D134 mentions post or chat in its threshold sentence, but that repo text alone does not establish an owner decision on hide/remove semantics. Original approval and intended scope still need checking; do not mark answered. |
 | Q-5 | **Karma for listing handoffs:** apply the §7.6 values (food 20/10, ride 25/10) to the listing handoffs too (currently 5/3)? Retroactively? | **Answered 2026-10-30 → D63** (not retroactive). Changes users' karma totals |
-| Q-6 | **TestFlight database (D8 / G7):** which Supabase project do the repository-level secrets used by `testflight-ios.yml` point to? Recommendation: move them into a dedicated GitHub Environment (`supabase-prod-clean`) so the target is explicit. | ✅ Answered by owner decision (`D-195` Mobile nightly): tester builds use kc-dev; prod store builds from `main` come later |
+| Q-6 | **TestFlight database (D8 / G7):** which Supabase project do the repository-level secrets used by `testflight-ios.yml` point to? Recommendation: move them into a dedicated GitHub Environment (`supabase-prod-clean`) so the target is explicit. | ✅ Answered by owner decision (`D-195` Mobile nightly): tester builds use kc-dev; prod store builds from `main` come later. Reconciliation note 2026-11-19: backend/profile of submitted iOS build 36 is unverified; this historical policy is not build provenance. See [store checkpoint](./97_store_review_checkpoint.md). |
 | Q-7 | **Supabase project refs:** `ENVIRONMENTS.md` and `CLAUDE.md` / `.mcp.json` name **different** projects as dev. Which is canonical? | Agents hold write authority on "dev" |
 |  | ✅ **Q-7 answered by evidence (2026-10-30):** the deployed dev web bundle calls `enbqriuxvvuontiwslun`, matching `ENVIRONMENTS.md` (prod `kdqtbdbzwvlugkhonexg`). `roeefqpdbftlndzsvhfj` (MVP-2) and `slxijdfvinbjmrsfgbzx` (MVP-PROD) are **paused** projects in the older "KC" Supabase org. `DEPLOY_WEB.md` is corrected; `CLAUDE.md` §13 and `.mcp.json` / `app/.mcp.json` now point at kc-dev (PM-approved 2026-10-30). | |
-| Q-8 | **Account deletion and shared chats:** deleting an account now removes the user's chat images. The counterpart keeps the (anonymized) chat, so those images disappear for them too. Confirm that right-to-be-forgotten wins over the counterpart's copy (current behavior), or keep them until the counterpart deletes the chat. | Privacy vs. counterpart experience |
+| Q-8 | **Account deletion and shared chats:** deleting an account now removes the user's chat images. The counterpart keeps the (anonymized) chat, so those images disappear for them too. Confirm that right-to-be-forgotten wins over the counterpart's copy (current behavior), or keep them until the counterpart deletes the chat. | Answered 2026-11-20: purge removes the deleted member's shared chat images for both sides; retained chat text does not retain those assets. Existing 30-day restore period unchanged. |
 
 ## 5. SSOT hygiene notes
 
 - **Tech-debt ID reuse.** Legacy spec headers cite `TD-69`, `TD-75` and `TD-79` for 2026-05-16 audit items, but the `tech-debt` issues now use those IDs for unrelated rows (migration-drift guard, translation provider, translate tests). When reading a legacy header, treat its TD reference as **historical** and use the `tech-debt` issues as the live register. New IDs must never reuse a number.
 - **Migration registry.** `docs/agents/MIGRATION_RANGES.md` recorded `0440` for the world launch flags; the flags shipped as `0441`, and `0440` is the chat-media path change. Noted in the registry.
 - **CI script tests.** Before this PR only 2 of the 8 `scripts/*.test.mjs` suites ran in CI, and two Edge Function test files (`delete-account`, `revenuecat-webhook`) were never executed. Both are now wired.
+
+
+## Responsive requirements partial checkpoint (2026-11-24, #1862)
+
+Static review at dev `89f047f4`, all six FR IDs and39AC numbers retained. See the per-AC evidence table in `requirements/17_responsive_desktop.md`. Shell primitives/root wiring are present; preview flag semantics and private aside context descriptions corrected. Split-chat and split-auth wiring remain planned. Eight focused shell/inset/keyboard test files (42 tests) passed locally.
+
+This does not close #1862. Full device/large-text acceptance, named scaling constants, historical typography minima versus current tokens, and exact viewport/config claims remain unverified or inconsistent. No approved requirement was waived and no UI implementation changed. Scoped D/S/G/book searches did not supply a decision settling those gaps; do not silently replace a requirement with current code.
+
+## Translation requirements checkpoint (2026-11-24, #1863)
+
+Scoped static reconciliation at dev `89f047f4`; no live flags, database, provider or deployed client inspected. All six `FR-TRANSLATE-*` IDs and existing AC numbers are retained. No product decision or rollout approval is added.
+
+| Scope | Evidence | Result |
+|---|---|---|
+| Book and product registries | Chapters indexed by `README.md`; `90_decisions_log.md`, `91_kc_fills_pending.md`, `92_open_questions.md`, `93_implementation_gaps.md` | No domain-specific translation rule found that conflicts with this retained engineering contract. This is not a new PM decision. |
+| Current cache and taxonomy | `supabase/schemas/78_translation/010_content_translations.sql`; `_shared/translation/kcSource.ts`; domain `TranslationTypes.ts` | Post/comment/message/user with `id` PKs; rides are posts. Updated stale ride-listing and pre-baseline policy/trigger descriptions. Source-row confidence is historical, not claimed present. |
+| Cache and provider | `translate/resolveBatch.ts`, `translate/cache.ts`, `_shared/translation/provider.ts` | Unique persistence does not guarantee one provider call. Current default selector is googlefree; DPA/zero-retention approval and deployed selector are not verified. Earlier single-provider-call goal remains unmet/unverified. |
+| Reader UX and release | `src/hooks/useTranslatedPosts.ts`, `src/config/featureFlags.ts`; schema message-policy comment | Implementation exists behind default-off flag. Chat remains planned and sender-consent-gated. Registry support is not released UX. |
+| Retirement | FR-TRANSLATE-005/006, engineering D-190/D-191 | Retired IDs retained, including the separately identified KC batch reuse. |
+
+Requirements and `docs/SSOT/UGC_TRANSLATION.md` now distinguish current code, historical requirements and unverified rollout. Production provider terms/approval and provider-call deduplication remain acceptance gaps, not waived requirements. No shared D/S/G numbering changed.
+
+
+## Public research requirements checkpoint (2026-11-24, #1861)
+
+Partial reconciliation at dev `551c9f44`. Four FR IDs and all 26 original numbered criteria are retained verbatim, not relaxed to match implementation. The status header now separates historical QA from current source evidence. Per-AC evidence and limitations are in [requirements 16](./requirements/16_public_research.md).
+
+D166/D186 preserve the public research surface. Source evidence covers the web runner, public route/chrome policy, draft storage, anonymous gateway, private response/contact storage and share helpers. Six focused unit-test files passed (49 tests). This is not a fresh database, deployed, native or analytics acceptance run.
+
+Unresolved: native route-file absence vs null fallback, direct anon grant vs service gateway, separate thank-you email capture, administrator read/deletion semantics. Logged together in [92](./92_open_questions.md#public-research-checkpoint-2026-11-24-1861). This domain is not ticked complete and this checkpoint must not auto-close #1861. No product/security decision, deployment, rollout or data access granted.
+
+
+## Identity verification requirements checkpoint (2026-11-24, #1867)
+
+Partial source reconciliation at dev `551c9f44`: all 13 FR IDs and 52 numbered AC sentences retained. Updated the stale phone-only/unimplemented header, distinguished D23 history from D172 tiers and annotated S62's superseded phone-tier wording. S60/S61/S62 detailed retention, attempts and validity policy remain pending; A12 provider contract/DPA and counsel/biometric/privacy launch gates remain unchanged.
+
+The [per-AC table](./requirements/22_identity_verification.md#source-reconciliation-and-remaining-acceptance-2026-11-24-1867) records existing domain/nudge/badge, adapter, session/webhook, signature/hash, attempts and expiry sources separately from unverified acceptance. Didit source selection is not PM provider approval or a deployed contract. No live PII, provider signup, keys or database inspected.
+
+Six focused unit-test files / 51 tests passed. Single SQL level-function/automatic completeness parity, full member provider flow, provider sandbox/certification, admin review, reminders, retention and device acceptance remain incomplete or unverified. Domain not ticked complete; this checkpoint must not auto-close #1867.

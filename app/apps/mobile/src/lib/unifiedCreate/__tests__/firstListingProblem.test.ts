@@ -70,4 +70,26 @@ describe('firstListingProblem', () => {
     const problem = firstListingProblem({ ...valid(), eventSeries: { weekdays: [], endsOn: null } });
     expect(problem).toEqual({ message: 'postSeries.errors.weekdaysRequired', field: null });
   });
+
+  it('asks for a pay period when a job offer has an estimated salary (#2537)', () => {
+    const problem = firstListingProblem({
+      ...valid(),
+      worldSlug: 'employment',
+      submitted: { estimated_salary_min: 10000 },
+    });
+    expect(problem).toEqual({
+      message: 'jobOffer.errors.salaryPeriodRequired',
+      field: 'detail:salary_pay_period',
+    });
+  });
+
+  it('accepts a job offer salary with its period', () => {
+    expect(
+      firstListingProblem({
+        ...valid(),
+        worldSlug: 'employment',
+        submitted: { estimated_salary_min: 10000, salary_pay_period: 'pay_monthly' },
+      }),
+    ).toBeNull();
+  });
 });

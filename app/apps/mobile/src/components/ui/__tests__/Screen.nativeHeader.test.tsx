@@ -37,21 +37,39 @@ describe('Screen — native-header double-padding guard', () => {
     sawEdges.length = 0;
   });
 
-  it('drops top edge when hasNativeHeader is set', () => {
+  it('drops top edge but keeps landscape side edges when hasNativeHeader is set', () => {
     render(
       <Screen hasNativeHeader>
         <Text>body</Text>
       </Screen>,
     );
-    expect(sawEdges.at(-1)).toEqual([]);
+    expect(sawEdges.at(-1)).toEqual(['left', 'right']);
   });
 
-  it('keeps top edge by default', () => {
+  it('keeps top and landscape side edges by default', () => {
     render(
       <Screen>
         <Text>body</Text>
       </Screen>,
     );
-    expect(sawEdges.at(-1)).toEqual(['top']);
+    expect(sawEdges.at(-1)).toEqual(['top', 'left', 'right']);
+  });
+
+  it('preserves explicit caller edges (never widened by defaults)', () => {
+    render(
+      <Screen edges={['bottom']}>
+        <Text>body</Text>
+      </Screen>,
+    );
+    expect(sawEdges.at(-1)).toEqual(['bottom']);
+  });
+
+  it('preserves explicit caller edges under hasNativeHeader', () => {
+    render(
+      <Screen hasNativeHeader edges={[]}>
+        <Text>body</Text>
+      </Screen>,
+    );
+    expect(sawEdges.at(-1)).toEqual([]);
   });
 });

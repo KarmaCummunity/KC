@@ -4,7 +4,9 @@ import {
   EMAIL_PATTERN,
   STREET_NUMBER_PATTERN,
   containsBiographyUrl,
+  MESSAGE_REACTION_TYPES,
   createAddress,
+  isMessageReactionType,
 } from '../value-objects';
 import { ValidationError } from '../errors';
 
@@ -114,6 +116,23 @@ describe('containsBiographyUrl + BIOGRAPHY_URL_PATTERN — FR-PROFILE-014', () =
     expect(containsBiographyUrl('My name is Alice')).toBe(false);
   });
 
+  // KC#1721: a dot between two words is not a domain unless the suffix is a real TLD.
+  it('does not flag abbreviations, names and tech words that merely contain a dot', () => {
+    expect(containsBiographyUrl('I write Node.js and Vue.js')).toBe(false);
+    expect(containsBiographyUrl('Dr.Smith, e.g. a dentist')).toBe(false);
+    expect(containsBiographyUrl('version 3.14, hello.world')).toBe(false);
+    expect(containsBiographyUrl('אוהבת לעזור. גרה בלוד.')).toBe(false);
+  });
+
+  it('flags well-known shorteners and multi-label country domains (AC2)', () => {
+    expect(containsBiographyUrl('bit.ly/x')).toBe(true);
+    expect(containsBiographyUrl('see t.co/abc')).toBe(true);
+    expect(containsBiographyUrl('tinyurl.com/abc')).toBe(true);
+    expect(containsBiographyUrl('wa.me/972500000000')).toBe(true);
+    expect(containsBiographyUrl('my site.co.il')).toBe(true);
+    expect(containsBiographyUrl('write to name@mail.com')).toBe(true);
+  });
+
   it('is case-insensitive (HTTPS, WWW. variants)', () => {
     expect(containsBiographyUrl('HTTPS://EXAMPLE.COM')).toBe(true);
     expect(containsBiographyUrl('WWW.EXAMPLE.COM')).toBe(true);
@@ -122,5 +141,15 @@ describe('containsBiographyUrl + BIOGRAPHY_URL_PATTERN — FR-PROFILE-014', () =
   it('uses the exported pattern (the function is a thin wrapper, same semantics)', () => {
     const text = 'visit https://x.com';
     expect(containsBiographyUrl(text)).toBe(BIOGRAPHY_URL_PATTERN.test(text));
+  });
+});
+
+describe('isMessageReactionType (KC#873, #2568)', () => {
+  it('accepts every listed reaction type', () => {
+    for (const type of MESSAGE_REACTION_TYPES) expect(isMessageReactionType(type)).toBe(true);
+  });
+
+  it('rejects unknown strings and non-strings', () => {
+    for (const value of ['angry', '', 'LIKE', null, undefined, 1, {}]) expect(isMessageReactionType(value)).toBe(false);
   });
 });

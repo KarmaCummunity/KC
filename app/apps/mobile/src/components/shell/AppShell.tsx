@@ -3,9 +3,9 @@ import { Platform, View } from 'react-native';
 import { useSegments } from 'expo-router';
 import { makeUseStyles, useBreakpoint, useTheme, spacing, shellDimensions, AsidePanel, AsideProvider, type BreakpointToken } from '@kc/ui';
 import { NavigationRail } from './NavigationRail';
+import { resolveShellVariant, type ShellVariant } from './shellRoute';
 import { useShellNavigationRailVisibility } from '../../navigation/useShellTabBarVisibility';
 
-type ShellVariant = 'wide' | 'narrow';
 
 type AppShellProps = {
   children: ReactNode;
@@ -64,19 +64,9 @@ export function AppShell({ children, variant: variantProp }: AppShellProps) {
   );
 }
 
+/** The variant of the current route; `shellRoute.ts` holds which routes are forms. */
 function useDetectedVariant(): ShellVariant {
-  const segments = useSegments() as string[];
-  // Form-style routes use the narrow variant (~600px content cap).
-  // Each entry below is a segment that appears literally in expo-router's
-  // useSegments() output for that route. Update this list as screens declare
-  // unstable_settings.shellVariant in PRs 2-5.
-  const narrowSegments = ['settings', 'edit-profile', 'edit-post', 'edit-listing', 'create', '(auth)', '(onboarding)'];
-  if (narrowSegments.some((s) => segments.includes(s))) return 'narrow';
-  // auth/verify and auth/callback live under the bare 'auth' segment (not (auth) group).
-  if (segments.includes('auth') && (segments.includes('verify') || segments.includes('callback'))) {
-    return 'narrow';
-  }
-  return 'wide';
+  return resolveShellVariant(useSegments() as string[]);
 }
 
 function pickContentMax(bp: BreakpointToken, variant: ShellVariant): number | undefined {

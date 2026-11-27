@@ -1,71 +1,103 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-const { picker, manipulator, storageBucket, client } = vi.hoisted(() => {
+const { picker, encoder, uploader, ledger } = vi.hoisted(() => {
 const picker = {
+  getMediaLibraryPermissionsAsync: vi.fn(),
   requestMediaLibraryPermissionsAsync: vi.fn(),
   launchImageLibraryAsync: vi.fn(),
 };
-const manipulator = { manipulateAsync: vi.fn(), SaveFormat: { JPEG: 'jpeg' } };
-const storageBucket = {
-  upload: vi.fn(),
-  getPublicUrl: vi.fn(),
-};
-const client = { storage: { from: vi.fn(() => storageBucket) } };
+const encoder = { encodeJpeg: vi.fn() };
+const uploader = { uploadStorageObject: vi.fn() };
+const ledger = { abandonUpload: vi.fn(async () => undefined) };
 
-  return { picker, manipulator, storageBucket, client };
+  return { picker, encoder, uploader, ledger };
 });
 
 vi.mock('expo-image-picker', () => picker);
-vi.mock('expo-image-manipulator', () => manipulator);
 vi.mock('expo-crypto', () => ({ randomUUID: () => 'obj-1' }));
-vi.mock('@kc/infrastructure-supabase', () => ({ getSupabaseClient: () => client }));
-vi.mock('../mediaEncoding', () => ({ base64ToUint8Array: () => new Uint8Array([1, 2]) }));
+vi.mock('../abandonedUploads', () => ledger);
+vi.mock('../imageEncoding', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../imageEncoding')>()),
+  encodeJpeg: encoder.encodeJpeg,
+}));
+vi.mock('../storageObjectUpload', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../storageObjectUpload')>()),
+  uploadStorageObject: uploader.uploadStorageObject,
+}));
+vi.mock('expo-image-manipulator', () => ({ SaveFormat: { JPEG: 'jpeg' } }));
+vi.mock('react-native', () => ({ Platform: { OS: 'ios' } }));
 
 import { pickChatImage, uploadChatImageAndSend } from '../chatMediaUpload';
 
 beforeEach(() => vi.clearAllMocks());
 
 describe('pickChatImage', () => {
-  it('returns null without permission', async () => {
-    picker.requestMediaLibraryPermissionsAsync.mockResolvedValue({ granted: false });
-    await expect(pickChatImage()).resolves.toBeNull();
+  it('returns denied without opening the picker when the prompt is refused', async () => {
+    picker.getMediaLibraryPermissionsAsync.mockResolvedValue({ granted: false, canAskAgain: true });
+    picker.requestMediaLibraryPermissionsAsync.mockResolvedValue({ granted: false, canAskAgain: true });
+    await expect(pickChatImage()).resolves.toEqual({ status: 'denied' });
     expect(picker.launchImageLibraryAsync).not.toHaveBeenCalled();
   });
 
-  it('returns null when cancelled or empty, uri otherwise', async () => {
-    picker.requestMediaLibraryPermissionsAsync.mockResolvedValue({ granted: true });
+  it('returns blocked without requesting when the OS will not ask again', async () => {
+    picker.getMediaLibraryPermissionsAsync.mockResolvedValue({ granted: false, canAskAgain: false });
+    await expect(pickChatImage()).resolves.toEqual({ status: 'blocked', kind: 'mediaLibrary' });
+    expect(picker.requestMediaLibraryPermissionsAsync).not.toHaveBeenCalled();
+  });
+
+  it('returns cancelled when dismissed or empty, and the image otherwise', async () => {
+    picker.getMediaLibraryPermissionsAsync.mockResolvedValue({ granted: true, canAskAgain: true });
     picker.launchImageLibraryAsync.mockResolvedValueOnce({ canceled: true, assets: [] });
-    await expect(pickChatImage()).resolves.toBeNull();
+    await expect(pickChatImage()).resolves.toEqual({ status: 'cancelled' });
     picker.launchImageLibraryAsync.mockResolvedValueOnce({ canceled: false, assets: [] });
-    await expect(pickChatImage()).resolves.toBeNull();
-    picker.launchImageLibraryAsync.mockResolvedValueOnce({ canceled: false, assets: [{ uri: 'file://a' }] });
-    await expect(pickChatImage()).resolves.toEqual({ uri: 'file://a' });
+    await expect(pickChatImage()).resolves.toEqual({ status: 'cancelled' });
+    picker.launchImageLibraryAsync.mockResolvedValueOnce({ canceled: false, assets: [{ uri: 'file://a', width: 4, height: 3 }] });
+    await expect(pickChatImage()).resolves.toEqual({ status: 'ok', value: { uri: 'file://a', width: 4, height: 3 } });
   });
 });
 
 describe('uploadChatImageAndSend', () => {
-  it('uploads to chat-media and sends media rpc payload', async () => {
-    manipulator.manipulateAsync.mockResolvedValue({ base64: 'AAA', width: 800, height: 600 });
-    storageBucket.upload.mockResolvedValue({ error: null });
+  const picked = { uri: 'file://a', width: 4000, height: 3000 };
+
+  it('encodes with the longer edge bounded at 1600, uploads to chat-media and sends the media payload', async () => {
+    encoder.encodeJpeg.mockResolvedValue({ uri: 'file://e.jpg', width: 1600, height: 1200, bytes: new Uint8Array([1]) });
+    // Storage confirms the object of the attempt it received (a fresh object id per attempt).
+    uploader.uploadStorageObject.mockImplementation(async (u: { pathForAttempt: (n: number) => string }) => u.pathForAttempt(1));
     const send = vi.fn(async () => undefined);
-    await uploadChatImageAndSend('c1', 'u1', 'file://a', send);
-    expect(client.storage.from).toHaveBeenCalledWith('chat-media');
-    expect(storageBucket.upload).toHaveBeenCalledWith('u1/c1/obj-1.jpg', expect.any(Uint8Array), expect.objectContaining({ contentType: 'image/jpeg', upsert: false }));
-    expect(send).toHaveBeenCalledWith({ type: 'image', path: 'u1/c1/obj-1.jpg', width: 800, height: 600 });
-    // The bucket is private: no public URL is ever built or stored (#1064).
-    expect(storageBucket.getPublicUrl).not.toHaveBeenCalled();
+    await uploadChatImageAndSend('c1', 'u1', picked, send);
+    expect(encoder.encodeJpeg).toHaveBeenCalledWith('file://a', [{ resize: { width: 1600 } }], 0.85);
+    expect(uploader.uploadStorageObject).toHaveBeenCalledWith(expect.objectContaining({
+      bucket: 'chat-media',
+      contentType: 'image/jpeg',
+      // The bucket is private (#1064): only a private cache header, never a public URL.
+      cacheControl: 'private, max-age=31536000, immutable',
+    }));
+    expect(send).toHaveBeenCalledWith({ type: 'image', path: 'u1/c1/obj-1.jpg', width: 1600, height: 1200 });
   });
 
   it('throws when encoding fails', async () => {
-    manipulator.manipulateAsync.mockResolvedValue({ base64: undefined, width: 1, height: 1 });
-    await expect(uploadChatImageAndSend('c', 'u', 'f', vi.fn())).rejects.toThrow('chat_media_encode_failed');
+    encoder.encodeJpeg.mockRejectedValue(new Error('image_encode: manipulator returned no base64 payload'));
+    await expect(uploadChatImageAndSend('c', 'u', picked, vi.fn())).rejects.toThrow('no base64 payload');
   });
 
-  it('throws when upload fails', async () => {
-    manipulator.manipulateAsync.mockResolvedValue({ base64: 'A', width: 1, height: 1 });
-    storageBucket.upload.mockResolvedValue({ error: { message: 'quota' } });
+  it('throws when upload fails and never sends the message', async () => {
+    encoder.encodeJpeg.mockResolvedValue({ uri: 'f', width: 1, height: 1, bytes: new Uint8Array([1]) });
+    uploader.uploadStorageObject.mockRejectedValue({ status: 413, message: 'quota' });
     const send = vi.fn();
-    await expect(uploadChatImageAndSend('c', 'u', 'f', send)).rejects.toThrow('chat_media_upload: quota');
+    await expect(uploadChatImageAndSend('c', 'u', picked, send)).rejects.toThrow('chat_media_upload: quota');
     expect(send).not.toHaveBeenCalled();
+  });
+
+  it('retains the stored image when a committed message loses its RPC response, then reports the failure', async () => {
+    encoder.encodeJpeg.mockResolvedValue({ uri: 'f', width: 1, height: 1, bytes: new Uint8Array([1]) });
+    uploader.uploadStorageObject.mockImplementation(async (u: { pathForAttempt: (n: number) => string }) => u.pathForAttempt(1));
+    const committedPaths: string[] = [];
+    const send = vi.fn(async (payload: Record<string, unknown>) => {
+      committedPaths.push(String(payload.path));
+      throw new TypeError('rpc response lost');
+    });
+    await expect(uploadChatImageAndSend('c', 'u', picked, send)).rejects.toThrow('rpc response lost');
+    expect(committedPaths).toEqual(['u/c/obj-1.jpg']);
+    expect(ledger.abandonUpload).not.toHaveBeenCalled();
   });
 });

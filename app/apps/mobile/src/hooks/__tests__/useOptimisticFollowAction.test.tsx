@@ -4,8 +4,15 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, act } from '@testing-library/react';
 import type { ReactNode } from 'react';
-const mocks = vi.hoisted(() => ({ execute: vi.fn() }));
+const mocks = vi.hoisted(() => ({
+  execute: vi.fn(),
+  /** Default: complete profile — soft gate runs the deferred follow immediately. */
+  requestSoftGate: vi.fn((action: () => void) => { action(); }),
+}));
 vi.mock('../../services/followComposition', () => Object.fromEntries(['getFollowUserUseCase','getUnfollowUserUseCase','getSendFollowRequestUseCase','getCancelFollowRequestUseCase'].map(k => [k, () => ({ execute: mocks.execute })])));
+vi.mock('../../components/OnboardingSoftGate', () => ({
+  useSoftGate: () => ({ requestSoftGate: mocks.requestSoftGate }),
+}));
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k: string) => k }) }));
 import { useOptimisticFollowAction } from '../useOptimisticFollowAction';
 import { FollowError } from '@kc/application';
@@ -13,7 +20,11 @@ const target = { userId: 'target', privacyMode: 'Private' as const, followersCou
 describe('useOptimisticFollowAction', () => {
   let client: QueryClient;
   const wrapper = ({ children }: { children: ReactNode }) => <QueryClientProvider client={client}>{children}</QueryClientProvider>;
-  beforeEach(() => { vi.clearAllMocks(); client = new QueryClient(); });
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.requestSoftGate.mockImplementation((action: () => void) => { action(); });
+    client = new QueryClient();
+  });
   it('optimistically follows, adjusts counters and invalidates dependent caches on success', async () => {
     mocks.execute.mockResolvedValue(undefined);
     client.setQueryData(['follow-state','viewer','target'], { state: 'not_following_private_no_request' });
@@ -27,6 +38,38 @@ describe('useOptimisticFollowAction', () => {
     expect(client.getQueryData(['user-profile','viewer'])).toMatchObject({ followingCount: 5 });
     expect(mocks.execute).toHaveBeenCalledWith({ viewerId: 'viewer', targetUserId: 'target' });
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ['followers','target'] });
+  });
+  it('FR-AUTH-015: incomplete profile opens the soft gate and defers follow (no side effects)', async () => {
+    // Soft gate holds the action until Save — same contract as post-create.
+    mocks.requestSoftGate.mockImplementation(() => { /* defer */ });
+    mocks.execute.mockResolvedValue(undefined);
+    client.setQueryData(['follow-state','viewer','target'], { state: 'not_following_public' });
+    const { result } = renderHook(() => useOptimisticFollowAction({ viewerId: 'viewer', target: { ...target, privacyMode: 'Public' }, handle: 'handle' }), { wrapper });
+    await act(async () => result.current('follow'));
+    expect(mocks.requestSoftGate).toHaveBeenCalledTimes(1);
+    expect(mocks.execute).not.toHaveBeenCalled();
+    expect(client.getQueryData(['follow-state','viewer','target'])).toEqual({ state: 'not_following_public' });
+  });
+  it('FR-AUTH-015: incomplete profile defers a private follow-request send', async () => {
+    mocks.requestSoftGate.mockImplementation(() => { /* defer */ });
+    const { result } = renderHook(() => useOptimisticFollowAction({ viewerId: 'viewer', target, handle: 'handle' }), { wrapper });
+    await act(async () => result.current('send'));
+    expect(mocks.requestSoftGate).toHaveBeenCalledTimes(1);
+    expect(mocks.execute).not.toHaveBeenCalled();
+  });
+  it('FR-AUTH-015: complete profile proceeds through the soft gate on follow', async () => {
+    mocks.execute.mockResolvedValue(undefined);
+    const { result } = renderHook(() => useOptimisticFollowAction({ viewerId: 'viewer', target: { ...target, privacyMode: 'Public' }, handle: 'handle' }), { wrapper });
+    await act(async () => result.current('follow'));
+    expect(mocks.requestSoftGate).toHaveBeenCalledTimes(1);
+    expect(mocks.execute).toHaveBeenCalledWith({ viewerId: 'viewer', targetUserId: 'target' });
+  });
+  it('FR-AUTH-015: unfollow bypasses the soft gate', async () => {
+    mocks.execute.mockResolvedValue(undefined);
+    const { result } = renderHook(() => useOptimisticFollowAction({ viewerId: 'viewer', target: { ...target, privacyMode: 'Public' }, handle: 'handle' }), { wrapper });
+    await act(async () => result.current('unfollow'));
+    expect(mocks.requestSoftGate).not.toHaveBeenCalled();
+    expect(mocks.execute).toHaveBeenCalled();
   });
   it('rolls back caches and reports a localized failure', async () => {
     mocks.execute.mockRejectedValue(new Error('offline'));

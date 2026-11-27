@@ -4,9 +4,9 @@ import { serve } from 'https://deno.land/std@0.224.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 import { withObservability } from '../_shared/observability/mod.ts';
 import { createSenderHandler, loadChannelConfigViaRpc } from './handler.ts';
+import { currentServiceRoleKeys, primaryServiceRoleKey } from '../_shared/serviceRoleGuard.ts';
 
-const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
-const supabase = createClient(Deno.env.get('SUPABASE_URL')!, SERVICE_KEY);
+const supabase = createClient(Deno.env.get('SUPABASE_URL')!, primaryServiceRoleKey());
 
 const rpc = async (fn: string, args: Record<string, unknown>) => {
   const { data, error } = await supabase.rpc(fn, args);
@@ -14,7 +14,7 @@ const rpc = async (fn: string, args: Record<string, unknown>) => {
 };
 
 serve(withObservability('whatsapp-sender', createSenderHandler({
-  serviceKey: SERVICE_KEY,
+  serviceKey: currentServiceRoleKeys(),
   rpc,
   loadChannelConfig: () => loadChannelConfigViaRpc(rpc),
   token: Deno.env.get('WHATSAPP_CLOUD_API_TOKEN') ?? '',

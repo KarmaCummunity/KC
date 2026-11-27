@@ -1,3 +1,4 @@
+import { guestBrowseHe } from './modules/guestBrowse';
 // ─────────────────────────────────────────────
 // Hebrew (he) translation bundle — Karma Community
 // Mapped to: R-MVP-Core-4 (עברית בלבד ב-MVP)
@@ -28,6 +29,7 @@ import { onboardingReplayHe } from './modules/onboardingReplay';
 import { dateOfBirthHe } from './modules/dateOfBirth';
 import { verificationHe } from './modules/verification';
 import { errorsHe } from './modules/errors';
+import { mediaAccessHe } from './modules/mediaAccess';
 import { createPostValidationHe } from './createPostValidation';
 import { formFieldHe } from './formField';
 import { chatHe } from './modules/chat';
@@ -78,7 +80,7 @@ const he = {
   config: configHe,
 
   // Auth (FR-AUTH-001..014) — see modules/auth.ts
-  auth: { ...authHe, ...authVerificationHintHe },
+  auth: { ...guestBrowseHe, ...authHe, ...authVerificationHintHe },
   offlineSync: offlineSyncHe,
 
   // Onboarding (FR-AUTH-010..012, FR-AUTH-018) — see modules/onboarding.ts
@@ -231,6 +233,7 @@ const he = {
 
   // Error messages (auth/post/profile/media/createPost) — see modules/errors.ts
   errors: errorsHe,
+  mediaAccess: mediaAccessHe,
   createPostValidation: createPostValidationHe,
   formField: formFieldHe,
 

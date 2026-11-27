@@ -4,7 +4,7 @@
 // Clean no-op when: the caller is not the service role, the GEMINI key is absent, or the
 // matching setting `llm_rerank_enabled` is off (api_match_llm_pending returns no rows).
 
-import { isServiceRoleRequest } from '../_shared/serviceRoleGuard.ts';
+import { isServiceRoleRequest, serviceRoleRequiredResponse } from '../_shared/serviceRoleGuard.ts';
 import { buildGeminiBody, parseRerankResponse, type PendingPair } from '../_shared/matching/rerank.ts';
 
 type RpcResult = { data: unknown; error: { message: string } | null };
@@ -14,7 +14,7 @@ export interface RerankDeps {
   fetchFn: typeof fetch;
   geminiKey: string;
   model: string;
-  serviceKey: string;
+  serviceKey: string | string[];
   batchSize?: number;
 }
 
@@ -24,7 +24,7 @@ const json = (body: unknown, status = 200) =>
 export function createRerankHandler(deps: RerankDeps) {
   return async (req: Request): Promise<Response> => {
     if (req.method !== 'POST') return json({ error: 'method_not_allowed' }, 405);
-    if (!isServiceRoleRequest(req, deps.serviceKey)) return json({ error: 'forbidden' }, 403);
+    if (!isServiceRoleRequest(req, deps.serviceKey)) return serviceRoleRequiredResponse();
     if (!deps.geminiKey) return json({ ok: true, skipped: 'no_gemini_key', scored: 0 });
 
     const pending = await deps.rpc('api_match_llm_pending', { p_limit: deps.batchSize ?? 20 });

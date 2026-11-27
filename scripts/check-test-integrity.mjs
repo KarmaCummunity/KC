@@ -20,6 +20,11 @@
 // on `dev` the findings are printed as warnings and the guard passes, and the
 // release PR into `main` surfaces them to the owner.
 //
+// Reviewed skips: on PRs into main, an added skip / focus / todo marker that
+// is listed with its exact line, reason and reviewing PR in
+// .github/test-integrity-reviewed.json is accepted without an owner (see
+// REVIEWED_FILE below). Every other finding still needs the override.
+//
 // Override: an owner listed in the base commit's .github/owners.json approves
 // the PR's current head SHA (and is not its author). The static lane runs this
 // file from the base commit (like the CI judges), and `CI gate` re-runs the
@@ -27,13 +32,18 @@
 // carry an override.
 //
 // Pushes and dispatches are not judged: their commits already passed a PR.
-// The checks are textual tripwires, not proof (TD-222).
+// JS/TS markers stay fail-closed on the line-regex set (JS_MARKERS); a
+// dependency-free structural scan (TD-222 / #1818) only ADDS findings
+// (empty tests, early / same-line bare returns). Assertion counts use the
+// structural scan and may only under-count on a misparse (also fail-closed).
+// SQL and config limits stay textual.
 //
 // Inputs (env): EVENT_NAME, BASE_SHA, HEAD_SHA, JUDGE_REF, PR_NUMBER,
 // PR_AUTHOR, GITHUB_REPOSITORY, GITHUB_TOKEN.
 
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { countJsAssertions, findJsWeakening } from './check-test-integrity-ast.mjs';
 import { ownerApprovalRequired } from './ci-base.mjs';
 import { findOwnerOverride } from './ci-github.mjs';
 
@@ -81,8 +91,20 @@ export function stripComments(text, sql = false) {
 
 /** Count assertions in the text of a test file at `path` (comments ignored). */
 export function countAssertions(path, text) {
-  const sql = isSqlTest(path);
-  return stripComments(text ?? '', sql).match(sql ? SQL_ASSERTION : JS_ASSERTION)?.length ?? 0;
+  if (isSqlTest(path)) {
+    return stripComments(text ?? '', true).match(SQL_ASSERTION)?.length ?? 0;
+  }
+  // Structural scan (strings/comments ignored). A tokenizer misparse can only
+  // lower this count, which fails closed on net-removal (TD-222 / #1818).
+  return countJsAssertions(text ?? '');
+}
+
+/** Textual assertion count (comment-stripped regex) — baseline for fail-closed pins. */
+export function countAssertionsTextual(path, text) {
+  if (isSqlTest(path)) {
+    return stripComments(text ?? '', true).match(SQL_ASSERTION)?.length ?? 0;
+  }
+  return stripComments(text ?? '', false).match(JS_ASSERTION)?.length ?? 0;
 }
 
 /** Numbers captured by `re` in `lines`, grouped by key ('' when the regex has one group). */
@@ -120,7 +142,34 @@ function markerHits(file, markers) {
   const out = [];
   for (const line of file.added) {
     const hit = markers.find((m) => m.re.test(line));
-    if (hit) out.push(`${file.path}: adds ${hit.why}: \`${line.trim().slice(0, 120)}\``);
+    if (hit) out.push({ path: file.path, line: line.trim(), text: `${file.path}: adds ${hit.why}: \`${line.trim().slice(0, 120)}\`` });
+  }
+  return out;
+}
+
+/**
+ * JS/TS weakening: line-regex JS_MARKERS first (fail closed — at least as
+ * strict as dev), then OR in structural findings the regex cannot see
+ * (empty / assertion-free tests, early or same-line bare returns). The AST
+ * path never removes a regex hit (#1818 CI-owner review).
+ */
+function jsWeakeningHits(file) {
+  const out = markerHits(file, JS_MARKERS);
+  const seenLines = new Set(out.map((r) => r.line));
+  const addedTexts = new Set(file.added.map((l) => l.trim()).filter(Boolean));
+  const source = typeof file.newText === 'string' && file.newText.length > 0 ? file.newText : file.added.join('\n');
+  for (const hit of findJsWeakening(source)) {
+    const inDiff =
+      addedTexts.has(hit.lineText) ||
+      (typeof file.newText !== 'string' &&
+        file.added.some((l) => l.includes(hit.lineText) || hit.lineText.includes(l.trim())));
+    if (!inDiff || seenLines.has(hit.lineText)) continue;
+    seenLines.add(hit.lineText);
+    out.push({
+      path: file.path,
+      line: hit.lineText,
+      text: `${file.path}: adds ${hit.why}: \`${hit.lineText.slice(0, 120)}\``,
+    });
   }
   return out;
 }
@@ -138,27 +187,49 @@ export const testSides = (file) => ({
  * overrides them.
  */
 export function findViolations(files) {
+  return findViolationRecords(files).map((r) => r.text);
+}
+
+/**
+ * Like findViolations, as records `{ path, line, text }`. `line` (the exact
+ * trimmed added line) is set only for an added marker; deletions, renames,
+ * loosened limits and lost assertions carry `line: null` and can never be
+ * matched by a reviewed-skip entry.
+ */
+export function findViolationRecords(files) {
   const out = [];
-  let before = 0;
-  let after = 0;
+  const plain = (text) => ({ path: null, line: null, text });
+  // Fail closed on EITHER measure: dev's textual regex count and the structural
+  // count are tracked separately, so a misparse of the old side can never hide
+  // a removed assertion (never weaker than dev; TD-222 / #1818).
+  const sum = { s: [0, 0], t: [0, 0] };
   const losers = [];
   for (const file of files) {
     const { wasTest, isTestNow } = testSides(file);
-    if (wasTest && file.newPath === null) out.push(`${file.oldPath}: deletes a test file`);
-    if (wasTest && file.newPath !== null && file.newPath !== file.oldPath) out.push(`${file.oldPath}: renamed or moved to ${file.newPath}`);
-    if (isTestNow) out.push(...markerHits(file, isSqlTest(file.path) ? SQL_MARKERS : JS_MARKERS));
-    if (!file.path.endsWith('.md')) out.push(...markerHits(file, [{ re: NO_TESTS_SWITCH, why: 'a switch that passes when no tests exist' }]));
-    if (VITEST_CONFIG.test(file.path)) out.push(...loosenedLimits(file, THRESHOLD, (o, n) => n < o, 'coverage threshold'));
-    out.push(...loosenedLimits(file, MAX_WARNINGS, (o, n) => n > o, '--max-warnings'));
+    if (wasTest && file.newPath === null) out.push(plain(`${file.oldPath}: deletes a test file`));
+    if (wasTest && file.newPath !== null && file.newPath !== file.oldPath) out.push(plain(`${file.oldPath}: renamed or moved to ${file.newPath}`));
+    if (isTestNow) {
+      out.push(...(isSqlTest(file.path) ? markerHits(file, SQL_MARKERS) : jsWeakeningHits(file)));
+    }
+    if (!file.path.endsWith('.md')) out.push(...markerHits(file, [{ re: NO_TESTS_SWITCH, why: 'a switch that passes when no tests exist' }]).map((r) => plain(r.text)));
+    if (VITEST_CONFIG.test(file.path)) out.push(...loosenedLimits(file, THRESHOLD, (o, n) => n < o, 'coverage threshold').map(plain));
+    out.push(...loosenedLimits(file, MAX_WARNINGS, (o, n) => n > o, '--max-warnings').map(plain));
     // A deleted test is already a violation; count only files that survive.
-    const old = wasTest && file.newPath !== null ? countAssertions(file.oldPath, file.oldText) : 0;
-    const now = isTestNow ? countAssertions(file.newPath, file.newText) : 0;
-    before += old;
-    after += now;
-    if (now < old) losers.push(file.path);
+    const keep = wasTest && file.newPath !== null;
+    let lost = false;
+    for (const [k, count] of [['s', countAssertions], ['t', countAssertionsTextual]]) {
+      const old = keep ? count(file.oldPath, file.oldText) : 0;
+      const now = isTestNow ? count(file.newPath, file.newText) : 0;
+      sum[k][0] += old;
+      sum[k][1] += now;
+      lost ||= now < old;
+    }
+    if (lost) losers.push(file.path);
   }
-  if (after < before) {
-    out.push(`removes ${before - after} assertion(s) net from tests (${before} before, ${after} after; files losing some: ${losers.join(', ')})`);
+  const drop = ['t', 's'].map((k) => sum[k]).find(([b, a]) => a < b);
+  if (drop) {
+    const [before, after] = drop;
+    out.push(plain(`removes ${before - after} assertion(s) net from tests (${before} before, ${after} after; files losing some: ${losers.join(', ')})`));
   }
   return out;
 }
@@ -201,6 +272,71 @@ function readHeader(file, line) {
   else if (line.startsWith('deleted file mode')) file.newPath = null;
   else if (line.startsWith('rename from ')) file.oldPath = line.slice('rename from '.length);
   else if (line.startsWith('rename to ')) file.newPath = line.slice('rename to '.length);
+}
+
+/**
+ * Reviewed conditional skips (owner delegation of 22 Nov 2026, issue #2613).
+ * A committed list of skip / focus / todo markers that a release reviewer has
+ * read and accepted, each with its reason and the PR that added the entry.
+ * Only an added MARKER line can be accepted, and only by an entry naming the
+ * same file and the exact trimmed line; detection itself is unchanged, and
+ * deletions, renames, loosened limits and lost assertions still need an
+ * owner. An entry counts when it is already on the base branch, or when the
+ * PR it names (`reviewedIn`) is a commit in this diff that changed the list,
+ * so every accepted skip has an audit trail in git history. The file lives
+ * under .github/ (CODEOWNERS).
+ */
+export const REVIEWED_FILE = '.github/test-integrity-reviewed.json';
+
+/** Validated entries of the reviewed-skip list; throws on a malformed file. */
+export function parseReviewed(raw) {
+  if (raw === null || raw === undefined || raw.trim() === '') return [];
+  const doc = JSON.parse(raw);
+  const entries = doc?.entries;
+  if (!Array.isArray(entries)) throw new Error(`${REVIEWED_FILE}: "entries" must be an array`);
+  return entries.map((e, i) => {
+    const ok =
+      e && typeof e.file === 'string' && isTest(e.file) &&
+      typeof e.line === 'string' && e.line.trim() === e.line && e.line.length > 0 &&
+      typeof e.reason === 'string' && e.reason.trim().length >= 20 &&
+      Number.isInteger(e.reviewedIn) && e.reviewedIn > 0;
+    if (!ok) throw new Error(`${REVIEWED_FILE}: entry ${i} needs a test-file "file", an exact trimmed "line", a "reason" (≥ 20 chars) and an integer "reviewedIn" PR`);
+    return { file: e.file, line: e.line, reason: e.reason.trim(), reviewedIn: e.reviewedIn };
+  });
+}
+
+/** PR numbers `(#n)` in the subjects of commits in base...head that changed the reviewed list. */
+export function prsThatChangedReviewed(base, head, cwd = process.cwd()) {
+  const subjects = git(['log', '--format=%s', `${base}...${head}`, '--', REVIEWED_FILE], cwd);
+  return new Set([...subjects.matchAll(/\(#(\d+)\)/g)].map((m) => Number(m[1])));
+}
+
+/**
+ * Split violation records into those a reviewed entry accepts and the rest.
+ * `baseEntries` are trusted as they are; `headEntries` only when their
+ * `reviewedIn` PR is in `introducedPrs`.
+ */
+export function applyReviewed(records, { baseEntries = [], headEntries = [], introducedPrs = new Set() } = {}) {
+  const usable = [...baseEntries, ...headEntries.filter((e) => introducedPrs.has(e.reviewedIn))];
+  const accepted = [];
+  const remaining = [];
+  for (const r of records) {
+    const entry = r.line === null ? null : usable.find((e) => e.file === r.path && e.line === r.line);
+    if (entry) accepted.push({ record: r, entry });
+    else remaining.push(r);
+  }
+  return { accepted, remaining };
+}
+
+/** The reviewed list at `ref`, or [] when the file does not exist there. */
+export function reviewedAt(ref, cwd = process.cwd()) {
+  let raw;
+  try {
+    raw = git(['show', `${ref}:${REVIEWED_FILE}`], cwd);
+  } catch {
+    return [];
+  }
+  return parseReviewed(raw);
 }
 
 function git(args, cwd) {
@@ -266,16 +402,29 @@ async function main() {
       process.exit(1);
     }
   }
-  const violations = findViolations(loadDiff(env.BASE_SHA, env.HEAD_SHA));
-  if (violations.length === 0) {
+  const records = findViolationRecords(loadDiff(env.BASE_SHA, env.HEAD_SHA));
+  if (records.length === 0) {
     console.log('Test integrity: no deleted tests, skip/focus markers, loosened limits or lost assertions.');
     return;
   }
   if (!ownerApprovalRequired(env)) {
     // Free on dev; the release PR into main surfaces it to the owner.
-    for (const v of violations) console.log(`::warning::Test integrity: ${v} — allowed: owner approval is required only for changes into main`);
+    for (const r of records) console.log(`::warning::Test integrity: ${r.text} — allowed: owner approval is required only for changes into main`);
     return;
   }
+  const { accepted, remaining } = applyReviewed(records, {
+    baseEntries: reviewedAt(env.BASE_SHA),
+    headEntries: reviewedAt(env.HEAD_SHA),
+    introducedPrs: prsThatChangedReviewed(env.BASE_SHA, env.HEAD_SHA),
+  });
+  for (const { record, entry } of accepted) {
+    console.log(`::notice::${record.text} — accepted: reviewed skip (${REVIEWED_FILE}, #${entry.reviewedIn}): ${entry.reason}`);
+  }
+  if (remaining.length === 0) {
+    console.log(`Test integrity: ${accepted.length} finding(s), all accepted as reviewed skips.`);
+    return;
+  }
+  const violations = remaining.map((r) => r.text);
   const override = await findOwnerOverride(env, env.JUDGE_REF);
   if (override.login) {
     for (const v of violations) console.log(`::notice::${v} — accepted: @${override.login} approved head ${env.HEAD_SHA}`);
