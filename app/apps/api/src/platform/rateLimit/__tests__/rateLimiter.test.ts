@@ -48,6 +48,16 @@ describe('RateLimiter', () => {
     expect(decisions[3]?.retryAfterSeconds).toBe(40);
   });
 
+  it('holds a route to a stricter limit of its own, which stays on when the general one is switched off', async () => {
+    const { limiter } = setup(0);
+    const decisions = [];
+    for (let call = 0; call < 3; call += 1) decisions.push((await limiter.check('auth:sign-in:203.0.113.7', 2)).allowed);
+
+    expect(decisions).toEqual([true, true, false]);
+    // The general allowance of the same limiter is off: any number of ordinary calls pass.
+    expect((await limiter.check('ip:203.0.113.7')).allowed).toBe(true);
+  });
+
   it('counts each caller on their own', async () => {
     const { limiter } = setup(1);
 

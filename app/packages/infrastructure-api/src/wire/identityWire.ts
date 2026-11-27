@@ -9,6 +9,20 @@ export const IDENTITY_PATHS = {
   signOut: '/v1/auth/sign-out',
   /** The public keys access tokens verify against, as a JWK Set. */
   keySet: '/v1/auth/.well-known/jwks.json',
+  /** Creates an account with an email address and a password: `EmailSignUpRequest` → `{}`, whether or not the address was free. */
+  signUp: '/v1/auth/sign-up',
+  /** Signs in with an email address and a password: `EmailSignInRequest` → `SessionResponse`. */
+  signIn: '/v1/auth/sign-in',
+  /** Redeems the link of an email: `VerifyLinkRequest` → `SessionResponse`. */
+  verify: '/v1/auth/verify',
+  /** Sends the verification email again: `EmailLinkRequest` → `{}`, whatever the address. */
+  resend: '/v1/auth/resend',
+  /** Sends a password reset email: `EmailLinkRequest` → `{}`, whatever the address. */
+  recover: '/v1/auth/recover',
+  /** Sets the caller's password and ends every session they have: `SetPasswordRequest` → `{}`. Needs the access token. */
+  password: '/v1/auth/password',
+  /** Updates the name and picture of the caller's sign-in profile: `ProfileRequest` → `{}`. Needs the access token. */
+  profile: '/v1/auth/profile',
 } as const;
 
 /** The member a session belongs to, as the app's `AuthSession` needs them. */
@@ -45,9 +59,57 @@ export interface SignOutRequest {
   readonly scope: 'device' | 'everywhere';
 }
 
+export interface EmailSignInRequest {
+  readonly email: string;
+  readonly password: string;
+}
+
+export interface EmailSignUpRequest extends EmailSignInRequest {
+  /** Where the verification link leads; one of the addresses the API is configured to allow. */
+  readonly redirectTo: string;
+}
+
+export interface EmailLinkRequest {
+  readonly email: string;
+  /** Where the link leads; one of the addresses the API is configured to allow. */
+  readonly redirectTo: string;
+}
+
+/** The query parameter a link carries its one-time token in, and the one that says what the link is for. */
+export const LINK_TOKEN_PARAMETER = 'token_hash';
+export const LINK_TYPE_PARAMETER = 'type';
+
+export interface VerifyLinkRequest {
+  /** The token of the link, as it arrived. */
+  readonly token: string;
+  /** `signup`: an address is being verified. `recovery`: a password is being reset. */
+  readonly type: 'signup' | 'recovery';
+}
+
+export interface SetPasswordRequest {
+  readonly password: string;
+}
+
+export interface ProfileRequest {
+  readonly displayName?: string;
+  readonly avatarUrl?: string;
+}
+
 /**
  * Codes of the identity routes' refusals (`error.code` of the API's error body).
  * `invalid_refresh_token` covers every reason a refresh token does not work
  * (unknown, replaced, of a session that ended): the app signs the member out.
  */
-export type IdentityErrorCode = 'invalid_request' | 'invalid_refresh_token' | 'not_configured' | 'too_many_requests' | 'unauthorized';
+export type IdentityErrorCode =
+  | 'invalid_request'
+  | 'invalid_refresh_token'
+  /** The address and password do not sign anyone in; never says which of the two is wrong. */
+  | 'invalid_credentials'
+  /** The password was right and the address is not verified yet. */
+  | 'email_not_confirmed'
+  /** The link was used already, expired, or was never issued. */
+  | 'invalid_link'
+  | 'weak_password'
+  | 'not_configured'
+  | 'too_many_requests'
+  | 'unauthorized';

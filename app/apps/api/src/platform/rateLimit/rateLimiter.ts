@@ -38,9 +38,11 @@ export class RateLimiter {
     private readonly now: () => number = Date.now,
   ) {}
 
-  /** @param subject Who is counted: `user:<id>` for a member, `ip:<address>` for a visitor. */
-  async check(subject: string): Promise<RateLimitDecision> {
-    const limit = this.config.rateLimitPerMinute;
+  /**
+   * @param subject Who is counted: `user:<id>` for a member, `ip:<address>` for a visitor.
+   * @param limit Calls a minute this subject may make; the API's general allowance unless a route has a stricter one of its own.
+   */
+  async check(subject: string, limit: number = this.config.rateLimitPerMinute): Promise<RateLimitDecision> {
     if (limit === 0) return ALLOWED;
 
     const seconds = Math.floor(this.now() / 1000);

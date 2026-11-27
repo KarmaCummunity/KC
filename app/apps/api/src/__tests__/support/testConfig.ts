@@ -21,6 +21,7 @@ export function testConfig(overrides: Partial<ApiConfig> = {}): ApiConfig {
     redisUrl: UNREACHABLE_REDIS_URL,
     authIssuer: TEST_AUTH_ISSUER,
     authSigningKeys: null,
+    authRedirectUrls: [],
     allowedOrigins: [],
     trustedProxyHops: 0,
     rateLimitPerMinute: 0,

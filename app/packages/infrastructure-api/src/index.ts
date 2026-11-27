@@ -59,5 +59,20 @@ export {
   type UploadGrantResponse,
   type UploadTarget,
 } from './wire/storageWire';
-export { IDENTITY_PATHS, type IdentityErrorCode, type RefreshRequest, type SessionResponse, type SessionUser, type SignOutRequest } from './wire/identityWire';
+export {
+  type EmailLinkRequest,
+  type EmailSignInRequest,
+  type EmailSignUpRequest,
+  IDENTITY_PATHS,
+  type IdentityErrorCode,
+  LINK_TOKEN_PARAMETER,
+  LINK_TYPE_PARAMETER,
+  type ProfileRequest,
+  type RefreshRequest,
+  type SessionResponse,
+  type SessionUser,
+  type SetPasswordRequest,
+  type SignOutRequest,
+  type VerifyLinkRequest,
+} from './wire/identityWire';
 export { withoutTrailingSlashes } from './wire/urlText';

@@ -45,6 +45,12 @@ export interface ApiConfig extends FeatureConfig {
    */
   readonly authSigningKeys: string | null;
   /**
+   * The addresses a link in an identity email (verification, password reset)
+   * may lead to, exactly. A request that names any other address is refused:
+   * the link carries a secret, and must only ever open the app.
+   */
+  readonly authRedirectUrls: readonly string[];
+  /**
    * Web origins allowed to call the API from a browser (CORS). Empty: no
    * browser may; the native apps are not subject to CORS and need no entry.
    */
@@ -176,6 +182,13 @@ function parseAuthSigningKeys(env: Env): string | null {
   return keys;
 }
 
+/** A comma-separated list of absolute URLs (a web page of the app, or the app's own scheme). */
+function parseAuthRedirectUrls(value: string | undefined): readonly string[] {
+  const urls = (value ?? '').split(',').map((url) => url.trim()).filter((url) => url !== '');
+  if (!urls.every((url) => URL.canParse(url))) throw new ApiConfigError('KC_AUTH_REDIRECT_URLS', 'must be a comma-separated list of URLs');
+  return urls;
+}
+
 /**
  * Builds the API configuration from environment variables.
  * `PORT` is the name Cloud Run injects; the others are KC's own.
@@ -192,6 +205,7 @@ export function loadApiConfig(env: Env): ApiConfig {
     redisUrl: parseRedisUrl(env),
     authIssuer: parseServiceUrl('KC_AUTH_ISSUER', readVariable(env, 'KC_AUTH_ISSUER'), ['https', 'http']),
     authSigningKeys: parseAuthSigningKeys(env),
+    authRedirectUrls: parseAuthRedirectUrls(readVariable(env, 'KC_AUTH_REDIRECT_URLS')),
     allowedOrigins: parseOrigins('KC_API_ALLOWED_ORIGINS', readVariable(env, 'KC_API_ALLOWED_ORIGINS')),
     trustedProxyHops: parseInteger('KC_API_TRUSTED_PROXY_HOPS', readVariable(env, 'KC_API_TRUSTED_PROXY_HOPS'), 0, 0, 10),
     rateLimitPerMinute: parseInteger('KC_API_RATE_LIMIT_PER_MINUTE', readVariable(env, 'KC_API_RATE_LIMIT_PER_MINUTE'), DEFAULT_RATE_LIMIT_PER_MINUTE, 0, 100_000),

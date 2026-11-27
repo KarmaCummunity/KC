@@ -38,6 +38,7 @@ describe('loadApiConfig', () => {
       redisUrl: REQUIRED.REDIS_URL,
       authIssuer: REQUIRED.KC_AUTH_ISSUER,
       authSigningKeys: null,
+      authRedirectUrls: [],
       allowedOrigins: [],
       trustedProxyHops: 0,
       rateLimitPerMinute: 600,
@@ -258,6 +259,13 @@ describe('loadApiConfig', () => {
 
     expect(config).toMatchObject({ authIssuer: 'https://api.kc.test/v1/auth', authSigningKeys: '{"keys":[]}' });
     expect(configErrorOf({ KC_AUTH_SIGNING_KEYS: '{"keys":[]}' }).variable).toBe('KC_AUTH_ISSUER');
+  });
+
+  it('reads the addresses a link in an identity email may lead to, and refuses a list that is not addresses', () => {
+    const config = loadApiConfig({ ...REQUIRED, KC_AUTH_REDIRECT_URLS: 'https://app.kc.test/auth/verify, karmacommunity://auth/callback ,' });
+
+    expect(config.authRedirectUrls).toEqual(['https://app.kc.test/auth/verify', 'karmacommunity://auth/callback']);
+    expect(configErrorOf({ KC_AUTH_REDIRECT_URLS: 'https://app.kc.test/auth/verify,/auth/reset' }).variable).toBe('KC_AUTH_REDIRECT_URLS');
   });
 
   it('reads where the existing files are copied from, and copies none without it', () => {

@@ -9,6 +9,7 @@ locals {
     "DATABASE_URL",
     "REDIS_URL",
     "KC_JOBS_TOKEN",
+    "KC_AUTH_SIGNING_KEYS",
     "EXPO_ACCESS_TOKEN",
     "GEMINI_API_KEY",
     "IDV_PROVIDER_API_KEY",

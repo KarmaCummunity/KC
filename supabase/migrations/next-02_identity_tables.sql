@@ -144,3 +144,57 @@ as $$
     from auth.users u
    where u.id = p_user_id;
 $$;
+
+-- ── The member's row, written for the identity module ───────────────────────────────────────────
+-- `auth.users` is not writable by the service role either. Each function below does one thing to
+-- one row; the triggers on the table do the rest, as they do for a sign-up today.
+
+-- The member an address belongs to, whatever they signed up with. Addresses are stored in lower case.
+create function kc_private.auth_user_id_by_email(p_email text)
+returns uuid
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select u.id from auth.users u where u.email = lower(p_email) order by u.created_at limit 1;
+$$;
+
+-- Creates a member. `on_auth_user_created` builds their profile and account from this row:
+-- active at once when the address is verified (a provider vouched for it), pending otherwise.
+create function kc_private.auth_user_create(p_email text, p_provider text, p_email_verified boolean, p_profile jsonb)
+returns uuid
+language sql
+security definer
+set search_path = ''
+as $$
+  insert into auth.users (email, email_confirmed_at, raw_user_meta_data, raw_app_meta_data)
+  values (
+    lower(p_email),
+    case when p_email_verified then now() end,
+    coalesce(p_profile, '{}'::jsonb),
+    jsonb_build_object('provider', p_provider, 'providers', jsonb_build_array(p_provider))
+  )
+  returning id;
+$$;
+
+-- Records that the member proved the address is theirs; `on_auth_user_verified` activates the account.
+create function kc_private.auth_user_confirm_email(p_user_id uuid)
+returns void
+language sql
+security definer
+set search_path = ''
+as $$
+  update auth.users set email_confirmed_at = now() where id = p_user_id and email_confirmed_at is null;
+$$;
+
+-- Merges name and picture fields into what the member's sign-in profile says (D-38: the product's
+-- own tables are the source of truth; this copy is kept in step with them).
+create function kc_private.auth_user_merge_profile(p_user_id uuid, p_patch jsonb)
+returns void
+language sql
+security definer
+set search_path = ''
+as $$
+  update auth.users set raw_user_meta_data = coalesce(raw_user_meta_data, '{}'::jsonb) || p_patch where id = p_user_id;
+$$;

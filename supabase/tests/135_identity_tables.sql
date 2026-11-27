@@ -4,7 +4,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = extensions, public;
 
-select plan(15);
+select plan(19);
 
 -- ── Nobody but the service role reaches them ────────────────────────────────────────────────────
 select ok(
@@ -121,6 +121,37 @@ select is(
   'the service role reads the columns a session needs of a member''s row'
 );
 select is(current_setting('test.reads_users_table'), 'no', 'and still cannot read the table itself');
+
+-- ── Creating and changing the member's row ──────────────────────────────────────────────────────
+set local role service_role;
+select set_config('test.new_member', kc_private.auth_user_create('Carol@Identity.Test', 'email', false, '{"full_name": "Carol"}')::text, true);
+select set_config('test.found_by_email', kc_private.auth_user_id_by_email('CAROL@identity.test')::text, true);
+reset role;
+select is(current_setting('test.found_by_email'), current_setting('test.new_member'), 'a member is found by their address in any letter case');
+select results_eq(
+  $$select u.email, u.email_confirmed_at is null, u.raw_app_meta_data ->> 'provider', a.status::text
+      from auth.users u join public.user_account a on a.user_id = u.id
+     where u.id = current_setting('test.new_member')::uuid$$,
+  $$values ('carol@identity.test', true, 'email', 'pending_verification')$$,
+  'a sign-up with an unverified address creates the member, pending, through the table''s own trigger'
+);
+
+set local role service_role;
+select kc_private.auth_user_confirm_email(current_setting('test.new_member')::uuid);
+select kc_private.auth_user_merge_profile(current_setting('test.new_member')::uuid, '{"avatar_url": "https://media.kc.test/carol.jpg"}');
+reset role;
+select results_eq(
+  $$select a.status::text, u.raw_user_meta_data ->> 'full_name', u.raw_user_meta_data ->> 'avatar_url'
+      from auth.users u join public.user_account a on a.user_id = u.id
+     where u.id = current_setting('test.new_member')::uuid$$,
+  $$values ('active', 'Carol', 'https://media.kc.test/carol.jpg')$$,
+  'confirming the address activates the account, and a profile change keeps what it does not name'
+);
+select ok(
+  not has_function_privilege('authenticated', 'kc_private.auth_user_create(text, text, boolean, jsonb)', 'execute')
+    and not has_function_privilege('anon', 'kc_private.auth_user_confirm_email(uuid)', 'execute'),
+  'no client role can call them'
+);
 
 -- ── Removed with the member ─────────────────────────────────────────────────────────────────────
 delete from auth.users where id = 'a0000000-0000-4000-8000-000000000001';

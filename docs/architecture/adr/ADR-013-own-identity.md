@@ -59,7 +59,7 @@ Because the refresh tokens are carried over (hashed), a member who is signed in 
 | 1 | Signing keys, the access token, the published key set, the verifier that accepts KC's own issuer | Done (`apps/api/src/platform/identity`): with `KC_AUTH_SIGNING_KEYS` set the API signs with its first key, verifies against its own set without a network call, and publishes the public halves at `/v1/auth/.well-known/jwks.json`; without it nothing changes |
 | 2 | The tables (`kc_private`): identities, passwords, sessions, refresh tokens, one-time links | Done (migration `identity_tables`, with its database test): closed to every client role, removed with the member's row, and the rule that says whether a session still proves its member |
 | 3 | Sessions: issue, refresh with rotation and reuse detection, sign-out (one device, everywhere), the 30-day limit, the check on every request | Done (`apps/api/src/modules/identity`, `platform/identity/sessionCheckedVerifier.ts`): `POST /v1/auth/token` and `/v1/auth/sign-out`, in the wire format shared with the app (`identityWire.ts`). Checked on the KC schema through the real routes: two requests racing with one token, a replayed token ending the session, one device or all of them signed out, the 30-day lapse, a removed account |
-| 4 | Email and password: sign-up, verification, sign-in, reset, change; the email interface | — |
+| 4 | Email and password: sign-up, verification, sign-in, reset, change; the email interface | Done (`modules/identity/emailAccountService.ts`): `/v1/auth/sign-up`, `/sign-in`, `/verify`, `/resend`, `/recover`, `/password`, `/profile`. Checked on the KC schema through the real routes, with a stand-in for the email provider: the account waits for its link, a taken address is answered exactly as a free one, a wrong password as an unknown address, a link works once, a reset ends every session, and a bcrypt hash carried over signs its member in and is replaced by a scrypt one. The member's row is created and changed through four functions of the migration, since the service role cannot write `auth.users` |
 | 5 | Google and Apple ID tokens; Google's browser redirect | — |
 | 6 | The app's adapter (`@kc/infrastructure-api`) and its composition switch | — |
 | 7 | The copy of users, identities, hashes and refresh tokens from Supabase Auth, checked against a real one (the local stack) | — |
@@ -80,6 +80,9 @@ Steps 1 to 5 and 7 need nothing from a person. Step 6 lands with the app's other
 - **The password list.** FR-AUTH-006 AC1 also asks that a password is not among the 100 000 most breached ones. The app does not check this today. It is not added silently by this move; it is a small separate task once decided.
 
 ## Limits
+
+- Guessing a password is slowed by a limit on calls per address of the caller (twenty a minute on each route that takes a password or sends an email) and by the cost of one check. There is no lock on an account after failed attempts: a lock is a way to shut a member out by guessing on purpose. The limiter lets calls through when Redis is down, as it does everywhere.
+- A link in an email can only lead to an address the API was configured with (`KC_AUTH_REDIRECT_URLS`), compared exactly.
 
 - An access token is valid for an hour as a signature. What ends it earlier is the API's own session check; a service that only verifies the signature (none exists today) would not see a sign-out until the token expires.
 - A member signed in on an app version from before the cut-over is signed out when Supabase Auth stops answering it; the minimum version (KC#2675) is what turns that into an update prompt instead.
