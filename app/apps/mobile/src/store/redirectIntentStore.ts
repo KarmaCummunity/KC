@@ -16,8 +16,9 @@ const INTENT_TTL_MS = 10 * 60 * 1000;
 
 // Restorable path prefixes. Auth / onboarding / tabs are intentionally
 // excluded so a half-captured intent never bounces the user out of the
-// auth flow they just completed.
-const RESTORABLE_PATH_PREFIXES = ['/post/', '/user/', '/chat/'];
+// auth flow they just completed. Owner-edit deep links from WhatsApp
+// (#2238) must survive sign-in the same way post detail links do.
+const RESTORABLE_PATH_PREFIXES = ['/post/', '/edit-post/', '/edit-listing/', '/user/', '/chat/'];
 
 export function isRestorablePath(path: string): boolean {
   if (typeof path !== 'string' || path === '') return false;

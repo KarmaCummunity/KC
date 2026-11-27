@@ -78,11 +78,13 @@ Configure in Supabase Dashboard → Edge Functions → Secrets (names only; neve
 | `GEMINI_MODEL_ID` | Optional, `whatsapp-webhook` agent model (default `gemini-flash-latest`) |
 | `KC_APP_BASE_URL` | Optional, `whatsapp-webhook`: web origin of the "finish in the app" links (default `https://karma-community-kc.com`) |
 | `WHATSAPP_WABA_ID` | `scripts/whatsapp-templates.mjs submit` only (template submission to Meta) |
-| `WHATSAPP_SKIP_SIGNATURE_VERIFY` | Local/dev only when app secret unset |
 
 The `whatsapp_send` job calls `whatsapp-sender` through `kc_private.invoke_edge_function`, which
-reads the Vault secrets `kc_project_url` and `kc_service_role_key` (shared with the other
-scheduled workers). Nothing is sent until a moderator switches the channel on in the admin
+reads the Vault secrets `kc_project_url` and `kc_verified_service_role_key` (shared with the other
+scheduled workers). The verified key is populated only by the reviewed deployment helper after
+read-only current-key validation. The obsolete `kc_service_role_key` slot may still be written by
+an older default-branch deployment workflow; workers never read or fall back to it. A missing
+verified slot records an unconfigured warning and makes no HTTP request. Nothing is sent until a moderator switches the channel on in the admin
 WhatsApp console and a super admin marks the templates approved.
 
 RPC contract for MCP adapters: `docs/SSOT/MCP_MARKETPLACE_BOT_CONTRACT.md`.

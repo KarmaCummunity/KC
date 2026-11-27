@@ -105,7 +105,7 @@ Artifact `db-backup-<target>-<YYYYMMDD>-<run id>-<attempt>`, each file gzip-comp
 | `manifest.json.gz.age` | table list and exact row count per table |
 | `BACKUP-INFO.txt`, `SHA256SUMS` | plain text: target, project, time; checksums of the `.age` files |
 
-**Not in a backup:** the files in Storage (avatars, post images; only their metadata rows are), Edge Function code and secrets, Vault secrets (`kc_project_url`, `kc_service_role_key`), Auth settings, and project settings. Re-apply those from the repo and the setup documents after a restore.
+**Not in a backup:** the files in Storage (avatars, post images; only their metadata rows are), Edge Function code and secrets, Vault secrets (`kc_project_url`, plus the applicable caller slot), Auth settings, and project settings. The caller slot is `kc_service_role_key` before the `verified_edge_caller` migration and `kc_verified_service_role_key` afterward. A migrated worker never falls back to the obsolete slot. Restore the applicable configuration through the reviewed target-specific Deploy pipeline and validate it before accepting the restore. Do not copy an unverified old caller or assume this DEV migration has been applied to PROD.
 
 ### Safety properties
 
@@ -694,6 +694,32 @@ with no metadata, which the structural rewrite does in milliseconds and with mem
 Disable the job through a migration (`update kc_private.scheduled_jobs set enabled = false where name =
 'post_media_process'`) and delete the `process-post-media` row of `kc_private.edge_function_kicks`. Rows
 already `ready` keep pointing at their copies; queued rows stay `pending` (shown to their owner only).
+
+---
+
+## Storage deletion intents — account purge (FR-SETTINGS-012 AC4)
+
+**What it does.** When `purge-deleted-accounts` deletes an identity (`kc_private.account_purge_finish`),
+the same transaction records one row in `kc_private.storage_deletion_intents` per folder of the
+member: `<user_id>` in every bucket and `derived/<user_id>` in `post-images`. The table has no foreign
+key, so the member's cascade does not remove it. Every run of the purge (daily, job `account_purge`)
+then sweeps the due intents: it lists the folder, deletes what it finds, and lists again. An intent
+closes (`verified_absent_at`) only when that second listing is empty **and** its quiet window
+(`not_before`, one hour after the deletion) has passed; otherwise it is swept again later, and a
+failed sweep backs off (15 min doubling, at most a day). Closed rows are deleted after 7 days (the
+path holds a user id). Design: `supabase/proposals/post-media-privacy-lifecycle/DESIGN.md` §4, phase 1.
+
+**What it does not do.** It is eventual deletion, re-checked, not a storage fence: nothing refuses a
+service write at storage-commit time, and a finite quiet window cannot prove that no write will still
+commit. A "closed" intent means the folder was empty at a sweep after the window.
+
+### Operate
+
+- **Open intents:** `select bucket, count(*), max(sweeps), min(created_at) from kc_private.storage_deletion_intents where verified_absent_at is null group by 1;`
+- **Stuck:** an intent swept 5 times without closing raises `ops.warnings` key `storage_deletion_stuck`
+  (it keeps being swept). `last_error` and `last_remaining` say why.
+- **Sweep now:** the purge worker sweeps due intents on every run (`POST /functions/v1/purge-deleted-accounts`,
+  service role); its answer carries `intents: { verified, pending, failed }`.
 
 ---
 

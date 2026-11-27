@@ -39,6 +39,7 @@ import { webTextRtl, webViewRtl } from '../../src/lib/webRtlStyle';
 import { useKeyboardVerticalOffset } from '../../src/lib/platform/useKeyboardVerticalOffset';
 import { resolveKeyboardAvoidingBehavior } from '../../src/lib/platform/keyboardVerticalOffset';
 import { FormScrollView } from '../../src/components/ui/FormScrollView';
+export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
 
 type DemoAnswer = { rating: number | null; text: string };
 

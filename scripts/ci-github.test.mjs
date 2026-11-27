@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { MAX_PAGES, findOwnerOverride, githubList, laneResults, ownerApproval, parseOwners } from './ci-github.mjs';
+import { MAX_PAGES, findOwnerOverride, githubFetch, githubList, laneResults, ownerApproval, parseOwners, rateLimitOf } from './ci-github.mjs';
 
 const HEAD = 'a'.repeat(40);
 const OLD = 'b'.repeat(40);
@@ -96,4 +96,62 @@ test('githubList returns a short list and refuses to truncate a long one', async
   assert.equal((await withFetch([1, 2], () => githubList('/x', null, env))).length, 2);
   const full = Array.from({ length: 100 }, (_, i) => i);
   await assert.rejects(withFetch(full, () => githubList('/x', null, env)), new RegExp(`more than ${MAX_PAGES * 100} items`));
+});
+
+// --- rate limits (PR #2647: a CI gate read HTTP 403 while the repo's GITHUB_TOKEN budget was spent) ---
+
+function answer(status, { headers = {}, body = {} } = {}) {
+  const h = new Map(Object.entries(headers).map(([k, v]) => [k.toLowerCase(), String(v)]));
+  const res = { ok: status >= 200 && status < 300, status, headers: { get: (k) => h.get(k.toLowerCase()) ?? null }, json: async () => body };
+  res.clone = () => res;
+  return res;
+}
+
+async function withAnswers(answers, fn) {
+  const real = globalThis.fetch;
+  const calls = [];
+  globalThis.fetch = async (url, init) => {
+    calls.push({ url, method: init?.method });
+    return answers.shift();
+  };
+  try {
+    return await fn(calls);
+  } finally {
+    globalThis.fetch = real;
+  }
+}
+
+test('rateLimitOf: a plain 403 or 404 is not a rate limit', async () => {
+  assert.equal(await rateLimitOf(answer(403, { body: { message: 'Resource not accessible by integration' } })), null);
+  assert.equal(await rateLimitOf(answer(404)), null);
+});
+
+test('rateLimitOf: primary limit waits until the reset; secondary uses Retry-After; 429 counts', async () => {
+  const now = Date.parse('2026-11-23T21:10:00Z');
+  const primary = await rateLimitOf(answer(403, { headers: { 'x-ratelimit-remaining': 0, 'x-ratelimit-reset': now / 1000 + 90 }, body: { message: 'API rate limit exceeded' } }), now);
+  assert.equal(primary.waitMs, 90_000);
+  assert.match(primary.why, /remaining=0/);
+  assert.equal((await rateLimitOf(answer(403, { headers: { 'retry-after': 30 } }), now)).waitMs, 30_000);
+  assert.equal((await rateLimitOf(answer(403, { body: { message: 'You have exceeded a secondary rate limit' } }), now)).waitMs, 60_000);
+  assert.equal((await rateLimitOf(answer(429), now)).waitMs, 60_000);
+});
+
+test('githubFetch waits out a short rate limit and then returns the answer', async () => {
+  const slept = [];
+  const env = { GITHUB_TOKEN: 't' };
+  const out = await withAnswers([answer(403, { headers: { 'retry-after': 5 } }), answer(200, { body: { ok: 1 } })], (calls) =>
+    githubFetch('GET', '/x', {}, env, async (ms) => slept.push(ms)).then((r) => ({ r, n: calls.length })),
+  );
+  assert.deepEqual(out, { r: { ok: 1 }, n: 2 });
+  assert.deepEqual(slept, [6000]);
+});
+
+test('githubFetch fails closed when the rate limit outlasts the budget, and never retries other errors', async () => {
+  const env = { GITHUB_TOKEN: 't', CI_GITHUB_RATE_LIMIT_MAX_WAIT_MIN: '1' };
+  await withAnswers([answer(403, { headers: { 'retry-after': 600 } })], () =>
+    assert.rejects(githubFetch('GET', '/x', {}, env, async () => {}), /HTTP 403 \(rate limit: .*waited 0 s of 60 s\)/),
+  );
+  await withAnswers([answer(403, { body: { message: 'Resource not accessible by integration' } })], (calls) =>
+    assert.rejects(githubFetch('GET', '/y', {}, env, async () => assert.fail('must not sleep')), /GitHub API GET \/y answered HTTP 403$/).then(() => assert.equal(calls.length, 1)),
+  );
 });

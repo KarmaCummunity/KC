@@ -97,6 +97,20 @@ describe('ListChatStartCandidatesUseCase (FR-CHAT-017)', () => {
     expect(res.following.map((u) => u.userId)).toEqual(['a']);
   });
 
+  it('matches Hebrew names ignoring niqqud on query and haystack (TD-111)', async () => {
+    const plain = '\u05D3\u05D5\u05D3';
+    const withNiqqud = '\u05D3\u05B8\u05D5\u05B4\u05D3';
+    const { uc } = setup({
+      following: [mkUser('a', plain), mkUser('b', withNiqqud), mkUser('c', 'Avi')],
+    });
+    const byNiqqud = await uc.execute({ viewerId: 'me', query: withNiqqud });
+    expect(byNiqqud.following.map((u) => u.userId).sort()).toEqual(['a', 'b']);
+    const byPlain = await uc.execute({ viewerId: 'me', query: plain });
+    expect(byPlain.following.map((u) => u.userId).sort()).toEqual(['a', 'b']);
+    const latin = await uc.execute({ viewerId: 'me', query: 'avi' });
+    expect(latin.following.map((u) => u.userId)).toEqual(['c']);
+  });
+
   it('still lists candidates when the backend cannot list blocks (the server hides blocked people anyway)', async () => {
     const { uc, blocks } = setup({ following: [mkUser('a', 'Avi')] });
     blocks.listMyBlockedUsers.mockRejectedValueOnce(new BackendUnavailableError('rpc:list_my_blocked_users', 'function'));

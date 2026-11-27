@@ -47,6 +47,7 @@ export const adminDemoDataEn = {
       social: 'Creating follows and saves…',
       chats: 'Creating chats…',
       orgs: 'Creating demo nonprofits…',
+      coverage: 'Creating one fixture per lifecycle state…',
       done: 'Finishing…',
     },
     passwordLabel: 'Password for the demo members',
