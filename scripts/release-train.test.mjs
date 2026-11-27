@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { parse } from 'yaml';
 import {
-  deployVerdict, freezePlan, isCiSkipped, judgeChecks, latestByName, migrationChanges,
+  deployVerdict, freezePlan, isCiSkipped, judgeChecks, lastLabelEvent, latestByName, migrationChanges, unfreezeAction,
   nextPatch, renderSummary, scanMigrationSql, skipDecision, sqlStatements, RELEASE_E2E_CHECK,
 } from './release-train-lib.mjs';
 
@@ -165,4 +165,44 @@ test('release PR body carries justifications that pass the strict release scan (
   assert.equal(lines.length, 1, 'prose and the format example are not copied');
   assert.deepEqual(checkReleaseMigrations(files, ['Summary', ...lines].join('\n')), []);
   assert.ok(checkReleaseMigrations(files, 'Migration safety: 0998_other.sql — unrelated reason here').length > 0, 'justification is per file');
+});
+
+test('lastLabelEvent picks the newest no-auto-merge labeled/unlabeled event', () => {
+  const ev = [
+    { id: 1, event: 'labeled', label: { name: 'no-auto-merge' } },
+    { id: 2, event: 'labeled', label: { name: 'area:ci' } },
+    { id: 3, event: 'unlabeled', label: { name: 'no-auto-merge' } },
+    { id: 4, event: 'commented' },
+  ];
+  assert.equal(lastLabelEvent(ev).id, 3);
+  assert.equal(lastLabelEvent([]), null);
+  assert.equal(lastLabelEvent(undefined), null);
+});
+
+test('unfreezeAction: a hold placed while the train ran wins (#2509 / #2514)', () => {
+  const op = 'kc-train';
+  const ours = { id: 9, event: 'labeled', actor: { login: op }, label: { name: 'no-auto-merge' } };
+  const open = (labels = ['no-auto-merge'], extra = {}) => ({ state: 'open', draft: false, labels: labels.map((name) => ({ name })), ...extra });
+  const frozen = { number: 1, armed: true, queued: false, addLabel: true, hold_event_id: 9 };
+  // Untouched: our label comes off and auto-merge comes back.
+  assert.deepEqual(unfreezeAction(frozen, open(), ours, op), { removeLabel: true, rearm: true, reason: 'restored' });
+  // Turned into a draft, or closed: left alone.
+  assert.equal(unfreezeAction(frozen, open(['no-auto-merge'], { draft: true }), ours, op).rearm, false);
+  assert.equal(unfreezeAction(frozen, open(['no-auto-merge'], { draft: true }), ours, op).removeLabel, false);
+  assert.equal(unfreezeAction(frozen, open([], { state: 'closed' }), ours, op).reason, 'not open');
+  // A person removed and re-added the label: the newest event is no longer ours.
+  const human = { id: 12, event: 'labeled', actor: { login: 'navesarussi' }, label: { name: 'no-auto-merge' } };
+  assert.deepEqual(unfreezeAction(frozen, open(), human, op), { removeLabel: false, rearm: false, reason: 'no-auto-merge label changed since the freeze' });
+  // Same id but another actor, or an unlabeled event: not ours.
+  assert.equal(unfreezeAction(frozen, open(), { ...ours, actor: { login: 'x' } }, op).rearm, false);
+  assert.equal(unfreezeAction(frozen, open([]), { ...ours, event: 'unlabeled' }, op).rearm, false);
+  // State saved before hold_event_id existed stays held.
+  assert.equal(unfreezeAction({ ...frozen, hold_event_id: undefined }, open(), ours, op).rearm, false);
+  // The label was already there before the freeze (addLabel false): it is the owner's hold.
+  assert.deepEqual(unfreezeAction({ number: 2, armed: false, queued: true, addLabel: false }, open(), null, op),
+    { removeLabel: false, rearm: false, reason: 'no-auto-merge held' });
+  // Neither armed nor queued: the label still comes off, nothing is armed.
+  assert.deepEqual(unfreezeAction({ ...frozen, armed: false }, open(), ours, op), { removeLabel: true, rearm: false, reason: 'was not armed' });
+  // Plain label strings work too (GraphQL shape).
+  assert.equal(unfreezeAction({ number: 3, armed: true, addLabel: false }, { state: 'open', draft: false, labels: ['area:ci'] }, null, op).rearm, true);
 });
