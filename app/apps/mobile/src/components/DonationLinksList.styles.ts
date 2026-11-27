@@ -1,6 +1,5 @@
 import { makeUseStyles, radius, spacing, typography } from '@kc/ui';
-import { rtlTextAlignStart } from '../lib/rtlTextAlignStart';
-
+import { rtlTextAlignStart } from '../lib/rtlLayout';
 export const useDonationLinksListStyles = makeUseStyles(({ colors }) => ({
   container: { gap: spacing.md },
   // `row` + parent RTL: title (first child) at inline-start (visual right), + at end.

@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
 import { Card } from '../ui/Card';
 import { SecondaryButton } from '../ui/Buttons';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { rtlTextAlignStart } from '../../lib/rtlLayout';
 import { aboutOpenExternalUrl } from '../../features/about-landing/aboutOpenExternalUrl';
 
 const JGIVE_URL = 'https://www.jgive.com';

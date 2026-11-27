@@ -1,7 +1,6 @@
 import { StyleSheet } from 'react-native';
 import { makeUseStyles, radius, shadow, spacing, typography } from '@kc/ui';
-import { rowDirectionStart } from '../../lib/rtlLayout';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { rowDirectionStart, rtlTextAlignStart } from '../../lib/rtlLayout';
 
 export const useKcRowCardStyles = makeUseStyles(({ colors }) => ({
   card: {

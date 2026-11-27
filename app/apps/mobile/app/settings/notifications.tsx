@@ -10,7 +10,7 @@ import { isNotificationKindEnabled } from '@kc/domain';
 import { Stack } from 'expo-router';
 import { makeUseStyles, typography, spacing, radius, Text } from '@kc/ui';
 import { useShellStackScreenOptions } from '../../src/navigation/shellStackScreenOptions';
-import { rtlTextAlignStart } from '../../src/lib/rtlTextAlignStart';
+import { rtlTextAlignStart } from '../../src/lib/rtlLayout';
 import { webTextRtl, webViewRtl } from '../../src/lib/webRtlStyle';
 import { NotificationToggleRow } from '../../src/components/NotificationToggleRow';
 import { QuietHoursSection } from '../../src/components/settings/QuietHoursSection';

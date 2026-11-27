@@ -7,8 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { iconSize, makeUseStyles, radius, spacing, Text, typography, useTheme } from '@kc/ui';
 import { MEDICAL_SECTIONS, type MedicalBody } from '../features/donations/medicalBodies';
-import { rtlTextAlignStart } from '../lib/rtlTextAlignStart';
-
+import { rtlTextAlignStart } from '../lib/rtlLayout';
 const useStyles = makeUseStyles(({ colors }) => ({
   container: { gap: spacing.lg },
   sectionsTitle: { ...typography.h2, color: colors.textPrimary, textAlign: rtlTextAlignStart },

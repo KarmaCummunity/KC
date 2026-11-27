@@ -11,7 +11,7 @@ import { Chip } from '../ui/Chip';
 import { ChipSelectRow } from '../filterKit/ChipSelectRow';
 import { TextField } from '../ui/TextField';
 import { Card } from '../ui/Card';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { rtlTextAlignStart } from '../../lib/rtlLayout';
 import { webTextRtl, webViewRtl } from '../../lib/webRtlStyle';
 
 /** The optional categories, in display order; the server stores the key verbatim. */

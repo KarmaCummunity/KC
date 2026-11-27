@@ -10,8 +10,7 @@ import { composeIsoDate, dateOfBirthIssue, parseIsoDate } from '@kc/domain';
 import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
 import { TextField } from './ui/TextField';
 import { useFormScopeAnchor } from './ui/useFormScopeField';
-import { rtlTextAlignStart } from '../lib/rtlTextAlignStart';
-
+import { rtlTextAlignStart } from '../lib/rtlLayout';
 interface Props {
   /** ISO `YYYY-MM-DD`, or null while the three parts do not form a valid date. */
   readonly value: string | null;

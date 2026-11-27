@@ -9,7 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
 import { SecondaryButton } from '../ui/Buttons';
 import { openExternalUrl } from '../../utils/openExternalUrl';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { rtlTextAlignStart } from '../../lib/rtlLayout';
 import { useWorldLinksPreview } from '../../hooks/useWorldLinksPreview';
 import { WorldContentRow } from './WorldContentRow';
 import { worldLinksSubScreenLink } from './worldSubScreens';

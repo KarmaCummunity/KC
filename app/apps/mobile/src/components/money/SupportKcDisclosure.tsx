@@ -7,7 +7,7 @@ import { ActivityIndicator, Pressable, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { makeUseStyles, radius, spacing, typography, useTheme, Text, iconSize } from '@kc/ui';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { rtlTextAlignStart } from '../../lib/rtlLayout';
 import { useKcStandingOrderCancelRequest } from '../../hooks/useKcStandingOrderCancelRequest';
 
 const BASE_LINES = [

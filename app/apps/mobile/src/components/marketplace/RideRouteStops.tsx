@@ -14,8 +14,7 @@ import {
   type RidePlace,
   type RideRoute,
 } from '@kc/domain';
-import { rowDirectionStart } from '../../lib/rtlLayout';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { rowDirectionStart, rtlTextAlignStart } from '../../lib/rtlLayout';
 
 interface Stop {
   readonly place: RidePlace;

@@ -5,7 +5,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { DONATION_LINK_DESCRIPTION_MAX, DONATION_LINK_DISPLAY_NAME_MAX } from '@kc/domain';
 import { makeUseStyles, typography, Text } from '@kc/ui';
-import { rtlTextAlignStart } from '../lib/rtlTextAlignStart';
+import { rtlTextAlignStart } from '../lib/rtlLayout';
 import { TextField } from './ui/TextField';
 import type { useAddOrEditDonationLinkModal } from './useAddOrEditDonationLinkModal';
 

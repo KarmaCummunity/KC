@@ -4,7 +4,7 @@ import React from 'react';
 import { View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { makeUseStyles, radius, spacing, typography, iconSize, useTheme, Text } from '@kc/ui';
-import { rtlTextAlignStart } from '../../../lib/rtlTextAlignStart';
+import { rtlTextAlignStart } from '../../../lib/rtlLayout';
 import { useTranslation } from 'react-i18next';
 import type { SystemMessageBubbleProps } from './SystemMessageBubble';
 

@@ -9,7 +9,7 @@ import { useQuery } from '@tanstack/react-query';
 import { makeUseStyles, spacing, radius, typography, Text } from '@kc/ui';
 import type { VerifiedNonprofitRow } from '@kc/domain';
 import { paymentsUseCases } from '../../services/paymentsComposition';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { rtlTextAlignStart } from '../../lib/rtlLayout';
 import { listOrEmpty } from '../../lib/backendAvailability';
 
 const useStyles = makeUseStyles(({ colors }) => ({

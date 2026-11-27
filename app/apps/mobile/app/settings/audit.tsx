@@ -12,7 +12,7 @@ import { container } from '../../src/lib/container';
 import { getUniversalSearchUseCase } from '../../src/services/searchComposition';
 import { useAuthStore } from '../../src/store/authStore';
 import { useTranslation } from 'react-i18next';
-import { rtlTextAlignStart } from '../../src/lib/rtlTextAlignStart';
+import { rtlTextAlignStart } from '../../src/lib/rtlLayout';
 import { webTextRtl, webViewRtl } from '../../src/lib/webRtlStyle';
 import { KcFlashList } from '../../src/components/lists/KcFlashList';
 export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';

@@ -12,8 +12,7 @@ import { useModalStackIsEmpty } from './useActiveModalStack';
 import { LegalConsentScreen, type LegalConsentMode } from './LegalConsentScreen';
 import { LegalUpdateBannerStrip } from './LegalUpdateBannerStrip';
 import { legalUpdateDaysRemaining } from './legalConsentRules';
-import { layoutWritingDirectionStyle, rowDirectionStart } from '../../lib/rtlLayout';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { layoutWritingDirectionStyle, rowDirectionStart, rtlTextAlignStart } from '../../lib/rtlLayout';
 
 const FOREGROUND_DEBOUNCE_MS = 500;
 

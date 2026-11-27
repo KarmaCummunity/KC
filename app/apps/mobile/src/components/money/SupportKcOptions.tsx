@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { makeUseStyles, spacing, typography, useTheme, Text } from '@kc/ui';
 import { hasKcSupportOptions, type KcSupportChannel, type KcSupportOptions as Options } from '@kc/domain';
 import { PrimaryButton, SecondaryButton } from '../ui/Buttons';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { rtlTextAlignStart } from '../../lib/rtlLayout';
 import { SupportKcPayeePhone } from './SupportKcPayeePhone';
 
 interface SupportKcOptionsProps {

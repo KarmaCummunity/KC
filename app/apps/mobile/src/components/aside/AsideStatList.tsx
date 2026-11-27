@@ -3,9 +3,8 @@
 // {label, value} row idiom — keep it in one place.
 import { View } from 'react-native';
 import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
-import { rowDirectionStart } from '../../lib/rtlLayout';
 
+import { rowDirectionStart, rtlTextAlignStart } from '../../lib/rtlLayout';
 export type AsideStatRow = {
   key: string;
   label: string;

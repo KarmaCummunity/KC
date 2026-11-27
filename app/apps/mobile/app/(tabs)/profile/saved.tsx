@@ -12,8 +12,7 @@ import { ProfilePostsGrid } from '../../../src/components/profile/ProfilePostsGr
 import { useShellTabBarScrollInset } from '../../../src/navigation/useShellTabBarVisibility';
 import { useAuthStore } from '../../../src/store/authStore';
 import { getListSavedPostsUseCase } from '../../../src/services/savedPostsComposition';
-import { rowDirectionStart } from '../../../src/lib/rtlLayout';
-import { rtlTextAlignStart } from '../../../src/lib/rtlTextAlignStart';
+import { rowDirectionStart, rtlTextAlignStart } from '../../../src/lib/rtlLayout';
 
 export default function MyProfileSavedScreen() {
   const styles = useStyles();

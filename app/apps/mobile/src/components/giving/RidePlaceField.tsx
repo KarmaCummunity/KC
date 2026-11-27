@@ -4,8 +4,8 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { makeUseStyles, typography, Text } from '@kc/ui';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
-import { inputTextAlignStart } from '../../lib/rtlLayout';
+
+import { inputTextAlignStart, rtlTextAlignStart } from '../../lib/rtlLayout';
 import { RIDE_HOUSE_NUMBER_MAX_LENGTH, streetPlaceId, type RidePlace } from '@kc/domain';
 import { SearchablePicker } from '../SearchablePicker/SearchablePicker';
 import { StreetPicker } from '../StreetPicker';

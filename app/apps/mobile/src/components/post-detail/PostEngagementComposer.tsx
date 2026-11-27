@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { Keyboard, Platform, Pressable, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { makeUseStyles, spacing, typography, radius, iconSize, useTheme, Text, TextInput } from '@kc/ui';
-import { emptyInputDirectionStyle } from '../../lib/rtlLayout';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { emptyInputDirectionStyle, rtlTextAlignStart } from '../../lib/rtlLayout';
+
 import { MirroredIcon } from '../ui/MirroredIcon';
 import { usePostEngagement } from './PostEngagementContext';
 import { useShellTabBarScrollInset } from '../../navigation/useShellTabBarVisibility';

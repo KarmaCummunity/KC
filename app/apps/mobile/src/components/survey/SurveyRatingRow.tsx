@@ -5,8 +5,7 @@ import { Pressable, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { makeUseStyles, radius, spacing, typography, Text } from '@kc/ui';
 import { webTextRtl, webViewRtl } from '../../lib/webRtlStyle';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
-
+import { rtlTextAlignStart } from '../../lib/rtlLayout';
 const RATINGS = [1, 2, 3, 4, 5, 6, 7] as const;
 
 type SurveyRatingRowProps = {

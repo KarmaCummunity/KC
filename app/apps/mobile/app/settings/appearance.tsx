@@ -18,7 +18,7 @@ import {
   Text,
 } from '@kc/ui';
 import { useShellStackScreenOptions } from '../../src/navigation/shellStackScreenOptions';
-import { rtlTextAlignStart } from '../../src/lib/rtlTextAlignStart';
+import { rtlTextAlignStart } from '../../src/lib/rtlLayout';
 import { webTextRtl, webViewRtl } from '../../src/lib/webRtlStyle';
 import { ModeRow, PalettePreview, type ModeOption } from '../../src/components/settings/appearanceParts';
 export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';

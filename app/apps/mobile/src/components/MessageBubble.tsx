@@ -12,7 +12,7 @@ import { useAdminRoles } from '../hooks/useAdminRoles';
 import { container } from '../lib/container';
 import { confirmAndRun, showAdminToast } from './chat/system/adminActions';
 import { formatMessageBubbleTime } from '../lib/chatMessageDisplayTime';
-import { rtlTextAlignStart } from '../lib/rtlTextAlignStart';
+import { rtlTextAlignStart } from '../lib/rtlLayout';
 import { useTranslation } from 'react-i18next';
 import { ChatMediaImage } from './chat/ChatMediaImage';
 import { chatImagePath } from '../services/chatMediaUrl';

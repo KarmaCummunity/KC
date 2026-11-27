@@ -2,7 +2,7 @@
 import React from 'react';
 import { View } from 'react-native';
 import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { rtlTextAlignStart } from '../../lib/rtlLayout';
 import {
   FilterChipRow,
   type FilterOption,

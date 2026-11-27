@@ -5,8 +5,8 @@ import { makeUseStyles, spacing, radius, typography, useTheme, Text } from '@kc/
 import type { ClosureCandidate } from '@kc/application';
 import type { PickMode } from '../../store/closureStore';
 import { RecipientPickerRow } from './RecipientPickerRow';
-import { rowDirectionStart } from '../../lib/rtlLayout';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { rowDirectionStart, rtlTextAlignStart } from '../../lib/rtlLayout';
+
 import { TextField } from '../ui/TextField';
 
 export function ModeTabs({

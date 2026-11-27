@@ -9,8 +9,8 @@ import { makeUseStyles, spacing, typography, useTheme, Text } from '@kc/ui';
 import { Chip, TextField } from '../../src/components/ui';
 import { PrimaryButton } from '../../src/components/ui/Buttons';
 import { useShellStackScreenOptions } from '../../src/navigation/shellStackScreenOptions';
-import { rtlTextAlignStart } from '../../src/lib/rtlTextAlignStart';
-import { rowDirectionStart } from '../../src/lib/rtlLayout';
+
+import { rowDirectionStart, rtlTextAlignStart } from '../../src/lib/rtlLayout';
 import { webTextRtl, webViewRtl } from '../../src/lib/webRtlStyle';
 import { container } from '../../src/lib/container';
 import { useFeedMuteFilters } from '../../src/hooks/useFeedMuteFilters';

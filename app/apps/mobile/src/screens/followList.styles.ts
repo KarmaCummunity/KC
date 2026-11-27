@@ -1,6 +1,5 @@
 import { makeUseStyles, spacing, typography } from '@kc/ui';
-import { rowDirectionStart } from '../lib/rtlLayout';
-import { rtlTextAlignStart } from '../lib/rtlTextAlignStart';
+import { rowDirectionStart, rtlTextAlignStart } from '../lib/rtlLayout';
 
 // Shared by the followers and following list screens (FR-PROFILE-010), which
 // render the same search row and user rows; `menuBtn` is the followers-only

@@ -9,8 +9,7 @@ import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
 import { CityPicker } from '../../../components/CityPicker';
 import { FilterSheetFrame, FilterSection } from '../../../components/filterKit';
 import { useRidesFilterStore } from '../store/ridesFilterStore';
-import { rtlTextAlignStart } from '../../../lib/rtlTextAlignStart';
-
+import { rtlTextAlignStart } from '../../../lib/rtlLayout';
 interface Props {
   readonly visible: boolean;
   readonly onClose: () => void;

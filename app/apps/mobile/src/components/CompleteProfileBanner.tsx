@@ -6,8 +6,7 @@ import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { iconSize, makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
 import { Card } from './ui/Card';
-import { rowDirectionStart } from '../lib/rtlLayout';
-import { rtlTextAlignStart } from '../lib/rtlTextAlignStart';
+import { rowDirectionStart, rtlTextAlignStart } from '../lib/rtlLayout';
 
 export function CompleteProfileBanner({ onDismiss }: { readonly onDismiss: () => void }) {
   const { t } = useTranslation();

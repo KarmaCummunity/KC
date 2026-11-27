@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { makeUseStyles, typography, spacing, radius, Text } from '@kc/ui';
 import { BottomSheet } from './ui/BottomSheet';
 import { GhostButton } from './ui/Buttons';
-import { rtlTextAlignStart } from '../lib/rtlTextAlignStart';
+import { rtlTextAlignStart } from '../lib/rtlLayout';
 import { isCameraAvailable, type AvatarSource } from '../services/avatarUpload';
 
 interface Props {

@@ -8,7 +8,7 @@ import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
 import { useAuthStore } from '../../store/authStore';
 import { getUserRepo } from '../../services/userComposition';
 import { useProfileTabCounts } from '../../hooks/useProfileTabCounts';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { rtlTextAlignStart } from '../../lib/rtlLayout';
 import { AsideCard } from './AsideCard';
 import { AsideStatList, type AsideStatRow } from './AsideStatList';
 

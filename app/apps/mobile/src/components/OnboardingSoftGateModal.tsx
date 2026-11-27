@@ -16,8 +16,7 @@ import { mapEditProfileSaveError } from '../lib/editProfileSaveErrors';
 import { useFeedSessionStore } from '../store/feedSessionStore';
 import { useProfileFieldErrors } from '../hooks/useProfileFieldErrors';
 import { useTranslation } from 'react-i18next';
-import { rtlTextAlignStart } from '../lib/rtlTextAlignStart';
-
+import { rtlTextAlignStart } from '../lib/rtlLayout';
 interface Props {
   readonly visible: boolean;
   readonly onClose: () => void;

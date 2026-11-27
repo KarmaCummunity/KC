@@ -13,7 +13,7 @@ import {
   hebrewSurveyFieldTextStyle,
   SURVEY_TEXT_ALIGN,
 } from '../../../components/survey/hebrewSurveyFieldStyle';
-import { rtlTextAlignStart } from '../../../lib/rtlTextAlignStart';
+import { rtlTextAlignStart } from '../../../lib/rtlLayout';
 import { webTextRtl } from '../../../lib/webRtlStyle';
 
 export type QuestionPanelProps = {

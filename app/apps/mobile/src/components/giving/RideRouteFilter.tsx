@@ -14,8 +14,8 @@ import { GhostButton } from '../ui/Buttons';
 import { useRidePlaces } from '../../hooks/useRidePlaces';
 import { useAuthStore } from '../../store/authStore';
 import { hapticLightTap } from '../../lib/haptics';
-import { rowDirectionStart } from '../../lib/rtlLayout';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { rowDirectionStart, rtlTextAlignStart } from '../../lib/rtlLayout';
+
 import type { RidesHubFeedState } from '../../hooks/useRidesHubFeed';
 
 type RouteFilterState = Pick<

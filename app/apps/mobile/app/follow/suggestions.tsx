@@ -9,8 +9,8 @@ import { container } from '../../src/lib/container';
 import type { VerificationLevel } from '@kc/domain';
 import { AvatarInitials } from '../../src/components/AvatarInitials';
 import { VerificationBadge } from '../../src/components/VerificationBadge';
-import { rtlTextAlignStart } from '../../src/lib/rtlTextAlignStart';
-import { rowDirectionStart } from '../../src/lib/rtlLayout';
+
+import { rowDirectionStart, rtlTextAlignStart } from '../../src/lib/rtlLayout';
 import { KcFlashList } from '../../src/components/lists/KcFlashList';
 import { SimpleRowListSkeleton } from '../../src/components/skeletons/SimpleRowListSkeleton';
 import { listOrEmpty, valueOrNull } from '../../src/lib/backendAvailability';

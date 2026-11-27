@@ -15,8 +15,8 @@ import { useShellTabBarScrollInset } from '../../../src/navigation/useShellTabBa
 import { useAuthStore } from '../../../src/store/authStore';
 import { getMyPostsUseCase } from '../../../src/services/postsComposition';
 import { useMyProfilePostOwner } from '../../../src/hooks/useProfilePostOwner';
-import { rowDirectionStart } from '../../../src/lib/rtlLayout';
-import { rtlTextAlignStart } from '../../../src/lib/rtlTextAlignStart';
+import { rowDirectionStart, rtlTextAlignStart } from '../../../src/lib/rtlLayout';
+
 import { OWNER_MODERATED_POST_STATUSES, removedPostLane } from '../../../src/lib/moderation/postModeration';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../../src/components/RouteErrorBoundary';

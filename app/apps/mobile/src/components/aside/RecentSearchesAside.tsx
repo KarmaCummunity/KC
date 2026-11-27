@@ -3,11 +3,11 @@
 // requestedQuery handshake (the input state lives inside the screen).
 import { TouchableOpacity } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, spacing, typography, useTheme, Text } from '@kc/ui';
+import { iconSize, makeUseStyles, spacing, typography, useTheme, Text } from '@kc/ui';
 import { Ionicons } from '@expo/vector-icons';
 import { useSearchStore } from '../../store/searchStore';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
-import { rowDirectionStart } from '../../lib/rtlLayout';
+
+import { rowDirectionStart, rtlTextAlignStart } from '../../lib/rtlLayout';
 import { AsideCard } from './AsideCard';
 
 export function RecentSearchesAside() {
@@ -31,7 +31,7 @@ export function RecentSearchesAside() {
           testID={`aside-recent-${q}`}
           onPress={() => requestSearch(q)}
         >
-          <Ionicons name="time-outline" size={14} color={colors.textSecondary} />
+          <Ionicons name="time-outline" size={iconSize.xs} color={colors.textSecondary} />
           <Text style={styles.rowLabel} numberOfLines={1}>
             {q}
           </Text>

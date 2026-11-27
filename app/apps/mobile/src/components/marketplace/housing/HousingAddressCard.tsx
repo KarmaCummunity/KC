@@ -7,7 +7,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
 import { housingQueryKeys, housingUseCases } from '../../../services/housingComposition';
-import { rtlTextAlignStart } from '../../../lib/rtlTextAlignStart';
+import { rtlTextAlignStart } from '../../../lib/rtlLayout';
 import { valueOrNull } from '../../../lib/backendAvailability';
 
 interface Props {

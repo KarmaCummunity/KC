@@ -5,8 +5,7 @@ import type { SupportThreadSummary } from '@kc/application';
 import { makeUseStyles, radius, spacing, typography, Text } from '@kc/ui';
 import { AvatarInitials } from '../../AvatarInitials';
 import { useLocaleBundle } from '../../../i18n/useLocaleBundle';
-import { rtlTextAlignStart } from '../../../lib/rtlTextAlignStart';
-
+import { rtlTextAlignStart } from '../../../lib/rtlLayout';
 export interface SupportThreadRowProps {
   readonly thread: SupportThreadSummary;
   readonly busy: boolean;

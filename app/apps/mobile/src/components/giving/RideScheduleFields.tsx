@@ -5,7 +5,7 @@ import React, { useEffect, useRef, type Dispatch, type SetStateAction } from 're
 import { Pressable, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { makeUseStyles, radius, spacing, typography, Text } from '@kc/ui';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { rtlTextAlignStart } from '../../lib/rtlLayout';
 import {
   RIDE_DEFAULT_SEATS,
   RIDE_DEPARTURE_SHORTCUTS,

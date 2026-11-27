@@ -1,5 +1,5 @@
 import { makeUseStyles, spacing, typography } from '@kc/ui';
-import { rtlTextAlignStart } from '../lib/rtlTextAlignStart';
+import { rtlTextAlignStart } from '../lib/rtlLayout';
 import { webTextRtl, webViewRtl } from '../lib/webRtlStyle';
 
 // Settings screen styles — themed via `makeUseStyles` so they respond to

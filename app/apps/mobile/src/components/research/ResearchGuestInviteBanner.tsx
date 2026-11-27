@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { iconSize, makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
 import { MirroredIcon } from '../ui/MirroredIcon';
 import { webTextRtl, webViewRtl } from '../../lib/webRtlStyle';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { rtlTextAlignStart } from '../../lib/rtlLayout';
 import { useAuthStore } from '../../store/authStore';
 
 export function ResearchGuestInviteBanner(): React.JSX.Element | null {

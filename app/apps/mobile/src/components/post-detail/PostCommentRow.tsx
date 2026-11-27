@@ -7,8 +7,7 @@ import { he as dateFnsHe } from 'date-fns/locale/he';
 import type { PostCommentWithAuthor } from '@kc/infrastructure-supabase';
 import { makeUseStyles, spacing, typography, iconSize, useTheme, Text } from '@kc/ui';
 import { AvatarInitials } from '../AvatarInitials';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
-
+import { rtlTextAlignStart } from '../../lib/rtlLayout';
 type Props = Readonly<{
   comment: PostCommentWithAuthor;
   nested?: boolean;

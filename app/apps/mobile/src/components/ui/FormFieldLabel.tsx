@@ -2,8 +2,7 @@ import React from 'react';
 import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { makeUseStyles, typography, spacing, Text } from '@kc/ui';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
-
+import { rtlTextAlignStart } from '../../lib/rtlLayout';
 const useStyles = makeUseStyles(({ colors }) => ({
   row: {
     flexDirection: 'row' as const,

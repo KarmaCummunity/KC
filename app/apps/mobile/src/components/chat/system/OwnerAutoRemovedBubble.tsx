@@ -4,7 +4,7 @@ import React from 'react';
 import { View } from 'react-native';
 import { makeUseStyles, radius, spacing, typography, Text } from '@kc/ui';
 import { useTranslation } from 'react-i18next';
-import { rtlTextAlignStart } from '../../../lib/rtlTextAlignStart';
+import { rtlTextAlignStart } from '../../../lib/rtlLayout';
 import type { SystemMessageBubbleProps } from './SystemMessageBubble';
 import { ownerModerationBubbleKey } from '../../../lib/moderation/postModeration';
 
