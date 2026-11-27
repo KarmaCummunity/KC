@@ -188,10 +188,13 @@ describe('Realtime gateway on the KC schema', () => {
     await subscribe(his, 'presence:online', 'presence');
     const state = await his.next((frame) => frame.op === 'presence_state');
     hers.close();
-    const diff = await his.next((frame) => frame.op === 'presence_diff' && frame.leaves.length > 0);
+    // The topic is the whole community's: a suite running beside this one may have members online on it too.
+    const isAlice = (member: { key: string }) => member.key === alice.userId;
+    const diff = await his.next((frame) => frame.op === 'presence_diff' && frame.leaves.some(isAlice));
 
-    expect(state).toEqual({ op: 'presence_state', topic: 'presence:online', members: [{ key: alice.userId, meta: {} }] });
-    expect(diff).toMatchObject({ leaves: [{ key: alice.userId }] });
+    expect(state).toMatchObject({ op: 'presence_state', topic: 'presence:online' });
+    expect(state.op === 'presence_state' ? state.members.filter(isAlice) : []).toEqual([{ key: alice.userId, meta: {} }]);
+    expect(diff.op === 'presence_diff' ? diff.leaves.filter(isAlice) : []).toHaveLength(1);
   });
 
   it('closes a connection whose token is not valid, and one that subscribes before signing in', async () => {
