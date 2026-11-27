@@ -38,11 +38,12 @@ In CI the frontend lane runs the package without a database (the lower floor). T
 | `PORT` | `8080` | Port to listen on (the name Cloud Run injects) |
 | `KC_APP_VERSION` | `0.0.0-dev` | Version reported by `/health` |
 | `DATABASE_URL` | required | Postgres connection string (`postgres://` or `postgresql://`) |
-| `REDIS_URL` | required | Redis connection string (`redis://` or `rediss://`) |
+| `REDIS_URL` | required, unless `KC_API_SINGLE_INSTANCE=1` | Redis connection string (`redis://` or `rediss://`) |
+| `KC_API_SINGLE_INSTANCE` | none | `1` declares that this one process is the whole server, which lets it run without Redis: the rate limit is counted in the process, typing and presence stay in it, and visitors' results are not cached. For development and a first, small environment; **never with more than one instance**, where each would keep its own counters and its own realtime members |
 | `KC_AUTH_ISSUER` | required | Issuer of accepted access tokens, exactly as in the token's `iss`; keys are read from `<issuer>/.well-known/jwks.json` |
 | `KC_API_ALLOWED_ORIGINS` | none | Comma-separated web origins that may call the API from a browser (CORS), e.g. `https://app.example.org`. The native apps need no entry. The public research survey accepts answers only from a page on one of these origins |
 | `KC_API_TRUSTED_PROXY_HOPS` | `0` | Reverse proxies in front of the API whose `X-Forwarded-For` entry is trusted for the client address |
-| `KC_API_RATE_LIMIT_PER_MINUTE` | `600` | Port calls one caller may make per minute (a member by user id, a visitor by address), counted in Redis. `0` switches the limit off |
+| `KC_API_RATE_LIMIT_PER_MINUTE` | `600` | Port calls one caller may make per minute (a member by user id, a visitor by address), counted in Redis (in the process itself on a single instance without Redis). `0` switches the limit off |
 | `KC_JOBS_TOKEN` | none | Bearer token a scheduler sends to start a job (`POST /v1/jobs/<name>`); a secret of at least 32 characters. Without it no job can be started |
 | `KC_JOBS_OIDC_AUDIENCE` | none | With `KC_JOBS_SERVICE_ACCOUNT`: lets a scheduler start jobs with its own Google identity instead of a stored secret. The audience its identity tokens are issued for, which is this API's address as the scheduler calls it |
 | `KC_JOBS_SERVICE_ACCOUNT` | none | Email address of the scheduler's Google service account. Only a token Google signed for this account, for the audience above, starts a job |
@@ -99,7 +100,7 @@ An invalid value stops the process at start with an error that names the variabl
 | Route | Answers | Use |
 |---|---|---|
 | `GET /health` | `200` while the process serves HTTP | Liveness: restart the instance when it fails |
-| `GET /health/ready` | `200` when Postgres and Redis answer, else `503` naming the one that is down | Readiness: send traffic only when it passes |
+| `GET /health/ready` | `200` when Postgres and Redis answer (Postgres alone on a single instance without Redis), else `503` naming the one that is down | Readiness: send traffic only when it passes |
 
 ## Conventions
 

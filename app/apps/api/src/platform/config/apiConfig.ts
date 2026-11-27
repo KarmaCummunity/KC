@@ -28,7 +28,11 @@ export interface ApiConfig extends FeatureConfig {
   /** Postgres connection string. A secret: never logged, never in an error. */
   readonly databaseUrl: string;
   /** Redis connection string. A secret, like `databaseUrl`. */
-  readonly redisUrl: string;
+  /**
+   * Null: this process is the whole server (`KC_API_SINGLE_INSTANCE=1`), and what Redis
+   * shares between instances (rate counters, realtime fan-out, the visitor cache) is kept in it.
+   */
+  readonly redisUrl: string | null;
   /**
    * Issuer of the access tokens the API accepts, exactly as in the token's
    * `iss` claim. Its signing keys are read from `<issuer>/.well-known/jwks.json`.
@@ -102,6 +106,18 @@ function parseOrigins(variable: string, value: string | undefined): string[] {
 }
 
 /**
+ * Reads where Redis is. Running without it is allowed only when declared: a
+ * server of several instances that silently kept its counters and its
+ * realtime fan-out per instance would look healthy and be wrong.
+ */
+function parseRedisUrl(env: Env): string | null {
+  const value = readVariable(env, 'REDIS_URL');
+  if (value !== undefined) return parseServiceUrl('REDIS_URL', value, ['redis', 'rediss']);
+  if (readVariable(env, 'KC_API_SINGLE_INSTANCE') === '1') return null;
+  throw new ApiConfigError('REDIS_URL', 'is required, unless KC_API_SINGLE_INSTANCE=1 declares that one process is the whole server');
+}
+
+/**
  * Reads the scheduler's identity: both variables or neither. An audience with
  * no account would accept a token of anyone at Google, so half a
  * configuration is a start-up error.
@@ -150,7 +166,7 @@ export function loadApiConfig(env: Env): ApiConfig {
     port: parsePort(readVariable(env, 'PORT')),
     version: readVariable(env, 'KC_APP_VERSION') ?? '0.0.0-dev',
     databaseUrl: parseServiceUrl('DATABASE_URL', readVariable(env, 'DATABASE_URL'), ['postgres', 'postgresql']),
-    redisUrl: parseServiceUrl('REDIS_URL', readVariable(env, 'REDIS_URL'), ['redis', 'rediss']),
+    redisUrl: parseRedisUrl(env),
     authIssuer: parseServiceUrl('KC_AUTH_ISSUER', readVariable(env, 'KC_AUTH_ISSUER'), ['https', 'http']),
     allowedOrigins: parseOrigins('KC_API_ALLOWED_ORIGINS', readVariable(env, 'KC_API_ALLOWED_ORIGINS')),
     trustedProxyHops: parseInteger('KC_API_TRUSTED_PROXY_HOPS', readVariable(env, 'KC_API_TRUSTED_PROXY_HOPS'), 0, 0, 10),

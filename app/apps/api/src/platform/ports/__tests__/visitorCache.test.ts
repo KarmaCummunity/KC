@@ -64,4 +64,13 @@ describe('VisitorCache', () => {
     expect(await cache.read('guestPosts', 'list', [])).toEqual({ found: false });
     expect(warn).toHaveBeenCalledTimes(2);
   });
+  it('is switched off on a server that runs without Redis: nothing is stored, every read is a miss, and nothing is logged', async () => {
+    const warn = vi.fn();
+    const cache = new VisitorCache(null, { warn } as unknown as AppLogger);
+
+    await cache.write('guestPosts', 'list', [], [{ id: 1 }], 15);
+
+    expect(await cache.read('guestPosts', 'list', [])).toEqual({ found: false });
+    expect(warn).not.toHaveBeenCalled();
+  });
 });

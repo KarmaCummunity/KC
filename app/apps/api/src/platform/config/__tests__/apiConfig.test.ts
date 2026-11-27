@@ -87,6 +87,14 @@ describe('loadApiConfig', () => {
     expect(error.message).toContain('development, production, test');
   });
 
+  it('runs without Redis only when one process is declared to be the whole server', () => {
+    expect(loadApiConfig({ ...REQUIRED, REDIS_URL: '', KC_API_SINGLE_INSTANCE: '1' }).redisUrl).toBeNull();
+    // With Redis given, the declaration changes nothing.
+    expect(loadApiConfig({ ...REQUIRED, KC_API_SINGLE_INSTANCE: '1' }).redisUrl).toBe(REQUIRED.REDIS_URL);
+    expect(configErrorOf({ REDIS_URL: '', KC_API_SINGLE_INSTANCE: 'yes' }).variable).toBe('REDIS_URL');
+    expect(configErrorOf({ REDIS_URL: '' }).message).toContain('KC_API_SINGLE_INSTANCE=1');
+  });
+
   it.each(['DATABASE_URL', 'REDIS_URL', 'KC_AUTH_ISSUER'])('requires %s', (variable) => {
     const error = configErrorOf({ [variable]: '' });
 

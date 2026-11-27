@@ -15,13 +15,14 @@ const MISS: CachedResult = { found: false };
  * answer serves them all and a burst of visitors (a shared link, a landing
  * page) costs one query instead of one per request.
  *
- * Only successful results are stored. Redis being down turns the cache off:
- * a read is a miss and a write is dropped.
+ * Only successful results are stored. Redis being down, or a server that
+ * runs without it, turns the cache off: a read is a miss and a write is
+ * dropped.
  */
 @Injectable()
 export class VisitorCache {
   constructor(
-    @Inject(REDIS_CLIENT) private readonly redis: Redis,
+    @Inject(REDIS_CLIENT) private readonly redis: Redis | null,
     @Inject(APP_LOGGER) private readonly logger: AppLogger,
   ) {}
 
@@ -32,6 +33,7 @@ export class VisitorCache {
   }
 
   async read(port: string, method: string, args: readonly unknown[]): Promise<CachedResult> {
+    if (this.redis === null) return MISS;
     try {
       const stored = await this.redis.get(this.key(port, method, args));
       if (stored === null) return MISS;
@@ -44,6 +46,7 @@ export class VisitorCache {
   }
 
   async write(port: string, method: string, args: readonly unknown[], value: unknown, seconds: number): Promise<void> {
+    if (this.redis === null) return;
     try {
       await this.redis.set(this.key(port, method, args), JSON.stringify({ value }), 'EX', seconds);
     } catch (error) {

@@ -142,7 +142,7 @@ Nothing changes at run time with any slice: the app reaches the API only in a bu
 
 ## Cost posture
 
-Development runs on the smallest sizes: the API scales to zero, Redis and Cloud SQL are the smallest tiers and are created only by the phase that first needs them (Redis in phase 3 at the earliest, Cloud SQL in phase 10 rehearsals), and a budget alert exists from phase 2. During phases 1–9 Supabase is still paid for, so the two bills overlap; that overlap is the price of never having a broken app. Launch sizing (replicas, high availability, minimum instances) is set from k6 results in phase 10, not guessed now.
+Development runs on the smallest sizes: the API scales to zero, Redis and Cloud SQL are the smallest tiers and are created only by the phase that first needs them (Redis in phase 3 at the earliest, Cloud SQL in phase 10 rehearsals), and a budget alert exists from phase 2. The first cloud environment runs without Redis at all: an API that is declared a single instance (`KC_API_SINGLE_INSTANCE=1`) keeps its rate counters and realtime members in the process, which is correct for exactly one instance. Without the declaration a missing `REDIS_URL` stops the process at start, and the Terraform of an environment that makes the declaration caps its service at one instance. Managed Redis, the first fixed monthly cost, is added together with a second instance. During phases 1–9 Supabase is still paid for, so the two bills overlap; that overlap is the price of never having a broken app. Launch sizing (replicas, high availability, minimum instances) is set from k6 results in phase 10, not guessed now.
 
 ## Alternatives rejected
 

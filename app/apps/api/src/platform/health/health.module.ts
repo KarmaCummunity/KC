@@ -16,7 +16,7 @@ export class HealthModule {
         {
           provide: DEPENDENCY_PROBES,
           inject: [...probes],
-          useFactory: (...instances: DependencyProbe[]): DependencyProbe[] => instances,
+          useFactory: (...instances: DependencyProbe[]): DependencyProbe[] => instances.filter((probe) => probe.unused !== true),
         },
       ],
     };

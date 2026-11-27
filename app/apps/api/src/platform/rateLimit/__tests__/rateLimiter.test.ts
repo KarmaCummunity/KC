@@ -91,4 +91,38 @@ describe('RateLimiter', () => {
     expect((await limiter.check('user:a')).allowed).toBe(true);
     expect(warn).toHaveBeenCalledTimes(2);
   });
+  describe('on a server that runs without Redis', () => {
+    function setupLocal(limit: number) {
+      let clock = 1_800_000_020_000;
+      const limiter = new RateLimiter(null, testConfig({ rateLimitPerMinute: limit }), { warn: vi.fn() } as unknown as AppLogger, () => clock);
+      return { limiter, advance: (ms: number) => (clock += ms) };
+    }
+
+    it('counts in the process: up to the limit, then refused with the wait, each caller on their own', async () => {
+      const { limiter } = setupLocal(2);
+
+      const decisions = [];
+      for (let call = 0; call < 3; call += 1) decisions.push(await limiter.check('user:a'));
+
+      expect(decisions.map((decision) => decision.allowed)).toEqual([true, true, false]);
+      expect(decisions[2]?.retryAfterSeconds).toBe(40);
+      expect((await limiter.check('user:b')).allowed).toBe(true);
+    });
+
+    it('starts a fresh allowance in the next minute', async () => {
+      const { limiter, advance } = setupLocal(1);
+      await limiter.check('user:a');
+      expect((await limiter.check('user:a')).allowed).toBe(false);
+
+      advance(40_000);
+
+      expect((await limiter.check('user:a')).allowed).toBe(true);
+    });
+
+    it('allows every call when the limit is switched off', async () => {
+      const { limiter } = setupLocal(0);
+
+      expect((await limiter.check('user:a')).allowed).toBe(true);
+    });
+  });
 });
