@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
-// #1412 — a listing's publisher card: name, city and a tap into the profile, like the post page.
+// #1412 / #1809 — shared publisher card: listing defaults and post-page prop differences.
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import React from 'react';
 import { cleanup, fireEvent, render } from '@testing-library/react';
-import { ThemeProvider } from '@kc/ui';
+import { ThemeProvider, iconSize } from '@kc/ui';
 
 const push = vi.fn();
 vi.mock('expo-router', () => ({ useRouter: () => ({ push }) }));
@@ -28,7 +28,8 @@ function renderCard(props: Partial<React.ComponentProps<typeof PublisherCard>> =
 
 describe('PublisherCard', () => {
   it('shows the name and city, and no raw handle', () => {
-    const { getByText, queryByText } = renderCard();
+    const { getByText, queryByText, getByTestId } = renderCard();
+    expect(getByTestId('listing-publisher-card')).toBeTruthy();
     expect(getByText('post.detail.publishedBy')).toBeTruthy();
     expect(getByText('Dana Levi')).toBeTruthy();
     expect(getByText('Lod')).toBeTruthy();
@@ -45,5 +46,22 @@ describe('PublisherCard', () => {
     const { queryByText, queryByRole } = renderCard({ cityName: null, profileRef: null });
     expect(queryByText('Lod')).toBeNull();
     expect(queryByRole('button')).toBeNull();
+  });
+
+  // #1809 — post detail used lg chevron and no name clamp; props preserve that look.
+  it('accepts post-detail chevron size, unclamped name, and a distinct testID', () => {
+    const { getByTestId, getByText } = renderCard({
+      chevronSize: iconSize.lg,
+      nameNumberOfLines: null,
+      testID: 'post-publisher-card',
+    });
+    expect(getByTestId('post-publisher-card')).toBeTruthy();
+    expect(getByText('Dana Levi')).toBeTruthy();
+  });
+
+  it('does not navigate when profileRef is omitted even if a handle-like name is shown', () => {
+    const { queryByRole } = renderCard({ profileRef: null });
+    expect(queryByRole('button')).toBeNull();
+    expect(push).not.toHaveBeenCalled();
   });
 });

@@ -1,17 +1,14 @@
 import React from 'react';
 import { AccessibilityInfo, ScrollView, TouchableOpacity, View } from 'react-native';
-import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { iconSize, useTheme, Text } from '@kc/ui';
 import type { PostWithOwner } from '@kc/application';
-import type { VerificationLevel } from '@kc/domain';
-import { AvatarWithVerificationBadge } from '../../components/AvatarWithVerificationBadge';
-import { NameWithBadge } from '../../components/NameWithBadge';
 import { PostImageCarousel } from '../../components/PostImageCarousel';
 import { DetailHeroCard } from '../../components/post-detail/DetailHeroCard';
 import { PostDetailStatusBadge } from '../../components/post-detail/PostDetailStatusBadge';
 import { PostDetailNotices } from '../../components/post-detail/PostDetailNotices';
+import { PublisherCard } from '../../components/post-detail/PublisherCard';
 import { RecipientCallout } from '../../components/post-detail/RecipientCallout';
 import { RecipientUnmarkBar } from '../../components/post-detail/RecipientUnmarkBar';
 import { TranslatableText } from '../../components/TranslatableText';
@@ -22,7 +19,6 @@ import { PostEngagementThread } from '../../components/post-detail/PostEngagemen
 import { PostDetailHeader } from '../../components/cards/PostDetailHeader';
 import { PostItemReservation } from '../../components/post-detail/PostItemReservation';
 import { cleanDisplayTitle } from '../../lib/displayTitle';
-import { MirroredIcon } from '../../components/ui/MirroredIcon';
 import { postShowsEngagementSection } from '../../lib/postEngagementVisible';
 import { provenanceLabelKey } from '../../lib/importProvenance';
 import { worldClosedStatusKey, worldPlaceholderIcon } from '../../lib/worldDetailCopy';
@@ -157,17 +153,17 @@ export function PostDetailScrollContent({
             <Text style={styles.timeText}>{timeAgo}</Text>
           </View>
 
-          <View style={styles.authorCard}>
-            <Text style={styles.authorLabel}>{t('post.detail.publishedBy')}</Text>
-            <PostDetailAuthorFooter
-              ownerNavigable={ownerNavigable}
-              ownerLabel={ownerLabel}
-              ownerAvatarUrl={post.ownerAvatarUrl}
-              cityName={post.address.cityName}
-              ownerHandle={post.ownerHandle}
-              ownerVerificationLevel={post.ownerVerificationLevel}
-            />
-          </View>
+          {/* Same publisher card as listing pages (#1809); lg chevron + no name clamp match prior post-page look. */}
+          <PublisherCard
+            name={ownerLabel}
+            avatarUrl={post.ownerAvatarUrl}
+            cityName={post.address.cityName}
+            profileRef={ownerNavigable ? post.ownerHandle : null}
+            verificationLevel={post.ownerVerificationLevel}
+            chevronSize={iconSize.lg}
+            nameNumberOfLines={null}
+            testID="post-publisher-card"
+          />
 
           <PostItemReservation post={post} />
 
@@ -235,46 +231,4 @@ function ClosedDeliveredExtras(
       ) : null}
     </>
   );
-}
-
-function PostDetailAuthorFooter(
-  props: Readonly<{
-    ownerNavigable: boolean;
-    ownerLabel: string;
-    ownerAvatarUrl: string | null;
-    cityName: string;
-    ownerHandle: string;
-    ownerVerificationLevel?: VerificationLevel;
-  }>,
-) {
-  const router = useRouter();
-  const { colors } = useTheme();
-  const styles = usePostDetailStyles();
-  const { ownerNavigable, ownerLabel, ownerAvatarUrl, cityName, ownerHandle, ownerVerificationLevel } = props;
-  const core = (
-    <>
-      <AvatarWithVerificationBadge
-        name={ownerLabel}
-        avatarUrl={ownerAvatarUrl}
-        size={40}
-        verificationLevel={ownerVerificationLevel}
-        emphasis="detail"
-      />
-      <View style={styles.authorInfo}>
-        <NameWithBadge level={ownerVerificationLevel}>
-          <Text style={styles.authorName}>{ownerLabel}</Text>
-        </NameWithBadge>
-        <Text style={styles.authorCity}>{cityName}</Text>
-      </View>
-    </>
-  );
-  if (ownerNavigable) {
-    return (
-      <TouchableOpacity style={styles.authorRow} onPress={() => router.push(`/user/${ownerHandle}`)}>
-        {core}
-        <MirroredIcon name="chevron-forward" size={iconSize.lg} color={colors.textSecondary} />
-      </TouchableOpacity>
-    );
-  }
-  return <View style={styles.authorRow}>{core}</View>;
 }
