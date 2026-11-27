@@ -279,12 +279,35 @@ export function readPrAction(eventPath) {
   }
 }
 
-function main() {
+/**
+ * The PR's current labels from the API, or null when they cannot be read. A re-run keeps its
+ * original event payload, so a `maestro` label added afterwards (ci-maestro-label.yml re-runs the
+ * PR's CI) is only visible live. Opt-in only: a failed read falls back to the payload's labels,
+ * and the dev merge queue runs Maestro whatever the PR's labels say.
+ */
+export async function fetchPrLabels(env = process.env, fetchImpl = globalThis.fetch) {
+  const pr = env.PR_NUMBER;
+  if (env.EVENT_NAME !== 'pull_request' || !env.GITHUB_TOKEN || !env.GITHUB_REPOSITORY || !/^\d+$/.test(pr ?? '')) return null;
+  try {
+    const res = await fetchImpl(`https://api.github.com/repos/${env.GITHUB_REPOSITORY}/pulls/${pr}`, {
+      headers: { authorization: `Bearer ${env.GITHUB_TOKEN}`, accept: 'application/vnd.github+json' },
+    });
+    if (!res.ok) return null;
+    const body = await res.json();
+    return (body.labels ?? []).map((l) => l?.name).filter((n) => typeof n === 'string');
+  } catch {
+    return null;
+  }
+}
+
+async function main() {
   const env = process.env;
   const files = DIFF_EVENTS.has(env.EVENT_NAME) ? changedFiles(env.BASE_SHA, env.HEAD_SHA) : null;
   // A merge group still runs every other lane; its diff only decides Maestro.
   const groupFiles = env.EVENT_NAME === 'merge_group' ? changedFiles(env.BASE_SHA, env.HEAD_SHA) : null;
-  const { action, baseChanged, labels } = readPrAction(env.GITHUB_EVENT_PATH);
+  const { action, baseChanged, labels: payloadLabels } = readPrAction(env.GITHUB_EVENT_PATH);
+  const liveLabels = await fetchPrLabels(env);
+  const labels = [...new Set([...payloadLabels, ...(liveLabels ?? [])])];
   const result = plan({
     event: env.EVENT_NAME,
     draft: env.DRAFT === 'true',
@@ -310,5 +333,8 @@ function main() {
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  main();
+  main().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
 }

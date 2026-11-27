@@ -5,7 +5,7 @@ import { execFileSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { HEAVY_LANES, LANE_JOBS, MAESTRO_LABEL, OPTIONAL_LANES, REVIEW_LANES, changedFiles, classify, plan, readPrAction } from './ci-changes.mjs';
+import { HEAVY_LANES, LANE_JOBS, MAESTRO_LABEL, OPTIONAL_LANES, REVIEW_LANES, changedFiles, classify, fetchPrLabels, plan, readPrAction } from './ci-changes.mjs';
 
 const PR = { event: 'pull_request', draft: false, actor: 'agent', ref: 'refs/pull/1/merge', baseRef: 'dev' };
 const ALL = { hygiene: true, static: true, frontend: true, backend: true, edge: true, bundles: true };
@@ -425,4 +425,22 @@ test('a review or an edit of an opted-in PR plans the maestro lane but does not 
     assert.equal(r.plan.maestro, true);
     assert.equal(r.run.maestro, false);
   }
+});
+
+test('fetchPrLabels reads the live labels of a pull_request run, so a re-run sees a label added later', async () => {
+  const env = { EVENT_NAME: 'pull_request', GITHUB_TOKEN: 't', GITHUB_REPOSITORY: 'o/r', PR_NUMBER: '7' };
+  let url;
+  const ok = async (u) => { url = u; return { ok: true, json: async () => ({ labels: [{ name: MAESTRO_LABEL }, { name: 'area:mobile' }] }) }; };
+  assert.deepEqual(await fetchPrLabels(env, ok), [MAESTRO_LABEL, 'area:mobile']);
+  assert.equal(url, 'https://api.github.com/repos/o/r/pulls/7');
+});
+
+test('fetchPrLabels returns null (payload labels only) off pull_request runs or when the read fails', async () => {
+  const env = { EVENT_NAME: 'pull_request', GITHUB_TOKEN: 't', GITHUB_REPOSITORY: 'o/r', PR_NUMBER: '7' };
+  const never = async () => { throw new Error('must not fetch'); };
+  assert.equal(await fetchPrLabels({ ...env, EVENT_NAME: 'merge_group' }, never), null);
+  assert.equal(await fetchPrLabels({ ...env, GITHUB_TOKEN: '' }, never), null);
+  assert.equal(await fetchPrLabels({ ...env, PR_NUMBER: '7; rm' }, never), null);
+  assert.equal(await fetchPrLabels(env, async () => ({ ok: false, status: 403 })), null);
+  assert.equal(await fetchPrLabels(env, async () => { throw new Error('network'); }), null);
 });
