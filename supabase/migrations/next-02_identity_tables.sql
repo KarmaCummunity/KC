@@ -67,18 +67,23 @@ comment on table kc_private.auth_refresh_tokens is
   'Refresh tokens of KC''s own identity module (ADR-013), as digests. A replaced token that is presented again ends its session.';
 create index auth_refresh_tokens_session_idx on kc_private.auth_refresh_tokens (session_id);
 
--- A link sent to a member's address: it works once, until it expires.
+-- A secret handed to a member that works once, until it expires: the link in an email, or the code
+-- a browser sign-in ends with.
 create table kc_private.auth_one_time_tokens (
-  token_hash bytea primary key check (octet_length(token_hash) = 32),
-  user_id    uuid not null references auth.users (id) on delete cascade,
-  purpose    text not null check (purpose in ('verify_email', 'reset_password')),
-  created_at timestamptz not null default now(),
-  expires_at timestamptz not null,
-  used_at    timestamptz,
-  constraint auth_one_time_tokens_window_chk check (expires_at > created_at)
+  token_hash     bytea primary key check (octet_length(token_hash) = 32),
+  user_id        uuid not null references auth.users (id) on delete cascade,
+  purpose        text not null check (purpose in ('verify_email', 'reset_password', 'sign_in_code')),
+  created_at     timestamptz not null default now(),
+  expires_at     timestamptz not null,
+  used_at        timestamptz,
+  -- A sign-in code only works for the app instance that started the sign-in: it must present the
+  -- secret whose SHA-256 (base64url) this is (PKCE, RFC 7636).
+  code_challenge text check (code_challenge ~ '^[A-Za-z0-9_-]{43}$'),
+  constraint auth_one_time_tokens_window_chk check (expires_at > created_at),
+  constraint auth_one_time_tokens_challenge_chk check ((purpose = 'sign_in_code') = (code_challenge is not null))
 );
 comment on table kc_private.auth_one_time_tokens is
-  'Single-use links of KC''s own identity module (ADR-013): email verification and password reset, as digests.';
+  'Single-use secrets of KC''s own identity module (ADR-013): email verification, password reset and browser sign-in codes, as digests.';
 -- A new link replaces the member's earlier ones of the same purpose.
 create index auth_one_time_tokens_user_idx on kc_private.auth_one_time_tokens (user_id, purpose);
 

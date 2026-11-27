@@ -154,3 +154,36 @@ export async function removeUnprovenEmailSignUp(db: DatabaseSession, userId: str
   await db.query('delete from kc_private.auth_passwords where user_id = $1', [userId]);
   await db.query("delete from kc_private.auth_one_time_tokens where user_id = $1", [userId]);
 }
+
+/** How long the code a browser sign-in ends with works: the time an app needs to exchange it, and no more. */
+export const SIGN_IN_CODE_SECONDS = 5 * 60;
+
+/**
+ * A code that signs `userId` in once, for whoever holds the secret behind `codeChallenge`.
+ * @param codeChallenge SHA-256 of that secret, in base64url (PKCE).
+ */
+export async function issueSignInCode(db: DatabaseSession, userId: string, codeChallenge: string): Promise<string> {
+  const code = randomBytes(32).toString('base64url');
+  await db.query(
+    `insert into kc_private.auth_one_time_tokens (token_hash, user_id, purpose, expires_at, code_challenge)
+     values ($1, $2, 'sign_in_code', now() + make_interval(secs => $3), $4)`,
+    [linkDigest(code), userId, SIGN_IN_CODE_SECONDS, codeChallenge],
+  );
+  return code;
+}
+
+/**
+ * Uses a sign-in code up, for the holder of the secret it was issued for. A
+ * code presented with another secret is left as it is: the app that started
+ * the sign-in can still use it.
+ * @returns The member the code signs in, or null.
+ */
+export async function redeemSignInCode(db: DatabaseSession, code: string, codeVerifier: string): Promise<string | null> {
+  const { rows } = await db.query<{ user_id: string }>(
+    `update kc_private.auth_one_time_tokens set used_at = now()
+      where token_hash = $1 and purpose = 'sign_in_code' and code_challenge = $2 and used_at is null and expires_at > now()
+      returning user_id`,
+    [linkDigest(code), createHash('sha256').update(codeVerifier).digest('base64url')],
+  );
+  return rows[0]?.user_id ?? null;
+}

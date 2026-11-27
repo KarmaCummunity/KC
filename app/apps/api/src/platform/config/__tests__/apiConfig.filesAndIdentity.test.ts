@@ -51,7 +51,16 @@ describe('loadApiConfig: files and identity', () => {
   it('reads the client ids KC is registered under at Google and Apple', () => {
     const config = loadApiConfig({ ...REQUIRED, KC_AUTH_GOOGLE_CLIENT_IDS: 'web.apps.googleusercontent.com, ios.apps.googleusercontent.com', KC_AUTH_APPLE_CLIENT_IDS: 'com.karmacommunity.app' });
 
-    expect(config.signIn).toEqual({ googleClientIds: ['web.apps.googleusercontent.com', 'ios.apps.googleusercontent.com'], appleClientIds: ['com.karmacommunity.app'] });
+    expect(config.signIn).toEqual({ googleClientIds: ['web.apps.googleusercontent.com', 'ios.apps.googleusercontent.com'], appleClientIds: ['com.karmacommunity.app'], googleBrowserClient: null });
+  });
+
+  it('reads the client KC is at Google for a browser sign-in, whose tokens are then accepted, and needs its id and secret together', () => {
+    const browser = { KC_AUTH_GOOGLE_OAUTH_CLIENT_ID: 'web.apps.googleusercontent.com', KC_AUTH_GOOGLE_OAUTH_CLIENT_SECRET: 'client-secret' };
+
+    expect(loadApiConfig({ ...REQUIRED, ...browser }).signIn).toMatchObject({ googleClientIds: ['web.apps.googleusercontent.com'], googleBrowserClient: { clientId: 'web.apps.googleusercontent.com', clientSecret: 'client-secret' } });
+    expect(loadApiConfig({ ...REQUIRED, ...browser, KC_AUTH_GOOGLE_CLIENT_IDS: 'web.apps.googleusercontent.com,ios.test' }).signIn.googleClientIds).toEqual(['web.apps.googleusercontent.com', 'ios.test']);
+    expect(configErrorOf({ KC_AUTH_GOOGLE_OAUTH_CLIENT_ID: 'web.apps.googleusercontent.com' }).variable).toBe('KC_AUTH_GOOGLE_OAUTH_CLIENT_SECRET');
+    expect(configErrorOf({ KC_AUTH_GOOGLE_OAUTH_CLIENT_SECRET: 'client-secret' }).variable).toBe('KC_AUTH_GOOGLE_OAUTH_CLIENT_ID');
   });
 
   it('reads where the existing files are copied from, and copies none without it', () => {

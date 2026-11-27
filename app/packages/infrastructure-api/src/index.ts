@@ -73,6 +73,7 @@ export {
   type SessionResponse,
   type SessionUser,
   type SetPasswordRequest,
+  type SignInCodeRequest,
   type SignOutRequest,
   type VerifyLinkRequest,
 } from './wire/identityWire';

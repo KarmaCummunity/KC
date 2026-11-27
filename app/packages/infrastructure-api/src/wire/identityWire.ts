@@ -15,6 +15,10 @@ export const IDENTITY_PATHS = {
   signIn: '/v1/auth/sign-in',
   /** Signs in with an ID token of Google or Apple: `IdTokenSignInRequest` → `SessionResponse`. */
   idToken: '/v1/auth/id-token',
+  /** Starts a Google sign-in in a browser: `?redirect_to=<an allowed address>&code_challenge=<S256 of the app's secret>`; answers with a redirect. */
+  googleAuthorize: '/v1/auth/google/authorize',
+  /** Exchanges the code a browser sign-in ended with: `SignInCodeRequest` → `SessionResponse`. */
+  code: '/v1/auth/code',
   /** Redeems the link of an email: `VerifyLinkRequest` → `SessionResponse`. */
   verify: '/v1/auth/verify',
   /** Sends the verification email again: `EmailLinkRequest` → `{}`, whatever the address. */
@@ -79,6 +83,13 @@ export interface IdTokenSignInRequest {
   readonly nonce?: string;
 }
 
+export interface SignInCodeRequest {
+  /** The `code` the browser arrived back at the app with. */
+  readonly code: string;
+  /** The secret whose SHA-256 the app sent when it started the sign-in (PKCE). */
+  readonly codeVerifier: string;
+}
+
 export interface EmailLinkRequest {
   readonly email: string;
   /** Where the link leads; one of the addresses the API is configured to allow. */
@@ -121,6 +132,8 @@ export type IdentityErrorCode =
   | 'invalid_provider_token'
   /** A first sign-in through a provider that does not vouch for the account's address. */
   | 'email_not_verified'
+  /** The sign-in code was used, expired, or is presented without the secret it was issued for. */
+  | 'invalid_code'
   /** The link was used already, expired, or was never issued. */
   | 'invalid_link'
   | 'weak_password'

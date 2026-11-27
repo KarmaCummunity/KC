@@ -28,7 +28,7 @@ export const OWN_ISSUER = 'https://api.kc.test/v1/auth';
  * @param options.signIn The client ids KC is registered under at the providers.
  * @param options.databaseUrl Another database than the KC test schema (a local Supabase stack's own).
  */
-export async function startIdentityApp(options: IdentityRoutesOptions & { authRedirectUrls?: readonly string[]; signIn?: SignInConfig; databaseUrl?: string } = {}): Promise<NestFastifyApplication> {
+export async function startIdentityApp(options: IdentityRoutesOptions & { authRedirectUrls?: readonly string[]; signIn?: Partial<SignInConfig>; databaseUrl?: string } = {}): Promise<NestFastifyApplication> {
   @Global()
   @Module({
     providers: [{ provide: RateLimiter, useValue: { check: () => Promise.resolve({ allowed: true, retryAfterSeconds: 0 }) } }],
@@ -40,7 +40,7 @@ export async function startIdentityApp(options: IdentityRoutesOptions & { authRe
   @Module({ providers: [appLoggerProvider], exports: [APP_LOGGER] })
   class LoggerModule {}
 
-  const config = testConfig({ databaseUrl: options.databaseUrl ?? API_DATABASE_URL ?? KC_DATABASE_URL ?? '', authIssuer: OWN_ISSUER, authSigningKeys: await signingKeySetJson('test-key'), authRedirectUrls: options.authRedirectUrls ?? [], ...(options.signIn ? { signIn: options.signIn } : {}) });
+  const config = testConfig({ databaseUrl: options.databaseUrl ?? API_DATABASE_URL ?? KC_DATABASE_URL ?? '', authIssuer: OWN_ISSUER, authSigningKeys: await signingKeySetJson('test-key'), authRedirectUrls: options.authRedirectUrls ?? [], signIn: { googleClientIds: [], appleClientIds: [], googleBrowserClient: null, ...options.signIn } });
   @Module({ imports: [ApiConfigModule.forRoot(config), LoggerModule, DatabaseModule, IdentityModule, OpenRateLimitModule, BackgroundModule, IdentityRoutesModule.forRoot(options), SessionModule] })
   class IdentityTestModule {}
   return createApp(IdentityTestModule, config);

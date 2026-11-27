@@ -1,4 +1,4 @@
-import { Body, Controller, HttpCode, Inject, Post, Req, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Inject, Post, Query, Req, Res, UseGuards } from '@nestjs/common';
 import type { SessionResponse } from '@kc/infrastructure-api';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { ApiError } from '../../platform/errors/ApiError';
@@ -7,6 +7,7 @@ import { Caller } from '../../platform/identity/caller.decorator';
 import type { CallerIdentity } from '../../platform/identity/callerIdentity';
 import { RateLimiter } from '../../platform/rateLimit/rateLimiter';
 import { EmailAccountService } from './emailAccountService';
+import { GoogleBrowserSignIn } from './googleBrowserSignIn';
 import { ProviderAccountService } from './providerAccountService';
 import { SessionService } from './sessionService';
 
@@ -27,6 +28,7 @@ export class IdentityController {
     @Inject(SessionService) private readonly sessions: SessionService,
     @Inject(EmailAccountService) private readonly emailAccounts: EmailAccountService,
     @Inject(ProviderAccountService) private readonly providerAccounts: ProviderAccountService,
+    @Inject(GoogleBrowserSignIn) private readonly googleBrowser: GoogleBrowserSignIn,
     @Inject(RateLimiter) private readonly rateLimiter: RateLimiter,
   ) {}
 
@@ -61,6 +63,28 @@ export class IdentityController {
   async signInWithIdToken(@Body() body: unknown, @Req() request: FastifyRequest, @Res({ passthrough: true }) reply: FastifyReply): Promise<SessionResponse> {
     await this.count(request, reply, 'id-token', CREDENTIAL_CALLS_PER_MINUTE);
     return this.providerAccounts.signInWithIdToken(body);
+  }
+
+  /** `?redirect_to&code_challenge`: sends the browser to Google to sign in. */
+  @Get('google/authorize')
+  async googleAuthorize(@Query() query: Record<string, unknown>, @Req() request: FastifyRequest, @Res({ passthrough: true }) reply: FastifyReply): Promise<void> {
+    await this.count(request, reply, 'google', CREDENTIAL_CALLS_PER_MINUTE);
+    void reply.redirect(await this.googleBrowser.authorizeUrl(query), 302);
+  }
+
+  /** Where Google sends the browser back: sends it on to the app, with a one-time code or an error. */
+  @Get('google/callback')
+  async googleCallback(@Query() query: Record<string, unknown>, @Req() request: FastifyRequest, @Res({ passthrough: true }) reply: FastifyReply): Promise<void> {
+    await this.count(request, reply, 'google', CREDENTIAL_CALLS_PER_MINUTE);
+    void reply.redirect(await this.googleBrowser.completeUrl(query), 302);
+  }
+
+  /** `{ code, codeVerifier }`: the code a browser sign-in ended with → a session. */
+  @Post('code')
+  @HttpCode(200)
+  async redeemCode(@Body() body: unknown, @Req() request: FastifyRequest, @Res({ passthrough: true }) reply: FastifyReply): Promise<SessionResponse> {
+    await this.count(request, reply, 'code', CREDENTIAL_CALLS_PER_MINUTE);
+    return this.googleBrowser.redeem(body);
   }
 
   /** `{ token, type }` of an emailed link → a session. */

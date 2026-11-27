@@ -4,6 +4,7 @@ import type { ApiConfig } from '../../platform/config/apiConfig';
 import { API_CONFIG } from '../../platform/config/apiConfig.module';
 import { EmailAccountService } from './emailAccountService';
 import { EMAIL_SENDER, type EmailSender } from './emailSender';
+import { exchangeAtGoogle, GOOGLE_CODE_EXCHANGE, GoogleBrowserSignIn, type GoogleCodeExchange } from './googleBrowserSignIn';
 import { IdentityController } from './identity.controller';
 import { PROVIDER_TOKEN_VERIFIERS, ProviderAccountService, type ProviderTokenVerifiers } from './providerAccountService';
 import { createAppleTokenVerifier, createGoogleTokenVerifier, PROVIDER_KEYS_URL, type SignInProvider } from './providerTokens';
@@ -18,6 +19,8 @@ export interface IdentityRoutesOptions {
   readonly emailSender?: EmailSender;
   /** The keys each provider signs ID tokens with; the provider's published ones unless a test supplies its own. */
   readonly providerKeys?: Partial<Record<SignInProvider, JWTVerifyGetKey>>;
+  /** What exchanges Google's code for an ID token in the browser sign-in; Google itself unless a test supplies its own. */
+  readonly googleCodeExchange?: GoogleCodeExchange;
 }
 
 /**
@@ -37,7 +40,9 @@ export class IdentityRoutesModule {
         SessionService,
         EmailAccountService,
         ProviderAccountService,
+        GoogleBrowserSignIn,
         { provide: EMAIL_SENDER, useValue: options.emailSender ?? null },
+        { provide: GOOGLE_CODE_EXCHANGE, useValue: options.googleCodeExchange ?? exchangeAtGoogle },
         {
           provide: PROVIDER_TOKEN_VERIFIERS,
           inject: [API_CONFIG],

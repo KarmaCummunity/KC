@@ -25,6 +25,16 @@ describe('Google ID tokens', () => {
     await expect(verifier.verify(await google.idToken({ ...GOOGLE_MEMBER, aud: 'kc-ios.apps.googleusercontent.test', iss: 'accounts.google.com' }))).resolves.toMatchObject({ subject: 'google-subject-1' });
   });
 
+  it('requires the nonce of a sign-in that made one, and none of a sign-in that did not', async () => {
+    const bound = await google.idToken({ ...GOOGLE_MEMBER, nonce: 'made-for-this-sign-in' });
+
+    await expect(verifier.verify(bound, 'made-for-this-sign-in')).resolves.toMatchObject({ subject: 'google-subject-1' });
+    await expect(verifier.verify(bound, 'made-for-another')).rejects.toBeInstanceOf(InvalidProviderTokenError);
+    await expect(verifier.verify(await google.idToken(GOOGLE_MEMBER), 'made-for-this-sign-in')).rejects.toBeInstanceOf(InvalidProviderTokenError);
+    // The native sheet binds no nonce: a token is then judged without one.
+    await expect(verifier.verify(bound)).resolves.toMatchObject({ subject: 'google-subject-1' });
+  });
+
   it('does not take an address for verified unless Google says so', async () => {
     expect(await verifier.verify(await google.idToken({ sub: 's', email: 'x@example.test' }))).toMatchObject({ email: 'x@example.test', emailVerified: false, displayName: null });
     expect(await verifier.verify(await google.idToken({ sub: 's', email: 'x@example.test', email_verified: 'yes' }))).toMatchObject({ emailVerified: false });

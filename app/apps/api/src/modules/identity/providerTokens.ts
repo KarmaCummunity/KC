@@ -63,11 +63,16 @@ async function verified(token: string, keys: JWTVerifyGetKey, provider: SignInPr
   }
 }
 
-/** Google ID tokens, from the native sheet or the browser flow. Google's own flows bind no nonce the app could check, so none is asked for. */
+/**
+ * Google ID tokens. The native sheet binds no nonce an app could check, so
+ * none is required; when one is given (the browser flow makes one per
+ * sign-in and asks Google to put it in the token) the token must carry it.
+ */
 export function createGoogleTokenVerifier(keys: JWTVerifyGetKey, clientIds: readonly string[]): ProviderTokenVerifier {
   return {
-    async verify(token) {
+    async verify(token, nonce) {
       const claims = await verified(token, keys, 'google', clientIds);
+      if (nonce !== undefined && claims.nonce !== nonce) throw new InvalidProviderTokenError('nonce does not match');
       return {
         provider: 'google',
         subject: claims.sub as string,

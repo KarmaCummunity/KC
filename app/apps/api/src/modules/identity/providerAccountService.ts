@@ -55,8 +55,11 @@ export class ProviderAccountService {
     return this.database.runAsService(async (db) => this.sessions.openFor(db, await this.memberOf(db, account)));
   }
 
-  /** The member the provider account signs in as: the one it already is, the one who has its address, or a new one. */
-  private async memberOf(db: DatabaseSession, account: ProviderAccount): Promise<string> {
+  /**
+   * The member the provider account signs in as: the one it already is, the one who has its address, or a new one.
+   * @throws ApiError `403 email_not_verified` for a first sign-in whose address the provider does not vouch for.
+   */
+  async memberOf(db: DatabaseSession, account: ProviderAccount): Promise<string> {
     const known = await findProviderMember(db, account.provider, account.subject);
     if (known) return known;
     if (!account.email || !account.emailVerified) throw new ApiError('email_not_verified', 403);

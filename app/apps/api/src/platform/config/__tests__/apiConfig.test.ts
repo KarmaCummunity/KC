@@ -22,7 +22,7 @@ describe('loadApiConfig', () => {
       authIssuer: REQUIRED.KC_AUTH_ISSUER,
       authSigningKeys: null,
       authRedirectUrls: [],
-      signIn: { googleClientIds: [], appleClientIds: [] },
+      signIn: { googleClientIds: [], appleClientIds: [], googleBrowserClient: null },
       allowedOrigins: [],
       trustedProxyHops: 0,
       rateLimitPerMinute: 600,
