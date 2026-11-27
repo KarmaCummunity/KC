@@ -1,6 +1,6 @@
 import type { File, Storage } from '@google-cloud/storage';
 import { publicObjectUrl } from '@kc/infrastructure-api';
-import type { ObjectPage, ObjectStore, SignedUpload, StoredObject, UploadGrant } from './objectStore';
+import type { ObjectAttributes, ObjectPage, ObjectStore, SignedUpload, StoredObject, UploadGrant } from './objectStore';
 import { ObjectTooLargeError } from './objectStore';
 
 const HTTP_NOT_FOUND = 404;
@@ -62,7 +62,13 @@ export class GcsObjectStore implements ObjectStore {
   async head(bucket: string, name: string): Promise<StoredObject | null> {
     try {
       const [metadata] = await this.file(bucket, name).getMetadata();
-      return { size: Number(metadata.size), contentType: metadata.contentType ?? UNTYPED, cacheControl: metadata.cacheControl ?? null };
+      return {
+        size: Number(metadata.size),
+        contentType: metadata.contentType ?? UNTYPED,
+        cacheControl: metadata.cacheControl ?? null,
+        // The service reports MD5 in base64, and none for an object assembled from parts.
+        md5: metadata.md5Hash ? Buffer.from(metadata.md5Hash, 'base64').toString('hex') : null,
+      };
     } catch (error) {
       if (statusOf(error) === HTTP_NOT_FOUND) return null;
       throw error;
@@ -84,7 +90,7 @@ export class GcsObjectStore implements ObjectStore {
     }
   }
 
-  async write(bucket: string, name: string, bytes: Uint8Array, object: Omit<StoredObject, 'size'>): Promise<boolean> {
+  async write(bucket: string, name: string, bytes: Uint8Array, object: ObjectAttributes): Promise<boolean> {
     try {
       await this.file(bucket, name).save(Buffer.from(bytes), {
         // One request: these are copies and thumbnails, far below the size where a resumable session pays for its extra round trip.

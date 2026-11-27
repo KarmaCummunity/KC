@@ -38,12 +38,13 @@ export function describeObjectStoreContract(title: string, open: () => Promise<O
       await leg.close();
     });
 
-    it('stores an object and gives back its bytes, size and type', async () => {
+    it('stores an object and gives back its bytes, size, type and checksum', async () => {
       const name = `${freshFolder()}/a.jpg`;
 
       expect(await store.write('avatars', name, bytesOf(1, 2, 3, 4), JPEG)).toBe(true);
 
-      expect(await store.head('avatars', name)).toMatchObject({ size: 4, contentType: 'image/jpeg' });
+      // The checksum is the MD5 of the four bytes, worked out apart from the store.
+      expect(await store.head('avatars', name)).toMatchObject({ size: 4, contentType: 'image/jpeg', md5: '08d6c05a21512a79a1dfeb9d2a8f262f' });
       expect(await listOf(store.read('avatars', name))).toEqual([1, 2, 3, 4]);
     });
 
@@ -173,8 +174,8 @@ export function describeObjectStoreCacheControl(title: string, open: () => Promi
       await leg.store.write('avatars', `${folder}/cached.jpg`, bytesOf(1), { contentType: 'image/jpeg', cacheControl: 'public, max-age=60' });
       await leg.store.write('avatars', `${folder}/plain.jpg`, bytesOf(1), JPEG);
 
-      expect(await leg.store.head('avatars', `${folder}/cached.jpg`)).toEqual({ size: 1, contentType: 'image/jpeg', cacheControl: 'public, max-age=60' });
-      expect(await leg.store.head('avatars', `${folder}/plain.jpg`)).toEqual({ size: 1, contentType: 'image/jpeg', cacheControl: null });
+      expect(await leg.store.head('avatars', `${folder}/cached.jpg`)).toMatchObject({ size: 1, contentType: 'image/jpeg', cacheControl: 'public, max-age=60' });
+      expect(await leg.store.head('avatars', `${folder}/plain.jpg`)).toMatchObject({ size: 1, contentType: 'image/jpeg', cacheControl: null });
     });
   });
 }

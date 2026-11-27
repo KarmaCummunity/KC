@@ -26,6 +26,10 @@ const POSTGREST_PARITY_SUITES = ['src/**/*.parity.integration.test.ts'];
 const hasGcsProject = Boolean(process.env.KC_API_TEST_GCS_BUCKET_PREFIX);
 const GCS_PROJECT_SUITES = ['src/**/*.cloud.integration.test.ts'];
 
+// A real Supabase Storage (the local Supabase stack with its storage service), which the copy of the existing files reads from.
+const hasSupabaseStorage = Boolean(process.env.KC_API_TEST_SUPABASE_URL);
+const SUPABASE_STORAGE_SUITES = ['src/**/*.supabase.integration.test.ts'];
+
 /**
  * Coverage floors (percent). Much of this server is code that talks to the database, and its
  * tests are the suites above: the full floor holds when they are collected, and a run without
@@ -48,6 +52,7 @@ export default defineConfig({
       ...(hasGcsEmulator ? [] : GCS_EMULATOR_SUITES),
       ...(hasPostgrest ? [] : POSTGREST_PARITY_SUITES),
       ...(hasGcsProject ? [] : GCS_PROJECT_SUITES),
+      ...(hasSupabaseStorage ? [] : SUPABASE_STORAGE_SUITES),
     ],
     environment: 'node',
     globals: false,

@@ -44,6 +44,7 @@ describe('loadApiConfig', () => {
       jobsScheduler: null,
       expoAccessToken: null,
       storage: { localDirectory: null, publicUrl: null, cloud: null },
+      storageCopySource: null,
       portRollout: {},
       appBaseUrl: null,
       whatsapp: { cloudApiToken: null, phoneNumberId: null, graphApiVersion: null, verifyToken: null, appSecret: null },
@@ -248,6 +249,21 @@ describe('loadApiConfig', () => {
       'KC_STORAGE_LOCAL_DIR',
     ],
   ])('refuses to start with a cloud file store that is half configured, misnamed, or beside a local one: %j', (env, variable) => {
+    expect(configErrorOf(env).variable).toBe(variable);
+  });
+
+  it('reads where the existing files are copied from, and copies none without it', () => {
+    const config = loadApiConfig({ ...REQUIRED, KC_STORAGE_COPY_SOURCE_URL: 'https://project.supabase.test/', KC_STORAGE_COPY_SOURCE_KEY: 'service-key' });
+
+    expect(config.storageCopySource).toEqual({ url: 'https://project.supabase.test', key: 'service-key' });
+    expect(loadApiConfig(REQUIRED).storageCopySource).toBeNull();
+  });
+
+  it.each([
+    [{ KC_STORAGE_COPY_SOURCE_KEY: 'service-key' }, 'KC_STORAGE_COPY_SOURCE_URL'],
+    [{ KC_STORAGE_COPY_SOURCE_URL: 'https://project.supabase.test' }, 'KC_STORAGE_COPY_SOURCE_KEY'],
+    [{ KC_STORAGE_COPY_SOURCE_URL: 'not a url', KC_STORAGE_COPY_SOURCE_KEY: 'service-key' }, 'KC_STORAGE_COPY_SOURCE_URL'],
+  ])('refuses to start with a copy source that is half configured or not an address: %j', (env, variable) => {
     expect(configErrorOf(env).variable).toBe(variable);
   });
 

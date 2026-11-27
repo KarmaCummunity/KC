@@ -29,9 +29,11 @@ To run the server under test as a deployment connects, set `KC_API_TEST_API_DATA
 
 **The engine against a real PostgREST.** `src/__tests__/contracts/postgrestParity.parity.integration.test.ts` calls every served method of every hosted port twice, as two fresh members in the same state: once on the compatibility engine and once on a real PostgREST over the same database, and requires every request to have been answered alike (status, `Content-Range`, body, error code and text); methods a visitor may call are compared once more without a caller. It needs a running local Supabase stack (`supabase start`, then `supabase/seed/reference/load.sh`) and four variables from `supabase status -o env`: `KC_API_TEST_POSTGREST_URL` (`REST_URL`), `KC_API_TEST_POSTGREST_ANON_KEY`, `KC_API_TEST_POSTGREST_JWT_SECRET` and `KC_API_TEST_POSTGREST_DATABASE_URL` (`DB_URL`). The backend CI lane runs it.
 
+**The copy against a real Supabase Storage.** `src/modules/storageCopy/__tests__/supabaseStorageCopy.supabase.integration.test.ts` uploads files to the stack's own storage service and runs the copy on the rows that service wrote. It needs the stack started with its storage service (do not exclude `storage-api`) and four more variables from `supabase status -o env`: `KC_API_TEST_SUPABASE_URL` (`API_URL`), `KC_API_TEST_SUPABASE_SERVICE_KEY` (`SERVICE_ROLE_KEY`), `KC_API_TEST_SUPABASE_ANON_KEY` and `KC_API_TEST_SUPABASE_DATABASE_URL` (`DB_URL`). The backend CI lane runs it.
+
 Without the variable those suites are not collected and the unit tests still run (`vitest.config.ts` lists which suites need what). Coverage has two floors there: the full one when both kinds of database are present, and a lower one for a run without them.
 
-In CI the frontend lane runs the package without a database (the lower floor). The backend lane (`.github/workflows/ci-backend.yml`) runs every suite on the local Supabase stack's Postgres with Redis 7.2 (the full floor), and builds this package's container image and starts it. That lane is planned for a pull request that touches `app/apps/api` or `app/packages/infrastructure-api`, and always runs in the merge queue.
+In CI the frontend lane runs the package without a database (the lower floor). The backend lane (`.github/workflows/ci-backend.yml`) runs every suite on the local Supabase stack's Postgres, with its PostgREST and its storage service, Redis 7.2 and the Cloud Storage emulator (the full floor), and builds this package's container image and starts it. That lane is planned for a pull request that touches `app/apps/api` or `app/packages/infrastructure-api`, and always runs in the merge queue.
 
 ## Configuration (environment variables)
 
@@ -58,6 +60,8 @@ In CI the frontend lane runs the package without a database (the lower floor). T
 | `KC_API_PUBLIC_URL` | none | The API's own address as clients reach it; required with `KC_STORAGE_LOCAL_DIR`, whose upload and read addresses point back at the API |
 | `KC_STORAGE_GCS_BUCKET_PREFIX` | none | Selects the Google Cloud Storage file store of a deployed API (ADR-012): what precedes a KC bucket's name in its cloud bucket's name, e.g. `kc-dev-` for `kc-dev-avatars`. 1 to 50 lowercase letters, digits, dashes or underscores. Not together with `KC_STORAGE_LOCAL_DIR` |
 | `KC_MEDIA_PUBLIC_URL` | none | KC's media address, which serves the public buckets; required with `KC_STORAGE_GCS_BUCKET_PREFIX` |
+| `KC_STORAGE_COPY_SOURCE_URL` | none | The Supabase project KC's existing files are copied from, for the time they are being moved (ADR-012). Required with `KC_STORAGE_COPY_SOURCE_KEY`. Without the two the job `copy-stored-files` fails its run and the rest of the API works |
+| `KC_STORAGE_COPY_SOURCE_KEY` | none | A key of that project that reads private files too: its service role key (a secret). A key that is shown fewer files is refused by the job before it judges one |
 | `WHATSAPP_CLOUD_API_TOKEN` | none | Graph API token of the WhatsApp channel (a secret). Without it no WhatsApp message is sent |
 | `WHATSAPP_PHONE_NUMBER_ID` | channel settings | Overrides the phone number id stored with the channel's settings |
 | `WHATSAPP_VERIFY_TOKEN` | none | The token the WhatsApp provider echoes when the inbound webhook is registered (a secret). Without it registration is refused |
@@ -98,6 +102,16 @@ An invalid value stops the process at start with an error that names the variabl
 | Local directory | nothing (every `pnpm test`) | the whole contract, with paging and Cache-Control |
 | Cloud Storage emulator | `KC_API_TEST_GCS_ENDPOINT=http://127.0.0.1:4443` and a running [fake-gcs-server](https://github.com/fsouza/fake-gcs-server) (`docker run -p 127.0.0.1:4443:4443 fsouza/fake-gcs-server -scheme http -backend memory -public-host 127.0.0.1:4443`); the backend CI lane starts one | the contract and the signed addresses as real HTTP requests. The emulator answers a listing in one page, does not record Cache-Control and checks no signed condition, so those are not asserted there |
 | A real project | `KC_API_TEST_GCS_BUCKET_PREFIX=<prefix>`, Google credentials of the run's own, and the buckets `<prefix>avatars`, `<prefix>post-images`, `<prefix>chat-media` | everything, including what only the service enforces: a second upload to a name, an oversized body, another type, a missing condition. Run before the first deploy of an environment and after an SDK upgrade. **Not run yet: there is no cloud project** |
+
+**Moving the existing files** (ADR-012 section 6). The job `copy-stored-files` (`src/modules/storageCopy`) copies every file the index names from Supabase Storage into the configured store, under the same name, and proves each copy by size and MD5. One run handles a bounded number of files and answers where it stopped; the caller sends that back until it answers `"next": null`:
+
+```bash
+curl -X POST "$API/v1/jobs/copy-stored-files" -H "authorization: Bearer $TOKEN" -H 'content-type: application/json' -d '{"limit": 500}'
+# {"ok":true,"scanned":500,"verified":0,"copied":500,"replaced":0,"destinationOnly":0,"absent":0,"failed":0,"next":{"bucket":"avatars","after":"…"}}
+curl -X POST "$API/v1/jobs/copy-stored-files" … -d '{"limit": 500, "from": {"bucket":"avatars","after":"…"}}'
+```
+
+A whole pass can be repeated at any time and does only what is missing: a file whose row records its checksum is proven without being downloaded, a file that changed at the source is copied again (`replaced`), and a copy the store does not report back as sent is removed and counted `failed`. `absent` is a row whose file neither store has; `destinationOnly` is a file that was uploaded to KC's store in the first place. The files are ready to be switched when a full pass ends with `copied`, `replaced`, `absent` and `failed` all at zero. A file deleted at the source after it was copied loses its row, and the second pass of the daily `reconcile-storage-orphans` job removes every stored file that has no row (older than a day, in every bucket), so a deleted file does not live on in the copy. That pass leaves a bucket alone when the index has no row for it at all, and names it in its answer: stored files beside an empty index is what a server connected to the wrong database looks like.
 
 ## Logs
 

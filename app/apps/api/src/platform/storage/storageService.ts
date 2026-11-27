@@ -122,7 +122,7 @@ export class StorageService {
    * the real row. Writing a row that is already there changes nothing.
    * @returns false when the policy refused the row (the right was lost since it was asked).
    */
-  private async indexObject(caller: CallerIdentity, bucket: string, name: string, stored: StoredObject): Promise<boolean> {
+  private async indexObject(caller: CallerIdentity, bucket: string, name: string, stored: Omit<StoredObject, 'md5'>): Promise<boolean> {
     try {
       await this.database.runAs(caller, (session) =>
         session.query('insert into storage.objects (bucket_id, name, metadata) values ($1, $2, $3::jsonb) on conflict (bucket_id, name) do nothing', [
