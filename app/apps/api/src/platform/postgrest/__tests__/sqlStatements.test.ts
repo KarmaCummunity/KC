@@ -85,7 +85,9 @@ describe('buildStatement: changes', () => {
 
     expect(merge.text).toContain('on conflict ("isbn") do update set "isbn" = excluded."isbn", "title" = excluded."title"');
     expect(ignore.text).toContain('on conflict ("isbn") do nothing');
-    expect(merge.text).not.toContain('returning');
+    // No row is read back; `returning 1` only lets the changed rows be counted.
+    expect(merge.text).toContain('returning 1)');
+    expect(merge.text).not.toContain('returning "public"."books"');
   });
 
   it('inserts a row of defaults for an empty body', () => {
@@ -147,6 +149,21 @@ describe('buildStatement: functions', () => {
 
     expect(statement.text).toContain('as _typed("p_query" text)');
     expect(statement.text).not.toContain('p_limit');
+  });
+
+  it('describes a function it cannot find in PostgREST\'s own words, which name what was searched for', () => {
+    expect(() => resolveSignature('nope', [], TEST_CACHE)).toThrowError(
+      expect.objectContaining({
+        message: 'Could not find the function public.nope without parameters in the schema cache',
+        details: 'Searched for the function public.nope without parameters or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache.',
+      }),
+    );
+    expect(() => resolveSignature('book_count', ['p_extra', 'p_author'], TEST_CACHE)).toThrowError(
+      expect.objectContaining({
+        message: 'Could not find the function public.book_count(p_author, p_extra) in the schema cache',
+        details: 'Searched for the function public.book_count with parameters p_author, p_extra or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache.',
+      }),
+    );
   });
 
   it.each([

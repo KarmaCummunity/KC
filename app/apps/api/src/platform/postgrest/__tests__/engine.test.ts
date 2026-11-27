@@ -52,6 +52,27 @@ describe('handleCompatRequest: responses', () => {
     expect(JSON.parse(none.body ?? '')).toMatchObject({ code: 'PGRST116', details: 'The result contains 0 rows' });
   });
 
+  it('reports the rows a change touched as PostgREST does: an update its rows, an insert and a delete none', async () => {
+    const patch = request('PATCH', '/books?id=eq.1', { body: '{"a":1}' });
+
+    expect((await answer(patch, { body: null, row_count: 1 })).headers['content-range']).toBe('0-0/*');
+    expect((await answer(patch, { body: null, row_count: 3 })).headers['content-range']).toBe('0-2/*');
+    expect((await answer(patch, { body: null, row_count: 0 })).headers['content-range']).toBe('*/*');
+    expect((await answer(request('POST', '/books', { body: '{"a":1}' }), { body: null, row_count: 1 })).headers['content-range']).toBe('*/*');
+    expect((await answer(request('DELETE', '/books?id=eq.1'), { body: null, row_count: 1 })).headers['content-range']).toBe('*/*');
+  });
+
+  it('counts a function that returns nothing as one result, and an empty set as none', async () => {
+    expect((await answer(request('POST', '/rpc/ping'), { body: null, row_count: 0 })).headers['content-range']).toBe('0-0/*');
+    expect((await answer(request('POST', '/rpc/ping'), { body: '[]', row_count: 0 })).headers['content-range']).toBe('*/*');
+  });
+
+  it('answers a created row asked for as one object with 201', async () => {
+    const created = request('POST', '/books', { headers: { prefer: 'return=representation', accept: 'application/vnd.pgrst.object+json' }, body: '{"a":1}' });
+
+    expect(await answer(created, { body: '[{"a":1}]', row_count: 1 })).toMatchObject({ status: 201, body: '{"a":1}' });
+  });
+
   it('answers changes with 201 / 204 and no body unless rows were asked for', async () => {
     expect(await answer(request('POST', '/books', { body: '{"a":1}' }), { body: null, row_count: 0 })).toMatchObject({ status: 201, body: null });
     expect(await answer(request('DELETE', '/books?id=eq.1'), { body: null, row_count: 0 })).toMatchObject({ status: 204, body: null });
@@ -82,12 +103,24 @@ describe('handleCompatRequest: errors', () => {
     expect(JSON.parse((await answer(request('POST', '/books', { body: '{nope' }), undefined)).body ?? '')).toMatchObject({ code: 'PGRST102' });
   });
 
+  // The statuses are PostgREST's own; the parity suite compares them with a real one.
   it.each([
-    ['P0001', 400],
+    ['P0001', 400], // a function's `raise exception`
+    ['P0002', 500], // any other PL/pgSQL error
+    ['22P02', 400], // a value of the wrong form: the caller's request
+    ['23514', 400], // a check constraint: the caller's request
+    ['23503', 409],
+    ['23505', 409],
     ['42501', 403],
     ['42883', 404],
-    ['23505', 409],
-    ['08006', 500],
+    ['42P17', 500],
+    ['40001', 500],
+    ['08006', 503],
+    ['53300', 503],
+    ['57014', 500],
+    ['57P01', 503],
+    ['XX000', 500],
+    ['PT404', 404], // a function that chose its own status
   ])('passes a database error %s through with its code, message, detail and hint', async (code, status) => {
     const run = failingWith({ code, message: 'post_not_found', detail: 'd', hint: 'h' });
 
@@ -95,6 +128,14 @@ describe('handleCompatRequest: errors', () => {
 
     expect(response.status).toBe(status);
     expect(JSON.parse(response.body ?? '')).toEqual({ code, details: 'd', hint: 'h', message: 'post_not_found' });
+  });
+
+  it('tells a refused visitor to sign in (401) and a refused member that it is not theirs (403)', async () => {
+    const refused = failingWith({ code: '42501', message: 'permission denied for table books' });
+
+    expect((await handleCompatRequest(request('GET', '/books'), cacheSource(), refused, { isVisitor: true })).status).toBe(401);
+    expect((await handleCompatRequest(request('GET', '/books'), cacheSource(), refused, { isVisitor: false })).status).toBe(403);
+    expect((await handleCompatRequest(request('GET', '/books'), cacheSource(), refused)).status).toBe(403);
   });
 
   it('lets a failure that is not a database error through', async () => {

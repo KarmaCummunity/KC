@@ -25,6 +25,10 @@ export KC_API_TEST_KC_DATABASE_URL=postgres://postgres@127.0.0.1:5432/kc_api_tes
 pnpm --filter @kc/api test
 ```
 
+To run the server under test as a deployment connects, set `KC_API_TEST_API_DATABASE_URL` to the same database as the user `kc_api` (created by the migration `api_database_role`): it holds no rights until it switches to the caller's role, which is what the server does on every transaction. The fixtures keep the owner connection above. The backend CI lane always runs this way.
+
+**The engine against a real PostgREST.** `src/__tests__/contracts/postgrestParity.parity.integration.test.ts` calls every served method of every hosted port twice, as two fresh members in the same state: once on the compatibility engine and once on a real PostgREST over the same database, and requires every request to have been answered alike (status, `Content-Range`, body, error code and text); methods a visitor may call are compared once more without a caller. It needs a running local Supabase stack (`supabase start`, then `supabase/seed/reference/load.sh`) and four variables from `supabase status -o env`: `KC_API_TEST_POSTGREST_URL` (`REST_URL`), `KC_API_TEST_POSTGREST_ANON_KEY`, `KC_API_TEST_POSTGREST_JWT_SECRET` and `KC_API_TEST_POSTGREST_DATABASE_URL` (`DB_URL`). The backend CI lane runs it.
+
 Without the variable those suites are not collected and the unit tests still run (`vitest.config.ts` lists which suites need what). Coverage has two floors there: the full one when both kinds of database are present, and a lower one for a run without them.
 
 In CI the frontend lane runs the package without a database (the lower floor). The backend lane (`.github/workflows/ci-backend.yml`) runs every suite on the local Supabase stack's Postgres with Redis 7.2 (the full floor), and builds this package's container image and starts it. That lane is planned for a pull request that touches `app/apps/api` or `app/packages/infrastructure-api`, and always runs in the merge queue.
@@ -38,17 +42,22 @@ In CI the frontend lane runs the package without a database (the lower floor). T
 | `PORT` | `8080` | Port to listen on (the name Cloud Run injects) |
 | `KC_APP_VERSION` | `0.0.0-dev` | Version reported by `/health` |
 | `DATABASE_URL` | required | Postgres connection string (`postgres://` or `postgresql://`) |
-| `REDIS_URL` | required | Redis connection string (`redis://` or `rediss://`) |
+| `REDIS_URL` | required, unless `KC_API_SINGLE_INSTANCE=1` | Redis connection string (`redis://` or `rediss://`) |
+| `KC_API_SINGLE_INSTANCE` | none | `1` declares that this one process is the whole server, which lets it run without Redis: the rate limit is counted in the process, typing and presence stay in it, and visitors' results are not cached. For development and a first, small environment; **never with more than one instance**, where each would keep its own counters and its own realtime members |
 | `KC_AUTH_ISSUER` | required | Issuer of accepted access tokens, exactly as in the token's `iss`; keys are read from `<issuer>/.well-known/jwks.json` |
 | `KC_API_ALLOWED_ORIGINS` | none | Comma-separated web origins that may call the API from a browser (CORS), e.g. `https://app.example.org`. The native apps need no entry. The public research survey accepts answers only from a page on one of these origins |
 | `KC_API_TRUSTED_PROXY_HOPS` | `0` | Reverse proxies in front of the API whose `X-Forwarded-For` entry is trusted for the client address |
-| `KC_API_RATE_LIMIT_PER_MINUTE` | `600` | Port calls one caller may make per minute (a member by user id, a visitor by address), counted in Redis. `0` switches the limit off |
+| `KC_API_RATE_LIMIT_PER_MINUTE` | `600` | Port calls one caller may make per minute (a member by user id, a visitor by address), counted in Redis (in the process itself on a single instance without Redis). `0` switches the limit off |
 | `KC_JOBS_TOKEN` | none | Bearer token a scheduler sends to start a job (`POST /v1/jobs/<name>`); a secret of at least 32 characters. Without it no job can be started |
+| `KC_JOBS_OIDC_AUDIENCE` | none | With `KC_JOBS_SERVICE_ACCOUNT`: lets a scheduler start jobs with its own Google identity instead of a stored secret. The audience its identity tokens are issued for: a name the scheduler and the API agree on (`infra/gcp/run.tf` sets both) |
+| `KC_JOBS_SERVICE_ACCOUNT` | none | Email address of the scheduler's Google service account. Only a token Google signed for this account, for the audience above, starts a job |
 | `EXPO_ACCESS_TOKEN` | none | Access token of the Expo push service, when the Expo project requires one (a secret) |
 | `KC_APP_BASE_URL` | the product's address | The app's public web address, which a message to a member links to (for example the edit link of a draft) |
 | `KC_PORT_ROLLOUT` | everyone | Who each served port is served to: a JSON object of port name to `{ "percent": 0-100, "minAppVersion": "1.2.3" }`, with `*` for every port without a rule of its own (ADR-010). A rule for a port that does not exist stops the process at start |
 | `KC_STORAGE_LOCAL_DIR` | none | Directory of the local file store, for development and tests only (ADR-012). Without a store the storage routes answer `503 not_configured` |
 | `KC_API_PUBLIC_URL` | none | The API's own address as clients reach it; required with `KC_STORAGE_LOCAL_DIR`, whose upload and read addresses point back at the API |
+| `KC_STORAGE_GCS_BUCKET_PREFIX` | none | Selects the Google Cloud Storage file store of a deployed API (ADR-012): what precedes a KC bucket's name in its cloud bucket's name, e.g. `kc-dev-` for `kc-dev-avatars`. 1 to 50 lowercase letters, digits, dashes or underscores. Not together with `KC_STORAGE_LOCAL_DIR` |
+| `KC_MEDIA_PUBLIC_URL` | none | KC's media address, which serves the public buckets; required with `KC_STORAGE_GCS_BUCKET_PREFIX` |
 | `WHATSAPP_CLOUD_API_TOKEN` | none | Graph API token of the WhatsApp channel (a secret). Without it no WhatsApp message is sent |
 | `WHATSAPP_PHONE_NUMBER_ID` | channel settings | Overrides the phone number id stored with the channel's settings |
 | `WHATSAPP_VERIFY_TOKEN` | none | The token the WhatsApp provider echoes when the inbound webhook is registered (a secret). Without it registration is refused |
@@ -80,12 +89,26 @@ An invalid value stops the process at start with an error that names the variabl
 
 [ADR-012](../../../docs/architecture/adr/ADR-012-media-storage.md). A member's file moves in three steps: `POST /v1/storage/uploads` grants an upload of `<bucket>/<name>` and returns the address to send the bytes to; the app sends them there; `POST /v1/storage/uploads/complete` writes the file into the index (`storage.objects`). `POST /v1/storage/signed-urls` gives a short-lived address of a private file, and `POST /v1/storage/objects/delete` removes the member's files. Who may do what is decided by the policies on `storage.objects` (`src/platform/storage/storageAuthorizer.ts`), never by the API's own code. The bytes live behind the `ObjectStore` interface: a local directory here, Google Cloud Storage when deployed. Server modules that work on files inject `OBJECT_STORE`.
 
+**The two stores.** `LocalObjectStore` keeps files in a directory and its signed addresses are routes of this API. `GcsObjectStore` (`src/platform/storage/gcsObjectStore.ts`, on the official `@google-cloud/storage` SDK) keeps them in Cloud Storage: a KC bucket `avatars` is the cloud bucket `<prefix>avatars`, the object names are unchanged, and the client uploads straight to the store. What a grant fixes is part of the signed address, so Cloud Storage itself refuses anything else: another content type, a body over the granted size (`x-goog-content-length-range`), a name that is taken (`x-goog-if-generation-match: 0`). The API runs as its service's own identity: there is no key file, and it signs addresses through the IAM credentials service, which needs the role "Service Account Token Creator" on that same service account, beside object access on the buckets.
+
+**How the stores are checked.** One contract (`src/platform/storage/__tests__/objectStoreContract.ts`) runs against each store:
+
+| Run | Needs | Covers |
+|---|---|---|
+| Local directory | nothing (every `pnpm test`) | the whole contract, with paging and Cache-Control |
+| Cloud Storage emulator | `KC_API_TEST_GCS_ENDPOINT=http://127.0.0.1:4443` and a running [fake-gcs-server](https://github.com/fsouza/fake-gcs-server) (`docker run -p 127.0.0.1:4443:4443 fsouza/fake-gcs-server -scheme http -backend memory -public-host 127.0.0.1:4443`); the backend CI lane starts one | the contract and the signed addresses as real HTTP requests. The emulator answers a listing in one page, does not record Cache-Control and checks no signed condition, so those are not asserted there |
+| A real project | `KC_API_TEST_GCS_BUCKET_PREFIX=<prefix>`, Google credentials of the run's own, and the buckets `<prefix>avatars`, `<prefix>post-images`, `<prefix>chat-media` | everything, including what only the service enforces: a second upload to a name, an oversized body, another type, a missing condition. Run before the first deploy of an environment and after an SDK upgrade. **Not run yet: there is no cloud project** |
+
+## Logs
+
+One stream of JSON lines on standard output (`src/platform/logging/loggerOptions.ts`): request logs and everything the server says outside a request. Each line carries `severity` and `message`, the two fields Google Cloud's log viewer reads, so an error is filed as an error there and can raise an alert. A request is logged with its path and never its query string: a query can carry a credential of that request (a signed address, a provider's verification token). Every line of a request has its `reqId`, which is also the `x-request-id` header of the response.
+
 ## Health
 
 | Route | Answers | Use |
 |---|---|---|
 | `GET /health` | `200` while the process serves HTTP | Liveness: restart the instance when it fails |
-| `GET /health/ready` | `200` when Postgres and Redis answer, else `503` naming the one that is down | Readiness: send traffic only when it passes |
+| `GET /health/ready` | `200` when Postgres and Redis answer (Postgres alone on a single instance without Redis), else `503` naming the one that is down | Readiness: send traffic only when it passes |
 
 ## Conventions
 
@@ -99,7 +122,7 @@ An invalid value stops the process at start with an error that names the variabl
 - **The engine is not PostgREST.** It implements the dialect the adapters use and refuses the rest with `PGRST100`. If an adapter needs more, extend `src/platform/postgrest` with a unit test and a case on the KC schema; never loosen identifier or value handling.
 - **Errors.** Throw `ApiError(code, httpStatus)`; never format an error response in a handler. Every error body is `{ "error": { "code", "requestId" } }`, and an unexpected failure is always `500 internal_error`.
 - **Who is calling.** Put `@UseGuards(AuthenticatedGuard)` on a signed-in route and take the caller with `@Caller()`. Every rejected token is the same `401 unauthorized`.
-- **Database work for a request.** Use `IdentityDatabase.runAs(caller, work)` (or `runAnonymous`): one transaction with the caller's role and claims, so `auth.uid()`, RLS and the existing SQL functions behave as they do through PostgREST. The database user in `DATABASE_URL` must be allowed to switch to the `authenticated` and `anon` roles.
+- **Database work for a request.** Use `IdentityDatabase.runAs(caller, work)` (or `runAnonymous`): one transaction with the caller's role and claims, so `auth.uid()`, RLS and the existing SQL functions behave as they do through PostgREST. The database user in `DATABASE_URL` must be allowed to switch to the `anon`, `authenticated` and `service_role` roles and needs nothing else: the migration `api_database_role` creates that user, `kc_api`, without a password.
 - **Connections.** Inject `DATABASE_POOL` (`pg` pool) and `REDIS_CLIENT` (`ioredis`); never open a connection of your own. Both are closed on shutdown.
 - **Logging outside a request.** Inject `APP_LOGGER`; inside a handler use `request.log`, which carries the request id.
 - **Limits.** The gateway counts every port call that reaches a method against the caller's allowance and answers `429` with `retry-after` beyond it. When Redis is down the limiter lets calls through and logs a warning.

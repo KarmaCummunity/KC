@@ -4,6 +4,8 @@ export interface DependencyProbe {
   readonly name: string;
   /** Resolves when the dependency answers; rejects otherwise. */
   ping(): Promise<void>;
+  /** True for a dependency this deployment runs without: it is not probed and not reported. */
+  readonly unused?: boolean;
 }
 
 /** Injection token of the `DependencyProbe[]` the readiness endpoint runs. */

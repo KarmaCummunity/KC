@@ -39,7 +39,7 @@ describe('File storage clients on the KC schema', () => {
 
   beforeAll(async () => {
     directory = await mkdtemp(join(tmpdir(), 'kc-storage-clients-'));
-    gateway = await startKcGateway({ config: { storage: { localDirectory: directory, publicUrl: 'http://api.kc.test' } } });
+    gateway = await startKcGateway({ config: { storage: { localDirectory: directory, publicUrl: 'http://api.kc.test', cloud: null } } });
     store = gateway.app.get<ObjectStore>(OBJECT_STORE);
     [alice, bob, outsider] = await Promise.all([database.newMember(), database.newMember(), database.newMember()]);
     chatId = (await new SupabaseChatRepository(database.clientFor(alice.caller)).findOrCreateChat(alice.userId, bob.userId)).chatId;
