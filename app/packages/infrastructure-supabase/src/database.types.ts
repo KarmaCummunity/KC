@@ -2251,12 +2251,12 @@ export type Database = {
           id: string
           machine_id: string
           no_show_at: string | null
-          owner_id: string
+          owner_id: string | null
           pickup_mode: string
           pickup_window_end: string | null
           pickup_window_start: string | null
           post_id: string
-          recipient_id: string
+          recipient_id: string | null
           requested_meeting_point: Json | null
           seats: number
           slot_ends_at: string | null
@@ -2274,12 +2274,12 @@ export type Database = {
           id?: string
           machine_id: string
           no_show_at?: string | null
-          owner_id: string
+          owner_id?: string | null
           pickup_mode?: string
           pickup_window_end?: string | null
           pickup_window_start?: string | null
           post_id: string
-          recipient_id: string
+          recipient_id?: string | null
           requested_meeting_point?: Json | null
           seats?: number
           slot_ends_at?: string | null
@@ -2297,12 +2297,12 @@ export type Database = {
           id?: string
           machine_id?: string
           no_show_at?: string | null
-          owner_id?: string
+          owner_id?: string | null
           pickup_mode?: string
           pickup_window_end?: string | null
           pickup_window_start?: string | null
           post_id?: string
-          recipient_id?: string
+          recipient_id?: string | null
           requested_meeting_point?: Json | null
           seats?: number
           slot_ends_at?: string | null
@@ -3012,7 +3012,7 @@ export type Database = {
           item_subcategory_id: string | null
           kind_id: string
           location_display_level: string
-          owner_id: string
+          owner_id: string | null
           post_type: string
           published_at: string | null
           search_vector: unknown
@@ -3044,7 +3044,7 @@ export type Database = {
           item_subcategory_id?: string | null
           kind_id: string
           location_display_level?: string
-          owner_id: string
+          owner_id?: string | null
           post_type?: string
           published_at?: string | null
           search_vector?: unknown
@@ -3076,7 +3076,7 @@ export type Database = {
           item_subcategory_id?: string | null
           kind_id?: string
           location_display_level?: string
-          owner_id?: string
+          owner_id?: string | null
           post_type?: string
           published_at?: string | null
           search_vector?: unknown
@@ -5089,12 +5089,12 @@ export type Database = {
           id: string
           machine_id: string
           no_show_at: string | null
-          owner_id: string
+          owner_id: string | null
           pickup_mode: string
           pickup_window_end: string | null
           pickup_window_start: string | null
           post_id: string
-          recipient_id: string
+          recipient_id: string | null
           requested_meeting_point: Json | null
           seats: number
           slot_ends_at: string | null
@@ -5125,12 +5125,12 @@ export type Database = {
           id: string
           machine_id: string
           no_show_at: string | null
-          owner_id: string
+          owner_id: string | null
           pickup_mode: string
           pickup_window_end: string | null
           pickup_window_start: string | null
           post_id: string
-          recipient_id: string
+          recipient_id: string | null
           requested_meeting_point: Json | null
           seats: number
           slot_ends_at: string | null
@@ -5158,12 +5158,12 @@ export type Database = {
           id: string
           machine_id: string
           no_show_at: string | null
-          owner_id: string
+          owner_id: string | null
           pickup_mode: string
           pickup_window_end: string | null
           pickup_window_start: string | null
           post_id: string
-          recipient_id: string
+          recipient_id: string | null
           requested_meeting_point: Json | null
           seats: number
           slot_ends_at: string | null
@@ -5190,12 +5190,12 @@ export type Database = {
           id: string
           machine_id: string
           no_show_at: string | null
-          owner_id: string
+          owner_id: string | null
           pickup_mode: string
           pickup_window_end: string | null
           pickup_window_start: string | null
           post_id: string
-          recipient_id: string
+          recipient_id: string | null
           requested_meeting_point: Json | null
           seats: number
           slot_ends_at: string | null
@@ -5222,12 +5222,12 @@ export type Database = {
           id: string
           machine_id: string
           no_show_at: string | null
-          owner_id: string
+          owner_id: string | null
           pickup_mode: string
           pickup_window_end: string | null
           pickup_window_start: string | null
           post_id: string
-          recipient_id: string
+          recipient_id: string | null
           requested_meeting_point: Json | null
           seats: number
           slot_ends_at: string | null
@@ -5258,12 +5258,12 @@ export type Database = {
           id: string
           machine_id: string
           no_show_at: string | null
-          owner_id: string
+          owner_id: string | null
           pickup_mode: string
           pickup_window_end: string | null
           pickup_window_start: string | null
           post_id: string
-          recipient_id: string
+          recipient_id: string | null
           requested_meeting_point: Json | null
           seats: number
           slot_ends_at: string | null
@@ -5360,12 +5360,12 @@ export type Database = {
           id: string
           machine_id: string
           no_show_at: string | null
-          owner_id: string
+          owner_id: string | null
           pickup_mode: string
           pickup_window_end: string | null
           pickup_window_start: string | null
           post_id: string
-          recipient_id: string
+          recipient_id: string | null
           requested_meeting_point: Json | null
           seats: number
           slot_ends_at: string | null
@@ -5392,12 +5392,12 @@ export type Database = {
           id: string
           machine_id: string
           no_show_at: string | null
-          owner_id: string
+          owner_id: string | null
           pickup_mode: string
           pickup_window_end: string | null
           pickup_window_start: string | null
           post_id: string
-          recipient_id: string
+          recipient_id: string | null
           requested_meeting_point: Json | null
           seats: number
           slot_ends_at: string | null
@@ -5424,12 +5424,12 @@ export type Database = {
           id: string
           machine_id: string
           no_show_at: string | null
-          owner_id: string
+          owner_id: string | null
           pickup_mode: string
           pickup_window_end: string | null
           pickup_window_start: string | null
           post_id: string
-          recipient_id: string
+          recipient_id: string | null
           requested_meeting_point: Json | null
           seats: number
           slot_ends_at: string | null
@@ -5470,12 +5470,12 @@ export type Database = {
           id: string
           machine_id: string
           no_show_at: string | null
-          owner_id: string
+          owner_id: string | null
           pickup_mode: string
           pickup_window_end: string | null
           pickup_window_start: string | null
           post_id: string
-          recipient_id: string
+          recipient_id: string | null
           requested_meeting_point: Json | null
           seats: number
           slot_ends_at: string | null
@@ -5502,12 +5502,12 @@ export type Database = {
           id: string
           machine_id: string
           no_show_at: string | null
-          owner_id: string
+          owner_id: string | null
           pickup_mode: string
           pickup_window_end: string | null
           pickup_window_start: string | null
           post_id: string
-          recipient_id: string
+          recipient_id: string | null
           requested_meeting_point: Json | null
           seats: number
           slot_ends_at: string | null
@@ -5534,12 +5534,12 @@ export type Database = {
           id: string
           machine_id: string
           no_show_at: string | null
-          owner_id: string
+          owner_id: string | null
           pickup_mode: string
           pickup_window_end: string | null
           pickup_window_start: string | null
           post_id: string
-          recipient_id: string
+          recipient_id: string | null
           requested_meeting_point: Json | null
           seats: number
           slot_ends_at: string | null
@@ -5680,12 +5680,12 @@ export type Database = {
           id: string
           machine_id: string
           no_show_at: string | null
-          owner_id: string
+          owner_id: string | null
           pickup_mode: string
           pickup_window_end: string | null
           pickup_window_start: string | null
           post_id: string
-          recipient_id: string
+          recipient_id: string | null
           requested_meeting_point: Json | null
           seats: number
           slot_ends_at: string | null
@@ -5712,12 +5712,12 @@ export type Database = {
           id: string
           machine_id: string
           no_show_at: string | null
-          owner_id: string
+          owner_id: string | null
           pickup_mode: string
           pickup_window_end: string | null
           pickup_window_start: string | null
           post_id: string
-          recipient_id: string
+          recipient_id: string | null
           requested_meeting_point: Json | null
           seats: number
           slot_ends_at: string | null
@@ -6102,12 +6102,12 @@ export type Database = {
           id: string
           machine_id: string
           no_show_at: string | null
-          owner_id: string
+          owner_id: string | null
           pickup_mode: string
           pickup_window_end: string | null
           pickup_window_start: string | null
           post_id: string
-          recipient_id: string
+          recipient_id: string | null
           requested_meeting_point: Json | null
           seats: number
           slot_ends_at: string | null
@@ -6134,12 +6134,12 @@ export type Database = {
           id: string
           machine_id: string
           no_show_at: string | null
-          owner_id: string
+          owner_id: string | null
           pickup_mode: string
           pickup_window_end: string | null
           pickup_window_start: string | null
           post_id: string
-          recipient_id: string
+          recipient_id: string | null
           requested_meeting_point: Json | null
           seats: number
           slot_ends_at: string | null
@@ -6455,12 +6455,12 @@ export type Database = {
           id: string
           machine_id: string
           no_show_at: string | null
-          owner_id: string
+          owner_id: string | null
           pickup_mode: string
           pickup_window_end: string | null
           pickup_window_start: string | null
           post_id: string
-          recipient_id: string
+          recipient_id: string | null
           requested_meeting_point: Json | null
           seats: number
           slot_ends_at: string | null
@@ -6487,12 +6487,12 @@ export type Database = {
           id: string
           machine_id: string
           no_show_at: string | null
-          owner_id: string
+          owner_id: string | null
           pickup_mode: string
           pickup_window_end: string | null
           pickup_window_start: string | null
           post_id: string
-          recipient_id: string
+          recipient_id: string | null
           requested_meeting_point: Json | null
           seats: number
           slot_ends_at: string | null
@@ -6552,12 +6552,12 @@ export type Database = {
           id: string
           machine_id: string
           no_show_at: string | null
-          owner_id: string
+          owner_id: string | null
           pickup_mode: string
           pickup_window_end: string | null
           pickup_window_start: string | null
           post_id: string
-          recipient_id: string
+          recipient_id: string | null
           requested_meeting_point: Json | null
           seats: number
           slot_ends_at: string | null
@@ -6589,12 +6589,12 @@ export type Database = {
           id: string
           machine_id: string
           no_show_at: string | null
-          owner_id: string
+          owner_id: string | null
           pickup_mode: string
           pickup_window_end: string | null
           pickup_window_start: string | null
           post_id: string
-          recipient_id: string
+          recipient_id: string | null
           requested_meeting_point: Json | null
           seats: number
           slot_ends_at: string | null

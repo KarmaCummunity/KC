@@ -20,6 +20,7 @@ import { unwrapCall } from '../rpc/mapRpcError';
 import { sessionUserId } from '../users/userReads';
 import type { HandoffRow } from './givingHandoffs';
 import { requireRpcRow } from './rpcRow';
+import { presentMemberIds, memberEntry } from '../users/memberIds';
 
 type Client = SupabaseClient<Database>;
 
@@ -49,7 +50,7 @@ export function mapEventRegistration(row: HandoffRow, displayName: string | null
   if (!isEventRegistrationStatus(row.status)) return null;
   return {
     handoffId: row.id,
-    recipientId: row.recipient_id,
+    recipientId: row.recipient_id ?? '',
     displayName,
     status: row.status,
     reservedAt: row.created_at,
@@ -127,11 +128,11 @@ export async function listEventRegistrations(client: Client, target: string): Pr
   const users =
     unwrapCall(
       'table:users',
-      await client.from('users').select('id, display_name').in('id', [...new Set(rows.map((row) => row.recipient_id))]),
+      await client.from('users').select('id, display_name').in('id', presentMemberIds(rows.map((row) => row.recipient_id))),
     ) ?? [];
   const nameById = new Map(users.map((user) => [user.id, user.display_name]));
   return rows.flatMap((row) => {
-    const registration = mapEventRegistration(row, nameById.get(row.recipient_id) ?? null);
+    const registration = mapEventRegistration(row, memberEntry(nameById, row.recipient_id) ?? null);
     return registration ? [registration] : [];
   });
 }

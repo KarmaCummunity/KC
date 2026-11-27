@@ -144,7 +144,7 @@ Answered by the PM, in the order they were asked:
 4. **Money vocabulary.** A completed payment is `succeeded`; a called-off one is `cancelled`, everywhere.
 5. **Operator cases.** Retired; the review queue (`moderation_queue`) replaces them.
 6. **Recurring rides.** Ride templates are retired in favour of ride series.
-7. **Account deletion.** There is no `deleted` state: the purge removes the row, and a failed purge is retried.
+7. **Account deletion.** There is no `deleted` state and no tombstone member: the purge removes the row, and a failed purge is retried. The other member's records survive it (#2088): a post handed over to a member who stays, and every handoff of the deleted member, keep their row with `NULL` for the deleted side (`posts.owner_id`, `post_handoffs.owner_id` / `recipient_id`, `on delete set null`); the app shows that side as "Deleted user". Entering `pending_deletion` cancels the member's live handoffs (reason `system`).
 
 Also decided: an admin restore returns a removed post to its previous status (`D129`); items have no expiry (`D21`); an expired post is republished as a new post, never reopened (`D127`); an event expires when it ends (`D128`); a post has no `cancelled` state and its closed label follows the world (`D141`, `D142`); a recurring event or ride is one card in the feed (FR-POST-024, FR-RIDE-046).
 
