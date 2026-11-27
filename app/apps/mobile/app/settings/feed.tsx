@@ -25,6 +25,7 @@ import {
   normalizeMuteKeyword,
 } from '../../src/lib/feedMuteFilters';
 import { FormScrollView } from '../../src/components/ui/FormScrollView';
+export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
 
 export default function FeedSettingsScreen() {
   const options = useShellStackScreenOptions();

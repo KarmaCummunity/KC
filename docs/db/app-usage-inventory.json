@@ -32,7 +32,7 @@
   {
    "kind": "rpc",
    "file": "app/apps/mobile/app/pro.tsx",
-   "line": 38,
+   "line": 39,
    "area": "mobile",
    "symbol": "ProPaywallScreen",
    "via": "literal",

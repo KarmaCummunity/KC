@@ -14,6 +14,7 @@ import { rowDirectionStart } from '../../src/lib/rtlLayout';
 import { KcFlashList } from '../../src/components/lists/KcFlashList';
 import { SimpleRowListSkeleton } from '../../src/components/skeletons/SimpleRowListSkeleton';
 import { listOrEmpty, valueOrNull } from '../../src/lib/backendAvailability';
+export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
 
 type SuggestionItem = {
   userId: string;

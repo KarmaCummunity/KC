@@ -745,7 +745,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `chat-media` (bucket) | core | 1:1 | bucket `chat-media` | Declared in `95_platform/090_storage.sql`: private, `<user_id>/<chat_id>/<file>`, read through signed URLs by chat members (M23, verified). |  | high | chatMediaUrl.ts:17 |
 | `post-images` (bucket) | core | 1:1 | see `infrastructure-supabase/src/posts/` |  |  |  | usePostShare.ts:69, probeDraftImageAvailability.ts:30, listingImageUpload.ts:36 |
 | `topic = 'user:${userId}:notifications'` (channel) | core | 1:1 | topic `user:<user id>:notifications` | Already on the baseline contract (event `badge`). |  | high | useNotificationInboxBadge.ts:30 |
-| `api_my_pro_status` | core | 1:1 | see `infrastructure-supabase/src/payments/` |  |  |  | pro.tsx:38 |
+| `api_my_pro_status` | core | 1:1 | see `infrastructure-supabase/src/payments/` |  |  |  | pro.tsx:39 |
 | `app_flags` (table) | core | 1:1 | see `infrastructure-supabase/src/featureFlags/` |  |  |  | featureFlagsComposition.ts:12 |
 | `karma_ledger` (table) | wedge | CHANGED | see `infrastructure-supabase/src/karma/` |  |  |  | useKarmaHistory.ts:24 |
 

@@ -41,6 +41,7 @@ Rules for every function:
 - Guards: `supabase/tests/0161_*`, `0198_*`, `0520_*` (defaults, trigger functions, internal helpers, the anon list, RLS predicates) and `scripts/check-rpc-grants.mjs` (CI backend lane: every RPC the app calls is executable by a client role).
 - Clamp every caller-controlled limit or window (e.g. `least(greatest(p_limit, 1), 50)`).
 - `create or replace` keeps grants. Changing the return type needs `drop function` first, which is destructive: avoid it, or follow the migration-safety rule.
+- Changing the parameter list is not a replace: `create or replace` adds a second function of that name, and the old one stays callable with its old body and grants. Drop the old signature first in the same migration (`drop function kc_private.f(uuid);`) and re-grant the new one. An overload that is meant to exist carries `-- function-overload: allow <reason>` on its `create` line. `scripts/check-function-signatures.mjs` (CI static lane) enforces this (KC#1722).
 
 ### 3. RLS expectations
 
