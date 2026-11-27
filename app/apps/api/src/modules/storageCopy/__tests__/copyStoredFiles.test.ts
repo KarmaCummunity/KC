@@ -200,7 +200,8 @@ describe('copyStoredFiles', () => {
     expect(first).toMatchObject({ scanned: 2, copied: 2, next: { bucket: 'avatars', after: 'u2/b.jpg' } });
     expect(second).toMatchObject({ scanned: 3, copied: 3, next: { bucket: 'post-images', after: 'u1/p1/e.jpg' } });
     expect(third).toMatchObject({ scanned: 1, copied: 1, next: null });
-    expect(downloads).toEqual(['avatars/u1/a.jpg', 'avatars/u2/b.jpg', 'avatars/u3/c.jpg', 'chat-media/u1/c1/d.jpg', 'post-images/u1/p1/e.jpg', 'post-images/u1/p1/f.jpg']);
+    // Files of one pass are copied side by side, so only what was downloaded is fixed, not the order within a pass.
+    expect([...downloads].sort()).toEqual(['avatars/u1/a.jpg', 'avatars/u2/b.jpg', 'avatars/u3/c.jpg', 'chat-media/u1/c1/d.jpg', 'post-images/u1/p1/e.jpg', 'post-images/u1/p1/f.jpg']);
   });
 
   it('moves on to the buckets after a cursor whose bucket no longer exists, and ends after the last one', async () => {
