@@ -1,14 +1,30 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
-const m = vi.hoisted(() => ({ hasSent: vi.fn(), send: vi.fn(), append: vi.fn(), reconcile: vi.fn(), failed: vi.fn(), uuid: vi.fn(() => 'client-1'), t: vi.fn((k: string) => k) }));
+const m = vi.hoisted(() => ({
+  hasSent: vi.fn(),
+  send: vi.fn(),
+  append: vi.fn(),
+  reconcile: vi.fn(),
+  failed: vi.fn(),
+  uuid: vi.fn(() => 'client-1'),
+  t: vi.fn((k: string) => k),
+  /** Default: complete profile — soft gate runs the deferred send immediately. */
+  requestSoftGate: vi.fn((action: () => void) => { action(); }),
+}));
 vi.mock('../../lib/container', () => ({ container: { chatRepo: { hasSentAnyMessage: m.hasSent }, sendMessage: { execute: m.send } } }));
 vi.mock('../../store/chatStore', () => ({ useChatStore: { getState: () => ({ appendOptimistic: m.append, reconcileSent: m.reconcile, markFailed: m.failed }) } }));
 vi.mock('expo-crypto', () => ({ randomUUID: m.uuid }));
 vi.mock('../../i18n', () => ({ default: { t: m.t } }));
+vi.mock('../../components/OnboardingSoftGate', () => ({
+  useSoftGate: () => ({ requestSoftGate: m.requestSoftGate }),
+}));
 import { useChatSend } from '../useChatSend';
 describe('useChatSend', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    m.requestSoftGate.mockImplementation((action: () => void) => { action(); });
+  });
   it('trims and optimistically inserts a valid send, clears input and prompts on first send', async () => {
     m.hasSent.mockResolvedValue(false); m.send.mockResolvedValue({ messageId: 'server-1' });
     const setInput = vi.fn(), prompt = vi.fn();
@@ -18,6 +34,23 @@ describe('useChatSend', () => {
     expect(m.send).toHaveBeenCalledWith({ chatId: 'c1', senderId: 'u1', body: 'hello', messageId: 'client-1' });
     expect(m.reconcile).toHaveBeenCalledWith('c1', 'client-1', { messageId: 'server-1' });
     expect(setInput).toHaveBeenCalledWith(''); expect(prompt).toHaveBeenCalledWith('first-message-sent');
+  });
+  it('FR-AUTH-015: incomplete profile opens the soft gate and defers chat send (no side effects)', async () => {
+    m.requestSoftGate.mockImplementation(() => { /* defer — gate modal open */ });
+    const setInput = vi.fn();
+    const { result } = renderHook(() => useChatSend({ chatId: 'c1', userId: 'u1', input: 'hello', setInput, presentPrePrompt: vi.fn(), setNotify: vi.fn() }));
+    await act(async () => result.current());
+    expect(m.requestSoftGate).toHaveBeenCalledTimes(1);
+    expect(m.send).not.toHaveBeenCalled();
+    expect(m.append).not.toHaveBeenCalled();
+    expect(setInput).not.toHaveBeenCalled();
+  });
+  it('FR-AUTH-015: complete profile proceeds through the soft gate on chat send', async () => {
+    m.hasSent.mockResolvedValue(true); m.send.mockResolvedValue({ messageId: 'server-1' });
+    const { result } = renderHook(() => useChatSend({ chatId: 'c1', userId: 'u1', input: 'hi', setInput: vi.fn(), presentPrePrompt: vi.fn(), setNotify: vi.fn() }));
+    await act(async () => result.current());
+    expect(m.requestSoftGate).toHaveBeenCalledTimes(1);
+    expect(m.send).toHaveBeenCalledWith({ chatId: 'c1', senderId: 'u1', body: 'hi', messageId: 'client-1' });
   });
   it('skips blank input and marks a failed send with deleted-user feedback', async () => {
     const setNotify = vi.fn();

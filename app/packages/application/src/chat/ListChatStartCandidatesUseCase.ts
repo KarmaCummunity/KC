@@ -1,5 +1,5 @@
 /** FR-CHAT-017 — recipients the "+" on the Inbox offers: people I follow, then other people found by name. */
-import { BackendUnavailableError, type User } from '@kc/domain';
+import { BackendUnavailableError, normalizeChatSearchText, type User } from '@kc/domain';
 import type { IBlockRepository } from '../ports/IBlockRepository';
 import type { IUserRepository } from '../ports/IUserRepository';
 
@@ -52,9 +52,9 @@ export class ListChatStartCandidatesUseCase {
 }
 
 function matches(user: User, query: string): boolean {
-  const needle = query.toLowerCase();
+  const needle = normalizeChatSearchText(query);
   return (
-    (user.displayName ?? '').toLowerCase().includes(needle) ||
-    user.shareHandle.toLowerCase().includes(needle)
+    normalizeChatSearchText(user.displayName ?? '').includes(needle) ||
+    normalizeChatSearchText(user.shareHandle).includes(needle)
   );
 }

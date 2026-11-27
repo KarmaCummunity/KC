@@ -35,7 +35,7 @@ vi.mock('../../../services/listingStreetAddressComposition', () => ({
 }));
 // Street picker stand-in: the real one pulls in native animation modules.
 vi.mock('../../StreetPicker', () => ({ StreetPicker: () => null }));
-vi.mock('../../../services/listingImageUpload', () => ({ pickListingImages: vi.fn(async () => []), uploadListingImages: vi.fn() }));
+vi.mock('../../../services/listingImageUpload', () => ({ pickListingImages: vi.fn(async () => ({ status: 'ok' as const, value: [] })), uploadListingImages: vi.fn() }));
 vi.mock('../../../services/rideSeriesComposition', () => ({ rideSeriesUseCases: { create: () => ({ execute: vi.fn() }) } }));
 vi.mock('../../../lib/rides/rideStartDetails', () => ({ rememberRideRoute: vi.fn() }));
 vi.mock('../../../lib/analyticsCoreLoop', () => ({ trackCoreLoop: vi.fn(), trackActivationIfFirst: vi.fn() }));

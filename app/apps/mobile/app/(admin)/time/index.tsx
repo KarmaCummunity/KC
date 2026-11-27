@@ -169,7 +169,6 @@ export default function TimeScreen() {
       isLoading={rolesLoading}
       allowed={can('time.report')}
       loadingLabel={t.loading}
-      forbiddenLabel={t.forbiddenTitle}
     >
     <View style={styles.root}>
       <AdminFilterTopBarButton

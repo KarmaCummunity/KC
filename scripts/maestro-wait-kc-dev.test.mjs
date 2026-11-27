@@ -52,3 +52,20 @@ test('waitForSignIn gives up at the timeout and reports the last failure', async
   assert.equal(r.detail, 'HTTP 500');
   assert.ok(r.waitedMs <= 60_000 && r.attempts >= 4, `${r.waitedMs}ms, ${r.attempts} attempts`);
 });
+
+test('waitForSignIn with a streak ignores a single sign-in between failures (a flapping kc-dev)', async () => {
+  const { now, sleep } = clock();
+  const ok = { ok: true, detail: 'signed in' };
+  const down = { ok: false, detail: 'HTTP 504' };
+  const answers = [down, ok, down, ok, ok, ok];
+  const r = await waitForSignIn({ probe: async () => answers.shift(), timeoutMs: 600_000, intervalMs: 15_000, streak: 3, sleep, now });
+  assert.deepEqual(r, { ok: true, attempts: 6, waitedMs: 75_000, detail: 'signed in' });
+});
+
+test('waitForSignIn with a streak times out on the last failure when the run of sign-ins comes too late', async () => {
+  const { now, sleep } = clock();
+  const answers = [{ ok: false, detail: 'HTTP 504' }, { ok: true, detail: 'signed in' }, { ok: true, detail: 'signed in' }];
+  const r = await waitForSignIn({ probe: async () => answers.shift(), timeoutMs: 30_000, intervalMs: 15_000, streak: 3, sleep, now });
+  assert.equal(r.ok, false);
+  assert.equal(r.detail, 'HTTP 504');
+});

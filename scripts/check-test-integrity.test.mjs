@@ -9,7 +9,8 @@ import { execFileSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { ancestryGapMessage, applyReviewed, countAssertions, findViolationRecords, findViolations, isTest, loadDiff, parseDiff, parseReviewed, prsThatChangedReviewed, REVIEWED_FILE, reviewedAt, stripComments } from './check-test-integrity.mjs';
+import { ancestryGapMessage, applyReviewed, countAssertions, countAssertionsTextual, findViolationRecords, findViolations, isTest, loadDiff, parseDiff, parseReviewed, prsThatChangedReviewed, REVIEWED_FILE, reviewedAt, stripComments } from './check-test-integrity.mjs';
+import { countJsAssertions } from './check-test-integrity-ast.mjs';
 
 const SK = '.sk' + 'ip';
 const MARKER_LINES = [
@@ -74,6 +75,57 @@ test('every skip / focus / todo / conditional / alias / option / nocheck / bare-
   for (const line of MARKER_LINES) {
     assert.equal(findViolations([mod('app/a.test.ts', { added: [line] })]).length, 1, line);
   }
+});
+
+test('structural scan adds early / same-line bare returns and empty tests (TD-222)', () => {
+  assert.equal(findViolations([mod('app/a.test.ts', { added: ['if (cond) return;'] })]).length, 1);
+  assert.equal(findViolations([mod('app/a.test.ts', { added: ['return; expect(1).toBe(1);'] })]).length, 1);
+  // Line regex still flags `.skip` inside a string (fail closed, same as dev).
+  assert.equal(findViolations([mod('app/a.test.ts', { added: [`const decoy = "it${SK}('no')";`] })]).length, 1);
+  assert.equal(
+    findViolations([mod('app/a.test.ts', { added: ["it('empty', () => {})"] })]).length,
+    1,
+  );
+});
+
+test('regex / JSX decoys before it.skip cannot hide the marker (fail closed, #1818 review)', () => {
+  const skipLine = `it${SK}('x', () => {});`;
+  const decoys = [
+    "const r = /'/;",
+    "const r = /[/]'/;",
+    'function f(){ return /"/.test(x) }',
+    "const el = <div>don't</div>;",
+  ];
+  for (const decoy of decoys) {
+    const newText = `${decoy}\n${skipLine}\n`;
+    const files = [mod('app/a.test.tsx', { added: [skipLine], newText, oldText: `${decoy}\n` })];
+    assert.ok(findViolations(files).length >= 1, `decoy must not hide marker: ${decoy}`);
+    assert.match(findViolations(files)[0], /skip \/ focus/);
+  }
+});
+
+test('a tokenizer misparse can only lower the assertion count (fails closed)', () => {
+  const clean = 'expect(1).toBe(1);\nexpect(2).toBe(2);\n';
+  // Decoys that previously swallowed the file: structural count must not rise.
+  for (const decoy of ["const r = /'/;\n", "const el = <div>don't</div>;\n"]) {
+    const confused = decoy + clean;
+    assert.ok(
+      countJsAssertions(confused) <= countJsAssertions(clean),
+      `misparse must not inflate assertions: ${decoy}`,
+    );
+    assert.ok(
+      countAssertions('a.test.tsx', confused) <= countAssertionsTextual('a.test.tsx', confused),
+      'structural count stays ≤ textual (fail closed on net-removal)',
+    );
+  }
+});
+
+test('expect/assert inside a string does not count toward assertion totals (TD-222)', () => {
+  const file = mod('app/a.test.ts', {
+    oldText: 'expect(a).toBe(1);\nexpect(b).toBe(2);',
+    newText: "expect(a).toBe(1);\nconst s = 'expect(b).toBe(2)';",
+  });
+  assert.equal(findViolations([file]).length, 1);
 });
 
 test('markers in non-test code are ignored; pgTAP skip in SQL tests is flagged', () => {
@@ -285,4 +337,27 @@ test('prsThatChangedReviewed and reviewedAt read the list and its PRs from git',
     const { remaining } = applyReviewed(recs, { headEntries: reviewedAt(head, dir), introducedPrs: prsThatChangedReviewed(base, head, dir) });
     assert.deepEqual(remaining, []);
   });
+});
+
+// CI-owner re-review at b814152b: each decoy zeroes the structural OLD count, so
+// only dev's textual count can see the removed expect. Flag on either measure.
+function assertOldMisparseStillFlagged(decoy) {
+  const three = 'expect(a).toBe(1);\nexpect(b).toBe(2);\nexpect(c).toBe(3);';
+  const two = 'expect(a).toBe(1);\nexpect(b).toBe(2);';
+  for (const newText of [`${decoy}\n${two}`, two]) {
+    const file = mod('app/a.test.tsx', { oldText: `${decoy}\n${three}`, newText });
+    assert.ok(findViolations([file]).some((v) => v.includes('removes 1 assertion(s) net')), `${decoy} -> ${newText}`);
+  }
+}
+
+test('removed assertion is flagged after an old-side regex-after-`)` decoy', () => {
+  assertOldMisparseStillFlagged("if (ok) /'/.test(s);");
+});
+
+test('removed assertion is flagged after an old-side generic-arrow decoy', () => {
+  assertOldMisparseStillFlagged('const f = <T,>(x: T) => x; const s = "\'";');
+});
+
+test('removed assertion is flagged after an old-side angle-bracket type-assertion decoy', () => {
+  assertOldMisparseStillFlagged('const x = <any>y; const s = "don\'t";');
 });

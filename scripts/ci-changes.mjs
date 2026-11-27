@@ -50,10 +50,15 @@ export const LANE_RULES = {
   frontend: [/^app\//, /^scripts\//, /^sonar-project\.properties$/, ...SHARED],
   // DB validation also installs the app workspace (sqlProbes), so lockfile and
   // workspace manifests count. Edge Functions are excluded: the local stack
-  // starts without the edge runtime.
+  // starts without the edge runtime. The API server and its client package run
+  // their database suites and build their container image in this lane; the
+  // packages they share with the app (domain, application) do not plan it on a
+  // PR, and reach it in the merge queue, which runs every lane.
   backend: [
     /^supabase\/(?!functions\/)/,
     /^app\/packages\/infrastructure-supabase\//,
+    /^app\/apps\/api\//,
+    /^app\/packages\/infrastructure-api\//,
     /^app\/(package\.json|pnpm-lock\.yaml|pnpm-workspace\.yaml)$/,
     /^scripts\//,
     ...SHARED,
