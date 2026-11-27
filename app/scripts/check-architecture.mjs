@@ -31,10 +31,7 @@ const FILE_SIZE_ALLOWLIST = new Map([
 
   // SearchFilterSheet.tsx split → 127 lines (TD-133); entry removed.
   // SearchResultCard.tsx barrel (TD-133); entry removed.
-  // Edit-post screen — large form, acceptable as single screen. Bumped 404→415 (P1.1 merged from main).
-  // Further bumped to 425 when adding the FR-POST-013 AC3 Republish branch (TD-70). Republish CTA itself
-  // lives in components/post/ExpiredRepublishView.tsx — the edit-post addition is the dispatch branch only.
-  ['apps/mobile/app/edit-post/[id].tsx', { td: 'TD-130', max: 425 }],
+  // Edit-post screen split → field state in useEditPostForm, save in useEditPostSave (#1752); entry removed.
   // UniversalSearch test suite split into UniversalSearchUseCase.test.ts (152 LOC)
   // + UniversalSearchUseCase.limitsAndFilters.test.ts (178 LOC) in PR #207; both
   // under cap, allowlist entry removed.

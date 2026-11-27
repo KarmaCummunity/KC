@@ -9,7 +9,7 @@ Related: #949, #840, #841, #866. Version source of truth: [`app/VERSION`](../../
 
 | Field | Where | Who bumps |
 |---|---|---|
-| Marketing version (`MAJOR.MINOR.PATCH`) | `app/VERSION` (read by `app.config.ts` → Expo `version`) | [`bump-version-on-merge.yml`](../../.github/workflows/bump-version-on-merge.yml) on every merge to `dev`; a PR sets MINOR/MAJOR by editing the file |
+| Marketing version (`MAJOR.MINOR.PATCH`) | `app/VERSION` (read by `app.config.ts` → Expo `version`) | [`bump-version-on-merge.yml`](../../.github/workflows/bump-version-on-merge.yml) after a merge to `dev` that leaves the merge queue empty (one bump per burst of merges, {{ENG:bump-waits-for-empty-queue}}); a PR sets MINOR/MAJOR by editing the file |
 | iOS `buildNumber` / Android `versionCode` | EAS remote (`eas build:version:get`) with `autoIncrement` on production profile | EAS on each store-bound build |
 
 ### Patch bump (automatic)

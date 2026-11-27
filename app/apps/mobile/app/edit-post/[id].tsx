@@ -1,39 +1,28 @@
 // FR-POST-008, FR-POST-009, FR-POST-015 AC1, FR-ADMIN-006. Edit form for open posts (owner or super-admin).
 // FR-POST-005 — images: same picker + upload pipeline as create.
-// Closes TD-130.
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+// Closes TD-130. Field state lives in useEditPostForm and the save in useEditPostSave (#1752).
+import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { iconSize, useTheme, Text } from '@kc/ui';
-import {
-  canAccessPostEditor, isPostEditableByOwner, postOwnerActions,
-  type Category, type ItemCondition, type LocationDisplayLevel, type PostVisibility,
-} from '@kc/domain';
-import { isPostError } from '@kc/application';
+import { canAccessPostEditor, isPostEditableByOwner, postOwnerActions } from '@kc/domain';
 import { useAuthStore } from '../../src/store/authStore';
 import { useIsSuperAdmin } from '../../src/hooks/useIsSuperAdmin';
-import {
-  getListPostActorIdentityUseCase,
-  getPostByIdUseCase,
-  getUpdatePostUseCase,
-} from '../../src/services/postsComposition';
+import { getListPostActorIdentityUseCase, getPostByIdUseCase } from '../../src/services/postsComposition';
 import { ExpiredRepublishView } from '../../src/components/post/ExpiredRepublishView';
-import type { UploadedAsset } from '../../src/services/imageUpload';
 import { usePostImageUploads, type PostImageUploadSummary } from '../../src/hooks/usePostImageUploads';
 import { uploadErrorMessage } from '../../src/services/storageObjectUpload';
-import { getSupabaseImageThumbUrl, getSupabasePublicImageUrl } from '../../src/lib/imageUrl';
-import { useAddressStateWithCityReset } from '../../src/hooks/useAddressStateWithCityReset';
+import { useEditPostForm } from '../../src/hooks/useEditPostForm';
+import { useEditPostSave } from '../../src/hooks/useEditPostSave';
 import { useEditPostValidation } from '../../src/hooks/useEditPostValidation';
 import { EmptyState } from '../../src/components/EmptyState';
 import { SilentUnauthorizedFallback } from '../../src/components/permissions/SilentUnauthorizedFallback';
 import { EditPostFormScrollContent } from '../../src/components/post/EditPostFormScrollContent';
-import { mapPostErrorToHebrew } from '../../src/services/postMessages';
 import { NotifyModal } from '../../src/components/NotifyModal';
-import { syncOwnerPostActorIdentity } from '../../src/lib/syncOwnerPostActorIdentity';
 import { getUserRepo } from '../../src/services/userComposition';
 import { useEditPostScreenStyles } from '../../src/screens/edit-post/editPostScreen.styles';
 import { useKeyboardVerticalOffset } from '../../src/lib/platform/useKeyboardVerticalOffset';
@@ -41,16 +30,6 @@ import { TAB_INLINE_FORM_HEADER_HEIGHT } from '../../src/lib/platform/formChrome
 import { resolveKeyboardAvoidingBehavior } from '../../src/lib/platform/keyboardVerticalOffset';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
-
-const POST_IMAGES_BUCKET = 'post-images';
-/** The 96 px gallery tile needs the 400 px thumb, never the 2048 px original. */
-function assetPreviewUrl(path: string): string {
-  return getSupabaseImageThumbUrl({ bucket: POST_IMAGES_BUCKET, path });
-}
-/** Photos stored before thumbs existed only have the original. */
-function assetOriginalUrl(path: string): string {
-  return getSupabasePublicImageUrl({ bucket: POST_IMAGES_BUCKET, path });
-}
 
 export default function EditPostScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -73,26 +52,12 @@ export default function EditPostScreen() {
     staleTime: 60_000, // PERF-3: post detail — edit submission invalidates explicitly
   });
 
-  // Form state — seeded once the post loads.
-  const [seeded, setSeeded] = useState(false);
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [category, setCategory] = useState<Category>('Other');
-  const [condition, setCondition] = useState<ItemCondition>('Good');
-  const [urgency, setUrgency] = useState('');
-  const {
-    city, street, streetNumber, setCity, setStreet, setStreetNumber,
-  } = useAddressStateWithCityReset({});
-  const addressSetters = useRef({ setCity, setStreet, setStreetNumber });
-  addressSetters.current = { setCity, setStreet, setStreetNumber };
-  const [locationDisplayLevel, setLocationDisplayLevel] =
-    useState<LocationDisplayLevel>('CityAndStreet');
-  const [visibility, setVisibility] = useState<PostVisibility>('Public');
+  const post = query.data?.post;
+  const form = useEditPostForm(id, post);
+  const { title, city, street, streetNumber, uploads, setUploads } = form;
   const [hideFromCounterparty, setHideFromCounterparty] = useState(false);
-  const [uploads, setUploads] = useState<UploadedAsset[]>([]);
   const [notify, setNotify] = useState<{ title: string; message: string } | null>(null);
 
-  const post = query.data?.post;
   const validation = useEditPostValidation({
     isGive: post?.type === 'Give',
     title,
@@ -115,34 +80,6 @@ export default function EditPostScreen() {
     enabled: Boolean(id) && Boolean(viewerId),
     staleTime: 5 * 60_000, // PERF-3: post actor identity (self) — upsert actions invalidate explicitly
   });
-
-  useEffect(() => {
-    setSeeded(false);
-  }, [id]);
-
-  useEffect(() => {
-    if (!post || seeded) return;
-    setTitle(post.title);
-    setDescription(post.description ?? '');
-    setCategory(post.category);
-    setCondition(post.itemCondition ?? 'Good');
-    setUrgency(post.urgency ?? '');
-    addressSetters.current.setCity({ id: post.address.city, name: post.address.cityName });
-    addressSetters.current.setStreet(post.address.street);
-    addressSetters.current.setStreetNumber(post.address.streetNumber);
-    setLocationDisplayLevel(post.locationDisplayLevel);
-    setVisibility(post.visibility);
-    setUploads(
-      post.mediaAssets.map((a) => ({
-        path: a.path,
-        mimeType: a.mimeType,
-        sizeBytes: a.sizeBytes,
-        previewUri: assetPreviewUrl(a.path),
-        previewFallbackUri: assetOriginalUrl(a.path),
-      })),
-    );
-    setSeeded(true);
-  }, [post, seeded, setCity, setStreet, setStreetNumber]);
 
   useEffect(() => {
     if (!viewerId || identityQuery.data == null) return;
@@ -169,59 +106,17 @@ export default function EditPostScreen() {
   const handleRemoveImage = (path: string) =>
     setUploads((prev) => prev.filter((u) => u.path !== path));
 
-  const save = useMutation({
-    mutationFn: async () => {
-      if (!viewerId || !id) throw new Error('not_authenticated');
-      if (!city) throw new Error('city_required');
-      const updated = await getUpdatePostUseCase().execute({
-        postId: id,
-        viewerId,
-        patch: {
-          title,
-          description: description.trim() ? description.trim() : null,
-          category,
-          address: { city: city.id, cityName: city.name, street, streetNumber },
-          locationDisplayLevel,
-          itemCondition: post?.type === 'Give' ? condition : null,
-          urgency: post?.type !== 'Give' && urgency.trim() ? urgency.trim() : null,
-          visibility,
-          mediaAssets: uploads.map((u) => ({
-            path: u.path,
-            mimeType: u.mimeType,
-            sizeBytes: u.sizeBytes,
-          })),
-        },
-      });
-      if (post?.ownerId === viewerId) {
-        await syncOwnerPostActorIdentity({
-          postId: id,
-          ownerId: viewerId,
-          visibility,
-          hideFromCounterparty,
-        });
-      }
-      return updated;
-    },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['post', id, viewerId] });
-      await queryClient.invalidateQueries({ queryKey: ['post-actor-identity', id] });
-      await queryClient.invalidateQueries({ queryKey: ['my-posts'] });
-      await queryClient.invalidateQueries({ queryKey: ['my-hidden-open-posts'] });
-      await queryClient.invalidateQueries({ queryKey: ['profile-closed-posts'] });
-      await queryClient.invalidateQueries({ queryKey: ['profile-tab-open-count'] });
-      await queryClient.invalidateQueries({ queryKey: ['profile-tab-closed-count'] });
-      await queryClient.invalidateQueries({ queryKey: ['feed'] });
-      if (router.canGoBack()) router.back();
-      else router.replace('/(tabs)');
-    },
-    onError: (err) => {
-      const message = isPostError(err) ? mapPostErrorToHebrew(err.code) : t('post.editPost.networkError');
-      setNotify({ title: t('post.editPost.saveFailedTitle'), message });
-    },
+  const save = useEditPostSave({
+    postId: id,
+    viewerId,
+    post,
+    form,
+    hideFromCounterparty,
+    onFailure: setNotify,
   });
 
   // Loading / error / not-found guards.
-  if (query.isLoading || (!seeded && post != null)) {
+  if (query.isLoading || (!form.seeded && post != null)) {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color={colors.primary} />
@@ -328,25 +223,25 @@ export default function EditPostScreen() {
           permissionBlocked={permissionBlocked === 'mediaLibrary'}
           onRemovePhoto={handleRemoveImage}
           title={title}
-          onTitleChange={setTitle}
+          onTitleChange={form.setTitle}
           city={city}
-          onCityChange={setCity}
+          onCityChange={form.setCity}
           street={street}
-          onStreetChange={setStreet}
+          onStreetChange={form.setStreet}
           streetNumber={streetNumber}
-          onStreetNumberChange={setStreetNumber}
-          description={description}
-          onDescriptionChange={setDescription}
-          category={category}
-          onCategoryChange={setCategory}
-          condition={condition}
-          onConditionChange={setCondition}
-          locationDisplayLevel={locationDisplayLevel}
-          onLocationDisplayLevelChange={setLocationDisplayLevel}
-          urgency={urgency}
-          onUrgencyChange={setUrgency}
-          visibility={visibility}
-          onVisibilityChange={setVisibility}
+          onStreetNumberChange={form.setStreetNumber}
+          description={form.description}
+          onDescriptionChange={form.setDescription}
+          category={form.category}
+          onCategoryChange={form.setCategory}
+          condition={form.condition}
+          onConditionChange={form.setCondition}
+          locationDisplayLevel={form.locationDisplayLevel}
+          onLocationDisplayLevelChange={form.setLocationDisplayLevel}
+          urgency={form.urgency}
+          onUrgencyChange={form.setUrgency}
+          visibility={form.visibility}
+          onVisibilityChange={form.setVisibility}
           profilePrivacy={profilePrivacy}
           hideFromCounterparty={hideFromCounterparty}
           onHideFromCounterpartyChange={setHideFromCounterparty}

@@ -22,12 +22,17 @@ const SUCCESS_TITLE = 'הדיווח נשלח';
 /** "Already reported" title: the answer to a repeat user report while the first one is open. */
 const DUPLICATE_TITLE = 'כבר דיווחת';
 
-/** Open reports user A filed on one target, read through `reports_select_own`. */
+/**
+ * Open reports user A filed on one target. Filtered by reporter on purpose: seed user A holds
+ * the `support` staff role, and staff read every report (`reports_select_staff`), not only their own.
+ */
 async function openReportsByA(targetType: 'post' | 'user', targetId: string): Promise<{ reason: string }[]> {
   const { session } = await sessionFor(USER_A);
+  const reporterId = (session.user as { id: string }).id;
   return rest<{ reason: string }[]>(
     session.access_token as string,
-    `reports?select=reason&status=eq.open&target_type=eq.${targetType}&target_id=eq.${targetId}`,
+    `reports?select=reason&status=eq.open&reporter_id=eq.${reporterId}` +
+      `&target_type=eq.${targetType}&target_id=eq.${targetId}`,
   );
 }
 
