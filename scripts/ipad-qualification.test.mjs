@@ -84,3 +84,22 @@ test('warm comparison uses visible guest link and preserves startup markers befo
   assert.match(workflow, /startup-markers.log/);
   assert.match(workflow, /source-pr-head.txt/);
 });
+
+
+test('actual accessibility hierarchy and nested runner diagnostics remain bounded and encrypted', () => {
+  const workflow = readFileSync(new URL('../.github/workflows/ipad-guest-qualification.yml', import.meta.url), 'utf8');
+  assert.match(workflow, /maestro --device "\$SIMULATOR_UDID" hierarchy/);
+  assert.match(workflow, /nested-evidence-paths\.txt/);
+  assert.match(workflow, /head -40/);
+  assert.match(workflow, /tail -c 131072 "\$diagnostic"/);
+  assert.ok(workflow.indexOf('nested-evidence-paths.txt') < workflow.indexOf('openssl cms -encrypt'));
+  assert.doesNotMatch(workflow, /upload-artifact|cat .*hierarchy|cat .*nested-/);
+});
+test('guest entry is scrolled fully into view before selector tap without coordinate fallback', () => {
+  const flow = readFileSync(new URL('../tests/native/ipad-guest-qualification.yaml', import.meta.url), 'utf8');
+  assert.match(flow, /scrollUntilVisible:[\s\S]*id: auth-guest-entry[\s\S]*visibilityPercentage: 100/);
+  assert.ok(flow.indexOf('scrollUntilVisible') < flow.indexOf('- tapOn:'));
+  assert.doesNotMatch(flow, /point:|optional: true/);
+  assert.match(flow, /id: guest-post-\.\*/);
+  assert.match(flow, /ipad-guest-detail/);
+});

@@ -5,6 +5,13 @@ name: Isolated iPad guest list and detail, no account writes
     clearState: true
     permissions:
       all: deny
+- scrollUntilVisible:
+    element:
+      id: auth-guest-entry
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 100
+    centerElement: true
 - extendedWaitUntil:
     visible:
       id: auth-guest-entry

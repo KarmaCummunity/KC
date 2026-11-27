@@ -108,6 +108,8 @@ jobs:
           set -euo pipefail
           cd "$RUNNER_TEMP/ipad-evidence"
           capture_native_diagnostics() {
+            # Export the actual accessibility tree, not only screenshots of the app.
+            maestro --device "$SIMULATOR_UDID" hierarchy > "$RUNNER_TEMP/ipad-evidence/hierarchy-$(date +%s).log" 2>&1 || true
             xcrun simctl io "$SIMULATOR_UDID" screenshot "$RUNNER_TEMP/ipad-evidence/final-screen.png" > "$RUNNER_TEMP/ipad-evidence/screenshot.log" 2>&1 || true
             xcrun simctl spawn "$SIMULATOR_UDID" log show --last 8m --style compact --info \
               --predicate 'process == "KC"' > "$RUNNER_TEMP/ipad-evidence/native-console.log" 2>&1 || true
@@ -163,6 +165,17 @@ jobs:
             sips -Z 1600 -s format jpeg -s formatOptions 70 "$image" \
               --out "$RUNNER_TEMP/ipad-evidence-compact/screenshot-$index.jpg" > "$RUNNER_TEMP/sips-output.log" 2>&1
           done < "$RUNNER_TEMP/evidence-images.txt"
+          # Maestro stores hierarchy/command state below hidden debug directories.
+          # Keep a bounded, encrypted copy of nested text diagnostics, never public plaintext.
+          find "$RUNNER_TEMP/ipad-evidence/debug" "$RUNNER_TEMP/ipad-evidence/warm-debug" \
+            -type f \( -name '*.json' -o -name '*.xml' -o -name '*.log' \) 2>/dev/null \
+            | sort | head -40 > "$RUNNER_TEMP/nested-evidence-paths.txt" || true
+          index=0
+          while IFS= read -r diagnostic; do
+            index=$((index + 1))
+            printf '%s\n' "${diagnostic#"$RUNNER_TEMP/ipad-evidence/"}" > "$RUNNER_TEMP/ipad-evidence-compact/nested-$index-path.txt"
+            tail -c 131072 "$diagnostic" > "$RUNNER_TEMP/ipad-evidence-compact/nested-$index.log"
+          done < "$RUNNER_TEMP/nested-evidence-paths.txt"
           tar -czf "$RUNNER_TEMP/ipad-evidence.tar.gz" -C "$RUNNER_TEMP" ipad-evidence-compact
           openssl cms -encrypt -binary -aes-256-cbc -in "$RUNNER_TEMP/ipad-evidence.tar.gz" \
             -outform DER -out "$RUNNER_TEMP/ipad-evidence.cms" "$RUNNER_TEMP/evidence-cert.pem"
