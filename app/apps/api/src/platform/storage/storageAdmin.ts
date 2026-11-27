@@ -87,6 +87,18 @@ export class StorageAdmin {
    * @returns How many stored objects were removed.
    * @throws NoObjectStoreError
    */
+  /** How many objects are stored under `<folder>/` of a bucket. */
+  async countFolder(bucket: string, folder: string): Promise<number> {
+    let count = 0;
+    let pageToken: string | undefined;
+    do {
+      const page = await this.listPage(bucket, `${folder}/`, pageToken);
+      count += page.entries.length;
+      pageToken = page.nextPageToken ?? undefined;
+    } while (pageToken !== undefined);
+    return count;
+  }
+
   async removeFolder(bucket: string, folder: string): Promise<number> {
     const prefix = `${folder}/`;
     let removed = 0;

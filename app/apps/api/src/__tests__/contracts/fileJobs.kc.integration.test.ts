@@ -173,4 +173,35 @@ describe('File jobs on the KC schema', () => {
     expect(await stateOf('avatars', kept)).toEqual({ stored: true, indexed: true });
     expect((await database.admin.query('select 1 from auth.users where id = $1', [staying.userId])).rowCount).toBe(1);
   });
+
+  it('removes a file stored after the purge at a later run, and closes the folder\'s record only once it is found empty after its quiet window', async () => {
+    const leaving = await database.newMember();
+    await upload(leaving, 'post-images', `${leaving.userId}/batch/0.jpg`);
+    await endGracePeriod(leaving);
+    const intentsOf = async () =>
+      (await database.admin.query<{ bucket: string; closed: boolean }>(
+        'select bucket, verified_absent_at is not null as closed from kc_private.storage_deletion_intents where prefix = $1 order by bucket',
+        [leaving.userId],
+      )).rows;
+
+    // The purge records what must end up empty; the folders are empty, but too soon to say for good.
+    const first = await runJob('purge-deleted-accounts');
+    expect(first.body.intents).toMatchObject({ failed: 0 });
+    expect((await intentsOf()).map((intent) => intent.closed)).toEqual([false, false, false]);
+
+    // An upload that was on its way when the account was purged lands afterwards.
+    const late = `${leaving.userId}/batch/late.jpg`;
+    await store.write('post-images', late, PHOTO, { contentType: JPEG, cacheControl: null });
+    await database.admin.query(
+      "update kc_private.storage_deletion_intents set created_at = created_at - interval '2 days', not_before = not_before - interval '2 days', next_sweep_at = now() where prefix = $1",
+      [leaving.userId],
+    );
+
+    const second = await runJob('purge-deleted-accounts');
+
+    expect(second.status).toBe(200);
+    expect(await store.head('post-images', late)).toBeNull();
+    expect(Number((second.body.intents as { verified: number }).verified)).toBeGreaterThanOrEqual(3);
+    expect((await intentsOf()).map((intent) => intent.closed)).toEqual([true, true, true]);
+  });
 });

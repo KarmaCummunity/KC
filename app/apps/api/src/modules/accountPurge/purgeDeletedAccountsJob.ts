@@ -4,6 +4,7 @@ import { batchLimit, type JobReport, type ScheduledJob } from '../../platform/jo
 import { APP_LOGGER, type AppLogger } from '../../platform/logging/appLogger';
 import { StorageAdmin } from '../../platform/storage/storageAdmin';
 import { type PurgeDatabase, purgeDueAccounts } from './purgeAccounts';
+import { type SweepAnswer, type SweepDatabase, sweepDueIntents, type SweepSummary } from './sweepDeletionIntents';
 
 /** Accounts one run purges unless the scheduler asks otherwise, and the most it may ask for. */
 const DEFAULT_BATCH = 50;
@@ -26,7 +27,7 @@ export class PurgeDeletedAccountsJob implements ScheduledJob {
 
   /**
    * @param input `{ limit? }`: accounts to purge in this run.
-   * @returns `{ purged, failed, deferred }`.
+   * @returns `{ purged, failed, deferred, intents }`; `intents` is null when the re-sweep itself failed.
    */
   async run(input: Readonly<Record<string, unknown>>): Promise<JobReport> {
     const summary = await purgeDueAccounts(
@@ -37,13 +38,42 @@ export class PurgeDeletedAccountsJob implements ScheduledJob {
       },
       batchLimit(input.limit, DEFAULT_BATCH, MAX_BATCH),
     );
-    return { ...summary };
+    // The re-sweep never undoes or hides the accounts purged above: its own failure is logged
+    // and the run still answers with what it purged.
+    let intents: SweepSummary | null = null;
+    try {
+      intents = await sweepDueIntents(this.sweepDatabase(), this.files, (error, intentId) =>
+        this.logger.error({ err: error, stage: 'sweep', intent_id: intentId }, 'storage deletion intent sweep failed'),
+      );
+    } catch (error) {
+      this.logger.error({ err: error, stage: 'sweep' }, 'storage deletion intents could not be swept');
+    }
+    return { ...summary, intents };
   }
 
-  /** The database port: each method is one statement, as the service role, in its own transaction. */
+  /** One statement as the service role, in its own transaction. */
+  private one<Row extends Record<string, unknown>>(text: string, values: unknown[]): Promise<Row[]> {
+    return this.database.runAsService(async (session: DatabaseSession) => (await session.query<Row>(text, values)).rows);
+  }
+
+  /** The database port of the re-sweep. */
+  private sweepDatabase(): SweepDatabase {
+    return {
+      dueIntents: async (limit) =>
+        (await this.one<{ id: string; bucket: string; prefix: string }>('select d.id, d.bucket, d.prefix from kc_private.storage_deletion_intents_due($1::integer) d', [limit])).map((row) => ({
+          id: Number(row.id),
+          bucket: row.bucket,
+          prefix: row.prefix,
+        })),
+      recordSweep: async (id, found, remaining, error) =>
+        ((await this.one<{ answer: SweepAnswer }>('select kc_private.storage_deletion_intent_swept($1::bigint, $2::integer, $3::integer, $4::text) as answer', [id, found, remaining, error]))[0]?.answer ?? 'unknown'),
+      pruneIntents: async () => Number((await this.one<{ pruned: string }>('select kc_private.storage_deletion_intents_prune() as pruned', []))[0]?.pruned ?? 0),
+    };
+  }
+
+  /** The database port of the purge: each method is one statement. */
   private purgeDatabase(): PurgeDatabase {
-    const one = <Row extends Record<string, unknown>>(text: string, values: unknown[]) =>
-      this.database.runAsService(async (session: DatabaseSession) => (await session.query<Row>(text, values)).rows);
+    const one = this.one.bind(this);
     return {
       dueAccounts: async (limit) => (await one<{ user_id: string }>('select a.user_id from kc_private.accounts_due_for_purge($1::integer) a', [limit])).map((row) => row.user_id),
       prepare: async (userId) => {
