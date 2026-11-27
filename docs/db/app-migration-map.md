@@ -60,7 +60,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `infrastructure-supabase/src/karma/` | 1 | 0 | 1 | 0 | 0 |
 | `infrastructure-supabase/src/knowledge/` | 12 | 9 | 3 | 0 | 0 |
 | `infrastructure-supabase/src/legal/` | 3 | 3 | 0 | 0 | 0 |
-| `infrastructure-supabase/src/marketplace/` | 50 | 37 | 13 | 0 | 0 |
+| `infrastructure-supabase/src/marketplace/` | 49 | 37 | 12 | 0 | 0 |
 | `infrastructure-supabase/src/matching/` | 3 | 3 | 0 | 0 | 0 |
 | `infrastructure-supabase/src/moderation/` | 17 | 14 | 3 | 0 | 0 |
 | `infrastructure-supabase/src/notifications/` | 7 | 7 | 0 | 0 | 0 |
@@ -367,7 +367,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 
 ### `infrastructure-supabase/src/marketplace/`
 
-50 call sites: 37 map 1:1, 13 need logic changes, 0 removed, 0 MISSING.
+49 call sites: 37 map 1:1, 12 need logic changes, 0 removed, 0 MISSING.
 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -384,7 +384,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `message_event_registrants` | wedge | 1:1 | `message_event_registrants(p_body: string, p_post_id: string) → number` | The organizer's message to everyone registered for an event; answers how many were told (`event_message_invalid`). | `account_not_active`, `event_message_invalid`, `post_not_found`, `unauthenticated` | high | eventRegistrations.ts:110 |
 | `pause_post` | wedge | 1:1 | `pause_post(p_post_id: string) → undefined` | Pauses the owner's open post (`listing_wrong_status`, `listing_has_active_handoff`). | `account_not_active`, `listing_has_active_handoff`, `listing_wrong_status`, `post_not_found`, `unauthenticated` | high | listingOwnerActions.ts:29 |
 | `post_cards` | core | 1:1 | `post_cards(p_post_ids: string[]) → post_card[]` | Cards of up to 100 post ids the caller can read, in no particular order: the adapter restores the order of the ids (saved posts, a member's posts by status, one post). |  | high | listingMapping.ts:76 |
-| `post_detail` | wedge | 1:1 | `post_detail(p_post_id: string) → Json` | Card, gallery and first comments as one JSON; the adapter adds the world detail row and the world labels to build the listing detail. |  | high | mapListingDetail.ts:122 |
+| `post_detail` | wedge | 1:1 | `post_detail(p_post_id: string) → Json` | Card, gallery and first comments as one JSON; the adapter adds the world detail row and the world labels to build the listing detail. |  | high | mapListingDetail.ts:123 |
 | `post_seat_counts` | wedge | 1:1 | `post_seat_counts(p_post_ids: string[]) → { capacity: number post_id: string seats_left: number seats_taken: number waitlisted: number }[]` | Places held, waiting registrations and seats left of event and ride posts the caller can read (`p_post_ids`, at most 100); the volunteering shifts and the occurrences of a ride series read their free places here. |  | high | postSeatCounts.ts:22 |
 | `profile_posts_page` | core | 1:1 | `profile_posts_page(p_cursor?: Json, p_limit?: number, p_statuses?: string[], p_tab?: string, p_user_id: string) → { card: post_card next_cursor: Json }[]` | `p_tab` open \| closed \| hidden \| mine, keyset `p_cursor`; the closed tab of a profile. `mine` is the owner's own posts in every status and audience, narrowed by `p_statuses` (`forbidden` on another member's profile): "my listings" reads it. The owner's delivered or deleted "only me" posts still come from `posts` ids completed by `post_cards`. | `invalid_input` | high | SupabaseMarketplaceRepository.ts:68, SupabaseMarketplaceRepository.ts:89 |
 | `publish_post` | core | 1:1 | `publish_post(p_post_id: string) → undefined` | Publishes the draft the adapter wrote (draft → open); a failed create deletes the draft, which a device may delete. Refusals: `listing_wrong_status`, `post_limit_exceeded`. | `account_not_active`, `listing_wrong_status`, `offer_photo_required`, `post_not_found`, `unauthenticated` | high | listingWrites.ts:113 |
@@ -406,7 +406,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `post_media` (table) | core | 1:1 | table `post_media` | One row per photo, inserted `pending` by the owner after the upload to `post-images`; delete by the owner. An edit keeps the rows whose file and position are unchanged (no update grant). Every row records the real `mime_type` and `size_bytes` of the uploaded file (JPEG or PNG, at most 8 MB); `post_detail` returns both, so a republish attaches the same files again. |  | high | listingOwnerActions.ts:98, listingWrites.ts:57 |
 | `post_private_locations` (table) | core | 1:1 | see `infrastructure-supabase/src/housing/` |  |  |  | SupabaseListingStreetAddressRepository.ts:22, SupabaseListingStreetAddressRepository.ts:35 |
 | `post_ride_details` (table) | wedge | 1:1 | table `post_ride_details` | Read for the route, time and seats of a ride and for the occurrences of a series; the owner edits it through the adapter. |  | high | mapListingDetail.ts:39 |
-| `posts` (table) | core | CHANGED | see `infrastructure-supabase/src/admin/` |  |  |  | givingHandoffs.ts:25, listingOwnerActions.ts:46, listingOwnerActions.ts:80, listingWrites.ts:104, listingWrites.ts:116, mapListingDetail.ts:80, mapListingDetail.ts:125 |
+| `posts` (table) | core | CHANGED | see `infrastructure-supabase/src/admin/` |  |  |  | givingHandoffs.ts:25, listingOwnerActions.ts:46, listingOwnerActions.ts:80, listingWrites.ts:104, listingWrites.ts:116, mapListingDetail.ts:80 |
 | `users` (table) | core | CHANGED | see `infrastructure-supabase/src/admin/` |  |  |  | eventRegistrations.ts:130 |
 | `worlds` (table) | wedge | 1:1 | table `worlds` | The world labels shown on a listing detail. |  | high | worldCatalog.ts:21 |
 

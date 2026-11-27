@@ -118,11 +118,11 @@ function exposureOf(card: PostCardRow): Pick<MarketplaceListingDetail, 'visibili
 export async function fetchListingDetail(client: Client, listingId: string): Promise<MarketplaceListingDetail | null> {
   // Everything that needs only the listing id (or nothing) starts with `post_detail`; the world's own
   // detail row needs the card's type and follows it. The kind and world catalogs are cached per client.
-  const [payloadResult, kinds, worlds, geo] = await Promise.all([
+  // The map point is on the card (`geo_approx`), so `posts` is not read a second time.
+  const [payloadResult, kinds, worlds] = await Promise.all([
     client.rpc('post_detail', { p_post_id: listingId }),
     loadKindCatalog(client),
     loadWorldLabels(client),
-    client.from('posts').select('geo_approx').eq('id', listingId).maybeSingle(),
   ]);
   const payload = unwrapCall('rpc:post_detail', payloadResult);
   if (!isObject(payload) || !isObject(payload['post'])) return null;
@@ -132,7 +132,7 @@ export async function fetchListingDetail(client: Client, listingId: string): Pro
   const details = await loadWorldDetails(client, card);
   const kind = card.kind_id ? kinds.byId.get(card.kind_id) : undefined;
   const worldRow = worlds.get(card.world_slug ?? '');
-  const point = parseWkbPoint(unwrapCall('table:posts', geo)?.geo_approx);
+  const point = parseWkbPoint(card.geo_approx);
   return {
     listingId: card.id,
     ownerId: card.owner_id ?? '',
