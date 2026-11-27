@@ -179,6 +179,15 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      # The queue deletes a dropped entry's ref but not its run (KC#2746). Checked once this job
+      # holds the emulator slot: an orphaned run skips the slot wait and the flows, and frees the
+      # emulator in seconds for the live entries behind it.
+      - name: Skip an orphaned merge-queue run
+        id: entry
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: if [ -f scripts/maestro-queue-entry.mjs ]; then node scripts/maestro-queue-entry.mjs; else echo 'no merge-queue entry check in this tree'; fi
+
       - name: Install pinned guard-script dependencies
         run: npm ci --prefix scripts --ignore-scripts --no-audit --no-fund
 
@@ -228,6 +237,7 @@ jobs:
       # flows and the job ends green, releasing the emulator group to the merge queue.
       - name: Wait for a kc-dev test slot
         id: slot
+        if: steps.entry.outputs.orphaned != 'true'
         timeout-minutes: 125
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -239,7 +249,7 @@ jobs:
       # A green run takes 24–28 min (19 flows). 55 min is twice that; the runner itself stops early,
       # failed, when kc-dev is down or 3 flows in a row fail twice (scripts/maestro-run-android.sh).
       - name: Run Maestro flows on the emulator
-        if: steps.slot.outputs.yielded != 'true'
+        if: steps.entry.outputs.orphaned != 'true' && steps.slot.outputs.yielded != 'true'
         timeout-minutes: 55
         uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
         with:
@@ -261,7 +271,7 @@ jobs:
 
       - name: Remove unsafe automatic media from capture flows
         id: native-capture-privacy
-        if: always() && steps.slot.outputs.yielded != 'true'
+        if: always() && steps.entry.outputs.orphaned != 'true' && steps.slot.outputs.yielded != 'true'
         run: |
           for label in 07-create-post-form 07-create-post-form-retry 19-edit-profile-keyboard-toolbar 19-edit-profile-keyboard-toolbar-retry; do
             node scripts/maestro-native-capture-media.mjs "$RUNNER_TEMP/maestro" "$label"
