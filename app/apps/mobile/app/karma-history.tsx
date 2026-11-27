@@ -18,6 +18,7 @@ import { rowDirectionStart } from '../src/lib/rtlLayout';
 import { MirroredIcon, useDirectionalBackIcon } from '../src/components/ui/MirroredIcon';
 import { rtlTextAlignStart } from '../src/lib/rtlTextAlignStart';
 import { useShellTabBarScrollInset } from '../src/navigation/useShellTabBarVisibility';
+export { RouteErrorBoundary as ErrorBoundary } from '../src/components/RouteErrorBoundary';
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
 

@@ -33,7 +33,7 @@ export default function MoneyDonorsScreen() {
   const grandTotal = donors.reduce((sum, d) => sum + d.totalCents, 0);
 
   return (
-    <AdminScreenGuard isLoading={rolesLoading} allowed={allowed} loadingLabel={t.loading} forbiddenLabel={t.forbiddenTitle}>
+    <AdminScreenGuard isLoading={rolesLoading} allowed={allowed} loadingLabel={t.loading}>
       <View style={styles.root}>
         <MoneySubNav active="donors" />
         <ScrollView

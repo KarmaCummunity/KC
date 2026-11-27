@@ -75,7 +75,7 @@ vi.mock('../../giving/RideCreateSection', async () => {
     ),
   };
 });
-vi.mock('../../../services/listingImageUpload', () => ({ pickListingImages: vi.fn(async () => []), uploadListingImages: vi.fn() }));
+vi.mock('../../../services/listingImageUpload', () => ({ pickListingImages: vi.fn(async () => ({ status: 'ok' as const, value: [] })), uploadListingImages: vi.fn() }));
 vi.mock('../../../lib/analyticsCoreLoop', () => ({ trackCoreLoop: vi.fn(), trackActivationIfFirst: vi.fn() }));
 vi.mock('../../../lib/haptics', () => ({ hapticLightImpact: () => undefined, hapticLightTap: () => {} }));
 vi.mock('../../../navigation/useShellTabBarVisibility', () => ({ useShellTabBarScrollInset: () => 0 }));

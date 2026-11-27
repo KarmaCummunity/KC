@@ -15,6 +15,7 @@ import { HeroHalo } from '../../src/components/animations/HeroHalo';
 import { PressableScale } from '../../src/components/animations/PressableScale';
 import { staggerDelay } from '../../src/lib/animations/motion';
 import { useOnboardingPhotoFlow } from '../../src/hooks/useOnboardingPhotoFlow';
+import { PermissionSettingsNote } from '../../src/components/PermissionSettingsNote';
 import { PrimaryButton, SecondaryButton } from '../../src/components/ui/Buttons';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
@@ -31,6 +32,7 @@ export default function OnboardingPhotoScreen() {
     session, avatarUrl, hasAvatar,
     uploading, finalizing, busy,
     pick, remove, finalize, goBack,
+    permissionBlocked,
   } = useOnboardingPhotoFlow();
 
   const handlePick = async (source: Parameters<typeof pick>[0]) => {
@@ -86,6 +88,7 @@ export default function OnboardingPhotoScreen() {
         <AnimatedEntry delay={staggerDelay(2)}>
           <Text style={styles.subtitle}>{t('onboarding.photoSubtitle')}</Text>
         </AnimatedEntry>
+        {permissionBlocked ? <PermissionSettingsNote kind={permissionBlocked} /> : null}
 
         <AnimatedEntry delay={staggerDelay(3)} style={styles.changeBtnWrap}>
           <SecondaryButton

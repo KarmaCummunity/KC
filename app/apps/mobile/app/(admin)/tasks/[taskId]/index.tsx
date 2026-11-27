@@ -30,6 +30,7 @@ import { TaskActivityTimeline } from '../../../../src/components/admin/tasks/Tas
 import { useLocaleBundle, type LocaleBundle } from '../../../../src/i18n/useLocaleBundle';
 import { useAdminScreenTitle } from '../../../../src/components/admin/useAdminScreenTitle';
 import { FormScrollView } from '../../../../src/components/ui/FormScrollView';
+import { SilentUnauthorizedFallback } from '../../../../src/components/permissions/SilentUnauthorizedFallback';
 
 async function confirmAction(message: string, L: LocaleBundle): Promise<boolean> {
   if (Platform.OS === 'web') {
@@ -66,7 +67,7 @@ export default function TaskDetailScreen() {
     return <View style={styles.center}><Text>{L.admin.tasks.loading}</Text></View>;
   }
   if (!can('tasks.view')) {
-    return <View style={styles.center}><Text style={styles.deniedTitle}>{L.admin.tasks.forbiddenTitle}</Text></View>;
+    return <SilentUnauthorizedFallback href="/(admin)" />;
   }
   if (!q.detail) {
     return <View style={styles.center}><Text>{L.admin.tasks.detail.notFound}</Text></View>;

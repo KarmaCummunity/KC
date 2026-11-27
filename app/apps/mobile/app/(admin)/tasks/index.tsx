@@ -32,6 +32,7 @@ import { KcFlashList } from '../../../src/components/lists/KcFlashList';
 import { useLocaleBundle } from '../../../src/i18n/useLocaleBundle';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../../src/components/RouteErrorBoundary';
+import { SilentUnauthorizedFallback } from '../../../src/components/permissions/SilentUnauthorizedFallback';
 
 const taskKeyExtractor = (t: AdminTask) => t.taskId;
 
@@ -91,11 +92,7 @@ export default function TasksScreen() {
     return <View style={styles.center}><Text>{L.admin.tasks.loading}</Text></View>;
   }
   if (!can('tasks.view')) {
-    return (
-      <View style={styles.center}>
-        <Text style={styles.deniedTitle}>{L.admin.tasks.forbiddenTitle}</Text>
-      </View>
-    );
+    return <SilentUnauthorizedFallback href="/(admin)" />;
   }
 
   const activeFilterCount =

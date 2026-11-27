@@ -63,9 +63,10 @@ test('a complete kind is described with its text arguments', () => {
   assert.equal(kinds[0].groupedBodyKey, 'notifications.demoGroupedBody');
   assert.equal(kinds[0].groupWindowSeconds, 60);
   const paths = Object.keys(files);
-  assert.equal(paths.length, 3);
+  assert.equal(paths.length, 4);
   assert.match(files[paths[0]], /demo_kind: \{ category: 'critical'/);
   assert.equal(files[paths[0]], files[paths[1]], 'the app and the worker get the same module');
+  assert.equal(files[paths[2]], files[paths[3]], 'the Edge worker and the API worker get the same texts');
   assert.deepEqual(Object.keys(JSON.parse(files[paths[2]])).sort(),
     [...AUXILIARY_KEYS, 'notifications.demoBody', 'notifications.demoGroupedBody', 'notifications.demoTitle'].sort());
 });
