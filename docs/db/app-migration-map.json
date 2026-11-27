@@ -9353,7 +9353,7 @@
      "type": "rpc",
      "name": "guest_posts",
      "signature": [
-      "guest_posts(p_before_id?: string, p_limit?: number, p_post_id?: string) → { city_name_en: string city_name_he: string description: string id: string title: string }[]"
+      "guest_posts(p_before_id?: string, p_limit?: number, p_post_id?: string) → { author_share_handle: string city_name_en: string city_name_he: string description: string id: string title: string }[]"
      ],
      "errors": []
     }
