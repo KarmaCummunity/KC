@@ -1,5 +1,6 @@
 import { ApiConfigError, type Env, parseInteger, readVariable } from './configReader';
 import { type FeatureConfig, loadFeatureConfig } from './featureConfig';
+import { loadSignInConfig, type SignInConfig } from './signInConfig';
 
 // The names other modules have always imported from here.
 export { ApiConfigError } from './configReader';
@@ -50,6 +51,8 @@ export interface ApiConfig extends FeatureConfig {
    * the link carries a secret, and must only ever open the app.
    */
   readonly authRedirectUrls: readonly string[];
+  /** The provider accounts KC's own identity accepts a sign-in from. */
+  readonly signIn: SignInConfig;
   /**
    * Web origins allowed to call the API from a browser (CORS). Empty: no
    * browser may; the native apps are not subject to CORS and need no entry.
@@ -206,6 +209,7 @@ export function loadApiConfig(env: Env): ApiConfig {
     authIssuer: parseServiceUrl('KC_AUTH_ISSUER', readVariable(env, 'KC_AUTH_ISSUER'), ['https', 'http']),
     authSigningKeys: parseAuthSigningKeys(env),
     authRedirectUrls: parseAuthRedirectUrls(readVariable(env, 'KC_AUTH_REDIRECT_URLS')),
+    signIn: loadSignInConfig(env),
     allowedOrigins: parseOrigins('KC_API_ALLOWED_ORIGINS', readVariable(env, 'KC_API_ALLOWED_ORIGINS')),
     trustedProxyHops: parseInteger('KC_API_TRUSTED_PROXY_HOPS', readVariable(env, 'KC_API_TRUSTED_PROXY_HOPS'), 0, 0, 10),
     rateLimitPerMinute: parseInteger('KC_API_RATE_LIMIT_PER_MINUTE', readVariable(env, 'KC_API_RATE_LIMIT_PER_MINUTE'), DEFAULT_RATE_LIMIT_PER_MINUTE, 0, 100_000),

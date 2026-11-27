@@ -7,6 +7,7 @@ import { Caller } from '../../platform/identity/caller.decorator';
 import type { CallerIdentity } from '../../platform/identity/callerIdentity';
 import { RateLimiter } from '../../platform/rateLimit/rateLimiter';
 import { EmailAccountService } from './emailAccountService';
+import { ProviderAccountService } from './providerAccountService';
 import { SessionService } from './sessionService';
 
 /**
@@ -25,6 +26,7 @@ export class IdentityController {
   constructor(
     @Inject(SessionService) private readonly sessions: SessionService,
     @Inject(EmailAccountService) private readonly emailAccounts: EmailAccountService,
+    @Inject(ProviderAccountService) private readonly providerAccounts: ProviderAccountService,
     @Inject(RateLimiter) private readonly rateLimiter: RateLimiter,
   ) {}
 
@@ -51,6 +53,14 @@ export class IdentityController {
   async signIn(@Body() body: unknown, @Req() request: FastifyRequest, @Res({ passthrough: true }) reply: FastifyReply): Promise<SessionResponse> {
     await this.count(request, reply, 'sign-in', CREDENTIAL_CALLS_PER_MINUTE);
     return this.emailAccounts.signIn(body);
+  }
+
+  /** `{ provider, token, nonce? }`: an ID token of Google or Apple → a session. */
+  @Post('id-token')
+  @HttpCode(200)
+  async signInWithIdToken(@Body() body: unknown, @Req() request: FastifyRequest, @Res({ passthrough: true }) reply: FastifyReply): Promise<SessionResponse> {
+    await this.count(request, reply, 'id-token', CREDENTIAL_CALLS_PER_MINUTE);
+    return this.providerAccounts.signInWithIdToken(body);
   }
 
   /** `{ token, type }` of an emailed link → a session. */

@@ -13,6 +13,8 @@ export const IDENTITY_PATHS = {
   signUp: '/v1/auth/sign-up',
   /** Signs in with an email address and a password: `EmailSignInRequest` → `SessionResponse`. */
   signIn: '/v1/auth/sign-in',
+  /** Signs in with an ID token of Google or Apple: `IdTokenSignInRequest` → `SessionResponse`. */
+  idToken: '/v1/auth/id-token',
   /** Redeems the link of an email: `VerifyLinkRequest` → `SessionResponse`. */
   verify: '/v1/auth/verify',
   /** Sends the verification email again: `EmailLinkRequest` → `{}`, whatever the address. */
@@ -69,6 +71,14 @@ export interface EmailSignUpRequest extends EmailSignInRequest {
   readonly redirectTo: string;
 }
 
+export interface IdTokenSignInRequest {
+  readonly provider: 'google' | 'apple';
+  /** The ID token the provider's own sign-in gave the app. */
+  readonly token: string;
+  /** Apple only: the random value whose SHA-256 the app gave Apple for this sign-in. */
+  readonly nonce?: string;
+}
+
 export interface EmailLinkRequest {
   readonly email: string;
   /** Where the link leads; one of the addresses the API is configured to allow. */
@@ -107,6 +117,10 @@ export type IdentityErrorCode =
   | 'invalid_credentials'
   /** The password was right and the address is not verified yet. */
   | 'email_not_confirmed'
+  /** The ID token is not the provider's, not for KC, expired, or not bound to the nonce. */
+  | 'invalid_provider_token'
+  /** A first sign-in through a provider that does not vouch for the account's address. */
+  | 'email_not_verified'
   /** The link was used already, expired, or was never issued. */
   | 'invalid_link'
   | 'weak_password'

@@ -65,6 +65,7 @@ export {
   type EmailSignUpRequest,
   IDENTITY_PATHS,
   type IdentityErrorCode,
+  type IdTokenSignInRequest,
   LINK_TOKEN_PARAMETER,
   LINK_TYPE_PARAMETER,
   type ProfileRequest,

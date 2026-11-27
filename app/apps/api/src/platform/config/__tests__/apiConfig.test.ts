@@ -1,23 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { ApiConfigError, loadApiConfig } from '../apiConfig';
-
-/** The two required variables; every case adds or overrides on top of them. */
-const REQUIRED = {
-  DATABASE_URL: 'postgresql://user:pass@db.internal:5432/kc',
-  REDIS_URL: 'rediss://cache.internal:6379',
-  KC_AUTH_ISSUER: 'https://auth.internal/auth/v1',
-};
-
-/** Runs the loader and returns the configuration error it must throw. */
-function configErrorOf(env: Record<string, string>): ApiConfigError {
-  try {
-    loadApiConfig({ ...REQUIRED, ...env });
-  } catch (error) {
-    if (error instanceof ApiConfigError) return error;
-    throw error;
-  }
-  throw new Error('expected loadApiConfig to throw');
-}
+import { loadApiConfig } from '../apiConfig';
+import { configErrorOf, REQUIRED } from './configFixtures';
 
 describe('loadApiConfig', () => {
   it('reads every variable', () => {
@@ -39,6 +22,7 @@ describe('loadApiConfig', () => {
       authIssuer: REQUIRED.KC_AUTH_ISSUER,
       authSigningKeys: null,
       authRedirectUrls: [],
+      signIn: { googleClientIds: [], appleClientIds: [] },
       allowedOrigins: [],
       trustedProxyHops: 0,
       rateLimitPerMinute: 600,
@@ -223,64 +207,6 @@ describe('loadApiConfig', () => {
     expect(configErrorOf({ KC_JOBS_OIDC_AUDIENCE: scheduler.KC_JOBS_OIDC_AUDIENCE }).variable).toBe('KC_JOBS_SERVICE_ACCOUNT');
     expect(configErrorOf({ KC_JOBS_SERVICE_ACCOUNT: scheduler.KC_JOBS_SERVICE_ACCOUNT }).variable).toBe('KC_JOBS_OIDC_AUDIENCE');
     expect(configErrorOf({ ...scheduler, KC_JOBS_SERVICE_ACCOUNT: 'someone@gmail.com' }).variable).toBe('KC_JOBS_SERVICE_ACCOUNT');
-  });
-
-  it('reads the local file store and needs the address its URLs point at', () => {
-    const config = loadApiConfig({ ...REQUIRED, KC_STORAGE_LOCAL_DIR: '/var/kc-files', KC_API_PUBLIC_URL: 'http://localhost:8080/' });
-
-    expect(config.storage).toEqual({ localDirectory: '/var/kc-files', publicUrl: 'http://localhost:8080', cloud: null });
-    expect(configErrorOf({ KC_STORAGE_LOCAL_DIR: '/var/kc-files' }).variable).toBe('KC_API_PUBLIC_URL');
-    expect(configErrorOf({ KC_API_PUBLIC_URL: 'not a url' }).variable).toBe('KC_API_PUBLIC_URL');
-  });
-
-  it('reads the cloud file store: the prefix of its buckets and the media address public files are served from', () => {
-    const config = loadApiConfig({ ...REQUIRED, KC_STORAGE_GCS_BUCKET_PREFIX: 'kc-dev-', KC_MEDIA_PUBLIC_URL: 'https://media.example.org/' });
-
-    expect(config.storage).toEqual({ localDirectory: null, publicUrl: null, cloud: { bucketPrefix: 'kc-dev-', mediaUrl: 'https://media.example.org' } });
-    expect(loadApiConfig(REQUIRED).storage.cloud).toBeNull();
-  });
-
-  it.each([
-    [{ KC_STORAGE_GCS_BUCKET_PREFIX: 'kc-dev-' }, 'KC_MEDIA_PUBLIC_URL'],
-    [{ KC_STORAGE_GCS_BUCKET_PREFIX: 'kc-dev-', KC_MEDIA_PUBLIC_URL: 'not a url' }, 'KC_MEDIA_PUBLIC_URL'],
-    [{ KC_STORAGE_GCS_BUCKET_PREFIX: 'KC Dev/', KC_MEDIA_PUBLIC_URL: 'https://media.example.org' }, 'KC_STORAGE_GCS_BUCKET_PREFIX'],
-    [{ KC_STORAGE_GCS_BUCKET_PREFIX: '-kc', KC_MEDIA_PUBLIC_URL: 'https://media.example.org' }, 'KC_STORAGE_GCS_BUCKET_PREFIX'],
-    [{ KC_STORAGE_GCS_BUCKET_PREFIX: 'k'.repeat(51), KC_MEDIA_PUBLIC_URL: 'https://media.example.org' }, 'KC_STORAGE_GCS_BUCKET_PREFIX'],
-    [
-      { KC_STORAGE_GCS_BUCKET_PREFIX: 'kc-dev-', KC_MEDIA_PUBLIC_URL: 'https://media.example.org', KC_STORAGE_LOCAL_DIR: '/var/kc-files', KC_API_PUBLIC_URL: 'http://localhost:8080' },
-      'KC_STORAGE_LOCAL_DIR',
-    ],
-  ])('refuses to start with a cloud file store that is half configured, misnamed, or beside a local one: %j', (env, variable) => {
-    expect(configErrorOf(env).variable).toBe(variable);
-  });
-
-  it('reads the keys KC signs its own tokens with, only for an issuer that is this API', () => {
-    const config = loadApiConfig({ ...REQUIRED, KC_AUTH_ISSUER: 'https://api.kc.test/v1/auth', KC_AUTH_SIGNING_KEYS: '{"keys":[]}' });
-
-    expect(config).toMatchObject({ authIssuer: 'https://api.kc.test/v1/auth', authSigningKeys: '{"keys":[]}' });
-    expect(configErrorOf({ KC_AUTH_SIGNING_KEYS: '{"keys":[]}' }).variable).toBe('KC_AUTH_ISSUER');
-  });
-
-  it('reads the addresses a link in an identity email may lead to, and refuses a list that is not addresses', () => {
-    const config = loadApiConfig({ ...REQUIRED, KC_AUTH_REDIRECT_URLS: 'https://app.kc.test/auth/verify, karmacommunity://auth/callback ,' });
-
-    expect(config.authRedirectUrls).toEqual(['https://app.kc.test/auth/verify', 'karmacommunity://auth/callback']);
-    expect(configErrorOf({ KC_AUTH_REDIRECT_URLS: 'https://app.kc.test/auth/verify,/auth/reset' }).variable).toBe('KC_AUTH_REDIRECT_URLS');
-  });
-
-  it('reads where the existing files are copied from, and copies none without it', () => {
-    const config = loadApiConfig({ ...REQUIRED, KC_STORAGE_COPY_SOURCE_URL: 'https://project.supabase.test/', KC_STORAGE_COPY_SOURCE_KEY: 'service-key' });
-
-    expect(config.storageCopySource).toEqual({ url: 'https://project.supabase.test', key: 'service-key' });
-    expect(loadApiConfig(REQUIRED).storageCopySource).toBeNull();
-  });
-
-  it.each([
-    [{ KC_STORAGE_COPY_SOURCE_KEY: 'service-key' }, 'KC_STORAGE_COPY_SOURCE_URL'],
-    [{ KC_STORAGE_COPY_SOURCE_URL: 'https://project.supabase.test' }, 'KC_STORAGE_COPY_SOURCE_KEY'],
-    [{ KC_STORAGE_COPY_SOURCE_URL: 'not a url', KC_STORAGE_COPY_SOURCE_KEY: 'service-key' }, 'KC_STORAGE_COPY_SOURCE_URL'],
-  ])('refuses to start with a copy source that is half configured or not an address: %j', (env, variable) => {
-    expect(configErrorOf(env).variable).toBe(variable);
   });
 
   it('refuses to start with Gemini selected and no key, or with an unknown provider', () => {

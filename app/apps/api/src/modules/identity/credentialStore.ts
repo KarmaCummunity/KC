@@ -122,3 +122,35 @@ export async function redeemLink(db: DatabaseSession, token: string, purpose: Li
   );
   return rows[0]?.user_id ?? null;
 }
+
+/** The member a provider account belongs to, or null when nobody signed in with it yet. Records the sign-in when found. */
+export async function findProviderMember(db: DatabaseSession, provider: string, subject: string): Promise<string | null> {
+  const { rows } = await db.query<{ user_id: string }>(
+    'update kc_private.auth_identities set last_sign_in_at = now() where provider = $1 and subject = $2 returning user_id',
+    [provider, subject],
+  );
+  return rows[0]?.user_id ?? null;
+}
+
+/**
+ * Makes a provider account one of the member's ways to sign in.
+ * @returns false when the account became someone's in the meantime (two first sign-ins at once); nothing was written.
+ */
+export async function addProviderIdentity(db: DatabaseSession, userId: string, provider: string, subject: string): Promise<boolean> {
+  const added = await db.query(
+    'insert into kc_private.auth_identities (user_id, provider, subject, last_sign_in_at) values ($1, $2, $3, now()) on conflict (provider, subject) do nothing',
+    [userId, provider, subject],
+  );
+  return added.rowCount === 1;
+}
+
+/**
+ * Removes what an unverified sign-up left on a member: the email identity and
+ * its password. Whoever typed that password never proved the address was
+ * theirs, so it must not open the account once someone else has.
+ */
+export async function removeUnprovenEmailSignUp(db: DatabaseSession, userId: string): Promise<void> {
+  await db.query("delete from kc_private.auth_identities where user_id = $1 and provider = 'email'", [userId]);
+  await db.query('delete from kc_private.auth_passwords where user_id = $1', [userId]);
+  await db.query("delete from kc_private.auth_one_time_tokens where user_id = $1", [userId]);
+}
