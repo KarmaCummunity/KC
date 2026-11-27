@@ -8,6 +8,10 @@
 
 Verify: `https://dev.karma-community.pages.dev/version.json` shows the merged SHA; the Deploy run's smoke stage is green. To redeploy dev, dispatch **Deploy** on `dev`.
 
+## Edge Functions on prod: only from a `main` that has received `dev`
+
+Webhook functions with `verify_jwt = false` (`payments-webhook`, `whatsapp-webhook`, `revenuecat-webhook`, `identity-verification-webhook`) must authenticate their caller themselves. `scripts/check-webhook-auth.mjs` pins that in CI and runs again as a step of `deploy-functions.yml` against the tree being deployed (the script itself comes from the workflow commit), so a deploy from a `main` that has not yet received `dev` is refused. Ship function changes to prod by releasing `dev` → `main`; never deploy a function from a branch or by hand.
+
 ## Local DB
 
 ```bash
@@ -55,11 +59,12 @@ Playwright QA suite against `https://dev.karma-community.pages.dev` + kc-dev: [`
 | `seed-kc-dev.yml` | manual | Destructive dev reseed / wipe |
 | `e2e-nightly-dev.yml` | nightly + manual | QA suite against dev |
 | `e2e-account-purge-dev.yml` | nightly + manual + when the proof changes on dev | Account purge proof on kc-dev (FR-SETTINGS-012 AC4): a throwaway member with a file in every bucket is deleted and purged, and the run fails if a file or the identity is left (`scripts/e2e-account-purge.mjs`) |
+| `e2e-post-media-dev.yml` | nightly + manual + when the proof changes on dev | Post photo proof on kc-dev (FR-POST-005 AC4, KC#2316): a throwaway owner's photo carrying a GPS block must reach a second member only as the sanitized copy under `derived/`, copy and thumb free of the block (`scripts/e2e-post-media.mjs`) |
 | `k6-load-dev.yml` | manual | Load test against dev |
 | `mobile-nightly.yml` → `testflight-ios.yml`, `play-internal.yml` | nightly + manual (dev) | Store builds of the newest green dev commit, see [RELEASE.md](./RELEASE.md) |
 | `kc-mobile-eas-preview.yml` | manual | EAS preview build, no store submit |
 | `sync-main-to-dev.yml` | main push | Opens a zero-diff PR into `dev`; the owner merges it as a merge commit with the admin bypass (`TD-182`) |
-| `bump-version-on-merge.yml` | dev push | Bumps `app/VERSION` PATCH after each merge (`TD-196`); PRs do not edit VERSION |
+| `bump-version-on-merge.yml` | dev push | Bumps `app/VERSION` PATCH after a merge that leaves the merge queue empty, one bump per burst of merges ({{ENG:bump-waits-for-empty-queue}}, `TD-196`); PRs do not edit VERSION. Run it by hand on `dev` if the queue emptied without a merge |
 | `auto-merge-agent-ready.yml`, `labeler.yml`, `bump-app-version.yml`, `stale-stack-report.yml` | PR / schedule | Housekeeping |
 
 ## Web (Cloudflare Pages)

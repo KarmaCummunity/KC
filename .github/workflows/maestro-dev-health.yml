@@ -48,5 +48,9 @@ jobs:
       contents: read
       actions: read # kc-dev test slot (scripts/kc-dev-slot.mjs)
     uses: ./.github/workflows/ci-maestro-android.yml
+    # Gives up its emulator turn when dev moved on or a merge group waits (scripts/maestro-dev-yield.mjs):
+    # since #2690 every app change is tested by the merge queue on its exact head.
+    with:
+      yield_to_queue: true
     secrets:
       E2E_SEED_PASSWORD: ${{ secrets.E2E_SEED_PASSWORD }}

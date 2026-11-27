@@ -25,6 +25,7 @@ import { useShellStackScreenOptions } from '../../src/navigation/shellStackScree
 import { queryClient } from '../../src/lib/queryPersist';
 import { chatInboxQueryKey } from '../../src/lib/chatInboxQuery';
 import { NewChatHeaderButton } from '../../src/components/chat/NewChatHeaderButton';
+import { matchesInboxNamePrefix } from '../../src/lib/chat/matchInboxSearch';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
 
@@ -54,9 +55,8 @@ export default function ChatListScreen() {
 
   const filtered = useMemo(() => {
     if (!inbox) return [];
-    const needle = q.trim().toLowerCase();
-    const list = needle
-      ? inbox.filter((c) => (c.otherParticipant?.displayName ?? '').toLowerCase().startsWith(needle))
+    const list = q.trim()
+      ? inbox.filter((c) => matchesInboxNamePrefix(c.otherParticipant?.displayName, q))
       : inbox;
     return list.slice(0, visible);
   }, [inbox, q, visible]);

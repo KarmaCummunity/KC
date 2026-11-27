@@ -3,7 +3,7 @@
 // purge is in handler.ts. The worker's functions live in `kc_private`, which the HTTP API
 // does not expose, so it connects through the transaction pooler.
 //
-// POST → 200 { ok: true, purged, failed }   (401 for any caller but the service role)
+// POST → 200 { ok: true, purged, failed, deferred, intents }   (401 for any caller but the service role)
 // Secrets (names): SUPABASE_DB_URL, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY.
 import postgres from 'npm:postgres@3.4.5';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
@@ -40,6 +40,10 @@ Deno.serve(withObservability('purge-deleted-accounts', createPurgeHandler({
   report: (error, tags) =>
     reportError(error, {
       fn: 'purge-deleted-accounts',
-      tags: { stage: tags.stage, ...(tags.user_id ? { user_id: tags.user_id } : {}) },
+      tags: {
+        stage: tags.stage,
+        ...(tags.user_id ? { user_id: tags.user_id } : {}),
+        ...(tags.intent_id !== undefined ? { intent_id: String(tags.intent_id) } : {}),
+      },
     }),
 })));

@@ -11,6 +11,7 @@ import { NotifyModal } from './NotifyModal';
 import { PhotoSourceSheet } from './PhotoSourceSheet';
 import type { AvatarSource } from '../services/avatarUpload';
 import { useAvatarUploadTask } from '../hooks/useAvatarUploadTask';
+import { PermissionSettingsNote } from './PermissionSettingsNote';
 
 interface Props {
   readonly userId: string;
@@ -27,7 +28,7 @@ export function EditProfileAvatar({ userId, displayName, avatarUrl, disabled, on
   const { colors } = useTheme();
   const { t } = useTranslation();
   const [sheetVisible, setSheetVisible] = useState(false);
-  const { uploading, errorMsg, setErrorMsg, pickAndUpload } = useAvatarUploadTask({ userId, onChange, onUploadingChange });
+  const { uploading, errorMsg, setErrorMsg, permissionBlocked, pickAndUpload } = useAvatarUploadTask({ userId, onChange, onUploadingChange });
   const busy = !!disabled || uploading;
 
   const handlePick = (source: AvatarSource) => {
@@ -54,6 +55,7 @@ export function EditProfileAvatar({ userId, displayName, avatarUrl, disabled, on
         )}
       </TouchableOpacity>
       <Text style={styles.hint}>{avatarUrl ? t('profile.avatarChangeHint') : t('profile.avatarAddHint')}</Text>
+      {permissionBlocked ? <PermissionSettingsNote kind={permissionBlocked} /> : null}
       <PhotoSourceSheet
         visible={sheetVisible}
         canRemove={!!avatarUrl}

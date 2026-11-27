@@ -47,6 +47,7 @@ export const adminDemoDataHe = {
       social: 'יוצר מעקבים ושמירות…',
       chats: 'יוצר צ׳אטים…',
       orgs: 'יוצר עמותות דמה…',
+      coverage: 'יוצר דוגמה לכל מצב במחזור החיים…',
       done: 'מסיים…',
     },
     passwordLabel: 'סיסמה למשתמשי הדמה',

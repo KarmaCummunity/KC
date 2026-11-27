@@ -153,6 +153,22 @@ jobs:
       contents: read
       actions: read
 
+  # Public, non-secret provenance for later candidate qualification. No submit here.
+  ios-upload-proof:
+    name: Record exact PROD iOS upload
+    needs: [gate, ios]
+    if: needs.ios.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: Record exact uploaded candidate
+        env:
+          SOURCE_SHA: ${{ needs.gate.outputs.sha }}
+          IOS_BUILD_NUMBER: ${{ needs.ios.outputs.build_number }}
+        run: |
+          node -e 'const e=process.env; if(!/^[a-f0-9]{40}$/.test(e.SOURCE_SHA)||!/^\d+$/.test(e.IOS_BUILD_NUMBER))process.exit(1); console.log("KC_PROD_IOS_CANDIDATE="+JSON.stringify({source_sha:e.SOURCE_SHA,build_number:e.IOS_BUILD_NUMBER,backend:"prod"}));'
+
   android:
     name: Play Internal (PROD)
     needs: [gate, ledger]

@@ -260,6 +260,7 @@ Devices register and unregister push tokens.
 - AC3. On sign-out, the corresponding token is deactivated.
 - AC4. Tokens not used for 90 days are pruned by `bg-job-token-prune` (registry job `retention_user_devices`: `kc_private.retention_run('user_devices')` deletes `user_devices` rows whose `last_seen_at` is older than 90 days; KC#2519).
 - AC5. Permission denial is recorded; the user can opt back in via OS settings.
+- AC6. Foreground banner/list/sound/badge presentation and positive icon badge writes check current OS permission, fail closed without explicit authorization, respect individual iOS capabilities, and observe revocation on the next event. A zero badge clear remains allowed. Provisional/ephemeral permission is not explicit consent. Native verification is separate from mocked unit tests (KC#2721).
 
 **Related.** Domain: `Device`. Migration `next-01_user_devices_prune` (numbered on merge) · Tests `supabase/tests/098_retention.sql`.
 

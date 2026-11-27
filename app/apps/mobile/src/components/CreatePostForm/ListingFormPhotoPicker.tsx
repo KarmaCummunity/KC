@@ -1,8 +1,9 @@
 // Mapped to spec: FR-POST-001 AC6 + D127 — the listing form's photos: the ones the member picks on
 // this device and, when republishing, the source post's photos that the new post reuses.
-import React, { type Dispatch, type SetStateAction } from 'react';
+import React, { useState, type Dispatch, type SetStateAction } from 'react';
 import { MAX_MEDIA_ASSETS } from '@kc/domain';
 import { listingImagePublicUrl, pickListingImages, type PickedImage } from '../../services/listingImageUpload';
+import { isBlockedMediaPick } from '../../lib/mediaPermissionTypes';
 import { PhotoPicker, type PhotoPickerItem } from './PhotoPicker';
 
 interface Props {
@@ -17,6 +18,7 @@ interface Props {
 }
 
 export function ListingFormPhotoPicker({ photos, setPhotos, carriedMediaPaths, onRemoveCarried, required }: Props) {
+  const [permissionBlocked, setPermissionBlocked] = useState(false);
   // Carried photos come first, in the source's order; their key is the storage path.
   const carried: PhotoPickerItem[] = carriedMediaPaths.map((path) => ({ path, previewUri: listingImagePublicUrl(path) }));
   const picked: PhotoPickerItem[] = photos.map((p) => ({ path: p.uri, previewUri: p.uri }));
@@ -25,7 +27,14 @@ export function ListingFormPhotoPicker({ photos, setPhotos, carriedMediaPaths, o
 
   const addPhotos = async () => {
     const next = await pickListingImages(photos.length + carriedMediaPaths.length);
-    if (next.length > 0) setPhotos((prev) => [...prev, ...next].slice(0, room));
+    if (isBlockedMediaPick(next)) {
+      setPermissionBlocked(true);
+      return;
+    }
+    setPermissionBlocked(false);
+    if (next.status === 'ok' && next.value.length > 0) {
+      setPhotos((prev) => [...prev, ...next.value].slice(0, room));
+    }
   };
 
   /** A storage path is a carried photo; anything else is a picked photo's local uri. */
@@ -42,6 +51,7 @@ export function ListingFormPhotoPicker({ photos, setPhotos, carriedMediaPaths, o
       required={required}
       onAdd={() => void addPhotos()}
       onRemove={remove}
+      permissionBlocked={permissionBlocked}
     />
   );
 }
