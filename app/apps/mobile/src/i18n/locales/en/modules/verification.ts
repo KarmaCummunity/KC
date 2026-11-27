@@ -1,4 +1,5 @@
 // FR-VERIFY-001 / FR-VERIFY-013 — verification badges and complete-profile nudges.
+// FR-VERIFY-003 / FR-VERIFY-004 — identity verification status page, explainer and consent.
 export const verificationEn = {
   level: {
     1: 'Complete profile',
@@ -10,7 +11,49 @@ export const verificationEn = {
     levelNone: 'Not verified',
     doneBody: 'Your identity is verified. You can publish and stay in the housing world.',
     needProfile: 'Complete your profile before identity verification.',
-    providerSoon: 'Document and selfie verification will open here after a provider is chosen (FR-VERIFY-005).',
+    expiresOn: 'Valid until {{date}}',
+    explainer: {
+      title: 'How it works',
+      why: 'Verification keeps hosts and guests in the housing world, and people who receive home visits, safe.',
+      what: 'You photograph an identity document (ID card or passport) and take a short selfie; we check that the face matches the document photo.',
+      who: 'The check is run by Didit, a certified verification provider, on behalf of Karma Community.',
+      keeps: 'We keep only the result, the document type and its expiry. We never keep images, the document number or face data.',
+      retention: 'The provider deletes the images and biometric data within 30 days of the decision.',
+      withdraw: 'You can withdraw your consent at any time through support.',
+    },
+    consent: 'I consent to the processing of my photo and face for identity verification, as described above.',
+    start: 'Start verification',
+    retry: 'Try again',
+    refresh: 'Refresh status',
+    status: {
+      not_started: 'You have not started verification yet.',
+      in_progress: 'Verification is in progress. If you closed the window before the end, you can start again.',
+      review: 'Your verification is being reviewed by a person. We will update you within 48 hours.',
+      verified: 'Your identity is verified.',
+      declined: 'Verification was not approved.',
+      resubmit: 'A new capture is needed.',
+      expired: 'Your verification has expired. Please verify again.',
+    },
+    reason: {
+      underage: 'Identity verification is available from age 18 only.',
+      identity_already_used: 'This document is already used by another account. Contact support to recover that account.',
+      document_expired: 'The document has expired. Try again with a valid document.',
+      document_not_accepted: 'Only an Israeli ID card or a passport can be used.',
+      face_mismatch: 'The selfie did not match the document photo. Try in good light and without glasses.',
+      liveness_failed: 'We could not confirm a live capture. Try again in good light.',
+      forgery: 'We could not verify the document. Contact support for details.',
+      document_rejected: 'The document could not be read. Avoid glare and keep the whole document in the frame.',
+      other: 'Contact support for details.',
+    },
+    startError: {
+      consent_required: 'Please tick the consent to start.',
+      already_verified: 'Your identity is already verified.',
+      attempts_exhausted: 'You have reached the maximum number of attempts. Try again tomorrow or contact support.',
+      manual_review_only: 'Automatic verification is not available for you. The support team will review your request.',
+      account_not_active: 'Your account is not active, so identity verification is not available right now.',
+      unavailable: 'Verification is not available right now. Please try again in a few minutes.',
+      popup_blocked: 'Your browser blocked the verification window. Allow pop-ups for this site and try again.',
+    },
     settingsRow: 'Identity verification',
     profileNudge: {
       title: 'Complete identity verification',
