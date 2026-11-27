@@ -106,11 +106,30 @@ $$;
 comment on function public.admin_seed_demo_data_step(text) is
   'FR-ADMIN-031: runs the next phase of the demo-data restore (kc-dev only); call until done. Audited on completion.';
 
+-- Demo Coverage Catalog, wave 1: which states of the post, admin task and report machines have
+-- a demo fixture, and which have none. Read-only; admits the same callers as the screen.
+create or replace function public.admin_demo_coverage_report()
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+begin
+  perform kc_private.require_demo_data_manager();
+  return kc_private.demo_coverage_snapshot();
+end;
+$$;
+comment on function public.admin_demo_coverage_report() is
+  'FR-ADMIN-031: coverage of the lifecycle machine states by demo fixtures (docs/qa/DEMO_COVERAGE.md).';
+
 -- Functions are private by default (the baseline's default privileges); the portal RPCs are
 -- opened to signed-in members, whose rights the bodies check.
 revoke all on function public.admin_demo_data_status() from public, anon;
 revoke all on function public.admin_wipe_demo_data_step() from public, anon;
 revoke all on function public.admin_seed_demo_data_step(text) from public, anon;
+revoke all on function public.admin_demo_coverage_report() from public, anon;
 grant execute on function public.admin_demo_data_status() to authenticated;
 grant execute on function public.admin_wipe_demo_data_step() to authenticated;
 grant execute on function public.admin_seed_demo_data_step(text) to authenticated;
+grant execute on function public.admin_demo_coverage_report() to authenticated;

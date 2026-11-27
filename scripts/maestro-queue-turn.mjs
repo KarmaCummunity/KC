@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // Merge-queue head first on the Android emulator (#2613). The emulator suite runs one at a time
 // (ci-maestro-android.yml `concurrency: kc-dev-maestro-emulator, queue: max`), and that queue is
-// FIFO by request time, not by merge-queue position. Each merge into dev is followed by a version
-// bump commit pushed straight to dev (bump-version-on-merge.yml), which rebuilds every merge group,
+// FIFO by request time, not by merge-queue position. A commit pushed straight to dev after a merge
+// (bump-version-on-merge.yml: an ID assignment, or a version bump) rebuilds every merge group,
 // so up to five groups ask for the emulator at once and the queue's head could be served last
 // (24 Nov 2026: about 2.5 h per merge).
 //
