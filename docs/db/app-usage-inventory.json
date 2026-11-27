@@ -8,8 +8,8 @@
  ],
  "summary": {
   "bucket": {
-   "callSites": 15,
-   "distinct": 5
+   "callSites": 9,
+   "distinct": 2
   },
   "channel": {
    "callSites": 9,
@@ -20,40 +20,19 @@
    "distinct": 5
   },
   "rpc": {
-   "callSites": 296,
+   "callSites": 295,
    "distinct": 270
   },
   "table": {
-   "callSites": 197,
+   "callSites": 195,
    "distinct": 67
   }
  },
  "entries": [
   {
-   "kind": "rpc",
-   "file": "app/apps/mobile/app/pro.tsx",
-   "line": 39,
-   "area": "mobile",
-   "symbol": "ProPaywallScreen",
-   "via": "literal",
-   "name": "api_my_pro_status"
-  },
-  {
-   "kind": "table",
-   "file": "app/apps/mobile/src/hooks/useKarmaHistory.ts",
-   "line": 24,
-   "area": "mobile",
-   "symbol": "useKarmaHistory",
-   "via": "literal",
-   "ops": [
-    "select"
-   ],
-   "name": "karma_ledger"
-  },
-  {
    "kind": "channel",
    "file": "app/apps/mobile/src/hooks/useNotificationInboxBadge.ts",
-   "line": 30,
+   "line": 33,
    "area": "mobile",
    "symbol": "useEffect",
    "via": "expression",
@@ -61,78 +40,12 @@
   },
   {
    "kind": "bucket",
-   "file": "app/apps/mobile/src/hooks/usePostShare.ts",
-   "line": 69,
+   "file": "app/apps/mobile/src/services/backend/storageBackend.ts",
+   "line": 189,
    "area": "mobile",
-   "symbol": "recipientNavigable",
-   "via": "const",
-   "name": "post-images"
-  },
-  {
-   "kind": "bucket",
-   "file": "app/apps/mobile/src/lib/probeDraftImageAvailability.ts",
-   "line": 30,
-   "area": "mobile",
-   "symbol": "defaultStorageProbe",
-   "via": "const",
-   "name": "post-images"
-  },
-  {
-   "kind": "bucket",
-   "file": "app/apps/mobile/src/services/abandonedUploads.ts",
-   "line": 70,
-   "area": "mobile",
-   "symbol": "tryRemove",
+   "symbol": "signFileUrl",
    "via": "unresolved",
-   "name": "<entry.bucket>"
-  },
-  {
-   "kind": "bucket",
-   "file": "app/apps/mobile/src/services/avatarUpload.ts",
-   "line": 129,
-   "area": "mobile",
-   "symbol": "resizeAndUploadAvatar",
-   "via": "const",
-   "name": "avatars"
-  },
-  {
-   "kind": "bucket",
-   "file": "app/apps/mobile/src/services/avatarUpload.ts",
-   "line": 142,
-   "area": "mobile",
-   "symbol": "removeUploadedAvatar",
-   "via": "const",
-   "name": "avatars"
-  },
-  {
-   "kind": "bucket",
-   "file": "app/apps/mobile/src/services/chatMediaUrl.ts",
-   "line": 17,
-   "area": "mobile",
-   "symbol": "signWithSupabase",
-   "via": "const",
-   "name": "chat-media"
-  },
-  {
-   "kind": "table",
-   "file": "app/apps/mobile/src/services/featureFlagsComposition.ts",
-   "line": 12,
-   "area": "mobile",
-   "symbol": "fetchRemoteFeatureFlags",
-   "via": "literal",
-   "ops": [
-    "select"
-   ],
-   "name": "app_flags"
-  },
-  {
-   "kind": "bucket",
-   "file": "app/apps/mobile/src/services/listingImageUpload.ts",
-   "line": 36,
-   "area": "mobile",
-   "symbol": "listingImagePublicUrl",
-   "via": "const",
-   "name": "post-images"
+   "name": "<bucket>"
   },
   {
    "kind": "rpc",

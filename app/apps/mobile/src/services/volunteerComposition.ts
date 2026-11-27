@@ -14,11 +14,12 @@ import {
   SignUpVolunteerShiftUseCase,
 } from '@kc/application';
 import { pickAuthStorage } from './authSecureStorage';
+import { viaApi } from './backend/apiBackend';
 
 let _repo: SupabaseVolunteerRepository | null = null;
 
 function repo() {
-  _repo ??= new SupabaseVolunteerRepository(getSupabaseClient({ storage: pickAuthStorage() }));
+  _repo ??= viaApi('volunteer', new SupabaseVolunteerRepository(getSupabaseClient({ storage: pickAuthStorage() })));
   return _repo;
 }
 

@@ -14,10 +14,12 @@
   },
   "dependencies": {
     "@fastify/websocket": "^11.2.0",
+    "@google-cloud/storage": "^8.4.0",
     "@nestjs/common": "^12.6.0",
     "@nestjs/core": "^12.6.0",
     "@nestjs/platform-fastify": "^12.6.0",
     "@supabase/postgrest-js": "^2.119.0",
+    "bcryptjs": "^3.0.2",
     "fastify": "^5.12.8",
     "ioredis": "^6.0.0",
     "jose": "^6.2.18",

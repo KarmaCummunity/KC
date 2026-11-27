@@ -6,12 +6,13 @@ import {
 } from '@kc/infrastructure-supabase';
 import type { IUserRealtime } from '@kc/application';
 import { pickAuthStorage } from './authSecureStorage';
+import { viaApiRealtime } from './backend/apiBackend';
 
 let instance: IUserRealtime | null = null;
 
 export function getUserRealtime(): IUserRealtime {
   if (!instance) {
-    instance = new SupabaseUserRealtime(getSupabaseClient({ storage: pickAuthStorage() }));
+    instance = new SupabaseUserRealtime(viaApiRealtime(getSupabaseClient({ storage: pickAuthStorage() })));
   }
   return instance;
 }

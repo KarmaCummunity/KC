@@ -3,11 +3,12 @@ import { ListRidesFeedUseCase, type IRidesFeedRepository, type RideFeedRoute } f
 import { SupabaseRidesFeedRepository } from '@kc/infrastructure-supabase';
 import type { RideFeedSection } from '@kc/domain';
 import { getMarketplaceSupabaseClient } from './marketplaceComposition';
+import { viaApi } from './backend/apiBackend';
 
 let repo: IRidesFeedRepository | null = null;
 
 function repository(): IRidesFeedRepository {
-  repo ??= new SupabaseRidesFeedRepository(getMarketplaceSupabaseClient());
+  repo ??= viaApi('ridesFeed', new SupabaseRidesFeedRepository(getMarketplaceSupabaseClient()));
   return repo;
 }
 

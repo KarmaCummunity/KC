@@ -61,7 +61,8 @@ function changeStatement(
   parameters: SqlParameters,
 ): SqlStatement {
   if (!returning) {
-    return { text: `with _changed as (${change}) select null::text as body, 0 as row_count`, values: parameters.values };
+    // `returning 1` names no column, so it asks for no right to read the rows: it only lets them be counted, as PostgREST does.
+    return { text: `with _changed as (${change} returning 1) select null::text as body, (select count(*) from _changed)::int as row_count`, values: parameters.values };
   }
   const columns = projectionSql(returning, '_changed', null, cache, []);
   // `table.*`, not `*`: an UPDATE also has its patch source in scope.
@@ -125,7 +126,13 @@ export function resolveSignature(name: string, provided: readonly string[], cach
   const [signature, ambiguous] = matches;
   if (!signature) {
     const shown = [...provided].sort().join(', ');
-    throw new PostgrestCompatError('PGRST202', 404, `Could not find the function public.${name}(${shown}) in the schema cache`);
+    const searchedWith = provided.length === 0 ? 'without parameters' : `with parameters ${shown}`;
+    throw new PostgrestCompatError(
+      'PGRST202',
+      404,
+      `Could not find the function public.${name}${provided.length === 0 ? ' without parameters' : `(${shown})`} in the schema cache`,
+      `Searched for the function public.${name} ${searchedWith} or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache.`,
+    );
   }
   if (ambiguous) {
     throw new PostgrestCompatError('PGRST203', 300, `Could not choose the best candidate function for public.${name}`);

@@ -80,7 +80,7 @@ describe('File jobs on the KC schema', () => {
 
   beforeAll(async () => {
     directory = await mkdtemp(join(tmpdir(), 'kc-file-jobs-'));
-    gateway = await startKcGateway({ config: { jobsToken: JOBS_TOKEN, storage: { localDirectory: directory, publicUrl: 'http://api.kc.test' } } });
+    gateway = await startKcGateway({ config: { jobsToken: JOBS_TOKEN, storage: { localDirectory: directory, publicUrl: 'http://api.kc.test', cloud: null } } });
     store = gateway.app.get<ObjectStore>(OBJECT_STORE);
     const city = (await database.admin.query<{ city_id: string; name_he: string }>('select city_id, name_he from public.cities limit 1')).rows[0];
     if (!city) throw new Error('the reference seed is not loaded: no city');
@@ -129,18 +129,28 @@ describe('File jobs on the KC schema', () => {
     const orphan = `${alice.userId}/batch/abandoned.jpg`;
     const unconfirmed = `${alice.userId}/batch/never-confirmed.jpg`;
     const fresh = `${alice.userId}/batch/just-now.jpg`;
+    const avatar = `${alice.userId}/avatar.jpg`;
+    const unindexedAvatar = `${alice.userId}/removed-from-the-index.jpg`;
     await upload(alice, 'post-images', referenced);
     await upload(alice, 'post-images', orphan);
     await upload(alice, 'post-images', fresh);
+    await upload(alice, 'avatars', avatar);
     // Bytes that reached the store and were never confirmed into the index.
     await store.write('post-images', unconfirmed, PHOTO, { contentType: JPEG, cacheControl: null });
+    // A file of a bucket the first pass does not judge, without a row: a copy of a file deleted where it came from.
+    await store.write('avatars', unindexedAvatar, PHOTO, { contentType: JPEG, cacheControl: null });
     await postsOf(alice).create(newPostInput(alice.userId, address, { mediaAssets: [{ path: referenced, mimeType: JPEG, sizeBytes: PHOTO.byteLength }] }));
     await Promise.all([referenced, orphan, unconfirmed].map((name) => age('post-images', name)));
+    await Promise.all([avatar, unindexedAvatar].map((name) => age('avatars', name)));
 
     const { status, body } = await runJob('reconcile-storage-orphans');
 
     expect(status).toBe(200);
-    expect(body).toEqual({ ok: true, scanned: 3, removed: 2, errors: 0 });
+    expect(body).toMatchObject({ ok: true, scanned: 3, removed: 2, errors: 0 });
+    // The second pass judges every bucket: the post photo that stayed, and the two avatars.
+    expect(body.unindexed).toMatchObject({ scanned: 3, removed: 1, errors: 0 });
+    expect(await store.head('avatars', unindexedAvatar)).toBeNull();
+    expect(await stateOf('avatars', avatar)).toEqual({ stored: true, indexed: true });
     expect(await stateOf('post-images', orphan)).toEqual({ stored: false, indexed: false });
     expect(await stateOf('post-images', unconfirmed)).toEqual({ stored: false, indexed: false });
     expect(await stateOf('post-images', referenced)).toEqual({ stored: true, indexed: true });

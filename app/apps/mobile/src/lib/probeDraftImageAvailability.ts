@@ -4,7 +4,7 @@
 // placeholder with a re-add prompt.
 //
 // The default adapter calls Supabase Storage; tests inject a fake.
-import { getSupabaseClient } from '@kc/infrastructure-supabase';
+import { signFileUrl } from '../services/backend/storageBackend';
 import type { UploadedAsset } from '../services/imageUpload';
 
 export interface DraftImage extends UploadedAsset {
@@ -25,12 +25,7 @@ const POST_BUCKET = 'post-images';
 /** Default probe: short-lived signed URL request. Any error → missing. */
 export const defaultStorageProbe: StorageProbe = async (path) => {
   try {
-    const client = getSupabaseClient();
-    const { data, error } = await client.storage
-      .from(POST_BUCKET)
-      .createSignedUrl(path, 60);
-    if (error) return false;
-    return Boolean(data?.signedUrl);
+    return Boolean(await signFileUrl(POST_BUCKET, path, 60));
   } catch {
     return false;
   }

@@ -13,12 +13,13 @@ import {
 import { SupabaseRideBookingRepository } from '@kc/infrastructure-supabase';
 import { container } from '../lib/container';
 import { getMarketplaceSupabaseClient } from './marketplaceComposition';
+import { viaApi } from './backend/apiBackend';
 
 let repo: IRideBookingRepository | null = null;
 
 /** One adapter per app session, created on first use (after auth storage is ready). */
 function repository(): IRideBookingRepository {
-  repo ??= new SupabaseRideBookingRepository(getMarketplaceSupabaseClient());
+  repo ??= viaApi('rideBooking', new SupabaseRideBookingRepository(getMarketplaceSupabaseClient()));
   return repo;
 }
 

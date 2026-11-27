@@ -7,12 +7,13 @@ import {
   type IDriverDeclarationRepository,
 } from '@kc/application';
 import { getMarketplaceSupabaseClient } from '../../../services/marketplaceComposition';
+import { viaApi } from '../../../services/backend/apiBackend';
 
 let _declarations: IDriverDeclarationRepository | null = null;
 let _acceptDeclaration: AcceptDriverDeclarationUseCase | null = null;
 
 function getDeclarationRepo(): IDriverDeclarationRepository {
-  _declarations ??= new SupabaseDriverDeclarationRepository(getMarketplaceSupabaseClient());
+  _declarations ??= viaApi('driverDeclaration', new SupabaseDriverDeclarationRepository(getMarketplaceSupabaseClient()));
   return _declarations;
 }
 

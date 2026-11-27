@@ -4,6 +4,7 @@
 import { useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { container, supabase } from '../lib/container';
+import { viaApiRealtime } from '../services/backend/apiBackend';
 
 /**
  * The member's unread notifications from the shared query cache, without a realtime
@@ -26,7 +27,9 @@ export function useNotificationInboxBadge(userId: string | null | undefined): nu
   useEffect(() => {
     if (!userId) return;
     const topic = `user:${userId}:notifications`;
-    const channel = supabase
+    // Through the realtime door: KC's own gateway when the app is pointed at it, Supabase otherwise.
+    const realtime = viaApiRealtime(supabase);
+    const channel = realtime
       .channel(topic, { config: { private: true } })
       .on('broadcast', { event: 'badge' }, (payload) => {
         const count = (payload.payload as { unread_count?: number })?.unread_count;
@@ -37,7 +40,7 @@ export function useNotificationInboxBadge(userId: string | null | undefined): nu
       .subscribe();
 
     return () => {
-      void supabase.removeChannel(channel);
+      void realtime.removeChannel(channel);
     };
   }, [userId, qc]);
 

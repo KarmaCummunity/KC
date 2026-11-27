@@ -4,7 +4,6 @@ const { picker, encoder, uploader, storageBucket, client, platform } = vi.hoiste
   const storageBucket = {
     upload: vi.fn(),
     remove: vi.fn(),
-    getPublicUrl: vi.fn((path: string) => ({ data: { publicUrl: `https://p.supabase.co/storage/v1/object/public/avatars/${path}` } })),
   };
   return {
     picker: {
@@ -29,6 +28,8 @@ vi.mock('expo-image-manipulator', () => ({ SaveFormat: { JPEG: 'jpeg' } }));
 let uuid = 0;
 vi.mock('expo-crypto', () => ({ randomUUID: () => `g${++uuid}` }));
 vi.mock('@kc/infrastructure-supabase', () => ({ getSupabaseClient: () => client }));
+// The file host the storage door builds public addresses on.
+vi.mock('../../lib/supabasePublicConfig', () => ({ getSupabasePublicEnv: () => ({ url: 'https://p.supabase.co', anonKey: 'anon' }) }));
 vi.mock('../imageEncoding', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../imageEncoding')>()),
   encodeJpeg: encoder.encodeJpeg,

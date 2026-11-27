@@ -44,7 +44,7 @@ vi.mock('../../../store/authStore', () => ({
 vi.mock('../../../lib/analytics', () => ({ track: (...a: unknown[]) => track(...a) }));
 vi.mock('../../../lib/rtlTextAlignStart', () => ({ rtlTextAlignStart: 'left' }));
 vi.mock('../../../lib/webRtlStyle', () => ({ webTextRtl: {}, webViewRtl: {} }));
-vi.mock('../../marketplaceComposition', () => ({ getMarketplaceSupabaseClient: () => ({}) }));
+vi.mock('../../proEntitlementComposition', () => ({ getProEntitlementRepository: () => ({ isPro: () => Promise.resolve(false) }) }));
 vi.mock('../revenuecat', () => ({
   getProPackages: vi.fn(),
   purchaseProPackage: vi.fn(),

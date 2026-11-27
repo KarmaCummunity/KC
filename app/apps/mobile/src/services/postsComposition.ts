@@ -38,6 +38,7 @@ import {
 } from '@kc/application';
 import { getUserRepo } from './userComposition';
 import { pickAuthStorage } from './authSecureStorage';
+import { viaApi, viaApiRealtime } from './backend/apiBackend';
 
 let _repo: IPostRepository | null = null;
 let _realtime: IFeedRealtime | null = null;
@@ -65,7 +66,7 @@ let _materializePostTranslations: MaterializePostTranslationsUseCase | null = nu
 
 function getRepo(): IPostRepository {
   if (_repo) return _repo;
-  _repo = new SupabasePostRepository(getSupabaseClient({ storage: pickAuthStorage() }));
+  _repo = viaApi('post', new SupabasePostRepository(getSupabaseClient({ storage: pickAuthStorage() })));
   return _repo;
 }
 
@@ -140,14 +141,14 @@ export function getGetClosureCandidatesUseCase(): GetClosureCandidatesUseCase {
 // ── P1.2 — feed discovery (FR-FEED-009, 014, 015) ─────────────────────────
 export function getFeedRealtime(): IFeedRealtime {
   if (!_realtime) {
-    _realtime = new SupabaseFeedRealtime(getSupabaseClient({ storage: pickAuthStorage() }));
+    _realtime = new SupabaseFeedRealtime(viaApiRealtime(getSupabaseClient({ storage: pickAuthStorage() })));
   }
   return _realtime;
 }
 
 export function getStatsRepo(): IStatsRepository {
   if (!_stats) {
-    _stats = new SupabaseStatsRepository(getSupabaseClient({ storage: pickAuthStorage() }));
+    _stats = viaApi('stats', new SupabaseStatsRepository(getSupabaseClient({ storage: pickAuthStorage() })));
   }
   return _stats;
 }
@@ -196,7 +197,7 @@ export function getUpsertPostActorIdentityUseCase(): UpsertPostActorIdentityUseC
 export function getTranslatedPostsUseCase(): GetTranslatedPostsUseCase {
   if (!_getTranslatedPosts) {
     _getTranslatedPosts = new GetTranslatedPostsUseCase(
-      new SupabasePostTranslationReader(getSupabaseClient({ storage: pickAuthStorage() })),
+      viaApi('postTranslationReader', new SupabasePostTranslationReader(getSupabaseClient({ storage: pickAuthStorage() }))),
     );
   }
   return _getTranslatedPosts;
@@ -205,7 +206,7 @@ export function getTranslatedPostsUseCase(): GetTranslatedPostsUseCase {
 export function materializePostTranslationsUseCase(): MaterializePostTranslationsUseCase {
   if (!_materializePostTranslations) {
     _materializePostTranslations = new MaterializePostTranslationsUseCase(
-      new EdgeFnTranslationService(getSupabaseClient({ storage: pickAuthStorage() })),
+      viaApi('translation', new EdgeFnTranslationService(getSupabaseClient({ storage: pickAuthStorage() }))),
     );
   }
   return _materializePostTranslations;

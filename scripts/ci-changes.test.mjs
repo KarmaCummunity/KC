@@ -44,6 +44,10 @@ test('API server and its client package run frontend and backend (database suite
   }
 });
 
+test('the cloud environment plans backend only (its Terraform job lives there)', () => {
+  assert.deepEqual(classify(['infra/gcp/run.tf']), { frontend: false, backend: true, edge: false });
+});
+
 test('packages the API shares with the app do not plan backend on a PR', () => {
   for (const f of ['app/packages/domain/src/index.ts', 'app/packages/application/src/index.ts', 'app/apps/mobile/src/lib/x.ts']) {
     assert.equal(classify([f]).backend, false, f);

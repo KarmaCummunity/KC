@@ -13,18 +13,19 @@ import {
 } from '@kc/application';
 import { SupabaseKnowledgeBookingRepository, SupabaseKnowledgeSlotSeriesRepository } from '@kc/infrastructure-supabase';
 import { container, supabase } from '../lib/container';
+import { viaApi } from './backend/apiBackend';
 
 let repo: IKnowledgeBookingRepository | null = null;
 let seriesRepo: IKnowledgeSlotSeriesRepository | null = null;
 
 /** One adapter per app session, created on first use (after auth storage is ready). */
 function repository(): IKnowledgeBookingRepository {
-  repo ??= new SupabaseKnowledgeBookingRepository(supabase);
+  repo ??= viaApi('knowledgeBooking', new SupabaseKnowledgeBookingRepository(supabase));
   return repo;
 }
 
 function seriesRepository(): IKnowledgeSlotSeriesRepository {
-  seriesRepo ??= new SupabaseKnowledgeSlotSeriesRepository(supabase);
+  seriesRepo ??= viaApi('knowledgeSlotSeries', new SupabaseKnowledgeSlotSeriesRepository(supabase));
   return seriesRepo;
 }
 

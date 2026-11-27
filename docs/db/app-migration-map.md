@@ -10,10 +10,10 @@ The application (`app/packages/infrastructure-supabase`, `app/apps/mobile`) and 
 | --- | --- | --- | --- | --- | --- | --- |
 | RPCs | 270 | 193 | 22 | 55 | 0 | 0 |
 | Tables and views | 67 | 50 | 0 | 17 | 0 | 0 |
-| Storage buckets | 5 | 4 | 0 | 1 | 0 | 0 |
+| Storage buckets | 2 | 2 | 0 | 0 | 0 | 0 |
 | Realtime channels | 9 | 9 | 0 | 0 | 0 | 0 |
 | Edge Function invokes | 5 | 5 | 0 | 0 | 0 | 0 |
-| **Total** | 356 | 261 | 22 | 73 | 0 | 0 |
+| **Total** | 353 | 259 | 22 | 72 | 0 | 0 |
 
 ### Launch scope
 
@@ -21,10 +21,10 @@ Every row carries `launch` (spec D102, `docs/spec/96_launch_and_first_group_plan
 
 | Launch tier | Objects used | 1:1 | 1:1 (renamed) | CHANGED | REMOVED | MISSING |
 | --- | --- | --- | --- | --- | --- | --- |
-| core | 134 | 110 | 1 | 23 | 0 | 0 |
+| core | 130 | 107 | 1 | 22 | 0 | 0 |
 | wedge | 53 | 32 | 15 | 6 | 0 | 0 |
-| later | 169 | 119 | 6 | 44 | 0 | 0 |
-| **Launch-critical (core + wedge)** | 187 | 142 | 16 | 29 | 0 | 0 |
+| later | 170 | 120 | 6 | 44 | 0 | 0 |
+| **Launch-critical (core + wedge)** | 183 | 139 | 16 | 28 | 0 | 0 |
 
 Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename of the function or its arguments · **CHANGED** the caller's logic changes · **REMOVED** no replacement by design · **MISSING** the baseline has no equivalent although the code needs one (§4). Confidence: **high** read in the baseline source, **medium** inferred from names and generated types.
 
@@ -82,9 +82,9 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `infrastructure-supabase/src/volunteering/` | 9 | 3 | 6 | 0 | 0 |
 | `infrastructure-supabase/src/whatsapp/` | 4 | 2 | 2 | 0 | 0 |
 | `infrastructure-supabase/src/worlds/` | 3 | 1 | 2 | 0 | 0 |
-| `apps/mobile` (direct calls outside the adapters) | 11 | 10 | 1 | 0 | 0 |
+| `apps/mobile` (direct calls outside the adapters) | 2 | 2 | 0 | 0 | 0 |
 | Edge Function `_shared` | 21 | 17 | 4 | 0 | 0 |
-| Edge Function `backfill-image-thumbs` | 2 | 0 | 2 | 0 | 0 |
+| Edge Function `backfill-image-thumbs` | 2 | 2 | 0 | 0 | 0 |
 | Edge Function `embed-worker` | 3 | 3 | 0 | 0 | 0 |
 | Edge Function `extract-external-post` | 1 | 1 | 0 | 0 | 0 |
 | Edge Function `identity-verification-session` | 3 | 3 | 0 | 0 | 0 |
@@ -475,7 +475,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `api_my_pro_status` | core | 1:1 | `api_my_pro_status() → Json` | The caller's Pro status (`is_pro`); the Pro screen reads it. |  | high | SupabaseProEntitlementRepository.ts:12 |
+| `api_my_pro_status` | later | 1:1 | `api_my_pro_status() → Json` | The caller's Pro status (`is_pro`); the Pro screen reads it. |  | high | SupabaseProEntitlementRepository.ts:12 |
 | `cancel_standing_order` | later | CHANGED | `cancel_standing_order(p_order_id: string) → Json` | Same argument; returns the order as JSON with `amount_agorot`. | `order_not_found` †, `unauthenticated` | high | SupabasePaymentsRepository.ts:135 |
 | `create_donation_intent` | later | CHANGED | `create_donation_intent(p_amount_agorot: number, p_idempotency_key: string, p_org_id: string, p_post_id?: string) → Json` | `p_amount_ils` → `p_amount_agorot` (integer agorot); `p_listing_id` → `p_post_id`; returns JSON (intent and checkout). | `account_not_active`, `idempotency_key_conflict` †, `invalid_rate_limit_args`, `money_min_amount`, `payments_unavailable`, `rate_limited`, `unauthenticated`, `verified_org_required` | high | SupabasePaymentsRepository.ts:61 |
 | `create_standing_order` | later | CHANGED | `create_standing_order(p_amount_agorot: number, p_cadence?: string, p_idempotency_key: string, p_org_id: string) → Json` | `p_amount_ils` → `p_amount_agorot`; returns JSON. | `account_not_active`, `cadence_not_supported` †, `idempotency_key_conflict` †, `money_min_amount`, `payments_unavailable`, `unauthenticated`, `verified_org_required` | high | SupabasePaymentsRepository.ts:75 |
@@ -736,18 +736,12 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 
 ### `apps/mobile` (direct calls outside the adapters)
 
-11 call sites: 10 map 1:1, 1 need logic changes, 0 removed, 0 MISSING.
+2 call sites: 2 map 1:1, 0 need logic changes, 0 removed, 0 MISSING.
 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `<entry.bucket>` (bucket) | core | 1:1 | bucket `post-images` | The device abandoned-upload ledger retries deletion only in its runtime-allowlisted existing buckets: post-images, avatars or chat-media. Uses the current member session and existing own-folder Storage policies; no service-role client or bucket-policy change. |  | medium | abandonedUploads.ts:70 |
-| `avatars` (bucket) | core | 1:1 | bucket `avatars` | Declared in `95_platform/090_storage.sql`: public, JPEG, 512 KB, `<user_id>/avatar.jpg` (and the thumb in the same folder) (M23, verified). |  | high | avatarUpload.ts:129, avatarUpload.ts:142 |
-| `chat-media` (bucket) | core | 1:1 | bucket `chat-media` | Declared in `95_platform/090_storage.sql`: private, `<user_id>/<chat_id>/<file>`, read through signed URLs by chat members (M23, verified). |  | high | chatMediaUrl.ts:17 |
-| `post-images` (bucket) | core | 1:1 | see `infrastructure-supabase/src/posts/` |  |  |  | usePostShare.ts:69, probeDraftImageAvailability.ts:30, listingImageUpload.ts:36 |
-| `topic = 'user:${userId}:notifications'` (channel) | core | 1:1 | topic `user:<user id>:notifications` | Already on the baseline contract (event `badge`). |  | high | useNotificationInboxBadge.ts:30 |
-| `api_my_pro_status` | core | 1:1 | see `infrastructure-supabase/src/payments/` |  |  |  | pro.tsx:39 |
-| `app_flags` (table) | core | 1:1 | see `infrastructure-supabase/src/featureFlags/` |  |  |  | featureFlagsComposition.ts:12 |
-| `karma_ledger` (table) | wedge | CHANGED | see `infrastructure-supabase/src/karma/` |  |  |  | useKarmaHistory.ts:24 |
+| `<bucket>` (bucket) | core | 1:1 | bucket `post-images` | A bucket named at run time. The app's storage door (`apps/mobile/src/services/backend/storageBackend.ts`, ADR-012) is handed the bucket by its caller: `post-images`, `avatars` (public, JPEG, 512 KB, `<user_id>/…`) or `chat-media` (private, `<user_id>/<chat_id>/<file>`, read through signed URLs by chat members), each declared by the baseline with own-folder policies; the abandoned-upload ledger deletes only in those three. `backfill-image-thumbs` loops over a bucket list passed at run time (`post-images`, `avatars`). |  | medium | storageBackend.ts:189 |
+| `topic = 'user:${userId}:notifications'` (channel) | core | 1:1 | topic `user:<user id>:notifications` | Already on the baseline contract (event `badge`). |  | high | useNotificationInboxBadge.ts:33 |
 
 ### Edge Function `_shared`
 
@@ -778,11 +772,11 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 
 ### Edge Function `backfill-image-thumbs`
 
-2 call sites: 0 map 1:1, 2 need logic changes, 0 removed, 0 MISSING.
+2 call sites: 2 map 1:1, 0 need logic changes, 0 removed, 0 MISSING.
 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `<bucket>` (bucket) | core | CHANGED | bucket `post-images` | `backfill-image-thumbs` loops over a bucket list passed at run time; after the cut-over the list is `post-images` (plus `avatars` and `chat-media`). |  | medium | index.ts:180, index.ts:194 |
+| `<bucket>` (bucket) | core | 1:1 | see `apps/mobile` (direct calls outside the adapters) |  |  |  | index.ts:180, index.ts:194 |
 
 ### Edge Function `embed-worker`
 
@@ -944,16 +938,16 @@ In launch order: after package *n* the app is shippable with everything up to *n
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | CURRENT — Current post-baseline integrations | mixed inventory, not a launch commitment | 24 | 24 | 0 | 0 | 0 | — |
 | P0 — Contract switch and the degrade rule (first, alone) | core | 3 | 3 | 0 | 0 | 0 | — |
-| P1 — Identity: session start, profile, privacy, follow, block, legal, account deletion, devices | core | 37 | 33 | 4 | 0 | 0 | — |
-| P2 — Posts, feed, search, closure, translations | core | 51 | 40 | 11 | 0 | 0 | P3, P4 |
-| P3 — Chat and realtime | core | 19 | 17 | 2 | 0 | 0 | P2, P4 |
+| P1 — Identity: session start, profile, privacy, follow, block, legal, account deletion, devices | core | 36 | 32 | 4 | 0 | 0 | — |
+| P2 — Posts, feed, search, closure, translations | core | 50 | 39 | 11 | 0 | 0 | P3, P4 |
+| P3 — Chat and realtime | core | 18 | 16 | 2 | 0 | 0 | P2, P4 |
 | P4 — Reports, moderation and admin basics | core | 40 | 30 | 10 | 0 | 0 | P2, P3 |
 | P5 — Launch worlds: items, food, rides, time (events), matching, donation links | wedge | 81 | 68 | 13 | 0 | 0 | P6 |
-| P6 — Edge Functions of the launch | core | 15 | 11 | 4 | 0 | 0 | P5 |
+| P6 — Edge Functions of the launch | core | 15 | 12 | 3 | 0 | 0 | P5 |
 | L1 — Housing world | later | 15 | 11 | 4 | 0 | 0 | L2, L3, L4, L5, L6, L7 |
 | L2 — Knowledge world | later | 11 | 9 | 2 | 0 | 0 | L1, L3, L4, L5, L6, L7 |
 | L3 — Challenges | later | 9 | 6 | 3 | 0 | 0 | L1, L2, L4, L5, L6, L7 |
-| L4 — Money: donations to organizations, standing orders, org finance, org onboarding | later | 30 | 14 | 16 | 0 | 0 | L1, L2, L3, L5, L6, L7 |
+| L4 — Money: donations to organizations, standing orders, org finance, org onboarding | later | 31 | 15 | 16 | 0 | 0 | L1, L2, L3, L5, L6, L7 |
 | L5 — Surveys, feedback, public research | later | 15 | 14 | 1 | 0 | 0 | L1, L2, L3, L4, L6, L7 |
 | L6 — Back-office tools: tasks, CRM, timesheets | later | 22 | 17 | 5 | 0 | 0 | L1, L2, L3, L4, L5, L7 |
 | L7 — WhatsApp bot, linking, admin console | later | 40 | 23 | 17 | 0 | 0 | L1, L2, L3, L4, L5, L6 |
@@ -1008,7 +1002,7 @@ In launch order: after package *n* the app is shippable with everything up to *n
 
 ### P5 — Launch worlds: items, food, rides, time (events), matching, donation links
 
-- **Owns:** `marketplace/**`, `rides/** (except rides/SupabaseRidesRealtime.ts)`, `volunteering/**`, `matching/**`, `donations/**`, `organizations/**`, `apps/mobile: world screens, ridesKnowledgeComposition, listing image upload, karma history`
+- **Owns:** `marketplace/**`, `rides/** (except rides/SupabaseRidesRealtime.ts)`, `volunteering/**`, `matching/**`, `donations/**`, `organizations/**`, `karma/**`, `apps/mobile: world screens, ridesKnowledgeComposition, listing image upload, karma history`
 - **Work:** Listings become posts; one handoff row shape; the legacy ride tables and their repositories are deleted; volunteering maps onto event posts; matches as cards. Two agents may split it by folder (rides / the rest): no shared file.
 - **Must pass:** vitest: marketplace, rides, volunteering, matching, donations suites; pgTAP 035, 070, 072 (events, karma), 073 (food), 076, 080
 - **If reached before it is migrated:** Each launch world is behind `world_<slug>_enabled`: until this package lands the four flags are off and the worlds render as portals (the generic post flow of P2 still lets members publish and close items).

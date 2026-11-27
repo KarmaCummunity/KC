@@ -6,6 +6,9 @@ import { createExpoTransport } from '../notifications/expoTransport';
 import type { PushTransport } from '../notifications/pushTypes';
 import { ProcessPostMediaJob } from '../postMedia/processPostMediaJob';
 import { RotateResearchSaltJob } from '../publicResearch/rotateResearchSaltJob';
+import { COPY_SOURCE, CopyStoredFilesJob } from '../storageCopy/copyStoredFilesJob';
+import type { CopySource } from '../storageCopy/copyStoredFiles';
+import { createSupabaseStorageSource } from '../storageCopy/supabaseStorageSource';
 import { ReconcileStorageOrphansJob } from '../storageMaintenance/reconcileStorageOrphansJob';
 import type { FetchFn } from '../whatsapp/metaClient';
 import { WHATSAPP_FETCH, WhatsAppSenderJob } from '../whatsapp/whatsappSenderJob';
@@ -17,6 +20,7 @@ import { PruneRealtimeMessagesJob } from '../../platform/realtime/pruneRealtimeM
 
 /** Outbound calls a test replaces, so no test reaches the network. */
 export interface ScheduledJobOverrides {
+  readonly copySource?: CopySource;
   readonly matchRerankModel?: Pick<GeminiClient, 'generateJson'>;
   readonly pushTransport?: PushTransport;
   readonly whatsAppFetch?: FetchFn;
@@ -26,13 +30,15 @@ export interface ScheduledJobOverrides {
  * Every scheduled job this server runs (ADR-009 phase 8). A newly ported job
  * is added here and nowhere else: the jobs route is generic. A job that
  * replaces an Edge Function keeps its name, so its schedule only changes
- * address; `realtime-retention` is new with KC's own realtime gateway. The
- * three file jobs need the storage module, and fail their run on a server
- * that has no file store.
+ * address; `realtime-retention` is new with KC's own realtime gateway, and
+ * `copy-stored-files` exists only until the files have moved (ADR-012
+ * section 6). The four file jobs need the storage module, and fail their run
+ * on a server that has no file store.
  */
 export function scheduledJobSet(overrides: ScheduledJobOverrides = {}): ScheduledJobSet {
   return {
     jobs: [
+      CopyStoredFilesJob,
       DispatchNotificationsJob,
       EmbedPostsJob,
       MatchRerankJob,
@@ -45,6 +51,11 @@ export function scheduledJobSet(overrides: ScheduledJobOverrides = {}): Schedule
       WhatsAppSenderJob,
     ],
     providers: [
+      {
+        provide: COPY_SOURCE,
+        inject: [API_CONFIG],
+        useFactory: (config: ApiConfig) => overrides.copySource ?? (config.storageCopySource ? createSupabaseStorageSource(config.storageCopySource) : null),
+      },
       { provide: MATCH_RERANK_MODEL, inject: [API_CONFIG], useFactory: (config: ApiConfig) => overrides.matchRerankModel ?? matchRerankModelFor(config) },
       { provide: PUSH_TRANSPORT, inject: [API_CONFIG], useFactory: (config: ApiConfig) => overrides.pushTransport ?? createExpoTransport(config.expoAccessToken) },
       { provide: WHATSAPP_FETCH, useValue: overrides.whatsAppFetch ?? ((input: string, init?: RequestInit) => fetch(input, init)) },

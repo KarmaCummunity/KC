@@ -11,6 +11,7 @@ import {
   type ISavedPostsRepository,
 } from '@kc/application';
 import { pickAuthStorage } from './authSecureStorage';
+import { viaApi } from './backend/apiBackend';
 
 let _repo: ISavedPostsRepository | null = null;
 let _savePost: SavePostUseCase | null = null;
@@ -20,7 +21,7 @@ let _listSavedPosts: ListSavedPostsUseCase | null = null;
 
 function getRepo(): ISavedPostsRepository {
   if (_repo) return _repo;
-  _repo = new SupabaseSavedPostsRepository(getSupabaseClient({ storage: pickAuthStorage() }));
+  _repo = viaApi('savedPosts', new SupabaseSavedPostsRepository(getSupabaseClient({ storage: pickAuthStorage() })));
   return _repo;
 }
 

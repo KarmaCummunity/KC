@@ -319,10 +319,7 @@ rpc('<fn>', 'same', ['rpc:post_media_processing_claim', 'rpc:post_media_processi
 
 // ───────────────────────────── storage buckets
 bucket('post-images', 'same', 'bucket:post-images', 'Declared by the baseline (own-folder insert / delete policies); `post_media.storage_bucket` points at it.');
-bucket('avatars', 'same', 'bucket:avatars', 'Declared in `95_platform/090_storage.sql`: public, JPEG, 512 KB, `<user_id>/avatar.jpg` (and the thumb in the same folder) (M23, verified).');
-bucket('chat-media', 'same', 'bucket:chat-media', 'Declared in `95_platform/090_storage.sql`: private, `<user_id>/<chat_id>/<file>`, read through signed URLs by chat members (M23, verified).');
-bucket('<entry.bucket>', 'same', 'bucket:post-images', 'The device abandoned-upload ledger retries deletion only in its runtime-allowlisted existing buckets: post-images, avatars or chat-media. Uses the current member session and existing own-folder Storage policies; no service-role client or bucket-policy change.', { c: M });
-bucket('<bucket>', 'changed', 'bucket:post-images', '`backfill-image-thumbs` loops over a bucket list passed at run time; after the cut-over the list is `post-images` (plus `avatars` and `chat-media`).', { c: M });
+bucket('<bucket>', 'same', 'bucket:post-images', 'A bucket named at run time. The app\'s storage door (`apps/mobile/src/services/backend/storageBackend.ts`, ADR-012) is handed the bucket by its caller: `post-images`, `avatars` (public, JPEG, 512 KB, `<user_id>/…`) or `chat-media` (private, `<user_id>/<chat_id>/<file>`, read through signed URLs by chat members), each declared by the baseline with own-folder policies; the abandoned-upload ledger deletes only in those three. `backfill-image-thumbs` loops over a bucket list passed at run time (`post-images`, `avatars`).', { c: M });
 
 // ───────────────────────────── realtime
 channel('`chat:${chatId}:messages`', 'same', 'topic:chat:<chat id>:messages', 'Private topic of the chat; broadcast events `INSERT` (the message row), `read` (a member\'s marker), `reaction` and `chat_updated` (the pinned post). The app consumes all four; a `reaction` updates the reactions of the open chat in place (#2568), which are read once per open.');
@@ -484,8 +481,8 @@ export const packages = [
     degrade: 'Reporting a post or member shows "not available yet"; the admin portal entry is hidden for everyone until the package lands (staff use the dashboard of the database meanwhile).',
     risks: 'Staff deletion of a chat message is `admin_delete_message` (M18).' },
   { id: 'P5', title: 'Launch worlds: items, food, rides, time (events), matching, donation links', launch: 'wedge', parallelWith: ['P6'],
-    select: either(inArea('marketplace', 'rides', 'volunteering', 'matching', 'donations', 'organizations', 'series', 'worlds'), both(inArea('mobile'), tierIs('wedge'))),
-    files: ['marketplace/**', 'rides/** (except rides/SupabaseRidesRealtime.ts)', 'volunteering/**', 'matching/**', 'donations/**', 'organizations/**', 'apps/mobile: world screens, ridesKnowledgeComposition, listing image upload, karma history'],
+    select: either(inArea('marketplace', 'rides', 'volunteering', 'matching', 'donations', 'organizations', 'series', 'worlds', 'karma'), both(inArea('mobile'), tierIs('wedge'))),
+    files: ['marketplace/**', 'rides/** (except rides/SupabaseRidesRealtime.ts)', 'volunteering/**', 'matching/**', 'donations/**', 'organizations/**', 'karma/**', 'apps/mobile: world screens, ridesKnowledgeComposition, listing image upload, karma history'],
     work: 'Listings become posts; one handoff row shape; the legacy ride tables and their repositories are deleted; volunteering maps onto event posts; matches as cards. Two agents may split it by folder (rides / the rest): no shared file.',
     tests: ['vitest: marketplace, rides, volunteering, matching, donations suites', 'pgTAP 035, 070, 072 (events, karma), 073 (food), 076, 080'],
     degrade: 'Each launch world is behind `world_<slug>_enabled`: until this package lands the four flags are off and the worlds render as portals (the generic post flow of P2 still lets members publish and close items).',

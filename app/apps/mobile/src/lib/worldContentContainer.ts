@@ -3,7 +3,8 @@
 import { GetWorldContentUseCase } from '@kc/application';
 import { SupabaseWorldContentRepository } from '@kc/infrastructure-supabase';
 import { supabase } from './container';
+import { viaApi } from '../services/backend/apiBackend';
 
 export const worldContentContainer = {
-  getWorldContent: new GetWorldContentUseCase(new SupabaseWorldContentRepository(supabase)),
+  getWorldContent: new GetWorldContentUseCase(viaApi('worldContent', new SupabaseWorldContentRepository(supabase))),
 };

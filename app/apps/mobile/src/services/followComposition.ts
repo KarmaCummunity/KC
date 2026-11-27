@@ -22,10 +22,11 @@ import {
   UpdatePrivacyModeUseCase,
 } from '@kc/application';
 import { pickAuthStorage } from './authSecureStorage';
+import { viaApi } from './backend/apiBackend';
 
 let repo: SupabaseUserRepository | null = null;
 function getRepo() {
-  repo ??= new SupabaseUserRepository(getSupabaseClient({ storage: pickAuthStorage() }));
+  repo ??= viaApi('user', new SupabaseUserRepository(getSupabaseClient({ storage: pickAuthStorage() })));
   return repo;
 }
 

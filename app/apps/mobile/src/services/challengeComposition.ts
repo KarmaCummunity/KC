@@ -13,11 +13,12 @@ import {
   ReportChallengeProgressUseCase,
 } from '@kc/application';
 import { pickAuthStorage } from './authSecureStorage';
+import { viaApi } from './backend/apiBackend';
 
 let _repo: SupabaseChallengeRepository | null = null;
 
 function repo() {
-  _repo ??= new SupabaseChallengeRepository(getSupabaseClient({ storage: pickAuthStorage() }));
+  _repo ??= viaApi('challenge', new SupabaseChallengeRepository(getSupabaseClient({ storage: pickAuthStorage() })));
   return _repo;
 }
 

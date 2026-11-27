@@ -67,17 +67,37 @@ export interface GeminiConfig {
   readonly model: string;
 }
 
+/** The Google Cloud Storage object store of a deployed API (ADR-012). */
+export interface CloudStorageConfig {
+  /** What precedes a KC bucket's name in its cloud bucket's name, e.g. `kc-dev-`. */
+  readonly bucketPrefix: string;
+  /** KC's media address, which serves the public buckets. */
+  readonly mediaUrl: string;
+}
+
 export interface StorageConfig {
   /** Directory of the local-directory object store (development and tests); null: no store of that kind. */
   readonly localDirectory: string | null;
   /** The API's own address as clients reach it, which the local store's URLs point back at. */
   readonly publicUrl: string | null;
+  /** The cloud object store; null: no store of that kind. Never together with `localDirectory`. */
+  readonly cloud: CloudStorageConfig | null;
+}
+
+/** The Supabase project KC's existing files are copied from (ADR-012 section 6). */
+export interface StorageCopySourceConfig {
+  /** The project's address. */
+  readonly url: string;
+  /** A key of the project that reads private files too. A secret. */
+  readonly key: string;
 }
 
 /** The feature settings, as `loadApiConfig` adds them to the configuration. */
 export interface FeatureConfig {
   /** Where files are stored (ADR-012). */
   readonly storage: StorageConfig;
+  /** Where the existing files are copied from; null: this server copies none. */
+  readonly storageCopySource: StorageCopySourceConfig | null;
   /** Who each served port is served to; empty: everyone (`portRolloutConfig.ts`). */
   readonly portRollout: PortRolloutRules;
   /** The app's public web address, which a message to a member links to; null: the product's default. */
@@ -164,7 +184,40 @@ function parseStorage(env: Env): StorageConfig {
   const publicUrl = rawPublicUrl === undefined ? null : withoutTrailingSlashes(rawPublicUrl);
   if (publicUrl !== null && !URL.canParse(publicUrl)) throw new ApiConfigError('KC_API_PUBLIC_URL', 'must be a URL');
   if (localDirectory !== null && publicUrl === null) throw new ApiConfigError('KC_API_PUBLIC_URL', 'is required when KC_STORAGE_LOCAL_DIR is set');
-  return { localDirectory, publicUrl };
+  const cloud = parseCloudStorage(env);
+  // One process, one store: two would split the files between them.
+  if (localDirectory !== null && cloud !== null) throw new ApiConfigError('KC_STORAGE_LOCAL_DIR', 'cannot be set together with KC_STORAGE_GCS_BUCKET_PREFIX');
+  return { localDirectory, publicUrl, cloud };
+}
+
+/**
+ * Lowercase letters, digits, dashes and underscores, as a cloud bucket name
+ * allows. At most 50 characters: a bucket's whole name may have 63, and the
+ * longest KC bucket name follows the prefix.
+ */
+const BUCKET_PREFIX = /^[a-z0-9][a-z0-9_-]{0,49}$/;
+
+function parseCloudStorage(env: Env): CloudStorageConfig | null {
+  const bucketPrefix = readVariable(env, 'KC_STORAGE_GCS_BUCKET_PREFIX');
+  const rawMediaUrl = readVariable(env, 'KC_MEDIA_PUBLIC_URL');
+  const mediaUrl = rawMediaUrl === undefined ? null : withoutTrailingSlashes(rawMediaUrl);
+  if (mediaUrl !== null && !URL.canParse(mediaUrl)) throw new ApiConfigError('KC_MEDIA_PUBLIC_URL', 'must be a URL');
+  if (bucketPrefix === undefined) return null;
+  if (!BUCKET_PREFIX.test(bucketPrefix)) throw new ApiConfigError('KC_STORAGE_GCS_BUCKET_PREFIX', 'must be 1 to 50 lowercase letters, digits, dashes or underscores, starting with a letter or digit');
+  if (mediaUrl === null) throw new ApiConfigError('KC_MEDIA_PUBLIC_URL', 'is required when KC_STORAGE_GCS_BUCKET_PREFIX is set');
+  return { bucketPrefix, mediaUrl };
+}
+
+/** The copy needs both the address of the files and the key that reads them. */
+function parseStorageCopySource(env: Env): StorageCopySourceConfig | null {
+  const rawUrl = readVariable(env, 'KC_STORAGE_COPY_SOURCE_URL');
+  const key = readVariable(env, 'KC_STORAGE_COPY_SOURCE_KEY');
+  if (rawUrl === undefined && key === undefined) return null;
+  if (rawUrl === undefined) throw new ApiConfigError('KC_STORAGE_COPY_SOURCE_URL', 'is required when KC_STORAGE_COPY_SOURCE_KEY is set');
+  if (key === undefined) throw new ApiConfigError('KC_STORAGE_COPY_SOURCE_KEY', 'is required when KC_STORAGE_COPY_SOURCE_URL is set');
+  const url = withoutTrailingSlashes(rawUrl);
+  if (!URL.canParse(url)) throw new ApiConfigError('KC_STORAGE_COPY_SOURCE_URL', 'must be a URL');
+  return { url, key };
 }
 
 /** Reads every feature's settings. @throws ApiConfigError on the first invalid variable. */
@@ -173,6 +226,7 @@ export function loadFeatureConfig(env: Env): FeatureConfig {
   const geminiModel = readVariable(env, 'GEMINI_MODEL') ?? DEFAULT_GEMINI_MODEL;
   return {
     storage: parseStorage(env),
+    storageCopySource: parseStorageCopySource(env),
     portRollout: parsePortRollout(env),
     appBaseUrl: parseAppBaseUrl(env),
     whatsapp: {

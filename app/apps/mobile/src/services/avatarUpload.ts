@@ -14,7 +14,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { blockedPick, ensureMediaPermission, type MediaPickResult } from '../lib/mediaPermissions';
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as Crypto from 'expo-crypto';
-import { getSupabaseClient } from '@kc/infrastructure-supabase';
+import { publicFileUrl, removeFiles } from './backend/storageBackend';
 import { deriveThumbPath } from '../lib/imageUrl';
 import type { PickedImage } from './imageUpload';
 import { encodeJpeg, planMaxEdgeResize, type EncodedJpeg } from './imageEncoding';
@@ -126,7 +126,7 @@ export async function resizeAndUploadAvatar(
     console.warn(`avatar_upload_thumb: ${uploadErrorMessage(err)}`);
   }
 
-  return getSupabaseClient().storage.from(AVATAR_BUCKET).getPublicUrl(path).data.publicUrl;
+  return publicFileUrl(AVATAR_BUCKET, path);
 }
 
 /**
@@ -139,6 +139,6 @@ export async function removeUploadedAvatar(userId: string, avatarUrl?: string | 
   if (!userId) return;
   const current = avatarPathFromUrl(avatarUrl, userId);
   const paths = [...LEGACY_AVATAR_PATHS(userId), ...(current ? [current, deriveThumbPath(current)] : [])];
-  const { error } = await getSupabaseClient().storage.from(AVATAR_BUCKET).remove([...new Set(paths)]);
-  if (error) console.warn(`avatar_remove: ${error.message}`);
+  const refusal = await removeFiles(AVATAR_BUCKET, [...new Set(paths)]);
+  if (refusal) console.warn(`avatar_remove: ${refusal}`);
 }

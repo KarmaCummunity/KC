@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { IdentityDatabase } from '../database/identityDatabase';
-import { OBJECT_STORE, type ObjectPage, type ObjectStore, type StoredObject } from './objectStore';
+import { OBJECT_STORE, type ObjectAttributes, type ObjectPage, type ObjectStore } from './objectStore';
 
 /** Objects asked for per page of a listing, and removed per statement. */
 export const FILE_PAGE_SIZE = 500;
@@ -56,7 +56,7 @@ export class StorageAdmin {
    * @returns false when the name is taken.
    * @throws NoObjectStoreError
    */
-  async write(bucket: string, name: string, bytes: Uint8Array, object: Omit<StoredObject, 'size'>): Promise<boolean> {
+  async write(bucket: string, name: string, bytes: Uint8Array, object: ObjectAttributes): Promise<boolean> {
     if (!(await this.requireStore().write(bucket, name, bytes, object))) return false;
     await this.database.runAsService((session) =>
       session.query('insert into storage.objects (bucket_id, name, metadata) values ($1, $2, $3::jsonb) on conflict (bucket_id, name) do nothing', [
@@ -82,12 +82,9 @@ export class StorageAdmin {
   }
 
   /**
-   * Empties a folder: every stored object under `<folder>/`, and every row
-   * of the index under it, including a row whose object is already gone.
-   * @returns How many stored objects were removed.
+   * How many objects are stored under `<folder>/` of a bucket.
    * @throws NoObjectStoreError
    */
-  /** How many objects are stored under `<folder>/` of a bucket. */
   async countFolder(bucket: string, folder: string): Promise<number> {
     let count = 0;
     let pageToken: string | undefined;
@@ -99,6 +96,12 @@ export class StorageAdmin {
     return count;
   }
 
+  /**
+   * Empties a folder: every stored object under `<folder>/`, and every row
+   * of the index under it, including a row whose object is already gone.
+   * @returns How many stored objects were removed.
+   * @throws NoObjectStoreError
+   */
   async removeFolder(bucket: string, folder: string): Promise<number> {
     const prefix = `${folder}/`;
     let removed = 0;

@@ -11,7 +11,7 @@ import { useAuthStore } from '../src/store/authStore';
 import { track } from '../src/lib/analytics';
 import { rtlTextAlignStart } from '../src/lib/rtlTextAlignStart';
 import { webTextRtl, webViewRtl } from '../src/lib/webRtlStyle';
-import { getMarketplaceSupabaseClient } from '../src/services/marketplaceComposition';
+import { getProEntitlementRepository } from '../src/services/proEntitlementComposition';
 import {
   getProPackages,
   manageSubscriptionUrl,
@@ -35,11 +35,7 @@ export default function ProPaywallScreen() {
   const proQuery = useQuery({
     queryKey: [...PRO_KEY, userId],
     enabled: enabled && !!userId,
-    queryFn: async () => {
-      const { data, error } = await getMarketplaceSupabaseClient().rpc('api_my_pro_status');
-      if (error) throw error;
-      return (data as { is_pro?: boolean } | null)?.is_pro === true;
-    },
+    queryFn: () => getProEntitlementRepository().isPro(),
   });
   const isPro = proQuery.data === true;
 

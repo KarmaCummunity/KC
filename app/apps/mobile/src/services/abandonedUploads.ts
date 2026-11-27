@@ -16,7 +16,7 @@
 // `chat-media` and `avatars` have no server reconciliation yet (owner: the storage orphan job).
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getSupabaseClient } from '@kc/infrastructure-supabase';
+import { removeFiles, signedInMemberId } from './backend/storageBackend';
 
 const STORAGE_KEY = 'kc.media.abandonedUploads.v1';
 /** Best-effort delay before a retrying delete; not a bound on late server commits. */
@@ -67,8 +67,7 @@ async function writeLedger(entries: AbandonedUpload[]): Promise<void> {
 /** One delete; true when Storage accepted it (deleting an absent object also succeeds). */
 async function tryRemove(entry: AbandonedUpload): Promise<boolean> {
   try {
-    const { error } = await getSupabaseClient().storage.from(entry.bucket).remove([entry.path]);
-    return !error;
+    return (await removeFiles(entry.bucket, [entry.path])) === null;
   } catch {
     return false;
   }
@@ -101,8 +100,7 @@ async function sweepEntry(entry: AbandonedUpload, now: number): Promise<void> {
 
 /** Deletes every settled entry of the signed-in member; keeps the rest for a later sweep. */
 export async function sweepAbandonedUploads(now = Date.now()): Promise<void> {
-  const { data } = await getSupabaseClient().auth.getSession();
-  const userId = data.session?.user.id;
+  const userId = await signedInMemberId();
   if (!userId) return;
   const due = (await readLedger()).filter((e) => e.settleAfter <= now && e.path.startsWith(`${userId}/`));
   for (const entry of due) await sweepEntry(entry, now);

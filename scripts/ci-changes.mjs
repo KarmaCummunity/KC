@@ -59,6 +59,8 @@ export const LANE_RULES = {
     /^app\/packages\/infrastructure-supabase\//,
     /^app\/apps\/api\//,
     /^app\/packages\/infrastructure-api\//,
+    // The API's cloud environment is checked by a job of this lane.
+    /^infra\//,
     /^app\/(package\.json|pnpm-lock\.yaml|pnpm-workspace\.yaml)$/,
     /^scripts\//,
     ...SHARED,

@@ -3,7 +3,7 @@ import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatDistanceToNow } from 'date-fns';
 import type { PostWithOwner } from '@kc/application';
-import { getSupabaseClient } from '@kc/infrastructure-supabase';
+import { publicFileUrl } from '../services/backend/storageBackend';
 import { canSharePost } from '../lib/canSharePost';
 import { resolveWebBaseUrl } from '../lib/buildPostShareUrl';
 import { resolveDateFnsLocale } from '../lib/resolveDateFnsLocale';
@@ -66,7 +66,7 @@ export function usePostShare(post: PostWithOwner) {
       );
       const firstAsset = post.mediaAssets[0];
       const remoteImageUrl = firstAsset
-        ? getSupabaseClient().storage.from(POST_IMAGES_BUCKET).getPublicUrl(firstAsset.path).data.publicUrl
+        ? publicFileUrl(POST_IMAGES_BUCKET, firstAsset.path)
         : undefined;
       const outcome = await sharePost({
         postId: post.postId,
