@@ -10,9 +10,10 @@
 // which has completed (it got through) — until that job ends. Jobs still waiting are ordered
 // FIFO by the start time of their SLOT_STEP (then job id). This job proceeds when the holders
 // plus the waiters ahead of it are fewer than KC_DEV_TEST_SLOTS (default 2).
-// After KC_DEV_SLOT_MAX_WAIT_MIN (default 120) it proceeds with a warning, so a stuck throttle
-// cannot block CI forever. A GitHub API error (a 403/429 rate limit, a 5xx) is NOT a free pass: it
-// waits (honouring Retry-After / X-RateLimit-Reset, capped) and asks again. Until 15 Nov 2026 any error
+// A bounded wait ends with a non-zero failure, never permission to exceed the slot limit.
+// Missing credentials or an unidentifiable current job also fail closed.
+// A GitHub API error waits (honouring Retry-After / X-RateLimit-Reset, capped).
+// Until 15 Nov 2026 any error
 // let the job through: at 10:18Z seven queued Maestro jobs got the same 403 within 26 s and all went at
 // once, so nine emulators plus a release E2E hit kc-dev together and it stalled for hours.
 // A run that replaces a cancelled one keeps the cancelled run's place in the queue (queuedAt, below):
@@ -253,7 +254,7 @@ async function yielded(env, token, repo) {
   return true;
 }
 
-async function main(env = process.env) {
+export async function main(env = process.env) {
   const token = env.GITHUB_TOKEN;
   const repo = env.GITHUB_REPOSITORY;
   const slots = Math.max(1, Number.parseInt(env.KC_DEV_TEST_SLOTS || '2', 10) || 2);
@@ -261,8 +262,7 @@ async function main(env = process.env) {
   const pollMs = Number(env.KC_DEV_SLOT_POLL_MS || 60_000);
   const started = Date.now();
   if (!token || !repo) {
-    console.log('::warning::kc-dev slot: no token/repository; not waiting');
-    return;
+    throw new Error('kc-dev slot: missing token/repository; refusing to run shared DEV tests');
   }
   const workflows = readSlotWorkflows();
   if (workflows.size === 0) console.log('::warning::kc-dev slot: could not read .github/workflows; checking every in-progress run');
@@ -282,8 +282,7 @@ async function main(env = process.env) {
           await new Promise((r) => setTimeout(r, Math.min(pollMs, 10_000)));
           continue;
         }
-        console.log('::warning::kc-dev slot: could not find this job; not waiting');
-        return;
+        throw new Error('kc-dev slot: could not identify this job; refusing to run shared DEV tests');
       }
       // Until the API records this step's start, queue as of now (the back of the line).
       myStartedAt = me.stepStartedAt ?? myStartedAt ?? new Date().toISOString();
@@ -304,8 +303,7 @@ async function main(env = process.env) {
       console.log(`::warning::kc-dev slot: GitHub API ${err.message} (error ${errors}); still waiting, next check in ${Math.round(waitMs / 1000)}s`);
     }
     if (Date.now() - started >= maxWaitMs) {
-      console.log(`::warning::kc-dev slot: no slot after ${Math.round(maxWaitMs / 60000)} min (${errors} API error(s)); proceeding anyway`);
-      return;
+      throw new Error(`kc-dev slot: no verified slot after ${Math.round(maxWaitMs / 60000)} min (${errors} lookup error(s)); shared DEV tests were not started`);
     }
     await new Promise((r) => setTimeout(r, Math.min(waitMs, Math.max(1000, maxWaitMs - (Date.now() - started)))));
   }

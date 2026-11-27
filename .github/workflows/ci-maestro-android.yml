@@ -226,8 +226,8 @@ jobs:
 
       # kc-dev (Free/Nano) stalls when several suites hit it at once (13/14/15 Nov 2026), so at
       # most KC_DEV_TEST_SLOTS suites (default 2) run their tests against it together; the rest
-      # queue here FIFO. An API error (rate limit) waits and asks again; only after 120 min does
-      # it proceed without a slot.
+      # queue here FIFO. API errors keep waiting; after 120 minutes without a verified slot,
+      # the step fails without starting shared DEV tests.
       # A dev-push run (maestro-dev-health.yml) gives up its turn here when dev has moved on or a
       # merge group waits for the emulator (scripts/maestro-dev-yield.mjs): `yielded=true` skips the
       # flows and the job ends green, releasing the emulator group to the merge queue.
