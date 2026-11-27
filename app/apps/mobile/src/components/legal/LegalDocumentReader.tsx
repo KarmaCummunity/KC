@@ -1,12 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { View, ScrollView, ActivityIndicator, Platform, type DimensionValue } from 'react-native';
-import Markdown from 'react-native-markdown-display';
 import { useTranslation } from 'react-i18next';
 import type { LegalDocType, LegalDocumentContent } from '@kc/domain';
 import { typography, spacing, radius, useTheme, Text } from '@kc/ui';
 import { getLoadLegalDocumentUseCase } from '../../services/legalComposition';
-import { makeLegalMarkdownStyles } from './LegalMarkdownStyles';
-import { makeLegalMarkdownRules } from './legalMarkdownRules';
+import { LegalMarkdown } from './LegalMarkdown';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 import { layoutWritingDirectionStyle, selfAlignStart } from '../../lib/rtlLayout';
 
@@ -29,8 +27,6 @@ type State =
 export function LegalDocumentReader({ docType }: LegalDocumentReaderProps) {
   const { colors } = useTheme();
   const { t } = useTranslation();
-  const markdownStyles = useMemo(() => makeLegalMarkdownStyles(colors), [colors]);
-  const markdownRules = useMemo(() => makeLegalMarkdownRules(colors), [colors]);
   const [state, setState] = useState<State>({ kind: 'loading' });
 
   useEffect(() => {
@@ -110,9 +106,7 @@ export function LegalDocumentReader({ docType }: LegalDocumentReaderProps) {
         </Text>
       </View>
 
-      <Markdown style={markdownStyles} rules={markdownRules}>
-        {content.bodyMd}
-      </Markdown>
+      <LegalMarkdown colors={colors}>{content.bodyMd}</LegalMarkdown>
     </ScrollView>
   );
 }

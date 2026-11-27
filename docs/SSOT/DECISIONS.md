@@ -834,7 +834,7 @@ Design spec: `docs/SSOT/archive/superpowers/specs/2026-05-24-closed-post-dual-su
 
 ## D-40 — Legal docs delivery model: server-driven Markdown, native render (2026-05-25)
 
-**Decision.** Legal documents (Terms of Service + Privacy Policy) are delivered as server-driven Markdown stored in `legal_document_versions.body_md` and rendered natively in the mobile app via `react-native-markdown-display`. No WebView; no remote-config URL pointing at a canonical web copy.
+**Decision.** Legal documents (Terms of Service + Privacy Policy) are delivered as server-driven Markdown stored in `legal_document_versions.body_md` and rendered natively in the mobile app via an in-house React Native renderer on maintained `markdown-it@14` (replacing unmaintained `react-native-markdown-display`, #1789). No WebView; no remote-config URL pointing at a canonical web copy.
 
 **Rationale.** Native rendering keeps RTL, theming, and offline behavior consistent across iOS, Android, and web. Avoids depending on a separate website CMS during an MVP that doesn't yet have one. Editing workflow is one SQL snippet (`publish_legal_document` RPC) against Supabase Studio rather than a CMS publish + cache invalidation.
 

@@ -6,25 +6,17 @@ import {
   hebrewContentTextStyle,
 } from '../../lib/hebrewContentDirection';
 
-// Style map consumed by react-native-markdown-display.
-// Keys come from the library's internal renderer node names.
-//
-// Legal document bodies are Hebrew-only (#1733), so every text node takes
-// `hebrewContentTextStyle()` — RTL bidi aligned to the visual right in both the
-// Hebrew and the English UI — and `list_item` takes `hebrewContentRowDirection()`
-// so the bullet sits on the right. The row `gap` keeps the bullet spacing on the
-// inner side in both layouts. Most of these styles are overridden by the custom
-// render rules in `legalMarkdownRules.tsx` (the library strips text props from its
-// View wrappers); they stay in sync so any node the rules don't override still
-// renders RTL.
+/**
+ * Style map for the in-house legal Markdown renderer (`LegalMarkdown`).
+ *
+ * Legal document bodies are Hebrew-only (#1733), so every text node takes
+ * `hebrewContentTextStyle()` — RTL bidi aligned to the visual right in both the
+ * Hebrew and the English UI — and list rows take `hebrewContentRowDirection()`
+ * so the bullet sits on the right.
+ */
 export function makeLegalMarkdownStyles(colors: ColorPalette) {
   const hebrew = hebrewContentTextStyle();
   return StyleSheet.create({
-    body: {
-      ...typography.body,
-      color: colors.textPrimary,
-      ...hebrew,
-    } as TextStyle,
     paragraph: {
       ...typography.body,
       color: colors.textPrimary,
@@ -36,7 +28,7 @@ export function makeLegalMarkdownStyles(colors: ColorPalette) {
       ...typography.h2,
       color: colors.textPrimary,
       marginTop: spacing.lg,
-      marginBottom: spacing.md,
+      marginBottom: spacing.sm,
       ...hebrew,
     } as TextStyle,
     heading2: {
@@ -53,31 +45,52 @@ export function makeLegalMarkdownStyles(colors: ColorPalette) {
       marginBottom: spacing.sm,
       ...hebrew,
     } as TextStyle,
+    heading4: {
+      ...typography.h4,
+      color: colors.textPrimary,
+      marginTop: spacing.md,
+      marginBottom: spacing.sm,
+      ...hebrew,
+    } as TextStyle,
+    heading5: {
+      ...typography.body,
+      color: colors.textPrimary,
+      marginTop: spacing.md,
+      marginBottom: spacing.sm,
+      ...hebrew,
+    } as TextStyle,
+    heading6: {
+      ...typography.body,
+      color: colors.textPrimary,
+      marginTop: spacing.md,
+      marginBottom: spacing.sm,
+      ...hebrew,
+    } as TextStyle,
     link: {
       color: colors.primary,
       textDecorationLine: 'underline',
       ...hebrew,
     } as TextStyle,
-    list_item: {
+    list: {
+      marginBottom: spacing.md,
+    } as ViewStyle,
+    listItem: {
       flexDirection: hebrewContentRowDirection(),
       gap: spacing.sm,
+      alignItems: 'flex-start',
       marginBottom: spacing.sm,
     } as ViewStyle,
-    bullet_list_icon: {
+    listIcon: {
       ...typography.body,
       color: colors.textSecondary,
+      minWidth: 16,
+      lineHeight: 26,
       ...hebrew,
     } as TextStyle,
-    ordered_list_icon: {
+    listContent: {
       ...typography.body,
-      color: colors.textSecondary,
-      ...hebrew,
-    } as TextStyle,
-    bullet_list_content: {
-      flex: 1,
-      ...hebrew,
-    } as TextStyle,
-    ordered_list_content: {
+      color: colors.textPrimary,
+      lineHeight: 26,
       flex: 1,
       ...hebrew,
     } as TextStyle,
@@ -88,6 +101,11 @@ export function makeLegalMarkdownStyles(colors: ColorPalette) {
       paddingVertical: spacing.sm,
       marginVertical: spacing.sm,
       borderRadius: radius.xs,
+    } as ViewStyle,
+    hr: {
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: colors.border,
+      marginVertical: spacing.lg,
     } as ViewStyle,
     strong: {
       ...typography.body,
@@ -101,3 +119,5 @@ export function makeLegalMarkdownStyles(colors: ColorPalette) {
     } as TextStyle,
   });
 }
+
+export type LegalMarkdownStyleMap = ReturnType<typeof makeLegalMarkdownStyles>;
