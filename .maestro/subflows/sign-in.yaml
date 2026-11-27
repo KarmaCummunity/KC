@@ -2,7 +2,7 @@
 # Env: KC_E2E_EMAIL (default user1@seed.kc.test), KC_E2E_PASSWORD (from scripts/maestro-dev-env.mjs).
 appId: org.karmacommunity.app
 env:
-  KC_E2E_EMAIL: user1@seed.kc.test
+  KC_E2E_EMAIL: ${typeof KC_E2E_EMAIL !== 'undefined' && KC_E2E_EMAIL || 'user1@seed.kc.test'}
 ---
 - runFlow: open-email-sign-in.yaml
 - tapOn:
