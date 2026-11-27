@@ -99,14 +99,14 @@ describe('resizeAndUploadAvatar', () => {
   const storedAt = (attempt: number) => async (u: UploadCall) => u.pathForAttempt(attempt);
 
   it('stores a NEW object per upload (never a fixed path), its thumb beside it, and returns its URL', async () => {
-    encoder.encodeJpeg.mockResolvedValueOnce(enc(512, 'file://full.jpg')).mockResolvedValueOnce(enc(96, 'file://thumb.jpg'));
+    encoder.encodeJpeg.mockResolvedValueOnce(enc(800, 'file://full.jpg')).mockResolvedValueOnce(enc(96, 'file://thumb.jpg'));
     uploader.uploadStorageObject.mockImplementation(storedAt(1));
     const url = await resizeAndUploadAvatar({ ...asset, fileSize: null }, 'u1');
     expect(url).toMatch(/\/avatars\/u1\/avatar-g\d+\.jpg$/);
     expect(encoder.encodeJpeg).toHaveBeenNthCalledWith(
       1,
       'file://a.jpg',
-      [{ crop: { originX: 200, originY: 0, width: 800, height: 800 } }, { resize: { width: 512, height: 512 } }],
+      [{ crop: { originX: 200, originY: 0, width: 800, height: 800 } }, { resize: { width: 800, height: 800 } }],
       0.85,
     );
     expect(encoder.encodeJpeg).toHaveBeenNthCalledWith(2, 'file://full.jpg', [{ resize: { width: 96 } }], 0.75);
@@ -118,8 +118,60 @@ describe('resizeAndUploadAvatar', () => {
     expect('upsert' in (photo as object)).toBe(false);
   });
 
+  it('encodes large photos at a 1024px maximum edge and q85', async () => {
+    encoder.encodeJpeg.mockResolvedValueOnce(enc(1024, 'file://full.jpg')).mockResolvedValueOnce(enc(96, 'file://thumb.jpg'));
+    uploader.uploadStorageObject.mockImplementation(storedAt(1));
+    await resizeAndUploadAvatar({ uri: 'file://large.jpg', width: 4000, height: 3000, fileSize: 9_000_000 }, 'u1');
+    expect(encoder.encodeJpeg).toHaveBeenNthCalledWith(1, 'file://large.jpg', [
+      { crop: { originX: 500, originY: 0, width: 3000, height: 3000 } },
+      { resize: { width: 1024, height: 1024 } },
+    ], 0.85);
+  });
+
+  it('uses encoded byte size, accepts the exact bucket boundary and never upscales a small image', async () => {
+    encoder.encodeJpeg.mockResolvedValueOnce({ ...enc(64, 'file://small.jpg'), bytes: new Uint8Array(524288) })
+      .mockResolvedValueOnce(enc(64, 'file://thumb.jpg'));
+    uploader.uploadStorageObject.mockImplementation(storedAt(1));
+    await resizeAndUploadAvatar({ uri: 'file://small.jpg', width: 64, height: 64, fileSize: 20_000_000 }, 'u1');
+    expect(encoder.encodeJpeg).toHaveBeenNthCalledWith(1, 'file://small.jpg', [
+      { crop: { originX: 0, originY: 0, width: 64, height: 64 } },
+      { resize: { width: 64, height: 64 } },
+    ], 0.85);
+    expect(encoder.encodeJpeg).toHaveBeenCalledTimes(2);
+    expect((uploader.uploadStorageObject.mock.calls[0]?.[0] as { bytes: Uint8Array }).bytes.byteLength).toBe(524288);
+  });
+
+  it('shrinks an over-budget encode at q85 before upload and derives the thumb from the accepted result', async () => {
+    encoder.encodeJpeg.mockResolvedValueOnce({ ...enc(1024, 'file://heavy.jpg'), bytes: new Uint8Array(524289) })
+      .mockResolvedValueOnce(enc(768, 'file://accepted.jpg')).mockResolvedValueOnce(enc(96, 'file://thumb.jpg'));
+    uploader.uploadStorageObject.mockImplementation(storedAt(1));
+    await resizeAndUploadAvatar({ uri: 'file://large.jpg', width: 2000, height: 2000, fileSize: 1 }, 'u1');
+    expect(encoder.encodeJpeg).toHaveBeenNthCalledWith(2, 'file://large.jpg', [
+      { crop: { originX: 0, originY: 0, width: 2000, height: 2000 } },
+      { resize: { width: 768, height: 768 } },
+    ], 0.85);
+    expect(encoder.encodeJpeg).toHaveBeenNthCalledWith(3, 'file://accepted.jpg', [{ resize: { width: 96 } }], 0.75);
+  });
+
+  it('fails before storage if every bounded encode exceeds the bucket limit', async () => {
+    encoder.encodeJpeg.mockResolvedValue({ ...enc(1024, 'file://heavy.jpg'), bytes: new Uint8Array(524289) });
+    await expect(resizeAndUploadAvatar({ uri: 'file://large.jpg', width: 3000, height: 3000, fileSize: null }, 'u1'))
+      .rejects.toThrow();
+    expect(encoder.encodeJpeg).toHaveBeenCalledTimes(5);
+    expect(encoder.encodeJpeg.mock.calls.map((call) => call[2])).toEqual([0.85, 0.85, 0.85, 0.85, 0.85]);
+    expect(uploader.uploadStorageObject).not.toHaveBeenCalled();
+  });
+
+  it.each([{ width: 0, height: 10 }, { width: Number.NaN, height: 10 }, { width: 10, height: Infinity }])(
+    'rejects invalid dimensions without encoding or storage: %j', async (size) => {
+      await expect(resizeAndUploadAvatar({ uri: 'file://invalid.jpg', ...size, fileSize: null }, 'u1')).rejects.toThrow();
+      expect(encoder.encodeJpeg).not.toHaveBeenCalled();
+      expect(uploader.uploadStorageObject).not.toHaveBeenCalled();
+    },
+  );
+
   it('a timed-out older upload landing late can not overwrite a newer avatar: every attempt has its own path', async () => {
-    encoder.encodeJpeg.mockResolvedValue(enc(512, 'file://full.jpg'));
+    encoder.encodeJpeg.mockResolvedValue(enc(800, 'file://full.jpg'));
     // Upload A: attempt 1 timed out (its write may still land), attempt 2 was confirmed.
     uploader.uploadStorageObject.mockImplementationOnce(storedAt(2)).mockImplementationOnce(storedAt(1));
     const first = await resizeAndUploadAvatar({ ...asset, fileSize: null }, 'u1');
@@ -133,7 +185,7 @@ describe('resizeAndUploadAvatar', () => {
   });
 
   it('passes the caller\'s abort signal to the photo and thumb uploads', async () => {
-    encoder.encodeJpeg.mockResolvedValue(enc(512, 'file://full.jpg'));
+    encoder.encodeJpeg.mockResolvedValue(enc(800, 'file://full.jpg'));
     uploader.uploadStorageObject.mockImplementation(storedAt(1));
     const controller = new AbortController();
     await resizeAndUploadAvatar({ ...asset, fileSize: null }, 'u1', { signal: controller.signal });
@@ -142,7 +194,7 @@ describe('resizeAndUploadAvatar', () => {
   });
 
   it('throws on a failed photo upload or a failed encode', async () => {
-    encoder.encodeJpeg.mockResolvedValue(enc(512, 'file://full.jpg'));
+    encoder.encodeJpeg.mockResolvedValue(enc(800, 'file://full.jpg'));
     uploader.uploadStorageObject.mockRejectedValueOnce({ status: 403, message: 'denied' });
     await expect(resizeAndUploadAvatar({ ...asset, fileSize: null }, 'u1')).rejects.toThrow('avatar_upload: denied');
     encoder.encodeJpeg.mockRejectedValue(new Error('image_encode: manipulator returned no base64 payload'));
@@ -151,7 +203,7 @@ describe('resizeAndUploadAvatar', () => {
 
   it('only warns when the thumb upload fails', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    encoder.encodeJpeg.mockResolvedValue(enc(512, 'file://full.jpg'));
+    encoder.encodeJpeg.mockResolvedValue(enc(800, 'file://full.jpg'));
     uploader.uploadStorageObject.mockImplementationOnce(storedAt(1)).mockRejectedValueOnce({ status: 500, message: 'thumb' });
     await expect(resizeAndUploadAvatar({ ...asset, fileSize: null }, 'u1')).resolves.toContain('/avatars/u1/avatar-');
     expect(warn).toHaveBeenCalledWith('avatar_upload_thumb: thumb');

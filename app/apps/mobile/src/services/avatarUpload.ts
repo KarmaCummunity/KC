@@ -1,6 +1,6 @@
 // ─────────────────────────────────────────────
 // Avatar pick + upload pipeline (FR-AUTH-011).
-// Pick (camera|gallery) → square center-crop → resize to 512 + JPEG q=0.85
+// Pick (camera|gallery) → square center-crop → resize up to 1024 + JPEG q=0.85
 // → upload to `avatars` bucket at a NEW <userId>/avatar-<uuid>.jpg per attempt
 // → return its public URL. Never a fixed path: an older upload that times out
 // and lands late writes only its own, never-referenced object, so it can not
@@ -23,7 +23,9 @@ import { avatarPathFromUrl } from './avatarLifecycle';
 
 export { avatarPathFromUrl };
 
-const AVATAR_FULL_EDGE = 512;
+const AVATAR_FULL_EDGE = 1024;
+// Storage avatars bucket cap, unchanged. Inspect encoded bytes, never picker metadata.
+const AVATAR_MAX_BYTES = 524288;
 const AVATAR_THUMB_EDGE = 96;
 const COMPRESS = 0.85;
 const THUMB_COMPRESS = 0.75;
@@ -68,16 +70,25 @@ export async function pickAvatarImage(source: AvatarSource): Promise<MediaPickRe
   return { status: 'ok', value: { uri: a.uri, width: a.width, height: a.height, fileSize: a.fileSize ?? null } };
 }
 
-/** Square center-crop of the picked image, sized `size`×`size` and JPEG-encoded. */
+/** Square center-crop, q85; reduce dimensions only when the encoded JPEG exceeds Storage's cap. */
 async function squareCropAndResize(picked: PickedImage, size: number, compress: number): Promise<EncodedJpeg> {
-  const side = Math.min(picked.width, picked.height);
-  const originX = Math.max(0, Math.round((picked.width - side) / 2));
-  const originY = Math.max(0, Math.round((picked.height - side) / 2));
-  const actions: ImageManipulator.Action[] = [
-    { crop: { originX, originY, width: side, height: side } },
-    { resize: { width: size, height: size } },
-  ];
-  return encodeJpeg(picked.uri, actions, compress);
+  if (![picked.width, picked.height].every((n) => Number.isFinite(n) && n >= 1)) {
+    throw new Error(i18n.t('profile.avatarUploadRetry'));
+  }
+  const side = Math.floor(Math.min(picked.width, picked.height));
+  const originX = Math.max(0, Math.floor((picked.width - side) / 2));
+  const originY = Math.max(0, Math.floor((picked.height - side) / 2));
+  // Finite attempts, all at q85. Never upscale or re-compress a previous lossy derivative.
+  const edges = [...new Set([size, 768, 512, 384, 256].map((edge) => Math.min(side, edge)))];
+  for (const edge of edges) {
+    const actions: ImageManipulator.Action[] = [
+      { crop: { originX, originY, width: side, height: side } },
+      { resize: { width: edge, height: edge } },
+    ];
+    const encoded = await encodeJpeg(picked.uri, actions, compress);
+    if (encoded.bytes.byteLength <= AVATAR_MAX_BYTES) return encoded;
+  }
+  throw new Error(i18n.t('profile.avatarUploadRetry'));
 }
 
 /** Stores one avatar object; resolves with the path Storage confirmed. */
@@ -98,10 +109,10 @@ function uploadAvatarObject(
 }
 
 /**
- * FR-AUTH-011 AC2: square center-crop → 512×512 JPEG → upload to a new
+ * FR-AUTH-011 AC2: square center-crop → at most 1024×1024 q85 JPEG → upload to a new
  * `avatars/<userId>/avatar-<uuid>.jpg`. PERF-4: also writes a 96×96 thumb as its
- * `-thumb` sibling, derived from the 512 encode so the original photo is decoded
- * once. Returns the public URL; being a new path it needs no cache-busting.
+ * `-thumb` sibling, derived from the accepted full encode. Returns the public URL;
+ * being a new path it needs no cache-busting.
  */
 export async function resizeAndUploadAvatar(
   picked: PickedImage,

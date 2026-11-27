@@ -1620,13 +1620,13 @@
    "callSites": [
     {
      "file": "app/apps/mobile/src/services/avatarUpload.ts",
-     "line": 129,
+     "line": 140,
      "symbol": "resizeAndUploadAvatar",
      "area": "mobile"
     },
     {
      "file": "app/apps/mobile/src/services/avatarUpload.ts",
-     "line": 142,
+     "line": 153,
      "symbol": "removeUploadedAvatar",
      "area": "mobile"
     }

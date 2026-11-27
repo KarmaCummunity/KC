@@ -89,7 +89,7 @@
   {
    "kind": "bucket",
    "file": "app/apps/mobile/src/services/avatarUpload.ts",
-   "line": 129,
+   "line": 140,
    "area": "mobile",
    "symbol": "resizeAndUploadAvatar",
    "via": "const",
@@ -98,7 +98,7 @@
   {
    "kind": "bucket",
    "file": "app/apps/mobile/src/services/avatarUpload.ts",
-   "line": 142,
+   "line": 153,
    "area": "mobile",
    "symbol": "removeUploadedAvatar",
    "via": "const",
