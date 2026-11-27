@@ -37,6 +37,7 @@ describe('loadApiConfig', () => {
       databaseUrl: REQUIRED.DATABASE_URL,
       redisUrl: REQUIRED.REDIS_URL,
       authIssuer: REQUIRED.KC_AUTH_ISSUER,
+      authSigningKeys: null,
       allowedOrigins: [],
       trustedProxyHops: 0,
       rateLimitPerMinute: 600,
@@ -250,6 +251,13 @@ describe('loadApiConfig', () => {
     ],
   ])('refuses to start with a cloud file store that is half configured, misnamed, or beside a local one: %j', (env, variable) => {
     expect(configErrorOf(env).variable).toBe(variable);
+  });
+
+  it('reads the keys KC signs its own tokens with, only for an issuer that is this API', () => {
+    const config = loadApiConfig({ ...REQUIRED, KC_AUTH_ISSUER: 'https://api.kc.test/v1/auth', KC_AUTH_SIGNING_KEYS: '{"keys":[]}' });
+
+    expect(config).toMatchObject({ authIssuer: 'https://api.kc.test/v1/auth', authSigningKeys: '{"keys":[]}' });
+    expect(configErrorOf({ KC_AUTH_SIGNING_KEYS: '{"keys":[]}' }).variable).toBe('KC_AUTH_ISSUER');
   });
 
   it('reads where the existing files are copied from, and copies none without it', () => {

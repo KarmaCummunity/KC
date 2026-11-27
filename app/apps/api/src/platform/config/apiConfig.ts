@@ -39,6 +39,12 @@ export interface ApiConfig extends FeatureConfig {
    */
   readonly authIssuer: string;
   /**
+   * The private keys KC signs its own access tokens with, as a JWK Set
+   * (ADR-013). A secret. Null: the API issues no tokens and accepts the ones
+   * of the issuer above, verified against that issuer's published keys.
+   */
+  readonly authSigningKeys: string | null;
+  /**
    * Web origins allowed to call the API from a browser (CORS). Empty: no
    * browser may; the native apps are not subject to CORS and need no entry.
    */
@@ -153,6 +159,23 @@ function parseServiceUrl(variable: string, value: string | undefined, schemes: r
   return value;
 }
 
+/** Path, under the API's address, of the routes that make it an issuer; its key set is published below it. */
+export const OWN_ISSUER_PATH = '/v1/auth';
+
+/**
+ * The keys are only read as text here; they are parsed when the process
+ * starts its identity module. An API that signs tokens is their issuer, so
+ * the issuer must be this API's own identity address: the verifier of any
+ * other service looks for the key set there.
+ */
+function parseAuthSigningKeys(env: Env): string | null {
+  const keys = readVariable(env, 'KC_AUTH_SIGNING_KEYS') ?? null;
+  if (keys !== null && !readVariable(env, 'KC_AUTH_ISSUER')?.endsWith(OWN_ISSUER_PATH)) {
+    throw new ApiConfigError('KC_AUTH_ISSUER', `must be this API's address followed by ${OWN_ISSUER_PATH} when KC_AUTH_SIGNING_KEYS is set`);
+  }
+  return keys;
+}
+
 /**
  * Builds the API configuration from environment variables.
  * `PORT` is the name Cloud Run injects; the others are KC's own.
@@ -168,6 +191,7 @@ export function loadApiConfig(env: Env): ApiConfig {
     databaseUrl: parseServiceUrl('DATABASE_URL', readVariable(env, 'DATABASE_URL'), ['postgres', 'postgresql']),
     redisUrl: parseRedisUrl(env),
     authIssuer: parseServiceUrl('KC_AUTH_ISSUER', readVariable(env, 'KC_AUTH_ISSUER'), ['https', 'http']),
+    authSigningKeys: parseAuthSigningKeys(env),
     allowedOrigins: parseOrigins('KC_API_ALLOWED_ORIGINS', readVariable(env, 'KC_API_ALLOWED_ORIGINS')),
     trustedProxyHops: parseInteger('KC_API_TRUSTED_PROXY_HOPS', readVariable(env, 'KC_API_TRUSTED_PROXY_HOPS'), 0, 0, 10),
     rateLimitPerMinute: parseInteger('KC_API_RATE_LIMIT_PER_MINUTE', readVariable(env, 'KC_API_RATE_LIMIT_PER_MINUTE'), DEFAULT_RATE_LIMIT_PER_MINUTE, 0, 100_000),

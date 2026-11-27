@@ -2138,3 +2138,13 @@ The Demo data screen keeps two failures apart: the RPC itself is missing (`not_i
 **Trade-off.** PATCH no longer counts merges: the merges of one burst share a number, told apart by the commit SHA in `/version.json`. `dev` can sit one bump behind when the queue's last entry is dropped instead of merged, until the next merge or a manual run.
 
 **Affected.** `.github/workflows/bump-version-on-merge.yml`, `scripts/bump-version-on-merge.test.mjs`, `AGENTS.md`, `docs/agents/DEPLOY.md`, `docs/agents/RELEASE.md`, `docs/process/MAESTRO.md`.
+
+## {{ENG:own-identity}} — KC signs its own members in; the user row, its triggers and the policies stay (2026-11-27)
+
+**Decision.** An `identity` module in the API replaces Supabase Auth. `auth.users` stays, as KC's own table, so the foreign key, the two triggers, the purge and every `auth.uid()` policy work unchanged; identities, password hashes, sessions, refresh tokens and one-time links move to tables in `kc_private` that only the API's service role reaches. Access tokens are ES256 JWTs with the claims already read today plus the session's id; refresh tokens are opaque, stored hashed, replaced at every use, and a reused one ends the session. A session that ended is refused on the next request. The app's `IAuthService` port does not change; it gets a second adapter. The switch happens in the database cut-over (phase 10), with users, hashes and live refresh tokens carried over so nobody resets a password or signs in again. Full text: [`ADR-013`](../architecture/adr/ADR-013-own-identity.md).
+
+**Why.** The same reasoning as for realtime (`D-247`) and files (`D-248`): what is built on the service survives it. One row stays the member and SQL stays the place where rights are decided, so no policy or function is rewritten to change who issues a token.
+
+**Trade-off.** KC holds password hashes, refresh-token hashes and signing keys, and owns the rules an identity service owns (rotation, reuse, lockout, enumeration). The API checks the session on every request, in the statement that already opens the transaction.
+
+**Affected.** `app/apps/api/src/modules/identity` (new), `app/apps/api/src/platform/identity`, `supabase/migrations` (the tables), `app/packages/infrastructure-api` (the app's adapter, later).
