@@ -80,7 +80,7 @@ Every schema change must be a committed file in `supabase/migrations/`. **A PR n
 
 **App-wide semver lives in `app/VERSION` (`MAJOR.MINOR.PATCH`).**
 
-1. **PATCH is bumped automatically on every merge into `dev`** by `.github/workflows/bump-version-on-merge.yml`. **Do not edit `app/VERSION` in ordinary PRs** — two open PRs that both edit it always conflict (TD-196).
+1. **PATCH is bumped automatically after merges into `dev`** by `.github/workflows/bump-version-on-merge.yml`: once per merge when the merge queue is empty, once for the whole burst when several PRs merge in a row ({{ENG:bump-waits-for-empty-queue}}). **Do not edit `app/VERSION` in ordinary PRs** — two open PRs that both edit it always conflict (TD-196).
 2. **When you ship a breaking change → set MAJOR** (e.g. `1.4.2` → `2.0.0`) by editing `app/VERSION` in that PR. A PR that edits the file itself is not auto-bumped.
 3. **When you ship a significant non-breaking feature set → set MINOR** (e.g. `1.4.2` → `1.5.0`) the same way.
 4. The bump commit is `[skip ci]`, so a deploy builds the previous number and the new one ships with the next merge.

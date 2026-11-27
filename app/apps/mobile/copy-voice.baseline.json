@@ -19,9 +19,6 @@
     "src/i18n/locales/he/modules/adminTasks.ts": {
       "genderedImperative": 7
     },
-    "src/i18n/locales/he/modules/adminTime.ts": {
-      "genderedImperative": 6
-    },
     "src/i18n/locales/he/modules/chat.ts": {
       "genderedImperative": 11
     },

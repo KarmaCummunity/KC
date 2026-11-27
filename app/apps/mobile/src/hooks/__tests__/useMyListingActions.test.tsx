@@ -67,7 +67,7 @@ describe('useMyListingActions', () => {
   });
 
   it('uploads picked photos and appends them to the listing', async () => {
-    m.pick.mockResolvedValue([{ uri: 'file://a.jpg' }]);
+    m.pick.mockResolvedValue({ status: 'ok', value: [{ uri: 'file://a.jpg' }] });
     m.upload.mockResolvedValue([{ path: 'u1/batch/0.jpg', mimeType: 'image/jpeg', sizeBytes: 2048 }]);
     m.repo.addMyListingMedia.mockResolvedValue(1);
     const refetch = vi.fn(async () => undefined);
@@ -83,13 +83,13 @@ describe('useMyListingActions', () => {
   });
 
   it('does nothing when no photo is picked, and explains a full photo set', async () => {
-    m.pick.mockResolvedValueOnce([]);
+    m.pick.mockResolvedValueOnce({ status: 'ok', value: [] });
     const { result } = renderHook(() => useMyListingActions(vi.fn(async () => undefined)));
     act(() => result.current.addPhotos('l1'));
     await flush();
     expect(m.upload).not.toHaveBeenCalled();
 
-    m.pick.mockResolvedValueOnce([{ uri: 'file://b.jpg' }]);
+    m.pick.mockResolvedValueOnce({ status: 'ok', value: [{ uri: 'file://b.jpg' }] });
     m.upload.mockResolvedValueOnce([{ path: 'u1/batch/1.jpg', mimeType: 'image/jpeg', sizeBytes: 2048 }]);
     m.repo.addMyListingMedia.mockRejectedValueOnce({ message: 'listing_media_full' });
     act(() => result.current.addPhotos('l1'));

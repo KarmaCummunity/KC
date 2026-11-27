@@ -8,6 +8,7 @@ import { Alert, Platform } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { marketplaceRepository } from '../services/marketplaceComposition';
 import { pickListingImages, uploadListingImages } from '../services/listingImageUpload';
+import { isBlockedMediaPick, type MediaPermissionKind } from '../lib/mediaPermissionTypes';
 import { listingOwnerErrorKey } from '../lib/listingOwnerError';
 import { ORG_EVENT_KIND_SLUG, type MyListingRow } from '@kc/domain';
 import { useAuthStore } from '../store/authStore';
@@ -45,12 +46,14 @@ export interface MyListingActions {
   readonly fulfill: (listing: MyListingRow) => void;
   readonly remove: (listingId: string) => void;
   readonly addPhotos: (listingId: string) => void;
+  readonly permissionBlocked: MediaPermissionKind | null;
 }
 
 export function useMyListingActions(refetch: () => Promise<unknown>): MyListingActions {
   const { t } = useTranslation();
   const invalidate = useInvalidateMyListings();
   const userId = useAuthStore((s) => s.session?.userId ?? null);
+  const [permissionBlocked, setPermissionBlocked] = useState<MediaPermissionKind | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
 
   // Runs one action for a row, refreshes the list, and explains a refusal.
@@ -135,9 +138,14 @@ export function useMyListingActions(refetch: () => Promise<unknown>): MyListingA
       if (!userId) return;
       void (async () => {
         const picked = await pickListingImages(0);
-        if (picked.length === 0) return;
+        if (isBlockedMediaPick(picked)) {
+          setPermissionBlocked(picked.kind);
+          return;
+        }
+        setPermissionBlocked(null);
+        if (picked.status !== 'ok' || picked.value.length === 0) return;
         await run(listingId, async () => {
-          const media = await uploadListingImages(userId, picked);
+          const media = await uploadListingImages(userId, picked.value);
           await marketplaceRepository().addMyListingMedia(listingId, media);
           notify(t('marketplace.myListingsAddPhotos'), t('marketplace.myListingsPhotosAdded'));
         });
@@ -148,7 +156,7 @@ export function useMyListingActions(refetch: () => Promise<unknown>): MyListingA
 
   // Stable while nothing changes, so memoized list rows do not re-render on every parent render.
   return useMemo(
-    () => ({ busyId, pause, resume, fulfill, remove, addPhotos }),
-    [busyId, pause, resume, fulfill, remove, addPhotos],
+    () => ({ busyId, pause, resume, fulfill, remove, addPhotos, permissionBlocked }),
+    [busyId, pause, resume, fulfill, remove, addPhotos, permissionBlocked],
   );
 }

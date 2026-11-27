@@ -8,6 +8,7 @@ import { cleanup, fireEvent, render } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from '@kc/ui';
 import type { PostWithOwner } from '@kc/application';
+import type { PostStatus } from '@kc/domain';
 
 vi.mock('@expo/vector-icons', () => ({
   Ionicons: ({ name }: { name: string }) => <span data-testid={`icon-${name}`} />,
@@ -56,16 +57,17 @@ afterEach(() => {
 
 const POST = { postId: 'p_1', ownerId: 'u_owner', status: 'open', title: 'Sofa' } as unknown as PostWithOwner;
 
-function renderMenu(viewerId: string | null, overrides: { visible?: boolean; isSuperAdmin?: boolean } = {}) {
+function renderMenu(viewerId: string | null, overrides: { visible?: boolean; isSuperAdmin?: boolean; canAdminRemove?: boolean; status?: PostStatus } = {}) {
   const handlers = { onClose: vi.fn(), onToggleSave: vi.fn(), onAfterRemoval: vi.fn(), onEdit: vi.fn() };
   const view = render(
     <QueryClientProvider client={new QueryClient()}>
       <ThemeProvider mode="light" systemScheme="light" setMode={() => {}}>
         <PostMenuSheet
           visible={overrides.visible ?? true}
-          post={POST}
+          post={overrides.status ? { ...POST, status: overrides.status } : POST}
           viewerId={viewerId}
           isSuperAdmin={overrides.isSuperAdmin ?? false}
+          canAdminRemove={overrides.canAdminRemove ?? false}
           isSaved={false}
           saveBusy={false}
           {...handlers}
@@ -90,6 +92,8 @@ describe('PostMenuSheet', () => {
       expect(getByRole('button', { name })).toBeTruthy();
     }
     expect(queryByRole('button', { name: 'post.menuDelete' })).toBeNull();
+    expect(queryByRole('button', { name: 'post.menuEdit' })).toBeNull();
+    expect(queryByRole('button', { name: 'post.menuAdminRemove' })).toBeNull();
   });
 
   it('shows the owner edit and delete instead of report', () => {
@@ -126,5 +130,23 @@ describe('PostMenuSheet', () => {
     const { getByRole, onClose } = renderMenu('u_viewer');
     fireEvent.click(getByRole('button', { name: 'general.close' }));
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('hides Edit for a non-owner even when they may admin-remove the post (moderator/admin)', () => {
+    const { queryByRole, getByRole } = renderMenu('u_viewer', { canAdminRemove: true });
+    expect(queryByRole('button', { name: 'post.menuEdit' })).toBeNull();
+    expect(getByRole('button', { name: 'post.menuAdminRemove' })).toBeTruthy();
+  });
+
+  it('shows Edit for a non-owner super admin on an editable post', () => {
+    const { getByRole, queryByRole } = renderMenu('u_viewer', { isSuperAdmin: true });
+    expect(getByRole('button', { name: 'post.menuEdit' })).toBeTruthy();
+    expect(queryByRole('button', { name: 'post.menuAdminRemove' })).toBeNull();
+  });
+
+  it('hides Edit for the owner when the post is not editable', () => {
+    const { queryByRole, getByRole } = renderMenu('u_owner', { status: 'expired' });
+    expect(queryByRole('button', { name: 'post.menuEdit' })).toBeNull();
+    expect(getByRole('button', { name: 'post.menuDelete' })).toBeTruthy();
   });
 });

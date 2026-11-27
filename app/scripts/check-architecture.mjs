@@ -7,7 +7,8 @@
 //   1. File-size cap: ≤300 lines per .ts/.tsx file. Pre-existing violations live
 //      in FILE_SIZE_ALLOWLIST with a TD-N pointer; the list shrinks over time.
 //   2. Layer boundaries: a layer never imports from a layer below it
-//      (domain ⇏ application/infra; application ⇏ infra; ui ⇏ domain/app/infra).
+//      (domain ⇏ application/infra; application ⇏ infra; ui ⇏ domain/app/infra;
+//      api ⇏ supabase-js/ui).
 //   3. Domain typed-error rule: `packages/domain/src/**` may not `throw new Error(...)` —
 //      must throw a domain-specific error class. Pre-existing exemptions are listed.
 
@@ -30,10 +31,7 @@ const FILE_SIZE_ALLOWLIST = new Map([
 
   // SearchFilterSheet.tsx split → 127 lines (TD-133); entry removed.
   // SearchResultCard.tsx barrel (TD-133); entry removed.
-  // Edit-post screen — large form, acceptable as single screen. Bumped 404→415 (P1.1 merged from main).
-  // Further bumped to 425 when adding the FR-POST-013 AC3 Republish branch (TD-70). Republish CTA itself
-  // lives in components/post/ExpiredRepublishView.tsx — the edit-post addition is the dispatch branch only.
-  ['apps/mobile/app/edit-post/[id].tsx', { td: 'TD-130', max: 425 }],
+  // Edit-post screen split → field state in useEditPostForm, save in useEditPostSave (#1752); entry removed.
   // UniversalSearch test suite split into UniversalSearchUseCase.test.ts (152 LOC)
   // + UniversalSearchUseCase.limitsAndFilters.test.ts (178 LOC) in PR #207; both
   // under cap, allowlist entry removed.
@@ -59,6 +57,15 @@ const LAYER_RULES = [
       /^@kc\/application/,
       /^@kc\/domain/,
     ],
+  },
+  // The server is its own composition root (ADR-009). While the move is in
+  // flight it hosts the Supabase data adapters on its own SQL-backed client
+  // (ADR-010), so it may import them and the PostgREST request builder; it
+  // never opens a network client to Supabase and never touches the UI kit.
+  {
+    label: 'api',
+    fromPattern: /^apps\/api\/src\//,
+    forbidden: [/^@supabase\/supabase-js/, /^@kc\/ui/],
   },
 ];
 
@@ -189,7 +196,7 @@ function checkRouteFile(absPath, violations) {
   }
 }
 
-const targets = [join(ROOT, 'packages'), join(ROOT, 'apps', 'mobile')];
+const targets = [join(ROOT, 'packages'), join(ROOT, 'apps', 'mobile'), join(ROOT, 'apps', 'api')];
 const files = targets.flatMap((t) => walk(t));
 const violations = [];
 checkNotificationKindsGenerated(violations);

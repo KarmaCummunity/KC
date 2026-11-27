@@ -20,6 +20,7 @@ import {
   reloadApp,
   type AppLanguage,
 } from '../../src/i18n/language';
+export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
 
 // Language options are labelled in their own script (native names live in the i18n
 // bundles under identical keys, so the label is the same regardless of active UI

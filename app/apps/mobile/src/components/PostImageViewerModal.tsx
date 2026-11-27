@@ -5,7 +5,7 @@ import { Modal, NativeScrollEvent, NativeSyntheticEvent, TouchableOpacity, View,
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, spacing, typography, useTheme, Text } from '@kc/ui';
+import { makeUseStyles, radius, spacing, typography, useTheme, zIndex, Text } from '@kc/ui';
 import { KcFlashList, type KcFlashListRef } from './lists/KcFlashList';
 import { KCImage } from './ui/KCImage';
 
@@ -52,7 +52,7 @@ export function PostImageViewerModal({
   if (urls.length === 0) return null;
 
   return (
-    <Modal
+    <Modal // brand-guard-allow: full-screen image viewer, not a centred dialog
       visible={visible}
       transparent
       animationType="fade"
@@ -66,7 +66,11 @@ export function PostImageViewerModal({
           accessibilityRole="button"
           accessibilityLabel={t('post.imageViewerClose')}
         >
-          <Ionicons name="close" size={32} color={colors.textInverse} />
+          <Ionicons
+            name="close"
+            size={32} // brand-guard-allow: viewer chrome glyph above the icon scale (spec 17 §4.2)
+            color={colors.textInverse}
+          />
         </TouchableOpacity>
 
         {urls.length > 1 ? (
@@ -92,7 +96,7 @@ export function PostImageViewerModal({
           renderItem={({ item }) => (
             <KCImage
               uri={item}
-              style={{ width, height, backgroundColor: '#000' }}
+              style={{ width, height, backgroundColor: colors.shadow }}
               contentFit="contain"
               recyclingKey={item}
               noPlaceholder
@@ -106,27 +110,32 @@ export function PostImageViewerModal({
   );
 }
 
-const useStyles = makeUseStyles(({ colors, isDark }) => ({
+const useStyles = makeUseStyles(({ colors }) => ({
   root: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.shadow,
     justifyContent: 'center',
   },
   closeBtn: {
     position: 'absolute',
     start: spacing.md,
-    zIndex: 2,
+    zIndex: zIndex.overlay,
     padding: spacing.xs,
   },
   counter: {
     position: 'absolute',
     alignSelf: 'center',
-    zIndex: 1,
+    zIndex: zIndex.raised,
     paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    borderRadius: 999,
+    // Nearest spacing step above the former 2pt (no 2 on the scale).
+    paddingVertical: spacing.xs,
+    backgroundColor: colors.overlay,
+    borderRadius: radius.full,
   },
-  counterText: { ...typography.caption, color: colors.textInverse, fontWeight: '600' },
+  counterText: {
+    ...typography.caption,
+    ...typography.semiBold,
+    color: colors.textInverse,
+  },
   list: { flex: 1 },
 }));

@@ -26,11 +26,16 @@
 // every KC_DEV_SLOT_POLL_MS (default 60 s) and reads the jobs only of runs whose workflow can hold a
 // slot (slotWorkflows: the workflows that run this script, and those that call them).
 //
+// With KC_DEV_SLOT_YIELD_TO_QUEUE=true (only maestro-dev-health.yml sets it) a dev-push run gives up
+// its turn to the merge queue while it waits (scripts/maestro-dev-yield.mjs): it writes
+// `yielded=true` to GITHUB_OUTPUT and returns, and the flow steps skip on that output.
+//
 // Needs GITHUB_TOKEN with `actions: read`. Env: GITHUB_REPOSITORY, GITHUB_RUN_ID,
 // GITHUB_RUN_ATTEMPT, RUNNER_NAME (set by Actions).
-import { readdirSync, readFileSync } from 'node:fs';
+import { appendFileSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { readYieldInputs, yieldReason } from './maestro-dev-yield.mjs';
 
 export const SLOT_STEP = 'Wait for a kc-dev test slot';
 
@@ -229,6 +234,25 @@ export function findMe(jobs, runnerName) {
   return { id: me.id, name: me.name, stepStartedAt: step?.started_at ?? null };
 }
 
+/** True (and `yielded=true` written) when this dev-push run should give way; never on a lookup error. */
+async function yielded(env, token, repo) {
+  // Opt-in (maestro-dev-health.yml via ci-maestro-android.yml `yield_to_queue`): other push-event
+  // users of the slot (deploy / release E2E) never skip their wait.
+  if (env.KC_DEV_SLOT_YIELD_TO_QUEUE !== 'true' || env.GITHUB_EVENT_NAME !== 'push') return false;
+  let reason = null;
+  try {
+    const inputs = await readYieldInputs((path) => gh(path, token), repo);
+    reason = yieldReason({ event: env.GITHUB_EVENT_NAME, ref: env.GITHUB_REF, sha: env.GITHUB_SHA, ...inputs });
+  } catch (err) {
+    console.log(`::warning::dev-push yield check failed (${err.message}); not yielding`);
+    return false;
+  }
+  if (!reason) return false;
+  console.log(`::notice::dev-push Maestro run yields to the merge queue: ${reason}. The flows are skipped.`);
+  if (env.GITHUB_OUTPUT) appendFileSync(env.GITHUB_OUTPUT, 'yielded=true\n');
+  return true;
+}
+
 async function main(env = process.env) {
   const token = env.GITHUB_TOKEN;
   const repo = env.GITHUB_REPOSITORY;
@@ -247,6 +271,7 @@ async function main(env = process.env) {
   let errors = 0;
   for (;;) {
     let waitMs = pollMs;
+    if (await yielded(env, token, repo)) return;
     try {
       const mine = await gh(`/repos/${repo}/actions/runs/${env.GITHUB_RUN_ID}/attempts/${env.GITHUB_RUN_ATTEMPT || 1}/jobs?per_page=100`, token);
       const me = findMe(mine.jobs ?? [], env.RUNNER_NAME);

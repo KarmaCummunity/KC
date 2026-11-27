@@ -13,14 +13,14 @@ const JOB_SCOPES = ['job_full_time', 'job_part_time', 'job_hourly', 'job_freelan
 const WORK_MODES = ['on_site', 'remote', 'hybrid'] as const;
 
 /** The role in a few words: it is the line a job seeker scans first. */
-const ROLE_FIELD: ListingFieldSpec = { key: 'role', type: 'text', required: true, maxLength: 80 };
+const ROLE_FIELD: ListingFieldSpec = { key: 'role', type: 'text', required: true, maxLength: 80, testID: 'listing-input-role' };
 
 /** Shared optional fields of a job offer: requirements and estimated salary (#2537). */
 const JOB_OFFER_EXTRA_FIELDS: readonly ListingFieldSpec[] = [
-  { key: 'job_requirements', type: 'text', multiline: true, maxLength: JOB_REQUIREMENTS_MAX_LENGTH },
+  { key: 'job_requirements', type: 'text', multiline: true, maxLength: JOB_REQUIREMENTS_MAX_LENGTH, testID: 'listing-input-job-requirements' },
   // Min alone is a single amount; min + max is a range. Both optional.
-  { key: 'estimated_salary_min', type: 'amount', max: ESTIMATED_SALARY_MAX_ILS },
-  { key: 'estimated_salary_max', type: 'amount', max: ESTIMATED_SALARY_MAX_ILS },
+  { key: 'estimated_salary_min', type: 'amount', max: ESTIMATED_SALARY_MAX_ILS, testID: 'listing-input-salary-min' },
+  { key: 'estimated_salary_max', type: 'amount', max: ESTIMATED_SALARY_MAX_ILS, testID: 'listing-input-salary-max' },
   { key: 'salary_pay_period', type: 'choice', options: SALARY_PAY_PERIODS },
 ];
 

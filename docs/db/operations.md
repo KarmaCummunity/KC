@@ -138,14 +138,24 @@ project (names only — values are never written in the repository):
 | Vault secret name | Value |
 | --- | --- |
 | `kc_project_url` | the project's API URL |
-| `kc_service_role_key` | the project's service-role key |
+| `kc_service_role_key` | historical caller slot, before `verified_edge_caller` only |
+| `kc_verified_service_role_key` | caller slot after `verified_edge_caller`; never falls back to the historical slot |
 
-```sql
-select vault.create_secret('<value>', 'kc_project_url');
-select vault.create_secret('<value>', 'kc_service_role_key');
-```
+Use the reviewed target-specific Deploy writer, not copied credentials or ad-hoc Vault SQL.
+It retrieves an existing key with explicit reveal, requires two identical reads and an
+Auth-settings 200, then stores it in the verified slot. This does not rotate keys. Provider
+rotation and any PROD action still require their own authority. Missing verified configuration
+records a warning and queues no HTTP call. A default-branch legacy writer can still overwrite
+the obsolete slot without changing the migrated worker's caller.
 
-Rotate the key: `select vault.update_secret(id, '<new value>') from vault.secrets where name = 'kc_service_role_key';`.
+The migration runs before the verified writer. If a DEV push deployment is replaced in normal
+concurrency by an old default-branch wrapper, the new slot may remain missing. Bootstrap only
+through an authorized normal Deploy dispatch on the CI-certified DEV ref, not a reseed, manual
+worker call or direct credential write. Independently check current inventory equality, the
+nonclaiming Auth response and the unchanged registry/cron/kick containment afterward. That is
+configuration proof, not worker or physical-delivery proof. Do not delete the obsolete slot as
+part of this migration. PROD continues using its own ledger and applicable slot until a
+separately approved release changes it.
 Extensions required on the project: `pg_cron`, `pg_net`, `supabase_vault`.
 
 Push latency: an insert of a `notification` outbox event starts `dispatch-notification`

@@ -26,6 +26,7 @@ import {
 } from '../../src/lib/shareResearchSurvey';
 import { triggerResearchShare } from '../../src/lib/triggerResearchShare';
 import { useFeedSessionStore } from '../../src/store/feedSessionStore';
+export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
 
 type ChipColors = { bg: string; text: string };
 
