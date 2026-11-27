@@ -10,23 +10,18 @@
 
 insert into kc_private.scheduled_jobs (name, schedule, command, timeout, alert_after, description) values
   -- Queue consumers (outbox topics handled inside the database).
-  -- #2481: kc-dev is a burstable Nano instance; the per-minute consumers all fired at
-  -- second 0 of every minute and, together with chat_system_messages every 10 s, the
-  -- background load alone kept the instance at its throttled baseline (sign-in 504s).
-  -- The consumers below now start 10-40 s into their minute (pg_sleep) so they no
-  -- longer burst together; their timeouts include the sleep.
   ('chat_system_messages', '10 seconds', 'select kc_private.chat_system_messages_process()',
    interval '30 seconds', interval '5 minutes', 'Outbox topic chat_system_message: writes system lines into chats.'),
   ('chat_moderation', '* * * * *', 'select kc_private.chat_moderation_process()',
    interval '50 seconds', interval '10 minutes', 'Outbox topic moderation_target: hides and restores chats under review.'),
-  ('audit_consume', '* * * * *', 'select pg_sleep(10); select kc_private.audit_consume_outbox()',
-   interval '60 seconds', interval '10 minutes', 'Outbox topic audit: writes audit.events.'),
-  ('moderation_consume', '* * * * *', 'select pg_sleep(20); select kc_private.moderation_consume_outbox()',
-   interval '70 seconds', interval '10 minutes', 'Outbox topic moderation: fills the moderation queue.'),
+  ('audit_consume', '* * * * *', 'select kc_private.audit_consume_outbox()',
+   interval '50 seconds', interval '10 minutes', 'Outbox topic audit: writes audit.events.'),
+  ('moderation_consume', '* * * * *', 'select kc_private.moderation_consume_outbox()',
+   interval '50 seconds', interval '10 minutes', 'Outbox topic moderation: fills the moderation queue.'),
 
   -- Edge Function workers started from the database.
-  ('push_dispatch', '* * * * *', 'select pg_sleep(40); select kc_private.push_dispatch_tick()',
-   interval '60 seconds', interval '10 minutes',
+  ('push_dispatch', '* * * * *', 'select kc_private.push_dispatch_tick()',
+   interval '20 seconds', interval '10 minutes',
    'Safety net of the push dispatcher (dispatch-notification); new events also start it at once.'),
   ('account_purge', '30 3 * * *', $$select kc_private.invoke_edge_function('purge-deleted-accounts')$$,
    interval '20 seconds', interval '36 hours', 'Starts purge-deleted-accounts: accounts past their 30-day grace period.'),
@@ -83,15 +78,14 @@ insert into kc_private.scheduled_jobs (name, schedule, command, timeout, alert_a
 
 -- Jobs of the karma, matching, activity and research modules.
 insert into kc_private.scheduled_jobs (name, schedule, command, timeout, alert_after, description) values
-  ('karma_consume', '* * * * *', 'select pg_sleep(30); select kc_private.karma_process()',
-   interval '80 seconds', interval '10 minutes', 'Outbox topic karma: writes the karma ledger and the member totals.'),
+  ('karma_consume', '* * * * *', 'select kc_private.karma_process()',
+   interval '50 seconds', interval '10 minutes', 'Outbox topic karma: writes the karma ledger and the member totals.'),
   ('karma_reconcile', '30 1 * * *', 'select kc_private.karma_reconcile()',
    interval '10 minutes', interval '36 hours', 'Recomputes karma totals from the ledger and records drift.'),
   ('match_process', '*/2 * * * *', 'select kc_private.match_process()',
    interval '100 seconds', interval '15 minutes', 'Outbox topic match: computes candidates for new and edited posts and announces them.'),
-  ('community_stats_refresh', '*/10 * * * *', 'select kc_private.community_stats_refresh()',
-   interval '30 seconds', interval '30 minutes',
-   'Refreshes the one-row community counters shown on the home screen. Every 10 minutes since #2481: at p95 9.6 s it was the heaviest per-minute job on kc-dev.'),
+  ('community_stats_refresh', '* * * * *', 'select kc_private.community_stats_refresh()',
+   interval '30 seconds', interval '10 minutes', 'Refreshes the one-row community counters shown on the home screen.'),
   ('user_active_days_purge', '50 4 * * *', 'select kc_private.user_active_days_purge()',
    interval '5 minutes', interval '36 hours', 'Removes active-day rows older than the retention window.'),
   ('embed_worker', '*/2 * * * *', $$select kc_private.invoke_edge_function('embed-worker')$$,
