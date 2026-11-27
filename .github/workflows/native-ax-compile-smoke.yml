@@ -1,0 +1,57 @@
+name: Isolated native AX diagnostic compile smoke
+on:
+  pull_request:
+    branches: [dev]
+    paths:
+      - '.github/workflows/native-ax-compile-smoke.yml'
+      - 'tests/native-diagnostics/**'
+permissions:
+  contents: read
+jobs:
+  typecheck:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: macos-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Test isolated source transforms
+        run: node --test tests/native-diagnostics/ax-probe.test.mjs
+      - name: Typecheck read-only UIKit diagnostic and independent XCTest tree reader
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'JS'
+          import { AX_PROBE } from './tests/native-diagnostics/ax-probe.mjs';
+          import { writeFileSync } from 'node:fs';
+          writeFileSync(process.env.RUNNER_TEMP + '/KCAXDiagnostic.swift', 'import UIKit\n' + AX_PROBE);
+          JS
+          sdk=$(xcrun --sdk iphonesimulator --show-sdk-path)
+          developer=$(xcode-select -p)
+          frameworks="$developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks"
+          xcrun swiftc -typecheck -swift-version 5 -sdk "$sdk" -target arm64-apple-ios18.0-simulator \
+            "$RUNNER_TEMP/KCAXDiagnostic.swift"
+          xcrun swiftc -typecheck -swift-version 5 -sdk "$sdk" -target arm64-apple-ios18.0-simulator \
+            -F "$frameworks" tests/native-diagnostics/RawAXTests.swift
+      - name: Build standalone diagnostic XCTest runner without KC application
+        run: |
+          set -euo pipefail
+          gem install xcodeproj --version 1.27.0 --user-install --no-document
+          ruby tests/native-diagnostics/create-project.rb "$RUNNER_TEMP/kc-ax-reader"
+          xcodebuild -project "$RUNNER_TEMP/kc-ax-reader/KCAXReader.xcodeproj" \
+            -scheme KCAXReader -configuration Debug -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/kc-ax-reader-build" \
+            CODE_SIGNING_ALLOWED=NO build-for-testing
+      - name: Run reader against synthetic UIKit control, not KC
+        run: |
+          set -euo pipefail
+          xcrun simctl list devices available --json > "$RUNNER_TEMP/ax-devices.json"
+          udid=$(node -e 'const j=require(process.env.RUNNER_TEMP+"/ax-devices.json");const d=Object.values(j.devices).flat().find(d=>d.name.startsWith("iPad")&&d.isAvailable);if(!d)process.exit(1);console.log(d.udid)')
+          xcrun simctl boot "$udid"
+          xcrun simctl bootstatus "$udid" -b
+          xcodebuild -project "$RUNNER_TEMP/kc-ax-reader/KCAXReader.xcodeproj" \
+            -scheme KCAXControlSmoke -configuration Debug -sdk iphonesimulator \
+            -destination "platform=iOS Simulator,id=$udid" \
+            -derivedDataPath "$RUNNER_TEMP/kc-ax-control-build" \
+            CODE_SIGNING_ALLOWED=NO test
