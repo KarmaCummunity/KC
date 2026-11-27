@@ -308,9 +308,9 @@
    "missing": 0
   },
   "marketplace": {
-   "callSites": 50,
+   "callSites": 49,
    "oneToOne": 37,
-   "changed": 13,
+   "changed": 12,
    "removed": 0,
    "missing": 0
   },
@@ -10979,7 +10979,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-     "line": 122,
+     "line": 123,
      "symbol": "fetchListingDetail",
      "area": "marketplace"
     }
@@ -17323,15 +17323,6 @@
      "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
      "line": 80,
      "symbol": "loadEventDetails",
-     "area": "marketplace",
-     "ops": [
-      "select"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-     "line": 125,
-     "symbol": "fetchListingDetail",
      "area": "marketplace",
      "ops": [
       "select"

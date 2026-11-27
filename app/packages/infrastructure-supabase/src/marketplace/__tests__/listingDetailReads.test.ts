@@ -1,6 +1,6 @@
 // NFR-PERF-005 — how many reads, and in what order, one listing detail costs.
 import { describe, expect, it } from 'vitest';
-import { callsTo, createFakeClient, type FakeCall } from '../../__tests__/fakeBaselineClient';
+import { callsTo, createFakeClient } from '../../__tests__/fakeBaselineClient';
 import { makeCard, ok, pageTables } from '../../posts/__tests__/cardFixtures';
 import { SupabasePostRepository } from '../../posts/SupabasePostRepository';
 import { fetchListingDetail } from '../mapListingDetail';
@@ -13,10 +13,10 @@ function setup(cardOverrides: Parameters<typeof makeCard>[0] = {}) {
   const card = makeCard({ id: 'p1', world_slug: 'food', direction: 'request', post_type: 'standard', ...cardOverrides });
   return createFakeClient({
     rpc: { post_detail: ok({ post: card, media: [], comments: [] }), post_cards: ok([card]) },
-    // `posts` answers the listing's one-row geo read with an object and the card extras with a list.
+    // `posts` answers the card extras of the post screen; the listing reads its map point from the card.
     tables: pageTables({
       worlds: ok(WORLDS),
-      posts: (call: FakeCall) => ok(call.single ? { geo_approx: null } : []),
+      posts: ok([]),
       post_media: ok([]),
       post_private_locations: ok(null),
     }),
@@ -33,12 +33,18 @@ describe('fetchListingDetail read order', () => {
 
     const pending = fetchListingDetail(client, 'p1');
     await Promise.resolve();
-    expect(callsTo(calls, 'posts')).toHaveLength(1);
     expect(callsTo(calls, 'post_kinds')).toHaveLength(1);
     expect(callsTo(calls, 'worlds')).toHaveLength(1);
 
     release();
     expect((await pending)?.worldLabelEn).toBe('Food');
+  });
+
+  it('takes the map point from the card instead of reading posts again', async () => {
+    const { client, calls } = setup({ geo_approx: '0101000020E6100000000000000000F03F0000000000000040' });
+    const detail = await fetchListingDetail(client, 'p1');
+    expect(detail).toMatchObject({ lat: 2, lng: 1 });
+    expect(callsTo(calls, 'posts')).toHaveLength(0);
   });
 
   it('reads the world labels once per client, however many details are opened', async () => {
