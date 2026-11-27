@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { SavePostUseCase } from '../SavePostUseCase';
+import { PostError } from '../errors';
 import { FakeSavedPostsRepository } from './fakeSavedPostsRepository';
 
 describe('SavePostUseCase', () => {
@@ -10,9 +11,14 @@ describe('SavePostUseCase', () => {
     expect(repo.lastSavePostId).toBe('post_1');
   });
 
-  it('rejects empty postId', async () => {
+  it('rejects empty postId with typed PostError (message preserved)', async () => {
     const repo = new FakeSavedPostsRepository();
     const uc = new SavePostUseCase(repo);
-    await expect(uc.execute('')).rejects.toThrow(/postId/);
+    await expect(uc.execute('')).rejects.toMatchObject({
+      name: 'PostError',
+      code: 'forbidden',
+      message: 'SavePostUseCase: postId is required',
+    });
+    await expect(uc.execute('')).rejects.toBeInstanceOf(PostError);
   });
 });
