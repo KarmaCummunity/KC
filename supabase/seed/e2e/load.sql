@@ -1,4 +1,5 @@
--- E2E test members for kc-dev: user1 … user4 @seed.kc.test (tests/e2e). DEV ONLY.
+-- E2E test members for kc-dev: user1 … user4 @seed.kc.test (tests/e2e) plus
+-- admin1@seed.kc.test with an active platform `admin` grant (Maestro admin portal). DEV ONLY.
 --
 -- The nightly browser suite signs in as user1 and user2 and blocks user3; user4 is the spare
 -- for the account-deletion restore journey (and write-rate-limits / media acceptance: the suite
@@ -6,6 +7,10 @@
 -- way the auth service creates them: an `auth.users` row plus its email identity; the baseline
 -- trigger builds the member rows and the confirmed email makes the account active. No posts,
 -- follows or chats are created: the suite makes its own rows (`[e2e <timestamp>] …`).
+--
+-- admin1 holds a platform `admin` role so Maestro can open the admin portal and exercise the
+-- onboarding replay (FR-ADMIN-035 / #2253). The grant is idempotent: a second run refreshes the
+-- password and re-ensures one active grant without duplicating.
 --
 -- Session settings the caller must set first (the Seed KC dev workflow does):
 --   kc.seed_target   = 'dev'
@@ -25,7 +30,9 @@ end $$;
 
 create temp table e2e_member on commit drop as
 select n, 'user' || n || '@seed.kc.test' as email, 'E2E Member ' || n as full_name
-from generate_series(1, 4) n;
+from generate_series(1, 4) n
+union all
+select 0, 'admin1@seed.kc.test', 'E2E Admin 1';
 
 -- New members. The password is bcrypt-hashed with the extensions the platform provides.
 insert into auth.users (
@@ -77,7 +84,29 @@ update public.user_account a
  where a.user_id = u.id
    and a.onboarding_state <> 'completed';
 
+-- Platform admin grant for the Maestro admin-portal journeys (FR-ADMIN-035). Idempotent:
+-- skip when an active grant already exists for this member and role.
+insert into public.admin_role_grants (user_id, role)
+select u.id, 'admin'
+  from auth.users u
+ where u.email = 'admin1@seed.kc.test'
+   and not exists (
+     select 1
+       from public.admin_role_grants g
+      where g.user_id = u.id
+        and g.role = 'admin'
+        and g.scope_org_id is null
+        and g.revoked_at is null
+   );
+
 select 'e2e members' as what, count(*) as n
   from auth.users u join e2e_member m on m.email = u.email;
+
+select 'e2e admin grants' as what, count(*) as n
+  from public.admin_role_grants g
+  join auth.users u on u.id = g.user_id
+ where u.email = 'admin1@seed.kc.test'
+   and g.role = 'admin'
+   and g.revoked_at is null;
 
 commit;

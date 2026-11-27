@@ -26,8 +26,10 @@ Tracking issue: KC#1235. Workflow: [`ci-maestro-android.yml`](../../.github/work
 | `20-import-post-kill-switch` | with `external_post_import_enabled` off, the import link opens the plain create form and the form offers no import entry | FR-IMPORT-001 AC4 |
 | `21-employment-job-offer-form` | employment job offer: the role/scope/requirements/salary fields render, title and role are required, and the publish stops at the organization gate (no eligible org seeded, so no publish, salary validation and cards stay unit-covered, see the flow header) | spec 05 §5.11, #2278, #2537, #1476 |
 | `22-edit-profile-save-persistence` | edit profile: editing the phone and tapping Save persists it to kc-dev; reopening shows the saved value | FR-PROFILE-007 |
+| `23-admin-onboarding-replay` | seed admin signs in → admin portal → replay onboarding twice → profile display name unchanged | FR-ADMIN-035 AC1–AC4 |
+| `24-admin-onboarding-replay-exit` | seed admin → replay → exit from step 2 → admin dashboard | FR-ADMIN-035 AC3–AC4 |
 
-`.maestro/subflows/` holds the shared steps (`sign-in`, `open-email-sign-in`, `dismiss-gates`); `config.yaml` runs only `flows/`.
+`.maestro/subflows/` holds the shared steps (`sign-in`, `open-email-sign-in`, `dismiss-gates`, `admin-onboarding-replay-once`); `config.yaml` runs only `flows/`. Flows 23–24 sign in as `admin1@seed.kc.test` (kc-dev E2E seed). First green run is expected on the Maestro / nightly e2e lane after kc-dev is reseeded with that member.
 
 ## How CI builds and runs it
 

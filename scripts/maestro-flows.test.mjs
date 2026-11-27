@@ -56,6 +56,12 @@ function appHasTestId(id) {
     const slug = createCategory[1];
     return source.includes(`${slug}: `) || source.includes(`${slug}: '`);
   }
+  // Admin dashboard cards: `testID={`admin-card-${c.key}`}` with `key: 'onboardingReplay'`, …
+  const adminCard = id.match(/^admin-card-([A-Za-z0-9_]+)$/);
+  if (adminCard && source.includes('testID={`admin-card-${')) {
+    const key = adminCard[1];
+    return source.includes(`key: '${key}'`) || source.includes(`key: "${key}"`);
+  }
   return false;
 }
 
