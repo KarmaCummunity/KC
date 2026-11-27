@@ -12,7 +12,7 @@ export type ApiEnvironment = (typeof API_ENVIRONMENTS)[number];
 /** Runtime configuration of the API process, read once at start. The feature settings are in `featureConfig.ts`. */
 /** The scheduler that starts jobs with its own Google identity instead of a shared secret. */
 export interface JobsSchedulerConfig {
-  /** The audience the scheduler's identity tokens are issued for: this API's address as the scheduler calls it. */
+  /** The audience the scheduler's identity tokens are issued for: a name the scheduler and this API agree on. */
   readonly audience: string;
   /** Email address of the scheduler's service account; a token of any other account is refused. */
   readonly serviceAccount: string;

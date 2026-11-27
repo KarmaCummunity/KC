@@ -55,3 +55,9 @@ scripts/node_modules/
 
 # Graphify knowledge graph output (generated locally by `graphify update .`; never tracked)
 graphify-out/
+
+# Terraform: the provider cache and any local state or plan (state lives in a bucket, infra/gcp/README.md)
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan

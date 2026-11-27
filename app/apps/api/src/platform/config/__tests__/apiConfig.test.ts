@@ -242,6 +242,7 @@ describe('loadApiConfig', () => {
     [{ KC_STORAGE_GCS_BUCKET_PREFIX: 'kc-dev-', KC_MEDIA_PUBLIC_URL: 'not a url' }, 'KC_MEDIA_PUBLIC_URL'],
     [{ KC_STORAGE_GCS_BUCKET_PREFIX: 'KC Dev/', KC_MEDIA_PUBLIC_URL: 'https://media.example.org' }, 'KC_STORAGE_GCS_BUCKET_PREFIX'],
     [{ KC_STORAGE_GCS_BUCKET_PREFIX: '-kc', KC_MEDIA_PUBLIC_URL: 'https://media.example.org' }, 'KC_STORAGE_GCS_BUCKET_PREFIX'],
+    [{ KC_STORAGE_GCS_BUCKET_PREFIX: 'k'.repeat(51), KC_MEDIA_PUBLIC_URL: 'https://media.example.org' }, 'KC_STORAGE_GCS_BUCKET_PREFIX'],
     [
       { KC_STORAGE_GCS_BUCKET_PREFIX: 'kc-dev-', KC_MEDIA_PUBLIC_URL: 'https://media.example.org', KC_STORAGE_LOCAL_DIR: '/var/kc-files', KC_API_PUBLIC_URL: 'http://localhost:8080' },
       'KC_STORAGE_LOCAL_DIR',

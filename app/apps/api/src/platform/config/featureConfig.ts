@@ -180,8 +180,12 @@ function parseStorage(env: Env): StorageConfig {
   return { localDirectory, publicUrl, cloud };
 }
 
-/** Lowercase letters, digits, dashes and underscores, as a cloud bucket name allows; short, since the bucket's own name follows. */
-const BUCKET_PREFIX = /^[a-z0-9][a-z0-9_-]{0,29}$/;
+/**
+ * Lowercase letters, digits, dashes and underscores, as a cloud bucket name
+ * allows. At most 50 characters: a bucket's whole name may have 63, and the
+ * longest KC bucket name follows the prefix.
+ */
+const BUCKET_PREFIX = /^[a-z0-9][a-z0-9_-]{0,49}$/;
 
 function parseCloudStorage(env: Env): CloudStorageConfig | null {
   const bucketPrefix = readVariable(env, 'KC_STORAGE_GCS_BUCKET_PREFIX');
@@ -189,7 +193,7 @@ function parseCloudStorage(env: Env): CloudStorageConfig | null {
   const mediaUrl = rawMediaUrl === undefined ? null : withoutTrailingSlashes(rawMediaUrl);
   if (mediaUrl !== null && !URL.canParse(mediaUrl)) throw new ApiConfigError('KC_MEDIA_PUBLIC_URL', 'must be a URL');
   if (bucketPrefix === undefined) return null;
-  if (!BUCKET_PREFIX.test(bucketPrefix)) throw new ApiConfigError('KC_STORAGE_GCS_BUCKET_PREFIX', 'must be 1 to 30 lowercase letters, digits, dashes or underscores, starting with a letter or digit');
+  if (!BUCKET_PREFIX.test(bucketPrefix)) throw new ApiConfigError('KC_STORAGE_GCS_BUCKET_PREFIX', 'must be 1 to 50 lowercase letters, digits, dashes or underscores, starting with a letter or digit');
   if (mediaUrl === null) throw new ApiConfigError('KC_MEDIA_PUBLIC_URL', 'is required when KC_STORAGE_GCS_BUCKET_PREFIX is set');
   return { bucketPrefix, mediaUrl };
 }

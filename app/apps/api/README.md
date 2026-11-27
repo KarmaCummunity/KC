@@ -45,14 +45,14 @@ In CI the frontend lane runs the package without a database (the lower floor). T
 | `KC_API_TRUSTED_PROXY_HOPS` | `0` | Reverse proxies in front of the API whose `X-Forwarded-For` entry is trusted for the client address |
 | `KC_API_RATE_LIMIT_PER_MINUTE` | `600` | Port calls one caller may make per minute (a member by user id, a visitor by address), counted in Redis (in the process itself on a single instance without Redis). `0` switches the limit off |
 | `KC_JOBS_TOKEN` | none | Bearer token a scheduler sends to start a job (`POST /v1/jobs/<name>`); a secret of at least 32 characters. Without it no job can be started |
-| `KC_JOBS_OIDC_AUDIENCE` | none | With `KC_JOBS_SERVICE_ACCOUNT`: lets a scheduler start jobs with its own Google identity instead of a stored secret. The audience its identity tokens are issued for, which is this API's address as the scheduler calls it |
+| `KC_JOBS_OIDC_AUDIENCE` | none | With `KC_JOBS_SERVICE_ACCOUNT`: lets a scheduler start jobs with its own Google identity instead of a stored secret. The audience its identity tokens are issued for: a name the scheduler and the API agree on (`infra/gcp/run.tf` sets both) |
 | `KC_JOBS_SERVICE_ACCOUNT` | none | Email address of the scheduler's Google service account. Only a token Google signed for this account, for the audience above, starts a job |
 | `EXPO_ACCESS_TOKEN` | none | Access token of the Expo push service, when the Expo project requires one (a secret) |
 | `KC_APP_BASE_URL` | the product's address | The app's public web address, which a message to a member links to (for example the edit link of a draft) |
 | `KC_PORT_ROLLOUT` | everyone | Who each served port is served to: a JSON object of port name to `{ "percent": 0-100, "minAppVersion": "1.2.3" }`, with `*` for every port without a rule of its own (ADR-010). A rule for a port that does not exist stops the process at start |
 | `KC_STORAGE_LOCAL_DIR` | none | Directory of the local file store, for development and tests only (ADR-012). Without a store the storage routes answer `503 not_configured` |
 | `KC_API_PUBLIC_URL` | none | The API's own address as clients reach it; required with `KC_STORAGE_LOCAL_DIR`, whose upload and read addresses point back at the API |
-| `KC_STORAGE_GCS_BUCKET_PREFIX` | none | Selects the Google Cloud Storage file store of a deployed API (ADR-012): what precedes a KC bucket's name in its cloud bucket's name, e.g. `kc-dev-` for `kc-dev-avatars`. 1 to 30 lowercase letters, digits, dashes or underscores. Not together with `KC_STORAGE_LOCAL_DIR` |
+| `KC_STORAGE_GCS_BUCKET_PREFIX` | none | Selects the Google Cloud Storage file store of a deployed API (ADR-012): what precedes a KC bucket's name in its cloud bucket's name, e.g. `kc-dev-` for `kc-dev-avatars`. 1 to 50 lowercase letters, digits, dashes or underscores. Not together with `KC_STORAGE_LOCAL_DIR` |
 | `KC_MEDIA_PUBLIC_URL` | none | KC's media address, which serves the public buckets; required with `KC_STORAGE_GCS_BUCKET_PREFIX` |
 | `WHATSAPP_CLOUD_API_TOKEN` | none | Graph API token of the WhatsApp channel (a secret). Without it no WhatsApp message is sent |
 | `WHATSAPP_PHONE_NUMBER_ID` | channel settings | Overrides the phone number id stored with the channel's settings |

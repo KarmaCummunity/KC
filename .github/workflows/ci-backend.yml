@@ -1,15 +1,16 @@
 name: CI — backend
 
 # Database lane, called by ci.yml when migrations, seed/config, the Supabase
-# adapter package, the API server (app/apps/api), its client package or CI
-# plumbing changed. Boots a fresh local Supabase stack
+# adapter package, the API server (app/apps/api), its client package, its cloud
+# environment (infra/) or CI plumbing changed. Boots a fresh local Supabase stack
 # (supabase/migrations: 0001_baseline.sql, then any later migration), runs the
 # pgTAP suites of supabase/tests on an empty scratch database of the same server
 # (plus the reference and content seed loaders, applied twice), the RPC grants
 # check, the database.types.ts drift check, the FSM catalog contract, the
 # SECURITY DEFINER SQL probe / port contract integration tests and the API
 # server's database suites. A second job builds the API's container image and
-# starts it. The migration chain, destructive-op and baseline-assembly scans
+# starts it; a third checks the API's cloud environment (infra/gcp) without a
+# cloud account. The migration chain, destructive-op and baseline-assembly scans
 # are static and run in ci-static-guards.yml.
 
 on:
@@ -277,6 +278,45 @@ jobs:
       - name: Stop Supabase
         if: always()
         run: supabase stop || true
+
+  # The cloud environment of the API (infra/gcp, ADR-009 phase 2). No cloud account is
+  # involved: the configuration is formatted, validated and tested against a mocked provider.
+  infra:
+    name: cloud environment · terraform fmt · validate · test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # Pinned release binary, fetched directly and checked against its SHA-256 (from the
+      # release's terraform_<version>_SHA256SUMS), as the workflow linter is.
+      - name: Install Terraform 1.17.2
+        env:
+          TERRAFORM_VERSION: 1.17.2
+          TERRAFORM_SHA256: e6f16b2f0b137ee5729caa8c4e79a3bae4ee261acd198a1fcfa8584a6296605b
+        run: |
+          set -euo pipefail
+          asset="terraform_${TERRAFORM_VERSION}_linux_amd64.zip"
+          curl -fsSL --retry 3 --retry-all-errors -o "$RUNNER_TEMP/$asset" \
+            "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/${asset}"
+          echo "${TERRAFORM_SHA256}  $RUNNER_TEMP/$asset" | sha256sum --check --strict -
+          unzip -q "$RUNNER_TEMP/$asset" terraform -d "$RUNNER_TEMP/bin"
+          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+
+      - name: Format
+        working-directory: infra/gcp
+        run: terraform fmt -check -recursive
+
+      # The provider is the version and checksums of .terraform.lock.hcl; no state is read.
+      - name: Validate
+        working-directory: infra/gcp
+        run: terraform init -backend=false -input=false -lockfile=readonly && terraform validate
+
+      - name: Test (mocked provider)
+        working-directory: infra/gcp
+        run: terraform test
 
   # The image is what the hosting platform runs (ADR-009 phase 2). Building it proves the
   # Dockerfile, the bundle and the production dependency set; starting it proves the process

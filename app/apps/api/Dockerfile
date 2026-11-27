@@ -34,7 +34,11 @@ RUN pnpm --filter @kc/api build \
  && cp -r apps/api/dist /out/dist
 
 FROM node:22-bookworm-slim AS runtime
-ENV NODE_ENV=production
+# The version this image was built from, reported by /health. The deploy
+# workflow passes it; an image built by hand says so.
+ARG KC_APP_VERSION=0.0.0-dev
+ENV NODE_ENV=production \
+    KC_APP_VERSION=${KC_APP_VERSION}
 WORKDIR /app
 COPY --from=build /out/package.json ./
 COPY --from=build /out/node_modules ./node_modules

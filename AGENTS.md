@@ -480,6 +480,7 @@ If you don't see a home for something below, **ask the PM** before inventing a n
 | Tech debt                 | GitHub issues labeled `tech-debt`      |
 | Architectural decisions   | `docs/SSOT/DECISIONS.md`               |
 | Migration verification    | `docs/SSOT/OPERATOR_RUNBOOK.md`        |
+| Cloud infrastructure (API) | `infra/gcp/` (Terraform; its README)  |
 | Environment topology      | `docs/SSOT/ENVIRONMENTS.md`            |
 | **Process rules**         | **`AGENTS.md`** (this file)            |
 | `docs/agents/`            | Operating runbooks (flow, deploy, release, claims) |
