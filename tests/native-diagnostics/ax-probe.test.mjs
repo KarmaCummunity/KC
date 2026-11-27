@@ -28,7 +28,7 @@ test('native AX probe is not referenced by store or normal application code', ()
 
 test('compile smoke cannot launch/build KC, read secrets, or publish raw evidence', () => {
   const workflow = readFileSync(new URL('../../.github/workflows/native-ax-compile-smoke.yml', import.meta.url), 'utf8');
-  assert.match(workflow, /timeout-minutes: 8/);
+  assert.match(workflow, /timeout-minutes: 15/);
   assert.match(workflow, /swiftc -typecheck/);
   assert.match(workflow, /KCAXReader.xcodeproj/);
   assert.match(workflow, /CODE_SIGNING_ALLOWED=NO build-for-testing/);
