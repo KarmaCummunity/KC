@@ -1,7 +1,7 @@
 # ADR-012 — Media and storage: KC's own object store, the same paths, the same policies
 
 - **Status:** Accepted (2026-11-23) · phase 7 of [ADR-009](./ADR-009-backend-platform.md)
-- **Decision log:** `{{ENG:media-storage}}` in [`../../SSOT/DECISIONS.md`](../../SSOT/DECISIONS.md)
+- **Decision log:** `D-248` in [`../../SSOT/DECISIONS.md`](../../SSOT/DECISIONS.md)
 - **Related:** [ADR-010 port gateway](./ADR-010-port-gateway.md), [ADR-011 realtime gateway](./ADR-011-realtime-gateway.md) (the same principle, applied to realtime)
 
 ## Context

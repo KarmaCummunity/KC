@@ -45,7 +45,7 @@ Each step = its own migration(s) + contract tests + regression tests; no data lo
 
 ## 4. Quality gates (D58)
 - Every task: spec section + code + automated test; bug → regression test.
-- Ports/adapters keep the backend replaceable; domain stays pure. The backend itself moves from Supabase to an owned NestJS API on Google Cloud, one port at a time ([ADR-009](./adr/ADR-009-backend-platform.md), `{{ENG:backend-platform-off-supabase}}`).
+- Ports/adapters keep the backend replaceable; domain stays pure. The backend itself moves from Supabase to an owned NestJS API on Google Cloud, one port at a time ([ADR-009](./adr/ADR-009-backend-platform.md), `D-245`).
 - Contract tests for every port change; migration drift check; perf budgets.
 - Feature flags per world/phase (D3) instead of branches.
 
