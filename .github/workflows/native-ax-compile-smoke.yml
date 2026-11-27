@@ -33,3 +33,13 @@ jobs:
             "$RUNNER_TEMP/KCAXDiagnostic.swift"
           xcrun swiftc -typecheck -swift-version 5 -sdk "$sdk" -target arm64-apple-ios18.0-simulator \
             -F "$frameworks" tests/native-diagnostics/RawAXTests.swift
+      - name: Build standalone diagnostic XCTest runner without KC application
+        run: |
+          set -euo pipefail
+          gem install xcodeproj --version 1.27.0 --user-install --no-document
+          ruby tests/native-diagnostics/create-project.rb "$RUNNER_TEMP/kc-ax-reader"
+          xcodebuild -project "$RUNNER_TEMP/kc-ax-reader/KCAXReader.xcodeproj" \
+            -scheme KCAXReader -configuration Debug -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/kc-ax-reader-build" \
+            CODE_SIGNING_ALLOWED=NO build-for-testing

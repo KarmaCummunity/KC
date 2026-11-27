@@ -30,7 +30,10 @@ test('compile smoke cannot launch/build KC, read secrets, or publish raw evidenc
   const workflow = readFileSync(new URL('../../.github/workflows/native-ax-compile-smoke.yml', import.meta.url), 'utf8');
   assert.match(workflow, /timeout-minutes: 8/);
   assert.match(workflow, /swiftc -typecheck/);
-  assert.doesNotMatch(workflow, /secrets\.|xcodebuild|expo prebuild|simctl|maestro|upload-artifact|curl |pnpm install/);
+  assert.match(workflow, /KCAXReader.xcodeproj/);
+  assert.match(workflow, /CODE_SIGNING_ALLOWED=NO build-for-testing/);
+  assert.doesNotMatch(workflow, /test-without-building|xcodebuild[^\n]* KC[.]/);
+  assert.doesNotMatch(workflow, /secrets\.|expo prebuild|simctl|maestro|upload-artifact|curl |pnpm install/);
   const reader = readFileSync(new URL('./RawAXTests.swift', import.meta.url), 'utf8');
   assert.match(reader, /prefix\(131072\)/);
   assert.match(reader, /XCTAttachment/);
