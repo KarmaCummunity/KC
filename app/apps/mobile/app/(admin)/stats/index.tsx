@@ -19,6 +19,7 @@ import { listOrEmpty } from '../../../src/lib/backendAvailability';
 import { AdminImportTelemetry } from '../../../src/components/admin/AdminImportTelemetry';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../../src/components/RouteErrorBoundary';
+import { SilentUnauthorizedFallback } from '../../../src/components/permissions/SilentUnauthorizedFallback';
 
 const WINDOWS = [
   { key: 'd7', days: 7 },
@@ -55,7 +56,7 @@ export default function PlatformStatsScreen() {
   });
 
   if (rolesLoading) return <View style={styles.center}><Text>{t.loading}</Text></View>;
-  if (!enabled) return <View style={styles.center}><Text style={styles.forbidden}>{t.forbidden}</Text></View>;
+  if (!enabled) return <SilentUnauthorizedFallback href="/(admin)" />;
 
   const isHebrew = i18n.language.startsWith('he');
   const rows = funnel.data ?? [];

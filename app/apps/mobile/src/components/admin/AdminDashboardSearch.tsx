@@ -1,6 +1,6 @@
-// app/apps/mobile/src/components/admin/AdminDashboardSearch.tsx
 // Mapped to spec: FR-ADMIN-011 / #2081 — search bar on the admin portal home. Typing lists the
-// screens the admin may open (title in either language, or a keyword); tapping one navigates there.
+// screens, settings and actions the admin may open (title in either language, or a keyword);
+// tapping one navigates there (and starts any prepare step for actions).
 import React, { useMemo, useState, type ReactElement } from 'react';
 import { Pressable, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,9 +9,10 @@ import type { AdminRole } from '@kc/domain';
 import { iconSize, makeUseStyles, radius, spacing, Text, typography, useTheme } from '@kc/ui';
 import { FilterSearchBar } from '../filterKit/FilterSearchBar';
 import { rowDirectionStart, textAlignStart } from '../../lib/rtlLayout';
-import { ADMIN_DESTINATIONS } from '../../lib/admin/adminDestinations';
+import { ADMIN_SEARCH_ENTRIES, isAdminSearchAction } from '../../lib/admin/adminSearchEntries';
 import { searchAdminDestinations, visibleDestinations } from '../../lib/admin/adminSearch';
 import { bothLocaleBundles, useLocaleBundle } from '../../i18n/useLocaleBundle';
+import { useOnboardingReplayStore } from '../../store/onboardingReplayStore';
 
 interface Props {
   readonly roles: readonly AdminRole[];
@@ -30,7 +31,7 @@ export function AdminDashboardSearch({ roles, isHidden }: Props): ReactElement {
   const [query, setQuery] = useState('');
 
   const results = useMemo(() => {
-    const allowed = visibleDestinations(ADMIN_DESTINATIONS, roles).filter((d) => !isHidden?.(d.key));
+    const allowed = visibleDestinations(ADMIN_SEARCH_ENTRIES, roles).filter((d) => !isHidden?.(d.key));
     return searchAdminDestinations(query, allowed, SEARCH_LABELS);
   }, [query, roles, isHidden]);
   const searching = query.trim().length > 0;
@@ -55,6 +56,9 @@ export function AdminDashboardSearch({ roles, isHidden }: Props): ReactElement {
           style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
           onPress={() => {
             setQuery('');
+            if (isAdminSearchAction(d.key)) {
+              useOnboardingReplayStore.getState().start();
+            }
             router.push(d.href);
           }}
           accessibilityRole="link"

@@ -181,7 +181,7 @@ Deno.test('e2e: signed free-text → ingest; START → consent; match → outbou
   const state = freshState();
   const rpc = makeRpc(state);
   const webhook = createWebhookHandler({
-    rpc, verifyToken: 'v', appSecret: SECRET, skipSignatureVerify: false,
+    rpc, verifyToken: 'v', appSecret: SECRET,
   });
 
   // 1) Free text listing intent (no keyword)
@@ -242,7 +242,7 @@ Deno.test('e2e: STOP after opt-in blocks further proactive templates; confirmati
   state.consentOptedIn = true;
   const rpc = makeRpc(state);
   const webhook = createWebhookHandler({
-    rpc, verifyToken: 'v', appSecret: SECRET, skipSignatureVerify: false,
+    rpc, verifyToken: 'v', appSecret: SECRET,
   });
 
   const stop = await signedPost(webhook, metaBody('הסר', 'wamid.stop'));
@@ -260,7 +260,7 @@ Deno.test('e2e: wrong signature never touches RPCs', async () => {
   const state = freshState();
   const rpc = makeRpc(state);
   const webhook = createWebhookHandler({
-    rpc, verifyToken: 'v', appSecret: SECRET, skipSignatureVerify: false,
+    rpc, verifyToken: 'v', appSecret: SECRET,
   });
   const body = metaBody('hi');
   const res = await webhook(new Request('https://x/', {

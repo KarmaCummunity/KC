@@ -132,7 +132,7 @@ export default function CreatePostScreen() {
   const onMissingOwner = useCallback(() => {
     setNotify({ title: t('general.errorTitle'), message: t('post.reauthRequired') });
   }, [t]);
-  const { uploadingCount, pickAndUpload: handlePick, cancelUploads } = usePostImageUploads({
+  const { uploadingCount, permissionBlocked, pickAndUpload: handlePick, cancelUploads } = usePostImageUploads({
     ownerId,
     galleryCount: form.uploads.length,
     setUploads: form.setUploads,
@@ -270,6 +270,7 @@ export default function CreatePostScreen() {
         uploadingCount={uploadingCount}
         onAddPhotos={handlePick}
         onCancelUploads={cancelUploads}
+        permissionBlocked={permissionBlocked === 'mediaLibrary'}
         onRemovePhoto={handleRemove}
         />
       </KeyboardAvoidingView>

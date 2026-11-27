@@ -18,6 +18,7 @@ import { useUnsavedChangesGuard } from '../src/hooks/useUnsavedChangesGuard';
 import { useEditProfileStyles } from '../src/screens/edit-profile.styles';
 import { useEditProfileController } from '../src/hooks/useEditProfileController';
 
+export { RouteErrorBoundary as ErrorBoundary } from '../src/components/RouteErrorBoundary';
 
 export default function EditProfileScreen() {
   const { t } = useTranslation();

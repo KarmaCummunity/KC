@@ -124,10 +124,14 @@ test('the runner stops early, failed and with the reason, when kc-dev is down or
 
 test('the Maestro workflow is a lane of the CI gate: reusable, secret passed by ci.yml, no job-level skip', () => {
   const lane = readFileSync(join(ROOT, '.github', 'workflows', 'ci-maestro-android.yml'), 'utf8');
-  assert.match(lane, /^on:\n {2}workflow_call:\n {4}secrets:\n {6}E2E_SEED_PASSWORD:/m);
+  assert.match(lane, /^on:\n {2}workflow_call:\n(?: {4}inputs:\n(?: {6,}.*\n)+)? {4}secrets:\n {6}E2E_SEED_PASSWORD:/m);
+  // The only input lets maestro-dev-health.yml give its turn to the merge queue; it defaults off and
+  // ci.yml (merge groups, PRs) never passes it.
+  assert.match(lane, /yield_to_queue:\n[\s\S]*?default: false/);
   // The gate sees one result for the lane, so a job that skips on its own would pass unnoticed.
   assert.doesNotMatch(lane, /^ {4}if:/m);
   const ci = readFileSync(join(ROOT, '.github', 'workflows', 'ci.yml'), 'utf8');
   assert.match(ci, /^ {2}maestro:\n[\s\S]*?uses: \.\/\.github\/workflows\/ci-maestro-android\.yml/m);
+  assert.doesNotMatch(ci, /yield_to_queue/);
   assert.match(ci, /needs: \[changes, hygiene, static, release, frontend, bundles, backend, edge, maestro\]/);
 });

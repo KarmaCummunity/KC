@@ -38,6 +38,18 @@ test('infrastructure-supabase change runs frontend and backend', () => {
   assert.deepEqual(lanes, { frontend: true, backend: true, edge: false });
 });
 
+test('API server and its client package run frontend and backend (database suites, container image)', () => {
+  for (const f of ['app/apps/api/src/main.ts', 'app/apps/api/Dockerfile', 'app/packages/infrastructure-api/src/wire/portWire.ts']) {
+    assert.deepEqual(classify([f]), { frontend: true, backend: true, edge: false }, f);
+  }
+});
+
+test('packages the API shares with the app do not plan backend on a PR', () => {
+  for (const f of ['app/packages/domain/src/index.ts', 'app/packages/application/src/index.ts', 'app/apps/mobile/src/lib/x.ts']) {
+    assert.equal(classify([f]).backend, false, f);
+  }
+});
+
 test('lockfile change also runs backend (sqlProbes install the workspace)', () => {
   assert.equal(classify(['app/pnpm-lock.yaml']).backend, true);
 });

@@ -1,0 +1,67 @@
+name: Automatically submit qualified App Store candidate
+on:
+  workflow_run:
+    workflows: [CI]
+    branches: [main]
+    types: [completed]
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: asc-submit-review
+  cancel-in-progress: false
+jobs:
+  qualify:
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      version: ${{ steps.candidate.outputs.version }}
+      build_number: ${{ steps.candidate.outputs.build_number }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version-file: .nvmrc
+      - name: Verify exact qualified candidate, evidence and reviewed notes
+        id: candidate
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          CANDIDATE_COMMIT: ${{ github.event.workflow_run.head_sha }}
+        run: node scripts/asc-auto-candidate.mjs
+  submit:
+    needs: qualify
+    if: needs.qualify.outputs.build_number != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: mobile-store
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version-file: .nvmrc
+      - name: Revalidate candidate after environment gate
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          CANDIDATE_COMMIT: ${{ github.event.workflow_run.head_sha }}
+        run: node scripts/asc-auto-candidate.mjs
+      - name: Submit qualified VALID build, never publish or cancel another review
+        env:
+          ASC_MODE: submit
+          ASC_VERSION: ${{ needs.qualify.outputs.version }}
+          ASC_BUILD_NUMBER: ${{ needs.qualify.outputs.build_number }}
+          ASC_CANCEL_SUBMISSION: ''
+          ASC_NOTES_FILE: docs/store/app-review-notes.md
+          ASC_API_KEY_P8: ${{ secrets.ASC_API_KEY_P8 }}
+          ASC_API_KEY_ID: ${{ secrets.ASC_API_KEY_ID }}
+          ASC_API_KEY_ISSUER_ID: ${{ secrets.ASC_API_KEY_ISSUER_ID }}
+          KC_ASC_APP_ID: ${{ vars.KC_ASC_APP_ID }}
+        run: node scripts/asc-submit-review.mjs

@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const { picker, encoder, uploader, ledger } = vi.hoisted(() => {
 const picker = {
+  getMediaLibraryPermissionsAsync: vi.fn(),
   requestMediaLibraryPermissionsAsync: vi.fn(),
   launchImageLibraryAsync: vi.fn(),
 };
@@ -31,20 +32,27 @@ import { pickChatImage, uploadChatImageAndSend } from '../chatMediaUpload';
 beforeEach(() => vi.clearAllMocks());
 
 describe('pickChatImage', () => {
-  it('returns null without permission', async () => {
-    picker.requestMediaLibraryPermissionsAsync.mockResolvedValue({ granted: false });
-    await expect(pickChatImage()).resolves.toBeNull();
+  it('returns denied without opening the picker when the prompt is refused', async () => {
+    picker.getMediaLibraryPermissionsAsync.mockResolvedValue({ granted: false, canAskAgain: true });
+    picker.requestMediaLibraryPermissionsAsync.mockResolvedValue({ granted: false, canAskAgain: true });
+    await expect(pickChatImage()).resolves.toEqual({ status: 'denied' });
     expect(picker.launchImageLibraryAsync).not.toHaveBeenCalled();
   });
 
-  it('returns null when cancelled or empty, uri otherwise', async () => {
-    picker.requestMediaLibraryPermissionsAsync.mockResolvedValue({ granted: true });
+  it('returns blocked without requesting when the OS will not ask again', async () => {
+    picker.getMediaLibraryPermissionsAsync.mockResolvedValue({ granted: false, canAskAgain: false });
+    await expect(pickChatImage()).resolves.toEqual({ status: 'blocked', kind: 'mediaLibrary' });
+    expect(picker.requestMediaLibraryPermissionsAsync).not.toHaveBeenCalled();
+  });
+
+  it('returns cancelled when dismissed or empty, and the image otherwise', async () => {
+    picker.getMediaLibraryPermissionsAsync.mockResolvedValue({ granted: true, canAskAgain: true });
     picker.launchImageLibraryAsync.mockResolvedValueOnce({ canceled: true, assets: [] });
-    await expect(pickChatImage()).resolves.toBeNull();
+    await expect(pickChatImage()).resolves.toEqual({ status: 'cancelled' });
     picker.launchImageLibraryAsync.mockResolvedValueOnce({ canceled: false, assets: [] });
-    await expect(pickChatImage()).resolves.toBeNull();
+    await expect(pickChatImage()).resolves.toEqual({ status: 'cancelled' });
     picker.launchImageLibraryAsync.mockResolvedValueOnce({ canceled: false, assets: [{ uri: 'file://a', width: 4, height: 3 }] });
-    await expect(pickChatImage()).resolves.toEqual({ uri: 'file://a', width: 4, height: 3 });
+    await expect(pickChatImage()).resolves.toEqual({ status: 'ok', value: { uri: 'file://a', width: 4, height: 3 } });
   });
 });
 

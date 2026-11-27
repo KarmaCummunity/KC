@@ -52,10 +52,12 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `infrastructure-supabase/src/chat/` | 20 | 18 | 2 | 0 | 0 |
 | `infrastructure-supabase/src/cities/` | 1 | 0 | 1 | 0 | 0 |
 | `infrastructure-supabase/src/donations/` | 7 | 3 | 4 | 0 | 0 |
+| `infrastructure-supabase/src/featureFlags/` | 1 | 1 | 0 | 0 | 0 |
 | `infrastructure-supabase/src/feed/` | 6 | 6 | 0 | 0 | 0 |
 | `infrastructure-supabase/src/housing/` | 18 | 11 | 7 | 0 | 0 |
 | `infrastructure-supabase/src/identityVerification/` | 3 | 3 | 0 | 0 | 0 |
 | `infrastructure-supabase/src/imports/` | 5 | 5 | 0 | 0 | 0 |
+| `infrastructure-supabase/src/karma/` | 1 | 0 | 1 | 0 | 0 |
 | `infrastructure-supabase/src/knowledge/` | 12 | 9 | 3 | 0 | 0 |
 | `infrastructure-supabase/src/legal/` | 3 | 3 | 0 | 0 | 0 |
 | `infrastructure-supabase/src/marketplace/` | 50 | 37 | 13 | 0 | 0 |
@@ -63,7 +65,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `infrastructure-supabase/src/moderation/` | 17 | 14 | 3 | 0 | 0 |
 | `infrastructure-supabase/src/notifications/` | 7 | 7 | 0 | 0 | 0 |
 | `infrastructure-supabase/src/organizations/` | 6 | 5 | 1 | 0 | 0 |
-| `infrastructure-supabase/src/payments/` | 11 | 3 | 8 | 0 | 0 |
+| `infrastructure-supabase/src/payments/` | 12 | 4 | 8 | 0 | 0 |
 | `infrastructure-supabase/src/posts/` | 50 | 35 | 15 | 0 | 0 |
 | `infrastructure-supabase/src/realtime/` | 2 | 2 | 0 | 0 | 0 |
 | `infrastructure-supabase/src/reports/` | 10 | 4 | 6 | 0 | 0 |
@@ -225,22 +227,22 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `'chat:${chatId}:messages'` (channel) | core | 1:1 | topic `chat:<chat id>:messages` | Private topic of the chat; broadcast events `INSERT` (the message row), `read` (a member's marker), `reaction` and `chat_updated` (the pinned post). The app consumes all four; a `reaction` updates the reactions of the open chat in place (#2568), which are read once per open. |  | high | SupabaseChatRealtime.ts:43 |
+| `'chat:${chatId}:messages'` (channel) | core | 1:1 | topic `chat:<chat id>:messages` | Private topic of the chat; broadcast events `INSERT` (the message row), `read` (a member's marker), `reaction` and `chat_updated` (the pinned post). The app consumes all four; a `reaction` updates the reactions of the open chat in place (#2568), which are read once per open. |  | high | SupabaseChatRealtime.ts:51 |
 | `'chat:${chatId}:typing'` (channel) | core | 1:1 | topic `chat:<chat id>:typing` | Members may send on `chat:%:typing` and `chat:%:presence`. |  | high | SupabaseChatV2Realtime.ts:30 |
-| `'user:${userId}:chats'` (channel) | core | 1:1 | topic `user:<user id>:chats` | Private topic of the member; event `chat_updated` carries ids only, so the inbox refreshes and the unread total is re-read. |  | high | SupabaseChatRealtime.ts:97 |
+| `'user:${userId}:chats'` (channel) | core | 1:1 | topic `user:<user id>:chats` | Private topic of the member; event `chat_updated` carries ids only, so the inbox refreshes and the unread total is re-read. |  | high | SupabaseChatRealtime.ts:105 |
 | `chat_inbox_page` | core | 1:1 | `chat_inbox_page(p_before_chat_id?: string, p_before_last_message_at?: string, p_limit?: number, p_search?: string) → { anchor_post_id: string chat_id: string counterpart_avatar_url: string counterpart_display_name: string counterpart_id: string counterpart_last_read_at: string counterpart_share_handle: string counterpart_verificatio...` | `p_limit`, `p_before_last_message_at`, `p_before_chat_id`, `p_search`; one row per visible chat with the counterpart, a 140-character preview of the newest message and the unread count. The app reads one page of 50; each row also carries the counterpart's verification level, the media type of a media message and the system payload of a system message, for the inbox badge and previews. | `unauthenticated` | high | getMyChats.ts:75 |
 | `chat_messages_page` | core | 1:1 | `chat_messages_page(p_after?: string, p_before?: string, p_chat_id: string, p_limit?: number) → messages row[]` | `p_chat_id`, `p_limit`, `p_before`, `p_after`; the `messages` rows, newest first when paging backwards. Refusal `chat_not_found`. | `chat_not_found`, `unauthenticated` | high | SupabaseChatRepository.ts:62 |
-| `chat_unread_total` | core | 1:1 | `chat_unread_total() → number` | The badge; also delivered in `bootstrap_session().unread.chats`. | `unauthenticated` | high | SupabaseChatRealtime.ts:136, SupabaseChatRepository.ts:98 |
+| `chat_unread_total` | core | 1:1 | `chat_unread_total() → number` | The badge; also delivered in `bootstrap_session().unread.chats`. | `unauthenticated` | high | SupabaseChatRealtime.ts:144, SupabaseChatRepository.ts:98 |
 | `hide_chat` | core | 1:1 | `hide_chat(p_chat_id: string) → undefined` | `p_chat_id`; a support thread cannot be hidden (`support_thread_not_hideable`). | `chat_not_found`, `support_thread_not_hideable`, `unauthenticated` | high | supabaseDmChat.ts:46 |
 | `mark_chat_read` | core | 1:1 | `mark_chat_read(p_chat_id: string) → undefined` | `p_chat_id`; advances the caller's `chat_members.last_read_at`, which is the read receipt other members see. | `chat_not_found`, `unauthenticated` | high | SupabaseChatRepository.ts:94 |
 | `open_direct_chat` | core | 1:1 | `open_direct_chat(p_anchor_post_id?: string, p_user_id: string) → chats row` | `p_user_id`, `p_anchor_post_id`; the caller's one chat with the member (created when missing, un-hidden when hidden), re-pinned when an anchor is given. A ride is a post, so a ride anchor is a post anchor; the old "second chat after a personal hide" no longer exists. Refusals `account_not_active`, `blocked_relationship`, `cannot_chat_self`, `post_unavailable` †, `user_unavailable`. | `account_not_active`, `blocked_relationship`, `cannot_chat_self`, `post_unavailable`, `unauthenticated`, `user_unavailable` | high | supabaseDmChat.ts:30 |
 | `open_support_thread` | core | 1:1 | `open_support_thread() → chats row` | No arguments; the caller's support thread (`kind = 'support'`, `support_user_id`), created on first use. A support issue is this call plus `send_message`: the category is the first line of the body (there is no category column). | `unauthenticated` | high | supabaseDmChat.ts:40 |
-| `send_message` | core | 1:1 | `send_message(p_body: string, p_chat_id: string, p_media_payload?: Json, p_message_id?: string) → messages row` | `p_chat_id`, `p_body`, `p_media_payload`, `p_message_id` (the optimistic message id, so a retry returns the first copy); also carries media messages and the support issue. Refusals `account_not_active`, `blocked_relationship`, `chat_not_found`, `invalid_media_payload` †, `invalid_rate_limit_args` †, `message_body_invalid` †, `rate_limited`. | `account_not_active`, `blocked_relationship`, `chat_not_found`, `invalid_media_payload`, `invalid_rate_limit_args`, `message_body_invalid`, `rate_limited`, `unauthenticated` | high | SupabaseChatRepository.ts:80, SupabaseChatV2Repository.ts:37 |
-| `set_message_reaction` | core | 1:1 | `set_message_reaction(p_message_id: string, p_reaction_type: string) → undefined` | `p_message_id`, `p_reaction_type` (null clears); returns nothing, the change arrives as a `reaction` broadcast on the chat topic. Refusals `account_not_active`, `invalid_reaction_type` †, `message_not_found`. | `account_not_active`, `invalid_reaction_type`, `message_not_found`, `unauthenticated` | high | SupabaseChatV2Repository.ts:21 |
+| `send_message` | core | 1:1 | `send_message(p_body: string, p_chat_id: string, p_media_payload?: Json, p_message_id?: string) → messages row` | `p_chat_id`, `p_body`, `p_media_payload`, `p_message_id` (the optimistic message id, so a retry returns the first copy); also carries media messages and the support issue. Refusals `account_not_active`, `blocked_relationship`, `chat_not_found`, `invalid_media_payload` †, `invalid_rate_limit_args` †, `message_body_invalid` †, `rate_limited`. | `account_not_active`, `blocked_relationship`, `chat_not_found`, `invalid_media_payload`, `invalid_rate_limit_args`, `message_body_invalid`, `rate_limited`, `unauthenticated` | high | SupabaseChatRepository.ts:80, SupabaseChatV2Repository.ts:38 |
+| `set_message_reaction` | core | 1:1 | `set_message_reaction(p_message_id: string, p_reaction_type: string) → undefined` | `p_message_id`, `p_reaction_type` (null clears); returns nothing, the change arrives as a `reaction` broadcast on the chat topic. Refusals `account_not_active`, `invalid_reaction_type` †, `message_not_found`. | `account_not_active`, `invalid_reaction_type`, `message_not_found`, `unauthenticated` | high | SupabaseChatV2Repository.ts:22 |
 | `submit_support_issue` | core | CHANGED | `submit_support_issue(p_category: string, p_description: string, p_issue_id?: string) → chats row` | Was `rpc_submit_support_issue`. `(p_category, p_description, p_issue_id)` writes a `support_issue` system message (`issue_id`, `category`, `description`) and returns the thread; refusals `description_too_short`, `description_too_long` (500), `invalid_support_category`; `0015`. |  | high | submitSupportIssue.ts:22 |
 | `chat_members` (table) | core | 1:1 | table `chat_members` | Read by chat for the members' read markers (`user_id`, `last_read_at`): a message is read when another member's marker reached it. Writes only through `mark_chat_read` and `hide_chat`. |  | high | SupabaseChatRepository.ts:155 |
 | `chats` (table) | core | 1:1 | table `chats` | Read by id for the chat screen (`id`, `kind`, `direct_user_a/b`, `support_user_id`, `anchor_post_id`, `last_message_at`, `created_at`); creation is `open_direct_chat`, the inbox is `chat_inbox_page`. |  | high | SupabaseChatRepository.ts:32 |
-| `message_reactions` (table) | core | 1:1 | table `message_reactions` | Read for the reactions of the listed messages (`message_id`, `user_id`, `reaction_type`); writes only through `set_message_reaction`. |  | high | SupabaseChatV2Repository.ts:53 |
+| `message_reactions` (table) | core | 1:1 | table `message_reactions` | Read for the reactions of the listed messages (`message_id`, `user_id`, `reaction_type`); writes only through `set_message_reaction`. |  | high | SupabaseChatV2Repository.ts:54 |
 | `messages` (table) | core | 1:1 | table `messages` | Read-only for clients: the "has this member ever sent a message" check selects the caller's `kind = 'user'` rows; paging is `chat_messages_page`, sending is `send_message`. |  | high | SupabaseChatRepository.ts:113 |
 | `users` (table) | core | CHANGED | see `infrastructure-supabase/src/admin/` |  |  |  | SupabaseChatRepository.ts:134 |
 
@@ -264,6 +266,14 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `donation_links` (table) | core | CHANGED | table `donation_links` | Clients select and delete only; insert and update are done by the `validate-donation-link` function with the service role. `tags`, `hidden_at`, `hidden_by` are gone (hiding = `review_status`). |  | high | SupabaseDonationLinksRepository.ts:60, SupabaseDonationLinksRepository.ts:99, SupabaseDonationLinksRepository.ts:116 |
 | `users` (table) | core | CHANGED | see `infrastructure-supabase/src/admin/` |  |  |  | SupabaseDonationLinksRepository.ts:123 |
 
+### `infrastructure-supabase/src/featureFlags/`
+
+1 call sites: 1 map 1:1, 0 need logic changes, 0 removed, 0 MISSING.
+
+| Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `app_flags` (table) | core | 1:1 | table `app_flags` | Same `select key, enabled`, for signed-in members only (no `anon` grant): before sign-in the compiled defaults apply. After sign-in the same map is `bootstrap_session().flags`. The rows (`world_<slug>_enabled`) are seed data, not part of the baseline (M09, verified). |  | high | SupabaseFeatureFlagsRepository.ts:11 |
+
 ### `infrastructure-supabase/src/feed/`
 
 6 call sites: 6 map 1:1, 0 need logic changes, 0 removed, 0 MISSING.
@@ -271,9 +281,9 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `FEED_PUBLIC_TOPIC = 'feed:public'` (channel) | core | 1:1 | topic `feed:public` | Private topic (migration 0026); event `new_post` with `post_id` and `owner_id` when a post becomes open and Public. The feed counts the pill and re-reads through RLS on tap (FR-FEED-009 AC2, M24 built). |  | high | SupabaseFeedRealtime.ts:20 |
-| `feed_hides` (table) | core | 1:1 | table `feed_hides` | Insert (user_id, post_id) ignoring duplicates; delete by post. |  | high | SupabaseSocialFeedRepository.ts:51 |
-| `feed_impressions` (table) | core | 1:1 | table `feed_impressions` | Bulk insert of `post_id` rows; the member and the time are filled by the table. |  | high | SupabaseSocialFeedRepository.ts:61 |
-| `feed_mute_filters` (table) | core | 1:1 | table `feed_mute_filters` | Kinds user, world and keyword (a keyword is 2-60 characters, trimmed, lower-case); there is no per-category mute, so that settings section is gone. |  | high | SupabaseSocialFeedRepository.ts:69, SupabaseSocialFeedRepository.ts:86, SupabaseSocialFeedRepository.ts:91 |
+| `feed_hides` (table) | core | 1:1 | table `feed_hides` | Insert (user_id, post_id) ignoring duplicates; delete by post. |  | high | SupabaseSocialFeedRepository.ts:44 |
+| `feed_impressions` (table) | core | 1:1 | table `feed_impressions` | Bulk insert of `post_id` rows; the member and the time are filled by the table. |  | high | SupabaseSocialFeedRepository.ts:54 |
+| `feed_mute_filters` (table) | core | 1:1 | table `feed_mute_filters` | Kinds user, world and keyword (a keyword is 2-60 characters, trimmed, lower-case); there is no per-category mute, so that settings section is gone. |  | high | SupabaseSocialFeedRepository.ts:62, SupabaseSocialFeedRepository.ts:79, SupabaseSocialFeedRepository.ts:84 |
 
 ### `infrastructure-supabase/src/housing/`
 
@@ -319,6 +329,14 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `api_import_attach_post` | later | 1:1 | `api_import_attach_post(p_import_id: string, p_post_id: string) → undefined` | Existing current caller: app/packages/infrastructure-supabase/src/imports/EdgeFnPostExtractionService.ts. Current source declaration is bound; transitive errors remain explicitly unknown, not runtime acceptance. | Error binding unknown (not an assertion of no errors) | medium | EdgeFnPostExtractionService.ts:24 |
 | `api_import_record_edits` | later | 1:1 | `api_import_record_edits(p_edited_fields: string[], p_import_id: string) → undefined` | Existing current caller: app/packages/infrastructure-supabase/src/imports/EdgeFnPostExtractionService.ts. Current source declaration is bound; transitive errors remain explicitly unknown, not runtime acceptance. | Error binding unknown (not an assertion of no errors) | medium | EdgeFnPostExtractionService.ts:29 |
 
+### `infrastructure-supabase/src/karma/`
+
+1 call sites: 0 map 1:1, 1 need logic changes, 0 removed, 0 MISSING.
+
+| Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `karma_ledger` (table) | wedge | CHANGED | table `karma_ledger` | `ledger_id` → `id`, `points_delta` → `points`, `ref_type` / `ref_id` → `subject` / `reference`. The total is `my_karma_points()`. |  | high | SupabaseKarmaHistoryRepository.ts:15 |
+
 ### `infrastructure-supabase/src/knowledge/`
 
 12 call sites: 9 map 1:1, 3 need logic changes, 0 removed, 0 MISSING.
@@ -343,9 +361,9 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `accept_legal_document` | core | 1:1 | `accept_legal_document(p_doc_type: string, p_locale?: string, p_user_agent?: string, p_version: number) → Json` | `p_doc_type` is text (was an enum), `p_locale` / `p_user_agent` optional. | `legal_version_out_of_range`, `unauthenticated`, `unknown_legal_document` | high | SupabaseLegalDocumentRepository.ts:117 |
-| `legal_document_versions` (table) | core | 1:1 | table `legal_document_versions` | `created_at` is gone (`published_at` stays). |  | high | SupabaseLegalDocumentRepository.ts:82 |
-| `legal_documents` (table) | core | 1:1 | table `legal_documents` | Readable signed-out too (the only anon grant in the baseline). |  | high | SupabaseLegalDocumentRepository.ts:72 |
+| `accept_legal_document` | core | 1:1 | `accept_legal_document(p_doc_type: string, p_locale?: string, p_user_agent?: string, p_version: number) → Json` | `p_doc_type` is text (was an enum), `p_locale` / `p_user_agent` optional. | `legal_version_out_of_range`, `unauthenticated`, `unknown_legal_document` | high | SupabaseLegalDocumentRepository.ts:119 |
+| `legal_document_versions` (table) | core | 1:1 | table `legal_document_versions` | `created_at` is gone (`published_at` stays). |  | high | SupabaseLegalDocumentRepository.ts:97 |
+| `legal_documents` (table) | core | 1:1 | table `legal_documents` | Readable signed-out too (the only anon grant in the baseline). |  | high | SupabaseLegalDocumentRepository.ts:92 |
 
 ### `infrastructure-supabase/src/marketplace/`
 
@@ -398,9 +416,9 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `admin_match_quality` | later | 1:1 | `admin_match_quality(p_days?: number) → { accepted: number chat_pairs: number chat_rate: number completed_pairs: number completion_rate: number notified_pairs: number precision_proxy: number responses: number world_label_en: string world_label_he: string wo...` | `p_days` (clamped 1..365); per giving world the alerted pairs, answers, acceptances, chats after the alert and completed handoffs, rates as numerics. Moderators and above (`forbidden` otherwise); lives in `76_matching/070_match_quality.sql`. |  | high | SupabaseMatchRepository.ts:145 |
-| `match_respond` | wedge | 1:1 | `match_respond(p_accept: boolean, p_match_id: string) → string` | `p_match_id`, `p_accept`; answers the pair's status (`accepted` when both accepted). | `account_not_active`, `match_not_found` †, `match_not_open` †, `unauthenticated` | high | SupabaseMatchRepository.ts:138 |
-| `my_matches` | wedge | 1:1 | `my_matches(p_limit?: number) → { created_at: string distance_km: number llm_reason: string match_id: string my_post_id: string my_post_title: string my_response: string my_role: string other_post: post_card other_response: string score: number stat...` | The caller's pairs, each with the other member's post as a card (`other_post`). |  | high | SupabaseMatchRepository.ts:130 |
+| `admin_match_quality` | later | 1:1 | `admin_match_quality(p_days?: number) → { accepted: number chat_pairs: number chat_rate: number completed_pairs: number completion_rate: number notified_pairs: number precision_proxy: number responses: number world_label_en: string world_label_he: string wo...` | `p_days` (clamped 1..365); per giving world the alerted pairs, answers, acceptances, chats after the alert and completed handoffs, rates as numerics. Moderators and above (`forbidden` otherwise); lives in `76_matching/070_match_quality.sql`. |  | high | SupabaseMatchRepository.ts:94 |
+| `match_respond` | wedge | 1:1 | `match_respond(p_accept: boolean, p_match_id: string) → string` | `p_match_id`, `p_accept`; answers the pair's status (`accepted` when both accepted). | `account_not_active`, `match_not_found` †, `match_not_open` †, `unauthenticated` | high | SupabaseMatchRepository.ts:87 |
+| `my_matches` | wedge | 1:1 | `my_matches(p_limit?: number) → { created_at: string distance_km: number llm_reason: string match_id: string my_post_id: string my_post_title: string my_response: string my_role: string other_post: post_card other_response: string score: number stat...` | The caller's pairs, each with the other member's post as a card (`other_post`). |  | high | SupabaseMatchRepository.ts:79 |
 
 ### `infrastructure-supabase/src/moderation/`
 
@@ -453,10 +471,11 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 
 ### `infrastructure-supabase/src/payments/`
 
-11 call sites: 3 map 1:1, 8 need logic changes, 0 removed, 0 MISSING.
+12 call sites: 4 map 1:1, 8 need logic changes, 0 removed, 0 MISSING.
 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
+| `api_my_pro_status` | core | 1:1 | `api_my_pro_status() → Json` | The caller's Pro status (`is_pro`); the Pro screen reads it. |  | high | SupabaseProEntitlementRepository.ts:12 |
 | `cancel_standing_order` | later | CHANGED | `cancel_standing_order(p_order_id: string) → Json` | Same argument; returns the order as JSON with `amount_agorot`. | `order_not_found` †, `unauthenticated` | high | SupabasePaymentsRepository.ts:135 |
 | `create_donation_intent` | later | CHANGED | `create_donation_intent(p_amount_agorot: number, p_idempotency_key: string, p_org_id: string, p_post_id?: string) → Json` | `p_amount_ils` → `p_amount_agorot` (integer agorot); `p_listing_id` → `p_post_id`; returns JSON (intent and checkout). | `account_not_active`, `idempotency_key_conflict` †, `invalid_rate_limit_args`, `money_min_amount`, `payments_unavailable`, `rate_limited`, `unauthenticated`, `verified_org_required` | high | SupabasePaymentsRepository.ts:61 |
 | `create_standing_order` | later | CHANGED | `create_standing_order(p_amount_agorot: number, p_cadence?: string, p_idempotency_key: string, p_org_id: string) → Json` | `p_amount_ils` → `p_amount_agorot`; returns JSON. | `account_not_active`, `cadence_not_supported` †, `idempotency_key_conflict` †, `money_min_amount`, `payments_unavailable`, `unauthenticated`, `verified_org_required` | high | SupabasePaymentsRepository.ts:75 |
@@ -483,7 +502,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `feed_page` | core | 1:1 | `feed_page(p_cursor?: Json, p_filters?: Json, p_limit?: number) → { card: post_card distance_m: number next_cursor: Json }[]` | `p_cursor`, `p_limit` (at most 50), `p_filters` (sort, world, direction, item_subcategory_ids, status, audience, city_id + radius_km, near_city_id, q, scope); rows of `card`, `next_cursor`, `distance_m`. Several worlds or an item condition are narrowed on the returned page. | `invalid_input`, `unauthenticated` | high | postCardPages.ts:91 |
 | `guest_posts` | core | 1:1 | `guest_posts(p_before_id?: string, p_limit?: number, p_post_id?: string) → { city_name_en: string city_name_he: string description: string id: string title: string }[]` | D186 / FR-AUTH-014, guest_posts forward migration: read-only signed-out projection of open Public posts with active owner/world/kind, published and unexpired. Returns only opaque id, title, description and city names; existing member grants stay closed. Optional post id, before-id cursor and bounded page limit. |  | high | SupabaseGuestPostsRepository.ts:18, SupabaseGuestPostsRepository.ts:25 |
 | `post_cards` | core | 1:1 | see `infrastructure-supabase/src/marketplace/` |  |  |  | postCardPages.ts:73, postRepoQueries.ts:46 |
-| `post_comments_page` | core | 1:1 | `post_comments_page(p_cursor?: Json, p_limit?: number, p_parent_comment_id?: string, p_post_id: string) → { author_avatar_url: string author_display_name: string author_id: string author_identity_masked: boolean author_share_handle: string body: string created_at: string edited_at: string id: string mention_user_ids: stri...` | Root comments (`p_parent_comment_id` null) or the replies of one, oldest first, with the author already masked when the poster asked to stay anonymous; the screen reads the roots and then the replies of each root that has any. |  | high | SupabasePostEngagementRepository.ts:161 |
+| `post_comments_page` | core | 1:1 | `post_comments_page(p_cursor?: Json, p_limit?: number, p_parent_comment_id?: string, p_post_id: string) → { author_avatar_url: string author_display_name: string author_id: string author_identity_masked: boolean author_share_handle: string body: string created_at: string edited_at: string id: string mention_user_ids: stri...` | Root comments (`p_parent_comment_id` null) or the replies of one, oldest first, with the author already masked when the poster asked to stay anonymous; the screen reads the roots and then the replies of each root that has any. |  | high | SupabasePostEngagementRepository.ts:138 |
 | `profile_closed_posts_count` | core | CHANGED | `profile_closed_posts_count(p_user_id: string) → number` | One argument, `p_user_id` (the viewer is the caller); counts the closed tab only, so the Hidden tab badge (`p_list_mode = owner_only_me`) is not served: take it from `user_stats.open_posts_only_me` or drop it (M13, built as a count over the same rows as the tab). |  | high | postRepoQueries.ts:115 |
 | `profile_posts_page` | core | 1:1 | see `infrastructure-supabase/src/marketplace/` |  |  |  | postCardPages.ts:130 |
 | `publish_post` | core | 1:1 | see `infrastructure-supabase/src/marketplace/` |  |  |  | postWriteMethods.ts:93 |
@@ -491,20 +510,20 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `reopen_post` | core | 1:1 | `reopen_post(p_post_id: string) → undefined` | Reopens a delivered post, or a deleted one inside its window (`closure_wrong_status`, `reopen_window_expired`); returns nothing, the adapter reads the post again. | `account_not_active`, `closure_wrong_status`, `post_not_found`, `reopen_window_expired`, `unauthenticated` | high | closureMethods.ts:62 |
 | `replace_post_media` | core | 1:1 | `replace_post_media(p_media: Json, p_post_id: string) → undefined` | Existing current caller: app/packages/infrastructure-supabase/src/posts/postMediaWrites.ts. Current source declaration is bound; transitive errors remain explicitly unknown, not runtime acceptance. | Error binding unknown (not an assertion of no errors) | medium | postMediaWrites.ts:57 |
 | `search_posts_page` | core | CHANGED | `search_posts_page(p_cursor?: Json, p_filters?: Json, p_limit?: number, p_query: string) → { card: post_card distance_m: number next_cursor: Json }[]` | Returns cards with `next_cursor` (was ids); category / city / type move into `p_filters` (same keys as `feed_page`). | `invalid_input`, `unauthenticated` | high | postCardPages.ts:110 |
-| `set_post_reaction` | core | 1:1 | `set_post_reaction(p_post_id: string, p_reaction_type: string) → string` | `p_reaction_type` like \| support \| thanks; a reaction is removed by deleting the caller's `post_reactions` row. | `account_not_active`, `invalid_reaction_type`, `post_not_found`, `unauthenticated` | high | SupabasePostEngagementRepository.ts:106 |
+| `set_post_reaction` | core | 1:1 | `set_post_reaction(p_post_id: string, p_reaction_type: string) → string` | `p_reaction_type` like \| support \| thanks; a reaction is removed by deleting the caller's `post_reactions` row. | `account_not_active`, `invalid_reaction_type`, `post_not_found`, `unauthenticated` | high | SupabasePostEngagementRepository.ts:83 |
 | `upsert_post_actor_identity` | core | 1:1 | `upsert_post_actor_identity(p_hide_from_counterparty: boolean, p_identity_visibility?: string, p_post_id: string, p_surface_visibility: string) → undefined` | Same three arguments plus an optional `p_identity_visibility`; errors are P0001 codes (`not_participant`, `followers_only_requires_public_profile`). The owner of a delivered post also moves `posts.visibility` (M02, built). | `account_not_active`, `followers_only_requires_public_profile` †, `invalid_identity_visibility`, `invalid_surface_visibility`, `not_participant`, `post_not_found`, `unauthenticated` | high | postActorIdentityMethods.ts:47 |
 | `chats` (table) | core | 1:1 | see `infrastructure-supabase/src/chat/` |  |  |  | closureMethods.ts:110 |
 | `item_subcategories` (table) | core | 1:1 | see `infrastructure-supabase/src/marketplace/` |  |  |  | postCatalog.ts:54 |
 | `post_actor_identity` (table) | core | CHANGED | table `post_actor_identity` | A member reads only their own row. The projection `projectActorIdentityForViewer` is no longer run on the device: the server masks the owner in `post_card` and the author in `post_comments_page` (M02, built). |  | high | postActorIdentityMethods.ts:27 |
 | `post_closures` (table) | core | 1:1 | table `post_closures` | The owner reads `purge_after`: the end of the seven-day reopen window of a post deleted without a recipient. |  | high | postCardExtras.ts:29 |
-| `post_comment_reactions` (table) | core | 1:1 | table `post_comment_reactions` | Same shape. |  | high | SupabasePostEngagementRepository.ts:146, SupabasePostEngagementRepository.ts:153 |
-| `post_comments` (table) | core | CHANGED | table `post_comments`<br>`post_comments_page(p_cursor?: Json, p_limit?: number, p_parent_comment_id?: string, p_post_id: string) → { author_avatar_url: string author_display_name: string author_id: string author_identity_masked: boolean author_share_handle: string body: string created_at: string edited_at: string id: string mention_user_ids: stri...`<br>`delete_post_comment(p_comment_id: string) → undefined` | `comment_id` → `id`. Lists should use `post_comments_page` (keyset, author fields and viewer reaction included). Delete → `delete_post_comment`. | `comment_not_found`, `unauthenticated` | high | SupabasePostEngagementRepository.ts:120 |
+| `post_comment_reactions` (table) | core | 1:1 | table `post_comment_reactions` | Same shape. |  | high | SupabasePostEngagementRepository.ts:123, SupabasePostEngagementRepository.ts:130 |
+| `post_comments` (table) | core | CHANGED | table `post_comments`<br>`post_comments_page(p_cursor?: Json, p_limit?: number, p_parent_comment_id?: string, p_post_id: string) → { author_avatar_url: string author_display_name: string author_id: string author_identity_masked: boolean author_share_handle: string body: string created_at: string edited_at: string id: string mention_user_ids: stri...`<br>`delete_post_comment(p_comment_id: string) → undefined` | `comment_id` → `id`. Lists should use `post_comments_page` (keyset, author fields and viewer reaction included). Delete → `delete_post_comment`. | `comment_not_found`, `unauthenticated` | high | SupabasePostEngagementRepository.ts:97 |
 | `post_handoffs` (table) | core | CHANGED | see `infrastructure-supabase/src/housing/` |  |  |  | postCardExtras.ts:41 |
 | `post_kinds` (table) | core | 1:1 | see `infrastructure-supabase/src/marketplace/` |  |  |  | postCatalog.ts:56 |
 | `post_media` (table) | core | 1:1 | see `infrastructure-supabase/src/marketplace/` |  |  |  | ownPendingCovers.ts:30, postMediaWrites.ts:41, postRepoQueries.ts:24 |
 | `post_private_locations` (table) | core | 1:1 | see `infrastructure-supabase/src/housing/` |  |  |  | postRepoQueries.ts:35, postWriteMethods.ts:46 |
-| `post_reactions` (table) | core | 1:1 | table `post_reactions` | `reaction_id` is gone (key is post + user). |  | high | SupabasePostEngagementRepository.ts:88, SupabasePostEngagementRepository.ts:101 |
-| `post_stats` (table) | core | 1:1 | table `post_stats` | Counters of a post (reactions, comments, shares); no row until the first one. |  | high | SupabasePostEngagementRepository.ts:71 |
+| `post_reactions` (table) | core | 1:1 | table `post_reactions` | `reaction_id` is gone (key is post + user). |  | high | SupabasePostEngagementRepository.ts:65, SupabasePostEngagementRepository.ts:78 |
+| `post_stats` (table) | core | 1:1 | table `post_stats` | Counters of a post (reactions, comments, shares); no row until the first one. |  | high | SupabasePostEngagementRepository.ts:48 |
 | `posts` (table) | core | CHANGED | see `infrastructure-supabase/src/admin/` |  |  |  | closureMethods.ts:130, getMyPostsPage.ts:34, postRepoQueries.ts:73, postWriteMethods.ts:59, postWriteMethods.ts:104, postWriteMethods.ts:126, postWriteMethods.ts:149 |
 | `saved_posts` (table) | core | 1:1 | table `saved_posts` | Same columns. The upsert becomes insert-ignore-duplicate (no update grant). The saved-posts page hydrates ids with `post_cards`. |  | high | savedPostsMethods.ts:26, savedPostsMethods.ts:32, savedPostsMethods.ts:38, savedPostsMethods.ts:55 |
 | `users` (table) | core | CHANGED | see `infrastructure-supabase/src/admin/` |  |  |  | closureMethods.ts:137, postCardExtras.ts:50 |
@@ -607,8 +626,8 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `rpc_follow_suggestions` | later | 1:1 | `rpc_follow_suggestions(p_limit?: number) → { avatar_url: string city_name: string display_name: string followers_count: number reason: string score: number share_handle: string user_id: string verification_level: number }[]` | `p_limit` (1-30); members with a public profile the caller does not follow and has no block with, ranked by mutual follows, city and followers, with a `reason` (migration 0031, M03 built). |  | high | SupabaseFollowSuggestionsRepository.ts:35 |
-| `rpc_profile_completeness` | later | 1:1 | `rpc_profile_completeness(p_user_id?: string) → Json` | The caller's own score (0-100), `missing` parts and verification flags; another member's id is refused `forbidden` (migration 0031, M04 built). |  | high | SupabaseFollowSuggestionsRepository.ts:51 |
+| `rpc_follow_suggestions` | later | 1:1 | `rpc_follow_suggestions(p_limit?: number) → { avatar_url: string city_name: string display_name: string followers_count: number reason: string score: number share_handle: string user_id: string verification_level: number }[]` | `p_limit` (1-30); members with a public profile the caller does not follow and has no block with, ranked by mutual follows, city and followers, with a `reason` (migration 0031, M03 built). |  | high | SupabaseFollowSuggestionsRepository.ts:20 |
+| `rpc_profile_completeness` | later | 1:1 | `rpc_profile_completeness(p_user_id?: string) → Json` | The caller's own score (0-100), `missing` parts and verification flags; another member's id is refused `forbidden` (migration 0031, M04 built). |  | high | SupabaseFollowSuggestionsRepository.ts:36 |
 
 ### `infrastructure-supabase/src/stats/`
 
@@ -677,7 +696,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `cities` (table) | core | CHANGED | see `infrastructure-supabase/src/cities/` |  |  |  | editableProfileSupabase.ts:40, userReads.ts:49 |
 | `follow_requests` (table) | core | CHANGED | table `follow_requests`<br>`follow_user(p_target: string) → string`<br>`follow_request_decide(p_accept: boolean, p_requester: string) → undefined`<br>`follow_request_cancel(p_target: string) → undefined` | Read-only for clients. Insert → `follow_user`; accept / reject → `follow_request_decide(p_requester, p_accept)`; cancel → `follow_request_cancel(p_target)`. Status column is ruled by the follow_request machine. | `account_not_active`, `blocked_relationship`, `follow_request_cooldown_active`, `invalid_rate_limit_args`, `rate_limited`, `self_follow_forbidden`, `unauthenticated`, `user_unavailable`, `follow_request_not_pending`, `invalid_decision` | high | followRequestMethods.ts:104, followRequestMethods.ts:120, getFollowState.ts:19, getFollowState.ts:26 |
 | `follows` (table) | core | 1:1 | table `follows` | Select and delete direct (`follower_id`, `followed_id`); an edge is created only by `follow_user`. |  | high | followMethods.ts:41, followMethods.ts:53, followMethods.ts:80, followMethods.ts:100, getFollowState.ts:17 |
-| `user_private` (table) | core | 1:1 | table `user_private` | The caller's own row: select, and update of the granted columns (contact phone, address lines, notification preferences, dismiss flags, `basic_info_skipped`, `show_active_status`). |  | high | editableProfileSupabase.ts:24, ownPrivateUpdate.ts:27, SupabaseActiveStatusRepository.ts:20, SupabaseUserRepository.ts:230 |
+| `user_private` (table) | core | 1:1 | table `user_private` | The caller's own row: select, and update of the granted columns (contact phone, address lines, notification preferences, dismiss flags, `basic_info_skipped`, `show_active_status`). |  | high | editableProfileSupabase.ts:24, ownPrivateUpdate.ts:27, SupabaseActiveStatusRepository.ts:21, SupabaseUserRepository.ts:230 |
 | `user_stats` (table) | core | 1:1 | see `infrastructure-supabase/src/search/` |  |  |  | userReads.ts:60 |
 | `users` (table) | core | CHANGED | see `infrastructure-supabase/src/admin/` |  |  |  | editableProfileSupabase.ts:51, followMethods.ts:108, followRequestMethods.ts:130, getFollowState.ts:16, ownUserUpdate.ts:20, searchUsers.ts:28, userReads.ts:97 |
 
@@ -722,13 +741,13 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `<entry.bucket>` (bucket) | core | 1:1 | bucket `post-images` | The device abandoned-upload ledger retries deletion only in its runtime-allowlisted existing buckets: post-images, avatars or chat-media. Uses the current member session and existing own-folder Storage policies; no service-role client or bucket-policy change. |  | medium | abandonedUploads.ts:70 |
-| `avatars` (bucket) | core | 1:1 | bucket `avatars` | Declared in `95_platform/090_storage.sql`: public, JPEG, 512 KB, `<user_id>/avatar.jpg` (and the thumb in the same folder) (M23, verified). |  | high | avatarUpload.ts:164, avatarUpload.ts:177 |
+| `avatars` (bucket) | core | 1:1 | bucket `avatars` | Declared in `95_platform/090_storage.sql`: public, JPEG, 512 KB, `<user_id>/avatar.jpg` (and the thumb in the same folder) (M23, verified). |  | high | avatarUpload.ts:129, avatarUpload.ts:142 |
 | `chat-media` (bucket) | core | 1:1 | bucket `chat-media` | Declared in `95_platform/090_storage.sql`: private, `<user_id>/<chat_id>/<file>`, read through signed URLs by chat members (M23, verified). |  | high | chatMediaUrl.ts:17 |
 | `post-images` (bucket) | core | 1:1 | see `infrastructure-supabase/src/posts/` |  |  |  | usePostShare.ts:69, probeDraftImageAvailability.ts:30, listingImageUpload.ts:36 |
 | `topic = 'user:${userId}:notifications'` (channel) | core | 1:1 | topic `user:<user id>:notifications` | Already on the baseline contract (event `badge`). |  | high | useNotificationInboxBadge.ts:30 |
-| `api_my_pro_status` | core | 1:1 | `api_my_pro_status() → Json` | The caller's Pro status (`is_pro`); the Pro screen reads it. |  | high | pro.tsx:38 |
-| `app_flags` (table) | core | 1:1 | table `app_flags` | Same `select key, enabled`, for signed-in members only (no `anon` grant): before sign-in the compiled defaults apply. After sign-in the same map is `bootstrap_session().flags`. The rows (`world_<slug>_enabled`) are seed data, not part of the baseline (M09, verified). |  | high | featureFlagsComposition.ts:12 |
-| `karma_ledger` (table) | wedge | CHANGED | table `karma_ledger` | `ledger_id` → `id`, `points_delta` → `points`, `ref_type` / `ref_id` → `subject` / `reference`. The total is `my_karma_points()`. |  | high | useKarmaHistory.ts:24 |
+| `api_my_pro_status` | core | 1:1 | see `infrastructure-supabase/src/payments/` |  |  |  | pro.tsx:39 |
+| `app_flags` (table) | core | 1:1 | see `infrastructure-supabase/src/featureFlags/` |  |  |  | featureFlagsComposition.ts:12 |
+| `karma_ledger` (table) | wedge | CHANGED | see `infrastructure-supabase/src/karma/` |  |  |  | useKarmaHistory.ts:24 |
 
 ### Edge Function `_shared`
 
@@ -781,7 +800,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `app_flags` (table) | core | 1:1 | see `apps/mobile` (direct calls outside the adapters) |  |  |  | index.ts:28 |
+| `app_flags` (table) | core | 1:1 | see `infrastructure-supabase/src/featureFlags/` |  |  |  | index.ts:28 |
 
 ### Edge Function `identity-verification-session`
 

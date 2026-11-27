@@ -35,7 +35,8 @@ import { useKeyboardVerticalOffset } from '../../src/lib/platform/useKeyboardVer
 import { CHAT_CONVERSATION_HEADER_HEIGHT } from '../../src/lib/platform/formChromeHeights';
 import { useChatTypingIndicator } from '../../src/hooks/useChatTypingIndicator';
 import { useChatMessageReactions } from '../../src/hooks/useChatMessageReactions';
-import { pickChatImage, uploadChatImageAndSend } from '../../src/services/chatMediaUpload';
+import { useChatImageAttach } from '../../src/hooks/useChatImageAttach';
+import { PermissionSettingsNote } from '../../src/components/PermissionSettingsNote';
 import type { MessageReactionType } from '@kc/domain';
 import { webEnterToSend } from '../../src/components/chat/webEnterToSend';
 import { firstParam } from '../../src/lib/postChatPrefillDecision';
@@ -127,21 +128,9 @@ export default function ChatScreen() {
     [toggleReaction],
   );
 
-  const handleAttachImage = useCallback(async () => {
-    const picked = await pickChatImage();
-    if (!picked) return;
-    try {
-      await uploadChatImageAndSend(chatId, userId, picked, async (payload) => {
-        const server = await container.chatV2Repo.sendMediaMessage(chatId, payload);
-        useChatStore.getState().appendOptimistic(chatId, {
-          ...server,
-          clientId: server.messageId,
-        });
-      });
-    } catch {
-      setNotify({ title: t('chat.errorTitle'), message: t('chat.mediaUploadFailed') });
-    }
-  }, [chatId, userId, t]);
+  const { attach: handleAttachImage, permissionBlocked } = useChatImageAttach({
+    chatId, userId, onError: setNotify,
+  });
 
   // Stable renderItem so the thread KcFlashList doesn't re-render every bubble on
   // each composer keystroke — deps change only on real data changes.
@@ -229,6 +218,7 @@ export default function ChatScreen() {
         {peerTyping ? (
           <Text style={styles.typingHint}>{t('chat.typingIndicator')}</Text>
         ) : null}
+        {permissionBlocked ? <PermissionSettingsNote kind={permissionBlocked} /> : null}
         <View style={styles.inputBar}>
           {/* Composer order follows the reading direction: text field at the reading-start edge
               (right in Hebrew, left in English), then attach, with "send" at the reading-end edge. */}

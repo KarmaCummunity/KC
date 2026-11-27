@@ -50,6 +50,8 @@ const { roles, uc } = vi.hoisted(() => {
   };
 });
 
+const router = vi.hoisted(() => ({ canGoBack: vi.fn(() => true), back: vi.fn(), replace: vi.fn() }));
+vi.mock('expo-router', () => ({ useRouter: () => router }));
 vi.mock('../../../lib/container', () => ({ container: uc }));
 vi.mock('../../../hooks/useAdminRoles', () => ({ useAdminRoles: () => ({ roles: roles.current, isLoading: false }) }));
 vi.mock('../../../services/platformConfirm', () => ({ confirmAction: () => Promise.resolve(true) }));
@@ -86,13 +88,20 @@ function renderScreen() {
 }
 
 beforeEach(() => { vi.clearAllMocks(); });
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  router.back.mockClear();
+  router.replace.mockClear();
+  router.canGoBack.mockReturnValue(true);
+});
 
 describe('WhatsAppAdminScreen', () => {
-  it('refuses a member without whatsapp.manage', () => {
+  it('refuses a member without whatsapp.manage by redirecting back, without a no-permission screen', () => {
     roles.current = ['support'];
     const v = renderScreen();
-    expect(v.getByText(t.forbiddenTitle)).toBeTruthy();
+    expect(v.queryByText(t.forbiddenTitle)).toBeNull();
+    expect(v.getByTestId('silent-unauthorized-fallback')).toBeTruthy();
+    expect(router.back).toHaveBeenCalledTimes(1);
     expect(uc.getWhatsAppAdminOverview.execute).not.toHaveBeenCalled();
   });
 
