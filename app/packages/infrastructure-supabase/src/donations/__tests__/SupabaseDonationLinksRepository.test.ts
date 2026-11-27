@@ -41,6 +41,17 @@ describe('SupabaseDonationLinksRepository', () => {
     await expect(new SupabaseDonationLinksRepository(client as never).addViaEdgeFunction({ categorySlug: 'food', url: 'u', displayName: 'A' })).rejects.toMatchObject({ code: 'unreachable' });
   });
 
+  it('preserves Edge server_error on a failed validation body (DON-7)', async () => {
+    const { client } = clientWithFunction({ data: { ok: false, code: 'server_error' }, error: null });
+    await expect(
+      new SupabaseDonationLinksRepository(client as never).addViaEdgeFunction({
+        categorySlug: 'food',
+        url: 'https://a.example',
+        displayName: 'A',
+      }),
+    ).rejects.toMatchObject({ code: 'server_error' });
+  });
+
   it('deletes by id and reports through the support-thread RPC', async () => {
     const { client, calls } = createFakeClient({ tables: { donation_links: ok(null) }, rpc: { report_donation_link: ok(null) } });
     const repo = new SupabaseDonationLinksRepository(client);

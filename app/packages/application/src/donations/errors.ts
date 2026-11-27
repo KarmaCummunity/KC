@@ -1,10 +1,12 @@
+import type { ValidateDonationLinkEdgeErrorCode } from './validateDonationLinkContract';
+
+/**
+ * Domain error codes for donation-link flows.
+ * Edge-emitted codes come from `ValidateDonationLinkEdgeErrorCode`;
+ * `network` / `unknown` are client-only fallbacks (transport / unmapped).
+ */
 export type DonationLinkErrorCode =
-  | 'invalid_input'
-  | 'invalid_url'
-  | 'unreachable'
-  | 'rate_limited'
-  | 'unauthorized'
-  | 'forbidden'
+  | ValidateDonationLinkEdgeErrorCode
   | 'network'
   | 'unknown';
 
