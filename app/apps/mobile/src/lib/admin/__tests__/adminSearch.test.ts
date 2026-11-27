@@ -1,12 +1,13 @@
 // Mapped to spec: FR-ADMIN-011 — admin portal search (#2081): Hebrew + English, RBAC-filtered, ranked.
 import { describe, expect, it } from 'vitest';
-import { ADMIN_DESTINATIONS } from '../adminDestinations';
+import { ADMIN_SEARCH_ENTRIES } from '../adminSearchEntries';
 import { searchAdminDestinations, visibleDestinations } from '../adminSearch';
 import { bothLocaleBundles } from '../../../i18n/useLocaleBundle';
 
 const { he, en } = bothLocaleBundles();
 const labels = { he: he.admin, en: en.admin };
-const keys = (q: string, dest = ADMIN_DESTINATIONS) => searchAdminDestinations(q, dest, labels).map((d) => d.key);
+const keys = (q: string, dest = ADMIN_SEARCH_ENTRIES) =>
+  searchAdminDestinations(q, dest, labels).map((d) => d.key);
 
 describe('searchAdminDestinations', () => {
   it('finds a screen by its Hebrew title', () => {
@@ -21,6 +22,14 @@ describe('searchAdminDestinations', () => {
   it('finds a screen by a word it manages that is not in the title', () => {
     expect(keys('חסימה')).toContain('users');
     expect(keys('kpi')).toContain('stats');
+  });
+
+  it('finds a finance setting and an action by Hebrew or English labels/keywords', () => {
+    expect(keys('חשבונות')).toContain('moneyAccounts');
+    expect(keys('accounts')).toContain('moneyAccounts');
+    expect(keys('תורמים')).toContain('moneyDonors');
+    expect(keys('onboarding')).toContain('onboardingReplay');
+    expect(keys('ארגונים')).toContain('orgApprovals');
   });
 
   it('ranks a title that starts with the query before one that only contains it', () => {
@@ -44,14 +53,24 @@ describe('searchAdminDestinations', () => {
 
 describe('visibleDestinations (RBAC)', () => {
   it('hides destinations the roles lack the permission for, so search cannot surface them', () => {
-    const none = visibleDestinations(ADMIN_DESTINATIONS, []);
+    const none = visibleDestinations(ADMIN_SEARCH_ENTRIES, []);
     expect(none.every((d) => d.perm == null)).toBe(true);
     expect(keys('כספים', none)).toEqual([]);
     expect(keys('דיווחים', none)).toEqual(['reports']);
+    expect(keys('accounts', none)).toEqual([]);
+    expect(keys('onboarding', none)).toEqual(['onboardingReplay']);
   });
 
   it('shows a permissioned destination to a role that holds it', () => {
-    const all = visibleDestinations(ADMIN_DESTINATIONS, ['super_admin']);
-    expect(all.map((d) => d.key)).toContain('money');
+    const all = visibleDestinations(ADMIN_SEARCH_ENTRIES, ['super_admin']);
+    expect(all.map((d) => d.key)).toEqual(
+      expect.arrayContaining(['money', 'moneyAccounts', 'moneyDonors', 'orgApprovals']),
+    );
+  });
+
+  it('hides the donors setting without money.transparency', () => {
+    const mod = visibleDestinations(ADMIN_SEARCH_ENTRIES, ['moderator']);
+    expect(mod.map((d) => d.key)).toContain('moneyAccounts');
+    expect(mod.map((d) => d.key)).not.toContain('moneyDonors');
   });
 });

@@ -127,6 +127,9 @@ playwright.config.*                         @navesarussi
 /scripts/release/prod-dryrun-*.mjs           @navesarussi
 /scripts/release/service-role-key.mjs       @navesarussi
 
+/scripts/asc-auto-candidate.mjs              @navesarussi
+/docs/release/asc-qualified-candidate.json   @navesarussi
+
 # Exceptions — script self-tests stay unowned so agents may add tests freely.
 # Deleting a test or removing assertions is caught by the test-integrity guard
 # (scripts/check-test-integrity.mjs) instead.

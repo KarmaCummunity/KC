@@ -33,6 +33,7 @@ export const notificationsHe = {
   permissionRetry: 'ניסיון נוסף',
   permissionLoading: 'בודקים את הרשאת ההתראות',
   permissionNotRequested: 'ההתראות עדיין לא מופעלות במכשיר הזה',
+  permissionExplainer: 'KC יכולה להודיע לך על הודעות, תגובות ועדכונים שקשורים אליך. אפשר לכבות התראות אחר כך בהגדרות.',
   permissionError: 'לא הצלחנו להפעיל התראות. אפשר לנסות שוב',
   permissionGranted: 'הרשאת התראות מופעלת',
   permissionDenied: 'הרשאה חסומה בהגדרות המכשיר',
@@ -40,11 +41,11 @@ export const notificationsHe = {
   tokenNotRegistered: 'המכשיר טרם נרשם',
   openOsSettings: 'פתיחת הגדרות',
 
-  enablePushTitle: 'להישאר בקשר?',
-  enablePushBodyFromChat: 'נשלח לך התראה כשמישהו עונה לך — גם כשהאפליקציה סגורה.',
-  enablePushBodyFromPost: 'נשלח לך התראה כשמישהו פנה בנוגע לפוסט שלך — גם כשהאפליקציה סגורה.',
-  enablePushAccept: 'כן, להפעיל',
-  enablePushDecline: 'אולי בפעם אחרת',
+  enablePushTitle: 'התראות',
+  enablePushBodyFromChat: 'KC יכולה לשלוח התראה כשמישהו עונה לך, גם כשהאפליקציה סגורה. אפשר לכבות התראות אחר כך בהגדרות.',
+  enablePushBodyFromPost: 'KC יכולה לשלוח התראה כשמישהו פונה בנוגע לפוסט שלך, גם כשהאפליקציה סגורה. אפשר לכבות התראות אחר כך בהגדרות.',
+  enablePushAccept: 'הפעלת התראות',
+  enablePushDecline: 'לא עכשיו',
 
   // The push worker renders these as well, through strings.he.generated.json.
   chatTitle: '{{actorName}}',

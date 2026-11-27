@@ -10,7 +10,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { iconSize, useTheme, Text } from '@kc/ui';
 import {
-  isPostEditableByOwner, postOwnerActions,
+  canAccessPostEditor, isPostEditableByOwner, postOwnerActions,
   type Category, type ItemCondition, type LocationDisplayLevel, type PostVisibility,
 } from '@kc/domain';
 import { isPostError } from '@kc/application';
@@ -29,6 +29,7 @@ import { getSupabaseImageThumbUrl, getSupabasePublicImageUrl } from '../../src/l
 import { useAddressStateWithCityReset } from '../../src/hooks/useAddressStateWithCityReset';
 import { useEditPostValidation } from '../../src/hooks/useEditPostValidation';
 import { EmptyState } from '../../src/components/EmptyState';
+import { SilentUnauthorizedFallback } from '../../src/components/permissions/SilentUnauthorizedFallback';
 import { EditPostFormScrollContent } from '../../src/components/post/EditPostFormScrollContent';
 import { mapPostErrorToHebrew } from '../../src/services/postMessages';
 import { NotifyModal } from '../../src/components/NotifyModal';
@@ -157,7 +158,7 @@ export default function EditPostScreen() {
   const onMissingOwner = useCallback(() => {
     setNotify({ title: t('post.editPost.notifyErrorTitle'), message: t('post.editPost.needReauthBody') });
   }, [t]);
-  const { uploadingCount, pickAndUpload: handlePickImages, cancelUploads } = usePostImageUploads({
+  const { uploadingCount, permissionBlocked, pickAndUpload: handlePickImages, cancelUploads } = usePostImageUploads({
     ownerId: viewerId,
     galleryCount: uploads.length,
     setUploads,
@@ -245,18 +246,8 @@ export default function EditPostScreen() {
     );
   }
 
-  const isOwner = viewerId !== null && post.ownerId === viewerId;
-  const canEdit = isOwner || isSuperAdmin;
-  if (!canEdit) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <EmptyState
-          icon="lock-closed-outline"
-          title={t('post.editPost.forbiddenTitle')}
-          subtitle={t('post.editPost.forbiddenSubtitle')}
-        />
-      </SafeAreaView>
-    );
+  if (!canAccessPostEditor({ viewerId, ownerId: post.ownerId, isSuperAdmin })) {
+    return <SilentUnauthorizedFallback />;
   }
 
   if (!isPostEditableByOwner(post.status)) {
@@ -334,6 +325,7 @@ export default function EditPostScreen() {
           uploadingCount={uploadingCount}
           onAddPhotos={handlePickImages}
           onCancelUploads={cancelUploads}
+          permissionBlocked={permissionBlocked === 'mediaLibrary'}
           onRemovePhoto={handleRemoveImage}
           title={title}
           onTitleChange={setTitle}
