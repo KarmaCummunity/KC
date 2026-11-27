@@ -43,3 +43,13 @@ jobs:
             -destination 'generic/platform=iOS Simulator' \
             -derivedDataPath "$RUNNER_TEMP/kc-ax-reader-build" \
             CODE_SIGNING_ALLOWED=NO build-for-testing
+      - name: Run reader against synthetic UIKit control, not KC
+        run: |
+          set -euo pipefail
+          xcrun simctl list devices available --json > "$RUNNER_TEMP/ax-devices.json"
+          udid=$(node -e 'const j=require(process.env.RUNNER_TEMP+"/ax-devices.json");const d=Object.values(j.devices).flat().find(d=>d.name.startsWith("iPad")&&d.isAvailable);if(!d)process.exit(1);console.log(d.udid)')
+          xcodebuild -project "$RUNNER_TEMP/kc-ax-reader/KCAXReader.xcodeproj" \
+            -scheme KCAXControlSmoke -configuration Debug -sdk iphonesimulator \
+            -destination "platform=iOS Simulator,id=$udid" \
+            -derivedDataPath "$RUNNER_TEMP/kc-ax-control-build" \
+            CODE_SIGNING_ALLOWED=NO test

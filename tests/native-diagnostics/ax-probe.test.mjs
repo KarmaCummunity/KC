@@ -33,9 +33,12 @@ test('compile smoke cannot launch/build KC, read secrets, or publish raw evidenc
   assert.match(workflow, /KCAXReader.xcodeproj/);
   assert.match(workflow, /CODE_SIGNING_ALLOWED=NO build-for-testing/);
   assert.doesNotMatch(workflow, /test-without-building|xcodebuild[^\n]* KC[.]/);
-  assert.doesNotMatch(workflow, /secrets\.|expo prebuild|simctl|maestro|upload-artifact|curl |pnpm install/);
+  assert.doesNotMatch(workflow, /secrets\.|expo prebuild|maestro|upload-artifact|curl |pnpm install/);
   const reader = readFileSync(new URL('./RawAXTests.swift', import.meta.url), 'utf8');
   assert.match(reader, /prefix\(131072\)/);
   assert.match(reader, /XCTAttachment/);
   assert.doesNotMatch(reader, /app\.(?:launch|activate|terminate)\(|\.tap\(|coordinate\(/);
+  assert.match(reader, /KC_AX_SMOKE_CONTROL/);
+  assert.match(reader, /control\.launch\(\)/);
+  assert.match(reader, /diagnostic\.axcontrol/);
 });
