@@ -247,6 +247,16 @@ jobs:
           psql "$DB_URL" -X -v ON_ERROR_STOP=1 -q -c "alter role kc_api password '$api_password'"
           api_url="$(sed -E "s#://[^@]*@#://kc_api:${api_password}@#" <<<"${DB_URL%/*}/kc_api_test")"
           echo "KC_API_TEST_API_DATABASE_URL=$api_url" >> "$GITHUB_ENV"
+          # The API's compatibility engine is compared, request by request, with the stack's own
+          # PostgREST over the stack's database (ADR-010). Local-only values of a throwaway stack.
+          eval "$(supabase status -o env | grep -E '^(REST_URL|ANON_KEY|JWT_SECRET)=')"
+          echo "::add-mask::$JWT_SECRET"
+          {
+            echo "KC_API_TEST_POSTGREST_URL=$REST_URL"
+            echo "KC_API_TEST_POSTGREST_ANON_KEY=$ANON_KEY"
+            echo "KC_API_TEST_POSTGREST_JWT_SECRET=$JWT_SECRET"
+            echo "KC_API_TEST_POSTGREST_DATABASE_URL=$DB_URL"
+          } >> "$GITHUB_ENV"
 
       # KC_API_TEST_DISPOSABLE_DATABASE also collects the platform suites, which create roles
       # and a schema of their own: allowed here, the database is thrown away with the stack.

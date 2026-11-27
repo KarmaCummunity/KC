@@ -92,7 +92,7 @@ export function createSqlBackedClient(
       headers: lowerCaseHeaders(init?.headers),
       body: typeof init?.body === 'string' ? init.body : null,
     };
-    const response = await handleCompatRequest(request, schema, run);
+    const response = await handleCompatRequest(request, schema, run, { isVisitor: caller === null });
     observe?.(request, response);
     return new Response(response.body, { status: response.status, headers: response.headers });
   };

@@ -32,10 +32,19 @@ export interface TestMember {
  */
 export class KcTestDatabase {
   /** Superuser connection: seeding and assertions the members themselves may not make. */
-  readonly admin = new Pool({ connectionString: KC_DATABASE_URL, max: 4 });
-  private readonly database = new IdentityDatabase(this.admin);
-  private readonly schema = createSchemaCacheSource(<Row>(text: string) => this.admin.query(text) as unknown as Promise<{ rows: Row[] }>);
+  readonly admin: Pool;
+  private readonly database: IdentityDatabase;
+  private readonly schema: ReturnType<typeof createSchemaCacheSource>;
   private readonly created: string[] = [];
+  /** Statements the clients handed out here are running right now. */
+  private readonly running = new Set<Promise<unknown>>();
+
+  /** @param connectionString The database to work on; the suites' own throwaway KC database unless another is named. */
+  constructor(connectionString: string | undefined = KC_DATABASE_URL) {
+    this.admin = new Pool({ connectionString, max: 4 });
+    this.database = new IdentityDatabase(this.admin);
+    this.schema = createSchemaCacheSource(<Row>(text: string) => this.admin.query(text) as unknown as Promise<{ rows: Row[] }>);
+  }
 
   async newMember(): Promise<TestMember> {
     const userId = randomUUID();
@@ -59,9 +68,23 @@ export class KcTestDatabase {
     const run = (statement: { text: string; values: readonly unknown[] }) => {
       const work = (session: { query: Pool['query'] }) =>
         session.query<ResultRow>(statement.text, [...statement.values]).then((result) => result.rows[0]);
-      return caller ? this.database.runAs(caller, work) : this.database.runAnonymous(work);
+      const result = caller ? this.database.runAs(caller, work) : this.database.runAnonymous(work);
+      this.running.add(result);
+      const forget = () => this.running.delete(result);
+      result.then(forget, forget);
+      return result;
     };
     return createSqlBackedClient(caller, this.schema, run, observe) as unknown as Client;
+  }
+
+  /**
+   * Resolves once no statement of a client is running and their observers
+   * have been told: an adapter that asked several things at once and failed
+   * on one has stopped waiting, but the others are still on their way.
+   */
+  async settled(): Promise<void> {
+    while (this.running.size > 0) await Promise.allSettled([...this.running]);
+    await new Promise<void>((resolve) => setImmediate(resolve));
   }
 
   /** Removes the members this instance created (their rows cascade) and closes the pool. */
