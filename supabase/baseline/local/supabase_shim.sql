@@ -75,6 +75,9 @@ create table if not exists realtime.messages (
 );
 alter table realtime.messages enable row level security;
 grant select, insert on realtime.messages to authenticated;
+-- KC's own realtime gateway (ADR-011) reads the queue, writes authorization probes and prunes
+-- old rows as the service role.
+grant select, insert, delete on realtime.messages to service_role;
 
 create or replace function realtime.topic()
 returns text
@@ -84,12 +87,18 @@ as $$
   select nullif(current_setting('realtime.topic', true), '');
 $$;
 
+-- The notification is delivered when the transaction commits, so a listener never hears of a
+-- row it cannot read yet (ADR-011 section 3).
 create or replace function realtime.send(payload jsonb, event text, topic text, private boolean default true)
 returns void
 language sql
 as $$
-  insert into realtime.messages (payload, event, topic, private, extension)
-  values (payload, event, topic, private, 'broadcast');
+  with sent as (
+    insert into realtime.messages (payload, event, topic, private, extension)
+    values (payload, event, topic, private, 'broadcast')
+    returning id
+  )
+  select pg_notify('kc_realtime', id::text) from sent;
 $$;
 
 -- Minimal storage schema: the bucket registry, the object table storage policies are
@@ -114,8 +123,14 @@ create table if not exists storage.objects (
   metadata jsonb,
   created_at timestamptz default now()
 );
+-- One object per name in a bucket, as on the platform (its index has the same name): an upload
+-- never replaces a file, and the storage service relies on it when two requests race.
+create unique index if not exists bucketid_objname on storage.objects (bucket_id, name);
 alter table storage.objects enable row level security;
 grant select, insert, update, delete on storage.objects to authenticated, service_role;
+-- KC's own storage service (ADR-012) reads a bucket's rules (public, size limit, allowed types)
+-- as the service role.
+grant select on storage.buckets to service_role;
 
 create or replace function storage.foldername(name text)
 returns text[]

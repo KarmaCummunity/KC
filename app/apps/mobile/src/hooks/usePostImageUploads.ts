@@ -7,6 +7,7 @@
 
 import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import { pickPostImages, uploadPostImageBatch, type UploadedAsset } from '../services/imageUpload';
+import { isBlockedMediaPick, type MediaPermissionKind } from '../lib/mediaPermissionTypes';
 import { createOrderedCommitter, isUploadCancelled } from '../services/uploadControl';
 
 export interface PostImageUploadSummary {
@@ -31,6 +32,7 @@ interface Args {
 
 export function usePostImageUploads({ ownerId, galleryCount, setUploads, onMissingOwner, onFailures }: Args) {
   const [uploadingCount, setUploadingCount] = useState(0);
+  const [permissionBlocked, setPermissionBlocked] = useState<MediaPermissionKind | null>(null);
   const controllers = useRef(new Set<AbortController>());
   const mounted = useRef(true);
 
@@ -55,18 +57,25 @@ export function usePostImageUploads({ ownerId, galleryCount, setUploads, onMissi
       return;
     }
     const picked = await pickPostImages(galleryCount + uploadingCount);
-    if (picked.length === 0 || !mounted.current) return;
+    if (!mounted.current) return;
+    if (isBlockedMediaPick(picked)) {
+      setPermissionBlocked(picked.kind);
+      return;
+    }
+    setPermissionBlocked(null);
+    if (picked.status !== 'ok' || picked.value.length === 0) return;
+    const images = picked.value;
 
     const controller = new AbortController();
     controllers.current.add(controller);
-    setUploadingCount((n) => n + picked.length);
-    const commit = createOrderedCommitter<UploadedAsset>(picked.length, (values, released) => {
+    setUploadingCount((n) => n + images.length);
+    const commit = createOrderedCommitter<UploadedAsset>(images.length, (values, released) => {
       if (!mounted.current) return;
       if (values.length > 0) setUploads((prev) => [...prev, ...values]);
       setUploadingCount((n) => Math.max(0, n - released));
     });
     try {
-      const results = await uploadPostImageBatch(picked, ownerId, { signal: controller.signal, onSettled: commit });
+      const results = await uploadPostImageBatch(images, ownerId, { signal: controller.signal, onSettled: commit });
       const failures = results.flatMap((r) => (r.status === 'rejected' && !isUploadCancelled(r.reason) ? [r.reason] : []));
       const cancelled = results.filter((r) => r.status === 'rejected' && isUploadCancelled(r.reason)).length;
       if (failures.length > 0 && mounted.current) {
@@ -78,5 +87,5 @@ export function usePostImageUploads({ ownerId, galleryCount, setUploads, onMissi
     }
   }, [ownerId, galleryCount, uploadingCount, setUploads, onMissingOwner, onFailures]);
 
-  return { uploadingCount, pickAndUpload, cancelUploads };
+  return { uploadingCount, permissionBlocked, pickAndUpload, cancelUploads };
 }

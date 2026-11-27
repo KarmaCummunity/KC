@@ -22,6 +22,7 @@ import { useLocaleBundle } from '../../../src/i18n/useLocaleBundle';
 import { useAdminScreenTitle } from '../../../src/components/admin/useAdminScreenTitle';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../../src/components/RouteErrorBoundary';
+import { SilentUnauthorizedFallback } from '../../../src/components/permissions/SilentUnauthorizedFallback';
 
 export default function AdminPersonScreen() {
   const styles = useStyles();
@@ -40,7 +41,7 @@ export default function AdminPersonScreen() {
     return <View style={styles.center}><ActivityIndicator color={colors.primary} /></View>;
   }
   if (!hasPermission(roles, 'admins.view')) {
-    return <View style={styles.center}><Text style={styles.title}>{L.admin.admins.forbiddenTitle}</Text></View>;
+    return <SilentUnauthorizedFallback href="/(admin)" />;
   }
   const avatarUrl = person?.avatarUrl ?? basics.data?.avatarUrl ?? null;
   if (!person && !basics.data) {

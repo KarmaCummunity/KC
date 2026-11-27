@@ -39,6 +39,10 @@ env:
   # that default (a remote app_flags row would beat it, and kc-dev has none). Read by Expo at
   # prebuild/bundle time, so it applies to both build steps below.
   EXPO_PUBLIC_LAUNCH_EMAIL_AUTH: '1'
+  # kc-dev counts as working after this many seed-user sign-ins in a row (scripts/maestro-wait-kc-dev.mjs),
+  # both before the emulator boots and before a failed flow's retry. On 26-27 Nov 2026 it flapped: one
+  # good sign-in between HTTP 504s, and the retry that followed failed.
+  KC_WAIT_STREAK: '3'
 
 jobs:
   # The APK is built in parallel by every caller; only the emulator job below takes the single kc-dev
@@ -169,9 +173,10 @@ jobs:
     concurrency:
       group: kc-dev-maestro-emulator
       queue: max
-    # Flows (55) + up to 125 for a kc-dev test slot held by another suite, with slack. Time spent
-    # queued on the concurrency group does not count: the job has not started.
-    timeout-minutes: 190
+    # Flows (55) + up to 125 for a kc-dev test slot held by another suite + up to 45 for kc-dev to
+    # sign in again, with slack. Time spent queued on the concurrency group does not count: the job
+    # has not started.
+    timeout-minutes: 240
     permissions:
       contents: read
       actions: read # the kc-dev test slot reads which jobs are running
@@ -244,6 +249,17 @@ jobs:
           KC_DEV_SLOT_YIELD_TO_QUEUE: ${{ inputs.yield_to_queue && 'true' || '' }}
         # An older checked-out tree (e.g. mobile-nightly's pinned SHA) has no throttle yet.
         run: if [ -f scripts/kc-dev-slot.mjs ]; then node scripts/kc-dev-slot.mjs; else echo 'no kc-dev slot script in this tree'; fi
+
+      # kc-dev must sign the seed user in three times in a row before the emulator boots, and the
+      # step waits up to 45 min for that (scripts/maestro-wait-kc-dev.mjs). An outage then delays
+      # the merge group instead of failing it: a failed group drops its PR from the merge queue and
+      # rebuilds every group behind it. After 45 min the step fails with the outage as the reason.
+      - name: Wait for kc-dev to sign the seed user in
+        if: steps.slot.outputs.yielded != 'true'
+        timeout-minutes: 50
+        env:
+          KC_WAIT_TIMEOUT_MS: '2700000'
+        run: node scripts/maestro-wait-kc-dev.mjs
 
       - name: Recheck candidate after waiting for DEV slot
         if: github.event_name == 'merge_group'

@@ -16,6 +16,7 @@ import { WhatsAppTemplatesPanel } from '../../components/admin/whatsapp/WhatsApp
 import { WhatsAppSendLimitsPanel } from '../../components/admin/whatsapp/WhatsAppSendLimitsPanel';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../components/RouteErrorBoundary';
+import { SilentUnauthorizedFallback } from '../../components/permissions/SilentUnauthorizedFallback';
 
 export function WhatsAppAdminScreen() {
   const styles = useStyles();
@@ -28,7 +29,7 @@ export function WhatsAppAdminScreen() {
     return <View style={styles.center}><Text>{t.loading}</Text></View>;
   }
   if (!can('whatsapp.manage')) {
-    return <View style={styles.center}><Text style={styles.forbidden}>{t.forbiddenTitle}</Text></View>;
+    return <SilentUnauthorizedFallback href="/(admin)" />;
   }
   const canConfigure = can('whatsapp.configure');
 

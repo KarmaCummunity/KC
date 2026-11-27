@@ -72,3 +72,66 @@ test('trigger explicit VERSION edit remains authoritative after fresh substantiv
  f.commit(f.work,'app/VERSION','2.0.0\n','explicit release');f.git(f.work,'push','origin','dev');f.git(f.rival,'pull','--ff-only');const newer=f.commit(f.rival,'another.txt','new','merge newer');f.git(f.rival,'push','origin','dev');run(f);assert.equal(f.git(f.work,'rev-parse','HEAD'),newer);assert.equal(readFileSync(join(f.work,'app/VERSION'),'utf8'),'2.0.0\n');
  }finally{f.cleanup();}
 });
+
+// The bump waits for an empty merge queue: a push to dev rebuilds every waiting merge group.
+// A group is a `gh-readonly-queue/dev/pr-<N>-<base sha>` ref on the remote.
+const queueRef = (pr, base) => `refs/heads/gh-readonly-queue/dev/pr-${pr}-${base}`;
+
+/** Push a merge group that still waits behind the landed merge: a commit that is not on dev. */
+function pushWaitingGroup(f, pr) {
+  const base = f.git(f.rival, 'rev-parse', 'HEAD');
+  f.git(f.rival, 'checkout', '--detach');
+  const head = f.commit(f.rival, `queued-${pr}.txt`, 'queued', `queued pr ${pr}`);
+  f.git(f.rival, 'push', 'origin', `${head}:${queueRef(pr, base)}`);
+  f.git(f.rival, 'checkout', 'dev');
+  return { ref: queueRef(pr, base), head };
+}
+
+test('a merge that leaves groups waiting in the queue pushes no bump', () => {
+  const f = fixture();
+  try {
+    pushWaitingGroup(f, 7);
+    const result = run(f);
+    assert.equal(f.git(f.work, 'rev-parse', 'HEAD'), f.trigger);
+    assert.equal(f.git(f.remote, 'rev-parse', 'dev'), f.trigger);
+    assert.match(result.stdout, /Merge groups are waiting behind this merge/);
+  } finally { f.cleanup(); }
+});
+
+test('the landed merge\'s own group ref, not removed yet, does not defer the bump', () => {
+  const f = fixture();
+  try {
+    f.git(f.rival, 'push', 'origin', `${f.trigger}:${queueRef(5, 'a'.repeat(40))}`);
+    run(f);
+    assert.equal(readFileSync(join(f.work, 'app/VERSION'), 'utf8'), '1.0.1\n');
+    assert.equal(f.git(f.work, 'rev-parse', 'HEAD^'), f.trigger);
+  } finally { f.cleanup(); }
+});
+
+test('the merge that empties the queue pushes one bump for the whole burst', () => {
+  const f = fixture();
+  try {
+    const waiting = pushWaitingGroup(f, 7);
+    run(f);
+    // The waiting group lands: dev moves to its commit and GitHub removes its ref.
+    f.git(f.rival, 'push', 'origin', `${waiting.head}:refs/heads/dev`, `:${waiting.ref}`);
+    run(f);
+    assert.equal(readFileSync(join(f.work, 'app/VERSION'), 'utf8'), '1.0.1\n');
+    assert.equal(f.git(f.work, 'log', '-1', '--format=%s', 'HEAD^'), 'queued pr 7');
+    assert.equal(f.git(f.work, 'show', '--format=', '--name-only', 'HEAD'), 'app/VERSION');
+  } finally { f.cleanup(); }
+});
+
+test('an ID commit is pushed even while groups wait, and the bump is still deferred', () => {
+  const f = fixture();
+  try {
+    const ids = "import { existsSync, renameSync } from 'node:fs'; if (existsSync('pending-id')) renameSync('pending-id', 'assigned-id');\n";
+    f.commit(f.rival, 'scripts/spec-ids.mjs', ids, 'fixture assigner');
+    f.commit(f.rival, 'pending-id', 'placeholder', 'merge placeholder');
+    f.git(f.rival, 'push', 'origin', 'dev');
+    pushWaitingGroup(f, 9);
+    run(f);
+    assert.equal(f.git(f.work, 'log', '-1', '--format=%s'), 'chore(release): assign spec ids');
+    assert.equal(readFileSync(join(f.work, 'app/VERSION'), 'utf8'), '1.0.0\n');
+  } finally { f.cleanup(); }
+});
