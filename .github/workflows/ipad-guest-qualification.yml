@@ -145,6 +145,7 @@ jobs:
             > "$RUNNER_TEMP/ipad-evidence/interaction.log" 2>&1 || initial_status=$?
           capture_native_diagnostics
           cp "$RUNNER_TEMP/ipad-evidence/native-console.log" "$RUNNER_TEMP/ipad-evidence/initial-console.log"
+          cp "$RUNNER_TEMP/ipad-evidence/final-screen.png" "$RUNNER_TEMP/ipad-evidence/initial-screen.png" || true
           if [ "$initial_status" -ne 0 ]; then
             # Preserve the failed first-launch screen/tree before a warm control.
             # This independent reader neither activates nor relaunches KC.
