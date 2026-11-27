@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
   effectiveVerificationLevel,
+  isAtMaxLiveVerificationLevel,
   isProfileComplete,
+  MAX_LIVE_VERIFICATION_LEVEL,
+  meetsVerificationRequirement,
   missingCompleteProfileFields,
   toVerificationLevel,
   type CompleteProfileFields,
@@ -57,5 +60,22 @@ describe('toVerificationLevel', () => {
 
   it('maps anything else to 0', () => {
     expect([null, undefined, 4, -1, '2', 1.5].map(toVerificationLevel)).toEqual([0, 0, 0, 0, 0, 0]);
+  });
+});
+
+describe('MAX_LIVE_VERIFICATION_LEVEL / meetsVerificationRequirement (#1037)', () => {
+  it('treats complete profile as the live maximum until Didit ships', () => {
+    expect(MAX_LIVE_VERIFICATION_LEVEL).toBe(1);
+    expect(isAtMaxLiveVerificationLevel(0)).toBe(false);
+    expect(isAtMaxLiveVerificationLevel(1)).toBe(true);
+    expect(isAtMaxLiveVerificationLevel(2)).toBe(true);
+  });
+
+  it('lets level 1 clear gates that nominally require ID verification', () => {
+    expect(meetsVerificationRequirement(0, 1)).toBe(false);
+    expect(meetsVerificationRequirement(1, 1)).toBe(true);
+    expect(meetsVerificationRequirement(1, 2)).toBe(true);
+    expect(meetsVerificationRequirement(0, 2)).toBe(false);
+    expect(meetsVerificationRequirement(2, 2)).toBe(true);
   });
 });

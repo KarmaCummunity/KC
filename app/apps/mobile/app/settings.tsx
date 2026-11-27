@@ -23,7 +23,11 @@ import { AccountIdentityRows } from '../src/components/settings/AccountIdentityR
 import { usePrivateProfileToggle } from '../src/hooks/usePrivateProfileToggle';
 import { useActiveStatusSetting } from '../src/hooks/useActiveStatusSetting';
 import { useSettingsScreenStyles } from '../src/screens/settings.styles';
-import { effectiveVerificationLevel } from '@kc/domain';
+import {
+  effectiveVerificationLevel,
+  isAtMaxLiveVerificationLevel,
+  MAX_LIVE_VERIFICATION_LEVEL,
+} from '@kc/domain';
 import { getUserRepo } from '../src/services/userComposition';
 import { WHATSAPP_BOT_AVAILABLE } from '../src/lib/parkedFeatures';
 
@@ -81,7 +85,9 @@ export default function SettingsScreen() {
             icon="person-outline"
             onPress={() => router.push('/edit-profile')}
           />
-          {userQuery.data && effectiveVerificationLevel(userQuery.data) < 2 ? (
+          {MAX_LIVE_VERIFICATION_LEVEL >= 2 &&
+          userQuery.data &&
+          !isAtMaxLiveVerificationLevel(effectiveVerificationLevel(userQuery.data)) ? (
             <SettingsScreenRow
               testID="settings-row-identity-verification"
               label={t('verification.identity.settingsRow')}

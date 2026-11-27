@@ -58,9 +58,9 @@ export const housingStay = {
     no_show: 'Did not arrive',
   },
   create: {
-    verifyTitle: 'Verify your identity before housing',
+    verifyTitle: 'Complete your profile before housing',
     verifyBody: 'In the housing world you publish and stay only after ID verification (document + selfie), so both sides know who they are meeting.',
-    verifyBodyProfile: 'First complete your profile (name, city, photo, phone, and more). Then verify your identity.',
+    verifyBodyProfile: 'Complete your profile (name, city, photo, phone, and more) to publish or stay in housing.',
     verifyCtaProfile: 'Complete profile',
     verifyCtaIdentity: 'Verify identity',
   },
