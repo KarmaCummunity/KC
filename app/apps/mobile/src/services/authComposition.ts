@@ -8,10 +8,6 @@
 
 import { Platform } from 'react-native';
 import { pickAuthStorage } from './authSecureStorage';
-import * as WebBrowser from 'expo-web-browser';
-import * as AuthSession from 'expo-auth-session';
-import * as AppleAuthentication from 'expo-apple-authentication';
-import * as Crypto from 'expo-crypto';
 import {
   getSupabaseClient,
   SupabaseAccountGateRepository,
@@ -31,14 +27,17 @@ import {
   ResetPasswordUseCase,
   type AuthSession as KcAuthSession,
   type IAuthService,
-  type OpenAuthSession,
-  type PerformAppleSignIn,
 } from '@kc/application';
 import Constants from 'expo-constants';
 import { webBaseUrl } from '../config/featureFlags';
 import { resolveGoogleNativeSignInConfig } from '../lib/auth/googleNativeSignInConfig';
 import { createGoogleIdTokenRequester } from './googleNativeSignIn';
+import { performAppleSignIn } from './appleNativeSignIn';
+import { openAuthSession } from './authBrowserSession';
+import { redirectToGoogleSignInWeb as redirectToGoogleSignInWebImpl } from './authGoogleWebRedirect';
 import { reportUnexpectedSignOut } from '../lib/observability/reportAuthEvent';
+
+export { getOAuthRedirectUri } from './authBrowserSession';
 
 let _authService: IAuthService | null = null;
 let _signUp: SignUpWithEmailUseCase | null = null;
@@ -67,87 +66,11 @@ export function getAuthService(): IAuthService {
   return _authService;
 }
 
-const openAuthSession: OpenAuthSession = async (url, redirectTo) => {
-  const result = await WebBrowser.openAuthSessionAsync(url, redirectTo);
-  if (result.type === 'success') return result.url;
-  return null;
-};
-
-/** Random hex nonce. Apple receives SHA-256(nonce); Supabase verifies the raw value. */
-function generateRawNonce(): string {
-  const bytes = Crypto.getRandomBytes(16);
-  return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
-}
-
-function isAppleCancellation(err: unknown): boolean {
-  return (
-    typeof err === 'object' &&
-    err !== null &&
-    'code' in err &&
-    (err as { code?: string }).code === 'ERR_REQUEST_CANCELED'
-  );
-}
-
 /**
- * FR-AUTH-004 (iOS). Drives the native Sign in with Apple sheet and returns the
- * identity token + raw nonce for Supabase, plus the first-authorization name
- * (Apple delivers it once). Resolves null when the user cancels the sheet.
- */
-const performAppleSignIn: PerformAppleSignIn = async () => {
-  const rawNonce = generateRawNonce();
-  const hashedNonce = await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, rawNonce);
-  try {
-    const credential = await AppleAuthentication.signInAsync({
-      requestedScopes: [
-        AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
-        AppleAuthentication.AppleAuthenticationScope.EMAIL,
-      ],
-      nonce: hashedNonce,
-    });
-    if (!credential.identityToken) return null;
-    const fullName = [credential.fullName?.givenName, credential.fullName?.familyName]
-      .filter(Boolean)
-      .join(' ')
-      .trim();
-    return {
-      identityToken: credential.identityToken,
-      rawNonce,
-      fullName: fullName.length > 0 ? fullName : null,
-    };
-  } catch (err) {
-    if (isAppleCancellation(err)) return null;
-    throw err;
-  }
-};
-
-/** Deep link the OAuth provider redirects back to. Resolves per-platform via AuthSession. */
-export function getOAuthRedirectUri(): string {
-  return AuthSession.makeRedirectUri({
-    scheme: 'karmacommunity',
-    path: 'auth/callback',
-  });
-}
-
-/**
- * FR-AUTH-003 / FR-AUTH-007 (web).
- *
- * Same-tab redirect to Google. Web only — Safari blocks the `window.open`
- * popup that `WebBrowser.openAuthSessionAsync` performs on web (the popup is
- * blocked because GIS / our auth call happens after an async fetch, outside
- * the user-gesture window). Same-tab navigation is the standard pattern used
- * by Notion, Linear, GitHub: page navigates to `accounts.google.com`, user
- * picks an account, browser returns to `/auth/callback` with `?code=...` for
- * the existing exchange flow. The JS context here is destroyed by the
- * navigation, so this function never "resolves" in a meaningful sense — it
- * only rejects if `getGoogleAuthUrl` fails *before* the redirect fires.
+ * FR-AUTH-003 / FR-AUTH-007 (web). Same-tab Google redirect; see authGoogleWebRedirect.
  */
 export async function redirectToGoogleSignInWeb(): Promise<void> {
-  if (Platform.OS !== 'web' || typeof window === 'undefined') {
-    throw new Error('redirectToGoogleSignInWeb: web-only');
-  }
-  const redirectTo = `${window.location.origin}/auth/callback`;
-  const url = await getAuthService().getGoogleAuthUrl(redirectTo);
-  window.location.assign(url);
+  return redirectToGoogleSignInWebImpl(getAuthService());
 }
 
 export function getSignUpUseCase(): SignUpWithEmailUseCase {

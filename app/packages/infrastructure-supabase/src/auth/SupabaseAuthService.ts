@@ -5,7 +5,7 @@
 // docs/spec/requirements/01_auth_and_onboarding.md
 // ─────────────────────────────────────────────
 
-import type { SupabaseClient, Session as SbSession } from '@supabase/supabase-js';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import {
   AuthError,
   type AppleIdentityCredential,
@@ -13,14 +13,16 @@ import {
   type AuthSession,
   type IAuthService,
 } from '@kc/application';
-import { parseAuthProvider } from '@kc/domain';
 import { mapAuthError } from './mapAuthError';
+import { buildAuthMetadataPayload, toSession } from './mapSupabaseSession';
+import { SupabaseAuthOAuth } from './supabaseAuthOAuth';
 
 export class SupabaseAuthService implements IAuthService {
-  private activeExchangeCode: string | null = null;
-  private activeExchangePromise: Promise<AuthSession> | null = null;
+  private readonly oauth: SupabaseAuthOAuth;
 
-  constructor(private readonly client: SupabaseClient) {}
+  constructor(private readonly client: SupabaseClient) {
+    this.oauth = new SupabaseAuthOAuth(client);
+  }
 
   async signUpWithEmail(
     email: string,
@@ -82,64 +84,20 @@ export class SupabaseAuthService implements IAuthService {
     return () => data.subscription.unsubscribe();
   }
 
-  async getGoogleAuthUrl(redirectTo: string): Promise<string> {
-    const { data, error } = await this.client.auth.signInWithOAuth({
-      provider: 'google',
-      options: { 
-        redirectTo, 
-        skipBrowserRedirect: true,
-        queryParams: {
-          prompt: 'select_account',
-        },
-      },
-    });
-    if (error) throw mapAuthError(error);
-    if (!data.url) throw new AuthError('unknown', 'oauth_no_url');
-    return data.url;
+  getGoogleAuthUrl(redirectTo: string): Promise<string> {
+    return this.oauth.getGoogleAuthUrl(redirectTo);
   }
 
-  async exchangeCodeForSession(code: string): Promise<AuthSession> {
-    if (this.activeExchangeCode === code && this.activeExchangePromise) {
-      return this.activeExchangePromise;
-    }
-    
-    this.activeExchangeCode = code;
-    this.activeExchangePromise = (async () => {
-      const { data, error } = await this.client.auth.exchangeCodeForSession(code);
-      if (error) throw mapAuthError(error);
-      if (!data.session) throw new AuthError('unknown', 'oauth_no_session');
-      return toSession(data.session);
-    })().finally(() => {
-      if (this.activeExchangeCode === code) {
-        this.activeExchangePromise = null;
-        this.activeExchangeCode = null;
-      }
-    });
-    
-    return this.activeExchangePromise;
+  exchangeCodeForSession(code: string): Promise<AuthSession> {
+    return this.oauth.exchangeCodeForSession(code);
   }
 
-  async signInWithApple(credential: AppleIdentityCredential): Promise<AuthSession> {
-    const { data, error } = await this.client.auth.signInWithIdToken({
-      provider: 'apple',
-      token: credential.identityToken,
-      nonce: credential.rawNonce,
-    });
-    if (error) throw mapAuthError(error);
-    if (!data.session) throw new AuthError('unknown', 'apple_no_session');
-    return toSession(data.session);
+  signInWithApple(credential: AppleIdentityCredential): Promise<AuthSession> {
+    return this.oauth.signInWithApple(credential);
   }
 
-  // No nonce: the native Google SDK doesn't expose one, so the Supabase Google
-  // provider must run with nonce checks skipped (#1955).
-  async signInWithGoogleIdToken(idToken: string): Promise<AuthSession> {
-    const { data, error } = await this.client.auth.signInWithIdToken({
-      provider: 'google',
-      token: idToken,
-    });
-    if (error) throw mapAuthError(error);
-    if (!data.session) throw new AuthError('unknown', 'google_no_session');
-    return toSession(data.session);
+  signInWithGoogleIdToken(idToken: string): Promise<AuthSession> {
+    return this.oauth.signInWithGoogleIdToken(idToken);
   }
 
   async resendVerificationEmail(
@@ -196,45 +154,3 @@ export class SupabaseAuthService implements IAuthService {
     if (error) throw mapAuthError(error);
   }
 }
-
-/** Maps profile fields to keys read by `toSession` (full_name/name, avatar_url/picture). */
-function buildAuthMetadataPayload(patch: AuthProfileMetadataPatch): Record<string, string | null> {
-  const data: Record<string, string | null> = {};
-  if (patch.displayName !== undefined) {
-    const name = patch.displayName.trim();
-    data.full_name = name;
-    data.name = name;
-  }
-  if (patch.avatarUrl !== undefined) {
-    data.avatar_url = patch.avatarUrl;
-    data.picture = patch.avatarUrl;
-  }
-  return data;
-}
-
-function toSession(s: SbSession): AuthSession {
-  const meta = (s.user.user_metadata ?? {}) as Record<string, unknown>;
-  return {
-    userId: s.user.id,
-    email: s.user.email ?? null,
-    emailVerified: Boolean(s.user.email_confirmed_at),
-    accessToken: s.access_token,
-    refreshToken: s.refresh_token,
-    expiresAt: s.expires_at ?? Math.floor(Date.now() / 1000) + (s.expires_in ?? 3600),
-    displayName: pickString(meta, ['full_name', 'name']),
-    avatarUrl: pickString(meta, ['avatar_url', 'picture']),
-    accountCreatedAt: s.user.created_at ?? null,
-    signInProvider: parseAuthProvider(s.user.app_metadata?.provider),
-    // Supabase reports "no phone" as an empty string.
-    phone: s.user.phone ? s.user.phone : null,
-  };
-}
-
-function pickString(meta: Record<string, unknown>, keys: readonly string[]): string | null {
-  for (const k of keys) {
-    const v = meta[k];
-    if (typeof v === 'string' && v.trim().length > 0) return v;
-  }
-  return null;
-}
-
