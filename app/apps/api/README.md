@@ -25,6 +25,8 @@ export KC_API_TEST_KC_DATABASE_URL=postgres://postgres@127.0.0.1:5432/kc_api_tes
 pnpm --filter @kc/api test
 ```
 
+To run the server under test as a deployment connects, set `KC_API_TEST_API_DATABASE_URL` to the same database as the user `kc_api` (created by the migration `api_database_role`): it holds no rights until it switches to the caller's role, which is what the server does on every transaction. The fixtures keep the owner connection above. The backend CI lane always runs this way.
+
 Without the variable those suites are not collected and the unit tests still run (`vitest.config.ts` lists which suites need what). Coverage has two floors there: the full one when both kinds of database are present, and a lower one for a run without them.
 
 In CI the frontend lane runs the package without a database (the lower floor). The backend lane (`.github/workflows/ci-backend.yml`) runs every suite on the local Supabase stack's Postgres with Redis 7.2 (the full floor), and builds this package's container image and starts it. That lane is planned for a pull request that touches `app/apps/api` or `app/packages/infrastructure-api`, and always runs in the merge queue.
@@ -114,7 +116,7 @@ An invalid value stops the process at start with an error that names the variabl
 - **The engine is not PostgREST.** It implements the dialect the adapters use and refuses the rest with `PGRST100`. If an adapter needs more, extend `src/platform/postgrest` with a unit test and a case on the KC schema; never loosen identifier or value handling.
 - **Errors.** Throw `ApiError(code, httpStatus)`; never format an error response in a handler. Every error body is `{ "error": { "code", "requestId" } }`, and an unexpected failure is always `500 internal_error`.
 - **Who is calling.** Put `@UseGuards(AuthenticatedGuard)` on a signed-in route and take the caller with `@Caller()`. Every rejected token is the same `401 unauthorized`.
-- **Database work for a request.** Use `IdentityDatabase.runAs(caller, work)` (or `runAnonymous`): one transaction with the caller's role and claims, so `auth.uid()`, RLS and the existing SQL functions behave as they do through PostgREST. The database user in `DATABASE_URL` must be allowed to switch to the `authenticated` and `anon` roles.
+- **Database work for a request.** Use `IdentityDatabase.runAs(caller, work)` (or `runAnonymous`): one transaction with the caller's role and claims, so `auth.uid()`, RLS and the existing SQL functions behave as they do through PostgREST. The database user in `DATABASE_URL` must be allowed to switch to the `anon`, `authenticated` and `service_role` roles and needs nothing else: the migration `api_database_role` creates that user, `kc_api`, without a password.
 - **Connections.** Inject `DATABASE_POOL` (`pg` pool) and `REDIS_CLIENT` (`ioredis`); never open a connection of your own. Both are closed on shutdown.
 - **Logging outside a request.** Inject `APP_LOGGER`; inside a handler use `request.log`, which carries the request id.
 - **Limits.** The gateway counts every port call that reaches a method against the caller's allowance and answers `429` with `retry-after` beyond it. When Redis is down the limiter lets calls through and logs a warning.

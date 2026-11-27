@@ -66,7 +66,7 @@ One time per environment, by a person who owns the Google Cloud project. Google 
    read -rs VALUE && printf '%s' "$VALUE" | gcloud secrets versions add kc-api-dev-database-url --data-file=- && unset VALUE
    ```
 
-   It is the connection string of the API's own database user on the kc-dev Supabase project. The agent prepares the steps for creating that user once the project exists (issue #2584).
+   It is the connection string of the API's own database user, `kc_api`, on the kc-dev Supabase project. A migration creates that user without a password; a person sets one in the Supabase SQL editor (`alter role kc_api password '<a long random value>';`) and uses it here. The API needs a connection that keeps its session (it listens for database events), so the address is the project's *session* pooler (port 5432) with the user written as `kc_api.<project ref>`; this is the expected form and is confirmed at the first deploy.
 
 6. **Tell the agent** the project's id and that step 5 is done. The agent then adds `"DATABASE_URL"` to `mounted_secrets` in `envs/dev.tfvars` in a pull request; after it merges, run the `terraform apply` of step 4 again.
 7. **Give the deploy workflow its four settings**, as repository *variables* on GitHub (Settings → Secrets and variables → Actions → Variables). None is a secret; `terraform output` prints the last three:

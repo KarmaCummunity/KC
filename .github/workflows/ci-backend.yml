@@ -239,6 +239,14 @@ jobs:
           set -euo pipefail
           DB_URL="$(supabase status -o env | sed -n 's/^DB_URL="\(.*\)"$/\1/p')"
           DB_URL="$DB_URL" app/apps/api/scripts/kc-test-db.sh | grep '^KC_API_TEST_KC_DATABASE_URL=' >> "$GITHUB_ENV"
+          # The server under test connects as the API's own database user (kc_api), which holds
+          # no rights until it switches role: the shape of a deployment, not the fixtures' owner
+          # connection. The password is made here, for this throwaway server only.
+          api_password="$(openssl rand -hex 24)"
+          echo "::add-mask::$api_password"
+          psql "$DB_URL" -X -v ON_ERROR_STOP=1 -q -c "alter role kc_api password '$api_password'"
+          api_url="$(sed -E "s#://[^@]*@#://kc_api:${api_password}@#" <<<"${DB_URL%/*}/kc_api_test")"
+          echo "KC_API_TEST_API_DATABASE_URL=$api_url" >> "$GITHUB_ENV"
 
       # KC_API_TEST_DISPOSABLE_DATABASE also collects the platform suites, which create roles
       # and a schema of their own: allowed here, the database is thrown away with the stack.

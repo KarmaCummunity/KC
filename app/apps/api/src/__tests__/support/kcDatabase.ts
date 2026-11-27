@@ -12,6 +12,12 @@ import { createSqlBackedClient } from '../../platform/postgrest/sqlBackedClient'
  * real schema run only when it is set.
  */
 export const KC_DATABASE_URL = process.env.KC_API_TEST_KC_DATABASE_URL;
+/**
+ * The connection the server under test uses, when it should not be the fixtures' own: the
+ * API's database user (`kc_api`), which holds no rights until it switches role. Unset, the
+ * server connects as the fixtures do.
+ */
+export const API_DATABASE_URL = process.env.KC_API_TEST_API_DATABASE_URL;
 
 export interface TestMember {
   readonly userId: string;
