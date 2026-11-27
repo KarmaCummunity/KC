@@ -10,7 +10,7 @@ create extension if not exists pgtap with schema extensions;
 set local search_path = extensions, public;
 set local client_min_messages = warning;
 
-select plan(12);
+select plan(16);
 
 -- ── Production values, as the migrations leave them ─────────────────────────
 select is((select r.keep from kc_private.retention_rules r where r.name = 'job_runs'), interval '30 days',
@@ -19,6 +19,8 @@ select is((select r.keep from kc_private.retention_rules r where r.name = 'cron_
   'the migrations keep pg_cron''s run log 7 days (production)');
 select is((select j.schedule from kc_private.scheduled_jobs j where j.name = 'chat_system_messages'), '10 seconds',
   'the migrations run the system-message consumer every 10 seconds (production)');
+select is((select j.schedule from kc_private.scheduled_jobs j where j.name = 'community_stats_refresh'), '* * * * *',
+  'the migrations refresh the community counters every minute (production)');
 select is((select s.scan_limit from kc_private.matching_settings s), 500,
   'the migrations let one matching run scan 500 posts (production)');
 
@@ -28,7 +30,7 @@ create temp table untouched_before on commit drop as
    where r.name not in ('job_runs', 'cron_run_history')
   union all
   select 'job:' || j.name, j.schedule || '|' || j.alert_after::text from kc_private.scheduled_jobs j
-   where j.name <> 'chat_system_messages';
+   where j.name not in ('chat_system_messages', 'community_stats_refresh');
 
 -- Count statement-level UPDATE trigger invocations. A WHERE clause matching
 -- zero rows still fires this trigger, so checking final values alone is not enough.
@@ -62,6 +64,11 @@ select is((select j.schedule from kc_private.scheduled_jobs j where j.name = 'ch
 select ok((select j.alert_after >= interval '90 seconds' from kc_private.scheduled_jobs j
             where j.name = 'chat_system_messages'),
   'its alert period still covers three runs, so jobs_late keeps its meaning');
+select is((select j.schedule from kc_private.scheduled_jobs j where j.name = 'community_stats_refresh'), '*/10 * * * *',
+  'kc-dev refreshes the community counters every 10 minutes');
+select ok((select j.alert_after >= interval '30 minutes' from kc_private.scheduled_jobs j
+            where j.name = 'community_stats_refresh'),
+  'its alert period still covers three runs, so jobs_late keeps its meaning');
 select is((select s.scan_limit from kc_private.matching_settings s), 200,
   'kc-dev lets one matching run scan 200 posts');
 
@@ -70,7 +77,7 @@ select is((select count(*) from (
              where r.name not in ('job_runs', 'cron_run_history')
             union all
             select 'job:' || j.name, j.schedule || '|' || j.alert_after::text from kc_private.scheduled_jobs j
-             where j.name <> 'chat_system_messages'
+             where j.name not in ('chat_system_messages', 'community_stats_refresh')
             except
             select item, value from untouched_before) changed), 0::bigint,
   'every other retention rule and job keeps its production value');
@@ -82,11 +89,13 @@ language plpgsql
 as $$
 begin
   if to_regclass('cron.job') is null then
-    return query select skip('pg_cron is not loaded on this server', 1);
+    return query select skip('pg_cron is not loaded on this server', 2);
     return;
   end if;
   return next is((select c.schedule from cron.job c where c.jobname = 'chat_system_messages'), '30 seconds',
                  'pg_cron runs the system-message consumer every 30 seconds');
+  return next is((select c.schedule from cron.job c where c.jobname = 'community_stats_refresh'), '*/10 * * * *',
+                 'pg_cron refreshes the community counters every 10 minutes');
 end;
 $$;
 select * from pg_temp.cron_checks();
