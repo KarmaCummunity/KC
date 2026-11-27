@@ -8,9 +8,12 @@
 //      of its files), so step 2 runs only once the workers have stopped writing.
 //   2. files:    the member's folder `<user_id>/` in every bucket, and the server-made copies
 //                of their photos under `derived/<user_id>/` in post-images (repeatable)
-//   3. database: the auth identity is deleted; every row of the member cascades
+//   3. database: a storage deletion intent per folder of the member is recorded, and the auth
+//                identity is deleted (every row of the member cascades; the intents do not)
 // An account stays due until step 3 succeeded, so a failed account is retried by the next run
-// and never blocks the others.
+// and never blocks the others. After the accounts, every run re-sweeps the due deletion intents
+// (sweepDeletionIntents.ts): an object that was stored after step 2 is removed, and an intent
+// closes only when its folder is found empty after its quiet window.
 
 /**
  * Folders of a member that server code writes on their behalf, outside their own `<user_id>/`
