@@ -120,3 +120,27 @@ as $$
        and s.refreshed_at > now() - kc_private.auth_session_idle_limit()
   );
 $$;
+
+-- The member as a session describes them. `auth.users` is not readable by the service role, here
+-- or on the platform, so the read is this function's: it returns the columns a session needs and
+-- nothing else of the row.
+create function kc_private.auth_session_user(p_user_id uuid)
+returns table (
+  id                 uuid,
+  email              text,
+  email_confirmed_at timestamptz,
+  phone              text,
+  meta               jsonb,
+  provider           text,
+  created_at         timestamptz
+)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select u.id, u.email::text, u.email_confirmed_at, u.phone::text, u.raw_user_meta_data,
+         u.raw_app_meta_data ->> 'provider', u.created_at
+    from auth.users u
+   where u.id = p_user_id;
+$$;

@@ -6,6 +6,7 @@ import { HOSTED_PORTS } from './modules/hostedAdapters/hostedPorts';
 import { hostedFunctionSet } from './modules/hostedFunctions/hostedFunctionSet';
 import { IdentityVerificationModule } from './modules/identityVerification/identityVerification.module';
 import { scheduledJobSet } from './modules/scheduledJobs/scheduledJobSet';
+import { IdentityRoutesModule } from './modules/identity/identityRoutes.module';
 import { SessionModule } from './modules/session/session.module';
 import type { ApiConfig } from './platform/config/apiConfig';
 import { ApiConfigModule } from './platform/config/apiConfig.module';
@@ -39,6 +40,7 @@ export class AppModule {
         VisitorCacheModule,
         HealthModule.withProbes([DatabaseProbe, RedisProbe]),
         SessionModule,
+        IdentityRoutesModule,
         PortClientsModule,
         IdentityVerificationModule.forRoot(),
         BillingModule,

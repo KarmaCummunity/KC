@@ -28,7 +28,7 @@ What Supabase Auth keeps in tables of its own (identities, password hashes, sess
 - **Access token:** a JWT signed with ES256, valid for one hour, as today. The API publishes its public keys at `<issuer>/.well-known/jwks.json`, where its own verifier already looks. Signing keys are a set held as a deployment secret: the first signs, all are published, so a key is rotated by adding the new one first and removing the old one an hour after it stopped signing.
 - **Refresh token:** 256 random bits, opaque, stored only as a SHA-256 hash. Each use replaces it. A token that was already replaced is accepted for ten seconds (two requests of one app racing each other, as Supabase Auth is configured today); after that its use means the token was copied, and the whole session ends.
 - **Session:** one per sign-in, on one device. It ends at sign-out, at a password reset (all of the member's sessions), when a replaced refresh token is reused, or after 30 days without a refresh (FR-AUTH-007 AC4).
-- **A session that ended is refused at once**, not when its access token expires: the API checks the session in the statement that opens a request's transaction, so the check costs no extra round trip. This is what FR-AUTH-017 AC2 asks ("subsequent uses of the old token are rejected") and Supabase Auth does not do.
+- **A session that ended is refused at once**, not when its access token expires: wherever the API establishes who a request is from, it also asks the database whether the token's session is still live, in one round trip. That is one place for every route, the realtime handshake included. This is what FR-AUTH-017 AC2 asks ("subsequent uses of the old token are rejected") and Supabase Auth does not do.
 
 ### 3. Sign-in methods: the ones the app has, behaving as they do
 
@@ -58,7 +58,7 @@ Because the refresh tokens are carried over (hashed), a member who is signed in 
 |---|---|---|
 | 1 | Signing keys, the access token, the published key set, the verifier that accepts KC's own issuer | Done (`apps/api/src/platform/identity`): with `KC_AUTH_SIGNING_KEYS` set the API signs with its first key, verifies against its own set without a network call, and publishes the public halves at `/v1/auth/.well-known/jwks.json`; without it nothing changes |
 | 2 | The tables (`kc_private`): identities, passwords, sessions, refresh tokens, one-time links | Done (migration `identity_tables`, with its database test): closed to every client role, removed with the member's row, and the rule that says whether a session still proves its member |
-| 3 | Sessions: issue, refresh with rotation and reuse detection, sign-out (one device, everywhere), the 30-day limit, the check on every request | — |
+| 3 | Sessions: issue, refresh with rotation and reuse detection, sign-out (one device, everywhere), the 30-day limit, the check on every request | Done (`apps/api/src/modules/identity`, `platform/identity/sessionCheckedVerifier.ts`): `POST /v1/auth/token` and `/v1/auth/sign-out`, in the wire format shared with the app (`identityWire.ts`). Checked on the KC schema through the real routes: two requests racing with one token, a replayed token ending the session, one device or all of them signed out, the 30-day lapse, a removed account |
 | 4 | Email and password: sign-up, verification, sign-in, reset, change; the email interface | — |
 | 5 | Google and Apple ID tokens; Google's browser redirect | — |
 | 6 | The app's adapter (`@kc/infrastructure-api`) and its composition switch | — |
@@ -72,7 +72,7 @@ Steps 1 to 5 and 7 need nothing from a person. Step 6 lands with the app's other
 - One row still is the member, and one set of policies still decides everything. The identity module can be replaced again without touching the product's SQL.
 - KC now holds what an identity service holds: password hashes, refresh-token hashes and signing keys. The hashes are in tables no client role can read; the keys are a deployment secret and never in the database or the repository.
 - Ending a session takes effect on the next request, which is stricter than today.
-- The check on every request reads one row by its primary key in a statement the request already sends.
+- The check on every request is one more round trip to the database, reading one row by its primary key. It was first meant to ride on the statement that opens a request's transaction; three code paths open one, and a rule enforced in one place is worth the round trip.
 
 ## Open, for the PM
 

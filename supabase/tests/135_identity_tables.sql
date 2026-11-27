@@ -4,7 +4,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = extensions, public;
 
-select plan(13);
+select plan(15);
 
 -- ── Nobody but the service role reaches them ────────────────────────────────────────────────────
 select ok(
@@ -93,6 +93,34 @@ select throws_ok(
   '23514', null,
   'a session cannot end without a reason'
 );
+
+-- ── The member as a session describes them ──────────────────────────────────────────────────────
+update auth.users
+   set raw_user_meta_data = '{"full_name": "Bob Builder"}', raw_app_meta_data = '{"provider": "google"}', email_confirmed_at = now()
+ where id = 'a0000000-0000-4000-8000-000000000002';
+-- The service role may not call the test functions, so what it sees is noted while acting as it
+-- and asserted afterwards.
+set local role service_role;
+select set_config(
+  'test.session_user',
+  (select format('%s|%s|%s|%s', email, email_confirmed_at is not null, meta ->> 'full_name', provider)
+     from kc_private.auth_session_user('a0000000-0000-4000-8000-000000000002')),
+  true
+);
+do $$
+begin
+  perform 1 from auth.users limit 1;
+  perform set_config('test.reads_users_table', 'yes', true);
+exception when insufficient_privilege then
+  perform set_config('test.reads_users_table', 'no', true);
+end $$;
+reset role;
+select is(
+  current_setting('test.session_user'),
+  'bob@identity.test|t|Bob Builder|google',
+  'the service role reads the columns a session needs of a member''s row'
+);
+select is(current_setting('test.reads_users_table'), 'no', 'and still cannot read the table itself');
 
 -- ── Removed with the member ─────────────────────────────────────────────────────────────────────
 delete from auth.users where id = 'a0000000-0000-4000-8000-000000000001';

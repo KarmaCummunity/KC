@@ -1,11 +1,12 @@
 import 'reflect-metadata';
-import { Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { createLocalJWKSet, type JWK } from 'jose';
 import { afterEach, describe, expect, it } from 'vitest';
 import { createApp } from '../../../createApp';
 import { testConfig } from '../../../__tests__/support/testConfig';
 import { ApiConfigModule } from '../../config/apiConfig.module';
+import { DATABASE_POOL } from '../../database/database.tokens';
 import { ACCESS_TOKEN_ISSUER, type AccessTokenIssuer } from '../accessTokenIssuer';
 import { ACCESS_TOKEN_VERIFIER, type AccessTokenVerifier, createAccessTokenVerifier } from '../accessTokenVerifier';
 import { IdentityModule } from '../identity.module';
@@ -18,9 +19,13 @@ describe('GET /v1/auth/.well-known/jwks.json', () => {
   let app: NestFastifyApplication | undefined;
 
   /** An app with the identity module alone, as an issuer when `authSigningKeys` is given. */
-  async function start(authSigningKeys: string | null): Promise<NestFastifyApplication> {
+  async function start(authSigningKeys: string | null, withDatabase = true): Promise<NestFastifyApplication> {
     const config = testConfig({ authIssuer: ISSUER, authSigningKeys });
-    @Module({ imports: [ApiConfigModule.forRoot(config), IdentityModule] })
+    // An issuer keeps its sessions in the database; these cases never ask it, so a pool nobody can connect to stands in.
+    @Global()
+    @Module({ providers: [{ provide: DATABASE_POOL, useValue: { connect: () => Promise.reject(new Error('no database in this test')) } }], exports: [DATABASE_POOL] })
+    class NoDatabaseModule {}
+    @Module({ imports: [ApiConfigModule.forRoot(config), ...(withDatabase ? [NoDatabaseModule] : []), IdentityModule] })
     class TestModule {}
     app = await createApp(TestModule, config);
     return app;
@@ -45,7 +50,12 @@ describe('GET /v1/auth/.well-known/jwks.json', () => {
     // A verifier that knows nothing but the published set accepts the token.
     await expect(createAccessTokenVerifier(createLocalJWKSet(published), ISSUER).verify(token)).resolves.toMatchObject({ userId: MEMBER.userId });
     // And so does the API's own, which never fetches it.
-    await expect(started.get<AccessTokenVerifier>(ACCESS_TOKEN_VERIFIER).verify(token)).resolves.toMatchObject({ userId: MEMBER.userId });
+    // The API's own verifier needs no fetch for the signature, and goes on to ask the database about the session.
+    await expect(started.get<AccessTokenVerifier>(ACCESS_TOKEN_VERIFIER).verify(token)).rejects.toThrow('no database in this test');
+  });
+
+  it('does not start as an issuer without the database its sessions are kept in', async () => {
+    await expect(start(await signingKeySetJson('k1'), false)).rejects.toThrow('needs the database module');
   });
 
   it('answers 404 on an API that accepts another issuer\'s tokens, and that API issues none', async () => {
