@@ -93,3 +93,4 @@
 0096_api_database_role.sql
 0097_post_read_visibility_gate.sql
 0098_deleted_user_keeps_counterpart_records.sql
+0099_avatar_orphan_reconciliation.sql
