@@ -27,12 +27,12 @@ jobs:
     runs-on: macos-latest
     timeout-minutes: 90
     env:
-      CANDIDATE_SHA: 9549d5c61a155372caeac9fe43515051bf63e647
+      CANDIDATE_SHA: 02cf8dc342de36ad8e229f6537d5ea10c0a0dfc0
       PINNED_WEB_URL: ${{ inputs.pinned_web_url }}
       EVIDENCE_CERTIFICATE: ${{ inputs.evidence_certificate }}
       DEVICE_FAMILY: ${{ inputs.device_family }}
-      EAS_BUILD_GIT_COMMIT_HASH: 9549d5c61a155372caeac9fe43515051bf63e647
-      EXPO_PUBLIC_GIT_COMMIT_SHA: 9549d5c61a155372caeac9fe43515051bf63e647
+      EAS_BUILD_GIT_COMMIT_HASH: 02cf8dc342de36ad8e229f6537d5ea10c0a0dfc0
+      EXPO_PUBLIC_GIT_COMMIT_SHA: 02cf8dc342de36ad8e229f6537d5ea10c0a0dfc0
       KC_E2E_BUILD: '1'
       EXPO_PUBLIC_ENVIRONMENT: development
       EXPO_PUBLIC_SUPABASE_URL: https://enbqriuxvvuontiwslun.supabase.co
@@ -56,7 +56,7 @@ jobs:
           git -C tooling rev-parse HEAD > "$RUNNER_TEMP/native-private/tooling-sha.txt"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: 9549d5c61a155372caeac9fe43515051bf63e647
+          ref: 02cf8dc342de36ad8e229f6537d5ea10c0a0dfc0
           path: candidate
           persist-credentials: false
       - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115
@@ -124,6 +124,7 @@ jobs:
             xcrun xcresulttool export attachments --path "$RUNNER_TEMP/native-private/guest.xcresult" --output-path "$RUNNER_TEMP/native-private/attachments" > "$RUNNER_TEMP/native-private/attachment-export.log" 2>&1
           fi
       - name: Encrypt all evidence before upload, including failures
+        id: encrypted_evidence
         if: always()
         run: |
           set -euo pipefail
@@ -131,10 +132,11 @@ jobs:
           tar -czf "$RUNNER_TEMP/native-private.tar.gz" -C "$RUNNER_TEMP" native-private
           openssl cms -encrypt -binary -aes-256-cbc -in "$RUNNER_TEMP/native-private.tar.gz" -outform DER -out "$RUNNER_TEMP/native-exact-evidence.cms" "$RUNNER_TEMP/recipient.pem"
           test -s "$RUNNER_TEMP/native-exact-evidence.cms"
+          node tooling/scripts/native-exact-evidence-size.mjs "$RUNNER_TEMP/native-exact-evidence.cms"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
-        if: always()
+        if: always() && steps.encrypted_evidence.outcome == 'success'
         with:
           name: native-exact-encrypted-evidence
           path: ${{ runner.temp }}/native-exact-evidence.cms
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 1

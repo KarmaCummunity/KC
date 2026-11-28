@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { validateTarget, chooseDevice, cleanCandidate, verifyBuildConfig } from './native-exact-acceptance.mjs';
-const sha = '9549d5c61a155372caeac9fe43515051bf63e647';
+const sha = '02cf8dc342de36ad8e229f6537d5ea10c0a0dfc0';
 const url = 'https://10978250.karma-community.pages.dev';
 test('target requires exact matching source and immutable dev URL', () => {
   assert.equal(validateTarget(sha, url, { sha }).source, sha);
@@ -32,7 +32,7 @@ test('source attestation rejects tracked edits and wrong commit', () => {
 });
 test('workflow keeps candidate independent and ciphertext-only', () => {
   const y = readFileSync('.github/workflows/native-exact-acceptance.yml', 'utf8');
-  assert.match(y, /ref: 9549d5c61a155372caeac9fe43515051bf63e647/);
+  assert.match(y, /ref: 02cf8dc342de36ad8e229f6537d5ea10c0a0dfc0/);
   assert.match(y, /package-manager-cache: false/);
   assert.match(y, /--skip-dependency-update expo,react-native/);
   assert.match(y, /path: tooling/); assert.match(y, /path: candidate/);
