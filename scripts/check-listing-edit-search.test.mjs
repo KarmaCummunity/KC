@@ -9,4 +9,5 @@ test('the actual non-items editor uses the mounted-search save callback', () => 
   const hook = read('app/apps/mobile/src/hooks/useListingEditSaved.ts');
   assert.match(hook, /\['universalSearch'\]/);
   assert.ok(hook.indexOf('await Promise.all') < hook.indexOf('router.back()'));
+  assert.match(read('app/apps/mobile/src/hooks/useListingCreateForm.ts'), /await onSaved\?\.\(\)/);
 });
