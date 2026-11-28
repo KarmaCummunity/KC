@@ -54,6 +54,8 @@ jobs:
           node tooling/scripts/native-exact-acceptance.mjs target "$CANDIDATE_SHA" "$PINNED_WEB_URL" > "$RUNNER_TEMP/native-private/target.json"
           printf '%s' "$EVIDENCE_CERTIFICATE" | base64 --decode > "$RUNNER_TEMP/recipient.pem"
           openssl x509 -in "$RUNNER_TEMP/recipient.pem" -noout -checkend 86400
+          printf '%s\n' 'harmless runner encryption probe' > "$RUNNER_TEMP/crypto-probe.txt"
+          openssl cms -encrypt -binary -aes-256-cbc -in "$RUNNER_TEMP/crypto-probe.txt" -outform DER -out "$RUNNER_TEMP/crypto-probe.cms" "$RUNNER_TEMP/recipient.pem"
           openssl x509 -in "$RUNNER_TEMP/recipient.pem" -noout -fingerprint -sha256 > "$RUNNER_TEMP/native-private/recipient-fingerprint.txt"
           git -C tooling rev-parse HEAD > "$RUNNER_TEMP/native-private/tooling-sha.txt"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1

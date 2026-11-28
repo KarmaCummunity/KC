@@ -36,6 +36,7 @@ test('workflow keeps candidate independent and ciphertext-only', () => {
   assert.match(y, /--skip-dependency-update expo,react-native/);
   assert.match(y, /path: tooling/); assert.match(y, /path: candidate/);
   assert.match(y, /node .*native-exact-acceptance.mjs.* source/);
+  assert.match(y, /crypto-probe\.cms/);
   assert.match(y, /native-exact-evidence\.cms/);
   assert.doesNotMatch(y, /ipad-qualification-startup|ax-probe\.mjs|E2E_SEED_PASSWORD|ASC_API|KC_SECURE_STORAGE_PROBE|KC_PUSH_SIMULATOR_TEST|workflow_run:|pull_request:|continue-on-error|tee /);
   assert.equal((y.match(/actions\/upload-artifact@/g) ?? []).length, 1);
