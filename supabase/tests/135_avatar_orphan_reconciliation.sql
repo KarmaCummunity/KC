@@ -6,7 +6,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = extensions, public;
 
-select plan(9);
+select plan(10);
 
 -- Lookup of a stored URL's object key.
 select is(kc_private.avatar_object_key('https://x.supabase.co/storage/v1/object/public/avatars/u1/avatar-g2.jpg?t=17'),
@@ -42,9 +42,31 @@ select is((select count(*)::integer from kc_private.storage_orphan_keys('avatars
     '00000000-0000-4000-8000-00000000000a/avatar-g2.jpg'])), 1,
   'once the member removes the photo, its object is an orphan');
 
+-- A member changes their own photo the way the app does (a direct update of their users row): the
+-- orphan rule must add nothing a member's write has to be allowed to run.
+create function pg_temp.member_sets_avatar(p_url text)
+returns text
+language plpgsql
+as $$
+begin
+  perform set_config('request.jwt.claims', '{"sub":"00000000-0000-4000-8000-00000000000a","role":"authenticated"}', true);
+  perform set_config('role', 'authenticated', true);
+  update public.users set avatar_url = p_url where id = '00000000-0000-4000-8000-00000000000a';
+  perform set_config('role', 'none', true);
+  return 'ok';
+exception when others then
+  perform set_config('role', 'none', true);
+  return sqlerrm;
+end;
+$$;
+select is(pg_temp.member_sets_avatar(
+    'https://x.supabase.co/storage/v1/object/public/avatars/00000000-0000-4000-8000-00000000000a/avatar-g3.jpg'),
+  'ok', 'a member can still set their own photo (nothing in the rule runs with the member''s rights)');
+select is((select count(*)::integer from kc_private.storage_orphan_keys('avatars', array[
+    '00000000-0000-4000-8000-00000000000a/avatar-g3.jpg'])), 0, 'and the photo they just set is kept');
+
 select is((select count(*)::integer from kc_private.storage_orphan_keys('chat-media', array['x/unknown.jpg'])), 0,
   'a bucket whose files are not recorded row by row is still never judged');
-select has_index('public', 'users', 'users_avatar_object_key_idx', 'each asked key is found through an index');
 
 select * from finish();
 rollback;

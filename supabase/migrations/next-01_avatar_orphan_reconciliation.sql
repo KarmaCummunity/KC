@@ -27,15 +27,14 @@ $$;
 comment on function kc_private.avatar_object_key(text) is
   'The avatars-bucket key of a public avatar URL (query and fragment dropped), or null.';
 
--- The reconciler asks for up to 500 keys at a time; each is looked up through this index.
-create index users_avatar_object_key_idx on public.users (kc_private.avatar_object_key(avatar_url))
-  where avatar_url is not null;
-
 -- Storage reconciliation keeps every object a row still needs:
 --   post-images  the file a photo row points at, the original a processed row was made from, and
 --                the `-thumb` sibling of either (unchanged from 0084);
 --   avatars      the object a member's avatar_url points at, and its `-thumb` sibling.
 -- Any other bucket is not recorded row by row and is never judged.
+-- The avatar keys members point at are read once per call (one scan of the users with an avatars
+-- URL) rather than through an expression index: an index on public.users would evaluate
+-- kc_private.avatar_object_key with the rights of every member who updates their own row.
 create or replace function kc_private.storage_orphan_keys(p_bucket text, p_keys text[])
 returns setof text
 language sql
@@ -52,6 +51,8 @@ as $$
           and not exists (select 1 from kc_private.post_media_processing q
                            where q.source_key in (k.key, b.base)))
       or (p_bucket = 'avatars'
-          and not exists (select 1 from public.users u
-                           where kc_private.avatar_object_key(u.avatar_url) in (k.key, b.base)));
+          and not exists (select 1 from (select kc_private.avatar_object_key(u.avatar_url) as key
+                                           from public.users u
+                                          where u.avatar_url like '%/storage/v1/object/public/avatars/%') r
+                           where r.key in (k.key, b.base)));
 $$;
