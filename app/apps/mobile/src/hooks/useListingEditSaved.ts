@@ -4,7 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { postActorIdentityQueryKey } from './useListingExposure';
 
-export function useListingEditSaved(id: string | undefined, listingId: string | undefined) {
+export function useListingEditSaved(id: string | undefined, listingId: string | null | undefined) {
   const queryClient = useQueryClient();
   const router = useRouter();
   return useCallback(async () => {

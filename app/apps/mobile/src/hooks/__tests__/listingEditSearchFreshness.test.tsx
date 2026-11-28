@@ -42,3 +42,16 @@ it('marks inactive cached search variants stale and preserves all existing detai
   expect(back).toHaveBeenCalledOnce();
   client.clear();
 });
+
+it('handles a null domain listing ID without marketplace or identity invalidation', async () => {
+  const client = new QueryClient();
+  const invalidate = vi.spyOn(client, 'invalidateQueries');
+  const wrapper = ({ children }: { children: ReactNode }) => <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+  const saved = renderHook(() => useListingEditSaved('p1', null), { wrapper });
+  await act(async () => { await saved.result.current(); });
+  expect(invalidate).toHaveBeenCalledWith({ queryKey: ['universalSearch'] });
+  expect(invalidate).not.toHaveBeenCalledWith({ queryKey: ['marketplace', 'detail', null] });
+  expect(invalidate).not.toHaveBeenCalledWith({ queryKey: ['post-actor-identity', null] });
+  expect(back).toHaveBeenCalledOnce();
+  client.clear();
+});
