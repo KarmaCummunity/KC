@@ -95,6 +95,7 @@ jobs:
           NODE_ENV=production npx expo prebuild --platform ios --no-install --clean --skip-dependency-update expo,react-native > "$RUNNER_TEMP/native-private/prebuild.log" 2>&1
           node "$GITHUB_WORKSPACE/tooling/scripts/native-exact-acceptance.mjs" source "$GITHUB_WORKSPACE/candidate" "$CANDIDATE_SHA" > "$RUNNER_TEMP/native-private/source-after-prebuild.json"
           npx expo config --type public --json > "$RUNNER_TEMP/native-private/resolved-expo-config.json"
+          node "$GITHUB_WORKSPACE/tooling/scripts/native-exact-acceptance.mjs" config "$RUNNER_TEMP/native-private/resolved-expo-config.json" "$CANDIDATE_SHA" > "$RUNNER_TEMP/native-private/config-proof.json"
           cd ios
           pod install > "$RUNNER_TEMP/native-private/pods.log" 2>&1
           xcodebuild -workspace KC.xcworkspace -scheme KC -configuration Release -sdk iphonesimulator -destination "platform=iOS Simulator,id=$SIMULATOR_UDID" -derivedDataPath "$RUNNER_TEMP/exact-app-build" CODE_SIGNING_ALLOWED=YES CODE_SIGNING_REQUIRED=YES CODE_SIGN_IDENTITY='-' DEVELOPMENT_TEAM='' build > "$RUNNER_TEMP/native-private/app-build.log" 2>&1

@@ -9,6 +9,10 @@ export function validateTarget(sha, webUrl, payload) {
   if (payload.sha !== sha) throw new Error('Pinned web source does not match candidate');
   return { source: sha, webUrl: url.href, environment: 'development', scope: 'Unchanged-source simulator guest acceptance, not store binary or APNs acceptance' };
 }
+export function verifyBuildConfig(config, expected) {
+  if (config.extra?.gitCommitSha !== expected.slice(0, 7) || config.updates?.enabled !== false || config.extra?.pushSimulatorEnabled !== false || config.extra?.secureStorageProbeEnabled !== false || config.extra?.supabaseConfigured !== true) throw new Error('Resolved candidate configuration is not the declared embedded-bundle guest scope');
+  return { embeddedSource: config.extra.gitCommitSha, otaEnabled: false, pushProbe: false, storageProbe: false };
+}
 export function chooseDevice(payload, family) {
   if (!['iPad', 'iPhone'].includes(family)) throw new Error('Unsupported device family');
   const rows = Object.entries(payload.devices ?? {}).filter(([runtime]) => runtime.includes('iOS')).sort(([a], [b]) => b.localeCompare(a)).flatMap(([runtime, devices]) => devices.map(d => ({ ...d, runtime })));
@@ -28,7 +32,8 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     const response = await fetch(new URL('/version.json', url));
     if (!response.ok) throw new Error('Pinned deployment version unavailable');
     console.log(JSON.stringify(validateTarget(sha, url, await response.json())));
-  } else if (mode === 'device') console.log(JSON.stringify(chooseDevice(JSON.parse(readFileSync(args[0], 'utf8')), args[1])));
+  } else if (mode === 'config') console.log(JSON.stringify(verifyBuildConfig(JSON.parse(readFileSync(args[0], 'utf8')), args[1])));
+  else if (mode === 'device') console.log(JSON.stringify(chooseDevice(JSON.parse(readFileSync(args[0], 'utf8')), args[1])));
   else if (mode === 'source') console.log(JSON.stringify(cleanCandidate(args[0], args[1])));
   else if (mode === 'hash') console.log(createHash('sha256').update(readFileSync(args[0])).digest('hex'));
   else throw new Error('Unsupported mode');

@@ -4,7 +4,7 @@ import { readFileSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { execFileSync } from 'node:child_process';
-import { validateTarget, chooseDevice, cleanCandidate } from './native-exact-acceptance.mjs';
+import { validateTarget, chooseDevice, cleanCandidate, verifyBuildConfig } from './native-exact-acceptance.mjs';
 const sha = '9549d5c61a155372caeac9fe43515051bf63e647';
 const url = 'https://10978250.karma-community.pages.dev';
 test('target requires exact matching source and immutable dev URL', () => {
@@ -47,4 +47,12 @@ test('independent runner uses one launch and no coordinate/reset fallback', () =
   assert.doesNotMatch(swift, /coordinate|clearState|terminate\(|activate\(/);
   for (const stage of ['welcome', 'list', 'detail', 'returned-list']) assert.ok(swift.includes(`capture("${stage}")`));
   assert.match(swift, /XCUIScreen.main.screenshot/);
+});
+
+test('resolved build config proves embedded source and disables probes/OTA', () => {
+  const config = { extra: { gitCommitSha: sha.slice(0,7), pushSimulatorEnabled: false, secureStorageProbeEnabled: false, supabaseConfigured: true }, updates: { enabled: false } };
+  assert.equal(verifyBuildConfig(config, sha).otaEnabled, false);
+  assert.throws(() => verifyBuildConfig(config, 'b'.repeat(40)));
+  assert.throws(() => verifyBuildConfig({ ...config, updates: { enabled: true } }, sha));
+  assert.throws(() => verifyBuildConfig({ ...config, extra: { ...config.extra, pushSimulatorEnabled: true } }, sha));
 });
