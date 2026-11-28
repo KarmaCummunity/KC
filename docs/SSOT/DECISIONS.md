@@ -2131,7 +2131,7 @@ The Demo data screen keeps two failures apart: the RPC itself is missing (`not_i
 
 **Affected.** `app/apps/api/src/platform/storage`, `supabase/baseline/local/supabase_shim.sql` (the `storage` schema KC will own: the service role may read a bucket's rules).
 
-## {{ENG:bump-waits-for-empty-queue}} — The version bump waits for an empty merge queue (2026-11-27)
+## D-249 — The version bump waits for an empty merge queue (2026-11-27)
 
 **Decision.** `bump-version-on-merge.yml` pushes the `app/VERSION` bump only when no merge group is waiting in the `dev` merge queue. A merge that leaves groups behind it pushes nothing; the merge that empties the queue pushes one PATCH bump for the whole burst. The ID-assignment commit (spec registry IDs, migration numbers) is still pushed at once. The workflow also runs by hand on `dev`, for the case where the queue emptied without a merge.
 

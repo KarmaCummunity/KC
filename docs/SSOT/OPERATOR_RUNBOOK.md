@@ -667,7 +667,7 @@ with no metadata, which the structural rewrite does in milliseconds and with mem
 | --- | --- |
 | Queue, claim, lease, CAS, lifecycle skip, retries, caps, grants, reconciliation keep-list | **Measured**: pgTAP `128`, `129`, `130`, `132` on a local PostgreSQL 16 baseline |
 | EXIF/GPS, XMP, IPTC, comments and PNG text removed; orientation kept; pixels unchanged; polyglots, bombs, HTML/SVG refused | **Measured**: deno tests (`sanitize.test.ts`, `handler.test.ts`) with real Jimp-made JPEG/PNG files |
-| Storage records `metadata.size` / `metadata.mimetype` exactly as the CAS reads them | **Assumed** until the kc-dev end-to-end proof runs |
+| Storage records `metadata.size` / `metadata.mimetype` exactly as the CAS reads them | **Measured on kc-dev**: `E2E post photos (dev)` (2026-11-23: ready in 8 s, the viewer gets the copy without its GPS block) |
 | Client write fence on `derived/` | **Measured on the local shim** (pgTAP `129`); not verified against live storage-api |
 | WhatsApp renders the copy as a preview | **Not measured** |
 
@@ -679,7 +679,8 @@ with no metadata, which the structural rewrite does in milliseconds and with mem
 2. **Server-side resized derivatives** (`FR-POST-005` AC3: 640 px feed / 1280 px detail) are not made;
    the app's 2048 px upload and 400 px thumb are what readers get.
 3. **Client-side cleanup is best effort.** The app's abandoned-uploads ledger is per device; `post-images`
-   has the server orphan job as backstop, `chat-media` and `avatars` have none.
+   and `avatars` have the server orphan job as backstop (`avatars`: an object no `users.avatar_url` points
+   at, nor its `-thumb`, older than a day), `chat-media` has none.
 
 ### Cost surface (per new photo, approximate)
 

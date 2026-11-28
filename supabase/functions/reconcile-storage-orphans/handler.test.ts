@@ -2,7 +2,7 @@
 // Run: deno test --allow-read reconcile-storage-orphans   (from supabase/functions)
 import { assertEquals } from 'jsr:@std/assert@1';
 import {
-  createOrphanDatabase, createOrphanHandler, type ObjectEntry, ORPHAN_SQL, type OrphanDatabase, type OrphanStorage,
+  createOrphanDatabase, createOrphanHandler, type ObjectEntry, ORPHAN_SQL, type OrphanDatabase, type OrphanStorage, RECONCILED_BUCKETS,
 } from './handler.ts';
 
 const KEY = 'service-key-for-tests';
@@ -35,21 +35,27 @@ class FakeStorage implements OrphanStorage {
   }
 }
 
-function setup(files: [string, string | null][], referenced: string[]) {
+/**
+ * `buckets`: the buckets the run judges, one fake bucket serving them all; `'worker default'` leaves
+ * the worker's own list (RECONCILED_BUCKETS). Most tests judge post-images only.
+ */
+function setup(files: [string, string | null][], referenced: string[], buckets: readonly string[] | 'worker default' = ['post-images']) {
   const storage = new FakeStorage(new Map(files));
   const asked: string[][] = [];
+  const askedBuckets: string[] = [];
   const db: OrphanDatabase = {
-    orphanKeys(_bucket, keys) {
+    orphanKeys(bucket, keys) {
       asked.push(keys);
+      askedBuckets.push(bucket);
       return Promise.resolve(keys.filter((key) => !referenced.includes(key)));
     },
   };
   const reports: string[] = [];
   const handler = createOrphanHandler({
-    db, storage, serviceRoleKey: KEY, now: () => NOW,
+    db, storage, serviceRoleKey: KEY, now: () => NOW, buckets: buckets === 'worker default' ? undefined : buckets,
     report: (_error, tags) => { reports.push(`${tags.stage}:${tags.bucket}`); return Promise.resolve(); },
   });
-  return { storage, asked, reports, handler };
+  return { storage, asked, askedBuckets, reports, handler };
 }
 
 Deno.test('only the service role may start the reconciliation', async () => {
@@ -88,6 +94,14 @@ Deno.test('a bucket that cannot be listed completely is not cleaned; a failed re
   removing.storage.failRemove = true;
   assertEquals(await (await removing.handler(post())).json(), { ok: true, scanned: 2, removed: 0, errors: 2 });
   assertEquals(removing.reports, ['remove:post-images']);
+});
+
+Deno.test('the daily run judges post photos and profile photos (avatars); other buckets are never listed', async () => {
+  assertEquals([...RECONCILED_BUCKETS], ['post-images', 'avatars']);
+  // Referenced, so it survives the first bucket's pass of this one shared fake bucket.
+  const { askedBuckets, handler } = setup([['u1/avatar-g1.jpg', OLD]], ['u1/avatar-g1.jpg'], 'worker default');
+  await handler(post());
+  assertEquals(askedBuckets, ['post-images', 'avatars']);
 });
 
 Deno.test('Postgres adapter: one statement, one database function; no question for no keys', async () => {

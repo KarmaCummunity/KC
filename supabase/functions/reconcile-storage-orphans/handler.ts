@@ -5,6 +5,10 @@
 // A device uploads a file before it records the row, and a deleted post loses its rows
 // before its files, so only objects older than `minAgeMs` are judged: a fresh upload is
 // never taken for an orphan.
+//
+// Judged buckets: `post-images` (a file no photo row or photo job needs) and `avatars` (an object
+// no member's avatar_url points at: replaced generations and unsaved uploads the app could not
+// remove itself). `chat-media` is not recorded row by row yet and is never judged.
 import { isServiceRoleRequest, serviceRoleRequiredResponse } from '../_shared/serviceRoleGuard.ts';
 
 /** One row of a Storage listing; a folder has `id === null`. */
@@ -35,11 +39,11 @@ export interface OrphanDeps {
   readonly now?: () => number;
 }
 
-export const RECONCILED_BUCKETS = ['post-images'] as const;
+export const RECONCILED_BUCKETS = ['post-images', 'avatars'] as const;
 export const MIN_AGE_MS = 24 * 60 * 60 * 1000;
 const PAGE = 100;
 const ASK = 500;
-/** `<user_id>/<batch>/<file>` plus one level of slack. */
+/** `<user_id>/<batch>/<file>` (post-images; avatars are one level shallower) plus one level of slack. */
 const MAX_DEPTH = 4;
 
 /** Paths of the objects under `prefix` that were created before `before`. */

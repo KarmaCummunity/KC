@@ -1,13 +1,13 @@
 // FR-POST-014/022 — post ⋮ menu strings (split from post.ts for LOC cap).
 export const postMenuHe = {
   menuA11y: 'תפריט פעולות',
-  menuShare: 'לשתף פוסט',
-  menuHideFromFeed: 'להסתיר מהפיד שלי',
-  menuEdit: 'לערוך פוסט',
-  menuSave: 'לשמור',
-  menuUnsave: 'להסיר מהשמורים',
-  menuDelete: 'למחוק את הפוסט',
-  menuAdminRemove: 'להסיר כמנהל',
+  menuShare: 'שיתוף הפוסט',
+  menuHideFromFeed: 'הסתרה מהפיד שלי',
+  menuEdit: 'עריכת הפוסט',
+  menuSave: 'שמירה',
+  menuUnsave: 'הסרה מהשמורים',
+  menuDelete: 'מחיקת הפוסט',
+  menuAdminRemove: 'הסרה כאדמין',
   saveSuccess: 'הפוסט נשמר.',
   saveError: 'השמירה נכשלה. אפשר לנסות שוב.',
   unsaveSuccess: 'הוסר מהשמורים.',
@@ -18,5 +18,5 @@ export const postMenuHe = {
   adminRemoveTitle: '🛡️ להסיר את הפוסט?',
   adminRemoveBody:
     'הפוסט "{{title}}" יוסתר מהפיד ויסומן כמוסר על ידי מנהל. ניתן יהיה לשחזר אותו בעתיד דרך יומן האודיט.',
-  adminRemoveCta: 'להסיר',
+  adminRemoveCta: 'הסרה',
 } as const;
