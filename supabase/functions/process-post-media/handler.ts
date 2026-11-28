@@ -5,8 +5,9 @@
 // One run: up to `limit` (1..5, default 3) jobs, claimed ONE at a time with a lease
 // (post_media_processing_claim) and only while the run's time budget lasts, so no claimed job
 // ever waits on another and no attempt is spent on a job the run had no time for. For each:
-//   1. refuse a key outside the owner's folder, and an object Storage recorded as missing, over
-//      8 MiB or not JPEG/PNG — all BEFORE downloading it;
+//   1. refuse a bucket the worker never reads, a key outside the owner's folder, and an object
+//      Storage recorded as missing, over 8 MiB or not JPEG/PNG — all BEFORE downloading it
+//      (source.ts; the original is in `post-uploads` (private) or `post-images` (older uploads));
 //   2. download it with a hard byte cap (the recorded size), check the real bytes and the pixel
 //      size from the header, and rebuild the file without metadata (sanitize.ts: no pixel decode);
 //   3. do the same for the uploader's `-thumb` sibling when it exists and is valid (it is optional:
@@ -31,8 +32,9 @@
 // removes nothing and records nothing (the lease decides what happens).
 
 import { isServiceRoleRequest, serviceRoleRequiredResponse } from '../_shared/serviceRoleGuard.ts';
-import { ImageRejected, MAX_SOURCE_BYTES, type ImageType } from './imageCheck.ts';
+import { ImageRejected, type ImageType } from './imageCheck.ts';
 import { sanitizeImage, type SanitizedImage } from './sanitize.ts';
+import { FinalRefusal, preflight, type SourceBucket } from './source.ts';
 
 type RpcResult = { data: unknown; error: { message: string } | null };
 /** The database functions this worker calls (all service role only). */
@@ -40,13 +42,16 @@ type WorkerRpc = 'post_media_processing_claim' | 'post_media_processing_complete
 
 export interface MediaStorage {
   /**
-   * The object's bytes, or null when no such object exists; rejects when it would exceed `maxBytes`
-   * (the read is cut off) or `signal` aborts.
+   * The bytes of an original (or its thumb) in `bucket`, or null when no such object exists; rejects
+   * when it would exceed `maxBytes` (the read is cut off) or `signal` aborts.
    */
-  download(key: string, maxBytes: number, signal: AbortSignal): Promise<Uint8Array | null>;
-  /** Stores a new object of `contentType`; rejects if it already exists (never overwrites) or `signal` aborts. */
+  download(bucket: SourceBucket, key: string, maxBytes: number, signal: AbortSignal): Promise<Uint8Array | null>;
+  /**
+   * Stores a new copy of `contentType` in `post-images`; rejects if it already exists (never
+   * overwrites) or `signal` aborts.
+   */
   upload(key: string, bytes: Uint8Array, contentType: ImageType, signal: AbortSignal): Promise<void>;
-  /** Removes objects; must abort its request when `signal` aborts. Best effort (failures logged). */
+  /** Removes copies from `post-images`; must abort its request when `signal` aborts. Best effort (failures logged). */
   remove(keys: string[], signal: AbortSignal): Promise<void>;
 }
 
@@ -81,6 +86,8 @@ export interface ClaimedMediaJob {
   attempt: number;
   owner_id: string;
   post_id: string;
+  /** Bucket of the original; absent on a claim made before the database recorded it (`post-images`). */
+  storage_bucket?: string | null;
   storage_key: string;
   mime_type: string;
   size_bytes: number;
@@ -127,12 +134,6 @@ const THUMB_CAPS = { maxSourceEdge: 1024, maxSourcePixels: 1024 * 1024 };
 const THUMB_MAX_BYTES = 1024 * 1024;
 /** No upload starts within this margin before the lease ends, and every upload is aborted there. */
 export const WRITE_MARGIN_MS = 30_000;
-const SOURCE_TYPES = new Set(['image/jpeg', 'image/png']);
-/** `<owner uuid>/<path>` with plain path characters and no `..` segment. */
-const OWNED_KEY = /^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\/[A-Za-z0-9._\/-]{1,400}$/;
-
-/** A refusal that no retry can change. */
-class FinalRefusal extends Error {}
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
@@ -148,17 +149,6 @@ export function thumbKey(key: string): string {
   return key.replace(/(\.[A-Za-z0-9]+)?$/, (ext) => `-thumb${ext}`);
 }
 
-/** Pre-download refusals, from what the claim says about the row and the stored object. */
-export function preflight(job: ClaimedMediaJob): void {
-  const owned = OWNED_KEY.exec(job.storage_key);
-  if (!owned || owned[1] !== job.owner_id || job.storage_key.split('/').includes('..')) {
-    throw new FinalRefusal('foreign_or_invalid_path');
-  }
-  if (job.object_size === null) throw new FinalRefusal('object_missing');
-  if (job.object_size > MAX_SOURCE_BYTES) throw new FinalRefusal('too_large');
-  if (!job.object_mimetype || !SOURCE_TYPES.has(job.object_mimetype)) throw new FinalRefusal('unsupported_type');
-}
-
 /** A database function call with its deadline. */
 function callRpc(deps: ProcessPostMediaDeps, fn: WorkerRpc, args: Record<string, unknown>): Promise<RpcResult> {
   const ms = deps.deadlines?.rpcMs ?? DEFAULT_DEADLINES.rpcMs;
@@ -171,11 +161,11 @@ function callRpc(deps: ProcessPostMediaDeps, fn: WorkerRpc, args: Record<string,
  * any problem with it, transient or not, only costs the thumb.
  */
 async function sanitizedThumb(
-  job: ClaimedMediaJob, type: ImageType, deps: ProcessPostMediaDeps, downloadMs: number,
+  job: ClaimedMediaJob, bucket: SourceBucket, type: ImageType, deps: ProcessPostMediaDeps, downloadMs: number,
 ): Promise<SanitizedImage | null> {
   try {
     const bytes = await withDeadline(downloadMs, 'thumb download', (signal) =>
-      deps.storage.download(thumbKey(job.storage_key), THUMB_MAX_BYTES, signal));
+      deps.storage.download(bucket, thumbKey(job.storage_key), THUMB_MAX_BYTES, signal));
     const thumb = bytes ? sanitizeImage(bytes, THUMB_CAPS) : null;
     return thumb?.type === type ? thumb : null;
   } catch (err) {
@@ -197,12 +187,12 @@ async function processJob(job: ClaimedMediaJob, deps: ProcessPostMediaDeps): Pro
   let sanitized: SanitizedImage;
   let thumb: SanitizedImage | null;
   try {
-    preflight(job);
+    const bucket = preflight(job);
     const bytes = await withDeadline(deadlines.downloadMs, 'download', (signal) =>
-      deps.storage.download(job.storage_key, job.object_size as number, signal));
+      deps.storage.download(bucket, job.storage_key, job.object_size as number, signal));
     if (!bytes) throw new FinalRefusal('object_missing');
     sanitized = sanitizeImage(bytes);
-    thumb = await sanitizedThumb(job, sanitized.type, deps, deadlines.downloadMs);
+    thumb = await sanitizedThumb(job, bucket, sanitized.type, deps, deadlines.downloadMs);
   } catch (err) {
     if (err instanceof FinalRefusal || err instanceof ImageRejected) return fail(err.message, false);
     return fail(`download: ${err instanceof Error ? err.message : String(err)}`, true);

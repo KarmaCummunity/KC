@@ -6343,6 +6343,7 @@ export type Database = {
           owner_id: string
           post_id: string
           size_bytes: number
+          storage_bucket: string
           storage_key: string
         }[]
       }

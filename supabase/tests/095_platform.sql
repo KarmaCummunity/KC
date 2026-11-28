@@ -187,8 +187,8 @@ select is(pg_temp.seen('b', $$select 1 where public.bootstrap_session() -> 'flag
 -- ── Storage (through the local stand-in of the storage schema) ──────────────
 select is((select string_agg(id || ':' || public || ':' || file_size_limit || ':' || array_to_string(allowed_mime_types, '+'), ' ' order by id)
              from storage.buckets),
-  'avatars:true:524288:image/jpeg chat-media:false:5242880:image/jpeg+image/png+image/webp post-images:true:8388608:image/jpeg+image/png',
-  'every bucket has a size limit and a MIME allow-list; only chat media is private');
+  'avatars:true:524288:image/jpeg chat-media:false:5242880:image/jpeg+image/png+image/webp post-images:true:8388608:image/jpeg+image/png post-uploads:false:8388608:image/jpeg+image/png',
+  'every bucket has a size limit and a MIME allow-list; chat media and post photo uploads are private');
 select is((select count(*) from storage.buckets where file_size_limit is null or allowed_mime_types is null), 0::bigint,
   'no bucket is unlimited');
 select is(pg_temp.act('b', $$insert into storage.objects (bucket_id, name) values ('avatars', @b || '/avatar.jpg')$$)
