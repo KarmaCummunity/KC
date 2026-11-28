@@ -10,7 +10,7 @@ name: Bump app version on merge
 # 2. Bumps `app/VERSION` PATCH, so PRs no longer edit the file themselves
 #    (TD-196): two open PRs that both bump it always conflict.
 #
-# The bump waits for an empty merge queue ({{ENG:bump-waits-for-empty-queue}}).
+# The bump waits for an empty merge queue.
 # Any push to `dev` makes GitHub rebuild every merge group still waiting, and
 # each rebuilt group runs CI again from the start, the one-at-a-time Maestro
 # lane included (on 26-27 Nov 2026 a group that had already passed was rebuilt

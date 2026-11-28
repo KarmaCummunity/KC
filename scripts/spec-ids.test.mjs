@@ -147,3 +147,12 @@ describe('spec-ids CLI', () => {
     assert.match(result.stderr, /\{\{G:never-defined\}\} has no entry/);
   });
 });
+
+// Assignment runs with a Contents-only App. A templated citation in a workflow
+// comment would make the generated commit require Workflows write permission.
+describe('assignment workflow token scope', () => {
+  it('keeps registry placeholders out of the version-assignment workflow', () => {
+    const workflow = readFileSync(resolve(dirname(script), '../.github/workflows/bump-version-on-merge.yml'), 'utf8');
+    assert.deepEqual(findPlaceholders(workflow), []);
+  });
+});
