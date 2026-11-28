@@ -2,6 +2,7 @@
 // for must exist as a React Native testID in app/apps/mobile, so renaming a testID fails here
 // (seconds) instead of on the emulator (tens of minutes).
 import { test } from 'node:test';
+import { runInNewContext } from 'node:vm';
 import assert from 'node:assert/strict';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
@@ -55,6 +56,12 @@ function appHasTestId(id) {
   if (createCategory && source.includes('testID={`create-category-${')) {
     const slug = createCategory[1];
     return source.includes(`${slug}: `) || source.includes(`${slug}: '`);
+  }
+  // Admin dashboard cards: `testID={`admin-card-${c.key}`}` with `key: 'onboardingReplay'`, …
+  const adminCard = id.match(/^admin-card-([A-Za-z0-9_]+)$/);
+  if (adminCard && source.includes('testID={`admin-card-${')) {
+    const key = adminCard[1];
+    return source.includes(`key: '${key}'`) || source.includes(`key: "${key}"`);
   }
   return false;
 }
@@ -134,4 +141,21 @@ test('the Maestro workflow is a lane of the CI gate: reusable, secret passed by 
   assert.match(ci, /^ {2}maestro:\n[\s\S]*?uses: \.\/\.github\/workflows\/ci-maestro-android\.yml/m);
   assert.doesNotMatch(ci, /yield_to_queue/);
   assert.match(ci, /needs: \[changes, hygiene, static, release, frontend, bundles, backend, edge, maestro\]/);
+});
+
+
+test('shared sign-in keeps a caller email and defaults only when none is supplied', () => {
+  const flow = readFileSync(join(MAESTRO_DIR, 'subflows', 'sign-in.yaml'), 'utf8');
+  const value = flow.match(/^  KC_E2E_EMAIL: (.+)$/m)?.[1];
+  assert.ok(value?.startsWith('${') && value.endsWith('}'), 'the shared helper must evaluate a default, not overwrite callers');
+  const expression = value.slice(2, -1);
+  assert.equal(runInNewContext(expression, { KC_E2E_EMAIL: 'admin1@seed.kc.test' }), 'admin1@seed.kc.test');
+  assert.equal(runInNewContext(expression, { KC_E2E_EMAIL: 'user1@seed.kc.test' }), 'user1@seed.kc.test');
+  assert.equal(runInNewContext(expression, { KC_E2E_EMAIL: undefined }), 'user1@seed.kc.test');
+  assert.equal(runInNewContext(expression, {}), 'user1@seed.kc.test');
+  for (const name of ['23-admin-onboarding-replay.yaml', '24-admin-onboarding-replay-exit.yaml']) {
+    const adminFlow = readFileSync(join(MAESTRO_DIR, 'flows', name), 'utf8');
+    assert.match(adminFlow, /file: ..\/subflows\/sign-in.yaml\n    env:\n      KC_E2E_EMAIL: admin1@seed.kc.test/);
+  }
+  assert.match(readFileSync(join(MAESTRO_DIR, 'flows', '23-admin-onboarding-replay.yaml'), 'utf8'), /assertVisible: "E2E Admin 1"/);
 });

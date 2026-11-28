@@ -1,0 +1,49 @@
+# Admin portal onboarding replay: exit from step 2 returns to the dashboard (FR-ADMIN-035 AC3/AC4).
+# Spec: docs/spec/requirements/12_super_admin.md FR-ADMIN-035 AC3–AC4 (KC#2253).
+appId: org.karmacommunity.app
+name: Admin — onboarding replay exit on step 2
+tags: [admin, onboarding]
+env:
+  KC_E2E_EMAIL: admin1@seed.kc.test
+---
+- runFlow:
+    file: ../subflows/sign-in.yaml
+    env:
+      KC_E2E_EMAIL: admin1@seed.kc.test
+- extendedWaitUntil:
+    visible:
+      id: topbar-admin-portal
+    timeout: 30000
+- tapOn:
+    id: topbar-admin-portal
+- extendedWaitUntil:
+    visible:
+      id: admin-portal-topbar
+    timeout: 20000
+- scrollUntilVisible:
+    element:
+      id: admin-card-onboardingReplay
+    direction: DOWN
+    timeout: 20000
+    centerElement: true
+- tapOn:
+    id: admin-card-onboardingReplay
+- extendedWaitUntil:
+    visible:
+      id: onboarding-replay-banner
+    timeout: 15000
+# Step 1 → step 2, then banner exit back to the portal.
+- tapOn:
+    id: onboarding-skip
+- extendedWaitUntil:
+    visible:
+      id: onboarding-replay-banner
+    timeout: 15000
+- tapOn:
+    id: onboarding-replay-exit
+- extendedWaitUntil:
+    visible:
+      id: admin-portal-topbar
+    timeout: 15000
+- assertVisible:
+    id: admin-dashboard-search

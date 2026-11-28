@@ -1,0 +1,43 @@
+# One sandboxed onboarding replay from the admin dashboard and back (FR-ADMIN-035).
+# Caller must already be on the admin portal with the replay card reachable.
+appId: org.karmacommunity.app
+---
+- scrollUntilVisible:
+    element:
+      id: admin-card-onboardingReplay
+    direction: DOWN
+    timeout: 20000
+    centerElement: true
+- tapOn:
+    id: admin-card-onboardingReplay
+- extendedWaitUntil:
+    visible:
+      id: onboarding-replay-banner
+    timeout: 15000
+# Four steps (about → basic info → photo → tour); skip advances without writing the profile.
+- tapOn:
+    id: onboarding-skip
+- extendedWaitUntil:
+    visible:
+      id: onboarding-replay-banner
+    timeout: 15000
+- tapOn:
+    id: onboarding-skip
+- extendedWaitUntil:
+    visible:
+      id: onboarding-replay-banner
+    timeout: 15000
+- tapOn:
+    id: onboarding-skip
+- extendedWaitUntil:
+    visible:
+      id: onboarding-replay-banner
+    timeout: 15000
+- tapOn:
+    id: onboarding-skip
+- extendedWaitUntil:
+    visible:
+      id: admin-portal-topbar
+    timeout: 15000
+- assertVisible:
+    id: admin-dashboard-search

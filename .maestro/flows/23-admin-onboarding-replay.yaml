@@ -1,0 +1,32 @@
+# Admin portal onboarding replay: open → complete → return, twice; profile name stays the seed value.
+# Spec: docs/spec/requirements/12_super_admin.md FR-ADMIN-035 AC1–AC4 (KC#2253 / #2080 E2E).
+appId: org.karmacommunity.app
+name: Admin — onboarding replay completes twice
+tags: [admin, onboarding, smoke]
+env:
+  KC_E2E_EMAIL: admin1@seed.kc.test
+---
+- runFlow:
+    file: ../subflows/sign-in.yaml
+    env:
+      KC_E2E_EMAIL: admin1@seed.kc.test
+- extendedWaitUntil:
+    visible:
+      id: topbar-admin-portal
+    timeout: 30000
+- tapOn:
+    id: topbar-admin-portal
+- extendedWaitUntil:
+    visible:
+      id: admin-portal-topbar
+    timeout: 20000
+- runFlow: ../subflows/admin-onboarding-replay-once.yaml
+- runFlow: ../subflows/admin-onboarding-replay-once.yaml
+# Sandbox: the seeded display name is still on the profile after both runs.
+- tapOn:
+    id: tab-profile
+- extendedWaitUntil:
+    visible:
+      id: my-profile-screen
+    timeout: 15000
+- assertVisible: "E2E Admin 1"

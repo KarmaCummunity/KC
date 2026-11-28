@@ -7,7 +7,8 @@ name: Seed KC dev
 #   reference   cities, streets, road junctions            supabase/seed/reference/load.sh
 #   content     organization links, legal texts, surveys,  supabase/seed/content/load.sh
 #               the platform organization
-#   e2e-users   user1 … user4 @seed.kc.test for tests/e2e  supabase/seed/e2e/load.sql
+#   e2e-users   user1 … user4 + admin1 @seed.kc.test       supabase/seed/e2e/load.sql
+#               (admin1 holds a platform admin grant for Maestro)
 #   all         the three above, in that order
 #   demo        the demo-data tools behind the admin portal's Demo data screen (FR-ADMIN-031):
 #               supabase/seed/demo/load.sql installs them and marks kc-dev as the one database
