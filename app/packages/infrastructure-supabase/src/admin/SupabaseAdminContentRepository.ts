@@ -19,6 +19,7 @@ import { unwrapCall } from '../rpc/mapRpcError';
 import { loadDisplayNames } from '../reports/reportTargetPreviews';
 import { callAuditSearch } from './auditSearchCall';
 import { refusalReason } from './refusalReason';
+import { presentMemberIds, memberEntry } from '../users/memberIds';
 
 type Client = SupabaseClient<Database>;
 
@@ -158,7 +159,7 @@ export class SupabaseAdminContentRepository implements IAdminContentRepository {
       if (after) query = query.or(after);
       const rows = unwrapCall('table:posts', await query) ?? [];
       const page = pageOf(rows, limit, (r) => ({ createdAt: r.created_at, id: r.id }));
-      const owners = await loadDisplayNames(this.client, page.rows.map((r) => r.owner_id));
+      const owners = await loadDisplayNames(this.client, presentMemberIds(page.rows.map((r) => r.owner_id)));
       return {
         rows: page.rows.map((r) => ({
           postId: r.id,
@@ -166,8 +167,9 @@ export class SupabaseAdminContentRepository implements IAdminContentRepository {
           type: r.post_type,
           status: r.status,
           visibility: r.visibility,
-          ownerId: r.owner_id,
-          ownerDisplayName: owners.get(r.owner_id) ?? null,
+          // '' for an owner who deleted their account (#2088).
+          ownerId: r.owner_id ?? '',
+          ownerDisplayName: memberEntry(owners, r.owner_id) ?? null,
           createdAt: new Date(r.created_at),
           updatedAt: new Date(r.updated_at),
         })),

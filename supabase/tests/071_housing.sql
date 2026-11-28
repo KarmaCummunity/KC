@@ -311,8 +311,12 @@ select is(pg_temp.ask('b', 'h3', 60, 61) || pg_temp.act('a', $$select public.del
     || '|' || pg_temp.val(null, $$select cancel_reason from public.post_handoffs where id = ~h3.b$$), 'okok|post_deleted',
   'deleting an offer cancels its requests');
 delete from auth.users where id = '00000000-0000-4000-8000-00000000000a';
-select is((select count(*) from public.post_housing_details) + (select count(*) from public.handoff_booking_details), 0::bigint,
-  'removing the host removes the offers and their bookings');
+select is((select count(*) from public.post_housing_details d join public.posts p on p.id = d.post_id
+             where p.owner_id is null and not exists (select 1 from public.post_handoffs h
+                                                       where h.post_id = p.id and h.status = 'handed_over'))
+  + (select count(*) from public.handoff_booking_details b join public.post_handoffs h on h.id = b.handoff_id
+      where h.owner_id is null and h.status in ('reserved', 'confirmed')), 0::bigint,
+  'removing the host removes the offers and bookings nobody completed (a completed stay is the guest''s record, #2088)');
 
 select * from finish();
 rollback;

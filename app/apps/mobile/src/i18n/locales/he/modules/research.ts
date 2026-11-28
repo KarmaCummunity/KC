@@ -27,7 +27,7 @@ export const researchHe = {
   navFinish: 'סיום',
 
   // Submit
-  submitBtn: 'שלח תשובות',
+  submitBtn: 'שליחת תשובות',
   submitting: 'שולח...',
   submitRequiresAllRatings: 'יש לדרג את כל השאלות לפני הסיום — בדקו את השאלות שסומנו',
 
@@ -41,7 +41,7 @@ export const researchHe = {
   errorInvalidEmail: 'כתובת המייל לא תקינה — תקנו או השאירו ריק',
   errorInvalidSource: 'קישור הסקר לא תקין — נסו שוב מהקישור המקורי',
   errorGeneric: 'אירעה שגיאה, נסה שוב',
-  retryBtn: 'נסה שוב',
+  retryBtn: 'לנסות שוב',
 
   // Thank-you page (design spec §9)
   thanksHeading: 'תודה. ברצינות.',

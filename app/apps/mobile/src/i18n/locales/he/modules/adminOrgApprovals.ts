@@ -36,6 +36,6 @@ export const adminOrgApprovalsHe = {
     application_not_found:        'הבקשה לא נמצאה.',
     application_already_decided:  'הבקשה כבר טופלה.',
     invalid_status:               'סטטוס לא תקין.',
-    unknown:                      'אירעה שגיאה. נסה שוב.',
+    unknown:                      'אירעה שגיאה. אפשר לנסות שוב.',
   },
 };

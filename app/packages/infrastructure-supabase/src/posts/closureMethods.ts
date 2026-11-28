@@ -130,6 +130,8 @@ export async function getClosureCandidates(client: Client, postId: string): Prom
     await client.from('posts').select('owner_id').eq('id', postId).maybeSingle(),
   );
   if (!post) throw new PostError('not_found', 'post not found');
+  // An owner who deleted their account (#2088) closes nothing.
+  if (post.owner_id === null) return [];
   const partners = await chatPartners(client, postId, post.owner_id);
   if (partners.size === 0) return [];
   const rows = unwrapCall(

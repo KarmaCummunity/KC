@@ -4,24 +4,24 @@ export const chatHe = {
   noChats: 'אין שיחות עדיין',
   noChatsDesc: 'פנה למפרסמים ישירות מתוך הפוסטים.',
   inputPlaceholder: 'כתוב הודעה...',
-  attachImage: 'צרף תמונה',
-  mediaUploadFailed: 'לא ניתן לשלוח את התמונה. נסה שוב.',
+  attachImage: 'צירוף תמונה',
+  mediaUploadFailed: 'לא ניתן לשלוח את התמונה. אפשר לנסות שוב.',
   typingIndicator: 'מקליד/ה…',
   onlineNow: 'מחובר/ת עכשיו',
-  send: 'שלח',
+  send: 'שליחה',
   read: 'נקרא',
-  report: 'דווח על שיחה',
-  menuDeleteFromInbox: 'הסר מהאינבוקס שלי',
+  report: 'דיווח על שיחה',
+  menuDeleteFromInbox: 'הסרה מהאינבוקס שלי',
   hideFromInboxTitle: 'להסיר את השיחה מהאינבוקס?',
   hideFromInboxBody:
     'השיחה תיעלם רק אצלך. אצל הצד השני נשארת ההיסטוריה. הודעה חדשה באותו שרשור עלולה להחזיר אותה לרשימה.',
   hideFromInboxCancel: 'ביטול',
-  hideFromInboxConfirm: 'הסר',
-  menuReport: 'דווח על השיחה',
+  hideFromInboxConfirm: 'הסרה',
+  menuReport: 'דיווח על השיחה',
   minutesAgoShort: "לפני {{count}} דק'",
 
   // InboxChatRow
-  hideChatA11y: 'הסר שיחה מהאינבוקס',
+  hideChatA11y: 'הסרת שיחה מהאינבוקס',
   // Inbox preview prefixes — TD-110 bug 2.
   inboxSystemPrefix: '(הודעת מערכת)',
   inboxNewConversation: '(שיחה חדשה)',
@@ -34,7 +34,7 @@ export const chatHe = {
   },
 
   // AnchoredPostCard (FR-CHAT-014/015)
-  anchoredOpenA11y: 'פתח את הפוסט',
+  anchoredOpenA11y: 'פתיחת הפוסט',
   anchoredTypeGive: 'נותן',
   anchoredTypeRequest: 'מבקש',
   // AnchoredPostCard contact-phone quick-call (FR-CHAT-014 AC7)
@@ -60,10 +60,10 @@ export const chatHe = {
   headerActionsA11y: 'פעולות',
   errorTitle: 'שגיאה',
   hideErrorSupport: 'לא ניתן להסיר את שיחת התמיכה.',
-  hideErrorGeneric: 'לא הצלחנו להסיר את השיחה. נסה שוב.',
+  hideErrorGeneric: 'לא הצלחנו להסיר את השיחה. אפשר לנסות שוב.',
 
   // Chat inbox screen (chat/index.tsx) — PR5b i18n sweep.
-  searchPlaceholder: 'חפש לפי שם...',
+  searchPlaceholder: 'חיפוש לפי שם...',
 
   // ChatNotFoundView (components/chat/ChatNotFoundView.tsx) — PR5b i18n sweep.
   notFoundTitle: 'השיחה לא זמינה',

@@ -11,6 +11,8 @@ vi.mock('expo-router', () => ({ useRouter: () => ({ replace }) }));
 vi.mock('../../store/authStore', () => ({ useAuthStore: Object.assign((selector: (s: { session: typeof state.session; setOnboardingState: typeof setOnboarding }) => unknown) => selector({ session: state.session, setOnboardingState: setOnboarding }), { getState: () => ({ setBasicInfoSkipped: setSkipped }) }) }));
 vi.mock('../../store/feedSessionStore', () => ({ useFeedSessionStore: { getState: () => ({ showEphemeralToast: toast }) } }));
 vi.mock('../../services/userComposition', () => ({ getCompleteBasicInfoUseCase: () => ({ execute: complete }), markBasicInfoSkipped: skip }));
+const measureMark = vi.hoisted(() => vi.fn((_name: string, work: () => Promise<unknown>) => work()));
+vi.mock('../../lib/observability/perfMarks', () => ({ measureMark }));
 import { useOnboardingBasicInfoFlow } from '../useOnboardingBasicInfoFlow';
 import { useOnboardingReplayStore } from '../../store/onboardingReplayStore';
 describe('useOnboardingBasicInfoFlow', () => {
@@ -63,6 +65,16 @@ describe('useOnboardingBasicInfoFlow', () => {
     expect(result.current.fieldErrors).toEqual({});
     await act(() => result.current.handleContinue());
     expect(complete).toHaveBeenCalledTimes(1);
+  });
+  // #2579: the save and the skip are the network waits between tap and the photo step.
+  it('times the save and the skip as their own marks', async () => {
+    const { result } = renderHook(() => useOnboardingBasicInfoFlow());
+    act(() => { result.current.setCity({ id: 'c1', name: 'Town' }); result.current.setDateOfBirth('1990-05-15'); });
+    await act(() => result.current.handleContinue());
+    await act(() => result.current.handleSkip());
+    expect(measureMark.mock.calls.map((c) => c[0])).toEqual(['onboarding.basic_info_save', 'onboarding.basic_info_skip']);
+    expect(complete).toHaveBeenCalledTimes(1);
+    expect(skip).toHaveBeenCalledWith('u1');
   });
   it('skips for active sessions, ignores absent sessions, and guards back while loading', async () => {
     const { result, rerender } = renderHook(() => useOnboardingBasicInfoFlow());

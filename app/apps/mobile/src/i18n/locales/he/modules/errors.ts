@@ -6,15 +6,15 @@ export const errorsHe = {
   auth: {
     authentication_failed: 'לא הצלחנו להתחבר עם הפרטים האלו. בדקו את הדוא"ל והסיסמה ונסו שוב.',
     invalid_credentials: 'דוא"ל או סיסמה שגויים.',
-    email_already_in_use: 'הדוא"ל הזה כבר רשום. נסה להתחבר או לאפס סיסמה.',
+    email_already_in_use: 'הדוא"ל הזה כבר רשום. אפשר להתחבר או לאפס סיסמה.',
     weak_password: 'הסיסמה חלשה מדי. צריך לפחות 8 תווים, אות וספרה.',
     invalid_email: 'הדוא"ל אינו תקין.',
-    email_not_verified: 'יש לאשר את הדוא"ל לפני הכניסה. בדוק את תיבת הדואר.',
+    email_not_verified: 'יש לאשר את הדוא"ל לפני הכניסה. יש לבדוק את תיבת הדואר.',
     session_expired: 'פג תוקף הסשן. יש להתחבר מחדש.',
-    rate_limited: 'יותר מדי ניסיונות. נסה שוב בעוד כמה דקות.',
+    rate_limited: 'יותר מדי ניסיונות. אפשר לנסות שוב בעוד כמה דקות.',
     cooldown_active: 'החשבון בתקופת המתנה לאחר מחיקה.',
-    network: 'שגיאת רשת. בדוק את החיבור לאינטרנט.',
-    unknown: 'אירעה שגיאה. נסה שוב.',
+    network: 'שגיאת רשת. יש לבדוק את החיבור לאינטרנט.',
+    unknown: 'אירעה שגיאה. אפשר לנסות שוב.',
   },
   post: {
     title_required: 'יש להזין כותרת לפוסט.',
@@ -27,7 +27,7 @@ export const errorsHe = {
     followers_only_requires_private:
       'פוסט לעוקבים בלבד דורש פרופיל פרטי. שנהו את הפרופיל לפרטי בהגדרות ← פרטיות.',
     street_number_invalid: 'מספר הבית לא תקין. השתמש בספרות בלבד (אפשר להוסיף אות אחת בסוף, למשל 12, 12B או 12א).',
-    city_not_found: 'העיר שנבחרה לא נמצאה ברשימה. אנא בחר עיר מהרשימה.',
+    city_not_found: 'העיר שנבחרה לא נמצאה ברשימה. יש לבחור עיר מהרשימה.',
     image_required_for_give: 'פוסטים מסוג "לתת" חייבים לפחות תמונה אחת.',
     too_many_media_assets: 'מותר עד {{max}} תמונות לפוסט.',
     condition_required_for_give: 'יש לבחור מצב לחפץ שניתן.',
@@ -38,7 +38,7 @@ export const errorsHe = {
     invalid_visibility: 'בחירת הפרטיות לא תקינה.',
     invalid_category: 'הקטגוריה לא תקינה.',
     invalid_location_display_level: 'רמת תצוגת המיקום לא תקינה.',
-    forbidden: 'אין לך הרשאה לפעולה זו. נסה להתחבר מחדש.',
+    forbidden: 'אין לך הרשאה לפעולה זו. אפשר להתחבר מחדש.',
     closure_not_owner: 'רק בעל הפוסט יכול לסמן או לפתוח אותו מחדש.',
     closure_wrong_status: 'הפוסט במצב שאינו מאפשר את הפעולה הזו.',
     closure_recipient_not_in_chat: 'אי אפשר לסמן את עצמך, ולא משתמש שלא קיים.',
@@ -47,7 +47,7 @@ export const errorsHe = {
     post_not_open: 'לא ניתן לערוך פוסט שאינו פתוח.',
     post_owner_delete_forbidden:
       'לא ניתן למחוק: יש מקבל רשום לפוסט, או שהפוסט במצב שאינו מאפשר מחיקה. אפשר למחוק פוסט פתוח או סגור בלי רשומת מקבל.',
-    unknown: 'אירעה שגיאה. נסה שוב.',
+    unknown: 'אירעה שגיאה. אפשר לנסות שוב.',
   },
   profile: {
     invalid_display_name: 'שם לא תקין (1–50 תווים).',
@@ -65,7 +65,7 @@ export const errorsHe = {
     galleryDeniedBodyPost: 'כדי לבחור תמונות יש לאפשר גישה בהגדרות → קהילת קארמה → תמונות.',
     cameraDeniedTitle: 'גישה למצלמה נדחתה',
     cameraDeniedBodyAvatar: 'כדי לצלם תמונה יש לאפשר גישה בהגדרות → קהילת קארמה → מצלמה.',
-    openSettings: 'פתח הגדרות',
+    openSettings: 'פתיחת הגדרות',
   },
   chat: {
     userUnavailableTitle: 'משתמש לא זמין',

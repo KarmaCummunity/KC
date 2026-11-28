@@ -24,6 +24,7 @@ import {
 } from '../marketplace/eventRegistrations';
 import { fetchCardsInOrder } from '../marketplace/listingMapping';
 import { loadSeatCounts } from '../marketplace/postSeatCounts';
+import { presentMemberIds, memberEntry } from '../users/memberIds';
 
 type Client = SupabaseClient<Database>;
 type EventRow = Database['public']['Tables']['post_event_details']['Row'];
@@ -201,7 +202,7 @@ export class SupabaseVolunteerRepository implements IVolunteerRepository {
       unwrapCall('table:post_handoffs', await this.client.from('post_handoffs').select('*').eq('post_id', shiftId).order('created_at', { ascending: true })) ?? [];
     if (handoffs.length === 0) return [];
     const [users, events] = await Promise.all([
-      this.client.from('users').select('id, display_name, share_handle').in('id', [...new Set(handoffs.map((row) => row.recipient_id))]),
+      this.client.from('users').select('id, display_name, share_handle').in('id', presentMemberIds(handoffs.map((row) => row.recipient_id))),
       loadEventRows(this.client, [shiftId]),
     ]);
     const userById = new Map((unwrapCall('table:users', users) ?? []).map((user) => [user.id, user]));
@@ -209,10 +210,10 @@ export class SupabaseVolunteerRepository implements IVolunteerRepository {
     let waiting = 0;
     return handoffs.map((row) => {
       const position = row.status === 'waitlisted' ? ++waiting : null;
-      const user = userById.get(row.recipient_id);
+      const user = memberEntry(userById, row.recipient_id);
       return {
         signupId: row.id,
-        userId: row.recipient_id,
+        userId: row.recipient_id ?? '',
         displayName: user?.display_name ?? null,
         shareHandle: user?.share_handle ?? null,
         status: row.status,
