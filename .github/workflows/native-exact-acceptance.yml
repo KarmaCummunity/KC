@@ -1,0 +1,140 @@
+name: Exact-source native guest acceptance
+on:
+  workflow_dispatch:
+    inputs:
+      candidate_sha:
+        description: Immutable 40-character launch candidate commit
+        required: true
+        type: string
+      pinned_web_url:
+        description: Immutable matching KC DEV Pages deployment root
+        required: true
+        type: string
+      evidence_certificate:
+        description: Base64 PEM public certificate with already-proven private recovery
+        required: true
+        type: string
+      device_family:
+        description: Simulator family, never physical-device or store-binary proof
+        required: true
+        type: choice
+        options: [iPad, iPhone]
+        default: iPad
+permissions:
+  contents: read
+concurrency:
+  group: native-exact-acceptance
+  cancel-in-progress: false
+jobs:
+  accept:
+    if: github.ref != 'refs/heads/main'
+    runs-on: macos-latest
+    timeout-minutes: 90
+    env:
+      CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+      PINNED_WEB_URL: ${{ inputs.pinned_web_url }}
+      EVIDENCE_CERTIFICATE: ${{ inputs.evidence_certificate }}
+      DEVICE_FAMILY: ${{ inputs.device_family }}
+      EAS_BUILD_GIT_COMMIT_HASH: ${{ inputs.candidate_sha }}
+      EXPO_PUBLIC_GIT_COMMIT_SHA: ${{ inputs.candidate_sha }}
+      KC_E2E_BUILD: '1'
+      EXPO_PUBLIC_ENVIRONMENT: development
+      EXPO_PUBLIC_SUPABASE_URL: https://enbqriuxvvuontiwslun.supabase.co
+      SENTRY_DISABLE_AUTO_UPLOAD: 'true'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          path: tooling
+          persist-credentials: false
+      - name: Validate immutable inputs and encryption destination before build
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/native-private"
+          printf '%s\n' 'Recovered encrypted key and vault passphrase must be proven before dispatch. Simulator acceptance only.' > "$RUNNER_TEMP/native-private/scope.txt"
+          node tooling/scripts/native-exact-acceptance.mjs target "$CANDIDATE_SHA" "$PINNED_WEB_URL" > "$RUNNER_TEMP/native-private/target.json"
+          printf '%s' "$EVIDENCE_CERTIFICATE" | base64 --decode > "$RUNNER_TEMP/recipient.pem"
+          openssl x509 -in "$RUNNER_TEMP/recipient.pem" -noout -checkend 86400
+          openssl x509 -in "$RUNNER_TEMP/recipient.pem" -noout -fingerprint -sha256 > "$RUNNER_TEMP/native-private/recipient-fingerprint.txt"
+          git -C tooling rev-parse HEAD > "$RUNNER_TEMP/native-private/tooling-sha.txt"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ inputs.candidate_sha }}
+          path: candidate
+          persist-credentials: false
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115
+        with:
+          package_json_file: candidate/app/package.json
+          run_install: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version-file: candidate/.nvmrc
+      - name: Prepare independent XCTest runner and fresh simulator
+        run: |
+          set -euo pipefail
+          xcrun simctl list devices available --json > "$RUNNER_TEMP/devices.json"
+          node tooling/scripts/native-exact-acceptance.mjs device "$RUNNER_TEMP/devices.json" "$DEVICE_FAMILY" > "$RUNNER_TEMP/native-private/device.json"
+          dtype=$(node -p 'JSON.parse(require("fs").readFileSync(process.env.RUNNER_TEMP+"/native-private/device.json")).deviceTypeIdentifier')
+          runtime=$(node -p 'JSON.parse(require("fs").readFileSync(process.env.RUNNER_TEMP+"/native-private/device.json")).runtime')
+          udid=$(xcrun simctl create KCExactFresh "$dtype" "$runtime")
+          printf '%s\n' "$udid" > "$RUNNER_TEMP/native-private/fresh-device-udid.txt"
+          echo "SIMULATOR_UDID=$udid" >> "$GITHUB_ENV"
+          xcrun simctl boot "$udid" > "$RUNNER_TEMP/native-private/boot.log" 2>&1
+          xcrun simctl bootstatus "$udid" -b >> "$RUNNER_TEMP/native-private/boot.log" 2>&1
+          gem install xcodeproj --version 1.27.0 --user-install --no-document > "$RUNNER_TEMP/native-private/gem.log" 2>&1
+          ruby tooling/tests/native/exact/create-project.rb "$RUNNER_TEMP/exact-runner"
+          xcodebuild -project "$RUNNER_TEMP/exact-runner/KCAXReader.xcodeproj" -scheme KCAXReader -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath "$RUNNER_TEMP/exact-runner-build" CODE_SIGNING_ALLOWED=NO build-for-testing > "$RUNNER_TEMP/native-private/runner-build.log" 2>&1
+      - name: Resolve public configuration from matching immutable deployment
+        run: node tooling/scripts/native-exact-public-env.mjs >> "$GITHUB_ENV"
+      - name: Build unchanged candidate with explicit simulator-only configuration
+        working-directory: candidate/app
+        run: |
+          set -euo pipefail
+          node ../../tooling/scripts/native-exact-acceptance.mjs source .. "$CANDIDATE_SHA" > "$RUNNER_TEMP/native-private/source-before.json"
+          pnpm install --frozen-lockfile > "$RUNNER_TEMP/native-private/install.log" 2>&1
+          cd apps/mobile
+          NODE_ENV=production npx expo prebuild --platform ios --no-install --clean --skip-dependency-update expo,react-native > "$RUNNER_TEMP/native-private/prebuild.log" 2>&1
+          node "$GITHUB_WORKSPACE/tooling/scripts/native-exact-acceptance.mjs" source "$GITHUB_WORKSPACE/candidate" "$CANDIDATE_SHA" > "$RUNNER_TEMP/native-private/source-after-prebuild.json"
+          npx expo config --type public --json > "$RUNNER_TEMP/native-private/resolved-expo-config.json"
+          cd ios
+          pod install > "$RUNNER_TEMP/native-private/pods.log" 2>&1
+          xcodebuild -workspace KC.xcworkspace -scheme KC -configuration Release -sdk iphonesimulator -destination "platform=iOS Simulator,id=$SIMULATOR_UDID" -derivedDataPath "$RUNNER_TEMP/exact-app-build" CODE_SIGNING_ALLOWED=YES CODE_SIGNING_REQUIRED=YES CODE_SIGN_IDENTITY='-' DEVELOPMENT_TEAM='' build > "$RUNNER_TEMP/native-private/app-build.log" 2>&1
+          app="$RUNNER_TEMP/exact-app-build/Build/Products/Release-iphonesimulator/KC.app"
+          node "$GITHUB_WORKSPACE/tooling/scripts/native-exact-acceptance.mjs" hash "$app/KC" > "$RUNNER_TEMP/native-private/executable-sha256.txt"
+          find "$app" -type f -exec shasum -a 256 {} \; > "$RUNNER_TEMP/native-private/app-resource-sha256.txt"
+          codesign --verify --deep --strict "$app" > "$RUNNER_TEMP/native-private/signature.log" 2>&1
+          codesign -d --entitlements :- "$app" > "$RUNNER_TEMP/native-private/entitlements.txt" 2>&1
+          printf '%s\n' 'Unmodified candidate source; DEV backend; KC_E2E_BUILD=1 disables OTA; Release simulator SDK; local ad-hoc signing; no startup or AX app patches; not store binary or APNs evidence.' > "$RUNNER_TEMP/native-private/build-scope.txt"
+          xcrun simctl install "$SIMULATOR_UDID" "$app" > "$RUNNER_TEMP/native-private/install-app.log" 2>&1
+      - name: One cold launch and semantic guest journey, no fallback
+        run: |
+          set -euo pipefail
+          xcodebuild -project "$RUNNER_TEMP/exact-runner/KCAXReader.xcodeproj" -scheme KCAXReader -configuration Debug -sdk iphonesimulator -destination "platform=iOS Simulator,id=$SIMULATOR_UDID" -derivedDataPath "$RUNNER_TEMP/exact-runner-build" -resultBundlePath "$RUNNER_TEMP/native-private/guest.xcresult" -only-testing:KCAXReader/RawAXTests/testExactFreshGuestBrowse -parallel-testing-enabled NO -test-timeouts-enabled YES -default-test-execution-time-allowance 180 -maximum-test-execution-time-allowance 210 CODE_SIGNING_ALLOWED=NO test-without-building > "$RUNNER_TEMP/native-private/journey.log" 2>&1
+      - name: Recheck candidate tracked source after execution
+        if: always()
+        run: |
+          set -euo pipefail
+          if [ -d candidate/.git ]; then
+            node tooling/scripts/native-exact-acceptance.mjs source candidate "$CANDIDATE_SHA" > "$RUNNER_TEMP/native-private/source-after-execution.json"
+          fi
+      - name: Export native screenshot attachments into private evidence
+        if: always()
+        run: |
+          set -euo pipefail
+          if [ -d "$RUNNER_TEMP/native-private/guest.xcresult" ]; then
+            xcrun xcresulttool export attachments --path "$RUNNER_TEMP/native-private/guest.xcresult" --output-path "$RUNNER_TEMP/native-private/attachments" > "$RUNNER_TEMP/native-private/attachment-export.log" 2>&1
+          fi
+      - name: Encrypt all evidence before upload, including failures
+        if: always()
+        run: |
+          set -euo pipefail
+          test -s "$RUNNER_TEMP/recipient.pem"
+          tar -czf "$RUNNER_TEMP/native-private.tar.gz" -C "$RUNNER_TEMP" native-private
+          openssl cms -encrypt -binary -aes-256-cbc -in "$RUNNER_TEMP/native-private.tar.gz" -outform DER -out "$RUNNER_TEMP/native-exact-evidence.cms" "$RUNNER_TEMP/recipient.pem"
+          test -s "$RUNNER_TEMP/native-exact-evidence.cms"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: native-exact-encrypted-evidence
+          path: ${{ runner.temp }}/native-exact-evidence.cms
+          if-no-files-found: error
+          retention-days: 14
