@@ -1,6 +1,8 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
+import { createElement, type ReactNode } from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { PostWithOwner } from '@kc/application';
 import { usePostMenuActions } from '../usePostMenuActions';
 
@@ -42,18 +44,24 @@ const mockPost = {
   ownerId: 'owner-456',
 } as unknown as PostWithOwner;
 
+const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+const wrapper = ({ children }: { children: ReactNode }) => createElement(QueryClientProvider, { client: queryClient }, children);
+
 describe('usePostMenuActions', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    queryClient.clear();
   });
 
   it('executes owner delete successfully', async () => {
     deleteMock.mockResolvedValue(undefined);
+    queryClient.setQueryData(['universalSearch', 'fixture', {}, null], { posts: ['deleted-post'] });
     const onAfterRemoval = vi.fn();
     const onSettle = vi.fn();
 
     const { result } = renderHook(() =>
       usePostMenuActions({ post: mockPost, onAfterRemoval, onSettle }),
+      { wrapper },
     );
 
     await act(async () => {
@@ -66,6 +74,7 @@ describe('usePostMenuActions', () => {
     });
     expect(toastMock).toHaveBeenCalledWith('post.deleteSuccess', 'success');
     expect(onSettle).toHaveBeenCalledTimes(1);
+    expect(queryClient.getQueryState(['universalSearch', 'fixture', {}, null])?.isInvalidated).toBe(true);
     expect(onAfterRemoval).toHaveBeenCalledTimes(1);
     expect(result.current.busy).toBe(false);
     expect(result.current.error).toBeNull();
@@ -78,6 +87,7 @@ describe('usePostMenuActions', () => {
 
     const { result } = renderHook(() =>
       usePostMenuActions({ post: mockPost, onAfterRemoval, onSettle }),
+      { wrapper },
     );
 
     await act(async () => {
@@ -99,6 +109,7 @@ describe('usePostMenuActions', () => {
 
     const { result } = renderHook(() =>
       usePostMenuActions({ post: mockPost, onAfterRemoval, onSettle }),
+      { wrapper },
     );
 
     await act(async () => {
