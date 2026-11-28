@@ -11574,7 +11574,7 @@
     {
      "type": "rpc",
      "name": "replace_post_media",
-     "source": "supabase/migrations/next-01_private_post_uploads.sql",
+     "source": "supabase/migrations/0100_private_post_uploads.sql",
      "sqlSignature": "replace_post_media(p_post_id uuid, p_media jsonb) → void",
      "errorBinding": {
       "status": "unknown",

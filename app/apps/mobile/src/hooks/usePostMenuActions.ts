@@ -2,6 +2,7 @@
 // Extracted to keep PostMenuSheet under the 200-LOC cap and to make
 // the state machine testable in isolation if/when we add tests.
 import { useCallback, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import type { PostWithOwner } from '@kc/application';
 import { isPostError } from '@kc/application';
@@ -31,6 +32,7 @@ interface PostMenuActions {
 
 export function usePostMenuActions({ post, onAfterRemoval, onSettle }: Args): PostMenuActions {
   const { t } = useTranslation();
+  const queryClient = useQueryClient();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -44,6 +46,7 @@ export function usePostMenuActions({ post, onAfterRemoval, onSettle }: Args): Po
       const toast = useFeedSessionStore.getState().showEphemeralToast;
       try {
         await work();
+        await queryClient.invalidateQueries({ queryKey: ['universalSearch'] });
         toast(opts.successToast, 'success');
         onSettle();
         onAfterRemoval();
@@ -55,7 +58,7 @@ export function usePostMenuActions({ post, onAfterRemoval, onSettle }: Args): Po
         setBusy(false);
       }
     },
-    [onAfterRemoval, onSettle],
+    [onAfterRemoval, onSettle, queryClient],
   );
 
   const handleOwnerDelete = useCallback(

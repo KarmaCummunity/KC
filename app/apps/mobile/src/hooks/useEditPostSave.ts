@@ -42,6 +42,7 @@ const QUERY_KEYS_AFTER_EDIT = (postId: string, viewerId: string | null): readonl
   ['profile-tab-open-count'],
   ['profile-tab-closed-count'],
   ['feed'],
+  ['universalSearch'],
 ];
 
 interface Params {
