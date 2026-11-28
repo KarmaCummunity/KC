@@ -64,7 +64,7 @@ Playwright QA suite against `https://dev.karma-community.pages.dev` + kc-dev: [`
 | `mobile-nightly.yml` → `testflight-ios.yml`, `play-internal.yml` | nightly + manual (dev) | Store builds of the newest green dev commit, see [RELEASE.md](./RELEASE.md) |
 | `kc-mobile-eas-preview.yml` | manual | EAS preview build, no store submit |
 | `sync-main-to-dev.yml` | main push | Opens a zero-diff PR into `dev`; the owner merges it as a merge commit with the admin bypass (`TD-182`) |
-| `bump-version-on-merge.yml` | dev push | Bumps `app/VERSION` PATCH after a merge that leaves the merge queue empty, one bump per burst of merges (D-249, `TD-196`); PRs do not edit VERSION. Run it by hand on `dev` if the queue emptied without a merge |
+| `bump-version-on-merge.yml` | dev push | Assigns registry/migration IDs immediately, independently of the automatic PATCH checkpoint. A DEV-side waiter coalesces until 60 minutes after the last VERSION change, then bumps even with a busy queue and no further merge. Runner/check delays are additional. No manual action required (D-249, `TD-196`); ordinary PRs do not edit VERSION |
 | `auto-merge-agent-ready.yml`, `labeler.yml`, `bump-app-version.yml`, `stale-stack-report.yml` | PR / schedule | Housekeeping |
 
 ## Web (Cloudflare Pages)

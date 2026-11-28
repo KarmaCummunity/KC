@@ -1,6 +1,6 @@
 name: Bump app version on merge
 
-# Post-merge bookkeeping on `dev`, in one commit per merge:
+# Post-merge bookkeeping and automatic version checkpoints on `dev`:
 # 1. Assigns registry IDs: each ID placeholder a PR added becomes the next free
 #    number (scripts/spec-ids.mjs), so parallel PRs never collide on a
 #    D# / TD-# / S# / G# / engineering D-# number. The same commit numbers the
@@ -10,16 +10,12 @@ name: Bump app version on merge
 # 2. Bumps `app/VERSION` PATCH, so PRs no longer edit the file themselves
 #    (TD-196): two open PRs that both bump it always conflict.
 #
-# The bump waits for an empty merge queue.
-# Any push to `dev` makes GitHub rebuild every merge group still waiting, and
-# each rebuilt group runs CI again from the start, the one-at-a-time Maestro
-# lane included (on 26-27 Nov 2026 a group that had already passed was rebuilt
-# up to five times, and a merge took hours). So a merge that leaves groups
-# waiting behind it pushes no bump; the merge that empties the queue pushes
-# one bump for the whole burst. If the queue empties without a merge (its last
-# entry was dropped), run this workflow by hand on `dev` to bump. The ID
-# commit of step 1 is not deferred: `dev` must not keep an unnumbered
-# migration, and it lands only for a merge that added a placeholder.
+# PATCH checkpoints coalesce for up to 60 minutes from the last VERSION change,
+# never until an empty merge queue. A DEV-side waiter survives without another
+# merge and catches up automatically. Runner/check delays are additional.
+# ID assignment runs independently, so the waiter cannot hold migrations back.
+# Version-only pushes can rebuild waiting merge groups, at most once per window.
+# Existing CI/deploy certification and store-release gates are unchanged.
 #
 # A PR that edits `app/VERSION` itself (a MINOR/MAJOR release) gets no bump, but
 # its placeholders are still assigned.
@@ -46,30 +42,26 @@ name: Bump app version on merge
 on:
   push:
     branches: [dev]
-  # Catch-up bump when the queue emptied without a merge. Only a run on `dev`
-  # can read the App key (the `version-bump` environment is dev-only).
+  # Operational replay only; automatic catch-up never depends on dispatch.
   workflow_dispatch:
-
-# One run at a time; each run re-reads the tip of `dev`. GitHub keeps only one
-# pending run per group, so a newer pending run replaces an older one. The run
-# triggered by this workflow's own ID commit is skipped by the job `if` below,
-# so it takes a group of its own and never displaces a merge's pending run.
-concurrency:
-  group: "${{ startsWith(github.event.head_commit.message, 'chore(release): assign spec ids') && format('bump-version-on-merge-own-{0}', github.run_id) || 'bump-version-on-merge' }}"
-  cancel-in-progress: false
 
 permissions:
   contents: read
 
 jobs:
   bump:
-    name: assign spec ids and bump patch
+    name: assign registry and migration IDs
+    outputs:
+      explicit_version: ${{ steps.assign.outputs.explicit_version }}
     # Skip our own commit, otherwise the push below would trigger this again.
     if: >-
       ${{ !startsWith(github.event.head_commit.message, 'chore(release): bump app version')
         && !startsWith(github.event.head_commit.message, 'chore(release): assign spec ids') }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    concurrency:
+      group: dev-id-assignment
+      cancel-in-progress: false
     # Branch-restricted to `dev`: a workflow pushed on any other branch cannot
     # read the App key (repository-level secrets would be readable, TD-223).
     environment: version-bump
@@ -94,65 +86,38 @@ jobs:
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          fetch-depth: 2
+          fetch-depth: 0
           token: ${{ steps.app.outputs.token }}
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version-file: .nvmrc
 
-      - name: Assign spec ids, bump patch and push to dev
+      - name: Assign registry and migration IDs immediately
+        id: assign
         run: |
           set -euo pipefail
-          # An explicit version edit in the merged change wins over the automatic bump.
-          # Captured first: `grep -q` exiting early under pipefail would fail the pipeline.
           changed="$(git show --name-only --format= HEAD)"
-          bump_version=true
           if grep -qx 'app/VERSION' <<<"$changed"; then
-            echo "The merged change edits app/VERSION itself; no version bump."
-            bump_version=false
+            echo "explicit_version=true" >> "$GITHUB_OUTPUT"
           fi
-
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-          # True while a merge group other than the one that just landed is waiting in the
-          # dev merge queue. A group ref's commit that is already on dev (the tip, or its
-          # parent under an ID commit) is the landed merge, whose ref GitHub has not removed
-          # yet; an unknown commit is a waiting group. A failed lookup reads as an empty
-          # queue, so the bump still happens (the behavior before the deferral).
-          queue_has_waiting_groups() {
-            local sha
-            while read -r sha _; do
-              git merge-base --is-ancestor "$sha" HEAD 2>/dev/null || return 0
-            done < <(git ls-remote origin 'refs/heads/gh-readonly-queue/dev/*')
-            return 1
-          }
 
           # `dev` may move between checkout and push, so retry on a fresh tip.
           # Each attempt re-reads the registries, so numbers stay unique even
           # when several merges land close together.
           for attempt in 1 2 3; do
-            git fetch --depth=2 origin dev
+            git fetch origin dev
             git reset --hard origin/dev
-
-            # A queued run or rejected push may now be looking at another run's
-            # VERSION child (or an explicit release version edit). The trigger's
-            # checkout decision is stale after reset. Never append another skip-CI
-            # bump to that tip: deploy certification permits only ONE version child.
-            # Compute before ID assignment, which must still run independently.
-            attempt_bump_version="$bump_version"
-            tip_changed="$(git show --name-only --format= HEAD)"
-            if grep -qx 'app/VERSION' <<<"$tip_changed"; then
-              echo "Fresh dev tip already edits app/VERSION; no duplicate version bump."
-              attempt_bump_version=false
-            fi
 
             # 1. Registry IDs, pushed on their own so CI certifies them and the
             #    bump below stays a VERSION-only child of a gated commit. A
             #    retry after this push finds no placeholders left.
             node scripts/spec-ids.mjs assign
             node scripts/migration-ids.mjs assign
+            # Source bindings include migration filenames; refresh in the same commit.
+            node scripts/app-migration-map.mjs
             # `-u` stages edits and deletions; the renamed migrations are new paths.
             git add -u
             git add -A supabase/migrations
@@ -165,14 +130,83 @@ jobs:
               fi
             fi
 
-            # 2. Version bump: app/VERSION only, `[skip ci]` (see the header).
-            if [ "$attempt_bump_version" != true ]; then
+            exit 0
+
+          done
+
+          echo "::error::Could not push the post-merge commit to dev. If the ruleset rejected it, add the kc-version-bump App as the dev ruleset's bypass actor (TD-231)."
+          exit 1
+
+  checkpoint:
+    name: bounded DEV version checkpoint
+    needs: bump
+    if: ${{ github.ref == 'refs/heads/dev' && needs.bump.result == 'success' && needs.bump.outputs.explicit_version != 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    environment: version-bump
+    concurrency:
+      group: dev-version-checkpoint
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: dev
+          fetch-depth: 0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version-file: .nvmrc
+      - name: Wait for bounded checkpoint eligibility
+        id: eligibility
+        run: node scripts/version-checkpoint.mjs
+      - name: Require the version-bump App
+        if: steps.eligibility.outputs.proceed == 'true'
+        env:
+          APP_ID: ${{ secrets.VERSION_BUMP_APP_ID }}
+          APP_KEY: ${{ secrets.VERSION_BUMP_APP_PRIVATE_KEY }}
+        run: |
+          if [ -z "$APP_ID" ] || [ -z "$APP_KEY" ]; then
+            echo "::error::VERSION_BUMP_APP_ID / VERSION_BUMP_APP_PRIVATE_KEY are not set in the version-bump environment; the version cannot be bumped. See docs/SSOT/OPERATOR_RUNBOOK.md § Owner setup for D-195 CI/CD."
+            exit 1
+          fi
+
+      # Short-lived installation token, scoped to this repository only.
+      - name: Mint the version-bump App token
+        if: steps.eligibility.outputs.proceed == 'true'
+        id: app
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          app-id: ${{ secrets.VERSION_BUMP_APP_ID }}
+          private-key: ${{ secrets.VERSION_BUMP_APP_PRIVATE_KEY }}
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.eligibility.outputs.proceed == 'true'
+        with:
+          ref: dev
+          fetch-depth: 0
+          token: ${{ steps.app.outputs.token }}
+      - name: Commit the eligible VERSION-only checkpoint
+        if: steps.eligibility.outputs.proceed == 'true'
+        env:
+          EXPECTED_CHECKPOINT: ${{ steps.eligibility.outputs.checkpoint }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          for attempt in $(seq 1 20); do
+            git fetch origin dev
+            git reset --hard origin/dev
+            # Revalidate after waiting, token minting, checkout and every racing push.
+            checkpoint="$(git log -1 --format=%H -- app/VERSION)"
+            if [ "$checkpoint" != "$EXPECTED_CHECKPOINT" ] || [ "$(git rev-parse HEAD)" = "$checkpoint" ]; then
+              echo "A VERSION checkpoint already covers this run; nothing to bump."
               exit 0
             fi
-            # Pushing now would rebuild every waiting merge group (see the header).
-            if queue_has_waiting_groups; then
-              echo "::notice::Merge groups are waiting behind this merge; the merge that empties the queue bumps the version."
-              exit 0
+            # Assigners have separate concurrency and continue while this job waits.
+            # Let a just-landed migration obtain its real ID before a VERSION child.
+            if ! node scripts/migration-ids.mjs list; then
+              echo "Waiting for immediate migration assignment"
+              sleep 15
+              continue
             fi
             node scripts/bump-app-version.mjs
             version="$(tr -d '[:space:]' < app/VERSION)"
@@ -182,9 +216,8 @@ jobs:
               echo "Bumped to ${version}"
               exit 0
             fi
-            echo "Push rejected (attempt ${attempt}); retrying on the new tip of dev"
-            sleep $((attempt * 5))
+            echo "Push raced a merge; retry ${attempt} on current DEV"
+            sleep 15
           done
-
-          echo "::error::Could not push the post-merge commit to dev. If the ruleset rejected it, add the kc-version-bump App as the dev ruleset's bypass actor (TD-231)."
+          echo "::error::Could not commit the eligible checkpoint after automatic retries."
           exit 1
