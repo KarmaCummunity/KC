@@ -22,5 +22,7 @@ test('DB suite covers privileged positive and both client denied reads/writes', 
  for (const role of ['anon','authenticated']) assert.match(sql, new RegExp('set local role '+role+';'));
  assert.equal((sql.match(/select throws_ok\(/g)??[]).length,2);
  assert.match(sql, /privileged controller sees probe/);
+ assert.match(sql, /grant usage on schema storage to anon, authenticated/);
+ assert.match(sql, /alter table storage.objects enable row level security/);
  assert.match(sql, /rollback;/);
 });

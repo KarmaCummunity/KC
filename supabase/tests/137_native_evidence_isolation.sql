@@ -3,6 +3,11 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = extensions, public;
 select plan(8);
+-- The throwaway baseline omits Storage API role grants. Grant them only in this
+-- rolled-back test transaction so denials exercise RLS, not schema privileges.
+grant usage on schema storage to anon, authenticated;
+grant select, insert, update, delete on storage.objects to anon, authenticated;
+alter table storage.objects enable row level security;
 select is((select count(*)::integer from pg_policies where schemaname='storage' and tablename='objects' and policyname='kc_native_evidence_client_deny' and permissive='RESTRICTIVE' and cmd='ALL'), 1, 'one restrictive all-operation isolation guard');
 select ok((select roles @> array['anon','authenticated']::name[] from pg_policies where schemaname='storage' and policyname='kc_native_evidence_client_deny'), 'both ordinary roles guarded');
 insert into storage.buckets(id,name,public,file_size_limit,allowed_mime_types)
