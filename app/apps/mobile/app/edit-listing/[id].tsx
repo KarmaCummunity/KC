@@ -5,7 +5,7 @@ import { ActivityIndicator, KeyboardAvoidingView, Platform, TouchableOpacity, Vi
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { iconSize, spacing, Text, useTheme } from '@kc/ui';
 import { canAccessPostEditor, isFeedWorldSlug, isPostEditableByOwner } from '@kc/domain';
 import { Screen } from '../../src/components/ui/Screen';
@@ -19,7 +19,7 @@ import { useKeyboardVerticalOffset } from '../../src/lib/platform/useKeyboardVer
 import { TAB_INLINE_FORM_HEADER_HEIGHT } from '../../src/lib/platform/formChromeHeights';
 import { EmptyState } from '../../src/components/EmptyState';
 import { SilentUnauthorizedFallback } from '../../src/components/permissions/SilentUnauthorizedFallback';
-import { postActorIdentityQueryKey } from '../../src/hooks/useListingExposure';
+import { useListingEditSaved } from '../../src/hooks/useListingEditSaved';
 import type { CreateDirection } from '../../src/lib/unifiedCreate/createCategories';
 import { resolveKeyboardAvoidingBehavior } from '../../src/lib/platform/keyboardVerticalOffset';
 
@@ -31,7 +31,6 @@ export default function EditListingScreen() {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const styles = useCreatePostStyles();
-  const queryClient = useQueryClient();
   const viewerId = useAuthStore((s) => s.session?.userId ?? null);
   const isSuperAdmin = useIsSuperAdmin();
   const [title, setTitle] = useState('');
@@ -67,20 +66,7 @@ export default function EditListingScreen() {
     setSummary(postDescription ?? '');
   }, [postId, postTitle, postDescription]);
 
-  const onSaved = useCallback(() => {
-    void queryClient.invalidateQueries({ queryKey: ['post', id] });
-    void queryClient.invalidateQueries({ queryKey: ['feed'] });
-    // The audience and the mask may have changed: every list that filters on them refreshes,
-    // the same set the items edit refreshes.
-    for (const queryKey of [['my-posts'], ['my-hidden-open-posts'], ['profile-tab-open-count']]) {
-      void queryClient.invalidateQueries({ queryKey });
-    }
-    if (listingId) {
-      void queryClient.invalidateQueries({ queryKey: ['marketplace', 'detail', listingId] });
-      void queryClient.invalidateQueries({ queryKey: postActorIdentityQueryKey(listingId) });
-    }
-    router.back();
-  }, [queryClient, id, listingId, router]);
+  const onSaved = useListingEditSaved(id, listingId);
 
   if (postQuery.isLoading) {
     return (

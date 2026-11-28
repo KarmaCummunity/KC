@@ -57,7 +57,7 @@ interface Args {
   readonly onPublished: (listingId: string) => void;
   /** When set, the form loads this listing and saves via `updateMyListing` (G1 owner edit). */
   readonly editListingId?: string | null;
-  readonly onSaved?: () => void;
+  readonly onSaved?: () => void | Promise<void>;
   /** When set, the form starts from this (expired) listing minus its dates and publishes a NEW one (D127). */
   readonly republishFromListingId?: string | null;
 }
@@ -192,7 +192,7 @@ export function useListingCreateForm({
         });
         await exposure.saveIdentity(editListingId);
         await address.save(editListingId);
-        onSaved?.();
+        await onSaved?.();
         return;
       }
       // A series: the server publishes each date; the form opens the first one.

@@ -47,7 +47,7 @@ interface Props {
   readonly onPublished: (listingId: string) => void;
   readonly onPublishActionChange: (action: (() => void) | null, loading: boolean) => void;
   readonly editListingId?: string | null;
-  readonly onSaved?: () => void;
+  readonly onSaved?: () => void | Promise<void>;
   /** Republish (D127): start from this listing minus its dates and publish a new listing. */
   readonly republishFromListingId?: string | null;
 }
