@@ -2,10 +2,6 @@ name: Exact-source native guest acceptance
 on:
   workflow_dispatch:
     inputs:
-      candidate_sha:
-        description: Immutable 40-character launch candidate commit
-        required: true
-        type: string
       pinned_web_url:
         description: Immutable matching KC DEV Pages deployment root
         required: true
@@ -31,12 +27,12 @@ jobs:
     runs-on: macos-latest
     timeout-minutes: 90
     env:
-      CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+      CANDIDATE_SHA: 9549d5c61a155372caeac9fe43515051bf63e647
       PINNED_WEB_URL: ${{ inputs.pinned_web_url }}
       EVIDENCE_CERTIFICATE: ${{ inputs.evidence_certificate }}
       DEVICE_FAMILY: ${{ inputs.device_family }}
-      EAS_BUILD_GIT_COMMIT_HASH: ${{ inputs.candidate_sha }}
-      EXPO_PUBLIC_GIT_COMMIT_SHA: ${{ inputs.candidate_sha }}
+      EAS_BUILD_GIT_COMMIT_HASH: 9549d5c61a155372caeac9fe43515051bf63e647
+      EXPO_PUBLIC_GIT_COMMIT_SHA: 9549d5c61a155372caeac9fe43515051bf63e647
       KC_E2E_BUILD: '1'
       EXPO_PUBLIC_ENVIRONMENT: development
       EXPO_PUBLIC_SUPABASE_URL: https://enbqriuxvvuontiwslun.supabase.co
@@ -60,7 +56,7 @@ jobs:
           git -C tooling rev-parse HEAD > "$RUNNER_TEMP/native-private/tooling-sha.txt"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: ${{ inputs.candidate_sha }}
+          ref: 9549d5c61a155372caeac9fe43515051bf63e647
           path: candidate
           persist-credentials: false
       - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115

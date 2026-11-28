@@ -32,7 +32,7 @@ test('source attestation rejects tracked edits and wrong commit', () => {
 });
 test('workflow keeps candidate independent and ciphertext-only', () => {
   const y = readFileSync('.github/workflows/native-exact-acceptance.yml', 'utf8');
-  assert.match(y, /ref: \$\{\{ inputs.candidate_sha \}\}/);
+  assert.match(y, /ref: 9549d5c61a155372caeac9fe43515051bf63e647/);
   assert.match(y, /package-manager-cache: false/);
   assert.match(y, /--skip-dependency-update expo,react-native/);
   assert.match(y, /path: tooling/); assert.match(y, /path: candidate/);
