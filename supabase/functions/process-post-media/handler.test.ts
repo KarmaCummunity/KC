@@ -24,7 +24,7 @@ const isThumb = (key: string) => /-thumb\.[a-z]+$/.test(key);
 
 interface Harness {
   calls: { fn: string; args: Record<string, unknown> }[];
-  downloads: { key: string; maxBytes: number }[];
+  downloads: { bucket: string; key: string; maxBytes: number }[];
   uploads: string[];
   /** Bytes and content type of each upload, by key. */
   stored: Map<string, { bytes: Uint8Array; contentType: string }>;
@@ -80,8 +80,8 @@ function harness(opts: {
       return Promise.resolve({ data: args.p_retryable ? 'retry' : 'failed', error: null });
     },
     storage: {
-      download: opts.storage?.download ?? ((key, maxBytes, signal) => {
-        downloads.push({ key, maxBytes });
+      download: opts.storage?.download ?? ((bucket, key, maxBytes, signal) => {
+        downloads.push({ bucket, key, maxBytes });
         if (hang.has('download')) return hangUntilAborted(signal);
         return Promise.resolve(isThumb(key) ? opts.thumb ?? null : opts.bytes ?? new Uint8Array(0));
       }),
@@ -151,12 +151,36 @@ Deno.test('happy path: claims a bounded batch, writes this attempt\'s own deriva
   assertEquals(key, `derived/${OWNER}/${MEDIA}-a1.jpg`);
   assertEquals(h.uploads, [key, thumbKey(key)]);
   assert(!h.uploads.includes(job().storage_key), 'the original is never written');
-  assertEquals(h.downloads, [{ key: job().storage_key, maxBytes: 5000 }, { key: thumbKey(job().storage_key), maxBytes: 1024 * 1024 }]);
+  // A claim that names no bucket is from before buckets were recorded: the original is in post-images.
+  assertEquals(h.downloads, [
+    { bucket: 'post-images', key: job().storage_key, maxBytes: 5000 },
+    { bucket: 'post-images', key: thumbKey(job().storage_key), maxBytes: 1024 * 1024 },
+  ]);
   assertEquals([...h.stored.values()].map((o) => o.contentType), ['image/jpeg', 'image/jpeg']);
   const complete = h.calls.find((c) => c.fn === 'post_media_processing_complete')!.args;
   assertEquals(complete.p_derivative_key, key);
   assertEquals([complete.p_width, complete.p_height], [64, 48]);
   assertEquals(out.outcomes, { [MEDIA]: 'ready' });
+});
+
+Deno.test('an original in the private post-uploads bucket is read from it; the copies still go to post-images/derived', async () => {
+  const h = harness({ jobs: [job({ storage_bucket: 'post-uploads' })], bytes: await realJpeg(), thumb: await realJpeg(16, 12) });
+  const out = await h.run();
+  assertEquals(h.downloads.map((d) => `${d.bucket}:${d.key}`), [
+    `post-uploads:${job().storage_key}`, `post-uploads:${thumbKey(job().storage_key)}`,
+  ]);
+  // MediaStorage.upload writes to post-images only; the keys are the service-only copy keys.
+  assertEquals(h.uploads, [derivativeKey(OWNER, MEDIA, 1), thumbKey(derivativeKey(OWNER, MEDIA, 1))]);
+  assertEquals(out.outcomes, { [MEDIA]: 'ready' });
+});
+
+Deno.test('a claim naming any other bucket is refused before download, as final', async () => {
+  for (const storage_bucket of ['avatars', 'chat-media', '']) {
+    const h = harness({ jobs: [job({ storage_bucket })] });
+    await h.run();
+    assertEquals(h.downloads, []);
+    assertEquals(failCall(h), { p_media_id: MEDIA, p_lease_token: 'lease-1', p_error: 'foreign_bucket', p_retryable: false });
+  }
 });
 
 Deno.test('a foreign-owner or climbing path is refused before download, as final', async () => {
@@ -343,7 +367,7 @@ Deno.test('a missing, invalid or unreadable thumb costs only the thumb: the phot
   }
   const flaky = harness({
     jobs: [job()],
-    storage: { download: (key) => isThumb(key) ? Promise.reject(new Error('network')) : Promise.resolve(photo) },
+    storage: { download: (_bucket, key) => isThumb(key) ? Promise.reject(new Error('network')) : Promise.resolve(photo) },
   });
   assertEquals((await flaky.run()).outcomes, { [MEDIA]: 'ready' });
 });

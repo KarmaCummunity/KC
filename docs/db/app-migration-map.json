@@ -2145,7 +2145,7 @@
      "type": "rpc",
      "name": "post_media_processing_claim",
      "signature": [
-      "post_media_processing_claim(p_lease_seconds?: number, p_limit?: number) → { attempt: number lease_token: string leased_until: string media_id: string mime_type: string object_mimetype: string object_size: number owner_id: string post_id: string size_bytes: number storage_key: string }[]"
+      "post_media_processing_claim(p_lease_seconds?: number, p_limit?: number) → { attempt: number lease_token: string leased_until: string media_id: string mime_type: string object_mimetype: string object_size: number owner_id: string post_id: string size_bytes: number storage_bucket: string stor..."
      ],
      "errors": []
     },
@@ -2172,7 +2172,7 @@
    "callSites": [
     {
      "file": "supabase/functions/process-post-media/handler.ts",
-     "line": 165,
+     "line": 155,
      "symbol": "callRpc",
      "area": "fn:process-post-media"
     }
@@ -11574,7 +11574,7 @@
     {
      "type": "rpc",
      "name": "replace_post_media",
-     "source": "supabase/migrations/0068_replace_post_media.sql",
+     "source": "supabase/migrations/next-01_private_post_uploads.sql",
      "sqlSignature": "replace_post_media(p_post_id uuid, p_media jsonb) → void",
      "errorBinding": {
       "status": "unknown",

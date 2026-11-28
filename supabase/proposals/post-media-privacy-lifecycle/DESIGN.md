@@ -1,7 +1,7 @@
 # Post media privacy and deletion lifecycle — design for review (KC#2316, Item 2)
 
-Status: **design only, not implemented, for review.** Nothing here changes storage policies, buckets
-or data. Implementation starts only after this design is reviewed and an option is chosen per area.
+Status: **design, implemented phase by phase** (§6 records what is in place). Nothing in this file
+changes storage policies, buckets or data; each phase ships as its own migration, reviewed and tested.
 
 Scope: (1) who can read an uploaded original; (2) how deletion (photo removed, post deleted, account
 purged) reaches every stored object, including objects written late; (3) durable cleanup for
@@ -13,6 +13,7 @@ purged) reaches every stored object, including objects written late; (3) durable
 | --- | --- | --- | --- |
 | Post photo original (member upload) | `post-images` (public) `<owner>/<batch>/<n>.jpg` | anyone with the URL, also after its copy is ready | orphan job when unreferenced and > 1 day old; account purge (`<owner>/`) |
 | Client thumb of the original | `post-images` `<owner>/…-thumb.jpg` | anyone with the URL | same |
+| Post photo original, private (phase 3a; the app moves with a release) | `post-uploads` (private) `<owner>/<batch>/<n>.jpg` (+ `-thumb`) | its owner (signed URL) and the service role | orphan job when unreferenced and > 1 day old; account purge (`<owner>/`) |
 | Server copy + thumb (candidate) | `post-images` `derived/<owner>/<media>-a<n>.jpg` | anyone with the URL | orphan job when unreferenced; account purge (`derived/<owner>/`) |
 | Chat image | `chat-media` (private) `<sender>/<chat>/<uuid>.jpg` | chat members (signed URL) | account purge; app ledger (best effort); **no server orphan job** |
 | Avatar generation | `avatars` (public) `<user>/avatar-<uuid>.jpg` | anyone with the URL | account purge; app ledger + profile re-read (best effort); **no server orphan job** |
@@ -149,8 +150,18 @@ An intent completes only when `now() >= not_before` and the second listing is em
 2. **Avatars orphan reconciliation** (§5), pgTAP for the reference rule, purge-compatible.
    *Implemented (2026-11-28):* `kc_private.storage_orphan_keys` answers for `avatars` (referenced iff a
    `users.avatar_url` points at the object or it is that object's `-thumb`, via
-   `kc_private.avatar_object_key` and an expression index); `reconcile-storage-orphans` judges `avatars`.
+   `kc_private.avatar_object_key`, read inside the security-definer rule: an expression index on
+   `public.users` would run that function with the rights of every member editing their own row);
+   `reconcile-storage-orphans` judges `avatars`.
 3. **Private upload bucket** (§3 A) behind an app release; the worker reads from it; copies unchanged.
+   *3a, server side, implemented (2026-11-28):* private bucket `post-uploads` (member insert, read
+   and delete in their own folder only); `post_media_processing.source_bucket`; the claim names the
+   original's bucket and completion moves the row to `post-images/derived/`; `replace_post_media` takes
+   a bucket per item; the orphan rule judges `post-uploads` and matches a job's original by bucket.
+   Backward compatible: `post-images` uploads behave as before.
+   *Open:* 3b, the app (upload target, owner previews through signed URLs, republish copy; needs a
+   release); 3c, the WhatsApp bot's uploads; then closing `post-images` to member uploads once the
+   release has rolled out.
 4. **Commit-time authorization** for member writes (§4), then the chosen option for service writes.
 5. **Chat-media references + reconciliation** (§5).
 6. Decide separately: migration of existing public originals, avatar retention, and which classes need

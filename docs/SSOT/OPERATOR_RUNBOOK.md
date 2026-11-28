@@ -628,11 +628,14 @@ the next approved release). Migrations `0084_post_media_sanitized_derivative.sql
 contract, `derived/` fence, purge integration) and the activation migration (`*_post_media_processing_activation.sql`:
 schedule, immediate start, backlog, type-aware completion). Edge Function `process-post-media`.
 
-**What it does.** Every new `post_media` image row in `post-images` is queued. The insert starts the
+**What it does.** Every new pending `post_media` image row in `post-uploads` (the private upload
+bucket, `*_private_post_uploads.sql`) or `post-images` (older app versions, the WhatsApp bot) is
+queued with the bucket of its original. The insert starts the
 worker at once (debounced kick, one call per 2 s); the job `post_media_process` (every minute) is the
 safety net for retries and for starts that could not be sent. The worker claims one job at a time
-with a lease and refuses, before downloading, a key outside the owner's folder and a missing,
-> 8 MiB or non-JPEG/PNG object. It then validates the file structure fail-closed and rewrites it
+with a lease and refuses, before downloading, a bucket other than those two, a key outside the owner's
+folder and a missing, > 8 MiB or non-JPEG/PNG object. It reads the original from its bucket with the
+service role. It then validates the file structure fail-closed and rewrites it
 without metadata (no pixel decode, `supabase/functions/process-post-media/sanitize.ts`): EXIF, XMP,
 IPTC, comments and PNG text chunks are dropped, the EXIF orientation is kept as a single tag, ICC
 colour profiles are kept, and a file with unknown parts, a second frame or bytes after its end is
@@ -640,8 +643,9 @@ refused. The copy keeps the upload's type and pixel size (caps 4096 px per edge,
 uploader's `-thumb` sibling gets the same treatment when it exists (a missing or invalid thumb only
 costs the thumb; readers fall back to the copy). Copies go to `derived/<owner>/<media_id>-a<attempt>.<jpg|png>`
 (+ `-thumb`), never over the original; completion is a compare-and-set that also checks Storage holds
-the copy with the key's type and the reported size. The row then points at the copy, so cards, the
-post page, the share card and link previews serve only it. The `derived/` namespace is fenced by
+the copy with the key's type and the reported size. The row then points at the copy in `post-images`
+(whichever bucket the original came from), so cards, the post page, the share card and link previews
+serve only it. The `derived/` namespace is fenced by
 RESTRICTIVE storage policies (only the service role writes it); the account purge empties
 `derived/<user_id>/`; no copy is made for an owner who is not active.
 
@@ -666,6 +670,7 @@ with no metadata, which the structural rewrite does in milliseconds and with mem
 | Claim | Basis |
 | --- | --- |
 | Queue, claim, lease, CAS, lifecycle skip, retries, caps, grants, reconciliation keep-list | **Measured**: pgTAP `128`, `129`, `130`, `132` on a local PostgreSQL 16 baseline |
+| `post-uploads`: private, owner-only insert / read / delete, source bucket through claim and completion, orphan rule per bucket, `replace_post_media` buckets | **Measured on the local shim**: pgTAP `138`; the service-role read of a private object through the authenticated object route is **not yet measured** on kc-dev (the app does not upload there before its release) |
 | EXIF/GPS, XMP, IPTC, comments and PNG text removed; orientation kept; pixels unchanged; polyglots, bombs, HTML/SVG refused | **Measured**: deno tests (`sanitize.test.ts`, `handler.test.ts`) with real Jimp-made JPEG/PNG files |
 | Storage records `metadata.size` / `metadata.mimetype` exactly as the CAS reads them | **Measured on kc-dev**: `E2E post photos (dev)` (2026-11-23: ready in 8 s, the viewer gets the copy without its GPS block) |
 | Client write fence on `derived/` | **Measured on the local shim** (pgTAP `129`); not verified against live storage-api |
@@ -673,13 +678,15 @@ with no metadata, which the structural rewrite does in milliseconds and with mem
 
 ### Open (not closed by this pipeline)
 
-1. **Original uploads stay public.** The original object stays in the PUBLIC `post-images` bucket at an
-   unguessable key; anyone holding that URL can fetch the unsanitized bytes. Design for private staging:
-   `supabase/proposals/post-media-privacy-lifecycle/DESIGN.md`.
+1. **Original uploads are public until the app moves.** The server side of the private bucket
+   `post-uploads` is in place (phase 3a of `supabase/proposals/post-media-privacy-lifecycle/DESIGN.md`), but
+   the app still uploads to the PUBLIC `post-images` bucket until a release moves it (owner previews of a
+   pending photo through signed URLs). Originals uploaded there stay public at an unguessable key; moving
+   them is a separate decision.
 2. **Server-side resized derivatives** (`FR-POST-005` AC3: 640 px feed / 1280 px detail) are not made;
    the app's 2048 px upload and 400 px thumb are what readers get.
-3. **Client-side cleanup is best effort.** The app's abandoned-uploads ledger is per device; `post-images`
-   and `avatars` have the server orphan job as backstop (`avatars`: an object no `users.avatar_url` points
+3. **Client-side cleanup is best effort.** The app's abandoned-uploads ledger is per device; `post-images`,
+   `post-uploads` and `avatars` have the server orphan job as backstop (`avatars`: an object no `users.avatar_url` points
    at, nor its `-thumb`, older than a day), `chat-media` has none.
 
 ### Cost surface (per new photo, approximate)
