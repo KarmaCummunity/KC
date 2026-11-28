@@ -96,12 +96,12 @@ Deno.test('a bucket that cannot be listed completely is not cleaned; a failed re
   assertEquals(removing.reports, ['remove:post-images']);
 });
 
-Deno.test('the daily run judges post photos and profile photos (avatars); other buckets are never listed', async () => {
-  assertEquals([...RECONCILED_BUCKETS], ['post-images', 'avatars']);
-  // Referenced, so it survives the first bucket's pass of this one shared fake bucket.
+Deno.test('the daily run judges post photos, private photo uploads and profile photos; other buckets are never listed', async () => {
+  assertEquals([...RECONCILED_BUCKETS], ['post-images', 'post-uploads', 'avatars']);
+  // Referenced, so it survives the first buckets' passes of this one shared fake bucket.
   const { askedBuckets, handler } = setup([['u1/avatar-g1.jpg', OLD]], ['u1/avatar-g1.jpg'], 'worker default');
   await handler(post());
-  assertEquals(askedBuckets, ['post-images', 'avatars']);
+  assertEquals(askedBuckets, ['post-images', 'post-uploads', 'avatars']);
 });
 
 Deno.test('Postgres adapter: one statement, one database function; no question for no keys', async () => {
