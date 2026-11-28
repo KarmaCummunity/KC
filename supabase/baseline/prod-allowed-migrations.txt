@@ -90,3 +90,4 @@
 0093_user_devices_prune.sql
 0094_verified_edge_caller.sql
 0095_storage_deletion_intents.sql
+0096_api_database_role.sql
