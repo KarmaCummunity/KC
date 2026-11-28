@@ -20,11 +20,13 @@ import { InboxListSkeleton } from '../../src/components/skeletons/InboxListSkele
 import { NotifyModal } from '../../src/components/NotifyModal';
 import { KcFlashList } from '../../src/components/lists/KcFlashList';
 import { useChatInboxQuery } from '../../src/hooks/useChatInboxQuery';
+import { useScreenFocused } from '../../src/hooks/useScreenFocused';
 import { useChatStore } from '../../src/store/chatStore';
 import { useShellStackScreenOptions } from '../../src/navigation/shellStackScreenOptions';
 import { queryClient } from '../../src/lib/queryPersist';
 import { chatInboxQueryKey } from '../../src/lib/chatInboxQuery';
 import { NewChatHeaderButton } from '../../src/components/chat/NewChatHeaderButton';
+import { matchesInboxNamePrefix } from '../../src/lib/chat/matchInboxSearch';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
 
@@ -37,7 +39,9 @@ export default function ChatListScreen() {
   const styles = useChatListStyles();
   const shellStackOptions = useShellStackScreenOptions();
   const userId = useAuthStore((s) => s.session?.userId);
-  const inboxQuery = useChatInboxQuery(userId);
+  // Paused under an open conversation: no inbox re-read per message nobody sees (#2571).
+  const inboxFocused = useScreenFocused();
+  const inboxQuery = useChatInboxQuery(userId, { subscribed: inboxFocused });
   const inbox = inboxQuery.data?.chats;
   const [q, setQ] = useState('');
   const [visible, setVisible] = useState(PAGE);
@@ -54,9 +58,8 @@ export default function ChatListScreen() {
 
   const filtered = useMemo(() => {
     if (!inbox) return [];
-    const needle = q.trim().toLowerCase();
-    const list = needle
-      ? inbox.filter((c) => (c.otherParticipant?.displayName ?? '').toLowerCase().startsWith(needle))
+    const list = q.trim()
+      ? inbox.filter((c) => matchesInboxNamePrefix(c.otherParticipant?.displayName, q))
       : inbox;
     return list.slice(0, visible);
   }, [inbox, q, visible]);

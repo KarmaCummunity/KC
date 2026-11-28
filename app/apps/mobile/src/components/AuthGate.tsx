@@ -23,7 +23,7 @@ import { useRedirectIntentStore } from '../store/redirectIntentStore';
 import { container } from '../lib/container';
 import { reportHandledError } from '../lib/observability/reportHandledError';
 import { useEnforceAccountGate } from '../hooks/useEnforceAccountGate';
-import { finishMark } from '../lib/observability/perfMarks';
+import { finishMark, measureMark } from '../lib/observability/perfMarks';
 import { resolveAuthRedirect } from '../navigation/authRedirect';
 import { PrimaryButton } from './ui/Buttons';
 
@@ -95,7 +95,8 @@ export function AuthGate({ children }: Readonly<{ children: React.ReactNode }>) 
     setOnboardingBootstrapError(false);
     void (async () => {
       try {
-        const boot = await getOnboardingBootstrap(session.userId);
+        // #2579: routing after sign-in waits on this read; timed so field traces show its share.
+        const boot = await measureMark('auth.onboarding_bootstrap', () => getOnboardingBootstrap(session.userId));
         if (!cancelled) {
           setOnboardingState(boot.state);
           setBasicInfoSkipped(boot.basicInfoSkipped);

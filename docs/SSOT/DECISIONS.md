@@ -38,6 +38,8 @@ A decision should be re-opened only when one of the following triggers fires:
 
 ## D-2 — Supabase as the unified backend
 
+> **Superseded (2026-11-21)** by `D-245`: KC moves to an owned NestJS API on Google Cloud, in phases. This entry describes the backend until each phase of that plan lands.
+
 **Decision.** Use Supabase (Postgres, Auth, Storage, Realtime, Edge Functions) as the only backend.
 
 **Rationale.** Single integrated platform, mature RLS for the SRS's authorization model, native Realtime for our chat/feed UX, EU residency available, generous free tier for MVP.
@@ -832,7 +834,7 @@ Design spec: `docs/SSOT/archive/superpowers/specs/2026-05-24-closed-post-dual-su
 
 ## D-40 — Legal docs delivery model: server-driven Markdown, native render (2026-05-25)
 
-**Decision.** Legal documents (Terms of Service + Privacy Policy) are delivered as server-driven Markdown stored in `legal_document_versions.body_md` and rendered natively in the mobile app via `react-native-markdown-display`. No WebView; no remote-config URL pointing at a canonical web copy.
+**Decision.** Legal documents (Terms of Service + Privacy Policy) are delivered as server-driven Markdown stored in `legal_document_versions.body_md` and rendered natively in the mobile app via an in-house React Native renderer on maintained `markdown-it@14` (replacing unmaintained `react-native-markdown-display`, #1789). No WebView; no remote-config URL pointing at a canonical web copy.
 
 **Rationale.** Native rendering keeps RTL, theming, and offline behavior consistent across iOS, Android, and web. Avoids depending on a separate website CMS during an MVP that doesn't yet have one. Editing workflow is one SQL snippet (`publish_legal_document` RPC) against Supabase Studio rather than a CMS publish + cache invalidation.
 
@@ -953,6 +955,8 @@ Design spec: `docs/SSOT/archive/superpowers/specs/2026-05-24-closed-post-dual-su
 **Why not Datadog/Honeycomb:** vendor cost + integration overhead exceed value at this scale.
 
 **2026-10-31:** Edge Functions now also report to Sentry — `withTiming` is composed into `withObservability` (`D-202`, G41).
+
+**2026-11-23 (#2579):** auth and onboarding waits are marks too, tagged `outcome`: `auth.onboarding_bootstrap`, `auth.sign_out` (+ `.device_deactivation` `settled|timed_out`, `.server_revoke`), `onboarding.basic_info_save`, `onboarding.basic_info_skip`, `onboarding.finalize`.
 
 ---
 
@@ -2082,3 +2086,59 @@ The Demo data screen keeps two failures apart: the RPC itself is missing (`not_i
 **Trade-off.** The entropy-coded image data is passed through as uploaded, not regenerated; viewers' decoders see the uploader's encoding. Resized server derivatives (`FR-POST-005` AC3) are a separate gap.
 
 **Affected.** `supabase/functions/process-post-media/`, migration `*_post_media_processing_activation.sql`, `supabase/tests/132_post_media_processing_activation.sql`, `docs/SSOT/OPERATOR_RUNBOOK.md` "Post photo derivatives".
+
+## D-245 — KC leaves Supabase for an owned NestJS API on Google Cloud, in phases (2026-11-21)
+
+**Decision.** KC's backend becomes a modular monolith KC owns: one NestJS application (`app/apps/api`, one module per bounded context) on Cloud Run, Cloud SQL for PostgreSQL, Redis, Cloud Storage with a CDN and a video pipeline, queue workers in place of Edge Functions, and its own identity module. Final region `me-west1`. The move is a strangler: the API is added in front of the existing database and runs each request under the caller's identity, so RLS and the existing SQL functions keep working unchanged; the app switches from the Supabase adapter to a new `@kc/infrastructure-api` adapter one port at a time, behind a flag, when the port's contract suite (`D-204`) passes on both; the database itself moves last, in one rehearsed step. Eleven phases, each with an automated exit criterion, in [ADR-009](../architecture/adr/ADR-009-backend-platform.md). Supersedes `D-2`.
+
+**Why.** The PM wants a backend that carries a social network with photos and video for many concurrent users (PM, chat, 2026-11-21; cloud, shape and budget posture chosen there). Today the database schema is the public API of every installed build, 731 SQL functions run on the one machine that is hardest to scale, server code on Deno cannot import the domain packages, and media has no transcoding or CDN pipeline (`G53`).
+
+**Rejected.** Adding NestJS beside Supabase (keeps the schema as the public API); self-hosting Supabase's stack (same shape); a service and a database per context from day one (operations cost with no measured need; modules can be split out later); Railway (no region near Israel); AWS (equivalent, the PM chose Google Cloud); a parallel environment switched at the end (one large cut-over against a moving codebase).
+
+**Rules while in flight.** A context not yet moved follows ADR-002. A moved context gets new capabilities as endpoint + adapter method + contract case. No new Edge Function, Realtime channel or Storage bucket once the phase that replaces it has started. Migrations stay in `supabase/migrations/` until the database move.
+
+**Affected.** `docs/architecture/adr/ADR-009-backend-platform.md`, `docs/architecture/target.md` §4; later `app/apps/api`, `app/packages/infrastructure-api`, `infra/gcp/`, the **Deploy** workflow, and in the end `supabase/**` and `app/packages/infrastructure-supabase`.
+
+## D-246 — The API serves application ports through one gateway and hosts the Supabase adapters on a SQL engine (2026-11-21)
+
+**Decision.** The app's data access goes through one route, `POST /v1/ports/<port>/<method>`: the app calls a method of an application port and the API runs it as the caller. On the app, `createRemotePort<Port>()` of the new `@kc/infrastructure-api` is the one generic adapter for every port; a typed domain or application error crosses the wire and is rebuilt as an instance of its class. On the API, `definePort<Port>()` requires an access decision (`member`, `public`, `not_served`) for every method of the interface at compile time. A port is served by running its existing Supabase adapter on the server: `platform/postgrest` answers the PostgREST requests the adapters build with SQL, each request in its own transaction as the caller, so grants and row-level security decide as before. Details and limits in [ADR-010](../architecture/adr/ADR-010-port-gateway.md); it refines phase 5 of `D-245`.
+
+**Why.** 54 ports with about 275 methods sit on 184 adapter files (about 15 000 lines) that use a small PostgREST vocabulary. An endpoint and client adapter per method, or a rewrite of the adapters, is months of work that drifts from the tested originals. The ports are already the typed contract and six have shared contract suites (`D-204`); on 2026-11-21 all six (57 cases) pass end to end through the gateway on the real schema, built locally on plain PostgreSQL by `apps/api/scripts/kc-test-db.sh`.
+
+**Rejected.** An endpoint per method; rewriting adapters first; running PostgREST as a sidecar behind the API (one more service and pool, and the schema stays exposable); tRPC or GraphQL (a second schema next to the port interfaces).
+
+**Open.** Realtime, auth and the Edge Function services are not behind the gateway yet (`app/scripts/check-api-door.mjs` lists them). Arguments are checked against shapes generated from the port interfaces; signed-out access is exactly what the database grants the `anon` role.
+
+**Affected.** `app/apps/api/src/platform/{ports,postgrest}`, `app/apps/api/src/modules/hostedAdapters`, `app/packages/infrastructure-api`, `app/scripts/check-architecture.mjs`, `docs/architecture/adr/ADR-009-backend-platform.md`.
+
+## D-247 — Realtime moves to one WebSocket in the API; topics and policies stay as they are (2026-11-23)
+
+**Decision.** KC's own realtime service is a WebSocket endpoint of the API (`/v1/realtime`). The topics are ADR-003's. A subscription is authorized by the row-level-security policies already written on `realtime.messages`, with the algorithm of the service being replaced: a probe row, read (or inserted) as the caller, in a transaction that is rolled back. Database-sent events use `realtime.messages` as the queue and `pg_notify` as the bell; client-sent events and presence go through Redis. Full text: [`ADR-011`](../architecture/adr/ADR-011-realtime-gateway.md).
+
+**Why.** Authorization stays in SQL next to the data, so every policy and its SQL test keep their meaning and a new topic is still "a policy and a test in the same migration". Database events need no second fan-out system, because every API instance hears every notification. The app's ports and screens do not change.
+
+**Trade-off.** An event can be missed (a reconnect, a restart); ADR-003 already makes realtime an accelerator and never the source of truth. A revoked right takes effect at the next join or token replacement, as today. The protocol is KC's own.
+
+**Affected.** `app/apps/api/src/platform/realtime`, `app/packages/infrastructure-api/src/wire/realtimeWire.ts`, `supabase/baseline/local/supabase_shim.sql` (the `realtime` schema KC will own: the notification and the service role's grants).
+
+## D-248 — Files move to KC's own object store; paths and storage policies stay as they are (2026-11-23)
+
+**Decision.** Bytes go to Google Cloud Storage behind one `ObjectStore` interface in the API (a local directory in development and tests). `storage.objects` stays, as KC's index of its files, and the row-level-security policies already written on it decide every upload, read and delete: the API asks them in a transaction that is rolled back. The app uploads with a signed URL the API issues and reads public files from KC's media domain; bytes never pass through the API. Full text: [`ADR-012`](../architecture/adr/ADR-012-media-storage.md).
+
+**Why.** The same reasoning as for realtime (`D-247`): authorization stays in SQL next to the data, the paths the app and the database already use do not change, and the SQL that reads `storage.objects` keeps working.
+
+**Trade-off.** KC owns a `storage` schema it must keep in step with the store (the reconciliation job exists for that). A signed URL outlives a right that was revoked, until it expires.
+
+**Affected.** `app/apps/api/src/platform/storage`, `supabase/baseline/local/supabase_shim.sql` (the `storage` schema KC will own: the service role may read a bucket's rules).
+
+## D-249 - Automatic bounded version checkpoints (2026-11-28, replaces the 2026-11-27 empty-queue rule)
+
+**Decision.** Assign spec IDs and migration numbers immediately after each DEV merge, with their own concurrency lane and real CI. In a separate lane, automatically coalesce PATCH changes until 60 minutes from the preceding committed VERSION change, then bump even while merge groups remain queued. A DEV-side waiter re-reads the branch and catches up without another merge or manual action. Runner availability, checks and push retries add execution delay; 60 minutes is the coalescing limit, not a delivery SLA.
+
+**Why.** Waiting for an empty queue can starve releases indefinitely during sustained work. GitHub schedules run from main, which cannot use the dev-only version environment, so catch-up must run on DEV. The waiter has no write token until eligibility; it does not hold the assignment lane. A new merge during waiting receives IDs independently and does not extend the existing deadline.
+
+**Safety.** No VERSION change means no second bump on an already-covered tip. A newer explicit or automatic checkpoint ends an older waiter. Every push revalidates the checkpoint and fresh DEV tip; racing merges are retried, pending migrations wait for their assigner. VERSION-only bot identity, subject, one-parent CI inheritance, store build/submission and public-release gates remain unchanged. A changed VERSION alone is not a store submission or publication.
+
+**Trade-off.** A busy queue can still be rebuilt at a checkpoint, but not on every merge. Full-history fetch resolves the real prior VERSION timestamp; self-generated ID/VERSION pushes do not start another bookkeeping cycle. Workflow dispatch remains an operational replay surface, not a required release step.
+
+**Affected.** `.github/workflows/bump-version-on-merge.yml`, `scripts/version-checkpoint.mjs`, its tests, shell regression tests, `AGENTS.md`, `docs/agents/DEPLOY.md`, `docs/agents/RELEASE.md`.

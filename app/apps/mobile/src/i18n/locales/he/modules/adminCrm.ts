@@ -4,7 +4,7 @@ export const adminCrmHe = {
   forbiddenTitle:  'אין לך הרשאת גישה למסך זה.',
   loading:         'טוען...',
   emptyTitle:      'אין רשומות תואמות',
-  emptyHint:       'הוסף איש קשר חדש כדי להתחיל לעקוב.',
+  emptyHint:       'אפשר להוסיף איש קשר חדש כדי להתחיל לעקוב.',
   newBtn:          '+ איש קשר חדש',
   searchPlaceholder: 'חיפוש לפי שם, ארגון או אימייל',
   status: {
@@ -30,9 +30,9 @@ export const adminCrmHe = {
     lastContactedAt:  (when: string) => `יצירת קשר אחרון: ${when}`,
     neverContacted:   'טרם נוצר קשר',
     updatedAt:        (when: string) => `עודכן ${when}`,
-    edit:             'ערוך',
-    delete:           'מחק',
-    markContacted:    'סמן יצירת קשר',
+    edit:             'עריכה',
+    delete:           'מחיקה',
+    markContacted:    'סימון יצירת קשר',
   },
   form: {
     createTitle:        'איש קשר חדש',
@@ -46,13 +46,13 @@ export const adminCrmHe = {
     tagsLabel:          'תגיות (מופרדות בפסיק)',
     notesLabel:         'הערות',
     cancel:             'ביטול',
-    submit:             'שמור',
+    submit:             'שמירה',
     submitting:         'שומר...',
   },
   confirm: {
     delete:        'למחוק את איש הקשר? הוא יוסר מהרשימה (מחיקה רכה).',
     deleteTitle:   'אישור מחיקה',
-    deleteOk:      'מחק',
+    deleteOk:      'מחיקה',
     deleteCancel:  'ביטול',
   },
   errors: {
@@ -60,6 +60,6 @@ export const adminCrmHe = {
     invalid_name:       'שם חסר או לא תקין.',
     invalid_status:     'סטטוס לא תקין.',
     contact_not_found:  'איש הקשר לא נמצא.',
-    unknown:            'אירעה שגיאה. נסה שוב.',
+    unknown:            'אירעה שגיאה. אפשר לנסות שוב.',
   },
 };

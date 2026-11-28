@@ -45,7 +45,8 @@ export function mapHostBooking(
   return {
     ...stayDates(handoff, details),
     handoffId: handoff.id,
-    guestId: handoff.recipient_id,
+    // '' for a guest who deleted their account (#2088), as for a masked member.
+    guestId: handoff.recipient_id ?? '',
     guestName: guest?.display_name ?? '',
     guestAvatarUrl: guest?.avatar_url ?? null,
     guestVerified: (guest?.verification_level ?? 0) >= VERIFIED_LEVEL,
@@ -84,7 +85,7 @@ export function mapGuestStay(
     listingId: handoff.post_id,
     listingTitle: post?.title ?? '',
     cityId: post?.city_id ?? null,
-    hostId: handoff.owner_id,
+    hostId: handoff.owner_id ?? '',
     hostName: hostName ?? '',
     adults: details.adults,
     minors: details.minors,

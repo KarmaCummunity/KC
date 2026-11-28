@@ -10,9 +10,10 @@
 // which has completed (it got through) — until that job ends. Jobs still waiting are ordered
 // FIFO by the start time of their SLOT_STEP (then job id). This job proceeds when the holders
 // plus the waiters ahead of it are fewer than KC_DEV_TEST_SLOTS (default 2).
-// After KC_DEV_SLOT_MAX_WAIT_MIN (default 120) it proceeds with a warning, so a stuck throttle
-// cannot block CI forever. A GitHub API error (a 403/429 rate limit, a 5xx) is NOT a free pass: it
-// waits (honouring Retry-After / X-RateLimit-Reset, capped) and asks again. Until 15 Nov 2026 any error
+// A bounded wait ends with a non-zero failure, never permission to exceed the slot limit.
+// Missing credentials or an unidentifiable current job also fail closed.
+// A GitHub API error waits (honouring Retry-After / X-RateLimit-Reset, capped).
+// Until 15 Nov 2026 any error
 // let the job through: at 10:18Z seven queued Maestro jobs got the same 403 within 26 s and all went at
 // once, so nine emulators plus a release E2E hit kc-dev together and it stalled for hours.
 // A run that replaces a cancelled one keeps the cancelled run's place in the queue (queuedAt, below):
@@ -26,11 +27,16 @@
 // every KC_DEV_SLOT_POLL_MS (default 60 s) and reads the jobs only of runs whose workflow can hold a
 // slot (slotWorkflows: the workflows that run this script, and those that call them).
 //
+// With KC_DEV_SLOT_YIELD_TO_QUEUE=true (only maestro-dev-health.yml sets it) a dev-push run gives up
+// its turn to the merge queue while it waits (scripts/maestro-dev-yield.mjs): it writes
+// `yielded=true` to GITHUB_OUTPUT and returns, and the flow steps skip on that output.
+//
 // Needs GITHUB_TOKEN with `actions: read`. Env: GITHUB_REPOSITORY, GITHUB_RUN_ID,
 // GITHUB_RUN_ATTEMPT, RUNNER_NAME (set by Actions).
-import { readdirSync, readFileSync } from 'node:fs';
+import { appendFileSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { readYieldInputs, yieldReason } from './maestro-dev-yield.mjs';
 
 export const SLOT_STEP = 'Wait for a kc-dev test slot';
 
@@ -229,7 +235,26 @@ export function findMe(jobs, runnerName) {
   return { id: me.id, name: me.name, stepStartedAt: step?.started_at ?? null };
 }
 
-async function main(env = process.env) {
+/** True (and `yielded=true` written) when this dev-push run should give way; never on a lookup error. */
+async function yielded(env, token, repo) {
+  // Opt-in (maestro-dev-health.yml via ci-maestro-android.yml `yield_to_queue`): other push-event
+  // users of the slot (deploy / release E2E) never skip their wait.
+  if (env.KC_DEV_SLOT_YIELD_TO_QUEUE !== 'true' || env.GITHUB_EVENT_NAME !== 'push') return false;
+  let reason = null;
+  try {
+    const inputs = await readYieldInputs((path) => gh(path, token), repo);
+    reason = yieldReason({ event: env.GITHUB_EVENT_NAME, ref: env.GITHUB_REF, sha: env.GITHUB_SHA, ...inputs });
+  } catch (err) {
+    console.log(`::warning::dev-push yield check failed (${err.message}); not yielding`);
+    return false;
+  }
+  if (!reason) return false;
+  console.log(`::notice::dev-push Maestro run yields to the merge queue: ${reason}. The flows are skipped.`);
+  if (env.GITHUB_OUTPUT) appendFileSync(env.GITHUB_OUTPUT, 'yielded=true\n');
+  return true;
+}
+
+export async function main(env = process.env) {
   const token = env.GITHUB_TOKEN;
   const repo = env.GITHUB_REPOSITORY;
   const slots = Math.max(1, Number.parseInt(env.KC_DEV_TEST_SLOTS || '2', 10) || 2);
@@ -237,8 +262,7 @@ async function main(env = process.env) {
   const pollMs = Number(env.KC_DEV_SLOT_POLL_MS || 60_000);
   const started = Date.now();
   if (!token || !repo) {
-    console.log('::warning::kc-dev slot: no token/repository; not waiting');
-    return;
+    throw new Error('kc-dev slot: missing token/repository; refusing to run shared DEV tests');
   }
   const workflows = readSlotWorkflows();
   if (workflows.size === 0) console.log('::warning::kc-dev slot: could not read .github/workflows; checking every in-progress run');
@@ -247,6 +271,7 @@ async function main(env = process.env) {
   let errors = 0;
   for (;;) {
     let waitMs = pollMs;
+    if (await yielded(env, token, repo)) return;
     try {
       const mine = await gh(`/repos/${repo}/actions/runs/${env.GITHUB_RUN_ID}/attempts/${env.GITHUB_RUN_ATTEMPT || 1}/jobs?per_page=100`, token);
       const me = findMe(mine.jobs ?? [], env.RUNNER_NAME);
@@ -257,8 +282,7 @@ async function main(env = process.env) {
           await new Promise((r) => setTimeout(r, Math.min(pollMs, 10_000)));
           continue;
         }
-        console.log('::warning::kc-dev slot: could not find this job; not waiting');
-        return;
+        throw new Error('kc-dev slot: could not identify this job; refusing to run shared DEV tests');
       }
       // Until the API records this step's start, queue as of now (the back of the line).
       myStartedAt = me.stepStartedAt ?? myStartedAt ?? new Date().toISOString();
@@ -279,8 +303,7 @@ async function main(env = process.env) {
       console.log(`::warning::kc-dev slot: GitHub API ${err.message} (error ${errors}); still waiting, next check in ${Math.round(waitMs / 1000)}s`);
     }
     if (Date.now() - started >= maxWaitMs) {
-      console.log(`::warning::kc-dev slot: no slot after ${Math.round(maxWaitMs / 60000)} min (${errors} API error(s)); proceeding anyway`);
-      return;
+      throw new Error(`kc-dev slot: no verified slot after ${Math.round(maxWaitMs / 60000)} min (${errors} lookup error(s)); shared DEV tests were not started`);
     }
     await new Promise((r) => setTimeout(r, Math.min(waitMs, Math.max(1000, maxWaitMs - (Date.now() - started)))));
   }

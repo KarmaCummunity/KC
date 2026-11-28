@@ -2,7 +2,7 @@
 // (rides, food, housing, time). The kind is derived from request / offer: every create world
 // has exactly one kind per direction, so members never pick a "listing type" — except a member of
 // an organization, who may publish a time offer as the organization's event (G1 step 5, D31).
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import {
@@ -57,7 +57,7 @@ interface Args {
   readonly onPublished: (listingId: string) => void;
   /** When set, the form loads this listing and saves via `updateMyListing` (G1 owner edit). */
   readonly editListingId?: string | null;
-  readonly onSaved?: () => void;
+  readonly onSaved?: () => void | Promise<void>;
   /** When set, the form starts from this (expired) listing minus its dates and publishes a NEW one (D127). */
   readonly republishFromListingId?: string | null;
 }
@@ -146,7 +146,7 @@ export function useListingCreateForm({
   // event, an edit or another kind.
   const eventSeries = isEvent && !editListingId ? recurrence : null;
   // The red outline goes away as soon as the member edits the form again.
-  useEffect(() => {
+  useLayoutEffect(() => {
     setError(null);
   }, [title, details, city, street, streetNumber, recurrence, houseNumbers, eventChoice.orgId, jobOfferOrg.orgId]);
   const showSubcategory = WORLDS_WITH_SUBCATEGORY_PICKER.includes(worldSlug);
@@ -166,7 +166,7 @@ export function useListingCreateForm({
 
   const publish = async () => {
     if (!userId || !kind || busy || publishLock.current) return;
-    if (source.loading) return;
+    if (source.loading || source.initializing) return;
     const timed = isRides && !editListingId && leaveNow ? withLeaveNowDeparture(details, new Date()) : details;
     const submitted = withJobOfferOrg(
       withEventAddress(withEventOrg(detailsForSubmit(specs, timed), eventChoice), address.label),
@@ -192,7 +192,7 @@ export function useListingCreateForm({
         });
         await exposure.saveIdentity(editListingId);
         await address.save(editListingId);
-        onSaved?.();
+        await onSaved?.();
         return;
       }
       // A series: the server publishes each date; the form opens the first one.
@@ -291,7 +291,7 @@ export function useListingCreateForm({
     busy,
     error,
     publish,
-    canPublish: Boolean(userId && kind) && !busy && !source.loading && !address.loading && !exposure.loading,
+    canPublish: Boolean(userId && kind) && !busy && !source.loading && !source.initializing && !address.loading && !exposure.loading,
     isEdit: Boolean(editListingId),
     /** The edit / republish source is loading. */
     editLoading: source.loading,

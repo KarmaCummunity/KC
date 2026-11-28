@@ -56,7 +56,7 @@ export function client({ jwt, fetchImpl = fetch, write = false }) {
     const text = await res.text();
     const json = text ? JSON.parse(text) : {};
     if (!res.ok) {
-      const errs = (json.errors || []).map((e) => `${e.code || ''} ${e.detail || e.title || ''}`.trim()).join('; ');
+      const errs = describeAscErrors(json);
       throw new Error(`${method} ${new URL(url).pathname}: HTTP ${res.status} ${errs}`);
     }
     return json;
@@ -73,6 +73,24 @@ export const DONE_STATES = new Set([
 const OPEN_SUB_STATES = ['READY_FOR_REVIEW', 'WAITING_FOR_REVIEW', 'IN_REVIEW', 'UNRESOLVED_ISSUES'];
 
 /** Read everything the decision needs. GET only. */
+/**
+ * One line per ASC error, plus its meta.associatedErrors (the reasons behind a 409
+ * "This resource cannot be reviewed"). Codes and validation details only: ASC error
+ * bodies carry no credentials, and each detail is capped.
+ */
+export function describeAscErrors(json) {
+  const cap = (t) => String(t ?? '').replace(/\s+/g, ' ').trim().slice(0, 300);
+  const parts = [];
+  for (const e of json?.errors || []) {
+    parts.push(cap(`${e.code || ''} ${e.detail || e.title || ''}`));
+    const assoc = e.meta?.associatedErrors || {};
+    for (const [path, list] of Object.entries(assoc)) {
+      for (const a of Array.isArray(list) ? list : []) parts.push(cap(`associated ${path.replace(/^\/v1/, '')}: ${a.code || ''} ${a.detail || a.title || ''}`));
+    }
+  }
+  return parts.filter(Boolean).slice(0, 25).join('; ');
+}
+
 export async function readState(api, { appId, version, buildNumber }) {
   const q = new URLSearchParams({
     'filter[app]': appId, 'filter[version]': String(buildNumber), 'filter[preReleaseVersion.version]': version,

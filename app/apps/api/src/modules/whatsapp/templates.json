@@ -1,0 +1,70 @@
+{
+  "$comment": "WhatsApp message templates as code (#936). Source of truth for Meta submission (scripts/whatsapp-templates.mjs), the DB registry (migration 0307) and the sender. Bodies use Meta positional params {{1}}..{{n}} in the order of `params`. Bump the _vN suffix for any wording change after approval — approved templates cannot be edited in place.",
+  "version": 1,
+  "templates": [
+    {
+      "name": "match_found_v1",
+      "category": "UTILITY",
+      "purpose": "Proactive: a suggested match was found for one of the user's listings (listing_matches trigger).",
+      "params": ["world_label"],
+      "languages": {
+        "he": {
+          "body": "נמצאה התאמה חדשה עבורך בעולם {{1}} בקהילת קארמה. פתח/י את האפליקציה כדי לראות ולאשר. להסרה מהודעות: השב/י \"הסר\".",
+          "examples": ["חפצים"]
+        },
+        "en": {
+          "body": "We found a new match for you in {{1}} on Karma Community. Open the app to view and confirm it. Reply STOP to unsubscribe.",
+          "examples": ["Items"]
+        }
+      }
+    },
+    {
+      "name": "confirm_handoff_v1",
+      "category": "UTILITY",
+      "purpose": "Both sides accepted a match; prompts the user to coordinate the handoff.",
+      "params": ["partner_name", "listing_title"],
+      "languages": {
+        "he": {
+          "body": "ההתאמה שלך, {{1}}, אישרה את ההעברה של \"{{2}}\". אפשר לתאם איסוף או מסירה בצ'אט באפליקציה. להסרה מהודעות: השב/י \"הסר\".",
+          "examples": ["דנה", "ספה תלת מושבית"]
+        },
+        "en": {
+          "body": "Your match {{1}} confirmed the handoff for \"{{2}}\". Coordinate pickup or delivery in the app chat. Reply STOP to unsubscribe.",
+          "examples": ["Dana", "Three-seat sofa"]
+        }
+      }
+    },
+    {
+      "name": "reminder_v1",
+      "category": "UTILITY",
+      "purpose": "Reminder about a pending match/handoff the user has not answered.",
+      "params": ["listing_title"],
+      "languages": {
+        "he": {
+          "body": "תזכורת: \"{{1}}\" עדיין ממתין לתשובתך בקהילת קארמה. להסרה מתזכורות: השב/י \"הסר\".",
+          "examples": ["ספה תלת מושבית"]
+        },
+        "en": {
+          "body": "Reminder: \"{{1}}\" is still waiting for your reply on Karma Community. Reply STOP to stop reminders.",
+          "examples": ["Three-seat sofa"]
+        }
+      }
+    },
+    {
+      "name": "opt_in_confirm_v1",
+      "category": "UTILITY",
+      "purpose": "Confirms an opt-in made in the app (outside a 24h session, so it must be a template).",
+      "params": [],
+      "languages": {
+        "he": {
+          "body": "נרשמת להתראות התאמה מקהילת קארמה ב-WhatsApp. אפשר להסיר את עצמך בכל עת: השב/י \"הסר\".",
+          "examples": []
+        },
+        "en": {
+          "body": "You're subscribed to Karma Community match alerts on WhatsApp. Reply STOP at any time to unsubscribe.",
+          "examples": []
+        }
+      }
+    }
+  ]
+}

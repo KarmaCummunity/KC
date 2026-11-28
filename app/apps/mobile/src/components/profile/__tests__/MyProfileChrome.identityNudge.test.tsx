@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
-// FR-VERIFY-003 AC1 — profile card inviting identity verification.
+// #1037 — identity-verification profile CTA stays hidden at max live level (complete profile).
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import React from 'react';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { User } from '@kc/domain';
 
@@ -60,15 +60,15 @@ afterEach(cleanup);
 beforeEach(() => vi.clearAllMocks());
 
 describe('MyProfileChrome identity nudge', () => {
-  it('shows the identity reminder for a complete profile below level 2', async () => {
+  it('hides the identity reminder at complete-profile (max live level)', async () => {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     render(
       <QueryClientProvider client={client}>
         <MyProfileChrome activeTab="open" onTabChange={() => {}} />
       </QueryClientProvider>,
     );
-    expect(await screen.findByTestId('profile-identity-nudge')).toBeTruthy();
-    fireEvent.click(screen.getByTestId('profile-identity-nudge-cta'));
-    expect(router.push).toHaveBeenCalledWith('/identity-verification');
+    expect(await screen.findByTestId('profile-edit-btn')).toBeTruthy();
+    expect(screen.queryByTestId('profile-identity-nudge')).toBeNull();
+    expect(router.push).not.toHaveBeenCalledWith('/identity-verification');
   });
 });

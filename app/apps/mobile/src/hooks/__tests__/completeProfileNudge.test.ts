@@ -51,8 +51,9 @@ describe('needsIdentityVerificationReminder', () => {
     );
   });
 
-  it('is true at level 1', () => {
-    expect(needsIdentityVerificationReminder(completeUser)).toBe(true);
+  // #1037 — until Didit ships, complete profile is max live level; no IDV nudge.
+  it('is false at complete-profile (max live level)', () => {
+    expect(needsIdentityVerificationReminder(completeUser)).toBe(false);
   });
 
   it('is false from level 2 onward', () => {

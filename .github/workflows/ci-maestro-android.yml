@@ -1,8 +1,9 @@
 name: CI — Maestro Android E2E
 
-# Maestro lane, called by ci.yml on a PR whose diff touches the app, its packages, the flows or their
-# runner (scripts/ci-changes.mjs MAESTRO_RULES), and by maestro-dev-health.yml for the non-blocking
-# runs on `dev`. KC#1235 / #1619. It taps through the critical journeys (.maestro/flows) on an Android
+# Maestro lane, called by ci.yml on a dev merge group whose diff touches the app, its packages, the
+# flows or their runner (scripts/ci-changes.mjs MAESTRO_RULES), on a PR into main that does, and on a
+# PR into dev labelled `maestro` (opt-in), and by maestro-dev-health.yml for the non-blocking runs on
+# `dev`. KC#1235 / #1619. It taps through the critical journeys (.maestro/flows) on an Android
 # emulator against kc-dev. The APK is a local Gradle release build (no EAS, no EXPO_TOKEN) with OTA
 # updates off (KC_E2E_BUILD=1), so it runs exactly the JS of the commit it was called for.
 # Runbook: docs/process/MAESTRO.md
@@ -13,6 +14,11 @@ name: CI — Maestro Android E2E
 
 on:
   workflow_call:
+    inputs:
+      yield_to_queue:
+        description: A dev-push run gives up its emulator turn to the merge queue (maestro-dev-health.yml)
+        type: boolean
+        default: false
     secrets:
       E2E_SEED_PASSWORD:
         description: kc-dev seed users' password (every flow signs in with it)
@@ -33,17 +39,22 @@ env:
   # that default (a remote app_flags row would beat it, and kc-dev has none). Read by Expo at
   # prebuild/bundle time, so it applies to both build steps below.
   EXPO_PUBLIC_LAUNCH_EMAIL_AUTH: '1'
+  # kc-dev counts as working after this many seed-user sign-ins in a row (scripts/maestro-wait-kc-dev.mjs),
+  # both before the emulator boots and before a failed flow's retry. On 26-27 Nov 2026 it flapped: one
+  # good sign-in between HTTP 504s, and the retry that followed failed.
+  KC_WAIT_STREAK: '3'
 
 jobs:
-  android-e2e:
-    name: maestro · android emulator
+  # The APK is built in parallel by every caller; only the emulator job below takes the single kc-dev
+  # queue, so a waiting run holds no runner while it waits (#2613: on 23 Nov 2026 15 of ~17 running
+  # jobs were Maestro runs idling in the kc-dev slot step, starving the merge queue and every gate).
+  build-apk:
+    name: maestro · build E2E APK
     runs-on: ubuntu-latest
-    # Build (~15 min, ~30 with the retry) + flows (55) + up to 125 queued for a kc-dev test slot, with
-    # slack. A hang now ends as a timeout of the step that hung, not as a 4-hour run.
-    timeout-minutes: 190
+    # Build (~12 min, ~30 with the retry), with slack.
+    timeout-minutes: 45
     permissions:
       contents: read
-      actions: read # the kc-dev test slot reads which jobs are running
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -118,6 +129,98 @@ jobs:
           ./gradlew assembleRelease -PreactNativeArchitectures="$E2E_ABI" --console=plain
           echo "E2E_APK=$PWD/app/build/outputs/apk/release/app-release.apk" >> "$GITHUB_ENV"
 
+      - name: Upload the E2E APK for the emulator job
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: maestro-e2e-apk
+          path: ${{ env.E2E_APK }}
+          if-no-files-found: error
+          retention-days: 3
+          # A re-run of the run uploads it again under the same name.
+          overwrite: true
+
+  # Merge-queue head first (scripts/maestro-queue-turn.mjs): a merge_group run waits here, before
+  # its emulator job asks for the emulator group, while an earlier queue entry still has Maestro to
+  # finish. It holds neither the emulator nor a kc-dev slot while it waits, and it runs alongside
+  # the APK build. Any other caller passes straight through, and a failed lookup goes on (fail-open).
+  queue-turn:
+    name: maestro · queue turn
+    runs-on: ubuntu-latest
+    timeout-minutes: 160
+    permissions:
+      contents: read
+      actions: read # reads the earlier entries' CI jobs
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: scripts
+      - name: Wait for the merge-queue entries ahead to finish Maestro
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          MERGE_GROUP_BASE_REF: ${{ github.event.merge_group.base_ref }}
+          MERGE_GROUP_BASE_SHA: ${{ github.event.merge_group.base_sha }}
+          MERGE_GROUP_HEAD_SHA: ${{ github.event.merge_group.head_sha }}
+        run: if [ -f scripts/maestro-queue-turn.mjs ]; then node scripts/maestro-queue-turn.mjs; else echo 'no queue-turn script in this tree'; fi
+
+  android-e2e:
+    name: maestro · android emulator
+    needs: [build-apk, queue-turn]
+    runs-on: ubuntu-latest
+    # One emulator suite at a time across every caller (PR opt-ins, merge groups, dev health). A run
+    # waits here as a queued job, which holds no runner; `queue: max` keeps every waiter in FIFO order
+    # (up to 100) instead of the default, which cancels the pending one when another arrives. The
+    # kc-dev slot step below still orders it with the other kc-dev suites (nightly, deploy E2E).
+    concurrency:
+      group: kc-dev-maestro-emulator
+      queue: max
+    # Flows (55) + up to 125 for a kc-dev test slot held by another suite + up to 45 for kc-dev to
+    # sign in again, with slack. Time spent queued on the concurrency group does not count: the job
+    # has not started.
+    timeout-minutes: 240
+    permissions:
+      contents: read
+      actions: read # the kc-dev test slot reads which jobs are running
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # The queue deletes a dropped entry's ref but not its run (KC#2746). Checked once this job
+      # holds the emulator slot: an orphaned run skips the slot wait and the flows, and frees the
+      # emulator in seconds for the live entries behind it.
+      - name: Skip an orphaned merge-queue run
+        id: entry
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: if [ -f scripts/maestro-queue-entry.mjs ]; then node scripts/maestro-queue-entry.mjs; else echo 'no merge-queue entry check in this tree'; fi
+
+      - name: Install pinned guard-script dependencies
+        run: npm ci --prefix scripts --ignore-scripts --no-audit --no-fund
+
+      - name: Resolve kc-dev environment (public anon key + seed password)
+        env:
+          DEV_WEB_URL: ${{ vars.DEV_WEB_URL }}
+          E2E_SEED_PASSWORD: ${{ secrets.E2E_SEED_PASSWORD }}
+        run: |
+          set -euo pipefail
+          node scripts/maestro-dev-env.mjs > "$RUNNER_TEMP/kc-dev.env"
+          while IFS='=' read -r key value; do
+            echo "::add-mask::$value"
+            echo "$key=$value" >> "$GITHUB_ENV"
+          done < "$RUNNER_TEMP/kc-dev.env"
+
+      - name: Download the E2E APK
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: maestro-e2e-apk
+          path: ${{ runner.temp }}/e2e-apk
+
+      - name: Locate the E2E APK
+        run: |
+          set -euo pipefail
+          apk="$(find "$RUNNER_TEMP/e2e-apk" -name '*.apk' -print -quit)"
+          test -n "$apk"
+          echo "E2E_APK=$apk" >> "$GITHUB_ENV"
+
       - name: Install Maestro
         run: |
           set -euo pipefail
@@ -132,19 +235,37 @@ jobs:
 
       # kc-dev (Free/Nano) stalls when several suites hit it at once (13/14/15 Nov 2026), so at
       # most KC_DEV_TEST_SLOTS suites (default 2) run their tests against it together; the rest
-      # queue here FIFO. An API error (rate limit) waits and asks again; only after 120 min does
-      # it proceed without a slot.
+      # queue here FIFO. API errors keep waiting; after 120 minutes without a verified slot,
+      # the step fails without starting shared DEV tests.
+      # A dev-push run (maestro-dev-health.yml) gives up its turn here when dev has moved on or a
+      # merge group waits for the emulator (scripts/maestro-dev-yield.mjs): `yielded=true` skips the
+      # flows and the job ends green, releasing the emulator group to the merge queue.
       - name: Wait for a kc-dev test slot
+        id: slot
+        if: steps.entry.outputs.orphaned != 'true'
         timeout-minutes: 125
         env:
           GITHUB_TOKEN: ${{ github.token }}
           KC_DEV_TEST_SLOTS: ${{ vars.KC_DEV_TEST_SLOTS }}
+          KC_DEV_SLOT_YIELD_TO_QUEUE: ${{ inputs.yield_to_queue && 'true' || '' }}
         # An older checked-out tree (e.g. mobile-nightly's pinned SHA) has no throttle yet.
         run: if [ -f scripts/kc-dev-slot.mjs ]; then node scripts/kc-dev-slot.mjs; else echo 'no kc-dev slot script in this tree'; fi
+
+      # kc-dev must sign the seed user in three times in a row before the emulator boots, and the
+      # step waits up to 45 min for that (scripts/maestro-wait-kc-dev.mjs). An outage then delays
+      # the merge group instead of failing it: a failed group drops its PR from the merge queue and
+      # rebuilds every group behind it. After 45 min the step fails with the outage as the reason.
+      - name: Wait for kc-dev to sign the seed user in
+        if: steps.slot.outputs.yielded != 'true'
+        timeout-minutes: 50
+        env:
+          KC_WAIT_TIMEOUT_MS: '2700000'
+        run: node scripts/maestro-wait-kc-dev.mjs
 
       # A green run takes 24–28 min (19 flows). 55 min is twice that; the runner itself stops early,
       # failed, when kc-dev is down or 3 flows in a row fail twice (scripts/maestro-run-android.sh).
       - name: Run Maestro flows on the emulator
+        if: steps.entry.outputs.orphaned != 'true' && steps.slot.outputs.yielded != 'true'
         timeout-minutes: 55
         uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
         with:
@@ -166,7 +287,7 @@ jobs:
 
       - name: Remove unsafe automatic media from capture flows
         id: native-capture-privacy
-        if: always()
+        if: always() && steps.entry.outputs.orphaned != 'true' && steps.slot.outputs.yielded != 'true'
         run: |
           for label in 07-create-post-form 07-create-post-form-retry 19-edit-profile-keyboard-toolbar 19-edit-profile-keyboard-toolbar-retry; do
             node scripts/maestro-native-capture-media.mjs "$RUNNER_TEMP/maestro" "$label"

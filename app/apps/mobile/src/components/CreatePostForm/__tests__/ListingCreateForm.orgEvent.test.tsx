@@ -53,7 +53,7 @@ vi.mock('../../ui/DateTimeField', () => ({
   ),
 }));
 vi.mock('../../giving/RideCreateSection', () => ({ RIDE_CREATE_DETAIL_KEYS: [], RideCreateSection: () => null }));
-vi.mock('../../../services/listingImageUpload', () => ({ pickListingImages: vi.fn(async () => []), uploadListingImages: vi.fn() }));
+vi.mock('../../../services/listingImageUpload', () => ({ pickListingImages: vi.fn(async () => ({ status: 'ok' as const, value: [] })), uploadListingImages: vi.fn() }));
 vi.mock('../../../lib/analyticsCoreLoop', () => ({ trackCoreLoop: vi.fn(), trackActivationIfFirst: vi.fn() }));
 vi.mock('../../../lib/haptics', () => ({ hapticLightImpact: () => undefined, hapticLightTap: () => {} }));
 vi.mock('../../../navigation/useShellTabBarVisibility', () => ({ useShellTabBarScrollInset: () => 0 }));
@@ -138,7 +138,12 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-describe('ListingCreateForm — organization event', () => {
+// Each test renders the whole form and chains several waits (and most a publish); the first one also
+// pays the form's cold module load. Alone it takes ~1.8 s, but on a loaded CI runner under coverage
+// it exceeded vitest's 5 s default and failed unrelated PRs and merge-queue runs (#1948 precedent).
+const FORM_TEST_TIMEOUT = { timeout: 15_000 };
+
+describe('ListingCreateForm — organization event', FORM_TEST_TIMEOUT, () => {
   it('a member of no organization starts on today\'s form and may publish their own event (FR-POST-024)', async () => {
     mocks.listMyOrganizations.mockResolvedValue([]);
     const { onPublished } = renderTimeOffer();

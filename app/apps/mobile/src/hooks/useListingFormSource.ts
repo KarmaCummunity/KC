@@ -59,6 +59,7 @@ export function useListingFormSource({
   const [carriedMedia, setCarriedMedia] = useState<MediaAssetInput[]>([]);
   const { setWantsOrgEvent, setWantsPersonalEvent, setOrgId } = eventChoice;
   const kindSlug = kind?.slug ?? null;
+  const [initializedSpecs, setInitializedSpecs] = useState<readonly ListingFieldSpec[] | null>(null);
 
   // A new kind (direction switch) starts from its own defaults. The ride route and schedule are
   // shared by both ride kinds, so they survive the switch (RideCreateSection keeps showing them).
@@ -73,6 +74,7 @@ export function useListingFormSource({
       setDetails((prev) => ({ ...pickRideDetails(prev), ...initialDetailsFor(specs) }));
     }
     setError(null);
+    setInitializedSpecs(specs);
     // `kindSlug` changes together with `specs` (one run per kind); `seedVersion` re-runs this once
     // a seed arrives. The setters are stable.
   }, [specs, kindSlug, editListingId, seedVersion, setDetails, setError]);
@@ -105,6 +107,8 @@ export function useListingFormSource({
   return {
     /** The source is still loading; the form shows a spinner and cannot publish yet. */
     loading: Boolean(sourceId) && sourceQuery.isLoading,
+    /** Defaults must commit before create-mode validation or publication is exposed. */
+    initializing: !editListingId && initializedSpecs !== specs,
     /** The listing being edited or republished, once loaded. */
     detail: sourceQuery.data ?? undefined,
     sourceId,

@@ -32,8 +32,9 @@ export function mapHandoffRow(row: HandoffRow, worldSlug: string): GivingHandoff
   return {
     handoffId: row.id,
     listingId: row.post_id,
-    ownerId: row.owner_id,
-    recipientId: row.recipient_id,
+    // '' for a member who deleted their account (#2088), as for a masked member.
+    ownerId: row.owner_id ?? '',
+    recipientId: row.recipient_id ?? '',
     worldSlug,
     status: row.status,
     pickupMode: row.pickup_mode,

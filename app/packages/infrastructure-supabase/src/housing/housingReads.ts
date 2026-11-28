@@ -15,6 +15,7 @@ import {
   type BookingDetailsRow,
   type HandoffRow,
 } from './housingMappers';
+import { presentMemberIds, memberEntry } from '../users/memberIds';
 
 type Client = SupabaseClient<Database>;
 
@@ -68,7 +69,7 @@ export async function listHostBookings(client: Client, postId: string): Promise<
     ) ?? [];
   if (handoffs.length === 0) return [];
   const ids = handoffs.map((h) => h.id);
-  const guestIds = unique(handoffs.map((h) => h.recipient_id));
+  const guestIds = presentMemberIds(handoffs.map((h) => h.recipient_id));
   const [details, rated, stays, guests] = await Promise.all([
     detailsOf(client, ids),
     ratedOf(client, ids),
@@ -80,7 +81,7 @@ export async function listHostBookings(client: Client, postId: string): Promise<
     .flatMap((h) => {
       const row = details.get(h.id);
       const booking = row
-        ? mapHostBooking(h, row, guestById.get(h.recipient_id) ?? null, stays.get(h.recipient_id) ?? 0, rated.has(h.id))
+        ? mapHostBooking(h, row, memberEntry(guestById, h.recipient_id) ?? null, memberEntry(stays, h.recipient_id) ?? 0, rated.has(h.id))
         : null;
       return booking ? [booking] : [];
     })
@@ -109,7 +110,7 @@ export async function listGuestStays(client: Client, limit = DEFAULT_STAYS_LIMIT
     detailsOf(client, ids),
     ratedOf(client, ids),
     client.from('posts').select('id, title, city_id').in('id', unique(handoffs.map((h) => h.post_id))),
-    client.from('users').select('id, display_name').in('id', unique(handoffs.map((h) => h.owner_id))),
+    client.from('users').select('id, display_name').in('id', presentMemberIds(handoffs.map((h) => h.owner_id))),
   ]);
   const postById = new Map((unwrapCall('table:posts', posts) ?? []).map((p) => [p.id, p]));
   const hostById = new Map((unwrapCall('table:users', hosts) ?? []).map((u) => [u.id, u.display_name]));
@@ -117,7 +118,7 @@ export async function listGuestStays(client: Client, limit = DEFAULT_STAYS_LIMIT
   return handoffs.flatMap((h) => {
     const row = details.get(h.id);
     const stay = row
-      ? mapGuestStay(h, row, postById.get(h.post_id) ?? null, hostById.get(h.owner_id) ?? null, rated.has(h.id), now)
+      ? mapGuestStay(h, row, postById.get(h.post_id) ?? null, memberEntry(hostById, h.owner_id) ?? null, rated.has(h.id), now)
       : null;
     return stay ? [stay] : [];
   });

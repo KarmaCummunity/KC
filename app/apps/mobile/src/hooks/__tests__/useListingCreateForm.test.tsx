@@ -2,7 +2,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import type { ListingKindOption } from '@kc/domain';
-import type { PropsWithChildren } from 'react';
+import { useLayoutEffect, useRef, type PropsWithChildren } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const { repo, auth, upload, track, activation, remember } = vi.hoisted(() => ({
   repo: { listKindsForWorld: vi.fn(), createListing: vi.fn(), getListingDetail: vi.fn(), updateMyListing: vi.fn() },
@@ -26,6 +26,19 @@ import { useListingCreateForm } from '../useListingCreateForm';
 function wrapper({ children }: PropsWithChildren) { const client = new QueryClient({ defaultOptions: { queries: { retry: false } } }); return <QueryClientProvider client={client}>{children}</QueryClientProvider>; }
 const kind = { kindId: 'k1', slug: 'food_offer', direction: 'give', detailSchema: { properties: { food_type: {}, expires_at: {} } } } as unknown as ListingKindOption;
 describe('useListingCreateForm', () => {
+  it('retains validation when publishing immediately after kind initialization', async () => {
+    const { result } = renderHook(() => {
+      const form = useListingCreateForm({ worldSlug: 'food', direction: 'give', title: ' ', summary: '', onPublished: vi.fn() });
+      const publish = useRef(form.publish);
+      publish.current = form.publish;
+      useLayoutEffect(() => { if (form.canPublish) void publish.current(); }, [form.canPublish]);
+      return form;
+    }, { wrapper });
+    await waitFor(() => expect(result.current.kind?.kindId).toBe('k1'));
+    expect(result.current.error).toEqual({ message: 'post.unifiedCreate.errors.titleRequired', field: 'title' });
+    expect(repo.createListing).not.toHaveBeenCalled();
+  });
+
   beforeEach(() => { vi.clearAllMocks(); auth.current = 'u1'; repo.listKindsForWorld.mockResolvedValue([kind]); repo.createListing.mockResolvedValue('l1'); });
   it('reports title, required field, and city guards without publishing', async () => {
     const { result } = renderHook(() => useListingCreateForm({ worldSlug: 'food', direction: 'give', title: ' ', summary: '', onPublished: vi.fn() }), { wrapper });

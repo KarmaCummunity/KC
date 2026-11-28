@@ -1,7 +1,7 @@
 // FR-POST-023 — share sheet orchestration (header button + post ⋮ menu).
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow } from 'date-fns/formatDistanceToNow';
 import type { PostWithOwner } from '@kc/application';
 import { getSupabaseClient } from '@kc/infrastructure-supabase';
 import { canSharePost } from '../lib/canSharePost';

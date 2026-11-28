@@ -4,6 +4,7 @@
 import { ScrollView, Pressable, View } from 'react-native';
 import { makeUseStyles, radius, spacing, Text, typography } from '@kc/ui';
 import { rowDirectionStart } from '../../../lib/rtlLayout';
+import { useRtlWebHorizontalScrollStart } from '../../../hooks/useRtlWebHorizontalScrollStart';
 import { useLocaleBundle } from '../../../i18n/useLocaleBundle';
 
 export interface OrgOption {
@@ -22,6 +23,8 @@ export interface OrgSwitcherProps {
 export function OrgSwitcher({ orgs, selected, onSelect, accents }: OrgSwitcherProps) {
   const styles = useStyles();
   const L = useLocaleBundle();
+  // #1747 — rowDirectionStart is row-reverse on RTL web; pin scroll to the first chip.
+  const rtlScroll = useRtlWebHorizontalScrollStart();
   const chip = (id: string | null, label: string) => {
     const accent = id === null ? undefined : accents?.get(id);
     return (
@@ -43,9 +46,11 @@ export function OrgSwitcher({ orgs, selected, onSelect, accents }: OrgSwitcherPr
 
   return (
     <ScrollView
+      ref={rtlScroll.ref}
       horizontal
       showsHorizontalScrollIndicator={false}
       contentContainerStyle={styles.bar}
+      onContentSizeChange={rtlScroll.onContentSizeChange}
     >
       {chip(null, L.admin.admins.tree.orgAll)}
       {orgs.map((o) => chip(o.id, o.name))}

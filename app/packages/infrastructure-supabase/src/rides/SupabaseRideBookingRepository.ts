@@ -5,6 +5,7 @@ import type { Database, Json } from '../database.types';
 import { unwrapCall } from '../rpc/mapRpcError';
 import { sessionUserId } from '../users/userReads';
 import { requireRpcRow } from '../marketplace/rpcRow';
+import { presentMemberIds, memberEntry } from '../users/memberIds';
 
 type Client = SupabaseClient<Database>;
 type HandoffRow = Database['public']['Tables']['post_handoffs']['Row'];
@@ -42,7 +43,7 @@ export class SupabaseRideBookingRepository implements IRideBookingRepository {
       ) ?? [];
     if (rows.length === 0) return [];
     const [users, ratings, viewerId] = await Promise.all([
-      this.client.from('users').select('id, display_name, avatar_url').in('id', [...new Set(rows.map((r) => r.recipient_id))]),
+      this.client.from('users').select('id, display_name, avatar_url').in('id', presentMemberIds(rows.map((r) => r.recipient_id))),
       this.client.from('post_ratings').select('handoff_id').in('handoff_id', rows.map((r) => r.id)),
       sessionUserId(this.client),
     ]);
@@ -50,7 +51,7 @@ export class SupabaseRideBookingRepository implements IRideBookingRepository {
     // The table shows a member only the ratings they wrote, so every returned row is "rated by me".
     const rated = new Set((viewerId ? (unwrapCall('table:post_ratings', ratings) ?? []) : []).map((r) => r.handoff_id));
     return rows.flatMap((row) => {
-      const booking = mapBookingRow(row, userById.get(row.recipient_id) ?? null, rated.has(row.id));
+      const booking = mapBookingRow(row, memberEntry(userById, row.recipient_id) ?? null, rated.has(row.id));
       return booking ? [booking] : [];
     });
   }
@@ -96,7 +97,7 @@ export function mapBookingRow(
   if (!isRideBookingListStatus(row.status)) return null;
   return {
     handoffId: row.id,
-    recipientId: row.recipient_id,
+    recipientId: row.recipient_id ?? '',
     passengerName: passenger?.display_name ?? '',
     avatarUrl: passenger?.avatar_url ?? null,
     seats: row.seats,

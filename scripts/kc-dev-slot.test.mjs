@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';
-import { ApiError, INHERIT_MAX_LINKS, SLOT_STEP, backoffMs, decide, findMe, inheritedStart, retryAfterMs, slotWorkflows } from './kc-dev-slot.mjs';
+import { ApiError, INHERIT_MAX_LINKS, SLOT_STEP, backoffMs, decide, findMe, inheritedStart, main, retryAfterMs, slotWorkflows } from './kc-dev-slot.mjs';
 
 const me = { id: 100, stepStartedAt: '2026-11-15T00:10:00Z' };
 const job = (id, stepStatus, startedAt, status = 'in_progress') => ({
@@ -138,4 +138,46 @@ test('the inherited place is bounded by the lookback and the number of links', (
 test('findMe reports the job name used to find its predecessors', () => {
   const jobs = [{ id: 3, name: 'Maestro / maestro', status: 'in_progress', runner_name: 'r1', steps: [{ name: SLOT_STEP, started_at: '2026-11-21T17:00:00Z' }] }];
   assert.deepEqual(findMe(jobs, 'r1'), { id: 3, name: 'Maestro / maestro', stepStartedAt: '2026-11-21T17:00:00Z' });
+});
+
+const slotEnv = {
+  GITHUB_TOKEN: 'test-token', GITHUB_REPOSITORY: 'test/repo', GITHUB_RUN_ID: '1',
+  GITHUB_RUN_ATTEMPT: '1', RUNNER_NAME: 'slot-test', KC_DEV_SLOT_MAX_WAIT_MIN: '0',
+  KC_DEV_TEST_SLOTS: '1',
+};
+function mockSlotApi(t, occupied) {
+  const own = { ...job(100, 'in_progress', me.stepStartedAt), name: 'waiter', runner_name: 'slot-test' };
+  const jobs = occupied ? [own, job(200, 'completed', '2026-11-15T00:01:00Z')] : [own];
+  t.mock.method(globalThis, 'fetch', async (url) => ({
+    ok: true,
+    json: async () => String(url).includes('/jobs')
+      ? { jobs }
+      : { workflow_runs: [{ id: 1, path: '.github/workflows/ci.yml', run_attempt: 1, created_at: '2026-11-15T00:00:00Z' }] },
+  }));
+}
+test('main refuses shared DEV tests without credentials or repository', async () => {
+  await assert.rejects(main({}), /missing token\/repository/);
+});
+test('main fails closed when the bounded wait expires with an active holder', async (t) => {
+  mockSlotApi(t, true);
+  await assert.rejects(main(slotEnv), /no verified slot.*tests were not started/);
+});
+test('main fails closed when API errors prevent slot verification at the deadline', async (t) => {
+  t.mock.method(globalThis, 'fetch', async () => ({ ok: false, status: 503, headers: new Headers() }));
+  await assert.rejects(main(slotEnv), /no verified slot.*1 lookup error.*tests were not started/);
+});
+test('main still admits a verified free slot at the deadline', async (t) => {
+  mockSlotApi(t, false);
+  await assert.doesNotReject(main(slotEnv));
+});
+test('main fails closed when an earlier waiter owns the available place at the deadline', async (t) => {
+  const own = { ...job(100, 'in_progress', me.stepStartedAt), name: 'waiter', runner_name: 'slot-test' };
+  t.mock.method(globalThis, 'fetch', async (url) => ({ ok: true, json: async () => String(url).includes('/jobs')
+    ? { jobs: [own, job(200, 'in_progress', '2026-11-15T00:01:00Z')] }
+    : { workflow_runs: [{ id: 1, path: '.github/workflows/ci.yml', run_attempt: 1, created_at: '2026-11-15T00:00:00Z' }] } }));
+  await assert.rejects(main(slotEnv), /no verified slot.*tests were not started/);
+});
+test('main fails closed when the API never identifies its runner job', async (t) => {
+  t.mock.method(globalThis, 'fetch', async () => ({ ok: true, json: async () => ({ jobs: [] }) }));
+  await assert.rejects(main({ ...slotEnv, KC_DEV_SLOT_POLL_MS: '0' }), /no verified slot.*tests were not started/);
 });

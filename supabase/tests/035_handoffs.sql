@@ -471,9 +471,9 @@ select is(pg_temp.val('select cancel_reason from public.post_handoffs where id =
 -- ── Account removal ─────────────────────────────────────────────────────────
 delete from auth.users where id = '00000000-0000-4000-8000-00000000000b';
 select is(pg_temp.val('select count(*) from public.post_handoffs where recipient_id = @b'), '0',
-  'removing an account removes its handoffs');
+  'no handoff names a removed account any more');
 select is(pg_temp.val($$select count(*) || ' ' || count(rater_id) || ' ' || count(handoff_id) from public.post_ratings where ratee_id = @a$$),
-  '1 0 0', 'a rating given by the removed member stays, without its author');
+  '1 0 1', 'a rating given by the removed member stays, without its author, on the handoff that stays (#2088)');
 select is(pg_temp.stats('a'), '1/0', 'the remaining member''s counters are untouched');
 
 select * from finish();

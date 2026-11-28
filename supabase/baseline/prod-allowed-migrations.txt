@@ -88,3 +88,11 @@
 0091_post_media_processing_activation.sql
 0092_employment_job_offer_fields.sql
 0093_user_devices_prune.sql
+0094_verified_edge_caller.sql
+0095_storage_deletion_intents.sql
+0096_api_database_role.sql
+0097_post_read_visibility_gate.sql
+0098_deleted_user_keeps_counterpart_records.sql
+0099_avatar_orphan_reconciliation.sql
+0100_private_post_uploads.sql
+0101_native_evidence_isolation.sql

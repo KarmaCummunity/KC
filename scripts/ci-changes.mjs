@@ -24,6 +24,13 @@
 // rest the same way. A base-branch change still runs every planned lane.
 // The action is read from the event payload (`GITHUB_EVENT_PATH`).
 //
+// Maestro (the Android journeys against the single shared kc-dev) is the
+// exception: it runs in the dev merge queue, on the exact group head, when the
+// group's diff touches MAESTRO_RULES, and on a PR only when the PR carries the
+// MAESTRO_LABEL opt-in (see `plan`). Until 23 Nov 2026 every app PR ran it on
+// each push, and up to 15 jobs at once sat on runners waiting for the one
+// kc-dev slot, starving every other job on the ~20-runner Free plan (#2613).
+//
 // Inputs (env): EVENT_NAME, DRAFT, ACTOR, REF, BASE_REF (PR / merge-group
 // target branch), BASE_SHA, HEAD_SHA.
 // Outputs ($GITHUB_OUTPUT): draft, one true/false flag per lane job and per
@@ -43,10 +50,17 @@ export const LANE_RULES = {
   frontend: [/^app\//, /^scripts\//, /^sonar-project\.properties$/, ...SHARED],
   // DB validation also installs the app workspace (sqlProbes), so lockfile and
   // workspace manifests count. Edge Functions are excluded: the local stack
-  // starts without the edge runtime.
+  // starts without the edge runtime. The API server and its client package run
+  // their database suites and build their container image in this lane; the
+  // packages they share with the app (domain, application) do not plan it on a
+  // PR, and reach it in the merge queue, which runs every lane.
   backend: [
     /^supabase\/(?!functions\/)/,
     /^app\/packages\/infrastructure-supabase\//,
+    /^app\/apps\/api\//,
+    /^app\/packages\/infrastructure-api\//,
+    // The API's cloud environment is checked by a job of this lane.
+    /^infra\//,
     /^app\/(package\.json|pnpm-lock\.yaml|pnpm-workspace\.yaml)$/,
     /^scripts\//,
     ...SHARED,
@@ -88,10 +102,15 @@ export const LANE_JOBS = ['hygiene', 'static', ...LANES, ...HEAVY_LANES];
  * lane (source branch, strict migration scan, VERSION bump, dev E2E), needed
  * for every PR or merge group whose base is main, whatever it touches, and
  * `maestro`, the Android journeys on an emulator against kc-dev (about 45
- * minutes), needed on a PR whose diff touches MAESTRO_RULES. It is not run by
- * a merge group, a push or a dispatch: the PR already ran it, and a push to
- * dev has its own non-blocking run (maestro-dev-health.yml) so that a shared,
- * mutable kc-dev can never hold a deploy. Never
+ * minutes). `maestro` is needed by a merge group into dev whose diff (group
+ * base → group head, so every PR in the group) touches MAESTRO_RULES, or that
+ * cannot be diffed: nothing that changes what the journeys see lands on dev
+ * without passing them on the exact commit that lands. On a PR it runs only
+ * with the MAESTRO_LABEL opt-in (early feedback); a PR without it leaves the
+ * lane to the queue, which is the only place it is required. A push or a
+ * dispatch never runs it: dev has its own non-blocking run
+ * (maestro-dev-health.yml) so that a shared, mutable kc-dev can never hold a
+ * deploy. Never
  * planned as `false`, so a ci.yml without the job (and the gate copy that
  * predates it) keeps passing; scripts/ci-gate.mjs accepts the job as skipped
  * when the plan omits it. Keep in sync with OPTIONAL_LANES there.
@@ -129,6 +148,9 @@ export const MAESTRO_IGNORE = [
   /^app\/apps\/mobile\/[^/]+\.baseline\.json$/,
   /^app\/.+\.md$/,
 ];
+
+/** PR label that opts a PR into the Maestro lane on its own runs (it always runs in the queue). */
+export const MAESTRO_LABEL = 'maestro';
 
 /** True when `file` can change what the Maestro journeys see. */
 export function touchesMaestro(file) {
@@ -168,7 +190,7 @@ export const REVIEW_LANES = ['static'];
  * and on `edited` events without a base change, which also re-run hygiene).
  * `action` and `baseChanged` come from the GitHub event payload.
  */
-export function plan({ event, draft, actor, ref, baseRef, files, action, baseChanged }) {
+export function plan({ event, draft, actor, ref, baseRef, files, action, baseChanged, labels = [], groupFiles = null }) {
   const isPr = PR_EVENTS.has(event);
   if (isPr && draft) {
     const none = Object.fromEntries(LANE_JOBS.map((j) => [j, false]));
@@ -188,9 +210,16 @@ export function plan({ event, draft, actor, ref, baseRef, files, action, baseCha
   // gone from PRs into dev (D-195 addendum, TD-236), it gates PRs into main
   // and main pushes. Dependabot-triggered runs get no secrets.
   const sonarTarget = (isPr && base === 'main' && actor !== 'dependabot[bot]') || (!isPr && event !== 'merge_group' && ref === 'refs/heads/main');
-  // The seed password reaches only runs that get secrets, so a Dependabot PR does not plan Maestro.
-  // An undiffable PR (files === null) runs it: fail closed.
-  const maestro = isPr && actor !== 'dependabot[bot]' && (files === null || files.some(touchesMaestro));
+  // Maestro: required in the dev merge queue when the group touches the app (an undiffable group
+  // runs it: fail closed); on a PR only on opt-in. The seed password reaches only runs that get
+  // secrets, so a Dependabot PR run never plans it (its queue run does: the queue runs as the
+  // enqueuing app, with secrets).
+  const queueMaestro = event === 'merge_group' && base === 'dev' && (groupFiles === null || groupFiles.some(touchesMaestro));
+  // A PR into main has no merge queue after it, so it keeps running the lane on its diff (an
+  // undiffable one fails closed); a PR into dev runs it only on opt-in.
+  const prNeedsMaestro = base === 'main' ? files === null || files.some(touchesMaestro) : labels.includes(MAESTRO_LABEL);
+  const prMaestro = isPr && actor !== 'dependabot[bot]' && prNeedsMaestro;
+  const maestro = queueMaestro || prMaestro;
   const needed = {
     hygiene: isPr,
     static: true,
@@ -242,19 +271,22 @@ export function changedFiles(base, head, cwd = process.cwd()) {
  * lane (fail closed: an `edited` run without a payload must not skip lanes).
  */
 export function readPrAction(eventPath) {
-  if (!eventPath) return { action: undefined, baseChanged: false };
+  if (!eventPath) return { action: undefined, baseChanged: false, labels: [] };
   try {
     const event = JSON.parse(readFileSync(eventPath, 'utf8'));
-    return { action: event.action, baseChanged: Boolean(event.changes?.base) };
+    const labels = (event.pull_request?.labels ?? []).map((l) => l?.name).filter((n) => typeof n === 'string');
+    return { action: event.action, baseChanged: Boolean(event.changes?.base), labels };
   } catch {
-    return { action: undefined, baseChanged: false };
+    return { action: undefined, baseChanged: false, labels: [] };
   }
 }
 
 function main() {
   const env = process.env;
   const files = DIFF_EVENTS.has(env.EVENT_NAME) ? changedFiles(env.BASE_SHA, env.HEAD_SHA) : null;
-  const { action, baseChanged } = readPrAction(env.GITHUB_EVENT_PATH);
+  // A merge group still runs every other lane; its diff only decides Maestro.
+  const groupFiles = env.EVENT_NAME === 'merge_group' ? changedFiles(env.BASE_SHA, env.HEAD_SHA) : null;
+  const { action, baseChanged, labels } = readPrAction(env.GITHUB_EVENT_PATH);
   const result = plan({
     event: env.EVENT_NAME,
     draft: env.DRAFT === 'true',
@@ -264,6 +296,8 @@ function main() {
     files,
     action,
     baseChanged,
+    labels,
+    groupFiles,
   });
   const lines = [
     `draft=${result.draft}`,

@@ -1,7 +1,7 @@
 import React, { type ReactNode } from 'react';
 import { ScrollView, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow } from 'date-fns/formatDistanceToNow';
 import { he as dateFnsHe } from 'date-fns/locale/he';
 import { useTranslation } from 'react-i18next';
 import type { ChallengeSummary } from '@kc/domain';

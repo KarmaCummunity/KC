@@ -19,6 +19,7 @@ import { useAuthStore } from '../../../src/store/authStore';
 import { useLocaleBundle } from '../../../src/i18n/useLocaleBundle';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../../src/components/RouteErrorBoundary';
+import { SilentUnauthorizedFallback } from '../../../src/components/permissions/SilentUnauthorizedFallback';
 
 const entryKey = (entry: ModerationQueueEntry) => entry.entryId;
 
@@ -76,7 +77,7 @@ export default function ReviewQueueScreen() {
   );
 
   if (rolesLoading) return <View style={styles.center}><Text>{t.loading}</Text></View>;
-  if (!enabled) return <View style={styles.center}><Text style={styles.title}>{t.forbiddenTitle}</Text></View>;
+  if (!enabled) return <SilentUnauthorizedFallback href="/(admin)" />;
 
   return (
     <View style={styles.root}>

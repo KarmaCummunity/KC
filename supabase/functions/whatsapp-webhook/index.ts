@@ -70,5 +70,4 @@ serve(withObservability('whatsapp-webhook', createWebhookHandler({
     })),
   verifyToken: Deno.env.get('WHATSAPP_VERIFY_TOKEN') ?? '',
   appSecret: Deno.env.get('WHATSAPP_APP_SECRET') ?? '',
-  skipSignatureVerify: Deno.env.get('WHATSAPP_SKIP_SIGNATURE_VERIFY') === 'true',
 })));

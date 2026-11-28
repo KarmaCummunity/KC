@@ -18,6 +18,7 @@ afterEach(cleanup);
 
 const mockStyles = {
   row: {},
+  profileLink: {},
   rowText: {},
   name: {},
   city: {},
@@ -140,6 +141,8 @@ describe('FollowUserRow', () => {
     expect(removeBtn).toBeTruthy();
     fireEvent.click(removeBtn);
     expect(onRemove).toHaveBeenCalledWith(user);
+    expect(onOpen).not.toHaveBeenCalled();
+    expect(removeBtn.parentElement?.closest('[data-testid="follow-user-user-1"]')).toBeNull();
   });
 
   it('updates output when user prop changes (memoization preserves updates)', () => {

@@ -121,7 +121,7 @@ jobs:
           npx playwright install --with-deps chromium
       # kc-dev (Free/Nano) stalls when several suites hit it at once (13/14 Nov 2026), so at
       # most KC_DEV_TEST_SLOTS suites (default 2) run their tests against it together; the rest
-      # queue here FIFO. Best effort: proceeds after 120 min or on any API error.
+      # queue here FIFO. API errors keep waiting; the bounded wait fails closed without a slot.
       - name: Wait for a kc-dev test slot
         timeout-minutes: 125
         env:
@@ -135,13 +135,17 @@ jobs:
         env:
           E2E_SEED_PASSWORD: ${{ secrets.E2E_SEED_PASSWORD }}
         run: npm test
-      # Always, as in e2e-nightly-dev.yml: a test that passes on retry (flaky) leaves its failed
-      # attempt's trace and screenshot here, so the flake can be diagnosed.
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      # Raw browser reports can contain filled passwords, auth tokens and network payloads.
+      # Keep failures red; publish only an allowlisted numeric summary, never raw attachments.
+      - name: Prepare credential-safe Playwright counts
+        id: safe-playwright-summary
         if: always()
+        run: node scripts/playwright-safe-summary.mjs tests/e2e/test-results/results.json "$RUNNER_TEMP/safe-playwright-summary/counts.json"
+      - name: Upload credential-safe Playwright counts only
+        if: always() && steps['safe-playwright-summary'].outcome == 'success'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: playwright-report-release
-          path: |
-            tests/e2e/playwright-report/
-            tests/e2e/test-results/
+          name: playwright-safe-counts
+          path: ${{ runner.temp }}/safe-playwright-summary/counts.json
+          if-no-files-found: error
           retention-days: 14

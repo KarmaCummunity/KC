@@ -80,7 +80,7 @@ Every schema change must be a committed file in `supabase/migrations/`. **A PR n
 
 **App-wide semver lives in `app/VERSION` (`MAJOR.MINOR.PATCH`).**
 
-1. **PATCH is bumped automatically on every merge into `dev`** by `.github/workflows/bump-version-on-merge.yml`. **Do not edit `app/VERSION` in ordinary PRs** — two open PRs that both edit it always conflict (TD-196).
+1. **PATCH is bumped automatically after merges into `dev`** by `.github/workflows/bump-version-on-merge.yml`: at an automatic checkpoint no earlier than 60 minutes after the preceding VERSION change, including when the merge queue remains busy (D-249). The DEV-side waiter catches up without another merge; runner/check delays are additional. Registry/migration IDs are assigned immediately in a separate concurrency lane. **Do not edit `app/VERSION` in ordinary PRs** — two open PRs that both edit it always conflict (TD-196).
 2. **When you ship a breaking change → set MAJOR** (e.g. `1.4.2` → `2.0.0`) by editing `app/VERSION` in that PR. A PR that edits the file itself is not auto-bumped.
 3. **When you ship a significant non-breaking feature set → set MINOR** (e.g. `1.4.2` → `1.5.0`) the same way.
 4. The bump commit is `[skip ci]`, so a deploy builds the previous number and the new one ships with the next merge.
@@ -480,6 +480,7 @@ If you don't see a home for something below, **ask the PM** before inventing a n
 | Tech debt                 | GitHub issues labeled `tech-debt`      |
 | Architectural decisions   | `docs/SSOT/DECISIONS.md`               |
 | Migration verification    | `docs/SSOT/OPERATOR_RUNBOOK.md`        |
+| Cloud infrastructure (API) | `infra/gcp/` (Terraform; its README)  |
 | Environment topology      | `docs/SSOT/ENVIRONMENTS.md`            |
 | **Process rules**         | **`AGENTS.md`** (this file)            |
 | `docs/agents/`            | Operating runbooks (flow, deploy, release, claims) |

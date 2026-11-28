@@ -3,7 +3,7 @@
 // completed with the rating; cancel before check-in.
 import React, { useState } from 'react';
 import { View } from 'react-native';
-import { format } from 'date-fns';
+import { format } from 'date-fns/format';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Text, typography } from '@kc/ui';

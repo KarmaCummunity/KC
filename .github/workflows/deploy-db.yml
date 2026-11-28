@@ -253,9 +253,11 @@ jobs:
           CONTENT_DB_URL="$url" supabase/seed/content/load.sh
 
       # The database starts Edge Functions from its jobs with two Vault secrets
-      # (kc_project_url, kc_service_role_key). Created when missing, updated otherwise, on every
+      # (kc_project_url, kc_verified_service_role_key). Created when missing, updated otherwise, on every
       # deploy so a rotated key heals itself. The key is read from the Management API, masked at
       # once and handed to psql through the environment; only names are printed.
+      # Isolated from the obsolete kc_service_role_key writer in older MAIN copies.
+      # Migrations run first: a missing verified slot is a safe no-op until this succeeds.
       - name: Vault secrets for the database jobs
         env:
           PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
@@ -271,10 +273,10 @@ jobs:
           \getenv vault_key KC_VAULT_KEY
           select vault.create_secret(:'vault_url', 'kc_project_url') where not exists (select 1 from vault.secrets where name = 'kc_project_url');
           select vault.update_secret(id, :'vault_url') from vault.secrets where name = 'kc_project_url';
-          select vault.create_secret(:'vault_key', 'kc_service_role_key') where not exists (select 1 from vault.secrets where name = 'kc_service_role_key');
-          select vault.update_secret(id, :'vault_key') from vault.secrets where name = 'kc_service_role_key';
+          select vault.create_secret(:'vault_key', 'kc_verified_service_role_key') where not exists (select 1 from vault.secrets where name = 'kc_verified_service_role_key');
+          select vault.update_secret(id, :'vault_key') from vault.secrets where name = 'kc_verified_service_role_key';
           SQL
-          psql "$url" -v ON_ERROR_STOP=1 -qAt -c "select 'vault: ' || string_agg(name, ', ' order by name) from vault.secrets where name in ('kc_project_url','kc_service_role_key')"
+          psql "$url" -v ON_ERROR_STOP=1 -qAt -c "select 'vault: ' || string_agg(name, ', ' order by name) from vault.secrets where name in ('kc_project_url','kc_verified_service_role_key')"
 
       # The admin portal's Demo data screen (FR-ADMIN-031) calls RPCs of a dev-only seed
       # (supabase/seed/demo) that is not a migration, so nothing else brings it to kc-dev. It is

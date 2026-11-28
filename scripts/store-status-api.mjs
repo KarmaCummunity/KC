@@ -72,7 +72,8 @@ export async function fetchAscStatus({ appId, jwt, fetchImpl }) {
   const [subs, versions, builds] = await Promise.all([
     jsonGet(guarded, `${base}/reviewSubmissions?limit=5`, headers),
     jsonGet(guarded, `${base}/appStoreVersions?limit=10&include=build&fields[appStoreVersions]=versionString,appStoreState&fields[builds]=version`, headers),
-    jsonGet(guarded, `${base}/builds?limit=10&fields[builds]=version,processingState,uploadedDate`, headers),
+    // Newest first: /apps/{id}/builds has no sort, so the latest upload could fall off a 10-row page.
+    jsonGet(guarded, `${ASC_API}/builds?filter[app]=${encodeURIComponent(appId)}&sort=-uploadedDate&limit=10&fields[builds]=version,processingState,uploadedDate`, headers),
   ]);
   const included = new Map((versions.included || []).map((r) => [r.id, r]));
   return {

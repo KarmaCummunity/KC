@@ -1,6 +1,6 @@
 // Copy of a recurring ride's schedule (FR-RIDE-046): "every Sun–Thu at 07:30", "every day at 18:00",
 // "until 31/12". Weekday names come from the locale; runs of three or more days collapse to a range.
-import { format } from 'date-fns';
+import { format } from 'date-fns/format';
 import { rideWeekdayRuns, type RideWeekday } from '@kc/domain';
 
 type Translate = (key: string, options?: Record<string, unknown>) => string;

@@ -273,8 +273,12 @@ select is(pg_temp.told('event_registration_expired', 'c') || '|' || pg_temp.told
   'and each of them is told');
 
 delete from auth.users where id = '00000000-0000-4000-8000-00000000000a';
-select is((select count(*) from public.post_event_details) + (select count(*) from public.post_handoffs), 0::bigint,
-  'removing the organizer removes the events and their registrations');
+select is((select count(*) from public.post_event_details d join public.posts p on p.id = d.post_id
+             where p.owner_id is null and not exists (select 1 from public.post_handoffs h
+                                                       where h.post_id = p.id and h.status = 'handed_over'))
+  + (select count(*) from public.post_handoffs h where h.owner_id is null and h.status in ('waitlisted', 'reserved', 'confirmed')),
+  0::bigint,
+  'removing the organizer removes the events nobody attended and ends every live registration (attendance is the attendee''s record, #2088)');
 
 select * from finish();
 rollback;

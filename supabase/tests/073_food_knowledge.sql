@@ -236,8 +236,13 @@ select is(pg_temp.act('a', $$insert into public.post_knowledge_slots (post_id, s
     select #k1, now() + n * interval '3 days', now() + n * interval '3 days' + interval '1 hour' from generate_series(1, 20) n$$),
   'knowledge_slots_limit', 'at most twenty slots per offer');
 delete from auth.users where id = '00000000-0000-4000-8000-00000000000a';
-select is((select count(*) from public.post_knowledge_slots) + (select count(*) from public.post_food_details), 0::bigint,
-  'removing the giver removes slots and food details, booked or not');
+select is((select count(*) from public.post_knowledge_slots s join public.posts p on p.id = s.post_id
+             where p.owner_id is null and not exists (select 1 from public.post_handoffs h
+                                                       where h.post_id = p.id and h.status = 'handed_over'))
+  + (select count(*) from public.post_food_details d join public.posts p on p.id = d.post_id
+      where p.owner_id is null and not exists (select 1 from public.post_handoffs h
+                                                where h.post_id = p.id and h.status = 'handed_over')), 0::bigint,
+  'removing the giver removes slots and food details nobody received (a handed-over post is the receiver''s record, #2088)');
 
 select * from finish();
 rollback;

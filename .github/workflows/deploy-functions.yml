@@ -69,6 +69,7 @@ jobs:
             .github/actions/deploy-guard
             scripts/deploy-guard.mjs
             scripts/release-version.mjs
+            scripts/check-webhook-auth.mjs
           sparse-checkout-cone-mode: false
           persist-credentials: false
       - uses: ./.deploy-guard/.github/actions/deploy-guard
@@ -76,6 +77,11 @@ jobs:
           target: ${{ inputs.target }}
           release-sha: ${{ inputs.release_sha }}
           approved-attempt: ${{ inputs.approved_attempt }}
+
+      # The candidate checkout cleans the workspace, including the nested guard checkout.
+      # Preserve this trusted, self-contained judge outside that workspace first.
+      - name: Preserve trusted webhook judge across candidate checkout
+        run: cp .deploy-guard/scripts/check-webhook-auth.mjs "$RUNNER_TEMP/trusted-check-webhook-auth.mjs"
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -85,6 +91,13 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version-file: .nvmrc
+
+      # The guard's copy comes from deploy.yml's own commit and judges the commit
+      # being deployed: every function without a Supabase JWT (verify_jwt = false)
+      # must authenticate its caller and fail closed. A tree without those checks
+      # (for example a `main` that has not yet received `dev`) is refused here.
+      - name: Webhook functions authenticate their caller
+        run: node "$RUNNER_TEMP/trusted-check-webhook-auth.mjs" --root "$GITHUB_WORKSPACE"
 
       # Pins the project ref per target, so functions never land on the wrong project.
       - name: Preflight (secrets present, project ref matches the target)
@@ -123,8 +136,10 @@ jobs:
       # (the prefix is reserved now, so writing the key back is impossible by
       # design). Heal both here: remove a shadow, matching or stale, then the
       # deploy below refreshes every function's environment - the same way
-      # deploy-db.yml rewrites the kc_service_role_key Vault secret for the
-      # database jobs. SUPABASE_ANON_KEY would shadow the same way; nothing uses
+      # deploy-db.yml updates the verified caller slot for database jobs only after
+      # read-only key validation (kc_verified_service_role_key after its migration).
+      # The obsolete kc_service_role_key slot is not a fallback for migrated jobs.
+      # SUPABASE_ANON_KEY would shadow the same way; nothing uses
       # a saved copy of it today.
       - name: Drop a stale service-role key shadow (#2452)
         run: |

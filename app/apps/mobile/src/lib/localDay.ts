@@ -1,6 +1,6 @@
 // A calendar day as `YYYY-MM-DD`, read and written in local time. A UTC conversion would move the
 // day by the time-zone offset (just after midnight in Israel the UTC day is still yesterday).
-import { format } from 'date-fns';
+import { format } from 'date-fns/format';
 
 const ISO_DAY = /^(\d{4})-(\d{2})-(\d{2})$/;
 

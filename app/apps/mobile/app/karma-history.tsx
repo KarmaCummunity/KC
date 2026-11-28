@@ -7,7 +7,7 @@ import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
-import { format } from 'date-fns';
+import { format } from 'date-fns/format';
 import { he as dateFnsHe } from 'date-fns/locale/he';
 import { iconSize, makeUseStyles, radius, shadow, spacing, typography, useTheme, Text } from '@kc/ui';
 import { useAuthStore } from '../src/store/authStore';
@@ -18,6 +18,7 @@ import { rowDirectionStart } from '../src/lib/rtlLayout';
 import { MirroredIcon, useDirectionalBackIcon } from '../src/components/ui/MirroredIcon';
 import { rtlTextAlignStart } from '../src/lib/rtlTextAlignStart';
 import { useShellTabBarScrollInset } from '../src/navigation/useShellTabBarVisibility';
+export { RouteErrorBoundary as ErrorBoundary } from '../src/components/RouteErrorBoundary';
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
 

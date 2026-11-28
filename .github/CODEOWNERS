@@ -43,6 +43,7 @@
 /scripts/sync-eas-*                          @navesarussi
 /scripts/release-version.mjs                @navesarussi
 /scripts/resolve-green-dev-sha.mjs           @navesarussi
+/scripts/playwright-safe-summary.mjs          @navesarussi
 /scripts/prod-store-build-gate.mjs           @navesarussi
 /scripts/edge-functions.mjs                 @navesarussi
 /scripts/cloudflare-pages.mjs               @navesarussi
@@ -65,10 +66,13 @@
 /scripts/db-connect-retry.mjs               @navesarussi
 /scripts/kc-dev-slot.mjs                    @navesarussi
 /scripts/e2e-account-purge.mjs              @navesarussi
+/scripts/simulator-probe-*                   @navesarussi
+/scripts/e2e-post-media.mjs                 @navesarussi
 /scripts/release-merge.mjs @navesarussi
 /scripts/release-train.mjs @navesarussi
 /scripts/release-train-lib.mjs @navesarussi
 /scripts/bump-app-version.mjs               @navesarussi
+/scripts/version-checkpoint.mjs             @navesarussi
 /scripts/close-linked-issues.mjs            @navesarussi
 /scripts/run-baseline-tests.sh              @navesarussi
 /scripts/test-identity-provider-concurrency.py @navesarussi
@@ -125,6 +129,9 @@ playwright.config.*                         @navesarussi
 
 /scripts/release/prod-dryrun-*.mjs           @navesarussi
 /scripts/release/service-role-key.mjs       @navesarussi
+
+/scripts/asc-auto-candidate.mjs              @navesarussi
+/docs/release/asc-qualified-candidate.json   @navesarussi
 
 # Exceptions — script self-tests stay unowned so agents may add tests freely.
 # Deleting a test or removing assertions is caught by the test-integrity guard

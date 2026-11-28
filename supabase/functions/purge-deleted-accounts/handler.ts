@@ -11,11 +11,15 @@
 //      tombstone; a later re-sweep of `derived/<user_id>/` would need its own deletion intent.
 //   2. storage:  the member's folder `<user_id>/` in every bucket, and the server-made copies of
 //                their photos under `derived/<user_id>/` in post-images (repeatable)
-//   3. database: the auth identity is deleted; every row of the member cascades
+//   3. database: a storage deletion intent per folder of the member is recorded, and the auth
+//                identity is deleted (every row of the member cascades; the intents do not)
 // An account stays due until step 3 succeeded, so a failed account is retried by the next
-// run and never blocks the others.
+// run and never blocks the others. After the accounts, every run re-sweeps the due deletion
+// intents (sweep.ts): an object that committed after step 2 is deleted, and an intent closes only
+// when its folder lists empty after its quiet window.
 import { isServiceRoleRequest, serviceRoleRequiredResponse } from '../_shared/serviceRoleGuard.ts';
 import { chunkPaths, collectObjectPaths, type StorageListEntry } from '../_shared/storageCleanup.ts';
+import { createSweepDatabase, sweepDueIntents, type SweepDatabase, type SweepSummary } from './sweep.ts';
 
 /**
  * Folders of a member that server code writes on their behalf, outside their own `<user_id>/`
@@ -32,7 +36,7 @@ export function memberFolders(bucket: string, userId: string): string[] {
 }
 
 /** Database port; each method is one statement calling one database function. */
-export interface PurgeDatabase {
+export interface PurgeDatabase extends SweepDatabase {
   dueAccounts(limit: number): Promise<string[]>;
   prepare(userId: string): Promise<void>;
   /** Stops the member's photo jobs; true while a stopped worker may still be writing. */
@@ -50,7 +54,10 @@ export interface PurgeStorage {
 
 export type PurgeStage = 'prepare' | 'storage' | 'finish';
 /** Receives a failure with ids only; never the member's data. */
-export type PurgeReporter = (error: unknown, tags: { stage: PurgeStage | 'list_due'; user_id?: string }) => Promise<void>;
+export type PurgeReporter = (
+  error: unknown,
+  tags: { stage: PurgeStage | 'list_due' | 'sweep'; user_id?: string; intent_id?: number },
+) => Promise<void>;
 
 export interface PurgeDeps {
   readonly db: PurgeDatabase;
@@ -119,7 +126,17 @@ export function createPurgeHandler(deps: PurgeDeps): (req: Request) => Promise<R
         await deps.report(outcome.error, { stage: outcome.stage, user_id: userId });
       }
     }
-    return json({ ok: true, purged, failed, deferred });
+
+    // The re-sweep never undoes or hides the accounts purged above: its own failure is reported
+    // and the run still answers with what it purged.
+    let intents: SweepSummary | null = null;
+    try {
+      intents = await sweepDueIntents(deps.db, deps.storage, (error, intentId) =>
+        deps.report(error, { stage: 'sweep', intent_id: intentId }));
+    } catch (error) {
+      await deps.report(error, { stage: 'sweep' });
+    }
+    return json({ ok: true, purged, failed, deferred, intents });
   };
 }
 
@@ -135,6 +152,7 @@ export type Query = (sql: string, params: unknown[]) => Promise<Record<string, u
 
 export function createPurgeDatabase(query: Query): PurgeDatabase {
   return {
+    ...createSweepDatabase(query),
     async dueAccounts(limit) {
       return (await query(PURGE_SQL.dueAccounts, [limit])).map((row) => String(row.user_id));
     },

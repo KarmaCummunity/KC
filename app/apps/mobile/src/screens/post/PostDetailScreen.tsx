@@ -6,7 +6,7 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow } from 'date-fns/formatDistanceToNow';
 import { useTranslation } from 'react-i18next';
 import { resolveDateFnsLocale } from '../../lib/resolveDateFnsLocale';
 import { useTheme, Text, iconSize } from '@kc/ui';
