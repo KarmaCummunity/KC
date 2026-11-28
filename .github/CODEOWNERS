@@ -72,6 +72,7 @@
 /scripts/release-train.mjs @navesarussi
 /scripts/release-train-lib.mjs @navesarussi
 /scripts/bump-app-version.mjs               @navesarussi
+/scripts/version-checkpoint.mjs             @navesarussi
 /scripts/close-linked-issues.mjs            @navesarussi
 /scripts/run-baseline-tests.sh              @navesarussi
 /scripts/test-identity-provider-concurrency.py @navesarussi

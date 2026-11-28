@@ -214,7 +214,7 @@ jobs:
               echo "Bumped to ${version}"
               exit 0
             fi
-            echo "Push raced a merge; retrying on current DEV"
+            echo "Push raced a merge; retry ${attempt} on current DEV"
             sleep 15
           done
           echo "::error::Could not commit the eligible checkpoint after automatic retries."
