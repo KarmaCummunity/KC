@@ -50,7 +50,14 @@ export async function runStartInboxSub(
       onUnreadTotalChanged: (total) => {
         api.setState({ unreadTotal: total });
         const snap = readChatInboxSnapshot(qc, userId);
-        if (snap) writeChatInboxSnapshot(qc, userId, { ...snap, unreadTotal: total });
+        if (snap) {
+          // Badge-only data cannot make a stale conversation preview fresh. A delayed
+          // unread RPC follows chat_updated and setQueryData clears isInvalidated.
+          const key = chatInboxQueryKey(userId);
+          const wasInvalidated = qc.getQueryState(key)?.isInvalidated;
+          writeChatInboxSnapshot(qc, userId, { ...snap, unreadTotal: total });
+          if (wasInvalidated) void qc.invalidateQueries({ queryKey: key, refetchType: 'none' });
+        }
         else void qc.invalidateQueries({ queryKey: chatInboxQueryKey(userId) });
       },
       // A dropped channel may have missed events: the inbox is refetched on its next read, and the
