@@ -19,7 +19,7 @@ test('chat: user A messages the owner of a post, user B sees it', async ({ page,
   await input.fill(text);
   const send = page
     .getByTestId('chat-send')
-    .or(page.locator('[aria-label="צרף תמונה"] + *'));
+    .or(page.locator('[aria-label="צירוף תמונה"] + *'));
   await send.first().click();
   await expect(input).toHaveValue('');
   await expect(page.getByText(text)).toBeVisible();

@@ -7,7 +7,7 @@ export const adminTasksHe = {
   loading:         'טוען...',
   forbiddenTitle:  'אין לך הרשאת גישה למשימות הצוות.',
   emptyTitle:      'אין משימות תואמות',
-  emptyHint:       'נסה לשנות את הסינון או צור משימה חדשה.',
+  emptyHint:       'אפשר לשנות את הסינון או ליצור משימה חדשה.',
   newBtn:          '+ משימה חדשה',
   overdueBadge:    'איחור',
   status: {
@@ -45,7 +45,7 @@ export const adminTasksHe = {
     toLabel:     'עד תאריך יעד',
     placeholder: 'YYYY-MM-DD',
     apply:       'החל',
-    clear:       'נקה',
+    clear:       'ניקוי',
   },
 
   filters: {
@@ -72,7 +72,7 @@ export const adminTasksHe = {
     labelsLabel:          'תוויות (מופרדות בפסיק)',
     labelsPlaceholder:    'p0, ux, bug',
     cancel:               'ביטול',
-    submit:               'צור משימה',
+    submit:               'יצירת משימה',
   },
   detail: {
     notFound:           'המשימה לא נמצאה.',
@@ -80,10 +80,10 @@ export const adminTasksHe = {
     activity:           'יומן פעולות',
     changeStatus:       'שינוי סטטוס',
     changeCategory:     'שינוי קטגוריה',
-    addComment:         'הוסף תגובה',
+    addComment:         'הוספת תגובה',
     commentPlaceholder: 'תגובה...',
-    submitComment:      'שלח תגובה',
-    deleteBtn:          '🗑 מחק משימה',
+    submitComment:      'שליחת תגובה',
+    deleteBtn:          '🗑 מחיקת משימה',
     deleteConfirm:      'למחוק את המשימה? הפעולה אינה הפיכה והיומן יימחק יחד איתה.',
     confirmTitle:       'אישור פעולה',
     confirmOk:          'אישור',
@@ -116,6 +116,6 @@ export const adminTasksHe = {
     assignee_not_admin:  'אפשר לשייך רק למנהל פעיל.',
     empty_comment:       'התגובה ריקה.',
     comment_too_long:    'התגובה ארוכה מדי (עד 4000 תווים).',
-    unknown:             'אירעה שגיאה. נסה שוב.',
+    unknown:             'אירעה שגיאה. אפשר לנסות שוב.',
   },
 } as const;
