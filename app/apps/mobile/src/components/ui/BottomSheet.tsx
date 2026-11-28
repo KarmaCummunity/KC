@@ -8,8 +8,9 @@
 // bottom edge (`surfaceRaised`, top corners `radius.xl`, `shadow.modal`, a
 // border in dark mode) with a grab handle, the header (title + ✕), a scrolling
 // body and an optional footer. The surface pads itself above the home
-// indicator, lifts with the keyboard on iOS, and stops at 640pt wide on
-// tablets / desktop web so it does not stretch across the screen.
+// indicator, lifts with the keyboard via `resolveKeyboardAvoidingBehavior`
+// (FR-RESP-006 AC24 / #2139), and stops at 640pt wide on tablets / desktop
+// web so it does not stretch across the screen.
 //
 // Dismissal: backdrop tap, the ✕ control, Android back and web Escape all call
 // `onDismiss`; `dismissible={false}` ignores all four and hides the ✕.
@@ -35,6 +36,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { makeUseStyles, radius, shadow, shellDimensions, spacing } from '@kc/ui';
 import { ErrorBoundary } from '../ErrorBoundary';
+import { resolveKeyboardAvoidingBehavior } from '../../lib/platform/keyboardVerticalOffset';
 import { OverlayBackdrop, OverlayHeader, useFocusTitleOnOpen, useOverlayLifecycle } from './overlayParts';
 import { FormScope, FormScopeScrollView } from './FormScope';
 
@@ -135,8 +137,9 @@ export function BottomSheet({
       aria-label={Platform.OS === 'web' ? title : undefined}
     >
       <KeyboardAvoidingView
-        // iOS only: Android resizes the window for the keyboard itself.
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        // Edge-to-edge Android no longer resizes a Modal window for the
+        // keyboard; use the same resolver every other form uses (#2139).
+        behavior={resolveKeyboardAvoidingBehavior(Platform.OS)}
         style={[styles.frame, { paddingTop: insets.top + spacing['3xl'] }]}
       >
         <OverlayBackdrop onPress={requestClose} testID={testID ? `${testID}-backdrop` : undefined} />
