@@ -43,8 +43,11 @@ jobs:
           path: tooling
           persist-credentials: false
       - name: Validate immutable inputs and encryption destination before build
+        env:
+          KC_NATIVE_UPLOAD_CAPABILITY: ${{ secrets.KC_NATIVE_UPLOAD_CAPABILITY }}
         run: |
           set -euo pipefail
+          node tooling/scripts/native-exact-private-upload.mjs preflight
           mkdir -p "$RUNNER_TEMP/native-private"
           printf '%s\n' 'Recovered encrypted key and vault passphrase must be proven before dispatch. Simulator acceptance only.' > "$RUNNER_TEMP/native-private/scope.txt"
           node tooling/scripts/native-exact-acceptance.mjs target "$CANDIDATE_SHA" "$PINNED_WEB_URL" > "$RUNNER_TEMP/native-private/target.json"
@@ -133,10 +136,8 @@ jobs:
           openssl cms -encrypt -binary -aes-256-cbc -in "$RUNNER_TEMP/native-private.tar.gz" -outform DER -out "$RUNNER_TEMP/native-exact-evidence.cms" "$RUNNER_TEMP/recipient.pem"
           test -s "$RUNNER_TEMP/native-exact-evidence.cms"
           node tooling/scripts/native-exact-evidence-size.mjs "$RUNNER_TEMP/native-exact-evidence.cms"
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+      - name: Upload ciphertext to isolated private free-tier staging
         if: always() && steps.encrypted_evidence.outcome == 'success'
-        with:
-          name: native-exact-encrypted-evidence
-          path: ${{ runner.temp }}/native-exact-evidence.cms
-          if-no-files-found: error
-          retention-days: 1
+        env:
+          KC_NATIVE_UPLOAD_CAPABILITY: ${{ secrets.KC_NATIVE_UPLOAD_CAPABILITY }}
+        run: node tooling/scripts/native-exact-private-upload.mjs upload "$RUNNER_TEMP/native-exact-evidence.cms"

@@ -40,8 +40,8 @@ test('workflow keeps candidate independent and ciphertext-only', () => {
   assert.match(y, /crypto-probe\.cms/);
   assert.match(y, /native-exact-evidence\.cms/);
   assert.doesNotMatch(y, /ipad-qualification-startup|ax-probe\.mjs|E2E_SEED_PASSWORD|ASC_API|KC_SECURE_STORAGE_PROBE|KC_PUSH_SIMULATOR_TEST|workflow_run:|pull_request:|continue-on-error|tee /);
-  assert.equal((y.match(/actions\/upload-artifact@/g) ?? []).length, 1);
-  assert.match(y, /path: \$\{\{ runner.temp \}\}\/native-exact-evidence\.cms/);
+  assert.equal((y.match(/actions\/upload-artifact@/g) ?? []).length, 0);
+  assert.match(y, /native-exact-private-upload.mjs upload/);
 });
 test('independent runner uses one launch and no coordinate/reset fallback', () => {
   const swift = readFileSync('tests/native/exact/RawAXTests.swift', 'utf8');
