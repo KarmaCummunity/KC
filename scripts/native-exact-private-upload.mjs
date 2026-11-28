@@ -15,6 +15,7 @@ export function validateCapability(raw, now = Date.now(), minimumSeconds = 300) 
   const claim = JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString());
   if (!Number.isSafeInteger(claim.exp) || claim.exp * 1000 < now + minimumSeconds * 1000) throw Error('Upload capability expired or too short');
   if (claim.upsert === true) throw Error('Overwrite capability forbidden');
+  if (claim.url && claim.url !== 'kc-native-evidence/' + u.pathname.slice(ROOT.length)) throw Error('Token object mismatch');
   if (c.candidate !== '02cf8dc342de36ad8e229f6537d5ea10c0a0dfc0') throw Error('Candidate mismatch');
   return { url: u.toString(), expires: claim.exp };
 }
@@ -28,7 +29,7 @@ export async function uploadEvidence(raw, file, fetcher = fetch) {
     body: readFileSync(file),
   });
   if (!res.ok) throw Error('Private evidence upload failed');
-  await res.arrayBuffer();
+  await res.body?.cancel();
   return { uploaded: true, bytes: size };
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

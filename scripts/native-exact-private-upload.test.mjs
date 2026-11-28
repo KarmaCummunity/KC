@@ -15,6 +15,7 @@ test('rejects changed audience, object, candidate and parameters', () => {
 test('fails closed before build for short expiry and overwrite token',()=>{
  assert.throws(()=>validateCapability(cap({exp:1})));
  assert.throws(()=>validateCapability(cap({upsert:true})));
+ assert.throws(()=>validateCapability(cap({url:'kc-native-evidence/wrong/evidence.cms'})));
  assert.throws(()=>validateCapability(cap({exp:Math.floor(Date.now()/1000)+500}),Date.now(),6000));
 });
 test('uploads ciphertext once with no redirect or broad credentials',async()=>{
