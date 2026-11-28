@@ -11,9 +11,9 @@
 // sweep can still leave an orphan. This device ledger does not prove deletion quiescence.
 //
 // Limits (stated, not hidden): the ledger lives on this device. If the app is never opened again,
-// or the member signs out for good, entries are not swept from here; `post-images` objects are then
-// still removed by the server's orphan reconciliation (unreferenced and older than a day), but
-// `chat-media` and `avatars` have no server reconciliation yet (owner: the storage orphan job).
+// or the member signs out for good, entries are not swept from here; `post-images` and `avatars`
+// objects are then still removed by the server's orphan reconciliation (unreferenced and older than
+// a day), but `chat-media` has no server reconciliation yet (owner: the storage orphan job).
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getSupabaseClient } from '@kc/infrastructure-supabase';
