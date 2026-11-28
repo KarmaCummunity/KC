@@ -18,6 +18,8 @@ const JOBS_TOKEN = 'integration-jobs-token-0123456789abcdef';
 const JPEG = 'image/jpeg';
 const PHOTO = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3]);
 const TWO_DAYS_AGO = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
+// Every bucket of storage.buckets, in name order: the account purge records the member's folder in each.
+const MEMBER_FOLDER_BUCKETS = ['avatars', 'chat-media', 'post-images', 'post-uploads'] as const;
 
 const latin1 = (bytes: Uint8Array | null) => new TextDecoder('latin1').decode(bytes ?? new Uint8Array());
 
@@ -184,10 +186,12 @@ describe('File jobs on the KC schema', () => {
         [leaving.userId],
       )).rows;
 
-    // The purge records what must end up empty; the folders are empty, but too soon to say for good.
+    // The purge records what must end up empty: the member's folder in every bucket. The folders are
+    // empty, but too soon to say for good.
     const first = await runJob('purge-deleted-accounts');
     expect(first.body.intents).toMatchObject({ failed: 0 });
-    expect((await intentsOf()).map((intent) => intent.closed)).toEqual([false, false, false]);
+    expect((await intentsOf()).map((intent) => `${intent.bucket}:${intent.closed}`))
+      .toEqual(MEMBER_FOLDER_BUCKETS.map((bucket) => `${bucket}:false`));
 
     // An upload that was on its way when the account was purged lands afterwards.
     const late = `${leaving.userId}/batch/late.jpg`;
@@ -201,7 +205,8 @@ describe('File jobs on the KC schema', () => {
 
     expect(second.status).toBe(200);
     expect(await store.head('post-images', late)).toBeNull();
-    expect(Number((second.body.intents as { verified: number }).verified)).toBeGreaterThanOrEqual(3);
-    expect((await intentsOf()).map((intent) => intent.closed)).toEqual([true, true, true]);
+    expect(Number((second.body.intents as { verified: number }).verified)).toBeGreaterThanOrEqual(MEMBER_FOLDER_BUCKETS.length);
+    expect((await intentsOf()).map((intent) => `${intent.bucket}:${intent.closed}`))
+      .toEqual(MEMBER_FOLDER_BUCKETS.map((bucket) => `${bucket}:true`));
   });
 });

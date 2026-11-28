@@ -116,6 +116,8 @@ jobs:
             #    retry after this push finds no placeholders left.
             node scripts/spec-ids.mjs assign
             node scripts/migration-ids.mjs assign
+            # Source bindings include migration filenames; refresh in the same commit.
+            node scripts/app-migration-map.mjs
             # `-u` stages edits and deletions; the renamed migrations are new paths.
             git add -u
             git add -A supabase/migrations

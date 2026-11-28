@@ -10,7 +10,8 @@ import { currentServiceRoleKeys, primaryServiceRoleKey } from '../_shared/servic
 import { createProcessPostMediaHandler, type MediaStorage } from './handler.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-const BUCKET = 'post-images';
+/** Where the sanitized copies are written (and removed): always the public bucket, under `derived/`. */
+const COPY_BUCKET = 'post-images';
 const DOWNLOAD_TIMEOUT_MS = 20_000;
 const IMMUTABLE_MAX_AGE_SECONDS = '31536000';
 
@@ -58,13 +59,14 @@ async function readCapped(response: Response, maxBytes: number, abort: () => voi
 }
 
 const storage: MediaStorage = {
-  async download(key, maxBytes, signal) {
+  // The authenticated object route: it serves private buckets (`post-uploads`) to the service role.
+  async download(bucket, key, maxBytes, signal) {
     const controller = new AbortController();
     signal.addEventListener('abort', () => controller.abort(), { once: true });
     const timer = setTimeout(() => controller.abort(), DOWNLOAD_TIMEOUT_MS);
     try {
       const path = key.split('/').map(encodeURIComponent).join('/');
-      const response = await fetch(`${SUPABASE_URL}/storage/v1/object/${BUCKET}/${path}`, {
+      const response = await fetch(`${SUPABASE_URL}/storage/v1/object/${bucket}/${path}`, {
         headers: { authorization: `Bearer ${primaryServiceRoleKey()}`, apikey: primaryServiceRoleKey() },
         signal: controller.signal,
       });
@@ -80,7 +82,7 @@ const storage: MediaStorage = {
   // Through fetch, not storage-js: storage-js cannot abort an upload, and the lease bounds writes.
   async upload(key, bytes, contentType, signal) {
     const path = key.split('/').map(encodeURIComponent).join('/');
-    const response = await fetch(`${SUPABASE_URL}/storage/v1/object/${BUCKET}/${path}`, {
+    const response = await fetch(`${SUPABASE_URL}/storage/v1/object/${COPY_BUCKET}/${path}`, {
       method: 'POST',
       headers: {
         authorization: `Bearer ${primaryServiceRoleKey()}`,
@@ -96,7 +98,7 @@ const storage: MediaStorage = {
   },
   // Through fetch for the same reason as upload: storage-js cannot abort a request.
   async remove(keys, signal) {
-    const response = await fetch(`${SUPABASE_URL}/storage/v1/object/${BUCKET}`, {
+    const response = await fetch(`${SUPABASE_URL}/storage/v1/object/${COPY_BUCKET}`, {
       method: 'DELETE',
       headers: {
         authorization: `Bearer ${primaryServiceRoleKey()}`,

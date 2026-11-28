@@ -17,7 +17,7 @@ function fixture() {
  for(const name of ['scripts','app','supabase/migrations'])mkdirSync(join(work,name),{recursive:true});
  writeFileSync(join(work,'app/VERSION'),'1.0.0\n');
  cpSync(new URL('./bump-app-version.mjs',import.meta.url),join(work,'scripts/bump-app-version.mjs'));
- for(const name of ['spec-ids','migration-ids'])writeFileSync(join(work,'scripts/'+name+'.mjs'),'// fixture: no placeholders\n');
+ for(const name of ['spec-ids','migration-ids','app-migration-map'])writeFileSync(join(work,'scripts/'+name+'.mjs'),'// fixture: no placeholders\n');
  git(work,'config','user.name','fixture');git(work,'config','user.email','fixture@example.invalid');
  git(work,'add','.');git(work,'commit','-m','initial');git(work,'branch','-M','dev');git(work,'push','origin','dev');
  git(root,'clone','--branch','dev',remote,rival);git(rival,'config','user.name','fixture');git(rival,'config','user.email','fixture@example.invalid');
@@ -121,4 +121,14 @@ test('an ID commit is pushed immediately while the separate checkpoint waiter co
     assert.equal(f.git(f.work, 'log', '-1', '--format=%s'), 'chore(release): assign spec ids');
     assert.equal(readFileSync(join(f.work, 'app/VERSION'), 'utf8'), '1.0.0\n');
   } finally { f.cleanup(); }
+});
+
+test('assignment refreshes generated migration source map before staging the same commit', () => {
+ const f=fixture();try {
+  f.commit(f.rival,'docs/db/shadow-map.json','pending','fixture tracked map');
+  f.commit(f.rival,'scripts/app-migration-map.mjs',"import {writeFileSync} from 'node:fs';writeFileSync('docs/db/shadow-map.json','numbered');",'fixture map generator');
+  f.git(f.rival,'push','origin','dev');run(f,{assignOnly:true});
+  assert.equal(f.git(f.work,'show','HEAD:docs/db/shadow-map.json'),'numbered');
+  assert.equal(f.git(f.work,'log','-1','--format=%s'),'chore(release): assign spec ids');
+ }finally{f.cleanup();}
 });
