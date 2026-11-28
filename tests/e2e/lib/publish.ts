@@ -23,6 +23,14 @@ export interface PostToPublish {
   readonly details: () => Record<string, unknown>;
 }
 
+/** A post written by a member: its id, its title and the session that wrote it. */
+export interface WrittenPost {
+  readonly id: string;
+  readonly title: string;
+  readonly token: string;
+  readonly userId: string;
+}
+
 /** Re-throws a spent `post_create` window with a message that names the hourly limit. */
 function rethrowRateLimited(email: string, err: unknown): never {
   if (isRateLimitedError(err)) throw new Error(exhaustedBudgetMessage({ email }), { cause: err });
@@ -32,16 +40,28 @@ function rethrowRateLimited(email: string, err: unknown): never {
 /** Publishes as `user`; returns the post id and its title. */
 export async function publishPostAs(user: Credentials, journey: PostToPublish): Promise<{ id: string; title: string }> {
   try {
-    return await publishPostAsUnchecked(user, journey);
+    const { id, title } = await publishPostAsUnchecked(user, journey);
+    return { id, title };
   } catch (err) {
     rethrowRateLimited(user.email, err);
   }
 }
 
-async function publishPostAsUnchecked(
-  user: Credentials,
-  journey: PostToPublish,
-): Promise<{ id: string; title: string }> {
+/**
+ * Creates the post as a draft with no photo, through the same write the app uses for its kind
+ * (a draft row for `plain`, `create_post_with_details` with `"status": "draft"` for `food`).
+ * Lets a journey call `publish_post` itself, e.g. to prove that an offer without a photo is refused.
+ */
+export async function createDraftAs(user: Credentials, journey: PostToPublish): Promise<WrittenPost> {
+  try {
+    return await createDraftAsUnchecked(user, journey);
+  } catch (err) {
+    rethrowRateLimited(user.email, err);
+  }
+}
+
+/** The member's session and the columns every new post carries (kind, direction, title, city). */
+async function newPostColumns(user: Credentials, journey: PostToPublish) {
   const { session } = await sessionFor(user);
   const token = session.access_token as string;
   const userId = (session.user as { id: string }).id;
@@ -52,34 +72,52 @@ async function publishPostAsUnchecked(
   if (!kind) throw new Error(`post kind ${journey.world}/${journey.kindSlug} is missing on kc-dev`);
   const [city] = await rest<{ city_id: string }[]>(token, 'cities?select=city_id&city_id=eq.7400&limit=1');
   if (!city) throw new Error('city 7400 is missing from the reference seed on kc-dev');
-  const title = journey.title;
   const post = {
     world_slug: journey.world,
     kind_id: kind.id,
     direction: kind.direction,
-    title,
+    title: journey.title,
     description: null,
     city_id: city.city_id,
   };
+  return { token, userId, post };
+}
+
+/** Food: one `create_post_with_details` call; `draft` keeps the post unpublished. */
+async function createFoodPost(token: string, post: Record<string, unknown>, journey: PostToPublish, draft: boolean) {
+  const id = await rest<string>(token, 'rpc/create_post_with_details', {
+    method: 'POST',
+    body: { p_post: { ...post, details: {}, ...(draft ? { status: 'draft' } : {}) }, p_details: journey.details() },
+  });
+  if (typeof id !== 'string') throw new Error(`create_post_with_details returned ${JSON.stringify(id)}`);
+  return id;
+}
+
+async function createDraftAsUnchecked(user: Credentials, journey: PostToPublish): Promise<WrittenPost> {
+  const { token, userId, post } = await newPostColumns(user, journey);
   if (journey.publish === 'food') {
-    const id = await rest<string>(token, 'rpc/create_post_with_details', {
-      method: 'POST',
-      body: { p_post: { ...post, details: {} }, p_details: journey.details() },
-    });
-    if (typeof id !== 'string') throw new Error(`create_post_with_details returned ${JSON.stringify(id)}`);
-    return { id, title };
+    return { id: await createFoodPost(token, post, journey, true), title: journey.title, token, userId };
   }
   const [draft] = await rest<{ id: string }[]>(token, 'posts', {
     method: 'POST',
     body: { ...post, owner_id: userId, post_type: 'standard', status: 'draft', details: journey.details() },
   });
   if (!draft) throw new Error('the draft post was not created');
-  const key = await uploadPostPhoto(token, userId);
-  await rest(token, 'post_media', {
+  return { id: draft.id, title: journey.title, token, userId };
+}
+
+async function publishPostAsUnchecked(user: Credentials, journey: PostToPublish): Promise<WrittenPost> {
+  if (journey.publish === 'food') {
+    const { token, userId, post } = await newPostColumns(user, journey);
+    return { id: await createFoodPost(token, post, journey, false), title: journey.title, token, userId };
+  }
+  const draft = await createDraftAsUnchecked(user, journey);
+  const key = await uploadPostPhoto(draft.token, draft.userId);
+  await rest(draft.token, 'post_media', {
     method: 'POST',
     body: {
       post_id: draft.id,
-      owner_id: userId,
+      owner_id: draft.userId,
       kind: 'image',
       storage_bucket: 'post-images',
       storage_key: key,
@@ -88,6 +126,6 @@ async function publishPostAsUnchecked(
       size_bytes: 1,
     },
   });
-  await rest(token, 'rpc/publish_post', { method: 'POST', body: { p_post_id: draft.id } });
-  return { id: draft.id, title };
+  await rest(draft.token, 'rpc/publish_post', { method: 'POST', body: { p_post_id: draft.id } });
+  return draft;
 }
