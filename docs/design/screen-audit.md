@@ -2442,7 +2442,7 @@ Each screen of the application is mapped from the Expo Router file structure (`a
 ##### Design System Kit Adoption Status
 - **`TextField`:** Compliant
 - **`Modal` / `BottomSheet`:** Deviations present (`AboutNavDrawer.tsx` uses raw React Native `Modal` for slide-over drawer)
-- **`Chip`:** Deviations present (`AboutValuesGrid.tsx` defines ad-hoc `chip` style)
+- **`Chip`:** About values use kit `Chip` (`AboutValuesGrid.tsx`); remaining ad-hoc chips elsewhere (map, chat)
 - **Buttons & CTAs:** Deviations present (CTAs 2 migrated contact buttons; hero banner, embed, and scope toggle use primary color)
 - **`filterKit`:** N/A
 - **`MirroredIcon`:** Deviations present (`AboutContactLinks.tsx`, `AboutNavDrawer.tsx`, `AboutSocialLinks.tsx` use unmirrored directionals)
@@ -2477,7 +2477,7 @@ Each screen of the application is mapped from the Expo Router file structure (`a
 - `src/features/about-landing/AboutNavDrawer.tsx` — Total Findings: **7** (`physicalSide`: 2, `rawModal`: 1, `iconSizeLiteral`: 3, `unmirroredDirectionalIcon`: 1)
 - `src/features/about-landing/AboutScopeToggle.tsx` — Total Findings: **9** | Hand-rolled CTAs: **1** (`fontWeightLiteral`: 1, `shadowLiteral`: 8)
 - `src/features/about-landing/AboutSocialLinks.tsx` — Total Findings: **4** (`fontWeightLiteral`: 1, `iconSizeLiteral`: 2, `unmirroredDirectionalIcon`: 1)
-- `src/features/about-landing/AboutValuesGrid.tsx` — Total Findings: **7** (`fontWeightLiteral`: 1, `shadowLiteral`: 4, `adHocChip`: 1, `iconSizeLiteral`: 1)
+- `src/features/about-landing/AboutValuesGrid.tsx` — Total Findings: **0** (kit `Chip` `tag` / `brand` / `sm`, #1742)
 - `src/features/about-landing/AboutFaqAccordion.tsx` — Total Findings: **2** (`fontWeightLiteral`: 1, `iconSizeLiteral`: 1)
 - `src/features/about-landing/AboutGovernanceSection.tsx` — Total Findings: **3** (`fontWeightLiteral`: 3)
 - `src/features/about-landing/AboutMissionTeamSection.tsx` — Total Findings: **7** (`fontWeightLiteral`: 4, `spacingLiteral`: 1, `iconSizeLiteral`: 2)
@@ -2764,7 +2764,7 @@ Hebrew is the primary operating language of Karma Community. Physical layout sid
      - `src/features/about-landing/AboutNavDrawer.tsx` (1 modal: mobile web navigation drawer)
 3. **Ad-Hoc Chip Implementations (17 findings across 17 files):**
    - Hand-rolled styles named `chip: { ... }` bypass `@kc/ui`'s AA color contrast floor and standard 28pt / 36pt heights.
-   - Found in: Admin surfaces (8 files: `org-approvals`, `OrgSwitcher`, `LayerPersonChip`, `PostSearchRow`, `UserSearchRow`, `FinanceEntryCard`, `AssigneePicker`, `TaskCategoryPicker`), Settings (3 files: `feed`, `report-issue`, `surveys`), Post flow (`PostDetailHeader`, `editPostScreen.styles.ts`), Marketplace (`listingChipStyles.ts`), Map (`MapExplorer.styles.ts`), Chat (`ChatReactionChips.tsx`), and About (`AboutValuesGrid.tsx`).
+   - Found in: Admin surfaces (8 files: `org-approvals`, `OrgSwitcher`, `LayerPersonChip`, `PostSearchRow`, `UserSearchRow`, `FinanceEntryCard`, `AssigneePicker`, `TaskCategoryPicker`), Settings (3 files: `feed`, `report-issue`, `surveys`), Post flow (`PostDetailHeader`, `editPostScreen.styles.ts`), Marketplace (`listingChipStyles.ts`), Map (`MapExplorer.styles.ts`), Chat (`ChatReactionChips.tsx`). About (`AboutValuesGrid.tsx`) moved to kit `Chip` (#1742).
 
 ### 4.3 Hand-Rolled CTAs & Brand Orange Inconsistencies
 

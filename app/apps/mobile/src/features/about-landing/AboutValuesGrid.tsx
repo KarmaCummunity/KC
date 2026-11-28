@@ -1,10 +1,10 @@
-// Values grid — visual icon chips (one per value).
+// Values grid — one kit brand tag chip per value (spec 17 §4.1, #1742).
 import React from 'react';
 import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
-import { makeUseStyles, typography, spacing, radius, useTheme, Text } from '@kc/ui';
-import { aboutRtlText, aboutRtlRow } from './aboutWebRtlStyle';
+import { makeUseStyles, spacing } from '@kc/ui';
+import { Chip } from '../../components/ui/Chip';
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -16,47 +16,21 @@ interface ValueItem {
 export function AboutValuesGrid() {
   const { t } = useTranslation();
   const styles = useAboutValuesGridStyles();
-  const { colors } = useTheme();
   const values: ValueItem[] = t('aboutContent.valuesList', { returnObjects: true }) as ValueItem[];
 
   return (
     <View style={styles.grid}>
       {values.map((v) => (
-        <View key={v.label} style={styles.chip}>
-          <Ionicons name={v.icon} size={18} color={colors.primary} />
-          <Text style={styles.label}>{v.label}</Text>
-        </View>
+        <Chip key={v.label} variant="tag" tone="brand" size="sm" icon={v.icon} label={v.label} />
       ))}
     </View>
   );
 }
 
-const useAboutValuesGridStyles = makeUseStyles(({ colors }) => ({
+const useAboutValuesGridStyles = makeUseStyles(() => ({
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.sm,
-  },
-  chip: {
-    flexDirection: aboutRtlRow,
-    alignItems: 'center',
-    gap: spacing.xs,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    backgroundColor: colors.primarySurface,
-    borderRadius: radius.full,
-    borderWidth: 1,
-    borderColor: colors.primaryLight,
-    shadowColor: colors.primary,
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 1,
-  },
-  label: {
-    ...typography.caption,
-    color: colors.primary,
-    fontWeight: '700',
-    ...aboutRtlText,
   },
 }));
